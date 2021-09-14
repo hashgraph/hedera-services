@@ -152,7 +152,11 @@ public class VirtualDataSourceJasperDBLongKeyTest {
         return Assertions.assertDoesNotThrow(() ->
                 new VFCDataSourceExceptionWrapper<>(
                         new VirtualDataSourceJasperDB<>(
-                                LongVKeyImpl.SIZE_BYTES, LongVKeyImpl::new,
+                                LongVKeyImpl.SIZE_BYTES,
+                                LongVKeyImpl.SIZE_BYTES,
+                                LongVKeyImpl.SIZE_BYTES,
+                                LongVKeyImpl::new,
+                                null,
                                 TestLeafData.SIZE_BYTES, TestLeafData::new,
                                 STORE_PATH,
                                 size*10L,

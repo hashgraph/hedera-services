@@ -1,5 +1,6 @@
 package com.hedera.services.state.jasperdb;
 
+import com.hedera.services.state.jasperdb.files.DataFileCommon;
 import com.hedera.services.state.merkle.virtual.ContractKey;
 import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
@@ -156,12 +157,17 @@ public class VirtualDataSourceJasperDBContractKeyTest {
         return Assertions.assertDoesNotThrow(() ->
                 new VFCDataSourceExceptionWrapper<>(
                         new VirtualDataSourceJasperDB<>(
-                                ContractKey.SERIALIZED_SIZE, ContractKey::new,
+                                DataFileCommon.VARIABLE_DATA_SIZE,
+                                ContractKey.ESTIMATED_AVERAGE_SIZE,
+                                ContractKey.MAX_SIZE,
+                                ContractKey::new,
+                                ContractKey::readKeySize,
                                 TestLeafData.SIZE_BYTES, TestLeafData::new,
                                 STORE_PATH,
                                 size*10L,
                                 false,
-                                Long.MAX_VALUE)));
+                                Long.MAX_VALUE
+                        )));
     }
 
     public void assertLeaf(VFCDataSourceExceptionWrapper<ContractKey,TestLeafData>  dataSource, long path, int i) {

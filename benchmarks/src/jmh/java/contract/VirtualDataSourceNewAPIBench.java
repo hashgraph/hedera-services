@@ -1,6 +1,7 @@
 package contract;
 
 import com.hedera.services.state.jasperdb.VirtualDataSourceJasperDB;
+import com.hedera.services.state.jasperdb.files.DataFileCommon;
 import com.hedera.services.state.merkle.virtual.ContractKey;
 import com.hedera.services.state.merkle.virtual.ContractUint256;
 import com.swirlds.common.crypto.DigestType;
@@ -59,7 +60,7 @@ public class VirtualDataSourceNewAPIBench {
             switch (impl) {
                 case "lmdb":
                     dataSource = new VFCDataSourceLmdb<>(
-                        ContractKey.SERIALIZED_SIZE, ContractKey::new,
+                        1+8+32, ContractKey::new, // max seralized size
                         ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
                         storePath);
                     break;
@@ -70,7 +71,11 @@ public class VirtualDataSourceNewAPIBench {
 //                            storePath);
                 case "jasperdb":
                     dataSource = new VirtualDataSourceJasperDB<>(
-                            ContractKey.SERIALIZED_SIZE, ContractKey::new,
+                            DataFileCommon.VARIABLE_DATA_SIZE,
+                            ContractKey.ESTIMATED_AVERAGE_SIZE,
+                            ContractKey.MAX_SIZE,
+                            ContractKey::new,
+                            ContractKey::readKeySize,
                             ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
                             storePath,
                             numEntities+10_000_000,  // TODO see if 10 millionls extra is enough for add method
@@ -92,7 +97,7 @@ public class VirtualDataSourceNewAPIBench {
                             numEntities,numEntities*2,
                             LongStream.range(iHaveWritten,iHaveWritten+batchSize).mapToObj(i -> new VirtualInternalRecord(i,hash((int)i))),
                             LongStream.range(iHaveWritten,iHaveWritten+batchSize).mapToObj(i -> new VirtualLeafRecord<>(
-                                    i+numEntities,hash((int)i),new ContractKey(i, new ContractUint256(i)), new ContractUint256(i) )
+                                    i+numEntities,hash((int)i),new ContractKey(i, i), new ContractUint256(i) )
                             )
                     );
                     iHaveWritten += batchSize;
@@ -139,7 +144,7 @@ public class VirtualDataSourceNewAPIBench {
     public void randomIndex(){
         randomNodeIndex1 = (long)(random.nextDouble()*numEntities);
         randomLeafIndex1 = numEntities + randomNodeIndex1;
-        key1 = new ContractKey(randomNodeIndex1,new ContractUint256(randomNodeIndex1));
+        key1 = new ContractKey(randomNodeIndex1,randomNodeIndex1);
         random10kLeafPaths.clear();
         for (int i = 0; i < 10_000; i++) {
             random10kLeafPaths.add(numEntities + ((long)(random.nextDouble()*numEntities)));
@@ -167,7 +172,7 @@ public class VirtualDataSourceNewAPIBench {
                 numEntities,numEntities*2,
                 null,
                 LongStream.range(0,Math.min(10_000,numEntities)).mapToObj(i -> new VirtualLeafRecord<>(
-                        i+numEntities,hash((int)i),new ContractKey(i, new ContractUint256(i)), new ContractUint256(randomNodeIndex1) )
+                        i+numEntities,hash((int)i),new ContractKey(i, i), new ContractUint256(randomNodeIndex1) )
                 )
         );
         // add a small delay between iterations for merging to get a chance on write heavy benchmarks
@@ -187,7 +192,7 @@ public class VirtualDataSourceNewAPIBench {
         for (int i = 0; i < 10_000; i++) {
             long path = random10kLeafPaths.get(i);
             changes.add(new VirtualLeafRecord<>(
-                    path,hash((int)path),new ContractKey(path, new ContractUint256(path)), new ContractUint256(i) ));
+                    path,hash((int)path),new ContractKey(path, path), new ContractUint256(i) ));
         }
         dataSource.saveRecords(
                 numEntities,numEntities*2,
@@ -218,7 +223,7 @@ public class VirtualDataSourceNewAPIBench {
                 numEntities,numEntities*2,
                 null,
                 LongStream.range(nextPath,nextPath+10_000).mapToObj(i -> new VirtualLeafRecord<>(
-                        i+numEntities,hash((int)i),new ContractKey(i, new ContractUint256(i)), new ContractUint256(i) )
+                        i+numEntities,hash((int)i),new ContractKey(i, i), new ContractUint256(i) )
                 )
         );
         nextPath += 10_000;

@@ -1,6 +1,6 @@
 package com.hedera.services.state.jasperdb.collections;
 
-import com.hedera.services.state.jasperdb.collections.HalfDiskHashMap;
+import com.hedera.services.state.jasperdb.files.DataFileCommon;
 import com.hedera.services.state.merkle.virtual.ContractKey;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -23,7 +23,16 @@ public class HalfDiskHashMapTest {
         Path tempDirPath = Files.createTempDirectory("HalfDiskHashMapTest");
         deleteDirectoryAndContents(tempDirPath);
         // create map
-        HalfDiskHashMap<ContractKey> map = new HalfDiskHashMap<>(count,ContractKey.SERIALIZED_SIZE, ContractKey::new,tempDirPath,"HalfDiskHashMapTest");
+        HalfDiskHashMap<ContractKey> map = new HalfDiskHashMap<>(
+                count,
+                DataFileCommon.VARIABLE_DATA_SIZE,
+                ContractKey.ESTIMATED_AVERAGE_SIZE,
+                ContractKey.MAX_SIZE,
+                ContractKey::new,
+                ContractKey::readKeySize,
+                false,
+                tempDirPath,
+                "HalfDiskHashMapTest");
         map.printStats();
         return map;
     }
@@ -42,8 +51,9 @@ public class HalfDiskHashMapTest {
     private static void checkData(HalfDiskHashMap<ContractKey> map, int start, int count, long dataMultiplier) throws IOException  {
         long START = System.currentTimeMillis();
         for (int i = start; i < (start+count); i++) {
-            long result = map.get(newContractKey(i),0);
-            assertEquals(i*dataMultiplier,result);
+            long result = map.get(newContractKey(i),-1);
+//            System.out.println("result = " + result);
+            assertEquals(i*dataMultiplier,result, "Failed to read key="+newContractKey(i)+" dataMultiplier="+dataMultiplier);
         }
         printTestUpdate(START, count,"Read");
     }

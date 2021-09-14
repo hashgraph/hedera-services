@@ -100,8 +100,7 @@ public final class NonCryptographicHashing {
             final long x2,
             final long x3,
             final long x4) {
-        return(int)perm64(perm64(perm64(perm64(perm64(perm64(1)^x0) ^ x1) ^ x2) ^ x3) ^ x4);
-//        return(int)(0x00000000FFFFFFFFL & perm64(perm64(perm64(perm64(perm64(x0) ^ x1) ^ x2) ^ x3) ^ x4));
+        return(int)perm64(perm64(perm64(perm64(perm64(x0) ^ x1) ^ x2) ^ x3) ^ x4);
     }
 
     /**

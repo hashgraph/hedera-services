@@ -1,6 +1,7 @@
 package com.hedera.services.state.jasperdb.collections;
 
 import com.hedera.services.state.jasperdb.files.DataFileCollection;
+import com.hedera.services.state.jasperdb.files.DataFileCommon;
 import com.hedera.services.state.jasperdb.files.DataFileReader;
 import com.hedera.services.state.jasperdb.files.DataFileReaderAsynchronous;
 import com.swirlds.virtualmap.VirtualKey;
@@ -10,7 +11,6 @@ import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -31,7 +31,6 @@ import static com.hedera.services.state.jasperdb.files.DataFileCommon.MB;
  *
  * IMPORTANT: This implementation assumes a single writing thread. There can be multiple readers while writing is happening.
  */
-@SuppressWarnings({"unused", "DuplicatedCode"})
 public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
     /**
      * Nominal value for a bucket location that doesn't exist. It is zero, so we don't need to fill empty index memory
@@ -40,10 +39,10 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
     private static final long NON_EXISTENT_BUCKET = 0;
     /** System page size, for now hard coded as it is nearly always 4k on linux */
     private static final int DISK_PAGE_SIZE_BYTES = 4096;
+    /** The max size for each bucket on disk */
+    private static final int BUCKET_SIZE = DISK_PAGE_SIZE_BYTES;
     /** The amount of data used for storing key hash code */
     private static final int KEY_HASHCODE_SIZE = Integer.BYTES;
-    /** The amount of data used for storing key serialization version */
-    private static final int KEY_SERIALIZATION_VERSION_SIZE = Integer.BYTES;
     /** The amount of data used for storing value in bucket, our values are longs as this is a key to long map */
     private static final int VALUE_SIZE = Long.BYTES;
     /** The amount of data used for storing bucket index in bucket header */
@@ -60,10 +59,6 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
     private final LongList bucketIndexToBucketLocation;
     /** DataFileCollection manages the files storing the buckets on disk */
     private final DataFileCollection fileCollection;
-    /** The size of each entry, contains entry header and long value */
-    private final int entrySize;
-    /** The size of the header for an entry, this contains key hash code, key serialization version, serialized key */
-    private final int entryHeaderSize;
     /** This is the number of buckets needed to store mapSize entries if we ere only LOADING_FACTOR percent full */
     private final int minimumBuckets;
     /**
@@ -91,14 +86,23 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
      * Construct a new HalfDiskHashMap
      *
      * @param mapSize The maximum map number of entries. This should be more than big enough to avoid too many key collisions.
-     * @param keySize The key size in bytes when serialized to a ByteBuffer
+     * @param keySize The key size in bytes when serialized to a ByteBuffer. Can be DataFileCommon.VARIABLE_DATA_SIZE
+     * @param averageKeySizeEstimate If keySize is DataFileCommon.VARIABLE_DATA_SIZE then we need an estimate for the
+     *                               average key size to use in sizing calculations.
+     * @param maxKeySize The maximum size a key can be, needed for variable sized keys.
      * @param keyConstructor The constructor to use for creating new de-serialized keys
+     * @param keySizeReader Reader for reading key sizes from byte buffers containing a serialized key. This can be null
+     *                      if using fixed size keys.
+     * @param storeKeySerializationVersion when true we use an int for each key to store serialization version. When false
+     *                                     we assume the key's serialization is fixed or the version is tracked else where.
      * @param storeDir The directory to use for storing data files.
      * @param storeName The name for the data store, this allows more than one data store in a single directory.
      * @throws IOException If there was a problem creating or opening a set of data files.
      */
-    public HalfDiskHashMap(long mapSize, int keySize, Supplier<K> keyConstructor, Path storeDir,
-                           String storeName) throws IOException {
+    public HalfDiskHashMap(long mapSize, int keySize, int averageKeySizeEstimate, int maxKeySize,
+                           Supplier<K> keyConstructor,  KeySizeReader keySizeReader,
+                           boolean storeKeySerializationVersion,
+                           Path storeDir, String storeName) throws IOException {
         this.mapSize = mapSize;
         this.storeName = storeName;
         // create store dir
@@ -106,14 +110,20 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
         // create bucket index
         bucketIndexToBucketLocation = new LongListHeap();
         // calculate number of entries we can store in a disk page
-        entryHeaderSize = KEY_HASHCODE_SIZE + KEY_SERIALIZATION_VERSION_SIZE + keySize;
-        entrySize = entryHeaderSize + VALUE_SIZE; // key hash code, key serialization version, serialized key, long value
-        entriesPerBucket = ((DISK_PAGE_SIZE_BYTES-BUCKET_HEADER_SIZE) / entrySize);
+//        entryHeaderSize = KEY_HASHCODE_SIZE + KEY_SERIALIZATION_VERSION_SIZE + keySize;
+//        entrySize = entryHeaderSize + VALUE_SIZE; // key hash code, key serialization version, serialized key, long value
+        final int keySerializationVersionSize = storeKeySerializationVersion ? Integer.BYTES : 0;
+        final int keySizeForCalculations = keySize == DataFileCommon.VARIABLE_DATA_SIZE ? averageKeySizeEstimate: keySize;
+        final int entrySize = KEY_HASHCODE_SIZE + keySerializationVersionSize + keySizeForCalculations + VALUE_SIZE;
+
+                entriesPerBucket = ((BUCKET_SIZE -BUCKET_HEADER_SIZE) / entrySize);
         minimumBuckets = (int)Math.ceil(((double)mapSize/LOADING_FACTOR)/entriesPerBucket);
         numOfBuckets = Math.max(4096,Integer.highestOneBit(minimumBuckets)*2); // nearest greater power of two with a min of 4096
-        bucket = ThreadLocal.withInitial(() -> new Bucket<>(entrySize, entryHeaderSize, entriesPerBucket, keyConstructor));
+        bucket = ThreadLocal.withInitial(() -> new Bucket<>(KEY_HASHCODE_SIZE,
+                keySerializationVersionSize,
+                keySize, maxKeySize, entriesPerBucket, keyConstructor, keySizeReader));
         // create file collection
-        fileCollection = new DataFileCollection(storeDir,storeName,DISK_PAGE_SIZE_BYTES,
+        fileCollection = new DataFileCollection(storeDir,storeName, BUCKET_SIZE,
                 (key, dataLocation, dataValue) -> bucketIndexToBucketLocation.put(key,dataLocation));
     }
 
@@ -207,7 +217,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
         if (oneTransactionsData == null) throw new IllegalStateException("Trying to write to a HalfDiskHashMap when you have not called startWriting().");
         if (Thread.currentThread() != writingThread) throw new IllegalStateException("Tried calling write with different thread to startWriting()");
         // store key and value in transaction cache
-        int bucketIndex = computeBucketIndex(hash(key));
+        int bucketIndex = computeBucketIndex(key.hashCode());
         ObjectLongHashMap<K> bucketMap = oneTransactionsData.getIfAbsentPut(bucketIndex, ObjectLongHashMap::new);
         bucketMap.put(key,value);
     }
@@ -246,7 +256,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
                             fileCollection.readData(currentBucketLocation, bucket.bucketBuffer, DataFileReaderAsynchronous.DataToRead.VALUE);
                         }
                         // for each changed key in bucket, update bucket
-                        bucketMap.forEachKeyValue((k,v) -> bucket.putValue(hash(k),k,v));
+                        bucketMap.forEachKeyValue((k,v) -> bucket.putValue(k.hashCode(),k,v));
                         // save bucket
                         long bucketLocation;
                         bucket.bucketBuffer.rewind();
@@ -299,7 +309,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
      */
     public long get(K key, long notFoundValue) throws IOException {
         if (key == null) throw new IllegalArgumentException("Can not get a null key");
-        int keyHash = hash(key);
+        int keyHash = key.hashCode();
         int bucketIndex = computeBucketIndex(keyHash);
         long currentBucketLocation = bucketIndexToBucketLocation.get(bucketIndex, NON_EXISTENT_BUCKET);
         if (currentBucketLocation != NON_EXISTENT_BUCKET) {
@@ -323,10 +333,8 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
                 "    minimumBuckets = %,d\n"+
                 "    numOfBuckets = %,d\n"+
                 "    entriesPerBucket = %,d\n"+
-                "    entrySize = %,d\n"+
-                "    valueOffsetInEntry = %,d\n"+
                 "}\n"
-                , mapSize,minimumBuckets,numOfBuckets,entriesPerBucket,entrySize,entryHeaderSize);
+                , mapSize,minimumBuckets,numOfBuckets,entriesPerBucket);
     }
 
     /** Useful debug method to print the current state of the transaction cache */
@@ -353,13 +361,29 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
                 String tooBig = (bucketMap.size() > entriesPerBucket) ? " TOO MANY! > "+entriesPerBucket : "";
                 System.out.println("bucketIndex ["+bucketIndex+"] , count="+bucketMap.size()+tooBig);
                 bucketMap.forEachKeyValue((k, l) ->
-                        System.out.println("        keyHash ["+k.hashCode()+"]["+hash(k)+"] bucket ["+(hash(k)% numOfBuckets)+
-                                ","+computeBucketIndex(hash(k))+"]  key ["+k+"] value ["+l+"]"));
+                        System.out.println("        keyHash ["+k.hashCode()+"] bucket ["+computeBucketIndex(k.hashCode())+
+                                "]  key ["+k+"] value ["+l+"]"));
 //            } else {
 //                System.out.println("bucketIndex ["+bucketIndex+"] , EMPTY!");
             }
         }
         System.out.println("========================================================");
+    }
+
+    // =================================================================================================================
+    // Interface for key size readers
+
+    @FunctionalInterface
+    public interface KeySizeReader {
+        /**
+         * Read the size of the key from byte buffer at current position. Assumes current position is at beginning of
+         * serialized key. The buffer's position should be restored afterwards, so that key could be deserialized from
+         * the byte buffer if needed.
+         *
+         * @param buffer The buffer to read key's size from
+         * @return the key size in bytes
+         */
+        int getKeySize(ByteBuffer buffer);
     }
 
     // =================================================================================================================
@@ -377,65 +401,61 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
     }
 
     /**
-     * From Java HashMap
-     *
-     * Computes key.hashCode() and spreads (XORs) higher bits of hash
-     * to lower.  Because the table uses power-of-two masking, sets of
-     * hashes that vary only in bits above the current mask will
-     * always collide. (Among known examples are sets of Float keys
-     * holding consecutive whole numbers in small tables.)  So we
-     * apply a transform that spreads the impact of higher bits
-     * downward. There is a tradeoff between speed, utility, and
-     * quality of bit-spreading. Because many common sets of hashes
-     * are already reasonably distributed (so don't benefit from
-     * spreading), and because we use trees to handle large sets of
-     * collisions in bins, we just XOR some shifted bits in the
-     * cheapest possible way to reduce systematic lossage, as well as
-     * to incorporate impact of the highest bits that would otherwise
-     * never be used in index calculations because of table bounds.
-     */
-    private static int hash(Object key) {
-        int h;
-        return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);
-//        if (key == null) return 0;
-//        int k = key.hashCode();
-//        k ^= k >> 12;
-//        k ^= k << 25;
-//        k ^= k >> 27;
-//        k *= 0x2545F4914F6CDD1DL;
-//        return k;
-    }
-
-    /**
      * Class for accessing the data in a bucket. This is designed to be used from a single thread.
      *
      * Each bucket has a header containing:
      *  - int - Bucket index in map hash index
      *  - int - Count of keys stored
      *  - long - pointer to next bucket if this one is full. TODO implement this
+     *  - Entry[] - array of entries
+     *
+     * Each Entry contains:
+     *  - entryHashCodeSize(int/long) - key hash code
+     *  - value - the value of the key/value pair. It is here because it is fixed size
+     *  - optional int - key serialization version
+     *  - key data - can be fixed size of entryKeySize or variable size
      */
     private static final class Bucket<K extends VirtualKey> {
-        private static final int BUCKET_ENTRY_COUNT_OFFSET = Integer.BYTES;
-        private static final int NEXT_BUCKET_OFFSET = BUCKET_ENTRY_COUNT_OFFSET + Integer.BYTES;
-        private final ByteBuffer bucketBuffer = ByteBuffer.allocateDirect(DISK_PAGE_SIZE_BYTES);
-        private final int entrySize;
-        private final int entryHeaderSize;
+        private static final int BUCKET_INDEX_IN_HASH_MAP_SIZE = Integer.BYTES;
+        private static final int BUCKET_ENTRY_COUNT_SIZE = Integer.BYTES;
+        private static final int BUCKET_ENTRY_COUNT_OFFSET = BUCKET_INDEX_IN_HASH_MAP_SIZE;
+        private static final int NEXT_BUCKET_OFFSET = BUCKET_ENTRY_COUNT_OFFSET + BUCKET_ENTRY_COUNT_SIZE;
+        private final ByteBuffer bucketBuffer = ByteBuffer.allocate(BUCKET_SIZE);
+        private final int entryHashCodeSize;
+        private final int entryKeyVersionSize;
+        private final int entryKeySize;
+        private final int maxKeySize;
+        private final int entryValueOffset;
+        private final int maxEntrySize;
+        private final boolean hasFixedSizeKey;
+        private final boolean storeKeySerializationVersion;
         private final int entriesPerBucket;
         private final Supplier<K> keyConstructor;
+        private final KeySizeReader keySizeReader;
 
         /**
          * Create a new bucket
          *
-         * @param entrySize the total size for each entry, entryHeaderSize + long value
-         * @param entryHeaderSize this includes the key hash, key serialization version and serialized key
+         * @param entryHashCodeSize the size in bytes of key hashCode
+         * @param entryKeyVersionSize key serialization version size in bytes
+         * @param entryKeySize this size of serialized key inm bytes, can be DiskFileCommon.VARIABLE_DATA_SIZE
+         * @param maxKeySize The maximum size a key can be, needed for variable sized keys.
          * @param entriesPerBucket the number of entries we can store in a bucket
          * @param keyConstructor constructor for creating new keys during deserialization
          */
-        private Bucket(int entrySize, int entryHeaderSize, int entriesPerBucket, Supplier<K> keyConstructor) {
-            this.entrySize = entrySize;
-            this.entryHeaderSize = entryHeaderSize;
+        private Bucket(int entryHashCodeSize, int entryKeyVersionSize, int entryKeySize, int maxKeySize,
+                       int entriesPerBucket, Supplier<K> keyConstructor, KeySizeReader keySizeReader) {
+            this.entryHashCodeSize = entryHashCodeSize;
+            this.entryValueOffset = this.entryHashCodeSize;
+            this.entryKeyVersionSize = entryKeyVersionSize;
+            this.entryKeySize = entryKeySize;
+            this.maxKeySize = maxKeySize;
+            this.hasFixedSizeKey = entryKeySize != DataFileCommon.VARIABLE_DATA_SIZE;
+            this.storeKeySerializationVersion = entryKeyVersionSize > 0;
             this.entriesPerBucket = entriesPerBucket;
             this.keyConstructor = keyConstructor;
+            this.keySizeReader = keySizeReader;
+            this.maxEntrySize = entryHashCodeSize + VALUE_SIZE + entryKeyVersionSize + maxKeySize;
         }
 
         /**
@@ -474,8 +494,15 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
         /**
          * Set the number of entries stored in this bucket
          */
-        public void setBucketEntryCount(int entryCount) {
+        private void setBucketEntryCount(int entryCount) {
             this.bucketBuffer.putInt(BUCKET_ENTRY_COUNT_OFFSET,entryCount);
+        }
+
+        /**
+         * Add one to the number of entries stored in this bucket
+         */
+        private void incrementBucketEntryCount() {
+            this.bucketBuffer.putInt(BUCKET_ENTRY_COUNT_OFFSET,bucketBuffer.getInt(BUCKET_ENTRY_COUNT_OFFSET)+1);
         }
 
         /**
@@ -497,28 +524,20 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
         /**
          * Find a value for given key
          *
-         * @param keyHash the int hash for the key
+         * @param keyHashCode the int hash for the key
          * @param key the key object
          * @param notFoundValue the long to return if the key is not found
          * @return the stored value for given key or notFoundValue if nothing is stored for the key
          * @throws IOException If there was a problem reading the value from file
          */
-        public long findValue(int keyHash, K key, long notFoundValue) throws IOException {
-            int entryCount =  getBucketEntryCount();
-            for (int i = 0; i < entryCount; i++) {
-                int entryOffset = BUCKET_HEADER_SIZE + (i*entrySize);
-                int readHash = bucketBuffer.getInt(entryOffset);
-                if (readHash == keyHash) {
-                    // now check the full key
-                    bucketBuffer.position(entryOffset+Integer.BYTES);
-                    int keySerializationVersion = bucketBuffer.getInt();
-                    if (key.equals(bucketBuffer,keySerializationVersion)) {
-                        // yay we found it
-                        return getValue(entryOffset);
-                    }
-                }
+        public long findValue(int keyHashCode, K key, long notFoundValue) throws IOException {
+            final var found = findEntryOffset(keyHashCode,key);
+            if (found.found) {
+                // yay! we found it
+                return getValue(found.entryOffset);
+            } else {
+                return notFoundValue;
             }
-            return notFoundValue;
         }
 
         /**
@@ -527,35 +546,31 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
          * @param key the entry key
          * @param value the entry value
          */
-        public void putValue(int keyHash, K key, long value) {
+        public void putValue(int keyHashCode, K key, long value) {
             try {
-                final int entryCount =  getBucketEntryCount();
-                for (int i = 0; i < entryCount; i++) {
-                    int entryOffset = BUCKET_HEADER_SIZE + (i*entrySize);
-                    int readHash = bucketBuffer.getInt(entryOffset);
-                    if (readHash == keyHash) {
-                        // now check the full key
-                        bucketBuffer.position(entryOffset+Integer.BYTES);
-                        int keySerializationVersion = bucketBuffer.getInt();
-                        if (key.equals(bucketBuffer,keySerializationVersion)) {
-                            // yay we found it, so update value
-                            bucketBuffer.putLong(entryOffset+ entryHeaderSize, value);
-                            return;
-                        }
-                    }
+                // scan over all existing key/value entries and see if there is already one for this key. If there is
+                // then update it, otherwise we have at least worked out the entryOffset for the end of existing entries
+                // and can use that for appending a new entry if there is room
+                final var result = findEntryOffset(keyHashCode,key);
+                if (result.found) {
+                    // yay! we found it, so update value
+                    setValue(result.entryOffset, value);
+                    return;
                 }
-                // so there are no entries that match the key
-                if (entryCount < entriesPerBucket) {
+                // so there are no entries that match the key. Check if there is enough space for another entry in this bucket
+                final int currentEntryCount = getBucketEntryCount();
+                // TODO if we serialized the key to a temp ByteBuffer then we could do a check to see if there is enough
+                //  space for this specific key rather than using max size. This might allow a extra one or two entries
+                //  in a bucket at the cost of serializing to a temp buffer and writing that buffer into the bucket.
+                if ((result.entryOffset + maxEntrySize) < BUCKET_SIZE) {
                         // add a new entry
-                        int entryOffset = BUCKET_HEADER_SIZE + (entryCount*entrySize);
-                        // write entry
-                        bucketBuffer.position(entryOffset);
-                        bucketBuffer.putInt(keyHash);
-                        bucketBuffer.putInt(key.getVersion());
-                        key.serialize(bucketBuffer);
+                        bucketBuffer.position(result.entryOffset);
+                        bucketBuffer.putInt(keyHashCode);
                         bucketBuffer.putLong(value);
+                        if (entryKeyVersionSize > 0) bucketBuffer.putInt(key.getVersion());
+                        key.serialize(bucketBuffer);
                         // increment count
-                        setBucketEntryCount(entryCount+1);
+                        incrementBucketEntryCount();
                 } else {
                     // bucket is full
                     // TODO expand into another bucket
@@ -564,6 +579,51 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
+        }
+
+        /**
+         * Find the offset in bucket for an entry matching the given key, if not found then just return the offset for
+         * the end of all entries.
+         *
+         * @param keyHashCode hash code for the key to search for
+         * @param key the key to search for
+         * @return either true and offset for found key entry or false and offset for end of all entries in this bucket
+         * @throws IOException If there was a problem reading bucket
+         */
+        private FindResult findEntryOffset(int keyHashCode, K key) throws IOException {
+            int entryCount =  getBucketEntryCount();
+            int entryOffset = BUCKET_HEADER_SIZE;
+            for (int i = 0; i < entryCount; i++) {
+                int readHashCode = bucketBuffer.getInt(entryOffset);
+                if (readHashCode == keyHashCode) {
+                    // now check the full key
+                    bucketBuffer.position(entryOffset+entryHashCodeSize+VALUE_SIZE);
+                    final int keySerializationVersion = storeKeySerializationVersion ? bucketBuffer.getInt() : 1;
+                    if (key.equals(bucketBuffer,keySerializationVersion)) {
+                        // yay! we found it
+                        return new FindResult(entryOffset,true);
+                    }
+                }
+                // now read the key size so we can jump
+                // TODO ideally we would only read this once and use in key.equals and here
+                // TODO also could avoid doing this for last entry
+                int keySize = getKeySize(entryOffset);
+                // move to next entry
+                entryOffset += entryHashCodeSize + VALUE_SIZE + entryKeyVersionSize + keySize;
+            }
+            return new FindResult(entryOffset, false);
+        }
+
+        /**
+         * Read the size of the key for a entry
+         *
+         * @param entryOffset the offset to start of entry
+         * @return the size of the key in bytes
+         */
+        private int getKeySize(int entryOffset) {
+            if (hasFixedSizeKey) return entryKeySize;
+            bucketBuffer.position(entryOffset+entryHashCodeSize+VALUE_SIZE+entryKeyVersionSize);
+            return keySizeReader.getKeySize(bucketBuffer);
         }
 
         /**
@@ -588,7 +648,17 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
          * @return the value stored in given entry
          */
         private long getValue(int entryOffset) {
-            return bucketBuffer.getLong(entryOffset+ entryHeaderSize);
+            return bucketBuffer.getLong(entryOffset + entryValueOffset);
+        }
+
+        /**
+         * Read a value for a given entry
+         *
+         * @param entryOffset the offset for the entry
+         * @param value the value to set for entry
+         */
+        private void setValue(int entryOffset, long value) {
+            bucketBuffer.putLong(entryOffset + entryValueOffset, value);
         }
 
         /** toString for debugging */
@@ -600,26 +670,38 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
                 "Bucket{bucketIndex="+getBucketIndex()+", entryCount="+entryCount+", nextBucketLocation="+getNextBucketLocation()+"\n"
             );
             try {
+                int entryOffset = BUCKET_HEADER_SIZE;
                 for (int i = 0; i < entryCount; i++) {
-                    bucketBuffer.clear();
-                    int entryOffset = BUCKET_HEADER_SIZE + (i * entrySize);
-                    int readHash = bucketBuffer.getInt(entryOffset);
-                    bucketBuffer.position(entryOffset + Integer.BYTES);
-                    int keySerializationVersion = bucketBuffer.getInt();
-                    bucketBuffer.limit(bucketBuffer.position() + entryHeaderSize); // hack happens to be same number as keySize + Long.BYTES.
-                    sb.append("    ENTRY[" + i + "] value= "+getValue(entryOffset)+" keyHash=" + readHash + " ver=" + keySerializationVersion + " key=" + getKey(entryOffset)+" hashCode="+getKey(entryOffset).hashCode()+"\n");
+                    int keySize = getKeySize(entryOffset);
+                    bucketBuffer.position(entryOffset);
+                    int readHash = bucketBuffer.getInt();
+                    long value = bucketBuffer.getLong();
+                    int keySerializationVersion = storeKeySerializationVersion ? bucketBuffer.getInt() : 1;
+                    K key = keyConstructor.get();
+                    key.deserialize(bucketBuffer,keySerializationVersion);
+                    sb.append("    ENTRY[" + i + "] value= "+value+" keyHashCode=" + readHash + " keyVer=" + keySerializationVersion +
+                            " key=" + key+" keySize="+keySize+"\n");
+                    entryOffset += entryHashCodeSize + VALUE_SIZE + entryKeyVersionSize + keySize;
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
             bucketBuffer.clear();
-            bucketBuffer.rewind();
-            IntBuffer intBuf = bucketBuffer.asIntBuffer();
-            int[] array = new int[intBuf.remaining()];
-            intBuf.get(array);
-            bucketBuffer.rewind();
-            sb.append("} RAW DATA = "+ Arrays.toString(array));
+            sb.append("} RAW DATA = ");
+            for(byte b: bucketBuffer.array()) {
+                sb.append(String.format("%02X ", b).toUpperCase());
+            }
             return sb.toString();
+        }
+    }
+
+    private static class FindResult {
+        public final int entryOffset;
+        public final boolean found;
+
+        public FindResult(int entryOffset, boolean found) {
+            this.entryOffset = entryOffset;
+            this.found = found;
         }
     }
 }

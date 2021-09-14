@@ -1,7 +1,6 @@
 package disruptor;
 
 import com.lmax.disruptor.BlockingWaitStrategy;
-import com.lmax.disruptor.YieldingWaitStrategy;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
 import com.swirlds.virtualmap.VirtualKey;
@@ -34,17 +33,17 @@ public class TransactionProcessor<K extends VirtualKey, V extends VirtualValue, 
                 ProducerType.SINGLE,
                 new BlockingWaitStrategy());
 
-        PreFetchHandler preFetchHandlers[] = new PreFetchHandler[preFetchEventHandlers];
+        PreFetchHandler<K,V,T> preFetchHandlers[] = new PreFetchHandler[preFetchEventHandlers];
         for (int j = 0; j < preFetchEventHandlers; j++) {
-            preFetchHandlers[j] = new PreFetchHandler(j, preFetchEventHandlers, preFetchLogic);
+            preFetchHandlers[j] = new PreFetchHandler<>(j, preFetchEventHandlers, preFetchLogic);
         }
 
         Latch latch = new Latch();
         disruptor.handleEventsWith(preFetchHandlers)
-                        .then(new TransactionHandler(latch, txLogic));
+                        .then(new TransactionHandler<>(latch, txLogic));
         disruptor.start();
 
-        publisher = new TransactionPublisher<T>(disruptor.getRingBuffer(), latch);
+        publisher = new TransactionPublisher<>(disruptor.getRingBuffer(), latch);
     }
 
     public TransactionPublisher<T> getPublisher() {

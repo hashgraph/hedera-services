@@ -62,7 +62,15 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
 
     @Setup
     public void prepare() throws Exception {
-        virtualMap = createMap(dsType, Id.SERIALIZED_SIZE, Id::new, Account.SERIALIZED_SIZE, Account::new, numEntities);
+        virtualMap = createMap(dsType,
+                Id.SERIALIZED_SIZE,
+                Id.SERIALIZED_SIZE,
+                Id.SERIALIZED_SIZE,
+                Id::new,
+                null,
+                Account.SERIALIZED_SIZE,
+                Account::new,
+                numEntities);
 
         final var rand = new Random();
         txProcessor = new TransactionProcessor<VFCMapBenchBase.Id, VFCMapBenchBase.Account, Data>(

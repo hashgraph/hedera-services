@@ -29,7 +29,7 @@ public class JasperDbTestUtils {
 
     public static ContractKey newContractKey(long num) {
 //        return new ContractKey(new Id(num,num,num),new ContractUint256(num));
-        return new ContractKey(num,new ContractUint256(num));
+        return new ContractKey(num,num);
     }
 
     public static void deleteDirectoryAndContents(Path dir) {

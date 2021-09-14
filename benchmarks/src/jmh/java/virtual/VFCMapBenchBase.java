@@ -1,8 +1,8 @@
 package virtual;
 
 import com.hedera.services.state.jasperdb.VirtualDataSourceJasperDB;
+import com.hedera.services.state.jasperdb.collections.HalfDiskHashMap;
 import com.hedera.services.state.merkle.virtual.ContractKey;
-import com.hedera.services.state.merkle.virtual.ContractUint256;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
@@ -12,7 +12,6 @@ import com.swirlds.virtualmap.VirtualValue;
 import lmdb.VFCDataSourceLmdb;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -32,8 +31,8 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
 
     protected VirtualMap<K,V> createMap(
             DataSourceType type,
-            int keySizeBytes,
-            Supplier<K> keyConstructor,
+            int keySizeBytes,int estimatedAverageKeySizeBytes, int maxKeySize,
+            Supplier<K> keyConstructor, HalfDiskHashMap.KeySizeReader keySizeReader,
             int valueSizeBytes,
             Supplier<V> valueConstructor,
             long numEntities) throws IOException {
@@ -58,41 +57,50 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
  */
             case jasperdbIhRam:
                 map = new VirtualMap<>(new VirtualDataSourceJasperDB<>(
-                    keySizeBytes,
-                    keyConstructor,
-                    valueSizeBytes,
-                    valueConstructor,
-                    Path.of("jasperdb_ih_ram"),
-                    numEntities,
-                    Long.MAX_VALUE));
+                        keySizeBytes,
+                        estimatedAverageKeySizeBytes,
+                        maxKeySize,
+                        keyConstructor,
+                        keySizeReader,
+                        valueSizeBytes,
+                        valueConstructor,
+                        Path.of("jasperdb_ih_ram"),
+                        numEntities,
+                        Long.MAX_VALUE));
                 break;
             case jasperdbIhDisk:
             default:
                 map = new VirtualMap<>(new VirtualDataSourceJasperDB<>(
-                    keySizeBytes,
-                    keyConstructor,
-                    valueSizeBytes,
-                    valueConstructor,
-                    Path.of("jasperdb_ih_disk"),
-                    numEntities,
-                    0));
+                        keySizeBytes,
+                        estimatedAverageKeySizeBytes,
+                        maxKeySize,
+                        keyConstructor,
+                        keySizeReader,
+                        valueSizeBytes,
+                        valueConstructor,
+                        Path.of("jasperdb_ih_disk"),
+                        numEntities,
+                        0));
                 break;
             case jasperdbIhHalf:
                 map = new VirtualMap<>(new VirtualDataSourceJasperDB<>(
-                    keySizeBytes,
-                    keyConstructor,
-                    valueSizeBytes,
-                    valueConstructor,
-                    Path.of("jasperdb_ih_half"),
-                    numEntities,
-                    numEntities/2));
+                        keySizeBytes,
+                        estimatedAverageKeySizeBytes,
+                        maxKeySize,
+                        keyConstructor,
+                        keySizeReader,
+                        valueSizeBytes,
+                        valueConstructor,
+                        Path.of("jasperdb_ih_half"),
+                        numEntities,
+                        numEntities/2));
                 break;
         }
         return map;
     }
 
     protected ContractKey asContractKey(long contractIndex, long index) {
-        return new ContractKey(contractIndex, new ContractUint256(BigInteger.valueOf(index)));
+        return new ContractKey(contractIndex, index);
     }
 
     protected Id asId(long index) {

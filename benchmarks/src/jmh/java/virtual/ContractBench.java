@@ -1,5 +1,6 @@
 package virtual;
 
+import com.hedera.services.state.jasperdb.files.DataFileCommon;
 import com.hedera.services.state.merkle.virtual.ContractKey;
 import com.hedera.services.state.merkle.virtual.ContractUint256;
 import com.swirlds.virtualmap.VirtualMap;
@@ -17,6 +18,10 @@ import java.util.concurrent.TimeUnit;
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
 public class ContractBench extends VFCMapBenchBase<ContractKey, ContractUint256> {
+    /** guess at average ContractKey size as it is variable length */
+    private static final int ESTIMATED_CONTRACT_KEY_SERIALIZED_SIZE = 10;
+    private static final int ESTIMATED_KEY_VALUE_SIZE = ESTIMATED_CONTRACT_KEY_SERIALIZED_SIZE + ContractUint256.SERIALIZED_SIZE;
+
     @Param({"5", "15", "25"})
     public int numUpdatesPerOperation;
 
@@ -64,15 +69,19 @@ public class ContractBench extends VFCMapBenchBase<ContractKey, ContractUint256>
 
     @Setup
     public void prepare() throws Exception {
-        final long keyValueSize = ContractKey.SERIALIZED_SIZE + ContractUint256.SERIALIZED_SIZE;
         final long estimatedNumKeyValuePairs =
-                (long)(numContracts * (1-bigPercent-hugePercent) * ((kbPerContract * 1024L) / keyValueSize)) +
-                (long)(numContracts * bigPercent * ((kbPerBigContract * 1024L) / keyValueSize)) +
-                (long)(numContracts * hugePercent * ((kbPerHugeContract * 1024L) / keyValueSize));
+                (long)(numContracts * (1-bigPercent-hugePercent) * ((kbPerContract * 1024L) / ESTIMATED_KEY_VALUE_SIZE)) +
+                (long)(numContracts * bigPercent * ((kbPerBigContract * 1024L) / ESTIMATED_KEY_VALUE_SIZE)) +
+                (long)(numContracts * hugePercent * ((kbPerHugeContract * 1024L) / ESTIMATED_KEY_VALUE_SIZE));
         System.out.println("estimatedNumKeyValuePairs = " + estimatedNumKeyValuePairs);
         virtualMap = createMap(dsType,
-                ContractKey.SERIALIZED_SIZE, ContractKey::new,
-                ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
+                DataFileCommon.VARIABLE_DATA_SIZE,
+                ContractKey.ESTIMATED_AVERAGE_SIZE,
+                ContractKey.MAX_SIZE,
+                ContractKey::new,
+                ContractKey::readKeySize,
+                ContractUint256.SERIALIZED_SIZE,
+                ContractUint256::new,
                 estimatedNumKeyValuePairs);
 
         txProcessor = new TransactionProcessor<>(
@@ -120,7 +129,7 @@ public class ContractBench extends VFCMapBenchBase<ContractKey, ContractUint256>
                 } else {
                     kb = kbPerContract;
                 }
-                final var numKeyValuePairs = (kb * 1024L) / (ContractKey.SERIALIZED_SIZE + ContractUint256.SERIALIZED_SIZE);
+                final var numKeyValuePairs = (kb * 1024L) / ESTIMATED_KEY_VALUE_SIZE;
                 countOfKeyValuePairs += numKeyValuePairs;
                 keyValuePairsPerContract[i] = (int)numKeyValuePairs;
 

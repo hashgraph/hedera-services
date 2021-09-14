@@ -106,8 +106,11 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
     private Instant lastFullMerge = Instant.now();
 
     /**
-     * Create new VFCDataSourceImplV3 with merging enabled
+     * Create new VirtualDataSourceJasperDB with merging enabled
      * @param keySizeBytes the size of key when serialized in bytes
+     * @param estimatedAverageKeySizeBytes when key size is VARIABLE_DATA_SIZE we need an estimated average key size for
+     *                                     sizing calculations.
+     * @param maxKeySize when key size is VARIABLE_DATA_SIZE we need an max key size for sizing calculations.
      * @param keyConstructor constructor for creating keys for deserialization
      * @param valueSizeBytes the size of value when serialized in bytes
      * @param valueConstructor constructor for creating values for deserialization
@@ -116,25 +119,33 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
      * @param internalHashesRamToDiskThreshold When path value at which we switch from hashes in ram to hashes stored on
      *                                         disk. 0 means all on disk and Long.MAX_VALUE means all in ram.
      */
-    public VirtualDataSourceJasperDB(int keySizeBytes, Supplier<K> keyConstructor, int valueSizeBytes, Supplier<V> valueConstructor,
+    public VirtualDataSourceJasperDB(int keySizeBytes,int estimatedAverageKeySizeBytes, int maxKeySize,
+                                     Supplier<K> keyConstructor, HalfDiskHashMap.KeySizeReader keySizeReader,
+                                     int valueSizeBytes, Supplier<V> valueConstructor,
                                      Path storageDir, long maxNumOfKeys, long internalHashesRamToDiskThreshold) throws IOException {
-        this(keySizeBytes, keyConstructor, valueSizeBytes,valueConstructor,storageDir,
+        this(keySizeBytes, estimatedAverageKeySizeBytes, maxKeySize, keyConstructor, keySizeReader, valueSizeBytes,valueConstructor,storageDir,
                 maxNumOfKeys,true, internalHashesRamToDiskThreshold);
     }
 
     /**
-     * Create new VFCDataSourceImplV3
-     * @param keySizeBytes the size of key when serialized in bytes
+     * Create new VirtualDataSourceJasperDB
+     * @param keySizeBytes the size of key when serialized in bytes, can be VARIABLE_DATA_SIZE
+     * @param estimatedAverageKeySizeBytes when key size is VARIABLE_DATA_SIZE we need an estimated average key size for
+     *                                     sizing calculations.
+     * @param maxKeySize when key size is VARIABLE_DATA_SIZE we need an max key size for sizing calculations.
      * @param keyConstructor constructor for creating keys for deserialization
+     * @param keySizeReader Reader for reading key sizes from byte buffers containing a serialized key. This can be null
+     *                      if using fixed size keys.
      * @param valueSizeBytes the size of value when serialized in bytes
      * @param valueConstructor constructor for creating values for deserialization
      * @param storageDir directory to store data files in
      * @param maxNumOfKeys the maximum number of unique keys. This is used for calculating in memory index sizes
-     * @param internalHashesRamToDiskThreshold When path value at which we switch from hashes in ram to hashes stored on
-     *                                         disk. 0 means all on disk and Long.MAX_VALUE means all in ram.
+     * @param internalHashesRamToDiskThreshold When path value at which we switch from hashes in ram to stored on disk
      */
-    public VirtualDataSourceJasperDB(int keySizeBytes, Supplier<K> keyConstructor, int valueSizeBytes, Supplier<V> valueConstructor,
-                                     Path storageDir, long maxNumOfKeys, boolean mergingEnabled, long internalHashesRamToDiskThreshold) throws IOException {
+    public VirtualDataSourceJasperDB(int keySizeBytes,int estimatedAverageKeySizeBytes, int maxKeySize,
+                                     Supplier<K> keyConstructor, HalfDiskHashMap.KeySizeReader keySizeReader,
+                                     int valueSizeBytes, Supplier<V> valueConstructor, Path storageDir, long maxNumOfKeys,
+                                     boolean mergingEnabled, long internalHashesRamToDiskThreshold) throws IOException {
         System.out.println("multiThreadedSerializationEnabled = " + multiThreadedSerializationEnabled);
         this.keySizeBytes = Integer.BYTES + keySizeBytes; // extra leading integer keeps track of the version
         this.keyConstructor = keyConstructor;
@@ -163,7 +174,9 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
         } else {
             isLongKeyMode = false;
             longKeyToPath =  null;
-            objectKeyToPath = new HalfDiskHashMap<>(maxNumOfKeys,keySizeBytes,keyConstructor,storageDir,"objectKeyToPath");
+            objectKeyToPath = new HalfDiskHashMap<>(maxNumOfKeys,keySizeBytes,estimatedAverageKeySizeBytes,maxKeySize,
+                    keyConstructor,keySizeReader, false,
+                    storageDir, "objectKeyToPath");
             // we do not need callback as HalfDiskHashMap loads its own data from disk
             loadedDataCallback = null;
         }
