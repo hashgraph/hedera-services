@@ -9,9 +9,9 @@ package com.hedera.services.ledger.accounts;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,9 +39,9 @@ import static com.hedera.services.ledger.properties.TestAccountProperty.FLAG;
 import static com.hedera.services.ledger.properties.TestAccountProperty.LONG;
 import static com.hedera.services.ledger.properties.TestAccountProperty.OBJ;
 
-public class TestAccountCustomizer extends
+public final class TestAccountCustomizer extends
 		AccountCustomizer<Long, TestAccount, TestAccountProperty, TestAccountCustomizer> {
-	public static final Map<Option, TestAccountProperty> OPTION_PROPERTIES = Map.of(
+	protected static final Map<Option, TestAccountProperty> OPTION_PROPERTIES = Map.of(
 			KEY, OBJ,
 			MEMO, OBJ,
 			PROXY, OBJ,

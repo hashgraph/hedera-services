@@ -9,9 +9,9 @@ package com.hedera.services.txns.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -62,9 +62,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.anyLong;
 import static org.mockito.BDDMockito.argThat;
@@ -85,21 +85,18 @@ class CryptoCreateTransitionLogicTest {
 	private static final AccountID PROXY = AccountID.newBuilder().setAccountNum(4_321L).build();
 	private static final AccountID PAYER = AccountID.newBuilder().setAccountNum(1_234L).build();
 	private static final AccountID CREATED = AccountID.newBuilder().setAccountNum(9_999L).build();
+	private static final Instant consensusTime = Instant.now();
 
-	private static long expiry;
-	private static Instant consensusTime;
-	private static HederaLedger ledger;
-	private static OptionValidator validator;
-	private static TransactionBody cryptoCreateTxn;
-	private static TransactionContext txnCtx;
-	private static PlatformTxnAccessor accessor;
-	private static CryptoCreateTransitionLogic subject;
-	private static GlobalDynamicProperties dynamicProperties;
+	private HederaLedger ledger;
+	private OptionValidator validator;
+	private TransactionBody cryptoCreateTxn;
+	private TransactionContext txnCtx;
+	private PlatformTxnAccessor accessor;
+	private CryptoCreateTransitionLogic subject;
+	private GlobalDynamicProperties dynamicProperties;
 
 	@BeforeEach
 	private void setup() {
-		consensusTime = Instant.now();
-
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		ledger = mock(HederaLedger.class);
@@ -195,7 +192,7 @@ class CryptoCreateTransitionLogicTest {
 
 	@Test
 	void rejectsInvalidMaxAutomaticAssociations() {
-		givenInvalidMaxAutoAssociations();;
+		givenInvalidMaxAutoAssociations();
 
 		assertEquals(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT,
 				subject.semanticCheck().apply(cryptoCreateTxn));
@@ -203,9 +200,8 @@ class CryptoCreateTransitionLogicTest {
 
 	@Test
 	void followsHappyPathWithOverrides() throws Throwable {
-		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
-		expiry = consensusTime.getEpochSecond() + CUSTOM_AUTO_RENEW_PERIOD;
-
+		final var expiry = consensusTime.getEpochSecond() + CUSTOM_AUTO_RENEW_PERIOD;
+		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 		givenValidTxnCtx();
 		given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
 
@@ -219,7 +215,7 @@ class CryptoCreateTransitionLogicTest {
 		assertEquals(7, changes.size());
 		assertEquals(CUSTOM_AUTO_RENEW_PERIOD, (long) changes.get(AUTO_RENEW_PERIOD));
 		assertEquals(expiry, (long) changes.get(EXPIRY));
-		assertEquals(KEY, JKey.mapJKey((JKey)changes.get(AccountProperty.KEY)));
+		assertEquals(KEY, JKey.mapJKey((JKey) changes.get(AccountProperty.KEY)));
 		assertEquals(true, changes.get(IS_RECEIVER_SIG_REQUIRED));
 		assertEquals(EntityId.fromGrpcAccountId(PROXY), changes.get(AccountProperty.PROXY));
 		assertEquals(MEMO, changes.get(AccountProperty.MEMO));
@@ -260,7 +256,6 @@ class CryptoCreateTransitionLogicTest {
 				.setCryptoCreateAccount(
 						CryptoCreateTransactionBody.newBuilder()
 								.setInitialBalance(BALANCE)
-								.build()
 				).build();
 	}
 
@@ -271,7 +266,6 @@ class CryptoCreateTransitionLogicTest {
 						CryptoCreateTransactionBody.newBuilder()
 								.setKey(KEY)
 								.setInitialBalance(BALANCE)
-								.build()
 				).build();
 	}
 
@@ -283,7 +277,6 @@ class CryptoCreateTransitionLogicTest {
 								.setAutoRenewPeriod(Duration.newBuilder().setSeconds(1L))
 								.setKey(KEY)
 								.setSendRecordThreshold(-1L)
-								.build()
 				).build();
 	}
 
@@ -295,7 +288,6 @@ class CryptoCreateTransitionLogicTest {
 								.setAutoRenewPeriod(Duration.newBuilder().setSeconds(1L))
 								.setKey(KEY)
 								.setReceiveRecordThreshold(-1L)
-								.build()
 				).build();
 	}
 
@@ -307,7 +299,6 @@ class CryptoCreateTransitionLogicTest {
 								.setAutoRenewPeriod(Duration.newBuilder().setSeconds(1L))
 								.setKey(KEY)
 								.setInitialBalance(-1L)
-								.build()
 				).build();
 	}
 
@@ -324,8 +315,7 @@ class CryptoCreateTransitionLogicTest {
 								.setReceiveRecordThreshold(CUSTOM_RECEIVE_THRESHOLD)
 								.setSendRecordThreshold(CUSTOM_SEND_THRESHOLD)
 								.setKey(KEY)
-								.setMaxAutomaticTokenAssociations(MAX_TOKEN_ASSOCIATIONS +1)
-								.build()
+								.setMaxAutomaticTokenAssociations(MAX_TOKEN_ASSOCIATIONS + 1)
 				).build();
 	}
 
@@ -333,7 +323,7 @@ class CryptoCreateTransitionLogicTest {
 		givenValidTxnCtx(KEY);
 	}
 
-	private void givenValidTxnCtx(Key toUse) {
+	private void givenValidTxnCtx(final Key toUse) {
 		cryptoCreateTxn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
 				.setCryptoCreateAccount(
@@ -347,7 +337,6 @@ class CryptoCreateTransitionLogicTest {
 								.setSendRecordThreshold(CUSTOM_SEND_THRESHOLD)
 								.setKey(toUse)
 								.setMaxAutomaticTokenAssociations(MAX_AUTO_ASSOCIATIONS)
-								.build()
 				).build();
 		given(accessor.getTxn()).willReturn(cryptoCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);

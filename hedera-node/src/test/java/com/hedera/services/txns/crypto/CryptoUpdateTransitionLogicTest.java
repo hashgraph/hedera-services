@@ -9,9 +9,9 @@ package com.hedera.services.txns.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -94,14 +94,14 @@ class CryptoUpdateTransitionLogicTest {
 	private static final AccountID TARGET = AccountID.newBuilder().setAccountNum(9_999L).build();
 	private static final String MEMO = "Not since life began";
 
-	private static boolean useLegacyFields;
-	private static HederaLedger ledger;
-	private static OptionValidator validator;
-	private static TransactionBody cryptoUpdateTxn;
-	private static TransactionContext txnCtx;
-	private static PlatformTxnAccessor accessor;
-	private static CryptoUpdateTransitionLogic subject;
-	private static GlobalDynamicProperties dynamicProperties;
+	private boolean useLegacyFields;
+	private HederaLedger ledger;
+	private OptionValidator validator;
+	private TransactionBody cryptoUpdateTxn;
+	private TransactionContext txnCtx;
+	private PlatformTxnAccessor accessor;
+	private CryptoUpdateTransitionLogic subject;
+	private GlobalDynamicProperties dynamicProperties;
 
 	@BeforeEach
 	private void setup() {
@@ -122,7 +122,6 @@ class CryptoUpdateTransitionLogicTest {
 	@Test
 	void updatesProxyIfPresent() {
 		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
-
 		givenTxnCtx(EnumSet.of(AccountCustomizer.Option.PROXY));
 
 		subject.doStateTransition();
@@ -138,7 +137,6 @@ class CryptoUpdateTransitionLogicTest {
 	@Test
 	void updatesReceiverSigReqIfPresent() {
 		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
-
 		givenTxnCtx(EnumSet.of(IS_RECEIVER_SIG_REQUIRED));
 
 		subject.doStateTransition();
@@ -154,7 +152,6 @@ class CryptoUpdateTransitionLogicTest {
 	void updatesReceiverSigReqIfTrueInLegacy() {
 		useLegacyFields = true;
 		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
-
 		givenTxnCtx(EnumSet.of(IS_RECEIVER_SIG_REQUIRED));
 
 		subject.doStateTransition();
@@ -169,7 +166,6 @@ class CryptoUpdateTransitionLogicTest {
 	@Test
 	void updatesExpiryIfPresent() {
 		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
-
 		givenTxnCtx(EnumSet.of(EXPIRY));
 
 		subject.doStateTransition();
@@ -178,7 +174,7 @@ class CryptoUpdateTransitionLogicTest {
 		verify(txnCtx).setStatus(SUCCESS);
 		final var changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
-		assertEquals(NEW_EXPIRY, (long)changes.get(AccountProperty.EXPIRY));
+		assertEquals(NEW_EXPIRY, (long) changes.get(AccountProperty.EXPIRY));
 	}
 
 	@Test
@@ -193,14 +189,14 @@ class CryptoUpdateTransitionLogicTest {
 		verify(txnCtx).setStatus(SUCCESS);
 		final var changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
-		assertEquals(NEW_MAX_AUTOMATIC_ASSOCIATIONS, (int)changes.get(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS));
+		assertEquals(NEW_MAX_AUTOMATIC_ASSOCIATIONS, (int) changes.get(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS));
 	}
 
 	@Test
 	void updateMaxAutomaticAssociationsFailAsExpectedWithMaxLessThanAlreadyExisting() {
 		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 		givenTxnCtx(EnumSet.of(MAX_AUTOMATIC_ASSOCIATIONS));
-		given(ledger.alreadyUsedAutomaticAssociations(any())).willReturn(NEW_MAX_AUTOMATIC_ASSOCIATIONS +1);
+		given(ledger.alreadyUsedAutomaticAssociations(any())).willReturn(NEW_MAX_AUTOMATIC_ASSOCIATIONS + 1);
 
 		subject.doStateTransition();
 
@@ -213,7 +209,7 @@ class CryptoUpdateTransitionLogicTest {
 		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 		givenTxnCtx(EnumSet.of(MAX_AUTOMATIC_ASSOCIATIONS));
 		given(ledger.alreadyUsedAutomaticAssociations(any())).willReturn(CUR_MAX_AUTOMATIC_ASSOCIATIONS);
-		given(dynamicProperties.maxTokensPerAccount()).willReturn(NEW_MAX_AUTOMATIC_ASSOCIATIONS -1);
+		given(dynamicProperties.maxTokensPerAccount()).willReturn(NEW_MAX_AUTOMATIC_ASSOCIATIONS - 1);
 
 		subject.doStateTransition();
 
@@ -224,7 +220,6 @@ class CryptoUpdateTransitionLogicTest {
 	@Test
 	void updatesMemoIfPresent() {
 		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
-
 		givenTxnCtx(EnumSet.of(AccountCustomizer.Option.MEMO));
 
 		subject.doStateTransition();
@@ -238,7 +233,6 @@ class CryptoUpdateTransitionLogicTest {
 	@Test
 	void updatesAutoRenewIfPresent() {
 		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
-
 		givenTxnCtx(EnumSet.of(AccountCustomizer.Option.AUTO_RENEW_PERIOD));
 
 		subject.doStateTransition();
@@ -252,7 +246,6 @@ class CryptoUpdateTransitionLogicTest {
 	@Test
 	void updatesKeyIfPresent() throws Throwable {
 		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
-
 		givenTxnCtx(EnumSet.of(AccountCustomizer.Option.KEY));
 
 		subject.doStateTransition();
@@ -260,7 +253,7 @@ class CryptoUpdateTransitionLogicTest {
 		verify(ledger).customize(argThat(TARGET::equals), captor.capture());
 		final var changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
-		assertEquals(KEY, JKey.mapJKey((JKey)changes.get(AccountProperty.KEY)));
+		assertEquals(KEY, JKey.mapJKey((JKey) changes.get(AccountProperty.KEY)));
 	}
 
 	@Test
@@ -411,7 +404,7 @@ class CryptoUpdateTransitionLogicTest {
 		).build();
 	}
 
-	private void rejectsKey(Key key) {
+	private void rejectsKey(final Key key) {
 		givenTxnCtx();
 		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
 				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder().setKey(key))
@@ -431,17 +424,15 @@ class CryptoUpdateTransitionLogicTest {
 		), EnumSet.noneOf(AccountCustomizer.Option.class));
 	}
 
-	private void givenTxnCtx(
-			EnumSet<AccountCustomizer.Option> updating
-	) {
+	private void givenTxnCtx(final EnumSet<AccountCustomizer.Option> updating) {
 		givenTxnCtx(updating, EnumSet.noneOf(AccountCustomizer.Option.class));
 	}
 
 	private void givenTxnCtx(
-			EnumSet<AccountCustomizer.Option> updating,
-			EnumSet<AccountCustomizer.Option> misconfiguring
+			final EnumSet<AccountCustomizer.Option> updating,
+			final EnumSet<AccountCustomizer.Option> misconfiguring
 	) {
-		CryptoUpdateTransactionBody.Builder op = CryptoUpdateTransactionBody.newBuilder();
+		final var op = CryptoUpdateTransactionBody.newBuilder();
 		if (updating.contains(AccountCustomizer.Option.MEMO)) {
 			op.setMemo(StringValue.newBuilder().setValue(MEMO).build());
 		}

@@ -29,12 +29,24 @@ import org.junit.jupiter.api.Test;
 
 import java.util.EnumMap;
 
-import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.*;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_PERIOD;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.EXPIRY;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_DELETED;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_RECEIVER_SIG_REQUIRED;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_SMART_CONTRACT;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.KEY;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MAX_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MEMO;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.PROXY;
 import static com.hedera.services.ledger.properties.TestAccountProperty.FLAG;
 import static com.hedera.services.ledger.properties.TestAccountProperty.OBJ;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.argThat;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 
 class AccountCustomizerTest {
 	private TestAccountCustomizer subject;
@@ -186,7 +198,7 @@ class AccountCustomizerTest {
 
 	@Test
 	void changesAutoAssociationFieldsAsExpected() {
-		setupWithMockChangeManager();;
+		setupWithMockChangeManager();
 		final Integer maxAutoAssociations = 1234;
 		final Integer alreadyUsedAutoAssociations = 123;
 

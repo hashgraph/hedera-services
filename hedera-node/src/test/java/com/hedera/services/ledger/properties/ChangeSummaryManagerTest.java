@@ -9,9 +9,9 @@ package com.hedera.services.ledger.properties;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -42,8 +42,8 @@ class ChangeSummaryManagerTest {
 
 	@Test
 	void persistsExpectedChanges() {
-		final Object thing = new Object();
-		final TestAccount testAccount = new TestAccount(1L, thing, false);
+		final var thing = new Object();
+		final var testAccount = new TestAccount(1L, thing, false);
 
 		subject.update(changes, LONG, 5L);
 		subject.update(changes, FLAG, true);
@@ -68,7 +68,7 @@ class ChangeSummaryManagerTest {
 
 	@Test
 	void setsThing() {
-		final Object thing = new Object();
+		final var thing = new Object();
 
 		subject.update(changes, OBJ, thing);
 
