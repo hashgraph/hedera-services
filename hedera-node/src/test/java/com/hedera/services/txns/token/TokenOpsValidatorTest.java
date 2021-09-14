@@ -98,8 +98,7 @@ class TokenOpsValidatorTest {
 				4, 0, true,
 				INVALID_TOKEN_BURN_AMOUNT,
 				new ArrayList<>(List.of(1L, 2L, 3L, 4L)),
-				validator::maxBatchSizeBurnCheck,
-				null));
+				validator::maxBatchSizeBurnCheck));
 	}
 
 	@Test
@@ -110,8 +109,7 @@ class TokenOpsValidatorTest {
 				4, 0, true,
 				INVALID_TOKEN_BURN_AMOUNT,
 				new ArrayList<>(List.of(1L, -2L, 3L, 4L)),
-				validator::maxBatchSizeBurnCheck,
-				null));
+				validator::maxBatchSizeBurnCheck));
 	}
 
 	private ResponseCodeEnum forMintWith(int nftCount, long fungibleCount, boolean areNftEnabled) {

@@ -122,8 +122,7 @@ public class TokenBurnTransitionLogic implements TransitionLogic {
 				dynamicProperties.areNftsEnabled(),
 				INVALID_TOKEN_BURN_AMOUNT,
 				op.getSerialNumbersList(),
-				validator::maxBatchSizeBurnCheck,
-				null
+				validator::maxBatchSizeBurnCheck
 		);
 	}
 }

@@ -126,8 +126,7 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 				dynamicProperties.areNftsEnabled(),
 				INVALID_WIPING_AMOUNT,
 				op.getSerialNumbersList(),
-				validator::maxBatchSizeWipeCheck,
-				null
+				validator::maxBatchSizeWipeCheck
 		);
 	}
 }
