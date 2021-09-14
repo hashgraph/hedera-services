@@ -35,7 +35,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -122,7 +121,7 @@ public class TokenBurnTransitionLogic implements TransitionLogic {
 				op.getAmount(),
 				dynamicProperties.areNftsEnabled(),
 				INVALID_TOKEN_BURN_AMOUNT,
-				new ArrayList<>(op.getSerialNumbersList()),
+				op.getSerialNumbersList(),
 				validator::maxBatchSizeBurnCheck,
 				null
 		);
