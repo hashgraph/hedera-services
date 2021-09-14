@@ -40,12 +40,11 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.CommonUtils;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.fcqueue.FCQueue;
-import com.swirlds.merkletree.MerklePair;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.codec.DecoderException;
 
-import javax.annotation.Nonnull;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -387,8 +386,8 @@ public final class MiscUtils {
 		try {
 			return new JEd25519Key(CommonUtils.unhex(b64Reader.hexedABytesFrom(storeLoc, kpId)));
 		} catch (IllegalArgumentException e) {
-			final var msg = String.format("Arguments 'storeLoc=%s' and 'kpId=%s' did not denote a valid key!",
-					storeLoc, kpId);
+			final var msg = String.format(
+					"Arguments 'storeLoc=%s' and 'kpId=%s' did not denote a valid key!", storeLoc, kpId);
 			throw new IllegalArgumentException(msg, e);
 		}
 	}
@@ -738,14 +737,14 @@ public final class MiscUtils {
 		return x;
 	}
 
-	public static <K extends MerkleNode, V extends MerkleNode> void forEach(
-			final FCMap<K, V> map,
+	public static <K, V extends MerkleNode & Keyed<K>> void forEach(
+			final MerkleMap<K, V> map,
 			final BiConsumer<? super K, ? super V> action
 	) {
-		map.forEachNode((@Nonnull final MerkleNode node) -> {
-			if (node.getClassId() == MerklePair.CLASS_ID) {
-				final MerklePair<K, V> pair = node.cast();
-				action.accept(pair.getKey(), pair.getValue());
+		map.forEachNode((final MerkleNode node) -> {
+			if (node instanceof Keyed) {
+				final V leaf = node.cast();
+				action.accept(leaf.getKey(), leaf);
 			}
 		});
 	}

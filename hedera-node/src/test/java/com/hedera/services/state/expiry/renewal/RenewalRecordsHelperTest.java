@@ -21,9 +21,9 @@ package com.hedera.services.state.expiry.renewal;
  */
 
 import com.hedera.services.config.MockGlobalDynamicProps;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.test.utils.IdUtils;
@@ -60,12 +60,12 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class RenewalRecordsHelperTest {
-	private static final long fee = 1_234L;
-	private static final long newExpiry = 1_234_567L + 7776000L;
-	private static final Instant instantNow = Instant.ofEpochSecond(1_234_567L);
-	private static final AccountID removedId = IdUtils.asAccount("1.2.3");
-	private static final AccountID funding = IdUtils.asAccount("0.0.98");
-	private static final MerkleEntityId keyId = MerkleEntityId.fromAccountId(removedId);
+	private long fee = 1_234L;
+	private long newExpiry = 1_234_567L + 7776000L;
+	private final Instant instantNow = Instant.ofEpochSecond(1_234_567L);
+	private final AccountID removedId = IdUtils.asAccount("0.0.3");
+	private final AccountID funding = IdUtils.asAccount("0.0.98");
+	private final EntityNum keyId = EntityNum.fromAccountId(removedId);
 
 	@Mock
 	private RecordStreamManager recordStreamManager;
@@ -102,6 +102,8 @@ class RenewalRecordsHelperTest {
 
 		subject.beginRenewalCycle(instantNow);
 		subject.streamCryptoRemoval(keyId, tokensFrom(displacements), adjustmentsFrom(displacements));
+
+		// then:
 		verify(updateRunningHash).accept(any());
 		verify(recordStreamManager).addRecordStreamObject(rso);
 
@@ -118,6 +120,8 @@ class RenewalRecordsHelperTest {
 
 		subject.beginRenewalCycle(instantNow);
 		subject.streamCryptoRenewal(keyId, fee, newExpiry);
+
+		// then:
 		verify(updateRunningHash).accept(any());
 		verify(recordStreamManager).addRecordStreamObject(rso);
 

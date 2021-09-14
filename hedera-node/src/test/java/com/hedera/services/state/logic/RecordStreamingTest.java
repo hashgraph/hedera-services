@@ -67,8 +67,10 @@ class RecordStreamingTest {
 
 	@Test
 	void doesNothingIfNoRecord() {
+		// when:
 		subject.run();
 
+		// then:
 		verifyNoInteractions(txnCtx, nonBlockingHandoff, runningHashUpdate);
 	}
 

@@ -23,10 +23,10 @@ package com.hedera.services.fees.calculation.consensus.txns;
 import com.google.protobuf.StringValue;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -131,7 +131,7 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
 				adminKey,
 				submitKey,
 				0, new EntityId(0, 1, 2), new RichInstant(36_000, 0));
-		given(topics.get(MerkleEntityId.fromTopicId(topicId))).willReturn(merkleTopic);
+		given(topics.get(EntityNum.fromTopicId(topicId))).willReturn(merkleTopic);
 		final var mockedJkey = mockStatic(JKey.class);
 		mockedJkey.when(() -> JKey.mapJKey(any())).thenThrow(new DecoderException());
 
@@ -149,7 +149,7 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
 				IdUtils.asAccount("0.1.2"),
 				null,
 				null);
-		given(topics.get(MerkleEntityId.fromTopicId(topicId))).willReturn(null);
+		given(topics.get(EntityNum.fromTopicId(topicId))).willReturn(null);
 
 		final var feeData = subject.usageGiven(txBody, sigValueObj, view);
 
@@ -197,7 +197,7 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
 				newAutoRenewAccountId, newAutoRenewPeriod,
 				Optional.ofNullable(newExpirationTimestamp).map(RichInstant::toGrpc).orElse(null));
 
-		given(topics.get(MerkleEntityId.fromTopicId(topicId))).willReturn(merkleTopic);
+		given(topics.get(EntityNum.fromTopicId(topicId))).willReturn(merkleTopic);
 		final var feeData = subject.usageGiven(txBody, sigValueObj, view);
 
 		checkServicesFee(feeData, expectedExtraServicesRbh);

@@ -21,17 +21,16 @@ package com.hedera.services.ledger.accounts;
  */
 
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Set;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -44,18 +43,18 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 class PureBackingAccountsTest {
-	private final AccountID a = asAccount("1.2.3");
-	private final AccountID b = asAccount("3.2.1");
-	private final MerkleEntityId aKey = MerkleEntityId.fromAccountId(a);
-	private final MerkleEntityId bKey = MerkleEntityId.fromAccountId(b);
+	private final AccountID a = asAccount("0.0.3");
+	private final AccountID b = asAccount("0.0.1");
+	private final EntityNum aKey = EntityNum.fromAccountId(a);
+	private final EntityNum bKey = EntityNum.fromAccountId(b);
 	private final MerkleAccount aValue = MerkleAccountFactory.newAccount().balance(123L).get();
 
-	private FCMap<MerkleEntityId, MerkleAccount> map;
+	private MerkleMap<EntityNum, MerkleAccount> map;
 	private PureBackingAccounts subject;
 
 	@BeforeEach
 	private void setup() {
-		map = mock(FCMap.class);
+		map = mock(MerkleMap.class);
 
 		subject = new PureBackingAccounts(() -> map);
 	}

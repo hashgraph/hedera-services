@@ -24,9 +24,9 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.topics.TopicFactory;
 import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;
@@ -42,7 +42,7 @@ import com.hederahashgraph.api.proto.java.ResponseHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -66,7 +66,7 @@ import static org.mockito.BDDMockito.mock;
 
 class GetMerkleTopicInfoAnswerTest {
 	long seqNo = 1_234L;
-	FCMap topics;
+	MerkleMap topics;
 	byte[] hash = "NOT A HASH".getBytes();
 	StateView view;
 	OptionValidator optionValidator;
@@ -90,7 +90,7 @@ class GetMerkleTopicInfoAnswerTest {
 	private void setup() throws Exception {
 		adminKey = COMPLEX_KEY_ACCOUNT_KT.asKey();
 		submitKey = MISC_ACCOUNT_KT.asKey();
-		topics = mock(FCMap.class);
+		topics = mock(MerkleMap.class);
 		merkleTopic = TopicFactory.newTopic()
 				.adminKey(adminKey)
 				.submitKey(submitKey)
@@ -102,7 +102,7 @@ class GetMerkleTopicInfoAnswerTest {
 				.get();
 		merkleTopic.setRunningHash(hash);
 		merkleTopic.setSequenceNumber(seqNo);
-		MerkleEntityId key = MerkleEntityId.fromTopicId(asTopic(target));
+		EntityNum key = EntityNum.fromTopicId(asTopic(target));
 		given(topics.get(key)).willReturn(merkleTopic);
 
 		nodeProps = mock(NodeLocalProperties.class);

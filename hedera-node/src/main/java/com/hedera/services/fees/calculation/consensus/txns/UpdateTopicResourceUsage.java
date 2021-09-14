@@ -23,7 +23,7 @@ package com.hedera.services.fees.calculation.consensus.txns;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -69,7 +69,7 @@ public final class UpdateTopicResourceUsage implements TxnResourceUsageEstimator
 
 		long rbsIncrease = 0;
 		final var merkleTopic = view.topics().get(
-				MerkleEntityId.fromTopicId(txnBody.getConsensusUpdateTopic().getTopicID()));
+				EntityNum.fromTopicId(txnBody.getConsensusUpdateTopic().getTopicID()));
 
 		if (merkleTopic != null && merkleTopic.hasAdminKey()) {
 			final var expiry = Timestamp.newBuilder()

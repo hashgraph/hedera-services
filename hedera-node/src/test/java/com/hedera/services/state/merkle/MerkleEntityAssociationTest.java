@@ -20,6 +20,7 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
+import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,6 +57,12 @@ class MerkleEntityAssociationTest {
 	}
 
 	@Test
+	void gettersWork() {
+		assertEquals(fromNum, subject.getFromNum());
+		assertEquals(toNum, subject.getToNum());
+	}
+
+	@Test
 	void toAbbrevStringWorks() {
 		assertEquals("13.25.7 <-> 31.52.0", subject.toAbbrevString());
 	}
@@ -78,8 +85,8 @@ class MerkleEntityAssociationTest {
 	@Test
 	void factoryWorks() {
 		assertEquals(
-				subject,
-				MerkleEntityAssociation.fromAccountTokenRel(asAccount("13.25.7"), asToken("31.52.0")));
+				EntityNumPair.fromLongs(7, 8),
+				MerkleEntityAssociation.fromAccountTokenRel(asAccount("0.0.7"), asToken("0.0.8")));
 	}
 
 	@Test

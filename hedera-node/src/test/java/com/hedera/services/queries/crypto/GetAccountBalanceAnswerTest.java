@@ -24,12 +24,12 @@ import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.utils.IdUtils;
@@ -43,19 +43,16 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.common.constructable.ClassConstructorPair;
-import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.fcmap.FCMap;
-import com.swirlds.merkletree.MerklePair;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
-import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
-import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
+import static com.hedera.services.utils.EntityNum.fromAccountId;
+import static com.hedera.services.utils.EntityNum.fromContractId;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.tokenBalanceWith;
@@ -73,8 +70,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 class GetAccountBalanceAnswerTest {
-	private FCMap accounts;
-	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels;
+	private MerkleMap accounts;
+	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 	private StateView view;
 	private OptionValidator optionValidator;
 	private String accountIdLit = "0.0.12345";
@@ -104,9 +101,6 @@ class GetAccountBalanceAnswerTest {
 
 	@BeforeEach
 	private void setup() throws ConstructableRegistryException {
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(MerklePair.class, MerklePair::new));
-
 		deleted = mock(MerkleToken.class);
 		given(deleted.isDeleted()).willReturn(true);
 		given(deleted.decimals()).willReturn(123);
@@ -114,7 +108,7 @@ class GetAccountBalanceAnswerTest {
 		given(notDeleted.isDeleted()).willReturn(false);
 		given(notDeleted.decimals()).willReturn(1).willReturn(2);
 
-		tokenRels = new FCMap<>();
+		tokenRels = new MerkleMap<>();
 		tokenRels.put(
 				fromAccountTokenRel(target, aToken),
 				new MerkleTokenRelStatus(aBalance, true, true, true));
@@ -128,7 +122,7 @@ class GetAccountBalanceAnswerTest {
 				fromAccountTokenRel(target, dToken),
 				new MerkleTokenRelStatus(dBalance, false, false, true));
 
-		accounts = mock(FCMap.class);
+		accounts = mock(MerkleMap.class);
 		nodeProps = mock(NodeLocalProperties.class);
 		given(accounts.get(fromAccountId(asAccount(accountIdLit)))).willReturn(accountV);
 		given(accounts.get(fromContractId(asContract(contractIdLit)))).willReturn(contractV);

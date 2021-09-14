@@ -34,9 +34,8 @@ import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
 @CommandLine.Command(
 		name = "freeze",
 		subcommands = { picocli.CommandLine.HelpCommand.class },
-		description = "Freeze system at given start time")
+		description = "Schedules the network to freeze for maintenance")
 public class SysFreezeCommand implements Callable<Integer> {
-
 	@CommandLine.ParentCommand
 	private Yahcli yahcli;
 
