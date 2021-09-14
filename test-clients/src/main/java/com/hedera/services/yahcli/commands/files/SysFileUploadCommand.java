@@ -32,7 +32,7 @@ import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
 @CommandLine.Command(
 		name = "upload",
 		subcommands = { picocli.CommandLine.HelpCommand.class },
-		description = "Upload a system file")
+		description = "Uploads a system file")
 public class SysFileUploadCommand implements Callable<Integer> {
 	public static AtomicReference<String> activeSrcDir = new AtomicReference<>();
 
