@@ -62,11 +62,6 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
-	public boolean associationExists(AccountID aId, TokenID tId) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment) {
 		throw new UnsupportedOperationException();
 	}

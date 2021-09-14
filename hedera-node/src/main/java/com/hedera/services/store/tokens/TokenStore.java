@@ -50,8 +50,6 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 
 	void removeKnownTreasuryForToken(AccountID aId, TokenID tId);
 
-	boolean associationExists(AccountID aId, TokenID tId);
-
 	boolean isTreasuryForToken(AccountID aId, TokenID tId);
 
 	List<TokenID> listOfTokensServed(AccountID treasury);
