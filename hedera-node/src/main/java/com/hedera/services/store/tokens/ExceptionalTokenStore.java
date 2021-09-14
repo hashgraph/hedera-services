@@ -37,11 +37,6 @@ public enum ExceptionalTokenStore implements TokenStore {
 	NOOP_TOKEN_STORE;
 
 	@Override
-	public ResponseCodeEnum unfreeze(AccountID aId, TokenID tId) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public ResponseCodeEnum grantKyc(AccountID aId, TokenID tId) {
 		throw new UnsupportedOperationException();
 	}
