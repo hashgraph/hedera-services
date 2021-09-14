@@ -83,8 +83,6 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_
 import static com.hedera.test.mocks.TestContextValidator.CONSENSUS_NOW;
 import static com.hedera.test.mocks.TestContextValidator.TEST_VALIDATOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
@@ -511,35 +509,6 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	void grantingKycRejectsMissingAccount() {
-		given(accountsLedger.exists(sponsor)).willReturn(false);
-
-		final var status = subject.grantKyc(sponsor, misc);
-
-		assertEquals(INVALID_ACCOUNT_ID, status);
-	}
-
-	@Test
-	void grantingKycRejectsDetachedAccount() {
-		given(accountsLedger.exists(sponsor)).willReturn(true);
-		given(hederaLedger.isDetached(sponsor)).willReturn(true);
-
-		final var status = subject.grantKyc(sponsor, misc);
-
-		assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, status);
-	}
-
-	@Test
-	void grantingKycRejectsDeletedAccount() {
-		given(accountsLedger.exists(sponsor)).willReturn(true);
-		given(hederaLedger.isDeleted(sponsor)).willReturn(true);
-
-		final var status = subject.grantKyc(sponsor, misc);
-
-		assertEquals(ACCOUNT_DELETED, status);
-	}
-
-	@Test
 	void revokingKycRejectsMissingAccount() {
 		given(accountsLedger.exists(sponsor)).willReturn(false);
 
@@ -913,15 +882,6 @@ class HederaTokenStoreTest {
 		final var status = subject.adjustBalance(sponsor, misc, 1);
 
 		assertEquals(ResponseCodeEnum.INVALID_TOKEN_ID, status);
-	}
-
-	@Test
-	void grantingRejectsUnknowableToken() {
-		given(token.kycKey()).willReturn(Optional.empty());
-
-		final var status = subject.grantKyc(treasury, misc);
-
-		assertEquals(ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY, status);
 	}
 
 	@Test
