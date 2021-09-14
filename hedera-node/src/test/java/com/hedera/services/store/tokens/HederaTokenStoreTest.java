@@ -428,18 +428,6 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	void realAssociationsExist() {
-		assertTrue(subject.associationExists(sponsor, misc));
-	}
-
-	@Test
-	void noAssociationsWithMissingAccounts() {
-		given(accountsLedger.exists(sponsor)).willReturn(false);
-
-		assertFalse(subject.associationExists(sponsor, misc));
-	}
-
-	@Test
 	void associatingRejectsAlreadyAssociatedTokens() {
 		final var tokens = mock(MerkleAccountTokens.class);
 		given(tokens.includes(misc)).willReturn(true);

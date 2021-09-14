@@ -222,11 +222,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	@Override
-	public boolean associationExists(final AccountID aId, final TokenID tId) {
-		return checkExistence(aId, tId) == OK && tokenRelsLedger.exists(asTokenRel(aId, tId));
-	}
-
-	@Override
 	public boolean exists(final TokenID id) {
 		return (isCreationPending() && pendingId.equals(id)) || tokens.get().containsKey(fromTokenId(id));
 	}
