@@ -1,13 +1,18 @@
 package com.hedera.services.usage.crypto;
 
+import com.google.protobuf.Int32Value;
+import com.google.protobuf.StringValue;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Test;
 
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CryptoUpdateMetaTest {
@@ -77,22 +82,31 @@ class CryptoUpdateMetaTest {
 
 	@Test
 	void calculatesSizesAsExpected() {
+		final var memo = "updateMemo";
 		final var accountID = AccountID.newBuilder().setAccountNum(1_234L).build();
+		final var proxyID = AccountID.newBuilder().setAccountNum(1_230L).build();
 		final var canonicalTxn = TransactionBody.newBuilder()
 				.setCryptoUpdateAccount(
 						CryptoUpdateTransactionBody.newBuilder()
+						.setMemo(StringValue.of(memo))
+						.setMaxAutomaticTokenAssociations(Int32Value.of(5))
+						.setProxyAccountID(proxyID)
+						.setAutoRenewPeriod(Duration.newBuilder().setSeconds(expiry))
 						.setAccountIDToUpdate(accountID)
 						.setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
 				).build();
 
+		final var expectedMsgBytes = BASIC_ENTITY_ID_SIZE + memo.length() + LONG_SIZE
+				+ LONG_SIZE + BASIC_ENTITY_ID_SIZE + INT_SIZE;
+
 		final var subject = new CryptoUpdateMeta(canonicalTxn);
 
 		assertEquals(0, subject.getKeyBytesUsed());
-		assertEquals(32, subject.getMsgBytesUsed());
-		assertEquals(0, subject.getMemoSize());
+		assertEquals(expectedMsgBytes, subject.getMsgBytesUsed());
+		assertEquals(memo.length(), subject.getMemoSize());
 		assertEquals(expiry, subject.getExpiry());
-		assertFalse(subject.hasProxy());
-		assertFalse(subject.hasMaxAutomaticAssociations());
-		assertEquals(0, subject.getMaxAutomaticAssociations());
+		assertTrue(subject.hasProxy());
+		assertTrue(subject.hasMaxAutomaticAssociations());
+		assertEquals(5, subject.getMaxAutomaticAssociations());
 	}
 }

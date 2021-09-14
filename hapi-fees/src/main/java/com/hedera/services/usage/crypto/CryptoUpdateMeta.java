@@ -98,7 +98,7 @@ public class CryptoUpdateMeta {
 		return hasMaxAutomaticAssociations;
 	}
 
-	private long bytesUsedInTxn(CryptoUpdateTransactionBody op) {
+	private int bytesUsedInTxn(CryptoUpdateTransactionBody op) {
 		return BASIC_ENTITY_ID_SIZE
 				+ op.getMemo().getValueBytes().size()
 				+ (op.hasExpirationTime() ? LONG_SIZE : 0)
