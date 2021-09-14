@@ -141,7 +141,6 @@ class LedgerBalanceChangesTest {
 				false, true);
 		tokenStore = new HederaTokenStore(
 				ids,
-				validator,
 				viewManager,
 				dynamicProperties,
 				() -> tokens,
@@ -242,7 +241,6 @@ class LedgerBalanceChangesTest {
 				false, true);
 		tokenStore = new HederaTokenStore(
 				ids,
-				validator,
 				viewManager,
 				dynamicProperties,
 				() -> tokens,
