@@ -41,8 +41,6 @@ class ExceptionalTokenStoreTest {
 		assertThrows(UnsupportedOperationException.class,
 				() -> NOOP_TOKEN_STORE.isKnownTreasury(null));
 		assertThrows(UnsupportedOperationException.class,
-				() -> NOOP_TOKEN_STORE.grantKyc(null, null));
-		assertThrows(UnsupportedOperationException.class,
 				() -> NOOP_TOKEN_STORE.revokeKyc(null, null));
 		assertThrows(UnsupportedOperationException.class,
 				() -> NOOP_TOKEN_STORE.apply(null, token -> { }));

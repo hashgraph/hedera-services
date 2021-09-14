@@ -255,11 +255,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	@Override
-	public ResponseCodeEnum grantKyc(final AccountID aId, final TokenID tId) {
-		return setHasKyc(aId, tId, true);
-	}
-
-	@Override
 	public ResponseCodeEnum revokeKyc(final AccountID aId, final TokenID tId) {
 		return setHasKyc(aId, tId, false);
 	}

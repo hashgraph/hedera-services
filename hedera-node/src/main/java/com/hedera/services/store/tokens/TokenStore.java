@@ -56,8 +56,6 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 
 	List<TokenID> listOfTokensServed(AccountID treasury);
 
-	ResponseCodeEnum grantKyc(AccountID aId, TokenID tId);
-
 	ResponseCodeEnum revokeKyc(AccountID aId, TokenID tId);
 
 	ResponseCodeEnum associate(AccountID aId, List<TokenID> tokens, boolean automaticAssociation);
