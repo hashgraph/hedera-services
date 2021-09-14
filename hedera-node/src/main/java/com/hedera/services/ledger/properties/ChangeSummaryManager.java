@@ -20,7 +20,7 @@ package com.hedera.services.ledger.properties;
  * ‍
  */
 
-import java.util.EnumMap;
+import java.util.Map;
 
 /**
  * Minimal implementation of a helper that manages summary changesets.
@@ -29,25 +29,22 @@ import java.util.EnumMap;
  * @param <A> the type of account being changed.
  * @param <P> the property family whose changesets are to be summarized.
  */
-public class ChangeSummaryManager<A, P extends Enum<P> & BeanProperty<A>> {
+public final class ChangeSummaryManager<A, P extends Enum<P> & BeanProperty<A>> {
 	/**
 	 * Updates the changeset summary for the given property to the given value.
-	 *
-	 * @param changes the total changeset summary so far.
+	 *  @param changes the total changeset summary so far.
 	 * @param property the property in the family whose changeset should be updated.
 	 * @param value the new value that summarizes the changeset.
 	 */
-	public void update(EnumMap<P, Object> changes, P property, Object value) {
+	public void update(final Map<P, Object> changes, P property, final Object value) {
 		changes.put(property, value);
 	}
 
 	/**
 	 * Flush a changeset summary to a given object.
-	 *
-	 * @param changes the summary of changes made to the relevant property family.
-	 * @param account the account to receive the net changes.
-	 */
-	public void persist(EnumMap<P, Object> changes, A account) {
+	 *  @param changes the summary of changes made to the relevant property family.
+	 * @param account the account to receive the net changes.*/
+	public void persist(final Map<P, Object> changes, final A account) {
 		changes.entrySet().forEach(entry ->
 			entry.getKey().setter().accept(account, entry.getValue())
 		);
