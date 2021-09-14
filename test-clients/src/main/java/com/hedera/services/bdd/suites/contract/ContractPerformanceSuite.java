@@ -9,17 +9,19 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Assertions;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getExecTime;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
@@ -88,6 +90,7 @@ public class ContractPerformanceSuite extends HapiApiSuite {
     List<HapiApiSpec> hapiSpecs = new ArrayList<>();
     for (String test : perfTests) {
       String path = PERF_RESOURCES + test;
+      String via = test.substring(0, test.length() - 4);
       String contractCode;
       try {
         contractCode = new String(Files.toByteArray(new File(path)), StandardCharsets.US_ASCII);
@@ -125,15 +128,14 @@ public class ContractPerformanceSuite extends HapiApiSuite {
       hapiSpecs.add(
           defaultHapiSpec("Perf_" + test)
               .given(givenBlock)
-              .when()
+              .when(contractCall(test, "<empty>").gas(35000000).via(via))
               .then(
-                  withOpContext(
-                      (spec, opLog) -> {
-                        var contractCall = contractCall(test, "<empty>").gas(35000000);
-                        allRunFor(spec, contractCall);
-                        Assertions.assertEquals(
-                            ResponseCodeEnum.SUCCESS, contractCall.getLastReceipt().getStatus());
-                      })));
+                  getExecTime(via)
+                      .payingWith(GENESIS)
+                      .logged()
+                      // this is very high because of EthereumJ
+                      .assertingNoneLongerThan(10, ChronoUnit.SECONDS),
+                  getReceipt(via).hasPriorityStatus(ResponseCodeEnum.SUCCESS)));
     }
     return hapiSpecs;
   }
