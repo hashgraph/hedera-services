@@ -337,11 +337,6 @@ public class HederaLedger {
 		accountsLedger.set(aId, TOKENS, tokens);
 	}
 
-	public long getTokenBalance(AccountID aId, TokenID tId) {
-		var relationship = asTokenRel(aId, tId);
-		return (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
-	}
-
 	public boolean allTokenBalancesVanish(AccountID aId) {
 		if (tokenRelsLedger == null) {
 			throw new IllegalStateException("Ledger has no manageable token relationships!");
