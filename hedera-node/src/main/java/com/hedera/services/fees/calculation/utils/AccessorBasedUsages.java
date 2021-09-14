@@ -1,6 +1,23 @@
 package com.hedera.services.fees.calculation.utils;
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
+import com.hedera.services.usage.BaseTransactionMeta;
+import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.consensus.ConsensusOpsUsage;
+import com.hedera.services.usage.crypto.CryptoOpsUsage;
+import com.hedera.services.usage.file.FileOpsUsage;
+import com.hedera.services.usage.state.UsageAccumulator;
+import com.hedera.services.usage.token.TokenOpsUsage;
+import com.hedera.services.utils.TxnAccessor;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.EnumSet;
+
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
@@ -8,11 +25,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
-
-import java.util.EnumSet;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /*-
  * ‌
@@ -34,23 +46,13 @@ import javax.inject.Singleton;
  * ‍
  */
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
-import com.hedera.services.usage.BaseTransactionMeta;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.consensus.ConsensusOpsUsage;
-import com.hedera.services.usage.crypto.CryptoOpsUsage;
-import com.hedera.services.usage.file.FileOpsUsage;
-import com.hedera.services.usage.state.UsageAccumulator;
-import com.hedera.services.usage.token.TokenOpsUsage;
-import com.hedera.services.utils.TxnAccessor;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-
 @Singleton
 public class AccessorBasedUsages {
-	private static final EnumSet<HederaFunctionality> supportedOps = EnumSet.of(FileAppend, CryptoTransfer,
-			ConsensusSubmitMessage, TokenFeeScheduleUpdate,
-			TokenCreate, TokenBurn, TokenMint, TokenAccountWipe);
+	private static final EnumSet<HederaFunctionality> supportedOps = EnumSet.of(
+			FileAppend,
+			CryptoTransfer, CryptoCreate,
+			ConsensusSubmitMessage,
+			TokenFeeScheduleUpdate, TokenCreate, TokenBurn, TokenMint, TokenAccountWipe);
 
 	private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
 
@@ -63,9 +65,14 @@ public class AccessorBasedUsages {
 	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
-	public AccessorBasedUsages(FileOpsUsage fileOpsUsage, TokenOpsUsage tokenOpsUsage, CryptoOpsUsage cryptoOpsUsage,
-			OpUsageCtxHelper opUsageCtxHelper, ConsensusOpsUsage consensusOpsUsage,
-			GlobalDynamicProperties dynamicProperties) {
+	public AccessorBasedUsages(
+			FileOpsUsage fileOpsUsage,
+			TokenOpsUsage tokenOpsUsage,
+			CryptoOpsUsage cryptoOpsUsage,
+			OpUsageCtxHelper opUsageCtxHelper,
+			ConsensusOpsUsage consensusOpsUsage,
+			GlobalDynamicProperties dynamicProperties
+	) {
 		this.fileOpsUsage = fileOpsUsage;
 		this.tokenOpsUsage = tokenOpsUsage;
 		this.cryptoOpsUsage = cryptoOpsUsage;
@@ -83,6 +90,8 @@ public class AccessorBasedUsages {
 		final var baseMeta = accessor.baseUsageMeta();
 		if (function == CryptoTransfer) {
 			estimateCryptoTransfer(sigUsage, accessor, baseMeta, into);
+		} else if (function == CryptoCreate) {
+			estimateCryptoCreate(sigUsage, accessor, baseMeta, into);
 		} else if (function == ConsensusSubmitMessage) {
 			estimateSubmitMessage(sigUsage, accessor, baseMeta, into);
 		} else if (function == TokenFeeScheduleUpdate) {
@@ -104,49 +113,95 @@ public class AccessorBasedUsages {
 		return supportedOps.contains(function);
 	}
 
-	private void estimateFeeScheduleUpdate(SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta,
-			UsageAccumulator into) {
+	private void estimateFeeScheduleUpdate(
+			SigUsage sigUsage,
+			TxnAccessor accessor,
+			BaseTransactionMeta baseMeta,
+			UsageAccumulator into
+	) {
 		final var op = accessor.getTxn().getTokenFeeScheduleUpdate();
 		final var opMeta = spanMapAccessor.getFeeScheduleUpdateMeta(accessor);
 		final var usageCtx = opUsageCtxHelper.ctxForFeeScheduleUpdate(op);
 		tokenOpsUsage.feeScheduleUpdateUsage(sigUsage, baseMeta, opMeta, usageCtx, into);
 	}
 
-	private void estimateFileAppend(SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta,
-			UsageAccumulator into) {
+	private void estimateFileAppend(
+			SigUsage sigUsage,
+			TxnAccessor accessor,
+			BaseTransactionMeta baseMeta,
+			UsageAccumulator into
+	) {
 		final var opMeta = opUsageCtxHelper.metaForFileAppend(accessor.getTxn());
 		fileOpsUsage.fileAppendUsage(sigUsage, opMeta, baseMeta, into);
 	}
 
-	private void estimateCryptoTransfer(SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta,
-			UsageAccumulator into) {
+	private void estimateCryptoTransfer(
+			SigUsage sigUsage,
+			TxnAccessor accessor,
+			BaseTransactionMeta baseMeta,
+			UsageAccumulator into
+	) {
 		final var xferMeta = accessor.availXferUsageMeta();
 		xferMeta.setTokenMultiplier(dynamicProperties.feesTokenTransferUsageMultiplier());
 		cryptoOpsUsage.cryptoTransferUsage(sigUsage, xferMeta, baseMeta, into);
 	}
 
-	private void estimateSubmitMessage(SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta,
-			UsageAccumulator into) {
+	private void estimateCryptoCreate(
+			SigUsage sigUsage,
+			TxnAccessor accessor,
+			BaseTransactionMeta baseMeta,
+			UsageAccumulator into
+	) {
+		final var cryptoCreateMeta = accessor.getSpanMapAccessor().getCryptoCreateMeta(accessor);
+		cryptoOpsUsage.cryptoCreateUsage(sigUsage, baseMeta, cryptoCreateMeta, into);
+	}
+
+	private void estimateSubmitMessage(
+			SigUsage sigUsage,
+			TxnAccessor accessor,
+			BaseTransactionMeta baseMeta,
+			UsageAccumulator into
+	) {
 		final var submitMeta = accessor.availSubmitUsageMeta();
 		consensusOpsUsage.submitMessageUsage(sigUsage, submitMeta, baseMeta, into);
 	}
-	private void estimateTokenCreate(SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta,
-			UsageAccumulator into) {
+
+	private void estimateTokenCreate(
+			SigUsage sigUsage,
+			TxnAccessor accessor,
+			BaseTransactionMeta baseMeta,
+			UsageAccumulator into
+	) {
 		final var tokenCreateMeta = accessor.getSpanMapAccessor().getTokenCreateMeta(accessor);
 		tokenOpsUsage.tokenCreateUsage(sigUsage, baseMeta, tokenCreateMeta, into);
 	}
-	private void estimateTokenBurn(SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta,
-			UsageAccumulator into) {
+
+	private void estimateTokenBurn(
+			SigUsage sigUsage,
+			TxnAccessor accessor,
+			BaseTransactionMeta baseMeta,
+			UsageAccumulator into
+	) {
 		final var tokenBurnMeta = opUsageCtxHelper.metaForTokenBurn(accessor);
 		tokenOpsUsage.tokenBurnUsage(sigUsage, baseMeta, tokenBurnMeta, into);
 	}
-	private void estimateTokenMint(SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta,
-			UsageAccumulator into) {
+
+	private void estimateTokenMint(
+			SigUsage sigUsage,
+			TxnAccessor accessor,
+			BaseTransactionMeta baseMeta,
+			UsageAccumulator into
+	) {
 		final var tokenMintMeta = opUsageCtxHelper.metaForTokenMint(accessor);
 		tokenOpsUsage.tokenMintUsage(sigUsage, baseMeta, tokenMintMeta, into);
 	}
-	private void estimateTokenWipe(SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta,
-			UsageAccumulator into) {
+
+	private void estimateTokenWipe(
+			SigUsage sigUsage,
+			TxnAccessor accessor,
+			BaseTransactionMeta baseMeta,
+			UsageAccumulator into
+	) {
 		final var tokenWipeMeta = opUsageCtxHelper.metaForTokenWipe(accessor);
 		tokenOpsUsage.tokenWipeUsage(sigUsage, baseMeta, tokenWipeMeta, into);
 	}

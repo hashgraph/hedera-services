@@ -41,18 +41,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 @Singleton
-public class ScheduleDeleteTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(ScheduleCreateTransitionLogic.class);
+public final class ScheduleDeleteTransitionLogic implements TransitionLogic {
+	private static final Logger log = LogManager.getLogger(ScheduleDeleteTransitionLogic.class);
 
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
-
-	ScheduleStore store;
-	TransactionContext txnCtx;
+	private final ScheduleStore store;
+	private final TransactionContext txnCtx;
 
 	@Inject
 	public ScheduleDeleteTransitionLogic(
-			ScheduleStore store,
-			TransactionContext txnCtx
+			final ScheduleStore store,
+			final TransactionContext txnCtx
 	) {
 		this.store = store;
 		this.txnCtx = txnCtx;
@@ -62,14 +60,14 @@ public class ScheduleDeleteTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		try {
 			transitionFor(txnCtx.accessor().getTxn().getScheduleDelete(), txnCtx.consensusTime());
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
 			txnCtx.setStatus(FAIL_INVALID);
 		}
 	}
 
-	private void transitionFor(ScheduleDeleteTransactionBody op, Instant consensusTime) {
-		var outcome = store.deleteAt(op.getScheduleID(), consensusTime);
+	private void transitionFor(final ScheduleDeleteTransactionBody op, final Instant consensusTime) {
+		final var outcome = store.deleteAt(op.getScheduleID(), consensusTime);
 		txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
 	}
 
@@ -80,11 +78,11 @@ public class ScheduleDeleteTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
+		return this::validate;
 	}
 
-	public ResponseCodeEnum validate(TransactionBody txnBody) {
-		ScheduleDeleteTransactionBody op = txnBody.getScheduleDelete();
+	private ResponseCodeEnum validate(final TransactionBody txnBody) {
+		final var op = txnBody.getScheduleDelete();
 		if (!op.hasScheduleID()) {
 			return INVALID_SCHEDULE_ID;
 		}

@@ -24,6 +24,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
@@ -84,6 +85,7 @@ public class MerkleScheduleTest {
 	private static final RichInstant otherSchedulingTXValidStart = new RichInstant(456, 789);
 	private static final JKey adminKey = TxnHandlingScenario.TOKEN_ADMIN_KT.asJKeyUnchecked();
 	private static final JKey otherAdminKey = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKeyUnchecked();
+	private static final int number = 123_456;
 
 	private List<byte[]> signatories;
 	private MerkleSchedule subject;
@@ -94,6 +96,7 @@ public class MerkleScheduleTest {
 		signatories.addAll(List.of(fpk, spk, tpk));
 
 		subject = MerkleSchedule.from(bodyBytes, expiry);
+		subject.setKey(EntityNum.fromInt(number));
 
 		serdes = mock(DomainSerdes.class);
 		MerkleSchedule.serdes = serdes;
@@ -118,6 +121,7 @@ public class MerkleScheduleTest {
 		assertEquals(ordinaryVersionOfScheduledTxn, subject.ordinaryViewOfScheduledTxn());
 		assertEquals(expectedSignedTxn(), subject.asSignedTxn());
 		assertArrayEquals(bodyBytes, subject.bodyBytes());
+		assertEquals(number, subject.getKey().intValue());
 	}
 
 	@Test
@@ -207,10 +211,11 @@ public class MerkleScheduleTest {
 		inOrder.verify(out).writeInt(2);
 		inOrder.verify(out).writeByteArray(argThat((byte[] bytes) -> Arrays.equals(bytes, fpk)));
 		inOrder.verify(out).writeByteArray(argThat((byte[] bytes) -> Arrays.equals(bytes, spk)));
+		inOrder.verify(out).writeInt(number);
 	}
 
 	@Test
-	void deserializeWorks() throws IOException {
+	void deserializeWorksPre0180() throws IOException {
 		final var fin = mock(SerializableDataInputStream.class);
 		subject.witnessValidEd25519Signature(fpk);
 		subject.witnessValidEd25519Signature(spk);
@@ -227,7 +232,7 @@ public class MerkleScheduleTest {
 				.willReturn(false);
 		final var read = new MerkleSchedule();
 
-		read.deserialize(fin, MerkleToken.MERKLE_VERSION);
+		read.deserialize(fin, MerkleSchedule.PRE_RELEASE_0180_VERSION);
 
 		assertEquals(subject, read);
 		assertTrue(read.signatories().contains(fpk));
@@ -236,6 +241,37 @@ public class MerkleScheduleTest {
 		assertFalse(read.isDeleted());
 		assertEquals(grpcResolutionTime, read.executionTime());
 		assertEquals(subject.ordinaryViewOfScheduledTxn(), read.ordinaryViewOfScheduledTxn());
+		assertNotEquals(EntityNum.fromInt(number), read.getKey());
+	}
+
+	@Test
+	void deserializeWorksPost0180() throws IOException {
+		final var fin = mock(SerializableDataInputStream.class);
+		subject.witnessValidEd25519Signature(fpk);
+		subject.witnessValidEd25519Signature(spk);
+		subject.markExecuted(resolutionTime);
+		given(fin.readLong()).willReturn(subject.expiry());
+		given(fin.readInt()).willReturn(2).willReturn(number);
+		given(fin.readByteArray(Integer.MAX_VALUE)).willReturn(bodyBytes);
+		given(fin.readByteArray(MerkleSchedule.NUM_ED25519_PUBKEY_BYTES))
+				.willReturn(fpk)
+				.willReturn(spk);
+		given(serdes.readNullableInstant(fin)).willReturn(RichInstant.fromJava(resolutionTime));
+		given(fin.readBoolean())
+				.willReturn(true)
+				.willReturn(false);
+		final var read = new MerkleSchedule();
+
+		read.deserialize(fin, MerkleSchedule.RELEASE_0180_VERSION);
+
+		assertEquals(subject, read);
+		assertTrue(read.signatories().contains(fpk));
+		assertTrue(read.signatories().contains(spk));
+		assertTrue(read.isExecuted());
+		assertFalse(read.isDeleted());
+		assertEquals(grpcResolutionTime, read.executionTime());
+		assertEquals(subject.ordinaryViewOfScheduledTxn(), read.ordinaryViewOfScheduledTxn());
+		assertEquals(EntityNum.fromInt(number), read.getKey());
 	}
 
 	@Test
@@ -300,6 +336,7 @@ public class MerkleScheduleTest {
 		subject.markDeleted(resolutionTime);
 
 		final var expected = "MerkleSchedule{"
+				+ "number=123456 <-> 0.0.123456, "
 				+ "scheduledTxn=" + scheduledTxn + ", "
 				+ "expiry=" + expiry + ", "
 				+ "executed=" + false + ", "
@@ -325,7 +362,7 @@ public class MerkleScheduleTest {
 
 	@Test
 	void validVersion() {
-		assertEquals(MerkleSchedule.MERKLE_VERSION, subject.getVersion());
+		assertEquals(MerkleSchedule.CURRENT_VERSION, subject.getVersion());
 	}
 
 	@Test

@@ -34,7 +34,7 @@ import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 @Command(
 		name = "balance",
 		subcommands = { HelpCommand.class },
-		description = "Retrieve the balance of account(s) on the target network")
+		description = "Checks account balances")
 public class BalanceCommand implements Callable<Integer> {
 	@ParentCommand
 	AccountsCommand accountsCommand;
@@ -52,8 +52,8 @@ public class BalanceCommand implements Callable<Integer> {
 		COMMON_MESSAGES.printGlobalInfo(config);
 
 		StringBuilder balanceRegister = new StringBuilder();
-		String serviceBorder = "---------------------|----------------------|\n";
-		balanceRegister.append(serviceBorder);
+		String serviceBorder = "---------------------|----------------------|";
+		balanceRegister.append(serviceBorder).append("\n");
 		balanceRegister.append(String.format("%20s | %20s |\n", "Account Id", "Balance"));
 		balanceRegister.append(serviceBorder);
 
@@ -61,8 +61,6 @@ public class BalanceCommand implements Callable<Integer> {
 
 		var delegate = new BalanceSuite(config.asSpecConfig(), accounts);
 		delegate.runSuiteSync();
-
-
 
 		return 0;
 	}

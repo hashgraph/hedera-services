@@ -9,9 +9,9 @@ package com.hedera.services.fees.calculation.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,9 +22,9 @@ package com.hedera.services.fees.calculation.utils;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.files.HFileMeta;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.usage.file.FileAppendMeta;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
@@ -36,7 +36,7 @@ import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -57,13 +57,13 @@ public class OpUsageCtxHelper {
 
 	private final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
 
+	private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
 	private final StateView workingView;
-	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
 
 	@Inject
 	public OpUsageCtxHelper(
 			StateView workingView,
-			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens
+			Supplier<MerkleMap<EntityNum, MerkleToken>> tokens
 	) {
 		this.tokens = tokens;
 		this.workingView = workingView;
@@ -81,7 +81,7 @@ public class OpUsageCtxHelper {
 	}
 
 	public ExtantFeeScheduleContext ctxForFeeScheduleUpdate(TokenFeeScheduleUpdateTransactionBody op) {
-		final var key = MerkleEntityId.fromTokenId(op.getTokenId());
+		final var key = EntityNum.fromTokenId(op.getTokenId());
 		final var token = tokens.get().get(key);
 		if (token == null) {
 			return MISSING_FEE_SCHEDULE_UPDATE_CTX;
@@ -92,8 +92,8 @@ public class OpUsageCtxHelper {
 	private SubType getSubTypeFor(TokenID token) {
 		final var tokenType = workingView.tokenType(token);
 		SubType subType = null;
-		if(tokenType.isPresent()) {
-			if(tokenType.get() == NON_FUNGIBLE_UNIQUE) {
+		if (tokenType.isPresent()) {
+			if (tokenType.get() == NON_FUNGIBLE_UNIQUE) {
 				subType = TOKEN_NON_FUNGIBLE_UNIQUE;
 			} else {
 				subType = TOKEN_FUNGIBLE_COMMON;
@@ -119,7 +119,7 @@ public class OpUsageCtxHelper {
 		final var subType = getSubTypeFor(token);
 
 		long lifeTime = 0L;
-		if(subType == TOKEN_NON_FUNGIBLE_UNIQUE) {
+		if (subType == TOKEN_NON_FUNGIBLE_UNIQUE) {
 			final var now = txn.getTxnId().getTransactionValidStart().getSeconds();
 			final var tokenIfPresent = workingView.tokenWith(token);
 			lifeTime = tokenIfPresent.map(t -> Math.max(0L, t.expiry() - now)).orElse(0L);

@@ -132,11 +132,11 @@ public class ConfigManager {
 		return finalPassphrase;
 	}
 
-	private boolean isValid(File keyFile, Optional<String> passphrase) {
+	public static boolean isValid(File keyFile, Optional<String> passphrase) {
 		return passphrase.isPresent() && unlocks(keyFile, passphrase.get());
 	}
 
-	private String keysLoc() {
+	public String keysLoc() {
 		return targetName + "/keys";
 	}
 
@@ -197,9 +197,5 @@ public class ConfigManager {
 
 	public String getTargetName() {
 		return targetName;
-	}
-
-	public NetConfig getTargetNet() {
-		return targetNet;
 	}
 }

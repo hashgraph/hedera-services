@@ -20,15 +20,18 @@ package com.hedera.services.usage.crypto;
  * ‍
  */
 
+import com.google.protobuf.Int32Value;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
-import com.google.protobuf.UInt32Value;
 import com.hedera.services.test.IdUtils;
 import com.hedera.services.test.KeyUtils;
+import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.QueryUsage;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.file.FileOpsUsage;
+import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
@@ -38,6 +41,8 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -143,41 +148,62 @@ class CryptoOpsUsageTest {
 	}
 
 	@Test
-	void estimatesCreationWithMaxAutoAssociationsAsExpected() {
+	void accumulatesBptAndRbhAsExpectedForCryptoCreateWithMaxAutoAssociations() {
 		givenCreationOpWithMaxAutoAssociaitons();
-		// and given:
-		long rb = basicReprBytes();
-		long bytesUsed = basicReprBytes() - CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
-				+ 2 * LONG_SIZE + BOOL_SIZE;
+		final ByteString canonicalSig = ByteString.copyFromUtf8(
+				"0123456789012345678901234567890123456789012345678901234567890123");
+		final SignatureMap onePairSigMap = SignatureMap.newBuilder()
+				.addSigPair(SignaturePair.newBuilder()
+						.setPubKeyPrefix(ByteString.copyFromUtf8("a"))
+						.setEd25519(canonicalSig))
+				.build();
+		final SigUsage singleSigUsage = new SigUsage(
+				1, onePairSigMap.getSerializedSize(), 1);
+		final var opMeta = new CryptoCreateMeta(txn);
+		final var baseMeta = new BaseTransactionMeta(memo.length(), 0);
 
-		// when:
-		var estimate = subject.cryptoCreateUsage(txn, sigUsage);
+		var actual = new UsageAccumulator();
+		var expected = new UsageAccumulator();
 
-		// then:
-		assertEquals(A_USAGES_MATRIX, estimate);
-		// and:
-		verify(base).addBpt(bytesUsed);
-		verify(base).addRbs(rb * secs);
-		verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+		var baseSize = memo.length() + getAccountKeyStorageSize(key) + BASIC_ENTITY_ID_SIZE + INT_SIZE;
+		expected.resetForTransaction(baseMeta, singleSigUsage);
+		expected.addBpt(baseSize + 2 * LONG_SIZE + BOOL_SIZE);
+		expected.addRbs((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + baseSize) * secs);
+		expected.addRbs(maxAutoAssociations * INT_SIZE * secs * 27);
+		expected.addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+
+		subject.cryptoCreateUsage(singleSigUsage, baseMeta, opMeta, actual);
+
+		assertEquals(expected, actual);
 	}
 
 	@Test
-	void estimatesCreationWithOutMaxAutoAssociationsAsExpected() {
+	void accumulatesBptAndRbhAsExpectedForCryptoCreateWithoutMaxAutoAssociations() {
 		givenCreationOpWithOutMaxAutoAssociaitons();
-		// and given:
-		long rb = basicReprBytes() - INT_SIZE;
-		long bytesUsed = basicReprBytes() - CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
-				+ 2 * LONG_SIZE + BOOL_SIZE - INT_SIZE;
+		final ByteString canonicalSig = ByteString.copyFromUtf8(
+				"0123456789012345678901234567890123456789012345678901234567890123");
+		final SignatureMap onePairSigMap = SignatureMap.newBuilder()
+				.addSigPair(SignaturePair.newBuilder()
+						.setPubKeyPrefix(ByteString.copyFromUtf8("a"))
+						.setEd25519(canonicalSig))
+				.build();
+		final SigUsage singleSigUsage = new SigUsage(
+				1, onePairSigMap.getSerializedSize(), 1);
+		final var opMeta = new CryptoCreateMeta(txn);
+		final var baseMeta = new BaseTransactionMeta(memo.length(), 0);
 
-		// when:
-		var estimate = subject.cryptoCreateUsage(txn, sigUsage);
+		var actual = new UsageAccumulator();
+		var expected = new UsageAccumulator();
 
-		// then:
-		assertEquals(A_USAGES_MATRIX, estimate);
-		// and:
-		verify(base).addBpt(bytesUsed);
-		verify(base).addRbs(rb * secs);
-		verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+		var baseSize = memo.length() + getAccountKeyStorageSize(key) + BASIC_ENTITY_ID_SIZE;
+		expected.resetForTransaction(baseMeta, singleSigUsage);
+		expected.addBpt(baseSize + 2 * LONG_SIZE + BOOL_SIZE);
+		expected.addRbs((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + baseSize) * secs);
+		expected.addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+
+		subject.cryptoCreateUsage(singleSigUsage, baseMeta, opMeta, actual);
+
+		assertEquals(expected, actual);
 	}
 
 	@Test
@@ -311,7 +337,7 @@ class CryptoOpsUsageTest {
 				.setProxyAccountID(proxy)
 				.setMemo(StringValue.newBuilder().setValue(memo))
 				.setKey(key)
-				.setMaxAutomaticTokenAssociations(UInt32Value.of(maxAutoAssociations))
+				.setMaxAutomaticTokenAssociations(Int32Value.of(maxAutoAssociations))
 				.build();
 		setUpdateTxn();
 	}

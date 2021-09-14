@@ -21,7 +21,6 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -36,8 +35,8 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import java.io.IOException;
 import java.util.Objects;
 
-import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.codeFromNum;
-import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.numFromCode;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
 
 public class EntityId implements SelfSerializable {
 	private static final long DEFAULT_SHARD = 0L;
@@ -244,10 +243,6 @@ public class EntityId implements SelfSerializable {
 				.setRealmNum(realm)
 				.setAccountNum(num)
 				.build();
-	}
-
-	public MerkleEntityId asMerkle() {
-		return new MerkleEntityId(shard, realm, num);
 	}
 
 	public Id asId() {

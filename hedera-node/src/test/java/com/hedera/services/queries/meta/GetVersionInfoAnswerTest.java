@@ -49,19 +49,20 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 class GetVersionInfoAnswerTest {
-	private String node = "0.0.3";
-	private long fee = 1_234L;
-	private String payer = "0.0.12345";
-	private Transaction paymentTxn;
-	StateView view;
-
-	SemanticVersion expectedVersions = SemanticVersion.newBuilder()
+	private final String node = "0.0.3";
+	private final long fee = 1_234L;
+	private final String payer = "0.0.12345";
+	private final SemanticVersion expectedVersions = SemanticVersion.newBuilder()
 			.setMajor(0)
 			.setMinor(4)
 			.setPatch(0)
 			.build();
-	SemanticVersions semanticVersions;
-	GetVersionInfoAnswer subject;
+
+	private Transaction paymentTxn;
+	private StateView view;
+
+	private SemanticVersions semanticVersions;
+	private GetVersionInfoAnswer subject;
 
 	@BeforeEach
 	private void setup() throws Throwable {

@@ -316,7 +316,6 @@ class SignedTxnAccessorTest {
 
 	@Test
 	void setTokenCreateUsageMetaWorks() {
-		givenAutoRenewBasedOp();
 		final var txn = signedTokenCreateTxn();
 		final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
 		final var spanMapAccessor = accessor.getSpanMapAccessor();
@@ -328,6 +327,37 @@ class SignedTxnAccessorTest {
 		assertEquals(1, expandedMeta.getNumTokens());
 		assertEquals(1070, expandedMeta.getBaseSize());
 		assertEquals(TOKEN_FUNGIBLE_COMMON, accessor.getSubType());
+	}
+
+	@Test
+	void setCryptoCreateUsageMetaWorks() {
+		final var txn = signedCryptoCreateTxn();
+		final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
+		final var spanMapAccessor = accessor.getSpanMapAccessor();
+
+		final var expandedMeta = spanMapAccessor.getCryptoCreateMeta(accessor);
+
+		assertEquals(137, expandedMeta.getBaseSize());
+		assertEquals(autoRenewPeriod, expandedMeta.getLifeTime());
+		assertEquals(10, expandedMeta.getMaxAutomaticAssociations());
+	}
+
+	private Transaction signedCryptoCreateTxn() {
+		return buildTransactionFrom(cryptoCreateOp());
+	}
+
+	private TransactionBody cryptoCreateOp() {
+		final var op = CryptoCreateTransactionBody.newBuilder()
+				.setMemo(memo)
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
+				.setKey(adminKey)
+				.setMaxAutomaticTokenAssociations(10);
+		return TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder()
+								.setSeconds(now)))
+				.setCryptoCreateAccount(op)
+				.build();
 	}
 
 	private Transaction signedFeeScheduleUpdateTxn() {

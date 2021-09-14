@@ -26,14 +26,14 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -94,7 +94,7 @@ class ToStringAccountsExporterTest {
 	@Test
 	void toFileDoesNothingIfNoExportRequested() {
 		// when:
-		subject.toFile(new FCMap<>());
+		subject.toFile(new MerkleMap<>());
 
 		// expect:
 		assertFalse(new File(testExportLoc).exists());
@@ -106,7 +106,7 @@ class ToStringAccountsExporterTest {
 		given(nodeLocalProperties.accountsExportPath()).willReturn("/this/is/not/a/path");
 
 		// expect:
-		assertDoesNotThrow(() -> subject.toFile(new FCMap<>()));
+		assertDoesNotThrow(() -> subject.toFile(new MerkleMap<>()));
 		// and:
 		assertThat(logCaptor.warnLogs(), contains(startsWith("Could not export accounts to '/this/is/not/a/path'")));
 	}
@@ -123,7 +123,7 @@ class ToStringAccountsExporterTest {
 		// and:
 		var desired = "0.0.1\n" +
 				"---\n" +
-				"MerkleAccount{state=MerkleAccountState{key=ed25519: \"first-fake\"\n" +
+				"MerkleAccount{state=MerkleAccountState{number=1 <-> 0.0.1, key=ed25519: \"first-fake\"\n" +
 				", expiry=1234567, balance=1, autoRenewSecs=555555, memo=This ecstasy doth unperplex, deleted=false, " +
 				"smartContract=true, receiverSigRequired=true, proxy=EntityId{shard=0, realm=0, num=0}, nftsOwned=0, " +
 				"alreadyUsedAutoAssociations=7, maxAutoAssociations=10}, # records=0, " +
@@ -131,16 +131,16 @@ class ToStringAccountsExporterTest {
 				"\n" +
 				"0.0.2\n" +
 				"---\n" +
-				"MerkleAccount{state=MerkleAccountState{key=ed25519: \"second-fake\"\n" +
+				"MerkleAccount{state=MerkleAccountState{number=2 <-> 0.0.2, key=ed25519: \"second-fake\"\n" +
 				", expiry=7654321, balance=2, autoRenewSecs=444444, memo=We said, and show us what we love, " +
 				"deleted=true, smartContract=false, receiverSigRequired=false, proxy=EntityId{shard=0, realm=0, " +
 				"num=0}, nftsOwned=0, alreadyUsedAutoAssociations=0, maxAutoAssociations=0}, # records=0, tokens=[1234.0.0]}\n";
 
 		// given:
-		FCMap<MerkleEntityId, MerkleAccount> accounts = new FCMap<>();
+		MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
 		// and:
-		accounts.put(new MerkleEntityId(0, 0, 2), account2);
-		accounts.put(new MerkleEntityId(0, 0, 1), account1);
+		accounts.put(EntityNum.fromInt(2), account2);
+		accounts.put(EntityNum.fromInt(1), account1);
 		// and:
 		given(nodeLocalProperties.exportAccountsOnStartup()).willReturn(true);
 		given(nodeLocalProperties.accountsExportPath()).willReturn(testExportLoc);
