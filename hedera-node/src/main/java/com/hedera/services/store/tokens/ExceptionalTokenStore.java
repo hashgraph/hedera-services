@@ -52,11 +52,6 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
-	public ResponseCodeEnum freeze(AccountID aId, TokenID tId) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public boolean isKnownTreasury(AccountID aId) {
 		throw new UnsupportedOperationException();
 	}

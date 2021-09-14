@@ -31,8 +31,6 @@ class ExceptionalTokenStoreTest {
 	void allButSetAreUse() {
 		// expect:
 		assertThrows(UnsupportedOperationException.class,
-				() -> NOOP_TOKEN_STORE.freeze(null, null));
-		assertThrows(UnsupportedOperationException.class,
 				() -> NOOP_TOKEN_STORE.adjustBalance(null, null, 0));
 		assertThrows(UnsupportedOperationException.class,
 				() -> NOOP_TOKEN_STORE.changeOwner(null, null, null));
