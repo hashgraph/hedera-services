@@ -59,7 +59,7 @@ public class ExpandHandleSpanMapAccessor {
 		return (ImpliedTransfers) accessor.getSpanMap().get(IMPLIED_TRANSFERS_KEY);
 	}
 
-	public void setTokenCreate(TxnAccessor accessor, TokenCreateMeta tokenCreateMeta) {
+	public void setTokenCreateMeta(TxnAccessor accessor, TokenCreateMeta tokenCreateMeta) {
 		accessor.getSpanMap().put(TOKEN_CREATE_META_KEY, tokenCreateMeta);
 	}
 
@@ -67,7 +67,7 @@ public class ExpandHandleSpanMapAccessor {
 		return (TokenCreateMeta) accessor.getSpanMap().get(TOKEN_CREATE_META_KEY);
 	}
 
-	public void setCryptoCreate(TxnAccessor accessor, CryptoCreateMeta cryptoCreateMeta) {
+	public void setCryptoCreateMeta(TxnAccessor accessor, CryptoCreateMeta cryptoCreateMeta) {
 		accessor.getSpanMap().put(CRYPTO_CREATE_META_KEY, cryptoCreateMeta);
 	}
 

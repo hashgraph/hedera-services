@@ -85,12 +85,16 @@ public enum TokenOpsUsageUtils {
 				.build();
 	}
 
-	public TokenMintMeta tokenMintUsageFrom(final TransactionBody txn, final SubType subType, final long expectedLifeTime) {
+	public TokenMintMeta tokenMintUsageFrom(
+			final TransactionBody txn,
+			final SubType subType,
+			final long expectedLifeTime
+	) {
 		var op = txn.getTokenMint();
 		int bpt = 0;
 		long rbs = 0;
 		int transferRecordRb = 0;
-		if(subType == TOKEN_NON_FUNGIBLE_UNIQUE) {
+		if (subType == TOKEN_NON_FUNGIBLE_UNIQUE) {
 			var metadataBytes = 0;
 			for (ByteString o : op.getMetadataList()) {
 				metadataBytes += o.size();
@@ -103,7 +107,7 @@ public enum TokenOpsUsageUtils {
 			transferRecordRb = TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 1, 0);
 		}
 		bpt += BASIC_ENTITY_ID_SIZE;
-		return new TokenMintMeta( bpt, subType, transferRecordRb, rbs);
+		return new TokenMintMeta(bpt, subType, transferRecordRb, rbs);
 	}
 
 	public TokenBurnMeta tokenBurnUsageFrom(final TransactionBody txn, final SubType subType) {
@@ -114,14 +118,14 @@ public enum TokenOpsUsageUtils {
 	public TokenWipeMeta tokenWipeUsageFrom(final TransactionBody txn, final SubType subType) {
 		var op = txn.getTokenWipe();
 
-		return retrieveRawDataFrom(subType, op::getSerialNumbersCount, TokenWipeMeta::new );
+		return retrieveRawDataFrom(subType, op::getSerialNumbersCount, TokenWipeMeta::new);
 	}
 
-	public <R> R retrieveRawDataFrom(SubType subType, IntSupplier getDataForNFT,  Producer<R> producer) {
+	public <R> R retrieveRawDataFrom(SubType subType, IntSupplier getDataForNFT, Producer<R> producer) {
 		int serialNumsCount = 0;
 		int bpt = 0;
 		int transferRecordRb = 0;
-		if(subType == TOKEN_NON_FUNGIBLE_UNIQUE) {
+		if (subType == TOKEN_NON_FUNGIBLE_UNIQUE) {
 			serialNumsCount = getDataForNFT.getAsInt();
 			transferRecordRb = TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 0, serialNumsCount);
 			bpt = serialNumsCount * LONG_SIZE;

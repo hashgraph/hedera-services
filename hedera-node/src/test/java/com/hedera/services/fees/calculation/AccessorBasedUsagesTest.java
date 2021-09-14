@@ -9,9 +9,9 @@ package com.hedera.services.fees.calculation;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -217,7 +217,7 @@ class AccessorBasedUsagesTest {
 
 		subject.assess(sigUsage, txnAccessor, accumulator);
 
-		verify(tokenOpsUsage).tokenCreateUsage(sigUsage, baseMeta, opMeta,  accumulator);
+		verify(tokenOpsUsage).tokenCreateUsage(sigUsage, baseMeta, opMeta, accumulator);
 	}
 
 	@Test
@@ -234,7 +234,7 @@ class AccessorBasedUsagesTest {
 		subject.assess(sigUsage, txnAccessor, accumulator);
 
 		// then:
-		verify(tokenOpsUsage).tokenBurnUsage(sigUsage, baseMeta, tokenBurnMeta,  accumulator);
+		verify(tokenOpsUsage).tokenBurnUsage(sigUsage, baseMeta, tokenBurnMeta, accumulator);
 	}
 
 	@Test
@@ -251,7 +251,7 @@ class AccessorBasedUsagesTest {
 		subject.assess(sigUsage, txnAccessor, accumulator);
 
 		// then:
-		verify(tokenOpsUsage).tokenWipeUsage(sigUsage, baseMeta, tokenWipeMeta,  accumulator);
+		verify(tokenOpsUsage).tokenWipeUsage(sigUsage, baseMeta, tokenWipeMeta, accumulator);
 	}
 
 	@Test
@@ -268,9 +268,10 @@ class AccessorBasedUsagesTest {
 		subject.assess(sigUsage, txnAccessor, accumulator);
 
 		// then:
-		verify(tokenOpsUsage).tokenMintUsage(sigUsage, baseMeta, tokenMintMeta,  accumulator);
-  }
-  
+		verify(tokenOpsUsage).tokenMintUsage(sigUsage, baseMeta, tokenMintMeta, accumulator);
+	}
+
+	@Test
 	void worksAsExpectedForCryptoCreate() {
 		final var baseMeta = new BaseTransactionMeta(100, 0);
 		final var opMeta = new CryptoCreateMeta.Builder()
@@ -319,9 +320,9 @@ class AccessorBasedUsagesTest {
 	}
 
 	private List<CustomFee> fees() {
-		final var collector = new EntityId(1, 2 ,3);
-		final var aDenom = new EntityId(2, 3 ,4);
-		final var bDenom = new EntityId(3, 4 ,5);
+		final var collector = new EntityId(1, 2, 3);
+		final var aDenom = new EntityId(2, 3, 4);
+		final var bDenom = new EntityId(3, 4, 5);
 
 		return List.of(
 				fixedFee(1, null, collector),

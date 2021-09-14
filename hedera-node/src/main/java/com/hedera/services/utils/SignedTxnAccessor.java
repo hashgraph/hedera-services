@@ -56,8 +56,13 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSu
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
 /**
  * Encapsulates access to several commonly referenced parts of a gRPC {@link Transaction}.
@@ -156,10 +161,19 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 	@Override
 	public SubType getSubType() {
-		if(getFunction() == CryptoTransfer) {
+		if (function == CryptoTransfer) {
 			return xferUsageMeta.getSubType();
-		} else if (getFunction() == TokenCreate) {
+		} else if (function == TokenCreate) {
 			return SPAN_MAP_ACCESSOR.getTokenCreateMeta(this).getSubType();
+		} else if (function == TokenMint) {
+			final var op = getTxn().getTokenMint();
+			return op.getMetadataCount() > 0 ? TOKEN_NON_FUNGIBLE_UNIQUE : TOKEN_FUNGIBLE_COMMON;
+		} else if (function == TokenBurn) {
+			final var op = getTxn().getTokenBurn();
+			return op.getSerialNumbersCount() > 0 ? TOKEN_NON_FUNGIBLE_UNIQUE : TOKEN_FUNGIBLE_COMMON;
+		} else if (function == TokenAccountWipe) {
+			final var op = getTxn().getTokenWipe();
+			return op.getSerialNumbersCount() > 0 ? TOKEN_NON_FUNGIBLE_UNIQUE : TOKEN_FUNGIBLE_COMMON;
 		}
 		return SubType.DEFAULT;
 	}
@@ -260,7 +274,8 @@ public class SignedTxnAccessor implements TxnAccessor {
 	@Override
 	public SubmitMessageMeta availSubmitUsageMeta() {
 		if (function != ConsensusSubmitMessage) {
-			throw new IllegalStateException("Cannot get ConsensusSubmitMessage metadata for a " + function + ACCESSOR_LITERAL);
+			throw new IllegalStateException(
+					"Cannot get ConsensusSubmitMessage metadata for a " + function + ACCESSOR_LITERAL);
 		}
 		return submitMessageMeta;
 	}
@@ -332,11 +347,11 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 	private void setTokenCreateUsageMeta() {
 		final var tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(txn);
-		SPAN_MAP_ACCESSOR.setTokenCreate(this, tokenCreateMeta);
+		SPAN_MAP_ACCESSOR.setTokenCreateMeta(this, tokenCreateMeta);
 	}
 
 	private void setCryptoCreateUsageMeta() {
 		final var cryptoCreateMeta = new CryptoCreateMeta(txn);
-		SPAN_MAP_ACCESSOR.setCryptoCreate(this, cryptoCreateMeta);
+		SPAN_MAP_ACCESSOR.setCryptoCreateMeta(this, cryptoCreateMeta);
 	}
 }

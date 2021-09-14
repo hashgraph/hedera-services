@@ -9,9 +9,9 @@ package com.hedera.services.fees.calculation.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,17 +24,15 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.FcCustomFee;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.usage.file.FileAppendMeta;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.TokenBurnMeta;
 import com.hedera.services.usage.token.meta.TokenMintMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.TxnAccessor;
-import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.merkle.map.MerkleMap;
 
@@ -46,9 +44,7 @@ import java.util.function.Supplier;
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FIXED_FEE;
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FRACTIONAL_FEE;
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
-import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
-import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 @Singleton
 public class OpUsageCtxHelper {
@@ -89,42 +85,25 @@ public class OpUsageCtxHelper {
 		return new ExtantFeeScheduleContext(token.expiry(), curFeeScheduleReprSize(token.customFeeSchedule()));
 	}
 
-	private SubType getSubTypeFor(TokenID token) {
-		final var tokenType = workingView.tokenType(token);
-		SubType subType = null;
-		if(tokenType.isPresent()) {
-			if(tokenType.get() == NON_FUNGIBLE_UNIQUE) {
-				subType = TOKEN_NON_FUNGIBLE_UNIQUE;
-			} else {
-				subType = TOKEN_FUNGIBLE_COMMON;
-			}
-		}
-		return subType;
+	public TokenBurnMeta metaForTokenBurn(TxnAccessor accessor) {
+		return TOKEN_OPS_USAGE_UTILS.tokenBurnUsageFrom(accessor.getTxn(), accessor.getSubType());
 	}
 
-	public TokenBurnMeta metaForTokenBurn(TxnAccessor txn) {
-		final var token = txn.getTxn().getTokenBurn().getToken();
-		final var subType = getSubTypeFor(token);
-		return TOKEN_OPS_USAGE_UTILS.tokenBurnUsageFrom(txn.getTxn(), subType);
+	public TokenWipeMeta metaForTokenWipe(TxnAccessor accessor) {
+		return TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(accessor.getTxn(), accessor.getSubType());
 	}
 
-	public TokenWipeMeta metaForTokenWipe(TxnAccessor txn) {
-		final var token = txn.getTxn().getTokenWipe().getToken();
-		final var subType = getSubTypeFor(token);
-		return TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(txn.getTxn(), subType);
-	}
-
-	public TokenMintMeta metaForTokenMint(TxnAccessor txn) {
-		final var token = txn.getTxn().getTokenMint().getToken();
-		final var subType = getSubTypeFor(token);
+	public TokenMintMeta metaForTokenMint(TxnAccessor accessor) {
+		final var subType = accessor.getSubType();
 
 		long lifeTime = 0L;
-		if(subType == TOKEN_NON_FUNGIBLE_UNIQUE) {
-			final var now = txn.getTxnId().getTransactionValidStart().getSeconds();
+		if (subType == TOKEN_NON_FUNGIBLE_UNIQUE) {
+			final var token = accessor.getTxn().getTokenMint().getToken();
+			final var now = accessor.getTxnId().getTransactionValidStart().getSeconds();
 			final var tokenIfPresent = workingView.tokenWith(token);
 			lifeTime = tokenIfPresent.map(t -> Math.max(0L, t.expiry() - now)).orElse(0L);
 		}
-		return TOKEN_OPS_USAGE_UTILS.tokenMintUsageFrom(txn.getTxn(), subType, lifeTime);
+		return TOKEN_OPS_USAGE_UTILS.tokenMintUsageFrom(accessor.getTxn(), subType, lifeTime);
 	}
 
 	private int curFeeScheduleReprSize(List<FcCustomFee> feeSchedule) {

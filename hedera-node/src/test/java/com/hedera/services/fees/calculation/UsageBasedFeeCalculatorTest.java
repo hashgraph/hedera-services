@@ -99,25 +99,25 @@ import static org.mockito.BDDMockito.willThrow;
 
 class UsageBasedFeeCalculatorTest {
 	private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
-	private FeeComponents mockFees = FeeComponents.newBuilder()
+	private final FeeComponents mockFees = FeeComponents.newBuilder()
 			.setMax(1_234_567L)
 			.setGas(5_000_000L)
 			.setBpr(1_000_000L)
 			.setBpt(2_000_000L)
 			.setRbh(3_000_000L)
 			.setSbh(4_000_000L).build();
-	private FeeData mockFeeData = FeeData.newBuilder()
+	private final FeeData mockFeeData = FeeData.newBuilder()
 			.setNetworkdata(mockFees).setNodedata(mockFees).setServicedata(mockFees).setSubType(SubType.DEFAULT).build();
-	private Map<SubType, FeeData> currentPrices = Map.of(
+	private final Map<SubType, FeeData> currentPrices = Map.of(
 			SubType.DEFAULT, mockFeeData,
 			SubType.TOKEN_FUNGIBLE_COMMON, mockFeeData,
 			SubType.TOKEN_NON_FUNGIBLE_UNIQUE, mockFeeData);
-	private FeeData defaultCurrentPrices = mockFeeData;
-	private FeeData resourceUsage = mockFeeData;
-	private ExchangeRate currentRate = ExchangeRate.newBuilder().setCentEquiv(22).setHbarEquiv(1).build();
+	private final FeeData defaultCurrentPrices = mockFeeData;
+	private final FeeData resourceUsage = mockFeeData;
+	private final ExchangeRate currentRate = ExchangeRate.newBuilder().setCentEquiv(22).setHbarEquiv(1).build();
 	private Query query;
 	private StateView view;
-	private Timestamp at = Timestamp.newBuilder().setSeconds(1_234_567L).build();
+	private final Timestamp at = Timestamp.newBuilder().setSeconds(1_234_567L).build();
 	private HbarCentExchange exchange;
 	private UsagePricesProvider usagePrices;
 	private TxnResourceUsageEstimator correctOpEstimator;
@@ -125,21 +125,21 @@ class UsageBasedFeeCalculatorTest {
 	private QueryResourceUsageEstimator correctQueryEstimator;
 	private QueryResourceUsageEstimator incorrectQueryEstimator;
 	private Map<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators;
-	private long balance = 1_234_567L;
-	private AccountID payer = IdUtils.asAccount("0.0.75231");
-	private AccountID receiver = IdUtils.asAccount("0.0.86342");
+	private final long balance = 1_234_567L;
+	private final AccountID payer = IdUtils.asAccount("0.0.75231");
+	private final AccountID receiver = IdUtils.asAccount("0.0.86342");
 
-	private TokenID tokenId = IdUtils.asToken("0.0.123456");
+	private final TokenID tokenId = IdUtils.asToken("0.0.123456");
 
 	/* Has nine simple keys. */
-	private KeyTree complexKey = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
+	private final KeyTree complexKey = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 	private JKey payerKey;
 	private Transaction signedTxn;
 	private SignedTxnAccessor accessor;
 	private AutoRenewCalcs autoRenewCalcs;
 	private PricedUsageCalculator pricedUsageCalculator;
 
-	private AtomicLong suggestedMultiplier = new AtomicLong(1L);
+	private final AtomicLong suggestedMultiplier = new AtomicLong(1L);
 
 	private UsageBasedFeeCalculator subject;
 
@@ -553,7 +553,7 @@ class UsageBasedFeeCalculatorTest {
 		assertEquals(fees.getServiceFee(), expectedFees.getServiceFee());
 	}
 
-	private Function<SigValueObj, ArgumentMatcher<SigValueObj>> factory = expectedSigUsage -> sigUsage ->
+	private final Function<SigValueObj, ArgumentMatcher<SigValueObj>> factory = expectedSigUsage -> sigUsage ->
 			expectedSigUsage.getSignatureSize() == sigUsage.getSignatureSize()
 					&& expectedSigUsage.getPayerAcctSigCount() == sigUsage.getPayerAcctSigCount()
 					&& expectedSigUsage.getSignatureSize() == sigUsage.getSignatureSize();
