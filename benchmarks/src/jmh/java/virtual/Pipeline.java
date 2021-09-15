@@ -59,8 +59,7 @@ public class Pipeline<K extends VirtualKey, V extends VirtualValue> {
             final var cf = new CompletableFuture<Hash>();
             final var map = hashingExchanger.exchange(new HashingData(cf)).map;
             try {
-                final var hashingFuture = map.hash();
-                cf.complete(hashingFuture.get()); // blocks, which is what I want.
+                cf.complete(map.getHash());
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
@@ -106,7 +105,8 @@ public class Pipeline<K extends VirtualKey, V extends VirtualValue> {
         archiveService.execute(new Task(() -> {
             final var map = archiveExchanger.exchange(null);
             if (map != null) {
-                map.archive();
+                /* TODO - what is the 0.18.1 equivalent? */
+//                map.archive();
                 finishedArchiving.set(true);
             }
         }));

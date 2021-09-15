@@ -147,7 +147,7 @@ public class CommonTestUtils {
                 iteration,iteration,iteration,
                 randomString(256, random),
                 false,false,false,
-                new EntityId(iteration,iteration,iteration));
+                new EntityId(iteration,iteration,iteration), 1001, 0);
     }
 
     public static String randomString(int length, Random random) {

@@ -1,7 +1,7 @@
 package virtual;
 
 import com.hedera.services.state.jasperdb.VirtualDataSourceJasperDB;
-import com.hedera.services.state.jasperdb.collections.HalfDiskHashMap;
+import com.hedera.services.state.jasperdb.files.HalfDiskHashMap;
 import com.hedera.services.state.merkle.virtual.ContractKey;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
