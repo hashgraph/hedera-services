@@ -227,14 +227,6 @@ class BaseOperationUsage {
 
 
 	UsageAccumulator tokenFreezeAccount() {
-		final var tokenID = TokenID.newBuilder().setTokenNum(1002).build();
-		final var accountID = AccountID.newBuilder().setAccountNum(1001).build();
-		final var canonicalTxn = TransactionBody.newBuilder()
-				.setTokenFreeze(TokenFreezeAccountTransactionBody.newBuilder()
-						.setToken(tokenID)
-						.setAccount(accountID))
-				.build();
-
 		final var tokenFreezeMeta = TOKEN_OPS_USAGE_UTILS.tokenFreezeUsageFrom();
 		final var into = new UsageAccumulator();
 		TOKEN_OPS_USAGE.tokenFreezeUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenFreezeMeta, into);
@@ -242,14 +234,6 @@ class BaseOperationUsage {
 	}
 
 	UsageAccumulator tokenUnfreezeAccount() {
-		final var tokenID = TokenID.newBuilder().setTokenNum(1002).build();
-		final var accountID = AccountID.newBuilder().setAccountNum(1001).build();
-		final var canonicalTxn = TransactionBody.newBuilder()
-				.setTokenUnfreeze(TokenUnfreezeAccountTransactionBody.newBuilder()
-						.setToken(tokenID)
-						.setAccount(accountID))
-				.build();
-
 		final var tokenUnfreezeMeta = TOKEN_OPS_USAGE_UTILS.tokenUnfreezeUsageFrom();
 		final var into = new UsageAccumulator();
 		TOKEN_OPS_USAGE.tokenFreezeUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenUnfreezeMeta, into);
