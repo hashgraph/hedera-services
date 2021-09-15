@@ -121,7 +121,6 @@ public class ContractPerformanceSuite extends HapiApiSuite {
 			} else {
 				givenBlock =
 						new HapiSpecOperation[] {
-								fileUpdate(APP_PROPERTIES).payingWith(ADDRESS_BOOK_CONTROL),
 								fileCreate("bytecode").path(PERF_RESOURCES + test),
 								contractCreate(test).bytecode("bytecode")
 						};
