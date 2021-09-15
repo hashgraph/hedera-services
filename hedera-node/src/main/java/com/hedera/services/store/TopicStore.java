@@ -17,28 +17,28 @@ package com.hedera.services.store;
  */
 
 import com.hedera.services.records.TransactionRecordService;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.store.models.Topic;
-import com.swirlds.fcmap.FCMap;
+import com.hedera.services.utils.EntityNum;
+import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.function.Supplier;
 
 /**
- * A store which interacts with the state topics, represented in a {@link FCMap}.
+ * A store which interacts with the state topics, represented in a {@link MerkleMap}.
  * 
  * @author Yoan Sredkov
  */
 @Singleton
 public class TopicStore {
 
-	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
+	private final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics;
 	private final TransactionRecordService transactionRecordService;
 
 	@Inject
-	public TopicStore(final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics, final TransactionRecordService transactionRecordService) {
+	public TopicStore(final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics, final TransactionRecordService transactionRecordService) {
 		this.topics = topics;
 		this.transactionRecordService = transactionRecordService;
 	}
@@ -50,7 +50,7 @@ public class TopicStore {
 	 * 		- the model to be mapped onto a new {@link MerkleTopic} and persisted.
 	 */
 	public void persistNew(Topic model) {
-		final var id = model.getId().asMerkle();
+		final var id = model.getId().asEntityNum();
 		final var currentTopics = topics.get();
 		final var merkleTopic = new MerkleTopic();
 		mapModelToMerkle(model, merkleTopic);

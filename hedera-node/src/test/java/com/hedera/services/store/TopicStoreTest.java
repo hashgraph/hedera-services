@@ -17,12 +17,12 @@ package com.hedera.services.store;
  */
 
 import com.hedera.services.records.TransactionRecordService;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Topic;
-import com.swirlds.fcmap.FCMap;
+import com.hedera.services.utils.EntityNum;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,7 +37,7 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class TopicStoreTest {
 	@Mock
-	private FCMap<MerkleEntityId, MerkleTopic> topics;
+	private MerkleMap<EntityNum, MerkleTopic> topics;
 	@Mock
 	private TransactionRecordService transactionRecordService;
 	

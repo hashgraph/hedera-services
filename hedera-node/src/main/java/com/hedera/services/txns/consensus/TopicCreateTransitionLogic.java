@@ -26,20 +26,10 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TopicStore;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Topic;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.merkle.map.MerkleMap;
-import org.apache.commons.codec.DecoderException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -84,19 +74,28 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public void doStateTransition() {
-		/* --- pre-validation --- */
-		validatePreStateTransition();
-		/* --- extract gRPC --- */
+		/* --- Extract gRPC --- */
 		final var transactionBody = transactionContext.accessor().getTxn();
 		final var payerAccountId = transactionBody.getTransactionID().getAccountID();
 		final var op = transactionBody.getConsensusCreateTopic();
-		// expirationTime (currently un-enforced) is consensus timestamp of create plus the specified required
-		// autoRenewPeriod->seconds.
-		final var expirationTime = transactionContext.consensusTime().plusSeconds(op.getAutoRenewPeriod().getSeconds());
+		/* --- Validate --- */
+		final var validationResult = validator.memoCheck(op.getMemo());
+		validateTrue(OK == validationResult, validationResult);
+		validateFalse(op.hasSubmitKey() && !validator.hasGoodEncoding(op.getSubmitKey()), BAD_ENCODING);
+		validateTrue(op.hasAutoRenewPeriod(), INVALID_RENEWAL_PERIOD);
+		validateTrue(validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod()), AUTORENEW_DURATION_NOT_IN_RANGE);
+		if (op.hasAutoRenewAccount()) {
+			final var autoRenew = accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(op.getAutoRenewAccount()), INVALID_AUTORENEW_ACCOUNT);
+			validateFalse(autoRenew.isSmartContract(), INVALID_AUTORENEW_ACCOUNT);
+			validateTrue(op.hasAdminKey(), AUTORENEW_ACCOUNT_NOT_ALLOWED);
+		}
+
 		/* --- Do business logic --- */
+		final var expirationTime = transactionContext.consensusTime().plusSeconds(op.getAutoRenewPeriod().getSeconds());
 		final var topicId = entityIdSource.newAccountId(payerAccountId);
 		final var topic = Topic.fromGrpcTopicCreate(op, Id.fromGrpcAccount(topicId), expirationTime);
-		/* --- persist the topic --- */
+
+		/* --- Persist the topic --- */
 		topicStore.persistNew(topic);
 	}
 
@@ -120,30 +119,11 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 	 */
 	private ResponseCodeEnum validate(TransactionBody transactionBody) {
 		var op = transactionBody.getConsensusCreateTopic();
-		
+
 		if (op.hasAdminKey() && !validator.hasGoodEncoding(op.getAdminKey())) {
 			return BAD_ENCODING;
 		}
 
 		return OK;
 	}
-
-	/**
-	 * Validation of the post-consensus transaction just prior to state transition.
-	 * Throws {@link com.hedera.services.exceptions.InvalidTransactionException} on failed validation.
-	 */
-	private void validatePreStateTransition() {
-		final var op = transactionContext.accessor().getTxn().getConsensusCreateTopic();
-		final var validationResult = validator.memoCheck(op.getMemo());
-		validateTrue(OK == validationResult, validationResult);
-		validateFalse(op.hasSubmitKey() && !validator.hasGoodEncoding(op.getSubmitKey()), BAD_ENCODING);
-		validateTrue(op.hasAutoRenewPeriod(), INVALID_RENEWAL_PERIOD);
-		validateTrue(validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod()), AUTORENEW_DURATION_NOT_IN_RANGE);
-		if (op.hasAutoRenewAccount()) {
-			final var autoRenew = accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(op.getAutoRenewAccount()), INVALID_AUTORENEW_ACCOUNT);
-			validateFalse(autoRenew.isSmartContract(), INVALID_AUTORENEW_ACCOUNT);
-			validateTrue(op.hasAdminKey(), AUTORENEW_ACCOUNT_NOT_ALLOWED);
-		}
-	}
-
 }
