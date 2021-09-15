@@ -228,7 +228,7 @@ class AccessorBasedUsagesTest {
 		final var accumulator = new UsageAccumulator();
 		given(txnAccessor.getFunction()).willReturn(TokenBurn);
 		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
-		given(opUsageCtxHelper.metaForTokenBurn(txnAccessor)).willReturn(tokenBurnMeta);
+		given(txnAccessor.getSpanMapAccessor().getTokenBurnMeta(any())).willReturn(tokenBurnMeta);
 
 		// when:
 		subject.assess(sigUsage, txnAccessor, accumulator);
@@ -245,7 +245,7 @@ class AccessorBasedUsagesTest {
 		final var accumulator = new UsageAccumulator();
 		given(txnAccessor.getFunction()).willReturn(TokenAccountWipe);
 		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
-		given(opUsageCtxHelper.metaForTokenWipe(txnAccessor)).willReturn(tokenWipeMeta);
+		given(txnAccessor.getSpanMapAccessor().getTokenWipeMeta(any())).willReturn(tokenWipeMeta);
 
 		// when:
 		subject.assess(sigUsage, txnAccessor, accumulator);

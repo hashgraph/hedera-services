@@ -182,7 +182,7 @@ public class AccessorBasedUsages {
 			BaseTransactionMeta baseMeta,
 			UsageAccumulator into
 	) {
-		final var tokenBurnMeta = opUsageCtxHelper.metaForTokenBurn(accessor);
+		final var tokenBurnMeta = accessor.getSpanMapAccessor().getTokenBurnMeta(accessor);
 		tokenOpsUsage.tokenBurnUsage(sigUsage, baseMeta, tokenBurnMeta, into);
 	}
 
@@ -202,7 +202,7 @@ public class AccessorBasedUsages {
 			BaseTransactionMeta baseMeta,
 			UsageAccumulator into
 	) {
-		final var tokenWipeMeta = opUsageCtxHelper.metaForTokenWipe(accessor);
+		final var tokenWipeMeta = accessor.getSpanMapAccessor().getTokenWipeMeta(accessor);
 		tokenOpsUsage.tokenWipeUsage(sigUsage, baseMeta, tokenWipeMeta, into);
 	}
 }
