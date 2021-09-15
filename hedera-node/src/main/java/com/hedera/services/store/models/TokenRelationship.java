@@ -95,8 +95,10 @@ public class TokenRelationship {
 	 * 		the updated balance of the relationship
 	 */
 	public void setBalance(long balance) {
-		validateTrue(!token.hasFreezeKey() || !frozen, ACCOUNT_FROZEN_FOR_TOKEN);
-		validateTrue(!token.hasKycKey() || kycGranted, ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
+		if (!token.isDeleted()) {
+			validateTrue(!token.hasFreezeKey() || !frozen, ACCOUNT_FROZEN_FOR_TOKEN);
+			validateTrue(!token.hasKycKey() || kycGranted, ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
+		}
 
 		balanceChange += (balance - this.balance);
 		this.balance = balance;

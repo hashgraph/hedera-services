@@ -24,7 +24,6 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.BaseErroringAssertsProvider;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
-import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -38,6 +37,9 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.NoTokenTransfers.emptyTokenTransfers;
+import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
@@ -288,8 +290,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						tokenDissociate(unfrozenAccount, expiringToken)
 								.via("dissociateTxn"),
 						getTxnRecord("dissociateTxn")
-								.hasPriority(TransactionRecordAsserts
-										.recordWith().tokenTransfers(new BaseErroringAssertsProvider<>() {
+								.hasPriority(recordWith().tokenTransfers(new BaseErroringAssertsProvider<>() {
 											@Override
 											public ErroringAsserts<List<TokenTransferList>> assertsFor(
 													HapiApiSpec spec) {
@@ -347,6 +348,8 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 		String nonZeroBalanceUnfrozen = "1bUnfrozen";
 		long initialSupply = 100L;
 		long nonZeroXfer = 10L;
+		final var zeroBalanceDissoc = "zeroBalanceDissoc";
+		final var nonZeroBalanceDissoc = "nonZeroBalanceDissoc";
 
 		return defaultHapiSpec("DissociateHasExpectedSemanticsForDeletedTokens")
 				.given(
@@ -381,12 +384,17 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 								.hasTokenBalance(tbdToken, initialSupply - 2 * nonZeroXfer),
 						tokenDelete(tbdToken)
 				).then(
-						tokenDissociate(zeroBalanceFrozen, tbdToken),
+						tokenDissociate(zeroBalanceFrozen, tbdToken).via(zeroBalanceDissoc),
 						tokenDissociate(zeroBalanceUnfrozen, tbdToken),
-						tokenDissociate(nonZeroBalanceFrozen, tbdToken),
+						tokenDissociate(nonZeroBalanceFrozen, tbdToken).via(nonZeroBalanceDissoc),
 						tokenDissociate(nonZeroBalanceUnfrozen, tbdToken),
 						getAccountBalance(TOKEN_TREASURY)
-								.hasTokenBalance(tbdToken, initialSupply - 2 * nonZeroXfer)
+								.hasTokenBalance(tbdToken, initialSupply - 2 * nonZeroXfer),
+						getTxnRecord(zeroBalanceDissoc)
+								.hasPriority(recordWith().tokenTransfers(emptyTokenTransfers())),
+						getTxnRecord(nonZeroBalanceDissoc)
+								.hasPriority(recordWith().tokenTransfers(changingFungibleBalances()
+										.including(tbdToken, nonZeroBalanceFrozen, -nonZeroXfer))).logged()
 				);
 	}
 

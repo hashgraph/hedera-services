@@ -33,6 +33,7 @@ import java.util.Objects;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
@@ -89,12 +90,23 @@ public class Dissociation {
 		auto-removed; and there is nothing more to do or validate in that case. */
 		if (dissociatedTokenTreasuryRel != null) {
 			/* Also nothing more to do for an association with a deleted token. */
-			if (!dissociatingAccountRel.getToken().isDeleted()) {
+			if (dissociatingAccountRel.getToken().isDeleted()) {
+				updateModelsForDissociationFromDeletedToken();
+			} else {
 				updateModelsForDissociationFromActiveToken(validator);
 			}
 		}
 		dissociatingAccountRel.markAsDestroyed();
 		modelsAreUpdated = true;
+	}
+
+	private void updateModelsForDissociationFromDeletedToken() {
+		Objects.requireNonNull(dissociatingAccountRel);
+
+		final var token = dissociatingAccountRel.getToken();
+		if (token.getType() == FUNGIBLE_COMMON) {
+			dissociatingAccountRel.setBalance(0L);
+		}
 	}
 
 	private void updateModelsForDissociationFromActiveToken(OptionValidator validator) {

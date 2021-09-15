@@ -99,6 +99,17 @@ class TokenRelationshipTest {
 	}
 
 	@Test
+	void canChangeBalanceIfFrozenForDeletedToken() {
+		token.setFreezeKey(freezeKey);
+		token.setIsDeleted(true);
+
+		subject.setFrozen(true);
+
+		subject.setBalance(0);
+		assertEquals(-balance, subject.getBalanceChange());
+	}
+
+	@Test
 	void canChangeBalanceIfUnfrozenForToken() {
 		// given:
 		token.setFreezeKey(freezeKey);

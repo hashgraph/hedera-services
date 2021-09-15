@@ -344,13 +344,17 @@ class SignedStateBalancesExporterTest {
 				.setAccountID(asAccount("0.0.1001"))
 				.setHbarBalance(firstNonNodeAccountBalance)
 				.build();
-		final var tokenBalances = TokenUnitBalance.newBuilder()
+		final var nonDeletedTokenUnits = TokenUnitBalance.newBuilder()
 				.setTokenId(theToken)
 				.setBalance(secondNonNodeTokenBalance);
+		final var deletedTokenUnits = TokenUnitBalance.newBuilder()
+				.setTokenId(theDeletedToken)
+				.setBalance(secondNonNodeDeletedTokenBalance);
 		final var secondNon = singleAcctBuilder
 				.setAccountID(asAccount("0.0.1002"))
 				.setHbarBalance(secondNonNodeAccountBalance)
-				.addTokenUnitBalances(tokenBalances)
+				.addTokenUnitBalances(nonDeletedTokenUnits)
+				.addTokenUnitBalances(deletedTokenUnits)
 				.build();
 
 		return List.of(thisNode, anotherNode, firstNon, secondNon);
