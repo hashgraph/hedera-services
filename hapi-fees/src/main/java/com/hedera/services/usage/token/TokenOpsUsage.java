@@ -27,6 +27,7 @@ import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hedera.services.usage.token.meta.TokenBurnMeta;
 import com.hedera.services.usage.token.meta.TokenCreateMeta;
+import com.hedera.services.usage.token.meta.TokenFreezeMeta;
 import com.hedera.services.usage.token.meta.TokenMintMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
 import com.hederahashgraph.api.proto.java.CustomFee;
@@ -178,6 +179,24 @@ public final class TokenOpsUsage {
 
 		accumulator.addBpt(tokenWipeMeta.getBpt());
 		accumulator.addNetworkRbs(tokenWipeMeta.getTransferRecordDb() * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+	}
+
+	public void tokenFreezeUsage(final SigUsage sigUsage,
+			final BaseTransactionMeta baseMeta,
+			final TokenFreezeMeta tokenFreezeMeta,
+			final UsageAccumulator accumulator) {
+		accumulator.resetForTransaction(baseMeta, sigUsage);
+
+		accumulator.addBpt(tokenFreezeMeta.getBpt());
+	}
+
+	public void tokenUnfreezeUsage(final SigUsage sigUsage,
+			final BaseTransactionMeta baseMeta,
+			final TokenFreezeMeta tokenFreezeMeta,
+			final UsageAccumulator accumulator) {
+		accumulator.resetForTransaction(baseMeta, sigUsage);
+
+		accumulator.addBpt(tokenFreezeMeta.getBpt());
 	}
 
 

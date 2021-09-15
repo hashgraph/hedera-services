@@ -24,11 +24,14 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.usage.token.entities.TokenEntitySizes;
 import com.hedera.services.usage.token.meta.TokenBurnMeta;
 import com.hedera.services.usage.token.meta.TokenCreateMeta;
+import com.hedera.services.usage.token.meta.TokenFreezeMeta;
 import com.hedera.services.usage.token.meta.TokenMintMeta;
+import com.hedera.services.usage.token.meta.TokenUnfreezeMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import java.util.function.Function;
@@ -108,6 +111,14 @@ public enum TokenOpsUsageUtils {
 		}
 		bpt += BASIC_ENTITY_ID_SIZE;
 		return new TokenMintMeta(bpt, subType, transferRecordRb, rbs);
+	}
+
+	public TokenFreezeMeta tokenFreezeUsageFrom(final TransactionBody txn) {
+		return new TokenFreezeMeta(2 * BASIC_ENTITY_ID_SIZE);
+	}
+
+	public TokenUnfreezeMeta tokenUnfreezeUsageFrom(final TransactionBody txn) {
+		return new TokenUnfreezeMeta(2 * BASIC_ENTITY_ID_SIZE);
 	}
 
 	public TokenBurnMeta tokenBurnUsageFrom(final TransactionBody txn) {

@@ -48,9 +48,11 @@ import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenType;
+import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -190,6 +192,10 @@ class BaseOperationUsage {
 					return fungibleCommonTokenBurn();
 				}
 				break;
+			case TokenFreezeAccount:
+				return tokenFreezeAccount();
+			case TokenUnfreezeAccount:
+				return tokenUnfreezeAccount();
 			case TokenFeeScheduleUpdate:
 				return feeScheduleUpdate();
 			case ConsensusSubmitMessage:
@@ -219,6 +225,37 @@ class BaseOperationUsage {
 		final var opMeta = new FileAppendMeta(1_000, THREE_MONTHS_IN_SECONDS);
 		final var into = new UsageAccumulator();
 		FILE_OPS_USAGE.fileAppendUsage(SINGLE_SIG_USAGE, opMeta, NO_MEMO_AND_NO_EXPLICIT_XFERS, into);
+		return into;
+	}
+
+
+	UsageAccumulator tokenFreezeAccount() {
+		final var tokenID = TokenID.newBuilder().setTokenNum(1002).build();
+		final var accountID = AccountID.newBuilder().setAccountNum(1001).build();
+		final var canonicalTxn = TransactionBody.newBuilder()
+				.setTokenFreeze(TokenFreezeAccountTransactionBody.newBuilder()
+						.setToken(tokenID)
+						.setAccount(accountID))
+				.build();
+
+		final var tokenFreezeMeta = TOKEN_OPS_USAGE_UTILS.tokenFreezeUsageFrom(canonicalTxn);
+		final var into = new UsageAccumulator();
+		TOKEN_OPS_USAGE.tokenFreezeUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenFreezeMeta, into);
+		return into;
+	}
+
+	UsageAccumulator tokenUnfreezeAccount() {
+		final var tokenID = TokenID.newBuilder().setTokenNum(1002).build();
+		final var accountID = AccountID.newBuilder().setAccountNum(1001).build();
+		final var canonicalTxn = TransactionBody.newBuilder()
+				.setTokenUnfreeze(TokenUnfreezeAccountTransactionBody.newBuilder()
+						.setToken(tokenID)
+						.setAccount(accountID))
+				.build();
+
+		final var tokenUnfreezeMeta = TOKEN_OPS_USAGE_UTILS.tokenUnfreezeUsageFrom(canonicalTxn);
+		final var into = new UsageAccumulator();
+		TOKEN_OPS_USAGE.tokenFreezeUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenUnfreezeMeta, into);
 		return into;
 	}
 
