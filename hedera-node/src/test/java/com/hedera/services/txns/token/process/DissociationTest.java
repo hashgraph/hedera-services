@@ -239,6 +239,7 @@ class DissociationTest {
 	@Test
 	void oksDissociatedDeletedUniqueTokenTreasury() {
 		final long balance = 1_234L;
+		account.setOwnedNfts(balance);
 		dissociatingAccountRel.initBalance(balance);
 		token.setTreasury(account);
 		token.setIsDeleted(true);
@@ -252,7 +253,8 @@ class DissociationTest {
 
 		assertEquals(1, accum.size());
 		assertSame(dissociatingAccountRel, accum.get(0));
-		assertEquals(0, dissociatingAccountRel.getBalanceChange());
+		assertEquals(-balance, dissociatingAccountRel.getBalanceChange());
+		assertEquals(0, account.getOwnedNfts());
 	}
 
 	@Test

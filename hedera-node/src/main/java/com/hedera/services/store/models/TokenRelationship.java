@@ -180,6 +180,10 @@ public class TokenRelationship {
 		destroyed = true;
 	}
 
+	public boolean hasChangesForRecord() {
+		return balanceChange != 0 && (hasCommonRepresentation() || token.isDeleted());
+	}
+
 	public boolean hasCommonRepresentation() {
 		return token.getType() == TokenType.FUNGIBLE_COMMON;
 	}

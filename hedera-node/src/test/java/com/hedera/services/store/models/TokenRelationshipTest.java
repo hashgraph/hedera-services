@@ -60,6 +60,32 @@ class TokenRelationshipTest {
 	}
 
 	@Test
+	void ofRecordInterestIfFungibleBalanceChanges() {
+		subject.setBalance(balance - 1);
+
+		assertTrue(subject.hasChangesForRecord());
+	}
+
+	@Test
+	void notOrdinarilyOfRecordInterestIfNonFungibleBalanceChanges() {
+		token.setType(TokenType.NON_FUNGIBLE_UNIQUE);
+
+		subject.setBalance(balance - 1);
+
+		assertFalse(subject.hasChangesForRecord());
+	}
+
+	@Test
+	void ordinarilyOfRecordInterestIfNonFungibleBalanceChangesForDeletedToken() {
+		token.setType(TokenType.NON_FUNGIBLE_UNIQUE);
+		token.setIsDeleted(true);
+
+		subject.setBalance(balance - 1);
+
+		assertTrue(subject.hasChangesForRecord());
+	}
+
+	@Test
 	void asAssociationWorks() {
 		final var expected = new FcTokenAssociation(1234, 4321);
 

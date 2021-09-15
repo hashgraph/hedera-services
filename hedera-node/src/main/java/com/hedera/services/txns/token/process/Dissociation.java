@@ -33,7 +33,6 @@ import java.util.Objects;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
@@ -103,9 +102,14 @@ public class Dissociation {
 	private void updateModelsForDissociationFromDeletedToken() {
 		Objects.requireNonNull(dissociatingAccountRel);
 
+		final var disappearingUnits = dissociatingAccountRel.getBalance();
+		dissociatingAccountRel.setBalance(0L);
+
 		final var token = dissociatingAccountRel.getToken();
-		if (token.getType() == FUNGIBLE_COMMON) {
-			dissociatingAccountRel.setBalance(0L);
+		if (token.getType() == NON_FUNGIBLE_UNIQUE) {
+			final var account = dissociatingAccountRel.getAccount();
+			final var curOwnedNfts = account.getOwnedNfts();
+			account.setOwnedNfts(curOwnedNfts - disappearingUnits);
 		}
 	}
 

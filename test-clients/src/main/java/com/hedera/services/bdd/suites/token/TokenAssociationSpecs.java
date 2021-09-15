@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.token;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.BaseErroringAssertsProvider;
@@ -28,9 +29,11 @@ import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +53,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
@@ -102,12 +106,12 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						dissociateHasExpectedSemantics(),
 						associateHasExpectedSemantics(),
 						associatedContractsMustHaveAdminKeys(),
-						dissociateHasExpectedSemanticsForDeletedTokens(),
 						expiredAndDeletedTokensStillAppearInContractInfo(),
 						dissociationFromExpiredTokensAsExpected(),
 						accountInfoQueriesAsExpected(),
 						handlesUseOfDefaultTokenId(),
 						contractInfoQueriesAsExpected(),
+						dissociateHasExpectedSemanticsForDeletedTokens(),
 				}
 		);
 	}
@@ -291,45 +295,45 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 								.via("dissociateTxn"),
 						getTxnRecord("dissociateTxn")
 								.hasPriority(recordWith().tokenTransfers(new BaseErroringAssertsProvider<>() {
-											@Override
-											public ErroringAsserts<List<TokenTransferList>> assertsFor(
-													HapiApiSpec spec) {
-												return tokenXfers -> {
-													try {
-														assertEquals(
-																1,
-																tokenXfers.size(),
-																"Wrong number of tokens transferred!");
-														TokenTransferList xfers = tokenXfers.get(0);
-														assertEquals(
-																spec.registry().getTokenID(expiringToken),
-																xfers.getToken(),
-																"Wrong token transferred!");
-														AccountAmount toTreasury = xfers.getTransfers(0);
-														assertEquals(
-																spec.registry().getAccountID(treasury),
-																toTreasury.getAccountID(),
-																"Treasury should come first!");
-														assertEquals(
-																100L,
-																toTreasury.getAmount(),
-																"Treasury should get 100 tokens back!");
-														AccountAmount fromAccount = xfers.getTransfers(1);
-														assertEquals(
-																spec.registry().getAccountID(unfrozenAccount),
-																fromAccount.getAccountID(),
-																"Account should come second!");
-														assertEquals(
-																-100L,
-																fromAccount.getAmount(),
-																"Account should send 100 tokens back!");
-													} catch (Throwable error) {
-														return List.of(error);
-													}
-													return Collections.emptyList();
-												};
+									@Override
+									public ErroringAsserts<List<TokenTransferList>> assertsFor(
+											HapiApiSpec spec) {
+										return tokenXfers -> {
+											try {
+												assertEquals(
+														1,
+														tokenXfers.size(),
+														"Wrong number of tokens transferred!");
+												TokenTransferList xfers = tokenXfers.get(0);
+												assertEquals(
+														spec.registry().getTokenID(expiringToken),
+														xfers.getToken(),
+														"Wrong token transferred!");
+												AccountAmount toTreasury = xfers.getTransfers(0);
+												assertEquals(
+														spec.registry().getAccountID(treasury),
+														toTreasury.getAccountID(),
+														"Treasury should come first!");
+												assertEquals(
+														100L,
+														toTreasury.getAmount(),
+														"Treasury should get 100 tokens back!");
+												AccountAmount fromAccount = xfers.getTransfers(1);
+												assertEquals(
+														spec.registry().getAccountID(unfrozenAccount),
+														fromAccount.getAccountID(),
+														"Account should come second!");
+												assertEquals(
+														-100L,
+														fromAccount.getAmount(),
+														"Account should send 100 tokens back!");
+											} catch (Throwable error) {
+												return List.of(error);
 											}
-										})),
+											return Collections.emptyList();
+										};
+									}
+								})),
 						getAccountBalance(treasury)
 								.hasTokenBalance(expiringToken, 1000L),
 						getAccountInfo(frozenAccount)
@@ -341,7 +345,9 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 	}
 
 	public HapiApiSpec dissociateHasExpectedSemanticsForDeletedTokens() {
+		String multiKey = "multiKey";
 		String tbdToken = "ToBeDeleted";
+		String tbdUniqToken = "UniqToBeDeleted";
 		String zeroBalanceFrozen = "0bFrozen";
 		String zeroBalanceUnfrozen = "0bUnfrozen";
 		String nonZeroBalanceFrozen = "1bFrozen";
@@ -350,18 +356,27 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 		long nonZeroXfer = 10L;
 		final var zeroBalanceDissoc = "zeroBalanceDissoc";
 		final var nonZeroBalanceDissoc = "nonZeroBalanceDissoc";
+		final var uniqDissoc = "uniqDissoc";
+		final var firstMeta = ByteString.copyFrom("FIRST".getBytes(StandardCharsets.UTF_8));
+		final var secondMeta = ByteString.copyFrom("SECOND".getBytes(StandardCharsets.UTF_8));
+		final var thirdMeta = ByteString.copyFrom("THIRD".getBytes(StandardCharsets.UTF_8));
 
 		return defaultHapiSpec("DissociateHasExpectedSemanticsForDeletedTokens")
 				.given(
-						newKeyNamed("adminKey"),
-						newKeyNamed("freezeKey"),
+						newKeyNamed(multiKey),
 						cryptoCreate(TOKEN_TREASURY).balance(0L),
 						tokenCreate(tbdToken)
-								.adminKey("adminKey")
+								.adminKey(multiKey)
 								.initialSupply(initialSupply)
 								.treasury(TOKEN_TREASURY)
-								.freezeKey("freezeKey")
+								.freezeKey(multiKey)
 								.freezeDefault(true),
+						tokenCreate(tbdUniqToken)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.treasury(TOKEN_TREASURY)
+								.adminKey(multiKey)
+								.supplyKey(multiKey)
+								.initialSupply(0),
 						cryptoCreate(zeroBalanceFrozen).balance(0L),
 						cryptoCreate(zeroBalanceUnfrozen).balance(0L),
 						cryptoCreate(nonZeroBalanceFrozen).balance(0L),
@@ -371,7 +386,8 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						tokenAssociate(zeroBalanceUnfrozen, tbdToken),
 						tokenAssociate(nonZeroBalanceFrozen, tbdToken),
 						tokenAssociate(nonZeroBalanceUnfrozen, tbdToken),
-
+						mintToken(tbdUniqToken, List.of(firstMeta, secondMeta, thirdMeta)),
+						getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(3),
 						tokenUnfreeze(tbdToken, zeroBalanceUnfrozen),
 						tokenUnfreeze(tbdToken, nonZeroBalanceUnfrozen),
 						tokenUnfreeze(tbdToken, nonZeroBalanceFrozen),
@@ -382,19 +398,25 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						tokenFreeze(tbdToken, nonZeroBalanceFrozen),
 						getAccountBalance(TOKEN_TREASURY)
 								.hasTokenBalance(tbdToken, initialSupply - 2 * nonZeroXfer),
-						tokenDelete(tbdToken)
+						tokenDelete(tbdToken),
+						tokenDelete(tbdUniqToken)
 				).then(
 						tokenDissociate(zeroBalanceFrozen, tbdToken).via(zeroBalanceDissoc),
 						tokenDissociate(zeroBalanceUnfrozen, tbdToken),
 						tokenDissociate(nonZeroBalanceFrozen, tbdToken).via(nonZeroBalanceDissoc),
 						tokenDissociate(nonZeroBalanceUnfrozen, tbdToken),
+						tokenDissociate(TOKEN_TREASURY, tbdUniqToken).via(uniqDissoc),
 						getAccountBalance(TOKEN_TREASURY)
 								.hasTokenBalance(tbdToken, initialSupply - 2 * nonZeroXfer),
 						getTxnRecord(zeroBalanceDissoc)
 								.hasPriority(recordWith().tokenTransfers(emptyTokenTransfers())),
 						getTxnRecord(nonZeroBalanceDissoc)
 								.hasPriority(recordWith().tokenTransfers(changingFungibleBalances()
-										.including(tbdToken, nonZeroBalanceFrozen, -nonZeroXfer))).logged()
+										.including(tbdToken, nonZeroBalanceFrozen, -nonZeroXfer))),
+						getTxnRecord(uniqDissoc)
+								.hasPriority(recordWith().tokenTransfers(changingFungibleBalances()
+										.including(tbdUniqToken, TOKEN_TREASURY, -3))),
+						getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(0)
 				);
 	}
 
