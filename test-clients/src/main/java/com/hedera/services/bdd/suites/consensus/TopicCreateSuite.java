@@ -99,11 +99,12 @@ public class TopicCreateSuite extends HapiApiSuite {
 
 	private HapiApiSpec autoRenewAccountIsValidated() {
 		return defaultHapiSpec("AutoRenewAccountIsValidated")
-				.given()
+				.given(
+				)
 				.when()
 				.then(
 						createTopic("testTopic")
-								.autoRenewAccountId("1.2.3")
+								.autoRenewAccountId("9.9.999312312")
 								.signedBy(GENESIS)
 								.hasKnownStatus(INVALID_AUTORENEW_ACCOUNT)
 				);
