@@ -33,12 +33,15 @@ import java.util.function.Supplier;
  */
 @Singleton
 public class TopicStore {
-
+	
 	private final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics;
 	private final TransactionRecordService transactionRecordService;
 
 	@Inject
-	public TopicStore(final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics, final TransactionRecordService transactionRecordService) {
+	public TopicStore(
+			final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
+			final TransactionRecordService transactionRecordService
+	) {
 		this.topics = topics;
 		this.transactionRecordService = transactionRecordService;
 	}

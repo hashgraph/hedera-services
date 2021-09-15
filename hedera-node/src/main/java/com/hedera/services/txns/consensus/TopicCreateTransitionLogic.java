@@ -79,8 +79,8 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 		final var payerAccountId = transactionBody.getTransactionID().getAccountID();
 		final var op = transactionBody.getConsensusCreateTopic();
 		/* --- Validate --- */
-		final var validationResult = validator.memoCheck(op.getMemo());
-		validateTrue(OK == validationResult, validationResult);
+		final var memoValidationResult = validator.memoCheck(op.getMemo());
+		validateTrue(OK == memoValidationResult, memoValidationResult);
 		validateFalse(op.hasSubmitKey() && !validator.hasGoodEncoding(op.getSubmitKey()), BAD_ENCODING);
 		validateTrue(op.hasAutoRenewPeriod(), INVALID_RENEWAL_PERIOD);
 		validateTrue(validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod()), AUTORENEW_DURATION_NOT_IN_RANGE);
