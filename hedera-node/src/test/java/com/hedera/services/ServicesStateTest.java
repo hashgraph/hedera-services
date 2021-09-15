@@ -81,6 +81,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
@@ -152,6 +153,8 @@ class ServicesStateTest {
 	private ServicesApp.Builder appBuilder;
 	@Mock
 	private ServicesState.FcmMigrator fcmMigrator;
+	@Mock
+	private Consumer<Boolean> blobMigrationFlag;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -401,6 +404,7 @@ class ServicesStateTest {
 	@Test
 	void migratesWhenInitializingFromRelease0180() {
 		ServicesState.setFcmMigrator(fcmMigrator);
+		ServicesState.setBlobMigrationFlag(blobMigrationFlag);
 		final MerkleMap<?, ?> pretend = new MerkleMap<>();
 
 		subject = mock(ServicesState.class);
@@ -439,8 +443,11 @@ class ServicesStateTest {
 						Matchers.startsWith("↪ Migrated 0 "),
 						Matchers.startsWith("↪ Migrated 0 "),
 						equalTo("Finished with FCMap -> MerkleMap migrations, completing the deferred init")));
+		verify(blobMigrationFlag).accept(true);
+		verify(blobMigrationFlag).accept(false);
 
 		ServicesState.setFcmMigrator(FCMapMigration::FCMapToMerkleMap);
+		ServicesState.setBlobMigrationFlag(MerkleOptionalBlob::setInMigration);
 	}
 
 	@Test
