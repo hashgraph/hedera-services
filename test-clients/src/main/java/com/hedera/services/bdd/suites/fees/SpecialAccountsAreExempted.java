@@ -45,10 +45,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 public class SpecialAccountsAreExempted extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(SpecialAccountsAreExempted.class);
 
-	final static String DEFAULT_DIR = "./dev-system-files";
-
 	public static void main(String... args) {
-		new SpecialAccountsAreExempted().runSuiteSync();
+		new SpecialAccountsAreExempted().runSuiteAsync();
+	}
+
+	@Override
+	public boolean canRunAsync() {
+		return false;
 	}
 
 	@Override

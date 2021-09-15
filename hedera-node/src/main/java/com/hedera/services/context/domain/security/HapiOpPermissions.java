@@ -28,12 +28,15 @@ import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.EnumMap;
 
 import static com.hedera.services.context.domain.security.PermissionFileUtils.legacyKeys;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+@Singleton
 public class HapiOpPermissions {
 	private static final Logger log = LogManager.getLogger(HapiOpPermissions.class);
 
@@ -42,6 +45,7 @@ public class HapiOpPermissions {
 
 	private final AccountNumbers accountNums;
 
+	@Inject
 	public HapiOpPermissions(AccountNumbers accountNums) {
 		this.accountNums = accountNums;
 	}
@@ -69,9 +73,12 @@ public class HapiOpPermissions {
 
 	public ResponseCodeEnum permissibilityOf(HederaFunctionality function, AccountID givenPayer) {
 		var num = givenPayer.getAccountNum();
+		if (accountNums.isSuperuser(num)) {
+			return OK;
+		}
+
 		PermissionedAccountsRange range;
-		return (range = permissions.get(function)) != null && (accountNums.isSuperuser(num) || range.contains(num))
-				? OK : NOT_SUPPORTED;
+		return (range = permissions.get(function)) != null && range.contains(num) ? OK : NOT_SUPPORTED;
 	}
 
 	EnumMap<HederaFunctionality, PermissionedAccountsRange> getPermissions() {

@@ -22,17 +22,21 @@ package com.hedera.services.sigs.order;
 
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.config.EntityNumbers;
-import com.hedera.services.security.ops.SystemOpPolicies;
+import com.hedera.services.txns.auth.SystemOpPolicies;
+import com.hedera.services.txns.auth.SystemOpAuthorization;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+import static com.hedera.services.txns.auth.SystemOpAuthorization.AUTHORIZED;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
 
 /**
  * Implementation of {@link SignatureWaivers} that waives signatures based on the
- * {@link com.hedera.services.security.ops.SystemOpAuthorization} status of the
+ * {@link SystemOpAuthorization} status of the
  * transaction to which they apply.
  *
  * That is, it waives a signature if and only if the transaction is {@code AUTHORIZED}
@@ -43,10 +47,12 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
  * here, and a new key must sign; https://github.com/hashgraph/hedera-services/issues/1890
  * has details.
  */
+@Singleton
 public class PolicyBasedSigWaivers implements SignatureWaivers {
 	private final AccountNumbers accountNums;
 	private final SystemOpPolicies opPolicies;
 
+	@Inject
 	public PolicyBasedSigWaivers(EntityNumbers entityNums, SystemOpPolicies opPolicies) {
 		this.opPolicies = opPolicies;
 
@@ -56,31 +62,31 @@ public class PolicyBasedSigWaivers implements SignatureWaivers {
 	@Override
 	public boolean isAppendFileWaclWaived(TransactionBody fileAppendTxn) {
 		assertTypeExpectation(fileAppendTxn.hasFileAppend());
-		return opPolicies.check(fileAppendTxn, FileAppend) == AUTHORIZED;
+		return opPolicies.checkKnownTxn(fileAppendTxn, FileAppend) == AUTHORIZED;
 	}
 
 	@Override
 	public boolean isTargetFileWaclWaived(TransactionBody fileUpdateTxn) {
 		assertTypeExpectation(fileUpdateTxn.hasFileUpdate());
-		return opPolicies.check(fileUpdateTxn, FileUpdate) == AUTHORIZED;
+		return opPolicies.checkKnownTxn(fileUpdateTxn, FileUpdate) == AUTHORIZED;
 	}
 
 	@Override
 	public boolean isNewFileWaclWaived(TransactionBody fileUpdateTxn) {
 		assertTypeExpectation(fileUpdateTxn.hasFileUpdate());
-		return opPolicies.check(fileUpdateTxn, FileUpdate) == AUTHORIZED;
+		return opPolicies.checkKnownTxn(fileUpdateTxn, FileUpdate) == AUTHORIZED;
 	}
 
 	@Override
 	public boolean isTargetAccountKeyWaived(TransactionBody cryptoUpdateTxn) {
 		assertTypeExpectation(cryptoUpdateTxn.hasCryptoUpdateAccount());
-		return opPolicies.check(cryptoUpdateTxn, CryptoUpdate) == AUTHORIZED;
+		return opPolicies.checkKnownTxn(cryptoUpdateTxn, CryptoUpdate) == AUTHORIZED;
 	}
 
 	@Override
 	public boolean isNewAccountKeyWaived(TransactionBody cryptoUpdateTxn) {
 		assertTypeExpectation(cryptoUpdateTxn.hasCryptoUpdateAccount());
-		final var isAuthorized = opPolicies.check(cryptoUpdateTxn, CryptoUpdate) == AUTHORIZED;
+		final var isAuthorized = opPolicies.checkKnownTxn(cryptoUpdateTxn, CryptoUpdate) == AUTHORIZED;
 		if (!isAuthorized) {
 			return false;
 		} else {

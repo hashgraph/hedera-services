@@ -34,15 +34,19 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetContents;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
+@Singleton
 public class GetFileContentsAnswer implements AnswerService {
 	private final OptionValidator validator;
 
+	@Inject
 	public GetFileContentsAnswer(OptionValidator validator) {
 		this.validator = validator;
 	}

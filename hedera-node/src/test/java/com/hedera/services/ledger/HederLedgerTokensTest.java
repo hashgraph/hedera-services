@@ -30,7 +30,6 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
 
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
@@ -49,7 +48,7 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 
-public class HederLedgerTokensTest extends BaseHederaLedgerTestHelper {
+class HederLedgerTokensTest extends BaseHederaLedgerTestHelper {
 	@BeforeEach
 	private void setup() {
 		commonSetup();
@@ -58,36 +57,29 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTestHelper {
 
 	@Test
 	void delegatesToSetTokens() {
-		// setup:
-		var tokens = new MerkleAccountTokens();
+		final var tokens = new MerkleAccountTokens();
 
-		// when:
 		subject.setAssociatedTokens(genesis, tokens);
 
-		// then:
 		verify(accountsLedger).set(genesis, TOKENS, tokens);
 	}
 
 	@Test
 	void getsTokenBalance() {
-		// given:
-		var balance = subject.getTokenBalance(misc, frozenId);
+		final var balance = subject.getTokenBalance(misc, frozenId);
 
-		// expect:
 		assertEquals(miscFrozenTokenBalance, balance);
 	}
 
 	@Test
 	void recognizesAccountWithNonZeroTokenBalances() {
-		// expect:
 		assertFalse(subject.allTokenBalancesVanish(misc));
 	}
 
 	@Test
 	void ignoresNonZeroBalanceOfDeletedToken() {
 		given(frozenToken.isDeleted()).willReturn(true);
-		
-		// expect:
+
 		assertTrue(subject.allTokenBalancesVanish(misc));
 	}
 
@@ -95,13 +87,11 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTestHelper {
 	void throwsIfSubjectHasNoUsableTokenRelsLedger() {
 		subject.setTokenRelsLedger(null);
 
-		// expect:
 		assertThrows(IllegalStateException.class, () -> subject.allTokenBalancesVanish(deletable));
 	}
 
 	@Test
 	void recognizesAccountWithZeroTokenBalances() {
-		// expect:
 		assertTrue(subject.allTokenBalancesVanish(deletable));
 	}
 
@@ -110,12 +100,9 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTestHelper {
 		given(tokenStore.adjustBalance(misc, tokenId, 555))
 				.willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 
-		// given:
-		var status = subject.adjustTokenBalance(misc, tokenId, 555);
+		final var status = subject.adjustTokenBalance(misc, tokenId, 555);
 
-		// expect:
 		assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
-		// and:
 		assertEquals(0, subject.numTouches);
 	}
 
@@ -123,12 +110,9 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTestHelper {
 	void adjustsIfValid() {
 		givenAdjustBalanceUpdatingTokenXfers(any(), any(), anyLong());
 
-		// given:
-		var status = subject.adjustTokenBalance(misc, tokenId, 555);
+		final var status = subject.adjustTokenBalance(misc, tokenId, 555);
 
-		// expect:
 		assertEquals(OK, status);
-		// and:
 		assertEquals(
 				AccountAmount.newBuilder().setAccountID(misc).setAmount(555).build(),
 				subject.netTokenTransfers.get(tokenId).getAccountAmounts(0));
@@ -136,65 +120,47 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTestHelper {
 
 	@Test
 	void injectsLedgerToTokenStore() {
-		// expect:
 		verify(tokenStore).setAccountsLedger(accountsLedger);
 		verify(tokenStore).setHederaLedger(subject);
+		verify(creator).setLedger(subject);
 	}
 
 	@Test
 	void delegatesToGetTokens() {
-		// setup:
-		var tokens = new MerkleAccountTokens();
-
+		final var tokens = new MerkleAccountTokens();
 		given(accountsLedger.get(genesis, AccountProperty.TOKENS)).willReturn(tokens);
 
-		// when:
-		var actual = subject.getAssociatedTokens(genesis);
+		final var actual = subject.getAssociatedTokens(genesis);
 
-		// then:
-		Assertions.assertSame(actual, tokens);
+		Assertions.assertSame(tokens, actual);
 	}
 
 	@Test
 	void delegatesFreezeOps() {
-		// when:
 		subject.freeze(misc, frozenId);
-
-		// then:
 		verify(tokenStore).freeze(misc, frozenId);
 
-		// and when:
 		subject.unfreeze(misc, frozenId);
-
-		// then:
 		verify(tokenStore).unfreeze(misc, frozenId);
 	}
 
 	@Test
 	void delegatesKnowingOps() {
-		// when:
 		subject.grantKyc(misc, frozenId);
-
-		// then:
 		verify(tokenStore).grantKyc(misc, frozenId);
 
-		// and when:
 		subject.revokeKyc(misc, frozenId);
-
-		// then:
 		verify(tokenStore).revokeKyc(misc, frozenId);
 	}
 
 	@Test
 	void delegatesTokenChangeDrop() {
-		// setup:
 		final var manager = mock(UniqTokenViewsManager.class);
 		subject.setTokenViewsManager(manager);
 
 		subject.numTouches = 2;
 		subject.tokensTouched[0] = tokenWith(111);
 		subject.tokensTouched[1] = tokenWith(222);
-		// and:
 		subject.netTokenTransfers.put(
 				tokenWith(111),
 				TransferList.newBuilder()
@@ -207,22 +173,19 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTestHelper {
 						.addAccountAmounts(
 								AccountAmount.newBuilder()
 										.setAccountID(IdUtils.asAccount("0.0.3"))));
-		// and:
 		given(tokenStore.get(tokenId)).willReturn(token);
 		given(tokenStore.get(frozenId).tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
 		given(tokenStore.get(tokenId).tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
 		given(nftsLedger.isInTransaction()).willReturn(true);
 		given(manager.isInTransaction()).willReturn(true);
 
-		// when:
 		subject.dropPendingTokenChanges();
 
-		// then:
 		verify(tokenRelsLedger).rollback();
 		verify(nftsLedger).rollback();
 		verify(manager).rollback();
 		verify(accountsLedger).undoChangesOfType(NUM_NFTS_OWNED);
-		// and;
+
 		assertEquals(0, subject.numTouches);
 		assertEquals(0, subject.netTokenTransfers.get(tokenWith(111)).getAccountAmountsCount());
 		assertEquals(0, subject.netTokenTransfers.get(tokenWith(222)).getAccountAmountsCount());
@@ -231,10 +194,8 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTestHelper {
 	@Test
 	void onlyRollsbackIfTokenRelsLedgerInTxn() {
 		given(tokenRelsLedger.isInTransaction()).willReturn(false);
-		// and:
 		subject.setTokenViewsManager(mock(UniqTokenViewsManager.class));
 
-		// when:
 		subject.dropPendingTokenChanges();
 
 		verify(tokenRelsLedger, never()).rollback();
@@ -242,24 +203,18 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTestHelper {
 
 	@Test
 	void forwardsTransactionalSemanticsToTokenLedgersIfPresent() {
-		// setup:
-		UniqTokenViewsManager manager = mock(UniqTokenViewsManager.class);
-
-		InOrder inOrder = inOrder(tokenRelsLedger, nftsLedger, manager);
-
+		final var manager = mock(UniqTokenViewsManager.class);
+		final var inOrder = inOrder(tokenRelsLedger, nftsLedger, manager);
 		given(tokenRelsLedger.isInTransaction()).willReturn(true);
 		given(nftsLedger.isInTransaction()).willReturn(true);
 		given(manager.isInTransaction()).willReturn(true);
-		// and:
 		subject.setTokenViewsManager(manager);
 
-		// when:
 		subject.begin();
 		subject.commit();
 		subject.begin();
 		subject.rollback();
 
-		// then:
 		inOrder.verify(tokenRelsLedger).begin();
 		inOrder.verify(nftsLedger).begin();
 		inOrder.verify(manager).begin();
@@ -269,7 +224,7 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTestHelper {
 		inOrder.verify(nftsLedger).commit();
 		inOrder.verify(manager).isInTransaction();
 		inOrder.verify(manager).commit();
-		// and:
+
 		inOrder.verify(tokenRelsLedger).begin();
 		inOrder.verify(nftsLedger).begin();
 		inOrder.verify(manager).begin();

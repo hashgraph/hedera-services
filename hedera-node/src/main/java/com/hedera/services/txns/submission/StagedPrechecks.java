@@ -29,11 +29,14 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Optional;
 
 /**
  * A wrapper object to improve readability of {@code TransactionPrecheck}.
  */
+@Singleton
 public class StagedPrechecks {
 	private final SyntaxPrecheck syntaxPrecheck;
 	private final SystemPrecheck systemPrecheck;
@@ -41,6 +44,7 @@ public class StagedPrechecks {
 	private final SolvencyPrecheck solvencyPrecheck;
 	private final StructuralPrecheck structuralPrecheck;
 
+	@Inject
 	public StagedPrechecks(
 			SyntaxPrecheck syntaxPrecheck,
 			SystemPrecheck systemPrecheck,

@@ -2,7 +2,7 @@ package com.hedera.services.legacy.proto.utils;
 
 /*-
  * ‌
- * Hedera Services API
+ * Hedera Services API Utilities
  * ​
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
@@ -46,10 +46,11 @@ import java.util.Base64;
 
 /**
  * Common utilities.
- *
- * @author hua
  */
-public class CommonUtils {
+public final class CommonUtils {
+  private CommonUtils() {
+    throw new UnsupportedOperationException("Utility Class");
+  }
 
   /**
    * Sleep given seconds.
@@ -229,8 +230,7 @@ public class CommonUtils {
   public static String toReadableTransactionID(
           Transaction grpcTransaction) throws InvalidProtocolBufferException {
     TransactionBody body = extractTransactionBody(grpcTransaction);
-    String rv = "txID=" + TextFormat.shortDebugString(body.getTransactionID());
-    return rv;
+    return "txID=" + TextFormat.shortDebugString(body.getTransactionID());
   }
 
   public static ByteString extractTransactionBodyByteString(TransactionOrBuilder transaction)

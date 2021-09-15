@@ -20,12 +20,14 @@ package com.hedera.services.context;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.AddressBook;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.function.Supplier;
 
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
@@ -36,6 +38,7 @@ import static com.hedera.services.utils.EntityIdUtils.parseAccount;
  * re-reading the book; but at present nodes may treat the initializing
  * book as static.
  */
+@Singleton
 public class NodeInfo {
 	private static final Logger log = LogManager.getLogger(NodeInfo.class);
 
@@ -44,14 +47,26 @@ public class NodeInfo {
 	private int numberOfNodes;
 	private boolean[] isZeroStake;
 	private AccountID[] accounts;
-	private MerkleEntityId[] accountKeys;
+	private EntityNum[] accountKeys;
 
 	private final long selfId;
 	private final Supplier<AddressBook> book;
 
+	@Inject
 	public NodeInfo(long selfId, Supplier<AddressBook> book) {
 		this.book = book;
 		this.selfId = selfId;
+	}
+
+	/**
+	 * For a staked node, validates presence of a self-account in the address book.
+	 *
+	 * @throws IllegalStateException if the node is staked but has no account
+	 */
+	public void validateSelfAccountIfStaked() {
+		if (!isSelfZeroStake() && !hasSelfAccount()) {
+			throw new IllegalStateException("Node is not zero-stake, but has no known account");
+		}
 	}
 
 	/**
@@ -97,7 +112,7 @@ public class NodeInfo {
 		return accounts[index];
 	}
 
-	public MerkleEntityId accountKeyOf(long nodeId) {
+	public EntityNum accountKeyOf(long nodeId) {
 		final int index = validatedIndexFor(nodeId);
 
 		return accountKeys[index];
@@ -151,7 +166,7 @@ public class NodeInfo {
 
 		numberOfNodes = staticBook.getSize();
 		accounts = new AccountID[numberOfNodes];
-		accountKeys = new MerkleEntityId[numberOfNodes];
+		accountKeys = new EntityNum[numberOfNodes];
 		isZeroStake = new boolean[numberOfNodes];
 
 		for (int i = 0; i < numberOfNodes; i++) {
@@ -159,7 +174,7 @@ public class NodeInfo {
 			isZeroStake[i] = address.getStake() <= 0;
 			try {
 				accounts[i] = parseAccount(address.getMemo());
-				accountKeys[i] = MerkleEntityId.fromAccountId(accounts[i]);
+				accountKeys[i] = EntityNum.fromAccountId(accounts[i]);
 			} catch (IllegalArgumentException e) {
 				if (!isZeroStake[i]) {
 					log.error("Cannot parse account for staked node id {}, potentially fatal!", i, e);

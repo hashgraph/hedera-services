@@ -52,12 +52,14 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
+import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
@@ -129,6 +131,12 @@ public class BaseHederaLedgerTestHelper {
 			public void reclaimLastId() {
 				nextId--;
 			}
+
+			@Override
+			public void reclaimProvisionalIds() { }
+
+			@Override
+			public void resetProvisionalIds() { }
 		};
 	}
 
@@ -148,6 +156,8 @@ public class BaseHederaLedgerTestHelper {
 		when(accountsLedger.get(id, IS_DELETED)).thenReturn(false);
 		when(accountsLedger.get(id, IS_RECEIVER_SIG_REQUIRED)).thenReturn(true);
 		when(accountsLedger.get(id, IS_SMART_CONTRACT)).thenReturn(false);
+		when(accountsLedger.get(id, MAX_AUTOMATIC_ASSOCIATIONS)).thenReturn(8);
+		when(accountsLedger.get(id, ALREADY_USED_AUTOMATIC_ASSOCIATIONS)).thenReturn(5);
 		when(accountsLedger.exists(id)).thenReturn(true);
 		var tokens = new MerkleAccountTokens();
 		tokens.associateAll(tokenInfo.keySet());

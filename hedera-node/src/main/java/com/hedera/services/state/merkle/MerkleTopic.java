@@ -28,12 +28,14 @@ import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.serdes.TopicSerde;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.common.merkle.utility.Keyed;
 
 import javax.annotation.Nullable;
 import java.io.ByteArrayOutputStream;
@@ -45,6 +47,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
+import static com.hedera.services.utils.EntityIdUtils.asIdLiteral;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 import static com.swirlds.common.CommonUtils.hex;
 
@@ -67,11 +70,15 @@ import static com.swirlds.common.CommonUtils.hex;
  *   replace the Topic in the map.</li>
  * </ul>
  */
-public final class MerkleTopic extends AbstractMerkleLeaf {
+public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<EntityNum> {
 	public static final int RUNNING_HASH_BYTE_ARRAY_SIZE = 48;
 	public static final long RUNNING_HASH_VERSION = 3L;
 
-	static final int MERKLE_VERSION = 1;
+	static final int PRE_RELEASE_0180_VERSION = 1;
+	static final int RELEASE_0180_VERSION = 2;
+
+	static final int CURRENT_VERSION = RELEASE_0180_VERSION;
+
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xcfc535576b57baf0L;
 
 	static TopicSerde topicSerde = new TopicSerde();
@@ -84,6 +91,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 	private EntityId autoRenewAccountId;
 	private RichInstant expirationTimestamp;
 	private boolean deleted;
+	private int number;
 
 	// Before the first message is submitted to this topic, its sequenceNumber is 0 and runningHash is 48 bytes of '\0'
 	private long sequenceNumber;
@@ -92,6 +100,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 	@Override
 	public String toString() {
 		return MoreObjects.toStringHelper(this)
+				.add("number", number + " <-> " + asIdLiteral(number))
 				.add("memo", memo)
 				.add("expiry",
 						String.format("%d.%d", expirationTimestamp.getSeconds(), expirationTimestamp.getNanos()))
@@ -106,6 +115,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 	}
 
 	public MerkleTopic() {
+		/* RuntimeConstructable */
 	}
 
 	/**
@@ -125,12 +135,12 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 	 * 		when submitMessage will start failing
 	 */
 	public MerkleTopic(
-			@Nullable String memo,
-			@Nullable JKey adminKey,
-			@Nullable JKey submitKey,
-			long autoRenewDurationSeconds,
-			@Nullable EntityId autoRenewAccountId,
-			@Nullable RichInstant expirationTimestamp
+			final @Nullable String memo,
+			final @Nullable JKey adminKey,
+			final @Nullable JKey submitKey,
+			final long autoRenewDurationSeconds,
+			final @Nullable EntityId autoRenewAccountId,
+			final @Nullable RichInstant expirationTimestamp
 	) {
 		setMemo(memo);
 		setAdminKey(adminKey);
@@ -148,6 +158,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 		this.autoRenewAccountId = other.hasAutoRenewAccountId() ? other.autoRenewAccountId : null;
 		this.expirationTimestamp = other.hasExpirationTimestamp() ? other.expirationTimestamp : null;
 		this.deleted = other.deleted;
+		this.number = other.number;
 
 		this.sequenceNumber = other.sequenceNumber;
 		this.runningHash = (null != other.runningHash)
@@ -163,21 +174,24 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 
 	@Override
 	public int getVersion() {
-		return MERKLE_VERSION;
+		return CURRENT_VERSION;
 	}
 
 	@Override
-	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+	public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
 		topicSerde.deserializeV1(in, this);
+		if (version >= RELEASE_0180_VERSION) {
+			number = in.readInt();
+		}
 	}
 
 	@Override
-	public void serialize(SerializableDataOutputStream out) throws IOException {
+	public void serialize(final SerializableDataOutputStream out) throws IOException {
 		topicSerde.serialize(this, out);
+		out.writeInt(number);
 	}
 
 	/* --- FastCopyable --- */
-
 	@Override
 	public MerkleTopic copy() {
 		setImmutable(true);
@@ -192,9 +206,10 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 		if ((null == o) || !MerkleTopic.class.equals(o.getClass())) {
 			return false;
 		}
-		MerkleTopic that = (MerkleTopic) o;
+		final var that = (MerkleTopic) o;
 		try {
 			return Objects.equals(this.memo, that.memo)
+					&& this.number == that.number
 					&& Arrays.equals(getAdminKey().serialize(), that.getAdminKey().serialize())
 					&& Arrays.equals(getSubmitKey().serialize(), that.getSubmitKey().serialize())
 					&& Objects.equals(this.autoRenewDurationSeconds, that.autoRenewDurationSeconds)
@@ -219,7 +234,8 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 				expirationTimestamp,
 				deleted,
 				sequenceNumber,
-				runningHash);
+				runningHash,
+				number);
 	}
 
 	/* --- Helpers --- */
@@ -244,7 +260,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 	 * 		when any component fails to write to a temporary stream for computing the running hash
 	 */
 	public void updateRunningHashAndSequenceNumber(
-			AccountID payer,
+			final AccountID payer,
 			@Nullable byte[] message,
 			@Nullable TopicID topicId,
 			@Nullable Instant consensusTimestamp
@@ -280,8 +296,18 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 		}
 	}
 
+	@Override
+	public EntityNum getKey() {
+		return new EntityNum(number);
+	}
+
+	@Override
+	public void setKey(EntityNum phi) {
+		number = phi.intValue();
+	}
+
 	public static class KeySerializationException extends RuntimeException {
-		public KeySerializationException(String message) {
+		public KeySerializationException(final String message) {
 			super(message);
 		}
 	}
@@ -295,7 +321,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 		return hasMemo() ? memo : "";
 	}
 
-	public void setMemo(@Nullable String memo) {
+	public void setMemo(final @Nullable String memo) {
 		throwIfImmutable("Cannot change this topic's memo if it's immutable.");
 		this.memo = ((null != memo) && !memo.isEmpty()) ? memo : null;
 	}
@@ -308,7 +334,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 		return hasAdminKey() ? adminKey : getDefaultJKey();
 	}
 
-	public void setAdminKey(@Nullable JKey adminKey) {
+	public void setAdminKey(final @Nullable JKey adminKey) {
 		throwIfImmutable("Cannot change this topic's admin key if it's immutable.");
 		this.adminKey = ((null != adminKey) && !adminKey.isEmpty()) ? adminKey : null;
 	}
@@ -321,7 +347,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 		return hasSubmitKey() ? submitKey : getDefaultJKey();
 	}
 
-	public void setSubmitKey(@Nullable JKey submitKey) {
+	public void setSubmitKey(final @Nullable JKey submitKey) {
 		throwIfImmutable("Cannot change this topic's memo if it's immutable.");
 		this.submitKey = ((null != submitKey) && !submitKey.isEmpty()) ? submitKey : null;
 	}
@@ -330,7 +356,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 		return autoRenewDurationSeconds;
 	}
 
-	public void setAutoRenewDurationSeconds(long autoRenewDurationSeconds) {
+	public void setAutoRenewDurationSeconds(final long autoRenewDurationSeconds) {
 		throwIfImmutable("Cannot change this topic's auto renewal duration seconds if it's immutable.");
 		this.autoRenewDurationSeconds = autoRenewDurationSeconds;
 	}
@@ -343,7 +369,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 		return hasAutoRenewAccountId() ? autoRenewAccountId : new EntityId();
 	}
 
-	public void setAutoRenewAccountId(@Nullable EntityId autoRenewAccountId) {
+	public void setAutoRenewAccountId(final @Nullable EntityId autoRenewAccountId) {
 		throwIfImmutable("Cannot change this topic's auto renewal account if it's immutable.");
 		this.autoRenewAccountId = ((null != autoRenewAccountId) && (0 != autoRenewAccountId.num()))
 				? autoRenewAccountId
@@ -358,7 +384,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 		return hasExpirationTimestamp() ? expirationTimestamp : new RichInstant();
 	}
 
-	public void setExpirationTimestamp(@Nullable RichInstant expiry) {
+	public void setExpirationTimestamp(final @Nullable RichInstant expiry) {
 		throwIfImmutable("Cannot change this topic's expiration timestamp if it's immutable.");
 		if ((null != expiry) && ((0 != expiry.getSeconds()) || (0 != expiry.getNanos()))) {
 			this.expirationTimestamp = expiry;
@@ -371,7 +397,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 		return deleted;
 	}
 
-	public void setDeleted(boolean deleted) {
+	public void setDeleted(final boolean deleted) {
 		throwIfImmutable("Cannot change this topic's status to be deleted if it's immutable.");
 		this.deleted = deleted;
 	}
@@ -380,7 +406,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 		return sequenceNumber;
 	}
 
-	public void setSequenceNumber(long sequenceNumber) {
+	public void setSequenceNumber(final long sequenceNumber) {
 		throwIfImmutable("Cannot change this topic's sequence number if it's immutable.");
 		this.sequenceNumber = sequenceNumber;
 	}
@@ -393,7 +419,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 		return (runningHash != null) ? runningHash : new byte[RUNNING_HASH_BYTE_ARRAY_SIZE];
 	}
 
-	public void setRunningHash(@Nullable byte[] runningHash) {
+	public void setRunningHash(final @Nullable byte[] runningHash) {
 		throwIfImmutable("Cannot change this topic's running hash if it's immutable.");
 		this.runningHash = ((null != runningHash) && (0 != runningHash.length)) ? runningHash : null;
 	}

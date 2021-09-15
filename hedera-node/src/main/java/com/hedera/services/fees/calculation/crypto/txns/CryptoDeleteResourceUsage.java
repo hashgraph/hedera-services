@@ -28,9 +28,14 @@ import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
 import com.hederahashgraph.fee.SigValueObj;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class CryptoDeleteResourceUsage implements TxnResourceUsageEstimator {
 	private final CryptoFeeBuilder usageEstimator;
 
+	@Inject
 	public CryptoDeleteResourceUsage(CryptoFeeBuilder usageEstimator) {
 		this.usageEstimator = usageEstimator;
 	}

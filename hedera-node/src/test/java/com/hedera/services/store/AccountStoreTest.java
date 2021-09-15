@@ -24,14 +24,14 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,8 +42,10 @@ import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
@@ -57,7 +59,7 @@ class AccountStoreTest {
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	private AccountStore subject;
 
@@ -66,6 +68,11 @@ class AccountStoreTest {
 		setupAccounts();
 
 		subject = new AccountStore(validator, dynamicProperties, () -> accounts);
+	}
+
+	@Test
+	void objectContractWorks() {
+		assertNotNull(subject.getValidator());
 	}
 
 	/* --- Account loading --- */
@@ -102,6 +109,9 @@ class AccountStoreTest {
 
 		// then:
 		assertEquals(miscAccount, actualAccount);
+
+		final var actualAccount2 = subject.loadAccountOrFailWith(miscId, FAIL_INVALID);
+		assertEquals(miscAccount, actualAccount2);
 	}
 
 	@Test
@@ -115,13 +125,15 @@ class AccountStoreTest {
 				.balance(balance)
 				.assocTokens(firstAssocTokenId, secondAssocTokenId, aThirdToken.getId())
 				.expirationTime(expiry)
+				.maxAutomaticAssociations(maxAutoAssociations)
+				.alreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations)
 				.get();
 
 		// given:
 		final var model = subject.loadAccount(miscId);
 
 		// when:
-		model.associateWith(List.of(aThirdToken), Integer.MAX_VALUE);
+		model.associateWith(List.of(aThirdToken), Integer.MAX_VALUE, false);
 		// and:
 		subject.persistAccount(model);
 
@@ -132,11 +144,64 @@ class AccountStoreTest {
 		assertNotSame(miscMerkleAccount.tokens().getIds(), model.getAssociatedTokens());
 	}
 
-	private void setupWithAccount(MerkleEntityId anId, MerkleAccount anAccount) {
+	@Test
+	void failsWithGivenCause() throws NegativeAccountBalanceException {
+		setupWithAccount(miscMerkleId, miscMerkleAccount);
+		miscMerkleAccount.setDeleted(true);
+
+		var ex = assertThrows(
+				InvalidTransactionException.class, () -> subject.loadAccountOrFailWith(miscId, FAIL_INVALID));
+		assertEquals(FAIL_INVALID, ex.getResponseCode());
+
+		miscMerkleAccount.setDeleted(false);
+		given(validator.isAfterConsensusSecond(expiry)).willReturn(false);
+		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
+		miscMerkleAccount.setBalance(0L);
+
+		var ex2 = assertThrows(
+				InvalidTransactionException.class, () -> subject.loadAccountOrFailWith(miscId, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
+		assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, ex2.getResponseCode());
+	}
+
+	@Test
+	void persistanceUpdatesAutoAssociations() {
+		setupWithAccount(miscMerkleId, miscMerkleAccount);
+		setupWithMutableAccount(miscMerkleId, miscMerkleAccount);
+		var newMax = maxAutoAssociations + 5;
+		var newUsedCount = alreadyUsedAutoAssociations - 10;
+		// and:
+		final var expectedReplacement = MerkleAccountFactory.newAccount()
+				.balance(balance)
+				.assocTokens(firstAssocTokenId, secondAssocTokenId)
+				.expirationTime(expiry)
+				.maxAutomaticAssociations(newMax)
+				.alreadyUsedAutomaticAssociations(newUsedCount)
+				.get();
+
+		// given:
+		final var model = subject.loadAccount(miscId);
+
+		// when:
+		model.setMaxAutomaticAssociations(newMax);
+		// decrease the already Used automatic associations by 10
+		for (int i=0; i<11; i++){
+			model.decrementUsedAutomaticAssocitions();
+		}
+		model.incrementUsedAutomaticAssocitions();
+
+		// and:
+		subject.persistAccount(model);
+
+		// then:
+		assertEquals(expectedReplacement, miscMerkleAccount);
+		verify(accounts, never()).replace(miscMerkleId, expectedReplacement);
+	}
+
+	private void setupWithAccount(EntityNum anId, MerkleAccount anAccount) {
 		given(accounts.get(anId)).willReturn(anAccount);
 	}
 
-	private void setupWithMutableAccount(MerkleEntityId anId, MerkleAccount anAccount) {
+	private void setupWithMutableAccount(EntityNum anId, MerkleAccount anAccount) {
 		given(accounts.getForModify(anId)).willReturn(anAccount);
 	}
 
@@ -150,11 +215,15 @@ class AccountStoreTest {
 				.balance(balance)
 				.assocTokens(firstAssocTokenId, secondAssocTokenId)
 				.expirationTime(expiry)
+				.maxAutomaticAssociations(maxAutoAssociations)
+				.alreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations)
 				.get();
 
 		miscAccount.setExpiry(expiry);
 		miscAccount.initBalance(balance);
 		miscAccount.setAssociatedTokens(miscMerkleAccount.tokens().getIds());
+		miscAccount.setMaxAutomaticAssociations(maxAutoAssociations);
+		miscAccount.setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations);
 		autoRenewAccount.setExpiry(expiry);
 		autoRenewAccount.initBalance(balance);
 	}
@@ -165,11 +234,13 @@ class AccountStoreTest {
 	private final long autoRenewAccountNum = 3_234L;
 	private final long firstAssocTokenNum = 666L;
 	private final long secondAssocTokenNum = 777L;
+	private final int alreadyUsedAutoAssociations = 12;
+	private final int maxAutoAssociations = 123;
 	private final Id miscId = new Id(0, 0, miscAccountNum);
 	private final Id autoRenewId = new Id(0, 0, autoRenewAccountNum);
 	private final Id firstAssocTokenId = new Id(0, 0, firstAssocTokenNum);
 	private final Id secondAssocTokenId = new Id(0, 0, secondAssocTokenNum);
-	private final MerkleEntityId miscMerkleId = new MerkleEntityId(0, 0, miscAccountNum);
+	private final EntityNum miscMerkleId = EntityNum.fromLong(miscAccountNum);
 	private final Account miscAccount = new Account(miscId);
 	private final Account autoRenewAccount = new Account(autoRenewId);
 

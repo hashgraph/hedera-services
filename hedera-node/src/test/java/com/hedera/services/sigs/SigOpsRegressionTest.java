@@ -27,18 +27,19 @@ import com.hedera.services.files.HederaFs;
 import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.KeyActivationCharacteristics;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.security.ops.SystemOpPolicies;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
+import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
-import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.PolicyBasedSigWaivers;
+import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.order.SignatureWaivers;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.order.SigningOrderResultFactory;
 import com.hedera.services.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -50,7 +51,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
 import com.swirlds.common.crypto.engine.CryptoEngine;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Test;
 
 import java.util.AbstractMap;
@@ -93,8 +94,8 @@ class SigOpsRegressionTest {
 	private ResponseCodeEnum actualStatus;
 	private ResponseCodeEnum expectedErrorStatus;
 	private PlatformTxnAccessor platformTxn;
-	private HederaSigningOrder signingOrder;
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private SigRequirements signingOrder;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	private EntityNumbers mockEntityNumbers = new MockEntityNumbers();
 	private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers);
@@ -102,7 +103,7 @@ class SigOpsRegressionTest {
 
 	static boolean otherPartySigsAreActive(
 			PlatformTxnAccessor accessor,
-			HederaSigningOrder keyOrder,
+			SigRequirements keyOrder,
 			SigningOrderResultFactory<ResponseCodeEnum> summaryFactory
 	) {
 		return otherPartySigsAreActive(accessor, keyOrder, summaryFactory, DEFAULT_ACTIVATION_CHARACTERISTICS);
@@ -110,7 +111,7 @@ class SigOpsRegressionTest {
 
 	static boolean otherPartySigsAreActive(
 			PlatformTxnAccessor accessor,
-			HederaSigningOrder keyOrder,
+			SigRequirements keyOrder,
 			SigningOrderResultFactory<ResponseCodeEnum> summaryFactory,
 			KeyActivationCharacteristics characteristics
 	) {
@@ -355,7 +356,7 @@ class SigOpsRegressionTest {
 	}
 
 	private boolean invokePayerSigActivationScenario(List<TransactionSignature> knownSigs) {
-		HederaSigningOrder keysOrder = new HederaSigningOrder(
+		SigRequirements keysOrder = new SigRequirements(
 				defaultLookupsFor(null, () -> accounts, () -> null, ref -> null, ref -> null),
 				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
@@ -369,7 +370,7 @@ class SigOpsRegressionTest {
 	private boolean invokeOtherPartySigActivationScenario(List<TransactionSignature> knownSigs) {
 		platformTxn.getPlatformTxn().clear();
 		platformTxn.getPlatformTxn().addAll(knownSigs.toArray(new TransactionSignature[0]));
-		HederaSigningOrder keysOrder = new HederaSigningOrder(
+		SigRequirements keysOrder = new SigRequirements(
 				defaultLookupsFor(hfs, () -> accounts, null, ref -> null, ref -> null),
 				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
@@ -383,7 +384,7 @@ class SigOpsRegressionTest {
 				defaultLookupsPlusAccountRetriesFor(
 						hfs, () -> accounts, () -> null, ref -> null, ref -> null, MAGIC_NUMBER, MAGIC_NUMBER,
 						runningAvgs, speedometers);
-		HederaSigningOrder keyOrder = new HederaSigningOrder(
+		SigRequirements keyOrder = new SigRequirements(
 				sigMetaLookups,
 				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
@@ -394,21 +395,17 @@ class SigOpsRegressionTest {
 
 	private Rationalization invokeRationalizationScenario() {
 		// setup:
-		final var rationalization = new Rationalization();
-
 		SyncVerifier syncVerifier = new CryptoEngine()::verifySync;
 		SigMetadataLookup sigMetaLookups = defaultLookupsFor(hfs, () -> accounts, () -> null, ref -> null, ref -> null);
-		HederaSigningOrder keyOrder = new HederaSigningOrder(
+		SigRequirements keyOrder = new SigRequirements(
 				sigMetaLookups,
 				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
 
-		rationalization.performFor(
-				platformTxn,
-				syncVerifier,
-				keyOrder,
-				platformTxn.getPkToSigsFn(),
-				new BodySigningSigFactory(platformTxn));
+		// given:
+		final var rationalization = new Rationalization(syncVerifier, keyOrder, new ReusableBodySigningFactory());
+
+		rationalization.performFor(platformTxn);
 
 		return rationalization;
 	}
@@ -422,7 +419,7 @@ class SigOpsRegressionTest {
 
 		expectedErrorStatus = null;
 
-		signingOrder = new HederaSigningOrder(
+		signingOrder = new SigRequirements(
 				defaultLookupsFor(hfs, () -> accounts, () -> null, ref -> null, ref -> null),
 				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);

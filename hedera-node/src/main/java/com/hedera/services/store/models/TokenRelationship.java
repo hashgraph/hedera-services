@@ -22,6 +22,7 @@ package com.hedera.services.store.models;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.enums.TokenType;
+import com.hedera.services.state.submerkle.FcTokenAssociation;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -56,12 +57,17 @@ public class TokenRelationship {
 	private boolean kycGranted;
 	private boolean destroyed = false;
 	private boolean notYetPersisted = true;
+	private boolean automaticAssociation = false;
 
 	private long balanceChange = 0L;
 
 	public TokenRelationship(Token token, Account account) {
 		this.token = token;
 		this.account = account;
+	}
+
+	public FcTokenAssociation asAutoAssociation() {
+		return new FcTokenAssociation(token.getId().getNum(), account.getId().getNum());
 	}
 
 	public long getBalance() {
@@ -89,8 +95,8 @@ public class TokenRelationship {
 	 * 		the updated balance of the relationship
 	 */
 	public void setBalance(long balance) {
-		validateTrue(!token.hasFreezeKey() || !frozen, ACCOUNT_FROZEN_FOR_TOKEN);
-		validateTrue(!token.hasKycKey() || kycGranted, ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
+		validateTrue(isTokenFrozenFor(), ACCOUNT_FROZEN_FOR_TOKEN);
+		validateTrue(isTokenKycGrantedFor(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
 
 		balanceChange += (balance - this.balance);
 		this.balance = balance;
@@ -180,6 +186,22 @@ public class TokenRelationship {
 		return token.getType() == TokenType.NON_FUNGIBLE_UNIQUE;
 	}
 
+	public boolean isAutomaticAssociation() {
+		return automaticAssociation;
+	}
+
+	public void setAutomaticAssociation(final boolean automaticAssociation) {
+		this.automaticAssociation = automaticAssociation;
+	}
+
+	private boolean isTokenFrozenFor() {
+		return !token.hasFreezeKey() || !frozen;
+	}
+
+	private boolean isTokenKycGrantedFor() {
+		return !token.hasKycKey() || kycGranted;
+	}
+
 	/* The object methods below are only overridden to improve
 	readability of unit tests; model objects are not used in hash-based
 	collections, so the performance of these methods doesn't matter. */
@@ -203,6 +225,7 @@ public class TokenRelationship {
 				.add("balanceChange", balanceChange)
 				.add("frozen", frozen)
 				.add("kycGranted", kycGranted)
+				.add("isAutomaticAssociation", automaticAssociation)
 				.toString();
 	}
 }

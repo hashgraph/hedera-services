@@ -21,28 +21,30 @@ package com.hedera.services.state.exports;
  */
 
 import com.hedera.services.ServicesState;
+import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityAssociation;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hedera.services.stream.proto.TokenUnitBalance;
 import com.hedera.services.utils.MiscUtils;
+import com.hedera.services.utils.SystemExits;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenBalance;
-import com.hederahashgraph.api.proto.java.TokenBalances;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.NodeId;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -51,7 +53,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -59,9 +60,10 @@ import java.util.function.UnaryOperator;
 
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
-import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
+import static com.hedera.services.utils.EntityNum.fromTokenId;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 
+@Singleton
 public class SignedStateBalancesExporter implements BalancesExporter {
 	private static final Logger log = LogManager.getLogger(SignedStateBalancesExporter.class);
 
@@ -74,11 +76,10 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 
 	private static final String PROTO_FILE_EXTENSION = ".pb";
 
-	private static final Base64.Encoder encoder = Base64.getEncoder();
-
 	private Instant nextExportTime = null;
 
 	final long expectedFloat;
+	private final SystemExits systemExits;
 	private final UnaryOperator<byte[]> signer;
 	private final GlobalDynamicProperties dynamicProperties;
 
@@ -94,12 +95,15 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 	static final Comparator<SingleAccountBalances> SINGLE_ACCOUNT_BALANCES_COMPARATOR =
 			Comparator.comparing(SingleAccountBalances::getAccountID, ACCOUNT_ID_COMPARATOR);
 
+	@Inject
 	public SignedStateBalancesExporter(
-			PropertySource properties,
+			SystemExits systemExits,
+			@CompositeProps PropertySource properties,
 			UnaryOperator<byte[]> signer,
 			GlobalDynamicProperties dynamicProperties
 	) {
 		this.signer = signer;
+		this.systemExits = systemExits;
 		this.expectedFloat = properties.getLongProperty("ledger.totalTinyBarFloat");
 		this.dynamicProperties = dynamicProperties;
 		exportPeriod = dynamicProperties.balancesExportPeriodSecs();
@@ -118,6 +122,9 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 
 	@Override
 	public boolean isTimeToExport(Instant now) {
+		if (!dynamicProperties.shouldExportBalances()) {
+			return false;
+		}
 		if (nextExportTime == null) {
 			nextExportTime = getFirstExportTime(now, exportPeriod);
 		}
@@ -135,15 +142,16 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		}
 		var watch = StopWatch.createStarted();
 		summary = summarized(signedState);
-		var expected = BigInteger.valueOf(expectedFloat);
-		if (!expected.equals(summary.getTotalFloat())) {
-			throw new IllegalStateException(String.format(
-					"Signed state @ %s had total balance %d not %d!",
-					consensusTime, summary.getTotalFloat(), expectedFloat));
+		final var expected = BigInteger.valueOf(expectedFloat);
+		if (expected.equals(summary.getTotalFloat())) {
+			log.info("Took {}ms to summarize signed state balances", watch.getTime(TimeUnit.MILLISECONDS));
+			toProtoFile(consensusTime);
+		} else {
+			log.error(
+					"Signed state @ {} had total balance {} not {}; exiting",
+					consensusTime, summary.getTotalFloat(), expectedFloat);
+			systemExits.fail(1);
 		}
-		log.info("Took {}ms to summarize signed state balances", watch.getTime(TimeUnit.MILLISECONDS));
-
-		toProtoFile(consensusTime);
 	}
 
 	private void toProtoFile(Instant exportTimeStamp) {
@@ -205,7 +213,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			var id = entry.getKey();
 			var account = entry.getValue();
 			if (!account.isDeleted()) {
-				var accountId = id.toAccountId();
+				var accountId = id.toGrpcAccountId();
 				var balance = account.getBalance();
 				if (nodeIds.contains(accountId) && balance < nodeBalanceWarnThreshold) {
 					log.warn(LOW_NODE_BALANCE_WARN_MSG_TPL,
@@ -214,8 +222,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 				}
 				totalFloat = totalFloat.add(BigInteger.valueOf(account.getBalance()));
 				SingleAccountBalances.Builder sabBuilder = SingleAccountBalances.newBuilder();
-				sabBuilder.setHbarBalance(balance)
-						.setAccountID(accountId);
+				sabBuilder.setHbarBalance(balance).setAccountID(accountId);
 				if (dynamicProperties.shouldExportTokenBalances()) {
 					addTokenBalances(accountId, account, sabBuilder, tokens, tokenAssociations);
 				}
@@ -230,8 +237,8 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			AccountID id,
 			MerkleAccount account,
 			SingleAccountBalances.Builder sabBuilder,
-			FCMap<MerkleEntityId, MerkleToken> tokens,
-			FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations
+			MerkleMap<EntityNum, MerkleToken> tokens,
+			MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations
 	) {
 		var accountTokens = account.tokens();
 		for (TokenID tokenId : accountTokens.asTokenIds()) {
@@ -245,16 +252,6 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 
 	private TokenUnitBalance tb(TokenID id, long balance) {
 		return TokenUnitBalance.newBuilder().setTokenId(id).setBalance(balance).build();
-	}
-
-	static String b64Encode(SingleAccountBalances accountBalances) {
-		var wrapper = TokenBalances.newBuilder();
-		for (TokenUnitBalance tokenUnitBalance : accountBalances.getTokenUnitBalancesList()) {
-			wrapper.addTokenBalances(TokenBalance.newBuilder()
-					.setTokenId(tokenUnitBalance.getTokenId())
-					.setBalance(tokenUnitBalance.getBalance()));
-		}
-		return encoder.encodeToString(wrapper.build().toByteArray());
 	}
 
 	private boolean ensureExportDir(AccountID node) {

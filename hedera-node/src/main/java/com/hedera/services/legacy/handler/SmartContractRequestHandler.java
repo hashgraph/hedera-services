@@ -9,9 +9,9 @@ package com.hedera.services.legacy.handler;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,9 +33,9 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.evm.SolidityExecutor;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.PureValidation;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
@@ -63,13 +63,15 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.fee.FeeBuilder;
 import com.swirlds.common.CommonUtils;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.core.Transaction;
 import org.ethereum.db.ServicesRepositoryRoot;
 import org.spongycastle.util.encoders.DecoderException;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.List;
@@ -103,6 +105,7 @@ import static com.hederahashgraph.builder.RequestBuilder.getTransactionRecord;
 /**
  * Post-consensus execution of smart contract api calls
  */
+@Singleton
 public class SmartContractRequestHandler {
 	private static final Logger log = LogManager.getLogger(SmartContractRequestHandler.class);
 
@@ -110,7 +113,7 @@ public class SmartContractRequestHandler {
 
 	private HederaLedger ledger;
 	private ServicesRepositoryRoot repository;
-	private Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
+	private Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 	private HbarCentExchange exchange;
 	private TransactionContext txnCtx;
 	private UsagePricesProvider usagePrices;
@@ -119,10 +122,11 @@ public class SmartContractRequestHandler {
 	private SoliditySigsVerifier sigsVerifier;
 	private GlobalDynamicProperties dynamicProperties;
 
+	@Inject
 	public SmartContractRequestHandler(
 			ServicesRepositoryRoot repository,
 			HederaLedger ledger,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			TransactionContext txnCtx,
 			HbarCentExchange exchange,
 			UsagePricesProvider usagePrices,
@@ -304,7 +308,7 @@ public class SmartContractRequestHandler {
 				getContractCallRbhInTinyBars(mockConsensusTime),
 				getContractCallSbhInTinyBars(mockConsensusTime),
 				txnCtx,
-		true,
+				true,
 				sigsVerifier,
 				dynamicProperties);
 
@@ -398,7 +402,7 @@ public class SmartContractRequestHandler {
 
 	private void setParentPropertiesForChildrenContracts(AccountID parent, List<ContractID> children) {
 		MerkleAccount parentAccount = ledger.get(parent);
-		HederaAccountCustomizer customizer = new HederaAccountCustomizer().key(parentAccount.getKey())
+		HederaAccountCustomizer customizer = new HederaAccountCustomizer().key(parentAccount.getAccountKey())
 				.memo(parentAccount.getMemo())
 				.expiry(parentAccount.getExpiry())
 				.autoRenewPeriod(parentAccount.getAutoRenewSecs())
@@ -475,20 +479,20 @@ public class SmartContractRequestHandler {
 			try {
 				rbhInTinybars = getContractCallRbhInTinyBars(consensusTimeStamp);
 				sbhInTinybars = getContractCallSbhInTinyBars(consensusTimeStamp);
-				var record = run(
-					tx,
-					senderAccountEthAddress,
-					transaction,
-					consensusTime,
-					startTime,
-					sequenceNum,
-					rbhInTinybars,
-					sbhInTinybars,
-					false);
+				final var txnRecord = run(
+						tx,
+						senderAccountEthAddress,
+						transaction,
+						consensusTime,
+						startTime,
+						sequenceNum,
+						rbhInTinybars,
+						sbhInTinybars,
+						false);
 				setParentPropertiesForChildrenContracts(
 						receiverAccount,
-						record.getContractCallResult().getCreatedContractIDsList());
-				return record;
+						txnRecord.getContractCallResult().getCreatedContractIDsList());
+				return txnRecord;
 			} catch (Exception e) {
 				log.warn("Unhandled exception during EVM transaction", e);
 				return getFailureTransactionRecord(transaction, consensusTime, CONTRACT_EXECUTION_EXCEPTION);
@@ -574,7 +578,8 @@ public class SmartContractRequestHandler {
 	/**
 	 * check if a contract with given contractId exists
 	 *
-	 * @param contractID the contract id to check for existence
+	 * @param contractID
+	 * 		the contract id to check for existence
 	 * @return CONTRACT_DELETED if deleted, INVALID_CONTRACT_ID if doesn't exist, OK otherwise
 	 */
 	public ResponseCodeEnum validateContractExistence(ContractID contractID) {

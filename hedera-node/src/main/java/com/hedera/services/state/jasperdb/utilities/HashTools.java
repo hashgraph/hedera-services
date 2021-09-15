@@ -12,7 +12,6 @@ public class HashTools {
     public static final DigestType DEFAULT_DIGEST = DigestType.SHA_384;
     public static final int HASH_SIZE_BYTES = DEFAULT_DIGEST.digestLength();
 
-
     public static ByteBuffer hashToByteBuffer(Hash hash) {
         ByteBuffer buf = ByteBuffer.allocate(HASH_SIZE_BYTES);
         buf.put(hash.getValue());
@@ -48,6 +47,17 @@ public class HashTools {
     }
 
     public static final class NoCopyHash extends Hash {
+        private static final long CLASS_ID = 0x3ddc77ef7d291ab5l;
+
+        @Override
+        public long getClassId() {
+            return CLASS_ID;
+        }
+
+        public NoCopyHash() {
+            /* RuntimeConstructable */
+        }
+
         public NoCopyHash(byte[] bytes) {
             super(bytes, DEFAULT_DIGEST, true, false);
         }

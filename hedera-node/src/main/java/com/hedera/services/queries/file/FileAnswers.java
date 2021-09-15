@@ -20,10 +20,15 @@ package com.hedera.services.queries.file;
  * ‍
  */
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class FileAnswers {
 	private final GetFileInfoAnswer getFileInfo;
 	private final GetFileContentsAnswer getFileContents;
 
+	@Inject
 	public FileAnswers(GetFileInfoAnswer getFileInfo, GetFileContentsAnswer getFileContents) {
 		this.getFileInfo = getFileInfo;
 		this.getFileContents = getFileContents;

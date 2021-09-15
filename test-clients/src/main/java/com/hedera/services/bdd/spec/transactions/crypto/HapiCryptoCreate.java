@@ -23,16 +23,22 @@ package com.hedera.services.bdd.spec.transactions.crypto;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hedera.services.usage.BaseTransactionMeta;
+import com.hedera.services.usage.crypto.CryptoCreateMeta;
+import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -45,6 +51,7 @@ import java.util.function.Function;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.netOf;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
@@ -72,6 +79,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 	private Optional<KeyType> keyType = Optional.empty();
 	private Optional<SigControl> keyShape = Optional.empty();
 	private Optional<Function<HapiApiSpec, Long>> balanceFn = Optional.empty();
+	private Optional<Integer> maxAutomaticTokenAssociations = Optional.empty();
 
 
 	@Override
@@ -128,6 +136,11 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 		return this;
 	}
 
+	public HapiCryptoCreate maxAutomaticTokenAssociations(int max) {
+		maxAutomaticTokenAssociations = Optional.of(max);
+		return this;
+	}
+
 	public HapiCryptoCreate balance(Function<HapiApiSpec, Long> fn) {
 		balanceFn = Optional.of(fn);
 		return this;
@@ -171,7 +184,15 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
 		return spec.fees().forActivityBasedOp(
-				HederaFunctionality.CryptoCreate, cryptoFees::getCryptoCreateTxFeeMatrices, txn, numPayerKeys);
+				HederaFunctionality.CryptoCreate, this::usageEstimate, txn, numPayerKeys);
+	}
+
+	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
+		var baseMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
+		var opMeta = new CryptoCreateMeta(txn);
+		var accumulator = new UsageAccumulator();
+		cryptoOpsUsage.cryptoCreateUsage(suFrom(svo), baseMeta, opMeta, accumulator);
+		return AdapterUtils.feeDataFrom(accumulator);
 	}
 
 	@Override
@@ -184,14 +205,15 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 				.<CryptoCreateTransactionBody, CryptoCreateTransactionBody.Builder>body(
 						CryptoCreateTransactionBody.class, b -> {
 							b.setKey(key);
-							proxy.ifPresent(p -> b.setProxyAccountID(p));
-							entityMemo.ifPresent(m -> b.setMemo(m));
-							sendThresh.ifPresent(a -> b.setSendRecordThreshold(a));
-							receiveThresh.ifPresent(a -> b.setReceiveRecordThreshold(a));
-							initialBalance.ifPresent(a -> b.setInitialBalance(a));
-							receiverSigRequired.ifPresent(r -> b.setReceiverSigRequired(r));
+							proxy.ifPresent(b::setProxyAccountID);
+							entityMemo.ifPresent(b::setMemo);
+							sendThresh.ifPresent(b::setSendRecordThreshold);
+							receiveThresh.ifPresent(b::setReceiveRecordThreshold);
+							initialBalance.ifPresent(b::setInitialBalance);
+							receiverSigRequired.ifPresent(b::setReceiverSigRequired);
 							autoRenewDurationSecs.ifPresent(
 									s -> b.setAutoRenewPeriod(Duration.newBuilder().setSeconds(s).build()));
+							maxAutomaticTokenAssociations.ifPresent(b::setMaxAutomaticTokenAssociations);
 						});
 		return b -> b.setCryptoCreateAccount(opBody);
 	}

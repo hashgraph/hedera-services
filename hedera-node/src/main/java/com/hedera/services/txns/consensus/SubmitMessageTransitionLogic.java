@@ -22,16 +22,18 @@ package com.hedera.services.txns.consensus;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.IOException;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -45,7 +47,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MESSAGE_SIZE_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-
+@Singleton
 public class SubmitMessageTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(SubmitMessageTransitionLogic.class);
 
@@ -53,11 +55,12 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 
 	private final OptionValidator validator;
 	private final TransactionContext transactionContext;
-	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
+	private final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics;
 	private final GlobalDynamicProperties globalDynamicProperties;
 
+	@Inject
 	public SubmitMessageTransitionLogic(
-			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
+			Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
 			OptionValidator validator,
 			TransactionContext transactionContext,
 			GlobalDynamicProperties globalDynamicProperties
@@ -107,7 +110,7 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 			}
 		}
 
-		var topicId = MerkleEntityId.fromTopicId(op.getTopicID());
+		var topicId = EntityNum.fromTopicId(op.getTopicID());
 		var mutableTopic = topics.get().getForModify(topicId);
 		try {
 			mutableTopic.updateRunningHashAndSequenceNumber(

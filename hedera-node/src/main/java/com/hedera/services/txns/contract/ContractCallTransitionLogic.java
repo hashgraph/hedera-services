@@ -22,17 +22,19 @@ package com.hedera.services.txns.contract;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -43,6 +45,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+@Singleton
 public class ContractCallTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(ContractCallTransitionLogic.class);
 
@@ -50,16 +53,17 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
 	private final Supplier<SequenceNumber> seqNo;
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> contracts;
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
+	@Inject
 	public ContractCallTransitionLogic(
 			LegacyCaller delegate,
 			OptionValidator validator,
 			TransactionContext txnCtx,
 			Supplier<SequenceNumber> seqNo,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> contracts
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts
 	) {
 		this.delegate = delegate;
 		this.validator = validator;

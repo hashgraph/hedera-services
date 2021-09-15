@@ -35,17 +35,16 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.legacy.TestHelper;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
-import com.hedera.services.legacy.unit.FCStorageWrapper;
 import com.hedera.services.legacy.unit.StorageKeyNotFoundException;
+import com.hedera.services.legacy.unit.StorageTestHelper;
 import com.hedera.services.legacy.util.SCEncoding;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleBlobMeta;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.mocks.SolidityLifecycleFactory;
 import com.hedera.test.mocks.StorageSourceFactory;
@@ -72,8 +71,7 @@ import com.hederahashgraph.builder.RequestBuilder;
 import com.swirlds.common.CommonUtils;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.fcmap.FCMap;
-import com.swirlds.merkletree.MerklePair;
+import com.swirlds.merkle.map.MerkleMap;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.apache.commons.collections4.Predicate;
@@ -106,11 +104,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-/**
- * @author oc/peter
- * @version Junit5 Tests the SmartContractRequestHandler class features
- */
-
 class SmartContractRequestHandlerStorageTest {
   private static final String SIMPLE_STORAGE_BIN = "/testfiles/simpleStorage.bin";
   private static final String CHILD_STORAGE_BIN = "/testfiles/ChildStorage.bin";
@@ -126,11 +119,10 @@ class SmartContractRequestHandlerStorageTest {
 	public static String ADDRESS_PATH = "/{0}/s{1}";
 	SmartContractRequestHandler smartHandler;
   FileServiceHandler fsHandler;
-  FCMap<MerkleEntityId, MerkleAccount> contracts = null;
-  private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap;
+  MerkleMap<EntityNum, MerkleAccount> contracts = null;
+  private MerkleMap<String, MerkleOptionalBlob> storageMap;
   ServicesRepositoryRoot repository;
 
-  MerkleEntityId payerMerkleEntityId; // fcMap key for payer account
   byte[] payerKeyBytes = null; // Repository key for payer account
   AccountID payerAccountId;
   AccountID nodeAccountId;
@@ -139,15 +131,17 @@ class SmartContractRequestHandlerStorageTest {
   BigInteger gasPrice;
   private long selfID = 9870798L;
   private LedgerAccountsSource ledgerSource;
-  private FCStorageWrapper storageWrapper;
+  private StorageTestHelper storageWrapper;
   private HederaLedger ledger;
+  private BackingAccounts backingAccounts;
 
   private ServicesRepositoryRoot getLocalRepositoryInstance() {
     DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
+    backingAccounts = new BackingAccounts(() -> contracts);
     TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
             AccountProperty.class,
             MerkleAccount::new,
-			new BackingAccounts(() -> contracts),
+			backingAccounts,
             new ChangeSummaryManager<>());
     ledger = new HederaLedger(
             mock(TokenStore.class),
@@ -168,8 +162,6 @@ class SmartContractRequestHandlerStorageTest {
   void setUp() throws Exception {
     // setup:
     ConstructableRegistry.registerConstructable(
-            new ClassConstructorPair(MerklePair.class, MerklePair::new));
-    ConstructableRegistry.registerConstructable(
             new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
 
     payerAccountId = RequestBuilder.getAccountIdBuild(payerAccount, 0l, 0l);
@@ -177,8 +169,8 @@ class SmartContractRequestHandlerStorageTest {
     feeCollAccountId = RequestBuilder.getAccountIdBuild(feeCollAccount, 0l, 0l);
     contractFileId = RequestBuilder.getFileIdBuild(contractFileNumber, 0L, 0L);
 
-    contracts = new FCMap<>();
-    storageMap = new FCMap<>();
+    contracts = new MerkleMap<>();
+    storageMap = new MerkleMap<>();
     createAccount(payerAccountId, 1_000_000_000L);
     createAccount(nodeAccountId, 10_000L);
     createAccount(feeCollAccountId, 10_000L);
@@ -207,7 +199,7 @@ class SmartContractRequestHandlerStorageTest {
             ignore -> true,
             null,
             new MockGlobalDynamicProps());
-    storageWrapper = new FCStorageWrapper(storageMap);
+    storageWrapper = new StorageTestHelper(storageMap);
     fsHandler = new FileServiceHandler(storageWrapper);
     String key = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, payerAccount));
     try {
@@ -215,20 +207,14 @@ class SmartContractRequestHandlerStorageTest {
     } catch (IllegalArgumentException e) {
       Assertions.fail("Failure building solidity key for payer account");
     }
-    payerMerkleEntityId = new MerkleEntityId();
-    payerMerkleEntityId.setNum(payerAccount);
-    payerMerkleEntityId.setRealm(0);
-    payerMerkleEntityId.setShard(0);
+
+    backingAccounts.rebuildFromSources();
   }
 
-  private void createAccount(AccountID payerAccount, long balance)
-      throws NegativeAccountBalanceException {
-    MerkleEntityId mk = new MerkleEntityId();
-    mk.setNum(payerAccount.getAccountNum());
-    mk.setRealm(0);
+  private void createAccount(AccountID payerAccount, long balance) throws NegativeAccountBalanceException {
     MerkleAccount mv = new MerkleAccount();
     mv.setBalance(balance);
-    contracts.put(mk, mv);
+    contracts.put(EntityNum.fromAccountId(payerAccount), mv);
   }
 
   private byte[] createFile(String filePath, FileID fileId) {
@@ -299,14 +285,10 @@ class SmartContractRequestHandlerStorageTest {
   }
 
   private void checkContractArtifactsExist(ContractID contractId) {
-    MerkleEntityId mk = new MerkleEntityId();
-    mk.setNum(contractId.getContractNum());
-    mk.setRealm(contractId.getRealmNum());
-    mk.setShard(contractId.getShardNum());
-    MerkleAccount mv = contracts.get(mk);
+    MerkleAccount mv = contracts.get(EntityNum.fromLong(contractId.getContractNum()));
     Assertions.assertNotNull(mv);
-    Assertions.assertNotNull(mv.getKey());
-    Assertions.assertNotNull(mv.getKey());
+    Assertions.assertNotNull(mv.getAccountKey());
+    Assertions.assertNotNull(mv.getAccountKey());
 
     String bytesPath = String.format("/%d/s%d", contractId.getRealmNum(), contractId.getContractNum());
     Assertions.assertTrue(storageWrapper.fileExists(bytesPath));

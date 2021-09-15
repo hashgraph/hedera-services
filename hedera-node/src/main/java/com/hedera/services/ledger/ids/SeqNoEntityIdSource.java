@@ -31,6 +31,12 @@ import java.util.function.Supplier;
 public class SeqNoEntityIdSource implements EntityIdSource {
 	private final Supplier<SequenceNumber> seqNo;
 
+	/**
+	 * Tracks the newly created {@link com.hedera.services.state.submerkle.EntityId} during the {@link com.hedera.services.txns.TransitionLogic} of an operation
+	 * Utilised only in refactored Transition Logics - currently only {@link com.hedera.services.txns.token.TokenCreateTransitionLogic}
+	 */
+	private int provisionalIds = 0;
+
 	public SeqNoEntityIdSource(Supplier<SequenceNumber> seqNo) {
 		this.seqNo = seqNo;
 	}
@@ -55,6 +61,7 @@ public class SeqNoEntityIdSource implements EntityIdSource {
 
 	@Override
 	public TokenID newTokenId(AccountID sponsor) {
+		provisionalIds++;
 		return TokenID.newBuilder()
 				.setRealmNum(sponsor.getRealmNum())
 				.setShardNum(sponsor.getShardNum())
@@ -74,5 +81,23 @@ public class SeqNoEntityIdSource implements EntityIdSource {
 	@Override
 	public void reclaimLastId() {
 		seqNo.get().decrement();
+	}
+
+	@Override
+	public void reclaimProvisionalIds() {
+		final var curSeqNo = seqNo.get();
+		while (provisionalIds != 0) {
+			curSeqNo.decrement();
+			--provisionalIds;
+		}
+	}
+
+	@Override
+	public void resetProvisionalIds() {
+		provisionalIds = 0;
+	}
+
+	int getProvisionalIds() {
+		return provisionalIds;
 	}
 }

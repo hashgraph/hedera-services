@@ -21,7 +21,6 @@ package com.hedera.services.store.models;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -125,9 +124,5 @@ public class Id {
 
 	public EntityId asEntityId() {
 		return new EntityId(shard, realm, num);
-	}
-
-	public MerkleEntityId asMerkle() {
-		return new MerkleEntityId(shard, realm, num);
 	}
 }

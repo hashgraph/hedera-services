@@ -20,14 +20,15 @@ package com.hedera.services.fees.calculation;
  * ‍
  */
 
-import com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
@@ -42,7 +43,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import javax.inject.Inject;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -69,7 +69,7 @@ class AutoRenewCalcsTest {
 			.setCentEquiv(10)
 			.build();
 
-	@Inject
+	@LoggingTarget
 	private LogCaptor logCaptor;
 
 	@LoggingSubject
@@ -175,10 +175,11 @@ class AutoRenewCalcsTest {
 		// given:
 		var expectedCtx = ExtantCryptoContext.newBuilder()
 				.setCurrentExpiry(0L)
-				.setCurrentKey(MiscUtils.asKeyUnchecked(expiredAccount.getKey()))
+				.setCurrentKey(MiscUtils.asKeyUnchecked(expiredAccount.getAccountKey()))
 				.setCurrentlyHasProxy(true)
 				.setCurrentMemo(expiredAccount.getMemo())
 				.setCurrentNumTokenRels(expiredAccount.tokens().numAssociations())
+				.setCurrentMaxAutomaticAssociations(expiredAccount.getMaxAutomaticAssociations())
 				.build();
 
 		// expect:

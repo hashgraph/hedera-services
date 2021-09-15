@@ -51,6 +51,8 @@ public class MerkleAccountFactory {
 	private Optional<String> memo = Optional.empty();
 	private Optional<Boolean> isSmartContract = Optional.empty();
 	private Optional<AccountID> proxy = Optional.empty();
+	private Optional<Integer>  alreadyUsedAutoAssociations = Optional.empty();
+	private Optional<Integer>  maxAutoAssociations = Optional.empty();
 	private Set<TokenID> associatedTokens = new HashSet<>();
 	private Set<Id> assocTokens = new HashSet<>();
 
@@ -60,11 +62,13 @@ public class MerkleAccountFactory {
 		proxy.ifPresent(p -> value.setProxy(EntityId.fromGrpcAccountId(p)));
 		balance.ifPresent(b -> { try { value.setBalance(b); } catch (Exception ignore) {} });
 		deleted.ifPresent(value::setDeleted);
-		accountKeys.ifPresent(value::setKey);
+		accountKeys.ifPresent(value::setAccountKey);
 		expirationTime.ifPresent(value::setExpiry);
 		autoRenewPeriod.ifPresent(value::setAutoRenewSecs);
 		isSmartContract.ifPresent(value::setSmartContract);
 		receiverSigRequired.ifPresent(value::setReceiverSigRequired);
+		maxAutoAssociations.ifPresent(value::setMaxAutomaticAssociations);
+		alreadyUsedAutoAssociations.ifPresent(value::setAlreadyUsedAutomaticAssociations);
 		var tokens = new MerkleAccountTokens();
 		if (useNewStyleTokenIds) {
 			tokens.associate(assocTokens);
@@ -148,6 +152,14 @@ public class MerkleAccountFactory {
 	}
 	public MerkleAccountFactory isSmartContract(boolean b) {
 		isSmartContract = Optional.of(b);
+		return this;
+	}
+	public MerkleAccountFactory maxAutomaticAssociations(int max) {
+		maxAutoAssociations = Optional.of(max);
+		return this;
+	}
+	public MerkleAccountFactory alreadyUsedAutomaticAssociations(int count) {
+		alreadyUsedAutoAssociations = Optional.of(count);
 		return this;
 	}
 }

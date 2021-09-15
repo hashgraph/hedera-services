@@ -34,7 +34,12 @@ import java.util.Set;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.getMaxAutomaticAssociationsFrom;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.setMaxAutomaticAssociationsTo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 
@@ -56,6 +61,7 @@ public class Account {
 	private boolean deleted = false;
 	private CopyOnWriteIds associatedTokens;
 	private long ownedNfts;
+	private int autoAssociationMetadata;
 
 	public Account(Id id) {
 		this.id = id;
@@ -85,7 +91,42 @@ public class Account {
 		this.ownedNfts++;
 	}
 
-	public void associateWith(List<Token> tokens, int maxAllowed) {
+	public void setAutoAssociationMetadata(int autoAssociationMetadata) {
+		this.autoAssociationMetadata = autoAssociationMetadata;
+	}
+
+	public int getAutoAssociationMetadata() {
+		return autoAssociationMetadata;
+	}
+
+	public int getMaxAutomaticAssociations() {
+		return getMaxAutomaticAssociationsFrom(autoAssociationMetadata);
+	}
+
+	public int getAlreadyUsedAutomaticAssociations() {
+		return getAlreadyUsedAutomaticAssociationsFrom(autoAssociationMetadata);
+	}
+
+	public void setMaxAutomaticAssociations(int maxAutomaticAssociations) {
+		autoAssociationMetadata = setMaxAutomaticAssociationsTo(autoAssociationMetadata, maxAutomaticAssociations);
+	}
+
+	public void setAlreadyUsedAutomaticAssociations(int alreadyUsedCount) {
+		validateTrue(isValidAlreadyUsedCount(alreadyUsedCount), NO_REMAINING_AUTOMATIC_ASSOCIATIONS );
+		autoAssociationMetadata = setAlreadyUsedAutomaticAssociationsTo(autoAssociationMetadata, alreadyUsedCount);
+	}
+
+	public void incrementUsedAutomaticAssocitions() {
+		var count = getAlreadyUsedAutomaticAssociations();
+		setAlreadyUsedAutomaticAssociations(++count);
+	}
+
+	public void decrementUsedAutomaticAssocitions() {
+		var count = getAlreadyUsedAutomaticAssociations();
+		setAlreadyUsedAutomaticAssociations(--count);
+	}
+
+	public void associateWith(List<Token> tokens, int maxAllowed, boolean automaticAssociation) {
 		final var alreadyAssociated = associatedTokens.size();
 		final var proposedNewAssociations = tokens.size() + alreadyAssociated;
 		validateTrue(proposedNewAssociations <= maxAllowed, TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
@@ -94,6 +135,9 @@ public class Account {
 		for (var token : tokens) {
 			final var id = token.getId();
 			validateFalse(associatedTokens.contains(id), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
+			if (automaticAssociation) {
+				incrementUsedAutomaticAssocitions();
+			}
 			uniqueIds.add(id);
 		}
 
@@ -113,6 +157,9 @@ public class Account {
 			validateTrue(id.equals(dissociation.dissociatingAccountId()), FAIL_INVALID);
 			dissociation.updateModelRelsSubjectTo(validator);
 			dissociatedTokenIds.add(dissociation.dissociatedTokenId());
+			if (dissociation.dissociatingAccountRel().isAutomaticAssociation()) {
+				decrementUsedAutomaticAssocitions();
+			}
 		}
 		associatedTokens.removeAllIds(dissociatedTokenIds);
 	}
@@ -123,6 +170,14 @@ public class Account {
 
 	public CopyOnWriteIds getAssociatedTokens() {
 		return associatedTokens;
+	}
+
+	public boolean isAssociatedWith(Id token) {
+		return associatedTokens.contains(token);
+	}
+
+	private boolean isValidAlreadyUsedCount(int alreadyUsedCount) {
+		return alreadyUsedCount >= 0 && alreadyUsedCount <= getMaxAutomaticAssociations();
 	}
 
 	/* NOTE: The object methods below are only overridden to improve
@@ -149,6 +204,9 @@ public class Account {
 				.add("balance", balance)
 				.add("deleted", deleted)
 				.add("tokens", assocTokenRepr)
+				.add("ownedNfts", ownedNfts)
+				.add("alreadyUsedAutoAssociations", getAlreadyUsedAutomaticAssociations())
+				.add("maxAutoAssociations", getMaxAutomaticAssociations())
 				.toString();
 	}
 }

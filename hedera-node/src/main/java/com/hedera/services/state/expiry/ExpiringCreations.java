@@ -20,26 +20,28 @@ package com.hedera.services.state.expiry;
  * ‍
  */
 
-import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.fees.charging.NarratedCharging;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
-import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,70 +50,73 @@ import java.util.function.Supplier;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcScheduleId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
+@Singleton
 public class ExpiringCreations implements EntityCreator {
-	private RecordCache recordCache;
+	private HederaLedger ledger;
 
 	private final ExpiryManager expiries;
+	private final NarratedCharging narratedCharging;
 	private final GlobalDynamicProperties dynamicProperties;
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
+	@Inject
 	public ExpiringCreations(
-			ExpiryManager expiries,
-			GlobalDynamicProperties dynamicProperties,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
+			final ExpiryManager expiries,
+			final NarratedCharging narratedCharging,
+			final GlobalDynamicProperties dynamicProperties,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {
 		this.accounts = accounts;
 		this.expiries = expiries;
+		this.narratedCharging = narratedCharging;
 		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
-	public void setRecordCache(RecordCache recordCache) {
-		this.recordCache = recordCache;
+	public void setLedger(final HederaLedger ledger) {
+		this.ledger = ledger;
+
+		narratedCharging.setLedger(ledger);
 	}
 
 	@Override
 	public ExpirableTxnRecord saveExpiringRecord(
-			AccountID payer,
-			ExpirableTxnRecord expiringRecord,
-			long consensusTime,
-			long submittingMember
+			final AccountID payer,
+			final ExpirableTxnRecord expiringRecord,
+			final long consensusTime,
+			final long submittingMember
 	) {
 		final long expiry = consensusTime + dynamicProperties.cacheRecordsTtl();
 		expiringRecord.setExpiry(expiry);
 		expiringRecord.setSubmittingMember(submittingMember);
 
-		if (dynamicProperties.shouldKeepRecordsInState()) {
-			final var key = MerkleEntityId.fromAccountId(payer);
-			addToState(key, expiringRecord);
-			expiries.trackRecordInState(payer, expiringRecord.getExpiry());
-		} else {
-			recordCache.trackForExpiry(expiringRecord);
-		}
+		final var key = EntityNum.fromAccountId(payer);
+		addToState(key, expiringRecord);
+		expiries.trackRecordInState(payer, expiringRecord.getExpiry());
 
 		return expiringRecord;
 	}
 
 	@Override
 	public ExpirableTxnRecord.Builder buildExpiringRecord(
-			long otherNonThresholdFees,
-			byte[] hash,
-			TxnAccessor accessor,
-			Instant consensusTime,
-			TxnReceipt receipt,
-			List<TokenTransferList> explicitTokenTransfers,
-			ServicesContext ctx,
-			List<FcAssessedCustomFee> customFeesCharged
+			final long otherNonThresholdFees,
+			final byte[] hash,
+			final TxnAccessor accessor,
+			final Instant consensusTime,
+			final TxnReceipt receipt,
+			final List<TokenTransferList> explicitTokenTransfers,
+			final List<FcAssessedCustomFee> customFeesCharged,
+			final List<FcTokenAssociation> newTokenAssociations
 	) {
-		final long amount = ctx.narratedCharging().totalFeesChargedToPayer() + otherNonThresholdFees;
-		final TransferList transfersList = ctx.ledger().netTransfersInTxn();
+		final long amount = narratedCharging.totalFeesChargedToPayer() + otherNonThresholdFees;
+		final var transfersList = ledger.netTransfersInTxn();
 		final var tokenTransferList = explicitTokenTransfers != null
 				? explicitTokenTransfers
-				: ctx.ledger().netTokenTransfersInTxn();
+				: ledger.netTokenTransfersInTxn();
 		final var currencyAdjustments = transfersList.getAccountAmountsCount() > 0
 				? CurrencyAdjustments.fromGrpc(transfersList) : null;
 
-		var builder = ExpirableTxnRecord.newBuilder()
+		final var builder = ExpirableTxnRecord.newBuilder()
 				.setReceipt(receipt)
 				.setTxnHash(hash)
 				.setTxnId(TxnId.fromGrpc(accessor.getTxnId()))
@@ -120,7 +125,9 @@ public class ExpiringCreations implements EntityCreator {
 				.setFee(amount)
 				.setTransferList(currencyAdjustments)
 				.setScheduleRef(accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null)
-				.setCustomFeesCharged(customFeesCharged);
+				.setCustomFeesCharged(customFeesCharged)
+				.setNewTokenAssociations(newTokenAssociations != null ?
+						newTokenAssociations : ledger.getNewTokenAssociations());
 
 		if (!tokenTransferList.isEmpty()) {
 			setTokensAndTokenAdjustments(builder, tokenTransferList);
@@ -130,8 +137,11 @@ public class ExpiringCreations implements EntityCreator {
 	}
 
 	@Override
-	public ExpirableTxnRecord.Builder buildFailedExpiringRecord(TxnAccessor accessor, Instant consensusTime) {
-		var txnId = accessor.getTxnId();
+	public ExpirableTxnRecord.Builder buildFailedExpiringRecord(
+			final TxnAccessor accessor,
+			final Instant consensusTime
+	) {
+		final var txnId = accessor.getTxnId();
 
 		return ExpirableTxnRecord.newBuilder()
 				.setTxnId(TxnId.fromGrpc(txnId))
@@ -143,23 +153,23 @@ public class ExpiringCreations implements EntityCreator {
 	}
 
 	private void setTokensAndTokenAdjustments(
-			ExpirableTxnRecord.Builder builder,
-			List<TokenTransferList> tokenTransferList
+			final ExpirableTxnRecord.Builder builder,
+			final List<TokenTransferList> tokenTransferList
 	) {
 		final List<EntityId> tokens = new ArrayList<>();
 		final List<CurrencyAdjustments> tokenAdjustments = new ArrayList<>();
 		final List<NftAdjustments> nftTokenAdjustments = new ArrayList<>();
-		for (TokenTransferList tokenTransfers : tokenTransferList) {
-			tokens.add(EntityId.fromGrpcTokenId(tokenTransfers.getToken()));
-			tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList()));
-			nftTokenAdjustments.add(NftAdjustments.fromGrpc(tokenTransfers.getNftTransfersList()));
+		for (final var tokenTransfer : tokenTransferList) {
+			tokens.add(EntityId.fromGrpcTokenId(tokenTransfer.getToken()));
+			tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfer.getTransfersList()));
+			nftTokenAdjustments.add(NftAdjustments.fromGrpc(tokenTransfer.getNftTransfersList()));
 		}
 		builder.setTokens(tokens).setTokenAdjustments(tokenAdjustments).setNftTokenAdjustments(nftTokenAdjustments);
 	}
 
-	private void addToState(MerkleEntityId key, ExpirableTxnRecord record) {
+	private void addToState(final EntityNum key, final ExpirableTxnRecord expirableTxnRecord) {
 		final var currentAccounts = accounts.get();
 		final var mutableAccount = currentAccounts.getForModify(key);
-		mutableAccount.records().offer(record);
+		mutableAccount.records().offer(expirableTxnRecord);
 	}
 }

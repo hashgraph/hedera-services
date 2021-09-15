@@ -37,6 +37,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
@@ -51,6 +53,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_S
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+@Singleton
 public class ScheduleCreateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(ScheduleCreateTransitionLogic.class);
 
@@ -68,12 +71,14 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 	SigMapScheduleClassifier classifier = new SigMapScheduleClassifier();
 	SignatoryUtils.ScheduledSigningsWitness signingsWitness = SignatoryUtils::witnessScoped;
 
+	@Inject
 	public ScheduleCreateTransitionLogic(
 			ScheduleStore store,
 			TransactionContext txnCtx,
 			InHandleActivationHelper activationHelper,
 			OptionValidator validator,
-			ScheduleExecutor executor) {
+			ScheduleExecutor executor
+	) {
 		this.store = store;
 		this.txnCtx = txnCtx;
 		this.activationHelper = activationHelper;

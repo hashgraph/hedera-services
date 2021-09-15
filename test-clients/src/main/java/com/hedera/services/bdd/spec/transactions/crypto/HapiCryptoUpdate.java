@@ -22,6 +22,7 @@ package com.hedera.services.bdd.spec.transactions.crypto;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.BoolValue;
+import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import com.google.protobuf.UInt64Value;
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -70,6 +71,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	private Optional<String> entityMemo = Optional.empty();
 	private Optional<String> updKeyName = Optional.empty();
 	private Optional<Boolean> updSigRequired = Optional.empty();
+	private Optional<Integer> newMaxAutomaticAssociations = Optional.empty();
 
 	public HapiCryptoUpdate(String account) {
 		this.account = account;
@@ -125,6 +127,11 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 		return this;
 	}
 
+	public HapiCryptoUpdate maxAutomaticAssociations(int max) {
+		newMaxAutomaticAssociations = Optional.of(max);
+		return this;
+	}
+
 	@Override
 	public HederaFunctionality type() {
 		return HederaFunctionality.CryptoUpdate;
@@ -168,6 +175,8 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 											UInt64Value.newBuilder().setValue(v).build()));
 							newExpiry.ifPresent(l ->
 								builder.setExpirationTime(Timestamp.newBuilder().setSeconds(l).build()));
+							newMaxAutomaticAssociations.ifPresent(p ->
+									builder.setMaxAutomaticTokenAssociations(Int32Value.of(p)));
 						}
 				);
 		return builder -> builder.setCryptoUpdateAccount(opBody);

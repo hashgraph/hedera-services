@@ -24,8 +24,16 @@ import com.hedera.services.ServicesState;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class HashLogger {
 	private static final Logger log = LogManager.getLogger(HashLogger.class);
+
+	@Inject
+	public HashLogger() {
+	}
 
 	public void logHashesFor(ServicesState state) {
 		log.info("[SwirldState Hashes]\n" +

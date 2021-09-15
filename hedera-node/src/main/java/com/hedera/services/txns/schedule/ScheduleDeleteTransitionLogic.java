@@ -29,6 +29,9 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.time.Instant;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -37,17 +40,18 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-public class ScheduleDeleteTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(ScheduleCreateTransitionLogic.class);
+@Singleton
+public final class ScheduleDeleteTransitionLogic implements TransitionLogic {
+	private static final Logger log = LogManager.getLogger(ScheduleDeleteTransitionLogic.class);
 
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
+	private final ScheduleStore store;
+	private final TransactionContext txnCtx;
 
-	ScheduleStore store;
-	TransactionContext txnCtx;
-
+	@Inject
 	public ScheduleDeleteTransitionLogic(
-			ScheduleStore store,
-			TransactionContext txnCtx) {
+			final ScheduleStore store,
+			final TransactionContext txnCtx
+	) {
 		this.store = store;
 		this.txnCtx = txnCtx;
 	}
@@ -55,15 +59,15 @@ public class ScheduleDeleteTransitionLogic implements TransitionLogic {
 	@Override
 	public void doStateTransition() {
 		try {
-			transitionFor(txnCtx.accessor().getTxn().getScheduleDelete());
-		} catch (Exception e) {
+			transitionFor(txnCtx.accessor().getTxn().getScheduleDelete(), txnCtx.consensusTime());
+		} catch (final Exception e) {
 			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
 			txnCtx.setStatus(FAIL_INVALID);
 		}
 	}
 
-	private void transitionFor(ScheduleDeleteTransactionBody op) {
-		var outcome = store.delete(op.getScheduleID());
+	private void transitionFor(final ScheduleDeleteTransactionBody op, final Instant consensusTime) {
+		final var outcome = store.deleteAt(op.getScheduleID(), consensusTime);
 		txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
 	}
 
@@ -74,11 +78,11 @@ public class ScheduleDeleteTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
+		return this::validate;
 	}
 
-	public ResponseCodeEnum validate(TransactionBody txnBody) {
-		ScheduleDeleteTransactionBody op = txnBody.getScheduleDelete();
+	private ResponseCodeEnum validate(final TransactionBody txnBody) {
+		final var op = txnBody.getScheduleDelete();
 		if (!op.hasScheduleID()) {
 			return INVALID_SCHEDULE_ID;
 		}

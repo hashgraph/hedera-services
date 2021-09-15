@@ -31,6 +31,8 @@ import org.ethereum.core.AccountState;
 import org.ethereum.datasource.Source;
 import org.ethereum.util.ALock;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.math.BigInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -39,6 +41,7 @@ import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityA
 import static com.hedera.services.utils.EntityIdUtils.asContract;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 
+@Singleton
 public class LedgerAccountsSource implements Source<byte[], AccountState> {
 	private static final Logger log = LogManager.getLogger(LedgerAccountsSource.class);
 
@@ -47,6 +50,7 @@ public class LedgerAccountsSource implements Source<byte[], AccountState> {
 	private final ALock rLock = new ALock(rwLock.readLock());
 	private final ALock wLock = new ALock(rwLock.writeLock());
 
+	@Inject
 	public LedgerAccountsSource(HederaLedger ledger) {
 		this.ledger = ledger;
 	}
@@ -93,11 +97,11 @@ public class LedgerAccountsSource implements Source<byte[], AccountState> {
 
 	@Override
 	public void put(byte[] key, AccountState evmState) {
-		var id = accountParsedFromSolidityAddress(key);
+		final var id = accountParsedFromSolidityAddress(key);
 
 		if (evmState == null) {
-			String id_str = asLiteralString(id);
-			log.warn("Ignoring null state put to account {}!", id_str);
+			final var idStr = asLiteralString(id);
+			log.warn("Ignoring null state put to account {}!", idStr);
 			return;
 		}
 

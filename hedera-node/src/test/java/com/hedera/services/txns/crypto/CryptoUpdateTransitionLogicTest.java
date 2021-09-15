@@ -9,9 +9,9 @@ package com.hedera.services.txns.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,8 +21,10 @@ package com.hedera.services.txns.crypto;
  */
 
 import com.google.protobuf.BoolValue;
+import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.HederaLedger;
@@ -48,48 +50,50 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.time.Instant;
-import java.util.EnumMap;
 import java.util.EnumSet;
 
-import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.EXPIRY;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_RECEIVER_SIG_REQUIRED;
-import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.KEY;
-import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MEMO;
-import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.PROXY;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willThrow;
 
 class CryptoUpdateTransitionLogicTest {
-	final private Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
-	final private long curExpiry = consensusTime.getEpochSecond() + 2L;
-	final private long newExpiry = consensusTime.getEpochSecond() + 7776000L;
+	private static final Instant CONSENSUS_TIME = Instant.ofEpochSecond(1_234_567L);
+	private static final long CUR_EXPIRY = CONSENSUS_TIME.getEpochSecond() + 2L;
+	private static final long NEW_EXPIRY = CONSENSUS_TIME.getEpochSecond() + 7776000L;
+	private static final int CUR_MAX_AUTOMATIC_ASSOCIATIONS = 10;
+	private static final int NEW_MAX_AUTOMATIC_ASSOCIATIONS = 15;
+	private static final int MAX_TOKEN_ASSOCIATIONS = 12345;
 
-	final private Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
-	final private long autoRenewPeriod = 100_001L;
-	final private AccountID proxy = AccountID.newBuilder().setAccountNum(4_321L).build();
-	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
-	final private AccountID target = AccountID.newBuilder().setAccountNum(9_999L).build();
+	private static final Key KEY = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
+	private static final long AUTO_RENEW_PERIOD = 100_001L;
+	private static final AccountID PROXY = AccountID.newBuilder().setAccountNum(4_321L).build();
+	private static final AccountID PAYER = AccountID.newBuilder().setAccountNum(1_234L).build();
+	private static final AccountID TARGET = AccountID.newBuilder().setAccountNum(9_999L).build();
+	private static final String MEMO = "Not since life began";
 
-	private String memo = "Not since life began";
 	private boolean useLegacyFields;
 	private HederaLedger ledger;
 	private OptionValidator validator;
@@ -97,158 +101,165 @@ class CryptoUpdateTransitionLogicTest {
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
 	private CryptoUpdateTransitionLogic subject;
+	private GlobalDynamicProperties dynamicProperties;
 
 	@BeforeEach
 	private void setup() {
 		useLegacyFields = false;
 
 		txnCtx = mock(TransactionContext.class);
-		given(txnCtx.consensusTime()).willReturn(consensusTime);
+		given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME);
 		ledger = mock(HederaLedger.class);
 		accessor = mock(PlatformTxnAccessor.class);
 		validator = mock(OptionValidator.class);
+		dynamicProperties = mock(GlobalDynamicProperties.class);
+		given(dynamicProperties.maxTokensPerAccount()).willReturn(MAX_TOKEN_ASSOCIATIONS);
 		withRubberstampingValidator();
 
-		subject = new CryptoUpdateTransitionLogic(ledger, validator, txnCtx);
+		subject = new CryptoUpdateTransitionLogic(ledger, validator, txnCtx, dynamicProperties);
 	}
 
 	@Test
 	void updatesProxyIfPresent() {
-		// setup:
-		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
+		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
+		givenTxnCtx(EnumSet.of(AccountCustomizer.Option.PROXY));
 
-		givenTxnCtx(EnumSet.of(PROXY));
-
-		// when:
 		subject.doStateTransition();
 
-		// then:
-		verify(ledger).customize(argThat(target::equals), captor.capture());
+		verify(ledger).customize(argThat(TARGET::equals), captor.capture());
 		verify(txnCtx).setStatus(SUCCESS);
-		// and:
-		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
+		final var changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
-		assertEquals(EntityId.fromGrpcAccountId(proxy), changes.get(AccountProperty.PROXY));
+		assertEquals(EntityId.fromGrpcAccountId(PROXY), changes.get(AccountProperty.PROXY));
 	}
 
 
 	@Test
 	void updatesReceiverSigReqIfPresent() {
-		// setup:
-		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
-
+		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 		givenTxnCtx(EnumSet.of(IS_RECEIVER_SIG_REQUIRED));
 
-		// when:
 		subject.doStateTransition();
 
-		// then:
-		verify(ledger).customize(argThat(target::equals), captor.capture());
+		verify(ledger).customize(argThat(TARGET::equals), captor.capture());
 		verify(txnCtx).setStatus(SUCCESS);
-		// and:
-		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
+		final var changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
 		assertEquals(true, changes.get(AccountProperty.IS_RECEIVER_SIG_REQUIRED));
 	}
 
 	@Test
 	void updatesReceiverSigReqIfTrueInLegacy() {
-		// setup:
 		useLegacyFields = true;
-		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
-
+		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 		givenTxnCtx(EnumSet.of(IS_RECEIVER_SIG_REQUIRED));
 
-		// when:
 		subject.doStateTransition();
 
-		// then:
-		verify(ledger).customize(argThat(target::equals), captor.capture());
+		verify(ledger).customize(argThat(TARGET::equals), captor.capture());
 		verify(txnCtx).setStatus(SUCCESS);
-		// and:
-		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
+		final var changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
 		assertEquals(true, changes.get(AccountProperty.IS_RECEIVER_SIG_REQUIRED));
 	}
 
 	@Test
 	void updatesExpiryIfPresent() {
-		// setup:
-		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
-
+		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 		givenTxnCtx(EnumSet.of(EXPIRY));
 
-		// when:
 		subject.doStateTransition();
 
-		// then:
-		verify(ledger).customize(argThat(target::equals), captor.capture());
+		verify(ledger).customize(argThat(TARGET::equals), captor.capture());
 		verify(txnCtx).setStatus(SUCCESS);
-		// and:
-		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
+		final var changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
-		assertEquals(newExpiry, (long)changes.get(AccountProperty.EXPIRY));
+		assertEquals(NEW_EXPIRY, (long) changes.get(AccountProperty.EXPIRY));
 	}
 
 	@Test
-	void updatesMemoIfPresent() throws Throwable {
-		// setup:
-		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
+	void updatesMaxAutomaticAssociationsIfPresent() {
+		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
+		givenTxnCtx(EnumSet.of(MAX_AUTOMATIC_ASSOCIATIONS));
+		given(ledger.alreadyUsedAutomaticAssociations(any())).willReturn(CUR_MAX_AUTOMATIC_ASSOCIATIONS);
 
-		givenTxnCtx(EnumSet.of(MEMO));
-
-		// when:
 		subject.doStateTransition();
 
-		// then:
-		verify(ledger).customize(argThat(target::equals), captor.capture());
-		// and:
-		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
+		verify(ledger).customize(argThat(TARGET::equals), captor.capture());
+		verify(txnCtx).setStatus(SUCCESS);
+		final var changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
-		assertEquals(memo, changes.get(AccountProperty.MEMO));
+		assertEquals(NEW_MAX_AUTOMATIC_ASSOCIATIONS, (int) changes.get(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS));
 	}
 
 	@Test
-	void updatesAutoRenewIfPresent() throws Throwable {
-		// setup:
-		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
+	void updateMaxAutomaticAssociationsFailAsExpectedWithMaxLessThanAlreadyExisting() {
+		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
+		givenTxnCtx(EnumSet.of(MAX_AUTOMATIC_ASSOCIATIONS));
+		given(ledger.alreadyUsedAutomaticAssociations(any())).willReturn(NEW_MAX_AUTOMATIC_ASSOCIATIONS + 1);
 
-		givenTxnCtx(EnumSet.of(AUTO_RENEW_PERIOD));
-
-		// when:
 		subject.doStateTransition();
 
-		// then:
-		verify(ledger).customize(argThat(target::equals), captor.capture());
-		// and:
-		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
+		verify(ledger, never()).customize(argThat(TARGET::equals), captor.capture());
+		verify(txnCtx).setStatus(EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT);
+	}
+
+	@Test
+	void updateMaxAutomaticAssociationsFailAsExpectedWithMaxMoreThanAllowedTokenAssociations() {
+		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
+		givenTxnCtx(EnumSet.of(MAX_AUTOMATIC_ASSOCIATIONS));
+		given(ledger.alreadyUsedAutomaticAssociations(any())).willReturn(CUR_MAX_AUTOMATIC_ASSOCIATIONS);
+		given(dynamicProperties.maxTokensPerAccount()).willReturn(NEW_MAX_AUTOMATIC_ASSOCIATIONS - 1);
+
+		subject.doStateTransition();
+
+		verify(ledger, never()).customize(argThat(TARGET::equals), captor.capture());
+		verify(txnCtx).setStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
+	}
+
+	@Test
+	void updatesMemoIfPresent() {
+		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
+		givenTxnCtx(EnumSet.of(AccountCustomizer.Option.MEMO));
+
+		subject.doStateTransition();
+
+		verify(ledger).customize(argThat(TARGET::equals), captor.capture());
+		final var changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
-		assertEquals(autoRenewPeriod, changes.get(AccountProperty.AUTO_RENEW_PERIOD));
+		assertEquals(MEMO, changes.get(AccountProperty.MEMO));
+	}
+
+	@Test
+	void updatesAutoRenewIfPresent() {
+		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
+		givenTxnCtx(EnumSet.of(AccountCustomizer.Option.AUTO_RENEW_PERIOD));
+
+		subject.doStateTransition();
+
+		verify(ledger).customize(argThat(TARGET::equals), captor.capture());
+		final var changes = captor.getValue().getChanges();
+		assertEquals(1, changes.size());
+		assertEquals(AUTO_RENEW_PERIOD, changes.get(AccountProperty.AUTO_RENEW_PERIOD));
 	}
 
 	@Test
 	void updatesKeyIfPresent() throws Throwable {
-		// setup:
-		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
+		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
+		givenTxnCtx(EnumSet.of(AccountCustomizer.Option.KEY));
 
-		givenTxnCtx(EnumSet.of(KEY));
-
-		// when:
 		subject.doStateTransition();
 
-		// then:
-		verify(ledger).customize(argThat(target::equals), captor.capture());
-		// and:
-		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
+		verify(ledger).customize(argThat(TARGET::equals), captor.capture());
+		final var changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
-		assertEquals(key, JKey.mapJKey((JKey)changes.get(AccountProperty.KEY)));
+		assertEquals(KEY, JKey.mapJKey((JKey) changes.get(AccountProperty.KEY)));
 	}
 
 	@Test
 	void hasCorrectApplicability() {
 		givenTxnCtx();
 
-		// expect:
 		assertTrue(subject.applicability().test(cryptoUpdateTxn));
 		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
 	}
@@ -265,10 +276,9 @@ class CryptoUpdateTransitionLogicTest {
 
 	@Test
 	void rejectsInvalidMemo() {
-		givenTxnCtx(EnumSet.of(MEMO));
-		given(validator.memoCheck(memo)).willReturn(MEMO_TOO_LONG);
+		givenTxnCtx(EnumSet.of(AccountCustomizer.Option.MEMO));
+		given(validator.memoCheck(MEMO)).willReturn(MEMO_TOO_LONG);
 
-		// expect:
 		assertEquals(MEMO_TOO_LONG, subject.semanticCheck().apply(cryptoUpdateTxn));
 	}
 
@@ -277,7 +287,6 @@ class CryptoUpdateTransitionLogicTest {
 		givenTxnCtx();
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(false);
 
-		// expect:
 		assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, subject.semanticCheck().apply(cryptoUpdateTxn));
 	}
 
@@ -285,19 +294,16 @@ class CryptoUpdateTransitionLogicTest {
 	void acceptsValidTxn() {
 		givenTxnCtx();
 
-		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(cryptoUpdateTxn));
 	}
 
 	@Test
 	void rejectsDetachedAccount() {
 		givenTxnCtx();
-		given(ledger.isDetached(target)).willReturn(true);
+		given(ledger.isDetached(TARGET)).willReturn(true);
 
-		// when:
 		subject.doStateTransition();
 
-		// then:
 		verify(txnCtx).setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 	}
 
@@ -306,59 +312,49 @@ class CryptoUpdateTransitionLogicTest {
 		givenTxnCtx();
 		given(validator.isValidExpiry(any())).willReturn(false);
 
-		// when:
 		subject.doStateTransition();
 
-		// then:
 		verify(txnCtx).setStatus(INVALID_EXPIRATION_TIME);
 	}
 
 	@Test
 	void permitsDetachedIfOnlyExtendingExpiry() {
 		givenTxnCtx(EnumSet.of(EXPIRY));
-		given(ledger.isDetached(target)).willReturn(true);
+		given(ledger.isDetached(TARGET)).willReturn(true);
 
-		// when:
 		subject.doStateTransition();
 
-		// then:
 		verify(txnCtx).setStatus(SUCCESS);
 	}
 
 	@Test
 	void rejectsInvalidExpiryForDetached() {
 		givenTxnCtx(EnumSet.of(EXPIRY), EnumSet.of(EXPIRY));
-		given(ledger.isDetached(target)).willReturn(true);
-		given(ledger.expiry(target)).willReturn(curExpiry);
+		given(ledger.isDetached(TARGET)).willReturn(true);
+		given(ledger.expiry(TARGET)).willReturn(CUR_EXPIRY);
 
-		// when:
 		subject.doStateTransition();
 
-		// then:
 		verify(txnCtx).setStatus(EXPIRATION_REDUCTION_NOT_ALLOWED);
 	}
 
 	@Test
 	void rejectsSmartContract() {
 		givenTxnCtx();
-		given(ledger.isSmartContract(target)).willReturn(true);
+		given(ledger.isSmartContract(TARGET)).willReturn(true);
 
-		// when:
 		subject.doStateTransition();
 
-		// then:
 		verify(txnCtx).setStatus(INVALID_ACCOUNT_ID);
 	}
 
 	@Test
 	void preemptsMissingAccountException() {
 		givenTxnCtx();
-		given(ledger.exists(target)).willReturn(false);
+		given(ledger.exists(TARGET)).willReturn(false);
 
-		// when:
 		subject.doStateTransition();
 
-		// then:
 		verify(txnCtx).setStatus(INVALID_ACCOUNT_ID);
 	}
 
@@ -367,10 +363,8 @@ class CryptoUpdateTransitionLogicTest {
 		givenTxnCtx();
 		willThrow(MissingAccountException.class).given(ledger).customize(any(), any());
 
-		// when:
 		subject.doStateTransition();
 
-		// then:
 		verify(txnCtx).setStatus(INVALID_ACCOUNT_ID);
 	}
 
@@ -379,10 +373,8 @@ class CryptoUpdateTransitionLogicTest {
 		givenTxnCtx();
 		willThrow(DeletedAccountException.class).given(ledger).customize(any(), any());
 
-		// when:
 		subject.doStateTransition();
 
-		// then:
 		verify(txnCtx).setStatus(ACCOUNT_DELETED);
 	}
 
@@ -395,11 +387,8 @@ class CryptoUpdateTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(cryptoUpdateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 
-
-		// when:
 		subject.doStateTransition();
 
-		// then:
 		verify(txnCtx).setStatus(FAIL_INVALID);
 	}
 
@@ -415,52 +404,49 @@ class CryptoUpdateTransitionLogicTest {
 		).build();
 	}
 
-	private void rejectsKey(Key key) {
+	private void rejectsKey(final Key key) {
 		givenTxnCtx();
 		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
 				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder().setKey(key))
 				.build();
 
-		// expect:
 		assertEquals(BAD_ENCODING, subject.semanticCheck().apply(cryptoUpdateTxn));
 	}
 
 	private void givenTxnCtx() {
 		givenTxnCtx(EnumSet.of(
-				KEY,
-				MEMO,
-				PROXY,
+				AccountCustomizer.Option.KEY,
+				AccountCustomizer.Option.MEMO,
+				AccountCustomizer.Option.PROXY,
 				EXPIRY,
 				IS_RECEIVER_SIG_REQUIRED,
-				AUTO_RENEW_PERIOD
+				AccountCustomizer.Option.AUTO_RENEW_PERIOD
 		), EnumSet.noneOf(AccountCustomizer.Option.class));
 	}
 
-	private void givenTxnCtx(
-			EnumSet<AccountCustomizer.Option> updating
-	) {
+	private void givenTxnCtx(final EnumSet<AccountCustomizer.Option> updating) {
 		givenTxnCtx(updating, EnumSet.noneOf(AccountCustomizer.Option.class));
 	}
 
 	private void givenTxnCtx(
-			EnumSet<AccountCustomizer.Option> updating,
-			EnumSet<AccountCustomizer.Option> misconfiguring
+			final EnumSet<AccountCustomizer.Option> updating,
+			final EnumSet<AccountCustomizer.Option> misconfiguring
 	) {
-		CryptoUpdateTransactionBody.Builder op = CryptoUpdateTransactionBody.newBuilder();
-		if (updating.contains(MEMO)) {
-			op.setMemo(StringValue.newBuilder().setValue(memo).build());
+		final var op = CryptoUpdateTransactionBody.newBuilder();
+		if (updating.contains(AccountCustomizer.Option.MEMO)) {
+			op.setMemo(StringValue.newBuilder().setValue(MEMO).build());
 		}
-		if (updating.contains(KEY)) {
-			op.setKey(key);
+		if (updating.contains(AccountCustomizer.Option.KEY)) {
+			op.setKey(KEY);
 		}
-		if (updating.contains(PROXY)) {
-			op.setProxyAccountID(proxy);
+		if (updating.contains(AccountCustomizer.Option.PROXY)) {
+			op.setProxyAccountID(PROXY);
 		}
 		if (updating.contains(EXPIRY)) {
 			if (misconfiguring.contains(EXPIRY)) {
-				op.setExpirationTime(Timestamp.newBuilder().setSeconds(curExpiry - 1));
+				op.setExpirationTime(Timestamp.newBuilder().setSeconds(CUR_EXPIRY - 1));
 			} else {
-				op.setExpirationTime(Timestamp.newBuilder().setSeconds(newExpiry));
+				op.setExpirationTime(Timestamp.newBuilder().setSeconds(NEW_EXPIRY));
 			}
 		}
 		if (updating.contains(IS_RECEIVER_SIG_REQUIRED)) {
@@ -470,21 +456,24 @@ class CryptoUpdateTransitionLogicTest {
 				op.setReceiverSigRequired(true);
 			}
 		}
-		if (updating.contains(AUTO_RENEW_PERIOD)) {
-			op.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod));
+		if (updating.contains(AccountCustomizer.Option.AUTO_RENEW_PERIOD)) {
+			op.setAutoRenewPeriod(Duration.newBuilder().setSeconds(AUTO_RENEW_PERIOD));
 		}
-		op.setAccountIDToUpdate(target);
+		if (updating.contains(MAX_AUTOMATIC_ASSOCIATIONS)) {
+			op.setMaxAutomaticTokenAssociations(Int32Value.of(NEW_MAX_AUTOMATIC_ASSOCIATIONS));
+		}
+		op.setAccountIDToUpdate(TARGET);
 		cryptoUpdateTxn = TransactionBody.newBuilder().setTransactionID(ourTxnId()).setCryptoUpdateAccount(op).build();
 		given(accessor.getTxn()).willReturn(cryptoUpdateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(ledger.exists(target)).willReturn(true);
+		given(ledger.exists(TARGET)).willReturn(true);
 	}
 
 	private TransactionID ourTxnId() {
 		return TransactionID.newBuilder()
-				.setAccountID(payer)
+				.setAccountID(PAYER)
 				.setTransactionValidStart(
-						Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
+						Timestamp.newBuilder().setSeconds(CONSENSUS_TIME.getEpochSecond()))
 				.build();
 	}
 

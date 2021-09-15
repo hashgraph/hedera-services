@@ -91,11 +91,15 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.Transaction
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETFASTRECORD;
 
-public class PermissionFileUtils {
+public final class PermissionFileUtils {
 	private static final EnumMap<HederaFunctionality, String> permissionKeys = new EnumMap<>(HederaFunctionality.class);
 	static final Map<String, HederaFunctionality> legacyKeys;
 
-	public static String permissionFileKeyForTxn(TransactionBody txn) {
+	private PermissionFileUtils() {
+		throw new UnsupportedOperationException("Utility Class");
+	}
+
+	public static String permissionFileKeyForTxn(final TransactionBody txn) {
 		try {
 			return permissionKeys.get(functionOf(txn));
 		} catch (UnknownHederaFunctionality ignore) {
@@ -103,7 +107,7 @@ public class PermissionFileUtils {
 		}
 	}
 
-	public static String permissionFileKeyForQuery(Query query) {
+	public static String permissionFileKeyForQuery(final Query query) {
 		if (query.getQueryCase() == TRANSACTIONGETFASTRECORD) {
 			return "getFastTransactionRecord";
 		} else {

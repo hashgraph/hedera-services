@@ -46,12 +46,16 @@ public class ConfigUtils {
 	}
 
 	public static Optional<File> keyFileFor(String keysLoc, String typedNum) {
-		var pemFile = Paths.get(keysLoc, typedNum + ".pem").toFile();
+		return keyFileAt(keysLoc + File.separator + typedNum);
+	}
+
+	public static Optional<File> keyFileAt(String sansExt) {
+		var pemFile = Paths.get(sansExt + ".pem").toFile();
 		if (pemFile.exists()) {
 			return Optional.of(pemFile);
 		}
 
-		var wordsFile = Paths.get(keysLoc, typedNum + ".words").toFile();
+		var wordsFile = Paths.get(sansExt + ".words").toFile();
 		if (wordsFile.exists()) {
 			return Optional.of(wordsFile);
 		}
@@ -59,7 +63,7 @@ public class ConfigUtils {
 		return Optional.empty();
 	}
 
-	static Optional<File> passFileFor(File pemFile) {
+	public static Optional<File> passFileFor(File pemFile) {
 		var absPath = pemFile.getAbsolutePath();
 		var passFile = new File(absPath.replace(".pem", ".pass"));
 		return passFile.exists() ? Optional.of(passFile) : Optional.empty();
@@ -74,7 +78,7 @@ public class ConfigUtils {
 		}
 	}
 
-	static Optional<String> promptForPassphrase(String pemLoc, String prompt, int maxAttempts) {
+	public static Optional<String> promptForPassphrase(String pemLoc, String prompt, int maxAttempts) {
 		var pemFile = new File(pemLoc);
 		String fullPrompt = prompt + ": ";
 		char[] passphrase;

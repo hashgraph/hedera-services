@@ -32,8 +32,6 @@ import java.util.function.Function;
 /**
  * Implements a property family whose instances can provide the
  * getter/setter pairs relevant to themselves on a {@link MerkleAccount} object.
- *
- * @author Michael Tinker
  */
 @SuppressWarnings("unchecked")
 public enum AccountProperty implements BeanProperty<MerkleAccount> {
@@ -119,12 +117,12 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 	KEY {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, k) -> a.setKey((JKey) k);
+			return (a, k) -> a.setAccountKey((JKey) k);
 		}
 
 		@Override
 		public Function<MerkleAccount, Object> getter() {
-			return MerkleAccount::getKey;
+			return MerkleAccount::getAccountKey;
 		}
 	},
 	MEMO {
@@ -169,6 +167,28 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 		@Override
 		public Function<MerkleAccount, Object> getter() {
 			return a -> a.tokens().tmpNonMerkleCopy();
+		}
+	},
+	MAX_AUTOMATIC_ASSOCIATIONS {
+		@Override
+		public BiConsumer<MerkleAccount, Object> setter() {
+			return (a, t) -> a.setMaxAutomaticAssociations((int) t);
+		}
+
+		@Override
+		public Function<MerkleAccount, Object> getter() {
+			return MerkleAccount::getMaxAutomaticAssociations;
+		}
+	},
+	ALREADY_USED_AUTOMATIC_ASSOCIATIONS {
+		@Override
+		public BiConsumer<MerkleAccount, Object> setter() {
+			return (a, t) -> a.setAlreadyUsedAutomaticAssociations((int) t);
+		}
+
+		@Override
+		public Function<MerkleAccount, Object> getter() {
+			return MerkleAccount::getAlreadyUsedAutoAssociations;
 		}
 	};
 

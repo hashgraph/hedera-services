@@ -20,12 +20,17 @@ package com.hedera.services.queries.token;
  * ‍
  */
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class TokenAnswers {
 	private final GetTokenInfoAnswer tokenInfo;
 	private final GetTokenNftInfoAnswer nftInfo;
 	private final GetTokenNftInfosAnswer tokenNftInfos;
 	private final GetAccountNftInfosAnswer accountNftInfos;
 
+	@Inject
 	public TokenAnswers(
 			GetTokenInfoAnswer tokenInfo,
 			GetTokenNftInfoAnswer nftInfo,

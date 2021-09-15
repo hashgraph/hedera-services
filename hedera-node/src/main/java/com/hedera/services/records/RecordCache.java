@@ -21,9 +21,8 @@ package com.hedera.services.records;
  */
 
 import com.google.common.cache.Cache;
-import com.hedera.services.context.ServicesContext;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.state.expiry.MonotonicFullQueueExpiries;
+import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -32,6 +31,8 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -42,81 +43,81 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 import static java.util.stream.Collectors.toList;
 
+@Singleton
 public class RecordCache {
-	static final TxnReceipt UNKNOWN_RECEIPT = TxnReceipt.newBuilder()
+	private static final TxnReceipt UNKNOWN_RECEIPT = TxnReceipt.newBuilder()
 			.setStatus(UNKNOWN.name())
 			.build();
 
-	public static final Boolean MARKER = Boolean.TRUE;
+	static final Boolean MARKER = Boolean.TRUE;
 
-	private ServicesContext ctx;
+	private EntityCreator creator;
 	private Cache<TransactionID, Boolean> timedReceiptCache;
 	private Map<TransactionID, TxnIdRecentHistory> histories;
 
-	MonotonicFullQueueExpiries<TransactionID> recordExpiries = new MonotonicFullQueueExpiries<>();
-
-	public RecordCache(
-			ServicesContext ctx,
-			Cache<TransactionID, Boolean> timedReceiptCache,
-			Map<TransactionID, TxnIdRecentHistory> histories
-	) {
-		this.ctx = ctx;
+	@Inject
+	public RecordCache(Cache<TransactionID, Boolean> cache, Map<TransactionID, TxnIdRecentHistory> histories) {
 		this.histories = histories;
-		this.timedReceiptCache = timedReceiptCache;
+		this.timedReceiptCache = cache;
 	}
 
-	public void addPreConsensus(TransactionID txnId) {
+	@Inject
+	void setCreator(final EntityCreator creator) {
+		this.creator = creator;
+	}
+
+	public void addPreConsensus(final TransactionID txnId) {
 		timedReceiptCache.put(txnId, Boolean.TRUE);
 	}
 
-	public void setPostConsensus(
-			TransactionID txnId,
-			ResponseCodeEnum status,
-			ExpirableTxnRecord record
+	void setPostConsensus(
+			final TransactionID txnId,
+			final ResponseCodeEnum status,
+			final ExpirableTxnRecord expirableTxnRecord
 	) {
-		var recentHistory = histories.computeIfAbsent(txnId, ignore -> new TxnIdRecentHistory());
-		recentHistory.observe(record, status);
+		final var recentHistory = histories.computeIfAbsent(txnId, ignore -> new TxnIdRecentHistory());
+		recentHistory.observe(expirableTxnRecord, status);
 	}
 
 	public void setFailInvalid(
-			AccountID effectivePayer,
-			TxnAccessor accessor,
-			Instant consensusTimestamp,
-			long submittingMember
+			final AccountID effectivePayer,
+			final TxnAccessor accessor,
+			final Instant consensusTimestamp,
+			final long submittingMember
 	) {
-		var recordBuilder = ctx.creator().buildFailedExpiringRecord(accessor,
-				consensusTimestamp);
-		var expiringRecord = ctx.creator().saveExpiringRecord(
+		final var recordBuilder = creator.buildFailedExpiringRecord(accessor, consensusTimestamp);
+		final var expiringRecord = creator.saveExpiringRecord(
 				effectivePayer,
 				recordBuilder.build(),
 				consensusTimestamp.getEpochSecond(),
 				submittingMember);
 
-		var recentHistory = histories.computeIfAbsent(accessor.getTxnId(), ignore -> new TxnIdRecentHistory());
+		final var recentHistory = histories.computeIfAbsent(
+				accessor.getTxnId(), ignore -> new TxnIdRecentHistory());
 		recentHistory.observe(expiringRecord, FAIL_INVALID);
 	}
 
-	public boolean isReceiptPresent(TransactionID txnId) {
+	public boolean isReceiptPresent(final TransactionID txnId) {
 		return histories.containsKey(txnId) || timedReceiptCache.getIfPresent(txnId) == MARKER;
 	}
 
-	public TxnReceipt getPriorityReceipt(TransactionID txnId) {
-		var recentHistory = histories.get(txnId);
+	public TxnReceipt getPriorityReceipt(final TransactionID txnId) {
+		final var recentHistory = histories.get(txnId);
 		return recentHistory != null
 				? receiptFrom(recentHistory)
 				: (timedReceiptCache.getIfPresent(txnId) == MARKER ? UNKNOWN_RECEIPT : null);
 	}
 
-	public List<TransactionRecord> getDuplicateRecords(TransactionID txnId) {
+	public List<TransactionRecord> getDuplicateRecords(final TransactionID txnId) {
 		return duplicatesOf(txnId);
 	}
 
-	public List<TransactionReceipt> getDuplicateReceipts(TransactionID txnId) {
+	public List<TransactionReceipt> getDuplicateReceipts(final TransactionID txnId) {
 		return duplicatesOf(txnId).stream().map(TransactionRecord::getReceipt).collect(toList());
 	}
 
-	private List<TransactionRecord> duplicatesOf(TransactionID txnId) {
-		var recentHistory = histories.get(txnId);
+	private List<TransactionRecord> duplicatesOf(final TransactionID txnId) {
+		final var recentHistory = histories.get(txnId);
 		if (recentHistory == null) {
 			return Collections.emptyList();
 		} else {
@@ -127,39 +128,18 @@ public class RecordCache {
 		}
 	}
 
-	private TxnReceipt receiptFrom(TxnIdRecentHistory recentHistory) {
+	private TxnReceipt receiptFrom(final TxnIdRecentHistory recentHistory) {
 		return Optional.ofNullable(recentHistory.priorityRecord())
 				.map(ExpirableTxnRecord::getReceipt)
 				.orElse(UNKNOWN_RECEIPT);
 	}
 
-	public ExpirableTxnRecord getPriorityRecord(TransactionID txnId) {
-		var history = histories.get(txnId);
+	public ExpirableTxnRecord getPriorityRecord(final TransactionID txnId) {
+		final var history = histories.get(txnId);
 		if (history != null) {
 			return Optional.ofNullable(history.priorityRecord())
 					.orElse(null);
 		}
 		return null;
-	}
-
-	public void forgetAnyOtherExpiredHistory(long now) {
-		while (recordExpiries.hasExpiringAt(now)) {
-			var txnId = recordExpiries.expireNextAt(now);
-			var history = histories.get(txnId);
-			if (history != null) {
-				history.forgetExpiredAt(now);
-				if (history.isForgotten()) {
-					histories.remove(txnId);
-				}
-			}
-		}
-	}
-
-	public void trackForExpiry(ExpirableTxnRecord record) {
-		recordExpiries.track(record.getTxnId().toGrpc(), record.getExpiry());
-	}
-
-	public void reset() {
-		recordExpiries.reset();
 	}
 }

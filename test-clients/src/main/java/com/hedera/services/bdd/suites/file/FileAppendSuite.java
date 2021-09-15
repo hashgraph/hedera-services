@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.file;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,39 +25,70 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 
 public class FileAppendSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(FileAppendSuite.class);
 
 	public static void main(String... args) {
-		new FileAppendSuite().runSuiteSync();
+		new FileAppendSuite().runSuiteAsync();
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return allOf(
-				positiveTests(),
-				negativeTests()
+		return List.of(new HapiApiSpec[] {
+						vanillaAppendSucceeds(),
+						baseOpsHaveExpectedPrices(),
+				}
 		);
 	}
 
-	private List<HapiApiSpec> positiveTests() {
-		return Arrays.asList(
-		);
-	}
+	public HapiApiSpec baseOpsHaveExpectedPrices() {
+		final var civilian = "NonExemptPayer";
 
-	private List<HapiApiSpec> negativeTests() {
-		return Arrays.asList(
-				vanillaAppendSucceeds()
-		);
+		final var expectedAppendFeesPriceUsd = 0.05;
+
+		final var baseAppend = "baseAppend";
+		final var targetFile = "targetFile";
+		final var contentBuilder = new StringBuilder();
+		for (int i = 0; i < 1000; i++) {
+			contentBuilder.append("A");
+		}
+		final var magicKey = "magicKey";
+		final var magicWacl = "magicWacl";
+
+		return defaultHapiSpec("BaseOpsHaveExpectedPrices")
+				.given(
+						newKeyNamed(magicKey),
+						newKeyListNamed(magicWacl, List.of(magicKey)),
+						cryptoCreate(civilian)
+								.balance(ONE_HUNDRED_HBARS)
+								.key(magicKey),
+						fileCreate(targetFile)
+								.key(magicWacl)
+								.lifetime(THREE_MONTHS_IN_SECONDS)
+								.contents("Nothing much!")
+				).when(
+						fileAppend(targetFile)
+								.signedBy(magicKey)
+								.blankMemo()
+								.content(contentBuilder.toString())
+								.payingWith(civilian)
+								.via(baseAppend)
+				).then(
+						validateChargedUsdWithin(
+								baseAppend, expectedAppendFeesPriceUsd, 0.01)
+				);
 	}
 
 	private HapiApiSpec vanillaAppendSucceeds() {
@@ -78,6 +109,7 @@ public class FileAppendSuite extends HapiApiSuite {
 	}
 
 	private final int BYTES_4K = 4 * (1 << 10);
+
 	private byte[] randomUtf8Bytes(int n) {
 		byte[] data = new byte[n];
 		int i = 0;

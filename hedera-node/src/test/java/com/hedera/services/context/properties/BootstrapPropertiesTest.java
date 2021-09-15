@@ -25,18 +25,20 @@ import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import javax.inject.Inject;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static java.util.Map.entry;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -47,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith({ LogCaptureExtension.class })
 class BootstrapPropertiesTest {
-	@Inject
+	@LoggingTarget
 	private LogCaptor logCaptor;
 	@LoggingSubject
 	private BootstrapProperties subject = new BootstrapProperties();
@@ -123,7 +125,6 @@ class BootstrapPropertiesTest {
 			entry("hedera.transaction.maxValidDuration", 180L),
 			entry("hedera.transaction.minValidityBufferSecs", 10),
 			entry("ledger.fundingAccount", 98L),
-			entry("ledger.keepRecordsInState", false),
 			entry("ledger.maxAccountNum", 100_000_000L),
 			entry("ledger.numSystemAccounts", 100),
 			entry("ledger.transfers.maxLen", 10),
@@ -162,10 +163,15 @@ class BootstrapPropertiesTest {
 			entry("cache.records.ttl", 180),
 			entry("rates.intradayChangeLimitPercent", 25),
 			entry("rates.midnightCheckInterval", 1L),
-			entry("scheduling.whitelist", Set.of(CryptoTransfer, ConsensusSubmitMessage)),
+			entry("scheduling.whitelist", Set.of(
+					CryptoTransfer,
+					TokenMint,
+					TokenBurn,
+					ConsensusSubmitMessage)),
 			entry("stats.runningAvgHalfLifeSecs", 10.0),
 			entry("stats.hapiOps.speedometerUpdateIntervalMs", 3_000L),
 			entry("stats.speedometerHalfLifeSecs", 10.0),
+			entry("stats.executionTimesToTrack", 0),
 			entry("consensus.message.maxBytesAllowed", 1024),
 			entry("ledger.nftTransfers.maxLen", 10),
 			entry("ledger.xferBalanceChanges.maxLen", 20),

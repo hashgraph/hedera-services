@@ -25,10 +25,15 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.merkle.internals.IdentityCodeUtils;
+import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.FixedFee;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -38,6 +43,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
@@ -53,6 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -83,6 +90,7 @@ class TokenTest {
 
 		treasuryRel = new TokenRelationship(subject, treasuryAccount);
 		treasuryRel.initBalance(initialTreasuryBalance);
+		treasuryRel.setAutomaticAssociation(true);
 		nonTreasuryRel = new TokenRelationship(subject, nonTreasuryAccount);
 	}
 
@@ -93,11 +101,71 @@ class TokenTest {
 	}
 
 	@Test
+	void recognizesFeeScheduleKey() {
+		assertFalse(subject.hasFeeScheduleKey());
+
+		subject.setFeeScheduleKey(TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT.asJKeyUnchecked());
+		
+		assertTrue(subject.hasFeeScheduleKey());
+	}
+
+	@Test
 	void deleteFailsAsExpected() {
 		subject.setAdminKey(null);
 		assertFailsWith(() -> subject.delete(), TOKEN_IS_IMMUTABLE);
 	}
 
+	@Test
+	void constructsOkToken() {
+		final var feeScheduleKey = TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT.asKey();
+		final var op = TransactionBody.newBuilder()
+				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
+						.setTokenType(com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON)
+						.setInitialSupply(25)
+						.setMaxSupply(21_000_000)
+						.setSupplyType(com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE)
+						.setDecimals(10)
+						.setFreezeDefault(false)
+						.setMemo("the mother")
+						.setName("bitcoin")
+						.setSymbol("BTC")
+						.setFeeScheduleKey(feeScheduleKey)
+						.addAllCustomFees(List.of(CustomFee.newBuilder().setFixedFee(
+								FixedFee.newBuilder().setAmount(10).build())
+								.setFeeCollectorAccountId(IdUtils.asAccount("1.2.3")).build()))
+						.setAutoRenewAccount(nonTreasuryAccount.getId().asGrpcAccount())
+						.setExpiry(Timestamp.newBuilder().setSeconds(1000L).build())
+						.build())
+				.build();
+
+		subject = Token.fromGrpcOpAndMeta(id, op.getTokenCreation(), treasuryAccount, nonTreasuryAccount, 123);
+
+		assertEquals("bitcoin", subject.getName());
+		assertEquals(123L, subject.getExpiry());
+		assertEquals(TokenSupplyType.FINITE, subject.getSupplyType());
+		assertNotNull(subject.getFeeScheduleKey());
+	}
+
+	@Test
+	void okCreationRelationship() {
+		final var frzKey = TxnHandlingScenario.TOKEN_FREEZE_KT.asJKeyUnchecked();
+		final var kycKey = TxnHandlingScenario.TOKEN_KYC_KT.asJKeyUnchecked();
+		subject.setFreezeKey(frzKey);
+		subject.setKycKey(kycKey);
+		final var rel = subject.newEnabledRelationship(treasuryAccount);
+		assertNotNull(rel);
+		assertFalse(rel.isFrozen());
+		assertTrue(rel.isKycGranted());
+	}
+
+	@Test
+	void constructsTreasuryRelationShipAsExpected() {
+		subject.setKycKey(someKey);
+		final var newRel = subject.newRelationshipWith(treasuryAccount, true);
+		newRel.initBalance(initialTreasuryBalance);
+
+		assertEquals(newRel, treasuryRel);
+	}
 
 	@Test
 	void constructsExpectedDefaultRelWithNoKeys() {
@@ -105,7 +173,7 @@ class TokenTest {
 		nonTreasuryRel.setKycGranted(true);
 
 		// when:
-		final var newRel = subject.newRelationshipWith(nonTreasuryAccount);
+		final var newRel = subject.newRelationshipWith(nonTreasuryAccount, false);
 
 		// then:
 		assertEquals(newRel, nonTreasuryRel);
@@ -134,7 +202,7 @@ class TokenTest {
 		subject.setFrozenByDefault(true);
 
 		// when:
-		final var newRel = subject.newRelationshipWith(nonTreasuryAccount);
+		final var newRel = subject.newRelationshipWith(nonTreasuryAccount, false);
 
 		// then:
 		assertEquals(newRel, nonTreasuryRel);
@@ -150,7 +218,7 @@ class TokenTest {
 		subject.setFrozenByDefault(false);
 
 		// when:
-		final var newRel = subject.newRelationshipWith(nonTreasuryAccount);
+		final var newRel = subject.newRelationshipWith(nonTreasuryAccount, false);
 
 		// then:
 		assertEquals(newRel, nonTreasuryRel);
@@ -162,7 +230,7 @@ class TokenTest {
 		subject.setKycKey(someKey);
 
 		// when:
-		final var newRel = subject.newRelationshipWith(nonTreasuryAccount);
+		final var newRel = subject.newRelationshipWith(nonTreasuryAccount, false);
 
 		// then:
 		assertEquals(newRel, nonTreasuryRel);
@@ -171,13 +239,13 @@ class TokenTest {
 	@Test
 	void failsInvalidIfLogicImplTriesToChangeNonTreasurySupply() {
 		assertFailsWith(() -> subject.burn(nonTreasuryRel, 1L), FAIL_INVALID);
-		assertFailsWith(() -> subject.mint(nonTreasuryRel, 1L), FAIL_INVALID);
+		assertFailsWith(() -> subject.mint(nonTreasuryRel, 1L, false), FAIL_INVALID);
 	}
 
 	@Test
 	void cantBurnOrMintNegativeAmounts() {
 		assertFailsWith(() -> subject.burn(treasuryRel, -1L), INVALID_TOKEN_BURN_AMOUNT);
-		assertFailsWith(() -> subject.mint(treasuryRel, -1L), INVALID_TOKEN_MINT_AMOUNT);
+		assertFailsWith(() -> subject.mint(treasuryRel, -1L, false), INVALID_TOKEN_MINT_AMOUNT);
 	}
 
 	@Test
@@ -185,7 +253,7 @@ class TokenTest {
 		subject.setSupplyKey(null);
 		subject.setType(TokenType.FUNGIBLE_COMMON);
 		assertFailsWith(() -> subject.burn(treasuryRel, 1L), TOKEN_HAS_NO_SUPPLY_KEY);
-		assertFailsWith(() -> subject.mint(treasuryRel, 1L), TOKEN_HAS_NO_SUPPLY_KEY);
+		assertFailsWith(() -> subject.mint(treasuryRel, 1L, false), TOKEN_HAS_NO_SUPPLY_KEY);
 	}
 
 	@Test
@@ -207,7 +275,7 @@ class TokenTest {
 		subject.setSupplyKey(someKey);
 		subject.setType(TokenType.FUNGIBLE_COMMON);
 
-		assertFailsWith(() -> subject.mint(treasuryRel, overflowMint), INVALID_TOKEN_MINT_AMOUNT);
+		assertFailsWith(() -> subject.mint(treasuryRel, overflowMint, false), INVALID_TOKEN_MINT_AMOUNT);
 		assertFailsWith(() -> subject.burn(treasuryRel, initialSupply + 1), INVALID_TOKEN_BURN_AMOUNT);
 	}
 
@@ -282,7 +350,7 @@ class TokenTest {
 		subject.setSupplyKey(someKey);
 
 		// when:
-		subject.mint(treasuryRel, mintAmount);
+		subject.mint(treasuryRel, mintAmount, false);
 
 		// then:
 		assertEquals(initialSupply + mintAmount, subject.getTotalSupply());
@@ -435,7 +503,7 @@ class TokenTest {
 		// setup:
 		final var twoMeta = List.of(ByteString.copyFromUtf8("A"), ByteString.copyFromUtf8("Z"));
 		subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
-		subject.setLastUsedSerialNumber(IdentityCodeUtils.MAX_NUM_ALLOWED - 1);
+		subject.setLastUsedSerialNumber(BitPackUtils.MAX_NUM_ALLOWED - 1);
 
 		assertFailsWith(
 				() -> subject.mint(null, treasuryRel, twoMeta, RichInstant.MISSING_INSTANT),
@@ -496,15 +564,10 @@ class TokenTest {
 	@Test
 	void toStringWorks() {
 		final var desired = "Token{id=Id{shard=1, realm=2, num=3}, type=null, deleted=false, autoRemoved=false, " +
-				"treasury=Account{id=Id{shard=0, realm=0, num=0}, expiry=0, balance=0, deleted=false, tokens=<N/A>}, " +
-				"autoRenewAccount=null, kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, " +
-				"currentSerialNumber=0}";
+				"treasury=Account{id=Id{shard=0, realm=0, num=0}, expiry=0, balance=0, deleted=false, tokens=<N/A>, " +
+				"ownedNfts=0, alreadyUsedAutoAssociations=0, maxAutoAssociations=0}, autoRenewAccount=null, " +
+				"kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, currentSerialNumber=0}";
 
 		assertEquals(desired, subject.toString());
-	}
-
-	private void assertFailsWith(final Runnable something, final ResponseCodeEnum status) {
-		final var ex = assertThrows(InvalidTransactionException.class, something::run);
-		assertEquals(status, ex.getResponseCode());
 	}
 }

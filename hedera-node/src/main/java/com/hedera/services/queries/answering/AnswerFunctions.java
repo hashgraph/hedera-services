@@ -22,42 +22,50 @@ package com.hedera.services.queries.answering;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.records.RecordCache;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.TxnId;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
-import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.List;
 import java.util.Optional;
 
+@Singleton
 public class AnswerFunctions {
-	public List<TransactionRecord> accountRecords(StateView view, Query query) {
-		CryptoGetAccountRecordsQuery op = query.getCryptoGetAccountRecords();
-		MerkleEntityId key = MerkleEntityId.fromAccountId(op.getAccountID());
-		MerkleAccount account = view.accounts().get(key);
+	@Inject
+	public AnswerFunctions() {
+	}
+
+	public List<TransactionRecord> accountRecords(final StateView view, final CryptoGetAccountRecordsQuery op) {
+		final var key = EntityNum.fromAccountId(op.getAccountID());
+		final var account = view.accounts().get(key);
 		return ExpirableTxnRecord.allToGrpc(account.recordList());
 	}
 
-	public Optional<TransactionRecord> txnRecord(RecordCache recordCache, StateView view, Query query) {
-		var txnId = query.getTransactionGetRecord().getTransactionID();
-		var record = recordCache.getPriorityRecord(txnId);
-		if (record != null) {
-			return Optional.of(record.asGrpc());
+	public Optional<TransactionRecord> txnRecord(
+			final RecordCache recordCache,
+			final StateView view,
+			final TransactionGetRecordQuery query
+	) {
+		final var txnId = query.getTransactionID();
+		final var expirableTxnRecord = recordCache.getPriorityRecord(txnId);
+		if (expirableTxnRecord != null) {
+			return Optional.of(expirableTxnRecord.asGrpc());
 		} else {
 			try {
-				AccountID id = txnId.getAccountID();
-				MerkleAccount account = view.accounts().get(MerkleEntityId.fromAccountId(id));
-				TxnId searchableId = TxnId.fromGrpc(txnId);
+				final var id = txnId.getAccountID();
+				final var account = view.accounts().get(EntityNum.fromAccountId(id));
+				final var searchableId = TxnId.fromGrpc(txnId);
 				return account.recordList()
 						.stream()
 						.filter(r -> r.getTxnId().equals(searchableId))
 						.findAny()
 						.map(ExpirableTxnRecord::asGrpc);
-			} catch (Exception ignore) {
+			} catch (final Exception ignore) {
 				return Optional.empty();
 			}
 		}

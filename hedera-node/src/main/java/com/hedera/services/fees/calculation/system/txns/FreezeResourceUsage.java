@@ -27,7 +27,15 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class FreezeResourceUsage implements TxnResourceUsageEstimator {
+	@Inject
+	public FreezeResourceUsage() {
+	}
+
 	@Override
 	public boolean applicableTo(TransactionBody txn) {
 		return txn.hasFreeze();

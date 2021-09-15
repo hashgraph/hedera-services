@@ -24,9 +24,9 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -34,11 +34,13 @@ import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -56,6 +58,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
+@Singleton
 public class TopicUpdateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(TopicUpdateTransitionLogic.class);
 
@@ -65,12 +68,13 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 	private final HederaLedger ledger;
 	private final OptionValidator validator;
 	private final TransactionContext transactionContext;
-	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
+	private final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics;
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
+	@Inject
 	public TopicUpdateTransitionLogic(
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
-			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
 			OptionValidator validator,
 			TransactionContext transactionContext,
 			HederaLedger ledger
@@ -93,7 +97,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 			return;
 		}
 
-		var topicId = MerkleEntityId.fromTopicId(op.getTopicID());
+		var topicId = EntityNum.fromTopicId(op.getTopicID());
 		var topic = topics.get().get(topicId);
 		if (!topic.hasAdminKey() && wantsToMutateNonExpiryField(op)) {
 			transactionContext.setStatus(UNAUTHORIZED);

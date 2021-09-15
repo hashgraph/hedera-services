@@ -22,26 +22,25 @@ package com.hedera.services.state.forensics;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleBlobMeta;
-import com.hedera.services.state.merkle.MerkleEntityAssociation;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.merkle.io.MerkleDataOutputStream;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.util.function.Function;
@@ -67,19 +66,19 @@ class FcmDumpTest {
 	@Mock
 	Function<String, MerkleDataOutputStream> merkleOutFn;
 	@Mock
-	FCMap<MerkleEntityId, MerkleAccount> accounts;
+	MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
-	FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
+	MerkleMap<String, MerkleOptionalBlob> storage;
 	@Mock
-	FCMap<MerkleEntityId, MerkleTopic> topics;
+	MerkleMap<EntityNum, MerkleTopic> topics;
 	@Mock
-	FCMap<MerkleEntityId, MerkleToken> tokens;
+	MerkleMap<EntityNum, MerkleToken> tokens;
 	@Mock
-	FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
+	MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
 	@Mock
-	FCMap<MerkleEntityId, MerkleSchedule> scheduleTxs;
+	MerkleMap<EntityNum, MerkleSchedule> scheduleTxs;
 
-	@Inject
+	@LoggingTarget
 	private LogCaptor logCaptor;
 
 	@LoggingSubject

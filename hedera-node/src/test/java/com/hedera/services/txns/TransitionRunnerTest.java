@@ -26,6 +26,7 @@ import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,9 +35,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import javax.inject.Inject;
 import java.util.Optional;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -50,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
@@ -66,9 +68,8 @@ class TransitionRunnerTest {
 	@Mock
 	private TransitionLogicLookup lookup;
 
-	@Inject
+	@LoggingTarget
 	private LogCaptor logCaptor;
-
 	@LoggingSubject
 	private TransitionRunner subject;
 
@@ -157,5 +158,20 @@ class TransitionRunnerTest {
 		// then:
 		verify(txnCtx).setStatus(SUCCESS);
 		assertTrue(result);
+		verify(logic).resetCreatedIds();
+	}
+	
+	@Test
+	void reclaimsIdsOnFailedTransaction() {
+		given(accessor.getFunction()).willReturn(TokenCreate);
+		given(accessor.getTxn()).willReturn(mockBody);
+		given(lookup.lookupFor(TokenCreate, mockBody)).willReturn(Optional.of(logic));
+		given(logic.validateSemantics(accessor)).willReturn(OK);
+		
+		doThrow(new InvalidTransactionException(FAIL_INVALID)).when(logic).doStateTransition();
+		
+		var res = subject.tryTransition(accessor);
+		verify(txnCtx).setStatus(FAIL_INVALID);
+		verify(logic).reclaimCreatedIds();
 	}
 }

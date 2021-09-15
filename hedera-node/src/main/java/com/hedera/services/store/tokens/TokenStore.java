@@ -22,13 +22,10 @@ package com.hedera.services.store.tokens;
 
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.Store;
 import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 
@@ -43,14 +40,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
 
 /**
  * Defines a type able to manage arbitrary tokens.
- *
- * @author Michael Tinker
  */
 public interface TokenStore extends Store<TokenID, MerkleToken> {
 	TokenID MISSING_TOKEN = TokenID.getDefaultInstance();
 	Consumer<MerkleToken> DELETION = token -> token.setDeleted(true);
 
 	boolean isKnownTreasury(AccountID id);
+
+	void addKnownTreasury(AccountID aId, TokenID tId);
 
 	void removeKnownTreasuryForToken(AccountID aId, TokenID tId);
 
@@ -64,23 +61,19 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 
 	ResponseCodeEnum update(TokenUpdateTransactionBody changes, long now);
 
-	ResponseCodeEnum updateFeeSchedule(TokenFeeScheduleUpdateTransactionBody changes);
-
 	ResponseCodeEnum unfreeze(AccountID aId, TokenID tId);
 
 	ResponseCodeEnum grantKyc(AccountID aId, TokenID tId);
 
 	ResponseCodeEnum revokeKyc(AccountID aId, TokenID tId);
 
-	ResponseCodeEnum associate(AccountID aId, List<TokenID> tokens);
+	ResponseCodeEnum associate(AccountID aId, List<TokenID> tokens, boolean automaticAssociation);
 
 	ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment);
 
 	ResponseCodeEnum changeOwner(NftId nftId, AccountID from, AccountID to);
 
 	ResponseCodeEnum changeOwnerWildCard(NftId nftId, AccountID from, AccountID to);
-
-	CreationResult<TokenID> createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now);
 
 	default TokenID resolve(TokenID id) {
 		return exists(id) ? id : MISSING_TOKEN;

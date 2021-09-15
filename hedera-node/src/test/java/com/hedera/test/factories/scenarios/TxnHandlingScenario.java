@@ -20,10 +20,10 @@ package com.hedera.test.factories.scenarios;
  * ‍
  */
 
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
-import com.hedera.services.legacy.unit.serialization.HFileMetaSerdeTest;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleScheduleTest;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -33,6 +33,7 @@ import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.FixedFeeSpec;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.keys.KeyFactory;
@@ -49,7 +50,8 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
+import org.apache.commons.codec.DecoderException;
 
 import java.time.Instant;
 import java.util.List;
@@ -57,7 +59,7 @@ import java.util.List;
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.test.factories.accounts.MerkleAccountFactory.newAccount;
 import static com.hedera.test.factories.accounts.MerkleAccountFactory.newContract;
-import static com.hedera.test.factories.accounts.MockFCMapFactory.newAccounts;
+import static com.hedera.test.factories.accounts.MockMMapFactory.newAccounts;
 import static com.hedera.test.factories.keys.KeyTree.withRoot;
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
 import static com.hedera.test.factories.keys.NodeFactory.list;
@@ -81,7 +83,7 @@ public interface TxnHandlingScenario {
 
 	KeyFactory overlapFactory = new KeyFactory(OverlappingKeyGenerator.withDefaultOverlaps());
 
-	default FCMap<MerkleEntityId, MerkleAccount> accounts() throws Exception {
+	default MerkleMap<EntityNum, MerkleAccount> accounts() throws Exception {
 		return newAccounts()
 				.withAccount(FIRST_TOKEN_SENDER_ID,
 						newAccount()
@@ -179,17 +181,24 @@ public interface TxnHandlingScenario {
 		HederaFs hfs = mock(HederaFs.class);
 		given(hfs.exists(MISC_FILE)).willReturn(true);
 		given(hfs.exists(SYS_FILE)).willReturn(true);
-		given(hfs.getattr(MISC_FILE)).willReturn(HFileMetaSerdeTest.convert(MISC_FILE_INFO));
-		given(hfs.getattr(SYS_FILE)).willReturn(HFileMetaSerdeTest.convert(SYS_FILE_INFO));
+		given(hfs.getattr(MISC_FILE)).willReturn(convert(MISC_FILE_INFO));
+		given(hfs.getattr(SYS_FILE)).willReturn(convert(SYS_FILE_INFO));
 		given(hfs.exists(IMMUTABLE_FILE)).willReturn(true);
-		given(hfs.getattr(IMMUTABLE_FILE)).willReturn(HFileMetaSerdeTest.convert(IMMUTABLE_FILE_INFO));
+		given(hfs.getattr(IMMUTABLE_FILE)).willReturn(convert(IMMUTABLE_FILE_INFO));
 		return hfs;
 	}
 
-	default FCMap<MerkleEntityId, MerkleTopic> topics() {
-		var topics = (FCMap<MerkleEntityId, MerkleTopic>) mock(FCMap.class);
+	default MerkleMap<EntityNum, MerkleTopic> topics() {
+		var topics = (MerkleMap<EntityNum, MerkleTopic>) mock(MerkleMap.class);
 		given(topics.get(EXISTING_TOPIC)).willReturn(new MerkleTopic());
 		return topics;
+	}
+
+	private static HFileMeta convert(final FileGetInfoResponse.FileInfo fi) throws DecoderException {
+		return new HFileMeta(
+				fi.getDeleted(),
+				JKey.mapKey(Key.newBuilder().setKeyList(fi.getKeys()).build()),
+				fi.getExpirationTime().getSeconds());
 	}
 
 	default TokenStore tokenStore() {
@@ -292,12 +301,11 @@ public interface TxnHandlingScenario {
 
 	default byte[] extantSchedulingBodyBytes() throws Throwable {
 		return MerkleScheduleTest.scheduleCreateTxnWith(
-				Key.getDefaultInstance(),
-				"",
-				MISC_ACCOUNT,
-				MISC_ACCOUNT,
-				MiscUtils.asTimestamp(Instant.ofEpochSecond(1L))
-		)
+						Key.getDefaultInstance(),
+						"",
+						MISC_ACCOUNT,
+						MISC_ACCOUNT,
+						MiscUtils.asTimestamp(Instant.ofEpochSecond(1L)))
 				.toByteArray();
 	}
 
@@ -348,7 +356,7 @@ public interface TxnHandlingScenario {
 		return scheduleStore;
 	}
 
-	String MISSING_ACCOUNT_ID = "1.2.3";
+	String MISSING_ACCOUNT_ID = "0.0.321321";
 	AccountID MISSING_ACCOUNT = asAccount(MISSING_ACCOUNT_ID);
 
 	String NO_RECEIVER_SIG_ID = "0.0.1337";
@@ -364,7 +372,6 @@ public interface TxnHandlingScenario {
 	KeyTree MISC_ACCOUNT_KT = withRoot(ed25519());
 
 	String SYS_ACCOUNT_ID = "0.0.666";
-	AccountID SYS_ACCOUNT = asAccount(SYS_ACCOUNT_ID);
 
 	String DILIGENT_SIGNING_PAYER_ID = "0.0.1340";
 	AccountID DILIGENT_SIGNING_PAYER = asAccount(DILIGENT_SIGNING_PAYER_ID);
@@ -390,11 +397,10 @@ public interface TxnHandlingScenario {
 	KeyTree FROM_OVERLAP_PAYER_KT = withRoot(threshold(2, ed25519(true), ed25519(true), ed25519(false)));
 
 	KeyTree NEW_ACCOUNT_KT = withRoot(list(ed25519(), threshold(1, ed25519(), ed25519())));
-	KeyTree SYS_ACCOUNT_KT =  withRoot(list(ed25519(), threshold(1, ed25519(), ed25519())));
+	KeyTree SYS_ACCOUNT_KT = withRoot(list(ed25519(), threshold(1, ed25519(), ed25519())));
 	KeyTree LONG_THRESHOLD_KT = withRoot(threshold(1, ed25519(), ed25519(), ed25519(), ed25519()));
 
 	String MISSING_FILE_ID = "1.2.3";
-	FileID MISSING_FILE = asFile(MISSING_FILE_ID);
 
 	String SYS_FILE_ID = "0.0.111";
 	FileID SYS_FILE = asFile(SYS_FILE_ID);
@@ -427,10 +433,8 @@ public interface TxnHandlingScenario {
 	ContractID MISC_RECIEVER_SIG_CONTRACT = asContract(MISC_RECIEVER_SIG_CONTRACT_ID);
 
 	String IMMUTABLE_CONTRACT_ID = "0.0.9339";
-	ContractID IMMUTABLE_CONTRACT = asContract(IMMUTABLE_CONTRACT_ID);
 
 	String MISC_CONTRACT_ID = "0.0.3337";
-	ContractID MISC_CONTRACT = asContract(MISC_CONTRACT_ID);
 	KeyTree MISC_ADMIN_KT = withRoot(ed25519());
 
 	KeyTree SIMPLE_NEW_ADMIN_KT = withRoot(ed25519());

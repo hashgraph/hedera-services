@@ -22,6 +22,7 @@ package com.hedera.services.state.merkle;
 
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,7 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.MAX_NUM_ALLOWED;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.MAX_NUM_ALLOWED;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -195,13 +196,9 @@ class MerkleUniqueTokenIdTest {
 
 	@Test
 	void fromNftIdWorks() {
-		// given
-		var expected = new MerkleUniqueTokenId(
-				new EntityId(0, 0, 1),
-				1
-		);
-
 		// expect:
-		assertEquals(expected, MerkleUniqueTokenId.fromNftId(new NftId(0, 0, 1, 1)));
+		assertEquals(
+				EntityNumPair.fromLongs(1L, 1L),
+				EntityNumPair.fromNftId(new NftId(0, 0, 1, 1)));
 	}
 }

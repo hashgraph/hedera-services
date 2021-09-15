@@ -9,9 +9,9 @@ package com.hedera.services.ledger.accounts;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,7 +27,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 
 import java.util.Map;
 
-public class HederaAccountCustomizer extends
+public final class HederaAccountCustomizer extends
 		AccountCustomizer<AccountID, MerkleAccount, AccountProperty, HederaAccountCustomizer> {
 	private static final Map<Option, AccountProperty> OPTION_PROPERTIES = Map.of(
 			Option.KEY, AccountProperty.KEY,
@@ -37,7 +37,9 @@ public class HederaAccountCustomizer extends
 			Option.IS_DELETED, AccountProperty.IS_DELETED,
 			Option.AUTO_RENEW_PERIOD, AccountProperty.AUTO_RENEW_PERIOD,
 			Option.IS_SMART_CONTRACT, AccountProperty.IS_SMART_CONTRACT,
-			Option.IS_RECEIVER_SIG_REQUIRED, AccountProperty.IS_RECEIVER_SIG_REQUIRED
+			Option.IS_RECEIVER_SIG_REQUIRED, AccountProperty.IS_RECEIVER_SIG_REQUIRED,
+			Option.MAX_AUTOMATIC_ASSOCIATIONS, AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS,
+			Option.ALREADY_USED_AUTOMATIC_ASSOCIATIONS, AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS
 	);
 
 	public HederaAccountCustomizer() {

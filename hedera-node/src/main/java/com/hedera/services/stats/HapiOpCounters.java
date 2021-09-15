@@ -57,10 +57,10 @@ public class HapiOpCounters {
 	EnumMap<HederaFunctionality, AtomicLong> answeredQueries = new EnumMap<>(HederaFunctionality.class);
 
 	public HapiOpCounters(
-			CounterFactory counter,
-			MiscRunningAvgs runningAvgs,
-			TransactionContext txnCtx,
-			Function<HederaFunctionality, String> statNameFn
+			final CounterFactory counter,
+			final MiscRunningAvgs runningAvgs,
+			final TransactionContext txnCtx,
+			final Function<HederaFunctionality, String> statNameFn
 	) {
 		this.txnCtx = txnCtx;
 		this.counter = counter;
@@ -80,7 +80,7 @@ public class HapiOpCounters {
 		});
 	}
 
-	public void registerWith(Platform platform) {
+	public void registerWith(final Platform platform) {
 		registerCounters(platform, receivedOps, COUNTER_RECEIVED_NAME_TPL, COUNTER_RECEIVED_DESC_TPL);
 		registerCounters(platform, submittedTxns, COUNTER_SUBMITTED_NAME_TPL, COUNTER_SUBMITTED_DESC_TPL);
 		registerCounters(platform, handledTxns, COUNTER_HANDLED_NAME_TPL, COUNTER_HANDLED_DESC_TPL);
@@ -88,36 +88,36 @@ public class HapiOpCounters {
 	}
 
 	private void registerCounters(
-			Platform platform,
-			Map<HederaFunctionality, AtomicLong> counters,
-			String nameTpl,
-			String descTpl
+			final Platform platform,
+			final Map<HederaFunctionality, AtomicLong> counters,
+			final String nameTpl,
+			final String descTpl
 	) {
-		for (Map.Entry<HederaFunctionality, AtomicLong> entry : counters.entrySet())	{
-			var baseName = statNameFn.apply(entry.getKey());
-			var fullName = String.format(nameTpl, baseName);
-			var description = String.format(descTpl, baseName);
+		for (final var entry : counters.entrySet())	{
+			final var baseName = statNameFn.apply(entry.getKey());
+			final var fullName = String.format(nameTpl, baseName);
+			final var description = String.format(descTpl, baseName);
 			platform.addAppStatEntry(counter.from(fullName, description, entry.getValue()::get));
 		}
 	}
 
-	public void countReceived(HederaFunctionality op) {
+	public void countReceived(final HederaFunctionality op) {
 		safeIncrement(receivedOps, op);
 	}
 
-	public long receivedSoFar(HederaFunctionality op) {
+	public long receivedSoFar(final HederaFunctionality op) {
 		return IGNORED_FUNCTIONS.contains(op) ? 0 : receivedOps.get(op).get();
 	}
 
-	public void countSubmitted(HederaFunctionality txn) {
+	public void countSubmitted(final HederaFunctionality txn) {
 		safeIncrement(submittedTxns, txn);
 	}
 
-	public long submittedSoFar(HederaFunctionality txn) {
+	public long submittedSoFar(final HederaFunctionality txn) {
 		return IGNORED_FUNCTIONS.contains(txn) ? 0 : submittedTxns.get(txn).get();
 	}
 
-	public void countHandled(HederaFunctionality txn) {
+	public void countHandled(final HederaFunctionality txn) {
 		safeIncrement(handledTxns, txn);
 		if (txn == ConsensusSubmitMessage) {
 			int txnBytes = txnCtx.accessor().getTxn().getSerializedSize();
@@ -125,21 +125,21 @@ public class HapiOpCounters {
 		}
 	}
 
-	public long handledSoFar(HederaFunctionality txn) {
+	public long handledSoFar(final HederaFunctionality txn) {
 		return IGNORED_FUNCTIONS.contains(txn) ? 0 : handledTxns.get(txn).get();
 	}
 
-	public void countAnswered(HederaFunctionality query) {
+	public void countAnswered(final HederaFunctionality query) {
 		safeIncrement(answeredQueries, query);
 	}
 
-	public long answeredSoFar(HederaFunctionality query) {
+	public long answeredSoFar(final HederaFunctionality query) {
 		return IGNORED_FUNCTIONS.contains(query) ? 0 : answeredQueries.get(query).get();
 	}
 
 	private void safeIncrement(
-			Map<HederaFunctionality, AtomicLong> counters,
-			HederaFunctionality function
+			final Map<HederaFunctionality, AtomicLong> counters,
+			final HederaFunctionality function
 	) {
 		if (!IGNORED_FUNCTIONS.contains(function)) {
 			counters.get(function).getAndIncrement();

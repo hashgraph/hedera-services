@@ -23,7 +23,7 @@ package com.hedera.services.fees.calculation.crypto.queries;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.test.utils.IdUtils;
@@ -38,7 +38,7 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -61,7 +61,7 @@ import static org.mockito.BDDMockito.verify;
 
 class GetAccountInfoResourceUsageTest {
 	StateView view;
-	FCMap<MerkleEntityId, MerkleAccount> accounts;
+	MerkleMap<EntityNum, MerkleAccount> accounts;
 	GetAccountInfoResourceUsage subject;
 	Key aKey = Key.newBuilder().setEd25519(ByteString.copyFrom("NONSENSE".getBytes())).build();
 	String a = "0.0.1234";
@@ -72,6 +72,7 @@ class GetAccountInfoResourceUsageTest {
 	TokenID bToken = asToken("0.0.1002");
 	TokenID cToken = asToken("0.0.1003");
 	String memo = "Hi there!";
+	int maxAutomaticAssociations = 123;
 	FeeData expected;
 	AccountID queryTarget = IdUtils.asAccount(a);
 
@@ -99,6 +100,7 @@ class GetAccountInfoResourceUsageTest {
 				.addTokenRelationships(0, TokenRelationship.newBuilder().setTokenId(aToken))
 				.addTokenRelationships(1, TokenRelationship.newBuilder().setTokenId(bToken))
 				.addTokenRelationships(2, TokenRelationship.newBuilder().setTokenId(cToken))
+				.setMaxAutomaticTokenAssociations(maxAutomaticAssociations)
 				.build();
 		// and:
 		var query = accountInfoQuery(a, ANSWER_ONLY);

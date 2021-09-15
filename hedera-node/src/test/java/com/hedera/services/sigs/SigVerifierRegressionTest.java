@@ -27,25 +27,25 @@ import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
-import com.hedera.services.security.ops.SystemOpPolicies;
-import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.PolicyBasedSigWaivers;
+import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.order.SignatureWaivers;
 import com.hedera.services.sigs.utils.PrecheckUtils;
 import com.hedera.services.sigs.verification.PrecheckKeyReqs;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.engine.CryptoEngine;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Test;
 
 import java.util.function.Predicate;
@@ -75,11 +75,11 @@ import static org.mockito.BDDMockito.verify;
 class SigVerifierRegressionTest {
 	private PrecheckKeyReqs precheckKeyReqs;
 	private PrecheckVerifier precheckVerifier;
-	private HederaSigningOrder keyOrder;
-	private HederaSigningOrder retryingKeyOrder;
+	private SigRequirements keyOrder;
+	private SigRequirements retryingKeyOrder;
 	private Predicate<TransactionBody> isQueryPayment;
 	private PlatformTxnAccessor platformTxn;
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	private MiscRunningAvgs runningAvgs;
 	private MiscSpeedometers speedometers;
 
@@ -215,12 +215,12 @@ class SigVerifierRegressionTest {
 		platformTxn = scenario.platformTxn();
 		runningAvgs = mock(MiscRunningAvgs.class);
 		speedometers = mock(MiscSpeedometers.class);
-		keyOrder = new HederaSigningOrder(
+		keyOrder = new SigRequirements(
 				defaultLookupsFor(null, () -> accounts, () -> null, ref -> null, ref -> null),
 				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
 		retryingKeyOrder =
-				new HederaSigningOrder(
+				new SigRequirements(
 						defaultLookupsPlusAccountRetriesFor(
 								null, () -> accounts, () -> null, ref -> null, ref -> null,
 								MN, MN, runningAvgs, speedometers),
@@ -229,8 +229,7 @@ class SigVerifierRegressionTest {
 		isQueryPayment = PrecheckUtils.queryPaymentTestFor(DEFAULT_NODE);
 		SyncVerifier syncVerifier = new CryptoEngine()::verifySync;
 		precheckKeyReqs = new PrecheckKeyReqs(keyOrder, retryingKeyOrder, isQueryPayment);
-		final var pkToSigFn = platformTxn.getPkToSigsFn();
-		precheckVerifier = new PrecheckVerifier(syncVerifier, precheckKeyReqs, ignore -> pkToSigFn);
+		precheckVerifier = new PrecheckVerifier(syncVerifier, precheckKeyReqs);
 	}
 }
 

@@ -24,9 +24,14 @@ import com.google.common.base.MoreObjects;
 import com.google.common.io.Files;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.usage.BaseTransactionMeta;
+import com.hedera.services.usage.file.FileAppendMeta;
+import com.hedera.services.usage.state.UsageAccumulator;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -35,8 +40,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.hederahashgraph.fee.SigValueObj;
 
 import java.io.File;
 import java.util.List;
@@ -46,16 +50,16 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.currExpiry;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 
 public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
-	static final Logger log = LogManager.getLogger(HapiFileAppend.class);
 	private final String file;
-	Optional<byte[]> contents = Optional.empty();
-	Optional<Supplier<byte[]>> contentsSupplier = Optional.empty();
-	Optional<String> path = Optional.empty();
+	private Optional<byte[]> contents = Optional.empty();
+	private Optional<Supplier<byte[]>> contentsSupplier = Optional.empty();
+	private Optional<String> path = Optional.empty();
 
-	Optional<Consumer<FileID>> preAppendCb = Optional.empty();
-	Optional<Consumer<ResponseCodeEnum>> postAppendCb = Optional.empty();
+	private Optional<Consumer<FileID>> preAppendCb = Optional.empty();
+	private Optional<Consumer<ResponseCodeEnum>> postAppendCb = Optional.empty();
 
 	public HapiFileAppend(String file) {
 		this.file = file;
@@ -123,7 +127,7 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
 				? currExpiry(file, spec, payerToUse(payer.get(), spec))
 				: currExpiry(file, spec);
 		FeeCalculator.ActivityMetrics metricsCalc = (txBody, sigUsage) ->
-				fileFees.getFileAppendTxFeeMatrices(txBody, expiry, sigUsage);
+				usageEstimate(txBody, sigUsage, expiry.getSeconds());
 		return spec.fees().forActivityBasedOp(HederaFunctionality.FileAppend, metricsCalc,txn, numPayerKeys);
 	}
 
@@ -159,5 +163,17 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
 				account.equals(spec.setup().exchangeRatesControlName()) ||
 				account.equals(spec.setup().feeScheduleControlName()) ||
 				account.equals(spec.setup().strongControlName());
+	}
+
+	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo, long expiry) {
+		final var op = txn.getFileAppend();
+		final var baseMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
+		final var effectiveNow = txn.getTransactionID().getTransactionValidStart().getSeconds();
+		final var opMeta = new FileAppendMeta(op.getContents().size(), expiry - effectiveNow);
+
+		final var accumulator = new UsageAccumulator();
+		fileOpsUsage.fileAppendUsage(suFrom(svo), opMeta, baseMeta, accumulator);
+
+		return AdapterUtils.feeDataFrom(accumulator);
 	}
 }

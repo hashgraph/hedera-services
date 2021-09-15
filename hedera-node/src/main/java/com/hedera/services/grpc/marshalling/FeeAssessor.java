@@ -26,6 +26,8 @@ import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.List;
 
 import static com.hedera.services.grpc.marshalling.FixedFeeResult.ASSESSMENT_FAILED_WITH_TOO_MANY_ADJUSTMENTS_REQUIRED;
@@ -38,11 +40,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+@Singleton
 public class FeeAssessor {
 	private final FixedFeeAssessor fixedFeeAssessor;
 	private final RoyaltyFeeAssessor royaltyFeeAssessor;
 	private final FractionalFeeAssessor fractionalFeeAssessor;
 
+	@Inject
 	public FeeAssessor(
 			FixedFeeAssessor fixedFeeAssessor,
 			RoyaltyFeeAssessor royaltyFeeAssessor,

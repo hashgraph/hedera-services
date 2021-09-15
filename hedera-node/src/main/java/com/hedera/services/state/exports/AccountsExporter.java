@@ -21,9 +21,9 @@ package com.hedera.services.state.exports;
  */
 
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.swirlds.fcmap.FCMap;
+import com.hedera.services.utils.EntityNum;
+import com.swirlds.merkle.map.MerkleMap;
 
 public interface AccountsExporter {
-	void toFile(String path, FCMap<MerkleEntityId, MerkleAccount> accounts) throws Exception;
+	void toFile(MerkleMap<EntityNum, MerkleAccount> accounts);
 }

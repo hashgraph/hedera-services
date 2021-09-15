@@ -32,13 +32,16 @@ import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.Token;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.utils.TxnUtils;
@@ -46,10 +49,8 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.swirlds.fchashmap.FCOneToManyRelation;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -58,15 +59,14 @@ import java.util.List;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInAnyOrder.containsInAnyOrder;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.verify;
 
-public class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
-	long thisSecond = 1_234_567L;
+class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
+	private static final long thisSecond = 1_234_567L;
 
 	@BeforeEach
 	void setup() {
@@ -77,10 +77,10 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 				MerkleAccount::new,
 				new HashMapBackingAccounts(),
 				new ChangeSummaryManager<>());
-		FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
-		FCOneToManyRelation<PermHashInteger, Long> uniqueTokenOwnerships = new FCOneToManyRelation<>();
-		FCOneToManyRelation<PermHashInteger, Long> uniqueTokenAccountOwnerships = new FCOneToManyRelation<>();
-		FCOneToManyRelation<PermHashInteger, Long> uniqueTokenTreasuryOwnerships = new FCOneToManyRelation<>();
+		final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
+		final FCOneToManyRelation<EntityNum, Long> uniqueTokenOwnerships = new FCOneToManyRelation<>();
+		final FCOneToManyRelation<EntityNum, Long> uniqueTokenAccountOwnerships = new FCOneToManyRelation<>();
+		final FCOneToManyRelation<EntityNum, Long> uniqueTokenTreasuryOwnerships = new FCOneToManyRelation<>();
 
 		nftsLedger = new TransactionalLedger<>(
 				NftProperty.class,
@@ -97,7 +97,7 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 				() -> uniqueTokenOwnerships,
 				() -> uniqueTokenAccountOwnerships,
 				() -> uniqueTokenTreasuryOwnerships,
-				false);
+				false, true);
 		tokenStore = new HederaTokenStore(
 				ids,
 				TestContextValidator.TEST_VALIDATOR,
@@ -111,74 +111,62 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 
 	@Test
 	void throwsOnCommittingInconsistentAdjustments() {
-		// when:
 		subject.begin();
 		subject.adjustBalance(genesis, -1L);
 
-		// then:
 		assertThrows(InconsistentAdjustmentsException.class, () -> subject.commit());
 	}
 
 	@Test
 	void resetsNetTransfersAfterCommit() {
-		// when:
 		subject.begin();
-		AccountID a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
+		subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
 		subject.commit();
-		// and:
-		subject.begin();
-		AccountID b = subject.create(genesis, 2_000L, new HederaAccountCustomizer().memo("b"));
 
-		// then:
+		subject.begin();
+		subject.create(genesis, 2_000L, new HederaAccountCustomizer().memo("b"));
+
 		assertEquals(2L, subject.netTransfersInTxn().getAccountAmountsList().size());
 	}
 
 	@Test
 	void doesntIncludeZeroAdjustsInNetTransfers() {
-		// when:
 		subject.begin();
-		AccountID a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
+		final var a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
 		subject.delete(a, genesis);
 
-		// then:
 		assertEquals(0L, subject.netTransfersInTxn().getAccountAmountsList().size());
 	}
 
 	@Test
 	void doesntAllowDestructionOfRealCurrency() {
-		// when:
 		subject.begin();
-		AccountID a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
+		final var a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
 		subject.destroy(a);
 
-		// then:
 		assertThrows(InconsistentAdjustmentsException.class, () -> subject.commit());
 	}
 
 	@Test
 	void allowsDestructionOfEphemeralCurrency() {
-		// when:
 		subject.begin();
-		AccountID a = asAccount("1.2.3");
+		final var a = asAccount("1.2.3");
 		subject.spawn(a, 1_000L, new HederaAccountCustomizer().memo("a"));
 		subject.destroy(a);
 		subject.commit();
 
-		// then:
 		assertFalse(subject.exists(a));
 		assertEquals(GENESIS_BALANCE, subject.getBalance(genesis));
 	}
 
 	@Test
 	void recordsCreationOfAccountDeletedInSameTxn() {
-		// when:
 		subject.begin();
-		AccountID a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
+		final var a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
 		subject.delete(a, genesis);
-		int numNetTransfers = subject.netTransfersInTxn().getAccountAmountsCount();
+		final var numNetTransfers = subject.netTransfersInTxn().getAccountAmountsCount();
 		subject.commit();
 
-		// then:
 		assertEquals(0, numNetTransfers);
 		assertTrue(subject.exists(a));
 		assertEquals(GENESIS_BALANCE, subject.getBalance(genesis));
@@ -186,61 +174,66 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 
 	@Test
 	void addsRecordsAndEntitiesBeforeCommitting() {
-		// when:
 		subject.begin();
-		AccountID a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
+		subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
 		subject.commit();
 
-		// then:
 		verify(historian).finalizeExpirableTransactionRecord();
 		verify(historian).noteNewExpirationEvents();
 	}
 
 	@Test
 	void resetsNetTransfersAfterRollback() {
-		// when:
 		subject.begin();
-		AccountID a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
+		subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
 		subject.rollback();
-		// and:
-		subject.begin();
-		AccountID b = subject.create(genesis, 2_000L, new HederaAccountCustomizer().memo("b"));
 
-		// then:
+		subject.begin();
+		subject.create(genesis, 2_000L, new HederaAccountCustomizer().memo("b"));
+
 		assertEquals(2L, subject.netTransfersInTxn().getAccountAmountsList().size());
 	}
 
 	@Test
 	void returnsNetTransfersInBalancedTxn() {
-		setup();
-		// and:
-		TokenID tA, tB;
-
-		// when:
 		subject.begin();
-		AccountID a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
-		AccountID b = subject.create(genesis, 2_000L, new HederaAccountCustomizer().memo("b"));
-		AccountID c = subject.create(genesis, 3_000L, new HederaAccountCustomizer().memo("c"));
-		AccountID d = subject.create(genesis, 4_000L, new HederaAccountCustomizer().memo("d"));
-		// and:
-		var rA = tokenStore.createProvisionally(stdWith("MINE", "MINE", a), a, thisSecond);
-		tA = rA.getCreated().get();
-		tokenStore.commitCreation();
-		var rB = tokenStore.createProvisionally(stdWith("YOURS", "YOURS", b), b, thisSecond);
-		tB = rB.getCreated().get();
-		tokenStore.commitCreation();
-		// and:
-		tokenStore.associate(a, List.of(tA, tB));
-		tokenStore.associate(b, List.of(tA, tB));
-		tokenStore.associate(c, List.of(tA, tB));
-		tokenStore.associate(d, List.of(tA, tB));
-		// and:
+		final var a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
+		final var b = subject.create(genesis, 2_000L, new HederaAccountCustomizer().memo("b"));
+		final var c = subject.create(genesis, 3_000L, new HederaAccountCustomizer().memo("c"));
+		final var d = subject.create(genesis, 4_000L, new HederaAccountCustomizer().memo("d"));
+
+		final var aa = new Account(Id.fromGrpcAccount(a));
+		aa.setAssociatedTokens(new CopyOnWriteIds());
+
+		final var ba = new Account(Id.fromGrpcAccount(b));
+		ba.setAssociatedTokens(new CopyOnWriteIds());
+
+		final var ca = new Account(Id.fromGrpcAccount(c));
+		ca.setAssociatedTokens(new CopyOnWriteIds());
+
+		final var da = new Account(Id.fromGrpcAccount(d));
+		da.setAssociatedTokens(new CopyOnWriteIds());
+
+		final var tA = ids.newTokenId(a);
+		final var tB = ids.newTokenId(b);
+		final var rA = Token.fromGrpcOpAndMeta(
+				Id.fromGrpcToken(tA),
+				stdWith("MINE", "MINE", a), aa, null, thisSecond);
+		final var rB = Token.fromGrpcOpAndMeta(
+				Id.fromGrpcToken(tB),
+				stdWith("YOURS", "YOURS", b), ba, null, thisSecond);
+
+		aa.associateWith(List.of(rA, rB), 10, false);
+		ba.associateWith(List.of(rA, rB), 10, false);
+		ca.associateWith(List.of(rA, rB), 10, false);
+		da.associateWith(List.of(rA, rB), 10, false);
+
 		subject.doTransfer(d, a, 1_000L);
 		subject.delete(d, b);
 		subject.adjustBalance(c, 1_000L);
 		subject.adjustBalance(genesis, -1_000L);
 		subject.doTransfers(TxnUtils.withAdjustments(a, -500L, b, 250L, c, 250L));
-		// and:
+
 		subject.adjustTokenBalance(a, tA, +10_000);
 		subject.adjustTokenBalance(a, tA, -5_000);
 		subject.adjustTokenBalance(a, tB, +1);
@@ -253,9 +246,7 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 		subject.adjustTokenBalance(c, tA, +5000);
 		subject.freeze(a, tB);
 		subject.adjustTokenBalance(a, tB, +1_000_000);
-		accountsLedger.changeSetSoFar();
 
-		// then:
 		assertThat(
 				subject.netTransfersInTxn().getAccountAmountsList(),
 				containsInAnyOrder(
@@ -263,29 +254,19 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 						AccountAmount.newBuilder().setAccountID(b).setAmount(5_250L).build(),
 						AccountAmount.newBuilder().setAccountID(c).setAmount(4_250L).build(),
 						AccountAmount.newBuilder().setAccountID(genesis).setAmount(-11_000L).build()));
-		// and:
-		assertThat(subject.netTokenTransfersInTxn(),
-				contains(
-						construct(tA, aa(a, +5_000), aa(c, +5_000)),
-						construct(tB, aa(b, +10_000), aa(c, +50))
-				));
 	}
 
 	@Test
 	void recognizesPendingCreates() {
-		setup();
-
-		// when:
 		subject.begin();
-		AccountID a = subject.create(genesis, 1L, new HederaAccountCustomizer().memo("a"));
+		final var a = subject.create(genesis, 1L, new HederaAccountCustomizer().memo("a"));
 
-		// then:
 		assertTrue(subject.isPendingCreation(a));
 		assertFalse(subject.isPendingCreation(genesis));
 	}
 
-	private TokenCreateTransactionBody stdWith(String symbol, String tokenName, AccountID account) {
-		var key = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey();
+	private TokenCreateTransactionBody stdWith(final String symbol, final String tokenName, final AccountID account) {
+		final var key = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey();
 		return TokenCreateTransactionBody.newBuilder()
 				.setAdminKey(key)
 				.setFreezeKey(TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey())
@@ -298,12 +279,4 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 				.setFreezeDefault(false)
 				.build();
 	}
-
-	private TokenTransferList construct(TokenID token, AccountAmount... xfers) {
-		return TokenTransferList.newBuilder()
-				.setToken(token)
-				.addAllTransfers(List.of(xfers))
-				.build();
-	}
-
 }

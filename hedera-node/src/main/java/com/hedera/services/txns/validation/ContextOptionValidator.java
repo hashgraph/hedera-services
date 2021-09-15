@@ -21,10 +21,11 @@ package com.hedera.services.txns.validation;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
@@ -32,11 +33,13 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.StringUtils;
 import org.bouncycastle.util.Arrays;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.Optional;
 
@@ -51,21 +54,20 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 
 /**
- * Implements an {@link OptionValidator} that relies an injected instance
- * of the {@link TransactionContext} to determine whether various options are
- * permissible.
- *
- * @author Michael Tinker
+ * Implements an {@link OptionValidator} that relies an injected instance of the
+ * {@link TransactionContext} to determine whether various options are permissible.
  */
+@Singleton
 public class ContextOptionValidator implements OptionValidator {
 	private final long maxEntityLifetime;
 	private final AccountID nodeAccount;
 	private final TransactionContext txnCtx;
 	private final GlobalDynamicProperties dynamicProperties;
 
+	@Inject
 	public ContextOptionValidator(
 			AccountID nodeAccount,
-			PropertySource properties,
+			@CompositeProps PropertySource properties,
 			TransactionContext txnCtx,
 			GlobalDynamicProperties dynamicProperties
 	) {
@@ -187,8 +189,8 @@ public class ContextOptionValidator implements OptionValidator {
 	}
 
 	@Override
-	public ResponseCodeEnum queryableTopicStatus(TopicID id, FCMap<MerkleEntityId, MerkleTopic> topics) {
-		MerkleTopic merkleTopic = topics.get(MerkleEntityId.fromTopicId(id));
+	public ResponseCodeEnum queryableTopicStatus(TopicID id, MerkleMap<EntityNum, MerkleTopic> topics) {
+		MerkleTopic merkleTopic = topics.get(EntityNum.fromTopicId(id));
 
 		return Optional.ofNullable(merkleTopic)
 				.map(t -> t.isDeleted() ? INVALID_TOPIC_ID : OK)

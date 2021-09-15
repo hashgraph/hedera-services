@@ -2,7 +2,7 @@ package com.hederahashgraph.builder;
 
 /*-
  * ‌
- * Hedera Services API
+ * Hedera Services API Utilities
  * ​
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
@@ -73,10 +73,10 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
 import java.util.List;
 
-/**
- * @author Akshay
- */
-public class RequestBuilder {
+public final class RequestBuilder {
+  private RequestBuilder() {
+    throw new UnsupportedOperationException("Utility Class");
+  }
 
   public static Transaction getCreateAccountBuilder(Long payerAccountNum, Long payerRealmNum,
       Long payerShardNum,
@@ -412,7 +412,7 @@ public class RequestBuilder {
    *
    * @param payerAccountNum payer account number
    * @param payerRealmNum payer realm number
-   * @param payerShardNum payer share number
+   * @param payerShardNum payer shard number
    * @param nodeAccountNum node account number
    * @param nodeRealmNum node realm number
    * @param nodeShardNum node shard number
@@ -425,25 +425,32 @@ public class RequestBuilder {
    *
    * @return transaction for file deletion
    */
-  public static Transaction getFileDeleteBuilder(Long payerAccountNum, Long payerRealmNum,
-      Long payerShardNum,
-      Long nodeAccountNum, Long nodeRealmNum, Long nodeShardNum,
-      long transactionFee, Timestamp timestamp, Duration transactionDuration,
-      boolean generateRecord, String memo,
-      FileID fileID) {
-    FileDeleteTransactionBody FileDeleteTransaction = FileDeleteTransactionBody.newBuilder()
+  public static Transaction getFileDeleteBuilder(
+          final Long payerAccountNum,
+          final Long payerRealmNum,
+          final Long payerShardNum,
+          final Long nodeAccountNum,
+          final Long nodeRealmNum,
+          final Long nodeShardNum,
+          final long transactionFee,
+          final Timestamp timestamp,
+          final Duration transactionDuration,
+          final boolean generateRecord,
+          final String memo,
+          final FileID fileID
+  ) {
+    final var fileDeleteTransaction = FileDeleteTransactionBody.newBuilder()
         .setFileID(fileID)
         .build();
-    TransactionBody.Builder body = getTransactionBody(payerAccountNum, payerRealmNum, payerShardNum,
+    final var body = getTransactionBody(payerAccountNum, payerRealmNum, payerShardNum,
         nodeAccountNum,
         nodeRealmNum, nodeShardNum, transactionFee, timestamp,
         transactionDuration, generateRecord, memo);
-    body.setFileDelete(FileDeleteTransaction);
-    byte[] bodyBytesArr = body.build().toByteArray();
-    ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
+    body.setFileDelete(fileDeleteTransaction);
+    final var bodyBytesArr = body.build().toByteArray();
+    final var bodyBytes = ByteString.copyFrom(bodyBytesArr);
     return Transaction.newBuilder().setBodyBytes(bodyBytes).build();
   }
-
 
   public static Query getFileGetContentBuilder(Transaction payment, FileID fileID,
       ResponseType responseType) {
@@ -754,7 +761,6 @@ public class RequestBuilder {
             .setHeader(queryHeader)).build();
 
   }
-
 
   public static Transaction getCreateAccountBuilder(Long payerAccountNum, Long payerRealmNum,
       Long payerShardNum, Long nodeAccountNum, Long nodeRealmNum, Long nodeShardNum,

@@ -29,6 +29,8 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.function.Function;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
@@ -40,12 +42,17 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
+@Singleton
 public class ScheduleOpsUsage {
 	/* Scheduled transaction ids have the scheduled=true flag set */
 	private static final long SCHEDULED_TXN_ID_SIZE = (1L * BASIC_TX_ID_SIZE) + BOOL_SIZE;
 
 	static EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
 	static Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;
+
+	@Inject
+	public ScheduleOpsUsage() {
+	}
 
 	public FeeData scheduleInfoUsage(Query scheduleInfo, ExtantScheduleContext ctx) {
 		var op = scheduleInfo.getScheduleGetInfo();

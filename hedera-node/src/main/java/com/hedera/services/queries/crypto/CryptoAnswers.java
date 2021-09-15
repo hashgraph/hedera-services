@@ -9,9 +9,9 @@ package com.hedera.services.queries.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,6 +20,10 @@ package com.hedera.services.queries.crypto;
  * ‍
  */
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class CryptoAnswers {
 	private final GetLiveHashAnswer liveHash;
 	private final GetStakersAnswer stakers;
@@ -27,12 +31,13 @@ public class CryptoAnswers {
 	private final GetAccountBalanceAnswer accountBalance;
 	private final GetAccountRecordsAnswer accountRecords;
 
+	@Inject
 	public CryptoAnswers(
-			GetLiveHashAnswer liveHash,
-			GetStakersAnswer stakers,
-			GetAccountInfoAnswer accountInfo,
-			GetAccountBalanceAnswer accountBalance,
-			GetAccountRecordsAnswer accountRecords
+			final GetLiveHashAnswer liveHash,
+			final GetStakersAnswer stakers,
+			final GetAccountInfoAnswer accountInfo,
+			final GetAccountBalanceAnswer accountBalance,
+			final GetAccountRecordsAnswer accountRecords
 	) {
 		this.liveHash = liveHash;
 		this.stakers = stakers;

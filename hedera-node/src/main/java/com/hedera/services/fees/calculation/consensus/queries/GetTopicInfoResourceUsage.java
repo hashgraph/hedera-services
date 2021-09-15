@@ -28,7 +28,10 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 
-import static com.hedera.services.state.merkle.MerkleEntityId.fromTopicId;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+import static com.hedera.services.utils.EntityNum.fromTopicId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.fee.ConsensusServiceFeeBuilder.computeVariableSizedFieldsUsage;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
@@ -39,30 +42,36 @@ import static com.hederahashgraph.fee.FeeBuilder.TX_HASH_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getQueryFeeDataMatrices;
 import static com.hederahashgraph.fee.FeeBuilder.getStateProofSize;
 
-public class GetTopicInfoResourceUsage implements QueryResourceUsageEstimator {
+@Singleton
+public final class GetTopicInfoResourceUsage implements QueryResourceUsageEstimator {
+	@Inject
+	public GetTopicInfoResourceUsage() {
+		/* No-op */
+	}
+
 	@Override
-	public boolean applicableTo(Query query) {
+	public boolean applicableTo(final Query query) {
 		return query.hasConsensusGetTopicInfo();
 	}
 
 	@Override
-	public FeeData usageGiven(Query query, StateView view) {
+	public FeeData usageGiven(final Query query, final StateView view) {
 		return usageGivenType(query, view, query.getConsensusGetTopicInfo().getHeader().getResponseType());
 	}
 
 	@Override
-	public FeeData usageGivenType(Query query, StateView view, ResponseType responseType) {
-		MerkleTopic merkleTopic = view.topics().get(fromTopicId(query.getConsensusGetTopicInfo().getTopicID()));
+	public FeeData usageGivenType(final Query query, final StateView view, final ResponseType responseType) {
+		final var merkleTopic = view.topics().get(fromTopicId(query.getConsensusGetTopicInfo().getTopicID()));
 
 		if (merkleTopic == null) {
 			return FeeData.getDefaultInstance();
 		}
 
-		long bpr = BASIC_QUERY_RES_HEADER
+		final long bpr = BASIC_QUERY_RES_HEADER
 				+ getStateProofSize(responseType)
 				+ BASIC_ENTITY_ID_SIZE
 				+ getTopicInfoSize(merkleTopic);
-		var feeMatrices = FeeComponents.newBuilder()
+		final var feeMatrices = FeeComponents.newBuilder()
 				.setBpt(BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE)
 				.setVpt(0)
 				.setRbh(0)
@@ -75,7 +84,7 @@ public class GetTopicInfoResourceUsage implements QueryResourceUsageEstimator {
 		return getQueryFeeDataMatrices(feeMatrices);
 	}
 
-	private static int getTopicInfoSize(MerkleTopic merkleTopic) {
+	private static int getTopicInfoSize(final MerkleTopic merkleTopic) {
 		/* Three longs in a topic representation: sequenceNumber, expirationTime, autoRenewPeriod */
 		return TX_HASH_SIZE + 3 * LONG_SIZE + computeVariableSizedFieldsUsage(
 				asKeyUnchecked(merkleTopic.getAdminKey()),

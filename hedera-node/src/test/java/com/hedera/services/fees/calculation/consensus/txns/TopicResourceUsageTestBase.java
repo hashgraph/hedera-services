@@ -23,14 +23,14 @@ package com.hedera.services.fees.calculation.consensus.txns;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.fee.SigValueObj;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 
 import static com.hedera.test.utils.IdUtils.asTopic;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -49,13 +49,13 @@ class TopicResourceUsageTestBase {
     protected static final int baseBpt = 140; // size of transaction fields and sigs
 
     protected StateView view;
-    protected FCMap<MerkleEntityId, MerkleTopic> topics;
+    protected MerkleMap<EntityNum, MerkleTopic> topics;
     protected TopicID topicId = asTopic("0.0.1234");
     protected SigValueObj sigValueObj = new SigValueObj(totalSigCount, payerAcctSigCount, signatureSize);
     protected NodeLocalProperties nodeProps;
 
     void setup() throws Throwable {
-        topics = mock(FCMap.class);
+        topics = mock(MerkleMap.class);
         nodeProps = mock(NodeLocalProperties.class);
         final StateChildren children = new StateChildren();
         children.setTopics(topics);

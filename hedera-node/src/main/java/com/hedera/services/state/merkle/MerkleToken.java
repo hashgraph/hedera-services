@@ -27,10 +27,13 @@ import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.common.merkle.utility.Keyed;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -45,12 +48,13 @@ import static com.hedera.services.utils.MiscUtils.describe;
 import static java.util.Collections.unmodifiableList;
 import static java.util.stream.Collectors.toList;
 
-public class MerkleToken extends AbstractMerkleLeaf {
+public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> {
 	static final int PRE_RELEASE_0120_VERSION = 1;
 	static final int RELEASE_0120_VERSION = 2;
 	static final int RELEASE_0160_VERSION = 3;
+	static final int RELEASE_0180_VERSION = 4;
 
-	static final int MERKLE_VERSION = RELEASE_0160_VERSION;
+	static final int CURRENT_VERSION = RELEASE_0180_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xd23ce8814b35fc2fL;
 
 	static DomainSerdes serdes = new DomainSerdes();
@@ -85,6 +89,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	private EntityId treasury;
 	private EntityId autoRenewAccount = null;
 	private List<FcCustomFee> feeSchedule = Collections.emptyList();
+	private int number;
 
 	public MerkleToken() {
 		/* No-op. */
@@ -110,6 +115,28 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		this.treasury = treasury;
 	}
 
+	public MerkleToken(
+			long expiry,
+			long totalSupply,
+			int decimals,
+			String symbol,
+			String name,
+			boolean accountsFrozenByDefault,
+			boolean accountKycGrantedByDefault,
+			EntityId treasury,
+			int number
+	) {
+		this.expiry = expiry;
+		this.totalSupply = totalSupply;
+		this.decimals = decimals;
+		this.symbol = symbol;
+		this.name = name;
+		this.accountsFrozenByDefault = accountsFrozenByDefault;
+		this.accountsKycGrantedByDefault = accountKycGrantedByDefault;
+		this.treasury = treasury;
+		this.number = number;
+	}
+
 	/* Object */
 	@Override
 	public boolean equals(Object o) {
@@ -132,6 +159,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 				this.lastUsedSerialNumber == that.lastUsedSerialNumber &&
 				this.accountsFrozenByDefault == that.accountsFrozenByDefault &&
 				this.accountsKycGrantedByDefault == that.accountsKycGrantedByDefault &&
+				this.number == that.number &&
 				Objects.equals(this.symbol, that.symbol) &&
 				Objects.equals(this.name, that.name) &&
 				Objects.equals(this.memo, that.memo) &&
@@ -157,6 +185,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 				totalSupply,
 				decimals,
 				lastUsedSerialNumber,
+				number,
 				adminKey,
 				freezeKey,
 				kycKey,
@@ -179,6 +208,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	public String toString() {
 		return MoreObjects.toStringHelper(MerkleToken.class)
 				.omitNullValues()
+				.add("number", number + " <-> " + EntityIdUtils.asIdLiteral(number))
 				.add("tokenType", tokenType)
 				.add("supplyType", supplyType)
 				.add("deleted", deleted)
@@ -217,7 +247,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 
 	@Override
 	public int getVersion() {
-		return MERKLE_VERSION;
+		return CURRENT_VERSION;
 	}
 
 	@Override
@@ -247,6 +277,9 @@ public class MerkleToken extends AbstractMerkleLeaf {
 			lastUsedSerialNumber = in.readLong();
 			feeSchedule = unmodifiableList(in.readSerializableList(Integer.MAX_VALUE, true, FcCustomFee::new));
 			feeScheduleKey = serdes.readNullable(in, serdes::deserializeKey);
+		}
+		if (version >= RELEASE_0180_VERSION) {
+			number = in.readInt();
 		}
 		if (tokenType == null) {
 			tokenType = TokenType.FUNGIBLE_COMMON;
@@ -281,6 +314,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		out.writeLong(lastUsedSerialNumber);
 		out.writeSerializableList(feeSchedule, true, true);
 		serdes.writeNullable(feeScheduleKey, out, serdes::serializeKey);
+		out.writeInt(number);
 	}
 
 	/* --- FastCopyable --- */
@@ -295,7 +329,8 @@ public class MerkleToken extends AbstractMerkleLeaf {
 				name,
 				accountsFrozenByDefault,
 				accountsKycGrantedByDefault,
-				treasury);
+				treasury,
+				number);
 		fc.setMemo(memo);
 		fc.setDeleted(deleted);
 		fc.setFeeSchedule(feeSchedule);
@@ -341,10 +376,6 @@ public class MerkleToken extends AbstractMerkleLeaf {
 
 	public Optional<JKey> adminKey() {
 		return Optional.ofNullable(adminKey);
-	}
-
-	public JKey getAdminKey() {
-		return adminKey;
 	}
 
 	public Optional<JKey> freezeKey() {
@@ -507,6 +538,10 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		return wipeKey;
 	}
 
+	public JKey getAdminKey() {
+		return adminKey;
+	}
+
 	public JKey getKycKey() {
 		return kycKey;
 	}
@@ -597,9 +632,9 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		return grpcList;
 	}
 
-	public void setFeeScheduleFrom(List<CustomFee> grpcFeeSchedule, EntityId targetId) {
+	public void setFeeScheduleFrom(List<CustomFee> grpcFeeSchedule) {
 		throwIfImmutable("Cannot change this token's fee schedule from grpc if it's immutable.");
-		feeSchedule = grpcFeeSchedule.stream().map(fee -> FcCustomFee.fromGrpc(fee, targetId)).collect(toList());
+		feeSchedule = grpcFeeSchedule.stream().map(FcCustomFee::fromGrpc).collect(toList());
 	}
 
 	public void setFeeScheduleKey(final JKey feeScheduleKey) {
@@ -607,11 +642,21 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		this.feeScheduleKey = feeScheduleKey;
 	}
 
+	public JKey getFeeScheduleKey() {
+		return feeScheduleKey;
+	}
+
 	public boolean hasFeeScheduleKey() {
 		return feeScheduleKey != UNUSED_KEY;
 	}
 
-	public JKey getFeeScheduleKey() {
-		return feeScheduleKey;
+	@Override
+	public EntityNum getKey() {
+		return new EntityNum(number);
+	}
+
+	@Override
+	public void setKey(EntityNum phi) {
+		this.number = phi.intValue();
 	}
 }

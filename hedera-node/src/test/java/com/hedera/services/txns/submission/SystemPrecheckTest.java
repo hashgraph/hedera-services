@@ -21,8 +21,8 @@ package com.hedera.services.txns.submission;
  */
 
 import com.hedera.services.context.domain.security.HapiOpPermissions;
-import com.hedera.services.security.ops.SystemOpAuthorization;
-import com.hedera.services.security.ops.SystemOpPolicies;
+import com.hedera.services.txns.auth.SystemOpAuthorization;
+import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
@@ -94,7 +94,7 @@ class SystemPrecheckTest {
 	@Test
 	void rejectsUnprivilegedPayer() {
 		givenPermissible(civilianPayer);
-		given(systemOpPolicies.check(civilianXferAccessor)).willReturn(SystemOpAuthorization.IMPERMISSIBLE);
+		given(systemOpPolicies.checkAccessor(civilianXferAccessor)).willReturn(SystemOpAuthorization.IMPERMISSIBLE);
 
 		// when:
 		var actual = subject.screen(civilianXferAccessor);
@@ -150,6 +150,6 @@ class SystemPrecheckTest {
 	}
 
 	private void givenPriviliged() {
-		given(systemOpPolicies.check(any())).willReturn(SystemOpAuthorization.UNNECESSARY);
+		given(systemOpPolicies.checkAccessor(any())).willReturn(SystemOpAuthorization.UNNECESSARY);
 	}
 }

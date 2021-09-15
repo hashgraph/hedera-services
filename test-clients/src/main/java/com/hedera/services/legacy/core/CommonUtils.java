@@ -46,8 +46,6 @@ import static java.lang.Boolean.parseBoolean;
 
 /**
  * Common utilities.
- *
- * @author hua
  */
 public class CommonUtils {
 

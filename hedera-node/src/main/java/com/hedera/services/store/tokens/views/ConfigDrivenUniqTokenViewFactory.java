@@ -20,15 +20,17 @@ package com.hedera.services.store.tokens.views;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.store.tokens.annotations.AreTreasuryWildcardsEnabled;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.fchashmap.FCOneToManyRelation;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.function.Supplier;
 
 /**
@@ -36,21 +38,23 @@ import java.util.function.Supplier;
  * of {@link UniqTokenView} depending on the injected value of the global/static
  * {@code tokens.nfts.useTreasuryWildcards} property.
  */
+@Singleton
 public class ConfigDrivenUniqTokenViewFactory implements UniqTokenViewFactory {
 	private final boolean shouldUseTreasuryWildcards;
 
-	public ConfigDrivenUniqTokenViewFactory(boolean shouldUseTreasuryWildcards) {
+	@Inject
+	public ConfigDrivenUniqTokenViewFactory(@AreTreasuryWildcardsEnabled boolean shouldUseTreasuryWildcards) {
 		this.shouldUseTreasuryWildcards = shouldUseTreasuryWildcards;
 	}
 
 	@Override
 	public UniqTokenView viewFor(
 			TokenStore tokenStore,
-			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
-			Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts,
-			Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByType,
-			Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByOwner,
-			Supplier<FCOneToManyRelation<PermHashInteger, Long>> treasuryNftsByType
+			Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
+			Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> nfts,
+			Supplier<FCOneToManyRelation<EntityNum, Long>> nftsByType,
+			Supplier<FCOneToManyRelation<EntityNum, Long>> nftsByOwner,
+			Supplier<FCOneToManyRelation<EntityNum, Long>> treasuryNftsByType
 	) {
 		if (shouldUseTreasuryWildcards) {
 			return new TreasuryWildcardsUniqTokenView(

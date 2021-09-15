@@ -36,7 +36,6 @@ import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -46,7 +45,7 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -55,12 +54,9 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.common.constructable.ClassConstructorPair;
-import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fchashmap.FCOneToManyRelation;
-import com.swirlds.fcmap.FCMap;
-import com.swirlds.merkletree.MerklePair;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -90,10 +86,10 @@ class LedgerBalanceChangesTest {
 			new HashMapBackingTokenRels();
 
 	private TokenStore tokenStore;
-	private final FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
-	private final FCOneToManyRelation<PermHashInteger, Long> uniqueTokenOwnerships = new FCOneToManyRelation<>();
-	private final FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipAssociations = new FCOneToManyRelation<>();
-	private final FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipTreasuryAssociations = new FCOneToManyRelation<>();
+	private final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
+	private final FCOneToManyRelation<EntityNum, Long> uniqueTokenOwnerships = new FCOneToManyRelation<>();
+	private final FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations = new FCOneToManyRelation<>();
+	private final FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations = new FCOneToManyRelation<>();
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private TransactionalLedger<
 			Pair<AccountID, TokenID>,
@@ -118,9 +114,6 @@ class LedgerBalanceChangesTest {
 
 	@BeforeEach
 	void setUp() throws ConstructableRegistryException {
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(MerklePair.class, MerklePair::new));
-
 		accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>());
 		tokenRelsLedger = new TransactionalLedger<>(
@@ -138,7 +131,7 @@ class LedgerBalanceChangesTest {
 				() -> uniqueTokenOwnerships,
 				() -> uniqueOwnershipAssociations,
 				() -> uniqueOwnershipTreasuryAssociations,
-				false);
+				false, true);
 		tokenStore = new HederaTokenStore(
 				ids,
 				validator,
@@ -147,6 +140,7 @@ class LedgerBalanceChangesTest {
 				() -> tokens,
 				tokenRelsLedger,
 				nftsLedger);
+		tokenStore.rebuildViews();
 
 		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProperties, accountsLedger);
 		subject.setTokenRelsLedger(tokenRelsLedger);
@@ -232,13 +226,13 @@ class LedgerBalanceChangesTest {
 	void rejectsMissingToken() {
 		// setup:
 		tokens.clear();
-		tokens.put(anotherTokenKey.copy(), fungibleTokenWithTreasury(aModel));
-		tokens.put(yetAnotherTokenKey.copy(), fungibleTokenWithTreasury(aModel));
+		tokens.put(anotherTokenKey, fungibleTokenWithTreasury(aModel));
+		tokens.put(yetAnotherTokenKey, fungibleTokenWithTreasury(aModel));
 		final var viewManager = new UniqTokenViewsManager(
 				() -> uniqueTokenOwnerships,
 				() -> uniqueOwnershipAssociations,
 				() -> uniqueOwnershipTreasuryAssociations,
-				false);
+				false, true);
 		tokenStore = new HederaTokenStore(
 				ids,
 				validator,
@@ -251,6 +245,7 @@ class LedgerBalanceChangesTest {
 		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProperties, accountsLedger);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setTokenViewsManager(viewManager);
+		tokenStore.rebuildViews();
 
 		givenInitialBalancesAndOwnership();
 
@@ -428,44 +423,44 @@ class LedgerBalanceChangesTest {
 		backingAccounts.put(cModel, cAccount);
 
 		Pair<AccountID, TokenID> bTokenKey = rel(bModel, token);
-		final var bTokenRel = new MerkleTokenRelStatus(bTokenStartBalance, false, true);
+		final var bTokenRel = new MerkleTokenRelStatus(bTokenStartBalance, false, true, false);
 		backingRels.put(bTokenKey, bTokenRel);
 		Pair<AccountID, TokenID> cTokenKey = rel(cModel, token);
-		final var cTokenRel = new MerkleTokenRelStatus(cTokenStartBalance, false, true);
+		final var cTokenRel = new MerkleTokenRelStatus(cTokenStartBalance, false, true, false);
 		backingRels.put(cTokenKey, cTokenRel);
 		Pair<AccountID, TokenID> aAnotherTokenKey = rel(aModel, anotherToken);
-		final var aAnotherTokenRel = new MerkleTokenRelStatus(aAnotherTokenStartBalance, false, true);
+		final var aAnotherTokenRel = new MerkleTokenRelStatus(aAnotherTokenStartBalance, false, true, true);
 		backingRels.put(aAnotherTokenKey, aAnotherTokenRel);
 		Pair<AccountID, TokenID> bAnotherTokenKey = rel(bModel, anotherToken);
-		final var bAnotherTokenRel = new MerkleTokenRelStatus(bAnotherTokenStartBalance, false, true);
+		final var bAnotherTokenRel = new MerkleTokenRelStatus(bAnotherTokenStartBalance, false, true, false);
 		backingRels.put(bAnotherTokenKey, bAnotherTokenRel);
 		Pair<AccountID, TokenID> cAnotherTokenKey = rel(cModel, anotherToken);
-		final var cAnotherTokenRel = new MerkleTokenRelStatus(cAnotherTokenStartBalance, false, true);
+		final var cAnotherTokenRel = new MerkleTokenRelStatus(cAnotherTokenStartBalance, false, true, true);
 		backingRels.put(cAnotherTokenKey, cAnotherTokenRel);
 		Pair<AccountID, TokenID> aYaTokenKey = rel(aModel, yetAnotherToken);
-		final var aYaTokenRel = new MerkleTokenRelStatus(aYetAnotherTokenBalance, false, true);
+		final var aYaTokenRel = new MerkleTokenRelStatus(aYetAnotherTokenBalance, false, true, false);
 		backingRels.put(aYaTokenKey, aYaTokenRel);
 		Pair<AccountID, TokenID> bYaTokenKey = rel(bModel, yetAnotherToken);
-		final var bYaTokenRel = new MerkleTokenRelStatus(bYetAnotherTokenBalance, false, true);
+		final var bYaTokenRel = new MerkleTokenRelStatus(bYetAnotherTokenBalance, false, true, false);
 		backingRels.put(bYaTokenKey, bYaTokenRel);
 
 		Pair<AccountID, TokenID> aaNftTokenKey = rel(aModel, aNft);
-		final var aaNftTokenRel = new MerkleTokenRelStatus(2, false, true);
+		final var aaNftTokenRel = new MerkleTokenRelStatus(2, false, true, false);
 		backingRels.put(aaNftTokenKey, aaNftTokenRel);
 		Pair<AccountID, TokenID> abNftTokenKey = rel(aModel, bNft);
-		final var abNftTokenRel = new MerkleTokenRelStatus(2, false, true);
+		final var abNftTokenRel = new MerkleTokenRelStatus(2, false, true, true);
 		backingRels.put(abNftTokenKey, abNftTokenRel);
 		Pair<AccountID, TokenID> baNftTokenKey = rel(bModel, aNft);
-		final var baNftTokenRel = new MerkleTokenRelStatus(2, false, true);
+		final var baNftTokenRel = new MerkleTokenRelStatus(2, false, true, false);
 		backingRels.put(baNftTokenKey, baNftTokenRel);
 		Pair<AccountID, TokenID> bbNftTokenKey = rel(bModel, bNft);
-		final var bbNftTokenRel = new MerkleTokenRelStatus(2, false, true);
+		final var bbNftTokenRel = new MerkleTokenRelStatus(2, false, true, true);
 		backingRels.put(bbNftTokenKey, bbNftTokenRel);
 		Pair<AccountID, TokenID> caNftTokenKey = rel(cModel, aNft);
-		final var caNftTokenRel = new MerkleTokenRelStatus(2, false, true);
+		final var caNftTokenRel = new MerkleTokenRelStatus(2, false, true, true);
 		backingRels.put(caNftTokenKey, caNftTokenRel);
 		Pair<AccountID, TokenID> cbNftTokenKey = rel(cModel, bNft);
-		final var cbNftTokenRel = new MerkleTokenRelStatus(2, false, true);
+		final var cbNftTokenRel = new MerkleTokenRelStatus(2, false, true, false);
 		backingRels.put(cbNftTokenKey, cbNftTokenRel);
 
 		backingNfts.put(
@@ -477,6 +472,8 @@ class LedgerBalanceChangesTest {
 		backingNfts.put(
 				bbNft,
 				new MerkleUniqueToken(EntityId.fromGrpcAccountId(cModel), "bb".getBytes(), MISSING_INSTANT));
+
+		backingRels.rebuildFromSources();
 	}
 
 	private List<BalanceChange> fixtureChanges() {
@@ -540,11 +537,11 @@ class LedgerBalanceChangesTest {
 	private final NftId aaNft = new NftId(aNft.getShard(), aNft.getRealm(), aNft.getNum(), aSerialNo);
 	private final NftId baNft = new NftId(bNft.getShard(), bNft.getRealm(), bNft.getNum(), aSerialNo);
 	private final NftId bbNft = new NftId(bNft.getShard(), bNft.getRealm(), bNft.getNum(), bSerialNo);
-	private final MerkleEntityId aNftKey = new MerkleEntityId(0, 0, 9999);
-	private final MerkleEntityId bNftKey = new MerkleEntityId(0, 0, 10000);
-	private final MerkleEntityId tokenKey = new MerkleEntityId(0, 0, 75231);
-	private final MerkleEntityId anotherTokenKey = new MerkleEntityId(0, 0, 75232);
-	private final MerkleEntityId yetAnotherTokenKey = new MerkleEntityId(0, 0, 75233);
+	private final EntityNum aNftKey = EntityNum.fromLong(9999);
+	private final EntityNum bNftKey = EntityNum.fromLong(10000);
+	private final EntityNum tokenKey = EntityNum.fromLong(75231);
+	private final EntityNum anotherTokenKey = EntityNum.fromLong(75232);
+	private final EntityNum yetAnotherTokenKey = EntityNum.fromLong(75233);
 
 	private final long aStartBalance = 1_000L;
 	private final long bStartBalance = 0L;

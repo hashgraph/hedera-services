@@ -20,47 +20,52 @@ package com.hedera.services.state.validation;
  * ‍
  */
 
-import com.hedera.services.config.HederaNumbers;
+import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.swirlds.fcmap.FCMap;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.MiscUtils;
+import com.swirlds.merkle.map.MerkleMap;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.math.BigInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
+@Singleton
 public class BasedLedgerValidator implements LedgerValidator {
 	private final long expectedFloat;
 
-	private final HederaNumbers hederaNums;
 	private final GlobalDynamicProperties dynamicProperties;
 
+	@Inject
 	public BasedLedgerValidator(
-			HederaNumbers hederaNums,
-			PropertySource properties,
+			@CompositeProps PropertySource properties,
 			GlobalDynamicProperties dynamicProperties
 	) {
 		this.expectedFloat = properties.getLongProperty("ledger.totalTinyBarFloat");
 
-		this.hederaNums = hederaNums;
 		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
-	public void assertIdsAreValid(FCMap<MerkleEntityId, MerkleAccount> accounts) {
-		for (MerkleEntityId id : accounts.keySet()) {
-			if (id.getRealm() != hederaNums.realm()) {
-				throw new IllegalStateException(String.format("Invalid realm in account %s", id.toAbbrevString()));
+	public void validate(MerkleMap<EntityNum, MerkleAccount> accounts) {
+		var totalFloat = new AtomicReference<>(BigInteger.ZERO);
+		MiscUtils.forEach(accounts, (id, account) -> {
+			final var num = id.longValue();
+			if (num < 1 || num > dynamicProperties.maxAccountNum()) {
+				throw new IllegalStateException(String.format("Invalid num in account %s", id.toIdString()));
 			}
-			if (id.getShard() != hederaNums.shard()) {
-				throw new IllegalStateException(String.format("Invalid shard in account %s", id.toAbbrevString()));
+			totalFloat.set(totalFloat.get().add(BigInteger.valueOf(account.getBalance())));
+		});
+		try {
+			final var actualFloat = totalFloat.get().longValueExact();
+			if (actualFloat != expectedFloat) {
+				throw new IllegalStateException("Wrong ℏ float, expected " + expectedFloat + " but was " + actualFloat);
 			}
-			if (id.getNum() < 1 || id.getNum() > dynamicProperties.maxAccountNum()) {
-				throw new IllegalStateException(String.format("Invalid num in account %s", id.toAbbrevString()));
-			}
+		} catch (ArithmeticException ae) {
+			throw new IllegalStateException("Wrong ℏ float, expected " + expectedFloat + " but overflowed instead");
 		}
-	}
-
-	@Override
-	public boolean hasExpectedTotalBalance(FCMap<MerkleEntityId, MerkleAccount> accounts) {
-		return expectedFloat == accounts.values().stream().mapToLong(MerkleAccount::getBalance).sum();
 	}
 }

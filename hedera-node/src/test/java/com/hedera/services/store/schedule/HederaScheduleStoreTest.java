@@ -20,34 +20,33 @@ package com.hedera.services.store.schedule;
  * ‍
  */
 
-import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleScheduleTest;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.swirlds.fcmap.FCMap;
-import com.swirlds.merkletree.MerklePair;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.function.Consumer;
 
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
-import static com.hedera.services.state.merkle.MerkleEntityId.fromScheduleId;
+import static com.hedera.services.utils.EntityNum.fromScheduleId;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccountId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SCHEDULE_ADMIN_KT;
@@ -70,33 +69,32 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 class HederaScheduleStoreTest {
+	private static final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
 	private static final String entityMemo = "Some memo here";
 	private static final RichInstant schedulingTXValidStart = new RichInstant(123, 456);
 	private static final long expectedExpiry = 1_234_567L;
 	private static final RichInstant consensusTime = new RichInstant(expectedExpiry, 0);
 	private static final Key adminJKey = asKeyUnchecked(SCHEDULE_ADMIN_KT.asJKeyUnchecked());
 
-	private static final ScheduleID created = IdUtils.asSchedule("1.2.333333");
-	private static final AccountID schedulingAccount = IdUtils.asAccount("1.2.333");
-	private static final AccountID payerId = IdUtils.asAccount("1.2.456");
-	private static final AccountID anotherPayerId = IdUtils.asAccount("1.2.457");
+	private static final ScheduleID created = IdUtils.asSchedule("0.0.333333");
+	private static final AccountID schedulingAccount = IdUtils.asAccount("0.0.333");
+	private static final AccountID payerId = IdUtils.asAccount("0.0.456");
+	private static final AccountID anotherPayerId = IdUtils.asAccount("0.0.457");
 
 	private static final EntityId entityPayer = fromGrpcAccountId(payerId);
 	private static final EntityId entitySchedulingAccount = fromGrpcAccountId(schedulingAccount);
 
 	private EntityIdSource ids;
-	private FCMap<MerkleEntityId, MerkleSchedule> schedules;
+	private MerkleMap<EntityNum, MerkleSchedule> schedules;
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private HederaLedger hederaLedger;
 	private GlobalDynamicProperties globalDynamicProperties;
 
 	private MerkleSchedule schedule;
 	private MerkleSchedule anotherSchedule;
-	private TransactionContext txnCtx;
 
 	private HederaScheduleStore subject;
 
@@ -116,7 +114,6 @@ class HederaScheduleStoreTest {
 		given(ids.newScheduleId(schedulingAccount)).willReturn(created);
 
 		hederaLedger = mock(HederaLedger.class);
-		txnCtx = mock(TransactionContext.class);
 		globalDynamicProperties = mock(GlobalDynamicProperties.class);
 
 		accountsLedger = (TransactionalLedger<AccountID, AccountProperty, MerkleAccount>) mock(
@@ -126,11 +123,11 @@ class HederaScheduleStoreTest {
 		given(accountsLedger.get(payerId, IS_DELETED)).willReturn(false);
 		given(accountsLedger.get(schedulingAccount, IS_DELETED)).willReturn(false);
 
-		schedules = (FCMap<MerkleEntityId, MerkleSchedule>) mock(FCMap.class);
+		schedules = (MerkleMap<EntityNum, MerkleSchedule>) mock(MerkleMap.class);
 		given(schedules.get(fromScheduleId(created))).willReturn(schedule);
 		given(schedules.containsKey(fromScheduleId(created))).willReturn(true);
 
-		subject = new HederaScheduleStore(globalDynamicProperties, ids, txnCtx, () -> schedules);
+		subject = new HederaScheduleStore(globalDynamicProperties, ids, () -> schedules);
 		subject.setAccountsLedger(accountsLedger);
 		subject.setHederaLedger(hederaLedger);
 	}
@@ -144,20 +141,21 @@ class HederaScheduleStoreTest {
 				entitySchedulingAccount.toGrpcAccountId(),
 				schedulingTXValidStart.toGrpc());
 		final var expected = MerkleSchedule.from(parentTxn.toByteArray(), 0L);
+		expected.setKey(EntityNum.fromLong(created.getScheduleNum()));
 		final var captor = forClass(Consumer.class);
 		final var expectedKey = expected.toContentAddressableView();
 
 		subject.rebuildViews();
 
-		verify(schedules, times(2)).forEachNode(captor.capture());
-		final var visitor = captor.getAllValues().get(1);
+		verify(schedules).forEachNode(captor.capture());
+		final var visitor = captor.getValue();
 
-		visitor.accept(new MerklePair<>(fromScheduleId(created), expected));
+		visitor.accept(expected);
 
 		final var extant = subject.getExtantSchedules();
 		assertEquals(1, extant.size());
 		assertTrue(extant.containsKey(expectedKey));
-		assertEquals(created, extant.get(expectedKey).toScheduleId());
+		assertEquals(created, extant.get(expectedKey).toGrpcScheduleId());
 	}
 
 	@Test
@@ -223,7 +221,7 @@ class HederaScheduleStoreTest {
 
 	@Test
 	@SuppressWarnings("unchecked")
-	public void provisionalApplicationWorks() {
+	void provisionalApplicationWorks() {
 		final var change = mock(Consumer.class);
 		subject.pendingId = created;
 		subject.pendingCreation = schedule;
@@ -434,9 +432,8 @@ class HederaScheduleStoreTest {
 	void deletesAsExpected() {
 		final var now = schedulingTXValidStart.toJava();
 		given(schedules.getForModify(fromScheduleId(created))).willReturn(schedule);
-		given(txnCtx.consensusTime()).willReturn(now);
 
-		final var outcome = subject.delete(created);
+		final var outcome = subject.deleteAt(created, now);
 
 		verify(schedule).markDeleted(now);
 		assertEquals(OK, outcome);
@@ -446,7 +443,7 @@ class HederaScheduleStoreTest {
 	void rejectsDeletionMissingAdminKey() {
 		given(schedule.adminKey()).willReturn(Optional.empty());
 
-		final var outcome = subject.delete(created);
+		final var outcome = subject.deleteAt(created, schedulingTXValidStart.toJava());
 
 		verify(schedules, never()).remove(fromScheduleId(created));
 		assertEquals(SCHEDULE_IS_IMMUTABLE, outcome);
@@ -456,7 +453,7 @@ class HederaScheduleStoreTest {
 	void rejectsDeletionAlreadyDeleted() {
 		given(schedule.isDeleted()).willReturn(true);
 
-		final var outcome = subject.delete(created);
+		final var outcome = subject.deleteAt(created, schedulingTXValidStart.toJava());
 
 		assertEquals(SCHEDULE_ALREADY_DELETED, outcome);
 	}
@@ -465,7 +462,7 @@ class HederaScheduleStoreTest {
 	void rejectsExecutionWhenDeleted() {
 		given(schedule.isDeleted()).willReturn(true);
 
-		final var outcome = subject.markAsExecuted(created);
+		final var outcome = subject.markAsExecuted(created, consensusNow);
 
 		assertEquals(SCHEDULE_ALREADY_DELETED, outcome);
 	}
@@ -474,7 +471,7 @@ class HederaScheduleStoreTest {
 	void rejectsExecutionWhenExecuted() {
 		given(schedule.isExecuted()).willReturn(true);
 
-		final var outcome = subject.markAsExecuted(created);
+		final var outcome = subject.markAsExecuted(created, consensusNow);
 
 		assertEquals(SCHEDULE_ALREADY_EXECUTED, outcome);
 	}
@@ -483,7 +480,7 @@ class HederaScheduleStoreTest {
 	void rejectsDeletionMissingSchedule() {
 		given(schedules.containsKey(fromScheduleId(created))).willReturn(false);
 
-		final var outcome = subject.delete(created);
+		final var outcome = subject.deleteAt(created, schedulingTXValidStart.toJava());
 
 		verify(schedules, never()).remove(fromScheduleId(created));
 		assertEquals(INVALID_SCHEDULE_ID, outcome);
@@ -493,20 +490,18 @@ class HederaScheduleStoreTest {
 	void rejectsExecutionMissingSchedule() {
 		given(schedules.containsKey(fromScheduleId(created))).willReturn(false);
 
-		final var outcome = subject.markAsExecuted(created);
+		final var outcome = subject.markAsExecuted(created, consensusNow);
 
 		assertEquals(INVALID_SCHEDULE_ID, outcome);
 	}
 
 	@Test
 	void marksExecutedAsExpected() {
-		final var now = schedulingTXValidStart.toJava();
-		given(txnCtx.consensusTime()).willReturn(now);
 		given(schedules.getForModify(fromScheduleId(created))).willReturn(schedule);
 
-		subject.markAsExecuted(created);
+		subject.markAsExecuted(created, consensusNow);
 
-		verify(schedule).markExecuted(now.plusNanos(1L));
+		verify(schedule).markExecuted(consensusNow.plusNanos(1L));
 		verify(schedules, never()).remove(fromScheduleId(created));
 	}
 
@@ -541,5 +536,10 @@ class HederaScheduleStoreTest {
 
 		assertThrows(IllegalArgumentException.class,
 				() -> subject.expire(EntityId.fromGrpcScheduleId(subject.pendingId)));
+	}
+
+	@Test
+	void throwsUsoOnDelete() {
+		assertThrows(UnsupportedOperationException.class, () -> subject.delete(created));
 	}
 }

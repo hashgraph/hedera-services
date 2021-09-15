@@ -28,6 +28,7 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -52,6 +53,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -62,6 +64,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -70,7 +73,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoTransferSuite.class);
 
 	public static void main(String... args) {
-		new CryptoTransferSuite().runSuiteAsync();
+		new CryptoTransferSuite().runSuiteSync();
 	}
 
 	@Override
@@ -84,9 +87,88 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						transferToTopicReturnsInvalidAccountId(),
 						tokenTransferFeesScaleAsExpected(),
 						okToSetInvalidPaymentHeaderForCostAnswer(),
-						baseCryptoTransferFeeChargedAsExpected()
+						baseCryptoTransferFeeChargedAsExpected(),
+						autoAssociationSuite()
 				}
 		);
+	}
+
+	@Override
+	public boolean canRunAsync() {
+		return true;
+	}
+
+	private HapiApiSpec autoAssociationSuite() {
+		final String tokenA = "tokenA";
+		final String tokenB = "tokenB";
+		final String firstUser = "firstUser";
+		final String secondUser = "secondUser";
+		final String treasury = "treasury";
+		final String tokenAcreateTxn = "tokenACreate";
+		final String tokenBcreateTxn = "tokenBCreate";
+		final String transferToFU = "transferToFU";
+		final String transferToSU = "transferToSU";
+
+		return defaultHapiSpec("AutoAssociationSuite")
+				.given(
+						cryptoCreate(treasury)
+								.balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(firstUser)
+								.balance(ONE_HBAR)
+								.maxAutomaticTokenAssociations(1),
+						cryptoCreate(secondUser)
+								.balance(ONE_HBAR)
+								.maxAutomaticTokenAssociations(2)
+				)
+				.when(
+						tokenCreate(tokenA)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(Long.MAX_VALUE)
+								.treasury(treasury)
+								.via(tokenAcreateTxn),
+						getTxnRecord(tokenAcreateTxn)
+								.hasNewTokenAssociation(tokenA, treasury)
+								.logged(),
+						tokenCreate(tokenB)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(Long.MAX_VALUE)
+								.treasury(treasury)
+								.via(tokenBcreateTxn),
+						getTxnRecord(tokenBcreateTxn)
+								.hasNewTokenAssociation(tokenB, treasury)
+								.logged(),
+						cryptoTransfer(moving(1, tokenA).between(treasury, firstUser))
+								.via(transferToFU),
+						getTxnRecord(transferToFU)
+								.hasNewTokenAssociation(tokenA, firstUser)
+								.logged(),
+						cryptoTransfer(moving(1, tokenB).between(treasury, secondUser))
+								.via(transferToSU),
+						getTxnRecord(transferToSU)
+								.hasNewTokenAssociation(tokenB, secondUser)
+								.logged()
+				)
+				.then(
+						cryptoTransfer(moving(1, tokenB).between(treasury, firstUser))
+								.hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS)
+								.via("failedTransfer"),
+						getAccountInfo(firstUser)
+								.hasAlreadyUsedAutomaticAssociations(1)
+								.hasMaxAutomaticAssociations(1)
+								.logged(),
+						getAccountInfo(secondUser)
+								.hasAlreadyUsedAutomaticAssociations(1)
+								.hasMaxAutomaticAssociations(2)
+								.logged(),
+						cryptoTransfer(moving(1, tokenA).between(treasury, secondUser)),
+						getAccountInfo(secondUser)
+								.hasAlreadyUsedAutomaticAssociations(2)
+								.hasMaxAutomaticAssociations(2)
+								.logged(),
+						cryptoTransfer(moving(1, tokenA).between(firstUser, treasury)),
+						tokenDissociate(firstUser, tokenA),
+						cryptoTransfer(moving(1, tokenB).between(treasury, firstUser))
+				);
 	}
 
 	private HapiApiSpec baseCryptoTransferFeeChargedAsExpected() {

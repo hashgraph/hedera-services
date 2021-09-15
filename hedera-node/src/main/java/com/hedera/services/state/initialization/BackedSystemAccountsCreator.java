@@ -22,7 +22,7 @@ package com.hedera.services.state.initialization;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.AccountNumbers;
-import com.hedera.services.config.HederaNumbers;
+import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
@@ -30,23 +30,27 @@ import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.CommonUtils;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 
+@Singleton
 public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 	private static final Logger log = LogManager.getLogger(BackedSystemAccountsCreator.class);
 
-	private final HederaNumbers hederaNums;
 	private final AccountNumbers accountNums;
 	private final PropertySource properties;
 	private final LegacyEd25519KeyReader b64KeyReader;
@@ -54,20 +58,19 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 	private JKey genesisKey;
 	private String hexedABytes;
 
+	@Inject
 	public BackedSystemAccountsCreator(
-			HederaNumbers hederaNums,
 			AccountNumbers accountNums,
-			PropertySource properties,
+			@CompositeProps PropertySource properties,
 			LegacyEd25519KeyReader b64KeyReader
 	) {
-		this.hederaNums = hederaNums;
 		this.accountNums = accountNums;
 		this.properties = properties;
 		this.b64KeyReader = b64KeyReader;
 	}
 
 	@Override
-	public void createSystemAccounts(FCMap<MerkleEntityId, MerkleAccount> accounts, AddressBook addressBook) {
+	public void createSystemAccounts(MerkleMap<EntityNum, MerkleAccount> accounts, AddressBook addressBook) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -81,7 +84,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 		long tinyBarFloat = properties.getLongProperty("ledger.totalTinyBarFloat");
 
 		for (long num = 1; num <= N; num++) {
-			var id = idWith(num);
+			var id = STATIC_PROPERTIES.scopedAccountWith(num);
 			if (accounts.contains(id)) {
 				continue;
 			}
@@ -93,7 +96,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 		}
 
 		for (long num = 900; num <= 1000; num++) {
-			var id = idWith(num);
+			var id = STATIC_PROPERTIES.scopedAccountWith(num);
 			if (!accounts.contains(id)) {
 				accounts.put(id, accountWith(0, expiry));
 			}
@@ -146,9 +149,5 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 					properties.getStringProperty("bootstrap.genesisB64Keystore.keyName"));
 		}
 		return hexedABytes;
-	}
-
-	private AccountID idWith(long num) {
-		return new MerkleEntityId(hederaNums.shard(), hederaNums.realm(), num).toAccountId();
 	}
 }

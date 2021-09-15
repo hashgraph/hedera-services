@@ -37,72 +37,85 @@ public class DeterministicThrottle {
 	private final BucketThrottle delegate;
 	private Instant lastDecisionTime;
 
-	public static DeterministicThrottle withTps(int tps) {
+	public static DeterministicThrottle withTps(final int tps) {
 		return new DeterministicThrottle(BucketThrottle.withTps(tps), NO_NAME);
 	}
 
-	public static DeterministicThrottle withTpsNamed(int tps, String name) {
+	public static DeterministicThrottle withTpsNamed(final int tps, final String name) {
 		return new DeterministicThrottle(BucketThrottle.withTps(tps), name);
 	}
 
-	public static DeterministicThrottle withMtps(long mtps) {
+	public static DeterministicThrottle withMtps(final long mtps) {
 		return new DeterministicThrottle(BucketThrottle.withMtps(mtps), NO_NAME);
 	}
 
-	public static DeterministicThrottle withMtpsNamed(long mtps, String name) {
+	public static DeterministicThrottle withMtpsNamed(final long mtps, final String name) {
 		return new DeterministicThrottle(BucketThrottle.withMtps(mtps), name);
 	}
 
-	public static DeterministicThrottle withTpsAndBurstPeriod(int tps, int burstPeriod) {
+	public static DeterministicThrottle withTpsAndBurstPeriod(final int tps, final int burstPeriod) {
 		return new DeterministicThrottle(BucketThrottle.withTpsAndBurstPeriod(tps, burstPeriod), NO_NAME);
 	}
 
-	public static DeterministicThrottle withTpsAndBurstPeriodNamed(int tps, int burstPeriod, String name) {
+	public static DeterministicThrottle withTpsAndBurstPeriodNamed(
+			final int tps,
+			final int burstPeriod,
+			final String name
+	) {
 		return new DeterministicThrottle(BucketThrottle.withTpsAndBurstPeriod(tps, burstPeriod), name);
 	}
 
-	public static DeterministicThrottle withMtpsAndBurstPeriod(long mtps, int burstPeriod) {
+	public static DeterministicThrottle withMtpsAndBurstPeriod(final long mtps, final int burstPeriod) {
 		return new DeterministicThrottle(BucketThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod), NO_NAME);
 	}
 
-	public static DeterministicThrottle withMtpsAndBurstPeriodNamed(long mtps, int burstPeriod, String name) {
+	public static DeterministicThrottle withMtpsAndBurstPeriodNamed(
+			final long mtps,
+			final int burstPeriod,
+			final String name) {
 		return new DeterministicThrottle(BucketThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod), name);
 	}
 
-	public static DeterministicThrottle withTpsAndBurstPeriodMs(int tps, long burstPeriodMs) {
+	public static DeterministicThrottle withTpsAndBurstPeriodMs(final int tps, final long burstPeriodMs) {
 		return new DeterministicThrottle(BucketThrottle.withTpsAndBurstPeriodMs(tps, burstPeriodMs), NO_NAME);
 	}
 
-	public static DeterministicThrottle withTpsAndBurstPeriodMsNamed(int tps, long burstPeriodMs, String name) {
+	public static DeterministicThrottle withTpsAndBurstPeriodMsNamed(
+			final int tps,
+			final long burstPeriodMs,
+			final String name) {
 		return new DeterministicThrottle(BucketThrottle.withTpsAndBurstPeriodMs(tps, burstPeriodMs), name);
 	}
 
-	public static DeterministicThrottle withMtpsAndBurstPeriodMs(long mtps, long burstPeriodMs) {
+	public static DeterministicThrottle withMtpsAndBurstPeriodMs(final long mtps, final long burstPeriodMs) {
 		return new DeterministicThrottle(BucketThrottle.withMtpsAndBurstPeriodMs(mtps, burstPeriodMs), NO_NAME);
 	}
 
-	public static DeterministicThrottle withMtpsAndBurstPeriodMsNamed(long mtps, long burstPeriodMs, String name) {
+	public static DeterministicThrottle withMtpsAndBurstPeriodMsNamed(
+			final long mtps,
+			final long burstPeriodMs,
+			final String name) {
 		return new DeterministicThrottle(BucketThrottle.withMtpsAndBurstPeriodMs(mtps, burstPeriodMs), name);
 	}
 
-	private DeterministicThrottle(BucketThrottle delegate, String name) {
+	private DeterministicThrottle(final BucketThrottle delegate, final String name) {
 		this.name = name;
 		this.delegate = delegate;
 		lastDecisionTime = NEVER;
 	}
 
-	public static long capacityRequiredFor(int nTransactions) {
+	public static long capacityRequiredFor(final int nTransactions) {
 		if (productWouldOverflow(nTransactions, BucketThrottle.capacityUnitsPerTxn())) {
 			return -1;
 		}
 		return nTransactions * BucketThrottle.capacityUnitsPerTxn();
 	}
 
-	public boolean allow(int n) {
+	public boolean allow(final int n) {
 		return allow(n, Instant.now());
 	}
 
-	public boolean allow(int n, Instant now) {
+	public boolean allow(final int n, final Instant now) {
 		long elapsedNanos = 0L;
 		if (lastDecisionTime != NEVER) {
 			elapsedNanos = Duration.between(lastDecisionTime, now).toNanos();
@@ -112,9 +125,8 @@ public class DeterministicThrottle {
 			}
 		}
 
-		var decision = delegate.allow(n, elapsedNanos);
 		lastDecisionTime = now;
-		return decision;
+		return delegate.allow(n, elapsedNanos);
 	}
 
 	public void reclaimLastAllowedUse() {
@@ -138,12 +150,12 @@ public class DeterministicThrottle {
 	}
 
 	public UsageSnapshot usageSnapshot() {
-		var bucket = delegate.bucket();
+		final var bucket = delegate.bucket();
 		return new UsageSnapshot(bucket.capacityUsed(), lastDecisionTime);
 	}
 
-	public void resetUsageTo(UsageSnapshot usageSnapshot) {
-		var bucket = delegate.bucket();
+	public void resetUsageTo(final UsageSnapshot usageSnapshot) {
+		final var bucket = delegate.bucket();
 		lastDecisionTime = usageSnapshot.lastDecisionTime();
 		bucket.resetUsed(usageSnapshot.used());
 	}
@@ -152,12 +164,12 @@ public class DeterministicThrottle {
 	readability of unit tests; Instances of this class are not used
         in hash-based collections */
 	@Override
-	public boolean equals(Object obj) {
+	public boolean equals(final Object obj) {
 		if (obj == null || this.getClass() != obj.getClass()) {
 			return false;
 		}
 
-		var that = (DeterministicThrottle)obj;
+		final var that = (DeterministicThrottle) obj;
 
 		return this.delegate.bucket().totalCapacity() == that.delegate.bucket().totalCapacity()
 				&& this.delegate.mtps() == that.delegate.mtps();
@@ -170,7 +182,7 @@ public class DeterministicThrottle {
 
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder("DeterministicThrottle{");
+		final var sb = new StringBuilder("DeterministicThrottle{");
 		if (name != null) {
 			sb.append("name='").append(name).append("', ");
 		}
@@ -186,7 +198,7 @@ public class DeterministicThrottle {
 		private final long used;
 		private final Instant lastDecisionTime;
 
-		public UsageSnapshot(long used, Instant lastDecisionTime) {
+		public UsageSnapshot(final long used, final Instant lastDecisionTime) {
 			this.used = used;
 			this.lastDecisionTime = lastDecisionTime;
 		}
@@ -201,7 +213,7 @@ public class DeterministicThrottle {
 
 		@Override
 		public String toString() {
-			var sb = new StringBuilder("DeterministicThrottle.UsageSnapshot{");
+			final var sb = new StringBuilder("DeterministicThrottle.UsageSnapshot{");
 			return sb
 					.append("used=").append(used)
 					.append(", last decision @ ")
@@ -218,7 +230,7 @@ public class DeterministicThrottle {
 			if (o == null || !o.getClass().equals(UsageSnapshot.class)) {
 				return false;
 			}
-			UsageSnapshot that = (UsageSnapshot) o;
+			final var that = (UsageSnapshot) o;
 			return this.used == that.used && Objects.equals(this.lastDecisionTime, that.lastDecisionTime);
 		}
 

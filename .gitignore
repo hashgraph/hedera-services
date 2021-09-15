@@ -13,6 +13,7 @@ test-clients/yahcli/localhost/accounts
 test-clients/yahcli/localhost/tokens
 test-clients/yahcli/localhost/topics
 test-clients/yahcli/cost-snapshots
+test-clients/yahcli/run/test/local/
 
 # VIM
 *.sw*
@@ -49,6 +50,7 @@ hs_err_pid*
 !test-clients/yahcli/run/test/local/*.sh
 *.json
 !hapi-fees/src/main/resources/*.json
+!hapi-fees/src/test/resources/*.json
 !hapi-utils/src/test/resources/bootstrap/*.json
 !hapi-utils/src/test/resources/sysfiles/*.json
 !hedera-node/src/test/resources/fees/feeSchedules.json

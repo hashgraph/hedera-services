@@ -21,66 +21,82 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
+import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
+import static java.util.stream.Collectors.toList;
 
+/**
+ * Provides the state transition for updating token fee schedule.
+ */
+@Singleton
 public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(TokenFeeScheduleUpdateTransitionLogic.class);
-	private final TokenStore store;
+	private final AccountStore accountStore;
+	private final TypedTokenStore tokenStore;
 	private final TransactionContext txnCtx;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
-	public TokenFeeScheduleUpdateTransitionLogic(final TokenStore tokenStore, final TransactionContext txnCtx) {
-		this.store = tokenStore;
+	private Function<CustomFee, FcCustomFee> grpcFeeConverter = FcCustomFee::fromGrpc;
+
+	@Inject
+	public TokenFeeScheduleUpdateTransitionLogic(
+			final TypedTokenStore tokenStore,
+			final TransactionContext txnCtx,
+			final AccountStore accountStore,
+			final GlobalDynamicProperties dynamicProperties
+	) {
 		this.txnCtx = txnCtx;
+		this.tokenStore = tokenStore;
+		this.accountStore = accountStore;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
 	public void doStateTransition() {
-		try {
-			transitionFor(txnCtx.accessor().getTxn().getTokenFeeScheduleUpdate());
-		} catch (Exception e) {
-			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
-			abortWith(FAIL_INVALID);
-		}
+		/* --- Translate from gRPC types --- */
+		var op = txnCtx.accessor().getTxn().getTokenFeeScheduleUpdate();
+		var grpcTokenId = op.getTokenId();
+		var targetTokenId = Id.fromGrpcToken(grpcTokenId);
 
-	}
+		/* --- Load the model objects --- */
+		var token = tokenStore.loadToken(targetTokenId);
+		validateTrue(token.hasFeeScheduleKey(), TOKEN_HAS_NO_FEE_SCHEDULE_KEY);
 
-	private void transitionFor(TokenFeeScheduleUpdateTransactionBody op) {
-		final var id = store.resolve(op.getTokenId());
-		if (id == MISSING_TOKEN) {
-			txnCtx.setStatus(INVALID_TOKEN_ID);
-			return;
-		}
+		/* --- Validate and initialize custom fees list --- */
+		final var tooManyFees = op.getCustomFeesCount() > dynamicProperties.maxCustomFeesAllowed();
+		validateFalse(tooManyFees, CUSTOM_FEES_LIST_TOO_LONG);
+		final var customFees = op.getCustomFeesList()
+				.stream()
+				.map(grpcFeeConverter)
+				.collect(toList());
+		customFees.forEach(fee -> {
+			fee.validateWith(token, accountStore, tokenStore);
+			fee.nullOutCollector();
+		});
+		token.setCustomFees(customFees);
 
-		final var token = store.get(id);
-		if (token.isDeleted()) {
-			txnCtx.setStatus(TOKEN_WAS_DELETED);
-			return;
-		}
-
-		final var outcome = store.updateFeeSchedule(op);
-		if (outcome != OK) {
-			abortWith(outcome);
-			return;
-		}
-		txnCtx.setStatus(SUCCESS);
+		/* --- Persist the updated models --- */
+		tokenStore.persistToken(token);
 	}
 
 	@Override
@@ -95,14 +111,12 @@ public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
 
 	private ResponseCodeEnum validate(TransactionBody txnBody) {
 		final var op = txnBody.getTokenFeeScheduleUpdate();
-		if (!op.hasTokenId()) {
-			return INVALID_TOKEN_ID;
-		}
 
-		return OK;
+		return op.hasTokenId() ? OK : INVALID_TOKEN_ID;
 	}
 
-	private void abortWith(ResponseCodeEnum cause) {
-		txnCtx.setStatus(cause);
+	/* --- Only used by unit tests --- */
+	void setGrpcFeeConverter(Function<CustomFee, FcCustomFee> grpcFeeConverter) {
+		this.grpcFeeConverter = grpcFeeConverter;
 	}
 }

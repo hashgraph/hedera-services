@@ -28,6 +28,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -36,15 +38,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
  * Provides the state transition for token deletion.
- *
- * @author Michael Tinker
  */
+@Singleton
 public class TokenDeleteTransitionLogic implements TransitionLogic {
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
 	private final TransactionContext txnCtx;
 	private final TypedTokenStore tokenStore;
 
+	@Inject
 	public TokenDeleteTransitionLogic(
 			final TransactionContext txnCtx,
 			final TypedTokenStore tokenStore

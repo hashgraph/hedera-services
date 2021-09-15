@@ -22,11 +22,6 @@ package com.hedera.services.state.merkle;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.utils.MiscUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
@@ -44,30 +39,10 @@ public class MerkleEntityId extends AbstractMerkleLeaf {
 	public MerkleEntityId() {
 	}
 
-	public MerkleEntityId(long shard, long realm, long num) {
+	public MerkleEntityId(final long shard, final long realm, final long num) {
 		this.shard = shard;
 		this.realm = realm;
 		this.num = num;
-	}
-
-	public static MerkleEntityId fromAccountId(AccountID grpc) {
-		return new MerkleEntityId(grpc.getShardNum(), grpc.getRealmNum(), grpc.getAccountNum());
-	}
-
-	public static MerkleEntityId fromTokenId(TokenID grpc) {
-		return new MerkleEntityId(grpc.getShardNum(), grpc.getRealmNum(), grpc.getTokenNum());
-	}
-
-	public static MerkleEntityId fromTopicId(TopicID grpc) {
-		return new MerkleEntityId(grpc.getShardNum(), grpc.getRealmNum(), grpc.getTopicNum());
-	}
-
-	public static MerkleEntityId fromContractId(ContractID grpc) {
-		return new MerkleEntityId(grpc.getShardNum(), grpc.getRealmNum(), grpc.getContractNum());
-	}
-
-	public static MerkleEntityId fromScheduleId(ScheduleID grpc) {
-		return new MerkleEntityId(grpc.getShardNum(), grpc.getRealmNum(), grpc.getScheduleNum());
 	}
 
 	/* --- MerkleLeaf --- */
@@ -82,14 +57,14 @@ public class MerkleEntityId extends AbstractMerkleLeaf {
 	}
 
 	@Override
-	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+	public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
 		shard = in.readLong();
 		realm = in.readLong();
 		num = in.readLong();
 	}
 
 	@Override
-	public void serialize(SerializableDataOutputStream out) throws IOException {
+	public void serialize(final SerializableDataOutputStream out) throws IOException {
 		out.writeLong(shard);
 		out.writeLong(realm);
 		out.writeLong(num);
@@ -97,7 +72,7 @@ public class MerkleEntityId extends AbstractMerkleLeaf {
 
 	/* --- Object --- */
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(final Object o) {
 		if (this == o) {
 			return true;
 		}
@@ -105,7 +80,7 @@ public class MerkleEntityId extends AbstractMerkleLeaf {
 			return false;
 		}
 
-		var that = (MerkleEntityId) o;
+		final var that = (MerkleEntityId) o;
 		return this.shard == that.shard && this.realm == that.realm && this.num == that.num;
 	}
 
@@ -157,33 +132,5 @@ public class MerkleEntityId extends AbstractMerkleLeaf {
 				.add("realm", realm)
 				.add("entity", num)
 				.toString();
-	}
-
-	public String toAbbrevString() {
-		return String.format("%d.%d.%d", shard, realm, num);
-	}
-
-	public AccountID toAccountId() {
-		return AccountID.newBuilder()
-				.setShardNum(shard)
-				.setRealmNum(realm)
-				.setAccountNum(num)
-				.build();
-	}
-
-	public TokenID toTokenId() {
-		return TokenID.newBuilder()
-				.setShardNum(shard)
-				.setRealmNum(realm)
-				.setTokenNum(num)
-				.build();
-	}
-
-	public ScheduleID toScheduleId() {
-		return ScheduleID.newBuilder()
-				.setShardNum(shard)
-				.setRealmNum(realm)
-				.setScheduleNum(num)
-				.build();
 	}
 }

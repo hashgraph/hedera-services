@@ -34,7 +34,7 @@ class ExceptionalScheduleStoreTest {
         assertThrows(UnsupportedOperationException.class, () -> NOOP_SCHEDULE_STORE.get(null));
         assertThrows(UnsupportedOperationException.class, () -> NOOP_SCHEDULE_STORE.delete(null));
         assertThrows(UnsupportedOperationException.class, () -> NOOP_SCHEDULE_STORE.apply(null, null));
-        assertThrows(UnsupportedOperationException.class, () -> NOOP_SCHEDULE_STORE.markAsExecuted(null));
+        assertThrows(UnsupportedOperationException.class, () -> NOOP_SCHEDULE_STORE.markAsExecuted(null, null));
         assertThrows(UnsupportedOperationException.class, () -> NOOP_SCHEDULE_STORE.expire(null));
         assertThrows(UnsupportedOperationException.class, NOOP_SCHEDULE_STORE::commitCreation);
         assertThrows(UnsupportedOperationException.class, NOOP_SCHEDULE_STORE::rollbackCreation);

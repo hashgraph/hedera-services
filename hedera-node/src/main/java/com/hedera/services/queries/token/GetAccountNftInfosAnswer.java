@@ -33,6 +33,8 @@ import com.hederahashgraph.api.proto.java.TokenGetAccountNftInfosQuery;
 import com.hederahashgraph.api.proto.java.TokenGetAccountNftInfosResponse;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -44,10 +46,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_QUERY_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
+@Singleton
 public class GetAccountNftInfosAnswer implements AnswerService {
     public static final String ACCOUNT_NFT_INFO_CTX_KEY = GetAccountNftInfosAnswer.class.getSimpleName() + "_accountNftInfos";
     private OptionValidator validator;
 
+    @Inject
     public GetAccountNftInfosAnswer(OptionValidator validator) {
         this.validator = validator;
     }

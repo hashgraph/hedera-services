@@ -31,15 +31,14 @@ import java.util.function.Consumer;
 /**
  * Provides static helpers for interrogating the simple keys in a complex Hedera key.
  *
- * @author Michael Tinker
  * @see JKey
  */
-public class HederaKeyTraversal {
+public final class HederaKeyTraversal {
 
 	private static final Logger log = LogManager.getLogger(HederaKeyTraversal.class);
 
-	HederaKeyTraversal() {
-		throw new IllegalStateException("Utility Class");
+	private HederaKeyTraversal() {
+		throw new UnsupportedOperationException("Utility Class");
 	}
 
 	/**
@@ -51,7 +50,7 @@ public class HederaKeyTraversal {
 	 * @param actionOnSimpleKey
 	 * 		the logic to apply to each visited simple key.
 	 */
-	public static void visitSimpleKeys(JKey key, Consumer<JKey> actionOnSimpleKey) {
+	public static void visitSimpleKeys(final JKey key, final Consumer<JKey> actionOnSimpleKey) {
 		if (key.hasThresholdKey()) {
 			key.getThresholdKey().getKeys().getKeysList().forEach(k -> visitSimpleKeys(k, actionOnSimpleKey));
 		} else if (key.hasKeyList()) {
@@ -68,8 +67,8 @@ public class HederaKeyTraversal {
 	 * 		the top-level Hedera key.
 	 * @return the number of simple keys in the leaves of the Hedera key.
 	 */
-	public static int numSimpleKeys(JKey key) {
-		AtomicInteger count = new AtomicInteger(0);
+	public static int numSimpleKeys(final JKey key) {
+		final var count = new AtomicInteger(0);
 		visitSimpleKeys(key, ignore -> count.incrementAndGet());
 		return count.get();
 	}
@@ -81,9 +80,9 @@ public class HederaKeyTraversal {
 	 * 		the account with the Hedera key of interest.
 	 * @return the number of simple keys.
 	 */
-	public static int numSimpleKeys(MerkleAccount account) {
+	public static int numSimpleKeys(final MerkleAccount account) {
 		try {
-			return numSimpleKeys(account.getKey());
+			return numSimpleKeys(account.getAccountKey());
 		} catch (Exception ignore) {
 			log.warn(ignore.getMessage());
 			return 0;

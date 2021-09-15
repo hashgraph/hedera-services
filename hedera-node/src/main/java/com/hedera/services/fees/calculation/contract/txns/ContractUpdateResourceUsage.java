@@ -22,7 +22,6 @@ package com.hedera.services.fees.calculation.contract.txns;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -32,14 +31,19 @@ import com.hederahashgraph.fee.SmartContractFeeBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import static com.hedera.services.fees.calculation.FeeCalcUtils.lookupAccountExpiry;
-import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
+import static com.hedera.services.fees.calculation.FeeCalcUtils.lookupAccountExpiry;
+import static com.hedera.services.utils.EntityNum.fromContractId;
+
+@Singleton
 public class ContractUpdateResourceUsage implements TxnResourceUsageEstimator {
 	private static final Logger log = LogManager.getLogger(ContractUpdateResourceUsage.class);
 
 	private final SmartContractFeeBuilder usageEstimator;
 
+	@Inject
 	public ContractUpdateResourceUsage(SmartContractFeeBuilder usageEstimator) {
 		this.usageEstimator = usageEstimator;
 	}
@@ -52,7 +56,7 @@ public class ContractUpdateResourceUsage implements TxnResourceUsageEstimator {
 	@Override
 	public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) throws InvalidTxBodyException {
 		try {
-			MerkleEntityId id = fromContractId(txn.getContractUpdateInstance().getContractID());
+			final var id = fromContractId(txn.getContractUpdateInstance().getContractID());
 			Timestamp expiry = lookupAccountExpiry(id, view.accounts());
 			return usageEstimator.getContractUpdateTxFeeMatrices(txn, expiry, sigUsage);
 		} catch (Exception e) {

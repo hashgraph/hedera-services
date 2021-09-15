@@ -47,9 +47,8 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.never;
 
 class TokenDeleteTransitionLogicTest {
-
-	private final TokenID grpcTokenId = IdUtils.asToken("0.0.12345");
-	private final Id tokenId = Id.fromGrpcToken(grpcTokenId);
+	private static final TokenID grpcTokenId = IdUtils.asToken("0.0.12345");
+	private static final Id tokenId = Id.fromGrpcToken(grpcTokenId);
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
 	private TypedTokenStore typedTokenStore;
@@ -68,10 +67,8 @@ class TokenDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void followsHappyPath() {
-
+	void followsHappyPath() {
 		givenValidTxnCtx();
-
 		given(typedTokenStore.loadToken(tokenId)).willReturn(token);
 		given(token.hasAdminKey()).willReturn(true);
 		given(token.isDeleted()).willReturn(false);
@@ -83,12 +80,9 @@ class TokenDeleteTransitionLogicTest {
 		verify(typedTokenStore).persistToken(token);
 	}
 
-
 	@Test
-	public void capturesInvalidDelete() {
-
+	void capturesInvalidDelete() {
 		givenValidTxnCtx();
-
 		given(typedTokenStore.loadToken(tokenId))
 				.willThrow(new InvalidTransactionException(INVALID_TOKEN_ID));
 
@@ -96,7 +90,6 @@ class TokenDeleteTransitionLogicTest {
 
 		verify(token, never()).delete();
 		verify(typedTokenStore, never()).persistToken(token);
-
 	}
 
 	private void assertFailsWith(final Runnable something, final ResponseCodeEnum status) {
@@ -105,10 +98,8 @@ class TokenDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void capturesInvalidDeletionDueToAlreadyDeleted() {
-
+	void capturesInvalidDeletionDueToAlreadyDeleted() {
 		givenValidTxnCtx();
-
 		given(typedTokenStore.loadToken(tokenId)).willThrow(new InvalidTransactionException(TOKEN_WAS_DELETED));
 
 		assertFailsWith(() -> subject.doStateTransition(), TOKEN_WAS_DELETED);
@@ -117,12 +108,10 @@ class TokenDeleteTransitionLogicTest {
 		verify(typedTokenStore, never()).persistToken(token);
 	}
 
-
 	@Test
 	void hasCorrectApplicability() {
 		givenValidTxnCtx();
 
-		// expect:
 		assertTrue(subject.applicability().test(tokenDeleteTxn));
 		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
 	}
@@ -131,7 +120,6 @@ class TokenDeleteTransitionLogicTest {
 	void acceptsValidTxn() {
 		givenValidTxnCtx();
 
-		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(tokenDeleteTxn));
 	}
 
@@ -139,7 +127,6 @@ class TokenDeleteTransitionLogicTest {
 	void rejectsMissingToken() {
 		givenMissingToken();
 
-		// expect:
 		assertEquals(INVALID_TOKEN_ID, subject.semanticCheck().apply(tokenDeleteTxn));
 	}
 
@@ -151,7 +138,6 @@ class TokenDeleteTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(tokenDeleteTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(typedTokenStore.loadToken(tokenId)).willReturn(token);
-
 	}
 
 	private void givenMissingToken() {

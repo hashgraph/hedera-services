@@ -321,9 +321,6 @@ public class TxnFactory {
 		return builder -> builder
 				.setInitialBalance(setup.defaultBalance())
 				.setAutoRenewPeriod(setup.defaultAutoRenewPeriod())
-				.setReceiveRecordThreshold(setup.defaultReceiveThreshold())
-				.setSendRecordThreshold(setup.defaultSendThreshold())
-				.setProxyAccountID(setup.defaultProxy())
 				.setReceiverSigRequired(setup.defaultReceiverSigRequired());
 	}
 

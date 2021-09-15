@@ -31,6 +31,8 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetLiveHash;
@@ -38,7 +40,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
 
+@Singleton
 public class GetLiveHashAnswer implements AnswerService {
+	@Inject
+	public GetLiveHashAnswer() {
+	}
+
 	@Override
 	public Response responseGiven(Query query, StateView view, ResponseCodeEnum validity, long cost) {
 		CryptoGetLiveHashQuery op = query.getCryptoGetLiveHash();

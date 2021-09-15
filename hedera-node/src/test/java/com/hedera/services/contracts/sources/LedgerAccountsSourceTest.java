@@ -31,6 +31,7 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -42,7 +43,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
-import javax.inject.Inject;
 import java.math.BigInteger;
 
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
@@ -79,7 +79,7 @@ class LedgerAccountsSourceTest {
 
 	HederaLedger ledger;
 
-	@Inject
+	@LoggingTarget
 	private LogCaptor logCaptor;
 	@LoggingSubject
 	private LedgerAccountsSource subject;

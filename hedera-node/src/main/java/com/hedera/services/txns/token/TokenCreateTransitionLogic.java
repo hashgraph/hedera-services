@@ -22,22 +22,22 @@ package com.hedera.services.txns.token;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.state.enums.TokenType;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Token;
 import com.hedera.services.txns.TransitionLogic;
+import com.hedera.services.txns.token.process.Creation;
+import com.hedera.services.txns.token.process.NewRels;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.services.utils.TokenTypesMapper;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -45,159 +45,66 @@ import static com.hedera.services.txns.validation.TokenListChecks.checkKeys;
 import static com.hedera.services.txns.validation.TokenListChecks.suppliesCheck;
 import static com.hedera.services.txns.validation.TokenListChecks.supplyTypeCheck;
 import static com.hedera.services.txns.validation.TokenListChecks.typeCheck;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 
 /**
  * Provides the state transition for token creation.
- *
- * @author Michael Tinker
  */
+@Singleton
 public class TokenCreateTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(TokenCreateTransitionLogic.class);
-
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
+	static final Creation.NewRelsListing RELS_LISTING = NewRels::listFrom;
+	static final Creation.TokenModelFactory MODEL_FACTORY = Token::fromGrpcOpAndMeta;
+	private Creation.CreationFactory creationFactory = Creation::new;
+
+	private final AccountStore accountStore;
+	private final EntityIdSource ids;
 	private final OptionValidator validator;
-	private final TokenStore store;
-	private final HederaLedger ledger;
+	private final TypedTokenStore tokenStore;
 	private final TransactionContext txnCtx;
 	private final GlobalDynamicProperties dynamicProperties;
 
+	@Inject
 	public TokenCreateTransitionLogic(
 			OptionValidator validator,
-			TokenStore store,
-			HederaLedger ledger,
+			TypedTokenStore tokenStore,
+			AccountStore accountStore,
 			TransactionContext txnCtx,
-			GlobalDynamicProperties dynamicProperties
+			GlobalDynamicProperties dynamicProperties,
+			EntityIdSource ids
 	) {
 		this.validator = validator;
-		this.store = store;
-		this.ledger = ledger;
 		this.txnCtx = txnCtx;
 		this.dynamicProperties = dynamicProperties;
+		this.ids = ids;
+		this.accountStore = accountStore;
+		this.tokenStore = tokenStore;
 	}
 
 	@Override
 	public void doStateTransition() {
-		try {
-			final var op = txnCtx.accessor().getTxn().getTokenCreation();
-			if (op.hasExpiry() && !validator.isValidExpiry(op.getExpiry())) {
-				txnCtx.setStatus(INVALID_EXPIRATION_TIME);
-				return;
-			}
-			transitionFor(op);
-		} catch (Exception e) {
-			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
-			abortWith(FAIL_INVALID);
-		}
-	}
+		/* --- Translate from gRPC types --- */
+		final var op = txnCtx.accessor().getTxn().getTokenCreation();
+		final var creation = creationFactory.processFrom(accountStore, tokenStore, dynamicProperties, op);
 
-	private void transitionFor(TokenCreateTransactionBody op) {
-		var result = store.createProvisionally(op, txnCtx.activePayer(), txnCtx.consensusTime().getEpochSecond());
-		if (result.getStatus() != OK) {
-			abortWith(result.getStatus());
-			return;
-		}
+		/* --- Load existing model objects --- */
+		creation.loadModelsWith(txnCtx.activePayer(), ids, validator);
 
-		TokenID created;
-		if (result.getCreated().isPresent()) {
-			created = result.getCreated().get();
-		} else {
-			log.warn("TokenStore#createProvisionally contract broken, no created id for OK response!");
-			abortWith(FAIL_INVALID);
-			return;
-		}
+		/* --- Create, update, and validate model objects  --- */
+		final var now = txnCtx.consensusTime().getEpochSecond();
+		creation.doProvisionallyWith(now, MODEL_FACTORY, RELS_LISTING);
 
-		var treasury = op.getTreasury();
-		var status = autoEnableAccountForNewToken(treasury, created, op);
-		if (status != OK) {
-			abortWith(status);
-			return;
-		}
-		if (op.getCustomFeesCount() > 0) {
-			status = autoEnableFeeCollectors(created, treasury, op);
-			if (status != OK) {
-				abortWith(status);
-				return;
-			}
-		}
+		/* --- Persist all new and updated models --- */
+		creation.persist();
 
-		if (op.getTokenType() != TokenType.NON_FUNGIBLE_UNIQUE) {
-			status = ledger.adjustTokenBalance(treasury, created, op.getInitialSupply());
-			if (status != OK) {
-				abortWith(status);
-				return;
-			}
-		}
-
-		store.commitCreation();
-		txnCtx.setCreated(created);
-		txnCtx.setStatus(SUCCESS);
-	}
-
-	private ResponseCodeEnum autoEnableFeeCollectors(
-			TokenID created,
-			AccountID alreadyEnabledTreasury,
-			TokenCreateTransactionBody op
-	) {
-		/* TokenStore.associate() returns TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT if the
-		account-token relationship already exists. */
-		final Set<AccountID> customCollectorsEnabled = new HashSet<>();
-		customCollectorsEnabled.add(alreadyEnabledTreasury);
-		ResponseCodeEnum status = OK;
-		for (var fee : op.getCustomFeesList()) {
-			boolean collectorEnablementNeeded = fee.hasFractionalFee();
-			if (fee.hasFixedFee() && fee.getFixedFee().hasDenominatingTokenId()) {
-				collectorEnablementNeeded |= (0 == fee.getFixedFee().getDenominatingTokenId().getTokenNum());
-			} else if (fee.hasRoyaltyFee() && fee.getRoyaltyFee().hasFallbackFee()) {
-				final var fallback = fee.getRoyaltyFee().getFallbackFee();
-				if (fallback.hasDenominatingTokenId()) {
-					collectorEnablementNeeded |= (0 == fallback.getDenominatingTokenId().getTokenNum());
-				}
-			}
-			final var collector = fee.getFeeCollectorAccountId();
-			if (collectorEnablementNeeded && !customCollectorsEnabled.contains(collector)) {
-				status = autoEnableAccountForNewToken(collector, created, op);
-				if (status != OK) {
-					return status;
-				}
-				customCollectorsEnabled.add(collector);
-			}
-		}
-		return status;
-	}
-
-	private ResponseCodeEnum autoEnableAccountForNewToken(
-			AccountID id,
-			TokenID created,
-			TokenCreateTransactionBody op
-	) {
-		var status = store.associate(id, List.of(created));
-		if (status != OK) {
-			return status;
-		}
-		if (op.hasFreezeKey()) {
-			status = ledger.unfreeze(id, created);
-		}
-		if (status == OK && op.hasKycKey()) {
-			status = ledger.grantKyc(id, created);
-		}
-		return status;
-	}
-
-	private void abortWith(ResponseCodeEnum cause) {
-		if (store.isCreationPending()) {
-			store.rollbackCreation();
-		}
-		ledger.dropPendingTokenChanges();
-		txnCtx.setStatus(cause);
+		/* --- Record activity in the transaction context --- */
+		txnCtx.setNewTokenAssociations(creation.newAssociations());
 	}
 
 	@Override
@@ -210,10 +117,21 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 		return SEMANTIC_CHECK;
 	}
 
+	@Override
+	public void reclaimCreatedIds() {
+		ids.reclaimProvisionalIds();
+	}
+
+	@Override
+	public void resetCreatedIds() {
+		ids.resetProvisionalIds();
+	}
+
 	public ResponseCodeEnum validate(TransactionBody txnBody) {
 		TokenCreateTransactionBody op = txnBody.getTokenCreation();
 
-		if (op.getTokenType() == TokenType.NON_FUNGIBLE_UNIQUE && !dynamicProperties.areNftsEnabled()) {
+		final var domainType = TokenTypesMapper.mapToDomain(op.getTokenType());
+		if (domainType == TokenType.NON_FUNGIBLE_UNIQUE && !dynamicProperties.areNftsEnabled()) {
 			return NOT_SUPPORTED;
 		}
 
@@ -279,5 +197,10 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 			}
 		}
 		return validity;
+	}
+
+	/* --- Only used by unit tests --- */
+	public void setCreationFactory(Creation.CreationFactory creationFactory) {
+		this.creationFactory = creationFactory;
 	}
 }

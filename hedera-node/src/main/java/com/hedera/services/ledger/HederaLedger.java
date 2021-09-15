@@ -39,6 +39,7 @@ import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
@@ -62,12 +63,14 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
+import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
+import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
@@ -94,8 +97,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * method); but it is necessary to provide "unsafe" single-booked
  * methods like {@link HederaLedger#adjustBalance(AccountID, long)} in
  * order to match transfer semantics the EVM expects.
- *
- * @author Michael Tinker
  */
 @SuppressWarnings("unchecked")
 public class HederaLedger {
@@ -121,6 +122,7 @@ public class HederaLedger {
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final TransferList.Builder netTransfers = TransferList.newBuilder();
+	private final List<FcTokenAssociation> newTokenAssociations = new ArrayList<>();
 	private final AccountRecordsHistorian historian;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
@@ -154,6 +156,7 @@ public class HederaLedger {
 		this.accountsLedger = accountsLedger;
 		this.dynamicProperties = dynamicProperties;
 
+		creator.setLedger(this);
 		historian.setCreator(creator);
 		tokenStore.setAccountsLedger(accountsLedger);
 		tokenStore.setHederaLedger(this);
@@ -201,6 +204,7 @@ public class HederaLedger {
 			tokenViewsManager.rollback();
 		}
 		netTransfers.clear();
+		newTokenAssociations.clear();
 		clearNetTokenTransfers();
 	}
 
@@ -220,7 +224,16 @@ public class HederaLedger {
 			tokenViewsManager.commit();
 		}
 		netTransfers.clear();
+		newTokenAssociations.clear();
 		clearNetTokenTransfers();
+	}
+
+	public void addNewAssociationToList(FcTokenAssociation newAssociation) {
+		newTokenAssociations.add(newAssociation);
+	}
+
+	public List<FcTokenAssociation> getNewTokenAssociations() {
+		return newTokenAssociations;
 	}
 
 	public TransferList netTransfersInTxn() {
@@ -501,6 +514,22 @@ public class HederaLedger {
 
 	public boolean isReceiverSigRequired(AccountID id) {
 		return (boolean) accountsLedger.get(id, IS_RECEIVER_SIG_REQUIRED);
+	}
+
+	public int maxAutomaticAssociations(AccountID id) {
+		return (int) accountsLedger.get(id, MAX_AUTOMATIC_ASSOCIATIONS);
+	}
+
+	public int alreadyUsedAutomaticAssociations(AccountID id) {
+		return (int) accountsLedger.get(id, ALREADY_USED_AUTOMATIC_ASSOCIATIONS);
+	}
+
+	public void setMaxAutomaticAssociations(AccountID id, int max) {
+		accountsLedger.set(id, MAX_AUTOMATIC_ASSOCIATIONS, max);
+	}
+
+	public void setAlreadyUsedAutomaticAssociations(AccountID id, int usedCount) {
+		accountsLedger.set(id, ALREADY_USED_AUTOMATIC_ASSOCIATIONS, usedCount);
 	}
 
 	public boolean isDeleted(AccountID id) {

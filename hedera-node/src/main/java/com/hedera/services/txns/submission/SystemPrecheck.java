@@ -21,11 +21,13 @@ package com.hedera.services.txns.submission;
  */
 
 import com.hedera.services.context.domain.security.HapiOpPermissions;
-import com.hedera.services.security.ops.SystemOpPolicies;
+import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.function.LongPredicate;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
@@ -38,6 +40,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  *
  * For more details, please see https://github.com/hashgraph/hedera-services/blob/master/docs/transaction-prechecks.md
  */
+@Singleton
 public class SystemPrecheck {
 	public static final LongPredicate IS_THROTTLE_EXEMPT = num -> num >= 1 && num <= 100L;
 
@@ -45,6 +48,7 @@ public class SystemPrecheck {
 	private final HapiOpPermissions hapiOpPermissions;
 	private final TransactionThrottling txnThrottling;
 
+	@Inject
 	public SystemPrecheck(
 			SystemOpPolicies systemOpPolicies,
 			HapiOpPermissions hapiOpPermissions,
@@ -63,7 +67,7 @@ public class SystemPrecheck {
 			return permissionStatus;
 		}
 
-		final var privilegeStatus = systemOpPolicies.check(accessor).asStatus();
+		final var privilegeStatus = systemOpPolicies.checkAccessor(accessor).asStatus();
 		if (privilegeStatus != OK) {
 			return privilegeStatus;
 		}

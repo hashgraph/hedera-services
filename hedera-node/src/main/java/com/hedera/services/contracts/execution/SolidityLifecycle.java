@@ -29,6 +29,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.db.ServicesRepositoryRoot;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Optional;
@@ -40,6 +42,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+@Singleton
 public class SolidityLifecycle {
 	private static final Logger log = LogManager.getLogger(SolidityLifecycle.class);
 
@@ -48,6 +51,7 @@ public class SolidityLifecycle {
 	public static final String OVERSIZE_RESULT_ERROR_MSG_TPL =
 			"Result size (%d bytes) exceeded maximum allowed size (%d bytes)";
 
+	@Inject
 	public SolidityLifecycle(GlobalDynamicProperties properties) {
 		this.properties = properties;
 	}

@@ -28,9 +28,14 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class GetAccountInfoResourceUsage implements QueryResourceUsageEstimator {
 	private final CryptoOpsUsage cryptoOpsUsage;
 
+	@Inject
 	public GetAccountInfoResourceUsage(CryptoOpsUsage cryptoOpsUsage) {
 		this.cryptoOpsUsage = cryptoOpsUsage;
 	}
@@ -65,6 +70,7 @@ public class GetAccountInfoResourceUsage implements QueryResourceUsageEstimator 
 				.setCurrentExpiry(details.getExpirationTime().getSeconds())
 				.setCurrentlyHasProxy(details.hasProxyAccountID())
 				.setCurrentNumTokenRels(details.getTokenRelationshipsCount())
+				.setCurrentMaxAutomaticAssociations(details.getMaxAutomaticTokenAssociations())
 				.build();
 		return cryptoOpsUsage.cryptoInfoUsage(query, ctx);
 	}

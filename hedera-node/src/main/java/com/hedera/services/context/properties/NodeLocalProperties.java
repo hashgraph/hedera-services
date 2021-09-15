@@ -20,6 +20,12 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
+import com.hedera.services.context.annotations.CompositeProps;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class NodeLocalProperties {
 	private final PropertySource properties;
 
@@ -53,8 +59,10 @@ public class NodeLocalProperties {
 	private int nettyStartRetries;
 	private long nettyStartRetryIntervalMs;
 	private boolean dumpFcmsOnIss;
+	private int numExecutionTimesToTrack;
 
-	public NodeLocalProperties(PropertySource properties) {
+	@Inject
+	public NodeLocalProperties(@CompositeProps PropertySource properties) {
 		this.properties = properties;
 
 		reload();
@@ -91,6 +99,7 @@ public class NodeLocalProperties {
 		nettyStartRetries = properties.getIntProperty("netty.startRetries");
 		nettyStartRetryIntervalMs = properties.getLongProperty("netty.startRetryIntervalMs");
 		dumpFcmsOnIss = properties.getBooleanProperty("iss.dumpFcms");
+		numExecutionTimesToTrack = properties.getIntProperty("stats.executionTimesToTrack");
 	}
 
 	public int port() {
@@ -211,5 +220,9 @@ public class NodeLocalProperties {
 
 	public boolean shouldDumpFcmsOnIss() {
 		return dumpFcmsOnIss;
+	}
+
+	public int numExecutionTimesToTrack() {
+		return numExecutionTimesToTrack;
 	}
 }

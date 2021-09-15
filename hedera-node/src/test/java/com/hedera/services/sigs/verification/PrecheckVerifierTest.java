@@ -26,6 +26,7 @@ import com.hedera.services.sigs.PlatformSigOps;
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.txns.PlatformTxnFactory;
 import com.hedera.test.utils.IdUtils;
@@ -61,7 +62,7 @@ class PrecheckVerifierTest {
 			.setTransactionID(TransactionID.newBuilder().setAccountID(IdUtils.asAccount("0.0.2")))
 			.build();
 	private static final Transaction txn = Transaction.newBuilder().setBodyBytes(txnBody.toByteString()).build();
-	private static final PlatformTxnAccessor accessor = uncheckedAccessorFor(PlatformTxnFactory.from(txn));
+	private static final PlatformTxnAccessor realAccessor = uncheckedAccessorFor(PlatformTxnFactory.from(txn));
 
 	private final static byte[][] VALID_SIG_BYTES = {
 			"firstSig".getBytes(),
@@ -81,6 +82,7 @@ class PrecheckVerifierTest {
 
 	private PrecheckKeyReqs precheckKeyReqs;
 	private PrecheckVerifier subject;
+	private SignedTxnAccessor mockAccessor;
 
 	@BeforeAll
 	static void setupAll() throws Throwable {
@@ -88,13 +90,17 @@ class PrecheckVerifierTest {
 				KeyTree.withRoot(list(ed25519(), list(ed25519(), ed25519()))).asJKey(),
 				KeyTree.withRoot(ed25519()).asJKey());
 		expectedSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
-				reqKeys, VALID_PROVIDER_FACTORY.get(), new BodySigningSigFactory(accessor)
+				reqKeys, VALID_PROVIDER_FACTORY.get(), new BodySigningSigFactory(realAccessor)
 		).getPlatformSigs();
 	}
 
 	@BeforeEach
 	void setup() {
 		precheckKeyReqs = mock(PrecheckKeyReqs.class);
+		mockAccessor = mock(SignedTxnAccessor.class);
+		given(mockAccessor.getTxn()).willReturn(realAccessor.getTxn());
+		given(mockAccessor.getTxnBytes()).willReturn(realAccessor.getTxnBytes());
+		given(mockAccessor.getPkToSigsFn()).willReturn(VALID_PROVIDER_FACTORY.get());
 	}
 
 	@Test
@@ -107,7 +113,7 @@ class PrecheckVerifierTest {
 		});
 
 		// when:
-		boolean hasPrechekSigs = subject.hasNecessarySignatures(accessor);
+		boolean hasPrechekSigs = subject.hasNecessarySignatures(mockAccessor);
 
 		// then:
 		assertEquals(expectedSigs, actualSigsVerified.get());
@@ -124,7 +130,7 @@ class PrecheckVerifierTest {
 		});
 
 		// when:
-		boolean hasPrechekSigs = subject.hasNecessarySignatures(accessor);
+		boolean hasPrechekSigs = subject.hasNecessarySignatures(mockAccessor);
 
 		// then:
 		assertEquals(expectedSigs, actualSigsVerified.get());
@@ -133,16 +139,16 @@ class PrecheckVerifierTest {
 
 	@Test
 	void propagatesSigCreationFailure() throws Exception {
+		// setup:
+		given(mockAccessor.getPkToSigsFn()).willReturn(bytes -> {
+			throw new KeyPrefixMismatchException("Oops!");
+		});
+
 		given(precheckKeyReqs.getRequiredKeys(txnBody)).willReturn(reqKeys);
-		subject = new PrecheckVerifier(
-				ALWAYS_VALID,
-				precheckKeyReqs,
-				ignore -> bytes -> {
-					throw new KeyPrefixMismatchException("Oops!");
-				});
+		subject = new PrecheckVerifier(ALWAYS_VALID, precheckKeyReqs);
 
 		// expect:
-		assertThrows(KeyPrefixMismatchException.class, () -> subject.hasNecessarySignatures(accessor));
+		assertThrows(KeyPrefixMismatchException.class, () -> subject.hasNecessarySignatures(mockAccessor));
 	}
 
 	@Test
@@ -151,7 +157,7 @@ class PrecheckVerifierTest {
 		givenImpliedSubject(ALWAYS_VALID);
 
 		// expect:
-		assertFalse(subject.hasNecessarySignatures(accessor));
+		assertFalse(subject.hasNecessarySignatures(mockAccessor));
 	}
 
 	@Test
@@ -160,29 +166,26 @@ class PrecheckVerifierTest {
 		givenImpliedSubject(ALWAYS_VALID);
 
 		// expect:
-		assertThrows(IllegalStateException.class, () -> subject.hasNecessarySignatures(accessor));
+		assertThrows(IllegalStateException.class, () -> subject.hasNecessarySignatures(mockAccessor));
 	}
 
 	@Test
 	void affirmsValidSignaturesInSignedTxn() throws Exception {
-		//setUp
-		SignedTransaction signedTransaction = SignedTransaction.newBuilder().setBodyBytes(
-				txnBody.toByteString()).build();
-		final Transaction signedTxn = Transaction.newBuilder().setSignedTransactionBytes(
-				signedTransaction.toByteString()).build();
-		PlatformTxnAccessor signedTxnAccessor = uncheckedAccessorFor(PlatformTxnFactory.from(signedTxn));
-
-		//given
-		given(precheckKeyReqs.getRequiredKeys(TransactionBody.parseFrom(signedTransaction.getBodyBytes()))).
-				willReturn(reqKeys);
+		// setup:
+		final var signedTransaction =
+				SignedTransaction.newBuilder().setBodyBytes(txnBody.toByteString()).build();
 		AtomicReference<List<TransactionSignature>> actualSigsVerified = new AtomicReference<>();
+
+		given(precheckKeyReqs.getRequiredKeys(TransactionBody.parseFrom(signedTransaction.getBodyBytes())))
+				.willReturn(reqKeys);
+		// and:
 		givenImpliedSubject(sigs -> {
 			actualSigsVerified.set(sigs);
 			ALWAYS_VALID.verifySync(sigs);
 		});
 
 		// when:
-		boolean hasPrechekSigs = subject.hasNecessarySignatures(signedTxnAccessor);
+		boolean hasPrechekSigs = subject.hasNecessarySignatures(mockAccessor);
 
 		// then:
 		assertEquals(expectedSigs, actualSigsVerified.get());
@@ -190,6 +193,6 @@ class PrecheckVerifierTest {
 	}
 
 	private void givenImpliedSubject(SyncVerifier syncVerifier) {
-		subject = new PrecheckVerifier(syncVerifier, precheckKeyReqs, ignore -> VALID_PROVIDER_FACTORY.get());
+		subject = new PrecheckVerifier(syncVerifier, precheckKeyReqs);
 	}
 }

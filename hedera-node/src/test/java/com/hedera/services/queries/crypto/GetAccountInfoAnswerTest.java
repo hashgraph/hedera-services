@@ -27,8 +27,6 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
-import com.hedera.services.state.merkle.MerkleEntityAssociation;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.EntityId;
@@ -36,6 +34,8 @@ import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.utils.IdUtils;
@@ -50,10 +50,7 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.CommonUtils;
-import com.swirlds.common.constructable.ClassConstructorPair;
-import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.fcmap.FCMap;
-import com.swirlds.merkletree.MerklePair;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -87,8 +84,8 @@ class GetAccountInfoAnswerTest {
 	private StateView view;
 	private TokenStore tokenStore;
 	private ScheduleStore scheduleStore;
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
-	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
+	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 	private OptionValidator optionValidator;
 
 	private String node = "0.0.3";
@@ -115,25 +112,22 @@ class GetAccountInfoAnswerTest {
 
 	@BeforeEach
 	private void setup() throws Throwable {
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(MerklePair.class, MerklePair::new));
-
-		tokenRels = new FCMap<>();
+		tokenRels = new MerkleMap<>();
 		tokenRels.put(
 				fromAccountTokenRel(payerId, firstToken),
-				new MerkleTokenRelStatus(firstBalance, true, true));
+				new MerkleTokenRelStatus(firstBalance, true, true, true));
 		tokenRels.put(
 				fromAccountTokenRel(payerId, secondToken),
-				new MerkleTokenRelStatus(secondBalance, false, false));
+				new MerkleTokenRelStatus(secondBalance, false, false, true));
 		tokenRels.put(
 				fromAccountTokenRel(payerId, thirdToken),
-				new MerkleTokenRelStatus(thirdBalance, true, true));
+				new MerkleTokenRelStatus(thirdBalance, true, true, false));
 		tokenRels.put(
 				fromAccountTokenRel(payerId, fourthToken),
-				new MerkleTokenRelStatus(fourthBalance, false, false));
+				new MerkleTokenRelStatus(fourthBalance, false, false, true));
 		tokenRels.put(
 				fromAccountTokenRel(payerId, missingToken),
-				new MerkleTokenRelStatus(missingBalance, false, false));
+				new MerkleTokenRelStatus(missingBalance, false, false, false));
 
 		token = mock(MerkleToken.class);
 		given(token.kycKey()).willReturn(Optional.of(new JEd25519Key("kyc".getBytes())));
@@ -177,8 +171,8 @@ class GetAccountInfoAnswerTest {
 				.get();
 		payerAccount.setTokens(tokens);
 
-		accounts = mock(FCMap.class);
-		given(accounts.get(MerkleEntityId.fromAccountId(asAccount(target)))).willReturn(payerAccount);
+		accounts = mock(MerkleMap.class);
+		given(accounts.get(EntityNum.fromAccountId(asAccount(target)))).willReturn(payerAccount);
 
 		nodeProps = mock(NodeLocalProperties.class);
 		final StateChildren children = new StateChildren();
@@ -265,7 +259,7 @@ class GetAccountInfoAnswerTest {
 		assertEquals(payerAccount.getBalance(), info.getBalance());
 		assertEquals(payerAccount.getAutoRenewSecs(), info.getAutoRenewPeriod().getSeconds());
 		assertEquals(payerAccount.getProxy(), EntityId.fromGrpcAccountId(info.getProxyAccountID()));
-		assertEquals(JKey.mapJKey(payerAccount.getKey()), info.getKey());
+		assertEquals(JKey.mapJKey(payerAccount.getAccountKey()), info.getKey());
 		assertEquals(payerAccount.isReceiverSigRequired(), info.getReceiverSigRequired());
 		assertEquals(payerAccount.getExpiry(), info.getExpirationTime().getSeconds());
 		assertEquals(memo, info.getMemo());
@@ -274,19 +268,19 @@ class GetAccountInfoAnswerTest {
 				List.of(
 						new RawTokenRelationship(
 								firstBalance, 0, 0,
-								firstToken.getTokenNum(), true, true).asGrpcFor(token),
+								firstToken.getTokenNum(), true, true, true).asGrpcFor(token),
 						new RawTokenRelationship(
 								secondBalance, 0, 0,
-								secondToken.getTokenNum(), false, false).asGrpcFor(token),
+								secondToken.getTokenNum(), false, false, true).asGrpcFor(token),
 						new RawTokenRelationship(
 								thirdBalance, 0, 0,
-								thirdToken.getTokenNum(), true, true).asGrpcFor(token),
+								thirdToken.getTokenNum(), true, true, false).asGrpcFor(token),
 						new RawTokenRelationship(
 								fourthBalance, 0, 0,
-								fourthToken.getTokenNum(), false, false).asGrpcFor(deletedToken),
+								fourthToken.getTokenNum(), false, false, true).asGrpcFor(deletedToken),
 						new RawTokenRelationship(
 								missingBalance, 0, 0,
-								missingToken.getTokenNum(), false, false).asGrpcFor(REMOVED_TOKEN)),
+								missingToken.getTokenNum(), false, false, false).asGrpcFor(REMOVED_TOKEN)),
 
 				info.getTokenRelationshipsList());
 	}

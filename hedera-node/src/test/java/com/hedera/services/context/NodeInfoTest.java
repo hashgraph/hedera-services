@@ -21,9 +21,11 @@ package com.hedera.services.context;
  */
 
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
@@ -32,13 +34,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-
-import javax.inject.Inject;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith({ LogCaptureExtension.class, MockitoExtension.class })
@@ -50,7 +54,7 @@ class NodeInfoTest {
 	@Mock
 	private AddressBook book;
 
-	@Inject
+	@LoggingTarget
 	private LogCaptor logCaptor;
 
 	@LoggingSubject
@@ -100,7 +104,7 @@ class NodeInfoTest {
 		assertEquals(expectedAccount, subject.selfAccount());
 		assertTrue(subject.hasSelfAccount());
 		// and:
-		assertEquals(expectedAccountKey, subject.accountKeyOf(nodeId));
+		assertEquals(EntityNum.fromAccountId(expectedAccount), subject.accountKeyOf(nodeId));
 	}
 
 	@Test
@@ -126,6 +130,30 @@ class NodeInfoTest {
 
 		// then:
 		assertTrue(logCaptor.errorLogs().isEmpty());
+	}
+
+	@Test
+	void throwsIseOnStakedNodeNoAccount() {
+		givenEntryWithMemoAndStake(nodeId, "LULZ", 1L);
+
+		// expect:
+		assertThrows(IllegalStateException.class, subject::validateSelfAccountIfStaked);
+	}
+
+	@Test
+	void doesntThrowIseOnZeroStakeNodeNoAccount() {
+		givenEntryWithMemoAndStake(nodeId, "LULZ", 0L);
+
+		// expect:
+		assertDoesNotThrow(subject::validateSelfAccountIfStaked);
+	}
+
+	@Test
+	void doesntThrowIseOnStakedNodeWithAccount() {
+		givenEntryWithMemoAndStake(nodeId, "0.0.3", 1L);
+
+		// expect:
+		assertDoesNotThrow(subject::validateSelfAccountIfStaked);
 	}
 
 	@Test

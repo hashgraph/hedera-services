@@ -23,16 +23,18 @@ package com.hedera.services.txns.contract;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -41,6 +43,7 @@ import java.util.function.Supplier;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
+@Singleton
 public class ContractDeleteTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(ContractDeleteTransitionLogic.class);
 
@@ -48,16 +51,17 @@ public class ContractDeleteTransitionLogic implements TransitionLogic {
 	private final LegacyDeleter delegate;
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> contracts;
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
+	@Inject
 	public ContractDeleteTransitionLogic(
 			HederaLedger ledger,
 			LegacyDeleter delegate,
 			OptionValidator validator,
 			TransactionContext txnCtx,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> contracts
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts
 	) {
 		this.ledger = ledger;
 		this.delegate = delegate;

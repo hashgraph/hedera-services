@@ -25,12 +25,14 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.fee.FeeObject;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -38,14 +40,16 @@ import java.util.function.Supplier;
  * Implements the {@link NarratedCharging} contract using a injected {@link HederaLedger}
  * to charge the requested fees.
  */
+@Singleton
 public class NarratedLedgerCharging implements NarratedCharging {
 	private static final long UNKNOWN_ACCOUNT_BALANCE = -1L;
 
+	private HederaLedger ledger;
+
 	private final NodeInfo nodeInfo;
-	private final HederaLedger ledger;
 	private final FeeExemptions feeExemptions;
 	private final GlobalDynamicProperties dynamicProperties;
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
 	private long effPayerStartingBalance = UNKNOWN_ACCOUNT_BALANCE;
 	private long nodeFee;
@@ -56,21 +60,25 @@ public class NarratedLedgerCharging implements NarratedCharging {
 	private boolean payerExempt;
 	private AccountID grpcNodeId;
 	private AccountID grpcPayerId;
-	private MerkleEntityId nodeId;
-	private MerkleEntityId payerId;
+	private EntityNum nodeId;
+	private EntityNum payerId;
 
+	@Inject
 	public NarratedLedgerCharging(
 			NodeInfo nodeInfo,
-			HederaLedger ledger,
 			FeeExemptions feeExemptions,
 			GlobalDynamicProperties dynamicProperties,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {
-		this.ledger = ledger;
 		this.accounts = accounts;
 		this.nodeInfo = nodeInfo;
 		this.feeExemptions = feeExemptions;
 		this.dynamicProperties = dynamicProperties;
+	}
+
+	@Override
+	public void setLedger(HederaLedger ledger) {
+		this.ledger = ledger;
 	}
 
 	@Override
@@ -81,7 +89,7 @@ public class NarratedLedgerCharging implements NarratedCharging {
 	@Override
 	public void resetForTxn(TxnAccessor accessor, long submittingNodeId) {
 		this.grpcPayerId = accessor.getPayer();
-		this.payerId = MerkleEntityId.fromAccountId(grpcPayerId);
+		this.payerId = EntityNum.fromAccountId(grpcPayerId);
 		this.totalOfferedFee = accessor.getOfferedFee();
 
 		nodeId = nodeInfo.accountKeyOf(submittingNodeId);
@@ -190,11 +198,11 @@ public class NarratedLedgerCharging implements NarratedCharging {
 		ledger.adjustBalance(dynamicProperties.fundingAccount(), +chargeableNetworkFee);
 	}
 
-	private void initEffPayerBalance(MerkleEntityId effPayerId) {
+	private void initEffPayerBalance(EntityNum effPayerId) {
 		final var payerAccount = accounts.get().get(effPayerId);
 		if (payerAccount == null) {
 			throw new IllegalStateException("Invariant failure, effective payer account "
-					+ Optional.ofNullable(effPayerId).map(MerkleEntityId::toAbbrevString).orElse("null")
+					+ Optional.ofNullable(effPayerId).map(EntityNum::toIdString).orElse("null")
 					+ " is missing!");
 		}
 		effPayerStartingBalance = payerAccount.getBalance();

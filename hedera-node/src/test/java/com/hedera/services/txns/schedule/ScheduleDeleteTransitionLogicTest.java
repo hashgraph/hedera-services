@@ -9,9 +9,9 @@ package com.hedera.services.txns.schedule;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,6 +23,10 @@ package com.hedera.services.txns.schedule;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
@@ -30,142 +34,124 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import java.time.Instant;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+@ExtendWith({ LogCaptureExtension.class })
 class ScheduleDeleteTransitionLogicTest {
-    private ScheduleStore store;
-    private PlatformTxnAccessor accessor;
-    private TransactionContext txnCtx;
-    private final ResponseCodeEnum NOT_OK = null;
+	private static final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
+	private static final ResponseCodeEnum NOT_OK = null;
+	private static final ScheduleID schedule = IdUtils.asSchedule("1.2.3");
 
-    private ScheduleID schedule = IdUtils.asSchedule("1.2.3");
+	private ScheduleStore store;
+	private PlatformTxnAccessor accessor;
+	private TransactionContext txnCtx;
 
-    private TransactionBody scheduleDeleteTxn;
-    private ScheduleDeleteTransitionLogic subject;
+	private TransactionBody scheduleDeleteTxn;
 
-    @BeforeEach
-    private void setup() {
-        store = mock(ScheduleStore.class);
-        accessor = mock(PlatformTxnAccessor.class);
-        txnCtx = mock(TransactionContext.class);
-        subject = new ScheduleDeleteTransitionLogic(store, txnCtx);
-    }
+	@LoggingTarget
+	private LogCaptor logCaptor;
 
-    @Test
-    void followsHappyPath() {
-        // given:
-        givenValidTxnCtx();
+	@LoggingSubject
+	private ScheduleDeleteTransitionLogic subject;
 
-        // and:
-        given(store.delete(schedule)).willReturn(OK);
+	@BeforeEach
+	private void setup() {
+		store = mock(ScheduleStore.class);
+		accessor = mock(PlatformTxnAccessor.class);
+		txnCtx = mock(TransactionContext.class);
+		subject = new ScheduleDeleteTransitionLogic(store, txnCtx);
+	}
 
-        // when:
-        subject.doStateTransition();
+	@Test
+	void followsHappyPath() {
+		givenValidTxnCtx();
+		given(store.deleteAt(schedule, consensusNow)).willReturn(OK);
 
-        // then
-        verify(store).delete(schedule);
-        verify(txnCtx).setStatus(SUCCESS);
-    }
+		subject.doStateTransition();
 
-    @Test
-    void capturesInvalidSchedule() {
-        // given:
-        givenValidTxnCtx();
+		verify(store).deleteAt(schedule, consensusNow);
+		verify(txnCtx).setStatus(SUCCESS);
+	}
 
-        // and:
-        given(store.delete(schedule)).willReturn(NOT_OK);
+	@Test
+	void capturesInvalidSchedule() {
+		givenValidTxnCtx();
+		given(store.deleteAt(schedule, consensusNow)).willReturn(NOT_OK);
 
-        // when:
-        subject.doStateTransition();
+		subject.doStateTransition();
 
-        // then
-        verify(store).delete(schedule);
-        verify(txnCtx).setStatus(NOT_OK);
-    }
+		verify(store).deleteAt(schedule, consensusNow);
+		verify(txnCtx).setStatus(NOT_OK);
+	}
 
-    @Test
-    void setsFailInvalidIfUnhandledException() {
-        givenValidTxnCtx();
-        // and:
-        given(store.delete(schedule)).willThrow(IllegalArgumentException.class);
+	@Test
+	void setsFailInvalidIfUnhandledException() {
+		givenValidTxnCtx();
+		given(store.deleteAt(schedule, consensusNow)).willThrow(IllegalArgumentException.class);
 
-        // when:
-        subject.doStateTransition();
+		subject.doStateTransition();
 
-        // then:
-        verify(store).delete(schedule);
-        // and:
-        verify(txnCtx).setStatus(FAIL_INVALID);
-    }
+		verify(store).deleteAt(schedule, consensusNow);
+		assertThat(logCaptor.warnLogs(), contains("Unhandled error while processing :: null! " +
+				"java.lang.IllegalArgumentException: null"));
+		verify(txnCtx).setStatus(FAIL_INVALID);
+	}
 
-    @Test
-    void hasCorrectApplicability() {
-        givenValidTxnCtx();
+	@Test
+	void hasCorrectApplicability() {
+		givenValidTxnCtx();
 
-        // expect:
-        assertTrue(subject.applicability().test(scheduleDeleteTxn));
-        assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
-    }
+		assertTrue(subject.applicability().test(scheduleDeleteTxn));
+		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
+	}
 
-    @Test
-    void failsOnInvalidSchedule() {
-        givenCtx(true);
+	@Test
+	void acceptsValidTxn() {
+		givenValidTxnCtx();
 
-        // expect:
-        assertEquals(INVALID_SCHEDULE_ID, subject.validate(scheduleDeleteTxn));
-    }
+		assertEquals(OK, subject.semanticCheck().apply(scheduleDeleteTxn));
+	}
 
-    @Test
-    void acceptsValidTxn() {
-        givenValidTxnCtx();
+	@Test
+	void rejectsInvalidScheduleId() {
+		givenCtx(true);
 
-        assertEquals(OK, subject.semanticCheck().apply(scheduleDeleteTxn));
-    }
+		assertEquals(INVALID_SCHEDULE_ID, subject.semanticCheck().apply(scheduleDeleteTxn));
+	}
 
-    @Test
-    void rejectsInvalidScheduleId() {
-        givenCtx(true);
+	private void givenValidTxnCtx() {
+		givenCtx(false);
+	}
 
-        assertEquals(INVALID_SCHEDULE_ID, subject.semanticCheck().apply(scheduleDeleteTxn));
-    }
+	private void givenCtx(final boolean invalidScheduleId) {
+		final var builder = TransactionBody.newBuilder();
+		final var scheduleDelete = ScheduleDeleteTransactionBody.newBuilder()
+				.setScheduleID(schedule);
 
-    void syntaxCheckWorks() {
-        givenValidTxnCtx();
+		if (invalidScheduleId) {
+			scheduleDelete.clearScheduleID();
+		}
 
-        // expect:
-        assertEquals(OK, subject.semanticCheck().apply(scheduleDeleteTxn));
-    }
+		builder.setScheduleDelete(scheduleDelete);
 
-    private void givenValidTxnCtx() {
-        givenCtx(false);
-    }
-
-
-    private void givenCtx(
-            boolean invalidScheduleId
-    ) {
-        var builder = TransactionBody.newBuilder();
-        var scheduleDelete = ScheduleDeleteTransactionBody.newBuilder()
-                .setScheduleID(schedule);
-
-        if (invalidScheduleId) {
-            scheduleDelete.clearScheduleID();
-        }
-
-        builder.setScheduleDelete(scheduleDelete);
-
-        scheduleDeleteTxn = builder.build();
-        given(accessor.getTxn()).willReturn(scheduleDeleteTxn);
-        given(txnCtx.accessor()).willReturn(accessor);
-    }
+		scheduleDeleteTxn = builder.build();
+		given(accessor.getTxn()).willReturn(scheduleDeleteTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.consensusTime()).willReturn(consensusNow);
+	}
 }

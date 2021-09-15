@@ -27,16 +27,14 @@ import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.swirlds.fcmap.FCMap;
+import com.hedera.services.utils.EntityNum;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
@@ -44,7 +42,7 @@ class BasedLedgerValidatorTest {
 	private long shard = 1;
 	private long realm = 2;
 
-	FCMap<MerkleEntityId, MerkleAccount> accounts = new FCMap<>();
+	MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
 
 	HederaNumbers hederaNums;
 	PropertySource properties;
@@ -61,76 +59,64 @@ class BasedLedgerValidatorTest {
 		properties = mock(PropertySource.class);
 		given(properties.getLongProperty("ledger.totalTinyBarFloat")).willReturn(100L);
 
-		subject = new BasedLedgerValidator(hederaNums, properties, dynamicProperties);
+		subject = new BasedLedgerValidator(properties, dynamicProperties);
 	}
 
 	@Test
 	void recognizesRightFloat() throws NegativeAccountBalanceException {
 		// given:
-		accounts.put(new MerkleEntityId(shard, realm, 1L), expectedWith(50L));
-		accounts.put(new MerkleEntityId(shard, realm, 2L), expectedWith(50L));
+		accounts.put(EntityNum.fromLong(1L), expectedWith(50L));
+		accounts.put(EntityNum.fromLong(2L), expectedWith(50L));
 
 		// expect:
-		assertTrue(subject.hasExpectedTotalBalance(accounts));
+		assertDoesNotThrow(() -> subject.validate(accounts));
 	}
 
 	@Test
 	void recognizesWrongFloat() throws NegativeAccountBalanceException {
 		// given:
-		accounts.put(new MerkleEntityId(shard, realm, 1L), expectedWith(50L));
-		accounts.put(new MerkleEntityId(shard, realm, 2L), expectedWith(51L));
+		accounts.put(EntityNum.fromLong(1L), expectedWith(50L));
+		accounts.put(EntityNum.fromLong(2L), expectedWith(51L));
 
 		// expect:
-		assertFalse(subject.hasExpectedTotalBalance(accounts));
+		assertThrows(IllegalStateException.class, () -> subject.validate(accounts));
+	}
+
+	@Test
+	void recognizesExcessFloat() throws NegativeAccountBalanceException {
+		// given:
+		accounts.put(EntityNum.fromLong(1L), expectedWith(Long.MAX_VALUE));
+		accounts.put(EntityNum.fromLong(2L), expectedWith(51L));
+
+		// expect:
+		assertThrows(IllegalStateException.class, () -> subject.validate(accounts));
 	}
 
 	@Test
 	void doesntThrowWithValidIds() throws NegativeAccountBalanceException {
 		// given:
-		accounts.put(new MerkleEntityId(shard, realm, 3L), expectedWith(100L));
+		accounts.put(EntityNum.fromLong(3L), expectedWith(100L));
 
 		// expect:
-		assertDoesNotThrow(() -> subject.assertIdsAreValid(accounts));
-	}
-
-	@Test
-	void throwsOnIdWithInvalidShard() throws NegativeAccountBalanceException {
-		// given:
-		accounts.put(
-				new MerkleEntityId(shard - 1, realm, 3L),
-				expectedWith(dynamicProperties.maxAccountNum()));
-
-		// expect:
-		assertThrows(IllegalStateException.class, () -> subject.assertIdsAreValid(accounts));
+		assertDoesNotThrow(() -> subject.validate(accounts));
 	}
 
 	@Test
 	void throwsOnIdWithNumTooSmall() throws NegativeAccountBalanceException {
 		// given:
-		accounts.put(new MerkleEntityId(shard, realm, 0L), expectedWith(100L));
+		accounts.put(EntityNum.fromLong(0L), expectedWith(100L));
 
 		// expect:
-		assertThrows(IllegalStateException.class, () -> subject.assertIdsAreValid(accounts));
+		assertThrows(IllegalStateException.class, () -> subject.validate(accounts));
 	}
 
 	@Test
 	void throwsOnIdWithNumTooLarge() throws NegativeAccountBalanceException {
 		// given:
-		accounts.put(
-				new MerkleEntityId(shard, realm, dynamicProperties.maxAccountNum() + 1),
-				expectedWith(100L));
+		accounts.put(EntityNum.fromLong(dynamicProperties.maxAccountNum() + 1), expectedWith(100L));
 
 		// expect:
-		assertThrows(IllegalStateException.class, () -> subject.assertIdsAreValid(accounts));
-	}
-
-	@Test
-	void throwsOnIdWithInvalidRealm() throws NegativeAccountBalanceException {
-		// given:
-		accounts.put(new MerkleEntityId(shard, realm - 1, 3L), expectedWith(100L));
-
-		// expect:
-		assertThrows(IllegalStateException.class, () -> subject.assertIdsAreValid(accounts));
+		assertThrows(IllegalStateException.class, () -> subject.validate(accounts));
 	}
 
 	private MerkleAccount expectedWith(long balance) throws NegativeAccountBalanceException {
