@@ -100,6 +100,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 		boolean updatesTreasury = op.hasTreasury() && (!token.getTreasury().getId().equals(Id.fromGrpcAccount(op.getTreasury())));
 		if (updatesTreasury) {
 			newTreasury = accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(op.getTreasury()), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+			validateFalse(newTreasury.isSmartContract(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 			validateAssociationBetween(newTreasury, token);
 			newTreasuryRel = tokenStore.loadTokenRelationship(token, newTreasury);
 			if (token.getType() == NON_FUNGIBLE_UNIQUE) {
@@ -111,6 +112,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 		}
 		if (op.hasAutoRenewAccount()) {
 			newAutoRenew = accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(op.getAutoRenewAccount()), INVALID_AUTORENEW_ACCOUNT);
+			validateFalse(newAutoRenew.isSmartContract(), INVALID_AUTORENEW_ACCOUNT);
 		}
 
 		/* --- Do the business logic --- */
