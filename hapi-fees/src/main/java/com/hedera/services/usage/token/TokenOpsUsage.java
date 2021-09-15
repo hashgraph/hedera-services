@@ -25,7 +25,10 @@ import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.services.usage.token.meta.TokenBurnMeta;
 import com.hedera.services.usage.token.meta.TokenCreateMeta;
+import com.hedera.services.usage.token.meta.TokenMintMeta;
+import com.hedera.services.usage.token.meta.TokenWipeMeta;
 import com.hederahashgraph.api.proto.java.CustomFee;
 
 import javax.inject.Inject;
@@ -145,6 +148,39 @@ public final class TokenOpsUsage {
 
 		accumulator.addNetworkRbs(tokenCreateMeta.getNetworkRecordRb() * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
+
+	public void tokenBurnUsage(final SigUsage sigUsage,
+			final BaseTransactionMeta baseMeta,
+			final TokenBurnMeta tokenBurnMeta,
+			final UsageAccumulator accumulator) {
+		accumulator.resetForTransaction(baseMeta, sigUsage);
+
+		accumulator.addBpt(tokenBurnMeta.getBpt());
+		accumulator.addNetworkRbs(tokenBurnMeta.getTransferRecordDb() * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+	}
+
+	public void tokenMintUsage(final SigUsage sigUsage,
+			final BaseTransactionMeta baseMeta,
+			final TokenMintMeta tokenMintMeta,
+			final UsageAccumulator accumulator) {
+		accumulator.resetForTransaction(baseMeta, sigUsage);
+
+		accumulator.addBpt(tokenMintMeta.getBpt());
+		accumulator.addRbs(tokenMintMeta.getRbs());
+		accumulator.addNetworkRbs(tokenMintMeta.getTransferRecordDb() * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+	}
+
+	public void tokenWipeUsage(final SigUsage sigUsage,
+			final BaseTransactionMeta baseMeta,
+			final TokenWipeMeta tokenWipeMeta,
+			final UsageAccumulator accumulator) {
+		accumulator.resetForTransaction(baseMeta, sigUsage);
+
+		accumulator.addBpt(tokenWipeMeta.getBpt());
+		accumulator.addNetworkRbs(tokenWipeMeta.getTransferRecordDb() * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+	}
+
+
 
 	private int plusCollectorSize(final int feeReprSize) {
 		return feeReprSize + BASIC_ENTITY_ID_SIZE;
