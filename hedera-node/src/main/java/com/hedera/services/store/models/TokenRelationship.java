@@ -96,8 +96,8 @@ public class TokenRelationship {
 	 */
 	public void setBalance(long balance) {
 		if (!token.isDeleted()) {
-			validateTrue(!token.hasFreezeKey() || !frozen, ACCOUNT_FROZEN_FOR_TOKEN);
-			validateTrue(!token.hasKycKey() || kycGranted, ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
+			validateTrue(isTokenFrozenFor(), ACCOUNT_FROZEN_FOR_TOKEN);
+			validateTrue(isTokenKycGrantedFor(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
 		}
 
 		balanceChange += (balance - this.balance);
@@ -137,7 +137,7 @@ public class TokenRelationship {
 	/**
 	 * Modifies the state of the KYC property to either true (granted) or false (revoked).
 	 * <p>Before the property modification, the method performs validation, that the respective token has a KYC key.
-     * </p>
+	 * </p>
 	 *
 	 * @param isGranted
 	 * 		the new state of the property
@@ -198,6 +198,14 @@ public class TokenRelationship {
 
 	public void setAutomaticAssociation(final boolean automaticAssociation) {
 		this.automaticAssociation = automaticAssociation;
+	}
+
+	private boolean isTokenFrozenFor() {
+		return !token.hasFreezeKey() || !frozen;
+	}
+
+	private boolean isTokenKycGrantedFor() {
+		return !token.hasKycKey() || kycGranted;
 	}
 
 	/* The object methods below are only overridden to improve

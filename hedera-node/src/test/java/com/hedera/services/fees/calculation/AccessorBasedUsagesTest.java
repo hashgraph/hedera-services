@@ -9,9 +9,9 @@ package com.hedera.services.fees.calculation;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,12 +37,17 @@ import com.hedera.services.usage.file.FileAppendMeta;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.usage.token.TokenOpsUsage;
+import com.hedera.services.usage.token.TokenOpsUsageUtils;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.services.usage.token.meta.TokenBurnMeta;
 import com.hedera.services.usage.token.meta.TokenCreateMeta;
+import com.hedera.services.usage.token.meta.TokenMintMeta;
+import com.hedera.services.usage.token.meta.TokenWipeMeta;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -66,7 +71,10 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreat
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -97,6 +105,10 @@ class AccessorBasedUsagesTest {
 	private ConsensusOpsUsage consensusOpsUsage;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private TokenOpsUsageUtils tokenOpsUsageUtils;
+	@Mock
+	private TransactionBody txnBody;
 
 	private AccessorBasedUsages subject;
 
@@ -205,7 +217,58 @@ class AccessorBasedUsagesTest {
 
 		subject.assess(sigUsage, txnAccessor, accumulator);
 
-		verify(tokenOpsUsage).tokenCreateUsage(sigUsage, baseMeta, opMeta,  accumulator);
+		verify(tokenOpsUsage).tokenCreateUsage(sigUsage, baseMeta, opMeta, accumulator);
+	}
+
+	@Test
+	void worksAsExpectedForTokenBurn() {
+		// setup:
+		final var baseMeta = new BaseTransactionMeta(100, 2);
+		final var tokenBurnMeta = new TokenBurnMeta(1000, SubType.TOKEN_FUNGIBLE_COMMON, 2345L, 2);
+		final var accumulator = new UsageAccumulator();
+		given(txnAccessor.getFunction()).willReturn(TokenBurn);
+		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
+		given(txnAccessor.getSpanMapAccessor().getTokenBurnMeta(any())).willReturn(tokenBurnMeta);
+
+		// when:
+		subject.assess(sigUsage, txnAccessor, accumulator);
+
+		// then:
+		verify(tokenOpsUsage).tokenBurnUsage(sigUsage, baseMeta, tokenBurnMeta, accumulator);
+	}
+
+	@Test
+	void worksAsExpectedForTokenWipe() {
+		// setup:
+		final var baseMeta = new BaseTransactionMeta(100, 2);
+		final var tokenWipeMeta = new TokenWipeMeta(1000, SubType.TOKEN_NON_FUNGIBLE_UNIQUE, 2345L, 2);
+		final var accumulator = new UsageAccumulator();
+		given(txnAccessor.getFunction()).willReturn(TokenAccountWipe);
+		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
+		given(txnAccessor.getSpanMapAccessor().getTokenWipeMeta(any())).willReturn(tokenWipeMeta);
+
+		// when:
+		subject.assess(sigUsage, txnAccessor, accumulator);
+
+		// then:
+		verify(tokenOpsUsage).tokenWipeUsage(sigUsage, baseMeta, tokenWipeMeta, accumulator);
+	}
+
+	@Test
+	void worksAsExpectedForTokenMint() {
+		// setup:
+		final var baseMeta = new BaseTransactionMeta(100, 2);
+		final var tokenMintMeta = new TokenMintMeta(1000, SubType.TOKEN_NON_FUNGIBLE_UNIQUE, 2345L, 20000);
+		final var accumulator = new UsageAccumulator();
+		given(txnAccessor.getFunction()).willReturn(TokenMint);
+		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
+		given(opUsageCtxHelper.metaForTokenMint(txnAccessor)).willReturn(tokenMintMeta);
+
+		// when:
+		subject.assess(sigUsage, txnAccessor, accumulator);
+
+		// then:
+		verify(tokenOpsUsage).tokenMintUsage(sigUsage, baseMeta, tokenMintMeta, accumulator);
 	}
 
 	@Test
@@ -257,9 +320,9 @@ class AccessorBasedUsagesTest {
 	}
 
 	private List<CustomFee> fees() {
-		final var collector = new EntityId(1, 2 ,3);
-		final var aDenom = new EntityId(2, 3 ,4);
-		final var bDenom = new EntityId(3, 4 ,5);
+		final var collector = new EntityId(1, 2, 3);
+		final var aDenom = new EntityId(2, 3, 4);
+		final var bDenom = new EntityId(3, 4, 5);
 
 		return List.of(
 				fixedFee(1, null, collector),
