@@ -23,8 +23,8 @@ package com.hedera.services.queries.crypto;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -36,7 +36,7 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -59,7 +59,7 @@ public class GetAccountBalanceAnswer implements AnswerService {
 
 	@Override
 	public ResponseCodeEnum checkValidity(Query query, StateView view) {
-		FCMap<MerkleEntityId, MerkleAccount> accounts = view.accounts();
+		MerkleMap<EntityNum, MerkleAccount> accounts = view.accounts();
 		CryptoGetAccountBalanceQuery op = query.getCryptogetAccountBalance();
 		return validityOf(op, accounts);
 	}
@@ -76,7 +76,7 @@ public class GetAccountBalanceAnswer implements AnswerService {
 
 	@Override
 	public Response responseGiven(Query query, StateView view, ResponseCodeEnum validity, long cost) {
-		FCMap<MerkleEntityId, MerkleAccount> accounts = view.accounts();
+		MerkleMap<EntityNum, MerkleAccount> accounts = view.accounts();
 		CryptoGetAccountBalanceQuery op = query.getCryptogetAccountBalance();
 
 		AccountID id = targetOf(op);
@@ -85,7 +85,7 @@ public class GetAccountBalanceAnswer implements AnswerService {
 				.setAccountID(id);
 
 		if (validity == OK) {
-			var key = MerkleEntityId.fromAccountId(id);
+			var key = EntityNum.fromAccountId(id);
 			var account = accounts.get(key);
 			opAnswer.setBalance(account.getBalance());
 			for (TokenID tId : account.tokens().asTokenIds()) {
@@ -116,7 +116,7 @@ public class GetAccountBalanceAnswer implements AnswerService {
 
 	private ResponseCodeEnum validityOf(
 			CryptoGetAccountBalanceQuery op,
-			FCMap<MerkleEntityId, MerkleAccount> accounts
+			MerkleMap<EntityNum, MerkleAccount> accounts
 	) {
 		if (op.hasContractID()) {
 			return optionValidator.queryableContractStatus(op.getContractID(), accounts);

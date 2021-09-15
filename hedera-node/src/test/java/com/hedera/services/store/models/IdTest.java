@@ -73,7 +73,6 @@ class IdTest {
 		final var grpcTopic = IdUtils.asTopic("1.2.3");
 
 		assertEquals(entityId, id.asEntityId());
-		assertEquals(merkleEntityId, id.asMerkle());
 		assertEquals(grpcAccount, id.asGrpcAccount());
 		assertEquals(grpcToken, id.asGrpcToken());
 		assertEquals(id, Id.fromGrpcAccount(grpcAccount));

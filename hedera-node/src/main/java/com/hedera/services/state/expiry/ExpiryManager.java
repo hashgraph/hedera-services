@@ -23,15 +23,15 @@ package com.hedera.services.state.expiry;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.schedule.ScheduleStore;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcqueue.FCQueue;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.inject.Inject;
@@ -71,8 +71,8 @@ public class ExpiryManager {
 
 	private final ScheduleStore scheduleStore;
 	private final Map<TransactionID, TxnIdRecentHistory> txnHistories;
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
-	private final Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules;
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+	private final Supplier<MerkleMap<EntityNum, MerkleSchedule>> schedules;
 
 	private final MonotonicFullQueueExpiries<Long> payerRecordExpiries =
 			new MonotonicFullQueueExpiries<>();
@@ -84,8 +84,8 @@ public class ExpiryManager {
 			final ScheduleStore scheduleStore,
 			final HederaNumbers hederaNums,
 			final Map<TransactionID, TxnIdRecentHistory> txnHistories,
-			final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
-			final Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final Supplier<MerkleMap<EntityNum, MerkleSchedule>> schedules
 	) {
 		this.accounts = accounts;
 		this.schedules = schedules;
@@ -134,7 +134,8 @@ public class ExpiryManager {
 
 		final var _payerExpiries = new ArrayList<Map.Entry<Long, Long>>();
 		final var currentAccounts = accounts.get();
-		forEach(currentAccounts, (id, account) -> stageExpiringRecords(id.getNum(), account.records(), _payerExpiries));
+		forEach(currentAccounts, (id, account) ->
+				stageExpiringRecords(id.longValue(), account.records(), _payerExpiries));
 		_payerExpiries.sort(comparing(Map.Entry<Long, Long>::getValue).thenComparing(Map.Entry::getKey));
 		_payerExpiries.forEach(entry -> payerRecordExpiries.track(entry.getKey(), entry.getValue()));
 
@@ -156,7 +157,7 @@ public class ExpiryManager {
 		final var currentSchedules = schedules.get();
 		forEach(currentSchedules, (id, schedule) -> {
 			final Consumer<EntityId> consumer = scheduleStore::expire;
-			final var pair = Pair.of(id.getNum(), consumer);
+			final var pair = Pair.of(id.longValue(), consumer);
 			_shortLivedEntityExpiries.add(new AbstractMap.SimpleImmutableEntry<>(pair, schedule.expiry()));
 		});
 
@@ -172,7 +173,7 @@ public class ExpiryManager {
 	private void purgeExpiredRecordsAt(final long now) {
 		final var currentAccounts = accounts.get();
 		while (payerRecordExpiries.hasExpiringAt(now)) {
-			final var key = new MerkleEntityId(shard, realm, payerRecordExpiries.expireNextAt(now));
+			final var key = EntityNum.fromLong(payerRecordExpiries.expireNextAt(now));
 
 			final var mutableAccount = currentAccounts.getForModify(key);
 			final var mutableRecords = mutableAccount.records();

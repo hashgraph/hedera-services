@@ -21,16 +21,16 @@ package com.hedera.services.ledger.accounts;
  */
 
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.FcLong;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.MutabilityException;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.merkle.utility.MerkleLong;
-import com.swirlds.fcmap.FCMap;
-import com.swirlds.merkletree.MerklePair;
+import com.swirlds.common.merkle.utility.KeyedMerkleLong;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -51,25 +51,25 @@ import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
 
 class BackingAccountsTest {
-	private final AccountID a = asAccount("1.2.3");
-	private final AccountID b = asAccount("3.2.1");
-	private final AccountID c = asAccount("4.3.0");
-	private final AccountID d = asAccount("1.3.4");
-	private final MerkleEntityId aKey = MerkleEntityId.fromAccountId(a);
-	private final MerkleEntityId bKey = MerkleEntityId.fromAccountId(b);
-	private final MerkleEntityId cKey = MerkleEntityId.fromAccountId(c);
-	private final MerkleEntityId dKey = MerkleEntityId.fromAccountId(d);
+	private final AccountID a = asAccount("0.0.1");
+	private final AccountID b = asAccount("0.0.2");
+	private final AccountID c = asAccount("0.0.3");
+	private final AccountID d = asAccount("0.0.4");
+	private final EntityNum aKey = EntityNum.fromAccountId(a);
+	private final EntityNum bKey = EntityNum.fromAccountId(b);
+	private final EntityNum cKey = EntityNum.fromAccountId(c);
+	private final EntityNum dKey = EntityNum.fromAccountId(d);
 	private final MerkleAccount aValue = MerkleAccountFactory.newAccount().balance(123L).get();
 	private final MerkleAccount bValue = MerkleAccountFactory.newAccount().balance(122L).get();
 	private final MerkleAccount cValue = MerkleAccountFactory.newAccount().balance(121L).get();
 	private final MerkleAccount dValue = MerkleAccountFactory.newAccount().balance(120L).get();
 
-	private FCMap<MerkleEntityId, MerkleAccount> map;
+	private MerkleMap<EntityNum, MerkleAccount> map;
 	private BackingAccounts subject;
 
 	@BeforeEach
 	private void setup() {
-		map = mock(FCMap.class);
+		map = mock(MerkleMap.class);
 		given(map.keySet()).willReturn(Collections.emptySet());
 
 		subject = new BackingAccounts(() -> map);
@@ -78,7 +78,7 @@ class BackingAccountsTest {
 	@Test
 	void rebuildsFromChangedSources() {
 		// setup:
-		map = new FCMap<>();
+		map = new MerkleMap<>();
 		map.put(aKey, aValue);
 		map.put(bKey, bValue);
 		// and:
@@ -205,29 +205,33 @@ class BackingAccountsTest {
 	void twoPutsChangesG4M() throws ConstructableRegistryException {
 		// setup:
 		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(MerklePair.class, MerklePair::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
+				new ClassConstructorPair(KeyedMerkleLong.class, KeyedMerkleLong::new));
+		final var oneGrandKey = new FcLong(1000L);
+		final var twoGrandKey = new FcLong(2000L);
+		final var evilKey = new FcLong(666L);
+		final var nonEvilKey = new FcLong(667L);
 
 		/* Case 1: g4m a leaf; then put ONE new leaf; then change the mutable leaf and re-get to verify new value */
-		final var firstFcm = new FCMap<MerkleLong, MerkleLong>();
-		final var oneGrandKey = new MerkleLong(1000L);
-		firstFcm.put(oneGrandKey, new MerkleLong(1L));
-		final var mutableOne = firstFcm.getForModify(oneGrandKey);
+		final MerkleMap<FcLong, KeyedMerkleLong<FcLong>> firstMm = new MerkleMap<>();
+		final var oneGrandEntry = new KeyedMerkleLong<>(oneGrandKey, 1000L);
+		firstMm.put(oneGrandKey, oneGrandEntry);
+		final var mutableOne = firstMm.getForModify(oneGrandKey);
 		/* Putting just one new leaf */
-		firstFcm.put(new MerkleLong(666L), new MerkleLong(666L));
-		/* And then changing the mutable value */
-		mutableOne.increment();
-		assertEquals(2L, firstFcm.get(oneGrandKey).getValue());
+		final var evilEntry = new KeyedMerkleLong<>(evilKey, 666L);
+		firstMm.put(evilKey, evilEntry);
+		/* Then the mutable value is retained */
+		assertSame(mutableOne, firstMm.get(oneGrandKey));
 
 		/* Case 2: g4m a leaf; then put TWO new leaves; then change the mutable leaf and re-get to verify new value */
-		final var secondFcm = new FCMap<MerkleLong, MerkleLong>();
-		final var twoGrandKey = new MerkleLong(2000L);
-		secondFcm.put(twoGrandKey, new MerkleLong(2L));
-		final var mutableTwo = secondFcm.getForModify(twoGrandKey);
+		final var secondFcm = new MerkleMap<FcLong, KeyedMerkleLong<FcLong>>();
+		final var twoGrandEntry = new KeyedMerkleLong<>(twoGrandKey, 2000L);
+		final var evilEntry2 = new KeyedMerkleLong<>(evilKey, 666L);
+		final var nonEvilEntry2 = new KeyedMerkleLong<>(nonEvilKey, 667L);
+		secondFcm.put(twoGrandKey, twoGrandEntry);
+		final var mutableTwo = secondFcm.getForModify(twoGrandEntry.getKey());
 		/* Putting two new leaves now */
-		secondFcm.put(new MerkleLong(666L), new MerkleLong(666L));
-		secondFcm.put(new MerkleLong(667L), new MerkleLong(667L));
+		secondFcm.put(evilEntry2.getKey(), evilEntry2);
+		secondFcm.put(nonEvilEntry2.getKey(), nonEvilEntry2);
 		/* And now changing the once-mutable value throws MutabilityException */
 		assertThrows(MutabilityException.class, mutableTwo::increment);
 	}

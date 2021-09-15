@@ -23,8 +23,8 @@ package com.hedera.services.txns.consensus;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -34,7 +34,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.CommonUtils;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -48,11 +48,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
@@ -67,7 +67,7 @@ class SubmitMessageTransitionLogicTest {
 	private PlatformTxnAccessor accessor;
 	private OptionValidator validator;
 	private SubmitMessageTransitionLogic subject;
-	private FCMap<MerkleEntityId, MerkleTopic> topics = new FCMap<>();
+	private MerkleMap<EntityNum, MerkleTopic> topics = new MerkleMap<>();
 	private GlobalDynamicProperties globalDynamicProperties;
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 
@@ -110,7 +110,7 @@ class SubmitMessageTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		var topic = topics.get(MerkleEntityId.fromTopicId(asTopic(TOPIC_ID)));
+		var topic = topics.get(EntityNum.fromTopicId(asTopic(TOPIC_ID)));
 		assertNotNull(topic);
 		assertEquals(1L, topic.getSequenceNumber()); // Starts at 0.
 
@@ -229,7 +229,7 @@ class SubmitMessageTransitionLogicTest {
 	}
 
 	private void assertUnchangedTopics() {
-		var topic = topics.get(MerkleEntityId.fromTopicId(asTopic(TOPIC_ID)));
+		var topic = topics.get(EntityNum.fromTopicId(asTopic(TOPIC_ID)));
 		assertEquals(0L, topic.getSequenceNumber());
 		assertArrayEquals(new byte[48], topic.getRunningHash());
 	}
@@ -252,14 +252,14 @@ class SubmitMessageTransitionLogicTest {
 	private void givenValidTransactionContext() {
 		givenTransaction(getBasicValidTransactionBodyBuilder());
 		given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics)).willReturn(OK);
-		topics.put(MerkleEntityId.fromTopicId(asTopic(TOPIC_ID)), new MerkleTopic());
+		topics.put(EntityNum.fromTopicId(asTopic(TOPIC_ID)), new MerkleTopic());
 	}
 
 	private void givenTransactionContextNoMessage() {
 		givenTransaction(ConsensusSubmitMessageTransactionBody.newBuilder()
 				.setTopicID(asTopic(TOPIC_ID)).setTopicID(asTopic(TOPIC_ID)));
 		given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics)).willReturn(OK);
-		topics.put(MerkleEntityId.fromTopicId(asTopic(TOPIC_ID)), new MerkleTopic());
+		topics.put(EntityNum.fromTopicId(asTopic(TOPIC_ID)), new MerkleTopic());
 	}
 
 	private void givenTransactionContextInvalidTopic() {
@@ -277,7 +277,7 @@ class SubmitMessageTransitionLogicTest {
 		givenTransaction(getBasicValidTransactionBodyBuilder()
 				.setChunkInfo(chunkInfo));
 		given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics)).willReturn(OK);
-		topics.put(MerkleEntityId.fromTopicId(asTopic(TOPIC_ID)), new MerkleTopic());
+		topics.put(EntityNum.fromTopicId(asTopic(TOPIC_ID)), new MerkleTopic());
 	}
 
 	private TransactionID txnId(AccountID payer, long epochSecond) {

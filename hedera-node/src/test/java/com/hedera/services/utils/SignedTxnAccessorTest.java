@@ -42,10 +42,13 @@ import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -60,6 +63,7 @@ import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -154,6 +158,90 @@ class SignedTxnAccessorTest {
 		assertEquals(false, accessor.isTriggeredTxn());
 		assertEquals(false, accessor.canTriggerTxn());
 		assertEquals(memoUtf8Bytes.length, txnUsageMeta.getMemoUtf8Bytes());
+	}
+
+	@Test
+	void detectsCommonTokenBurnSubtypeFromGrpcSyntax() {
+		final var op = TokenBurnTransactionBody.newBuilder()
+				.setAmount(1_234)
+				.build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setTokenBurn(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		assertEquals(TOKEN_FUNGIBLE_COMMON, subject.getSubType());
+	}
+
+	@Test
+	void detectsUniqueTokenBurnSubtypeFromGrpcSyntax() {
+		final var op = TokenBurnTransactionBody.newBuilder()
+				.addAllSerialNumbers(List.of(1L, 2L, 3L))
+				.build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setTokenBurn(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		assertEquals(TOKEN_NON_FUNGIBLE_UNIQUE, subject.getSubType());
+	}
+
+	@Test
+	void detectsCommonTokenMintSubtypeFromGrpcSyntax() {
+		final var op = TokenMintTransactionBody.newBuilder()
+				.setAmount(1_234)
+				.build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setTokenMint(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		assertEquals(TOKEN_FUNGIBLE_COMMON, subject.getSubType());
+	}
+
+	@Test
+	void detectsUniqueTokenMintSubtypeFromGrpcSyntax() {
+		final var op = TokenMintTransactionBody.newBuilder()
+				.addAllMetadata(List.of(ByteString.copyFromUtf8("STANDARD")))
+				.build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setTokenMint(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		assertEquals(TOKEN_NON_FUNGIBLE_UNIQUE, subject.getSubType());
+	}
+
+	@Test
+	void detectsUniqueTokenWipeSubtypeFromGrpcSyntax() {
+		final var op = TokenWipeAccountTransactionBody.newBuilder()
+				.addAllSerialNumbers(List.of(1L, 2L, 3L))
+				.build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setTokenWipe(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		assertEquals(TOKEN_NON_FUNGIBLE_UNIQUE, subject.getSubType());
+	}
+
+	@Test
+	void detectsCommonTokenWipeSubtypeFromGrpcSyntax() {
+		final var op = TokenWipeAccountTransactionBody.newBuilder()
+				.setAmount(1234L)
+				.build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setTokenWipe(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		assertEquals(TOKEN_FUNGIBLE_COMMON, subject.getSubType());
 	}
 
 	@Test
@@ -316,7 +404,6 @@ class SignedTxnAccessorTest {
 
 	@Test
 	void setTokenCreateUsageMetaWorks() {
-		givenAutoRenewBasedOp();
 		final var txn = signedTokenCreateTxn();
 		final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
 		final var spanMapAccessor = accessor.getSpanMapAccessor();
@@ -328,6 +415,37 @@ class SignedTxnAccessorTest {
 		assertEquals(1, expandedMeta.getNumTokens());
 		assertEquals(1070, expandedMeta.getBaseSize());
 		assertEquals(TOKEN_FUNGIBLE_COMMON, accessor.getSubType());
+	}
+
+	@Test
+	void setCryptoCreateUsageMetaWorks() {
+		final var txn = signedCryptoCreateTxn();
+		final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
+		final var spanMapAccessor = accessor.getSpanMapAccessor();
+
+		final var expandedMeta = spanMapAccessor.getCryptoCreateMeta(accessor);
+
+		assertEquals(137, expandedMeta.getBaseSize());
+		assertEquals(autoRenewPeriod, expandedMeta.getLifeTime());
+		assertEquals(10, expandedMeta.getMaxAutomaticAssociations());
+	}
+
+	private Transaction signedCryptoCreateTxn() {
+		return buildTransactionFrom(cryptoCreateOp());
+	}
+
+	private TransactionBody cryptoCreateOp() {
+		final var op = CryptoCreateTransactionBody.newBuilder()
+				.setMemo(memo)
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
+				.setKey(adminKey)
+				.setMaxAutomaticTokenAssociations(10);
+		return TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder()
+								.setSeconds(now)))
+				.setCryptoCreateAccount(op)
+				.build();
 	}
 
 	private Transaction signedFeeScheduleUpdateTxn() {

@@ -22,6 +22,7 @@ package com.hedera.services.utils;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.store.models.Id;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -187,5 +188,42 @@ class MerkleEntityIdUtilsTest {
 		final var fid = EntityIdUtils.asFile(id);
 
 		assertEquals(expected, fid);
+	}
+
+	@Test
+	void asRelStringWorks() {
+		// given:
+		final var numbers = BitPackUtils.packedNums(123, 456);
+
+		// when:
+		final var actual = EntityIdUtils.asRelationshipLiteral(numbers);
+
+		// then:
+		assertEquals("(0.0.123, 0.0.456)", actual);
+	}
+
+	@Test
+	void codeToLiteralWorks() {
+		// setup:
+		final var bigNum = (long)Integer.MAX_VALUE + 123;
+
+		// given:
+		final var lit = EntityIdUtils.asIdLiteral(BitPackUtils.codeFromNum(bigNum));
+
+		// expect:
+		assertEquals("0.0." + bigNum, lit);
+	}
+
+	@Test
+	void scopedSerialNoWorks() {
+		// setup:
+		final var bigNum = (long)Integer.MAX_VALUE + 123;
+		final var serialNo = bigNum + 1;
+
+		// given:
+		final var lit = EntityIdUtils.asScopedSerialNoLiteral(BitPackUtils.packedNums(bigNum, serialNo));
+
+		// expect:
+		assertEquals("0.0." + bigNum + "." + serialNo, lit);
 	}
 }

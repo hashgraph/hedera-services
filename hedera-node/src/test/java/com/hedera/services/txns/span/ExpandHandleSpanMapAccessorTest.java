@@ -20,6 +20,7 @@ package com.hedera.services.txns.span;
  * ‍
  */
 
+import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.utils.TxnAccessor;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,6 +32,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -51,13 +53,34 @@ class ExpandHandleSpanMapAccessorTest {
 
 	@Test
 	void testsForImpliedXfersAsExpected() {
-		// expect:
 		Assertions.assertDoesNotThrow(() -> subject.getImpliedTransfers(accessor));
 	}
 
 	@Test
 	void testsForTokenCreateMetaAsExpected() {
-		// expect:
 		Assertions.assertDoesNotThrow(() -> subject.getTokenCreateMeta(accessor));
+	}
+
+	@Test
+	void testsForTokenBurnMetaAsExpected() {
+		Assertions.assertDoesNotThrow(() -> subject.getTokenBurnMeta(accessor));
+	}
+
+	@Test
+	void testsForTokenWipeMetaAsExpected() {
+		Assertions.assertDoesNotThrow(() -> subject.getTokenWipeMeta(accessor));
+	}
+
+	@Test
+	void testsForCryptoCreateMetaAsExpected() {
+		var opMeta = new CryptoCreateMeta.Builder()
+				.baseSize(1_234)
+				.lifeTime(1_234_567L)
+				.maxAutomaticAssociations(12)
+				.build();
+
+		subject.setCryptoCreateMeta(accessor, opMeta);
+
+		assertEquals(1_234, subject.getCryptoCreateMeta(accessor).getBaseSize());
 	}
 }

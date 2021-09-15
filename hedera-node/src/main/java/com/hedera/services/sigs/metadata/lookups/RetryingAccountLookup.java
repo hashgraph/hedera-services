@@ -23,12 +23,12 @@ package com.hedera.services.sigs.metadata.lookups;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.Pause;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -36,12 +36,12 @@ import java.util.function.Supplier;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
 
 /**
- * Adds retry-with-backoff functionality to the {@link DefaultFCMapAccountLookup} by
+ * Adds retry-with-backoff functionality to the {@link DefaultAccountLookup} by
  * delegating the lookup to its superclass instance up to {@code maxRetries} times,
  * with {@code Pause} invocations that increase by {@code retryWaitIncrementMs} between
  * each failed lookup.
  */
-public class RetryingFCMapAccountLookup extends DefaultFCMapAccountLookup {
+public class RetryingAccountLookup extends DefaultAccountLookup {
 	private static final int DEFAULT_MAX_RETRIES = 10;
 	private static final int DEFAULT_RETRY_WAIT_INCREMENT_MS = 10;
 
@@ -53,8 +53,8 @@ public class RetryingFCMapAccountLookup extends DefaultFCMapAccountLookup {
 
 	private Optional<NodeLocalProperties> properties;
 
-	public RetryingFCMapAccountLookup(
-			final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+	public RetryingAccountLookup(
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			final int maxRetries,
 			final int retryWaitIncrementMs,
 			final Pause pause,
@@ -70,10 +70,10 @@ public class RetryingFCMapAccountLookup extends DefaultFCMapAccountLookup {
 		this.retryWaitIncrementMs = retryWaitIncrementMs;
 	}
 
-	public RetryingFCMapAccountLookup(
+	public RetryingAccountLookup(
 			final Pause pause,
 			final NodeLocalProperties properties,
-			final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			final MiscRunningAvgs runningAvgs,
 			final MiscSpeedometers speedometers
 	) {

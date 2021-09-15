@@ -118,13 +118,14 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
-import com.swirlds.common.merkle.utility.MerkleLong;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.common.merkle.utility.KeyedMerkleLong;
 import com.swirlds.fcqueue.FCQueue;
+import com.swirlds.merkle.map.MerkleMap;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.Test;
+import org.mockito.BDDMockito;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -243,28 +244,36 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 class MiscUtilsTest {
 	@Test
 	void forEachDropInWorksAsExpected() {
-		final FCMap<MerkleLong, MerkleLong> testFcm = new FCMap<>();
-		final BiConsumer<MerkleLong, MerkleLong> mockConsumer = mock(BiConsumer.class);
-		testFcm.put(new MerkleLong(1L), null);
-		testFcm.put(new MerkleLong(2L), new MerkleLong(2L));
+		// setup:
+		final MerkleMap<FcLong, KeyedMerkleLong<FcLong>> testMm = new MerkleMap<>();
+		@SuppressWarnings("unchecked")
+		final BiConsumer<FcLong, KeyedMerkleLong<FcLong>> mockConsumer = BDDMockito.mock(BiConsumer.class);
+		// and:
+		final var key1 = new FcLong(1L);
+		final var key2 = new FcLong(2L);
 
-		MiscUtils.forEach(testFcm, mockConsumer);
+		// given:
+		putValue(1L, testMm);
+		putValue(2L, testMm);
 
-		verify(mockConsumer, times(2)).accept(any(), any());
-		verify(mockConsumer).accept(new MerkleLong(1L), null);
-		verify(mockConsumer).accept(new MerkleLong(2L), new MerkleLong(2L));
+		// when:
+		MiscUtils.forEach(testMm, mockConsumer);
 
-		final var l3 = new MerkleLong(3L);
-		assertThrows(NullPointerException.class, () -> testFcm.put(null, l3));
+		// then:
+		verify(mockConsumer).accept(key1, new KeyedMerkleLong<>(key1, 1L));
+		verify(mockConsumer).accept(key2, new KeyedMerkleLong<>(key2, 2L));
+	}
+
+	private void putValue(long value, MerkleMap<FcLong, KeyedMerkleLong<FcLong>> mm) {
+		final var newValue = new KeyedMerkleLong(value);
+		mm.put(new FcLong(value), newValue);
 	}
 
 	@Test

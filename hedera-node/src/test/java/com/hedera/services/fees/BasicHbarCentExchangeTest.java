@@ -35,8 +35,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(MockitoExtension.class)
 class BasicHbarCentExchangeTest {
-	private long crossoverTime = 1_234_567L;
-	private ExchangeRateSet rates = ExchangeRateSet.newBuilder()
+	private static final long crossoverTime = 1_234_567L;
+	private static final ExchangeRateSet rates = ExchangeRateSet.newBuilder()
 			.setCurrentRate(ExchangeRate.newBuilder()
 					.setHbarEquiv(1).setCentEquiv(12)
 					.setExpirationTime(TimestampSeconds.newBuilder().setSeconds(crossoverTime)))
@@ -54,33 +54,27 @@ class BasicHbarCentExchangeTest {
 
 	@Test
 	void updatesWorkWithCurrentRate() {
-		// when:
 		subject.updateRates(rates);
 
-		// expect:
 		assertEquals(rates, subject.activeRates());
 		assertEquals(rates.getCurrentRate(), subject.activeRate(beforeCrossInstant));
 		assertEquals(rates.getCurrentRate(), subject.rate(beforeCrossTime));
-		// and:
 		assertEquals(rates, subject.fcActiveRates().toGrpc());
 	}
 
 	@Test
 	void updatesWorkWithNextRate() {
-		// when:
 		subject.updateRates(rates);
 
-		// expect:
 		assertEquals(rates.getNextRate(), subject.activeRate(afterCrossInstant));
 		assertEquals(rates.getNextRate(), subject.rate(afterCrossTime));
-		// and:
 		assertEquals(rates, subject.fcActiveRates().toGrpc());
 	}
 
-	private Timestamp beforeCrossTime = Timestamp.newBuilder()
+	private static final Timestamp beforeCrossTime = Timestamp.newBuilder()
 			.setSeconds(crossoverTime - 1).build();
-	private Timestamp afterCrossTime = Timestamp.newBuilder()
+	private static final Timestamp afterCrossTime = Timestamp.newBuilder()
 			.setSeconds(crossoverTime).build();
-	private Instant afterCrossInstant = Instant.ofEpochSecond(crossoverTime);
-	private Instant beforeCrossInstant = Instant.ofEpochSecond(crossoverTime - 1);
+	private static final Instant afterCrossInstant = Instant.ofEpochSecond(crossoverTime);
+	private static final Instant beforeCrossInstant = Instant.ofEpochSecond(crossoverTime - 1);
 }
