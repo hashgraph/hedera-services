@@ -46,7 +46,7 @@ public class BackedAccountLookup implements AccountSigMetaLookup {
 		var account = accounts.get().get(merkleId);
 		return new SafeLookupResult<>(
 				new AccountSigningMetadata(
-						account.getKey(),
+						account.getAccountKey(),
 						account.isReceiverSigRequired()));
 	}
 }

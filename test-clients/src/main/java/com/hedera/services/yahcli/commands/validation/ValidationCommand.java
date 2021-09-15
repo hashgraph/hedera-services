@@ -49,7 +49,7 @@ import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 		subcommands = {
 				picocli.CommandLine.HelpCommand.class,
 		},
-		description = "Perform system file operations")
+		description = "Validates network services")
 public class ValidationCommand implements Callable<Integer> {
 	public static final String PAYER = "yahcliPayer";
 	public static final String TOPIC = "yahcliTopic";
@@ -63,10 +63,11 @@ public class ValidationCommand implements Callable<Integer> {
 	@ParentCommand
 	private Yahcli yahcli;
 
+	/* Should support { crypto, file, contract, consensus, token, scheduling } */
 	@CommandLine.Parameters(
 			arity = "1..*",
 			paramLabel = "<services>",
-			description = "one or more from { crypto, file, contract, consensus, token, scheduling }; or 'all'")
+			description = "one or more from { token, scheduling }; or 'all'")
 	private String[] services;
 
 	@CommandLine.Option(
@@ -213,7 +214,7 @@ public class ValidationCommand implements Callable<Integer> {
 	}
 
 	private boolean isRequested(String prefix) {
-		return (services.length == 1 && "all".equals(services[0])) || Arrays.stream(services).anyMatch(prefix::equals);
+		return (services.length == 1 && "all".equals(services[0])) || Arrays.asList(services).contains(prefix);
 	}
 
 	public Yahcli getYahcli() {

@@ -22,7 +22,7 @@ package com.hedera.services.fees.calculation.token.txns;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.token.TokenDissociateUsage;
 import com.hedera.test.utils.IdUtils;
@@ -32,7 +32,7 @@ import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.SigValueObj;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -49,7 +49,7 @@ class TokenDissociateResourceUsageTest {
 
 	AccountID target = IdUtils.asAccount("1.2.3");
 	MerkleAccount account;
-	FCMap<MerkleEntityId, MerkleAccount> accounts;
+	MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	private TransactionBody nonTokenDissociateTxn;
 	private TransactionBody tokenDissociateTxn;
@@ -72,8 +72,8 @@ class TokenDissociateResourceUsageTest {
 		expected = mock(FeeData.class);
 		account = mock(MerkleAccount.class);
 		given(account.getExpiry()).willReturn(expiry);
-		accounts = mock(FCMap.class);
-		given(accounts.get(MerkleEntityId.fromAccountId(target))).willReturn(account);
+		accounts = mock(MerkleMap.class);
+		given(accounts.get(EntityNum.fromAccountId(target))).willReturn(account);
 		view = mock(StateView.class);
 		given(view.accounts()).willReturn(accounts);
 
@@ -118,7 +118,7 @@ class TokenDissociateResourceUsageTest {
 
 	@Test
 	void returnsDefaultIfInfoMissing() throws Exception {
-		given(accounts.get(MerkleEntityId.fromAccountId(target))).willReturn(null);
+		given(accounts.get(EntityNum.fromAccountId(target))).willReturn(null);
 
 		// expect:
 		assertEquals(

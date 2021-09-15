@@ -24,6 +24,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.expiry.EntityAutoRenewal;
 import com.hedera.services.state.expiry.ExpiryManager;
+import com.hedera.services.stats.ExecutionTimeTracker;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
@@ -36,7 +37,9 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
@@ -71,6 +74,8 @@ class StandardProcessLogicTest {
 	private TxnAccessor triggeredAccessor;
 	@Mock
 	private SwirldTransaction swirldTransaction;
+	@Mock
+	private ExecutionTimeTracker executionTimeTracker;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -79,12 +84,14 @@ class StandardProcessLogicTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new StandardProcessLogic(expiries, invariantChecks, expandHandleSpan, autoRenewal, txnManager,
-				txnCtx);
+		subject = new StandardProcessLogic(
+				expiries, invariantChecks, expandHandleSpan, autoRenewal, txnManager, txnCtx, executionTimeTracker);
 	}
 
 	@Test
 	void happyPathFlowsForNonTriggered() throws InvalidProtocolBufferException {
+		final InOrder inOrder = Mockito.inOrder(expiries, executionTimeTracker, txnManager, autoRenewal);
+
 		given(expandHandleSpan.accessorFor(swirldTransaction)).willReturn(accessor);
 		given(invariantChecks.holdFor(accessor, consensusNow, member)).willReturn(true);
 
@@ -92,9 +99,11 @@ class StandardProcessLogicTest {
 		subject.incorporateConsensusTxn(swirldTransaction, consensusNow, member);
 
 		// then:
-		verify(expiries).purge(consensusNow.getEpochSecond());
-		verify(txnManager).process(accessor, consensusNow, member);
-		verify(autoRenewal).execute(consensusNow);
+		inOrder.verify(expiries).purge(consensusNow.getEpochSecond());
+		inOrder.verify(executionTimeTracker).start();
+		inOrder.verify(txnManager).process(accessor, consensusNow, member);
+		inOrder.verify(executionTimeTracker).stop();
+		inOrder.verify(autoRenewal).execute(consensusNow);
 	}
 
 	@Test

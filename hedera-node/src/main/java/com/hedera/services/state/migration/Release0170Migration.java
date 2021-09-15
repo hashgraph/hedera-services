@@ -28,9 +28,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Static helper to move the two (expected) largest {@link com.swirlds.fcmap.FCMap}
- * children to the "binary route" positions in the Merkle tree, hence reducing the
- * size of their Merkle routes.
+ * Static helper to move the two (expected) largest FCM children to the
+ * "binary route" positions in the Merkle tree, hence reducing the size
+ * of their Merkle routes.
  */
 public final class Release0170Migration {
 	private static final Logger log = LogManager.getLogger(Release0170Migration.class);

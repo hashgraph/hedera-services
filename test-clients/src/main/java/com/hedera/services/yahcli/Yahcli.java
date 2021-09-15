@@ -33,12 +33,12 @@ import com.hedera.services.yahcli.commands.system.SysFreezeCommand;
 import com.hedera.services.yahcli.commands.validation.ValidationCommand;
 import com.hedera.services.yahcli.suites.BalanceSuite;
 import com.hedera.services.yahcli.suites.FreezeSuite;
+import com.hedera.services.yahcli.suites.RekeySuite;
 import com.hedera.services.yahcli.suites.SchedulesValidationSuite;
 import com.hedera.services.yahcli.suites.SysFileDownloadSuite;
 import com.hedera.services.yahcli.suites.SysFileUploadSuite;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
@@ -60,10 +60,8 @@ import java.util.concurrent.Callable;
 				FeesCommand.class,
 				SysFreezeCommand.class
 		},
-		description = "Perform operations against well-known entities on a Hedera Services network")
+		description = "Performs DevOps-type actions against a Hedera Services network")
 public class Yahcli implements Callable<Integer> {
-	private static final Logger log = LogManager.getLogger(Yahcli.class);
-
 	public static final long NO_FIXED_FEE = Long.MIN_VALUE;
 
 	@Spec
@@ -121,6 +119,7 @@ public class Yahcli implements Callable<Integer> {
 	private static void setLogLevelsToLessNoisy() {
 		List.of(
 				BalanceSuite.class,
+				RekeySuite.class,
 				SysFileUploadSuite.class,
 				SysFileDownloadSuite.class,
 				SchedulesValidationSuite.class,

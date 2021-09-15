@@ -48,29 +48,9 @@ public class HelloWorldSpec extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[]{
-//						balancesChangeOnTransfer(),
-						balancesChangeOnTransferWithOverrides(),
+						balancesChangeOnTransfer(),
 				}
 		);
-	}
-
-	private HapiApiSpec balancesChangeOnTransferWithOverrides() {
-		return defaultHapiSpec("BalancesChangeOnTransfer")
-				  .given(
-						cryptoCreate("sponsor"),
-						cryptoCreate("beneficiary"),
-						balanceSnapshot("sponsorBefore", "sponsor"),
-						balanceSnapshot("beneficiaryBefore", "beneficiary")
-				).when(
-						cryptoTransfer(tinyBarsFromTo("sponsor", "beneficiary", 1L))
-								.payingWith(GENESIS)
-								.memo("Hello World!")
-				).then(
-						getAccountBalance("sponsor")
-								.hasTinyBars(changeFromSnapshot("sponsorBefore", -1L)),
-						getAccountBalance("beneficiary")
-								.hasTinyBars(changeFromSnapshot("beneficiaryBefore", +1L))
-				);
 	}
 
 	private HapiApiSpec balancesChangeOnTransfer() {

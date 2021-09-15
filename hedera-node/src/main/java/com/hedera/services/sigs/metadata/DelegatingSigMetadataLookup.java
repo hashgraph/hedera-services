@@ -25,19 +25,19 @@ import com.hedera.services.files.HederaFs;
 import com.hedera.services.sigs.metadata.lookups.AccountSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.BackedAccountLookup;
 import com.hedera.services.sigs.metadata.lookups.ContractSigMetaLookup;
-import com.hedera.services.sigs.metadata.lookups.DefaultFCMapAccountLookup;
-import com.hedera.services.sigs.metadata.lookups.DefaultFCMapContractLookup;
-import com.hedera.services.sigs.metadata.lookups.DefaultFCMapTopicLookup;
+import com.hedera.services.sigs.metadata.lookups.DefaultAccountLookup;
+import com.hedera.services.sigs.metadata.lookups.DefaultContractLookup;
+import com.hedera.services.sigs.metadata.lookups.DefaultTopicLookup;
 import com.hedera.services.sigs.metadata.lookups.FileSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.HfsSigMetaLookup;
-import com.hedera.services.sigs.metadata.lookups.RetryingFCMapAccountLookup;
+import com.hedera.services.sigs.metadata.lookups.RetryingAccountLookup;
 import com.hedera.services.sigs.metadata.lookups.SafeLookupResult;
 import com.hedera.services.sigs.metadata.lookups.TopicSigMetaLookup;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SleepingPause;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -46,7 +46,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -68,40 +68,40 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 
 	public static DelegatingSigMetadataLookup backedLookupsFor(
 			HederaFs hfs,
-			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup,
 			Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleSigMetaLookup
 	) {
 		return new DelegatingSigMetadataLookup(
 				new HfsSigMetaLookup(hfs),
 				new BackedAccountLookup(accounts),
-				new DefaultFCMapContractLookup(accounts),
-				new DefaultFCMapTopicLookup(topics),
+				new DefaultContractLookup(accounts),
+				new DefaultTopicLookup(topics),
 				tokenLookup,
 				scheduleSigMetaLookup);
 	}
 
 	public static DelegatingSigMetadataLookup defaultLookupsFor(
 			HederaFs hfs,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
-			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
 			Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup,
 			Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleLookup
 	) {
 		return new DelegatingSigMetadataLookup(
 				new HfsSigMetaLookup(hfs),
-				new DefaultFCMapAccountLookup(accounts),
-				new DefaultFCMapContractLookup(accounts),
-				new DefaultFCMapTopicLookup(topics),
+				new DefaultAccountLookup(accounts),
+				new DefaultContractLookup(accounts),
+				new DefaultTopicLookup(topics),
 				tokenLookup,
 				scheduleLookup);
 	}
 
 	public static DelegatingSigMetadataLookup defaultLookupsPlusAccountRetriesFor(
 			HederaFs hfs,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
-			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
 			Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup,
 			Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleLookup,
 			int maxRetries,
@@ -109,7 +109,7 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 			MiscRunningAvgs runningAvgs,
 			MiscSpeedometers speedometers
 	) {
-		var accountLookup = new RetryingFCMapAccountLookup(
+		var accountLookup = new RetryingAccountLookup(
 				accounts,
 				maxRetries,
 				retryWaitIncrementMs,
@@ -119,8 +119,8 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 		return new DelegatingSigMetadataLookup(
 				new HfsSigMetaLookup(hfs),
 				accountLookup,
-				new DefaultFCMapContractLookup(accounts),
-				new DefaultFCMapTopicLookup(topics),
+				new DefaultContractLookup(accounts),
+				new DefaultTopicLookup(topics),
 				tokenLookup,
 				scheduleLookup);
 	}
@@ -128,19 +128,19 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	public static DelegatingSigMetadataLookup defaultAccountRetryingLookupsFor(
 			HederaFs hfs,
 			NodeLocalProperties properties,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
-			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
 			Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup,
 			Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleLookup,
 			MiscRunningAvgs runningAvgs,
 			MiscSpeedometers speedometers
 	) {
-		var accountLookup = new RetryingFCMapAccountLookup(pause, properties, accounts, runningAvgs, speedometers);
+		var accountLookup = new RetryingAccountLookup(pause, properties, accounts, runningAvgs, speedometers);
 		return new DelegatingSigMetadataLookup(
 				new HfsSigMetaLookup(hfs),
 				accountLookup,
-				new DefaultFCMapContractLookup(accounts),
-				new DefaultFCMapTopicLookup(topics),
+				new DefaultContractLookup(accounts),
+				new DefaultTopicLookup(topics),
 				tokenLookup,
 				scheduleLookup);
 	}

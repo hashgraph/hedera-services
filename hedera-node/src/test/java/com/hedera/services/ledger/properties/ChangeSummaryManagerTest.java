@@ -9,9 +9,9 @@ package com.hedera.services.ledger.properties;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -32,8 +32,8 @@ import static com.hedera.services.ledger.properties.TestAccountProperty.OBJ;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ChangeSummaryManagerTest {
-	private ChangeSummaryManager<TestAccount, TestAccountProperty> subject = new ChangeSummaryManager<>();
-	private EnumMap<TestAccountProperty, Object> changes = new EnumMap<>(TestAccountProperty.class);
+	private static final ChangeSummaryManager<TestAccount, TestAccountProperty> subject = new ChangeSummaryManager<>();
+	private static final EnumMap<TestAccountProperty, Object> changes = new EnumMap<>(TestAccountProperty.class);
 
 	@BeforeEach
 	private void setup() {
@@ -42,47 +42,36 @@ class ChangeSummaryManagerTest {
 
 	@Test
 	void persistsExpectedChanges() {
-		// given:
-		Object thing = new Object();
-		TestAccount a = new TestAccount(1L, thing, false);
+		final var thing = new Object();
+		final var testAccount = new TestAccount(1L, thing, false);
 
-		// when:
 		subject.update(changes, LONG, 5L);
 		subject.update(changes, FLAG, true);
-		// and:
-		subject.persist(changes, a);
+		subject.persist(changes, testAccount);
 
-		// then:
-		assertEquals(new TestAccount(5L, thing, true), a);
+		assertEquals(new TestAccount(5L, thing, true), testAccount);
 	}
 
 	@Test
 	void setsFlagWithPrimitiveArg() {
-		// when:
 		subject.update(changes, FLAG, true);
 
-		// then:
 		assertEquals(Boolean.TRUE, changes.get(FLAG));
 	}
 
 	@Test
 	void setsValueWithPrimitiveArg() {
-		// when:
 		subject.update(changes, LONG, 5L);
 
-		// then:
 		assertEquals(Long.valueOf(5L), changes.get(LONG));
 	}
 
 	@Test
 	void setsThing() {
-		// given:
-		Object thing = new Object();
+		final var thing = new Object();
 
-		// when:
 		subject.update(changes, OBJ, thing);
 
-		// then:
 		assertEquals(thing, changes.get(OBJ));
 	}
 }

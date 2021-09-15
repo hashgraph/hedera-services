@@ -18,7 +18,7 @@ docker run --name postgres -d -p 5432:5432 \
 --env POSTGRES_PASSWORD=password --env POSTGRES_USER=swirlds \
 --env POSTGRES_DB=fcfs \
 --env PGDATA=/var/lib/postgresql/data/pgdata \
-postgres:10.9-alpine
+postgres:10.15-alpine
 
 # Windows
 cd “%USERPROFILE%” 
@@ -26,10 +26,10 @@ docker run --name postgres -d -p 5432:5432 ^
 --env POSTGRES_PASSWORD=password --env POSTGRES_USER=swirlds ^
 --env POSTGRES_DB=fcfs ^
 --env PGDATA=/var/lib/postgresql/data/pgdata ^
-postgres:10.9-alpine
+postgres:10.15-alpine
 ```
 Notes:
-1. The version of PostgresSQL that is currently used: **postgres:10.9-alpine**
+1. The version of PostgresSQL that is currently used: **postgres:10.15-alpine**
 2. On Windows, you may be asked to authorize the drive sharing as shown below. Press the “Share It” button to allow access.
 
 ![](assets/authorize-drive-sharing.png)

@@ -9,9 +9,9 @@ package com.hedera.services.txns.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,6 +23,7 @@ package com.hedera.services.txns.crypto;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.TransactionRecordService;
@@ -30,6 +31,7 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.ContextOptionValidator;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
@@ -53,6 +55,10 @@ import java.time.Instant;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
+import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
+import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_INITIAL_BALANCE;
@@ -63,6 +69,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -76,15 +83,18 @@ import static org.mockito.Mockito.never;
 @ExtendWith(MockitoExtension.class)
 class CryptoCreateTransitionLogicTest {
 
-	final private Long balance = 1_234L;
-	final private int maxAutoAssociations = 1234;
-	final private int maxTokenAssociations = 12345;
-	final private Instant consensusTime = Instant.now();
-	final private long customAutoRenewPeriod = 100_001L;
-	final private Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
-	final private String memo = "The particular is pounded til it is man";
-	final private AccountID proxy = AccountID.newBuilder().setAccountNum(4_321L).build();
-	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
+	private static final Key KEY = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
+	private static final long CUSTOM_AUTO_RENEW_PERIOD = 100_001L;
+	private static final long CUSTOM_SEND_THRESHOLD = 49_000L;
+	private static final long CUSTOM_RECEIVE_THRESHOLD = 51_001L;
+	private static final Long BALANCE = 1_234L;
+	private static final String MEMO = "The particular is pounded til it is man";
+	private static final int MAX_AUTO_ASSOCIATIONS = 1234;
+	private static final int MAX_TOKEN_ASSOCIATIONS = 12345;
+	private static final AccountID PROXY = AccountID.newBuilder().setAccountNum(4_321L).build();
+	private static final AccountID PAYER = AccountID.newBuilder().setAccountNum(1_234L).build();
+	private static final AccountID CREATED = AccountID.newBuilder().setAccountNum(9_999L).build();
+	private static final Instant consensusTime = Instant.now();
 
 	@Mock
 	private Account sponsor;
@@ -115,7 +125,6 @@ class CryptoCreateTransitionLogicTest {
 	void hasCorrectApplicability() {
 		givenValidTxnCtx();
 
-		// expect:
 		assertTrue(subject.applicability().test(cryptoCreateTxn));
 		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
 	}
@@ -123,9 +132,8 @@ class CryptoCreateTransitionLogicTest {
 	@Test
 	void returnsMemoTooLongWhenValidatorSays() {
 		givenValidTxnCtx();
-		given(validator.memoCheck(memo)).willReturn(MEMO_TOO_LONG);
+		given(validator.memoCheck(MEMO)).willReturn(MEMO_TOO_LONG);
 
-		// expect:
 		assertEquals(MEMO_TOO_LONG, subject.semanticCheck().apply(cryptoCreateTxn));
 	}
 
@@ -144,7 +152,6 @@ class CryptoCreateTransitionLogicTest {
 		given(validator.memoCheck(any())).willReturn(OK);
 		given(validator.hasGoodEncoding(any())).willReturn(true);
 
-		// expect:
 		assertEquals(KEY_REQUIRED, subject.semanticCheck().apply(cryptoCreateTxn));
 	}
 
@@ -188,7 +195,6 @@ class CryptoCreateTransitionLogicTest {
 		given(validator.memoCheck(any())).willReturn(OK);
 		given(validator.hasGoodEncoding(any())).willReturn(true);
 
-		// expect:
 		assertEquals(INVALID_RENEWAL_PERIOD, subject.semanticCheck().apply(cryptoCreateTxn));
 	}
 
@@ -210,7 +216,6 @@ class CryptoCreateTransitionLogicTest {
 		given(validator.hasGoodEncoding(any())).willReturn(true);
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 
-		// expect:
 		assertEquals(INVALID_SEND_RECORD_THRESHOLD, subject.semanticCheck().apply(cryptoCreateTxn));
 	}
 
@@ -221,7 +226,6 @@ class CryptoCreateTransitionLogicTest {
 		given(validator.hasGoodEncoding(any())).willReturn(true);
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 
-		// expect:
 		assertEquals(INVALID_RECEIVE_RECORD_THRESHOLD, subject.semanticCheck().apply(cryptoCreateTxn));
 	}
 
@@ -244,7 +248,6 @@ class CryptoCreateTransitionLogicTest {
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 		given(dynamicProperties.maxTokensPerAccount()).willReturn(maxTokenAssociations + 1);
 
-		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(cryptoCreateTxn));
 	}
 
@@ -260,7 +263,6 @@ class CryptoCreateTransitionLogicTest {
 		given(ids.newAccountId(any())).willReturn(mock(AccountID.class));
 		given(sponsor.getId()).willReturn(mock(Id.class));
 
-		// when:
 		subject.doStateTransition();
 
 		// then:
@@ -308,9 +310,12 @@ class CryptoCreateTransitionLogicTest {
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(sponsor.isSmartContract()).willReturn(true);
 
-		TxnUtils.assertFailsWith(() -> subject.doStateTransition(), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-		verify(accountStore, never()).persistNew(any());
-		verify(accountStore, never()).persistAccount(any());
+		// then:
+		verify(txnCtx).setStatus(FAIL_INVALID);
+	}
+
+	private Key unmappableKey() {
+		return Key.getDefaultInstance();
 	}
 
 	private void givenMissingKey() {
@@ -318,8 +323,7 @@ class CryptoCreateTransitionLogicTest {
 				.setTransactionID(ourTxnId())
 				.setCryptoCreateAccount(
 						CryptoCreateTransactionBody.newBuilder()
-								.setInitialBalance(balance)
-								.build()
+								.setInitialBalance(BALANCE)
 				).build();
 	}
 
@@ -328,9 +332,8 @@ class CryptoCreateTransitionLogicTest {
 				.setTransactionID(ourTxnId())
 				.setCryptoCreateAccount(
 						CryptoCreateTransactionBody.newBuilder()
-								.setKey(key)
-								.setInitialBalance(balance)
-								.build()
+								.setKey(KEY)
+								.setInitialBalance(BALANCE)
 				).build();
 	}
 
@@ -340,9 +343,8 @@ class CryptoCreateTransitionLogicTest {
 				.setCryptoCreateAccount(
 						CryptoCreateTransactionBody.newBuilder()
 								.setAutoRenewPeriod(Duration.newBuilder().setSeconds(1L))
-								.setKey(key)
+								.setKey(KEY)
 								.setSendRecordThreshold(-1L)
-								.build()
 				).build();
 	}
 
@@ -352,9 +354,8 @@ class CryptoCreateTransitionLogicTest {
 				.setCryptoCreateAccount(
 						CryptoCreateTransactionBody.newBuilder()
 								.setAutoRenewPeriod(Duration.newBuilder().setSeconds(1L))
-								.setKey(key)
+								.setKey(KEY)
 								.setReceiveRecordThreshold(-1L)
-								.build()
 				).build();
 	}
 
@@ -364,9 +365,8 @@ class CryptoCreateTransitionLogicTest {
 				.setCryptoCreateAccount(
 						CryptoCreateTransactionBody.newBuilder()
 								.setAutoRenewPeriod(Duration.newBuilder().setSeconds(1L))
-								.setKey(key)
+								.setKey(KEY)
 								.setInitialBalance(-1L)
-								.build()
 				).build();
 	}
 
@@ -378,42 +378,42 @@ class CryptoCreateTransitionLogicTest {
 				.setTransactionID(ourTxnId())
 				.setCryptoCreateAccount(
 						CryptoCreateTransactionBody.newBuilder()
-								.setMemo(memo)
-								.setInitialBalance(balance)
-								.setProxyAccountID(proxy)
+								.setMemo(MEMO)
+								.setInitialBalance(BALANCE)
+								.setProxyAccountID(PROXY)
 								.setReceiverSigRequired(true)
-								.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod))
-								.setReceiveRecordThreshold(customReceiveThreshold)
-								.setSendRecordThreshold(customSendThreshold)
-								.setKey(key)
-								.setMaxAutomaticTokenAssociations(maxTokenAssociations + 1)
-								.build()
+								.setAutoRenewPeriod(Duration.newBuilder().setSeconds(CUSTOM_AUTO_RENEW_PERIOD))
+								.setReceiveRecordThreshold(CUSTOM_RECEIVE_THRESHOLD)
+								.setSendRecordThreshold(CUSTOM_SEND_THRESHOLD)
+								.setKey(KEY)
+								.setMaxAutomaticTokenAssociations(MAX_TOKEN_ASSOCIATIONS + 1)
 				).build();
 	}
 
 	private void givenValidTxnCtx() {
-		givenValidTxnCtx(key);
+		givenValidTxnCtx(KEY);
 	}
 
-	private void givenValidTxnCtx(Key toUse) {
+	private void givenValidTxnCtx(final Key toUse) {
 		cryptoCreateTxn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
 				.setCryptoCreateAccount(
 						CryptoCreateTransactionBody.newBuilder()
-								.setMemo(memo)
-								.setInitialBalance(balance)
-								.setProxyAccountID(proxy)
+								.setMemo(MEMO)
+								.setInitialBalance(BALANCE)
+								.setProxyAccountID(PROXY)
 								.setReceiverSigRequired(true)
-								.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod))
+								.setAutoRenewPeriod(Duration.newBuilder().setSeconds(CUSTOM_AUTO_RENEW_PERIOD))
+								.setReceiveRecordThreshold(CUSTOM_RECEIVE_THRESHOLD)
+								.setSendRecordThreshold(CUSTOM_SEND_THRESHOLD)
 								.setKey(toUse)
-								.setMaxAutomaticTokenAssociations(maxAutoAssociations)
-								.build()
+								.setMaxAutomaticTokenAssociations(MAX_AUTO_ASSOCIATIONS)
 				).build();
 	}
 
 	private TransactionID ourTxnId() {
 		return TransactionID.newBuilder()
-				.setAccountID(payer)
+				.setAccountID(PAYER)
 				.setTransactionValidStart(
 						Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
 				.build();

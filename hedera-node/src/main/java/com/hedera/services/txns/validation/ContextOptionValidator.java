@@ -24,8 +24,8 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
@@ -33,7 +33,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.StringUtils;
 import org.bouncycastle.util.Arrays;
@@ -189,8 +189,8 @@ public class ContextOptionValidator implements OptionValidator {
 	}
 
 	@Override
-	public ResponseCodeEnum queryableTopicStatus(TopicID id, FCMap<MerkleEntityId, MerkleTopic> topics) {
-		MerkleTopic merkleTopic = topics.get(MerkleEntityId.fromTopicId(id));
+	public ResponseCodeEnum queryableTopicStatus(TopicID id, MerkleMap<EntityNum, MerkleTopic> topics) {
+		MerkleTopic merkleTopic = topics.get(EntityNum.fromTopicId(id));
 
 		return Optional.ofNullable(merkleTopic)
 				.map(t -> t.isDeleted() ? INVALID_TOPIC_ID : OK)

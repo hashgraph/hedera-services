@@ -25,14 +25,14 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -77,7 +77,8 @@ class AccountStoreTest {
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
+
 	private AccountStore subject;
 	private MerkleAccount miscMerkleAccount;
 
@@ -225,11 +226,11 @@ class AccountStoreTest {
 		verify(accounts, never()).replace(miscMerkleId, expectedReplacement);
 	}
 
-	private void setupWithAccount(MerkleEntityId anId, MerkleAccount anAccount) {
+	private void setupWithAccount(EntityNum anId, MerkleAccount anAccount) {
 		given(accounts.get(anId)).willReturn(anAccount);
 	}
 
-	private void setupWithMutableAccount(MerkleEntityId anId, MerkleAccount anAccount) {
+	private void setupWithMutableAccount(EntityNum anId, MerkleAccount anAccount) {
 		given(accounts.getForModify(anId)).willReturn(anAccount);
 	}
 
@@ -255,4 +256,22 @@ class AccountStoreTest {
 		autoRenewAccount.setExpiry(expiry);
 		autoRenewAccount.setBalance(balance);
 	}
+
+	private final long expiry = 1_234_567L;
+	private final long balance = 1_000L;
+	private final long miscAccountNum = 1_234L;
+	private final long autoRenewAccountNum = 3_234L;
+	private final long firstAssocTokenNum = 666L;
+	private final long secondAssocTokenNum = 777L;
+	private final int alreadyUsedAutoAssociations = 12;
+	private final int maxAutoAssociations = 123;
+	private final Id miscId = new Id(0, 0, miscAccountNum);
+	private final Id autoRenewId = new Id(0, 0, autoRenewAccountNum);
+	private final Id firstAssocTokenId = new Id(0, 0, firstAssocTokenNum);
+	private final Id secondAssocTokenId = new Id(0, 0, secondAssocTokenNum);
+	private final EntityNum miscMerkleId = EntityNum.fromLong(miscAccountNum);
+	private final Account miscAccount = new Account(miscId);
+	private final Account autoRenewAccount = new Account(autoRenewId);
+
+	private MerkleAccount miscMerkleAccount;
 }

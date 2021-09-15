@@ -20,6 +20,7 @@ package com.hedera.services.queries;
  * ‍
  */
 
+import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.ServicesNodeType;
 import com.hedera.services.context.domain.security.HapiOpPermissions;
 import com.hedera.services.context.primitives.StateView;
@@ -55,6 +56,7 @@ public abstract class QueriesModule {
 	@Singleton
 	public static AnswerFlow provideAnswerFlow(
 			FeeCalculator fees,
+			AccountNumbers accountNums,
 			QueryFeeCheck queryFeeCheck,
 			ServicesNodeType nodeType,
 			HapiOpPermissions hapiOpPermissions,
@@ -68,6 +70,7 @@ public abstract class QueriesModule {
 		if (nodeType == STAKED_NODE) {
 			return new StakedAnswerFlow(
 					fees,
+					accountNums,
 					stateViews,
 					usagePrices,
 					hapiThrottling,
