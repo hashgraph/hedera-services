@@ -76,7 +76,7 @@ public class HapiTokenUnfreeze extends HapiTxnOp<HapiTokenUnfreeze> {
 
 	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
 		UsageAccumulator accumulator = new UsageAccumulator();
-		final var tokenUnfreezeMeta = TOKEN_OPS_USAGE_UTILS.tokenUnfreezeUsageFrom(txn);
+		final var tokenUnfreezeMeta = TOKEN_OPS_USAGE_UTILS.tokenUnfreezeUsageFrom();
 		final var baseTransactionMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
 		TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
 		tokenOpsUsage.tokenUnfreezeUsage(suFrom(svo), baseTransactionMeta, tokenUnfreezeMeta, accumulator );

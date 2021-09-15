@@ -235,7 +235,7 @@ class BaseOperationUsage {
 						.setAccount(accountID))
 				.build();
 
-		final var tokenFreezeMeta = TOKEN_OPS_USAGE_UTILS.tokenFreezeUsageFrom(canonicalTxn);
+		final var tokenFreezeMeta = TOKEN_OPS_USAGE_UTILS.tokenFreezeUsageFrom();
 		final var into = new UsageAccumulator();
 		TOKEN_OPS_USAGE.tokenFreezeUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenFreezeMeta, into);
 		return into;
@@ -250,7 +250,7 @@ class BaseOperationUsage {
 						.setAccount(accountID))
 				.build();
 
-		final var tokenUnfreezeMeta = TOKEN_OPS_USAGE_UTILS.tokenUnfreezeUsageFrom(canonicalTxn);
+		final var tokenUnfreezeMeta = TOKEN_OPS_USAGE_UTILS.tokenUnfreezeUsageFrom();
 		final var into = new UsageAccumulator();
 		TOKEN_OPS_USAGE.tokenFreezeUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenUnfreezeMeta, into);
 		return into;

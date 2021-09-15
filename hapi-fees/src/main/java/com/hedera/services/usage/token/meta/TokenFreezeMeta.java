@@ -1,7 +1,6 @@
 package com.hedera.services.usage.token.meta;
 
 import com.google.common.base.MoreObjects;
-import com.hederahashgraph.api.proto.java.SubType;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
