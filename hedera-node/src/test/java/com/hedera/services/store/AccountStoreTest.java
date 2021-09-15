@@ -28,8 +28,8 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.merkle.map.MerkleMap;
@@ -57,21 +57,7 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class AccountStoreTest {
-	private final long expiry = 1_234_567L;
-	private final long balance = 1_000L;
-	private final long miscAccountNum = 1_234L;
-	private final long autoRenewAccountNum = 3_234L;
-	private final long firstAssocTokenNum = 666L;
-	private final long secondAssocTokenNum = 777L;
-	private final int alreadyUsedAutoAssociations = 12;
-	private final int maxAutoAssociations = 123;
-	private final Id miscId = new Id(0, 0, miscAccountNum);
-	private final Account miscAccount = new Account(miscId);
-	private final Id autoRenewId = new Id(0, 0, autoRenewAccountNum);
-	private final Account autoRenewAccount = new Account(autoRenewId);
-	private final Id firstAssocTokenId = new Id(0, 0, firstAssocTokenNum);
-	private final Id secondAssocTokenId = new Id(0, 0, secondAssocTokenNum);
-	private final MerkleEntityId miscMerkleId = new MerkleEntityId(0, 0, miscAccountNum);
+
 	@Mock
 	private OptionValidator validator;
 	@Mock
@@ -273,5 +259,4 @@ class AccountStoreTest {
 	private final Account miscAccount = new Account(miscId);
 	private final Account autoRenewAccount = new Account(autoRenewId);
 
-	private MerkleAccount miscMerkleAccount;
 }

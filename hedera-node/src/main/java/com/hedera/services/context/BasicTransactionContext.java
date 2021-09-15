@@ -49,7 +49,6 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.fcmap.FCMap;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -96,7 +95,7 @@ public class BasicTransactionContext implements TransactionContext {
 	private Instant consensusTime;
 	private TxnAccessor accessor;
 	private ResponseCodeEnum statusSoFar;
-	private List<ExpiringEntity> expiringEntities = new ArrayList<>();
+	private final List<ExpiringEntity> expiringEntities = new ArrayList<>();
 	private Consumer<TxnReceipt.Builder> receiptConfig = noopReceiptConfig;
 	private Consumer<ExpirableTxnRecord.Builder> recordConfig = noopRecordConfig;
 	private TransferList explicitHbarTransfers;

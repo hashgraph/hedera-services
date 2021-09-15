@@ -26,8 +26,8 @@ import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.merkle.map.MerkleMap;
 
@@ -110,7 +110,7 @@ public class AccountStore {
 			account.setProxy(merkleAccount.getProxy().asId());
 		}
 		account.setReceiverSigRequired(merkleAccount.isReceiverSigRequired());
-		account.setKey(merkleAccount.getKey());
+		account.setKey(merkleAccount.state().key());
 		account.setMemo(merkleAccount.getMemo());
 		account.setAutoRenewSecs(merkleAccount.getAutoRenewSecs());
 		account.setDeleted(merkleAccount.isDeleted());
@@ -140,7 +140,7 @@ public class AccountStore {
 	 * @param account the account to create
 	 */
 	public void persistNew(Account account) {
-		final var newMerkleId = account.getId().asMerkle();
+		final var newMerkleId = EntityNum.fromAccountId(account.getId().asGrpcAccount());
 		final var mutableAccount = new MerkleAccount();
 
 		mapModelToMutable(account, mutableAccount);
@@ -159,7 +159,7 @@ public class AccountStore {
 		mutableAccount.setNftsOwned(model.getOwnedNfts());
 		mutableAccount.setMaxAutomaticAssociations(model.getMaxAutomaticAssociations());
 		mutableAccount.setAlreadyUsedAutomaticAssociations(model.getAlreadyUsedAutomaticAssociations());
-		mutableAccount.setKey(model.getKey());
+		mutableAccount.state().setAccountKey(model.getKey());
 		mutableAccount.setReceiverSigRequired(model.isReceiverSigRequired());
 		mutableAccount.setDeleted(model.isDeleted());
 		mutableAccount.setAutoRenewSecs(model.getAutoRenewSecs());

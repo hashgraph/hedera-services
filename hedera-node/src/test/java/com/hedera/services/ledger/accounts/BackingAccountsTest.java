@@ -49,18 +49,11 @@ import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
 
 class BackingAccountsTest {
-	private final AccountID a = asAccount("1.2.3");
-	private final AccountID b = asAccount("3.2.1");
-	private final AccountID c = asAccount("4.3.1");
-	private final AccountID d = asAccount("1.3.4");
+	private final AccountID a = asAccount("0.0.3");
+	private final AccountID b = asAccount("0.0.1");
 	private final EntityNum aKey = EntityNum.fromAccountId(a);
-	private final EntityNum bKey = EntityNum.fromAccountId(b);
-	private final EntityNum cKey = EntityNum.fromAccountId(c);
-	private final EntityNum dKey = EntityNum.fromAccountId(d);
 	private final MerkleAccount aValue = MerkleAccountFactory.newAccount().balance(123L).get();
 	private final MerkleAccount bValue = MerkleAccountFactory.newAccount().balance(122L).get();
-	private final MerkleAccount cValue = MerkleAccountFactory.newAccount().balance(121L).get();
-	private final MerkleAccount dValue = MerkleAccountFactory.newAccount().balance(120L).get();
 
 	private MerkleMap<EntityNum, MerkleAccount> map;
 	private BackingAccounts subject;
@@ -126,7 +119,7 @@ class BackingAccountsTest {
 		// setup:
 		HashSet<AccountID> s = new HashSet<>(Set.of(a, b));
 		// given:
-		final var map1 = new FCMap<MerkleEntityId, MerkleAccount>();
+		final var map1 = new MerkleMap<EntityNum, MerkleAccount>();
 		subject = new BackingAccounts(() -> map1);
 		subject.put(a, MerkleAccountFactory.newAccount()
 				.get());

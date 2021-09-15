@@ -23,7 +23,6 @@ package com.hedera.services.txns.crypto;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.TransactionRecordService;
@@ -31,11 +30,9 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.ContextOptionValidator;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
-import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -53,14 +50,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
-import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
-import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
-import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_INITIAL_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
@@ -69,7 +63,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -246,7 +239,7 @@ class CryptoCreateTransitionLogicTest {
 		given(validator.memoCheck(any())).willReturn(OK);
 		given(validator.hasGoodEncoding(any())).willReturn(true);
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
-		given(dynamicProperties.maxTokensPerAccount()).willReturn(maxTokenAssociations + 1);
+		given(dynamicProperties.maxTokensPerAccount()).willReturn(MAX_TOKEN_ASSOCIATIONS + 1);
 
 		assertEquals(OK, subject.semanticCheck().apply(cryptoCreateTxn));
 	}
@@ -282,13 +275,13 @@ class CryptoCreateTransitionLogicTest {
 						.build())
 				.setCryptoCreateAccount(
 						CryptoCreateTransactionBody.newBuilder()
-								.setMemo(memo)
-								.setInitialBalance(balance)
-								.setProxyAccountID(proxy)
+								.setMemo(MEMO)
+								.setInitialBalance(BALANCE)
+								.setProxyAccountID(PROXY)
 								.setReceiverSigRequired(true)
-								.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod))
-								.setKey(key)
-								.setMaxAutomaticTokenAssociations(maxAutoAssociations)
+								.setAutoRenewPeriod(Duration.newBuilder().setSeconds(CUSTOM_AUTO_RENEW_PERIOD))
+								.setKey(KEY)
+								.setMaxAutomaticTokenAssociations(MAX_AUTO_ASSOCIATIONS)
 								.build()
 				).build();
 		given(txnCtx.accessor()).willReturn(accessor);
@@ -296,7 +289,7 @@ class CryptoCreateTransitionLogicTest {
 
 		given(accountStore.loadAccount(Id.DEFAULT)).willThrow(new InvalidTransactionException(INVALID_ACCOUNT_ID));
 
-		TxnUtils.assertFailsWith(() -> subject.doStateTransition(), INVALID_ACCOUNT_ID);
+		assertFailsWith(() -> subject.doStateTransition(), INVALID_ACCOUNT_ID);
 		verify(accountStore, never()).persistNew(any());
 		verify(accountStore, never()).persistAccount(any());
 	}
@@ -311,7 +304,10 @@ class CryptoCreateTransitionLogicTest {
 		given(sponsor.isSmartContract()).willReturn(true);
 
 		// then:
-		verify(txnCtx).setStatus(FAIL_INVALID);
+		assertFailsWith(
+				() -> subject.doStateTransition(),
+				ACCOUNT_EXPIRED_AND_PENDING_REMOVAL
+		);
 	}
 
 	private Key unmappableKey() {

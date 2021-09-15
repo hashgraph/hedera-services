@@ -22,24 +22,25 @@ package com.hedera.services.sigs.metadata.lookups;
 
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 
 import java.util.function.Supplier;
 
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
+import static com.hedera.services.utils.EntityNum.fromAccountId;
 
 public class BackedAccountLookup implements AccountSigMetaLookup {
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
-	public BackedAccountLookup(Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts) {
+	public BackedAccountLookup(Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts) {
 		this.accounts = accounts;
 	}
 
 	@Override
 	public SafeLookupResult<AccountSigningMetadata> safeLookup(AccountID id) {
-		final var merkleId = MerkleEntityId.fromAccountId(id);
+		final var merkleId = fromAccountId(id);
 		if (!accounts.get().containsKey(merkleId)) {
 			return SafeLookupResult.failure(MISSING_ACCOUNT);
 		}

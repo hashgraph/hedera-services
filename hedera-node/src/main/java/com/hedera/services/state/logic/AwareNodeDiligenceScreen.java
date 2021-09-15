@@ -22,12 +22,12 @@ package com.hedera.services.state.logic;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.txns.diligence.DuplicateClassification;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -37,6 +37,7 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.txns.diligence.DuplicateClassification.NODE_DUPLICATE;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
+import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
@@ -54,13 +55,12 @@ public class AwareNodeDiligenceScreen {
 
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
-
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 	@Inject
 	public AwareNodeDiligenceScreen(
 			OptionValidator validator,
 			TransactionContext txnCtx,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {
 		this.txnCtx = txnCtx;
 		this.validator = validator;
@@ -72,7 +72,7 @@ public class AwareNodeDiligenceScreen {
 		final var currentAccounts = accounts.get();
 		var submittingAccount = txnCtx.submittingNodeAccount();
 		var designatedAccount = accessor.getTxn().getNodeAccountID();
-		boolean designatedNodeExists = currentAccounts.containsKey(MerkleEntityId.fromAccountId(designatedAccount));
+		boolean designatedNodeExists = currentAccounts.containsKey(fromAccountId(designatedAccount));
 		if (!designatedNodeExists) {
 			logAccountWarning(
 					MISSING_NODE_LOG_TPL,
@@ -85,14 +85,14 @@ public class AwareNodeDiligenceScreen {
 		}
 
 		var payerAccountId = accessor.getPayer();
-		boolean payerAccountExists = currentAccounts.containsKey(MerkleEntityId.fromAccountId(payerAccountId));
+		boolean payerAccountExists = currentAccounts.containsKey(fromAccountId(payerAccountId));
 
 		if (!payerAccountExists) {
 			txnCtx.setStatus(ACCOUNT_ID_DOES_NOT_EXIST);
 			return true;
 		}
 
-		var payerAccountRef = currentAccounts.get(MerkleEntityId.fromAccountId(payerAccountId));
+		var payerAccountRef = currentAccounts.get(fromAccountId(payerAccountId));
 
 		if (payerAccountRef.isDeleted()) {
 			txnCtx.setStatus(PAYER_ACCOUNT_DELETED);

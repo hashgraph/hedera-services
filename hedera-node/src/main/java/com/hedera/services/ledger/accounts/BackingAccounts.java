@@ -73,7 +73,7 @@ public class BackingAccounts implements BackingStore<AccountID, MerkleAccount> {
 	public Set<AccountID> idSet() {
 		return delegate.get().keySet()
 				.stream()
-				.map(MerkleEntityId::toAccountId)
+				.map(EntityNum::toGrpcAccountId)
 				.collect(Collectors.toSet());
 	}
 

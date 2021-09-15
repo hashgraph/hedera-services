@@ -39,7 +39,6 @@ import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.fcmap.FCMap;
 import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;

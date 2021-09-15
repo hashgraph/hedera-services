@@ -21,18 +21,19 @@ package com.hedera.services.sigs.metadata.lookups;
  */
 
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -46,7 +47,7 @@ class BackedAccountLookupTest {
 			.get();
 
 	@Mock
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	private BackedAccountLookup subject;
 
@@ -57,7 +58,7 @@ class BackedAccountLookupTest {
 
 	@Test
 	void usesRefForImpureLookup() {
-		final var id = MerkleEntityId.fromAccountId(accountID);
+		final var id = fromAccountId(accountID);
 		given(accounts.containsKey(id)).willReturn(true);
 		given(accounts.get(id)).willReturn(account);
 
