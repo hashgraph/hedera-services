@@ -147,7 +147,7 @@ class SmartContractRequestHandlerMiscTest {
    */
 
   private ServicesRepositoryRoot getLocalRepositoryInstance() {
-    DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
+//    DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
     backingAccounts = new BackingAccounts(() -> fcMap);
     TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
             AccountProperty.class,
@@ -163,9 +163,9 @@ class SmartContractRequestHandlerMiscTest {
             new MockGlobalDynamicProps(),
             delegate);
     ledgerSource = new LedgerAccountsSource(ledger);
-    Source<byte[], AccountState> repDatabase = ledgerSource;
-    ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);
-    repository.setStoragePersistence(new StoragePersistenceImpl(storageMap));
+//    Source<byte[], AccountState> repDatabase = ledgerSource;
+//    ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);
+//    repository.setStoragePersistence(new StoragePersistenceImpl(storageMap));
     return repository;
   }
 
@@ -205,18 +205,18 @@ class SmartContractRequestHandlerMiscTest {
                     expiryTime);
     given(exchange.activeRates()).willReturn(rates);
     given(exchange.rate(any())).willReturn(rates.getCurrentRate());
-    smartHandler = new SmartContractRequestHandler(
-            repository,
-            ledger,
-            () -> fcMap,
-            null,
-            exchange,
-            TEST_USAGE_PRICES,
-            () -> repository,
-            SolidityLifecycleFactory.newTestInstance(),
-            ignore -> true,
-            null,
-            new MockGlobalDynamicProps());
+//    smartHandler = new SmartContractRequestHandler(
+//            repository,
+//            ledger,
+//            () -> fcMap,
+//            null,
+//            exchange,
+//            TEST_USAGE_PRICES,
+//            () -> repository,
+//            SolidityLifecycleFactory.newTestInstance(),
+//            ignore -> true,
+//            null,
+//            new MockGlobalDynamicProps());
     storageWrapper = new FCStorageWrapper(storageMap);
     fsHandler = new FileServiceHandler(storageWrapper);
     String key = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, payerAccount));

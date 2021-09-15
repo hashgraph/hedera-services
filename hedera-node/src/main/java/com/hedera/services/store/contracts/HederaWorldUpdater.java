@@ -20,39 +20,37 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
-import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.contracts.repository.ContractDetails;
+import com.hedera.services.store.contracts.repository.ServicesRepositoryRoot;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
-import org.ethereum.db.ServicesRepositoryRoot;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.AccountStorageEntry;
 import org.hyperledger.besu.evm.account.EvmAccount;
-import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.worldstate.AbstractWorldUpdater;
 import org.hyperledger.besu.evm.worldstate.UpdateTrackingAccount;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
-import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Optional;
+import java.util.TreeSet;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 
 /**
  * {@link HederaWorldUpdater} must be renamed to HederaMutableWorldState and implement MutableWorldState to be equivalent to DefaultMutableWorld
@@ -62,13 +60,13 @@ public class HederaWorldUpdater implements WorldUpdater {
 	private final EntityIdSource ids;
 	private final AccountStore accountStore;
 	private final ServicesRepositoryRoot repositoryRoot;
-
-	// TODO most probably we do not need those 5 properties here
+	//TODO most probably we do not need those 5 properties here
 	private final Map<Address, Bytes> updatedAccountCode = new HashMap<>();
-	private final Map<Address, Bytes> updatedStorageTries = new HashMap<>();
+	private final Map<Address, ContractDetails> updatedStorageTries = new HashMap<>();
+
 	private final Map<Address, Bytes> provisionalCodeUpdates = new HashMap<>();
 	private final Map<Address, EvmAccountImpl> provisionalAccountUpdates = new HashMap<>();
-	private final Map<Id, Map.Entry<Id, HederaAccountCustomizer>> provisionalAccountCreations = new HashMap<>();
+	private final Map<Id, com.hedera.services.store.models.Account> provisionalAccountCreations = new HashMap<>();
 
 	@Inject
 	public HederaWorldUpdater(
@@ -84,17 +82,22 @@ public class HederaWorldUpdater implements WorldUpdater {
 	/**
 	 * Allocates new Contract address based on the realm and shard of the sponsor
 	 * IMPORTANT - The Id must be reclaimed if the MessageFrame reverts
+	 *
 	 * @param sponsor sponsor of the new contract
 	 * @return newly generated contract {@link Address}
 	 */
 	public Address allocateNewContractAddress(Address sponsor) {
-		return ids.newContractId(Id.fromEvmAddress(sponsor)).asEvmAddress();
+		Id newContractId = ids.newContractId(Id.fromEvmAddress(sponsor));
+		provisionalAccountCreations.put(newContractId, new com.hedera.services.store.models.Account(newContractId));
+		return newContractId.asEvmAddress();
 	}
 
+	//called by updater.commit()
 	public void put(Address address, Wei balance) {
 		provisionalAccountUpdates.put(address, new EvmAccountImpl(address, balance));
 	}
 
+	//called by updater.commit()
 	public void putCode(Address address, Bytes code) {
 		provisionalCodeUpdates.put(address, code);
 	}
@@ -108,6 +111,7 @@ public class HederaWorldUpdater implements WorldUpdater {
 		}
 	}
 
+	//called by updater.commit()
 	private void clearStorage(Address address) {
 		//todo
 	}
@@ -117,17 +121,13 @@ public class HederaWorldUpdater implements WorldUpdater {
 		return new Updater(this);
 	}
 
-	/**
-	 * TODO MUST return OUR implementation of EvmAccount which is extension of {@link com.hedera.services.store.models.Account}
-	 * @param address
-	 * @return
-	 */
+	//TODO MUST return OUR implementation of EvmAccount which is extension of {@link com.hedera.services.store.models.Account}
 	@Override
-	public EvmAccount get(Address address) {
+	public Account get(Address address) {
 		Id id = EntityIdUtils.idParsedFromEvmAddress(address.toArray());
 
 		if (provisionalAccountCreations.containsKey(id)) {
-			// TODO we should populate the balance, maybe code as-well
+			//TODO we should populate the balance, maybe code as-well
 			return new HederaUpdateTrackingAccount(new EvmAccountImpl(address, Wei.of(0)));
 		}
 
@@ -140,12 +140,18 @@ public class HederaWorldUpdater implements WorldUpdater {
 						provisionalCodeUpdates.get(address) : Bytes.of(repositoryRoot.getCode(address.toArray()));
 				return new HederaUpdateTrackingAccount(new EvmAccountImpl(address, Wei.of(balance), code));
 			}
-			// TODO we must address nonces and mitigate all EVM related operations since Hedera does not have the concept of nonces
+			//TODO we must address nonces and mitigate all EVM related operations since Hedera does not have the concept of nonces
 			return new HederaUpdateTrackingAccount(new EvmAccountImpl(address, Wei.of(balance)));
 		}
 
-		// TODO: test out when you want to send to a non-existing address in Hedera
+		//TODO: test out when you want to send to a non-existing address in Hedera
 		return null;
+	}
+
+	@Override
+	public EvmAccount getAccount(final Address address) {
+		//TODO if `get(addresss) is null it will throw since HederaUpdateTrackingAccount checks for != null
+		return new HederaUpdateTrackingAccount(get(address));
 	}
 
 	@Override
@@ -153,15 +159,9 @@ public class HederaWorldUpdater implements WorldUpdater {
 		Id id = EntityIdUtils.idParsedFromEvmAddress(address.toArray());
 		com.hedera.services.store.models.Account account = new com.hedera.services.store.models.Account(id);
 		account.setBalance(balance.toLong());
-		// TODO we should not persist the account in state yet. We must create it provisionally.
+		//TODO we should not persist the account in state yet. We must create it provisionally.
 		accountStore.persistNew(account);
 		return new HederaUpdateTrackingAccount(new EvmAccountImpl(address, balance));
-	}
-
-	@Override
-	public EvmAccount getAccount(final Address address) {
-		// TODO if `get(addresss) is null it will throw since HederaUpdateTrackingAccount checks for != null
-		return new HederaUpdateTrackingAccount(get(address));
 	}
 
 	@Override
@@ -187,15 +187,9 @@ public class HederaWorldUpdater implements WorldUpdater {
 	@Override
 	public void commit() {
 		//todo sponsor, customizer? we ignore them with the accountstore
-		provisionalAccountCreations.forEach((accountId, entry) -> {
-			validateTrue(!accountStore.exists(accountId), FAIL_INVALID);
-			var pair = entry;
-			if (pair != null) {
-				validateTrue((Boolean) pair.getValue().getChanges().get(AccountProperty.IS_SMART_CONTRACT), INVALID_SOLIDITY_ADDRESS);
-				com.hedera.services.store.models.Account account = new com.hedera.services.store.models.Account(accountId);
-				account.setBalance(0L);
-				accountStore.persistNew(account);
-			}
+		provisionalAccountCreations.forEach((id, account) -> {
+			validateTrue(!accountStore.exists(id), FAIL_INVALID);
+			accountStore.persistNew(account);
 		});
 
 		provisionalAccountUpdates.forEach((address, evmAccount) -> {
@@ -211,6 +205,8 @@ public class HederaWorldUpdater implements WorldUpdater {
 		provisionalCodeUpdates.forEach((address, code) -> {
 			repositoryRoot.saveCode(address.toArray(), code.toArray());
 		});
+
+		repositoryRoot.flush();
 
 		/* Clear any provisional changes */
 		provisionalCodeUpdates.clear();
@@ -232,7 +228,7 @@ public class HederaWorldUpdater implements WorldUpdater {
 		private final long nonce;
 		private final Wei balance;
 
-		private volatile Bytes storageTrie;
+		private volatile ContractDetails storageTrie;
 
 		public WorldStateAccount(final Address address, final long nonce, final Wei balance) {
 			this.address = address;
@@ -240,14 +236,13 @@ public class HederaWorldUpdater implements WorldUpdater {
 			this.balance = balance;
 		}
 
-		//todo
-		private Bytes storageTrie() {
-			final Bytes updatedTrie = updatedStorageTries.get(address);
+		private ContractDetails storageTrie() {
+			final ContractDetails updatedTrie = updatedStorageTries.get(address);
 			if (updatedTrie != null) {
 				storageTrie = updatedTrie;
 			}
 			if (storageTrie == null) {
-//        storageTrie = newAccountStorageMap(address);
+				storageTrie = repositoryRoot.getContractDetails(address.toArray());
 			}
 			return storageTrie;
 		}
@@ -282,7 +277,7 @@ public class HederaWorldUpdater implements WorldUpdater {
 			if (updatedCode != null) {
 				return updatedCode;
 			}
-			return Bytes.wrap(repositoryRoot.getCode(address.toArray()));
+			return Bytes.wrap(HederaWorldUpdater.this.getCode(address));
 		}
 
 		@Override
@@ -297,10 +292,7 @@ public class HederaWorldUpdater implements WorldUpdater {
 
 		@Override
 		public UInt256 getStorageValue(final UInt256 key) {
-			// todo
-//      repositoryRoot.getStorageValue()
-			//      return storageTrie().get(key).orElse(UInt256.ZERO);
-			return null;
+			return storageTrie().get(key);
 		}
 
 		@Override
@@ -316,14 +308,13 @@ public class HederaWorldUpdater implements WorldUpdater {
 
 		@Override
 		public String toString() {
-			final StringBuilder builder = new StringBuilder();
-			builder.append("AccountState").append("{");
-			builder.append("address=").append(getAddress()).append(", ");
-			builder.append("nonce=").append(getNonce()).append(", ");
-			builder.append("balance=").append(getBalance()).append(", ");
-			builder.append("storageRoot=").append(getStorageRoot()).append(", ");
-			builder.append("codeHash=").append(getCodeHash()).append(", ");
-			return builder.append("}").toString();
+			return "AccountState" + "{" +
+					"address=" + getAddress() + ", " +
+					"nonce=" + getNonce() + ", " +
+					"balance=" + getBalance() + ", " +
+					"storageRoot=" + getStorageRoot() + ", " +
+					"codeHash=" + getCodeHash() + ", " +
+					"}";
 		}
 	}
 
@@ -332,16 +323,16 @@ public class HederaWorldUpdater implements WorldUpdater {
 	 * - HederaAbstractWorldUpdater must use {@link HederaUpdateTrackingAccount} instead of {@link UpdateTrackingAccount}
 	 * - HederaAbstractWorldUpdater must have new method: allocateNewContractAddress.
 	 * The method will:
-	 *       - count the number of times the method is called
-	 *       - call the `HederaWorldView` to allocate new ID from {@link com.hedera.services.ledger.ids.SeqNoEntityIdSource}
+	 * - count the number of times the method is called
+	 * - call the `HederaWorldView` to allocate new ID from {@link com.hedera.services.ledger.ids.SeqNoEntityIdSource}
 	 * - HederaAbstractWorldUpdater must have new method: reclaimContractAddress
 	 * The method will:
-	 * 	     - call the `HederaWorldView` to reclaim an ID from {@link com.hedera.services.ledger.ids.SeqNoEntityIdSource}
-	 * 	     - decrement the counter for `newContractAddressesAllocated`
+	 * - call the `HederaWorldView` to reclaim an ID from {@link com.hedera.services.ledger.ids.SeqNoEntityIdSource}
+	 * - decrement the counter for `newContractAddressesAllocated`
 	 * - StackedUpdater in HederaAbstractWorldUpdater must extend `HederaAbstractWorldUpdater` instead of {@link AbstractWorldUpdater}
-	 * - HederaAbstractWorldUpdater on {@link UpdateTrackingAccount.reset} must clear the number of times `allocateNewContractAddress` was called
-	 * - HederaAbstractWorldUpdater on {@link UpdateTrackingAccount.revert} must call the
-	 * `HederaWorldView` and execute {@link com.hedera.services.ledger.ids.SeqNoEntityIdSource.reclaim} `newContractAddressesAllocated` times
+	 * - HederaAbstractWorldUpdater on { UpdateTrackingAccount.reset} must clear the number of times `allocateNewContractAddress` was called
+	 * - HederaAbstractWorldUpdater on { UpdateTrackingAccount.revert} must call the
+	 * `HederaWorldView` and execute { com.hedera.services.ledger.ids.SeqNoEntityIdSource.reclaim} `newContractAddressesAllocated` times
 	 */
 	protected static class Updater
 			extends AbstractWorldUpdater<HederaWorldUpdater, WorldStateAccount> {
@@ -375,27 +366,6 @@ public class HederaWorldUpdater implements WorldUpdater {
 			getUpdatedAccounts().clear();
 		}
 
-		// we need to override this or MessageCallProcessor.transferValue fails
-		@Override
-		public EvmAccount getAccount(final Address address) {
-			// We may have updated it already, so check that first.
-			final MutableAccount existing = updatedAccounts.get(address);
-			if (existing != null) {
-				return new WrappedEvmAccount(existing);
-			}
-			if (deletedAccounts.contains(address)) {
-				return null;
-			}
-
-			// Otherwise, get it from our wrapped view and create a new update tracker.
-			final Account origin = getForMutation(address);
-			if (origin == null) {
-				return null;
-			} else {
-				return new WrappedEvmAccount(track(new HederaUpdateTrackingAccount(origin)));
-			}
-		}
-
 		@Override
 		public void commit() {
 
@@ -403,6 +373,8 @@ public class HederaWorldUpdater implements WorldUpdater {
 
 			for (final Address address : getDeletedAccounts()) {
 				wrapped.deleteAccount(address);
+				wrapped.updatedStorageTries.remove(address);
+				wrapped.updatedAccountCode.remove(address);
 			}
 
 			for (final UpdateTrackingAccount<WorldStateAccount> updated : getUpdatedAccounts()) {
@@ -420,35 +392,35 @@ public class HederaWorldUpdater implements WorldUpdater {
 
 				final Map<UInt256, UInt256> updatedStorage = updated.getUpdatedStorage();
 				if (!updatedStorage.isEmpty()) {
-					// Apply any storage updates todo
-//          final AccountStorageMap storageTrie =
-//                  freshState ? wrapped.newAccountStorageMap(origin.getAddress()) : origin.storageTrie();
-//          final TreeSet<Map.Entry<UInt256, UInt256>> entries =
-//                  new TreeSet<>(Comparator.comparing(Map.Entry::getKey));
-//          entries.addAll(updatedStorage.entrySet());
-//
-//          for (final Map.Entry<UInt256, UInt256> entry : entries) {
-//            final UInt256 value = entry.getValue();
-//            if (value.isZero()) {
-//              storageTrie.remove(entry.getKey());
-//            } else {
-//              storageTrie.put(entry.getKey(), value);
-//            }
+					// Apply any storage updates
+					final ContractDetails storageTrie =
+							freshState ? wrapped.repositoryRoot.getContractDetails(origin.getAddress().toArray()) : origin.storageTrie();
+					final TreeSet<Map.Entry<UInt256, UInt256>> entries =
+							new TreeSet<>(Comparator.comparing(Map.Entry::getKey));
+					entries.addAll(updatedStorage.entrySet());
+
+					for (final Map.Entry<UInt256, UInt256> entry : entries) {
+						final UInt256 value = entry.getValue();
+						if (value.isZero()) {
+							storageTrie.put(entry.getKey(), value);
+						} else {
+							storageTrie.put(entry.getKey(), value);
+						}
+					}
 				}
+
+				// Lastly, save the new account.
+				//TODO we must not allow for arbitrary contract creation. If we do `get` for account and it
+				// returns `null` we must halt the execution and revert
+				wrapped.put(updated.getAddress(), updated.getBalance());
 			}
 
-			// Lastly, save the new account.
-			// TODO we must not allow for arbitrary contract creation. If we do `get` for account and it
-			// returns `null` we must halt the execution and revert
-//        wrapped.put(
-//                updated.getAddress(), updated.getBalance());
+			// Commit account state changes
+			wrapped.commit();
+
+			// Clear structures
+			wrapped.updatedStorageTries.clear();
 		}
-
-		// Commit account state changes
-//      wrapped.commit();
-
-		// Clear structures
-//      wrapped.updatedStorageTries.clear();
 	}
 }
 

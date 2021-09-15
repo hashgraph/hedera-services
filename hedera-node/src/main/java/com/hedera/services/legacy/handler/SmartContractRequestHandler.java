@@ -36,6 +36,8 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.contracts.repository.ServicesRepositoryRoot;
 import com.hedera.services.txns.validation.PureValidation;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
@@ -67,7 +69,6 @@ import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.core.Transaction;
-import org.ethereum.db.ServicesRepositoryRoot;
 import org.spongycastle.util.encoders.DecoderException;
 
 import javax.inject.Inject;
@@ -121,6 +122,7 @@ public class SmartContractRequestHandler {
 	private SolidityLifecycle lifecycle;
 	private SoliditySigsVerifier sigsVerifier;
 	private GlobalDynamicProperties dynamicProperties;
+	private final AccountStore accountStore;
 
 	@Inject
 	public SmartContractRequestHandler(
@@ -134,8 +136,8 @@ public class SmartContractRequestHandler {
 			SolidityLifecycle lifecycle,
 			SoliditySigsVerifier sigsVerifier,
 			Map<EntityId, Long> entityExpiries,
-			GlobalDynamicProperties dynamicProperties
-	) {
+			GlobalDynamicProperties dynamicProperties,
+			AccountStore accountStore) {
 		this.repository = repository;
 		this.newPureRepo = newPureRepo;
 		this.accounts = accounts;
@@ -147,6 +149,7 @@ public class SmartContractRequestHandler {
 		this.sigsVerifier = sigsVerifier;
 		this.entityExpiries = entityExpiries;
 		this.dynamicProperties = dynamicProperties;
+		this.accountStore = accountStore;
 	}
 
 	/**
@@ -321,6 +324,8 @@ public class SmartContractRequestHandler {
 				.build();
 	}
 
+
+
 	private TransactionRecord run(
 			Transaction solidityTxn,
 			String payerAddress,
@@ -347,12 +352,12 @@ public class SmartContractRequestHandler {
 				false,
 				sigsVerifier,
 				dynamicProperties);
-		var result = lifecycle.run(executor, repository);
-
-		var receiptBuilder = RequestBuilder.getTransactionReceipt(
-				result.getValue(),
-				exchange.activeRates()
-		).toBuilder();
+//		var result = lifecycle.run(executor, repository);
+//
+//		var receiptBuilder = RequestBuilder.getTransactionReceipt(
+//				result.getValue(),
+//				exchange.activeRates()
+//		).toBuilder();
 		var recordBuilder = RequestBuilder.getTransactionRecord(
 				txn.getTransactionFee(),
 				txn.getMemo(),
@@ -360,15 +365,15 @@ public class SmartContractRequestHandler {
 				RequestBuilder.getTimestamp(consensusTime),
 				com.hederahashgraph.api.proto.java.TransactionReceipt.getDefaultInstance());
 		if (isCreate) {
-			if (result.getValue() == SUCCESS) {
-				receiptBuilder.setContractID(result.getKey().getContractID());
-			}
-			recordBuilder.setContractCreateResult(result.getKey());
+//			if (result.getValue() == SUCCESS) {
+//				receiptBuilder.setContractID(result.getKey().getContractID());
+//			}
+//			recordBuilder.setContractCreateResult(result.getKey());
 		} else {
-			recordBuilder.setContractCallResult(result.getKey());
-			receiptBuilder.setContractID(txn.getContractCall().getContractID());
+//			recordBuilder.setContractCallResult(result.getKey());
+//			receiptBuilder.setContractID(txn.getContractCall().getContractID());
 		}
-		recordBuilder.setReceipt(receiptBuilder);
+//		recordBuilder.setReceipt(receiptBuilder);
 
 		return recordBuilder.build();
 	}

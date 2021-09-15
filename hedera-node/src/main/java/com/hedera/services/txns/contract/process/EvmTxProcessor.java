@@ -25,6 +25,7 @@ package com.hedera.services.txns.contract.process;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
+import com.hedera.services.store.contracts.HederaUpdateTrackingAccount;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
@@ -120,7 +121,7 @@ abstract class EvmTxProcessor {
 
 		final Address coinbase = Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress();
 		final HederaBlockHeader blockHeader = new HederaBlockHeader(coinbase, transaction.getGasLimit(), consensusTime.getEpochSecond());
-		final HederaMutableAccount mutableSender = (HederaMutableAccount) worldState.getOrCreateSenderAccount(sender.getId().asEvmAddress());
+		final HederaUpdateTrackingAccount mutableSender = (HederaUpdateTrackingAccount) worldState.getOrCreateSenderAccount(sender.getId().asEvmAddress());
 		mutableSender.decrementBalance(upfrontCost);
 
 		final Gas gasAvailable = Gas.of(transaction.getGasLimit()).minus(intrinsicGas);

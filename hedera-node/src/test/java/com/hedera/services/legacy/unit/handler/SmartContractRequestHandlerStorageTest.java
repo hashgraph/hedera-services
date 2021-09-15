@@ -139,7 +139,7 @@ class SmartContractRequestHandlerStorageTest {
   private BackingAccounts backingAccounts;
 
   private ServicesRepositoryRoot getLocalRepositoryInstance() {
-    DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
+//    DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
     backingAccounts = new BackingAccounts(() -> contracts);
     TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
             AccountProperty.class,
@@ -155,9 +155,9 @@ class SmartContractRequestHandlerStorageTest {
             new MockGlobalDynamicProps(),
             delegate);
     ledgerSource = new LedgerAccountsSource(ledger);
-    Source<byte[], AccountState> repDatabase = ledgerSource;
-    ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);
-    repository.setStoragePersistence(new StoragePersistenceImpl(storageMap));
+//    Source<byte[], AccountState> repDatabase = ledgerSource;
+//    ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);
+//    repository.setStoragePersistence(new StoragePersistenceImpl(storageMap));
     return repository;
   }
 
@@ -192,18 +192,18 @@ class SmartContractRequestHandlerStorageTest {
                     expiryTime);
     given(exchange.activeRates()).willReturn(rates);
     given(exchange.rate(any())).willReturn(rates.getCurrentRate());
-    smartHandler = new SmartContractRequestHandler(
-            repository,
-            ledger,
-            () -> contracts,
-            null,
-            exchange,
-            TestUsagePricesProvider.TEST_USAGE_PRICES,
-            () -> repository,
-            SolidityLifecycleFactory.newTestInstance(),
-            ignore -> true,
-            null,
-            new MockGlobalDynamicProps());
+//    smartHandler = new SmartContractRequestHandler(
+//            repository,
+//            ledger,
+//            () -> contracts,
+//            null,
+//            exchange,
+//            TestUsagePricesProvider.TEST_USAGE_PRICES,
+//            () -> repository,
+//            SolidityLifecycleFactory.newTestInstance(),
+//            ignore -> true,
+//            null,
+//            new MockGlobalDynamicProps());
     storageWrapper = new FCStorageWrapper(storageMap);
     fsHandler = new FileServiceHandler(storageWrapper);
     String key = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, payerAccount));

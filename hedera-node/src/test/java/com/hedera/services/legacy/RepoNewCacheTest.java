@@ -44,12 +44,6 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.CommonUtils;
 import com.swirlds.fcmap.FCMap;
-import org.ethereum.core.AccountState;
-import org.ethereum.core.Repository;
-import org.ethereum.datasource.DbSource;
-import org.ethereum.datasource.Source;
-import org.ethereum.db.ServicesRepositoryImpl;
-import org.ethereum.db.ServicesRepositoryRoot;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -64,7 +58,7 @@ class RepoNewCacheTest {
 		FCMap<MerkleEntityId, MerkleAccount> accountMap =
 				new FCMap<>();
 		FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = new FCMap<>();
-		DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
+//		DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
 
 		TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
 				AccountProperty.class,
@@ -79,65 +73,65 @@ class RepoNewCacheTest {
 				mock(AccountRecordsHistorian.class),
 				new MockGlobalDynamicProps(),
 				delegate);
-		Source<byte[], AccountState> repDatabase = new LedgerAccountsSource(ledger);
-		ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);
-		String key = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, 1));
-		byte[] keyByte = null;
-		try {
-			keyByte = CommonUtils.unhex(key);
-		} catch (IllegalArgumentException ignore) {
-		}
-		repository.addBalance(keyByte, BigInteger.TEN);
-		repository.commit();
-
-		Repository track1 = repository.startTracking();
-
-		Repository track2 = track1.startTracking();
-		track2.addBalance(keyByte, BigInteger.TEN);
-		assertEquals(20, track2.getBalance(keyByte).longValue());
-		assertEquals(10, track1.getBalance(keyByte).longValue());
-		assertEquals(10, repository.getBalance(keyByte).longValue());
-		track2.commit();
-
-		assertEquals(20, track2.getBalance(keyByte).longValue());
-		assertEquals(20, track1.getBalance(keyByte).longValue());
-		assertEquals(10, repository.getBalance(keyByte).longValue());
-
-		track1.commit();
-
-		assertEquals(20, track2.getBalance(keyByte).longValue());
-		assertEquals(20, track1.getBalance(keyByte).longValue());
-		assertEquals(20, repository.getBalance(keyByte).longValue());
-
-		repository.commit();
-		assertEquals(20, track2.getBalance(keyByte).longValue());
-		assertEquals(20, track1.getBalance(keyByte).longValue());
-		assertEquals(20, repository.getBalance(keyByte).longValue());
-
-		track1.addBalance(keyByte, BigInteger.valueOf(-5l));
-
-		assertEquals(15, track2.getBalance(keyByte).longValue());
-		assertEquals(15, track1.getBalance(keyByte).longValue());
-		assertEquals(20, repository.getBalance(keyByte).longValue());
-
-		track1.commit();
-
-		assertEquals(15, track2.getBalance(keyByte).longValue());
-		assertEquals(15, track1.getBalance(keyByte).longValue());
-		assertEquals(15, repository.getBalance(keyByte).longValue());
-		repository.commit();
-
-		repository.saveCode(keyByte, "Test Code for SmartContract".getBytes());
-
-		byte[] code = repository.getCode(keyByte);
-		String codeStr = new String(code);
-		assertEquals("Test Code for SmartContract", codeStr);
-		repository.commit();
-
-		repository.saveCode(keyByte, "Test Code for SmartContract..New".getBytes());
-		repository.commit();
-
-		code = repository.getCode(keyByte);
+//		Source<byte[], AccountState> repDatabase = new LedgerAccountsSource(ledger);
+//		ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);
+//		String key = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, 1));
+//		byte[] keyByte = null;
+//		try {
+//			keyByte = CommonUtils.unhex(key);
+//		} catch (IllegalArgumentException ignore) {
+//		}
+//		repository.addBalance(keyByte, BigInteger.TEN);
+//		repository.commit();
+//
+//		Repository track1 = repository.startTracking();
+//
+//		Repository track2 = track1.startTracking();
+//		track2.addBalance(keyByte, BigInteger.TEN);
+//		assertEquals(20, track2.getBalance(keyByte).longValue());
+//		assertEquals(10, track1.getBalance(keyByte).longValue());
+//		assertEquals(10, repository.getBalance(keyByte).longValue());
+//		track2.commit();
+//
+//		assertEquals(20, track2.getBalance(keyByte).longValue());
+//		assertEquals(20, track1.getBalance(keyByte).longValue());
+//		assertEquals(10, repository.getBalance(keyByte).longValue());
+//
+//		track1.commit();
+//
+//		assertEquals(20, track2.getBalance(keyByte).longValue());
+//		assertEquals(20, track1.getBalance(keyByte).longValue());
+//		assertEquals(20, repository.getBalance(keyByte).longValue());
+//
+//		repository.commit();
+//		assertEquals(20, track2.getBalance(keyByte).longValue());
+//		assertEquals(20, track1.getBalance(keyByte).longValue());
+//		assertEquals(20, repository.getBalance(keyByte).longValue());
+//
+//		track1.addBalance(keyByte, BigInteger.valueOf(-5l));
+//
+//		assertEquals(15, track2.getBalance(keyByte).longValue());
+//		assertEquals(15, track1.getBalance(keyByte).longValue());
+//		assertEquals(20, repository.getBalance(keyByte).longValue());
+//
+//		track1.commit();
+//
+//		assertEquals(15, track2.getBalance(keyByte).longValue());
+//		assertEquals(15, track1.getBalance(keyByte).longValue());
+//		assertEquals(15, repository.getBalance(keyByte).longValue());
+//		repository.commit();
+//
+//		repository.saveCode(keyByte, "Test Code for SmartContract".getBytes());
+//
+//		byte[] code = repository.getCode(keyByte);
+//		String codeStr = new String(code);
+//		assertEquals("Test Code for SmartContract", codeStr);
+//		repository.commit();
+//
+//		repository.saveCode(keyByte, "Test Code for SmartContract..New".getBytes());
+//		repository.commit();
+//
+//		code = repository.getCode(keyByte);
 	}
 
 	@Test
@@ -145,7 +139,7 @@ class RepoNewCacheTest {
 		FCMap<MerkleEntityId, MerkleAccount> accountMap =
 				new FCMap<>();
 		FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = new FCMap<>();
-		DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
+//		DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
 
 		BackingAccounts backingAccounts = new BackingAccounts(() -> accountMap);
 		TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
@@ -176,8 +170,8 @@ class RepoNewCacheTest {
 				mock(AccountRecordsHistorian.class),
 				new MockGlobalDynamicProps(),
 				delegate);
-		Source<byte[], AccountState> accountSource = new LedgerAccountsSource(ledger);
-		ServicesRepositoryRoot repository = new ServicesRepositoryRoot(accountSource, repDBFile);
+//		Source<byte[], AccountState> accountSource = new LedgerAccountsSource(ledger);
+//		ServicesRepositoryRoot repository = new ServicesRepositoryRoot(accountSource, repDBFile);
 
 		String someKey = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, 1));
 		byte[] someKeyBytes = null;
@@ -187,19 +181,19 @@ class RepoNewCacheTest {
 		}
 
 		ledger.begin();
-		repository.increaseNonce(someKeyBytes);
-		ServicesRepositoryImpl track1 = repository.startTracking();
-		track1.addBalance(someKeyBytes, BigInteger.TEN.negate());
-
-		assertEquals(99_999_990L, track1.getBalance(someKeyBytes).longValue());
-		assertEquals(100_000_000L, repository.getBalance(someKeyBytes).longValue());
-
-		track1.rollback();
-
-		repository.commit();
-		ledger.commit();
-
-		assertEquals(100_000_000L, repository.getBalance(someKeyBytes).longValue());
+//		repository.increaseNonce(someKeyBytes);
+//		ServicesRepositoryImpl track1 = repository.startTracking();
+//		track1.addBalance(someKeyBytes, BigInteger.TEN.negate());
+//
+//		assertEquals(99_999_990L, track1.getBalance(someKeyBytes).longValue());
+//		assertEquals(100_000_000L, repository.getBalance(someKeyBytes).longValue());
+//
+//		track1.rollback();
+//
+//		repository.commit();
+//		ledger.commit();
+//
+//		assertEquals(100_000_000L, repository.getBalance(someKeyBytes).longValue());
 	}
 
 }

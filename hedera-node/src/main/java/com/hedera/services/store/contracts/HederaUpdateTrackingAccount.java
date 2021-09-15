@@ -14,16 +14,4 @@ public class HederaUpdateTrackingAccount<A extends Account> extends UpdateTracki
     public void setBalance(Wei value) {
         super.setBalance(value);
     }
-
-    //todo also implement incrementBalance and maybe write to state?git
-    @Override
-    public Wei decrementBalance(Wei value) {
-        final Wei current = getBalance();
-        if (current.compareTo(value) < 0) {
-            throw new IllegalStateException(
-                    String.format("Cannot remove %s wei from account, balance is only %s", value, current));
-        }
-        setBalance(current.subtract(value));
-        return current;
-    }
 }

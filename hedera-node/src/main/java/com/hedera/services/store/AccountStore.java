@@ -164,12 +164,11 @@ public class AccountStore {
 		mutableAccount.setAutoRenewSecs(model.getAutoRenewSecs());
 	}
 
+	//todo maybe also validateUsable? problem is, if we try to get this account and it fails the
+	// validate usable check, an exception is thrown
 	public boolean exists(Id id) {
-		//todo is null returned if account doesn't exist/is deleted?
-		if (loadAccount(id) != null) {
-			return true;
-		}
-		return false;
+		final var key = new MerkleEntityId(id.getShard(), id.getRealm(), id.getNum());
+		return accounts.get().containsKey(key);
 	}
 
 	/**

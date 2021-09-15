@@ -21,8 +21,8 @@ package com.hedera.services.contracts.sources;
  */
 
 import com.hedera.services.contracts.annotations.BytecodeSource;
-import org.ethereum.datasource.DbSettings;
-import org.ethereum.datasource.DbSource;
+import com.hedera.services.store.contracts.repository.DbSettings;
+import com.hedera.services.store.contracts.repository.DbSource;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;

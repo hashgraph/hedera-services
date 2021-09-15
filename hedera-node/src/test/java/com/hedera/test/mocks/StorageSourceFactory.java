@@ -24,8 +24,8 @@ import com.hedera.services.contracts.sources.BlobStorageSource;
 import com.hedera.services.files.store.FcBlobsBytesStore;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
+import com.hedera.services.store.contracts.repository.DbSource;
 import com.swirlds.fcmap.FCMap;
-import org.ethereum.datasource.DbSource;
 
 import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.bytecodeMapFrom;
 
