@@ -22,11 +22,11 @@ package com.hedera.services.context.properties;
 
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 
-public class ActiveVersions {
+public final class ActiveVersions {
 	private final SemanticVersion proto;
 	private final SemanticVersion services;
 
-	public ActiveVersions(SemanticVersion proto, SemanticVersion services) {
+	public ActiveVersions(final SemanticVersion proto, final SemanticVersion services) {
 		this.proto = proto;
 		this.services = services;
 	}

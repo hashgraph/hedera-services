@@ -27,19 +27,26 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.sigs.utils.ImmutableKeyUtils;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.HederaStore;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fcmap.FCMap;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.inject.Inject;
@@ -63,8 +70,9 @@ import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRAN
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
+import static com.hedera.services.state.merkle.MerkleToken.UNUSED_KEY;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccountId;
-import static com.hedera.services.state.submerkle.EntityId.fromGrpcTokenId;
+import static com.hedera.services.utils.EntityNum.fromTokenId;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.MiscUtils.forEach;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
@@ -91,7 +99,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	static final TokenID NO_PENDING_ID = TokenID.getDefaultInstance();
 	private final UniqTokenViewsManager uniqTokenViewsManager;
 	private final GlobalDynamicProperties properties;
-	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
+	private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
 	private final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 	private final TransactionalLedger<
 			Pair<AccountID, TokenID>,
@@ -107,7 +115,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			final EntityIdSource ids,
 			final UniqTokenViewsManager uniqTokenViewsManager,
 			final GlobalDynamicProperties properties,
-			final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
+			final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
 			final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
 			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger
 	) {
@@ -130,7 +138,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		forEach(tokens.get(), (key, value) -> {
 			/* A deleted token's treasury is no longer bound by ACCOUNT_IS_TREASURY restrictions. */
 			if (!value.isDeleted()) {
-				addKnownTreasury(value.treasury().toGrpcAccountId(), key.toTokenId());
+				addKnownTreasury(value.treasury().toGrpcAccountId(), key.toGrpcTokenId());
 			}
 		});
 	}
@@ -260,8 +268,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			var owner = (EntityId) nftsLedger.get(nftId, OWNER);
 			if (owner.equals(fromGrpcAccountId(AccountID.getDefaultInstance()))) {
 				final var tid = nftId.tokenId();
-				owner = this.tokens.get().get(
-						new MerkleEntityId(tid.getShardNum(), tid.getRealmNum(), tid.getTokenNum())).treasury();
+				final var key = EntityNum.fromLong(tid.getTokenNum());
+				owner = this.tokens.get().get(key).treasury();
 			}
 			if (!owner.matches(from)) {
 				return SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
@@ -298,7 +306,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		tokenRelsLedger.set(fromRel, TOKEN_BALANCE, fromThisNftsOwned - 1);
 		tokenRelsLedger.set(toRel, TOKEN_BALANCE, toThisNftsOwned + 1);
 
-		final var merkleNftId = new MerkleUniqueTokenId(fromGrpcTokenId(nftId.tokenId()), nftId.serialNo());
+		final var merkleNftId = EntityNumPair.fromLongs(nftId.tokenId().getTokenNum(), nftId.serialNo());
 		final var receiver = fromGrpcAccountId(to);
 		if (isTreasuryReturn) {
 			uniqTokenViewsManager.treasuryReturnNotice(merkleNftId, owner, receiver);

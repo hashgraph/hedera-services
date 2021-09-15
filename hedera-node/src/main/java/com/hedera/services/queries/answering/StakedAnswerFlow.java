@@ -20,6 +20,7 @@ package com.hedera.services.queries.answering;
  * ‍
  */
 
+import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.domain.security.HapiOpPermissions;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
@@ -58,6 +59,7 @@ public class StakedAnswerFlow implements AnswerFlow {
 
 	private final FeeCalculator fees;
 	private final QueryFeeCheck queryFeeCheck;
+	private final AccountNumbers accountNums;
 	private final HapiOpPermissions hapiOpPermissions;
 	private final Supplier<StateView> stateViews;
 	private final UsagePricesProvider resourceCosts;
@@ -68,6 +70,7 @@ public class StakedAnswerFlow implements AnswerFlow {
 
 	public StakedAnswerFlow(
 			FeeCalculator fees,
+			AccountNumbers accountNums,
 			Supplier<StateView> stateViews,
 			UsagePricesProvider resourceCosts,
 			FunctionalityThrottling throttles,
@@ -81,6 +84,7 @@ public class StakedAnswerFlow implements AnswerFlow {
 		this.queryFeeCheck = queryFeeCheck;
 		this.throttles = throttles;
 		this.stateViews = stateViews;
+		this.accountNums = accountNums;
 		this.resourceCosts = resourceCosts;
 		this.submissionManager = submissionManager;
 		this.hapiOpPermissions = hapiOpPermissions;
@@ -140,6 +144,9 @@ public class StakedAnswerFlow implements AnswerFlow {
 	}
 
 	private ResponseCodeEnum tryToPay(SignedTxnAccessor payment, long fee) {
+		if (accountNums.isSuperuser(payment.getPayer().getAccountNum())) {
+			return OK;
+		}
 		final var xfers = payment.getTxn().getCryptoTransfer().getTransfers().getAccountAmountsList();
 		final var feeStatus = queryFeeCheck.nodePaymentValidity(xfers, fee, payment.getTxn().getNodeAccountID());
 		if (feeStatus != OK) {

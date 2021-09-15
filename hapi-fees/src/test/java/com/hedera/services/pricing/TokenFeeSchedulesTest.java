@@ -45,18 +45,21 @@ class TokenFeeSchedulesTest extends FeeSchedulesTestHelper {
 	}
 
 	@Test
-	void computesExpectedPriceForUniqueTokenMint() throws IOException {
+	void computesExpectedPriceForTokenMintSubtypes() throws IOException {
 		testExpectedPriceFor(TokenMint, TOKEN_NON_FUNGIBLE_UNIQUE);
+		testExpectedPriceFor(TokenMint, TOKEN_FUNGIBLE_COMMON);
 	}
 
 	@Test
-	void computesExpectedPriceForUniqueTokenWipe() throws IOException {
+	void computesExpectedPriceForTokenWipeSubtypes() throws IOException {
+		testExpectedPriceFor(TokenAccountWipe, TOKEN_FUNGIBLE_COMMON);
 		testExpectedPriceFor(TokenAccountWipe, TOKEN_NON_FUNGIBLE_UNIQUE);
 	}
 
 	@Test
-	void computesExpectedPriceForUniqueTokenBurn() throws IOException {
+	void computesExpectedPriceForTokenBurnSubtypes() throws IOException {
 		testExpectedPriceFor(TokenBurn, TOKEN_NON_FUNGIBLE_UNIQUE);
+		testExpectedPriceFor(TokenBurn, TOKEN_FUNGIBLE_COMMON);
 	}
 
 	@Test

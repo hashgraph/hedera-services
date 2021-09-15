@@ -27,20 +27,17 @@ import static com.swirlds.common.PlatformStatus.STARTING_UP;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ContextPlatformStatusTest {
-	ContextPlatformStatus subject = new ContextPlatformStatus();
+	private static final ContextPlatformStatus subject = new ContextPlatformStatus();
 
 	@Test
 	void beginsAsStartingUp() {
-		// expect:
 		assertEquals(STARTING_UP, subject.get());
 	}
 
 	@Test
 	void setterWorks() {
-		// when:
 		subject.set(MAINTENANCE);
 
-		// then:
 		assertEquals(MAINTENANCE, subject.get());
 	}
 }

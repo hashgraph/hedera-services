@@ -25,6 +25,7 @@ import javax.inject.Singleton;
 
 @Singleton
 public class MetaAnswers {
+	private final GetExecTimeAnswer execTime;
 	private final GetTxnRecordAnswer txnRecord;
 	private final GetTxnReceiptAnswer txnReceipt;
 	private final GetVersionInfoAnswer versionInfo;
@@ -32,11 +33,13 @@ public class MetaAnswers {
 
 	@Inject
 	public MetaAnswers(
+			GetExecTimeAnswer execTime,
 			GetTxnRecordAnswer txnRecord,
 			GetTxnReceiptAnswer txnReceipt,
 			GetVersionInfoAnswer versionInfo,
 			GetFastTxnRecordAnswer fastTxnRecord
 	) {
+		this.execTime = execTime;
 		this.txnRecord = txnRecord;
 		this.txnReceipt = txnReceipt;
 		this.versionInfo = versionInfo;
@@ -57,5 +60,9 @@ public class MetaAnswers {
 
 	public GetFastTxnRecordAnswer getFastTxnRecord() {
 		return fastTxnRecord;
+	}
+
+	public GetExecTimeAnswer getExecTime() {
+		return execTime;
 	}
 }

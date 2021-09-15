@@ -33,7 +33,7 @@ import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
 @Command(
 		name = "download",
 		subcommands = { picocli.CommandLine.HelpCommand.class },
-		description = "Download system files")
+		description = "Downloads system files")
 public class SysFileDownloadCommand implements Callable<Integer> {
 	@ParentCommand
 	private SysFilesCommand sysFilesCommand;

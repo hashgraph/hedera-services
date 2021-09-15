@@ -20,9 +20,8 @@ package com.hedera.services.legacy.unit;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class StorageWrapperTest {
-	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = new FCMap<>();
+	private MerkleMap<String, MerkleOptionalBlob> storageMap = new MerkleMap<>();
 	private static final String TEST_CREATE_FILE_PATH = "/0/a1234/";
 	private static final String TEST_CREATE_DELETE_FILE_PATH = "/0/a1236/";
 	private static final String TEST_CREATE_APPEND_FILE_PATH = "/0/a1237/";
@@ -43,7 +42,7 @@ class StorageWrapperTest {
 	@Test
 	void testFileCreateRead() {
 		final var fileCreateContent = randomUtf8Bytes(5000);
-		final var storageWrapper = new FCStorageWrapper(storageMap);
+		final var storageWrapper = new StorageTestHelper(storageMap);
 
 		storageWrapper.fileCreate(TEST_CREATE_FILE_PATH, fileCreateContent);
 		final var fileReadContent = storageWrapper.fileRead(TEST_CREATE_FILE_PATH);
@@ -55,7 +54,7 @@ class StorageWrapperTest {
 	@Test
 	void testFileCreateDelete() throws StorageKeyNotFoundException {
 		final var fileCreateContent = randomUtf8Bytes(5000);
-		final var storageWrapper = new FCStorageWrapper(storageMap);
+		final var storageWrapper = new StorageTestHelper(storageMap);
 
 		storageWrapper.fileCreate(TEST_CREATE_DELETE_FILE_PATH, fileCreateContent);
 		assertTrue(storageWrapper.fileExists(TEST_CREATE_DELETE_FILE_PATH));
@@ -71,7 +70,7 @@ class StorageWrapperTest {
 		final var file1Content = Arrays.copyOfRange(fileCombinedContentExpected, 0, fistChunklength);
 		final var file2Content = Arrays.copyOfRange(fileCombinedContentExpected, fistChunklength,
 				fileCombinedContentExpected.length);
-		final var storageWrapper = new FCStorageWrapper(storageMap);
+		final var storageWrapper = new StorageTestHelper(storageMap);
 
 		storageWrapper.fileCreate(TEST_CREATE_APPEND_FILE_PATH, file1Content);
 		assertTrue(storageWrapper.fileExists(TEST_CREATE_APPEND_FILE_PATH));
@@ -84,7 +83,7 @@ class StorageWrapperTest {
 	@Test
 	void testOverrideFile() {
 		final var fileCreateContent = randomUtf8Bytes(5000);
-		final var storageWrapper = new FCStorageWrapper(storageMap);
+		final var storageWrapper = new StorageTestHelper(storageMap);
 
 		storageWrapper.fileCreate(TEST_OVERRIDE_FILE_PATH, fileCreateContent);
 		assertTrue(storageWrapper.fileExists(TEST_OVERRIDE_FILE_PATH));

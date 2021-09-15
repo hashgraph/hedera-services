@@ -85,6 +85,6 @@ public abstract class AbstractAnswer implements AnswerService {
 	public Optional<SignedTxnAccessor> extractPaymentFrom(Query query) {
 		var paymentTxn = paymentExtractor.apply(query);
 
-		return Optional.ofNullable(SignedTxnAccessor.uncheckedFrom(paymentTxn));
+		return Optional.of(SignedTxnAccessor.uncheckedFrom(paymentTxn));
 	}
 }

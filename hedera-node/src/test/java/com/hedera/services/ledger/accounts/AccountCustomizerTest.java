@@ -23,7 +23,6 @@ package com.hedera.services.ledger.accounts;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.TestAccountProperty;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.state.submerkle.EntityId;
 import org.junit.jupiter.api.Test;
@@ -40,7 +39,6 @@ import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.KEY;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MEMO;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.PROXY;
-import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.TestAccountProperty.FLAG;
 import static com.hedera.services.ledger.properties.TestAccountProperty.OBJ;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -80,10 +78,10 @@ class AccountCustomizerTest {
 	@Test
 	void setsCustomizedProperties() {
 		setupWithLiveChangeManager();
-		final Long id = 1L;
+		final var id = 1L;
 		final TransactionalLedger<Long, TestAccountProperty, TestAccount> ledger = mock(TransactionalLedger.class);
-		final String customMemo = "alpha bravo charlie";
-		final boolean customIsReceiverSigRequired = true;
+		final var customMemo = "alpha bravo charlie";
+		final var customIsReceiverSigRequired = true;
 
 		subject
 				.isReceiverSigRequired(customIsReceiverSigRequired)
@@ -97,7 +95,7 @@ class AccountCustomizerTest {
 	@Test
 	void changesExpectedKeyProperty() {
 		setupWithMockChangeManager();
-		final JKey key = new JKeyList();
+		final var key = new JKeyList();
 
 		subject.key(key);
 
@@ -110,7 +108,7 @@ class AccountCustomizerTest {
 	@Test
 	void changesExpectedMemoProperty() {
 		setupWithMockChangeManager();
-		final String memo = "standardization ftw?";
+		final var memo = "standardization ftw?";
 
 		subject.memo(memo);
 
@@ -200,7 +198,7 @@ class AccountCustomizerTest {
 
 	@Test
 	void changesAutoAssociationFieldsAsExpected() {
-		setupWithMockChangeManager();;
+		setupWithMockChangeManager();
 		final Integer maxAutoAssociations = 1234;
 		final Integer alreadyUsedAutoAssociations = 123;
 

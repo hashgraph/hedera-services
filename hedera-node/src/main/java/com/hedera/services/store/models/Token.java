@@ -58,6 +58,7 @@ import static com.hedera.services.store.models.Token.CandidateKeys.SCHEDULE_KEY_
 import static com.hedera.services.store.models.Token.CandidateKeys.SUPPLY_KEY_CANDIDATE;
 import static com.hedera.services.store.models.Token.CandidateKeys.WIPE_KEY_CANDIDATE;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.MAX_NUM_ALLOWED;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DOES_NOT_OWN_WIPED_NFT;

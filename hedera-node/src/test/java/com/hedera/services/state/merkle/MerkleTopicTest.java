@@ -23,14 +23,15 @@ package com.hedera.services.state.merkle;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.serdes.TopicSerde;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TopicID;
-import org.junit.jupiter.api.AfterEach;
+import com.swirlds.common.io.SerializableDataInputStream;
+import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -39,8 +40,13 @@ import java.time.Instant;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 class MerkleTopicTest {
+	private final int number = 123_456;
+
 	String[] memos = new String[] {
 			"First memo",
 			"Second memo",
@@ -57,17 +63,79 @@ class MerkleTopicTest {
 			new JKeyList(List.of(new JEd25519Key("AbCdEfGhIjKlMnOpQrStUvWxYz012345".getBytes())))
 	};
 
-	@AfterEach
-	public void cleanup() {
+	@Test
+	void serializeWorks() throws IOException {
+		// setup:
+		final var topicSerde = mock(TopicSerde.class);
+		final var out = mock(SerializableDataOutputStream.class);
+		MerkleTopic.topicSerde = topicSerde;
+
+		// given:
+		final var subject = new MerkleTopic();
+		subject.setKey(EntityNum.fromInt(number));
+
+		// expect:
+		assertEquals(number, subject.getKey().intValue());
+
+		// and when:
+		subject.serialize(out);
+
+		// then:
+		verify(topicSerde).serialize(subject, out);
+		verify(out).writeInt(number);
+
+		// cleanup:
 		MerkleTopic.topicSerde = new TopicSerde();
-		MerkleTopic.serdes = new DomainSerdes();
+	}
+
+	@Test
+	void deserializeWorksForPre0180() throws IOException {
+		// setup:
+		final var topicSerde = mock(TopicSerde.class);
+		final var in = mock(SerializableDataInputStream.class);
+		MerkleTopic.topicSerde = topicSerde;
+
+		// given:
+		final var subject = new MerkleTopic();
+
+		// and when:
+		subject.deserialize(in, MerkleTopic.PRE_RELEASE_0180_VERSION);
+
+		// then:
+		verify(topicSerde).deserializeV1(in, subject);
+
+		// cleanup:
+		MerkleTopic.topicSerde = new TopicSerde();
+	}
+
+	@Test
+	void deserializeWorksFor0180() throws IOException {
+		// setup:
+		final var topicSerde = mock(TopicSerde.class);
+		final var in = mock(SerializableDataInputStream.class);
+		MerkleTopic.topicSerde = topicSerde;
+
+		given(in.readInt()).willReturn(number);
+		// and:
+		final var subject = new MerkleTopic();
+
+		// and when:
+		subject.deserialize(in, MerkleTopic.RELEASE_0180_VERSION);
+
+		// then:
+		verify(topicSerde).deserializeV1(in, subject);
+		// and:
+		assertEquals(number, subject.getKey().intValue());
+
+		// cleanup:
+		MerkleTopic.topicSerde = new TopicSerde();
 	}
 
 	@Test
 	void toStringWorks() throws IOException, NoSuchAlgorithmException {
 		// expect:
 		assertEquals(
-				"MerkleTopic{"
+				"MerkleTopic{number=0 <-> 0.0.0, "
 						+ "memo=First memo, "
 						+ "expiry=1234567.0, "
 						+ "deleted=false, "
@@ -80,7 +148,7 @@ class MerkleTopicTest {
 				topicFrom(0).toString());
 		// and:
 		assertEquals(
-				"MerkleTopic{" +
+				"MerkleTopic{number=1 <-> 0.0.1, " +
 						"memo=Second memo, " +
 						"expiry=2234567.1, " +
 						"deleted=false, " +
@@ -94,7 +162,7 @@ class MerkleTopicTest {
 				topicFrom(1).toString());
 		// and:
 		assertEquals(
-				"MerkleTopic{" +
+				"MerkleTopic{number=2 <-> 0.0.2, " +
 						"memo=Third memo, " +
 						"expiry=3234567.2, " +
 						"deleted=false, " +
@@ -111,11 +179,11 @@ class MerkleTopicTest {
 	@Test
 	void merkleMethodsWork() {
 		final var topic = new MerkleTopic();
-		assertEquals(MerkleTopic.MERKLE_VERSION, topic.getVersion());
+		assertEquals(MerkleTopic.CURRENT_VERSION, topic.getVersion());
 		assertEquals(MerkleTopic.RUNTIME_CONSTRUCTABLE_ID, topic.getClassId());
 	}
 
-	private MerkleTopic topicFrom(int s) throws IOException, NoSuchAlgorithmException {
+	private MerkleTopic topicFrom(int s) throws IOException {
 		long v = 1_234_567L + s * 1_000_000L;
 		long t = s + 1;
 		AccountID payer = AccountID.newBuilder().setAccountNum(123).build();
@@ -134,6 +202,7 @@ class MerkleTopicTest {
 					id,
 					Instant.ofEpochSecond(v, i));
 		}
+		topic.setKey(EntityNum.fromInt(s));
 		return topic;
 	}
 
