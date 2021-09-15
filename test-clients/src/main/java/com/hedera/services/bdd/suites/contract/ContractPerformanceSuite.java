@@ -1,10 +1,13 @@
 package com.hedera.services.bdd.suites.contract;
 
 import com.google.common.io.Files;
+import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
@@ -28,8 +31,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.swirlds.common.CommonUtils.hex;
+import static java.lang.System.arraycopy;
 
 public class ContractPerformanceSuite extends HapiApiSuite {
   private static final Logger LOG = LogManager.getLogger(ContractPerformanceSuite.class);
@@ -64,8 +67,8 @@ public class ContractPerformanceSuite extends HapiApiSuite {
     try {
       var contentString =
           new String(Files.toByteArray(new File(path)), StandardCharsets.US_ASCII)
-              .replace(RETURN_CONTRACT_ADDRESS, hex(asSolidityAddress(returnAccountAddress)))
-              .replace(REVERT_CONTRACT_ADDRESS, hex(asSolidityAddress(revertAccountAddress)));
+              .replace(RETURN_CONTRACT_ADDRESS, asSolidityAddress(returnAccountAddress))
+              .replace(REVERT_CONTRACT_ADDRESS, asSolidityAddress(revertAccountAddress));
       return fileCreate(test + "bytecode")
           .contents(contentString.getBytes(StandardCharsets.US_ASCII));
     } catch (Throwable t) {
@@ -144,4 +147,19 @@ public class ContractPerformanceSuite extends HapiApiSuite {
   protected Logger getResultsLogger() {
     return LOG;
   }
+
+  public static String asSolidityAddress(final ContractID id) {
+    return hex(asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum()));
+  }
+
+  public static byte[] asSolidityAddress(final int shard, final long realm, final long num) {
+    final byte[] solidityAddress = new byte[20];
+
+    arraycopy(Ints.toByteArray(shard), 0, solidityAddress, 0, 4);
+    arraycopy(Longs.toByteArray(realm), 0, solidityAddress, 4, 8);
+    arraycopy(Longs.toByteArray(num), 0, solidityAddress, 12, 8);
+
+    return solidityAddress;
+  }
+
 }
