@@ -41,7 +41,7 @@ import static com.hedera.services.queries.token.GetTokenInfoAnswer.TOKEN_INFO_CT
 
 @Singleton
 public final class GetTokenInfoResourceUsage implements QueryResourceUsageEstimator {
-	static Function<Query, TokenGetInfoUsage> factory = TokenGetInfoUsage::newEstimate;
+	private static final Function<Query, TokenGetInfoUsage> factory = TokenGetInfoUsage::newEstimate;
 
 	@Inject
 	public GetTokenInfoResourceUsage() {

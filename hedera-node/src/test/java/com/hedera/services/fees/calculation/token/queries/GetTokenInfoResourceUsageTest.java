@@ -35,10 +35,10 @@ import com.hederahashgraph.api.proto.java.TokenInfo;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 
 import java.util.HashMap;
 import java.util.Optional;
-import java.util.function.Function;
 
 import static com.hedera.services.queries.token.GetTokenInfoAnswer.TOKEN_INFO_CTX_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
@@ -50,6 +50,7 @@ import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.mockStatic;
 
 class GetTokenInfoResourceUsageTest {
 	private static final String memo = "22 a million";
@@ -71,7 +72,7 @@ class GetTokenInfoResourceUsageTest {
 
 	private FeeData expected;
 	private TokenGetInfoUsage estimator;
-	private Function<Query, TokenGetInfoUsage> factory;
+	private MockedStatic<TokenGetInfoUsage> mockedStatic;
 	private StateView view;
 
 	private GetTokenInfoResourceUsage subject;
@@ -81,10 +82,8 @@ class GetTokenInfoResourceUsageTest {
 		expected = mock(FeeData.class);
 		view = mock(StateView.class);
 		estimator = mock(TokenGetInfoUsage.class);
-		factory = mock(Function.class);
-		given(factory.apply(any())).willReturn(estimator);
-
-		GetTokenInfoResourceUsage.factory = factory;
+		mockedStatic = mockStatic(TokenGetInfoUsage.class);
+		mockedStatic.when(() -> TokenGetInfoUsage.newEstimate(satisfiableAnswerOnly)).thenReturn(estimator);
 
 		given(estimator.givenCurrentAdminKey(any())).willReturn(estimator);
 		given(estimator.givenCurrentWipeKey(any())).willReturn(estimator);
@@ -104,7 +103,7 @@ class GetTokenInfoResourceUsageTest {
 
 	@AfterEach
 	void tearDown() {
-		GetTokenInfoResourceUsage.factory = TokenGetInfoUsage::newEstimate;
+		mockedStatic.close();
 	}
 
 	@Test

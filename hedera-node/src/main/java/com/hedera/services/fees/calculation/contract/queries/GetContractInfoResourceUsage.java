@@ -38,7 +38,7 @@ import static com.hedera.services.queries.contract.GetContractInfoAnswer.CONTRAC
 
 @Singleton
 public final class GetContractInfoResourceUsage implements QueryResourceUsageEstimator {
-	static Function<Query, ContractGetInfoUsage> factory = ContractGetInfoUsage::newEstimate;
+	private static final Function<Query, ContractGetInfoUsage> factory = ContractGetInfoUsage::newEstimate;
 
 	@Inject
 	public GetContractInfoResourceUsage() {

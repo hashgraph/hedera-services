@@ -36,11 +36,11 @@ import com.hederahashgraph.api.proto.java.TokenRelationship;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
@@ -49,9 +49,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 
 class GetContractInfoResourceUsageTest {
@@ -70,7 +70,7 @@ class GetContractInfoResourceUsageTest {
 
 	private StateView view;
 	private ContractGetInfoUsage estimator;
-	private Function<Query, ContractGetInfoUsage> factory;
+	private MockedStatic<ContractGetInfoUsage> mockedStatic;
 	private FeeData expected;
 
 	private GetContractInfoResourceUsage subject;
@@ -83,10 +83,8 @@ class GetContractInfoResourceUsageTest {
 		given(view.infoForContract(target)).willReturn(Optional.of(info));
 
 		estimator = mock(ContractGetInfoUsage.class);
-		factory = mock(Function.class);
-		given(factory.apply(any())).willReturn(estimator);
-
-		GetContractInfoResourceUsage.factory = factory;
+		mockedStatic = mockStatic(ContractGetInfoUsage.class);
+		mockedStatic.when(() -> ContractGetInfoUsage.newEstimate(satisfiableAnswerOnly)).thenReturn(estimator);
 
 		given(estimator.givenCurrentKey(aKey)).willReturn(estimator);
 		given(estimator.givenCurrentMemo(memo)).willReturn(estimator);
@@ -98,7 +96,7 @@ class GetContractInfoResourceUsageTest {
 
 	@AfterEach
 	void tearDown() {
-		GetContractInfoResourceUsage.factory = ContractGetInfoUsage::newEstimate;
+		mockedStatic.close();
 	}
 
 	@Test

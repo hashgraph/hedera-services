@@ -34,11 +34,11 @@ import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 
 import static com.hedera.services.queries.token.GetAccountNftInfosAnswer.ACCOUNT_NFT_INFO_CTX_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
@@ -50,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 
 class GetAccountNftInfosResourceUsageTest {
@@ -69,7 +70,7 @@ class GetAccountNftInfosResourceUsageTest {
 	private static final Query satisfiableAnswerOnly = tokenGetAccountNftInfosQuery(target, start, end, ANSWER_ONLY);
 
 	private TokenGetAccountNftInfosUsage estimator;
-	private Function<Query, TokenGetAccountNftInfosUsage> factory;
+	private MockedStatic<TokenGetAccountNftInfosUsage> mockedStatic;
 	private FeeData expected;
 	private StateView view;
 
@@ -80,10 +81,8 @@ class GetAccountNftInfosResourceUsageTest {
 		expected = mock(FeeData.class);
 		view = mock(StateView.class);
 		estimator = mock(TokenGetAccountNftInfosUsage.class);
-		factory = mock(Function.class);
-		given(factory.apply(any())).willReturn(estimator);
-
-		GetAccountNftInfosResourceUsage.factory = factory;
+		mockedStatic = mockStatic(TokenGetAccountNftInfosUsage.class);
+		mockedStatic.when(() -> TokenGetAccountNftInfosUsage.newEstimate(satisfiableAnswerOnly)).thenReturn(estimator);
 
 		given(estimator.givenMetadata(any())).willReturn(estimator);
 		given(estimator.get()).willReturn(expected);
@@ -95,7 +94,7 @@ class GetAccountNftInfosResourceUsageTest {
 
 	@AfterEach
 	void tearDown() {
-		GetAccountNftInfosResourceUsage.factory = TokenGetAccountNftInfosUsage::newEstimate;
+		mockedStatic.close();
 	}
 
 	@Test
