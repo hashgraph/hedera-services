@@ -54,15 +54,18 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 
+/**
+ * {@link HederaWorldUpdater} must be renamed to HederaMutableWorldState and implement MutableWorldState to be equivalent to DefaultMutableWorld
+ */
 public class HederaWorldUpdater implements WorldUpdater {
 
 	private final EntityIdSource ids;
 	private final AccountStore accountStore;
 	private final ServicesRepositoryRoot repositoryRoot;
 
+	// TODO most probably we do not need those 5 properties here
 	private final Map<Address, Bytes> updatedAccountCode = new HashMap<>();
 	private final Map<Address, Bytes> updatedStorageTries = new HashMap<>();
-
 	private final Map<Address, Bytes> provisionalCodeUpdates = new HashMap<>();
 	private final Map<Address, EvmAccountImpl> provisionalAccountUpdates = new HashMap<>();
 	private final Map<Id, Map.Entry<Id, HederaAccountCustomizer>> provisionalAccountCreations = new HashMap<>();
@@ -114,11 +117,17 @@ public class HederaWorldUpdater implements WorldUpdater {
 		return new Updater(this);
 	}
 
+	/**
+	 * TODO MUST return OUR implementation of EvmAccount which is extension of {@link com.hedera.services.store.models.Account}
+	 * @param address
+	 * @return
+	 */
 	@Override
-	public Account get(Address address) {
+	public EvmAccount get(Address address) {
 		Id id = EntityIdUtils.idParsedFromEvmAddress(address.toArray());
 
 		if (provisionalAccountCreations.containsKey(id)) {
+			// TODO we should populate the balance, maybe code as-well
 			return new HederaUpdateTrackingAccount(new EvmAccountImpl(address, Wei.of(0)));
 		}
 
@@ -144,12 +153,14 @@ public class HederaWorldUpdater implements WorldUpdater {
 		Id id = EntityIdUtils.idParsedFromEvmAddress(address.toArray());
 		com.hedera.services.store.models.Account account = new com.hedera.services.store.models.Account(id);
 		account.setBalance(balance.toLong());
+		// TODO we should not persist the account in state yet. We must create it provisionally.
 		accountStore.persistNew(account);
 		return new HederaUpdateTrackingAccount(new EvmAccountImpl(address, balance));
 	}
 
 	@Override
 	public EvmAccount getAccount(final Address address) {
+		// TODO if `get(addresss) is null it will throw since HederaUpdateTrackingAccount checks for != null
 		return new HederaUpdateTrackingAccount(get(address));
 	}
 
@@ -212,8 +223,9 @@ public class HederaWorldUpdater implements WorldUpdater {
 		return Optional.empty();
 	}
 
-	// An immutable class that represents an individual account as stored in
-	// in the world state's underlying merkle patricia trie.
+	/**
+	 * TODO we must extend {@link com.hedera.services.store.models.Account}
+	 */
 	public class WorldStateAccount implements Account {
 
 		private final Address address;
@@ -315,6 +327,22 @@ public class HederaWorldUpdater implements WorldUpdater {
 		}
 	}
 
+	/**
+	 * This updater must extend `HederaAbstractWorldUpdater` instead of {@link AbstractWorldUpdater}
+	 * - HederaAbstractWorldUpdater must use {@link HederaUpdateTrackingAccount} instead of {@link UpdateTrackingAccount}
+	 * - HederaAbstractWorldUpdater must have new method: allocateNewContractAddress.
+	 * The method will:
+	 *       - count the number of times the method is called
+	 *       - call the `HederaWorldView` to allocate new ID from {@link com.hedera.services.ledger.ids.SeqNoEntityIdSource}
+	 * - HederaAbstractWorldUpdater must have new method: reclaimContractAddress
+	 * The method will:
+	 * 	     - call the `HederaWorldView` to reclaim an ID from {@link com.hedera.services.ledger.ids.SeqNoEntityIdSource}
+	 * 	     - decrement the counter for `newContractAddressesAllocated`
+	 * - StackedUpdater in HederaAbstractWorldUpdater must extend `HederaAbstractWorldUpdater` instead of {@link AbstractWorldUpdater}
+	 * - HederaAbstractWorldUpdater on {@link UpdateTrackingAccount.reset} must clear the number of times `allocateNewContractAddress` was called
+	 * - HederaAbstractWorldUpdater on {@link UpdateTrackingAccount.revert} must call the
+	 * `HederaWorldView` and execute {@link com.hedera.services.ledger.ids.SeqNoEntityIdSource.reclaim} `newContractAddressesAllocated` times
+	 */
 	protected static class Updater
 			extends AbstractWorldUpdater<HederaWorldUpdater, WorldStateAccount> {
 

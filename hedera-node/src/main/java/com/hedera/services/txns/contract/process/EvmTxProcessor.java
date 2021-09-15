@@ -68,6 +68,7 @@ abstract class EvmTxProcessor {
 
 	private final HbarCentExchange exchange;
 	private final GasCalculator gasCalculator;
+	// TODO this must NOT be a property but a new instance must be created for every `execute`
 	protected final HederaWorldUpdater worldState;
 	private final UsagePricesProvider usagePrices;
 	protected final GlobalDynamicProperties dynamicProperties;
@@ -101,6 +102,9 @@ abstract class EvmTxProcessor {
 				1);
 	}
 
+	/**
+	 * TODO we must extend the {@link Transaction} object with new properties such as `memo`, `proxyAccount` and `adminKey`
+	 */
 	protected void execute (Account sender, final Transaction transaction, Instant consensusTime) {
 
 		final var gasPrice = transaction.getGasPrice().get();
@@ -122,7 +126,6 @@ abstract class EvmTxProcessor {
 		final Gas gasAvailable = Gas.of(transaction.getGasLimit()).minus(intrinsicGas);
 		final WorldUpdater worldUpdater = worldState.updater();
 		final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
-
 		/*
 		  TODO Do we need those variables
 		  final var contextVariablesBuilder =
@@ -175,6 +178,8 @@ abstract class EvmTxProcessor {
 		mutableCoinbase.incrementBalance(coinbaseFee.priceFor(gasPrice));
 
 		initialFrame.getSelfDestructs().forEach(worldState::deleteAccount);
+
+		// TODO we must call worldState.persist() maybe in the Transition logic. Externalising the results there as-well
 
 		/* Externalise Result */
 		// TODO

@@ -94,10 +94,10 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		final var codeWithConstructorArgs = prepareCodeWithConstructorArguments(op);
 
 		/* --- Do the business logic --- */
+		// TODO we must throw BAD_ENCODING if the key is not okay
 		var key = op.hasAdminKey() ?
 				asFcKeyUnchecked(op.getAdminKey()) :
 				new JContractIDKey(asContract(senderId.asGrpcAccount()));
-		// TODO create the Merkle Contract
 
 		txProcessor.execute(
 				sender,
@@ -105,9 +105,6 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 				op.getInitialBalance(),
 				codeWithConstructorArgs,
 				txnCtx.consensusTime());
-
-		/* --- Persist new contract --- */
-//		accountStore.persistNew(contractAccount);
 	}
 
 

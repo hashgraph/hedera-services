@@ -82,6 +82,7 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 	@Override
 	protected MessageFrame buildInitialFrame(MessageFrame.Builder commonInitialFrame, Transaction transaction) {
 		final var newContractAddress = worldState.allocateNewContractAddress(transaction.getSender());
+		// TODO we must getMutableAccount and set the memo, admin key and proxy account properties
 		return commonInitialFrame
 						.type(MessageFrame.Type.CONTRACT_CREATION)
 						.address(newContractAddress)
