@@ -116,8 +116,12 @@ public abstract class HapiApiSuite {
 		this.deferResultsSummary = true;
 	}
 
+	public boolean getDeferResultsSummary() {
+		return deferResultsSummary;
+	}
+
 	public void summarizeDeferredResults() {
-		if (deferResultsSummary) {
+		if (getDeferResultsSummary()) {
 			deferResultsSummary = false;
 			summarizeResults(getResultsLogger());
 		}
@@ -136,7 +140,7 @@ public abstract class HapiApiSuite {
 	}
 
 	private FinalOutcome runSuite(Consumer<List<HapiApiSpec>> runner) {
-		if (!deferResultsSummary) {
+		if (!getDeferResultsSummary()) {
 			getResultsLogger().info("-------------- STARTING " + name() + " SUITE --------------");
 		}
 		List<HapiApiSpec> specs = getSpecsInSuite();
@@ -170,7 +174,7 @@ public abstract class HapiApiSuite {
 	}
 
 	private void summarizeResults(Logger log) {
-		if (deferResultsSummary) {
+		if (getDeferResultsSummary()) {
 			return;
 		}
 		log.info("-------------- STARTING " + name() + " SUITE --------------");
