@@ -173,6 +173,7 @@ public abstract class HapiApiSuite {
 		if (deferResultsSummary) {
 			return;
 		}
+		log.info("-------------- STARTING " + name() + " SUITE --------------");
 		log.info("-------------- RESULTS OF " + name() + " SUITE --------------");
 		for (HapiApiSpec spec : finalSpecs) {
 			log.info(spec);
