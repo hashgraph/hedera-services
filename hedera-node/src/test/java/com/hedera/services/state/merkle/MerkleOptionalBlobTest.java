@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -121,6 +122,32 @@ class MerkleOptionalBlobTest {
 
 		verify(stuffDelegate, never()).release();
 		assertEquals(newStuffDelegate, subject.getDelegate());
+	}
+
+	@Test
+	void onReleaseWorksForMissingDelegate() {
+		subject = new MerkleOptionalBlob();
+
+		assertDoesNotThrow(subject::onRelease);
+	}
+
+	@Test
+	void onReleaseDoesntDelegateWhenCopiedDuringMigration() {
+		MerkleOptionalBlob.setInMigration(true);
+
+		subject.copy();
+		subject.onRelease();
+
+		verify(stuffDelegate, never()).release();
+
+		MerkleOptionalBlob.setInMigration(false);
+	}
+
+	@Test
+	void onReleaseDelegatesWhenNotCopiedDuringMigration() {
+		subject.onRelease();
+
+		verify(stuffDelegate).release();
 	}
 
 	@Test
@@ -282,6 +309,20 @@ class MerkleOptionalBlobTest {
 		assertNotSame(subject, subjectCopy);
 		assertEquals(subject, subjectCopy);
 		assertTrue(subject.isImmutable());
+	}
+
+	@Test
+	void copyWorksInMigration() {
+		MerkleOptionalBlob.setInMigration(true);
+
+		final var subjectCopy = subject.copy();
+
+		assertNotSame(subject, subjectCopy);
+		assertEquals(subject, subjectCopy);
+		assertTrue(subject.isImmutable());
+		verify(stuffDelegate, never()).copy();
+
+		MerkleOptionalBlob.setInMigration(false);
 	}
 
 	@Test
