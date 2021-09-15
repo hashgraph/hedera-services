@@ -105,7 +105,6 @@ public class ContractPerformanceSuite extends HapiApiSuite {
       if (contractCode.contains(EXTERNAL_CONTRACT_MARKER)) {
         givenBlock =
             new HapiSpecOperation[] {
-              fileUpdate(APP_PROPERTIES).payingWith(ADDRESS_BOOK_CONTROL),
               createProgramFile(RETURN_CONTRACT + "bytecode", RETURN_PROGRAM),
               contractCreate(RETURN_CONTRACT).bytecode(RETURN_CONTRACT + "bytecode"),
               createProgramFile(REVERT_CONTRACT + "bytecode", REVERT_PROGRAM),
