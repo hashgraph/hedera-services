@@ -8,8 +8,10 @@ import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import org.junit.jupiter.api.Test;
 
+import static com.hedera.services.utils.EntityNumPair.MISSING_NUM_PAIR;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 class EntityNumPairTest {
 	@Test
@@ -53,6 +55,15 @@ class EntityNumPairTest {
 
 		// expect:
 		assertEquals(expected, actual);
+	}
+
+	@Test
+	void factoryFromInvalidNftIdWorks() {
+		final var invalidShard = new NftId(1, 0, 1, 2);
+		final var invalidRealm = new NftId(0, 1, 1, 2);
+
+		assertSame(MISSING_NUM_PAIR, EntityNumPair.fromNftId(invalidShard));
+		assertSame(MISSING_NUM_PAIR, EntityNumPair.fromNftId(invalidRealm));
 	}
 
 	@Test
