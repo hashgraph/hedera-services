@@ -61,6 +61,8 @@ class TokenRelationshipTest {
 
 	@Test
 	void ofRecordInterestIfFungibleBalanceChanges() {
+		token.setType(TokenType.FUNGIBLE_COMMON);
+		
 		subject.setBalance(balance - 1);
 
 		assertTrue(subject.hasChangesForRecord());
