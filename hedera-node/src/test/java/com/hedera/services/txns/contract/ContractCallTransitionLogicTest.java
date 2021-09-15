@@ -27,7 +27,7 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.txns.contract.helpers.BesuAdapter;
+import com.hedera.services.txns.contract.process.CallEvmTxProcessor;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -67,7 +67,7 @@ class ContractCallTransitionLogicTest {
 	private PlatformTxnAccessor accessor;
 	private GlobalDynamicProperties properties;
 	private AccountStore accountStore;
-	private BesuAdapter besuAdapter;
+	private CallEvmTxProcessor txProcessor;
 	FCMap<MerkleEntityId, MerkleAccount> contracts;
 	ContractCallTransitionLogic subject;
 
@@ -80,10 +80,10 @@ class ContractCallTransitionLogicTest {
 		validator = mock(OptionValidator.class);
 		properties = mock(GlobalDynamicProperties.class);
 		accountStore = mock(AccountStore.class);
-		besuAdapter = mock(BesuAdapter.class);
+		txProcessor = mock(CallEvmTxProcessor.class);
 		withRubberstampingValidator();
 
-		subject = new ContractCallTransitionLogic(txnCtx, properties, accountStore, besuAdapter);
+		subject = new ContractCallTransitionLogic(txnCtx, accountStore, txProcessor, properties);
 	}
 
 	@Test

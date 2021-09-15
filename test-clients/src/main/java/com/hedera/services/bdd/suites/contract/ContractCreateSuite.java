@@ -62,14 +62,16 @@ public class ContractCreateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-//				positiveTests(),
-				negativeTests()
+
+				positiveTests()
+//				negativeTests()
 		);
 	}
 
 	private List<HapiApiSpec> positiveTests() {
 		return Arrays.asList(
-			createsVanillaContract()
+//			createsVanillaContract()
+				createEmptyConstructor()
 		);
 	}
 
@@ -91,6 +93,20 @@ public class ContractCreateSuite extends HapiApiSuite {
 								.path(ContractResources.VALID_BYTECODE_PATH)
 				).when().then(
 						contractCreate("testContract")
+								.bytecode("contractFile")
+								.hasKnownStatus(SUCCESS)
+				);
+	}
+
+	private HapiApiSpec createEmptyConstructor() {
+		return defaultHapiSpec("EmptyConstructor")
+				.given(
+						fileCreate("contractFile")
+								.path(ContractResources.EMPTY_CONSTRUCTOR)
+				).when(
+
+				).then(
+						contractCreate("emptyConstructorTest")
 								.bytecode("contractFile")
 								.hasKnownStatus(SUCCESS)
 				);

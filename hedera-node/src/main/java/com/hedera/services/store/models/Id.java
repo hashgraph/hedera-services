@@ -21,12 +21,17 @@ package com.hedera.services.store.models;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import org.hyperledger.besu.datatypes.Address;
 
+import java.util.Arrays;
 import java.util.Comparator;
 
 /**
@@ -79,6 +84,14 @@ public class Id {
 		return new Id(id.getShardNum(), id.getRealmNum(), id.getTokenNum());
 	}
 
+	public static Id fromEvmAddress(final Address address) {
+		final var addressBytes = address.toArray();
+		final int shardId = Ints.fromByteArray(Arrays.copyOfRange(addressBytes, 0, 4));
+		final long realm = Longs.fromByteArray(Arrays.copyOfRange(addressBytes, 4, 12));
+		final long num = Longs.fromByteArray(Arrays.copyOfRange(addressBytes, 12, 20));
+		return new Id(shardId, realm, num);
+	}
+
 	public long getShard() {
 		return shard;
 	}
@@ -126,5 +139,13 @@ public class Id {
 
 	public MerkleEntityId asMerkle() {
 		return new MerkleEntityId(shard, realm, num);
+	}
+
+	/**
+	 * Returns the EVM representation of the Account
+	 * @return {@link Address} evm representation
+	 */
+	public Address asEvmAddress() {
+		return Address.fromHexString(EntityIdUtils.asSolidityAddressHex(this));
 	}
 }

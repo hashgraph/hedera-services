@@ -21,8 +21,12 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.files.HederaFs;
+import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.txns.contract.process.CreateEvmTxProcessor;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
@@ -53,9 +57,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -76,17 +80,18 @@ class ContractCreateTransitionLogicTest {
 	private HederaFs hfs;
 	private SequenceNumber seqNo;
 	private OptionValidator validator;
-	private ContractCreateTransitionLogic.LegacyCreator delegate;
+	private GlobalDynamicProperties properties;
 	private TransactionBody contractCreateTxn;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
 	private ContractCreateTransitionLogic subject;
+	private AccountStore accountStore;
+	private CreateEvmTxProcessor txProcessor;
+	private EntityIdSource entityIdSource;
 
 	@BeforeEach
 	private void setup() {
 		consensusTime = Instant.now();
-
-		delegate = mock(ContractCreateTransitionLogic.LegacyCreator.class);
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		hfs = mock(HederaFs.class);
@@ -94,8 +99,11 @@ class ContractCreateTransitionLogicTest {
 		validator = mock(OptionValidator.class);
 		withRubberstampingValidator();
 		seqNo = mock(SequenceNumber.class);
+		properties = mock(GlobalDynamicProperties.class);
+		txProcessor = mock(CreateEvmTxProcessor.class);
+		entityIdSource = mock(EntityIdSource.class);
 
-		subject = new ContractCreateTransitionLogic(hfs, delegate, () -> seqNo, validator, txnCtx);
+		subject = new ContractCreateTransitionLogic(hfs, entityIdSource, accountStore, validator, txnCtx, txProcessor, properties);
 	}
 
 	@Test
@@ -180,7 +188,6 @@ class ContractCreateTransitionLogicTest {
 		// and:
 		given(hfs.exists(bytecodeSrc)).willReturn(true);
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
-		given(delegate.perform(contractCreateTxn, consensusTime, bytecode, seqNo)).willReturn(creation);
 
 		// when:
 		subject.doStateTransition();
@@ -206,7 +213,6 @@ class ContractCreateTransitionLogicTest {
 		// and:
 		given(hfs.exists(bytecodeSrc)).willReturn(true);
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
-		given(delegate.perform(contractCreateTxn, consensusTime, bytecode, seqNo)).willReturn(creation);
 
 		// when:
 		subject.doStateTransition();
@@ -257,7 +263,6 @@ class ContractCreateTransitionLogicTest {
 		givenValidTxnCtx();
 		given(hfs.exists(bytecodeSrc)).willReturn(true);
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
-		given(delegate.perform(any(), any(), any(), any())).willThrow(IllegalStateException.class);
 
 		// when:
 		subject.doStateTransition();

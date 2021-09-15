@@ -36,6 +36,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
@@ -112,6 +113,11 @@ public class BaseHederaLedgerTestHelper {
 			@Override
 			public AccountID newAccountId(AccountID newAccountSponsor) {
 				return AccountID.newBuilder().setAccountNum(nextId++).build();
+			}
+
+			@Override
+			public Id newContractId(Id newContractSponsor) {
+				return new Id(0,0, nextId++);
 			}
 
 			@Override

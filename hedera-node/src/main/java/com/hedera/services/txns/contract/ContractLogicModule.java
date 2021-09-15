@@ -45,13 +45,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractUpd
 
 @Module
 public class ContractLogicModule {
-	@Provides
-	@Singleton
-	public static ContractCreateTransitionLogic.LegacyCreator provideLegacyCreator(
-		SmartContractRequestHandler contracts
-	) {
-		return contracts::createContract;
-	}
 
 	@Provides
 	@Singleton

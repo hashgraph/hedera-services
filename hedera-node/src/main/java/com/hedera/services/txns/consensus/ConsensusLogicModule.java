@@ -1,6 +1,7 @@
-package com.hedera.services.txns.contract;
+package com.hedera.services.txns.consensus;
 
-/*-
+/*
+ * -
  * ‌
  * Hedera Services Node
  * ​
@@ -9,23 +10,20 @@ package com.hedera.services.txns.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
- *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * ‍
+ *
  */
 
 import com.hedera.services.fees.annotations.FunctionKey;
 import com.hedera.services.txns.TransitionLogic;
-import com.hedera.services.txns.consensus.SubmitMessageTransitionLogic;
-import com.hedera.services.txns.consensus.TopicCreateTransitionLogic;
-import com.hedera.services.txns.consensus.TopicDeleteTransitionLogic;
-import com.hedera.services.txns.consensus.TopicUpdateTransitionLogic;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoMap;

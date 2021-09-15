@@ -28,7 +28,6 @@ import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.hyperledger.besu.datatypes.Address;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -229,15 +228,6 @@ public class Account {
 		return associatedTokens.contains(token);
 	}
 
-	/**
-	 * Returns the EVM {@link Address} representation of a given {@link Account}.
-	 *
-	 * @return a {@link Address} object
-	 */
-	public Address getEvmAddress() {
-		return Address.fromHexString(asSolidityAddressHex(id));
-	}
-
 	/* NOTE: The object methods below are only overridden to improve
 	readability of unit tests; this model object is not used in hash-based
 	collections, so the performance of these methods doesn't matter. */
@@ -249,9 +239,9 @@ public class Account {
 		final Account account = (Account) o;
 		return expiry == account.expiry
 				&& balance == account.balance
-				&& deleted == account.deleted 
-				&& isSmartContract == account.isSmartContract 
-				&& isReceiverSigRequired == account.isReceiverSigRequired 
+				&& deleted == account.deleted
+				&& isSmartContract == account.isSmartContract
+				&& isReceiverSigRequired == account.isReceiverSigRequired
 				&& ownedNfts == account.ownedNfts
 				&& autoRenewSecs == account.autoRenewSecs
 				&& isNew == account.isNew

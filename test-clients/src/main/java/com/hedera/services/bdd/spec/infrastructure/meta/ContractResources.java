@@ -49,6 +49,7 @@ public class ContractResources {
 	public static final String MINTERS_BYTECODE_PATH = bytecodePath("Minters");
 	public static final String PAY_TEST_BYTECODE_PATH = bytecodePath("PayTest");
 	public static final String DOUBLE_SEND_BYTECODE_PATH = bytecodePath("DoubleSend");
+	public static final String EMPTY_CONSTRUCTOR = bytecodePath("EmptyConstructor");
 
 	public static final String CREATE_CHILD_ABI = "{\"constant\":false," +
 			"\"inputs\":[],\"name\":\"create\"," +

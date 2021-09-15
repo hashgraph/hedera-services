@@ -4,7 +4,7 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.UpdateTrackingAccount;
 
-public class HederaUpdateTrackingAccount extends UpdateTrackingAccount {
+public class HederaUpdateTrackingAccount<A extends Account> extends UpdateTrackingAccount  {
 
     public HederaUpdateTrackingAccount(Account account) {
         super(account);

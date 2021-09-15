@@ -25,7 +25,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
-import com.hedera.services.txns.contract.helpers.BesuAdapter;
+import com.hedera.services.txns.contract.process.CallEvmTxProcessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -40,24 +40,24 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class ContractCallTransitionLogic implements TransitionLogic {
 
-	private final TransactionContext txnCtx;
-	private final GlobalDynamicProperties properties;
 	private final AccountStore accountStore;
-	private final BesuAdapter besuAdapter;
+	private final TransactionContext txnCtx;
+	private final CallEvmTxProcessor txProcessor;
+	private final GlobalDynamicProperties properties;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validateSemantics;
 
 	@Inject
 	public ContractCallTransitionLogic(
 			TransactionContext txnCtx,
-			GlobalDynamicProperties properties,
 			AccountStore accountStore,
-			BesuAdapter besuAdapter
+			CallEvmTxProcessor txProcessor,
+			GlobalDynamicProperties properties
 	) {
 		this.txnCtx = txnCtx;
 		this.properties = properties;
+		this.txProcessor = txProcessor;
 		this.accountStore = accountStore;
-		this.besuAdapter = besuAdapter;
 	}
 
 	@Override
@@ -74,15 +74,13 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 		final var receiver = accountStore.loadContract(contractId);
 
 		/* --- Do the business logic --- */
-		besuAdapter.executeTX(
-				false,
+		txProcessor.execute(
 				sender,
 				receiver,
 				op.getGas(),
-				op.getFunctionParameters(),
 				op.getAmount(),
-				txnCtx.consensusTime(),
-				null);
+				op.getFunctionParameters(),
+				txnCtx.consensusTime());
 	}
 
 	@Override

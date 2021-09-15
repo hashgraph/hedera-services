@@ -20,6 +20,7 @@ package com.hedera.services.ledger.ids;
  * ‍
  */
 
+import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -32,6 +33,9 @@ public enum ExceptionalEntityIdSource implements EntityIdSource {
 	public AccountID newAccountId(AccountID newAccountSponsor) {
 		throw new UnsupportedOperationException();
 	}
+
+	@Override
+	public Id newContractId(Id newContractSponsor) { throw new UnsupportedOperationException(); }
 
 	@Override
 	public FileID newFileId(AccountID newFileSponsor) {
