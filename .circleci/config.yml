@@ -1174,7 +1174,7 @@ workflows:
               branches:
                 ignore:
                   - NONE
-                  - jasperdb
+                  - merge-master-to-node-links
             workflow-name: "Continuous-integration"
         - sonar-check:
             context: SonarCloud
