@@ -140,9 +140,6 @@ class BaseOperationUsageTest {
 		final var subject = new BaseOperationUsage();
 
 		assertThrows(IllegalArgumentException.class,
-				() -> subject.baseUsageFor(CryptoUpdate, DEFAULT));
-
-		assertThrows(IllegalArgumentException.class,
 				() -> subject.baseUsageFor(CryptoTransfer, UNRECOGNIZED));
 	}
 
