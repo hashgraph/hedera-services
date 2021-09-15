@@ -35,6 +35,12 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExternalLeaf, Keyed<String> {
+	private static boolean inMigration = false;
+
+	public static synchronized void setInMigration(boolean inMigration) {
+		MerkleOptionalBlob.inMigration = inMigration;
+	}
+
 	static final int PRE_RELEASE_0180_VERSION = 1;
 	static final int RELEASE_0180_VERSION = 2;
 
@@ -63,6 +69,7 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 
 	private String path;
 	private BinaryObject delegate;
+	private boolean copiedDuringMigration = false;
 
 	public MerkleOptionalBlob() {
 		delegate = MISSING_DELEGATE;
@@ -179,7 +186,9 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 	@Override
 	public MerkleOptionalBlob copy() {
 		setImmutable(true);
-		final var fc = new MerkleOptionalBlob(delegate.copy());
+		copiedDuringMigration = inMigration;
+		final var fcDelegate = inMigration ? delegate : delegate.copy();
+		final var fc = new MerkleOptionalBlob(fcDelegate);
 		fc.setKey(path);
 		return fc;
 	}
@@ -222,7 +231,7 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 
 	@Override
 	public void onRelease() {
-		if (delegate != MISSING_DELEGATE) {
+		if (!copiedDuringMigration && delegate != MISSING_DELEGATE) {
 			delegate.release();
 		}
 	}

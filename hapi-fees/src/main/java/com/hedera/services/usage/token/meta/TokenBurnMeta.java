@@ -1,8 +1,8 @@
-package com.hedera.services.context;
+package com.hedera.services.usage.token.meta;
 
 /*-
  * ‌
- * Hedera Services Node
+ * Hedera Services API Fees
  * ​
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
@@ -20,29 +20,13 @@ package com.hedera.services.context;
  * ‍
  */
 
-import com.swirlds.common.PlatformStatus;
+import com.hederahashgraph.api.proto.java.SubType;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
-import static com.swirlds.common.PlatformStatus.STARTING_UP;
-
-@Singleton
-public final class ContextPlatformStatus implements CurrentPlatformStatus {
-	private PlatformStatus current = STARTING_UP;
-
-	@Inject
-	public ContextPlatformStatus() {
-		/* No-op */
-	}
-
-	@Override
-	public synchronized void set(final PlatformStatus status) {
-		current = status;
-	}
-
-	@Override
-	public synchronized PlatformStatus get() {
-		return current;
+public class TokenBurnMeta extends TokenBurnWipeMeta {
+	public TokenBurnMeta(final int bpt,
+			final SubType subType,
+			final long transferRecordRb,
+			final int serialNumsCount) {
+		super(bpt, subType, transferRecordRb, serialNumsCount);
 	}
 }

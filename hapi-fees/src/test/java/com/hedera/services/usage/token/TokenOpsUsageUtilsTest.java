@@ -20,20 +20,30 @@ package com.hedera.services.usage.token;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.test.IdUtils;
 import com.hedera.services.test.KeyUtils;
+import com.hedera.services.usage.token.meta.TokenBurnMeta;
 import com.hedera.services.usage.token.meta.TokenCreateMeta;
+import com.hedera.services.usage.token.meta.TokenMintMeta;
+import com.hedera.services.usage.token.meta.TokenWipeMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenType;
+import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import static com.hedera.services.test.IdUtils.asAccount;
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
@@ -49,7 +59,7 @@ class TokenOpsUsageUtilsTest {
 	@Test
 	void tokenCreateWithAutoRenewAccountWorks() {
 		final var txn = givenTokenCreateWith(
-				FUNGIBLE_COMMON, false, false, true);
+				FUNGIBLE_COMMON, false, false, true, false);
 
 		final var tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(txn);
 
@@ -64,7 +74,7 @@ class TokenOpsUsageUtilsTest {
 	@Test
 	void tokenCreateWithCustomFeesAndKeyWork() {
 		final var txn = givenTokenCreateWith(
-				FUNGIBLE_COMMON, true, true, false);
+				FUNGIBLE_COMMON, true, true, false, true);
 
 		final var tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(txn);
 
@@ -77,9 +87,25 @@ class TokenOpsUsageUtilsTest {
 	}
 
 	@Test
+	void tokenCreateWithCustomFeesWork() {
+		final var txn = givenTokenCreateWith(
+				FUNGIBLE_COMMON, false, true, false, true);
+
+		final var tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(txn);
+
+		assertEquals(1038, tokenCreateMeta.getBaseSize());
+		assertEquals(1_111_111L, tokenCreateMeta.getLifeTime());
+		assertEquals(TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES, tokenCreateMeta.getSubType());
+		assertEquals(1, tokenCreateMeta.getNumTokens());
+		assertEquals(0, tokenCreateMeta.getNftsTransfers());
+		assertEquals(32, tokenCreateMeta.getCustomFeeScheduleSize());
+	}
+
+
+	@Test
 	void tokenCreateWithAutoRenewAcctNoCustomFeeKeyNoCustomFeesWorks() {
 		final var txn = givenTokenCreateWith(NON_FUNGIBLE_UNIQUE,
-				false, false, true);
+				false, false, true, false);
 
 		final var tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(txn);
 
@@ -94,7 +120,7 @@ class TokenOpsUsageUtilsTest {
 	@Test
 	void tokenCreateWithOutAutoRenewAcctAndCustomFeeKeyNoCustomFeesWorks() {
 		final var txn = givenTokenCreateWith(NON_FUNGIBLE_UNIQUE,
-				true, false, true);
+				true, false, true, false);
 
 		TokenCreateMeta tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(txn);
 
@@ -107,9 +133,72 @@ class TokenOpsUsageUtilsTest {
 	}
 
 	@Test
+	void tokenWipeFungibleCommonWorks() {
+		final var txn = givenTokenWipeWith(FUNGIBLE_COMMON);
+
+		TokenWipeMeta tokenWipeMeta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(txn);
+
+		assertEquals(0, tokenWipeMeta.getSerialNumsCount());
+		assertEquals(56, tokenWipeMeta.getTransferRecordDb());
+	}
+
+	@Test
+	void tokenWipeNonFungibleUniqueWorks() {
+		final var txn = givenTokenWipeWith(NON_FUNGIBLE_UNIQUE);
+
+		TokenWipeMeta tokenWipeMeta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(txn);
+
+		assertEquals(1, tokenWipeMeta.getSerialNumsCount());
+		assertEquals(80, tokenWipeMeta.getTransferRecordDb());
+	}
+
+	@Test
+	void tokenBurnFungibleCommonWorks() {
+		final var txn = givenTokenBurnWith(FUNGIBLE_COMMON);
+
+		TokenBurnMeta tokenBurnMeta = TOKEN_OPS_USAGE_UTILS.tokenBurnUsageFrom(txn);
+
+		assertEquals(0, tokenBurnMeta.getSerialNumsCount());
+		assertEquals(56, tokenBurnMeta.getTransferRecordDb());
+	}
+
+	@Test
+	void tokenBurnNonFungibleUniqueWorks() {
+		final var txn = givenTokenBurnWith(NON_FUNGIBLE_UNIQUE);
+
+		TokenBurnMeta tokenBurnMeta = TOKEN_OPS_USAGE_UTILS.tokenBurnUsageFrom(txn);
+
+		assertEquals(1, tokenBurnMeta.getSerialNumsCount());
+		assertEquals(80, tokenBurnMeta.getTransferRecordDb());
+	}
+
+
+	@Test
+	void tokenMintFungibleCommonWorks() {
+		final var txn = givenTokenMintWith(FUNGIBLE_COMMON);
+
+		TokenMintMeta tokenMintMeta = TOKEN_OPS_USAGE_UTILS.tokenMintUsageFrom(txn, TOKEN_FUNGIBLE_COMMON, 72000L);
+
+		assertEquals(0, tokenMintMeta.getRbs());
+		assertEquals(32, tokenMintMeta.getBpt());
+		assertEquals(56, tokenMintMeta.getTransferRecordDb());
+	}
+
+	@Test
+	void tokenMintNonFungibleUniqueWorks() {
+		final var txn = givenTokenMintWith(NON_FUNGIBLE_UNIQUE);
+
+		TokenMintMeta tokenMintMeta = TOKEN_OPS_USAGE_UTILS.tokenMintUsageFrom(txn, TOKEN_NON_FUNGIBLE_UNIQUE, 72000L);
+
+		assertEquals(1296000, tokenMintMeta.getRbs());
+		assertEquals(42, tokenMintMeta.getBpt());
+		assertEquals(136, tokenMintMeta.getTransferRecordDb());
+	}
+
+	@Test
 	void tokenCreateWithAutoRenewAcctAndCustomFeesAndKeyWorks() {
 		final var txn = givenTokenCreateWith(NON_FUNGIBLE_UNIQUE,
-				true, true, true);
+				true, true, true, false);
 
 		final var tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(txn);
 
@@ -125,8 +214,8 @@ class TokenOpsUsageUtilsTest {
 			final TokenType type,
 			final boolean withCustomFeesKey,
 			final boolean withCustomFees,
-			final boolean withAutoRenewAccount
-	) {
+			final boolean withAutoRenewAccount,
+			final boolean withInitialSupply) {
 		final var builder = TokenCreateTransactionBody.newBuilder()
 				.setTokenType(type)
 				.setExpiry(Timestamp.newBuilder().setSeconds(expiry))
@@ -138,6 +227,9 @@ class TokenOpsUsageUtilsTest {
 				.setFreezeKey(freezeKey)
 				.setSupplyKey(supplyKey)
 				.setWipeKey(wipeKey);
+		if(withInitialSupply) {
+			builder.setInitialSupply(1000L);
+		}
 		if (withCustomFeesKey) {
 			builder.setFeeScheduleKey(customFeeKey);
 		}
@@ -159,6 +251,64 @@ class TokenOpsUsageUtilsTest {
 		return txn;
 	}
 
+	private TransactionBody givenTokenWipeWith(
+			final TokenType type) {
+		final var op = TokenWipeAccountTransactionBody.newBuilder()
+				.setToken(tokenId)
+				.setAccount(accountID);
+		if(type == FUNGIBLE_COMMON) {
+			op.setAmount(100);
+		} else {
+			op.addAllSerialNumbers(List.of(1L));
+		}
+		final var txn = TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder()
+								.setSeconds(now)))
+				.setTokenWipe(op.build())
+				.build();
+		return txn;
+	}
+
+	private TransactionBody givenTokenBurnWith(
+			final TokenType type) {
+		final var op = TokenBurnTransactionBody.newBuilder()
+				.setToken(tokenId);
+		if(type == FUNGIBLE_COMMON) {
+			op.setAmount(100);
+		} else {
+			op.addAllSerialNumbers(List.of(1L));
+		}
+		final var txn = TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder()
+								.setSeconds(now)))
+				.setTokenBurn(op.build())
+				.build();
+		return txn;
+	}
+
+	private TransactionBody givenTokenMintWith(
+			final TokenType type) {
+		final var op = TokenMintTransactionBody.newBuilder()
+				.setToken(tokenId)
+				;
+		if(type == FUNGIBLE_COMMON) {
+			op.setAmount(100);
+		} else {
+			op.addAllMetadata(List.of(
+					ByteString.copyFromUtf8("NFT meta1"),
+					ByteString.copyFromUtf8("NFT meta2")));
+		}
+		final var txn = TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder()
+								.setSeconds(now)))
+				.setTokenMint(op.build())
+				.build();
+		return txn;
+	}
+
 	private static final Key kycKey = KeyUtils.A_COMPLEX_KEY;
 	private static final Key adminKey = KeyUtils.A_THRESHOLD_KEY;
 	private static final Key freezeKey = KeyUtils.A_KEY_LIST;
@@ -170,7 +320,9 @@ class TokenOpsUsageUtilsTest {
 	private static final String symbol = "DUMMYTOKEN";
 	private static final String name = "DummyToken";
 	private static final String memo = "A simple test token create";
-	private static final AccountID autoRenewAccount = asAccount("0.0.75231");
+	private static final AccountID autoRenewAccount = asAccount("0.0.10001");
+	private static final AccountID accountID = asAccount("0.0.10002");
+	private static final TokenID tokenId = IdUtils.asToken("0.0.20001");
 
 	private static final long now = 1_234_567L;
 }

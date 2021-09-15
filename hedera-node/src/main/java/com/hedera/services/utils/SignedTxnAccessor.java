@@ -58,8 +58,13 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreat
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
 /**
  * Encapsulates access to several commonly referenced parts of a gRPC {@link Transaction}.
@@ -158,10 +163,17 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 	@Override
 	public SubType getSubType() {
-		if(getFunction() == CryptoTransfer) {
+		if (function == CryptoTransfer) {
 			return xferUsageMeta.getSubType();
-		} else if (getFunction() == TokenCreate) {
+		} else if (function == TokenCreate) {
 			return SPAN_MAP_ACCESSOR.getTokenCreateMeta(this).getSubType();
+		} else if (function == TokenMint) {
+			final var op = getTxn().getTokenMint();
+			return op.getMetadataCount() > 0 ? TOKEN_NON_FUNGIBLE_UNIQUE : TOKEN_FUNGIBLE_COMMON;
+		} else if (function == TokenBurn) {
+			return SPAN_MAP_ACCESSOR.getTokenBurnMeta(this).getSubType();
+		} else if (function == TokenAccountWipe) {
+			return SPAN_MAP_ACCESSOR.getTokenWipeMeta(this).getSubType();
 		}
 		return SubType.DEFAULT;
 	}
@@ -262,7 +274,8 @@ public class SignedTxnAccessor implements TxnAccessor {
 	@Override
 	public SubmitMessageMeta availSubmitUsageMeta() {
 		if (function != ConsensusSubmitMessage) {
-			throw new IllegalStateException("Cannot get ConsensusSubmitMessage metadata for a " + function + ACCESSOR_LITERAL);
+			throw new IllegalStateException(
+					"Cannot get ConsensusSubmitMessage metadata for a " + function + ACCESSOR_LITERAL);
 		}
 		return submitMessageMeta;
 	}
@@ -301,6 +314,10 @@ public class SignedTxnAccessor implements TxnAccessor {
 			setFeeScheduleUpdateMeta();
 		} else if (function == TokenCreate) {
 			setTokenCreateUsageMeta();
+		} else if (function == TokenBurn) {
+			setTokenBurnUsageMeta();
+		} else if (function == TokenAccountWipe) {
+			setTokenWipeUsageMeta();
 		} else if (function == CryptoCreate) {
 			setCryptoCreateUsageMeta();
 		} else if (function == CryptoUpdate) {
@@ -336,12 +353,22 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 	private void setTokenCreateUsageMeta() {
 		final var tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(txn);
-		SPAN_MAP_ACCESSOR.setTokenCreate(this, tokenCreateMeta);
+		SPAN_MAP_ACCESSOR.setTokenCreateMeta(this, tokenCreateMeta);
+	}
+
+	private void setTokenBurnUsageMeta() {
+		final var tokenBurnMeta = TOKEN_OPS_USAGE_UTILS.tokenBurnUsageFrom(txn);
+		SPAN_MAP_ACCESSOR.setTokenBurnMeta(this, tokenBurnMeta);
+	}
+
+	private void setTokenWipeUsageMeta() {
+		final var tokenWipeMeta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(txn);
+		SPAN_MAP_ACCESSOR.setTokenWipeMeta(this, tokenWipeMeta);
 	}
 
 	private void setCryptoCreateUsageMeta() {
 		final var cryptoCreateMeta = new CryptoCreateMeta(txn.getCryptoCreateAccount());
-		SPAN_MAP_ACCESSOR.setCryptoCreate(this, cryptoCreateMeta);
+		SPAN_MAP_ACCESSOR.setCryptoCreateMeta(this, cryptoCreateMeta);
 	}
 
 	private void setCryptoUpdateUsageMeta() {

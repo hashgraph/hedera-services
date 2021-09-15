@@ -145,9 +145,12 @@ public class ScheduleGenerator {
 					TOKEN_NON_FUNGIBLE_UNIQUE,
 					TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES
 			)),
-			Pair.of(TokenMint, List.of(TOKEN_NON_FUNGIBLE_UNIQUE)),
-			Pair.of(TokenBurn, List.of(TOKEN_NON_FUNGIBLE_UNIQUE)),
-			Pair.of(TokenAccountWipe, List.of(TOKEN_NON_FUNGIBLE_UNIQUE)),
+			Pair.of(TokenMint, List.of(TOKEN_FUNGIBLE_COMMON,
+					TOKEN_NON_FUNGIBLE_UNIQUE)),
+			Pair.of(TokenBurn, List.of(TOKEN_FUNGIBLE_COMMON,
+					TOKEN_NON_FUNGIBLE_UNIQUE)),
+			Pair.of(TokenAccountWipe, List.of(TOKEN_FUNGIBLE_COMMON,
+					TOKEN_NON_FUNGIBLE_UNIQUE)),
 			Pair.of(TokenFeeScheduleUpdate, List.of(DEFAULT)),
 			/* Consensus */
 			Pair.of(ConsensusSubmitMessage, List.of(DEFAULT))

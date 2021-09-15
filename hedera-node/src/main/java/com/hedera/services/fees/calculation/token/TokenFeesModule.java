@@ -28,17 +28,14 @@ import com.hedera.services.fees.calculation.token.queries.GetTokenInfoResourceUs
 import com.hedera.services.fees.calculation.token.queries.GetTokenNftInfoResourceUsage;
 import com.hedera.services.fees.calculation.token.queries.GetTokenNftInfosResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenAssociateResourceUsage;
-import com.hedera.services.fees.calculation.token.txns.TokenBurnResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenCreateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenDeleteResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenDissociateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenFreezeResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenGrantKycResourceUsage;
-import com.hedera.services.fees.calculation.token.txns.TokenMintResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenRevokeKycResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenUnfreezeResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenUpdateResourceUsage;
-import com.hedera.services.fees.calculation.token.txns.TokenWipeResourceUsage;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
@@ -47,15 +44,12 @@ import dagger.multibindings.IntoMap;
 import java.util.List;
 import java.util.Set;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
@@ -138,33 +132,6 @@ public abstract class TokenFeesModule {
 			TokenDeleteResourceUsage tokenDeleteResourceUsage
 	) {
 		return List.of(tokenDeleteResourceUsage);
-	}
-
-	@Provides
-	@IntoMap
-	@FunctionKey(TokenMint)
-	public static List<TxnResourceUsageEstimator> provideTokenMint(
-			TokenMintResourceUsage tokenMintResourceUsage
-	) {
-		return List.of(tokenMintResourceUsage);
-	}
-
-	@Provides
-	@IntoMap
-	@FunctionKey(TokenBurn)
-	public static List<TxnResourceUsageEstimator> provideTokenBurn(
-			TokenBurnResourceUsage tokenBurnResourceUsage
-	) {
-		return List.of(tokenBurnResourceUsage);
-	}
-
-	@Provides
-	@IntoMap
-	@FunctionKey(TokenAccountWipe)
-	public static List<TxnResourceUsageEstimator> provideTokenWipe(
-			TokenWipeResourceUsage tokenWipeResourceUsage
-	) {
-		return List.of(tokenWipeResourceUsage);
 	}
 
 	@Provides

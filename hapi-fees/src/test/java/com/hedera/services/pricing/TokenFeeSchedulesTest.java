@@ -47,16 +47,19 @@ class TokenFeeSchedulesTest extends FeeSchedulesTestHelper {
 	@Test
 	void computesExpectedPriceForUniqueTokenMint() throws IOException {
 		testCanonicalPriceFor(TokenMint, TOKEN_NON_FUNGIBLE_UNIQUE);
+		testCanonicalPriceFor(TokenMint, TOKEN_FUNGIBLE_COMMON);
 	}
 
 	@Test
 	void computesExpectedPriceForUniqueTokenWipe() throws IOException {
 		testCanonicalPriceFor(TokenAccountWipe, TOKEN_NON_FUNGIBLE_UNIQUE);
+		testCanonicalPriceFor(TokenAccountWipe, TOKEN_FUNGIBLE_COMMON);
 	}
 
 	@Test
 	void computesExpectedPriceForUniqueTokenBurn() throws IOException {
 		testCanonicalPriceFor(TokenBurn, TOKEN_NON_FUNGIBLE_UNIQUE);
+		testCanonicalPriceFor(TokenBurn, TOKEN_FUNGIBLE_COMMON);
 	}
 
 	@Test
