@@ -1,6 +1,6 @@
 package maps;
 
-import com.hedera.services.state.merkle.virtual.ContractUint256;
+import com.hedera.services.state.merkle.virtual.ContractValue;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.openjdk.jmh.annotations.*;
@@ -24,7 +24,7 @@ import java.util.stream.IntStream;
 public class EclipseMapBench {
     public Random random = new Random(1234);
     private long randomIndex;
-    private MutableLongObjectMap<ContractUint256> map;
+    private MutableLongObjectMap<ContractValue> map;
     private long nextIndex;
 
 
@@ -34,10 +34,10 @@ public class EclipseMapBench {
     @Setup(Level.Trial)
     public void setup() {
         nextIndex = numEntities;
-        map = new LongObjectHashMap<ContractUint256>().asSynchronized();
+        map = new LongObjectHashMap<ContractValue>().asSynchronized();
         // fill with some data
         for (long i = 0; i < numEntities; i++) {
-            map.put(i, new ContractUint256(i));
+            map.put(i, new ContractValue(i));
         }
         // print memory usage
         System.out.printf("Memory for initial %,d accounts:\n", numEntities);
@@ -56,12 +56,12 @@ public class EclipseMapBench {
 
     @Benchmark
     public void updateRandom() {
-        map.put(randomIndex,new ContractUint256(randomIndex*2));
+        map.put(randomIndex,new ContractValue(randomIndex*2));
     }
 
     @Benchmark
     public void add() throws Exception {
-        map.put(nextIndex,new ContractUint256(nextIndex));
+        map.put(nextIndex,new ContractValue(nextIndex));
         nextIndex ++;
     }
 
@@ -83,7 +83,7 @@ public class EclipseMapBench {
             ThreadLocalRandom random = ThreadLocalRandom.current();
             for (int i = 0; i < 2000; i++) {
                 blackHole.consume(map.get((long)random.nextInt(numEntities)));
-                map.put((long)random.nextInt(numEntities), new ContractUint256(random.nextLong()));
+                map.put((long)random.nextInt(numEntities), new ContractValue(random.nextLong()));
             }
         });
     }

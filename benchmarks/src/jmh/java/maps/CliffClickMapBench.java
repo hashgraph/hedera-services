@@ -1,6 +1,6 @@
 package maps;
 
-import com.hedera.services.state.merkle.virtual.ContractUint256;
+import com.hedera.services.state.merkle.virtual.ContractValue;
 import org.cliffc.high_scale_lib.NonBlockingHashMap;
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 import org.openjdk.jmh.annotations.*;
@@ -23,7 +23,7 @@ import java.util.stream.IntStream;
 public class CliffClickMapBench {
     public Random random = new Random(1234);
     private long randomIndex;
-    private NonBlockingHashMapLong<ContractUint256> map;
+    private NonBlockingHashMapLong<ContractValue> map;
     private int nextIndex;
 
     @Param({"2000000"})
@@ -35,7 +35,7 @@ public class CliffClickMapBench {
         map = new NonBlockingHashMapLong<>(false);
         // fill with some data
         for (int i = 0; i < numEntities; i++) {
-            map.put(i, new ContractUint256(i));
+            map.put(i, new ContractValue(i));
         }
         // print memory usage
         System.out.printf("Memory for initial %,d accounts:\n", numEntities);
@@ -60,18 +60,18 @@ public class CliffClickMapBench {
 
     @Benchmark
     public void updateRandom() {
-        map.put(randomIndex,new ContractUint256(randomIndex*2));
+        map.put(randomIndex,new ContractValue(randomIndex*2));
     }
 
     @Benchmark
     public void add() throws Exception {
-        map.put(nextIndex,new ContractUint256(nextIndex));
+        map.put(nextIndex,new ContractValue(nextIndex));
         nextIndex ++;
     }
 
     @Benchmark
     public void putIfAbsent() throws Exception {
-        map.putIfAbsent(nextIndex,new ContractUint256(nextIndex));
+        map.putIfAbsent(nextIndex,new ContractValue(nextIndex));
         nextIndex ++;
     }
 
@@ -93,7 +93,7 @@ public class CliffClickMapBench {
             ThreadLocalRandom random = ThreadLocalRandom.current();
             for (int i = 0; i < 2000; i++) {
                 blackHole.consume(map.get(random.nextInt(numEntities)));
-                map.put(random.nextInt(numEntities), new ContractUint256(random.nextLong()));
+                map.put(random.nextInt(numEntities), new ContractValue(random.nextLong()));
             }
         });
     }

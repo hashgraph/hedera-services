@@ -2,7 +2,6 @@ package com.hedera.services.state.jasperdb;
 
 import com.hedera.services.state.jasperdb.utilities.HashTools;
 import com.hedera.services.state.merkle.virtual.ContractKey;
-import com.hedera.services.state.merkle.virtual.ContractUint256;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;

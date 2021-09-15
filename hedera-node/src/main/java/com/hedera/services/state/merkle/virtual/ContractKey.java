@@ -20,6 +20,8 @@ import static com.hedera.services.state.jasperdb.utilities.NonCryptographicHashi
  *
  * We only store the number part of the contract ID as the ideas ia there will be a virtual merkle tree for each shard
  * and realm.
+ *
+ * TODO based on discussion with Danno we decided uint256 should be a Big Endian byte[] like ContractValue, this class needs updating
  */
 public final class ContractKey implements VirtualKey {
     /** The estimated average size for a contract key when serialized */
