@@ -31,6 +31,7 @@ import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TokenGetAccountNftInfosQuery;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -52,26 +53,25 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 class GetAccountNftInfosResourceUsageTest {
-	private ByteString m1 = ByteString.copyFromUtf8("metadata1");
-	private ByteString m2 = ByteString.copyFromUtf8("metadata2");
-	private List<ByteString> metadata = List.of(m1, m2);
-	private TokenGetAccountNftInfosUsage estimator;
-	private Function<Query, TokenGetAccountNftInfosUsage> factory;
-	private FeeData expected;
-	private static final AccountID target = IdUtils.asAccount("0.0.123");
-	private int start = 0;
-	private int end = 1;
-
-	private StateView view;
-	private List<TokenNftInfo> info = List.of(
+	private static final ByteString m1 = ByteString.copyFromUtf8("metadata1");
+	private static final ByteString m2 = ByteString.copyFromUtf8("metadata2");
+	private static final List<ByteString> metadata = List.of(m1, m2);
+	private static final List<TokenNftInfo> info = List.of(
 			TokenNftInfo.newBuilder()
 					.setMetadata(m1)
 					.build(),
 			TokenNftInfo.newBuilder()
 					.setMetadata(m2)
 					.build());
+	private static final AccountID target = IdUtils.asAccount("0.0.123");
+	private static final int start = 0;
+	private static final int end = 1;
+	private static final Query satisfiableAnswerOnly = tokenGetAccountNftInfosQuery(target, start, end, ANSWER_ONLY);
 
-	private Query satisfiableAnswerOnly = tokenGetAccountNftInfosQuery(target, start, end, ANSWER_ONLY);
+	private TokenGetAccountNftInfosUsage estimator;
+	private Function<Query, TokenGetAccountNftInfosUsage> factory;
+	private FeeData expected;
+	private StateView view;
 
 	private GetAccountNftInfosResourceUsage subject;
 
@@ -91,6 +91,11 @@ class GetAccountNftInfosResourceUsageTest {
 		given(view.infoForAccountNfts(target, start, end)).willReturn(Optional.of(info));
 
 		subject = new GetAccountNftInfosResourceUsage();
+	}
+
+	@AfterEach
+	void tearDown() {
+		GetAccountNftInfosResourceUsage.factory = TokenGetAccountNftInfosUsage::newEstimate;
 	}
 
 	@Test
@@ -147,7 +152,11 @@ class GetAccountNftInfosResourceUsageTest {
 		assertNotSame(FeeData.getDefaultInstance(), usage);
 	}
 
-	private Query tokenGetAccountNftInfosQuery(AccountID id, long start, long end, ResponseType type) {
+	private static final Query tokenGetAccountNftInfosQuery(
+			final AccountID id,
+			final long start,
+			final long end,
+			final ResponseType type) {
 		final var op = TokenGetAccountNftInfosQuery.newBuilder()
 				.setAccountID(id)
 				.setStart(start)

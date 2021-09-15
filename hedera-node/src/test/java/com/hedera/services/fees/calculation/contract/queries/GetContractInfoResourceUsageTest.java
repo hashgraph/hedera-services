@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -54,35 +55,31 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.verify;
 
 class GetContractInfoResourceUsageTest {
-	String memo = "Stay cold...";
-	ContractID target = asContract("0.0.123");
-	Key aKey = Key.newBuilder().setEd25519(ByteString.copyFrom("NONSENSE".getBytes())).build();
+	private static final String memo = "Stay cold...";
+	private static final ContractID target = asContract("0.0.123");
+	private static final Key aKey = Key.newBuilder().setEd25519(ByteString.copyFrom("NONSENSE".getBytes())).build();
+	private static final ContractGetInfoResponse.ContractInfo info = ContractGetInfoResponse.ContractInfo.newBuilder()
+			.setAdminKey(aKey)
+			.addAllTokenRelationships(List.of(
+					TokenRelationship.getDefaultInstance(),
+					TokenRelationship.getDefaultInstance(),
+					TokenRelationship.getDefaultInstance()))
+			.setMemo(memo)
+			.build();
+	private static final Query satisfiableAnswerOnly = contractInfoQuery(target, ANSWER_ONLY);
 
-	StateView view;
-	ContractGetInfoResponse.ContractInfo info;
+	private StateView view;
+	private ContractGetInfoUsage estimator;
+	private Function<Query, ContractGetInfoUsage> factory;
+	private FeeData expected;
 
-	ContractGetInfoUsage estimator;
-	Function<Query, ContractGetInfoUsage> factory;
-	FeeData expected;
-
-	Query satisfiableAnswerOnly = contractInfoQuery(target, ANSWER_ONLY);
-
-	GetContractInfoResourceUsage subject;
+	private GetContractInfoResourceUsage subject;
 
 	@BeforeEach
-	private void setup() throws Throwable {
+	private void setup() {
 		expected = mock(FeeData.class);
-		info = ContractGetInfoResponse.ContractInfo.newBuilder()
-				.setAdminKey(aKey)
-				.addAllTokenRelationships(List.of(
-						TokenRelationship.getDefaultInstance(),
-						TokenRelationship.getDefaultInstance(),
-						TokenRelationship.getDefaultInstance()))
-				.setMemo(memo)
-				.build();
 
 		view = mock(StateView.class);
-
 		given(view.infoForContract(target)).willReturn(Optional.of(info));
 
 		estimator = mock(ContractGetInfoUsage.class);
@@ -99,25 +96,25 @@ class GetContractInfoResourceUsageTest {
 		subject = new GetContractInfoResourceUsage();
 	}
 
+	@AfterEach
+	void tearDown() {
+		GetContractInfoResourceUsage.factory = ContractGetInfoUsage::newEstimate;
+	}
+
 	@Test
 	void recognizesApplicableQuery() {
-		// given:
-		var applicable = contractInfoQuery(target, COST_ANSWER);
-		var inapplicable = Query.getDefaultInstance();
+		final var applicable = contractInfoQuery(target, COST_ANSWER);
+		final var inapplicable = Query.getDefaultInstance();
 
-		// expect:
 		assertTrue(subject.applicableTo(applicable));
 		assertFalse(subject.applicableTo(inapplicable));
 	}
 
 	@Test
 	void usesEstimator() {
-		// when:
-		var usage = subject.usageGiven(contractInfoQuery(target, ANSWER_ONLY), view);
+		final var usage = subject.usageGiven(contractInfoQuery(target, ANSWER_ONLY), view);
 
-		// then:
 		assertEquals(expected, usage);
-		// and:
 		verify(estimator).givenCurrentKey(aKey);
 		verify(estimator).givenCurrentMemo(memo);
 		verify(estimator).givenCurrentTokenAssocs(3);
@@ -125,33 +122,26 @@ class GetContractInfoResourceUsageTest {
 
 	@Test
 	void setsInfoInQueryCxtIfPresent() {
-		// setup:
-		var queryCtx = new HashMap<String, Object>();
+		final var queryCtx = new HashMap<String, Object>();
 
-		// when:
 		subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
 
-		// then:
 		assertSame(info, queryCtx.get(GetContractInfoAnswer.CONTRACT_INFO_CTX_KEY));
 	}
 
 	@Test
 	void onlySetsContractInfoInQueryCxtIfFound() {
-		// setup:
-		var queryCtx = new HashMap<String, Object>();
-
+		final var queryCtx = new HashMap<String, Object>();
 		given(view.infoForContract(target)).willReturn(Optional.empty());
 
-		// when:
-		var actual = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
+		final var actual = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
 
-		// then:
 		assertFalse(queryCtx.containsKey(GetContractInfoAnswer.CONTRACT_INFO_CTX_KEY));
 		assertSame(FeeData.getDefaultInstance(), actual);
 	}
 
-	private Query contractInfoQuery(ContractID id, ResponseType type) {
-		ContractGetInfoQuery.Builder op = ContractGetInfoQuery.newBuilder()
+	private static final Query contractInfoQuery(final ContractID id, final ResponseType type) {
+		final var op = ContractGetInfoQuery.newBuilder()
 				.setContractID(id)
 				.setHeader(QueryHeader.newBuilder().setResponseType(type));
 		return Query.newBuilder()

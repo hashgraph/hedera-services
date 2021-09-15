@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -51,17 +52,11 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
 class GetTokenInfoResourceUsageTest {
-	String memo = "22 a million";
-	String symbol = "HEYMAOK";
-	String name = "IsItReallyOk";
-	TokenID target = IdUtils.asToken("0.0.123");
-	FeeData expected;
-
-	TokenGetInfoUsage estimator;
-	Function<Query, TokenGetInfoUsage> factory;
-
-	StateView view;
-	TokenInfo info = TokenInfo.newBuilder()
+	private static final String memo = "22 a million";
+	private static final String symbol = "HEYMAOK";
+	private static final String name = "IsItReallyOk";
+	private static final TokenID target = IdUtils.asToken("0.0.123");
+	private static final TokenInfo info = TokenInfo.newBuilder()
 			.setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey())
 			.setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey())
 			.setWipeKey(TxnHandlingScenario.TOKEN_WIPE_KT.asKey())
@@ -72,13 +67,17 @@ class GetTokenInfoResourceUsageTest {
 			.setMemo(memo)
 			.setAutoRenewAccount(IdUtils.asAccount("1.2.3"))
 			.build();
+	private static final Query satisfiableAnswerOnly = tokenInfoQuery(target, ANSWER_ONLY);
 
-	Query satisfiableAnswerOnly = tokenInfoQuery(target, ANSWER_ONLY);
+	private FeeData expected;
+	private TokenGetInfoUsage estimator;
+	private Function<Query, TokenGetInfoUsage> factory;
+	private StateView view;
 
-	GetTokenInfoResourceUsage subject;
+	private GetTokenInfoResourceUsage subject;
 
 	@BeforeEach
-	private void setup() throws Throwable {
+	private void setup() {
 		expected = mock(FeeData.class);
 		view = mock(StateView.class);
 		estimator = mock(TokenGetInfoUsage.class);
@@ -103,29 +102,28 @@ class GetTokenInfoResourceUsageTest {
 		subject = new GetTokenInfoResourceUsage();
 	}
 
+	@AfterEach
+	void tearDown() {
+		GetTokenInfoResourceUsage.factory = TokenGetInfoUsage::newEstimate;
+	}
+
 	@Test
 	void recognizesApplicableQuery() {
-		// given:
-		var applicable = tokenInfoQuery(target, COST_ANSWER);
-		var inapplicable = Query.getDefaultInstance();
+		final var applicable = tokenInfoQuery(target, COST_ANSWER);
+		final var inapplicable = Query.getDefaultInstance();
 
-		// expect:
 		assertTrue(subject.applicableTo(applicable));
 		assertFalse(subject.applicableTo(inapplicable));
 	}
 
 	@Test
 	void setsInfoInQueryCxtIfPresent() {
-		// setup:
-		var queryCtx = new HashMap<String, Object>();
+		final var queryCtx = new HashMap<String, Object>();
 
-		// when:
-		var usage = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
+		final var usage = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
 
-		// then:
 		assertSame(info, queryCtx.get(TOKEN_INFO_CTX_KEY));
 		assertSame(expected, usage);
-		// and:
 		verify(estimator).givenCurrentAdminKey(Optional.of(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey()));
 		verify(estimator).givenCurrentWipeKey(Optional.of(TxnHandlingScenario.TOKEN_WIPE_KT.asKey()));
 		verify(estimator).givenCurrentKycKey(Optional.of(TxnHandlingScenario.TOKEN_KYC_KT.asKey()));
@@ -139,22 +137,17 @@ class GetTokenInfoResourceUsageTest {
 
 	@Test
 	void onlySetsTokenInfoInQueryCxtIfFound() {
-		// setup:
-		var queryCtx = new HashMap<String, Object>();
-
+		final var queryCtx = new HashMap<String, Object>();
 		given(view.infoForToken(target)).willReturn(Optional.empty());
 
-		// when:
-		var usage = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
+		final var usage = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
 
-		// then:
 		assertFalse(queryCtx.containsKey(GetTokenInfoAnswer.TOKEN_INFO_CTX_KEY));
-		// and:
 		assertSame(FeeData.getDefaultInstance(), usage);
 	}
 
-	private Query tokenInfoQuery(TokenID id, ResponseType type) {
-		TokenGetInfoQuery.Builder op = TokenGetInfoQuery.newBuilder()
+	private static final Query tokenInfoQuery(final TokenID id, final ResponseType type) {
+		final var op = TokenGetInfoQuery.newBuilder()
 				.setToken(id)
 				.setHeader(QueryHeader.newBuilder().setResponseType(type));
 		return Query.newBuilder()

@@ -37,30 +37,31 @@ import static com.hedera.services.queries.AnswerService.NO_QUERY_CTX;
 import static com.hedera.services.queries.contract.GetContractInfoAnswer.CONTRACT_INFO_CTX_KEY;
 
 @Singleton
-public class GetContractInfoResourceUsage implements QueryResourceUsageEstimator {
+public final class GetContractInfoResourceUsage implements QueryResourceUsageEstimator {
 	static Function<Query, ContractGetInfoUsage> factory = ContractGetInfoUsage::newEstimate;
 
 	@Inject
 	public GetContractInfoResourceUsage() {
+		/* No-op */
 	}
 
 	@Override
-	public boolean applicableTo(Query query) {
+	public boolean applicableTo(final Query query) {
 		return query.hasContractGetInfo();
 	}
 
 	@Override
-	public FeeData usageGiven(Query query, StateView view) {
+	public FeeData usageGiven(final Query query, final StateView view) {
 		return usageFor(query, view, query.getContractGetInfo().getHeader().getResponseType(), NO_QUERY_CTX);
 	}
 
 	@Override
-	public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
+	public FeeData usageGivenType(final Query query, final StateView view, final ResponseType type) {
 		return usageFor(query, view, type, NO_QUERY_CTX);
 	}
 
 	@Override
-	public FeeData usageGiven(Query query, StateView view, Map<String, Object> queryCtx) {
+	public FeeData usageGiven(final Query query, final StateView view, final Map<String, Object> queryCtx) {
 		return usageFor(
 				query,
 				view,
@@ -68,13 +69,18 @@ public class GetContractInfoResourceUsage implements QueryResourceUsageEstimator
 				Optional.of(queryCtx));
 	}
 
-	private FeeData usageFor(Query query, StateView view, ResponseType type, Optional<Map<String, Object>> queryCtx) {
-		var op = query.getContractGetInfo();
-		var tentativeInfo = view.infoForContract(op.getContractID());
+	private FeeData usageFor(
+			final Query query,
+			final StateView view,
+			final ResponseType type,
+			final Optional<Map<String, Object>> queryCtx
+	) {
+		final var op = query.getContractGetInfo();
+		final var tentativeInfo = view.infoForContract(op.getContractID());
 		if (tentativeInfo.isPresent()) {
-			var info = tentativeInfo.get();
+			final var info = tentativeInfo.get();
 			queryCtx.ifPresent(ctx -> ctx.put(CONTRACT_INFO_CTX_KEY, info));
-			var estimate = factory.apply(query)
+			final var estimate = factory.apply(query)
 					.givenCurrentKey(info.getAdminKey())
 					.givenCurrentMemo(info.getMemo())
 					.givenCurrentTokenAssocs(info.getTokenRelationshipsCount());
