@@ -157,7 +157,7 @@ public class Account {
 	}
 
 	public void setAlreadyUsedAutomaticAssociations(int alreadyUsedCount) {
-		validateTrue(alreadyUsedCount >= 0 && alreadyUsedCount <= getMaxAutomaticAssociations(), NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
+		validateTrue(isValidAlreadyUsedCount(alreadyUsedCount), NO_REMAINING_AUTOMATIC_ASSOCIATIONS );
 		autoAssociationMetadata = setAlreadyUsedAutomaticAssociationsTo(autoAssociationMetadata, alreadyUsedCount);
 	}
 
@@ -225,6 +225,10 @@ public class Account {
 
 	public boolean isAssociatedWith(Id token) {
 		return associatedTokens.contains(token);
+	}
+
+	private boolean isValidAlreadyUsedCount(int alreadyUsedCount) {
+		return alreadyUsedCount >= 0 && alreadyUsedCount <= getMaxAutomaticAssociations();
 	}
 
 	/* NOTE: The object methods below are only overridden to improve
