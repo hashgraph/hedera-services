@@ -27,16 +27,22 @@ import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
 import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
+import org.hyperledger.besu.ethereum.processing.TransactionProcessingResult;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 @Singleton
 public class TransactionRecordService {
@@ -149,5 +155,38 @@ public class TransactionRecordService {
 					.build());
 		}
 		txnCtx.setTokenTransferLists(transferLists);
+	}
+
+	public void externaliseCreateEvmTransaction(@Nullable  Id createdContract, TransactionProcessingResult result) {
+		final var functionResBuilder = ContractFunctionResult.newBuilder()
+				.setGasUsed(result.getEstimateGasUsedByTransaction());
+		if (result.isSuccessful() && createdContract != null) {
+			functionResBuilder.setContractID(createdContract.asGrpcContract());
+			txnCtx.setStatus(OK);
+			txnCtx.setCreated(createdContract.asGrpcContract());
+//				.setBloom() TODO (?)
+//				.addAllLogInfo() TODO parse from result
+//				.addAllCreatedContractIDs() // TODO get from input
+		} else {
+			txnCtx.setStatus(CONTRACT_REVERT_EXECUTED);
+			result.getRevertReason().ifPresent(reason -> functionResBuilder.setErrorMessage(reason.toString()));
+		}
+		txnCtx.setCreateResult(functionResBuilder.build());
+	}
+
+	public void externaliseCallEvmTransaction(Id calledContract, TransactionProcessingResult result) {
+		final var functionResBuilder = ContractFunctionResult.newBuilder()
+				.setGasUsed(result.getEstimateGasUsedByTransaction());
+		if (result.isSuccessful()) {
+			functionResBuilder.setContractID(calledContract.asGrpcContract());
+			txnCtx.setStatus(OK);
+//				.setBloom() TODO (?)
+//				.addAllLogInfo() TODO parse from result
+//				.addAllCreatedContractIDs() // TODO get from input
+		} else {
+			txnCtx.setStatus(CONTRACT_REVERT_EXECUTED);
+			result.getRevertReason().ifPresent(reason -> functionResBuilder.setErrorMessage(reason.toString()));
+		}
+		txnCtx.setCallResult(functionResBuilder.build());
 	}
 }

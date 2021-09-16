@@ -20,6 +20,7 @@ package com.hedera.test.mocks;
  * ‍
  */
 
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -119,6 +120,9 @@ public enum TestContextValidator implements OptionValidator {
 	public ResponseCodeEnum queryableTopicStatus(TopicID id, FCMap<MerkleEntityId, MerkleTopic> topics) {
 		throw new UnsupportedOperationException();
 	}
+
+	@Override
+	public JKey attemptToDecodeOrThrow(Key key, ResponseCodeEnum code) { throw new UnsupportedOperationException(); }
 
 	@Override
 	public ResponseCodeEnum tokenSymbolCheck(String symbol) {

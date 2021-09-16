@@ -24,40 +24,42 @@ package com.hedera.services.txns.contract.process;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.store.contracts.HederaWorldUpdater;
+import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.ethereum.core.Transaction;
+import org.hyperledger.besu.ethereum.processing.TransactionProcessingResult;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.Optional;
 
-@Singleton
 public class CreateEvmTxProcessor extends EvmTxProcessor {
 
-	@Inject
+	private final Address newContractAddress;
+
 	public CreateEvmTxProcessor(
-			UsagePricesProvider usagePrices,
 			HbarCentExchange exchange,
-			HederaWorldUpdater worldState,
-			GlobalDynamicProperties globalDynamicProperties
+			HederaWorldState.Updater worldUpdater,
+			UsagePricesProvider usagePrices,
+			GlobalDynamicProperties globalDynamicProperties,
+			Address newContractAddress
 	) {
-		super(exchange, worldState, usagePrices, globalDynamicProperties);
+		super(exchange, usagePrices, worldUpdater, globalDynamicProperties);
+		this.newContractAddress = newContractAddress;
 	}
 
-	public void execute(
+	public TransactionProcessingResult execute(
 			final Account sender,
 			final long providedGasLimit,
 			final long value,
 			final Bytes code,
-			final Instant consensusTime
-	) {
+			final Instant consensusTime) {
+
 		final Wei gasPrice = Wei.of(gasPriceTinyBarsGiven(consensusTime));
 		final long gasLimit = providedGasLimit > dynamicProperties.maxGas() ? dynamicProperties.maxGas() : providedGasLimit;
 		var transaction = new Transaction(
@@ -70,7 +72,7 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 				code,
 				sender.getId().asEvmAddress(),
 				Optional.empty());
-		super.execute(sender, transaction, consensusTime);
+		return super.execute(sender, transaction, consensusTime);
 	}
 
 
@@ -81,8 +83,6 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 
 	@Override
 	protected MessageFrame buildInitialFrame(MessageFrame.Builder commonInitialFrame, Transaction transaction) {
-		final var newContractAddress = worldState.allocateNewContractAddress(transaction.getSender());
-		// TODO we must getMutableAccount and set the memo, admin key and proxy account properties
 		return commonInitialFrame
 						.type(MessageFrame.Type.CONTRACT_CREATION)
 						.address(newContractAddress)

@@ -72,6 +72,14 @@ public class Id {
 				.build();
 	}
 
+	public ContractID asGrpcContract() {
+		return ContractID.newBuilder()
+				.setShardNum(shard)
+				.setRealmNum(realm)
+				.setContractNum(num)
+				.build();
+	}
+
 	public static Id fromGrpcAccount(final AccountID id) {
 		return new Id(id.getShardNum(), id.getRealmNum(), id.getAccountNum());
 	}

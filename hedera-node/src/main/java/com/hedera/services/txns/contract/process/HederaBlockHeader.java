@@ -32,7 +32,7 @@ public class HederaBlockHeader extends SimpleBlockHeader {
 	protected final long timestamp;
 	protected final Address coinbase;
 
-	protected HederaBlockHeader( Address coinbase, long gasLimit, long timestamp) {
+	public HederaBlockHeader(Address coinbase, long gasLimit, long timestamp) {
 		this.coinbase = coinbase;
 		this.gasLimit = gasLimit;
 		this.timestamp = timestamp;

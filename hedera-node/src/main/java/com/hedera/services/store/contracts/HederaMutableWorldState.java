@@ -22,18 +22,37 @@ package com.hedera.services.store.contracts;
  *
  */
 
+import com.hedera.services.store.models.Id;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+import org.hyperledger.besu.evm.worldstate.WorldState;
+import org.hyperledger.besu.evm.worldstate.WorldView;
 
-public interface HederaWorldUpdater extends WorldUpdater  {
+public interface HederaMutableWorldState extends WorldState, WorldView {
 
 	/**
-	 * Allocates new Contract address based on the realm and shard of the sponsor
+	 * Allocates new Id address based on the realm and shard of the sponsor
 	 * IMPORTANT - The Id must be reclaimed if the MessageFrame reverts
 	 *
 	 * @param sponsor sponsor of the new contract
-	 * @return newly generated contract {@link Address}
+	 * @return newly generated Id
 	 */
-	Address allocateNewContractAddress(Address sponsor);
+	Id newContractId(Address sponsor);
 
+	/**
+	 * Reclaims the last created {@link Id}
+	 */
+	void reclaimContractId();
+
+	/**
+	 * Creates a updater for this mutable world view.
+	 *
+	 * @return a new updater for this mutable world view. On commit, change made to this updater will
+	 *     become visible on this view.
+	 */
+	HederaWorldState.Updater updater();
+
+	/**
+	 * Persists accumulated changes to the underlying storage
+	 */
+	void persist();
 }

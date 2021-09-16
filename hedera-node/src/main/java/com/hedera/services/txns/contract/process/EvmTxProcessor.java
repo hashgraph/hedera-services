@@ -25,11 +25,9 @@ package com.hedera.services.txns.contract.process;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.store.contracts.HederaUpdateTrackingAccount;
-import com.hedera.services.store.contracts.HederaWorldUpdater;
+import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.evm.HederaMutableAccount;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -39,11 +37,15 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.ethereum.core.GasAndAccessedState;
 import org.hyperledger.besu.ethereum.core.Transaction;
-import org.hyperledger.besu.ethereum.mainnet.BerlinTransactionGasCalculator;
+import org.hyperledger.besu.ethereum.mainnet.LondonTransactionGasCalculator;
 import org.hyperledger.besu.ethereum.mainnet.MainnetProtocolSpecs;
 import org.hyperledger.besu.ethereum.mainnet.TransactionGasCalculator;
+import org.hyperledger.besu.ethereum.mainnet.ValidationResult;
+import org.hyperledger.besu.ethereum.processing.TransactionProcessingResult;
+import org.hyperledger.besu.ethereum.transaction.TransactionInvalidReason;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.MainnetEVMs;
+import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.contractvalidation.MaxCodeSizeRule;
 import org.hyperledger.besu.evm.contractvalidation.PrefixCodeRule;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -54,7 +56,6 @@ import org.hyperledger.besu.evm.processor.AbstractMessageProcessor;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
-import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 import java.time.Instant;
 import java.util.ArrayDeque;
@@ -69,9 +70,8 @@ abstract class EvmTxProcessor {
 
 	private final HbarCentExchange exchange;
 	private final GasCalculator gasCalculator;
-	// TODO this must NOT be a property but a new instance must be created for every `execute`
-	protected final HederaWorldUpdater worldState;
 	private final UsagePricesProvider usagePrices;
+	protected final HederaWorldState.Updater updater;
 	protected final GlobalDynamicProperties dynamicProperties;
 	private final AbstractMessageProcessor messageCallProcessor;
 	private final TransactionGasCalculator transactionGasCalculator;
@@ -79,17 +79,17 @@ abstract class EvmTxProcessor {
 
 	public EvmTxProcessor(
 			final HbarCentExchange exchange,
-			final HederaWorldUpdater worldState,
 			final UsagePricesProvider usagePrices,
+			final HederaWorldState.Updater updater,
 			final GlobalDynamicProperties dynamicProperties
 	) {
+		this.updater = updater;
 		this.exchange = exchange;
-		this.worldState = worldState;
 		this.usagePrices = usagePrices;
 		this.dynamicProperties = dynamicProperties;
-		this.transactionGasCalculator = new BerlinTransactionGasCalculator();
+		this.transactionGasCalculator = new LondonTransactionGasCalculator();
 
-		final var evm = MainnetEVMs.berlin();
+		final var evm = MainnetEVMs.london();
 		this.gasCalculator = evm.getGasCalculator();
 		final PrecompileContractRegistry precompileContractRegistry = new PrecompileContractRegistry();
 		MainnetPrecompiledContracts.populateForIstanbul(precompileContractRegistry, gasCalculator);
@@ -103,30 +103,28 @@ abstract class EvmTxProcessor {
 				1);
 	}
 
-	/**
-	 * TODO we must extend the {@link Transaction} object with new properties such as `memo`, `proxyAccount` and `adminKey`
-	 */
-	protected void execute (Account sender, final Transaction transaction, Instant consensusTime) {
+	protected TransactionProcessingResult execute (Account sender, final Transaction transaction, Instant consensusTime) {
+		try {
+			//noinspection OptionalGetWithoutIsPresent
+			final var gasPrice = transaction.getGasPrice().get();
+			final Wei upfrontCost = Wei.of(transaction.getGasLimit()).multiply(gasPrice).add(transaction.getValue());
+			final GasAndAccessedState gasAndAccessedState =
+					transactionGasCalculator.transactionIntrinsicGasCostAndAccessedState(transaction);
+			final Gas intrinsicGas = gasAndAccessedState.getGas();
 
-		final var gasPrice = transaction.getGasPrice().get();
-		final Wei upfrontCost = Wei.of(transaction.getGasLimit()).multiply(gasPrice).add(transaction.getValue());
-		final GasAndAccessedState gasAndAccessedState =
-				transactionGasCalculator.transactionIntrinsicGasCostAndAccessedState(transaction);
-		final Gas intrinsicGas = gasAndAccessedState.getGas();
+			validateFalse(upfrontCost.compareTo(Wei.of(sender.getBalance())) > 0,
+					ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
+			validateFalse(intrinsicGas.compareTo(Gas.of(transaction.getGasLimit())) > 0,
+					ResponseCodeEnum.INSUFFICIENT_GAS);
 
-		validateFalse(upfrontCost.compareTo(Wei.of(sender.getBalance())) > 0,
-				ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
-		validateFalse(intrinsicGas.compareTo(Gas.of(transaction.getGasLimit())) > 0,
-				ResponseCodeEnum.INSUFFICIENT_GAS);
+			final Address coinbase = Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress();
+			final HederaBlockHeader blockHeader = new HederaBlockHeader(coinbase, transaction.getGasLimit(), consensusTime.getEpochSecond());
+			final MutableAccount mutableSender = updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()).getMutable();
+			mutableSender.decrementBalance(upfrontCost);
 
-		final Address coinbase = Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress();
-		final HederaBlockHeader blockHeader = new HederaBlockHeader(coinbase, transaction.getGasLimit(), consensusTime.getEpochSecond());
-		final HederaUpdateTrackingAccount mutableSender = (HederaUpdateTrackingAccount) worldState.getOrCreateSenderAccount(sender.getId().asEvmAddress());
-		mutableSender.decrementBalance(upfrontCost);
+			final Gas gasAvailable = Gas.of(transaction.getGasLimit()).minus(intrinsicGas);
+			final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
 
-		final Gas gasAvailable = Gas.of(transaction.getGasLimit()).minus(intrinsicGas);
-		final WorldUpdater worldUpdater = worldState.updater();
-		final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
 		/*
 		  TODO Do we need those variables
 		  final var contextVariablesBuilder =
@@ -135,55 +133,74 @@ abstract class EvmTxProcessor {
 		                .put(KEY_TRANSACTION, transaction)
 		                .put(KEY_TRANSACTION_HASH, transaction.getHash());
 		 */
+			final var stackedUpdater = updater.updater();
+			final MessageFrame.Builder commonInitialFrame =
+					MessageFrame.builder()
+							.messageFrameStack(messageFrameStack)
+							.maxStackSize(MAX_STACK_SIZE)
+							.worldUpdater(stackedUpdater)
+							.initialGas(gasAvailable)
+							.originator(transaction.getSender())
+							.gasPrice(gasPrice)
+							.sender(transaction.getSender())
+							.value(transaction.getValue())
+							.apparentValue(transaction.getValue())
+							.blockHeader(blockHeader)
+							.depth(0)
+							.completer(__ -> {})
+							.miningBeneficiary(coinbase)
+							.blockHashLookup(h -> null);
+			final MessageFrame initialFrame = buildInitialFrame(commonInitialFrame, transaction);
+			messageFrameStack.addFirst(initialFrame);
 
-		final MessageFrame.Builder commonInitialFrame =
-				MessageFrame.builder()
-						.messageFrameStack(messageFrameStack)
-						.maxStackSize(MAX_STACK_SIZE)
-						.worldUpdater(worldUpdater.updater())
-						.initialGas(gasAvailable)
-						.originator(transaction.getSender())
-						.gasPrice(gasPrice)
-						.sender(transaction.getSender())
-						.value(transaction.getValue())
-						.apparentValue(transaction.getValue())
-						.blockHeader(blockHeader)
-						.depth(0)
-						.completer(__ -> {})
-						.miningBeneficiary(coinbase)
-						.blockHashLookup(h -> null);
-		final MessageFrame initialFrame = buildInitialFrame(commonInitialFrame, transaction);
-		messageFrameStack.addFirst(initialFrame);
+			while (!messageFrameStack.isEmpty()) {
+				process(messageFrameStack.peekFirst(), OperationTracer.NO_TRACING);
+			}
 
-		while (!messageFrameStack.isEmpty()) {
-			process(messageFrameStack.peekFirst(), OperationTracer.NO_TRACING);
+			if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
+				stackedUpdater.commit();
+			}
+
+			/* Return leftover gas */
+			final Gas selfDestructRefund =
+					gasCalculator.getSelfDestructRefundAmount().times(initialFrame.getSelfDestructs().size());
+			final Gas refundGas = initialFrame.getGasRefund().plus(selfDestructRefund);
+			final Gas refunded = refunded(transaction, initialFrame.getRemainingGas(), refundGas);
+			final Wei refundedWei = refunded.priceFor(gasPrice);
+			mutableSender.incrementBalance(refundedWei);
+
+			/* Send TX fees to coinbase */
+			final Gas gasUsedByTransaction =
+					Gas.of(transaction.getGasLimit()).minus(initialFrame.getRemainingGas());
+			final var mutableCoinbase = updater.getOrCreate(coinbase).getMutable();
+			final Gas coinbaseFee = Gas.of(transaction.getGasLimit()).minus(refunded);
+			mutableCoinbase.incrementBalance(coinbaseFee.priceFor(gasPrice));
+
+			initialFrame.getSelfDestructs().forEach(updater::deleteAccount);
+
+			updater.commit();
+
+			/* Externalise Result */
+			if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
+				return TransactionProcessingResult.successful(
+						initialFrame.getLogs(),
+						gasUsedByTransaction.toLong(),
+						refunded.toLong(),
+						initialFrame.getOutputData(),
+						null);
+			} else {
+				return TransactionProcessingResult.failed(
+						gasUsedByTransaction.toLong(),
+						refunded.toLong(),
+						null,
+						initialFrame.getRevertReason());
+			}
+		} catch (RuntimeException re) {
+			return TransactionProcessingResult.invalid(
+					ValidationResult.invalid(
+							TransactionInvalidReason.INTERNAL_ERROR,
+							"Internal Error in Besu - " + re.toString()));
 		}
-
-		if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
-			worldUpdater.commit();
-		}
-
-		/* Return leftover gas */
-		final Gas selfDestructRefund =
-				gasCalculator.getSelfDestructRefundAmount().times(initialFrame.getSelfDestructs().size());
-		final Gas refundGas = initialFrame.getGasRefund().plus(selfDestructRefund);
-		final Gas refunded = refunded(transaction, initialFrame.getRemainingGas(), refundGas);
-		final Wei refundedWei = refunded.priceFor(gasPrice);
-		mutableSender.incrementBalance(refundedWei);
-
-		/* Send TX fees to coinbase */
-		final Gas gasUsedByTransaction =
-				Gas.of(transaction.getGasLimit()).minus(initialFrame.getRemainingGas());
-		final var mutableCoinbase = worldState.getOrCreate(coinbase).getMutable();
-		final Gas coinbaseFee = Gas.of(transaction.getGasLimit()).minus(refunded);
-		mutableCoinbase.incrementBalance(coinbaseFee.priceFor(gasPrice));
-
-		initialFrame.getSelfDestructs().forEach(worldState::deleteAccount);
-
-		// TODO we must call worldState.persist() maybe in the Transition logic. Externalising the results there as-well
-
-		/* Externalise Result */
-		// TODO
 	}
 
 	protected long gasPriceTinyBarsGiven(Instant consensusTime) {

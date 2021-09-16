@@ -26,7 +26,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.store.contracts.HederaWorldUpdater;
+import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.common.CommonUtils;
@@ -34,27 +34,24 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.ethereum.core.Transaction;
+import org.hyperledger.besu.ethereum.processing.TransactionProcessingResult;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.Optional;
 
-@Singleton
 public class CallEvmTxProcessor extends EvmTxProcessor {
 
-	@Inject
 	public CallEvmTxProcessor(
 			HbarCentExchange exchange,
-			HederaWorldUpdater worldUpdater,
+			HederaWorldState.Updater worldUpdater,
 			UsagePricesProvider usagePrices,
 			GlobalDynamicProperties dynamicProperties) {
-		super(exchange, worldUpdater, usagePrices, dynamicProperties);
+		super(exchange, usagePrices, worldUpdater, dynamicProperties);
 	}
 
-	public void execute(
+	public TransactionProcessingResult execute(
 			final Account sender,
 			final Account receiver,
 			final long providedGasLimit,
@@ -77,7 +74,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 				payload,
 				sender.getId().asEvmAddress(),
 				Optional.empty());
-		super.execute(sender, transaction, consensusTime);
+		return super.execute(sender, transaction, consensusTime);
 	}
 
 	@Override
@@ -93,7 +90,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 						.address(to)
 						.contract(to)
 						.inputData(transaction.getPayload())
-						.code(new Code(worldState.get(to).getCode()))
+						.code(new Code(updater.get(to).getCode()))
 						.build();
 	}
 }

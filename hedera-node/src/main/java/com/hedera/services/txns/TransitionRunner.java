@@ -32,14 +32,14 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.EnumSet;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
@@ -48,13 +48,16 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfree
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 
 @Singleton
 public class TransitionRunner {
 	private static final Logger log = LogManager.getLogger(TransitionRunner.class);
 
-	private static final EnumSet<HederaFunctionality> refactoredOps = EnumSet.of(
+	/**
+	 * List of operations that have been either refactored or have a default {@link com.hederahashgraph.api.proto.java.ResponseCodeEnum} OK status
+	 * {@link com.hedera.services.txns.contract.ContractCreateTransitionLogic} and {@link com.hedera.services.txns.contract.ContractCallTransitionLogic} must not have a default OK status!
+	 */
+	private static final EnumSet<HederaFunctionality> opsWithDefaultSuccessStatus = EnumSet.of(
 			TokenMint, TokenBurn,
 			TokenFreezeAccount, TokenUnfreezeAccount,
 			TokenGrantKycToAccount, TokenRevokeKycFromAccount,
@@ -63,8 +66,7 @@ public class TransitionRunner {
 			TokenCreate,
 			TokenFeeScheduleUpdate,
 			CryptoTransfer,
-			TokenDelete,
-			ContractCall
+			TokenDelete
 	);
 
 	private final TransactionContext txnCtx;
@@ -102,7 +104,7 @@ public class TransitionRunner {
 			try {
 				transition.doStateTransition();
 				/* Only certain functions are refactored */
-				if (refactoredOps.contains(function)) {
+				if (opsWithDefaultSuccessStatus.contains(function)) {
 					txnCtx.setStatus(SUCCESS);
 				}
 				transition.resetCreatedIds();

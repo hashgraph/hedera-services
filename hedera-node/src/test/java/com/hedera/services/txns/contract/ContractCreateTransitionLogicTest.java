@@ -22,10 +22,14 @@ package com.hedera.services.txns.contract;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.txns.contract.process.CreateEvmTxProcessor;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -88,6 +92,10 @@ class ContractCreateTransitionLogicTest {
 	private AccountStore accountStore;
 	private CreateEvmTxProcessor txProcessor;
 	private EntityIdSource entityIdSource;
+	private HbarCentExchange exchange;
+	private HederaWorldState worldState;
+	private UsagePricesProvider usagePrices;
+	private TransactionRecordService recordServices;
 
 	@BeforeEach
 	private void setup() {
@@ -102,8 +110,12 @@ class ContractCreateTransitionLogicTest {
 		properties = mock(GlobalDynamicProperties.class);
 		txProcessor = mock(CreateEvmTxProcessor.class);
 		entityIdSource = mock(EntityIdSource.class);
+		exchange = mock(HbarCentExchange.class);
+		worldState = mock(HederaWorldState.class);
+		usagePrices = mock(UsagePricesProvider.class);
+		recordServices = mock(TransactionRecordService.class);
 
-		subject = new ContractCreateTransitionLogic(hfs, entityIdSource, accountStore, validator, txnCtx, txProcessor, properties);
+		subject = new ContractCreateTransitionLogic(hfs, entityIdSource, txnCtx, accountStore, validator, exchange, worldState, usagePrices, properties, recordServices);
 	}
 
 	@Test

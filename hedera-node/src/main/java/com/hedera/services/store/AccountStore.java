@@ -164,11 +164,16 @@ public class AccountStore {
 		mutableAccount.setAutoRenewSecs(model.getAutoRenewSecs());
 	}
 
-	//todo maybe also validateUsable? problem is, if we try to get this account and it fails the
-	// validate usable check, an exception is thrown
+	/**
+	 * Checks whether a given account exists and is usable
+	 * @param id Id of the account
+	 * @return whether the account exists and it is usable
+	 */
 	public boolean exists(Id id) {
 		final var key = new MerkleEntityId(id.getShard(), id.getRealm(), id.getNum());
-		return accounts.get().containsKey(key);
+		final var merkleAccount = accounts.get().get(key);
+		return merkleAccount != null && !merkleAccount.isDeleted()
+				&& !isExpired(merkleAccount.getBalance(), merkleAccount.getExpiry());
 	}
 
 	/**
@@ -188,12 +193,11 @@ public class AccountStore {
 	private void validateUsable(MerkleAccount merkleAccount, @Nullable ResponseCodeEnum explicitResponse) {
 		validateTrue(merkleAccount != null, explicitResponse != null ? explicitResponse : INVALID_ACCOUNT_ID);
 		validateFalse(merkleAccount.isDeleted(), explicitResponse != null ? explicitResponse : ACCOUNT_DELETED);
-		if (dynamicProperties.autoRenewEnabled()) {
-			if (merkleAccount.getBalance() == 0) {
-				final boolean isExpired = !validator.isAfterConsensusSecond(merkleAccount.getExpiry());
-				validateFalse(isExpired, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-			}
-		}
+		validateFalse(isExpired(merkleAccount.getBalance(), merkleAccount.getExpiry()), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+	}
+
+	private boolean isExpired(long balance, long expiry) {
+		return dynamicProperties.autoRenewEnabled() && balance == 0 && validator.isAfterConsensusSecond(expiry);
 	}
 
 	public OptionValidator getValidator() {

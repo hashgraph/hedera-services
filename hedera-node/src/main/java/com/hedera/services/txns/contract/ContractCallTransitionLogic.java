@@ -22,7 +22,11 @@ package com.hedera.services.txns.contract;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.calculation.UsagePricesProvider;
+import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.contract.process.CallEvmTxProcessor;
@@ -33,17 +37,22 @@ import javax.inject.Inject;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class ContractCallTransitionLogic implements TransitionLogic {
 
 	private final AccountStore accountStore;
+	private final HbarCentExchange exchange;
 	private final TransactionContext txnCtx;
-	private final CallEvmTxProcessor txProcessor;
+	private final HederaWorldState worldState;
+	private final UsagePricesProvider usagePrices;
 	private final GlobalDynamicProperties properties;
+	private final TransactionRecordService recordService;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validateSemantics;
 
@@ -51,13 +60,19 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 	public ContractCallTransitionLogic(
 			TransactionContext txnCtx,
 			AccountStore accountStore,
-			CallEvmTxProcessor txProcessor,
-			GlobalDynamicProperties properties
+			HbarCentExchange exchange,
+			HederaWorldState worldState,
+			UsagePricesProvider usagePrices,
+			GlobalDynamicProperties properties,
+			TransactionRecordService recordService
 	) {
 		this.txnCtx = txnCtx;
+		this.exchange = exchange;
+		this.worldState = worldState;
 		this.properties = properties;
-		this.txProcessor = txProcessor;
+		this.usagePrices = usagePrices;
 		this.accountStore = accountStore;
+		this.recordService = recordService;
 	}
 
 	@Override
@@ -74,13 +89,22 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 		final var receiver = accountStore.loadContract(contractId);
 
 		/* --- Do the business logic --- */
-		txProcessor.execute(
+		final var txProcessor = new CallEvmTxProcessor(exchange, worldState.updater(), usagePrices, properties);
+		final var result = txProcessor.execute(
 				sender,
 				receiver,
 				op.getGas(),
 				op.getAmount(),
 				op.getFunctionParameters(),
 				txnCtx.consensusTime());
+		/* In case the EVM runs into RE */
+		validateFalse(result.isInvalid(), FAIL_INVALID, result.getValidationResult().getErrorMessage());
+
+		/* --- Persist changes into state --- */
+		worldState.persist();
+		/* --- Externalise result --- */
+		recordService.externaliseCallEvmTransaction(receiver.getId(), result);
+
 	}
 
 	@Override
