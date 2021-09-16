@@ -27,7 +27,6 @@ import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.state.UsageAccumulator;
-import com.hedera.services.usage.token.TokenFreezeUsage;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -37,8 +36,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.fee.SigValueObj;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -48,8 +45,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 
 public class HapiTokenFreeze extends HapiTxnOp<HapiTokenFreeze> {
-	static final Logger log = LogManager.getLogger(HapiTokenFreeze.class);
-
 	private String token;
 	private String account;
 
