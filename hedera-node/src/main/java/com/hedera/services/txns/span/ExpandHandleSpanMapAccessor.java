@@ -100,7 +100,7 @@ public class ExpandHandleSpanMapAccessor {
 	}
 
 	public void setTokenUnfreezeMeta(TxnAccessor accessor, TokenUnfreezeMeta tokenUnfreezeMeta) {
-		accessor.getSpanMap().put(TOKEN_FREEZE_META_KEY, tokenUnfreezeMeta);
+		accessor.getSpanMap().put(TOKEN_UNFREEZE_META_KEY, tokenUnfreezeMeta);
 	}
 
 	public TokenUnfreezeMeta getTokenUnfreezeMeta(TxnAccessor accessor) {

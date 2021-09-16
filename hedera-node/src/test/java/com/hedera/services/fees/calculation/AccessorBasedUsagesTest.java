@@ -42,7 +42,9 @@ import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hedera.services.usage.token.meta.TokenBurnMeta;
 import com.hedera.services.usage.token.meta.TokenCreateMeta;
+import com.hedera.services.usage.token.meta.TokenFreezeMeta;
 import com.hedera.services.usage.token.meta.TokenMintMeta;
+import com.hedera.services.usage.token.meta.TokenUnfreezeMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.CustomFee;
@@ -74,7 +76,9 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -269,6 +273,41 @@ class AccessorBasedUsagesTest {
 
 		// then:
 		verify(tokenOpsUsage).tokenMintUsage(sigUsage, baseMeta, tokenMintMeta, accumulator);
+	}
+
+
+	@Test
+	void worksAsExpectedForTokeFreezeAccount() {
+		// setup:
+		final var baseMeta = new BaseTransactionMeta(0, 0);
+		final var tokenFreezeMeta = new TokenFreezeMeta(48 );
+		final var accumulator = new UsageAccumulator();
+		given(txnAccessor.getFunction()).willReturn(TokenFreezeAccount);
+		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
+		given(txnAccessor.getSpanMapAccessor().getTokenFreezeMeta(any())).willReturn(tokenFreezeMeta);
+
+		// when:
+		subject.assess(sigUsage, txnAccessor, accumulator);
+
+		// then:
+		verify(tokenOpsUsage).tokenFreezeUsage(sigUsage, baseMeta, tokenFreezeMeta, accumulator);
+	}
+
+	@Test
+	void worksAsExpectedForTokeIUnfreezeAccount() {
+		// setup:
+		final var baseMeta = new BaseTransactionMeta(0, 0);
+		final var tokenUnfreezeMeta = new TokenUnfreezeMeta(48 );
+		final var accumulator = new UsageAccumulator();
+		given(txnAccessor.getFunction()).willReturn(TokenUnfreezeAccount);
+		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
+		given(txnAccessor.getSpanMapAccessor().getTokenUnfreezeMeta(any())).willReturn(tokenUnfreezeMeta);
+
+		// when:
+		subject.assess(sigUsage, txnAccessor, accumulator);
+
+		// then:
+		verify(tokenOpsUsage).tokenUnfreezeUsage(sigUsage, baseMeta, tokenUnfreezeMeta, accumulator);
 	}
 
 	@Test

@@ -1,0 +1,95 @@
+[ {
+  "currentFeeSchedule" : [ {
+    "transactionFeeSchedule" : {
+      "hederaFunctionality" : "TokenFreezeAccount",
+      "fees" : [ {
+        "subType" : "DEFAULT",
+        "nodedata" : {
+          "constant" : 76054309,
+          "bpt" : 121588,
+          "vpt" : 303970122,
+          "rbh" : 81,
+          "sbh" : 6,
+          "gas" : 811,
+          "bpr" : 121588,
+          "sbpr" : 3040,
+          "min" : 0,
+          "max" : 1000000000000000
+        },
+        "networkdata" : {
+          "constant" : 1521086180,
+          "bpt" : 2431761,
+          "vpt" : 6079402448,
+          "rbh" : 1621,
+          "sbh" : 122,
+          "gas" : 16212,
+          "bpr" : 2431761,
+          "sbpr" : 60794,
+          "min" : 0,
+          "max" : 1000000000000000
+        },
+        "servicedata" : {
+          "constant" : 1521086180,
+          "bpt" : 2431761,
+          "vpt" : 6079402448,
+          "rbh" : 1621,
+          "sbh" : 122,
+          "gas" : 16212,
+          "bpr" : 2431761,
+          "sbpr" : 60794,
+          "min" : 0,
+          "max" : 1000000000000000
+        }
+      } ]
+    }
+  }, {
+    "expiryTime" : 1633132800
+  } ]
+}, {
+  "nextFeeSchedule" : [ {
+    "transactionFeeSchedule" : {
+      "hederaFunctionality" : "TokenFreezeAccount",
+      "fees" : [ {
+        "subType" : "DEFAULT",
+        "nodedata" : {
+          "constant" : 76054309,
+          "bpt" : 121588,
+          "vpt" : 303970122,
+          "rbh" : 81,
+          "sbh" : 6,
+          "gas" : 811,
+          "bpr" : 121588,
+          "sbpr" : 3040,
+          "min" : 0,
+          "max" : 1000000000000000
+        },
+        "networkdata" : {
+          "constant" : 1521086180,
+          "bpt" : 2431761,
+          "vpt" : 6079402448,
+          "rbh" : 1621,
+          "sbh" : 122,
+          "gas" : 16212,
+          "bpr" : 2431761,
+          "sbpr" : 60794,
+          "min" : 0,
+          "max" : 1000000000000000
+        },
+        "servicedata" : {
+          "constant" : 1521086180,
+          "bpt" : 2431761,
+          "vpt" : 6079402448,
+          "rbh" : 1621,
+          "sbh" : 122,
+          "gas" : 16212,
+          "bpr" : 2431761,
+          "sbpr" : 60794,
+          "min" : 0,
+          "max" : 1000000000000000
+        }
+      } ]
+    }
+  }, {
+    "expiryTime" : 1635811200
+  } ]
+} ]
