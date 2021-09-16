@@ -70,7 +70,7 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 	@Override
 	public byte[] remove(Object path) {
 		pathedBlobs.get().remove(at(path));
-		return null;
+		return new byte[0];
 	}
 
 	/**
@@ -101,7 +101,7 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 			}
 			pathedBlobs.get().put(at(path), blob);
 		}
-		return null;
+		return new byte[0];
 	}
 
 	@Override

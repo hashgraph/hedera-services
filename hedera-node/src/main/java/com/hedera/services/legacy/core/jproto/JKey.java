@@ -285,15 +285,15 @@ public abstract class JKey implements Serializable {
 	}
 
 	public byte[] getEd25519() {
-		return null;
+		return new byte[0];
 	}
 
 	public byte[] getECDSA384() {
-		return null;
+		return new byte[0];
 	}
 
 	public byte[] getRSA3072() {
-		return null;
+		return new byte[0];
 	}
 
 	public JKey duplicate() {
