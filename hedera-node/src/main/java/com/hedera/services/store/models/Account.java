@@ -122,7 +122,7 @@ public class Account {
 	 * @return The list of balance changes to be externalized
 	 */
 	public List<BalanceChange> transferHbar(final Account recipient, long amount) {
-		validateTrue(getBalance() > amount, INSUFFICIENT_ACCOUNT_BALANCE);
+		validateTrue(getBalance() >= amount, INSUFFICIENT_ACCOUNT_BALANCE);
 		this.balance -= amount;
 		recipient.setBalance(recipient.getBalance() + amount);
 
