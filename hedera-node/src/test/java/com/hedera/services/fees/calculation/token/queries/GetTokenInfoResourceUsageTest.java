@@ -51,6 +51,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 
 class GetTokenInfoResourceUsageTest {
 	private static final String memo = "22 a million";
@@ -123,15 +124,9 @@ class GetTokenInfoResourceUsageTest {
 
 		assertSame(info, queryCtx.get(TOKEN_INFO_CTX_KEY));
 		assertSame(expected, usage);
+		verifyCommonCalls();
 		verify(estimator).givenCurrentAdminKey(Optional.of(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey()));
-		verify(estimator).givenCurrentWipeKey(Optional.of(TxnHandlingScenario.TOKEN_WIPE_KT.asKey()));
-		verify(estimator).givenCurrentKycKey(Optional.of(TxnHandlingScenario.TOKEN_KYC_KT.asKey()));
-		verify(estimator).givenCurrentSupplyKey(Optional.of(TxnHandlingScenario.TOKEN_SUPPLY_KT.asKey()));
-		verify(estimator).givenCurrentFreezeKey(Optional.of(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey()));
-		verify(estimator).givenCurrentSymbol(symbol);
-		verify(estimator).givenCurrentName(name);
 		verify(estimator).givenCurrentlyUsingAutoRenewAccount();
-		verify(estimator).givenCurrentMemo(memo);
 	}
 
 	@Test
@@ -143,6 +138,29 @@ class GetTokenInfoResourceUsageTest {
 
 		assertFalse(queryCtx.containsKey(GetTokenInfoAnswer.TOKEN_INFO_CTX_KEY));
 		assertSame(FeeData.getDefaultInstance(), usage);
+	}
+
+	@Test
+	void estimatesWithIncompleteInfo() {
+		final var incompleteInfo = info.toBuilder().clearAdminKey().clearAutoRenewAccount().build();
+		given(view.infoForToken(target)).willReturn(Optional.of(incompleteInfo));
+
+		final var usage = subject.usageGiven(satisfiableAnswerOnly, view);
+
+		assertSame(expected, usage);
+		verifyCommonCalls();
+		verify(estimator).givenCurrentAdminKey(Optional.empty());
+		verify(estimator, never()).givenCurrentlyUsingAutoRenewAccount();
+	}
+
+	private void verifyCommonCalls() {
+		verify(estimator).givenCurrentWipeKey(Optional.of(TxnHandlingScenario.TOKEN_WIPE_KT.asKey()));
+		verify(estimator).givenCurrentKycKey(Optional.of(TxnHandlingScenario.TOKEN_KYC_KT.asKey()));
+		verify(estimator).givenCurrentSupplyKey(Optional.of(TxnHandlingScenario.TOKEN_SUPPLY_KT.asKey()));
+		verify(estimator).givenCurrentFreezeKey(Optional.of(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey()));
+		verify(estimator).givenCurrentSymbol(symbol);
+		verify(estimator).givenCurrentName(name);
+		verify(estimator).givenCurrentMemo(memo);
 	}
 
 	private static final Query tokenInfoQuery(final TokenID id, final ResponseType type) {

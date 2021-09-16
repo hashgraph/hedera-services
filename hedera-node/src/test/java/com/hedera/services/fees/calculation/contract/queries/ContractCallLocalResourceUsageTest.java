@@ -25,6 +25,10 @@ import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.queries.contract.ContractCallLocalAnswer;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -39,6 +43,7 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.fee.SmartContractFeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.HashMap;
 
@@ -46,6 +51,9 @@ import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -58,6 +66,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+@ExtendWith(LogCaptureExtension.class)
 class ContractCallLocalResourceUsageTest {
 	private static final int gas = 1_234;
 	private static final ByteString params = ByteString.copyFrom("Hungry, and...".getBytes());
@@ -71,6 +80,10 @@ class ContractCallLocalResourceUsageTest {
 	private SmartContractFeeBuilder usageEstimator;
 	private ContractCallLocalAnswer.LegacyLocalCaller delegate;
 
+	@LoggingTarget
+	private LogCaptor logCaptor;
+
+	@LoggingSubject
 	private ContractCallLocalResourceUsage subject;
 
 	@BeforeEach
@@ -140,6 +153,7 @@ class ContractCallLocalResourceUsageTest {
 
 		assertThrows(IllegalStateException.class, () -> subject.usageGiven(satisfiableAnswerOnly, view, queryCtx));
 		assertFalse(queryCtx.containsKey(ContractCallLocalAnswer.CONTRACT_CALL_LOCAL_CTX_KEY));
+		assertThat(logCaptor.warnLogs(), contains(startsWith("Usage estimation unexpectedly failed for")));
 	}
 
 	@Test
