@@ -105,8 +105,7 @@ public class Pipeline<K extends VirtualKey, V extends VirtualValue> {
         archiveService.execute(new Task(() -> {
             final var map = archiveExchanger.exchange(null);
             if (map != null) {
-                /* TODO - what is the 0.18.1 equivalent? */
-//                map.archive();
+                map.flush();
                 finishedArchiving.set(true);
             }
         }));
