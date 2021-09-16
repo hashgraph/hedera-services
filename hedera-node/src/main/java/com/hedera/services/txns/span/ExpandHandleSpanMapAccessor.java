@@ -21,8 +21,12 @@ package com.hedera.services.txns.span;
  */
 
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
+import com.hedera.services.usage.crypto.CryptoCreateMeta;
+import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.services.usage.token.meta.TokenBurnMeta;
 import com.hedera.services.usage.token.meta.TokenCreateMeta;
+import com.hedera.services.usage.token.meta.TokenWipeMeta;
 import com.hedera.services.utils.TxnAccessor;
 
 import javax.inject.Inject;
@@ -36,6 +40,10 @@ public class ExpandHandleSpanMapAccessor {
 	private static final String IMPLIED_TRANSFERS_KEY = "impliedTransfers";
 	private static final String FEE_SCHEDULE_UPDATE_META_KEY = "feeScheduleUpdateMeta";
 	private static final String TOKEN_CREATE_META_KEY = "tokenCreateMeta";
+	private static final String TOKEN_BURN_META_KEY = "tokenBurnMeta";
+	private static final String TOKEN_WIPE_META_KEY = "tokenWipeMeta";
+	private static final String CRYPTO_CREATE_META_KEY = "cryptoCreateMeta";
+	private static final String CRYPTO_UPDATE_META_KEY = "cryptoUpdateMeta";
 
 	@Inject
 	public ExpandHandleSpanMapAccessor() {
@@ -57,11 +65,45 @@ public class ExpandHandleSpanMapAccessor {
 		return (ImpliedTransfers) accessor.getSpanMap().get(IMPLIED_TRANSFERS_KEY);
 	}
 
-	public void setTokenCreate(TxnAccessor accessor, TokenCreateMeta tokenCreateMeta) {
+	public void setTokenCreateMeta(TxnAccessor accessor, TokenCreateMeta tokenCreateMeta) {
 		accessor.getSpanMap().put(TOKEN_CREATE_META_KEY, tokenCreateMeta);
 	}
 
 	public TokenCreateMeta getTokenCreateMeta(TxnAccessor accessor) {
 		return (TokenCreateMeta) accessor.getSpanMap().get(TOKEN_CREATE_META_KEY);
 	}
+
+	public void setTokenBurnMeta(TxnAccessor accessor, TokenBurnMeta tokenBurnMeta) {
+		accessor.getSpanMap().put(TOKEN_BURN_META_KEY, tokenBurnMeta);
+	}
+
+	public TokenBurnMeta getTokenBurnMeta(TxnAccessor accessor) {
+		return (TokenBurnMeta) accessor.getSpanMap().get(TOKEN_BURN_META_KEY);
+	}
+
+	public void setTokenWipeMeta(TxnAccessor accessor, TokenWipeMeta tokenWipeMeta) {
+		accessor.getSpanMap().put(TOKEN_WIPE_META_KEY, tokenWipeMeta);
+	}
+
+	public TokenWipeMeta getTokenWipeMeta(TxnAccessor accessor) {
+		return (TokenWipeMeta) accessor.getSpanMap().get(TOKEN_WIPE_META_KEY);
+	}
+
+	public void setCryptoCreateMeta(TxnAccessor accessor, CryptoCreateMeta cryptoCreateMeta) {
+		accessor.getSpanMap().put(CRYPTO_CREATE_META_KEY, cryptoCreateMeta);
+	}
+
+	public CryptoCreateMeta getCryptoCreateMeta(TxnAccessor accessor) {
+		return (CryptoCreateMeta) accessor.getSpanMap().get(CRYPTO_CREATE_META_KEY);
+	}
+
+	public void setCryptoUpdate(TxnAccessor accessor, CryptoUpdateMeta cryptoUpdateMeta) {
+		accessor.getSpanMap().put(CRYPTO_UPDATE_META_KEY, cryptoUpdateMeta);
+	}
+
+	public CryptoUpdateMeta getCryptoUpdateMeta(TxnAccessor accessor) {
+		return (CryptoUpdateMeta) accessor.getSpanMap().get(CRYPTO_UPDATE_META_KEY);
+	}
+
+
 }

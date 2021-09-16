@@ -20,15 +20,12 @@ package com.hedera.services.ledger.accounts;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.common.constructable.ClassConstructorPair;
-import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.fcmap.FCMap;
-import com.swirlds.merkletree.MerklePair;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,27 +53,27 @@ class BackingTokenRelsTest {
 	private boolean aFrozen = true, bFrozen = false, cFrozen = true;
 	private boolean aKyc = false, bKyc = true, cKyc = false;
 	private boolean automaticAssociation = false;
-	private AccountID a = asAccount("1.2.3");
-	private AccountID b = asAccount("3.2.1");
-	private AccountID c = asAccount("4.3.0");
-	private TokenID at = asToken("9.8.7");
-	private TokenID bt = asToken("9.8.6");
-	private TokenID ct = asToken("9.8.5");
+	private AccountID a = asAccount("0.0.3");
+	private AccountID b = asAccount("0.0.1");
+	private AccountID c = asAccount("0.0.0");
+	private TokenID at = asToken("0.0.7");
+	private TokenID bt = asToken("0.0.6");
+	private TokenID ct = asToken("0.0.5");
 
-	private MerkleEntityAssociation aKey = fromAccountTokenRel(a, at);
-	private MerkleEntityAssociation bKey = fromAccountTokenRel(b, bt);
-	private MerkleEntityAssociation cKey = fromAccountTokenRel(c, ct);
+	private EntityNumPair aKey = fromAccountTokenRel(a, at);
+	private EntityNumPair bKey = fromAccountTokenRel(b, bt);
+	private EntityNumPair cKey = fromAccountTokenRel(c, ct);
 	private MerkleTokenRelStatus aValue = new MerkleTokenRelStatus(aBalance, aFrozen, aKyc, automaticAssociation);
 	private MerkleTokenRelStatus bValue = new MerkleTokenRelStatus(bBalance, bFrozen, bKyc, automaticAssociation);
 	private MerkleTokenRelStatus cValue = new MerkleTokenRelStatus(cBalance, cFrozen, cKyc, automaticAssociation);
 
-	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> rels;
+	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> rels;
 
 	private BackingTokenRels subject;
 
 	@BeforeEach
 	private void setup() {
-		rels = new FCMap<>();
+		rels = new MerkleMap<>();
 		rels.put(aKey, aValue);
 		rels.put(bKey, bValue);
 
@@ -110,14 +107,11 @@ class BackingTokenRelsTest {
 	@Test
 	void relToStringWorks() {
 		// expect:
-		assertEquals("1.2.3 <-> 9.8.7", readableTokenRel(asTokenRel(a, at)));
+		assertEquals("0.0.3 <-> 0.0.7", readableTokenRel(asTokenRel(a, at)));
 	}
 
 	@Test
 	void delegatesPutForNewRelIfMissing() throws ConstructableRegistryException {
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(MerklePair.class, MerklePair::new));
-
 		// when:
 		subject.put(asTokenRel(c, ct), cValue);
 
@@ -199,7 +193,7 @@ class BackingTokenRelsTest {
 	}
 
 	private void setupMocked() {
-		rels = mock(FCMap.class);
+		rels = mock(MerkleMap.class);
 		given(rels.keySet()).willReturn(Collections.emptySet());
 		given(rels.entrySet()).willReturn(Collections.emptySet());
 		subject = new BackingTokenRels(() -> rels);

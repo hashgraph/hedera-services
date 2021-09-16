@@ -53,6 +53,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -92,8 +93,8 @@ public class CryptoCreateSuite extends HapiApiSuite {
 				createAnAccountInvalidED25519(),
 				syntaxChecksAreAsExpected(),
 				xferRequiresCrypto(),
-				usdFeeAsExpected(),
-				maxAutoAssociationSpec()
+				maxAutoAssociationSpec(),
+				usdFeeAsExpected()
 		);
 	}
 
@@ -129,13 +130,24 @@ public class CryptoCreateSuite extends HapiApiSuite {
 
 	/* Prior to 0.13.0, a "canonical" CryptoCreate (one sig, 3 month auto-renew) cost 1¢. */
 	private HapiApiSpec usdFeeAsExpected() {
-		double preV13PriceUsd = 0.01, v13PriceUsd = 0.05;
+		double preV13PriceUsd = 0.01;
+		double v13PriceUsd = 0.05;
+		double autoAssocSlotPrice = 0.0018;
+		double v13PriceUsdOneAutoAssociation = v13PriceUsd + autoAssocSlotPrice;
+		double v13PriceUsdTenAutoAssociations = v13PriceUsd + 10 * autoAssocSlotPrice;
+
+		final var noAutoAssocSlots = "noAutoAssocSlots";
+		final var oneAutoAssocSlot = "oneAutoAssocSlot";
+		final var tenAutoAssocSlots = "tenAutoAssocSlots";
+		final var token = "token";
 
 		return defaultHapiSpec("usdFeeAsExpected")
 				.given(
 						cryptoCreate("civilian").balance(ONE_HUNDRED_HBARS),
 						getAccountBalance("civilian").hasTinyBars(ONE_HUNDRED_HBARS)
 				).when(
+						tokenCreate(token)
+								.autoRenewPeriod(THREE_MONTHS_IN_SECONDS),
 						cryptoCreate("neverToBe")
 								.balance(0L)
 								.memo("")
@@ -145,16 +157,36 @@ public class CryptoCreateSuite extends HapiApiSuite {
 								.feeUsd(preV13PriceUsd)
 								.hasPrecheck(INSUFFICIENT_TX_FEE),
 						getAccountBalance("civilian").hasTinyBars(ONE_HUNDRED_HBARS),
-						cryptoCreate("ok")
+						cryptoCreate("noAutoAssoc")
+								.key("civilian")
 								.balance(0L)
-								.via("txn")
-								.memo("")
-								.entityMemo("")
+								.via(noAutoAssocSlots)
+								.blankMemo()
+								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
+								.signedBy("civilian")
+								.payingWith("civilian"),
+						cryptoCreate("oneAutoAssoc")
+								.key("civilian")
+								.balance(0L)
+								.maxAutomaticTokenAssociations(1)
+								.via(oneAutoAssocSlot)
+								.blankMemo()
+								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
+								.signedBy("civilian")
+								.payingWith("civilian"),
+						cryptoCreate("tenAutoAssoc")
+								.key("civilian")
+								.balance(0L)
+								.maxAutomaticTokenAssociations(10)
+								.via(tenAutoAssocSlots)
+								.blankMemo()
 								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
 								.signedBy("civilian")
 								.payingWith("civilian")
 				).then(
-						validateChargedUsd("txn", v13PriceUsd)
+						validateChargedUsd(noAutoAssocSlots, v13PriceUsd),
+						validateChargedUsd(oneAutoAssocSlot, v13PriceUsdOneAutoAssociation),
+						validateChargedUsd(tenAutoAssocSlots, v13PriceUsdTenAutoAssociations)
 				);
 	}
 

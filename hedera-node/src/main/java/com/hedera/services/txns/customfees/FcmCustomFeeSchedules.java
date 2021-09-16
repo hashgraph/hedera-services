@@ -21,10 +21,10 @@ package com.hedera.services.txns.customfees;
  */
 
 import com.hedera.services.grpc.marshalling.CustomFeeMeta;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.models.Id;
-import com.swirlds.fcmap.FCMap;
+import com.hedera.services.utils.EntityNum;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -37,24 +37,25 @@ import java.util.function.Supplier;
  */
 @Singleton
 public class FcmCustomFeeSchedules implements CustomFeeSchedules {
-	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
+	private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
 
 	@Inject
-	public FcmCustomFeeSchedules(Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens) {
+	public FcmCustomFeeSchedules(Supplier<MerkleMap<EntityNum, MerkleToken>> tokens) {
 		this.tokens = tokens;
 	}
 
 	@Override
 	public CustomFeeMeta lookupMetaFor(Id tokenId) {
 		final var currentTokens = tokens.get();
-		if (!currentTokens.containsKey(tokenId.asMerkle())) {
+		final var key = EntityNum.fromModel(tokenId);
+		if (!currentTokens.containsKey(key)) {
 			return CustomFeeMeta.MISSING_META;
 		}
-		final var merkleToken = currentTokens.get(tokenId.asMerkle());
+		final var merkleToken = currentTokens.get(key);
 		return new CustomFeeMeta(tokenId, merkleToken.treasury().asId(), merkleToken.customFeeSchedule());
 	}
 
-	public Supplier<FCMap<MerkleEntityId, MerkleToken>> getTokens() {
+	public Supplier<MerkleMap<EntityNum, MerkleToken>> getTokens() {
 		return tokens;
 	}
 

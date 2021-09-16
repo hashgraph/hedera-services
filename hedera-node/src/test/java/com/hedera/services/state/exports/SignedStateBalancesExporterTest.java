@@ -25,10 +25,10 @@ import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityAssociation;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hedera.services.stream.proto.TokenUnitBalance;
@@ -46,8 +46,7 @@ import com.swirlds.common.NodeId;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.fcmap.FCMap;
-import com.swirlds.merkletree.MerklePair;
+import com.swirlds.merkle.map.MerkleMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -69,8 +68,8 @@ import java.util.function.UnaryOperator;
 
 import static com.hedera.services.state.exports.SignedStateBalancesExporter.SINGLE_ACCOUNT_BALANCES_COMPARATOR;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
-import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
-import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
+import static com.hedera.services.utils.EntityNum.fromAccountId;
+import static com.hedera.services.utils.EntityNum.fromTokenId;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -88,9 +87,9 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(LogCaptureExtension.class)
 class SignedStateBalancesExporterTest {
 	private static final NodeId nodeId = new NodeId(false, 1);
-	private FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
-	private FCMap<MerkleEntityId, MerkleAccount> accounts = new FCMap<>();
-	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels = new FCMap<>();
+	private MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
+	private MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
+	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels = new MerkleMap<>();
 
 	private MerkleToken token;
 	private MerkleToken deletedToken;
@@ -110,6 +109,7 @@ class SignedStateBalancesExporterTest {
 	private static final long secondNonNodeTokenBalance = 100;
 	private static final TokenID theDeletedToken = asToken("0.0.1005");
 	private static final long secondNonNodeDeletedTokenBalance = 100;
+	private static final TokenID theMissingToken = asToken("0.0.1006");
 
 	private static final byte[] sig = "not-really-a-sig".getBytes();
 	private static final byte[] fileHash = "not-really-a-hash".getBytes();
@@ -136,8 +136,6 @@ class SignedStateBalancesExporterTest {
 	@BeforeEach
 	void setUp() throws ConstructableRegistryException {
 		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(MerklePair.class, MerklePair::new));
-		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
 
 		thisNodeAccount = MerkleAccountFactory.newAccount().balance(thisNodeBalance).get();
@@ -145,7 +143,7 @@ class SignedStateBalancesExporterTest {
 		firstNonNodeAccount = MerkleAccountFactory.newAccount().balance(firstNonNodeAccountBalance).get();
 		secondNonNodeAccount = MerkleAccountFactory.newAccount()
 				.balance(secondNonNodeAccountBalance)
-				.tokens(theToken, theDeletedToken)
+				.tokens(theToken, theDeletedToken, theMissingToken)
 				.get();
 		deletedAccount = MerkleAccountFactory.newAccount().deleted(true).get();
 
@@ -347,13 +345,17 @@ class SignedStateBalancesExporterTest {
 				.setAccountID(asAccount("0.0.1001"))
 				.setHbarBalance(firstNonNodeAccountBalance)
 				.build();
-		final var tokenBalances = TokenUnitBalance.newBuilder()
+		final var nonDeletedTokenUnits = TokenUnitBalance.newBuilder()
 				.setTokenId(theToken)
 				.setBalance(secondNonNodeTokenBalance);
+		final var deletedTokenUnits = TokenUnitBalance.newBuilder()
+				.setTokenId(theDeletedToken)
+				.setBalance(secondNonNodeDeletedTokenBalance);
 		final var secondNon = singleAcctBuilder
 				.setAccountID(asAccount("0.0.1002"))
 				.setHbarBalance(secondNonNodeAccountBalance)
-				.addTokenUnitBalances(tokenBalances)
+				.addTokenUnitBalances(nonDeletedTokenUnits)
+				.addTokenUnitBalances(deletedTokenUnits)
 				.build();
 
 		return List.of(thisNode, anotherNode, firstNon, secondNon);

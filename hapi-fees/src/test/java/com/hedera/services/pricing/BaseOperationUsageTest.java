@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
@@ -43,7 +44,15 @@ import static org.mockito.Mockito.verify;
 
 class BaseOperationUsageTest {
 	@Test
-	void picksAppropriateOperation() {
+	void picksAppropriateFileOp() {
+		final var mock = Mockito.spy(new BaseOperationUsage());
+
+		mock.baseUsageFor(FileAppend, DEFAULT);
+		verify(mock).fileAppend();
+	}
+
+	@Test
+	void picksAppropriateCryptoOp() {
 		final var mock = Mockito.spy(new BaseOperationUsage());
 
 		mock.baseUsageFor(CryptoTransfer, DEFAULT);
@@ -61,11 +70,31 @@ class BaseOperationUsageTest {
 		mock.baseUsageFor(CryptoTransfer, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES);
 		verify(mock).nftCryptoTransferWithCustomFee();
 
+		mock.baseUsageFor(CryptoCreate, DEFAULT);
+		verify(mock).cryptoCreate(0);
+
+		mock.baseUsageFor(CryptoUpdate, DEFAULT);
+		verify(mock).cryptoUpdate(0);
+	}
+
+	@Test
+	void picksAppropriateTokenOp() {
+		final var mock = Mockito.spy(new BaseOperationUsage());
+
+		mock.baseUsageFor(TokenAccountWipe, TOKEN_FUNGIBLE_COMMON);
+		verify(mock).fungibleCommonTokenWipe();
+
 		mock.baseUsageFor(TokenAccountWipe, TOKEN_NON_FUNGIBLE_UNIQUE);
 		verify(mock).uniqueTokenWipe();
 
+		mock.baseUsageFor(TokenBurn, TOKEN_FUNGIBLE_COMMON);
+		verify(mock).fungibleCommonTokenBurn();
+
 		mock.baseUsageFor(TokenBurn, TOKEN_NON_FUNGIBLE_UNIQUE);
 		verify(mock).uniqueTokenBurn();
+
+		mock.baseUsageFor(TokenMint, TOKEN_FUNGIBLE_COMMON);
+		verify(mock).fungibleCommonTokenMint();
 
 		mock.baseUsageFor(TokenMint, TOKEN_NON_FUNGIBLE_UNIQUE);
 		verify(mock).uniqueTokenMint();
@@ -75,9 +104,6 @@ class BaseOperationUsageTest {
 
 		mock.baseUsageFor(TokenFeeScheduleUpdate, DEFAULT);
 		verify(mock).feeScheduleUpdate();
-
-		mock.baseUsageFor(FileAppend, DEFAULT);
-		verify(mock).fileAppend();
 
 		mock.baseUsageFor(TokenCreate, TOKEN_FUNGIBLE_COMMON);
 		verify(mock).fungibleTokenCreate();
@@ -90,22 +116,38 @@ class BaseOperationUsageTest {
 
 		mock.baseUsageFor(TokenCreate, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES);
 		verify(mock).uniqueTokenCreateWithCustomFees();
+	}
+
+	@Test
+	void failsOnUnrecognizedTokenTypes() {
+		final var subject = new BaseOperationUsage();
 
 		assertThrows(IllegalArgumentException.class,
-				() -> mock.baseUsageFor(TokenCreate, UNRECOGNIZED));
+				() -> subject.baseUsageFor(TokenCreate, UNRECOGNIZED));
 
 		assertThrows(IllegalArgumentException.class,
-				() -> mock.baseUsageFor(FileAppend, UNRECOGNIZED));
+				() -> subject.baseUsageFor(TokenMint, UNRECOGNIZED));
 
 		assertThrows(IllegalArgumentException.class,
-				() -> mock.baseUsageFor(CryptoUpdate, DEFAULT));
+				() -> subject.baseUsageFor(TokenAccountWipe, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES));
+
 		assertThrows(IllegalArgumentException.class,
-				() -> mock.baseUsageFor(CryptoTransfer, UNRECOGNIZED));
+				() -> subject.baseUsageFor(TokenBurn, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES));
+	}
+
+	@Test
+	void failsOnUnrecognizedCryptoTypes() {
+		final var subject = new BaseOperationUsage();
+
 		assertThrows(IllegalArgumentException.class,
-				() -> mock.baseUsageFor(TokenMint, TOKEN_FUNGIBLE_COMMON));
+				() -> subject.baseUsageFor(CryptoTransfer, UNRECOGNIZED));
+	}
+
+	@Test
+	void failsOnUnrecognizedFileTypes() {
+		final var subject = new BaseOperationUsage();
+
 		assertThrows(IllegalArgumentException.class,
-				() -> mock.baseUsageFor(TokenAccountWipe, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES));
-		assertThrows(IllegalArgumentException.class,
-				() -> mock.baseUsageFor(TokenBurn, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES));
+				() -> subject.baseUsageFor(FileAppend, UNRECOGNIZED));
 	}
 }

@@ -34,52 +34,41 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class OverflowCheckingCalcTest {
-	private final int rateTinybarComponent = 1001;
-	private final int rateTinycentComponent = 1000;
-	private final ExchangeRate someRate = ExchangeRate.newBuilder()
+	private static final int rateTinybarComponent = 1001;
+	private static final int rateTinycentComponent = 1000;
+	private static final ExchangeRate someRate = ExchangeRate.newBuilder()
 			.setHbarEquiv(rateTinybarComponent)
 			.setCentEquiv(rateTinycentComponent)
 			.build();
-	private OverflowCheckingCalc subject = new OverflowCheckingCalc();
+	private static final OverflowCheckingCalc subject = new OverflowCheckingCalc();
 
 	@Test
 	void throwsOnMultiplierOverflow() {
-		// given:
 		final var usage = new UsageAccumulator();
 		copyData(mockUsage, usage);
 
-		// expect:
 		assertThrows(IllegalArgumentException.class,
 				() -> subject.fees(usage, mockPrices, mockRate, Long.MAX_VALUE));
 	}
 
 	@Test
 	void converterCanFallbackToBigDecimal() {
-		// setup:
 		final var highFee = Long.MAX_VALUE / rateTinycentComponent;
-
-		// given:
 		final var expectedTinybarFee = FeeBuilder.getTinybarsFromTinyCents(someRate, highFee);
 
-		// when:
 		final long computedTinybarFee = subject.tinycentsToTinybars(highFee, someRate);
 
-		// then:
 		assertEquals(expectedTinybarFee, computedTinybarFee);
 	}
 
 	@Test
 	void matchesLegacyCalc() {
-		// given:
 		final var legacyFees = FeeBuilder.getFeeObject(mockPrices, mockUsage, mockRate, multiplier);
-		// and:
 		final var usage = new UsageAccumulator();
 		copyData(mockUsage, usage);
 
-		// when:
 		final var refactoredFees = subject.fees(usage, mockPrices, mockRate, multiplier);
 
-		// then:
 		assertEquals(legacyFees.getNodeFee(), refactoredFees.getNodeFee());
 		assertEquals(legacyFees.getNetworkFee(), refactoredFees.getNetworkFee());
 		assertEquals(legacyFees.getServiceFee(), refactoredFees.getServiceFee());
@@ -87,16 +76,12 @@ class OverflowCheckingCalcTest {
 
 	@Test
 	void ceilingIsEnforced() {
-		// given:
 		final var cappedFees = FeeBuilder.getFeeObject(mockLowCeilPrices, mockUsage, mockRate, multiplier);
-		// and:
 		final var usage = new UsageAccumulator();
 		copyData(mockUsage, usage);
 
-		// when:
 		final var refactoredFees = subject.fees(usage, mockLowCeilPrices, mockRate, multiplier);
 
-		// then:
 		assertEquals(cappedFees.getNodeFee(), refactoredFees.getNodeFee());
 		assertEquals(cappedFees.getNetworkFee(), refactoredFees.getNetworkFee());
 		assertEquals(cappedFees.getServiceFee(), refactoredFees.getServiceFee());
@@ -104,16 +89,12 @@ class OverflowCheckingCalcTest {
 
 	@Test
 	void floorIsEnforced() {
-		// given:
 		final var cappedFees = FeeBuilder.getFeeObject(mockHighFloorPrices, mockUsage, mockRate, multiplier);
-		// and:
 		final var usage = new UsageAccumulator();
 		copyData(mockUsage, usage);
 
-		// when:
 		final var refactoredFees = subject.fees(usage, mockHighFloorPrices, mockRate, multiplier);
 
-		// then:
 		assertEquals(cappedFees.getNodeFee(), refactoredFees.getNodeFee());
 		assertEquals(cappedFees.getNetworkFee(), refactoredFees.getNetworkFee());
 		assertEquals(cappedFees.getServiceFee(), refactoredFees.getServiceFee());
@@ -122,7 +103,6 @@ class OverflowCheckingCalcTest {
 
 	@Test
 	void safeAccumulateTwoWorks() {
-		// expect:
 		assertThrows(IllegalArgumentException.class,
 				() -> subject.safeAccumulateTwo(-1, 1, 1));
 		assertThrows(IllegalArgumentException.class,
@@ -134,13 +114,11 @@ class OverflowCheckingCalcTest {
 		assertThrows(IllegalArgumentException.class,
 				() -> subject.safeAccumulateTwo(1, 1, Long.MAX_VALUE));
 
-		// and:
 		assertEquals(3, subject.safeAccumulateTwo(1, 1, 1));
 	}
 
 	@Test
 	void safeAccumulateThreeWorks() {
-		// expect:
 		assertThrows(IllegalArgumentException.class,
 				() -> subject.safeAccumulateThree(-1, 1, 1, 1));
 		assertThrows(IllegalArgumentException.class,
@@ -156,13 +134,11 @@ class OverflowCheckingCalcTest {
 		assertThrows(IllegalArgumentException.class,
 				() -> subject.safeAccumulateThree(1, 1, 1, Long.MAX_VALUE));
 
-		// and:
 		assertEquals(4, subject.safeAccumulateThree(1, 1, 1, 1));
 	}
 
 	@Test
 	void safeAccumulateFourWorks() {
-		// expect:
 		assertThrows(IllegalArgumentException.class,
 				() -> subject.safeAccumulateFour(-1, 1, 1, 1, 1));
 		assertThrows(IllegalArgumentException.class,
@@ -182,13 +158,12 @@ class OverflowCheckingCalcTest {
 		assertThrows(IllegalArgumentException.class,
 				() -> subject.safeAccumulateFour(1, 1, 1, 1, Long.MAX_VALUE));
 
-		// and:
 		assertEquals(5, subject.safeAccumulateFour(1, 1, 1, 1, 1));
 	}
 
-	private final long multiplier = 2L;
-	private final long veryHighFloorFee = Long.MAX_VALUE / 2;
-	private final FeeComponents mockLowCeilFees = FeeComponents.newBuilder()
+	private static final long multiplier = 2L;
+	private static final long veryHighFloorFee = Long.MAX_VALUE / 2;
+	private static final FeeComponents mockLowCeilFees = FeeComponents.newBuilder()
 			.setMax(1234567L)
 			.setConstant(1_234_567L)
 			.setBpr(1_000_000L)
@@ -196,7 +171,7 @@ class OverflowCheckingCalcTest {
 			.setRbh(3_000_000L)
 			.setSbh(4_000_000L)
 			.build();
-	private final FeeComponents mockHighFloorFees = FeeComponents.newBuilder()
+	private static final FeeComponents mockHighFloorFees = FeeComponents.newBuilder()
 			.setMin(veryHighFloorFee)
 			.setConstant(1_234_567L)
 			.setBpr(1_000_000L)
@@ -204,7 +179,7 @@ class OverflowCheckingCalcTest {
 			.setRbh(3_000_000L)
 			.setSbh(4_000_000L)
 			.build();
-	private final FeeComponents mockFees = FeeComponents.newBuilder()
+	private static final FeeComponents mockFees = FeeComponents.newBuilder()
 			.setMax(Long.MAX_VALUE)
 			.setConstant(1_234_567L)
 			.setBpr(1_000_000L)
@@ -212,36 +187,36 @@ class OverflowCheckingCalcTest {
 			.setRbh(3_000_000L)
 			.setSbh(4_000_000L)
 			.build();
-	private final ExchangeRate mockRate = ExchangeRate.newBuilder()
+	private static final ExchangeRate mockRate = ExchangeRate.newBuilder()
 			.setHbarEquiv(1)
 			.setCentEquiv(120)
 			.build();
 
-	private FeeData mockPrices = FeeData.newBuilder()
+	private static final FeeData mockPrices = FeeData.newBuilder()
 			.setNetworkdata(mockFees)
 			.setNodedata(mockFees)
 			.setServicedata(mockFees)
 			.build();
-	private FeeData mockLowCeilPrices = FeeData.newBuilder()
+	private static final FeeData mockLowCeilPrices = FeeData.newBuilder()
 			.setNetworkdata(mockLowCeilFees)
 			.setNodedata(mockLowCeilFees)
 			.setServicedata(mockLowCeilFees)
 			.build();
-	private FeeData mockHighFloorPrices = FeeData.newBuilder()
+	private static final FeeData mockHighFloorPrices = FeeData.newBuilder()
 			.setNetworkdata(mockHighFloorFees)
 			.setNodedata(mockHighFloorFees)
 			.setServicedata(mockHighFloorFees)
 			.build();
 
-	private final long one = 1;
-	private final long bpt = 2;
-	private final long vpt = 3;
-	private final long rbh = 4;
-	private final long sbh = 5;
-	private final long bpr = 8;
-	private final long sbpr = 9;
-	private final long network_rbh = 10;
-	private final FeeComponents mockUsageVector = FeeComponents.newBuilder()
+	private static final long one = 1;
+	private static final long bpt = 2;
+	private static final long vpt = 3;
+	private static final long rbh = 4;
+	private static final long sbh = 5;
+	private static final long bpr = 8;
+	private static final long sbpr = 9;
+	private static final long network_rbh = 10;
+	private static final FeeComponents mockUsageVector = FeeComponents.newBuilder()
 			.setConstant(one)
 			.setBpt(bpt)
 			.setVpt(vpt)
@@ -250,10 +225,10 @@ class OverflowCheckingCalcTest {
 			.setBpr(bpr)
 			.setSbpr(sbpr)
 			.build();
-	private final FeeData mockUsage = ESTIMATOR_UTILS.withDefaultTxnPartitioning(
+	private static final FeeData mockUsage = ESTIMATOR_UTILS.withDefaultTxnPartitioning(
 			mockUsageVector, SubType.DEFAULT, network_rbh, 3);
 
-	private static void copyData(FeeData feeData, UsageAccumulator into) {
+	private static final void copyData(final FeeData feeData, final UsageAccumulator into) {
 		into.setNumPayerKeys(feeData.getNodedata().getVpt());
 		into.addVpt(feeData.getNetworkdata().getVpt());
 		into.addBpt(feeData.getNetworkdata().getBpt());

@@ -59,6 +59,7 @@ public class NodeLocalProperties {
 	private int nettyStartRetries;
 	private long nettyStartRetryIntervalMs;
 	private boolean dumpFcmsOnIss;
+	private int numExecutionTimesToTrack;
 
 	@Inject
 	public NodeLocalProperties(@CompositeProps PropertySource properties) {
@@ -98,6 +99,7 @@ public class NodeLocalProperties {
 		nettyStartRetries = properties.getIntProperty("netty.startRetries");
 		nettyStartRetryIntervalMs = properties.getLongProperty("netty.startRetryIntervalMs");
 		dumpFcmsOnIss = properties.getBooleanProperty("iss.dumpFcms");
+		numExecutionTimesToTrack = properties.getIntProperty("stats.executionTimesToTrack");
 	}
 
 	public int port() {
@@ -218,5 +220,9 @@ public class NodeLocalProperties {
 
 	public boolean shouldDumpFcmsOnIss() {
 		return dumpFcmsOnIss;
+	}
+
+	public int numExecutionTimesToTrack() {
+		return numExecutionTimesToTrack;
 	}
 }

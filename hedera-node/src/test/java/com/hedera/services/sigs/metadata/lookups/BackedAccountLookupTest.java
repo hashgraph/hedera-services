@@ -64,6 +64,6 @@ class BackedAccountLookupTest {
 
 		// then:
 		assertTrue(result.metadata().isReceiverSigRequired());
-		assertSame(account.getKey(), result.metadata().getKey());
+		assertSame(account.getAccountKey(), result.metadata().getKey());
 	}
 }

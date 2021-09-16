@@ -9,9 +9,9 @@ package com.hedera.services.txns.submission;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,7 +20,6 @@ package com.hedera.services.txns.submission;
  * ‍
  */
 
-import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.txns.SubmissionFlow;
 import com.hedera.services.utils.SignedTxnAccessor;
@@ -38,8 +37,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 @Singleton
-public class TxnResponseHelper {
-	private static final Logger log = LogManager.getLogger(QueryResponseHelper.class);
+public final class TxnResponseHelper {
+	private static final Logger log = LogManager.getLogger(TxnResponseHelper.class);
 
 	static final TransactionResponse FAIL_INVALID_RESPONSE = TransactionResponse.newBuilder()
 			.setNodeTransactionPrecheckCode(FAIL_INVALID)
@@ -49,15 +48,15 @@ public class TxnResponseHelper {
 	private final HapiOpCounters opCounters;
 
 	@Inject
-	public TxnResponseHelper(SubmissionFlow submissionFlow, HapiOpCounters opCounters) {
+	public TxnResponseHelper(final SubmissionFlow submissionFlow, final HapiOpCounters opCounters) {
 		this.opCounters = opCounters;
 		this.submissionFlow = submissionFlow;
 	}
 
 	public void submit(
-			Transaction signedTxn,
-			StreamObserver<TransactionResponse> observer,
-			HederaFunctionality statedFunction
+			final Transaction signedTxn,
+			final StreamObserver<TransactionResponse> observer,
+			final HederaFunctionality statedFunction
 	) {
 		respondWithMetrics(
 				signedTxn,
@@ -67,18 +66,18 @@ public class TxnResponseHelper {
 	}
 
 	private void respondWithMetrics(
-			Transaction signedTxn,
-			StreamObserver<TransactionResponse> observer,
-			Runnable incReceivedCount,
-			Runnable incSubmittedCount
+			final Transaction signedTxn,
+			final StreamObserver<TransactionResponse> observer,
+			final Runnable incReceivedCount,
+			final Runnable incSubmittedCount
 	) {
 		incReceivedCount.run();
 		TransactionResponse response;
 
 		try {
 			response = submissionFlow.submit(signedTxn);
-		} catch (Exception surprising) {
-			SignedTxnAccessor accessor = SignedTxnAccessor.uncheckedFrom(signedTxn);
+		} catch (final Exception surprising) {
+			final var accessor = SignedTxnAccessor.uncheckedFrom(signedTxn);
 			log.warn("Submission flow unable to submit {}!", accessor.getSignedTxnWrapper(), surprising);
 			response = FAIL_INVALID_RESPONSE;
 		}

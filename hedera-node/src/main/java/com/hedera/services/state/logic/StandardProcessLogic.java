@@ -24,6 +24,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.expiry.EntityAutoRenewal;
 import com.hedera.services.state.expiry.ExpiryManager;
+import com.hedera.services.stats.ExecutionTimeTracker;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.swirlds.common.SwirldTransaction;
@@ -44,6 +45,7 @@ public class StandardProcessLogic implements ProcessLogic {
 	private final EntityAutoRenewal autoRenewal;
 	private final ServicesTxnManager txnManager;
 	private final TransactionContext txnCtx;
+	private final ExecutionTimeTracker executionTimeTracker;
 
 	@Inject
 	public StandardProcessLogic(
@@ -52,11 +54,13 @@ public class StandardProcessLogic implements ProcessLogic {
 			ExpandHandleSpan expandHandleSpan,
 			EntityAutoRenewal autoRenewal,
 			ServicesTxnManager txnManager,
-			TransactionContext txnCtx
+			TransactionContext txnCtx,
+			ExecutionTimeTracker executionTimeTracker
 	) {
 		this.expiries = expiries;
 		this.invariantChecks = invariantChecks;
 		this.expandHandleSpan = expandHandleSpan;
+		this.executionTimeTracker = executionTimeTracker;
 		this.autoRenewal = autoRenewal;
 		this.txnManager = txnManager;
 		this.txnCtx = txnCtx;
@@ -76,11 +80,14 @@ public class StandardProcessLogic implements ProcessLogic {
 			}
 
 			expiries.purge(effectiveConsensusTime.getEpochSecond());
+
+			executionTimeTracker.start();
 			txnManager.process(accessor, effectiveConsensusTime, submittingMember);
 			final var triggeredAccessor = txnCtx.triggeredTxn();
 			if (triggeredAccessor != null) {
 				txnManager.process(triggeredAccessor, consensusTime, submittingMember);
 			}
+			executionTimeTracker.stop();
 
 			autoRenewal.execute(consensusTime);
 		} catch (InvalidProtocolBufferException e) {

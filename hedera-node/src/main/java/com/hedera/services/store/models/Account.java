@@ -34,10 +34,10 @@ import java.util.Set;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.getAlreadyUsedAutomaticAssociationsFrom;
-import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.getMaxAutomaticAssociationsFrom;
-import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.setAlreadyUsedAutomaticAssociationsTo;
-import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.setMaxAutomaticAssociationsTo;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.getMaxAutomaticAssociationsFrom;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.setMaxAutomaticAssociationsTo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
@@ -112,7 +112,7 @@ public class Account {
 	}
 
 	public void setAlreadyUsedAutomaticAssociations(int alreadyUsedCount) {
-		validateTrue(alreadyUsedCount >= 0 && alreadyUsedCount <= getMaxAutomaticAssociations(), NO_REMAINING_AUTOMATIC_ASSOCIATIONS );
+		validateTrue(isValidAlreadyUsedCount(alreadyUsedCount), NO_REMAINING_AUTOMATIC_ASSOCIATIONS );
 		autoAssociationMetadata = setAlreadyUsedAutomaticAssociationsTo(autoAssociationMetadata, alreadyUsedCount);
 	}
 
@@ -174,6 +174,10 @@ public class Account {
 
 	public boolean isAssociatedWith(Id token) {
 		return associatedTokens.contains(token);
+	}
+
+	private boolean isValidAlreadyUsedCount(int alreadyUsedCount) {
+		return alreadyUsedCount >= 0 && alreadyUsedCount <= getMaxAutomaticAssociations();
 	}
 
 	/* NOTE: The object methods below are only overridden to improve

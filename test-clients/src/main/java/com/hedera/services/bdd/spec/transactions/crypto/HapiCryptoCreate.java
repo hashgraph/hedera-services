@@ -23,8 +23,12 @@ package com.hedera.services.bdd.spec.transactions.crypto;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hedera.services.usage.BaseTransactionMeta;
+import com.hedera.services.usage.crypto.CryptoCreateMeta;
+import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -184,7 +188,11 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 	}
 
 	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
-		return cryptoOpsUsage.cryptoCreateUsage(txn, suFrom(svo));
+		var baseMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
+		var opMeta = new CryptoCreateMeta(txn.getCryptoCreateAccount());
+		var accumulator = new UsageAccumulator();
+		cryptoOpsUsage.cryptoCreateUsage(suFrom(svo), baseMeta, opMeta, accumulator);
+		return AdapterUtils.feeDataFrom(accumulator);
 	}
 
 	@Override

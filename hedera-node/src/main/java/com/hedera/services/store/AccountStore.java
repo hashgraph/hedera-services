@@ -24,16 +24,16 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.annotation.Nullable;
 import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
@@ -46,13 +46,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 public class AccountStore {
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties dynamicProperties;
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
 	@Inject
 	public AccountStore(
 			OptionValidator validator,
 			GlobalDynamicProperties dynamicProperties,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {
 		this.validator = validator;
 		this.dynamicProperties = dynamicProperties;
@@ -94,7 +94,7 @@ public class AccountStore {
 	public Account loadAccountOrFailWith(Id id, @Nullable ResponseCodeEnum code) {
 		Account account;
 
-		final var key = new MerkleEntityId(id.getShard(), id.getRealm(), id.getNum());
+		final var key = EntityNum.fromModel(id);
 		final var merkleAccount = accounts.get().get(key);
 
 		validateUsable(merkleAccount, code);
@@ -119,7 +119,7 @@ public class AccountStore {
 	 */
 	public void persistAccount(Account account) {
 		final var id = account.getId();
-		final var key = new MerkleEntityId(id.getShard(), id.getRealm(), id.getNum());
+		final var key = EntityNum.fromLong(id.getNum());
 
 		final var currentAccounts = accounts.get();
 		final var mutableAccount = currentAccounts.getForModify(key);

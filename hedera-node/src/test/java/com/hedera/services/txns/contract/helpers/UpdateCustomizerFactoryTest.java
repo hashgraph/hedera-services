@@ -93,7 +93,7 @@ class UpdateCustomizerFactoryTest {
 		mutableContract = result.getLeft().get().customizing(mutableContract);
 
 		// then:
-		assertEquals(newAdminKey, MiscUtils.asKeyUnchecked(mutableContract.getKey()));
+		assertEquals(newAdminKey, MiscUtils.asKeyUnchecked(mutableContract.getAccountKey()));
 		assertEquals(newAutoRenew.getSeconds(), mutableContract.getAutoRenewSecs());
 		assertEquals(newExpiry, mutableContract.getExpiry());
 		assertEquals(newMemo, mutableContract.getMemo());
@@ -140,7 +140,7 @@ class UpdateCustomizerFactoryTest {
 		mutableContract = result.getLeft().get().customizing(mutableContract);
 
 		// then:
-		assertEquals(targetKey, MiscUtils.asKeyUnchecked(mutableContract.getKey()));
+		assertEquals(targetKey, MiscUtils.asKeyUnchecked(mutableContract.getAccountKey()));
 	}
 
 	@Test

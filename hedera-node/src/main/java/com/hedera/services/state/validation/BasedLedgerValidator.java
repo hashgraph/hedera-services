@@ -20,14 +20,13 @@ package com.hedera.services.state.validation;
  * ‍
  */
 
-import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -38,33 +37,25 @@ import java.util.concurrent.atomic.AtomicReference;
 public class BasedLedgerValidator implements LedgerValidator {
 	private final long expectedFloat;
 
-	private final HederaNumbers hederaNums;
 	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
 	public BasedLedgerValidator(
-			HederaNumbers hederaNums,
 			@CompositeProps PropertySource properties,
 			GlobalDynamicProperties dynamicProperties
 	) {
 		this.expectedFloat = properties.getLongProperty("ledger.totalTinyBarFloat");
 
-		this.hederaNums = hederaNums;
 		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
-	public void validate(FCMap<MerkleEntityId, MerkleAccount> accounts) {
+	public void validate(MerkleMap<EntityNum, MerkleAccount> accounts) {
 		var totalFloat = new AtomicReference<>(BigInteger.ZERO);
 		MiscUtils.forEach(accounts, (id, account) -> {
-			if (id.getRealm() != hederaNums.realm()) {
-				throw new IllegalStateException(String.format("Invalid realm in account %s", id.toAbbrevString()));
-			}
-			if (id.getShard() != hederaNums.shard()) {
-				throw new IllegalStateException(String.format("Invalid shard in account %s", id.toAbbrevString()));
-			}
-			if (id.getNum() < 1 || id.getNum() > dynamicProperties.maxAccountNum()) {
-				throw new IllegalStateException(String.format("Invalid num in account %s", id.toAbbrevString()));
+			final var num = id.longValue();
+			if (num < 1 || num > dynamicProperties.maxAccountNum()) {
+				throw new IllegalStateException(String.format("Invalid num in account %s", id.toIdString()));
 			}
 			totalFloat.set(totalFloat.get().add(BigInteger.valueOf(account.getBalance())));
 		});
