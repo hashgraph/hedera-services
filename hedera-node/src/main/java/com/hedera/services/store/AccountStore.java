@@ -106,7 +106,7 @@ public class AccountStore {
 		account.setOwnedNfts(merkleAccount.getNftsOwned());
 		account.setMaxAutomaticAssociations(merkleAccount.getMaxAutomaticAssociations());
 		account.setAlreadyUsedAutomaticAssociations(merkleAccount.getAlreadyUsedAutoAssociations());
-
+		account.setSmartContract(merkleAccount.isSmartContract());
 		return account;
 	}
 

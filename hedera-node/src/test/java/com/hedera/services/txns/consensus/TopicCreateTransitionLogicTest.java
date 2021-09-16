@@ -22,16 +22,18 @@ package com.hedera.services.txns.consensus;
 
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TopicStore;
+import com.hedera.services.store.models.Account;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
+import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -42,33 +44,32 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-class MerkleTopicCreateTransitionLogicTest {
+@ExtendWith(MockitoExtension.class)
+class TopicCreateTransitionLogicTest {
 	private static final long VALID_AUTORENEW_PERIOD_SECONDS = 30 * 86400L;
 	private static final long INVALID_AUTORENEW_PERIOD_SECONDS = -1L;
 	private static final String TOO_LONG_MEMO = "too-long";
@@ -77,44 +78,36 @@ class MerkleTopicCreateTransitionLogicTest {
 
 	// key to be used as a valid admin or submit key.
 	final private Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
-
-	private Instant expirationTimestamp;
+	final private AccountID payer = AccountID.newBuilder().setAccountNum(2_345L).build();
 	private Instant consensusTimestamp;
 	private TransactionBody transactionBody;
+	
+	@Mock
 	private TransactionContext transactionContext;
+	@Mock
 	private PlatformTxnAccessor accessor;
+	@Mock
 	private OptionValidator validator;
 	private TopicCreateTransitionLogic subject;
 	private MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
 	private MerkleMap<EntityNum, MerkleTopic> topics = new MerkleMap<>();
+	@Mock
 	private EntityIdSource entityIdSource;
-	private HederaLedger ledger;
-	final private AccountID payer = AccountID.newBuilder().setAccountNum(2_345L).build();
-
+	@Mock
+	private TopicStore topicStore;
+	@Mock
+	private AccountStore accountStore;
+	@Mock
+	private Account autoRenew;
+	
 	@BeforeEach
 	private void setup() {
 		consensusTimestamp = Instant.ofEpochSecond(1546304463);
-
-		transactionContext = mock(TransactionContext.class);
-		given(transactionContext.consensusTime()).willReturn(consensusTimestamp);
-		accessor = mock(PlatformTxnAccessor.class);
-		validator = mock(OptionValidator.class);
-		given(validator.isValidAutoRenewPeriod(Duration.newBuilder().setSeconds(VALID_AUTORENEW_PERIOD_SECONDS).build()))
-				.willReturn(true);
-		given(validator.isValidAutoRenewPeriod(
-				Duration.newBuilder().setSeconds(INVALID_AUTORENEW_PERIOD_SECONDS).build()))
-				.willReturn(false);
-		given(validator.memoCheck(VALID_MEMO)).willReturn(OK);
-		given(validator.memoCheck(TOO_LONG_MEMO)).willReturn(MEMO_TOO_LONG);
-		entityIdSource = mock(EntityIdSource.class);
-		given(entityIdSource.newAccountId(any())).willReturn(NEW_TOPIC_ID);
 		accounts.clear();
 		topics.clear();
 
-		ledger = mock(HederaLedger.class);
-
 		subject = new TopicCreateTransitionLogic(
-				() -> accounts, () -> topics, entityIdSource, validator, transactionContext, ledger);
+				topicStore, entityIdSource, validator, transactionContext, accountStore);
 	}
 
 	@Test
@@ -150,113 +143,128 @@ class MerkleTopicCreateTransitionLogicTest {
 	@Test
 	void followsHappyPath() throws Throwable {
 		// given:
-		expirationTimestamp = consensusTimestamp.plusSeconds(VALID_AUTORENEW_PERIOD_SECONDS);
 		givenValidTransactionWithAllOptions();
-
+		given(validator.memoCheck(anyString())).willReturn(OK);
+		given(transactionContext.accessor()).willReturn(accessor);
+		given(accessor.getTxn()).willReturn(transactionBody);
+		given(accountStore.loadAccountOrFailWith(any(), any())).willReturn(autoRenew);
+		given(autoRenew.isSmartContract()).willReturn(false);
+		given(validator.isValidAutoRenewPeriod(Duration.newBuilder().setSeconds(VALID_AUTORENEW_PERIOD_SECONDS).build()))
+				.willReturn(true);
+		given(transactionContext.consensusTime()).willReturn(consensusTimestamp);
+		given(entityIdSource.newAccountId(any())).willReturn(NEW_TOPIC_ID);
 		// when:
 		subject.doStateTransition();
-
 		// then:
-		var topic = topics.get(EntityNum.fromAccountId(NEW_TOPIC_ID));
-		assertNotNull(topic);
-		assertEquals(VALID_MEMO, topic.getMemo());
-		assertArrayEquals(JKey.mapKey(key).serialize(), topic.getAdminKey().serialize());
-		assertArrayEquals(JKey.mapKey(key).serialize(), topic.getSubmitKey().serialize());
-		assertEquals(VALID_AUTORENEW_PERIOD_SECONDS, topic.getAutoRenewDurationSeconds());
-		assertEquals(EntityId.fromGrpcAccountId(MISC_ACCOUNT), topic.getAutoRenewAccountId());
-		assertEquals(expirationTimestamp.getEpochSecond(), topic.getExpirationTimestamp().getSeconds());
-		verify(transactionContext).setStatus(SUCCESS);
+		verify(topicStore).persistNew(any());
 	}
 
 	@Test
-	void memoTooLong() throws Throwable {
+	void memoTooLong() {
 		// given:
 		givenTransactionWithTooLongMemo();
-
+		given(validator.memoCheck(anyString())).willReturn(MEMO_TOO_LONG);
+		given(transactionContext.accessor()).willReturn(accessor);
+		given(accessor.getTxn()).willReturn(transactionBody);
 		// when:
-		subject.doStateTransition();
-
+		TxnUtils.assertFailsWith(() -> subject.doStateTransition(), MEMO_TOO_LONG);
 		// then:
 		assertTrue(topics.isEmpty());
-		verify(transactionContext).setStatus(MEMO_TOO_LONG);
 	}
 
 	@Test
-	void badSubmitKey() throws Throwable {
+	void badSubmitKey() {
 		// given:
 		givenTransactionWithInvalidSubmitKey();
-
+		given(transactionContext.accessor()).willReturn(accessor);
+		given(accessor.getTxn()).willReturn(transactionBody);
 		// when:
-		subject.doStateTransition();
+		given(validator.attemptDecodeOrThrow(any())).willThrow(new InvalidTransactionException(BAD_ENCODING));
+		TxnUtils.assertFailsWith(() -> subject.doStateTransition(), BAD_ENCODING);
 
 		// then:
 		assertTrue(topics.isEmpty());
-		verify(transactionContext).setStatus(BAD_ENCODING);
 	}
 
 	@Test
-	void missingAutoRenewPeriod() throws Throwable {
+	void missingAutoRenewPeriod() {
 		// given:
 		givenTransactionWithMissingAutoRenewPeriod();
-
+		given(validator.memoCheck(anyString())).willReturn(OK);
+		given(transactionContext.accessor()).willReturn(accessor);
+		given(accessor.getTxn()).willReturn(transactionBody);
 		// when:
-		subject.doStateTransition();
+		TxnUtils.assertFailsWith(() -> subject.doStateTransition(), INVALID_RENEWAL_PERIOD);
 
 		// then:
 		assertTrue(topics.isEmpty());
-		verify(transactionContext).setStatus(INVALID_RENEWAL_PERIOD);
 	}
 
 	@Test
-	void badAutoRenewPeriod() throws Throwable {
+	void badAutoRenewPeriod() {
 		// given:
 		givenTransactionWithInvalidAutoRenewPeriod();
-
+		given(validator.memoCheck(anyString())).willReturn(OK);
+		given(transactionContext.accessor()).willReturn(accessor);
+		given(accessor.getTxn()).willReturn(transactionBody);
 		// when:
-		subject.doStateTransition();
+		TxnUtils.assertFailsWith(() -> subject.doStateTransition(), AUTORENEW_DURATION_NOT_IN_RANGE);
 
 		// then:
 		assertTrue(topics.isEmpty());
-		verify(transactionContext).setStatus(AUTORENEW_DURATION_NOT_IN_RANGE);
 	}
 
 	@Test
-	void invalidAutoRenewAccountId() throws Throwable {
+	void invalidAutoRenewAccountId() {
 		// given:
 		givenTransactionWithInvalidAutoRenewAccountId();
-
+		given(validator.memoCheck(anyString())).willReturn(OK);
+		given(transactionContext.accessor()).willReturn(accessor);
+		given(accessor.getTxn()).willReturn(transactionBody);
+		given(accountStore.loadAccountOrFailWith(any(), any())).willThrow(new InvalidTransactionException(INVALID_AUTORENEW_ACCOUNT));
+		given(validator.isValidAutoRenewPeriod(Duration.newBuilder().setSeconds(VALID_AUTORENEW_PERIOD_SECONDS).build()))
+				.willReturn(true);
 		// when:
-		subject.doStateTransition();
+		TxnUtils.assertFailsWith(() -> subject.doStateTransition(), INVALID_AUTORENEW_ACCOUNT);
+
 
 		// then:
 		assertTrue(topics.isEmpty());
-		verify(transactionContext).setStatus(INVALID_AUTORENEW_ACCOUNT);
 	}
 
 	@Test
-	void detachedAutoRenewAccountId() throws Throwable {
+	void detachedAutoRenewAccountId() {
 		// given:
 		givenTransactionWithDetachedAutoRenewAccountId();
-
+		given(validator.memoCheck(anyString())).willReturn(OK);
+		given(transactionContext.accessor()).willReturn(accessor);
+		given(accessor.getTxn()).willReturn(transactionBody);
+		given(validator.isValidAutoRenewPeriod(Duration.newBuilder().setSeconds(VALID_AUTORENEW_PERIOD_SECONDS).build()))
+				.willReturn(true);
+		given(accountStore.loadAccountOrFailWith(any(), any())).willThrow(new InvalidTransactionException(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
 		// when:
-		subject.doStateTransition();
+		TxnUtils.assertFailsWith(() -> subject.doStateTransition(), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
 		// then:
 		assertTrue(topics.isEmpty());
-		verify(transactionContext).setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 	}
 
 	@Test
-	void autoRenewAccountNotAllowed() throws Throwable {
+	void autoRenewAccountNotAllowed() {
 		// given:
 		givenTransactionWithAutoRenewAccountWithoutAdminKey();
-
+		given(validator.memoCheck(anyString())).willReturn(OK);
+		given(transactionContext.accessor()).willReturn(accessor);
+		given(accessor.getTxn()).willReturn(transactionBody);
+		given(validator.isValidAutoRenewPeriod(Duration.newBuilder().setSeconds(VALID_AUTORENEW_PERIOD_SECONDS).build()))
+				.willReturn(true);
+		given(accountStore.loadAccountOrFailWith(any(), any())).willReturn(autoRenew);
+		given(autoRenew.isSmartContract()).willReturn(false);
 		// when:
-		subject.doStateTransition();
+		TxnUtils.assertFailsWith(() -> subject.doStateTransition(), AUTORENEW_ACCOUNT_NOT_ALLOWED);
 
 		// then:
 		assertTrue(topics.isEmpty());
-		verify(transactionContext).setStatus(AUTORENEW_ACCOUNT_NOT_ALLOWED);
 	}
 
 	private void givenTransaction(ConsensusCreateTopicTransactionBody.Builder body) {
@@ -264,8 +272,6 @@ class MerkleTopicCreateTransitionLogicTest {
 				.setTransactionID(ourTxnId())
 				.setConsensusCreateTopic(body.build())
 				.build();
-		given(accessor.getTxn()).willReturn(transactionBody);
-		given(transactionContext.accessor()).willReturn(accessor);
 	}
 
 	private ConsensusCreateTopicTransactionBody.Builder getBasicValidTransactionBodyBuilder() {
@@ -282,8 +288,6 @@ class MerkleTopicCreateTransitionLogicTest {
 						.setSubmitKey(key)
 						.setAutoRenewAccount(MISC_ACCOUNT)
 		);
-		given(validator.hasGoodEncoding(key)).willReturn(true);
-		given(validator.queryableAccountStatus(MISC_ACCOUNT, accounts)).willReturn(OK);
 	}
 
 	private void givenTransactionWithTooLongMemo() {
@@ -296,9 +300,8 @@ class MerkleTopicCreateTransitionLogicTest {
 	private void givenTransactionWithInvalidSubmitKey() {
 		givenTransaction(
 				getBasicValidTransactionBodyBuilder()
-						.setSubmitKey(MISC_ACCOUNT_KT.asKey())
+						.setSubmitKey(Key.getDefaultInstance())
 		);
-		given(validator.hasGoodEncoding(MISC_ACCOUNT_KT.asKey())).willReturn(false);
 	}
 
 	private void givenTransactionWithInvalidAutoRenewPeriod() {
@@ -320,7 +323,6 @@ class MerkleTopicCreateTransitionLogicTest {
 				getBasicValidTransactionBodyBuilder()
 						.setAutoRenewAccount(MISC_ACCOUNT)
 		);
-		given(validator.queryableAccountStatus(MISC_ACCOUNT, accounts)).willReturn(INVALID_ACCOUNT_ID);
 	}
 
 	private void givenTransactionWithDetachedAutoRenewAccountId() {
@@ -328,8 +330,6 @@ class MerkleTopicCreateTransitionLogicTest {
 				getBasicValidTransactionBodyBuilder()
 						.setAutoRenewAccount(MISC_ACCOUNT)
 		);
-		given(validator.queryableAccountStatus(MISC_ACCOUNT, accounts)).willReturn(OK);
-		given(ledger.isDetached(MISC_ACCOUNT)).willReturn(true);
 	}
 
 	private void givenTransactionWithAutoRenewAccountWithoutAdminKey() {
@@ -337,7 +337,7 @@ class MerkleTopicCreateTransitionLogicTest {
 				getBasicValidTransactionBodyBuilder()
 						.setAutoRenewAccount(MISC_ACCOUNT)
 		);
-		given(validator.queryableAccountStatus(MISC_ACCOUNT, accounts)).willReturn(OK);
+		
 	}
 
 	private TransactionID ourTxnId() {
