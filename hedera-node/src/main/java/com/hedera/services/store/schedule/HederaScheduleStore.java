@@ -22,15 +22,15 @@ package com.hedera.services.store.schedule;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.HederaStore;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.inject.Inject;
@@ -42,7 +42,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import static com.hedera.services.state.merkle.MerkleEntityId.fromScheduleId;
+import static com.hedera.services.utils.EntityNum.fromScheduleId;
 import static com.hedera.services.store.CreationResult.failure;
 import static com.hedera.services.store.CreationResult.success;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
@@ -63,17 +63,17 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	static final ScheduleID NO_PENDING_ID = ScheduleID.getDefaultInstance();
 
 	private final GlobalDynamicProperties properties;
-	private final Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules;
+	private final Supplier<MerkleMap<EntityNum, MerkleSchedule>> schedules;
 
 	ScheduleID pendingId = NO_PENDING_ID;
 	MerkleSchedule pendingCreation;
-	Map<MerkleSchedule, MerkleEntityId> extantSchedules = new HashMap<>();
+	Map<MerkleSchedule, EntityNum> extantSchedules = new HashMap<>();
 
 	@Inject
 	public HederaScheduleStore(
 			GlobalDynamicProperties properties,
 			EntityIdSource ids,
-			Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules
+			Supplier<MerkleMap<EntityNum, MerkleSchedule>> schedules
 	) {
 		super(ids);
 		this.schedules = schedules;
@@ -191,7 +191,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		}
 		if (extantSchedules.containsKey(schedule)) {
 			var extantId = extantSchedules.get(schedule);
-			return Pair.of(Optional.of(extantId.toScheduleId()), schedules.get().get(extantId));
+			return Pair.of(Optional.of(extantId.toGrpcScheduleId()), schedules.get().get(extantId));
 		}
 
 		return Pair.of(Optional.empty(), schedule);
@@ -217,7 +217,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 					readableId(id)));
 		}
 		var schedule = get(id);
-		schedules.get().remove(entityId.asMerkle());
+		schedules.get().remove(EntityNum.fromLong(entityId.num()));
 		extantSchedules.remove(schedule);
 	}
 
@@ -271,7 +271,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	}
 
 	/* --- Only used by unit tests --- */
-	Map<MerkleSchedule, MerkleEntityId> getExtantSchedules() {
+	Map<MerkleSchedule, EntityNum> getExtantSchedules() {
 		return extantSchedules;
 	}
 }

@@ -27,12 +27,16 @@ import com.google.protobuf.StringValue;
 import com.google.protobuf.UInt64Value;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.usage.BaseTransactionMeta;
+import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
+import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -203,8 +207,14 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 						.setCurrentMemo(info.getMemo())
 						.setCurrentKey(info.getKey())
 						.setCurrentlyHasProxy(info.hasProxyAccountID())
+						.setCurrentMaxAutomaticAssociations(info.getMaxAutomaticTokenAssociations())
 						.build();
-				return cryptoOpsUsage.cryptoUpdateUsage(_txn, suFrom(svo), ctx);
+				var baseMeta = new BaseTransactionMeta(_txn.getMemoBytes().size(), 0);
+				var opMeta = new CryptoUpdateMeta(_txn.getCryptoUpdateAccount(),
+						_txn.getTransactionID().getTransactionValidStart().getSeconds());
+				var accumulator = new UsageAccumulator();
+				cryptoOpsUsage.cryptoUpdateUsage(suFrom(svo), baseMeta, opMeta, ctx, accumulator);
+				return AdapterUtils.feeDataFrom(accumulator);
 			};
 			return spec.fees().forActivityBasedOp(HederaFunctionality.CryptoUpdate, metricsCalc, txn, numPayerKeys);
 		} catch (Throwable ignore) {

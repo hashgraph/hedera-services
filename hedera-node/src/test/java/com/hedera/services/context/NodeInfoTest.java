@@ -21,6 +21,7 @@ package com.hedera.services.context;
  */
 
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -103,7 +104,7 @@ class NodeInfoTest {
 		assertEquals(expectedAccount, subject.selfAccount());
 		assertTrue(subject.hasSelfAccount());
 		// and:
-		assertEquals(expectedAccountKey, subject.accountKeyOf(nodeId));
+		assertEquals(EntityNum.fromAccountId(expectedAccount), subject.accountKeyOf(nodeId));
 	}
 
 	@Test

@@ -45,7 +45,7 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 @Singleton
-public class BootstrapProperties implements PropertySource {
+public final class BootstrapProperties implements PropertySource {
 	private static final Map<String, Object> MISSING_PROPS = null;
 
 	private static final Function<String, InputStream> nullableResourceStreamProvider =
@@ -64,6 +64,7 @@ public class BootstrapProperties implements PropertySource {
 
 	@Inject
 	public BootstrapProperties() {
+		/* No-op */
 	}
 
 	String bootstrapPropsResource = "bootstrap.properties";

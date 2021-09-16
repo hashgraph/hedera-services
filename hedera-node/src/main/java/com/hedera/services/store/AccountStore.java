@@ -27,9 +27,10 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -47,13 +48,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRA
 public class AccountStore {
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties dynamicProperties;
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
 	@Inject
 	public AccountStore(
 			OptionValidator validator,
 			GlobalDynamicProperties dynamicProperties,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {
 		this.validator = validator;
 		this.dynamicProperties = dynamicProperties;
@@ -93,7 +94,7 @@ public class AccountStore {
 	 * @return a usable model of the account if available
 	 */
 	public Account loadAccountOrFailWith(Id id, @Nullable ResponseCodeEnum code) {
-		final var key = new MerkleEntityId(id.getShard(), id.getRealm(), id.getNum());
+		final var key = EntityNum.fromModel(id);
 		final var merkleAccount = accounts.get().get(key);
 
 		validateUsable(merkleAccount, code);
@@ -109,7 +110,7 @@ public class AccountStore {
 			account.setProxy(merkleAccount.getProxy().asId());
 		}
 		account.setReceiverSigRequired(merkleAccount.isReceiverSigRequired());
-		account.setKey(merkleAccount.getKey());
+		account.setKey(merkleAccount.state().key());
 		account.setMemo(merkleAccount.getMemo());
 		account.setAutoRenewSecs(merkleAccount.getAutoRenewSecs());
 		account.setDeleted(merkleAccount.isDeleted());
@@ -127,7 +128,7 @@ public class AccountStore {
 	 */
 	public void persistAccount(Account account) {
 		final var id = account.getId();
-		final var key = new MerkleEntityId(id.getShard(), id.getRealm(), id.getNum());
+		final var key = EntityNum.fromLong(id.getNum());
 
 		final var mutableAccount = accounts.get().getForModify(key);
 		mapModelToMutable(account, mutableAccount);
@@ -139,7 +140,7 @@ public class AccountStore {
 	 * @param account the account to create
 	 */
 	public void persistNew(Account account) {
-		final var newMerkleId = account.getId().asMerkle();
+		final var newMerkleId = EntityNum.fromAccountId(account.getId().asGrpcAccount());
 		final var mutableAccount = new MerkleAccount();
 
 		mapModelToMutable(account, mutableAccount);
@@ -158,7 +159,7 @@ public class AccountStore {
 		mutableAccount.setNftsOwned(model.getOwnedNfts());
 		mutableAccount.setMaxAutomaticAssociations(model.getMaxAutomaticAssociations());
 		mutableAccount.setAlreadyUsedAutomaticAssociations(model.getAlreadyUsedAutomaticAssociations());
-		mutableAccount.setKey(model.getKey());
+		mutableAccount.state().setAccountKey(model.getKey());
 		mutableAccount.setReceiverSigRequired(model.isReceiverSigRequired());
 		mutableAccount.setDeleted(model.isDeleted());
 		mutableAccount.setAutoRenewSecs(model.getAutoRenewSecs());

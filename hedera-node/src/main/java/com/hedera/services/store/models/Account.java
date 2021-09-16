@@ -38,10 +38,10 @@ import java.util.Set;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.getAlreadyUsedAutomaticAssociationsFrom;
-import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.getMaxAutomaticAssociationsFrom;
-import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.setAlreadyUsedAutomaticAssociationsTo;
-import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.setMaxAutomaticAssociationsTo;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.getMaxAutomaticAssociationsFrom;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.setMaxAutomaticAssociationsTo;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -141,12 +141,12 @@ public class Account {
 		return autoAssociationMetadata;
 	}
 
-	public void setAutoAssociationMetadata(int autoAssociationMetadata) {
-		this.autoAssociationMetadata = autoAssociationMetadata;
-	}
-
 	public int getMaxAutomaticAssociations() {
 		return getMaxAutomaticAssociationsFrom(autoAssociationMetadata);
+	}
+
+	public int getAlreadyUsedAutomaticAssociations() {
+		return getAlreadyUsedAutomaticAssociationsFrom(autoAssociationMetadata);
 	}
 
 	public void setMaxAutomaticAssociations(int maxAutomaticAssociations) {
@@ -158,7 +158,7 @@ public class Account {
 	}
 
 	public void setAlreadyUsedAutomaticAssociations(int alreadyUsedCount) {
-		validateTrue(alreadyUsedCount >= 0 && alreadyUsedCount <= getMaxAutomaticAssociations(), NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
+		validateTrue(isValidAlreadyUsedCount(alreadyUsedCount), NO_REMAINING_AUTOMATIC_ASSOCIATIONS );
 		autoAssociationMetadata = setAlreadyUsedAutomaticAssociationsTo(autoAssociationMetadata, alreadyUsedCount);
 	}
 
@@ -228,26 +228,17 @@ public class Account {
 		return associatedTokens.contains(token);
 	}
 
+	private boolean isValidAlreadyUsedCount(int alreadyUsedCount) {
+		return alreadyUsedCount >= 0 && alreadyUsedCount <= getMaxAutomaticAssociations();
+	}
+
 	/* NOTE: The object methods below are only overridden to improve
 	readability of unit tests; this model object is not used in hash-based
 	collections, so the performance of these methods doesn't matter. */
 
 	@Override
-	public boolean equals(final Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-		final Account account = (Account) o;
-		return expiry == account.expiry
-				&& balance == account.balance
-				&& deleted == account.deleted
-				&& isSmartContract == account.isSmartContract
-				&& isReceiverSigRequired == account.isReceiverSigRequired
-				&& ownedNfts == account.ownedNfts
-				&& autoRenewSecs == account.autoRenewSecs
-				&& isNew == account.isNew
-				&& Objects.equals(id, account.id)
-				&& Objects.equals(key, account.key)
-				&& Objects.equals(memo, account.memo);
+	public boolean equals(Object obj) {
+		return EqualsBuilder.reflectionEquals(this, obj);
 	}
 
 	@Override

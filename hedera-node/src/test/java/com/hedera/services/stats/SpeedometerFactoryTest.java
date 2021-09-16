@@ -62,6 +62,6 @@ class SpeedometerFactoryTest {
 		assertSame(speedometer, resetSpeedometer);
 		verify(speedometer, times(2)).reset(halfLife);
 		// and:
-		assertEquals(something, entry.supplier.get());
+		assertEquals(something, entry.statsStringSupplier.get());
 	}
 }

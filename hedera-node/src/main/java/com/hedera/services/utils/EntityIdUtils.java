@@ -36,6 +36,10 @@ import com.swirlds.common.CommonUtils;
 import java.util.Arrays;
 import java.util.Optional;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedLowOrder32From;
 import static java.lang.System.arraycopy;
 
 public final class EntityIdUtils {
@@ -217,5 +221,22 @@ public final class EntityIdUtils {
 				id.getShardNum(),
 				id.getRealmNum(),
 				id.getFileNum());
+	}
+
+	public static String asRelationshipLiteral(long packedNumbers) {
+		final var leftNum = unsignedHighOrder32From(packedNumbers);
+		final var rightNum = unsignedLowOrder32From(packedNumbers);
+		return "(" + STATIC_PROPERTIES.scopedIdLiteralWith(leftNum)
+				+ ", " + STATIC_PROPERTIES.scopedIdLiteralWith(rightNum) + ")";
+	}
+
+	public static String asIdLiteral(int num) {
+		return STATIC_PROPERTIES.scopedIdLiteralWith(numFromCode(num));
+	}
+
+	public static String asScopedSerialNoLiteral(long scopedSerialNo) {
+		final var leftNum = unsignedHighOrder32From(scopedSerialNo);
+		final var rightNum = unsignedLowOrder32From(scopedSerialNo);
+		return STATIC_PROPERTIES.scopedIdLiteralWith(leftNum) + "." + rightNum;
 	}
 }

@@ -33,11 +33,9 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.evm.SolidityExecutor;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.SequenceNumber;
-import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.contracts.repository.ServicesRepositoryRoot;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.PureValidation;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
@@ -65,7 +63,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.fee.FeeBuilder;
 import com.swirlds.common.CommonUtils;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.core.Transaction;
@@ -114,7 +112,7 @@ public class SmartContractRequestHandler {
 
 	private HederaLedger ledger;
 	private ServicesRepositoryRoot repository;
-	private Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
+	private Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 	private HbarCentExchange exchange;
 	private TransactionContext txnCtx;
 	private UsagePricesProvider usagePrices;
@@ -122,13 +120,12 @@ public class SmartContractRequestHandler {
 	private SolidityLifecycle lifecycle;
 	private SoliditySigsVerifier sigsVerifier;
 	private GlobalDynamicProperties dynamicProperties;
-	private final AccountStore accountStore;
 
 	@Inject
 	public SmartContractRequestHandler(
 			ServicesRepositoryRoot repository,
 			HederaLedger ledger,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			TransactionContext txnCtx,
 			HbarCentExchange exchange,
 			UsagePricesProvider usagePrices,
@@ -136,8 +133,8 @@ public class SmartContractRequestHandler {
 			SolidityLifecycle lifecycle,
 			SoliditySigsVerifier sigsVerifier,
 			Map<EntityId, Long> entityExpiries,
-			GlobalDynamicProperties dynamicProperties,
-			AccountStore accountStore) {
+			GlobalDynamicProperties dynamicProperties
+	) {
 		this.repository = repository;
 		this.newPureRepo = newPureRepo;
 		this.accounts = accounts;
@@ -149,7 +146,6 @@ public class SmartContractRequestHandler {
 		this.sigsVerifier = sigsVerifier;
 		this.entityExpiries = entityExpiries;
 		this.dynamicProperties = dynamicProperties;
-		this.accountStore = accountStore;
 	}
 
 	/**
@@ -324,8 +320,6 @@ public class SmartContractRequestHandler {
 				.build();
 	}
 
-
-
 	private TransactionRecord run(
 			Transaction solidityTxn,
 			String payerAddress,
@@ -407,7 +401,7 @@ public class SmartContractRequestHandler {
 
 	private void setParentPropertiesForChildrenContracts(AccountID parent, List<ContractID> children) {
 		MerkleAccount parentAccount = ledger.get(parent);
-		HederaAccountCustomizer customizer = new HederaAccountCustomizer().key(parentAccount.getKey())
+		HederaAccountCustomizer customizer = new HederaAccountCustomizer().key(parentAccount.getAccountKey())
 				.memo(parentAccount.getMemo())
 				.expiry(parentAccount.getExpiry())
 				.autoRenewPeriod(parentAccount.getAutoRenewSecs())

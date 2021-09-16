@@ -23,8 +23,8 @@ package com.hedera.services.txns.validation;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -35,7 +35,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 
 import java.time.Instant;
 
@@ -67,7 +67,7 @@ public interface OptionValidator {
 	ResponseCodeEnum maxNftTransfersLenCheck(int length);
 	ResponseCodeEnum nftMaxQueryRangeCheck(long start, long end);
 
-	ResponseCodeEnum queryableTopicStatus(TopicID id, FCMap<MerkleEntityId, MerkleTopic> topics);
+	ResponseCodeEnum queryableTopicStatus(TopicID id, MerkleMap<EntityNum, MerkleTopic> topics);
 
 	JKey attemptToDecodeOrThrow(Key key, ResponseCodeEnum code);
 
@@ -75,7 +75,7 @@ public interface OptionValidator {
 		return PureValidation.queryableAccountStatus(id, accounts);
 	}
 
-	default ResponseCodeEnum queryableContractStatus(ContractID cid, FCMap<MerkleEntityId, MerkleAccount> contracts) {
+	default ResponseCodeEnum queryableContractStatus(ContractID cid, MerkleMap<EntityNum, MerkleAccount> contracts) {
 		return PureValidation.queryableContractStatus(cid, contracts);
 	}
 

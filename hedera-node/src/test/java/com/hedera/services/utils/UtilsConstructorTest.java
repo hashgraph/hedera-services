@@ -39,7 +39,7 @@ import com.hedera.services.sigs.factories.PlatformSigFactory;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hedera.services.sigs.utils.PrecheckUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.internals.IdentityCodeUtils;
+import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.migration.LegacyStateChildIndices;
 import com.hedera.services.state.migration.Release0170Migration;
 import com.hedera.services.state.migration.StateChildIndices;
@@ -49,6 +49,7 @@ import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stats.ServicesStatsConfig;
 import com.hedera.services.store.tokens.views.utils.GrpcUtils;
 import com.hedera.services.txns.submission.PresolvencyFlaws;
+import com.hedera.services.txns.token.TokenOpsValidator;
 import com.hedera.services.txns.token.process.NewRels;
 import com.hedera.services.txns.validation.PureValidation;
 import com.hedera.services.txns.validation.TokenListChecks;
@@ -82,7 +83,7 @@ class UtilsConstructorTest {
 			ImmutableKeyUtils.class,
 			PrecheckUtils.class,
 			MerkleAccount.ChildIndices.class,
-			IdentityCodeUtils.class,
+			BitPackUtils.class,
 			LegacyStateChildIndices.class,
 			Release0170Migration.class,
 			StateChildIndices.class,
@@ -102,7 +103,8 @@ class UtilsConstructorTest {
 			TokenTypesMapper.class,
 			UnzipUtility.class,
 			MiscUtils.class,
-			MetadataMapFactory.class
+			MetadataMapFactory.class,
+			TokenOpsValidator.class
 	));
 
 	@Test

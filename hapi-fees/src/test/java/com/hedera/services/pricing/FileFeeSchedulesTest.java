@@ -30,6 +30,6 @@ import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 class FileFeeSchedulesTest extends FeeSchedulesTestHelper {
 	@Test
 	void computesExpectedPriceForBaseAppend() throws IOException {
-		testExpectedPriceFor(FileAppend, DEFAULT);
+		testCanonicalPriceFor(FileAppend, DEFAULT);
 	}
 }

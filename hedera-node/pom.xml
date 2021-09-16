@@ -252,7 +252,11 @@
     </dependency>
     <dependency>
       <groupId>com.swirlds</groupId>
-      <artifactId>swirlds-fcmap</artifactId>
+      <artifactId>swirlds-fchashmap</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.swirlds</groupId>
+      <artifactId>swirlds-merkle</artifactId>
     </dependency>
     <dependency>
       <groupId>com.swirlds</groupId>

@@ -25,14 +25,14 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Test;
 
 import java.text.MessageFormat;
@@ -51,9 +51,9 @@ public class FeeCalcUtilsTest {
 	private static final String ARTIFACTS_PREFIX_FILE_CONTENT = "f";
 	private static final String ARTIFACTS_PREFIX_FILE_INFO = "k";
 	private static final String LEDGER_PATH = "/{0}/";
-	private static final MerkleEntityId key = new MerkleEntityId(0, 0, 1234);
+	private static final EntityNum key = EntityNum.fromInt(1234);
 
-	public static String pathOf(final FileID fid) {
+	public static String pathOf(FileID fid) {
 		return path(ARTIFACTS_PREFIX_FILE_CONTENT, fid);
 	}
 
@@ -79,9 +79,11 @@ public class FeeCalcUtilsTest {
 
 	@Test
 	void returnsAccountExpiryIfAvail() {
+		// setup:
 		final var account = mock(MerkleAccount.class);
-		final FCMap<MerkleEntityId, MerkleAccount> accounts = mock(FCMap.class);
-		final var expected = Timestamp.newBuilder().setSeconds(Long.MAX_VALUE).build();
+		final MerkleMap<EntityNum, MerkleAccount> accounts = mock(MerkleMap.class);
+		Timestamp expected = Timestamp.newBuilder().setSeconds(Long.MAX_VALUE).build();
+
 		given(account.getExpiry()).willReturn(Long.MAX_VALUE);
 		given(accounts.get(key)).willReturn(account);
 

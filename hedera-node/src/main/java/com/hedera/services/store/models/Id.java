@@ -145,10 +145,6 @@ public class Id {
 		return new EntityId(shard, realm, num);
 	}
 
-	public MerkleEntityId asMerkle() {
-		return new MerkleEntityId(shard, realm, num);
-	}
-
 	/**
 	 * Returns the EVM representation of the Account
 	 * @return {@link Address} evm representation

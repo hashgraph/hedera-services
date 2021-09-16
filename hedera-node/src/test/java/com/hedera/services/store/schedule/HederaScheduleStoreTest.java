@@ -26,17 +26,16 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleScheduleTest;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.swirlds.fcmap.FCMap;
-import com.swirlds.merkletree.MerklePair;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,7 +46,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
-import static com.hedera.services.state.merkle.MerkleEntityId.fromScheduleId;
+import static com.hedera.services.utils.EntityNum.fromScheduleId;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccountId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SCHEDULE_ADMIN_KT;
@@ -80,16 +79,16 @@ class HederaScheduleStoreTest {
 	private static final RichInstant consensusTime = new RichInstant(expectedExpiry, 0);
 	private static final Key adminJKey = asKeyUnchecked(SCHEDULE_ADMIN_KT.asJKeyUnchecked());
 
-	private static final ScheduleID created = IdUtils.asSchedule("1.2.333333");
-	private static final AccountID schedulingAccount = IdUtils.asAccount("1.2.333");
-	private static final AccountID payerId = IdUtils.asAccount("1.2.456");
-	private static final AccountID anotherPayerId = IdUtils.asAccount("1.2.457");
+	private static final ScheduleID created = IdUtils.asSchedule("0.0.333333");
+	private static final AccountID schedulingAccount = IdUtils.asAccount("0.0.333");
+	private static final AccountID payerId = IdUtils.asAccount("0.0.456");
+	private static final AccountID anotherPayerId = IdUtils.asAccount("0.0.457");
 
 	private static final EntityId entityPayer = fromGrpcAccountId(payerId);
 	private static final EntityId entitySchedulingAccount = fromGrpcAccountId(schedulingAccount);
 
 	private EntityIdSource ids;
-	private FCMap<MerkleEntityId, MerkleSchedule> schedules;
+	private MerkleMap<EntityNum, MerkleSchedule> schedules;
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private HederaLedger hederaLedger;
 	private GlobalDynamicProperties globalDynamicProperties;
@@ -124,7 +123,7 @@ class HederaScheduleStoreTest {
 		given(accountsLedger.get(payerId, IS_DELETED)).willReturn(false);
 		given(accountsLedger.get(schedulingAccount, IS_DELETED)).willReturn(false);
 
-		schedules = (FCMap<MerkleEntityId, MerkleSchedule>) mock(FCMap.class);
+		schedules = (MerkleMap<EntityNum, MerkleSchedule>) mock(MerkleMap.class);
 		given(schedules.get(fromScheduleId(created))).willReturn(schedule);
 		given(schedules.containsKey(fromScheduleId(created))).willReturn(true);
 
@@ -142,6 +141,7 @@ class HederaScheduleStoreTest {
 				entitySchedulingAccount.toGrpcAccountId(),
 				schedulingTXValidStart.toGrpc());
 		final var expected = MerkleSchedule.from(parentTxn.toByteArray(), 0L);
+		expected.setKey(EntityNum.fromLong(created.getScheduleNum()));
 		final var captor = forClass(Consumer.class);
 		final var expectedKey = expected.toContentAddressableView();
 
@@ -150,12 +150,12 @@ class HederaScheduleStoreTest {
 		verify(schedules).forEachNode(captor.capture());
 		final var visitor = captor.getValue();
 
-		visitor.accept(new MerklePair<>(fromScheduleId(created), expected));
+		visitor.accept(expected);
 
 		final var extant = subject.getExtantSchedules();
 		assertEquals(1, extant.size());
 		assertTrue(extant.containsKey(expectedKey));
-		assertEquals(created, extant.get(expectedKey).toScheduleId());
+		assertEquals(created, extant.get(expectedKey).toGrpcScheduleId());
 	}
 
 	@Test

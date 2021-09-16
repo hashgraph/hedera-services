@@ -30,7 +30,22 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.isIdLiteral;
+
 public class Utils {
+	static String extractAccount(final String account) {
+		if (isIdLiteral(account)) {
+			return account;
+		} else {
+			try {
+				long number = Long.parseLong(account);
+				return "0.0." + number;
+			} catch (NumberFormatException ignore) {
+				throw new IllegalArgumentException("Named accounts not yet supported!");
+			}
+		}
+	}
+
 	enum ServiceType {
 		CRYPTO, CONSENSUS, TOKEN, FILE, CONTRACT, SCHEDULED, INVALID
 	}

@@ -25,8 +25,8 @@ package com.hedera.services.state.exports;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.swirlds.fcmap.FCMap;
+import com.hedera.services.utils.EntityNum;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -52,21 +52,21 @@ public class ToStringAccountsExporter implements AccountsExporter {
 	}
 
 	@Override
-	public void toFile(FCMap<MerkleEntityId, MerkleAccount> accounts) {
+	public void toFile(MerkleMap<EntityNum, MerkleAccount> accounts) {
 		if (!nodeLocalProperties.exportAccountsOnStartup()) {
 			return;
 		}
 		final var exportLoc = nodeLocalProperties.accountsExportPath();
 		try (var writer = Files.newBufferedWriter(Paths.get(exportLoc))) {
-			List<MerkleEntityId> keys = new ArrayList<>(accounts.keySet());
-			keys.sort(comparing(MerkleEntityId::toAccountId, HederaLedger.ACCOUNT_ID_COMPARATOR));
+			List<EntityNum> keys = new ArrayList<>(accounts.keySet());
+			keys.sort(comparing(EntityNum::toGrpcAccountId, HederaLedger.ACCOUNT_ID_COMPARATOR));
 			var first = true;
 			for (var key : keys) {
 				if (!first) {
 					writer.write("\n");
 				}
 				first = false;
-				writer.write(key.toAbbrevString() + "\n");
+				writer.write(key.toIdString() + "\n");
 				writer.write("---\n");
 				writer.write(accounts.get(key).toString() + "\n");
 			}

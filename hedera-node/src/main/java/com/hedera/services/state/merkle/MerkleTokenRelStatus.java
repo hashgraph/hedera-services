@@ -21,33 +21,59 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
-import org.apache.commons.lang3.builder.EqualsBuilder;
+import com.swirlds.common.merkle.utility.Keyed;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.io.IOException;
 
-public class MerkleTokenRelStatus extends AbstractMerkleLeaf {
+import static com.hedera.services.utils.EntityIdUtils.asRelationshipLiteral;
+
+public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<EntityNumPair> {
 	static final int RELEASE_090_VERSION = 1;
-	static final int RELEASE_0180_VERSION = 2;
-	static final int MERKLE_VERSION = RELEASE_0180_VERSION;
+	static final int RELEASE_0180_PRE_SDK_VERSION = 2;
+	static final int RELEASE_0180_VERSION = 3;
+
+	static final int CURRENT_VERSION = RELEASE_0180_VERSION;
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xe487c7b8b4e7233fL;
 
+	private long numbers;
 	private long balance;
 	private boolean frozen;
 	private boolean kycGranted;
 	private boolean automaticAssociation;
 
 	public MerkleTokenRelStatus() {
+		/* RuntimeConstructable */
 	}
 
-	public MerkleTokenRelStatus(long balance, boolean frozen, boolean kycGranted, boolean automaticAssociation) {
+	public MerkleTokenRelStatus(
+			long balance,
+			boolean frozen,
+			boolean kycGranted,
+			boolean automaticAssociation
+	) {
 		this.balance = balance;
 		this.frozen = frozen;
 		this.kycGranted = kycGranted;
+		this.automaticAssociation = automaticAssociation;
+	}
+
+	public MerkleTokenRelStatus(
+			long balance,
+			boolean frozen,
+			boolean kycGranted,
+			boolean automaticAssociation,
+			long numbers
+	) {
+		this.balance = balance;
+		this.frozen = frozen;
+		this.kycGranted = kycGranted;
+		this.numbers = numbers;
 		this.automaticAssociation = automaticAssociation;
 	}
 
@@ -59,7 +85,7 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf {
 
 	@Override
 	public int getVersion() {
-		return MERKLE_VERSION;
+		return CURRENT_VERSION;
 	}
 
 	@Override
@@ -67,8 +93,11 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf {
 		balance = in.readLong();
 		frozen = in.readBoolean();
 		kycGranted = in.readBoolean();
-		if (version >= RELEASE_0180_VERSION) {
+		if (version >= RELEASE_0180_PRE_SDK_VERSION) {
 			automaticAssociation = in.readBoolean();
+		}
+		if (version >= RELEASE_0180_VERSION) {
+			numbers = in.readLong();
 		}
 	}
 
@@ -78,6 +107,7 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf {
 		out.writeBoolean(frozen);
 		out.writeBoolean(kycGranted);
 		out.writeBoolean(automaticAssociation);
+		out.writeLong(numbers);
 	}
 
 	/* --- Object --- */
@@ -91,12 +121,11 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf {
 		}
 
 		var that = (MerkleTokenRelStatus) o;
-		return new EqualsBuilder()
-				.append(balance, that.balance)
-				.append(frozen, that.frozen)
-				.append(kycGranted, that.kycGranted)
-				.append(automaticAssociation, that.automaticAssociation)
-				.isEquals();
+		return this.balance == that.balance
+				&& this.frozen == that.frozen
+				&& this.kycGranted == that.kycGranted
+				&& this.numbers == that.numbers
+				&& this.automaticAssociation == that.automaticAssociation;
 	}
 
 	@Override
@@ -153,7 +182,7 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf {
 	@Override
 	public MerkleTokenRelStatus copy() {
 		setImmutable(true);
-		return new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation);
+		return new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation, numbers);
 	}
 
 	@Override
@@ -162,7 +191,18 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf {
 				.add("balance", balance)
 				.add("isFrozen", frozen)
 				.add("hasKycGranted", kycGranted)
+				.add("key", numbers + " <-> " + asRelationshipLiteral(numbers))
 				.add("isAutomaticAssociation", automaticAssociation)
 				.toString();
+	}
+
+	@Override
+	public EntityNumPair getKey() {
+		return new EntityNumPair(numbers);
+	}
+
+	@Override
+	public void setKey(EntityNumPair numbers) {
+		this.numbers = numbers.getValue();
 	}
 }

@@ -21,23 +21,26 @@ package com.hedera.services.pricing;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.Int32Value;
+import com.google.protobuf.StringValue;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.consensus.ConsensusOpsUsage;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
+import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
+import com.hedera.services.usage.crypto.CryptoUpdateMeta;
+import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.services.usage.file.FileAppendMeta;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.services.usage.state.UsageAccumulator;
-import com.hedera.services.usage.token.TokenBurnUsage;
-import com.hedera.services.usage.token.TokenMintUsage;
 import com.hedera.services.usage.token.TokenOpsUsage;
-import com.hedera.services.usage.token.TokenWipeUsage;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FixedFee;
@@ -46,6 +49,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SubType;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -54,12 +58,13 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import java.time.Instant;
 import java.util.List;
 
-import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
-import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
-import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
+import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
 /**
  * Provides the resource usage of the "base configuration" for each Hedera operation.
@@ -109,6 +114,7 @@ class BaseOperationUsage {
 
 	private static final String A_TOKEN_NAME = "012345678912";
 	private static final String A_TOKEN_SYMBOL = "ABCD";
+	private static final String BLANK_MEMO = "";
 
 	private static final TokenOpsUsage TOKEN_OPS_USAGE = new TokenOpsUsage();
 	private static final ConsensusOpsUsage CONSENSUS_OPS_USAGE = new ConsensusOpsUsage();
@@ -148,6 +154,16 @@ class BaseOperationUsage {
 						break;
 				}
 				break;
+			case CryptoCreate:
+				if (type == DEFAULT) {
+					return cryptoCreate(0);
+				}
+				break;
+			case CryptoUpdate:
+				if (type == DEFAULT) {
+					return cryptoUpdate(0);
+				}
+				break;
 			case TokenCreate:
 				switch (type) {
 					case TOKEN_FUNGIBLE_COMMON:
@@ -165,16 +181,22 @@ class BaseOperationUsage {
 			case TokenMint:
 				if (type == TOKEN_NON_FUNGIBLE_UNIQUE) {
 					return uniqueTokenMint();
+				} else if(type == TOKEN_FUNGIBLE_COMMON) {
+					return fungibleCommonTokenMint();
 				}
 				break;
 			case TokenAccountWipe:
 				if (type == TOKEN_NON_FUNGIBLE_UNIQUE) {
 					return uniqueTokenWipe();
+				} else if(type == TOKEN_FUNGIBLE_COMMON) {
+					return fungibleCommonTokenWipe();
 				}
 				break;
 			case TokenBurn:
 				if (type == TOKEN_NON_FUNGIBLE_UNIQUE) {
 					return uniqueTokenBurn();
+				} else if (type == TOKEN_FUNGIBLE_COMMON) {
+					return fungibleCommonTokenBurn();
 				}
 				break;
 			case TokenFeeScheduleUpdate:
@@ -186,6 +208,42 @@ class BaseOperationUsage {
 		}
 
 		throw new IllegalArgumentException("Canonical usage unknown");
+	}
+
+	UsageAccumulator cryptoCreate(int autoAssocSlots) {
+		final var cryptoCreateTxnBody = CryptoCreateTransactionBody.newBuilder()
+						.setMemo(BLANK_MEMO)
+						.setMaxAutomaticTokenAssociations(autoAssocSlots)
+						.setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS))
+						.setKey(A_KEY).build();
+		final var cryptoCreateMeta = new CryptoCreateMeta(cryptoCreateTxnBody);
+		final var into = new UsageAccumulator();
+		CRYPTO_OPS_USAGE.cryptoCreateUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, cryptoCreateMeta, into);
+		return into;
+	}
+
+	UsageAccumulator cryptoUpdate(int newAutoAssocSlots) {
+		final var now = Instant.now().getEpochSecond();
+		final var canonicalTxn = TransactionBody.newBuilder()
+				.setCryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder()
+						.setMemo(StringValue.of(BLANK_MEMO))
+						.setExpirationTime(Timestamp.newBuilder().setSeconds(now + THREE_MONTHS_IN_SECONDS))
+						.setMaxAutomaticTokenAssociations(Int32Value.newBuilder().setValue(newAutoAssocSlots))
+						.setAccountIDToUpdate(AN_ACCOUNT)
+				).build();
+		final var ctx = ExtantCryptoContext.newBuilder()
+				.setCurrentExpiry(now)
+				.setCurrentMemo(BLANK_MEMO)
+				.setCurrentKey(A_KEY)
+				.setCurrentlyHasProxy(false)
+				.setCurrentNumTokenRels(0)
+				.setCurrentMaxAutomaticAssociations(0)
+				.build();
+		final var cryptoUpdateMeta = new CryptoUpdateMeta(canonicalTxn.getCryptoUpdateAccount(), now);
+		final var into = new UsageAccumulator();
+		CRYPTO_OPS_USAGE.cryptoUpdateUsage(
+				SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, cryptoUpdateMeta, ctx, into);
+		return into;
 	}
 
 	UsageAccumulator fileAppend() {
@@ -203,12 +261,26 @@ class BaseOperationUsage {
 						.setToken(target)
 						.addAllSerialNumbers(SINGLE_SERIAL_NUM))
 				.build();
-		final var helper = new TxnUsageEstimator(SINGLE_SIG_USAGE, canonicalTxn, ESTIMATOR_UTILS);
-		final var estimator = new TokenBurnUsage(canonicalTxn, helper);
-		final var baseUsage = estimator
-				.givenSubType(TOKEN_NON_FUNGIBLE_UNIQUE)
-				.get();
-		return UsageAccumulator.fromGrpc(baseUsage);
+
+		final var tokenBurnMeta = TOKEN_OPS_USAGE_UTILS.tokenBurnUsageFrom(canonicalTxn, TOKEN_NON_FUNGIBLE_UNIQUE);
+		final var into = new UsageAccumulator();
+		TOKEN_OPS_USAGE.tokenBurnUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenBurnMeta, into);
+		return into;
+	}
+
+	UsageAccumulator fungibleCommonTokenBurn() {
+		final var target = TokenID.newBuilder().setTokenNum(1_235).build();
+		final var canonicalTxn = TransactionBody.newBuilder()
+				.setTokenBurn(TokenBurnTransactionBody.newBuilder()
+						.setToken(target)
+						.setAmount(1000L)
+						)
+				.build();
+
+		final var tokenBurnMeta = TOKEN_OPS_USAGE_UTILS.tokenBurnUsageFrom(canonicalTxn, TOKEN_FUNGIBLE_COMMON);
+		final var into = new UsageAccumulator();
+		TOKEN_OPS_USAGE.tokenBurnUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenBurnMeta, into);
+		return into;
 	}
 
 	UsageAccumulator uniqueTokenMint() {
@@ -219,13 +291,26 @@ class BaseOperationUsage {
 						.addMetadata(CANONICAL_NFT_METADATA))
 				.build();
 
-		final var helper = new TxnUsageEstimator(SINGLE_SIG_USAGE, canonicalTxn, ESTIMATOR_UTILS);
-		final var estimator = new TokenMintUsage(canonicalTxn, helper);
-		final var baseUsage = estimator
-				.givenSubType(TOKEN_NON_FUNGIBLE_UNIQUE)
-				.givenExpectedLifetime(THREE_MONTHS_IN_SECONDS)
-				.get();
-		return UsageAccumulator.fromGrpc(baseUsage);
+		final var tokenMintMeta = TOKEN_OPS_USAGE_UTILS.tokenMintUsageFrom(canonicalTxn,
+				TOKEN_NON_FUNGIBLE_UNIQUE, THREE_MONTHS_IN_SECONDS);
+		final var into = new UsageAccumulator();
+		TOKEN_OPS_USAGE.tokenMintUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenMintMeta, into);
+		return into;
+	}
+
+	UsageAccumulator fungibleCommonTokenMint() {
+		final var target = TokenID.newBuilder().setTokenNum(1_234).build();
+		final var canonicalTxn = TransactionBody.newBuilder()
+				.setTokenMint(TokenMintTransactionBody.newBuilder()
+						.setToken(target)
+						.setAmount(1000))
+				.build();
+
+		final var tokenMintMeta = TOKEN_OPS_USAGE_UTILS.tokenMintUsageFrom(canonicalTxn,
+				TOKEN_FUNGIBLE_COMMON, THREE_MONTHS_IN_SECONDS);
+		final var into = new UsageAccumulator();
+		TOKEN_OPS_USAGE.tokenMintUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenMintMeta, into);
+		return into;
 	}
 
 	UsageAccumulator uniqueTokenWipe() {
@@ -238,13 +323,26 @@ class BaseOperationUsage {
 						.addAllSerialNumbers(SINGLE_SERIAL_NUM))
 				.build();
 
-		final var helper = new TxnUsageEstimator(SINGLE_SIG_USAGE, canonicalTxn, ESTIMATOR_UTILS);
-		final var estimator = new TokenWipeUsage(canonicalTxn, helper);
-		final var baseUsage = estimator
-				.givenSubType(TOKEN_NON_FUNGIBLE_UNIQUE)
-				.get();
+		final var tokenWipeMeta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(canonicalTxn);
+		final var into = new UsageAccumulator();
+		TOKEN_OPS_USAGE.tokenWipeUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenWipeMeta, into);
+		return into;
+	}
 
-		return UsageAccumulator.fromGrpc(baseUsage);
+	UsageAccumulator fungibleCommonTokenWipe() {
+		final var target = TokenID.newBuilder().setTokenNum(1_234).build();
+		final var targetAcct = AccountID.newBuilder().setAccountNum(5_678).build();
+		final var canonicalTxn = TransactionBody.newBuilder()
+				.setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
+						.setToken(target)
+						.setAccount(targetAcct)
+						.setAmount(100))
+				.build();
+
+		final var tokenWipeMeta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(canonicalTxn);
+		final var into = new UsageAccumulator();
+		TOKEN_OPS_USAGE.tokenWipeUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenWipeMeta, into);
+		return into;
 	}
 
 	UsageAccumulator fungibleTokenCreateWithCustomFees() {

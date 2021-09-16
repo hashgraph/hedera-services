@@ -36,7 +36,9 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
@@ -132,6 +134,8 @@ public class ScheduleGenerator {
 					TOKEN_NON_FUNGIBLE_UNIQUE,
 					TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES
 			)),
+			Pair.of(CryptoCreate, List.of(DEFAULT)),
+			Pair.of(CryptoUpdate, List.of(DEFAULT)),
 			/* File */
 			Pair.of(FileAppend, List.of(DEFAULT)),
 			/* Token */
@@ -141,9 +145,12 @@ public class ScheduleGenerator {
 					TOKEN_NON_FUNGIBLE_UNIQUE,
 					TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES
 			)),
-			Pair.of(TokenMint, List.of(TOKEN_NON_FUNGIBLE_UNIQUE)),
-			Pair.of(TokenBurn, List.of(TOKEN_NON_FUNGIBLE_UNIQUE)),
-			Pair.of(TokenAccountWipe, List.of(TOKEN_NON_FUNGIBLE_UNIQUE)),
+			Pair.of(TokenMint, List.of(TOKEN_FUNGIBLE_COMMON,
+					TOKEN_NON_FUNGIBLE_UNIQUE)),
+			Pair.of(TokenBurn, List.of(TOKEN_FUNGIBLE_COMMON,
+					TOKEN_NON_FUNGIBLE_UNIQUE)),
+			Pair.of(TokenAccountWipe, List.of(TOKEN_FUNGIBLE_COMMON,
+					TOKEN_NON_FUNGIBLE_UNIQUE)),
 			Pair.of(TokenFeeScheduleUpdate, List.of(DEFAULT)),
 			/* Consensus */
 			Pair.of(ConsensusSubmitMessage, List.of(DEFAULT))

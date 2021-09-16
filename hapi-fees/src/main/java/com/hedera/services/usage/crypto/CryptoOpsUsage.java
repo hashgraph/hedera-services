@@ -26,11 +26,9 @@ import com.hedera.services.usage.QueryUsage;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.state.UsageAccumulator;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -39,7 +37,6 @@ import java.util.function.Function;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
-import static com.hedera.services.usage.TxnUsage.keySizeIfPresent;
 import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
 import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
@@ -52,6 +49,9 @@ import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 public class CryptoOpsUsage {
 	private static final long LONG_BASIC_ENTITY_ID_SIZE = BASIC_ENTITY_ID_SIZE;
 	private static final long LONG_ACCOUNT_AMOUNT_BYTES = USAGE_PROPERTIES.accountAmountBytes();
+
+	static final long CREATE_SLOT_MULTIPLIER = 1228;
+	static final long UPDATE_SLOT_MULTIPLIER = 24000;
 
 	static EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
 	static Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;
@@ -113,78 +113,68 @@ public class CryptoOpsUsage {
 				+ ctx.currentNumTokenRels() * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr();
 	}
 
-	public FeeData cryptoUpdateUsage(TransactionBody cryptoUpdate, SigUsage sigUsage, ExtantCryptoContext ctx) {
-		var op = cryptoUpdate.getCryptoUpdateAccount();
+	public void cryptoUpdateUsage(final SigUsage sigUsage,
+			final BaseTransactionMeta baseMeta,
+			final CryptoUpdateMeta cryptoUpdateMeta,
+			final ExtantCryptoContext ctx,
+			final UsageAccumulator accumulator) {
+		accumulator.resetForTransaction(baseMeta, sigUsage);
 
-		long keyBytesUsed = op.hasKey() ? getAccountKeyStorageSize(op.getKey()) : 0;
-		long msgBytesUsed = BASIC_ENTITY_ID_SIZE
-				+ op.getMemo().getValueBytes().size()
-				+ keyBytesUsed
-				+ (op.hasExpirationTime() ? LONG_SIZE : 0)
-				+ (op.hasAutoRenewPeriod() ? LONG_SIZE : 0)
-				+ (op.hasProxyAccountID() ? BASIC_ENTITY_ID_SIZE : 0)
-				+ (op.hasMaxAutomaticTokenAssociations() ? INT_SIZE : 0);
-		var estimate = txnEstimateFactory.get(sigUsage, cryptoUpdate, ESTIMATOR_UTILS);
-		estimate.addBpt(msgBytesUsed);
+		accumulator.addBpt(cryptoUpdateMeta.getMsgBytesUsed());
 
 		long newVariableBytes = 0;
-		newVariableBytes += !op.hasMemo()
-				? ctx.currentMemo().getBytes(StandardCharsets.UTF_8).length
-				: op.getMemo().getValueBytes().size();
-		newVariableBytes += !op.hasKey() ? getAccountKeyStorageSize(ctx.currentKey()) : keyBytesUsed;
-		newVariableBytes += (op.hasProxyAccountID() || ctx.currentlyHasProxy()) ? BASIC_ENTITY_ID_SIZE : 0;
+		var newMemoSize = cryptoUpdateMeta.getMemoSize();
+		newVariableBytes += newMemoSize != 0 ? newMemoSize : ctx.currentMemo().getBytes(StandardCharsets.UTF_8).length;
+		var newKeyBytes = cryptoUpdateMeta.getKeyBytesUsed();
+		newVariableBytes += newKeyBytes == 0 ? getAccountKeyStorageSize(ctx.currentKey()) : newKeyBytes;
+		newVariableBytes += (cryptoUpdateMeta.hasProxy() || ctx.currentlyHasProxy()) ? BASIC_ENTITY_ID_SIZE : 0;
 
 		long tokenRelBytes = ctx.currentNumTokenRels() * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr();
 		long sharedFixedBytes = CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + tokenRelBytes;
-		long newLifetime = ESTIMATOR_UTILS.relativeLifetime(cryptoUpdate, op.getExpirationTime().getSeconds());
-		long oldLifetime = ESTIMATOR_UTILS.relativeLifetime(cryptoUpdate, ctx.currentExpiry());
+		long newLifetime = ESTIMATOR_UTILS.relativeLifetime(
+				cryptoUpdateMeta.getEffectiveNow(), cryptoUpdateMeta.getExpiry());
+		long oldLifetime = ESTIMATOR_UTILS.relativeLifetime(
+				cryptoUpdateMeta.getEffectiveNow(), ctx.currentExpiry());
 		long rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(
 				cryptoAutoRenewRb(ctx),
 				oldLifetime,
 				sharedFixedBytes + newVariableBytes,
 				newLifetime);
 		if (rbsDelta > 0) {
-			estimate.addRbs(rbsDelta);
+			accumulator.addRbs(rbsDelta);
 		}
 
-		long maxAutoAssociationsDelta = op.hasMaxAutomaticTokenAssociations() ?
-				((op.getMaxAutomaticTokenAssociations().getValue() * newLifetime)
-						- (ctx.currentMaxAutomaticAssociations() * oldLifetime)) : 0L;
-
-		if (maxAutoAssociationsDelta > 0) {
-			/* 	A multiplier '27' is used here to match the cost of each auto-association slot with cost for
-			one additional association in a tokenAssociate call */
-			estimate.addRbs(maxAutoAssociationsDelta * INT_SIZE * 27);
+		final var oldSlotsUsage = ctx.currentMaxAutomaticAssociations() * UPDATE_SLOT_MULTIPLIER;
+		final var newSlotsUsage = cryptoUpdateMeta.hasMaxAutomaticAssociations()
+				? cryptoUpdateMeta.getMaxAutomaticAssociations() * UPDATE_SLOT_MULTIPLIER
+				: oldSlotsUsage;
+		long slotRbsDelta = ESTIMATOR_UTILS.changeInBsUsage(oldSlotsUsage, oldLifetime, newSlotsUsage, newLifetime);
+		if (slotRbsDelta > 0) {
+			accumulator.addRbs(slotRbsDelta);
 		}
-
-		return estimate.get();
 	}
 
-	public FeeData cryptoCreateUsage(TransactionBody cryptoCreation, SigUsage sigUsage) {
-		var op = cryptoCreation.getCryptoCreateAccount();
+	public void cryptoCreateUsage(final SigUsage sigUsage,
+			final BaseTransactionMeta baseMeta,
+			final CryptoCreateMeta cryptoCreateMeta,
+			final UsageAccumulator accumulator) {
+		accumulator.resetForTransaction(baseMeta, sigUsage);
 
-		long variableBytes = 0;
-		variableBytes += op.getMemoBytes().size();
-		variableBytes += keySizeIfPresent(op, CryptoCreateTransactionBody::hasKey, CryptoCreateTransactionBody::getKey);
-		if (op.hasProxyAccountID()) {
-			variableBytes += BASIC_ENTITY_ID_SIZE;
+		var baseSize = cryptoCreateMeta.getBaseSize();
+
+		var maxAutomaticTokenAssociations = cryptoCreateMeta.getMaxAutomaticAssociations();
+
+		var lifeTime = cryptoCreateMeta.getLifeTime();
+
+		if(maxAutomaticTokenAssociations > 0) {
+			baseSize += INT_SIZE;
 		}
-		if(op.getMaxAutomaticTokenAssociations() != 0) {
-			variableBytes += INT_SIZE;
-		}
 
-		var lifetime = op.getAutoRenewPeriod().getSeconds();
-
-		var estimate = txnEstimateFactory.get(sigUsage, cryptoCreation, ESTIMATOR_UTILS);
 		/* Variable bytes plus two additional longs for balance and auto-renew period;
-		   plus a boolean for receiver sig required. */
-		estimate.addBpt(variableBytes + 2 * LONG_SIZE + BOOL_SIZE);
-		estimate.addRbs((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + variableBytes) * lifetime);
-		/* 	A multiplier '27' is used here to match the cost of each auto-association slot with cost for
-			one additional association in a tokenAssociate call */
-		estimate.addRbs(op.getMaxAutomaticTokenAssociations() * INT_SIZE * lifetime * 27);
-		estimate.addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
-
-		return estimate.get();
+			plus a boolean for receiver sig required. */
+		accumulator.addBpt(baseSize + 2 * LONG_SIZE + BOOL_SIZE);
+		accumulator.addRbs((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + baseSize) * lifeTime);
+		accumulator.addRbs(maxAutomaticTokenAssociations * lifeTime * CREATE_SLOT_MULTIPLIER);
+		accumulator.addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 }

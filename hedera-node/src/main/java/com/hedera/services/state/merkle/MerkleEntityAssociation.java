@@ -21,7 +21,8 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -55,36 +56,22 @@ public class MerkleEntityAssociation extends AbstractMerkleLeaf {
 		this.toNum = toNum;
 	}
 
-	public static MerkleEntityAssociation fromModelRel(TokenRelationship tokenRelationship) {
-		final var accountId = tokenRelationship.getAccount().getId();
-		final var tokenId = tokenRelationship.getToken().getId();
-		return new MerkleEntityAssociation(
-				accountId.getShard(), accountId.getRealm(), accountId.getNum(),
-				tokenId.getShard(), tokenId.getRealm(), tokenId.getNum());
+	public long getFromNum() {
+		return fromNum;
 	}
 
-	public static MerkleEntityAssociation fromAccountTokenRel(Pair<AccountID, TokenID> rel) {
+	public long getToNum() {
+		return toNum;
+	}
+
+	public static EntityNumPair fromAccountTokenRel(Pair<AccountID, TokenID> rel) {
 		return fromAccountTokenRel(rel.getLeft(), rel.getRight());
 	}
 
-	public static MerkleEntityAssociation fromAccountTokenRel(AccountID account, TokenID token) {
-		return new MerkleEntityAssociation(
-				account.getShardNum(), account.getRealmNum(), account.getAccountNum(),
-				token.getShardNum(), token.getRealmNum(), token.getTokenNum());
-	}
-
-	public Pair<AccountID, TokenID> asAccountTokenRel() {
-		return Pair.of(
-				AccountID.newBuilder()
-						.setShardNum(fromShard)
-						.setRealmNum(fromRealm)
-						.setAccountNum(fromNum)
-						.build(),
-				TokenID.newBuilder()
-						.setShardNum(toShard)
-						.setRealmNum(toRealm)
-						.setTokenNum(toNum)
-						.build());
+	public static EntityNumPair fromAccountTokenRel(AccountID account, TokenID token) {
+		final var accountNum = EntityNum.fromAccountId(account);
+		final var tokenNum = EntityNum.fromTokenId(token);
+		return EntityNumPair.fromLongs(accountNum.longValue(), tokenNum.longValue());
 	}
 
 	/* --- MerkleLeaf --- */
