@@ -24,7 +24,6 @@ import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -52,14 +51,12 @@ class CryptoCreateMetaTest {
 
 	@Test
 	void calculatesBaseSizeAsExpected() {
-		final var canonicalTxn = TransactionBody.newBuilder()
-				.setCryptoCreateAccount(CryptoCreateTransactionBody.newBuilder()
+		final var cryptoCreateTxnBody = CryptoCreateTransactionBody.newBuilder()
 						.setMemo("")
 						.setAutoRenewPeriod(Duration.newBuilder().setSeconds(7776000L))
-						.setKey(key))
-				.build();
+						.setKey(key).build();
 
-		var subject = new CryptoCreateMeta(canonicalTxn);
+		var subject = new CryptoCreateMeta(cryptoCreateTxnBody);
 
 		assertEquals(32, subject.getBaseSize());
 	}

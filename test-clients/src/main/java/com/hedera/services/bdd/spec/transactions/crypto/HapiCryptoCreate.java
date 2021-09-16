@@ -189,7 +189,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 
 	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
 		var baseMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
-		var opMeta = new CryptoCreateMeta(txn);
+		var opMeta = new CryptoCreateMeta(txn.getCryptoCreateAccount());
 		var accumulator = new UsageAccumulator();
 		cryptoOpsUsage.cryptoCreateUsage(suFrom(svo), baseMeta, opMeta, accumulator);
 		return AdapterUtils.feeDataFrom(accumulator);
