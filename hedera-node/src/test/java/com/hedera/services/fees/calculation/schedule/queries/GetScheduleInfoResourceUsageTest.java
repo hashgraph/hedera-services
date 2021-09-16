@@ -53,17 +53,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 class GetScheduleInfoResourceUsageTest {
-    TransactionID scheduledTxnId = TransactionID.newBuilder()
+    private static final TransactionID scheduledTxnId = TransactionID.newBuilder()
             .setScheduled(true)
             .setAccountID(IdUtils.asAccount("0.0.2"))
             .build();
-    ScheduleID target = IdUtils.asSchedule("0.0.123");
-
-    Instant resolutionTime = Instant.ofEpochSecond(123L);
-    Key signersList = TxnHandlingScenario.MISC_FILE_WACL_KT.asKey();
-    String memo = "some memo here";
-    Key adminKey = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey();
-    ScheduleInfo info = ScheduleInfo.newBuilder()
+    private static final ScheduleID target = IdUtils.asSchedule("0.0.123");
+    private static final Instant resolutionTime = Instant.ofEpochSecond(123L);
+    private static final Key signersList = TxnHandlingScenario.MISC_FILE_WACL_KT.asKey();
+    private static final String memo = "some memo here";
+    private static final Key adminKey = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey();
+    private static final ScheduleInfo info = ScheduleInfo.newBuilder()
             .setMemo(memo)
             .setAdminKey(adminKey)
             .setPayerAccountID(TxnHandlingScenario.COMPLEX_KEY_ACCOUNT)
@@ -71,19 +70,23 @@ class GetScheduleInfoResourceUsageTest {
 			.setScheduledTransactionID(scheduledTxnId)
             .setDeletionTime(RichInstant.fromJava(resolutionTime).toGrpc())
             .build();
+    private static final Query scheduleInfoQuery = Query.newBuilder()
+                .setScheduleGetInfo(ScheduleGetInfoQuery.newBuilder()
+                        .setScheduleID(target))
+                .build();
 
-    StateView view;
-    GetScheduleInfoResourceUsage subject;
-    ScheduleOpsUsage scheduleOpsUsage;
-    FeeData expected;
+    private StateView view;
+    private ScheduleOpsUsage scheduleOpsUsage;
+    private FeeData expected;
+
+    private GetScheduleInfoResourceUsage subject;
 
     @BeforeEach
-    private void setup() throws Throwable {
+    private void setup() {
         view = mock(StateView.class);
         given(view.infoForSchedule(target)).willReturn(Optional.of(info));
 
         scheduleOpsUsage = mock(ScheduleOpsUsage.class);
-
         expected = mock(FeeData.class);
 
         subject = new GetScheduleInfoResourceUsage(scheduleOpsUsage);
@@ -91,62 +94,24 @@ class GetScheduleInfoResourceUsageTest {
 
     @Test
     void recognizesApplicableQuery() {
-        // given:
-        var applicable = scheduleInfoQuery(target);
-        var inapplicable = Query.getDefaultInstance();
+        final var applicable = scheduleInfoQuery;
+        final var inapplicable = Query.getDefaultInstance();
 
-        // expect:
         assertTrue(subject.applicableTo(applicable));
         assertFalse(subject.applicableTo(inapplicable));
     }
 
     @Test
     void calculatesFeeData() {
-        ArgumentCaptor<ExtantScheduleContext> captor = ArgumentCaptor.forClass(ExtantScheduleContext.class);
+        final var captor = ArgumentCaptor.forClass(ExtantScheduleContext.class);
+        given(scheduleOpsUsage.scheduleInfoUsage(eq(scheduleInfoQuery), captor.capture())).willReturn(expected);
 
-        // setup:
-        var query = scheduleInfoQuery(target);
+        final var usage = subject.usageGiven(scheduleInfoQuery, view);
 
-        given(scheduleOpsUsage.scheduleInfoUsage(eq(query), captor.capture())).willReturn(expected);
-
-        // when:
-        var usage = subject.usageGiven(query, view);
-
-        // then:
         verify(view).infoForSchedule(target);
         assertSame(expected, usage);
-        // and:
-        var ctx = captor.getValue();
-        assertEquals(adminKey, ctx.adminKey());
-        assertEquals(info.getSigners().getKeysCount(), ctx.numSigners());
-        assertTrue(ctx.isResolved());
-        assertEquals(info.getScheduledTransactionBody(), ctx.scheduledTxn());
-        assertEquals(info.getMemo(), ctx.memo());
-    }
 
-    @Test
-    void calculatesFeeDataAsResolvedIfExecuted() {
-        // setup:
-        info = info.toBuilder()
-                .clearDeletionTime()
-                .setExecutionTime(RichInstant.fromJava(resolutionTime).toGrpc())
-                .build();
-
-        ArgumentCaptor<ExtantScheduleContext> captor = ArgumentCaptor.forClass(ExtantScheduleContext.class);
-
-        // setup:
-        var query = scheduleInfoQuery(target);
-
-        given(scheduleOpsUsage.scheduleInfoUsage(eq(query), captor.capture())).willReturn(expected);
-
-        // when:
-        var usage = subject.usageGiven(query, view);
-
-        // then:
-        verify(view).infoForSchedule(target);
-        assertSame(expected, usage);
-        // and:
-        var ctx = captor.getValue();
+        final var ctx = captor.getValue();
         assertEquals(adminKey, ctx.adminKey());
         assertEquals(info.getSigners().getKeysCount(), ctx.numSigners());
         assertTrue(ctx.isResolved());
@@ -156,27 +121,21 @@ class GetScheduleInfoResourceUsageTest {
 
     @Test
     void calculatesFeeDataScheduleNotPresent() {
-        // given:
         given(view.infoForSchedule(target)).willReturn(Optional.empty());
-        // when:
-        var usage = subject.usageGiven(scheduleInfoQuery(target), view);
 
-        // then:
+        final var usage = subject.usageGiven(scheduleInfoQuery, view);
+
         verify(view).infoForSchedule(target);
         assertSame(FeeData.getDefaultInstance(), usage);
     }
 
     @Test
     void calculatesFeeDataWithContext() {
-        // setup:
-        var queryCtx = new HashMap<String, Object>();
-
+        final var queryCtx = new HashMap<String, Object>();
         given(scheduleOpsUsage.scheduleInfoUsage(any(), any())).willReturn(expected);
 
-        // when
-        var usage = subject.usageGiven(scheduleInfoQuery(target), view, queryCtx);
+        final var usage = subject.usageGiven(scheduleInfoQuery, view, queryCtx);
 
-        // then
         assertSame(info, queryCtx.get(GetScheduleInfoAnswer.SCHEDULE_INFO_CTX_KEY));
         assertSame(expected, usage);
         verify(view).infoForSchedule(target);
@@ -184,24 +143,12 @@ class GetScheduleInfoResourceUsageTest {
 
     @Test
     void onlySetsScheduleInfoInQueryCxtIfFound() {
-        // setup:
-        var queryCtx = new HashMap<String, Object>();
-
+        final var queryCtx = new HashMap<String, Object>();
         given(view.infoForSchedule(target)).willReturn(Optional.empty());
 
-        // when:
-        var usage = subject.usageGiven(scheduleInfoQuery(target), view, queryCtx);
+        final var usage = subject.usageGiven(scheduleInfoQuery, view, queryCtx);
 
-        // then:
         assertFalse(queryCtx.containsKey(GetScheduleInfoAnswer.SCHEDULE_INFO_CTX_KEY));
-        // and:
         assertSame(FeeData.getDefaultInstance(), usage);
-    }
-
-    private Query scheduleInfoQuery(ScheduleID id) {
-        return Query.newBuilder()
-                .setScheduleGetInfo(ScheduleGetInfoQuery.newBuilder()
-                        .setScheduleID(id))
-                .build();
     }
 }

@@ -9,9 +9,9 @@ package com.hedera.services.fees.calculation.file.queries;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -53,25 +53,26 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 class GetFileInfoResourceUsageTest {
-	long expiry = 1_234_567L;
-	long size = 123;
-	String memo = "Ok whatever";
-	FileID target = asFile("0.0.123");
-	StateView view;
-	FileOpsUsage fileOpsUsage;
-	GetFileInfoResourceUsage subject;
-	Key wacl = TxnHandlingScenario.MISC_FILE_WACL_KT.asKey();
-	FileGetInfoResponse.FileInfo targetInfo = FileGetInfoResponse.FileInfo.newBuilder()
+	private static final long expiry = 1_234_567L;
+	private static final long size = 123;
+	private static final String memo = "Ok whatever";
+	private static final FileID target = asFile("0.0.123");
+	private static final Key wacl = TxnHandlingScenario.MISC_FILE_WACL_KT.asKey();
+	private static final FileGetInfoResponse.FileInfo targetInfo = FileGetInfoResponse.FileInfo.newBuilder()
 			.setExpirationTime(Timestamp.newBuilder().setSeconds(expiry).build())
 			.setSize(size)
 			.setMemo(memo)
 			.setKeys(wacl.getKeyList())
 			.build();
 
-	@BeforeEach
-	private void setup() throws Throwable {
-		fileOpsUsage = mock(FileOpsUsage.class);
+	private StateView view;
+	private FileOpsUsage fileOpsUsage;
 
+	private GetFileInfoResourceUsage subject;
+
+	@BeforeEach
+	private void setup() {
+		fileOpsUsage = mock(FileOpsUsage.class);
 		view = mock(StateView.class);
 
 		subject = new GetFileInfoResourceUsage(fileOpsUsage);
@@ -79,35 +80,26 @@ class GetFileInfoResourceUsageTest {
 
 	@Test
 	void returnsDefaultSchedulesOnMissing() {
-		Query answerOnlyQuery = fileInfoQuery(target, ANSWER_ONLY);
-
+		final var answerOnlyQuery = fileInfoQuery(target, ANSWER_ONLY);
 		given(view.infoForFile(any())).willReturn(Optional.empty());
 
-		// then:
 		assertSame(FeeData.getDefaultInstance(), subject.usageGiven(answerOnlyQuery, view));
 	}
 
 	@Test
 	void invokesEstimatorAsExpectedForType() {
-		// setup:
-		FeeData expected = mock(FeeData.class);
-		// and:
-		ArgumentCaptor<ExtantFileContext> captor = ArgumentCaptor.forClass(ExtantFileContext.class);
-		// and:
-		Query answerOnlyQuery = fileInfoQuery(target, ANSWER_ONLY);
-
+		final var expected = mock(FeeData.class);
+		final var captor = ArgumentCaptor.forClass(ExtantFileContext.class);
+		final var answerOnlyQuery = fileInfoQuery(target, ANSWER_ONLY);
 		given(view.infoForFile(target)).willReturn(Optional.ofNullable(targetInfo));
 		given(fileOpsUsage.fileInfoUsage(any(), any())).willReturn(expected);
 
-		// when:
-		FeeData actual = subject.usageGiven(answerOnlyQuery, view);
+		final var actual = subject.usageGiven(answerOnlyQuery, view);
 
-		// then:
 		assertSame(expected, actual);
-		// and:
 		verify(fileOpsUsage).fileInfoUsage(argThat(answerOnlyQuery::equals), captor.capture());
-		// and:
-		var ctxUsed = captor.getValue();
+
+		final var ctxUsed = captor.getValue();
 		assertEquals(expiry, ctxUsed.currentExpiry());
 		assertEquals(memo, ctxUsed.currentMemo());
 		assertEquals(wacl.getKeyList(), ctxUsed.currentWacl());
@@ -116,25 +108,19 @@ class GetFileInfoResourceUsageTest {
 
 	@Test
 	void recognizesApplicableQuery() {
-		// given:
-		Query fileInfoQuery = fileInfoQuery(target, COST_ANSWER);
-		Query nonFileInfoQuery = nonFileInfoQuery();
+		final var fileInfoQuery = fileInfoQuery(target, COST_ANSWER);
+		final var nonFileInfoQuery = Query.getDefaultInstance();
 
-		// expect:
 		assertTrue(subject.applicableTo(fileInfoQuery));
 		assertFalse(subject.applicableTo(nonFileInfoQuery));
 	}
 
-	private Query fileInfoQuery(FileID id, ResponseType type) {
-		FileGetInfoQuery.Builder op = FileGetInfoQuery.newBuilder()
+	private static final Query fileInfoQuery(final FileID id, final ResponseType type) {
+		final var op = FileGetInfoQuery.newBuilder()
 				.setFileID(id)
 				.setHeader(QueryHeader.newBuilder().setResponseType(type));
 		return Query.newBuilder()
 				.setFileGetInfo(op)
 				.build();
-	}
-
-	private Query nonFileInfoQuery() {
-		return Query.newBuilder().build();
 	}
 }

@@ -49,7 +49,7 @@ public final class GetTxnRecordResourceUsage implements QueryResourceUsageEstima
 	private final AnswerFunctions answerFunctions;
 	private final CryptoFeeBuilder usageEstimator;
 
-	static BinaryOperator<FeeData> sumFn = FeeCalcUtils::sumOfUsages;
+	private static final BinaryOperator<FeeData> sumFn = FeeCalcUtils::sumOfUsages;
 
 	@Inject
 	public GetTxnRecordResourceUsage(
