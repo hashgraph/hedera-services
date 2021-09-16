@@ -25,10 +25,10 @@ import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.fees.calculation.meta.FixedUsageEstimates;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.ResponseType;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Map;
 
 @Singleton
 public final class GetVersionInfoResourceUsage implements QueryResourceUsageEstimator {
@@ -43,12 +43,7 @@ public final class GetVersionInfoResourceUsage implements QueryResourceUsageEsti
 	}
 
 	@Override
-	public FeeData usageGiven(final Query query, final StateView view) {
-		return FixedUsageEstimates.getVersionInfoUsage();
-	}
-
-	@Override
-	public FeeData usageGivenType(final Query query, final StateView view, final ResponseType type) {
+	public FeeData usageGiven(final Query query, final StateView view, final Map<String, Object> ignoreCtx) {
 		return FixedUsageEstimates.getVersionInfoUsage();
 	}
 }

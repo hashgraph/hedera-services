@@ -31,18 +31,18 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.BinaryOperator;
 
-import static com.hedera.services.queries.AnswerService.NO_QUERY_CTX;
 import static com.hedera.services.queries.meta.GetTxnRecordAnswer.DUPLICATE_RECORDS_CTX_KEY;
 import static com.hedera.services.queries.meta.GetTxnRecordAnswer.PRIORITY_RECORD_CTX_KEY;
+import static com.hedera.services.utils.MiscUtils.putIfNotNull;
 
 @Singleton
-public class GetTxnRecordResourceUsage implements QueryResourceUsageEstimator {
+public final class GetTxnRecordResourceUsage implements QueryResourceUsageEstimator {
 	static final TransactionRecord MISSING_RECORD_STANDIN = TransactionRecord.getDefaultInstance();
 
 	private final RecordCache recordCache;
@@ -68,17 +68,8 @@ public class GetTxnRecordResourceUsage implements QueryResourceUsageEstimator {
 	}
 
 	@Override
-	public FeeData usageGiven(final Query query, final StateView view) {
-		return usageFor(query, view, query.getTransactionGetRecord().getHeader().getResponseType(), NO_QUERY_CTX);
-	}
-
-	@Override
-	public FeeData usageGiven(final Query query, final StateView view, final Map<String, Object> queryCtx) {
-		return usageFor(
-				query,
-				view,
-				query.getTransactionGetRecord().getHeader().getResponseType(),
-				Optional.of(queryCtx));
+	public FeeData usageGiven(final Query query, final StateView view, @Nullable final Map<String, Object> queryCtx) {
+		return usageFor(query, view, query.getTransactionGetRecord().getHeader().getResponseType(), queryCtx);
 	}
 
 	@Override
@@ -90,16 +81,16 @@ public class GetTxnRecordResourceUsage implements QueryResourceUsageEstimator {
 			final Query query,
 			final StateView view,
 			final ResponseType type,
-			final Optional<Map<String, Object>> queryCtx
+			@Nullable final Map<String, Object> queryCtx
 	) {
 		final var op = query.getTransactionGetRecord();
 		final var txnRecord = answerFunctions.txnRecord(recordCache, view, op).orElse(MISSING_RECORD_STANDIN);
 		var usages = usageEstimator.getTransactionRecordQueryFeeMatrices(txnRecord, type);
 		if (txnRecord != MISSING_RECORD_STANDIN) {
-			queryCtx.ifPresent(ctx -> ctx.put(PRIORITY_RECORD_CTX_KEY, txnRecord));
+			putIfNotNull(queryCtx, PRIORITY_RECORD_CTX_KEY, txnRecord);
 			if (op.getIncludeDuplicates()) {
 				final var duplicateRecords = recordCache.getDuplicateRecords(op.getTransactionID());
-				queryCtx.ifPresent(ctx -> ctx.put(DUPLICATE_RECORDS_CTX_KEY, duplicateRecords));
+				putIfNotNull(queryCtx, DUPLICATE_RECORDS_CTX_KEY, duplicateRecords);
 				for (final var duplicate : duplicateRecords) {
 					final var duplicateUsage = usageEstimator.getTransactionRecordQueryFeeMatrices(duplicate, type);
 					usages = sumFn.apply(usages, duplicateUsage);
