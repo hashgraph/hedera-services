@@ -33,8 +33,6 @@ import java.util.Map;
  * query operations, relative to a particular state of the world.
  */
 public interface QueryResourceUsageEstimator {
-	Map<String, Object> NO_QUERY_CTX = null;
-
 	/**
 	 * Flags whether the estimator applies to the given query.
 	 *
@@ -57,7 +55,7 @@ public interface QueryResourceUsageEstimator {
 	 * 		or analogous if the estimator does not apply to the query
 	 */
 	default FeeData usageGiven(final Query query, final StateView view) {
-		return usageGiven(query, view, NO_QUERY_CTX);
+		return usageGiven(query, view, null);
 	}
 
 	/**

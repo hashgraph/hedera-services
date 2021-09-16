@@ -74,7 +74,7 @@ public final class GetTxnRecordResourceUsage implements QueryResourceUsageEstima
 
 	@Override
 	public FeeData usageGivenType(final Query query, final StateView view, final ResponseType type) {
-		return usageFor(query, view, type, NO_QUERY_CTX);
+		return usageFor(query, view, type, null);
 	}
 
 	private FeeData usageFor(

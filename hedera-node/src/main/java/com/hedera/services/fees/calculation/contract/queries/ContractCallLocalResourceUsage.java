@@ -71,7 +71,7 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
 
 	@Override
 	public FeeData usageGivenType(final Query query, final StateView view, final ResponseType type) {
-		return usageFor(query, type, NO_QUERY_CTX);
+		return usageFor(query, type, null);
 	}
 
 	@Override
@@ -83,7 +83,7 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
 		try {
 			final var op = query.getContractCallLocal();
 			ContractCallLocalResponse response;
-			if (queryCtx == NO_QUERY_CTX) {
+			if (null == queryCtx) {
 				response = dummyResponse(op.getContractID());
 			} else {
 				response = delegate.perform(op, Instant.now().getEpochSecond());
