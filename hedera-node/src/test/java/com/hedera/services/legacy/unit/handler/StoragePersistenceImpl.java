@@ -26,7 +26,6 @@ import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.store.contracts.repository.StoragePersistence;
 import com.hedera.services.utils.EntityIdUtils;
 import com.swirlds.merkle.map.MerkleMap;
-import org.ethereum.datasource.StoragePersistence;
 
 public class StoragePersistenceImpl implements StoragePersistence {
 	private static String ADDRESS_APENDED_PATH = "/{0}/d{1}";

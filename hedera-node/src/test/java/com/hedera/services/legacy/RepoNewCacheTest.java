@@ -21,7 +21,6 @@ package com.hedera.services.legacy;
  */
 
 import com.hedera.services.config.MockGlobalDynamicProps;
-import com.hedera.services.contracts.sources.LedgerAccountsSource;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.BackingAccounts;
@@ -35,26 +34,16 @@ import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.test.mocks.StorageSourceFactory;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.CommonUtils;
 import com.swirlds.merkle.map.MerkleMap;
-import org.ethereum.core.AccountState;
-import org.ethereum.core.Repository;
-import org.ethereum.datasource.DbSource;
-import org.ethereum.datasource.Source;
-import org.ethereum.db.ServicesRepositoryImpl;
-import org.ethereum.db.ServicesRepositoryRoot;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import java.math.BigInteger;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.mock;
 
 class RepoNewCacheTest {

@@ -71,7 +71,7 @@ public interface OptionValidator {
 
 	JKey attemptToDecodeOrThrow(Key key, ResponseCodeEnum code);
 
-	default ResponseCodeEnum queryableAccountStatus(AccountID id, FCMap<MerkleEntityId, MerkleAccount> accounts) {
+	default ResponseCodeEnum queryableAccountStatus(AccountID id, MerkleMap<EntityNum, MerkleAccount> accounts) {
 		return PureValidation.queryableAccountStatus(id, accounts);
 	}
 

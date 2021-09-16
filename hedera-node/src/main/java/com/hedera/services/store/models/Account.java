@@ -27,12 +27,12 @@ import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
 import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -42,7 +42,6 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.getAlready
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getMaxAutomaticAssociationsFrom;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setMaxAutomaticAssociationsTo;
-import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
@@ -145,12 +144,12 @@ public class Account {
 		return getMaxAutomaticAssociationsFrom(autoAssociationMetadata);
 	}
 
-	public int getAlreadyUsedAutomaticAssociations() {
-		return getAlreadyUsedAutomaticAssociationsFrom(autoAssociationMetadata);
-	}
-
 	public void setMaxAutomaticAssociations(int maxAutomaticAssociations) {
 		autoAssociationMetadata = setMaxAutomaticAssociationsTo(autoAssociationMetadata, maxAutomaticAssociations);
+	}
+
+	public void setAutoAssociationMetadata(int autoAssociationMetadata) {
+		this.autoAssociationMetadata = autoAssociationMetadata;
 	}
 
 	public int getAlreadyUsedAutomaticAssociations() {
