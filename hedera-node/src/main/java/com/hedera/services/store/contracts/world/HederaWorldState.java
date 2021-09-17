@@ -25,7 +25,6 @@ package com.hedera.services.store.contracts.world;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.contracts.HederaUpdateTrackingAccount;
 import com.hedera.services.store.contracts.repository.ContractDetails;
 import com.hedera.services.store.contracts.repository.ServicesRepositoryRoot;
 import com.hedera.services.store.models.Id;
@@ -301,7 +300,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 	/**
 	 * This updater must extend `HederaAbstractWorldUpdater` instead of {@link AbstractWorldUpdater}
-	 * - HederaAbstractWorldUpdater must use {@link HederaUpdateTrackingAccount} instead of {@link UpdateTrackingAccount}
+	 * - HederaAbstractWorldUpdater must use HederaUpdateTrackingAccount instead of {@link UpdateTrackingAccount}
 	 * - HederaAbstractWorldUpdater must have new method: allocateNewContractAddress.
 	 * The method will:
 	 * - count the number of times the method is called
