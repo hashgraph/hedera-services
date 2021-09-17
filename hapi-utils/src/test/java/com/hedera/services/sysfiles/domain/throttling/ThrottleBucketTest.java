@@ -81,7 +81,9 @@ class ThrottleBucketTest {
 
 	@Test
 	void failsWhenConstructingThrottlesWithZeroGroups() {
-		assertThrows(IllegalStateException.class, () -> new ThrottleBucket().asThrottleMapping(1));
+		final var subject = new ThrottleBucket();
+
+		assertThrows(IllegalStateException.class, () -> subject.asThrottleMapping(1));
 	}
 
 	@ParameterizedTest
