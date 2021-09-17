@@ -29,7 +29,7 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.store.contracts.world.HederaWorldState;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.contract.process.CreateEvmTxProcessor;
@@ -130,7 +130,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 				txnCtx.consensusTime()
 		);
 		/* In case the EVM runs into RE */
-		validateFalse(result.isInvalid(), FAIL_INVALID, result.getValidationResult().getErrorMessage());
+		validateFalse(result.isInvalid(), FAIL_INVALID, result.getValidationResult() == null ? "" : result.getValidationResult().getErrorMessage());
 
 		if (result.isSuccessful()) {
 			worldState.addPropertiesFor(newContractId.asEvmAddress(), op.getMemo(), key, proxyAccount);

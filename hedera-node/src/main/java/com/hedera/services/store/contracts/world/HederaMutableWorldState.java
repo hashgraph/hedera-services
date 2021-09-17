@@ -1,4 +1,4 @@
-package com.hedera.services.store.contracts;
+package com.hedera.services.store.contracts.world;
 
 /*
  * -

@@ -24,7 +24,7 @@ package com.hedera.services.txns.contract.process;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.store.contracts.world.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.tuweni.bytes.Bytes;

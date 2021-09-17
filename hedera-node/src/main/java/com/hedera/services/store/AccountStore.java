@@ -171,7 +171,7 @@ public class AccountStore {
 	 * @return whether the account exists and it is usable
 	 */
 	public boolean exists(Id id) {
-		final var key = new MerkleEntityId(id.getShard(), id.getRealm(), id.getNum());
+		final var key = EntityNum.fromModel(id);
 		final var merkleAccount = accounts.get().get(key);
 		return merkleAccount != null && !merkleAccount.isDeleted()
 				&& !isExpired(merkleAccount.getBalance(), merkleAccount.getExpiry());

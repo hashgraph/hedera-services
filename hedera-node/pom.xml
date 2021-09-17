@@ -295,32 +295,32 @@
     <dependency>
       <groupId>org.hyperledger.besu.internal</groupId>
       <artifactId>core</artifactId>
-      <version>21.7.3</version>
+      <version>21.7.4</version>
     </dependency>
     <dependency>
       <groupId>org.apache.tuweni</groupId>
       <artifactId>tuweni-units</artifactId>
-      <version>1.1.0</version>
+      <version>2.0.0</version>
     </dependency>
     <dependency>
       <groupId>org.hyperledger.besu</groupId>
       <artifactId>plugin-api</artifactId>
-      <version>21.7.3</version>
+      <version>21.7.4</version>
     </dependency>
     <dependency>
       <groupId>org.hyperledger.besu</groupId>
       <artifactId>evm</artifactId>
-      <version>21.7.3</version>
+      <version>21.7.4</version>
     </dependency>
     <dependency>
       <groupId>org.hyperledger.besu</groupId>
       <artifactId>besu-datatypes</artifactId>
-      <version>21.7.3</version>
+      <version>21.7.4</version>
     </dependency>
     <dependency>
       <groupId>org.hyperledger.besu.internal</groupId>
       <artifactId>crypto</artifactId>
-      <version>21.7.3</version>
+      <version>21.7.4</version>
     </dependency>
   </dependencies>
 

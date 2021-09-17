@@ -37,6 +37,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
 import org.ethereum.core.CallTransaction;
 import org.junit.jupiter.api.Assertions;
 
@@ -115,9 +116,10 @@ public class ContractCallSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-				positiveSpecs(),
-				negativeSpecs(),
-				Arrays.asList(fridayThe13thSpec())
+				Arrays.asList(benchmarkSingleSetter())
+//				positiveSpecs(),
+//				negativeSpecs(),
+//				Arrays.asList(fridayThe13thSpec())
 		);
 	}
 
@@ -145,6 +147,45 @@ public class ContractCallSuite extends HapiApiSuite {
 				smartContractInlineAssemblyCheck(),
 				ocToken()
 		);
+	}
+
+	private HapiApiSpec benchmarkSingleSetter() {
+		final long GAS_LIMIT = 1_000_000;
+		return defaultHapiSpec("SimpleStorage")
+				.given(
+						cryptoCreate("payer")
+								.balance(10 * ONE_HUNDRED_HBARS),
+						fileCreate("bytecode")
+								.path(ContractResources.BENCHMARK_CONTRACT)
+								.memo("test-memo-contract")
+								.payingWith("payer")
+				)
+				.when(
+						contractCreate("immutableContract")
+								.payingWith("payer")
+								.bytecode("bytecode")
+								.via("creationTx")
+								.gas(GAS_LIMIT),
+						contractCall(
+								"immutableContract",
+								ContractResources.TWO_SSTORES,
+								Bytes.fromHexString("0x05").toArray()
+						)
+								.gas(GAS_LIMIT)
+								.via("storageTx")
+				).then(
+//						contractCallLocal("immutableContract", ContractResources.BENCHMARK_GET_COUNTER)
+//								.nodePayment(1_234_567)
+//								.has(
+//										ContractFnResultAsserts.resultWith()
+//												.resultThruAbi(
+//														ContractResources.BENCHMARK_GET_COUNTER,
+//														ContractFnResultAsserts.isLiteralResult(
+//																new Object[]{BigInteger.valueOf(1L)}
+//														)
+//												)
+//								)
+				);
 	}
 
 	HapiApiSpec ocToken() {

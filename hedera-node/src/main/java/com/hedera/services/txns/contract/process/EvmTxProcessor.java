@@ -25,7 +25,7 @@ package com.hedera.services.txns.contract.process;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.store.contracts.world.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -35,11 +35,8 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.ethereum.core.GasAndAccessedState;
 import org.hyperledger.besu.ethereum.core.Transaction;
-import org.hyperledger.besu.ethereum.mainnet.LondonTransactionGasCalculator;
 import org.hyperledger.besu.ethereum.mainnet.MainnetProtocolSpecs;
-import org.hyperledger.besu.ethereum.mainnet.TransactionGasCalculator;
 import org.hyperledger.besu.ethereum.mainnet.ValidationResult;
 import org.hyperledger.besu.ethereum.processing.TransactionProcessingResult;
 import org.hyperledger.besu.ethereum.transaction.TransactionInvalidReason;
@@ -50,6 +47,7 @@ import org.hyperledger.besu.evm.contractvalidation.MaxCodeSizeRule;
 import org.hyperledger.besu.evm.contractvalidation.PrefixCodeRule;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
 import org.hyperledger.besu.evm.precompile.MainnetPrecompiledContracts;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.processor.AbstractMessageProcessor;
@@ -74,7 +72,6 @@ abstract class EvmTxProcessor {
 	protected final HederaWorldState.Updater updater;
 	protected final GlobalDynamicProperties dynamicProperties;
 	private final AbstractMessageProcessor messageCallProcessor;
-	private final TransactionGasCalculator transactionGasCalculator;
 	private final AbstractMessageProcessor contractCreationProcessor;
 
 	public EvmTxProcessor(
@@ -87,12 +84,11 @@ abstract class EvmTxProcessor {
 		this.exchange = exchange;
 		this.usagePrices = usagePrices;
 		this.dynamicProperties = dynamicProperties;
-		this.transactionGasCalculator = new LondonTransactionGasCalculator();
+		this.gasCalculator = new LondonGasCalculator();
 
 		final var evm = MainnetEVMs.london();
-		this.gasCalculator = evm.getGasCalculator();
 		final PrecompileContractRegistry precompileContractRegistry = new PrecompileContractRegistry();
-		MainnetPrecompiledContracts.populateForIstanbul(precompileContractRegistry, gasCalculator);
+		MainnetPrecompiledContracts.populateForIstanbul(precompileContractRegistry, this.gasCalculator);
 
 		this.messageCallProcessor = new MessageCallProcessor(evm, precompileContractRegistry);
 		this.contractCreationProcessor = new ContractCreationProcessor(
@@ -103,14 +99,14 @@ abstract class EvmTxProcessor {
 				1);
 	}
 
+	// TODO we can remove the Transaction object
 	protected TransactionProcessingResult execute (Account sender, final Transaction transaction, Instant consensusTime) {
 		try {
 			//noinspection OptionalGetWithoutIsPresent
 			final var gasPrice = transaction.getGasPrice().get();
 			final Wei upfrontCost = Wei.of(transaction.getGasLimit()).multiply(gasPrice).add(transaction.getValue());
-			final GasAndAccessedState gasAndAccessedState =
-					transactionGasCalculator.transactionIntrinsicGasCostAndAccessedState(transaction);
-			final Gas intrinsicGas = gasAndAccessedState.getGas();
+			final Gas intrinsicGas =
+					gasCalculator.transactionIntrinsicGasCost(transaction.getPayload(), transaction.isContractCreation());
 
 			validateFalse(upfrontCost.compareTo(Wei.of(sender.getBalance())) > 0,
 					ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
@@ -125,14 +121,6 @@ abstract class EvmTxProcessor {
 			final Gas gasAvailable = Gas.of(transaction.getGasLimit()).minus(intrinsicGas);
 			final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
 
-		/*
-		  TODO Do we need those variables
-		  final var contextVariablesBuilder =
-		            ImmutableMap.<String, Object>builder()
-		                .put(KEY_IS_PERSISTING_PRIVATE_STATE, isPersistingPrivateState)
-		                .put(KEY_TRANSACTION, transaction)
-		                .put(KEY_TRANSACTION_HASH, transaction.getHash());
-		 */
 			final var stackedUpdater = updater.updater();
 			final MessageFrame.Builder commonInitialFrame =
 					MessageFrame.builder()
@@ -238,7 +226,7 @@ abstract class EvmTxProcessor {
 		final Gas maxRefundAllowance =
 				Gas.of(transaction.getGasLimit())
 						.minus(gasRemaining)
-						.dividedBy(transactionGasCalculator.getMaxRefundQuotient());
+						.dividedBy(gasCalculator.getMaxRefundQuotient());
 		final Gas refundAllowance = maxRefundAllowance.min(gasRefund);
 		return gasRemaining.plus(refundAllowance);
 	}
