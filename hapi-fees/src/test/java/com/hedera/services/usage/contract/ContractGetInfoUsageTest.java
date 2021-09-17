@@ -37,7 +37,7 @@ import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ContractGetInfoUsageTest {
-	private Query query = Query.newBuilder().setContractGetInfo(ContractGetInfoQuery.getDefaultInstance()).build();
+	private final Query query = Query.newBuilder().setContractGetInfo(ContractGetInfoQuery.getDefaultInstance()).build();
 
 	private static final int NUM_TOKEN_ASSOCS = 3;
 	private static final Key KEY = KeyUtils.A_CONTRACT_KEY;
