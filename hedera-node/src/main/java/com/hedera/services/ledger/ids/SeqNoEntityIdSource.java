@@ -53,6 +53,7 @@ public class SeqNoEntityIdSource implements EntityIdSource {
 
 	@Override
 	public Id newContractId(Id newContractSponsor) {
+		provisionalIds++;
 		return new Id(
 				newContractSponsor.getRealm(),
 				newContractSponsor.getShard(),
