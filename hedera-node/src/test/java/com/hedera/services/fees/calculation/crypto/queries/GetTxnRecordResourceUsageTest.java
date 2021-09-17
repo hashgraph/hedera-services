@@ -41,7 +41,6 @@ import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.BinaryOperator;
 
 import static com.hedera.services.fees.calculation.crypto.queries.GetTxnRecordResourceUsage.MISSING_RECORD_STANDIN;
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -55,6 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
+import static org.mockito.Mockito.mockStatic;
 
 class GetTxnRecordResourceUsageTest {
 	private static final TransactionID targetTxnId = TransactionID.newBuilder()
@@ -136,9 +136,8 @@ class GetTxnRecordResourceUsageTest {
 		final var answerOnlyUsage = mock(FeeData.class);
 		final var summedUsage = mock(FeeData.class);
 		final var queryCtx = new HashMap<String, Object>();
-		final var sumFn = mock(BinaryOperator.class);
-		GetTxnRecordResourceUsage.sumFn = sumFn;
-		given(sumFn.apply(answerOnlyUsage, answerOnlyUsage)).willReturn(summedUsage);
+		final var mockedStatic = mockStatic(FeeCalcUtils.class);
+		mockedStatic.when(() -> FeeCalcUtils.sumOfUsages(answerOnlyUsage, answerOnlyUsage)).thenReturn(summedUsage);
 		given(usageEstimator.getTransactionRecordQueryFeeMatrices(desiredRecord, ANSWER_ONLY))
 				.willReturn(answerOnlyUsage);
 
@@ -146,15 +145,14 @@ class GetTxnRecordResourceUsageTest {
 
 		assertEquals(summedUsage, usage);
 
-		GetTxnRecordResourceUsage.sumFn = FeeCalcUtils::sumOfUsages;
+		mockedStatic.close();
 	}
 
 	@Test
 	void setsDuplicateRecordsInQueryCtxIfAppropos() {
 		final var answerOnlyUsage = mock(FeeData.class);
 		final var queryCtx = new HashMap<String, Object>();
-		final var sumFn = mock(BinaryOperator.class);
-		GetTxnRecordResourceUsage.sumFn = sumFn;
+		final var mockedStatic = mockStatic(FeeCalcUtils.class);
 		given(usageEstimator.getTransactionRecordQueryFeeMatrices(desiredRecord, ANSWER_ONLY))
 				.willReturn(answerOnlyUsage);
 
@@ -162,7 +160,7 @@ class GetTxnRecordResourceUsageTest {
 
 		assertEquals(List.of(desiredRecord), queryCtx.get(GetTxnRecordAnswer.DUPLICATE_RECORDS_CTX_KEY));
 
-		GetTxnRecordResourceUsage.sumFn = FeeCalcUtils::sumOfUsages;
+		mockedStatic.close();
 	}
 
 	@Test

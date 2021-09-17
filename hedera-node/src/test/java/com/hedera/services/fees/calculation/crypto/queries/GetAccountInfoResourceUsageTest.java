@@ -22,8 +22,6 @@ package com.hedera.services.fees.calculation.crypto.queries;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.test.utils.IdUtils;
@@ -38,7 +36,6 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
-import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -60,26 +57,25 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
 class GetAccountInfoResourceUsageTest {
-	StateView view;
-	MerkleMap<EntityNum, MerkleAccount> accounts;
-	GetAccountInfoResourceUsage subject;
-	Key aKey = Key.newBuilder().setEd25519(ByteString.copyFrom("NONSENSE".getBytes())).build();
-	String a = "0.0.1234";
-	MerkleAccount aValue;
-	long expiry = 1_234_567L;
-	AccountID proxy = IdUtils.asAccount("0.0.75231");
-	TokenID aToken = asToken("0.0.1001");
-	TokenID bToken = asToken("0.0.1002");
-	TokenID cToken = asToken("0.0.1003");
-	String memo = "Hi there!";
-	int maxAutomaticAssociations = 123;
-	FeeData expected;
-	AccountID queryTarget = IdUtils.asAccount(a);
+	private static final Key aKey = Key.newBuilder().setEd25519(ByteString.copyFrom("NONSENSE".getBytes())).build();
+	private static final String a = "0.0.1234";
+	private static final long expiry = 1_234_567L;
+	private static final AccountID proxy = IdUtils.asAccount("0.0.75231");
+	private static final TokenID aToken = asToken("0.0.1001");
+	private static final TokenID bToken = asToken("0.0.1002");
+	private static final TokenID cToken = asToken("0.0.1003");
+	private static final String memo = "Hi there!";
+	private static final int maxAutomaticAssociations = 123;
+	private static final AccountID queryTarget = IdUtils.asAccount(a);
 
-	CryptoOpsUsage cryptoOpsUsage;
+	private FeeData expected;
+	private CryptoOpsUsage cryptoOpsUsage;
+	private StateView view;
+
+	private GetAccountInfoResourceUsage subject;
 
 	@BeforeEach
-	private void setup() throws Throwable {
+	private void setup() {
 		cryptoOpsUsage = mock(CryptoOpsUsage.class);
 		expected = mock(FeeData.class);
 		view = mock(StateView.class);
@@ -89,10 +85,8 @@ class GetAccountInfoResourceUsageTest {
 
 	@Test
 	void usesEstimator() {
-		// setup:
-		ArgumentCaptor<ExtantCryptoContext> captor = ArgumentCaptor.forClass(ExtantCryptoContext.class);
-
-		var info = CryptoGetInfoResponse.AccountInfo.newBuilder()
+		final var captor = ArgumentCaptor.forClass(ExtantCryptoContext.class);
+		final var info = CryptoGetInfoResponse.AccountInfo.newBuilder()
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
 				.setMemo(memo)
 				.setProxyAccountID(proxy)
@@ -102,21 +96,16 @@ class GetAccountInfoResourceUsageTest {
 				.addTokenRelationships(2, TokenRelationship.newBuilder().setTokenId(cToken))
 				.setMaxAutomaticTokenAssociations(maxAutomaticAssociations)
 				.build();
-		// and:
-		var query = accountInfoQuery(a, ANSWER_ONLY);
-
+		final var query = accountInfoQuery(a, ANSWER_ONLY);
 		given(view.infoForAccount(queryTarget)).willReturn(Optional.of(info));
 		given(cryptoOpsUsage.cryptoInfoUsage(any(), any())).willReturn(expected);
 
-		// when:
-		var usage = subject.usageGiven(query, view);
+		final var usage = subject.usageGiven(query, view);
 
-		// then:
 		assertEquals(expected, usage);
-		// and:
 		verify(cryptoOpsUsage).cryptoInfoUsage(argThat(query::equals), captor.capture());
-		// and:
-		var ctx = captor.getValue();
+
+		final var ctx = captor.getValue();
 		assertEquals(aKey, ctx.currentKey());
 		assertEquals(expiry, ctx.currentExpiry());
 		assertEquals(memo, ctx.currentMemo());
@@ -128,35 +117,27 @@ class GetAccountInfoResourceUsageTest {
 	void returnsDefaultIfNoSuchAccount() {
 		given(view.infoForAccount(queryTarget)).willReturn(Optional.empty());
 
-		// when:
-		var usage = subject.usageGiven(accountInfoQuery(a, ANSWER_ONLY), view);
+		final var usage = subject.usageGiven(accountInfoQuery(a, ANSWER_ONLY), view);
 
-		// then:
 		assertSame(FeeData.getDefaultInstance(), usage);
 	}
 
 	@Test
 	void recognizesApplicableQuery() {
-		// given:
-		Query accountInfoQuery = accountInfoQuery(a, COST_ANSWER);
-		Query nonAccountInfoQuery = nonAccountInfoQuery();
+		final var accountInfoQuery = accountInfoQuery(a, COST_ANSWER);
+		final var nonAccountInfoQuery = Query.getDefaultInstance();
 
-		// expect:
 		assertTrue(subject.applicableTo(accountInfoQuery));
 		assertFalse(subject.applicableTo(nonAccountInfoQuery));
 	}
 
-	private Query accountInfoQuery(String target, ResponseType type) {
-		AccountID id = asAccount(target);
-		CryptoGetInfoQuery.Builder op = CryptoGetInfoQuery.newBuilder()
+	private static final Query accountInfoQuery(final String target, final ResponseType type) {
+		final var id = asAccount(target);
+		final var op = CryptoGetInfoQuery.newBuilder()
 				.setAccountID(id)
 				.setHeader(QueryHeader.newBuilder().setResponseType(type));
 		return Query.newBuilder()
 				.setCryptoGetInfo(op)
 				.build();
-	}
-
-	private Query nonAccountInfoQuery() {
-		return Query.newBuilder().build();
 	}
 }
