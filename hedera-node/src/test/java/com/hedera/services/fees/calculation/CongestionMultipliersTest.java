@@ -52,10 +52,18 @@ class CongestionMultipliersTest {
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = {"90,10x,95,25x,99,-100", "90,10x,95,25x,99", "90,x,95,25x,99,100x",
-			"90,10x,950,25x,99,100x", "90,10x,95,25x,,100x", "90,10x,95,25x,99x,100x", "90,10y,95,25x,99,100x",
-			"90,10,95,25,94,100", "90,10,95,25,99,24"})
-	void throwsOnVariousMultipliersAndTriggers(final String prop) {
+	@ValueSource(strings = {
+			"90,10x,95,25x,99,-100",
+			"90,10x,95,25x,99",
+			"90,x,95,25x,99,100x",
+			"90,10x,950,25x,99,100x",
+			"90,10x,95,25x,,100x",
+			"90,10x,95,25x,99x,100x",
+			"90,10y,95,25x,99,100x",
+			"90,10,95,25,94,100",
+			"90,10,95,25,99,24"
+	})
+	void throwsOnMalformedProps(final String prop) {
 		assertThrows(IllegalArgumentException.class, () -> CongestionMultipliers.from(prop));
 	}
 
