@@ -40,10 +40,10 @@ import static java.util.Collections.disjoint;
 import static java.util.stream.Collectors.toList;
 
 public class ThrottleBucket {
-	int burstPeriod;
-	long burstPeriodMs;
-	String name;
-	List<ThrottleGroup> throttleGroups = new ArrayList<>();
+	private int burstPeriod;
+	private long burstPeriodMs;
+	private String name;
+	private List<ThrottleGroup> throttleGroups = new ArrayList<>();
 
 	private static final String BUCKET_PREFIX = "Bucket ";
 
@@ -79,8 +79,8 @@ public class ThrottleBucket {
 		this.throttleGroups = throttleGroups;
 	}
 
-	public static ThrottleBucket fromProto(com.hederahashgraph.api.proto.java.ThrottleBucket bucket) {
-		var pojo = new ThrottleBucket();
+	public static ThrottleBucket fromProto(final com.hederahashgraph.api.proto.java.ThrottleBucket bucket) {
+		final var pojo = new ThrottleBucket();
 		pojo.name = bucket.getName();
 		pojo.burstPeriodMs = bucket.getBurstPeriodMs();
 		pojo.throttleGroups.addAll(bucket.getThrottleGroupsList().stream()
@@ -115,7 +115,7 @@ public class ThrottleBucket {
 	 *
 	 * @throws IllegalStateException if this bucket was constructed with invalid throttle groups
 	 */
-	public Pair<DeterministicThrottle, List<Pair<HederaFunctionality, Integer>>> asThrottleMapping(int n) {
+	public Pair<DeterministicThrottle, List<Pair<HederaFunctionality, Integer>>> asThrottleMapping(final int n) {
 		if (throttleGroups.isEmpty()) {
 			throw new IllegalStateException(exceptionMsgFor(
 							BUCKET_HAS_NO_THROTTLE_GROUPS,
@@ -124,7 +124,7 @@ public class ThrottleBucket {
 
 		assertMinimalOpsPerSec();
 
-		long logicalMtps = requiredLogicalMilliTpsToAccommodateAllGroups();
+		final var logicalMtps = requiredLogicalMilliTpsToAccommodateAllGroups();
 		if (logicalMtps < 0) {
 			throw new IllegalStateException(exceptionMsgFor(
 					BUCKET_CAPACITY_OVERFLOW,
@@ -134,12 +134,13 @@ public class ThrottleBucket {
 		return mappingWith(logicalMtps, n);
 	}
 
-	private Pair<DeterministicThrottle, List<Pair<HederaFunctionality, Integer>>> mappingWith(long mtps, int n) {
-		var throttle = throttleFor(mtps, n);
-		long totalCapacityUnits = throttle.capacity();
+	private Pair<DeterministicThrottle, List<Pair<HederaFunctionality, Integer>>> mappingWith(
+			final long mtps, final int n) {
+		final var throttle = throttleFor(mtps, n);
+		final var totalCapacityUnits = throttle.capacity();
 
-		Set<HederaFunctionality> seenSoFar = new HashSet<>();
-		List<Pair<HederaFunctionality, Integer>> opsReqs = new ArrayList<>();
+		final Set<HederaFunctionality> seenSoFar = new HashSet<>();
+		final List<Pair<HederaFunctionality, Integer>> opsReqs = new ArrayList<>();
 		for (var throttleGroup : throttleGroups) {
 			updateOpsReqs(n, mtps, totalCapacityUnits, throttleGroup, seenSoFar, opsReqs);
 		}
@@ -148,22 +149,22 @@ public class ThrottleBucket {
 	}
 
 	private void updateOpsReqs(
-			int n,
-			long mtps,
-			long totalCapacity,
-			ThrottleGroup group,
-			Set<HederaFunctionality> seenSoFar,
-			List<Pair<HederaFunctionality, Integer>> opsReqs
+			final int n,
+			final long mtps,
+			final long totalCapacity,
+			final ThrottleGroup group,
+			final Set<HederaFunctionality> seenSoFar,
+			final List<Pair<HederaFunctionality, Integer>> opsReqs
 	) {
-		int opsReq = (int)(mtps / group.impliedMilliOpsPerSec());
-		long capacityReq = capacityRequiredFor(opsReq);
+		final var opsReq = (int)(mtps / group.impliedMilliOpsPerSec());
+		final var capacityReq = capacityRequiredFor(opsReq);
 		if (capacityReq < 0 || capacityReq > totalCapacity) {
 			throw new IllegalStateException(exceptionMsgFor(
 					NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION,
 					BUCKET_PREFIX + name + " contains an unsatisfiable milliOpsPerSec with " + n + " nodes!"));
 		}
 
-		var functions = group.getOperations();
+		final var functions = group.getOperations();
 		if (disjoint(seenSoFar, functions)) {
 			Set<HederaFunctionality> listedSoFar = new HashSet<>();
 			for (var function : functions) {
@@ -181,7 +182,7 @@ public class ThrottleBucket {
 		}
 	}
 
-	private DeterministicThrottle throttleFor(long mtps, int n) {
+	private DeterministicThrottle throttleFor(final long mtps, final int n) {
 		try {
 			return DeterministicThrottle.withMtpsAndBurstPeriodMsNamed(mtps / n, impliedBurstPeriodMs(), name);
 		} catch (IllegalArgumentException unsatisfiable) {
@@ -208,18 +209,18 @@ public class ThrottleBucket {
 	}
 
 	private long requiredLogicalMilliTpsToAccommodateAllGroups() {
-		long lcm = throttleGroups.get(0).impliedMilliOpsPerSec();
+		var lcm = throttleGroups.get(0).impliedMilliOpsPerSec();
 		for (int i = 1, n = throttleGroups.size(); i < n; i++) {
 			lcm = lcm(lcm, throttleGroups.get(i).impliedMilliOpsPerSec());
 		}
 		return lcm;
 	}
 
-	private long lcm(long a, long b) {
+	private long lcm(final long a, final long b) {
 		return (a * b) / gcd(Math.min(a, b), Math.max(a, b));
 	}
 
-	private long gcd(long a, long b) {
+	private long gcd(final long a, final long b) {
 		return (a == 0) ? b : gcd(b % a, a);
 	}
 }

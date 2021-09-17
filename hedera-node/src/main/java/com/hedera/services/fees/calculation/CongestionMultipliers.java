@@ -29,9 +29,9 @@ public class CongestionMultipliers {
 	private final int[] usagePercentTriggers;
 	private final long[] multipliers;
 
-	public static CongestionMultipliers from(String csv) {
-		List<Integer> triggers = new ArrayList<>();
-		List<Long> multipliers = new ArrayList<>();
+	public static CongestionMultipliers from(final String csv) {
+		final List<Integer> triggers = new ArrayList<>();
+		final List<Long> multipliers = new ArrayList<>();
 
 		var sb = new StringBuilder();
 		boolean nextTokenIsTrigger = true;
@@ -61,10 +61,10 @@ public class CongestionMultipliers {
 	}
 
 	private static void append(
-			List<Integer> triggers,
-			List<Long> multipliers,
-			String token,
-			boolean nextTokenIsTrigger
+			final List<Integer> triggers,
+			final List<Long> multipliers,
+			final String token,
+			final boolean nextTokenIsTrigger
 	) {
 		if (nextTokenIsTrigger) {
 			triggers.add(triggerFrom(token));
@@ -73,7 +73,7 @@ public class CongestionMultipliers {
 		}
 	}
 
-	private static <T extends Comparable<T>> void assertIncreasing(List<T> vals, String desc) {
+	private static <T extends Comparable<T>> void assertIncreasing(final List<T> vals, final String desc) {
 		for (int i = 0, n = vals.size() - 1; i < n; i++) {
 			T a = vals.get(i);
 			T b = vals.get(i + 1);
@@ -83,8 +83,8 @@ public class CongestionMultipliers {
 		}
 	}
 
-	private static Long multiplierFrom(String s) {
-		var multiplier = s.endsWith("x") ?
+	private static Long multiplierFrom(final String s) {
+		final var multiplier = s.endsWith("x") ?
 				Long.valueOf(sansDecimals(s.substring(0, s.length() - 1))) :
 				Long.valueOf(sansDecimals(s));
 		if (multiplier <= 0) {
@@ -93,15 +93,15 @@ public class CongestionMultipliers {
 		return multiplier;
 	}
 
-	private static Integer triggerFrom(String s) {
-		var trigger = Integer.valueOf(sansDecimals(s));
+	private static Integer triggerFrom(final String s) {
+		final var trigger = Integer.valueOf(sansDecimals(s));
 		if (trigger <= 0 || trigger > 100) {
 			throw new IllegalArgumentException("Cannot use trigger value " + trigger + "!");
 		}
 		return trigger;
 	}
 
-	private static String sansDecimals(String s) {
+	private static String sansDecimals(final String s) {
 		int i;
 		if ((i = s.indexOf(".")) == -1) {
 			return s;
@@ -110,7 +110,7 @@ public class CongestionMultipliers {
 		}
 	}
 
-	private CongestionMultipliers(int[] usagePercentTriggers, long[] multipliers) {
+	private CongestionMultipliers(final int[] usagePercentTriggers, final long[] multipliers) {
 		this.usagePercentTriggers = usagePercentTriggers;
 		this.multipliers = multipliers;
 	}
@@ -129,21 +129,21 @@ public class CongestionMultipliers {
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(final Object o) {
 		if (o == this) {
 			return true;
 		}
 		if (o == null || !o.getClass().equals(CongestionMultipliers.class)) {
 			return false;
 		}
-		CongestionMultipliers that = (CongestionMultipliers) o;
+		final var that = (CongestionMultipliers) o;
 		return Arrays.equals(this.multipliers, that.multipliers) &&
 				Arrays.equals(this.usagePercentTriggers, that.usagePercentTriggers);
 	}
 
 	@Override
 	public String toString() {
-		var sb = new StringBuilder("CongestionMultipliers{");
+		final var sb = new StringBuilder("CongestionMultipliers{");
 		for (int i = 0; i < multipliers.length; i++) {
 			sb.append(multipliers[i]).append("x @ >=").append(usagePercentTriggers[i]).append("%")
 					.append((i == multipliers.length - 1) ? "" : ", ");
