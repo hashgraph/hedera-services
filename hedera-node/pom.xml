@@ -25,7 +25,7 @@
     <git-commit-id.version>4.9.10</git-commit-id.version>
     <ant-contrib.version>1.0b3</ant-contrib.version>
     <ant-nodeps.version>1.8.1</ant-nodeps.version>
-    <jackson.version>2.12.5</jackson.version>
+    <jackson.version>2.11.2</jackson.version>
   </properties>
 
   <build>

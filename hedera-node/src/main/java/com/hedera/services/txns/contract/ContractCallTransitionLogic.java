@@ -41,7 +41,6 @@ import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class ContractCallTransitionLogic implements TransitionLogic {
@@ -120,9 +119,6 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 	private ResponseCodeEnum validateSemantics(final TransactionBody transactionBody) {
 		var op = transactionBody.getContractCall();
 
-		if (op.getGas() > properties.maxGas()) {
-			return MAX_GAS_LIMIT_EXCEEDED;
-		}
 		if (op.getGas() < 0) {
 			return CONTRACT_NEGATIVE_GAS;
 		}

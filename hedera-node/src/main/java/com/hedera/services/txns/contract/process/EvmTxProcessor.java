@@ -62,6 +62,8 @@ import java.util.List;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 
+// TODO refactor it to be `EvmTransaction` model, have a builder and a single `execute` method
+// We need/can remove the Besu Transaction model as-well
 abstract class EvmTxProcessor {
 
 	private static final int MAX_STACK_SIZE = 1024;
