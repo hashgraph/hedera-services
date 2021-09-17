@@ -29,7 +29,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.util.List;
@@ -37,6 +36,7 @@ import java.util.List;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ThrottleBucketTest {
 	@Test
@@ -62,89 +62,48 @@ class ThrottleBucketTest {
 	}
 
 	@ParameterizedTest
-	@CsvSource({"2, bootstrap/insufficient-capacity-throttles.json", "24, bootstrap/overdone-throttles.json"})
-	void failsWhenConstructingThrottlesThatNeverPermitAnOperationAtNodeLevel(final int n, final String string)
-			throws IOException {
-		final var defs = TestUtils.pojoDefs(string);
-		final var subject = defs.getBuckets().get(0);
+	@CsvSource({
+			"2, bootstrap/insufficient-capacity-throttles.json",
+			"24, bootstrap/overdone-throttles.json",
+			"1, bootstrap/undersupplied-throttles.json",
+			"1, bootstrap/never-true-throttles.json",
+			"1, bootstrap/overflow-throttles.json",
+			"1, bootstrap/repeated-op-throttles.json"
+	})
+	void failsWhenConstructingThrottlesThatNeverPermitAnOperationAtNodeLevel(
+			final int networkSize,
+			final String path
+	) throws IOException {
+		final var subject = bucketFrom(path);
 
-		Assertions.assertThrows(IllegalStateException.class, () -> subject.asThrottleMapping(n));
+		assertThrows(IllegalStateException.class, () -> subject.asThrottleMapping(networkSize));
 	}
 
 	@Test
 	void failsWhenConstructingThrottlesWithZeroGroups() {
-		Assertions.assertThrows(IllegalStateException.class, () -> new ThrottleBucket().asThrottleMapping(1));
+		assertThrows(IllegalStateException.class, () -> new ThrottleBucket().asThrottleMapping(1));
 	}
 
-	@Test
-	void failsWhenConstructingThrottlesWithZeroOpsPerSecForAGroup() throws IOException {
-		final var n = 1;
-		final var defs = TestUtils.pojoDefs("bootstrap/undersupplied-throttles.json");
-		final var subject = defs.getBuckets().get(0);
-
-		Assertions.assertThrows(IllegalStateException.class, () -> subject.asThrottleMapping(n));
-	}
-
-	@Test
-	void constructsExpectedABucketMappingForGlobalThrottle() throws IOException {
-		final var defs = TestUtils.pojoDefs("bootstrap/throttles.json");
-		final var subject = defs.getBuckets().get(0);
+	@ParameterizedTest
+	@CsvSource({
+			"1, bootstrap/throttles.json",
+			"1, bootstrap/throttles-repeating.json",
+			"24, bootstrap/throttles.json"
+	})
+	void constructsExpectedBucketMapping(final int networkSize, final String path) throws IOException {
+		final var subject = bucketFrom(path);
 
 		/* Bucket A includes groups with opsPerSec of 12, 3000, and 10_000 so the
 		logical operations are, respectively, 30_000 / 12 = 2500, 30_000 / 3_000 = 10,
 		and 30_000 / 10_000 = 3. */
-		final var expectedThrottle = DeterministicThrottle.withTpsAndBurstPeriod(30_000, 2);
+		final var expectedThrottle = DeterministicThrottle.withTpsAndBurstPeriod(30_000 / networkSize, 2);
 		final var expectedReqs = List.of(
 				Pair.of(HederaFunctionality.CryptoTransfer, 3),
 				Pair.of(HederaFunctionality.CryptoCreate, 3),
 				Pair.of(ContractCall, 2500),
 				Pair.of(HederaFunctionality.TokenMint, 10));
 
-		final var mapping = subject.asThrottleMapping(1);
-		final var actualThrottle = mapping.getLeft();
-		final var actualReqs = mapping.getRight();
-
-		assertEquals(expectedThrottle, actualThrottle);
-		assertEquals(expectedReqs, actualReqs);
-	}
-
-	@Test
-	void constructsExpectedABucketMappingEvenWithRepetitions() throws IOException {
-		final var defs = TestUtils.pojoDefs("bootstrap/throttles-repeating.json");
-		final var subject = defs.getBuckets().get(0);
-
-		/* Bucket A includes groups with opsPerSec of 12, 3000, and 10_000 so the
-		logical operations are, respectively, 30_000 / 12 = 2500, 30_000 / 3_000 = 10,
-		and 30_000 / 10_000 = 3. */
-		final var expectedThrottle = DeterministicThrottle.withTpsAndBurstPeriod(30_000, 2);
-		final var expectedReqs = List.of(
-				Pair.of(HederaFunctionality.CryptoTransfer, 3),
-				Pair.of(HederaFunctionality.CryptoCreate, 3),
-				Pair.of(ContractCall, 2500),
-				Pair.of(HederaFunctionality.TokenMint, 10));
-
-		final var mapping = subject.asThrottleMapping(1);
-		final var actualThrottle = mapping.getLeft();
-		final var actualReqs = mapping.getRight();
-
-		assertEquals(expectedThrottle, actualThrottle);
-		assertEquals(expectedReqs, actualReqs);
-	}
-
-	@Test
-	void constructsExpectedABucketMappingForNetworkWith24Nodes() throws IOException {
-		final var n = 24;
-		final var defs = TestUtils.pojoDefs("bootstrap/throttles.json");
-
-		final var subject = defs.getBuckets().get(0);
-		final var expectedThrottle = DeterministicThrottle.withMtpsAndBurstPeriod((30_000 * 1_000) / n, 2);
-		final var expectedReqs = List.of(
-				Pair.of(HederaFunctionality.CryptoTransfer, 3),
-				Pair.of(HederaFunctionality.CryptoCreate, 3),
-				Pair.of(ContractCall, 2500),
-				Pair.of(HederaFunctionality.TokenMint, 10));
-
-		final var mapping = subject.asThrottleMapping(n);
+		final var mapping = subject.asThrottleMapping(networkSize);
 		final var actualThrottle = mapping.getLeft();
 		final var actualReqs = mapping.getRight();
 
@@ -154,9 +113,7 @@ class ThrottleBucketTest {
 
 	@Test
 	void constructedThrottleWorksAsExpected() throws InterruptedException, IOException {
-		final var defs = TestUtils.pojoDefs("bootstrap/throttles.json");
-
-		final var subject = defs.getBuckets().get(0);
+		final var subject = bucketFrom("bootstrap/throttles.json");
 		final var n = 14;
 		final var expectedXferTps = (1.0 * subject.getThrottleGroups().get(0).getOpsPerSec()) / n;
 		final var mapping = subject.asThrottleMapping(n);
@@ -172,26 +129,21 @@ class ThrottleBucketTest {
 		helper.assertTolerableTps(expectedXferTps, 1.00, opsForXfer);
 	}
 
-	private int opsForFunction(final List<Pair<HederaFunctionality, Integer>> source,
-							   final HederaFunctionality function) {
-		for (var pair : source) {
+	private static final ThrottleBucket bucketFrom(final String path) throws IOException {
+		final var defs = TestUtils.pojoDefs(path);
+		return defs.getBuckets().get(0);
+	}
+
+	private static final int opsForFunction(
+			final List<Pair<HederaFunctionality, Integer>> source,
+			final HederaFunctionality function
+	) {
+		for (final var pair : source) {
 			if (pair.getLeft() == function) {
 				return pair.getRight();
 			}
 		}
 		Assertions.fail("Function " + function + " was missing!");
 		return 0;
-	}
-
-	@ParameterizedTest
-	@ValueSource(strings = {"bootstrap/never-true-throttles.json",
-			"bootstrap/overflow-throttles.json",
-			"bootstrap/repeated-op-throttles.json"})
-	void throwOnBucketWithSmallCapacityOrOverflowingLogicalOpsOrRepeatedOp(final String string) throws IOException {
-		final var defs = TestUtils.pojoDefs(string);
-
-		final var subject = defs.getBuckets().get(0);
-
-		Assertions.assertThrows(IllegalStateException.class, () -> subject.asThrottleMapping(1));
 	}
 }

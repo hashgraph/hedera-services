@@ -39,7 +39,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.THROTTLE_GROUP
 import static java.util.Collections.disjoint;
 import static java.util.stream.Collectors.toList;
 
-public class ThrottleBucket {
+public final class ThrottleBucket {
 	private int burstPeriod;
 	private long burstPeriodMs;
 	private String name;
@@ -51,7 +51,7 @@ public class ThrottleBucket {
 		return burstPeriodMs;
 	}
 
-	public void setBurstPeriodMs(long burstPeriodMs) {
+	public void setBurstPeriodMs(final long burstPeriodMs) {
 		this.burstPeriodMs = burstPeriodMs;
 	}
 
@@ -59,7 +59,7 @@ public class ThrottleBucket {
 		return burstPeriod;
 	}
 
-	public void setBurstPeriod(int burstPeriod) {
+	public void setBurstPeriod(final int burstPeriod) {
 		this.burstPeriod = burstPeriod;
 	}
 
@@ -67,16 +67,12 @@ public class ThrottleBucket {
 		return name;
 	}
 
-	public void setName(String name) {
+	public void setName(final String name) {
 		this.name = name;
 	}
 
 	public List<ThrottleGroup> getThrottleGroups() {
 		return throttleGroups;
-	}
-
-	public void setThrottleGroups(List<ThrottleGroup> throttleGroups) {
-		this.throttleGroups = throttleGroups;
 	}
 
 	public static ThrottleBucket fromProto(final com.hederahashgraph.api.proto.java.ThrottleBucket bucket) {
@@ -100,25 +96,27 @@ public class ThrottleBucket {
 	}
 
 	private long impliedBurstPeriodMs() {
-		return burstPeriodMs > 0 ? burstPeriodMs : 1_000 * burstPeriod;
+		return burstPeriodMs > 0 ? burstPeriodMs : 1_000L * burstPeriod;
 	}
 
 	/**
-	 * Returns a deterministic throttle scoped to 1/nth of the nominal milliOpsPerSec
+	 * Returns a deterministic throttle scoped to (1/networkSize) of the nominal milliOpsPerSec
 	 * in each throttle group; and a list that maps each relevant {@code HederaFunctionality}
 	 * to the number of logical operations it requires from the throttle.
 	 *
-	 * @param n network size
-	 *
-	 * @return a throttle with 1/n-th the capacity of this bucket, and a list of how many logical
-	 * operations each assigned function will use from the throttle
-	 *
-	 * @throws IllegalStateException if this bucket was constructed with invalid throttle groups
+	 * @param networkSize
+	 * 		network size
+	 * @return a throttle with (1/networkSize) the capacity of this bucket, and a list of how many logical
+	 * 		operations each assigned function will use from the throttle
+	 * @throws IllegalStateException
+	 * 		if this bucket was constructed with invalid throttle groups
 	 */
-	public Pair<DeterministicThrottle, List<Pair<HederaFunctionality, Integer>>> asThrottleMapping(final int n) {
+	public Pair<DeterministicThrottle, List<Pair<HederaFunctionality, Integer>>> asThrottleMapping(
+			final int networkSize
+	) {
 		if (throttleGroups.isEmpty()) {
 			throw new IllegalStateException(exceptionMsgFor(
-							BUCKET_HAS_NO_THROTTLE_GROUPS,
+					BUCKET_HAS_NO_THROTTLE_GROUPS,
 					BUCKET_PREFIX + name + " includes no throttle groups!"));
 		}
 
@@ -131,17 +129,19 @@ public class ThrottleBucket {
 					BUCKET_PREFIX + name + " overflows with given throttle groups!"));
 		}
 
-		return mappingWith(logicalMtps, n);
+		return mappingWith(logicalMtps, networkSize);
 	}
 
 	private Pair<DeterministicThrottle, List<Pair<HederaFunctionality, Integer>>> mappingWith(
-			final long mtps, final int n) {
+			final long mtps,
+			final int n
+	) {
 		final var throttle = throttleFor(mtps, n);
 		final var totalCapacityUnits = throttle.capacity();
 
 		final Set<HederaFunctionality> seenSoFar = new HashSet<>();
 		final List<Pair<HederaFunctionality, Integer>> opsReqs = new ArrayList<>();
-		for (var throttleGroup : throttleGroups) {
+		for (final var throttleGroup : throttleGroups) {
 			updateOpsReqs(n, mtps, totalCapacityUnits, throttleGroup, seenSoFar, opsReqs);
 		}
 
@@ -156,7 +156,7 @@ public class ThrottleBucket {
 			final Set<HederaFunctionality> seenSoFar,
 			final List<Pair<HederaFunctionality, Integer>> opsReqs
 	) {
-		final var opsReq = (int)(mtps / group.impliedMilliOpsPerSec());
+		final var opsReq = (int) (mtps / group.impliedMilliOpsPerSec());
 		final var capacityReq = capacityRequiredFor(opsReq);
 		if (capacityReq < 0 || capacityReq > totalCapacity) {
 			throw new IllegalStateException(exceptionMsgFor(
@@ -166,13 +166,12 @@ public class ThrottleBucket {
 
 		final var functions = group.getOperations();
 		if (disjoint(seenSoFar, functions)) {
-			Set<HederaFunctionality> listedSoFar = new HashSet<>();
-			for (var function : functions) {
-				if (listedSoFar.contains(function)) {
-					continue;
+			final Set<HederaFunctionality> listedSoFar = new HashSet<>();
+			for (final var function : functions) {
+				if (!listedSoFar.contains(function)) {
+					opsReqs.add(Pair.of(function, opsReq));
+					listedSoFar.add(function);
 				}
-				opsReqs.add(Pair.of(function, opsReq));
-				listedSoFar.add(function);
 			}
 			seenSoFar.addAll(functions);
 		} else {
@@ -185,7 +184,7 @@ public class ThrottleBucket {
 	private DeterministicThrottle throttleFor(final long mtps, final int n) {
 		try {
 			return DeterministicThrottle.withMtpsAndBurstPeriodMsNamed(mtps / n, impliedBurstPeriodMs(), name);
-		} catch (IllegalArgumentException unsatisfiable) {
+		} catch (final IllegalArgumentException unsatisfiable) {
 			if (unsatisfiable.getMessage().startsWith("Cannot free")) {
 				throw new IllegalStateException(exceptionMsgFor(
 						BUCKET_CAPACITY_OVERFLOW,
@@ -199,7 +198,7 @@ public class ThrottleBucket {
 	}
 
 	private void assertMinimalOpsPerSec() {
-		for (var group : throttleGroups) {
+		for (final var group : throttleGroups) {
 			if (group.impliedMilliOpsPerSec() == 0) {
 				throw new IllegalStateException(exceptionMsgFor(
 						THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC,
