@@ -11,7 +11,7 @@ package com.hedera.services.txns.contract;
  * You may obtain a copy of the License at
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -97,7 +97,7 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 				op.getFunctionParameters(),
 				txnCtx.consensusTime());
 		/* In case the EVM runs into RE */
-		validateFalse(result.isInvalid(), FAIL_INVALID, result.getValidationResult().getErrorMessage());
+		validateFalse(result.isInvalid(), FAIL_INVALID, result.getInvalidReason());
 
 		/* --- Persist changes into state --- */
 		worldState.persist();

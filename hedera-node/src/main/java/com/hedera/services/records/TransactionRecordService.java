@@ -26,12 +26,12 @@ import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
+import com.hedera.services.txns.contract.process.TransactionProcessingResult;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import org.hyperledger.besu.ethereum.processing.TransactionProcessingResult;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;

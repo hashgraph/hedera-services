@@ -33,13 +33,9 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.fee.FeeBuilder;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.ethereum.core.Transaction;
-import org.hyperledger.besu.ethereum.mainnet.MainnetProtocolSpecs;
-import org.hyperledger.besu.ethereum.mainnet.ValidationResult;
-import org.hyperledger.besu.ethereum.processing.TransactionProcessingResult;
-import org.hyperledger.besu.ethereum.transaction.TransactionInvalidReason;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.MainnetEVMs;
 import org.hyperledger.besu.evm.account.MutableAccount;
@@ -59,6 +55,7 @@ import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
+import java.util.Optional;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 
@@ -97,50 +94,55 @@ abstract class EvmTxProcessor {
 				gasCalculator,
 				evm,
 				true,
-				List.of(MaxCodeSizeRule.of(MainnetProtocolSpecs.SPURIOUS_DRAGON_CONTRACT_SIZE_LIMIT), PrefixCodeRule.of()),
+				List.of(MaxCodeSizeRule.of(0x6000), //FIXME magic constant
+						PrefixCodeRule.of()),
 				1);
 	}
 
 	// TODO we can remove the Transaction object
-	protected TransactionProcessingResult execute (Account sender, final Transaction transaction, Instant consensusTime) {
+	protected TransactionProcessingResult execute(Account sender, Optional<Account> receiver, long gasPrice,
+			long gasLimit, long value, Bytes payload, boolean contractCreation, Instant consensusTime) {
 		try {
-			//noinspection OptionalGetWithoutIsPresent
-			final var gasPrice = transaction.getGasPrice().get();
-			final Wei upfrontCost = Wei.of(transaction.getGasLimit()).multiply(gasPrice).add(transaction.getValue());
+			final Wei upfrontCost = Wei.of(Math.addExact(Math.multiplyExact(gasLimit, gasPrice), value));
 			final Gas intrinsicGas =
-					gasCalculator.transactionIntrinsicGasCost(transaction.getPayload(), transaction.isContractCreation());
+					gasCalculator.transactionIntrinsicGasCost(payload, contractCreation);
 
 			validateFalse(upfrontCost.compareTo(Wei.of(sender.getBalance())) > 0,
 					ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
-			validateFalse(intrinsicGas.compareTo(Gas.of(transaction.getGasLimit())) > 0,
+			validateFalse(intrinsicGas.toLong() < gasLimit,
 					ResponseCodeEnum.INSUFFICIENT_GAS);
 
 			final Address coinbase = Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress();
-			final HederaBlockHeader blockHeader = new HederaBlockHeader(coinbase, transaction.getGasLimit(), consensusTime.getEpochSecond());
-			final MutableAccount mutableSender = updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()).getMutable();
+			final HederaBlockHeader blockHeader = new HederaBlockHeader(coinbase, gasLimit,
+					consensusTime.getEpochSecond());
+			Address senderEvmAddress = sender.getId().asEvmAddress();
+			final MutableAccount mutableSender = updater.getOrCreateSenderAccount(senderEvmAddress).getMutable();
 			mutableSender.decrementBalance(upfrontCost);
 
-			final Gas gasAvailable = Gas.of(transaction.getGasLimit()).minus(intrinsicGas);
+			final Gas gasAvailable = Gas.of(gasLimit).minus(intrinsicGas);
 			final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
 
 			final var stackedUpdater = updater.updater();
+			Wei valueAsWei = Wei.of(value);
 			final MessageFrame.Builder commonInitialFrame =
 					MessageFrame.builder()
 							.messageFrameStack(messageFrameStack)
 							.maxStackSize(MAX_STACK_SIZE)
 							.worldUpdater(stackedUpdater)
 							.initialGas(gasAvailable)
-							.originator(transaction.getSender())
-							.gasPrice(gasPrice)
-							.sender(transaction.getSender())
-							.value(transaction.getValue())
-							.apparentValue(transaction.getValue())
+							.originator(senderEvmAddress)
+							.gasPrice(Wei.of(gasPrice))
+							.sender(senderEvmAddress)
+							.value(valueAsWei)
+							.apparentValue(valueAsWei)
 							.blockHeader(blockHeader)
 							.depth(0)
-							.completer(__ -> {})
+							.completer(__ -> {
+							})
 							.miningBeneficiary(coinbase)
 							.blockHashLookup(h -> null);
-			final MessageFrame initialFrame = buildInitialFrame(commonInitialFrame, transaction);
+			final MessageFrame initialFrame = buildInitialFrame(commonInitialFrame,
+					receiver.map(acct -> acct.getId().asEvmAddress()).orElse(Address.ZERO), payload);
 			messageFrameStack.addFirst(initialFrame);
 
 			while (!messageFrameStack.isEmpty()) {
@@ -155,16 +157,16 @@ abstract class EvmTxProcessor {
 			final Gas selfDestructRefund =
 					gasCalculator.getSelfDestructRefundAmount().times(initialFrame.getSelfDestructs().size());
 			final Gas refundGas = initialFrame.getGasRefund().plus(selfDestructRefund);
-			final Gas refunded = refunded(transaction, initialFrame.getRemainingGas(), refundGas);
-			final Wei refundedWei = refunded.priceFor(gasPrice);
+			final Gas refunded = refunded(gasLimit, initialFrame.getRemainingGas(), refundGas);
+			final Wei refundedWei = refunded.priceFor(Wei.of(gasPrice));
 			mutableSender.incrementBalance(refundedWei);
 
 			/* Send TX fees to coinbase */
 			final Gas gasUsedByTransaction =
-					Gas.of(transaction.getGasLimit()).minus(initialFrame.getRemainingGas());
+					Gas.of(gasLimit).minus(initialFrame.getRemainingGas());
 			final var mutableCoinbase = updater.getOrCreate(coinbase).getMutable();
-			final Gas coinbaseFee = Gas.of(transaction.getGasLimit()).minus(refunded);
-			mutableCoinbase.incrementBalance(coinbaseFee.priceFor(gasPrice));
+			final Gas coinbaseFee = Gas.of(gasLimit).minus(refunded);
+			mutableCoinbase.incrementBalance(coinbaseFee.priceFor(Wei.of(gasPrice)));
 
 			initialFrame.getSelfDestructs().forEach(updater::deleteAccount);
 
@@ -176,20 +178,15 @@ abstract class EvmTxProcessor {
 						initialFrame.getLogs(),
 						gasUsedByTransaction.toLong(),
 						refunded.toLong(),
-						initialFrame.getOutputData(),
-						null);
+						initialFrame.getOutputData());
 			} else {
 				return TransactionProcessingResult.failed(
 						gasUsedByTransaction.toLong(),
 						refunded.toLong(),
-						null,
 						initialFrame.getRevertReason());
 			}
 		} catch (RuntimeException re) {
-			return TransactionProcessingResult.invalid(
-					ValidationResult.invalid(
-							TransactionInvalidReason.INTERNAL_ERROR,
-							"Internal Error in Besu - " + re.toString()));
+			return TransactionProcessingResult.invalid("Internal Error in Besu - " + re);
 		}
 	}
 
@@ -204,7 +201,7 @@ abstract class EvmTxProcessor {
 
 	protected abstract HederaFunctionality getFunctionType();
 
-	protected abstract MessageFrame buildInitialFrame(MessageFrame.Builder baseInitialFrame, Transaction transaction);
+	protected abstract MessageFrame buildInitialFrame(MessageFrame.Builder baseInitialFrame, Address to, Bytes payload);
 
 	protected void process(final MessageFrame frame, final OperationTracer operationTracer) {
 		final AbstractMessageProcessor executor = getMessageProcessor(frame.getType());
@@ -223,10 +220,10 @@ abstract class EvmTxProcessor {
 		}
 	}
 
-	private Gas refunded(final Transaction transaction, final Gas gasRemaining, final Gas gasRefund) {
+	private Gas refunded(final long gasLimit, final Gas gasRemaining, final Gas gasRefund) {
 		// Integer truncation takes care of the the floor calculation needed after the divide.
 		final Gas maxRefundAllowance =
-				Gas.of(transaction.getGasLimit())
+				Gas.of(gasLimit)
 						.minus(gasRemaining)
 						.dividedBy(gasCalculator.getMaxRefundQuotient());
 		final Gas refundAllowance = maxRefundAllowance.min(gasRefund);

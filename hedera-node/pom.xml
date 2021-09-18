@@ -293,11 +293,6 @@
       <artifactId>netty-handler</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.hyperledger.besu.internal</groupId>
-      <artifactId>core</artifactId>
-      <version>21.7.4</version>
-    </dependency>
-    <dependency>
       <groupId>org.apache.tuweni</groupId>
       <artifactId>tuweni-units</artifactId>
       <version>2.0.0</version>
@@ -305,22 +300,17 @@
     <dependency>
       <groupId>org.hyperledger.besu</groupId>
       <artifactId>plugin-api</artifactId>
-      <version>21.7.4</version>
+      <version>21.10.0-RC1-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.hyperledger.besu</groupId>
       <artifactId>evm</artifactId>
-      <version>21.7.4</version>
+      <version>21.10.0-RC1-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.hyperledger.besu</groupId>
       <artifactId>besu-datatypes</artifactId>
-      <version>21.7.4</version>
-    </dependency>
-    <dependency>
-      <groupId>org.hyperledger.besu.internal</groupId>
-      <artifactId>crypto</artifactId>
-      <version>21.7.4</version>
+      <version>21.10.0-RC1-SNAPSHOT</version>
     </dependency>
   </dependencies>
 
@@ -339,6 +329,14 @@
       <id>central</id>
       <name>Central Repository</name>
       <url>https://repo.maven.apache.org/maven2</url>
+    </repository>
+    <repository>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>besu</id>
+      <name>Hyperledger Besu</name>
+      <url>https://hyperledger.jfrog.io/artifactory/besu-maven</url>
     </repository>
   </repositories>
   <profiles>

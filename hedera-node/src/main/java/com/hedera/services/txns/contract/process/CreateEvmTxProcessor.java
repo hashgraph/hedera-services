@@ -29,9 +29,6 @@ import com.hedera.services.store.models.Account;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.ethereum.core.Transaction;
-import org.hyperledger.besu.ethereum.processing.TransactionProcessingResult;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
@@ -60,19 +57,10 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 			final Bytes code,
 			final Instant consensusTime) {
 
-		final Wei gasPrice = Wei.of(gasPriceTinyBarsGiven(consensusTime));
-		final long gasLimit = providedGasLimit > dynamicProperties.maxGas() ? dynamicProperties.maxGas() : providedGasLimit;
-		var transaction = new Transaction(
-				0,
-				gasPrice,
-				gasLimit,
-				Optional.empty(),
-				Wei.of(value),
-				null,
-				code,
-				sender.getId().asEvmAddress(),
-				Optional.empty());
-		return super.execute(sender, transaction, consensusTime);
+		final long gasPrice = gasPriceTinyBarsGiven(consensusTime);
+		final long gasLimit = providedGasLimit > dynamicProperties.maxGas() ? dynamicProperties.maxGas() :
+				providedGasLimit;
+		return super.execute(sender, Optional.empty(), gasPrice, gasLimit, value, code, true, consensusTime);
 	}
 
 
@@ -82,13 +70,13 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 	}
 
 	@Override
-	protected MessageFrame buildInitialFrame(MessageFrame.Builder commonInitialFrame, Transaction transaction) {
+	protected MessageFrame buildInitialFrame(MessageFrame.Builder commonInitialFrame, Address to, Bytes payload) {
 		return commonInitialFrame
-						.type(MessageFrame.Type.CONTRACT_CREATION)
-						.address(newContractAddress)
-						.contract(newContractAddress)
-						.inputData(Bytes.EMPTY)
-						.code(new Code(transaction.getPayload()))
-						.build();
+				.type(MessageFrame.Type.CONTRACT_CREATION)
+				.address(newContractAddress)
+				.contract(newContractAddress)
+				.inputData(Bytes.EMPTY)
+				.code(new Code(payload))
+				.build();
 	}
 }

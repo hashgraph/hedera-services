@@ -33,8 +33,6 @@ import com.swirlds.common.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.ethereum.core.Transaction;
-import org.hyperledger.besu.ethereum.processing.TransactionProcessingResult;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
@@ -59,22 +57,12 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 			final ByteString callData,
 			final Instant consensusTime
 	) {
-		final Wei gasPrice = Wei.of(gasPriceTinyBarsGiven(consensusTime));
+		final long gasPrice = gasPriceTinyBarsGiven(consensusTime);
 		final long gasLimit = providedGasLimit > dynamicProperties.maxGas() ? dynamicProperties.maxGas() : providedGasLimit;
 		final Bytes payload = callData != null && !callData.isEmpty()
 				? Bytes.fromHexString(CommonUtils.hex(callData.toByteArray())) : Bytes.EMPTY;
 
-		final var transaction = new Transaction(
-				0,
-				gasPrice,
-				gasLimit,
-				Optional.of(receiver.getId().asEvmAddress()),
-				Wei.of(value),
-				null,
-				payload,
-				sender.getId().asEvmAddress(),
-				Optional.empty());
-		return super.execute(sender, transaction, consensusTime);
+		return super.execute(sender, Optional.of(receiver), gasPrice, gasLimit, value, payload, false, consensusTime);
 	}
 
 	@Override
@@ -83,13 +71,13 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 	}
 
 	@Override
-	protected MessageFrame buildInitialFrame(MessageFrame.Builder baseInitialFrame, Transaction transaction) {
-		final Address to = transaction.getTo().get();
+	protected MessageFrame buildInitialFrame(MessageFrame.Builder baseInitialFrame, Address to, Bytes payload) {
+
 		return baseInitialFrame
 						.type(MessageFrame.Type.MESSAGE_CALL)
 						.address(to)
 						.contract(to)
-						.inputData(transaction.getPayload())
+						.inputData(payload)
 						.code(new Code(updater.get(to).getCode()))
 						.build();
 	}

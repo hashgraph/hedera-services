@@ -130,7 +130,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 				txnCtx.consensusTime()
 		);
 		/* In case the EVM runs into RE */
-		validateFalse(result.isInvalid(), FAIL_INVALID, result.getValidationResult() == null ? "" : result.getValidationResult().getErrorMessage());
+		validateFalse(result.isInvalid(), FAIL_INVALID, result.getInvalidReason());
 
 		if (result.isSuccessful()) {
 			worldState.addPropertiesFor(newContractId.asEvmAddress(), op.getMemo(), key, proxyAccount);
