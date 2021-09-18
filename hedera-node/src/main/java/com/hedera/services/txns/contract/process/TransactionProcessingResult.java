@@ -103,7 +103,7 @@ public class TransactionProcessingResult {
 		this.gasRemaining = gasRemaining;
 		this.output = output;
 		this.revertReason = revertReason;
-		this.invalidReason = invalidReason;
+		this.invalidReason = invalidReason == null ? "" : invalidReason;
 	}
 
 	/**

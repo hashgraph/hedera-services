@@ -185,14 +185,14 @@ class LedgerAccountsSourceTest {
 
 		// when:
 //		subject.put(key, evmState);
-//
-//		// then:
-//		inOrder.verify(ledger).adjustBalance(target, newBalance - oldBalance);
-//		inOrder.verify(ledger).customize(argThat(target::equals), captor.capture());
-//		// and:
-//		captor.getValue().customize(target, txnLedger);
-//		verify(txnLedger).set(target, IS_DELETED, newDeleted);
-//		verify(txnLedger).set(target, EXPIRY, newExpiry);
+
+		// then:
+		inOrder.verify(ledger).adjustBalance(target, newBalance - oldBalance);
+		inOrder.verify(ledger).customize(argThat(target::equals), captor.capture());
+		// and:
+		captor.getValue().customize(target, txnLedger);
+		verify(txnLedger).set(target, IS_DELETED, newDeleted);
+		verify(txnLedger).set(target, EXPIRY, newExpiry);
 	}
 
 	@Test
@@ -220,18 +220,18 @@ class LedgerAccountsSourceTest {
 //		subject.put(key, evmState);
 
 		// then:
-//		verify(ledger).spawn(argThat(target::equals), longThat(l -> l == newBalance), captor.capture());
+		verify(ledger).spawn(argThat(target::equals), longThat(l -> l == newBalance), captor.capture());
 		// and:
-//		captor.getValue().customize(target, txnLedger);
-//		verify(txnLedger).set(target, EXPIRY, expiry);
-//		verify(txnLedger).set(
-//				argThat(target::equals),
-//				argThat(KEY::equals),
-//				argThat(k -> expectedKey.toString().equals(k.toString())));
-//		verify(txnLedger).set(target, IS_SMART_CONTRACT, true);
-//		verify(txnLedger).set(target, AUTO_RENEW_PERIOD, autoRenew);
-//		verify(txnLedger).set(target, PROXY, EntityId.fromGrpcAccountId(proxy));
-//		verify(txnLedger).set(target, MEMO, "");
+		captor.getValue().customize(target, txnLedger);
+		verify(txnLedger).set(target, EXPIRY, expiry);
+		verify(txnLedger).set(
+				argThat(target::equals),
+				argThat(KEY::equals),
+				argThat(k -> expectedKey.toString().equals(k.toString())));
+		verify(txnLedger).set(target, IS_SMART_CONTRACT, true);
+		verify(txnLedger).set(target, AUTO_RENEW_PERIOD, autoRenew);
+		verify(txnLedger).set(target, PROXY, EntityId.fromGrpcAccountId(proxy));
+		verify(txnLedger).set(target, MEMO, "");
 	}
 
 	@Test
@@ -261,17 +261,17 @@ class LedgerAccountsSourceTest {
 //		subject.put(key, evmState);
 
 		// then:
-//		verify(ledger).spawn(argThat(target::equals), longThat(l -> l == newBalance), captor.capture());
+		verify(ledger).spawn(argThat(target::equals), longThat(l -> l == newBalance), captor.capture());
 		// and:
-//		captor.getValue().customize(target, txnLedger);
-//		verify(txnLedger).set(target, EXPIRY, expiry);
-//		verify(txnLedger).set(
-//				argThat(target::equals),
-//				argThat(KEY::equals),
-//				argThat(k -> expectedKey.toString().equals(k.toString())));
-//		verify(txnLedger).set(target, IS_SMART_CONTRACT, true);
-//		verify(txnLedger).set(target, AUTO_RENEW_PERIOD, autoRenew);
-//		verify(txnLedger).set(target, PROXY, EntityId.fromGrpcAccountId(proxy));
-//		verify(txnLedger).set(target, MEMO, "");
+		captor.getValue().customize(target, txnLedger);
+		verify(txnLedger).set(target, EXPIRY, expiry);
+		verify(txnLedger).set(
+				argThat(target::equals),
+				argThat(KEY::equals),
+				argThat(k -> expectedKey.toString().equals(k.toString())));
+		verify(txnLedger).set(target, IS_SMART_CONTRACT, true);
+		verify(txnLedger).set(target, AUTO_RENEW_PERIOD, autoRenew);
+		verify(txnLedger).set(target, PROXY, EntityId.fromGrpcAccountId(proxy));
+		verify(txnLedger).set(target, MEMO, "");
 	}
 }
