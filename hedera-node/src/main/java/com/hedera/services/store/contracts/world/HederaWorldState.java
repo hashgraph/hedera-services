@@ -102,7 +102,8 @@ public class HederaWorldState implements HederaMutableWorldState {
 				account.setBalance(worldStateAccount.balance.toLong());
 				accountStore.persistAccount(account);
 			} else {
-				com.hedera.services.store.models.Account toPersist = new com.hedera.services.store.models.Account(accountId);
+				com.hedera.services.store.models.Account toPersist = new com.hedera.services.store.models.Account(
+						accountId);
 				toPersist.setMemo(worldStateAccount.getMemo());
 				toPersist.setKey(worldStateAccount.getKey());
 				toPersist.setProxy(worldStateAccount.getProxyAccount());
@@ -174,11 +175,15 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 	public void addPropertiesFor(Address address, String memo, JKey key, Id proxyAccount) {
 		WorldStateAccount account = this.provisionalAccountUpdates.get(address);
-		account.setMemo(memo);
-		account.setKey(key);
-		account.setProxyAccount(proxyAccount);
+		if (account != null) {
+			account.setMemo(memo);
+			account.setKey(key);
+			account.setProxyAccount(proxyAccount);
 
-		this.provisionalAccountUpdates.put(address, account);
+			this.provisionalAccountUpdates.put(address, account);
+		} else {
+			//FIXME
+		}
 	}
 
 	public class WorldStateAccount implements Account {
@@ -309,10 +314,13 @@ public class HederaWorldState implements HederaMutableWorldState {
 	 * The method will:
 	 * - call the `HederaWorldView` to reclaim an ID from {@link com.hedera.services.ledger.ids.SeqNoEntityIdSource}
 	 * - decrement the counter for `newContractAddressesAllocated`
-	 * - StackedUpdater in HederaAbstractWorldUpdater must extend `HederaAbstractWorldUpdater` instead of {@link AbstractWorldUpdater}
-	 * - HederaAbstractWorldUpdater on { UpdateTrackingAccount.reset} must clear the number of times `allocateNewContractAddress` was called
+	 * - StackedUpdater in HederaAbstractWorldUpdater must extend `HederaAbstractWorldUpdater` instead of {@link
+	 * AbstractWorldUpdater}
+	 * - HederaAbstractWorldUpdater on { UpdateTrackingAccount.reset} must clear the number of times
+	 * `allocateNewContractAddress` was called
 	 * - HederaAbstractWorldUpdater on { UpdateTrackingAccount.revert} must call the
-	 * `HederaWorldView` and execute { com.hedera.services.ledger.ids.SeqNoEntityIdSource.reclaim} `newContractAddressesAllocated` times
+	 * `HederaWorldView` and execute { com.hedera.services.ledger.ids.SeqNoEntityIdSource.reclaim}
+	 * `newContractAddressesAllocated` times
 	 */
 	public static class Updater extends AbstractWorldUpdater<HederaWorldState, WorldStateAccount> {
 
@@ -364,7 +372,8 @@ public class HederaWorldState implements HederaMutableWorldState {
 				if (!updatedStorage.isEmpty()) {
 					// Apply any storage updates
 					final ContractDetails storageTrie =
-							freshState ? wrapped.repositoryRoot.getContractDetails(origin.getAddress().toArray()) : origin.storageTrie();
+							freshState ? wrapped.repositoryRoot.getContractDetails(
+									origin.getAddress().toArray()) : origin.storageTrie();
 					final TreeSet<Map.Entry<UInt256, UInt256>> entries =
 							new TreeSet<>(Comparator.comparing(Map.Entry::getKey));
 					entries.addAll(updatedStorage.entrySet());
@@ -381,7 +390,12 @@ public class HederaWorldState implements HederaMutableWorldState {
 					wrapped.provisionalStorageUpdates.put(updated.getAddress(), storageTrie);
 				}
 
-				wrapped.provisionalAccountUpdates.put(updated.getAddress(), updated.getWrappedAccount());
+				if (updated.getWrappedAccount() != null) {
+					wrapped.provisionalAccountUpdates.put(updated.getAddress(), updated.getWrappedAccount());
+				} else {
+					wrapped.provisionalAccountUpdates.put(updated.getAddress(),
+							wrapped.new WorldStateAccount(updated.getAddress(), updated.getBalance()));
+				}
 			}
 		}
 	}

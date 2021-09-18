@@ -347,12 +347,12 @@ public class SmartContractRequestHandler {
 				false,
 				sigsVerifier,
 				dynamicProperties);
-//		var result = lifecycle.run(executor, repository);
-//
-//		var receiptBuilder = RequestBuilder.getTransactionReceipt(
-//				result.getValue(),
-//				exchange.activeRates()
-//		).toBuilder();
+		var result = lifecycle.run(executor, repository);
+
+		var receiptBuilder = RequestBuilder.getTransactionReceipt(
+				result.getValue(),
+				exchange.activeRates()
+		).toBuilder();
 		var recordBuilder = RequestBuilder.getTransactionRecord(
 				txn.getTransactionFee(),
 				txn.getMemo(),
@@ -360,15 +360,15 @@ public class SmartContractRequestHandler {
 				RequestBuilder.getTimestamp(consensusTime),
 				com.hederahashgraph.api.proto.java.TransactionReceipt.getDefaultInstance());
 		if (isCreate) {
-//			if (result.getValue() == SUCCESS) {
-//				receiptBuilder.setContractID(result.getKey().getContractID());
-//			}
-//			recordBuilder.setContractCreateResult(result.getKey());
+			if (result.getValue() == SUCCESS) {
+				receiptBuilder.setContractID(result.getKey().getContractID());
+			}
+			recordBuilder.setContractCreateResult(result.getKey());
 		} else {
-//			recordBuilder.setContractCallResult(result.getKey());
-//			receiptBuilder.setContractID(txn.getContractCall().getContractID());
+			recordBuilder.setContractCallResult(result.getKey());
+			receiptBuilder.setContractID(txn.getContractCall().getContractID());
 		}
-//		recordBuilder.setReceipt(receiptBuilder);
+		recordBuilder.setReceipt(receiptBuilder);
 
 		return recordBuilder.build();
 	}
