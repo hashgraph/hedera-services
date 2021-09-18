@@ -36,14 +36,16 @@ import com.hederahashgraph.fee.FeeBuilder;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.Gas;
-import org.hyperledger.besu.evm.MainnetEVMs;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.contractvalidation.MaxCodeSizeRule;
 import org.hyperledger.besu.evm.contractvalidation.PrefixCodeRule;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
+import org.hyperledger.besu.evm.operation.InvalidOperation;
+import org.hyperledger.besu.evm.operation.OperationRegistry;
 import org.hyperledger.besu.evm.precompile.MainnetPrecompiledContracts;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.processor.AbstractMessageProcessor;
@@ -51,6 +53,7 @@ import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -58,6 +61,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
+import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 
 // TODO refactor it to be `EvmTransaction` model, have a builder and a single `execute` method
 // We need/can remove the Besu Transaction model as-well
@@ -85,7 +89,15 @@ abstract class EvmTxProcessor {
 		this.dynamicProperties = dynamicProperties;
 		this.gasCalculator = new LondonGasCalculator();
 
-		final var evm = MainnetEVMs.london();
+		var chainId = BigInteger.valueOf(0x0130);
+		var gasCalculator = new LondonGasCalculator();
+		var operationRegistry = new OperationRegistry();
+		registerLondonOperations(operationRegistry, gasCalculator, chainId);
+		// TODO add HederaCreateOperation
+		// make CREATE2 invalid
+		operationRegistry.put(new InvalidOperation(0xF5, gasCalculator));
+		var evm = new EVM(operationRegistry, gasCalculator);
+
 		final PrecompileContractRegistry precompileContractRegistry = new PrecompileContractRegistry();
 		MainnetPrecompiledContracts.populateForIstanbul(precompileContractRegistry, this.gasCalculator);
 
@@ -93,7 +105,7 @@ abstract class EvmTxProcessor {
 		this.contractCreationProcessor = new ContractCreationProcessor(
 				gasCalculator,
 				evm,
-				true,
+				false, //true,
 				List.of(MaxCodeSizeRule.of(0x6000), //FIXME magic constant
 						PrefixCodeRule.of()),
 				1);
@@ -109,7 +121,7 @@ abstract class EvmTxProcessor {
 
 			validateFalse(upfrontCost.compareTo(Wei.of(sender.getBalance())) > 0,
 					ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
-			validateFalse(intrinsicGas.toLong() < gasLimit,
+			validateFalse(intrinsicGas.toLong() > gasLimit,
 					ResponseCodeEnum.INSUFFICIENT_GAS);
 
 			final Address coinbase = Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress();
