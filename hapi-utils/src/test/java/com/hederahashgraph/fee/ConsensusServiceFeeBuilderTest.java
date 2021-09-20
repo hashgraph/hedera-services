@@ -38,7 +38,7 @@ import com.hederahashgraph.exception.InvalidTxBodyException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class ConsensusServiceFeeBuilderTest {
+class ConsensusServiceFeeBuilderTest {
     private static final Key A_KEY = Key.newBuilder()
             .setEd25519(ByteString.copyFromUtf8("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
             .build();
