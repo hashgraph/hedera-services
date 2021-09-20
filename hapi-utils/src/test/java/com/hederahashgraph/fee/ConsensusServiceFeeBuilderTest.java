@@ -22,18 +22,7 @@ package com.hederahashgraph.fee;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.FeeComponents;
-import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
-import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
-import com.hederahashgraph.api.proto.java.TopicID;
-import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -69,7 +58,7 @@ class ConsensusServiceFeeBuilderTest {
 
     @Test
     void getConsensusCreateTopicFeeHappyPath() throws InvalidTxBodyException {
-        final var txnBody = TransactionBody.newBuilder()
+        final var txnBodyA = TransactionBody.newBuilder()
                 .setConsensusCreateTopic(ConsensusCreateTopicTransactionBody.newBuilder()
                         .setAdminKey(A_KEY)
                         .setSubmitKey(A_KEY)
@@ -78,62 +67,50 @@ class ConsensusServiceFeeBuilderTest {
                         .setAutoRenewPeriod(DURATION)
                         .build())
                 .build();
-
-        final var expected = FeeData.newBuilder()
-                .setNodedata(FeeComponents.newBuilder()
-                        .setConstant(1L)
-                        .setBpt(188L)
-                        .setVpt(1L)
-                        .setBpr(4L)
-                        .build())
-                .setNetworkdata(FeeComponents.newBuilder()
-                        .setConstant(1L)
-                        .setBpt(188L)
-                        .setVpt(1L)
-                        .setRbh(3L)
-                        .build())
-                .setServicedata(FeeComponents.newBuilder()
-                        .setConstant(1L)
-                        .setRbh(62L)
+        final var txnBodyB = TransactionBody.newBuilder()
+                .setConsensusCreateTopic(ConsensusCreateTopicTransactionBody.newBuilder()
+                        .setAdminKey(A_KEY)
+                        .setSubmitKey(A_KEY)
+                        .setMemo(MEMO)
+                        .setAutoRenewAccount(ACCOUNT_A)
                         .build())
                 .build();
-        final var actual = ConsensusServiceFeeBuilder.getConsensusCreateTopicFee(txnBody, SIG_VALUE_OBJ);
 
-        Assertions.assertEquals(expected, actual);
+        final var expectedA = getFeeData(1L, 188L, 1L, 4L, 3L, 62L);
+        final var expectedB = getFeeData(1L, 188L, 1L, 4L, 3L, 6L);
+        final var actualA = ConsensusServiceFeeBuilder.getConsensusCreateTopicFee(txnBodyA, SIG_VALUE_OBJ);
+        final var actualB = ConsensusServiceFeeBuilder.getConsensusCreateTopicFee(txnBodyB, SIG_VALUE_OBJ);
+
+        Assertions.assertEquals(expectedA, actualA);
+        Assertions.assertEquals(expectedB, actualB);
     }
 
     @Test
     void getConsensusUpdateTopicFeeHappyPath() throws InvalidTxBodyException {
-        final var txnBody = TransactionBody.newBuilder()
+        final var txnBodyA = TransactionBody.newBuilder()
                 .setConsensusUpdateTopic(ConsensusUpdateTopicTransactionBody.newBuilder()
                         .setMemo(StringValue.of(MEMO))
                         .setAdminKey(A_KEY)
+                        .setExpirationTime(TIMESTAMP)
                         .setAutoRenewPeriod(DURATION)
                         .build())
                 .build();
-
-        final var expected = FeeData.newBuilder()
-                .setNodedata(FeeComponents.newBuilder()
-                        .setConstant(1L)
-                        .setBpt(156L)
-                        .setVpt(1L)
-                        .setBpr(4L)
-                        .build())
-                .setNetworkdata(FeeComponents.newBuilder()
-                        .setConstant(1L)
-                        .setBpt(156L)
-                        .setVpt(1L)
-                        .setRbh(1L)
-                        .build())
-                .setServicedata(FeeComponents.newBuilder()
-                        .setConstant(1L)
-                        .setRbh(6L)
+        final var txnBodyB = TransactionBody.newBuilder()
+                .setConsensusUpdateTopic(ConsensusUpdateTopicTransactionBody.newBuilder()
+                        .setMemo(StringValue.of(MEMO))
+                        .setAdminKey(A_KEY)
                         .build())
                 .build();
-        final var actual = ConsensusServiceFeeBuilder.getConsensusUpdateTopicFee(txnBody,
+
+        final var expectedA = getFeeData(1L, 164L, 1L, 4L, 1L, 6L);
+        final var expectedB = getFeeData(1L, 148L, 1L, 4L, 1L, 6L);
+        final var actualA = ConsensusServiceFeeBuilder.getConsensusUpdateTopicFee(txnBodyA,
+                100L, SIG_VALUE_OBJ);
+        final var actualB = ConsensusServiceFeeBuilder.getConsensusUpdateTopicFee(txnBodyB,
                 100L, SIG_VALUE_OBJ);
 
-        Assertions.assertEquals(expected, actual);
+        Assertions.assertEquals(expectedA, actualA);
+        Assertions.assertEquals(expectedB, actualB);
     }
 
     @Test
@@ -144,19 +121,26 @@ class ConsensusServiceFeeBuilderTest {
                 .build();
         final var emptyAccount = AccountID.newBuilder().setAccountNum(0L).setRealmNum(0L)
                 .setShardNum(0L).build();
-        final var txnBody = ConsensusUpdateTopicTransactionBody.newBuilder()
+        final var txnBodyA = ConsensusUpdateTopicTransactionBody.newBuilder()
                 .setMemo(StringValue.of(MEMO))
                 .setAdminKey(bKey)
                 .setSubmitKey(bKey)
                 .setAutoRenewPeriod(DURATION)
                 .setAutoRenewAccount(emptyAccount)
+                .setExpirationTime(TIMESTAMP)
+                .build();
+        final var txnBodyB = ConsensusUpdateTopicTransactionBody.newBuilder()
+                .setAutoRenewPeriod(DURATION)
                 .build();
 
 
-        final var actual = ConsensusServiceFeeBuilder.getUpdateTopicRbsIncrease(TIMESTAMP, A_KEY, A_KEY,
-                MEMO, true, TIMESTAMP, txnBody);
+        final var actualA = ConsensusServiceFeeBuilder.getUpdateTopicRbsIncrease(TIMESTAMP, A_KEY, A_KEY,
+                MEMO, true, TIMESTAMP, txnBodyA);
+        final var actualB = ConsensusServiceFeeBuilder.getUpdateTopicRbsIncrease(TIMESTAMP, A_KEY, A_KEY,
+                MEMO, true, TIMESTAMP, txnBodyB);
 
-        Assertions.assertEquals(0L, actual);
+        Assertions.assertEquals(0L, actualA);
+        Assertions.assertEquals(0L, actualB);
     }
 
     @Test
@@ -168,24 +152,7 @@ class ConsensusServiceFeeBuilderTest {
                         .build())
                 .build();
 
-        final var expected = FeeData.newBuilder()
-                .setNodedata(FeeComponents.newBuilder()
-                        .setConstant(1L)
-                        .setBpt(101L)
-                        .setVpt(1L)
-                        .setBpr(4L)
-                        .build())
-                .setNetworkdata(FeeComponents.newBuilder()
-                        .setConstant(1L)
-                        .setBpt(101L)
-                        .setVpt(1L)
-                        .setRbh(1L)
-                        .build())
-                .setServicedata(FeeComponents.newBuilder()
-                        .setConstant(1L)
-                        .setRbh(6L)
-                        .build())
-                .build();
+        final var expected = getFeeData(1L, 101L, 1L, 4L, 1L, 6L);
         final var actual = ConsensusServiceFeeBuilder.getConsensusDeleteTopicFee(txnBody, SIG_VALUE_OBJ);
 
         Assertions.assertEquals(expected, actual);
@@ -194,14 +161,38 @@ class ConsensusServiceFeeBuilderTest {
     @Test
     void helperMethodsWork() {
         final var baseTopicRamByteSize = 100;
+
         Assertions.assertEquals(baseTopicRamByteSize, ConsensusServiceFeeBuilder.getTopicRamBytes(0));
         Assertions.assertEquals(baseTopicRamByteSize + 20, ConsensusServiceFeeBuilder.getTopicRamBytes(20));
 
-        final var actualWithAutoRenewAccount = ConsensusServiceFeeBuilder.computeVariableSizedFieldsUsage(
+        final var actualWithAutoRenewAccountAndMemo = ConsensusServiceFeeBuilder.computeVariableSizedFieldsUsage(
                 A_KEY, A_KEY, MEMO, true);
-        final var actualWithoutAutRenewAccount = ConsensusServiceFeeBuilder.computeVariableSizedFieldsUsage(
-                A_KEY, A_KEY, MEMO, false);
-        Assertions.assertEquals(103, actualWithAutoRenewAccount);
-        Assertions.assertEquals(79, actualWithoutAutRenewAccount);
+        final var actualWithoutAutRenewAccountAndMemo = ConsensusServiceFeeBuilder.computeVariableSizedFieldsUsage(
+                A_KEY, A_KEY, null, false);
+
+        Assertions.assertEquals(103, actualWithAutoRenewAccountAndMemo);
+        Assertions.assertEquals(64, actualWithoutAutRenewAccountAndMemo);
+    }
+
+    private static FeeData getFeeData(final long constant, final long bpt, final long vpt,
+                                      final long bpr, final long rbhNetwork, final long rbhService) {
+        return FeeData.newBuilder()
+                .setNodedata(FeeComponents.newBuilder()
+                        .setConstant(constant)
+                        .setBpt(bpt)
+                        .setVpt(vpt)
+                        .setBpr(bpr)
+                        .build())
+                .setNetworkdata(FeeComponents.newBuilder()
+                        .setConstant(constant)
+                        .setBpt(bpt)
+                        .setVpt(vpt)
+                        .setRbh(rbhNetwork)
+                        .build())
+                .setServicedata(FeeComponents.newBuilder()
+                        .setConstant(constant)
+                        .setRbh(rbhService)
+                        .build())
+                .build();
     }
 }
