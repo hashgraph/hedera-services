@@ -24,6 +24,7 @@ import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TopicID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -31,6 +32,7 @@ import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_S
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asFile;
 import static com.hedera.test.utils.IdUtils.asToken;
+import static com.hedera.test.utils.IdUtils.asTopic;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -109,6 +111,13 @@ class SeqNoEntityIdSourceTest {
 		// then:
 		assertEquals(asToken("1.2.555"), newId);
 	}
+	
+	@Test
+	void returnsExpectedTopicId() {
+		given(seqNo.getAndIncrement()).willReturn(222L);
+		TopicID id = subject.newTopicId(sponsor);
+		assertEquals(asTopic("1.2.222"), id);
+	}
 
 	@Test
 	void reclaimDecrementsId() {
@@ -130,6 +139,8 @@ class SeqNoEntityIdSourceTest {
 				() -> NOOP_ID_SOURCE.newTokenId(AccountID.getDefaultInstance()));
 		assertThrows(UnsupportedOperationException.class,
 				() -> NOOP_ID_SOURCE.newScheduleId(AccountID.getDefaultInstance()));
+		assertThrows(UnsupportedOperationException.class,
+				() -> NOOP_ID_SOURCE.newTopicId(AccountID.getDefaultInstance()));
 		assertThrows(UnsupportedOperationException.class, NOOP_ID_SOURCE::reclaimLastId);
 		assertThrows(UnsupportedOperationException.class, NOOP_ID_SOURCE::reclaimProvisionalIds);
 		assertThrows(UnsupportedOperationException.class, NOOP_ID_SOURCE::resetProvisionalIds);

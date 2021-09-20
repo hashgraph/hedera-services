@@ -104,9 +104,9 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 
 		/* --- Do business logic --- */
 		final var expirationTime = transactionContext.consensusTime().plusSeconds(op.getAutoRenewPeriod().getSeconds());
-		final var topicId = entityIdSource.newAccountId(payerAccountId);
+		final var topicId = entityIdSource.newTopicId(payerAccountId);
 		final var topic = Topic.fromGrpcTopicCreate(
-				Id.fromGrpcAccount(topicId),
+				Id.fromGrpcTopic(topicId),
 				submitKey,
 				adminKey,
 				autoRenewAccount,
@@ -116,6 +116,16 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 
 		/* --- Persist the topic --- */
 		topicStore.persistNew(topic);
+	}
+
+	@Override
+	public void reclaimCreatedIds() {
+		entityIdSource.reclaimProvisionalIds();
+	}
+
+	@Override
+	public void resetCreatedIds() {
+		entityIdSource.resetProvisionalIds();
 	}
 
 	@Override
