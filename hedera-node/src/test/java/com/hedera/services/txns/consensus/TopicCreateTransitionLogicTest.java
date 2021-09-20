@@ -39,6 +39,7 @@ import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.merkle.map.MerkleMap;
@@ -51,7 +52,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT;
-import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asTopic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
@@ -74,7 +75,7 @@ class TopicCreateTransitionLogicTest {
 	private static final long INVALID_AUTORENEW_PERIOD_SECONDS = -1L;
 	private static final String TOO_LONG_MEMO = "too-long";
 	private static final String VALID_MEMO = "memo";
-	private static final AccountID NEW_TOPIC_ID = asAccount("7.6.54321");
+	private static final TopicID NEW_TOPIC_ID = asTopic("7.6.54321");
 
 	// key to be used as a valid admin or submit key.
 	final private Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
@@ -152,7 +153,7 @@ class TopicCreateTransitionLogicTest {
 		given(validator.isValidAutoRenewPeriod(Duration.newBuilder().setSeconds(VALID_AUTORENEW_PERIOD_SECONDS).build()))
 				.willReturn(true);
 		given(transactionContext.consensusTime()).willReturn(consensusTimestamp);
-		given(entityIdSource.newAccountId(any())).willReturn(NEW_TOPIC_ID);
+		given(entityIdSource.newTopicId(any())).willReturn(NEW_TOPIC_ID);
 		// when:
 		subject.doStateTransition();
 		// then:
