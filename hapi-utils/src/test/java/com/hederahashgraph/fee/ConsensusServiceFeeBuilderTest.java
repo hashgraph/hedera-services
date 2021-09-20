@@ -22,10 +22,23 @@ package com.hederahashgraph.fee;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.FeeComponents;
+import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TopicID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ConsensusServiceFeeBuilderTest {
     private static final Key A_KEY = Key.newBuilder()
@@ -42,17 +55,17 @@ class ConsensusServiceFeeBuilderTest {
     void builderMethodsThrowException() {
         final var txnBody = TransactionBody.newBuilder().build();
 
-        Assertions.assertThrows(InvalidTxBodyException.class,
+        assertThrows(InvalidTxBodyException.class,
                 () -> ConsensusServiceFeeBuilder.getConsensusCreateTopicFee(null, null));
-        Assertions.assertThrows(InvalidTxBodyException.class,
+        assertThrows(InvalidTxBodyException.class,
                 () -> ConsensusServiceFeeBuilder.getConsensusCreateTopicFee(txnBody, null));
-        Assertions.assertThrows(InvalidTxBodyException.class,
+        assertThrows(InvalidTxBodyException.class,
                 () -> ConsensusServiceFeeBuilder.getConsensusUpdateTopicFee(null, 100L, null));
-        Assertions.assertThrows(InvalidTxBodyException.class,
+        assertThrows(InvalidTxBodyException.class,
                 () -> ConsensusServiceFeeBuilder.getConsensusUpdateTopicFee(txnBody, 100L, null));
-        Assertions.assertThrows(InvalidTxBodyException.class,
+        assertThrows(InvalidTxBodyException.class,
                 () -> ConsensusServiceFeeBuilder.getConsensusDeleteTopicFee(null, null));
-        Assertions.assertThrows(InvalidTxBodyException.class,
+        assertThrows(InvalidTxBodyException.class,
                 () -> ConsensusServiceFeeBuilder.getConsensusDeleteTopicFee(txnBody, null));
     }
 
@@ -81,8 +94,8 @@ class ConsensusServiceFeeBuilderTest {
         final var actualA = ConsensusServiceFeeBuilder.getConsensusCreateTopicFee(txnBodyA, SIG_VALUE_OBJ);
         final var actualB = ConsensusServiceFeeBuilder.getConsensusCreateTopicFee(txnBodyB, SIG_VALUE_OBJ);
 
-        Assertions.assertEquals(expectedA, actualA);
-        Assertions.assertEquals(expectedB, actualB);
+        assertEquals(expectedA, actualA);
+        assertEquals(expectedB, actualB);
     }
 
     @Test
@@ -109,8 +122,8 @@ class ConsensusServiceFeeBuilderTest {
         final var actualB = ConsensusServiceFeeBuilder.getConsensusUpdateTopicFee(txnBodyB,
                 100L, SIG_VALUE_OBJ);
 
-        Assertions.assertEquals(expectedA, actualA);
-        Assertions.assertEquals(expectedB, actualB);
+        assertEquals(expectedA, actualA);
+        assertEquals(expectedB, actualB);
     }
 
     @Test
@@ -139,8 +152,8 @@ class ConsensusServiceFeeBuilderTest {
         final var actualB = ConsensusServiceFeeBuilder.getUpdateTopicRbsIncrease(TIMESTAMP, A_KEY, A_KEY,
                 MEMO, true, TIMESTAMP, txnBodyB);
 
-        Assertions.assertEquals(0L, actualA);
-        Assertions.assertEquals(0L, actualB);
+        assertEquals(0L, actualA);
+        assertEquals(0L, actualB);
     }
 
     @Test
@@ -155,26 +168,26 @@ class ConsensusServiceFeeBuilderTest {
         final var expected = getFeeData(1L, 101L, 1L, 4L, 1L, 6L);
         final var actual = ConsensusServiceFeeBuilder.getConsensusDeleteTopicFee(txnBody, SIG_VALUE_OBJ);
 
-        Assertions.assertEquals(expected, actual);
+        assertEquals(expected, actual);
     }
 
     @Test
     void helperMethodsWork() {
         final var baseTopicRamByteSize = 100;
 
-        Assertions.assertEquals(baseTopicRamByteSize, ConsensusServiceFeeBuilder.getTopicRamBytes(0));
-        Assertions.assertEquals(baseTopicRamByteSize + 20, ConsensusServiceFeeBuilder.getTopicRamBytes(20));
+        assertEquals(baseTopicRamByteSize, ConsensusServiceFeeBuilder.getTopicRamBytes(0));
+        assertEquals(baseTopicRamByteSize + 20, ConsensusServiceFeeBuilder.getTopicRamBytes(20));
 
         final var actualWithAutoRenewAccountAndMemo = ConsensusServiceFeeBuilder.computeVariableSizedFieldsUsage(
                 A_KEY, A_KEY, MEMO, true);
         final var actualWithoutAutRenewAccountAndMemo = ConsensusServiceFeeBuilder.computeVariableSizedFieldsUsage(
                 A_KEY, A_KEY, null, false);
 
-        Assertions.assertEquals(103, actualWithAutoRenewAccountAndMemo);
-        Assertions.assertEquals(64, actualWithoutAutRenewAccountAndMemo);
+        assertEquals(103, actualWithAutoRenewAccountAndMemo);
+        assertEquals(64, actualWithoutAutRenewAccountAndMemo);
     }
 
-    private static FeeData getFeeData(final long constant, final long bpt, final long vpt,
+    private static final FeeData getFeeData(final long constant, final long bpt, final long vpt,
                                       final long bpr, final long rbhNetwork, final long rbhService) {
         return FeeData.newBuilder()
                 .setNodedata(FeeComponents.newBuilder()

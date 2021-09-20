@@ -37,6 +37,9 @@ import java.time.Duration;
  * Fee builder for Consensus service transactions.
  */
 public final class ConsensusServiceFeeBuilder extends FeeBuilder {
+    private ConsensusServiceFeeBuilder() {
+        throw new UnsupportedOperationException("Utility Class");
+    }
 
     /**
      * Computes fee for ConsensusCreateTopic transaction
