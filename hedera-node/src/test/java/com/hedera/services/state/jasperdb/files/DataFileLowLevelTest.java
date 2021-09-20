@@ -11,6 +11,7 @@ import java.nio.LongBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -253,6 +254,34 @@ public class DataFileLowLevelTest {
             long[] dataItem = testType.dataItemSerializer.deserialize(data,dataFileMetadata.getSerializationVersion());
             checkItem(testType,i,dataItem);
             i++;
+        }
+    }
+
+    @Order(400)
+    @ParameterizedTest
+    @EnumSource(TestType.class)
+    public void copyFile(TestType testType) throws IOException {
+        DataFileWriter<long[]> newDataFileWriter = new DataFileWriter<>("test_"+testType.name(),tempFileDir,
+                DATA_FILE_INDEX+1, testType.dataItemSerializer,
+                TEST_START.plus(1, ChronoUnit.SECONDS),false);
+
+        final var dataFile = dataFileMap.get(testType);
+        final var dataFileMetadata = dataFileMetadataMap.get(testType);
+        DataFileIterator fileIterator = new DataFileIterator(dataFile,dataFileMetadata,testType.dataItemSerializer);
+        final LongArrayList newDataLocations = new LongArrayList(1000);
+        while (fileIterator.next()) {
+            final ByteBuffer itemData = fileIterator.getDataItemData();
+            newDataLocations.add(newDataFileWriter.writeCopiedDataItem(dataFileMetadata.getSerializationVersion(),
+                    itemData.remaining(),itemData));
+        }
+        final var newDataFileMetadata = newDataFileWriter.finishWriting(0,1000);
+        // now read back and check
+        DataFileReader<long[]> dataFileReader = new DataFileReader<>(newDataFileWriter.getPath(),
+                testType.dataItemSerializer, newDataFileMetadata);
+        // check by locations returned by write
+        for (int i = 0; i < 1000; i++) {
+            long[] dataItem = dataFileReader.readDataItem(newDataLocations.get(i));
+            checkItem(testType,i,dataItem);
         }
     }
 

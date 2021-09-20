@@ -13,16 +13,11 @@ import java.time.Instant;
 import static com.hedera.services.state.jasperdb.files.DataFileCommon.*;
 
 /**
- * Writer for creating a data file. This is designed to be used from a single thread.
- *
- * A data file contains a number of data items. Each data item is written to the file like this:
- *
- * <ul>
- *     <li>optional integer - value data length in bytes (ONLY IF NOT IN FIXED SIZE MODE)</li>
- *     <li>long             - key data</li>
- *     <li>bytes            - value data</li>
- * </ul>
- *
+ * Writer for creating a data file. A data file contains a number of data items. Each data item can be variable or fixed
+ * size and is considered as a black box. All access to contents of the data item is done via the DataItemSerializer.
+ * <p>
+ * <b>This is designed to be used from a single thread.</b>
+ * <p>
  * At the end of the file it is padded till a 4096 byte page boundary then a footer page is written by DataFileMetadata.
  *
  * @param <D> Data item type
@@ -46,8 +41,9 @@ public final class DataFileWriter<D> {
     /** The path to the lock file for data file we are writing */
     private final Path lockFilePath;
     /**
-     * Position in the file to write next. The current offset in bytes from the beginning of the file where we are writing. This is very important as it
-     * used to calculate the data location pointers to the data items we have written.
+     * Position in the file to write next. The current offset in bytes from the beginning of the file where we are
+     * writing. This is very important as it used to calculate the data location pointers to the data items we have
+     * written.
      */
     private long writePosition = 0;
     /** Count of the number of data items we have written so far. Ready to be stored in footer metadata */
@@ -93,6 +89,16 @@ public final class DataFileWriter<D> {
         return path;
     }
 
+    /**
+     * Write a data item copied from another file like during merge. The data item serializer copyItem() method will be
+     * called to give it a chance to pass the data for or upgrade the seralization as needed.
+     *
+     * @param serializedVersion the serialization version the item was written with
+     * @param dataItemSize The number of bytes for the data item
+     * @param dataItemData ByteBuffer containing the items data
+     * @return New data location in this file where it was written
+     * @throws IOException If there was a problem writing the data item
+     */
     public synchronized long writeCopiedDataItem(long serializedVersion, int dataItemSize, ByteBuffer dataItemData) throws IOException {
         // capture the current write position for beginning of data item
         final long byteOffset = writePosition;
