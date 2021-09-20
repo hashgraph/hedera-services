@@ -21,7 +21,7 @@ package com.hedera.services.contracts.persistence;
  */
 
 import com.hedera.services.contracts.annotations.StorageSource;
-import com.hedera.services.store.contracts.repository.StoragePersistence;
+import org.ethereum.datasource.StoragePersistence;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;

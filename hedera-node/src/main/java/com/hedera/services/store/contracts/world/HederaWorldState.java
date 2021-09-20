@@ -25,13 +25,14 @@ package com.hedera.services.store.contracts.world;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.contracts.repository.ContractDetails;
-import com.hedera.services.store.contracts.repository.ServicesRepositoryRoot;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
+import org.ethereum.db.ContractDetails;
+import org.ethereum.db.ServicesRepositoryRoot;
+import org.ethereum.vm.DataWord;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
@@ -254,7 +255,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		@Override
 		public UInt256 getStorageValue(final UInt256 key) {
-			return storageTrie().get(key);
+			return DWUtil.fromDataWord(storageTrie.get(DWUtil.fromUInt256(key)));
 		}
 
 		@Override
@@ -381,9 +382,9 @@ public class HederaWorldState implements HederaMutableWorldState {
 					for (final Map.Entry<UInt256, UInt256> entry : entries) {
 						final UInt256 value = entry.getValue();
 						if (value.isZero()) {
-							storageTrie.put(entry.getKey(), UInt256.ZERO);
+							storageTrie.put(DWUtil.fromUInt256(entry.getKey()), DataWord.ZERO);
 						} else {
-							storageTrie.put(entry.getKey(), value);
+							storageTrie.put(DWUtil.fromUInt256(entry.getKey()), DWUtil.fromUInt256(value));
 						}
 					}
 

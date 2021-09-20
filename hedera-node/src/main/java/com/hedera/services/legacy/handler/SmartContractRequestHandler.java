@@ -35,7 +35,6 @@ import com.hedera.services.legacy.evm.SolidityExecutor;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.SequenceNumber;
-import com.hedera.services.store.contracts.repository.ServicesRepositoryRoot;
 import com.hedera.services.txns.validation.PureValidation;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
@@ -68,6 +67,7 @@ import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.core.Transaction;
+import org.ethereum.db.ServicesRepositoryRoot;
 import org.spongycastle.util.encoders.DecoderException;
 
 import javax.inject.Inject;

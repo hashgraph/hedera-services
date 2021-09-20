@@ -24,12 +24,12 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.store.contracts.repository.ALock;
-import com.hedera.services.store.contracts.repository.AccountState;
-import com.hedera.services.store.contracts.repository.Source;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.ethereum.core.AccountState;
+import org.ethereum.datasource.Source;
+import org.ethereum.util.ALock;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;

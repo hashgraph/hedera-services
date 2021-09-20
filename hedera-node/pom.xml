@@ -300,17 +300,17 @@
     <dependency>
       <groupId>org.hyperledger.besu</groupId>
       <artifactId>plugin-api</artifactId>
-      <version>21.10.0-RC1-SNAPSHOT</version>
+      <version>21.7.4</version>
     </dependency>
     <dependency>
       <groupId>org.hyperledger.besu</groupId>
       <artifactId>evm</artifactId>
-      <version>21.10.0-RC1-SNAPSHOT</version>
+      <version>21.7.4</version>
     </dependency>
     <dependency>
       <groupId>org.hyperledger.besu</groupId>
       <artifactId>besu-datatypes</artifactId>
-      <version>21.10.0-RC1-SNAPSHOT</version>
+      <version>21.7.4</version>
     </dependency>
   </dependencies>
 
