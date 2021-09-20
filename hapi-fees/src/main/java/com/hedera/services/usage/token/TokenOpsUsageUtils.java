@@ -24,11 +24,15 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.usage.token.entities.TokenEntitySizes;
 import com.hedera.services.usage.token.meta.TokenBurnMeta;
 import com.hedera.services.usage.token.meta.TokenCreateMeta;
+import com.hedera.services.usage.token.meta.TokenDeleteMeta;
 import com.hedera.services.usage.token.meta.TokenMintMeta;
+import com.hedera.services.usage.token.meta.TokenUpdateMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import java.util.function.Function;
@@ -85,6 +89,45 @@ public enum TokenOpsUsageUtils {
 				.build();
 	}
 
+	public TokenUpdateMeta tokenUpdateUsageFrom(final TransactionBody txn) {
+		final var op = txn.getTokenUpdate();
+		final var keysSize = getTokenUpdateKeysSize(txn);
+
+		final boolean removesAutoRenewAccount = removesAutoRenewAccount(txn.getTokenUpdate());
+		final boolean hasAutoRenewAccount = op.hasAutoRenewAccount();
+		long autoRenewPeriod = 0;
+		if(hasAutoRenewAccount) {
+			autoRenewPeriod = op.getAutoRenewPeriod().getSeconds();
+		}
+		final boolean hasExpiry = op.hasExpiry();
+		long newExpiry = 0;
+		if(hasExpiry) {
+			newExpiry = op.getExpiry().getSeconds();
+		}
+
+
+		final long effectiveTxnStart = txn.getTransactionID().getTransactionValidStart().getSeconds();
+
+
+		return TokenUpdateMeta.newBuilder()
+				.setNewKeysLen(keysSize)
+				.setHasTreasure(op.hasTreasury())
+				.setHasAutoRenewAccount(op.hasAutoRenewAccount())
+				.setRemoveAutoRenewAccount(removesAutoRenewAccount)
+				.setNewAutoRenewPeriod(autoRenewPeriod)
+				.setNewExpiry(newExpiry)
+				.setNewMemoLen(op.hasMemo() ? op.getMemo().getValue().length() : 0)
+				.setNewNameLen(op.getName().length())
+				.setNewSymLen(op.getSymbol().length())
+				.setNewEffectiveTxnStartTime(effectiveTxnStart)
+				.build();
+	}
+
+//	private long effectiveLifeTime(final TransactionBody txn) {
+//		long effectiveNow = txn.getTransactionID().getTransactionValidStart().getSeconds();
+//
+//	}
+
 	public TokenMintMeta tokenMintUsageFrom(
 			final TransactionBody txn,
 			final SubType subType,
@@ -108,6 +151,10 @@ public enum TokenOpsUsageUtils {
 		}
 		bpt += BASIC_ENTITY_ID_SIZE;
 		return new TokenMintMeta(bpt, subType, transferRecordRb, rbs);
+	}
+
+	public TokenDeleteMeta tokenDeleteUsageFrom() {
+		return new TokenDeleteMeta(BASIC_ENTITY_ID_SIZE);
 	}
 
 	public TokenBurnMeta tokenBurnUsageFrom(final TransactionBody txn) {
@@ -179,7 +226,37 @@ public enum TokenOpsUsageUtils {
 		return baseSize;
 	}
 
+	public int getTokenUpdateKeysSize(final TransactionBody txn) {
+		final var op = txn.getTokenUpdate();
+
+		int keysSize = 0;
+		keysSize += keySizeIfPresent(
+				op, TokenUpdateTransactionBody::hasKycKey, TokenUpdateTransactionBody::getKycKey);
+		keysSize += keySizeIfPresent(
+				op, TokenUpdateTransactionBody::hasWipeKey, TokenUpdateTransactionBody::getWipeKey);
+		keysSize += keySizeIfPresent(
+				op, TokenUpdateTransactionBody::hasAdminKey, TokenUpdateTransactionBody::getAdminKey);
+		keysSize += keySizeIfPresent(
+				op, TokenUpdateTransactionBody::hasSupplyKey, TokenUpdateTransactionBody::getSupplyKey);
+		keysSize += keySizeIfPresent(
+				op, TokenUpdateTransactionBody::hasFreezeKey, TokenUpdateTransactionBody::getFreezeKey);
+		keysSize += keySizeIfPresent(
+				op, TokenUpdateTransactionBody::hasFeeScheduleKey, TokenUpdateTransactionBody::getFeeScheduleKey);
+		return keysSize;
+	}
+
 	public static <T> long keySizeIfPresent(final T op, final Predicate<T> check, final Function<T, Key> getter) {
 		return check.test(op) ? getAccountKeyStorageSize(getter.apply(op)) : 0L;
+	}
+
+	private int noRbImpactBytes(TokenUpdateTransactionBody op) {
+		return ((op.getExpiry().getSeconds() > 0) ? AMOUNT_REPR_BYTES : 0) +
+				((op.getAutoRenewPeriod().getSeconds() > 0) ? AMOUNT_REPR_BYTES : 0) +
+				(op.hasTreasury() ? BASIC_ENTITY_ID_SIZE : 0) +
+				(op.hasAutoRenewAccount() ? BASIC_ENTITY_ID_SIZE : 0);
+	}
+
+	private boolean removesAutoRenewAccount(TokenUpdateTransactionBody op) {
+		return op.hasAutoRenewAccount() && op.getAutoRenewAccount().equals(AccountID.getDefaultInstance());
 	}
 }

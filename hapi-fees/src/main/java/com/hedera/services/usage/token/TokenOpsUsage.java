@@ -22,12 +22,17 @@ package com.hedera.services.usage.token;
 
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.UsageProperties;
 import com.hedera.services.usage.state.UsageAccumulator;
+import com.hedera.services.usage.token.entities.TokenEntitySizes;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
+import com.hedera.services.usage.token.meta.ExtantTokenContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hedera.services.usage.token.meta.TokenBurnMeta;
 import com.hedera.services.usage.token.meta.TokenCreateMeta;
+import com.hedera.services.usage.token.meta.TokenDeleteMeta;
 import com.hedera.services.usage.token.meta.TokenMintMeta;
+import com.hedera.services.usage.token.meta.TokenUpdateMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
 import com.hederahashgraph.api.proto.java.CustomFee;
 
@@ -35,6 +40,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.List;
 
+import static com.hedera.services.usage.EstimatorUtils.MAX_ENTITY_LIFETIME;
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
@@ -51,6 +57,10 @@ public final class TokenOpsUsage {
 	private static final int ROYALTY_HBAR_FALLBACK_REPR_SIZE = ROYALTY_NO_FALLBACK_REPR_SIZE + FIXED_HBAR_REPR_SIZE;
 	private static final int ROYALTY_HTS_FALLBACK_REPR_SIZE = ROYALTY_NO_FALLBACK_REPR_SIZE + FIXED_HTS_REPR_SIZE;
 	private static final long LONG_BASIC_ENTITY_ID_SIZE = BASIC_ENTITY_ID_SIZE;
+	private static final int AMOUNT_REPR_BYTES = 8;
+
+	static TokenEntitySizes tokenEntitySizes = TOKEN_ENTITY_SIZES;
+	protected static UsageProperties usageProperties = USAGE_PROPERTIES;
 
 	@Inject
 	public TokenOpsUsage() {
@@ -158,6 +168,15 @@ public final class TokenOpsUsage {
 		accumulator.addBpt(tokenBurnMeta.getBpt());
 		accumulator.addNetworkRbs(tokenBurnMeta.getTransferRecordDb() * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
+	public void tokenDeleteUsage(final SigUsage sigUsage,
+			final BaseTransactionMeta baseMeta,
+			final TokenDeleteMeta tokenDeleteMeta,
+			final UsageAccumulator accumulator) {
+		accumulator.resetForTransaction(baseMeta, sigUsage);
+
+		accumulator.addBpt(tokenDeleteMeta.getBpt());
+		//accumulator.addNetworkRbs(tokenDeleteMeta.getTransferRecordDb() * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+	}
 
 	public void tokenMintUsage(final SigUsage sigUsage,
 			final BaseTransactionMeta baseMeta,
@@ -180,7 +199,54 @@ public final class TokenOpsUsage {
 		accumulator.addNetworkRbs(tokenWipeMeta.getTransferRecordDb() * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
+	public void tokenUpdateUsage(final SigUsage sigUsage,
+			final BaseTransactionMeta baseMeta,
+			final TokenUpdateMeta tokenUpdateMeta,
+			final ExtantTokenContext extantTokenContext,
+			final UsageAccumulator accumulator) {
+		accumulator.resetForTransaction(baseMeta, sigUsage);
 
+		long rbSize = 0;
+		rbSize += tokenUpdateMeta.getNewAdminKeyLen();
+		rbSize += tokenUpdateMeta.getNewKycKeyLen();
+		rbSize += tokenUpdateMeta.getNewFreezeKeyLen();
+		rbSize += tokenUpdateMeta.getNewWipeKeyLen();
+		rbSize += tokenUpdateMeta.getNewFeeScheduleKeyLen();
+		rbSize += tokenUpdateMeta.getNewSupplyKeyLen();
+		if(!tokenUpdateMeta.getRemoveAutoRenewAccount() &&
+				(extantTokenContext.getHashasAutoRenewAccount() || tokenUpdateMeta.hasAutoRenewAccount())) {
+			rbSize += BASIC_ENTITY_ID_SIZE;
+		}
+
+		rbSize += tokenUpdateMeta.getNewSymLen() > 0 ? tokenUpdateMeta.getNewSymLen() : extantTokenContext.getExistingSymLen();
+		rbSize += tokenUpdateMeta.getNewNameLen() > 0 ? tokenUpdateMeta.getNewNameLen() : extantTokenContext.getExistingNameLen();
+		rbSize += tokenUpdateMeta.getNewMemoLen() > 0 ? tokenUpdateMeta.getNewMemoLen() : extantTokenContext.getExistingMemoLen();
+
+		long newLifeTime = Math.max(tokenUpdateMeta.getNewEffectiveLifeTime(), extantTokenContext.getExistingExpiry());
+		newLifeTime = Math.min(newLifeTime, MAX_ENTITY_LIFETIME);
+
+		long existingRbSize = extantTokenContext.getExistingRbSize();
+
+		long rbsDelta = Math.max(0, newLifeTime * (rbSize - existingRbSize));
+		if(rbsDelta > 0) {
+			accumulator.addRbs(rbsDelta);
+		}
+
+		long txnBytes = rbSize + BASIC_ENTITY_ID_SIZE + noRbImpactBytes(tokenUpdateMeta);
+		accumulator.addBpt(txnBytes);
+		if(tokenUpdateMeta.hasTreasure()) {
+			accumulator.addNetworkRbs(
+					tokenEntitySizes.bytesUsedToRecordTokenTransfers(1, 2, 0)
+							* usageProperties.legacyReceiptStorageSecs());
+		}
+	}
+
+	private int noRbImpactBytes(TokenUpdateMeta opMeta) {
+		return ((opMeta.getNewExpiry() > 0) ? AMOUNT_REPR_BYTES : 0) +
+				((opMeta.getNewAutoRenewPeriod() > 0) ? AMOUNT_REPR_BYTES : 0) +
+				(opMeta.hasTreasure() ? BASIC_ENTITY_ID_SIZE : 0) +
+				(opMeta.hasAutoRenewAccount() ? BASIC_ENTITY_ID_SIZE : 0);
+	}
 
 	private int plusCollectorSize(final int feeReprSize) {
 		return feeReprSize + BASIC_ENTITY_ID_SIZE;

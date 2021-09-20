@@ -20,12 +20,16 @@ package com.hedera.services.records;
  * ‍
  */
 
+import com.hedera.services.context.BasicTransactionContext;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -36,6 +40,7 @@ import java.util.Optional;
  */
 @Singleton
 public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
+	private static final Logger log = LogManager.getLogger(TxnAwareRecordsHistorian.class);
 	private ExpirableTxnRecord lastExpirableRecord;
 
 	private EntityCreator creator;
@@ -64,6 +69,9 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	@Override
 	public void finalizeExpirableTransactionRecord() {
 		lastExpirableRecord = txnCtx.recordSoFar();
+		if(txnCtx.accessor().getFunction() == HederaFunctionality.TokenFreezeAccount) {
+			log.info("TokenFreeze record " + lastExpirableRecord);
+		}
 	}
 
 	@Override

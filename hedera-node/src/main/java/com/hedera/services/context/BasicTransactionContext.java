@@ -40,10 +40,12 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.TokenFreezeAccount;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -207,6 +209,10 @@ public class BasicTransactionContext implements TransactionContext {
 				explicitTokenTransfers,
 				assessedCustomFees,
 				newTokenAssociations);
+
+		if(accessor.getFunction() == HederaFunctionality.TokenFreezeAccount) {
+			log.info("TokenFreeze RecordSofar: " + recordSoFar.build());
+		}
 
 		recordConfig.accept(recordSoFar);
 		hasComputedRecordSoFar = true;

@@ -115,7 +115,7 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 					HederaFunctionality.TokenMint, subType, this::usageEstimate, txn, numPayerKeys);
 	}
 
-	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) throws Throwable {
+	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo)  {
 		UsageAccumulator accumulator = new UsageAccumulator();
 
 		long lifetime = 0L;

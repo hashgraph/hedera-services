@@ -28,6 +28,7 @@ import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.services.usage.file.FileAppendMeta;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
+import com.hedera.services.usage.token.meta.ExtantTokenContext;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hedera.services.usage.token.meta.TokenBurnMeta;
 import com.hedera.services.usage.token.meta.TokenMintMeta;
@@ -48,6 +49,7 @@ import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FIXED_FEE;
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FRACTIONAL_FEE;
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
 @Singleton
 public class OpUsageCtxHelper {
@@ -115,6 +117,52 @@ public class OpUsageCtxHelper {
 		return cryptoContext;
 	}
 
+	// get the TokenInfo from StateView and fill into ExtantTokenContext
+	public ExtantTokenContext ctxForTokenUpdate(TransactionBody txn) {
+		final var op = txn.getTokenUpdate();
+		var tokenInfoMaybe = workingView.infoForToken(op.getToken());
+		if(tokenInfoMaybe.isPresent()) {
+			final var tokenInfo = tokenInfoMaybe.get();
+			return ExtantTokenContext.newBuilder()
+					.setExistingNameLen(tokenInfo.getName().length())
+					.setExistingSymLen(tokenInfo.getSymbol().length())
+					.setExistingMemoLen(tokenInfo.getMemo().length())
+					.setExistingExpiry(tokenInfo.hasExpiry() ?
+							tokenInfo.getExpiry().getSeconds() : 0)
+					.setHasAutoRenewalAccount(tokenInfo.hasAutoRenewAccount())
+					.setExistingAdminKeyLen(tokenInfo.hasAdminKey() ?
+							getAccountKeyStorageSize(tokenInfo.getAdminKey()) : 0)
+					.setExistingKycKeyLen(tokenInfo.hasKycKey() ?
+							getAccountKeyStorageSize(tokenInfo.getKycKey()) : 0)
+					.setExistingFreezeKeyLen(tokenInfo.hasFreezeKey() ?
+							getAccountKeyStorageSize(tokenInfo.getFreezeKey()) : 0)
+					.setExistingSupplyKeyLen(tokenInfo.hasSupplyKey() ?
+							getAccountKeyStorageSize(tokenInfo.getSupplyKey()) : 0)
+					.setExistingWipeKeyLen(tokenInfo.hasWipeKey() ?
+							getAccountKeyStorageSize(tokenInfo.getWipeKey()) : 0)
+					.setExistingFeeScheduleKeyLen(tokenInfo.hasFeeScheduleKey() ?
+							getAccountKeyStorageSize(tokenInfo.getFeeScheduleKey()) : 0)
+					.setExistingKycKeyLen(tokenInfo.hasKycKey() ?
+							getAccountKeyStorageSize(tokenInfo.getKycKey()) : 0)
+					.build();
+		} else {
+			return ExtantTokenContext.newBuilder()
+					.setExistingNameLen(0)
+					.setExistingSymLen(0)
+					.setExistingMemoLen(0)
+					.setExistingExpiry(0)
+					.setHasAutoRenewalAccount(false)
+					.setExistingAdminKeyLen(0)
+					.setExistingKycKeyLen(0)
+					.setExistingFreezeKeyLen(0)
+					.setExistingSupplyKeyLen(0)
+					.setExistingFeeScheduleKeyLen(0)
+					.setExistingWipeKeyLen(0)
+					.build();
+		}
+	}
+
+	// These two can be removed
 	public TokenBurnMeta metaForTokenBurn(TxnAccessor accessor) {
 		return TOKEN_OPS_USAGE_UTILS.tokenBurnUsageFrom(accessor.getTxn(), accessor.getSubType());
 	}

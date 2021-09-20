@@ -24,6 +24,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 
@@ -109,6 +110,8 @@ public class AccessorBasedUsages {
 			estimateTokenMint(sigUsage, accessor, baseMeta, into);
 		} else if (function == TokenAccountWipe) {
 			estimateTokenWipe(sigUsage, accessor, baseMeta, into);
+		} else if (function == TokenDelete) {
+			estimateTokenDelete(sigUsage, accessor, baseMeta, into);
 		}
 	}
 
@@ -214,5 +217,22 @@ public class AccessorBasedUsages {
 	) {
 		final var tokenWipeMeta = accessor.getSpanMapAccessor().getTokenWipeMeta(accessor);
 		tokenOpsUsage.tokenWipeUsage(sigUsage, baseMeta, tokenWipeMeta, into);
+	}
+
+	private void estimateTokenUpdate(SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta,
+			UsageAccumulator into) {
+		final var tokenUpdateMeta = accessor.getSpanMapAccessor().getTokenUpdateMeta(accessor);
+		final var extantTokenContext = opUsageCtxHelper.ctxForTokenUpdate(accessor.getTxn());
+		tokenOpsUsage.tokenUpdateUsage(sigUsage, baseMeta, tokenUpdateMeta, extantTokenContext, into);
+	}
+
+	private void estimateTokenDelete(
+			SigUsage sigUsage,
+			TxnAccessor accessor,
+			BaseTransactionMeta baseMeta,
+			UsageAccumulator into
+	) {
+		final var tokenDeleteMeta = accessor.getSpanMapAccessor().getTokenDeleteMeta(accessor);
+		tokenOpsUsage.tokenDeleteUsage(sigUsage, baseMeta, tokenDeleteMeta, into);
 	}
 }

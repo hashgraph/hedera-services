@@ -37,7 +37,9 @@ import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
+import com.hedera.services.usage.token.meta.ExtantTokenContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.services.usage.token.meta.TokenUpdateMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
@@ -55,6 +57,7 @@ import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenType;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -201,6 +204,10 @@ class BaseOperationUsage {
 				break;
 			case TokenFeeScheduleUpdate:
 				return feeScheduleUpdate();
+			case TokenUpdate:
+				return tokenUpdate();
+			case TokenDelete:
+				return tokenDelete();
 			case ConsensusSubmitMessage:
 				return submitMessage();
 			default:
@@ -432,8 +439,40 @@ class BaseOperationUsage {
 		final var into = new UsageAccumulator();
 		TOKEN_OPS_USAGE.tokenCreateUsage(QUAD_SIG_USAGE,  NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenCreateMeta, into);
 		return into;
-
 	}
+
+	UsageAccumulator tokenUpdate() {
+		final var target = TokenID.newBuilder().setTokenNum(10_001).build();
+		final var now = Instant.now().getEpochSecond();
+		final var canonicalTxn = TransactionBody.newBuilder()
+				.setTokenUpdate(TokenUpdateTransactionBody.newBuilder()
+						.setMemo(StringValue.of(BLANK_MEMO))
+						.setName(A_TOKEN_NAME)
+						.setSymbol(A_TOKEN_SYMBOL)
+						.setExpiry(Timestamp.newBuilder().setSeconds(now + THREE_MONTHS_IN_SECONDS).setNanos(0).build())
+						.setToken(target)
+				).build();
+		final var extantTokenContext = ExtantTokenContext.newBuilder()
+				.setExistingExpiry(now)
+				.setExistingMemoLen(0)
+				.setExistingNameLen(0)
+				.setExistingSymLen(0)
+				.build();
+		final var tokenUpdateMeta = TOKEN_OPS_USAGE_UTILS.tokenUpdateUsageFrom(canonicalTxn);
+		final var into = new UsageAccumulator();
+		TOKEN_OPS_USAGE.tokenUpdateUsage(
+				SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenUpdateMeta, extantTokenContext, into);
+		return into;
+	}
+
+	UsageAccumulator tokenDelete() {
+		final var tokenDeleteMeta = TOKEN_OPS_USAGE_UTILS.tokenDeleteUsageFrom();
+		final var into = new UsageAccumulator();
+		TOKEN_OPS_USAGE.tokenDeleteUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenDeleteMeta, into);
+		//log.info("TokenFreeze base accumulator: {}", into);
+		return into;
+	}
+
 
 	UsageAccumulator submitMessage() {
 		final var opMeta = new SubmitMessageMeta(100);

@@ -23,12 +23,18 @@ package com.hedera.services.bdd.spec.transactions.token;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.StringValue;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.usage.BaseTransactionMeta;
+import com.hedera.services.usage.state.UsageAccumulator;
+import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.TokenUpdateUsage;
+import com.hedera.services.usage.token.meta.ExtantTokenContext;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -37,6 +43,7 @@ import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -48,12 +55,14 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 	static final Logger log = LogManager.getLogger(HapiTokenUpdate.class);
 
 	private String token;
+	private TokenInfo info;
 
 	private OptionalLong expiry = OptionalLong.empty();
 	private OptionalLong autoRenewPeriod = OptionalLong.empty();
@@ -182,40 +191,61 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
 		try {
 			final TokenInfo info = HapiTokenFeeScheduleUpdate.lookupInfo(spec, token, log, loggingOff);
-			FeeCalculator.ActivityMetrics metricsCalc = (_txn, svo) -> {
-				var estimate = TokenUpdateUsage.newEstimate(_txn, suFrom(svo));
-				if (info.hasFreezeKey()) {
-					estimate.givenCurrentFreezeKey(Optional.of(info.getFreezeKey()));
-				}
-				if (info.hasAdminKey()) {
-					estimate.givenCurrentAdminKey(Optional.of(info.getAdminKey()));
-				}
-				if (info.hasSupplyKey()) {
-					estimate.givenCurrentSupplyKey(Optional.of(info.getSupplyKey()));
-				}
-				if (info.hasKycKey()) {
-					estimate.givenCurrentKycKey(Optional.of(info.getKycKey()));
-				}
-				if (info.hasWipeKey()) {
-					estimate.givenCurrentWipeKey(Optional.of(info.getWipeKey()));
-				}
-				if (info.hasFeeScheduleKey()) {
-					estimate.givenCurrentFeeScheduleKey(Optional.of(info.getFeeScheduleKey()));
-				}
-				estimate.givenCurrentExpiry(info.getExpiry().getSeconds())
-						.givenCurrentMemo(info.getMemo())
-						.givenCurrentName(info.getName())
-						.givenCurrentSymbol(info.getSymbol());
-				if (info.hasAutoRenewAccount()) {
-					estimate.givenCurrentlyUsingAutoRenewAccount();
-				}
-				return estimate.get();
-			};
-			return spec.fees().forActivityBasedOp(HederaFunctionality.TokenUpdate, metricsCalc, txn, numPayerKeys);
+
+			return spec.fees().forActivityBasedOp(HederaFunctionality.TokenUpdate, this::usageEstimate, txn, numPayerKeys);
 		} catch (Throwable ignore) {
 			return HapiApiSuite.ONE_HBAR;
 		}
 	}
+	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
+		UsageAccumulator accumulator = new UsageAccumulator();
+		ExtantTokenContext ctx = ExtantTokenContext.newBuilder()
+				.setExistingSymLen(info.getSymbol().length())
+				.setExistingNameLen(info.getName().length())
+				.setExistingMemoLen(info.getMemo().length())
+				.setExistingExpiry(info.getExpiry().getSeconds())
+				.setHasAutoRenewalAccount(info.hasAutoRenewAccount())
+				.build();
+		final var tokenUpdateMeta = TOKEN_OPS_USAGE_UTILS.tokenUpdateUsageFrom(txn);
+
+		final var baseTransactionMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
+		TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
+		tokenOpsUsage.tokenUpdateUsage(suFrom(svo), baseTransactionMeta, tokenUpdateMeta, ctx, accumulator);
+		return AdapterUtils.feeDataFrom(accumulator);
+	}
+
+//	private FeeData usageEstimateOld(TransactionBody txn, SigValueObj svo) {
+//		//	FeeCalculator.ActivityMetrics metricsCalc = (_txn, _svo) -> {
+//
+//		var estimate = TokenUpdateUsage.newEstimate(txn, suFrom(svo));
+//		if (info.hasFreezeKey()) {
+//			estimate.givenCurrentFreezeKey(Optional.of(info.getFreezeKey()));
+//		}
+//		if (info.hasAdminKey()) {
+//			estimate.givenCurrentAdminKey(Optional.of(info.getAdminKey()));
+//		}
+//		if (info.hasSupplyKey()) {
+//			estimate.givenCurrentSupplyKey(Optional.of(info.getSupplyKey()));
+//		}
+//		if (info.hasKycKey()) {
+//			estimate.givenCurrentKycKey(Optional.of(info.getKycKey()));
+//		}
+//		if (info.hasWipeKey()) {
+//			estimate.givenCurrentWipeKey(Optional.of(info.getWipeKey()));
+//		}
+//		if (info.hasFeeScheduleKey()) {
+//			estimate.givenCurrentFeeScheduleKey(Optional.of(info.getFeeScheduleKey()));
+//		}
+//		estimate.givenCurrentExpiry(info.getExpiry().getSeconds())
+//				.givenCurrentMemo(info.getMemo())
+//				.givenCurrentName(info.getName())
+//				.givenCurrentSymbol(info.getSymbol());
+//		if (info.hasAutoRenewAccount()) {
+//			estimate.givenCurrentlyUsingAutoRenewAccount();
+//		}
+//		return estimate.get();
+//		//	};
+//	}
 
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {

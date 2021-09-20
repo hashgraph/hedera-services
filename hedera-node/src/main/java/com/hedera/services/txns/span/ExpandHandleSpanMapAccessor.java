@@ -26,6 +26,8 @@ import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hedera.services.usage.token.meta.TokenBurnMeta;
 import com.hedera.services.usage.token.meta.TokenCreateMeta;
+import com.hedera.services.usage.token.meta.TokenDeleteMeta;
+import com.hedera.services.usage.token.meta.TokenUpdateMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
 import com.hedera.services.utils.TxnAccessor;
 
@@ -42,6 +44,10 @@ public class ExpandHandleSpanMapAccessor {
 	private static final String TOKEN_CREATE_META_KEY = "tokenCreateMeta";
 	private static final String TOKEN_BURN_META_KEY = "tokenBurnMeta";
 	private static final String TOKEN_WIPE_META_KEY = "tokenWipeMeta";
+	private static final String TOKEN_UPDATE_META_KEY = "tokenUpdateMeta";
+	private static final String TOKEN_DELETE_META_KEY = "tokenDeleteMeta";
+	private static final String TOKEN_GRANT_META_KEY = "tokenGrantKycMeta";
+	private static final String TOKEN_REVOKE_META_KEY = "tokenRevokeKycMeta";
 	private static final String CRYPTO_CREATE_META_KEY = "cryptoCreateMeta";
 	private static final String CRYPTO_UPDATE_META_KEY = "cryptoUpdateMeta";
 
@@ -96,6 +102,23 @@ public class ExpandHandleSpanMapAccessor {
 	public CryptoCreateMeta getCryptoCreateMeta(TxnAccessor accessor) {
 		return (CryptoCreateMeta) accessor.getSpanMap().get(CRYPTO_CREATE_META_KEY);
 	}
+
+	public void setTokenUpdateMeta(TxnAccessor accessor, TokenUpdateMeta tokenUpdateMeta) {
+		accessor.getSpanMap().put(TOKEN_UPDATE_META_KEY, tokenUpdateMeta);
+	}
+
+	public TokenUpdateMeta getTokenUpdateMeta(TxnAccessor accessor) {
+		return (TokenUpdateMeta) accessor.getSpanMap().get(TOKEN_UPDATE_META_KEY);
+	}
+
+	public void setTokenDeleteMeta(TxnAccessor accessor, TokenDeleteMeta tokenDeleteMeta) {
+		accessor.getSpanMap().put(TOKEN_DELETE_META_KEY, tokenDeleteMeta);
+	}
+
+	public TokenDeleteMeta getTokenDeleteMeta(TxnAccessor accessor) {
+		return (TokenDeleteMeta) accessor.getSpanMap().get(TOKEN_DELETE_META_KEY);
+	}
+
 
 	public void setCryptoUpdate(TxnAccessor accessor, CryptoUpdateMeta cryptoUpdateMeta) {
 		accessor.getSpanMap().put(CRYPTO_UPDATE_META_KEY, cryptoUpdateMeta);
