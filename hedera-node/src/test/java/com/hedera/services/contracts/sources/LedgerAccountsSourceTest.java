@@ -184,7 +184,7 @@ class LedgerAccountsSourceTest {
 		given(ledger.exists(target)).willReturn(true);
 
 		// when:
-//		subject.put(key, evmState);
+		subject.put(key, evmState);
 
 		// then:
 		inOrder.verify(ledger).adjustBalance(target, newBalance - oldBalance);
@@ -217,7 +217,7 @@ class LedgerAccountsSourceTest {
 		given(ledger.exists(target)).willReturn(false);
 
 		// when:
-//		subject.put(key, evmState);
+		subject.put(key, evmState);
 
 		// then:
 		verify(ledger).spawn(argThat(target::equals), longThat(l -> l == newBalance), captor.capture());
@@ -258,7 +258,7 @@ class LedgerAccountsSourceTest {
 		given(ledger.exists(target)).willReturn(false);
 
 		// when:
-//		subject.put(key, evmState);
+		subject.put(key, evmState);
 
 		// then:
 		verify(ledger).spawn(argThat(target::equals), longThat(l -> l == newBalance), captor.capture());

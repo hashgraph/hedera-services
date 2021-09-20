@@ -269,27 +269,27 @@ public class SolidityExecutor {
 				errorCode = CONTRACT_BYTECODE_EMPTY;
 				setError(String.format("Error: Bytecode is empty for contract 0x%s", CommonUtils.hex(targetAddress)));
 			} else {
-//				var programInvoke = programInvokeFactory.createProgramInvoke(
-//						solidityTxn, block, trackingRepository, repository, NULL_BLOCK_STORE);
-//				((ProgramInvokeImpl) programInvoke).setStaticCall(localCall);
-//				this.vm = new VM(config, VMHook.EMPTY);
-//				this.program = new Program(
-//						repository.getCodeHash(targetAddress),
-//						code,
-//						programInvoke,
-//						solidityTxn,
-//						config,
-//						VMHook.EMPTY,
-//						contractCreateAdaptor,
-//						fundingAddress,
-//						rbh,
-//						sbh,
-//						dynamicProperties.defaultContractLifetime(),
-//						dynamicProperties.cacheRecordsTtl()).withCommonConfig(commonConfig);
+				var programInvoke = programInvokeFactory.createProgramInvoke(
+						solidityTxn, block, trackingRepository, repository, NULL_BLOCK_STORE);
+				((ProgramInvokeImpl) programInvoke).setStaticCall(localCall);
+				this.vm = new VM(config, VMHook.EMPTY);
+				this.program = new Program(
+						repository.getCodeHash(targetAddress),
+						code,
+						programInvoke,
+						solidityTxn,
+						config,
+						VMHook.EMPTY,
+						contractCreateAdaptor,
+						fundingAddress,
+						rbh,
+						sbh,
+						dynamicProperties.defaultContractLifetime(),
+						dynamicProperties.cacheRecordsTtl()).withCommonConfig(commonConfig);
 			}
 		}
 		if (!localCall) {
-//			transfer(trackingRepository, solidityTxn.getSender(), targetAddress, toBI(solidityTxn.getValue()));
+			transfer(trackingRepository, solidityTxn.getSender(), targetAddress, toBI(solidityTxn.getValue()));
 			touchedAccounts.add(targetAddress);
 		}
 	}
@@ -302,12 +302,12 @@ public class SolidityExecutor {
 		solidityTxn.setContractAddress(newContractAddress);
 
 		var alreadyExtant = trackingRepository.getAccountState(newContractAddress);
-//		if (alreadyExtant != null && alreadyExtant.isContractExist(blockchainConfig)) {
-//			errorCode = CONTRACT_EXECUTION_EXCEPTION;
-//			setError(String.format("Cannot overwrite extant contract @ 0x%s!", CommonUtils.hex(newContractAddress)));
-//			gasLeft = ZERO;
-//			return;
-//		}
+		if (alreadyExtant != null && alreadyExtant.isContractExist(blockchainConfig)) {
+			errorCode = CONTRACT_EXECUTION_EXCEPTION;
+			setError(String.format("Cannot overwrite extant contract @ 0x%s!", CommonUtils.hex(newContractAddress)));
+			gasLeft = ZERO;
+			return;
+		}
 
 		BigInteger oldBalance = repository.getBalance(newContractAddress);
 		trackingRepository.createAccount(newContractAddress);
@@ -332,26 +332,26 @@ public class SolidityExecutor {
 		}
 
 		if (!isEmpty(solidityTxn.getData())) {
-//			ProgramInvoke programInvoke = programInvokeFactory.createProgramInvoke(
-//					solidityTxn, block, trackingRepository, repository, NULL_BLOCK_STORE);
-//			((ProgramInvokeImpl) programInvoke).setStaticCall(localCall);
-//			this.vm = new VM(config, VMHook.EMPTY);
-//			this.program = new Program(
-//					null,
-//					solidityTxn.getData(),
-//					programInvoke,
-//					solidityTxn,
-//					config,
-//					VMHook.EMPTY,
-//					contractCreateAdaptor,
-//					fundingAddress,
-//					rbh,
-//					sbh,
-//					dynamicProperties.defaultContractLifetime(),
-//					dynamicProperties.cacheRecordsTtl()).withCommonConfig(commonConfig);
+			ProgramInvoke programInvoke = programInvokeFactory.createProgramInvoke(
+					solidityTxn, block, trackingRepository, repository, NULL_BLOCK_STORE);
+			((ProgramInvokeImpl) programInvoke).setStaticCall(localCall);
+			this.vm = new VM(config, VMHook.EMPTY);
+			this.program = new Program(
+					null,
+					solidityTxn.getData(),
+					programInvoke,
+					solidityTxn,
+					config,
+					VMHook.EMPTY,
+					contractCreateAdaptor,
+					fundingAddress,
+					rbh,
+					sbh,
+					dynamicProperties.defaultContractLifetime(),
+					dynamicProperties.cacheRecordsTtl()).withCommonConfig(commonConfig);
 		}
 		if (!localCall) {
-//			transfer(trackingRepository, solidityTxn.getSender(), newContractAddress, toBI(solidityTxn.getValue()));
+			transfer(trackingRepository, solidityTxn.getSender(), newContractAddress, toBI(solidityTxn.getValue()));
 			touchedAccounts.add(newContractAddress);
 		}
 	}
@@ -567,21 +567,21 @@ public class SolidityExecutor {
 		Map<byte[], List<byte[]>> creations =
 				Optional.ofNullable(contractCreateAdaptor.getCreatedContracts()).orElse(Collections.emptyMap());
 		if (!creations.isEmpty()) {
-//			final Consumer<byte[]> initializer = newScopedAccountInitializer(
-//					startTime.getEpochSecond(),
-//					dynamicProperties.defaultContractLifetime(),
-//					solidityTxn.getSender(),
-//					repository);
-//			createdContracts = Optional.of(
-//					creations.values()
-//							.stream()
-//							.flatMap(List::stream)
-//							.peek(initializer::accept)
-//							.map(address -> asContract(accountParsedFromSolidityAddress(address)))
-//							.sorted(comparingLong(ContractID::getShardNum)
-//									.thenComparingLong(ContractID::getRealmNum)
-//									.thenComparingLong(ContractID::getContractNum))
-//							.collect(Collectors.toList()));
+			final Consumer<byte[]> initializer = newScopedAccountInitializer(
+					startTime.getEpochSecond(),
+					dynamicProperties.defaultContractLifetime(),
+					solidityTxn.getSender(),
+					repository);
+			createdContracts = Optional.of(
+					creations.values()
+							.stream()
+							.flatMap(List::stream)
+							.peek(initializer::accept)
+							.map(address -> asContract(accountParsedFromSolidityAddress(address)))
+							.sorted(comparingLong(ContractID::getShardNum)
+									.thenComparingLong(ContractID::getRealmNum)
+									.thenComparingLong(ContractID::getContractNum))
+							.collect(Collectors.toList()));
 		}
 	}
 
