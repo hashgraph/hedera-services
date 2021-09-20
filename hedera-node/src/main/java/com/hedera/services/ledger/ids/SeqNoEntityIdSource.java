@@ -43,6 +43,7 @@ public class SeqNoEntityIdSource implements EntityIdSource {
 
 	@Override
 	public AccountID newAccountId(AccountID sponsor) {
+		provisionalIds++;
 		return AccountID.newBuilder()
 				.setRealmNum(sponsor.getRealmNum())
 				.setShardNum(sponsor.getShardNum())

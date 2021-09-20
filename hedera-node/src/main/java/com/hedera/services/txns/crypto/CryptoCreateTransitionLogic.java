@@ -114,6 +114,16 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 	}
 
 	@Override
+	public void reclaimCreatedIds() {
+		ids.reclaimProvisionalIds();
+	}
+
+	@Override
+	public void resetCreatedIds() {
+		ids.resetProvisionalIds();
+	}
+
+	@Override
 	public Predicate<TransactionBody> applicability() {
 		return TransactionBody::hasCryptoCreateAccount;
 	}
