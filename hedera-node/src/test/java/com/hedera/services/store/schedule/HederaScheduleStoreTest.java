@@ -341,7 +341,7 @@ class HederaScheduleStoreTest {
 
 		final var scheduleIdPair = subject.lookupSchedule(parentTxn.toByteArray());
 
-		assertEquals(Pair.of(Optional.of(created), schedule), scheduleIdPair);
+		assertEquals(Pair.of(created, schedule), scheduleIdPair);
 	}
 
 	@Test
@@ -352,7 +352,7 @@ class HederaScheduleStoreTest {
 
 		final var scheduleIdPair = subject.lookupSchedule(parentTxn.toByteArray());
 
-		assertEquals(Pair.of(Optional.of(created), candSchedule), scheduleIdPair);
+		assertEquals(Pair.of(created, candSchedule), scheduleIdPair);
 	}
 
 	@Test
@@ -361,7 +361,7 @@ class HederaScheduleStoreTest {
 
 		final var scheduleIdPair = subject.lookupSchedule(parentTxn.toByteArray());
 
-		assertTrue(scheduleIdPair.getLeft().isEmpty());
+		assertNull(scheduleIdPair.getLeft());
 		assertEquals(expected, scheduleIdPair.getRight());
 	}
 

@@ -208,7 +208,7 @@ class ScheduleCreateTransitionLogicTest {
 		given(merkleSchedule.scheduledTransactionId()).willReturn(scheduledTxnId);
 
 		// and:
-		given(store.lookupSchedule(eq(bodyBytes))).willReturn(Pair.of(Optional.of(schedule), merkleSchedule));
+		given(store.lookupSchedule(eq(bodyBytes))).willReturn(Pair.of(schedule, merkleSchedule));
 
 		// when:
 		subject.doStateTransition();
@@ -248,7 +248,7 @@ class ScheduleCreateTransitionLogicTest {
 		givenValidTxnCtx();
 
 		// and:
-		given(store.lookupSchedule(eq(bodyBytes))).willReturn(Pair.of(Optional.empty(), merkleSchedule));
+		given(store.lookupSchedule(eq(bodyBytes))).willReturn(Pair.of(null, merkleSchedule));
 		given(store.createProvisionally(eq(merkleSchedule), eq(RichInstant.fromJava(now))))
 				.willReturn(CreationResult.failure(INVALID_ADMIN_KEY));
 
@@ -381,7 +381,7 @@ class ScheduleCreateTransitionLogicTest {
 		given(txnCtx.activePayer()).willReturn(payer);
 		given(txnCtx.consensusTime()).willReturn(now);
 		given(store.isCreationPending()).willReturn(true);
-		given(store.lookupSchedule(bodyBytes)).willReturn(Pair.of(Optional.empty(), merkleSchedule));
+		given(store.lookupSchedule(bodyBytes)).willReturn(Pair.of(null, merkleSchedule));
 		given(store.createProvisionally(eq(merkleSchedule), eq(RichInstant.fromJava(now))))
 				.willReturn(CreationResult.success(schedule));
 	}

@@ -37,6 +37,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Collections;
@@ -97,17 +98,15 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 		}
 	}
 
-	private void transitionFor(byte[] bodyBytes, SignatureMap sigMap) throws InvalidProtocolBufferException {
-		var idSchedulePair = store.lookupSchedule(bodyBytes);
-		if (idSchedulePair.getLeft().isPresent()) {
-			completeContextWith(
-					idSchedulePair.getLeft().get(),
-					idSchedulePair.getRight(),
-					IDENTICAL_SCHEDULE_ALREADY_CREATED);
+	private void transitionFor(final byte[] bodyBytes, final SignatureMap sigMap) throws InvalidProtocolBufferException {
+		final var idSchedulePair = store.lookupSchedule(bodyBytes);
+		@Nullable final var existingScheduleId = idSchedulePair.getLeft();
+		final var schedule = idSchedulePair.getRight();
+		if (null != existingScheduleId) {
+			completeContextWith(existingScheduleId, schedule, IDENTICAL_SCHEDULE_ALREADY_CREATED);
 			return;
 		}
 
-		final var schedule = idSchedulePair.getRight();
 		final var result = store.createProvisionally(schedule, fromJava(txnCtx.consensusTime()));
 		final var scheduleId = result.getCreated();
 		if (null == scheduleId) {
