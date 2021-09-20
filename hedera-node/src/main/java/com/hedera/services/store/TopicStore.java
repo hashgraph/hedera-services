@@ -26,6 +26,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.function.Supplier;
 
+import static com.hedera.services.store.models.TopicConversion.fromModel;
+
 /**
  * A store which interacts with the state topics, represented in a {@link MerkleMap}.
  * 
@@ -55,30 +57,9 @@ public class TopicStore {
 	public void persistNew(Topic model) {
 		final var id = model.getId().asEntityNum();
 		final var currentTopics = topics.get();
-		final var merkleTopic = new MerkleTopic();
-		mapModelToMerkle(model, merkleTopic);
+		final var merkleTopic = fromModel(model);
 		merkleTopic.setSequenceNumber(0);
 		currentTopics.put(id, merkleTopic);
 		transactionRecordService.includeChangesToTopic(model);
 	}
-
-	/**
-	 * Maps properties between a model {@link Topic} and a {@link MerkleTopic}
-	 * 
-	 * @param model - the Topic model which will be used to map into a MerkleTopic
-	 * @param merkle - the merkle topic
-	 */
-	private void mapModelToMerkle(Topic model, MerkleTopic merkle) {
-		merkle.setAdminKey(model.getAdminKey());
-		merkle.setSubmitKey(model.getSubmitKey());
-		merkle.setMemo(model.getMemo());
-		if (model.getAutoRenewAccountId() != null) {
-			merkle.setAutoRenewAccountId(model.getAutoRenewAccountId().asEntityId());
-		}
-		merkle.setAutoRenewDurationSeconds(model.getAutoRenewDurationSeconds());
-		merkle.setExpirationTimestamp(model.getExpirationTimestamp());
-		merkle.setDeleted(model.isDeleted());
-		merkle.setSequenceNumber(model.getSequenceNumber());
-	}
-
 }
