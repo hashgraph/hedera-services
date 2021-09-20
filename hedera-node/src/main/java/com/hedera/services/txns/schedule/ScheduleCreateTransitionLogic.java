@@ -107,14 +107,14 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 			return;
 		}
 
-		var schedule = idSchedulePair.getRight();
-		var result = store.createProvisionally(schedule, fromJava(txnCtx.consensusTime()));
-		if (result.getCreated().isEmpty()) {
+		final var schedule = idSchedulePair.getRight();
+		final var result = store.createProvisionally(schedule, fromJava(txnCtx.consensusTime()));
+		final var scheduleId = result.getCreated();
+		if (null == scheduleId) {
 			abortWith(result.getStatus());
 			return;
 		}
 
-		var scheduleId = result.getCreated().get();
 		var payerKey = txnCtx.activePayerKey();
 		var topLevelKeys = schedule.adminKey().map(ak -> List.of(payerKey, ak)).orElse(List.of(payerKey));
 		var validScheduleKeys = classifier.validScheduleKeys(

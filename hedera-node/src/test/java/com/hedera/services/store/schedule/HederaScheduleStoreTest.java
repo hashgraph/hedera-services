@@ -34,7 +34,9 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,8 +48,8 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
-import static com.hedera.services.utils.EntityNum.fromScheduleId;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccountId;
+import static com.hedera.services.utils.EntityNum.fromScheduleId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SCHEDULE_ADMIN_KT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ACCOUNT_ID;
@@ -86,6 +88,13 @@ class HederaScheduleStoreTest {
 
 	private static final EntityId entityPayer = fromGrpcAccountId(payerId);
 	private static final EntityId entitySchedulingAccount = fromGrpcAccountId(schedulingAccount);
+
+	private static final TransactionBody parentTxn = MerkleScheduleTest.scheduleCreateTxnWith(
+			adminJKey,
+			entityMemo,
+			entityPayer.toGrpcAccountId(),
+			entitySchedulingAccount.toGrpcAccountId(),
+			schedulingTXValidStart.toGrpc());
 
 	private EntityIdSource ids;
 	private MerkleMap<EntityNum, MerkleSchedule> schedules;
@@ -134,12 +143,6 @@ class HederaScheduleStoreTest {
 
 	@Test
 	void rebuildsAsExpected() {
-		final var parentTxn = MerkleScheduleTest.scheduleCreateTxnWith(
-				adminJKey,
-				entityMemo,
-				entityPayer.toGrpcAccountId(),
-				entitySchedulingAccount.toGrpcAccountId(),
-				schedulingTXValidStart.toGrpc());
 		final var expected = MerkleSchedule.from(parentTxn.toByteArray(), 0L);
 		expected.setKey(EntityNum.fromLong(created.getScheduleNum()));
 		final var captor = forClass(Consumer.class);
@@ -257,18 +260,12 @@ class HederaScheduleStoreTest {
 
 	@Test
 	void createProvisionallyWorks() {
-		final var parentTxn = MerkleScheduleTest.scheduleCreateTxnWith(
-				adminJKey,
-				entityMemo,
-				entityPayer.toGrpcAccountId(),
-				entitySchedulingAccount.toGrpcAccountId(),
-				schedulingTXValidStart.toGrpc());
 		final var expected = MerkleSchedule.from(parentTxn.toByteArray(), 0L);
 
 		final var outcome = subject.createProvisionally(expected, consensusTime);
 
 		assertEquals(OK, outcome.getStatus());
-		assertEquals(created, outcome.getCreated().get());
+		assertEquals(created, outcome.getCreated());
 		assertEquals(created, subject.pendingId);
 		assertSame(expected, subject.pendingCreation);
 		assertEquals(expectedExpiry, expected.expiry());
@@ -287,7 +284,7 @@ class HederaScheduleStoreTest {
 				MerkleSchedule.from(parentTxn.toByteArray(), 0L), consensusTime);
 
 		assertEquals(INVALID_SCHEDULE_PAYER_ID, outcome.getStatus());
-		assertTrue(outcome.getCreated().isEmpty());
+		assertNull(outcome.getCreated());
 	}
 
 	@Test
@@ -305,87 +302,39 @@ class HederaScheduleStoreTest {
 
 	@Test
 	void createProvisionallyRejectsInvalidScheduler() {
-		final var parentTxn = MerkleScheduleTest.scheduleCreateTxnWith(
+		final var differentParentTxn = MerkleScheduleTest.scheduleCreateTxnWith(
 				adminJKey,
 				entityMemo,
 				entityPayer.toGrpcAccountId(),
 				IdUtils.asAccount("22.33.44"),
 				schedulingTXValidStart.toGrpc());
 
-		final var outcome = subject.createProvisionally(
-				MerkleSchedule.from(parentTxn.toByteArray(), 0L), consensusTime);
-
-		assertEquals(INVALID_SCHEDULE_ACCOUNT_ID, outcome.getStatus());
-		assertEquals(Optional.empty(), outcome.getCreated());
-		assertNull(subject.pendingCreation);
-		assertEquals(ScheduleID.getDefaultInstance(), subject.pendingId);
+		rejectWith(INVALID_SCHEDULE_ACCOUNT_ID, differentParentTxn);
 	}
 
 	@Test
 	void rejectsCreateProvisionallyDeletedPayer() {
 		given(hederaLedger.isDeleted(payerId)).willReturn(true);
-		final var parentTxn = MerkleScheduleTest.scheduleCreateTxnWith(
-				adminJKey,
-				entityMemo,
-				entityPayer.toGrpcAccountId(),
-				entitySchedulingAccount.toGrpcAccountId(),
-				schedulingTXValidStart.toGrpc());
 
-		final var outcome = subject.createProvisionally(
-				MerkleSchedule.from(parentTxn.toByteArray(), 0L), consensusTime);
-
-		assertEquals(INVALID_SCHEDULE_PAYER_ID, outcome.getStatus());
-		assertEquals(Optional.empty(), outcome.getCreated());
-		assertNull(subject.pendingCreation);
-		assertEquals(ScheduleID.getDefaultInstance(), subject.pendingId);
+		rejectWith(INVALID_SCHEDULE_PAYER_ID, parentTxn);
 	}
 
 	@Test
 	void rejectsCreateProvisionallyDeletedScheduler() {
 		given(hederaLedger.isDeleted(schedulingAccount)).willReturn(true);
-		final var parentTxn = MerkleScheduleTest.scheduleCreateTxnWith(
-				adminJKey,
-				entityMemo,
-				entityPayer.toGrpcAccountId(),
-				entitySchedulingAccount.toGrpcAccountId(),
-				schedulingTXValidStart.toGrpc());
 
-		final var outcome = subject.createProvisionally(
-				MerkleSchedule.from(parentTxn.toByteArray(), 0L), consensusTime);
-
-		assertEquals(INVALID_SCHEDULE_ACCOUNT_ID, outcome.getStatus());
-		assertEquals(Optional.empty(), outcome.getCreated());
-		assertNull(subject.pendingCreation);
-		assertEquals(ScheduleID.getDefaultInstance(), subject.pendingId);
+		rejectWith(INVALID_SCHEDULE_ACCOUNT_ID, parentTxn);
 	}
 
 	@Test
 	void rejectsCreateProvisionallyWithMissingSchedulingAccount() {
 		given(accountsLedger.exists(schedulingAccount)).willReturn(false);
-		final var parentTxn = MerkleScheduleTest.scheduleCreateTxnWith(
-				adminJKey,
-				entityMemo,
-				entityPayer.toGrpcAccountId(),
-				entitySchedulingAccount.toGrpcAccountId(),
-				schedulingTXValidStart.toGrpc());
 
-		final var outcome = subject.createProvisionally(
-				MerkleSchedule.from(parentTxn.toByteArray(), 0L), consensusTime);
-
-		assertEquals(INVALID_SCHEDULE_ACCOUNT_ID, outcome.getStatus());
-		assertEquals(Optional.empty(), outcome.getCreated());
-		assertNull(subject.pendingCreation);
-		assertEquals(ScheduleID.getDefaultInstance(), subject.pendingId);
+		rejectWith(INVALID_SCHEDULE_ACCOUNT_ID, parentTxn);
 	}
 
 	@Test
 	void recognizesCollidingSchedule() {
-		final var parentTxn = MerkleScheduleTest.scheduleCreateTxnWith(
-				adminJKey,
-				entityMemo,
-				entityPayer.toGrpcAccountId(),
-				entitySchedulingAccount.toGrpcAccountId(),
-				schedulingTXValidStart.toGrpc());
 		final var candSchedule = MerkleSchedule.from(parentTxn.toByteArray(), expectedExpiry);
 		final var cav = candSchedule.toContentAddressableView();
 		subject.getExtantSchedules().put(cav, fromScheduleId(created));
@@ -397,12 +346,6 @@ class HederaScheduleStoreTest {
 
 	@Test
 	void recognizesCollisionWithPending() {
-		final var parentTxn = MerkleScheduleTest.scheduleCreateTxnWith(
-				adminJKey,
-				entityMemo,
-				entityPayer.toGrpcAccountId(),
-				entitySchedulingAccount.toGrpcAccountId(),
-				schedulingTXValidStart.toGrpc());
 		final var candSchedule = MerkleSchedule.from(parentTxn.toByteArray(), expectedExpiry);
 		subject.pendingCreation = candSchedule;
 		subject.pendingId = created;
@@ -414,12 +357,6 @@ class HederaScheduleStoreTest {
 
 	@Test
 	void understandsMissing() {
-		final var parentTxn = MerkleScheduleTest.scheduleCreateTxnWith(
-				adminJKey,
-				entityMemo,
-				entityPayer.toGrpcAccountId(),
-				entitySchedulingAccount.toGrpcAccountId(),
-				schedulingTXValidStart.toGrpc());
 		final var expected = MerkleSchedule.from(parentTxn.toByteArray(), 0L);
 
 		final var scheduleIdPair = subject.lookupSchedule(parentTxn.toByteArray());
@@ -524,12 +461,6 @@ class HederaScheduleStoreTest {
 
 	@Test
 	void throwsOnExpiringPending() {
-		final var parentTxn = MerkleScheduleTest.scheduleCreateTxnWith(
-				adminJKey,
-				entityMemo,
-				entityPayer.toGrpcAccountId(),
-				entitySchedulingAccount.toGrpcAccountId(),
-				schedulingTXValidStart.toGrpc());
 		final var expected = MerkleSchedule.from(parentTxn.toByteArray(), 0L);
 
 		subject.createProvisionally(expected, consensusTime);
@@ -541,5 +472,15 @@ class HederaScheduleStoreTest {
 	@Test
 	void throwsUsoOnDelete() {
 		assertThrows(UnsupportedOperationException.class, () -> subject.delete(created));
+	}
+
+	private void rejectWith(final ResponseCodeEnum expectedCode, final TransactionBody parentTxn) {
+		final var outcome = subject.createProvisionally(
+				MerkleSchedule.from(parentTxn.toByteArray(), 0L), consensusTime);
+
+		assertEquals(expectedCode, outcome.getStatus());
+		assertNull(outcome.getCreated());
+		assertNull(subject.pendingCreation);
+		assertEquals(ScheduleID.getDefaultInstance(), subject.pendingId);
 	}
 }
