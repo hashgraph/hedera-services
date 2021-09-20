@@ -26,13 +26,10 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
-import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
@@ -42,8 +39,6 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
-import com.swirlds.fchashmap.FCOneToManyRelation;
-import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -91,13 +86,11 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 		subject.begin();
 		subject.adjustBalance(genesis, -1L);
 		subject.adjustBalance(misc, 1L);
-//		subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
 		subject.commit();
 
 		subject.begin();
 		subject.adjustBalance(misc, -10L);
 		subject.adjustBalance(genesis, 10L);
-//		subject.create(genesis, 2_000L, new HederaAccountCustomizer().memo("b"));
 
 		assertEquals(2L, subject.netTransfersInTxn().getAccountAmountsList().size());
 	}

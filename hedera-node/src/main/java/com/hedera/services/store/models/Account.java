@@ -127,8 +127,8 @@ public class Account {
 		recipient.setBalance(recipient.getBalance() + amount);
 
 		final var balanceAdjustments = new ArrayList<BalanceChange>();
-		balanceAdjustments.add(BalanceChange.hbarAdjust(recipient.getId(), -1 * amount));
-		balanceAdjustments.add(BalanceChange.hbarAdjust(this.getId(), amount));
+		balanceAdjustments.add(BalanceChange.hbarAdjust(this.getId(), -1 * amount));
+		balanceAdjustments.add(BalanceChange.hbarAdjust(recipient.getId(), amount));
 		return balanceAdjustments;
 	}
 

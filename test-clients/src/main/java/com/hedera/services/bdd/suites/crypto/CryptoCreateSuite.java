@@ -94,8 +94,24 @@ public class CryptoCreateSuite extends HapiApiSuite {
 				syntaxChecksAreAsExpected(),
 				xferRequiresCrypto(),
 				maxAutoAssociationSpec(),
-				usdFeeAsExpected()
+				usdFeeAsExpected(),
+				transactionRecordShowsCorrectTransfers()
 		);
+	}
+	
+	private HapiApiSpec transactionRecordShowsCorrectTransfers() {
+		return defaultHapiSpec("transactionRecordShowsCorrectTransfers")
+				.given(
+						cryptoCreate("account")
+								.balance(10L)
+								.payingWith(GENESIS)
+								.via("createTxn")
+				).when().then(
+						getTxnRecord("createTxn")
+								.hasHbarAmount("account", 10)
+								.hasHbarAmount(GENESIS, -10)
+								.logged()
+				);
 	}
 
 	private HapiApiSpec maxAutoAssociationSpec() {
