@@ -116,6 +116,10 @@ public final class ContractKey implements VirtualKey {
 
     @Override
     public void serialize(SerializableDataOutputStream out) throws IOException {
+        serializeReturningByteWritten(out);
+    }
+
+    public int serializeReturningByteWritten(SerializableDataOutputStream out) throws IOException {
         out.write(getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
         for (int b = contractIdNonZeroBytes-1; b >= 0; b--) {
             out.write((byte)(contractId >> (b*8)));
@@ -123,6 +127,7 @@ public final class ContractKey implements VirtualKey {
         for (int b = uint256KeyNonZeroBytes-1; b >= 0; b--) {
             out.write(getUint256Byte(b));
         }
+        return 1 + contractIdNonZeroBytes + uint256KeyNonZeroBytes;
     }
 
     @Override

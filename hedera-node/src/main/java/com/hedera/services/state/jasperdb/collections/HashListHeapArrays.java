@@ -38,7 +38,7 @@ public final class HashListHeapArrays implements HashList {
             int subIndex = (int) (index % NUM_HASHES_PER_CHUNK);
             int offset = HASH_SIZE_BYTES * subIndex;
             byte[] buffer = data.get(bufferIndex);
-            return HashTools.byteArrayToHash(buffer,offset);
+            return HashTools.byteArrayToHash(buffer,offset,1);
         } else {
             return null;
         }

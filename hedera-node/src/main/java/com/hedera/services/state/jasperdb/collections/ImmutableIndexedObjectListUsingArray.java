@@ -102,7 +102,7 @@ public class ImmutableIndexedObjectListUsingArray<T extends IndexedObject> exten
      */
     @Override
     public T getLast() {
-        return (dataArray == null || dataArray.length == 0) ? null : dataArray[0];
+        return (dataArray == null || dataArray.length == 0) ? null : dataArray[dataArray.length-1];
     }
 
     /**

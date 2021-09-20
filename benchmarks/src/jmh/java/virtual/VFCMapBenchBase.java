@@ -2,6 +2,7 @@ package virtual;
 
 import com.hedera.services.state.jasperdb.VirtualDataSourceJasperDB;
 import com.hedera.services.state.jasperdb.files.HalfDiskHashMap;
+import com.hedera.services.state.jasperdb.files.KeySizeReader;
 import com.hedera.services.state.merkle.virtual.ContractKey;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -32,7 +33,7 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
     protected VirtualMap<K,V> createMap(
             DataSourceType type,
             int keySizeBytes,int estimatedAverageKeySizeBytes, int maxKeySize,
-            Supplier<K> keyConstructor, HalfDiskHashMap.KeySizeReader keySizeReader,
+            Supplier<K> keyConstructor, KeySizeReader keySizeReader,
             int valueSizeBytes,
             Supplier<V> valueConstructor,
             long numEntities) throws IOException {
