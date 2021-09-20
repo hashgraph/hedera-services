@@ -20,9 +20,7 @@ package com.hederahashgraph.fee;
  * ‍
  */
 
-import com.google.common.base.Charsets;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -32,30 +30,33 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.time.Instant;
 
 /**
  * Fee builder for Consensus service transactions.
  */
-public class ConsensusServiceFeeBuilder extends FeeBuilder {
+public final class ConsensusServiceFeeBuilder extends FeeBuilder {
 
     /**
      * Computes fee for ConsensusCreateTopic transaction
      *
-     * @param txBody transaction body
-     * @param sigValObj signature value object
+     * @param txBody
+     *     transaction body
+     * @param sigValObj
+     *     signature value object
      *
      * @return fee data
-     * @throws InvalidTxBodyException when transaction body is invalid
+     * @throws InvalidTxBodyException
+     *     when transaction body is invalid
      */
-    public static FeeData getConsensusCreateTopicFee(TransactionBody txBody, SigValueObj sigValObj)
+    public static FeeData getConsensusCreateTopicFee(final TransactionBody txBody, final SigValueObj sigValObj)
             throws InvalidTxBodyException {
         if (txBody == null || !txBody.hasConsensusCreateTopic()) {
             throw new InvalidTxBodyException("consensusCreateTopic field not available for Fee Calculation");
         }
-        ConsensusCreateTopicTransactionBody createTopicTxBody = txBody.getConsensusCreateTopic();
-        int variableSize = computeVariableSizedFieldsUsage(createTopicTxBody.getAdminKey(),
+        final var createTopicTxBody = txBody.getConsensusCreateTopic();
+        final var variableSize = computeVariableSizedFieldsUsage(createTopicTxBody.getAdminKey(),
                 createTopicTxBody.getSubmitKey(), createTopicTxBody.getMemo(), createTopicTxBody.hasAutoRenewAccount());
         long extraRbsServices = 0;
         if (createTopicTxBody.hasAutoRenewPeriod()) {
@@ -69,19 +70,27 @@ public class ConsensusServiceFeeBuilder extends FeeBuilder {
     }
 
     /**
-     * Computes fee for consensus update topic transaction
+     * Computes fee for ConsensusUpdateTopic transaction
      *
-     * @param txBody transaction body
-     * @param rbsIncrease rbs increase
-     * @param sigValObj signature value object
+     * @param txBody
+     *     transaction body
+     * @param rbsIncrease
+     *     rbs increase
+     * @param sigValObj
+     *     signature value object
      *
      * @return fee data
-     * @throws InvalidTxBodyException when transaction body is invalid
+     * @throws InvalidTxBodyException
+     *     when transaction body is invalid
      */
-    public static FeeData getConsensusUpdateTopicFee(TransactionBody txBody, long rbsIncrease, SigValueObj sigValObj)
+    public static FeeData getConsensusUpdateTopicFee(
+            final TransactionBody txBody, final long rbsIncrease, final SigValueObj sigValObj)
             throws InvalidTxBodyException {
-        ConsensusUpdateTopicTransactionBody updateTopicTxBody = txBody.getConsensusUpdateTopic();
-        int variableSize = computeVariableSizedFieldsUsage(updateTopicTxBody.getAdminKey(),
+        if (txBody == null || !txBody.hasConsensusUpdateTopic()) {
+            throw new InvalidTxBodyException("consensusUpdateTopic field not available for Fee Calculation");
+        }
+        final var updateTopicTxBody = txBody.getConsensusUpdateTopic();
+        final var variableSize = computeVariableSizedFieldsUsage(updateTopicTxBody.getAdminKey(),
                 updateTopicTxBody.getSubmitKey(), updateTopicTxBody.getMemo().getValue(),
                 updateTopicTxBody.hasAutoRenewAccount());
         return getTxFeeMatrices(txBody, sigValObj,
@@ -90,7 +99,7 @@ public class ConsensusServiceFeeBuilder extends FeeBuilder {
     }
 
     private static int getConsensusUpdateTopicTransactionBodySize(
-            ConsensusUpdateTopicTransactionBody updateTopicTxBody, int variableSize) {
+            final ConsensusUpdateTopicTransactionBody updateTopicTxBody, int variableSize) {
         variableSize += BASIC_ENTITY_ID_SIZE; // topicID
         if (updateTopicTxBody.hasExpirationTime()) {
             variableSize += LONG_SIZE;
@@ -105,25 +114,32 @@ public class ConsensusServiceFeeBuilder extends FeeBuilder {
      * Computes additional rbs (services) for update topic transaction. If any of the variable sized fields change,
      * or the expiration time changes, rbs for the topic may increase
      *
-     * @param txValidStartTimestamp transaction valid start timestamp
-     * @param oldAdminKey old admin key
-     * @param oldSubmitKey old submit key
-     * @param oldMemo old memo
-     * @param hasOldAutoRenewAccount boolean representing old auto renew account
-     * @param oldExpirationTimeStamp old expiration timestamp
-     * @param updateTopicTxBody update topic transaction body
+     * @param txValidStartTimestamp
+     *     transaction valid start timestamp
+     * @param oldAdminKey
+     *     old admin key
+     * @param oldSubmitKey
+     *     old submit key
+     * @param oldMemo
+     *     old memo
+     * @param hasOldAutoRenewAccount
+     *     boolean representing old auto renew account
+     * @param oldExpirationTimeStamp
+     *     old expiration timestamp
+     * @param updateTopicTxBody
+     *     update topic transaction body
      *
      * @return long representing rbs increase
      */
     public static long getUpdateTopicRbsIncrease(
-            Timestamp txValidStartTimestamp,
-            Key oldAdminKey, Key oldSubmitKey, String oldMemo, boolean hasOldAutoRenewAccount, Timestamp oldExpirationTimeStamp,
-            ConsensusUpdateTopicTransactionBody updateTopicTxBody) {
-        int oldRamBytes = getTopicRamBytes(
+            final Timestamp txValidStartTimestamp,
+            final Key oldAdminKey, final Key oldSubmitKey, final String oldMemo, final boolean hasOldAutoRenewAccount,
+            final Timestamp oldExpirationTimeStamp, final ConsensusUpdateTopicTransactionBody updateTopicTxBody) {
+        final var oldRamBytes = getTopicRamBytes(
                 computeVariableSizedFieldsUsage(oldAdminKey, oldSubmitKey, oldMemo, hasOldAutoRenewAccount));
         // If value is null, do not update memo field
-        String newMemo = updateTopicTxBody.hasMemo() ? updateTopicTxBody.getMemo().getValue() : oldMemo;
-        boolean hasNewAutoRenewAccount = hasOldAutoRenewAccount;
+        final var newMemo = updateTopicTxBody.hasMemo() ? updateTopicTxBody.getMemo().getValue() : oldMemo;
+        var hasNewAutoRenewAccount = hasOldAutoRenewAccount;
         if (updateTopicTxBody.hasAutoRenewAccount()) {  // no change if unspecified
             hasNewAutoRenewAccount = true;
             AccountID account = updateTopicTxBody.getAutoRenewAccount();
@@ -131,55 +147,60 @@ public class ConsensusServiceFeeBuilder extends FeeBuilder {
                 hasNewAutoRenewAccount = false; // cleared if set to 0.0.0
             }
         }
-        Key newAdminKey = oldAdminKey;
+        var newAdminKey = oldAdminKey;
         if (updateTopicTxBody.hasAdminKey()) { // no change if unspecified
             newAdminKey = updateTopicTxBody.getAdminKey();
             if (newAdminKey.hasKeyList() && newAdminKey.getKeyList().getKeysCount() == 0) {
                 newAdminKey = null;  // cleared if set to empty KeyList
             }
         }
-        Key newSubmitKey = oldSubmitKey;
+        var newSubmitKey = oldSubmitKey;
         if (updateTopicTxBody.hasSubmitKey()) { // no change if unspecified
             newSubmitKey = updateTopicTxBody.getSubmitKey();
             if (newSubmitKey.hasKeyList() && newSubmitKey.getKeyList().getKeysCount() == 0) {
                 newSubmitKey = null;  // cleared if set to empty KeyList
             }
         }
-        int newRamBytes = getTopicRamBytes(
+        final var newRamBytes = getTopicRamBytes(
                 computeVariableSizedFieldsUsage(newAdminKey, newSubmitKey, newMemo, hasNewAutoRenewAccount));
 
-        Timestamp newExpirationTimeStamp =
+        final var newExpirationTimeStamp =
                 updateTopicTxBody.hasExpirationTime() ? updateTopicTxBody.getExpirationTime() : oldExpirationTimeStamp;
         return calculateRbsIncrease(txValidStartTimestamp, oldRamBytes, oldExpirationTimeStamp,
                 newRamBytes, newExpirationTimeStamp);
     }
 
     private static long calculateRbsIncrease(
-            Timestamp txValidStartTimestamp, long oldRamBytes, Timestamp oldExpirationTimeStamp,
-            long newRamBytes, Timestamp newExpirationTimeStamp) {
-        Instant txValidStart = RequestBuilder.convertProtoTimeStamp(txValidStartTimestamp);
-        Instant oldExpiration = RequestBuilder.convertProtoTimeStamp(oldExpirationTimeStamp);
-        Instant newExpiration = RequestBuilder.convertProtoTimeStamp(newExpirationTimeStamp);
+            final Timestamp txValidStartTimestamp, final long oldRamBytes, final Timestamp oldExpirationTimeStamp,
+            final long newRamBytes, final Timestamp newExpirationTimeStamp) {
+        final var txValidStart = RequestBuilder.convertProtoTimeStamp(txValidStartTimestamp);
+        final var oldExpiration = RequestBuilder.convertProtoTimeStamp(oldExpirationTimeStamp);
+        final var newExpiration = RequestBuilder.convertProtoTimeStamp(newExpirationTimeStamp);
 
         // RBS which has already been paid for.
-        long oldLifetime = Math.min(MAX_ENTITY_LIFETIME, Duration.between(txValidStart, oldExpiration).getSeconds());
-        long newLifetime = Math.min(MAX_ENTITY_LIFETIME, Duration.between(txValidStart, newExpiration).getSeconds());
-        long rbsRefund = oldRamBytes * oldLifetime;
-        long rbsCharge = newRamBytes * newLifetime;
-        long netRbs = rbsCharge - rbsRefund;
+        final var oldLifetime = Math.min(MAX_ENTITY_LIFETIME,
+                Duration.between(txValidStart, oldExpiration).getSeconds());
+        final var newLifetime = Math.min(MAX_ENTITY_LIFETIME,
+                Duration.between(txValidStart, newExpiration).getSeconds());
+        final var rbsRefund = oldRamBytes * oldLifetime;
+        final var rbsCharge = newRamBytes * newLifetime;
+        final var netRbs = rbsCharge - rbsRefund;
         return netRbs > 0 ? netRbs : 0;
     }
 
     /**
      * Computes fee for consensus delete topic transaction
      *
-     * @param txBody transaction body
-     * @param sigValObj signature value object
+     * @param txBody
+     *     transaction body
+     * @param sigValObj
+     *     signature value object
      *
      * @return fee data
-     * @throws InvalidTxBodyException when transaction body is invalid
+     * @throws InvalidTxBodyException
+     *     when transaction body is invalid
      */
-    public static FeeData getConsensusDeleteTopicFee(TransactionBody txBody, SigValueObj sigValObj)
+    public static FeeData getConsensusDeleteTopicFee(final TransactionBody txBody, final SigValueObj sigValObj)
             throws InvalidTxBodyException {
         if (txBody == null || !txBody.hasConsensusDeleteTopic()) {
             throw new InvalidTxBodyException("consensusDeleteTopic field not available for Fee Calculation");
@@ -190,13 +211,14 @@ public class ConsensusServiceFeeBuilder extends FeeBuilder {
     /**
      * Given transaction specific additional rbh and bpt components, computes fee components for node, network
      * and services.
+     *
      * @throws InvalidTxBodyException
+     *     when transaction body is invalid
      */
     private static FeeData getTxFeeMatrices(
-            TransactionBody txBody, SigValueObj sigValObj, int txBodyDataSize, long extraRbsServices,
-            long extraRbsNetwork)
-            throws InvalidTxBodyException {
-        FeeComponents.Builder feeComponentsBuilder = FeeComponents.newBuilder()
+            final TransactionBody txBody, final SigValueObj sigValObj, final int txBodyDataSize,
+            final long extraRbsServices, final long extraRbsNetwork) throws InvalidTxBodyException {
+        final var feeComponentsBuilder = FeeComponents.newBuilder()
                 .setVpt(sigValObj.getTotalSigCount())
                 .setSbh(0)
                 .setGas(0)
@@ -209,15 +231,16 @@ public class ConsensusServiceFeeBuilder extends FeeBuilder {
         feeComponentsBuilder.setRbh(
                 getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC
                 + extraRbsServices);
-        long rbsNetwork = getDefaultRBHNetworkSize() + extraRbsNetwork;
+        final var rbsNetwork = getDefaultRBHNetworkSize() + extraRbsNetwork;
         return getFeeDataMatrices(feeComponentsBuilder.build(), sigValObj.getPayerAcctSigCount(), rbsNetwork);
     }
 
     /**
-     * @param variableSize value returned by {@link #computeVariableSizedFieldsUsage(Key, Key, String, boolean)}.
+     * @param variableSize
+     *     value returned by {@link #computeVariableSizedFieldsUsage(Key, Key, String, boolean)}.
      * @return Estimation of size (in bytes) used by Topic in memory.
      */
-    public static int getTopicRamBytes(int variableSize) {
+    public static int getTopicRamBytes(final int variableSize) {
         return BASIC_ENTITY_ID_SIZE +  // topicID
                 3 * LONG_SIZE +  // expirationTime, sequenceNumber, autoRenewPeriod
                 BOOL_SIZE +  // deleted
@@ -228,18 +251,22 @@ public class ConsensusServiceFeeBuilder extends FeeBuilder {
     /**
      * Compute variable sized fields usage
      *
-     * @param adminKey admin key
-     * @param submitKey submit key
-     * @param memo memo
-     * @param hasAutoRenewAccount boolean representing an auto renew account
+     * @param adminKey
+     *     admin key
+     * @param submitKey
+     *     submit key
+     * @param memo
+     *     memo
+     * @param hasAutoRenewAccount
+     *     boolean representing an auto renew account
      *
      * @return size (in bytes) used by variable sized fields in topic
      */
     public static int computeVariableSizedFieldsUsage(
-            Key adminKey, Key submitKey, String memo, boolean hasAutoRenewAccount) {
+            final Key adminKey, final Key submitKey, final String memo, final boolean hasAutoRenewAccount) {
         int size = 0;
         if (memo != null) {
-            size += memo.getBytes(Charsets.UTF_8).length;
+            size += memo.getBytes(StandardCharsets.UTF_8).length;
         }
         size += getAccountKeyStorageSize(adminKey);
         size += getAccountKeyStorageSize(submitKey);
