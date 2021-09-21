@@ -9,9 +9,9 @@ package com.hedera.services.txns.schedule;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -61,9 +61,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_S
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -72,19 +72,40 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 class ScheduleCreateTransitionLogicTest {
-	long thisSecond = 1_234_567L;
-	private Instant now = Instant.ofEpochSecond(thisSecond);
-	private byte[] bodyBytes = TransactionBody.newBuilder()
+	private static final long thisSecond = 1_234_567L;
+	private static final Instant now = Instant.ofEpochSecond(thisSecond);
+	private static final byte[] bodyBytes = TransactionBody.newBuilder()
 			.setMemo("Just this")
 			.build()
 			.toByteArray();
-	final TransactionID scheduledTxnId = TransactionID.newBuilder()
+	private static final TransactionID scheduledTxnId = TransactionID.newBuilder()
 			.setAccountID(IdUtils.asAccount("0.0.2"))
 			.setScheduled(true)
 			.build();
 
-	private final Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
-	private final Key invalidKey = Key.newBuilder().build();
+	private static final Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
+	private static final Key invalidKey = Key.getDefaultInstance();
+
+	private static final AccountID payer = IdUtils.asAccount("1.2.3");
+	private static final ScheduleID schedule = IdUtils.asSchedule("2.4.6");
+	private static final String entityMemo = "some cool memo?";
+	private static final String innerMemo = "Strictly business now";
+
+	private static final TransactionID txnId = TransactionID.newBuilder()
+			.setTransactionValidStart(
+					Timestamp.newBuilder()
+							.setSeconds(now.getEpochSecond())
+							.setNanos(now.getNano()).build()
+			).build();
+
+	private static final JKey payerKey = new JEd25519Key(pretendKeyStartingWith("payer"));
+	private static final Optional<JKey> jAdminKey = asUsableFcKey(key);
+	private static final Optional<List<JKey>> validScheduleKeys = Optional.of(
+			List.of(new JEd25519Key(pretendKeyStartingWith("scheduled"))));
+	private static final SignatureMap sigMap = SigMapScheduleClassifierTest.sigMap;
+
+	private boolean adminKeyActuallySkipped = false;
+	private boolean invalidAdminKeyIsSentinelKeyList = false;
 
 	private OptionValidator validator;
 	private ScheduleStore store;
@@ -94,23 +115,9 @@ class ScheduleCreateTransitionLogicTest {
 	private SignatoryUtils.ScheduledSigningsWitness replSigningWitness;
 	private ScheduleExecutor executor;
 
-	private boolean adminKeyActuallySkipped = false;
-	private boolean invalidAdminKeyIsSentinelKeyList = false;
-	private AccountID payer = IdUtils.asAccount("1.2.3");
-	private ScheduleID schedule = IdUtils.asSchedule("2.4.6");
-	private String entityMemo = "some cool memo?";
-	private String innerMemo = "Strictly business now";
-
-	private TransactionID txnId;
 	private TransactionBody scheduleCreateTxn;
 	private InHandleActivationHelper activationHelper;
-	private SignatureMap sigMap = SigMapScheduleClassifierTest.sigMap;
-
-	private JKey payerKey = new JEd25519Key(pretendKeyStartingWith("payer"));
-	private Optional<JKey> jAdminKey;
 	private SigMapScheduleClassifier classifier;
-	private Optional<List<JKey>> validScheduleKeys = Optional.of(
-			List.of(new JEd25519Key(pretendKeyStartingWith("scheduled"))));
 
 	private ScheduleCreateTransitionLogic subject;
 
@@ -147,31 +154,22 @@ class ScheduleCreateTransitionLogicTest {
 	void hasCorrectApplicability() {
 		givenValidTxnCtx();
 
-		// expect:
 		assertTrue(subject.applicability().test(scheduleCreateTxn));
 		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
 	}
 
 	@Test
 	void followsHappyPath() {
-		// setup:
 		given(merkleSchedule.scheduledTransactionId()).willReturn(scheduledTxnId);
 		given(merkleSchedule.expiry()).willReturn(now.getEpochSecond());
-
 		givenValidTxnCtx();
 		given(merkleSchedule.adminKey()).willReturn(jAdminKey);
 
-		// when:
 		subject.doStateTransition();
 
-		// then:
 		verify(store).lookupSchedule(bodyBytes);
-
-		// and:
-		verify(store).createProvisionally(eq(merkleSchedule), eq(RichInstant.fromJava(now)));
-		// and:
+		verify(store).createProvisionally(merkleSchedule, RichInstant.fromJava(now));
 		verify(replSigningWitness).observeInScope(schedule, store, validScheduleKeys, activationHelper);
-		// and:
 		verify(store).commitCreation();
 		verify(txnCtx).addExpiringEntities(any());
 		verify(txnCtx).setStatus(SUCCESS);
@@ -180,20 +178,15 @@ class ScheduleCreateTransitionLogicTest {
 
 	@Test
 	void followsHappyPathEvenIfNoNewValidSignatures() {
-		// setup:
 		given(merkleSchedule.scheduledTransactionId()).willReturn(scheduledTxnId);
 		given(merkleSchedule.expiry()).willReturn(now.getEpochSecond());
-
 		givenValidTxnCtx();
 		given(merkleSchedule.adminKey()).willReturn(jAdminKey);
-		// and:
 		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper))
 				.willReturn(Pair.of(NO_NEW_VALID_SIGNATURES, false));
 
-		// when:
 		subject.doStateTransition();
 
-		// then:
 		verify(store).commitCreation();
 		verify(txnCtx).addExpiringEntities(any());
 		verify(txnCtx).setStatus(SUCCESS);
@@ -202,20 +195,13 @@ class ScheduleCreateTransitionLogicTest {
 
 	@Test
 	void rejectsRecreationOfExistingSchedule() {
-		// given:
 		givenValidTxnCtx();
-
 		given(merkleSchedule.scheduledTransactionId()).willReturn(scheduledTxnId);
+		given(store.lookupSchedule(bodyBytes)).willReturn(Pair.of(schedule, merkleSchedule));
 
-		// and:
-		given(store.lookupSchedule(eq(bodyBytes))).willReturn(Pair.of(Optional.of(schedule), merkleSchedule));
-
-		// when:
 		subject.doStateTransition();
 
-		// then:
 		verify(store, never()).createProvisionally(any(), any());
-		// and:
 		verify(store, never()).commitCreation();
 		verify(txnCtx, never()).addExpiringEntities(any());
 		verify(txnCtx).setStatus(IDENTICAL_SCHEDULE_ALREADY_CREATED);
@@ -225,18 +211,14 @@ class ScheduleCreateTransitionLogicTest {
 
 	@Test
 	void rollsBackForAnyNonOkSigning() throws InvalidProtocolBufferException {
-		// given:
 		givenValidTxnCtx();
 		given(merkleSchedule.adminKey()).willReturn(jAdminKey);
-		// and:
 		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper))
 				.willReturn(Pair.of(SOME_SIGNATURES_WERE_INVALID, true));
 
-		// when:
 		subject.doStateTransition();
 
-		// and:
-		verify(store).createProvisionally(eq(merkleSchedule), eq(RichInstant.fromJava(now)));
+		verify(store).createProvisionally(merkleSchedule, RichInstant.fromJava(now));
 		verify(store, never()).commitCreation();
 		verify(txnCtx).setStatus(SOME_SIGNATURES_WERE_INVALID);
 		verify(executor, never()).processExecution(schedule, store, txnCtx);
@@ -244,18 +226,13 @@ class ScheduleCreateTransitionLogicTest {
 
 	@Test
 	void capturesFailingCreateProvisionally() {
-		// given:
 		givenValidTxnCtx();
-
-		// and:
-		given(store.lookupSchedule(eq(bodyBytes))).willReturn(Pair.of(Optional.empty(), merkleSchedule));
-		given(store.createProvisionally(eq(merkleSchedule), eq(RichInstant.fromJava(now))))
+		given(store.lookupSchedule(bodyBytes)).willReturn(Pair.of(null, merkleSchedule));
+		given(store.createProvisionally(merkleSchedule, RichInstant.fromJava(now)))
 				.willReturn(CreationResult.failure(INVALID_ADMIN_KEY));
 
-		// when:
 		subject.doStateTransition();
 
-		// then:
 		verify(store, never()).commitCreation();
 		verify(txnCtx, never()).setStatus(SUCCESS);
 	}
@@ -263,33 +240,26 @@ class ScheduleCreateTransitionLogicTest {
 	@Test
 	void setsFailInvalidIfUnhandledException() {
 		givenValidTxnCtx();
-		// and:
-		given(store.lookupSchedule(eq(bodyBytes))).willThrow(IllegalArgumentException.class);
+		given(store.lookupSchedule(bodyBytes)).willThrow(IllegalArgumentException.class);
 
-		// when:
 		subject.doStateTransition();
 
-		// then:
 		verify(txnCtx).setStatus(FAIL_INVALID);
 	}
 
 	@Test
 	void failsOnAdminKeySetAsSentinelKeylist() {
-		// setup:
 		invalidAdminKeyIsSentinelKeyList = true;
 		givenCtx(true, false, false);
 
-		// expect:
 		assertEquals(INVALID_ADMIN_KEY, subject.semanticCheck().apply(scheduleCreateTxn));
 	}
 
 	@Test
 	void syntaxOkWithNoAdminKey() {
-		// setup:
 		adminKeyActuallySkipped = true;
 		givenValidTxnCtx();
 
-		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(scheduleCreateTxn));
 	}
 
@@ -297,7 +267,6 @@ class ScheduleCreateTransitionLogicTest {
 	void failsOnInvalidAdminKey() {
 		givenCtx(true, false, false);
 
-		// expect:
 		assertEquals(INVALID_ADMIN_KEY, subject.semanticCheck().apply(scheduleCreateTxn));
 	}
 
@@ -305,7 +274,6 @@ class ScheduleCreateTransitionLogicTest {
 	void failsOnInvalidEntityMemo() {
 		givenCtx(false, true, false);
 
-		// expect:
 		assertEquals(INVALID_ZERO_BYTE_IN_STRING, subject.semanticCheck().apply(scheduleCreateTxn));
 	}
 
@@ -313,7 +281,6 @@ class ScheduleCreateTransitionLogicTest {
 	void failsOnInvalidInnerMemo() {
 		givenCtx(false, false, true);
 
-		// expect:
 		assertEquals(INVALID_ZERO_BYTE_IN_STRING, subject.semanticCheck().apply(scheduleCreateTxn));
 	}
 
@@ -329,27 +296,19 @@ class ScheduleCreateTransitionLogicTest {
 	}
 
 	private void givenCtx(
-			boolean invalidAdminKey,
-			boolean invalidEntityMemo,
-			boolean invalidInnerMemo
+			final boolean invalidAdminKey,
+			final boolean invalidEntityMemo,
+			final boolean invalidInnerMemo
 	) {
 		given(accessor.getSigMap()).willReturn(sigMap);
-		jAdminKey = asUsableFcKey(key);
 		given(classifier.validScheduleKeys(
 				eq(List.of(payerKey, jAdminKey.get())),
 				eq(sigMap),
 				any(),
 				any())).willReturn(validScheduleKeys);
 
-		txnId = TransactionID.newBuilder()
-				.setTransactionValidStart(
-						Timestamp.newBuilder()
-								.setSeconds(now.getEpochSecond())
-								.setNanos(now.getNano()).build()
-				).build();
-
-		var builder = TransactionBody.newBuilder();
-		var scheduleCreate = ScheduleCreateTransactionBody.newBuilder()
+		final var builder = TransactionBody.newBuilder();
+		final var scheduleCreate = ScheduleCreateTransactionBody.newBuilder()
 				.setAdminKey(key)
 				.setPayerAccountID(payer)
 				.setMemo(entityMemo)
@@ -381,8 +340,8 @@ class ScheduleCreateTransitionLogicTest {
 		given(txnCtx.activePayer()).willReturn(payer);
 		given(txnCtx.consensusTime()).willReturn(now);
 		given(store.isCreationPending()).willReturn(true);
-		given(store.lookupSchedule(bodyBytes)).willReturn(Pair.of(Optional.empty(), merkleSchedule));
-		given(store.createProvisionally(eq(merkleSchedule), eq(RichInstant.fromJava(now))))
+		given(store.lookupSchedule(bodyBytes)).willReturn(Pair.of(null, merkleSchedule));
+		given(store.createProvisionally(merkleSchedule, RichInstant.fromJava(now)))
 				.willReturn(CreationResult.success(schedule));
 	}
 }
