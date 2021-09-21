@@ -116,8 +116,8 @@ public class ContractCallSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-//				Arrays.asList(benchmarkSingleSetter())
-				positiveSpecs()
+				Arrays.asList(benchmarkSingleSetter())
+//				positiveSpecs()
 //				negativeSpecs(),
 //				Arrays.asList(fridayThe13thSpec())
 		);
@@ -166,8 +166,7 @@ public class ContractCallSuite extends HapiApiSuite {
 								.payingWith("payer")
 								.bytecode("bytecode")
 								.via("creationTx")
-								.gas(GAS_LIMIT)
-								.balance(1000),
+								.gas(GAS_LIMIT),
 						contractCall(
 								"immutableContract",
 								ContractResources.TWO_SSTORES,

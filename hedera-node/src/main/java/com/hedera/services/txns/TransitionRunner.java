@@ -32,8 +32,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.EnumSet;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
@@ -68,8 +66,7 @@ public class TransitionRunner {
 			TokenCreate,
 			TokenFeeScheduleUpdate,
 			CryptoTransfer,
-			TokenDelete,
-			ContractCreate, ContractCall
+			TokenDelete
 	);
 
 	private final TransactionContext txnCtx;

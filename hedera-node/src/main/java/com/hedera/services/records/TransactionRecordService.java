@@ -28,12 +28,10 @@ import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.txns.contract.process.TransactionProcessingResult;
 import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.ArrayList;
@@ -42,7 +40,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 @Singleton
 public class TransactionRecordService {
@@ -157,36 +155,12 @@ public class TransactionRecordService {
 		txnCtx.setTokenTransferLists(transferLists);
 	}
 
-	public void externaliseCreateEvmTransaction(@Nullable  Id createdContract, TransactionProcessingResult result) {
-		final var functionResBuilder = ContractFunctionResult.newBuilder()
-				.setGasUsed(result.getEstimateGasUsedByTransaction());
-		if (result.isSuccessful() && createdContract != null) {
-			functionResBuilder.setContractID(createdContract.asGrpcContract());
-			txnCtx.setStatus(OK);
-			txnCtx.setCreated(createdContract.asGrpcContract());
-//				.setBloom() TODO (?)
-//				.addAllLogInfo() TODO parse from result
-//				.addAllCreatedContractIDs() // TODO get from input
-		} else {
-			txnCtx.setStatus(CONTRACT_REVERT_EXECUTED);
-			result.getRevertReason().ifPresent(reason -> functionResBuilder.setErrorMessage(reason.toString()));
-		}
-		txnCtx.setCreateResult(functionResBuilder.build());
-	}
-
-	public void externaliseCallEvmTransaction(Id calledContract, TransactionProcessingResult result) {
-		final var functionResBuilder = ContractFunctionResult.newBuilder()
-				.setGasUsed(result.getEstimateGasUsedByTransaction());
-		if (result.isSuccessful()) {
-			functionResBuilder.setContractID(calledContract.asGrpcContract());
-			txnCtx.setStatus(OK);
-//				.setBloom() TODO (?)
-//				.addAllLogInfo() TODO parse from result
-//				.addAllCreatedContractIDs() // TODO get from input
-		} else {
-			txnCtx.setStatus(CONTRACT_REVERT_EXECUTED);
-			result.getRevertReason().ifPresent(reason -> functionResBuilder.setErrorMessage(reason.toString()));
-		}
-		txnCtx.setCallResult(functionResBuilder.build());
+	/**
+	 * Updates the record of the active transaction with the {@link TransactionProcessingResult} of the EVM transaction
+	 * @param result the processing result of the EVM transaction
+	 */
+	public void externaliseEvmTransaction(TransactionProcessingResult result) {
+		txnCtx.setStatus(result.isSuccessful() ? SUCCESS : CONTRACT_REVERT_EXECUTED);
+		txnCtx.setCreateResult(result.toGrpc());
 	}
 }

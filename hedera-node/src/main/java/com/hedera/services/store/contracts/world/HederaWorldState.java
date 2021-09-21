@@ -105,10 +105,12 @@ public class HederaWorldState implements HederaMutableWorldState {
 			} else {
 				com.hedera.services.store.models.Account toPersist = new com.hedera.services.store.models.Account(
 						accountId);
+				toPersist.setSmartContract(true);
 				toPersist.setMemo(worldStateAccount.getMemo());
 				toPersist.setKey(worldStateAccount.getKey());
 				toPersist.setProxy(worldStateAccount.getProxyAccount());
 				toPersist.setBalance(worldStateAccount.getBalance().toLong());
+				// TODO expiry, autoRenewSecs
 				accountStore.persistNew(toPersist);
 			}
 		});
@@ -365,7 +367,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 					// Apply any storage updates
 					final ContractDetails storageTrie =
 							freshState ? wrapped.repositoryRoot.getContractDetails(
-									origin.getAddress().toArray()) : origin.storageTrie();
+									updated.getAddress().toArray()) : origin.storageTrie();
 					final TreeSet<Map.Entry<UInt256, UInt256>> entries =
 							new TreeSet<>(Comparator.comparing(Map.Entry::getKey));
 					entries.addAll(updatedStorage.entrySet());

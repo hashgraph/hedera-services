@@ -23,6 +23,7 @@ package com.hedera.services.txns.contract.process;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.store.contracts.world.HederaWorldState;
@@ -44,6 +45,8 @@ import org.hyperledger.besu.evm.contractvalidation.PrefixCodeRule;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
+import org.hyperledger.besu.evm.log.Log;
+import org.hyperledger.besu.evm.log.LogsBloomFilter;
 import org.hyperledger.besu.evm.operation.InvalidOperation;
 import org.hyperledger.besu.evm.operation.OperationRegistry;
 import org.hyperledger.besu.evm.precompile.MainnetPrecompiledContracts;
@@ -61,6 +64,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 
 // TODO refactor it to be `EvmTransaction` model, have a builder and a single `execute` method
@@ -105,7 +109,7 @@ abstract class EvmTxProcessor {
 		this.contractCreationProcessor = new ContractCreationProcessor(
 				gasCalculator,
 				evm,
-				false, //true,
+				true,
 				List.of(MaxCodeSizeRule.of(0x6000), //FIXME magic constant
 						PrefixCodeRule.of()),
 				1);
@@ -158,7 +162,7 @@ abstract class EvmTxProcessor {
 			messageFrameStack.addFirst(initialFrame);
 
 			while (!messageFrameStack.isEmpty()) {
-				process(messageFrameStack.peekFirst(), OperationTracer.NO_TRACING);
+				process(messageFrameStack.peekFirst(), new HederaTracer());
 			}
 
 			if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
@@ -186,19 +190,22 @@ abstract class EvmTxProcessor {
 
 			/* Externalise Result */
 			if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
+				final List<Log> logs = initialFrame.getLogs();
+				final var bloom = LogsBloomFilter.builder().insertLogs(logs).build();
 				return TransactionProcessingResult.successful(
-						initialFrame.getLogs(),
+						logs,
+						Optional.of(bloom),
 						gasUsedByTransaction.toLong(),
-						refunded.toLong(),
-						initialFrame.getOutputData());
+						initialFrame.getOutputData(),
+						initialFrame.getRecipientAddress());
 			} else {
 				return TransactionProcessingResult.failed(
 						gasUsedByTransaction.toLong(),
-						refunded.toLong(),
-						initialFrame.getRevertReason());
+						initialFrame.getRevertReason(),
+						initialFrame.getExceptionalHaltReason());
 			}
 		} catch (RuntimeException re) {
-			return TransactionProcessingResult.invalid("Internal Error in Besu - " + re);
+			throw new InvalidTransactionException("Internal Error in Besu - " + re, FAIL_INVALID);
 		}
 	}
 

@@ -37,10 +37,8 @@ import javax.inject.Inject;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class ContractCallTransitionLogic implements TransitionLogic {
@@ -96,14 +94,11 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 				op.getAmount(),
 				op.getFunctionParameters(),
 				txnCtx.consensusTime());
-		/* In case the EVM runs into RE */
-		validateFalse(result.isInvalid(), FAIL_INVALID, result.getInvalidReason());
 
 		/* --- Persist changes into state --- */
 		worldState.persist();
 		/* --- Externalise result --- */
-		recordService.externaliseCallEvmTransaction(receiver.getId(), result);
-
+		recordService.externaliseEvmTransaction(result);
 	}
 
 	@Override

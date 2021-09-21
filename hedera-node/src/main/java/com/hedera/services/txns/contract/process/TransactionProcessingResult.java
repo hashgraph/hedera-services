@@ -14,8 +14,14 @@
  */
 package com.hedera.services.txns.contract.process;
 
+import com.google.protobuf.ByteString;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.log.Log;
+import org.hyperledger.besu.evm.log.LogsBloomFilter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,9 +32,6 @@ public class TransactionProcessingResult {
 	/** The status of the transaction after being processed. */
 	public enum Status {
 
-		/** The transaction was invalid for processing. */
-		INVALID,
-
 		/** The transaction was successfully processed. */
 		SUCCESSFUL,
 
@@ -36,128 +39,72 @@ public class TransactionProcessingResult {
 		FAILED
 	}
 
+
 	private final Status status;
 
-	private final long estimateGasUsedByTransaction;
-
-	private final long gasRemaining;
+	private final long gasUsed;
 
 	private final List<Log> logs;
 
+	private final Optional<LogsBloomFilter> bloomFilter;
+
 	private final Bytes output;
+
+	private final Optional<Address> recipient;
 
 	private final Optional<Bytes> revertReason;
 
-	private final String invalidReason;
-
-	public static TransactionProcessingResult invalid(String invalidReason) {
-		return new TransactionProcessingResult(
-				Status.INVALID,
-				new ArrayList<>(),
-				-1L,
-				-1L,
-				Bytes.EMPTY,
-				Optional.empty(),
-				invalidReason);
-	}
+	private final Optional<ExceptionalHaltReason> haltReason;
 
 	public static TransactionProcessingResult failed(
-			final long gasUsedByTransaction,
-			final long gasRemaining,
-			final Optional<Bytes> revertReason) {
+			final long gasUsed,
+			final Optional<Bytes> revertReason,
+			final Optional<ExceptionalHaltReason> haltReason) {
 		return new TransactionProcessingResult(
 				Status.FAILED,
 				new ArrayList<>(),
-				gasUsedByTransaction,
-				gasRemaining,
+				Optional.empty(),
+				gasUsed,
 				Bytes.EMPTY,
+				Optional.empty(),
 				revertReason,
-				null);
+				haltReason);
 	}
 
 	public static TransactionProcessingResult successful(
 			final List<Log> logs,
-			final long gasUsedByTransaction,
-			final long gasRemaining,
-			final Bytes output) {
+			final Optional<LogsBloomFilter> bloom,
+			final long gasUsed,
+			final Bytes output,
+			final Address recipient) {
 		return new TransactionProcessingResult(
 				Status.SUCCESSFUL,
 				logs,
-				gasUsedByTransaction,
-				gasRemaining,
+				bloom,
+				gasUsed,
 				output,
-				Optional.empty(), null);
+				Optional.of(recipient),
+				Optional.empty(),
+				Optional.empty());
 	}
 
 	public TransactionProcessingResult(
 			final Status status,
 			final List<Log> logs,
-			final long estimateGasUsedByTransaction,
-			final long gasRemaining,
+			final Optional<LogsBloomFilter> bloom,
+			final long gasUsed,
 			final Bytes output,
+			final Optional<Address> recipient,
 			final Optional<Bytes> revertReason,
-			final String invalidReason) {
-		this.status = status;
+			final Optional<ExceptionalHaltReason> haltReason) {
 		this.logs = logs;
-		this.estimateGasUsedByTransaction = estimateGasUsedByTransaction;
-		this.gasRemaining = gasRemaining;
 		this.output = output;
+		this.status = status;
+		this.gasUsed = gasUsed;
+		this.bloomFilter = bloom;
+		this.recipient = recipient;
+		this.haltReason = haltReason;
 		this.revertReason = revertReason;
-		this.invalidReason = invalidReason == null ? "" : invalidReason;
-	}
-
-	/**
-	 * Return the logs produced by the transaction.
-	 *
-	 * <p>This is only valid when {@code TransactionProcessor#isSuccessful} returns {@code true}.
-	 *
-	 * @return the logs produced by the transaction
-	 */
-	public List<Log> getLogs() {
-		return logs;
-	}
-
-	/**
-	 * Returns the gas remaining after the transaction was processed.
-	 *
-	 * <p>This is only valid when {@code TransactionProcessor#isSuccessful} returns {@code true}.
-	 *
-	 * @return the gas remaining after the transaction was processed
-	 */
-	public long getGasRemaining() {
-		return gasRemaining;
-	}
-
-	/**
-	 * Returns the estimate gas used by the transaction Difference between the gas limit and the
-	 * remaining gas
-	 *
-	 * @return the estimate gas used
-	 */
-	public long getEstimateGasUsedByTransaction() {
-		return estimateGasUsedByTransaction;
-	}
-
-	/**
-	 * Returns the status of the transaction after being processed.
-	 *
-	 * @return the status of the transaction after being processed
-	 */
-	public Status getStatus() {
-		return status;
-	}
-
-	public Bytes getOutput() {
-		return output;
-	}
-
-	/**
-	 * Returns whether or not the transaction was invalid.
-	 *
-	 * @return {@code true} if the transaction was invalid; otherwise {@code false}
-	 */
-	public boolean isInvalid() {
-		return getStatus() == Status.INVALID;
 	}
 
 	/**
@@ -166,24 +113,27 @@ public class TransactionProcessingResult {
 	 * @return {@code true} if the transaction was successfully processed; otherwise {@code false}
 	 */
 	public boolean isSuccessful() {
-		return getStatus() == Status.SUCCESSFUL;
+		return status == Status.SUCCESSFUL;
 	}
 
 	/**
-	 * Returns the reason why a transaction was reverted (if applicable).
-	 *
-	 * @return the revert reason.
+	 * Converts the {@link TransactionProcessingResult} into {@link ContractFunctionResult} GRPC model
+	 * @return the {@link ContractFunctionResult} model to externalise
 	 */
-	public Optional<Bytes> getRevertReason() {
-		return revertReason;
-	}
+	public ContractFunctionResult toGrpc() {
+		final var contractResultBuilder = ContractFunctionResult.newBuilder()
+				.setGasUsed(gasUsed);
+		contractResultBuilder.setContractCallResult(ByteString.copyFrom(output.toArray()));
+		recipient.ifPresent(address -> contractResultBuilder.setContractID(EntityIdUtils.contractParsedFromSolidityAddress(address.toArray())));
+		bloomFilter.ifPresent(filter -> contractResultBuilder.setBloom(ByteString.copyFrom(filter.toArray())));
+		// Set Revert reason as error message if present, otherwise set halt reason (if present)
+		if (revertReason.isPresent()) {
+			contractResultBuilder.setErrorMessage(revertReason.toString());
+		} else {
+			haltReason.ifPresent(reason -> contractResultBuilder.setErrorMessage(reason.toString()));
+		}
 
-	/**
-	 * Returns the reason why a transaction was invalid.
-	 *
-	 * @return the invalid reason.
-	 */
-	public String getInvalidReason() {
-		return invalidReason;
+		//TODO populate logs and createdContractIDs
+		return contractResultBuilder.build();
 	}
 }

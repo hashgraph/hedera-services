@@ -51,7 +51,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
@@ -129,9 +128,6 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 				codeWithConstructorArgs,
 				txnCtx.consensusTime()
 		);
-		/* In case the EVM runs into RE */
-		validateFalse(result.isInvalid(), FAIL_INVALID, result.getInvalidReason());
-
 		if (result.isSuccessful()) {
 			worldState.addPropertiesFor(newContractId.asEvmAddress(), op.getMemo(), key, proxyAccount);
 		} else {
@@ -142,7 +138,10 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		worldState.persist();
 
 		/* --- Externalise changes --- */
-		recordService.externaliseCreateEvmTransaction(result.isSuccessful() ? newContractId : null, result);
+		if (result.isSuccessful()) {
+			txnCtx.setCreated(newContractId.asGrpcContract());
+		}
+		recordService.externaliseEvmTransaction(result);
 	}
 
 
