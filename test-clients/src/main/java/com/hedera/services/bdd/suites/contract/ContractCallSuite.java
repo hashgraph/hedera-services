@@ -116,8 +116,8 @@ public class ContractCallSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-				Arrays.asList(benchmarkSingleSetter())
-//				positiveSpecs(),
+//				Arrays.asList(benchmarkSingleSetter())
+				positiveSpecs()
 //				negativeSpecs(),
 //				Arrays.asList(fridayThe13thSpec())
 		);
@@ -136,16 +136,17 @@ public class ContractCallSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> positiveSpecs() {
 		return Arrays.asList(
-				vanillaSuccess(),
-				resultSizeAffectsFees(),
-				payableSuccess(),
-				depositSuccess(),
-				depositDeleteSuccess(),
-				multipleDepositSuccess(),
-				payTestSelfDestructCall(),
-				multipleSelfDestructsAreSafe(),
-				smartContractInlineAssemblyCheck(),
-				ocToken()
+//				vanillaSuccess(),
+//				resultSizeAffectsFees(),
+//				payableSuccess()
+				simpleUpdate()
+//				depositSuccess(),
+//				depositDeleteSuccess(),
+//				multipleDepositSuccess(),
+//				payTestSelfDestructCall(),
+//				multipleSelfDestructsAreSafe(),
+//				smartContractInlineAssemblyCheck(),
+//				ocToken()
 		);
 	}
 
@@ -165,7 +166,8 @@ public class ContractCallSuite extends HapiApiSuite {
 								.payingWith("payer")
 								.bytecode("bytecode")
 								.via("creationTx")
-								.gas(GAS_LIMIT),
+								.gas(GAS_LIMIT)
+								.balance(1000),
 						contractCall(
 								"immutableContract",
 								ContractResources.TWO_SSTORES,
@@ -710,6 +712,23 @@ public class ContractCallSuite extends HapiApiSuite {
 										resultWith().logs(
 												inOrder(
 														logWith().longAtBytes(depositAmount, 24))))));
+	}
+
+	HapiApiSpec simpleUpdate() {
+		return defaultHapiSpec("SimpleUpdate")
+				.given(
+						fileCreate("simpleUpdateBytecode").path(ContractResources.SIMPLE_UPDATE),
+						contractCreate("simpleUpdateContract").bytecode("simpleUpdateBytecode").adminKey(THRESHOLD)
+				).when(
+						contractCall("simpleUpdateContract", ContractResources.SIMPLE_UPDATE_ABI, 5),
+						contractCall("simpleUpdateContract", ContractResources.SIMPLE_UPDATE_ABI, 15)
+				).then(
+//						getTxnRecord("payTxn")
+//								.hasPriority(recordWith().contractCallResult(
+//										resultWith().logs(
+//												inOrder(
+//														logWith().longAtBytes(depositAmount, 24)))))
+														);
 	}
 
 	HapiApiSpec vanillaSuccess() {

@@ -51,6 +51,7 @@ public class ContractResources {
 	public static final String DOUBLE_SEND_BYTECODE_PATH = bytecodePath("DoubleSend");
 	public static final String EMPTY_CONSTRUCTOR = bytecodePath("EmptyConstructor");
 	public static final String BENCHMARK_CONTRACT = bytecodePath("Benchmark");
+	public static final String SIMPLE_UPDATE = bytecodePath("SimpleUpdate");
 
 	public static final String TWO_SSTORES = "{ \"inputs\": [ { \"internalType\": \"bytes32\", \"name\": \"_singleProp\", \"type\": \"bytes32\" } ], \"name\": \"twoSSTOREs\", \"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
@@ -339,7 +340,9 @@ public class ContractResources {
 			"\"name\":\"toFirst\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"toSecond\"," +
 			"\"type\":\"uint32\"}],\"name\":\"donate\",\"outputs\":[],\"payable\":true," +
 			"\"stateMutability\":\"payable\",\"type\":\"function\"}";
-
+	public static final String SIMPLE_UPDATE_ABI = "{\"inputs\": [{\"internalType\": \"uint256\"," +
+			"\"name\": \"n\",\"type\": \"uint256\"}],\"name\": \"set\",\"outputs\": []," +
+			"\"stateMutability\": \"nonpayable\",\"type\": \"function\"}]";
 
 	public static final String bytecodePath(String bytecode) {
 		return String.format("src/main/resource/contract/bytecodes/%s.bin", bytecode);

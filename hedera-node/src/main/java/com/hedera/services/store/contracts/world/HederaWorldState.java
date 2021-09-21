@@ -118,12 +118,6 @@ public class HederaWorldState implements HederaMutableWorldState {
 			repositoryRoot.saveCode(address.toArray(), code.toArray());
 		});
 
-		provisionalStorageUpdates.forEach((Address, ContractDetails) -> {
-			//todo will we use this? we don't populate it
-			// can we persist somehow contractdetails?
-			// or do we need to manually update all key/values? how?
-		});
-
 		repositoryRoot.flush();
 
 		/* Clear any provisional changes */
@@ -176,15 +170,11 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 	public void addPropertiesFor(Address address, String memo, JKey key, Id proxyAccount) {
 		WorldStateAccount account = this.provisionalAccountUpdates.get(address);
-		if (account != null) {
-			account.setMemo(memo);
-			account.setKey(key);
-			account.setProxyAccount(proxyAccount);
+		account.setMemo(memo);
+		account.setKey(key);
+		account.setProxyAccount(proxyAccount);
 
-			this.provisionalAccountUpdates.put(address, account);
-		} else {
-			//FIXME
-		}
+		this.provisionalAccountUpdates.put(address, account);
 	}
 
 	public class WorldStateAccount implements Account {
@@ -255,7 +245,8 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		@Override
 		public UInt256 getStorageValue(final UInt256 key) {
-			return DWUtil.fromDataWord(storageTrie.get(DWUtil.fromUInt256(key)));
+			DataWord dwValue = storageTrie().get(DWUtil.fromUInt256(key));
+			return dwValue == null ? UInt256.ZERO : DWUtil.fromDataWord(dwValue);
 		}
 
 		@Override
