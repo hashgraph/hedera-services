@@ -40,7 +40,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.NoTokenTransfers.emptyTokenTransfers;
 import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
@@ -512,14 +511,10 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 		final var secondMeta = ByteString.copyFrom("SECOND".getBytes(StandardCharsets.UTF_8));
 		final var thirdMeta = ByteString.copyFrom("THIRD".getBytes(StandardCharsets.UTF_8));
 
-		return customHapiSpec("DissociateHasExpectedSemanticsForDeletedTokens").withProperties(Map.of(
-				"nodes", "35.231.208.148",
-				"default.payer.pemKeyLoc", "previewtestnet-account2.pem",
-				"default.payer.pemKeyPassphrase", "P1WUX2Xla2wFslpoPTN39avz"
-		))
+		return defaultHapiSpec("DissociateHasExpectedSemanticsForDeletedTokens")
 				.given(
 						newKeyNamed(multiKey),
-						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						cryptoCreate(TOKEN_TREASURY).balance(0L).maxAutomaticTokenAssociations(542),
 						fileCreate(bytecode).path(ContractResources.FUSE_BYTECODE_PATH),
 						contractCreate(contract).bytecode(bytecode),
 						tokenCreate(uniqToken)
@@ -527,7 +522,8 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 								.initialSupply(0)
 								.supplyKey(multiKey)
 								.treasury(TOKEN_TREASURY),
-						mintToken(uniqToken, List.of(firstMeta, secondMeta, thirdMeta))
+						mintToken(uniqToken, List.of(firstMeta, secondMeta, thirdMeta)),
+						getAccountInfo(TOKEN_TREASURY).logged()
 				).when(
 						tokenAssociate(contract, uniqToken),
 						tokenDissociate(contract, uniqToken)

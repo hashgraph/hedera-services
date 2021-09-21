@@ -97,6 +97,7 @@ public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, 
 	}
 
 	public void addToExistingRels(Pair<AccountID, TokenID> key)	{
+		System.out.println("Adding rel " + readableTokenRel(key));
 		existingRels.add(key);
 	}
 
