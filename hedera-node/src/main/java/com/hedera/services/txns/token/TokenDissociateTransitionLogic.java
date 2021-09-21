@@ -95,6 +95,7 @@ public class TokenDissociateTransitionLogic implements TransitionLogic {
 		for (var dissociation : dissociations) {
 			dissociation.addUpdatedModelRelsTo(allUpdatedRels);
 		}
+		System.out.println("Dissociations: " + dissociations);
 		tokenStore.persistTokenRelationships(allUpdatedRels);
 	}
 

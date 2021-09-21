@@ -26,6 +26,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.BaseErroringAssertsProvider;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -39,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.NoTokenTransfers.emptyTokenTransfers;
 import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
@@ -102,16 +104,17 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						treasuryAssociationIsAutomatic(),
-						dissociateHasExpectedSemantics(),
-						associateHasExpectedSemantics(),
-						associatedContractsMustHaveAdminKeys(),
-						expiredAndDeletedTokensStillAppearInContractInfo(),
-						dissociationFromExpiredTokensAsExpected(),
-						accountInfoQueriesAsExpected(),
-						handlesUseOfDefaultTokenId(),
-						contractInfoQueriesAsExpected(),
-						dissociateHasExpectedSemanticsForDeletedTokens(),
+//						treasuryAssociationIsAutomatic(),
+//						dissociateHasExpectedSemantics(),
+//						associateHasExpectedSemantics(),
+//						associatedContractsMustHaveAdminKeys(),
+//						expiredAndDeletedTokensStillAppearInContractInfo(),
+//						dissociationFromExpiredTokensAsExpected(),
+//						accountInfoQueriesAsExpected(),
+//						handlesUseOfDefaultTokenId(),
+//						contractInfoQueriesAsExpected(),
+//						dissociateHasExpectedSemanticsForDeletedTokens(),
+						dissociateHasExpectedSemanticsForDissociatedContracts()
 				}
 		);
 	}
@@ -497,6 +500,41 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 												.kyc(KycNotApplicable)
 												.freeze(FreezeNotApplicable))
 								.logged()
+				);
+	}
+
+	public HapiApiSpec dissociateHasExpectedSemanticsForDissociatedContracts() {
+		final var multiKey = "multiKey";
+		final var uniqToken = "UniqToken";
+		final var contract = "1bUnfrozen";
+		final var bytecode = "bytecode";
+		final var firstMeta = ByteString.copyFrom("FIRST".getBytes(StandardCharsets.UTF_8));
+		final var secondMeta = ByteString.copyFrom("SECOND".getBytes(StandardCharsets.UTF_8));
+		final var thirdMeta = ByteString.copyFrom("THIRD".getBytes(StandardCharsets.UTF_8));
+
+		return customHapiSpec("DissociateHasExpectedSemanticsForDeletedTokens").withProperties(Map.of(
+				"nodes", "35.231.208.148",
+				"default.payer.pemKeyLoc", "previewtestnet-account2.pem",
+				"default.payer.pemKeyPassphrase", "P1WUX2Xla2wFslpoPTN39avz"
+		))
+				.given(
+						newKeyNamed(multiKey),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						fileCreate(bytecode).path(ContractResources.FUSE_BYTECODE_PATH),
+						contractCreate(contract).bytecode(bytecode),
+						tokenCreate(uniqToken)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0)
+								.supplyKey(multiKey)
+								.treasury(TOKEN_TREASURY),
+						mintToken(uniqToken, List.of(firstMeta, secondMeta, thirdMeta))
+				).when(
+						tokenAssociate(contract, uniqToken),
+						tokenDissociate(contract, uniqToken)
+				).then(
+						cryptoTransfer(TokenMovement.movingUnique(uniqToken, 1L)
+								.between(TOKEN_TREASURY, contract)
+						).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
 				);
 	}
 
