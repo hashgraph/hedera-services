@@ -118,14 +118,14 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 		/* --- Do the business logic --- */
 		final var tracker = new OwnershipTracker();
 		token.update(op, newAutoRenew, newTreasury, validator);
-		if (updatesTreasury) {
+		if (updatesTreasury && newTreasuryRel != null) {
 			prepareNewTreasury(newTreasuryRel, token);
 			transferTreasuryBalance(token, currentTreasuryRel, newTreasuryRel, tracker);
 		}
 
 		/* --- Persist changes --- */
 		tokenStore.persistToken(token);
-		if (updatesTreasury) {
+		if (updatesTreasury && newTreasuryRel != null) {
 			if (token.getType().equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
 				accountStore.persistAccount(currentTreasuryRel.getAccount());
 				accountStore.persistAccount(newTreasuryRel.getAccount());

@@ -125,7 +125,7 @@ public class Token {
 	private boolean deleted;
 	private boolean autoRemoved = false;
 	private boolean isNew;
-	static Predicate<Key> REMOVES_ADMIN_KEY = ImmutableKeyUtils::signalsKeyRemoval;
+	static Predicate<Key> removesAdminKey = ImmutableKeyUtils::signalsKeyRemoval;
 	public Token(Id id) {
 		this.id = id;
 	}
@@ -249,7 +249,7 @@ public class Token {
 	private void updateAdminKeyIfAppropriate(final TokenUpdateTransactionBody changes) {
 		if (changes.hasAdminKey()) {
 			var newAdminKey = changes.getAdminKey();
-			if (REMOVES_ADMIN_KEY.test(newAdminKey)) {
+			if (removesAdminKey.test(newAdminKey)) {
 				this.setAdminKey(UNUSED_KEY);
 			} else {
 				this.setAdminKey(asFcKeyUnchecked(changes.getAdminKey()));
@@ -297,9 +297,9 @@ public class Token {
 	}
 
 	private void updateExpiryIfAppropriate(final TokenUpdateTransactionBody changes) {
-		var expiry = changes.getExpiry().getSeconds();
-		if (expiry != 0L) {
-			this.setExpiry(expiry);
+		var newExpiry = changes.getExpiry().getSeconds();
+		if (newExpiry != 0L) {
+			this.setExpiry(newExpiry);
 		}
 	}
 

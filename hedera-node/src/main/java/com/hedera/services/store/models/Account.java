@@ -58,7 +58,7 @@ public class Account {
 
 	private long expiry;
 	private long balance;
-	private final boolean deleted = false;
+	private static final boolean DELETED = false;
 	private CopyOnWriteIds associatedTokens;
 	private long ownedNfts;
 	private int autoAssociationMetadata;
@@ -203,7 +203,7 @@ public class Account {
 				.add("id", id)
 				.add("expiry", expiry)
 				.add("balance", balance)
-				.add("deleted", deleted)
+				.add("deleted", DELETED)
 				.add("tokens", assocTokenRepr)
 				.add("ownedNfts", ownedNfts)
 				.add("alreadyUsedAutoAssociations", getAlreadyUsedAutomaticAssociations())

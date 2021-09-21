@@ -30,6 +30,10 @@ import javax.annotation.Nullable;
  */
 public final class TokenConversion {
 
+	private TokenConversion() {
+		throw new UnsupportedOperationException("Utility class");
+	}
+	
 	public static void mapMerkleToModel(MerkleToken merkle, Token model) {
 		model.initTotalSupply(merkle.totalSupply());
 		model.initSupplyConstraints(merkle.supplyType(), merkle.maxSupply());

@@ -144,7 +144,7 @@ class TokenConversionTest {
 	}
 
 	@Test
-	public void uniqueTokenMapping() {
+	void uniqueTokenMapping() {
 		final var model = mock(UniqueToken.class);
 		final var merkle = new MerkleUniqueToken(
 				1, new byte[]{12, 10, 104}, 100, 2);

@@ -148,9 +148,9 @@ class TokenTest {
 				newTreasury,
 				validator);
 		
-		assertEquals(subject.getName(), "name");
-		assertEquals(subject.getSymbol(), "smb");
-		assertEquals(subject.getMemo(), "memo");
+		assertEquals("name", subject.getName());
+		assertEquals("smb", subject.getSymbol());
+		assertEquals("memo", subject.getMemo());
 		assertEquals(1000, subject.getAutoRenewPeriod());
 		assertFalse(subject.isDeleted());
 		assertFalse(subject.isNew());

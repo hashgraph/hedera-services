@@ -507,14 +507,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 	}
 
-	private ResponseCodeEnum checkExistence(final AccountID aId, final TokenID tId) {
-		final var validity = checkAccountUsability(aId);
-		if (validity != OK) {
-			return validity;
-		}
-		return exists(tId) ? OK : INVALID_TOKEN_ID;
-	}
-
 	private ResponseCodeEnum checkTokenExistence(final TokenID tId) {
 		return exists(tId) ? OK : INVALID_TOKEN_ID;
 	}
