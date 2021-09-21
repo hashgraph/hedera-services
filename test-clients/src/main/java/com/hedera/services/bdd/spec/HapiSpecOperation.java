@@ -46,7 +46,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hederahashgraph.fee.ConsensusServiceFeeBuilder;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
 import com.hederahashgraph.fee.FeeBuilder;
 import com.hederahashgraph.fee.FileFeeBuilder;
@@ -92,7 +91,6 @@ public abstract class HapiSpecOperation {
 	protected FileFeeBuilder fileFees = new FileFeeBuilder();
 	protected CryptoFeeBuilder cryptoFees = new CryptoFeeBuilder();
 	protected SmartContractFeeBuilder scFees = new SmartContractFeeBuilder();
-	protected ConsensusServiceFeeBuilder hcsFees = new ConsensusServiceFeeBuilder();
 
 	protected boolean omitTxnId = false;
 	protected boolean loggingOff = false;
@@ -300,7 +298,7 @@ public abstract class HapiSpecOperation {
 					/ spec.ratesProvider().rates().getCentEquiv()
 					* spec.ratesProvider().rates().getHbarEquiv()
 					* HapiApiSuite.ONE_HBAR;
-			fee = Optional.of((long)tinybarFee);
+			fee = Optional.of((long) tinybarFee);
 		}
 		Consumer<TransactionBody.Builder> netDef = fee
 				.map(amount -> minDef.andThen(b -> b.setTransactionFee(amount)))
