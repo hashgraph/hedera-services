@@ -38,6 +38,8 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.store.models.AccountConversion.mapMerkleToModel;
+import static com.hedera.services.store.models.AccountConversion.mapModelToMerkle;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -100,21 +102,7 @@ public class AccountStore {
 		validateUsable(merkleAccount, code);
 
 		account = new Account(id);
-		account.setExpiry(merkleAccount.getExpiry());
-		account.setBalance(merkleAccount.getBalance());
-		account.setAssociatedTokens(merkleAccount.tokens().getIds().copy());
-		account.setOwnedNfts(merkleAccount.getNftsOwned());
-		account.setMaxAutomaticAssociations(merkleAccount.getMaxAutomaticAssociations());
-		account.setAlreadyUsedAutomaticAssociations(merkleAccount.getAlreadyUsedAutoAssociations());
-		if (merkleAccount.getProxy() != null) {
-			account.setProxy(merkleAccount.getProxy().asId());
-		}
-		account.setReceiverSigRequired(merkleAccount.isReceiverSigRequired());
-		account.setKey(merkleAccount.state().key());
-		account.setMemo(merkleAccount.getMemo());
-		account.setAutoRenewSecs(merkleAccount.getAutoRenewSecs());
-		account.setDeleted(merkleAccount.isDeleted());
-		account.setSmartContract(merkleAccount.isSmartContract());
+		mapMerkleToModel(merkleAccount, account);
 
 		return account;
 	}
@@ -131,7 +119,7 @@ public class AccountStore {
 		final var key = EntityNum.fromLong(id.getNum());
 
 		final var mutableAccount = accounts.get().getForModify(key);
-		mapModelToMutable(account, mutableAccount);
+		mapModelToMerkle(account, mutableAccount);
 		mutableAccount.tokens().updateAssociationsFrom(account.getAssociatedTokens());
 	}
 
@@ -143,27 +131,11 @@ public class AccountStore {
 		final var newMerkleId = EntityNum.fromAccountId(account.getId().asGrpcAccount());
 		final var mutableAccount = new MerkleAccount();
 
-		mapModelToMutable(account, mutableAccount);
-		mutableAccount.setMemo(account.getMemo());
-		mutableAccount.setSmartContract(account.isSmartContract());
+		mapModelToMerkle(account, mutableAccount);
 
 		accounts.get().put(newMerkleId, mutableAccount);
 	}
 
-	private void mapModelToMutable(Account model, MerkleAccount mutableAccount) {
-		if (model.getProxy() != null) {
-			mutableAccount.setProxy(model.getProxy().asEntityId());
-		}
-		mutableAccount.setExpiry(model.getExpiry());
-		mutableAccount.setBalanceUnchecked(model.getBalance());
-		mutableAccount.setNftsOwned(model.getOwnedNfts());
-		mutableAccount.setMaxAutomaticAssociations(model.getMaxAutomaticAssociations());
-		mutableAccount.setAlreadyUsedAutomaticAssociations(model.getAlreadyUsedAutomaticAssociations());
-		mutableAccount.state().setAccountKey(model.getKey());
-		mutableAccount.setReceiverSigRequired(model.isReceiverSigRequired());
-		mutableAccount.setDeleted(model.isDeleted());
-		mutableAccount.setAutoRenewSecs(model.getAutoRenewSecs());
-	}
 
 	private void validateUsable(MerkleAccount merkleAccount, @Nullable ResponseCodeEnum explicitResponse) {
 		validateTrue(merkleAccount != null, explicitResponse != null ? explicitResponse : INVALID_ACCOUNT_ID);

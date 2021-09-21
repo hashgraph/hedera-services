@@ -79,7 +79,7 @@ class AccountStoreTest {
 	@Test
 	void persistsNewWorks() {
 		final var acc = new Account(Id.DEFAULT);
-
+		
 		subject.persistNew(acc);
 		verify(accounts).put(any(), any());
 	}
