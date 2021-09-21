@@ -25,8 +25,8 @@ import javax.annotation.Nullable;
 
 /**
  * Responsible for mapping:
- * - {@link MerkleToken} <-> {@link Token}
- * - {@link UniqueToken} <-> {@link MerkleUniqueToken}
+ * - {@link MerkleToken} - {@link Token}
+ * - {@link UniqueToken} - {@link MerkleUniqueToken}
  */
 public final class TokenConversion {
 

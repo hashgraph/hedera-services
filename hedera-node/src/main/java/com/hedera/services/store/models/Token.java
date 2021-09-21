@@ -133,12 +133,14 @@ public class Token {
 	/**
 	 * Updates the token properties if appropriate and if the transaction body complies with business rules for the update operation.
 	 * <p><b>Candidates of the update operation are the bellow token properties:</b></p>
+	 * <ol>
 	 * <li>Keys (Freeze, KYC, Supply, Wipe, and Fee Schedule)</li>
 	 * <li>Symbol</li>
 	 * <li>Name</li>
 	 * <li>Memo</li>
 	 * <li>Expiry</li>
 	 * <li>Treasury account</li>
+	 * </ol>
 	 *
 	 * @param changes             the transaction body containing the necessary data for token update operation
 	 * @param newAutoRenewAccount the new auto-renew account, which will replace the current auto-renew account if appropriate
