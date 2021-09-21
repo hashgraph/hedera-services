@@ -141,8 +141,8 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 	}
 
 	private void validateTokenIsMutable(final Token token, final TokenUpdateTransactionBody op) {
-		final var tokenIsImmutable = !token.hasAdminKey() && !affectsExpiryAtMost(op);
-		validateFalse(tokenIsImmutable, TOKEN_IS_IMMUTABLE);
+		final var isTokenImmutable = !token.hasAdminKey() && !affectsExpiryAtMost(op);
+		validateFalse(isTokenImmutable, TOKEN_IS_IMMUTABLE);
 	}
 
 	private boolean affectsExpiryAtMost(TokenUpdateTransactionBody changes) {

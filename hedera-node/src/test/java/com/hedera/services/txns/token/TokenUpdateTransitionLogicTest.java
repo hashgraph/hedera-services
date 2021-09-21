@@ -66,6 +66,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -87,8 +88,9 @@ class TokenUpdateTransitionLogicTest {
 	private final AccountID newAutoRenew = IdUtils.asAccount("5.2.1");
 	private final String symbol = "SYMBOL";
 	private final String name = "Name";
-	long thisSecond = 1_234_567L;
+	private final long thisSecond = 1_234_567L;
 	private final Instant now = Instant.ofEpochSecond(thisSecond);
+	private final long expiry = thisSecond + 1_234L;
 	private TransactionBody tokenUpdateTxn;
 	private MerkleToken merkleToken;
 	private Token token;
@@ -275,7 +277,6 @@ class TokenUpdateTransitionLogicTest {
 		// and:
 
 		given(tokenStore.loadToken(any())).willReturn(token);
-		given(token.hasAdminKey()).willReturn(true);
 		given(token.getTreasury()).willReturn(oldTreasury);
 		given(oldTreasury.getId()).willReturn(Id.fromGrpcAccount(oldTreasuryId));
 		given(token.getAdminKey()).willReturn(null);
@@ -630,17 +631,13 @@ class TokenUpdateTransitionLogicTest {
 		given(token.getTreasury()).willReturn(oldTreasury);
 		given(token.getId()).willReturn(Id.DEFAULT);
 		given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-
 		given(oldTreasury.getId()).willReturn(Id.fromGrpcAccount(oldTreasuryId));
 		given(oldTreasury.getOwnedNfts()).willReturn(oldTreasuryBalance);
 		given(newTreasury.getId()).willReturn(Id.fromGrpcAccount(newTreasuryId));
-
-
 		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(oldTreasuryId)), any()))
 				.willReturn(oldTreasury);
 		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(newTreasuryId)), any()))
 				.willReturn(newTreasury);
-
 		given(treasuryAssociatedTokens.contains(any(Id.class))).willReturn(true);
 		given(oldTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokens);
 		given(newTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokens);
@@ -652,16 +649,66 @@ class TokenUpdateTransitionLogicTest {
 		final var newTreasuryRel = mock(TokenRelationship.class);
 		given(tokenStore.loadTokenRelationship(token, newTreasury)).willReturn(newTreasuryRel);
 		given(newTreasuryRel.getAccount()).willReturn(newTreasury);
-		// when:
-		doThrow(new InvalidTransactionException(CURRENT_TREASURY_STILL_OWNS_NFTS)).when(token).update(any(), any(), any(), any());
+
 		assertFailsWith(() -> subject.doStateTransition(), CURRENT_TREASURY_STILL_OWNS_NFTS);
-		// then:
+
+		// and when:
+		given(newTreasuryRel.getBalance()).willReturn(1L);
+
+		assertFailsWith(() -> subject.doStateTransition(), TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
+
 		verify(oldTreasury, never()).setOwnedNfts(0);
 		verify(newTreasury, never()).setOwnedNfts(1);
 		verify(oldTreasuryRel, never()).setBalance(0);
 		verify(newTreasuryRel, never()).setBalance(1);
 
-		// then:
+	}
+
+	@Test
+	void followsHappyPathForTreasuryUpdateIfNonzeroBalanceForUnique() {
+		// setup:
+		subject = new TokenUpdateTransitionLogic(
+				false, validator, txnCtx, tokenStore, accountStore);
+
+		givenValidTxnCtx(true);
+		long oldTreasuryBalance = 1;
+
+		given(tokenStore.loadToken(any())).willReturn(token);
+		given(token.hasAdminKey()).willReturn(true);
+		given(token.getTreasury()).willReturn(oldTreasury);
+		given(token.getId()).willReturn(Id.DEFAULT);
+		given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+		given(oldTreasury.getId()).willReturn(Id.fromGrpcAccount(oldTreasuryId));
+		given(oldTreasury.getOwnedNfts()).willReturn(oldTreasuryBalance);
+		given(newTreasury.getId()).willReturn(Id.fromGrpcAccount(newTreasuryId));
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(oldTreasuryId)), any()))
+				.willReturn(oldTreasury);
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(newTreasuryId)), any()))
+				.willReturn(newTreasury);
+		given(treasuryAssociatedTokens.contains(any(Id.class))).willReturn(true);
+		given(oldTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokens);
+		given(newTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokens);
+
+		final var oldTreasuryRel = mock(TokenRelationship.class);
+		given(tokenStore.loadTokenRelationship(token, oldTreasury)).willReturn(oldTreasuryRel);
+		given(oldTreasuryRel.getAccount()).willReturn(oldTreasury);
+		final var newTreasuryRel = mock(TokenRelationship.class);
+		given(tokenStore.loadTokenRelationship(token, newTreasury)).willReturn(newTreasuryRel);
+		given(newTreasuryRel.getAccount()).willReturn(newTreasury);
+
+		final var autoRenew = mock(Account.class);
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(newAutoRenew)), any()))
+				.willReturn(autoRenew);
+		given(autoRenew.isSmartContract()).willReturn(false);
+		given(token.getId()).willReturn(Id.DEFAULT);
+
+		subject.doStateTransition();
+
+		verify(oldTreasury, never()).setOwnedNfts(0);
+		verify(newTreasury, never()).setOwnedNfts(0);
+		verify(oldTreasuryRel, never()).setBalance(0);
+		verify(newTreasuryRel, never()).setBalance(0);
+
 	}
 
 	private void givenValidTxnCtx() {
@@ -692,6 +739,7 @@ class TokenUpdateTransitionLogicTest {
 						.setSymbol(symbol)
 						.setAutoRenewAccount(newAutoRenew)
 						.setName(name)
+						.setExpiry(Timestamp.newBuilder().setSeconds(expiry))
 						.setMemo(StringValue.newBuilder().setValue("FATALITY").build())
 						.setToken(target));
 		if (withNewTreasury) {
@@ -699,6 +747,7 @@ class TokenUpdateTransitionLogicTest {
 					.setTreasury(useDuplicateTreasury ? oldTreasuryId : newTreasuryId);
 		}
 		tokenUpdateTxn = builder.build();
+		given(validator.isValidExpiry(any())).willReturn(true);
 		given(accessor.getTxn()).willReturn(tokenUpdateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(now);

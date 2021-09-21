@@ -54,6 +54,7 @@ import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_METADATA;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
@@ -89,6 +90,8 @@ class TokenTest {
 	private final Account nonTreasuryAccount = new Account(nonTreasuryId);
 	private final Account autoRenew = new Account(autoRenewId);
 	private final OptionValidator validator = mock(OptionValidator.class);
+	private final long expiry = 1_234_567L;
+	private final long autoRenewPeriod = 345_678L;
 
 	private Token subject;
 	private TokenRelationship treasuryRel;
@@ -121,8 +124,8 @@ class TokenTest {
 				.setFeeScheduleKey(key)
 				.setSupplyKey(key)
 				.setWipeKey(key)
-				.setExpiry(Timestamp.newBuilder().setSeconds(1000L).build())
-				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(1000L).build())
+				.setExpiry(Timestamp.newBuilder().setSeconds(expiry + 1000L).build())
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod + 1000L).build())
 				.setTreasury(newTreasuryId.asGrpcAccount())
 				.setAdminKey(key)
 				.build();
@@ -137,7 +140,8 @@ class TokenTest {
 		subject.setWipeKey(someKey);
 		subject.setCustomFees(List.of());
 		subject.setAutoRenewAccount(autoRenew);
-		subject.setAutoRenewPeriod(10);
+		subject.setAutoRenewPeriod(autoRenewPeriod);
+		subject.setExpiry(expiry);
 		subject.setName("old");
 		subject.setMemo("oldMemo");
 		subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
@@ -151,7 +155,7 @@ class TokenTest {
 		assertEquals("name", subject.getName());
 		assertEquals("smb", subject.getSymbol());
 		assertEquals("memo", subject.getMemo());
-		assertEquals(1000, subject.getAutoRenewPeriod());
+		assertEquals(autoRenewPeriod + 1000, subject.getAutoRenewPeriod());
 		assertFalse(subject.isDeleted());
 		assertFalse(subject.isNew());
 		assertEquals(0, subject.getDecimals());
@@ -171,7 +175,7 @@ class TokenTest {
 		final var changes = TokenUpdateTransactionBody.newBuilder()
 				.setToken(id.asGrpcToken())
 				.setAutoRenewAccount(autoRenewId.asGrpcAccount())
-				.setExpiry(Timestamp.newBuilder().setSeconds(1000L).build())
+				.setExpiry(Timestamp.newBuilder().setSeconds(expiry + 1000L).build())
 				.setAdminKey(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build())
 				.build();
 		
@@ -179,9 +183,42 @@ class TokenTest {
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 
 		subject.setAdminKey(someKey);
+		subject.setExpiry(expiry);
 		subject.update(changes, autoRenew, null, validator);
 		
 		assertNull(subject.getAdminKey());
+	}
+
+	@Test
+	void skipsUpdatingFieldsIfNotSetOrInappropriate() {
+		final var changes = TokenUpdateTransactionBody.newBuilder()
+				.setToken(id.asGrpcToken())
+				.setExpiry(Timestamp.newBuilder().setSeconds(0L).build())
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(0L).build())
+				.build();
+
+		given(validator.isValidExpiry(any())).willReturn(true);
+		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
+
+		subject.setAdminKey(someKey);
+		subject.setExpiry(expiry);
+		subject.setAutoRenewPeriod(autoRenewPeriod);
+		subject.setAutoRenewAccount(autoRenew);
+		subject.update(changes, autoRenew, null, validator);
+
+		assertEquals(someKey, subject.getAdminKey());
+		assertEquals(expiry, subject.getExpiry());
+		assertEquals(autoRenewPeriod, subject.getAutoRenewPeriod());
+	}
+
+	@Test
+	void rejectsInvalidExpiryUpdate() {
+		final var changes = TokenUpdateTransactionBody.newBuilder()
+				.setToken(id.asGrpcToken())
+				.setExpiry(Timestamp.newBuilder().setSeconds(1000L).build())
+				.build();
+		subject.setExpiry(expiry);
+		assertFailsWith(() -> subject.update(changes, autoRenew, null, validator), INVALID_EXPIRATION_TIME);
 	}
 
 	@Test
@@ -523,11 +560,6 @@ class TokenTest {
 		subject.initSupplyConstraints(TokenSupplyType.FINITE, 100000);
 		subject.setSupplyKey(someKey);
 
-		final Map<Long, UniqueToken> loadedUniqueTokensMap = new HashMap<>();
-		final var owner = nonTreasuryAccount.getId();
-		final var uniqueToken = new UniqueToken(id, 1L, owner);
-		subject.setLoadedUniqueTokens(loadedUniqueTokensMap);
-
 		final var ownershipTracker = mock(OwnershipTracker.class);
 		final var singleSerialNumber = List.of(1L);
 
@@ -546,6 +578,9 @@ class TokenTest {
 		assertFailsWith(
 				() -> subject.wipe(ownershipTracker, treasuryRel, singleSerialNumber),
 				CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT);
+
+		assertFailsWith(() -> subject.wipe(ownershipTracker, nonTreasuryRel, singleSerialNumber),
+				FAIL_INVALID);
 	}
 
 	@Test
@@ -565,6 +600,9 @@ class TokenTest {
 		assertFailsWith(
 				() -> subject.burn(ownershipTracker, treasuryRel, emptySerialNumber),
 				INVALID_TOKEN_BURN_METADATA);
+
+		assertFailsWith(() -> subject.burn(ownershipTracker, nonTreasuryRel, singleSerialNumber),
+				FAIL_INVALID);
 	}
 
 	@Test
