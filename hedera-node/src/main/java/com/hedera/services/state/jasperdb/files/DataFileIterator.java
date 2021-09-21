@@ -48,18 +48,15 @@ public final class DataFileIterator implements AutoCloseable {
      *
      * @param path The path to the file to read.
      * @param metadata The metadata read from the file.
+     * @throws IOException if there was a problem creating a new InputStream on the file at path
      */
-    public DataFileIterator(Path path, DataFileMetadata metadata, DataItemSerializer dataItemSerializer) {
-        try {
-            this.path = path;
-            this.metadata = metadata;
-            this.dataItemSerializer = dataItemSerializer;
-            this.inputStream = new DataInputStream(
-                    new BufferedInputStream(Files.newInputStream(path, StandardOpenOption.READ),
-                    1024*1024)); // 1Mb buffer TODO perf profile the size to use
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public DataFileIterator(Path path, DataFileMetadata metadata, DataItemSerializer dataItemSerializer) throws IOException {
+        this.path = path;
+        this.metadata = metadata;
+        this.dataItemSerializer = dataItemSerializer;
+        this.inputStream = new DataInputStream(
+                new BufferedInputStream(Files.newInputStream(path, StandardOpenOption.READ),
+                1024*1024)); // 1Mb buffer TODO perf profile the size to use
     }
 
     /**

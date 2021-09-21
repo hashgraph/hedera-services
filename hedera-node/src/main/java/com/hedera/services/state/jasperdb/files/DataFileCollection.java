@@ -202,9 +202,10 @@ public class DataFileCollection<D> {
         long minimumValidKey = mostRecentDataFileMetadata.getMinimumValidKey();
         long maximumValidKey = mostRecentDataFileMetadata.getMaximumValidKey();
         // open iterators, first iterator will be on oldest file
-        List<DataFileIterator> blockIterators = filesToMerge.stream()
-                .map(DataFileReader::createIterator)
-                .collect(Collectors.toList());
+        List<DataFileIterator> blockIterators = new ArrayList<>(filesToMerge.size());
+        for (final var fileReader: filesToMerge){
+            blockIterators.add(fileReader.createIterator());
+        }
         // move all iterators to first block
         ListIterator<DataFileIterator> blockIteratorsIterator = blockIterators.listIterator();
         while (blockIteratorsIterator.hasNext()) {

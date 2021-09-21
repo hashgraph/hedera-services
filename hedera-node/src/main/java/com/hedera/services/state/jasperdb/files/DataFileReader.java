@@ -85,8 +85,9 @@ public class DataFileReader<D> implements AutoCloseable, Comparable<DataFileRead
      * in a separate thread. It must therefore be closed when you are finished with it.
      *
      * @return new data item iterator
+     * @throws IOException if there was a problem creating a new DataFileIterator
      */
-    public final DataFileIterator createIterator() {
+    public final DataFileIterator createIterator() throws IOException {
         return new DataFileIterator(path, metadata, dataItemSerializer);
     }
 
