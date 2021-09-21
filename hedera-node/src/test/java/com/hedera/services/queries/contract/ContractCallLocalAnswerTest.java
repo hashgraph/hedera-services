@@ -23,7 +23,7 @@ package com.hedera.services.queries.contract;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
@@ -82,11 +82,11 @@ class ContractCallLocalAnswerTest {
 	ContractCallLocalAnswer subject;
 	OptionValidator validator;
 	ContractCallLocalAnswer.LegacyLocalCaller delegate;
-	MerkleMap<PermHashInteger, MerkleAccount> contracts;
+	MerkleMap<EntityNum, MerkleAccount> contracts;
 
 	@BeforeEach
 	private void setup() throws Throwable {
-		contracts = (MerkleMap<PermHashInteger, MerkleAccount>) mock(MerkleMap.class);
+		contracts = (MerkleMap<EntityNum, MerkleAccount>) mock(MerkleMap.class);
 		view = mock(StateView.class);
 
 		delegate = mock(ContractCallLocalAnswer.LegacyLocalCaller.class);

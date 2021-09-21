@@ -27,7 +27,7 @@ import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -48,7 +48,7 @@ import static com.hedera.services.utils.MiscUtils.describe;
 import static java.util.Collections.unmodifiableList;
 import static java.util.stream.Collectors.toList;
 
-public class MerkleToken extends AbstractMerkleLeaf implements Keyed<PermHashInteger> {
+public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> {
 	static final int PRE_RELEASE_0120_VERSION = 1;
 	static final int RELEASE_0120_VERSION = 2;
 	static final int RELEASE_0160_VERSION = 3;
@@ -651,12 +651,12 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<PermHashInt
 	}
 
 	@Override
-	public PermHashInteger getKey() {
-		return new PermHashInteger(number);
+	public EntityNum getKey() {
+		return new EntityNum(number);
 	}
 
 	@Override
-	public void setKey(PermHashInteger phi) {
+	public void setKey(EntityNum phi) {
 		this.number = phi.intValue();
 	}
 }

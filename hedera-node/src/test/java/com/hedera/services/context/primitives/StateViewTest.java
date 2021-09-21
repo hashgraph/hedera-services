@@ -28,8 +28,8 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -40,8 +40,8 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenView;
 import com.hedera.services.store.tokens.views.UniqTokenViewFactory;
-import com.hedera.services.utils.PermHashInteger;
-import com.hedera.services.utils.PermHashLong;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -162,13 +162,13 @@ class StateViewTest {
 	private Map<FileID, HFileMeta> attrs;
 	private BiFunction<StateView, AccountID, List<TokenRelationship>> mockTokenRelsFn;
 
-	private MerkleMap<PermHashInteger, MerkleToken> tokens;
-	private MerkleMap<PermHashInteger, MerkleTopic> topics;
-	private MerkleMap<PermHashInteger, MerkleAccount> contracts;
-	private MerkleMap<PermHashLong, MerkleTokenRelStatus> tokenRels;
-	private FCOneToManyRelation<PermHashInteger, Long> nftsByType;
-	private FCOneToManyRelation<PermHashInteger, Long> nftsByOwner;
-	private FCOneToManyRelation<PermHashInteger, Long> treasuryNftsByType;
+	private MerkleMap<EntityNum, MerkleToken> tokens;
+	private MerkleMap<EntityNum, MerkleTopic> topics;
+	private MerkleMap<EntityNum, MerkleAccount> contracts;
+	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
+	private FCOneToManyRelation<EntityNum, Long> nftsByType;
+	private FCOneToManyRelation<EntityNum, Long> nftsByOwner;
+	private FCOneToManyRelation<EntityNum, Long> treasuryNftsByType;
 	private TokenStore tokenStore;
 	private ScheduleStore scheduleStore;
 	private TransactionBody parentScheduleCreate;
@@ -180,7 +180,7 @@ class StateViewTest {
 	private MerkleAccount notContract;
 	private MerkleAccount tokenAccount;
 	private NodeLocalProperties nodeProps;
-	private MerkleDiskFs diskFs;
+	private MerkleSpecialFiles specialFiles;
 	private UniqTokenView uniqTokenView;
 	private UniqTokenViewFactory uniqTokenViewFactory;
 	private StateChildren children;
@@ -238,17 +238,17 @@ class StateViewTest {
 				.get();
 		nftOwner = MerkleAccountFactory.newAccount()
 				.get();
-		contracts = (MerkleMap<PermHashInteger, MerkleAccount>) mock(MerkleMap.class);
-		given(contracts.get(PermHashInteger.fromContractId(cid))).willReturn(contract);
-		given(contracts.get(PermHashInteger.fromAccountId(nftOwnerId))).willReturn(nftOwner);
-		given(contracts.get(PermHashInteger.fromContractId(notCid))).willReturn(notContract);
-		given(contracts.get(PermHashInteger.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
+		contracts = (MerkleMap<EntityNum, MerkleAccount>) mock(MerkleMap.class);
+		given(contracts.get(EntityNum.fromContractId(cid))).willReturn(contract);
+		given(contracts.get(EntityNum.fromAccountId(nftOwnerId))).willReturn(nftOwner);
+		given(contracts.get(EntityNum.fromContractId(notCid))).willReturn(notContract);
+		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
 
-		topics = (MerkleMap<PermHashInteger, MerkleTopic>) mock(MerkleMap.class);
+		topics = (MerkleMap<EntityNum, MerkleTopic>) mock(MerkleMap.class);
 
 		tokenRels = new MerkleMap<>();
 		tokenRels.put(
-				PermHashLong.fromLongs(tokenAccountId.getAccountNum(), tokenId.getTokenNum()),
+				EntityNumPair.fromLongs(tokenAccountId.getAccountNum(), tokenId.getTokenNum()),
 				new MerkleTokenRelStatus(123L, false, true, true));
 
 		tokenStore = mock(TokenStore.class);
@@ -303,20 +303,20 @@ class StateViewTest {
 		given(storage.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedStorage);
 		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedBytecode);
 		nodeProps = mock(NodeLocalProperties.class);
-		diskFs = mock(MerkleDiskFs.class);
+		specialFiles = mock(MerkleSpecialFiles.class);
 
 		mockTokenRelsFn = (BiFunction<StateView, AccountID, List<TokenRelationship>>) mock(BiFunction.class);
 
 		StateView.tokenRelsFn = mockTokenRelsFn;
 		given(mockTokenRelsFn.apply(any(), any())).willReturn(Collections.emptyList());
 
-		var uniqueTokens = new MerkleMap<PermHashLong, MerkleUniqueToken>();
+		var uniqueTokens = new MerkleMap<EntityNumPair, MerkleUniqueToken>();
 		uniqueTokens.put(targetNftKey, targetNft);
 		uniqueTokens.put(treasuryNftKey, treasuryNft);
 
-		nftsByOwner = (FCOneToManyRelation<PermHashInteger, Long>) mock(FCOneToManyRelation.class);
-		nftsByType = (FCOneToManyRelation<PermHashInteger, Long>) mock(FCOneToManyRelation.class);
-		treasuryNftsByType = (FCOneToManyRelation<PermHashInteger, Long>) mock(FCOneToManyRelation.class);
+		nftsByOwner = (FCOneToManyRelation<EntityNum, Long>) mock(FCOneToManyRelation.class);
+		nftsByType = (FCOneToManyRelation<EntityNum, Long>) mock(FCOneToManyRelation.class);
+		treasuryNftsByType = (FCOneToManyRelation<EntityNum, Long>) mock(FCOneToManyRelation.class);
 		uniqTokenView = mock(UniqTokenView.class);
 		uniqTokenViewFactory = mock(UniqTokenViewFactory.class);
 
@@ -327,7 +327,7 @@ class StateViewTest {
 		children.setUniqueTokenAssociations(nftsByType);
 		children.setUniqueTokenAssociations(nftsByOwner);
 		children.setUniqueOwnershipTreasuryAssociations(treasuryNftsByType);
-		children.setSpecialFiles(diskFs);
+		children.setSpecialFiles(specialFiles);
 
 		given(uniqTokenViewFactory.viewFor(any(), any(), any(), any(), any(), any())).willReturn(uniqTokenView);
 
@@ -650,7 +650,7 @@ class StateViewTest {
 	@Test
 	void infoForAccountEmpty() {
 		// setup:
-		given(contracts.get(PermHashInteger.fromAccountId(tokenAccountId))).willReturn(null);
+		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(null);
 
 		// when:
 		var actualResponse = subject.infoForAccount(tokenAccountId);
@@ -923,8 +923,8 @@ class StateViewTest {
 	void getsSpecialFileContents() {
 		FileID file150 = asFile("0.0.150");
 
-		given(diskFs.contentsOf(file150)).willReturn(data);
-		given(diskFs.contains(file150)).willReturn(true);
+		given(specialFiles.get(file150)).willReturn(data);
+		given(specialFiles.contains(file150)).willReturn(true);
 
 		// when
 		var stuff = subject.contentsOf(file150);
@@ -1083,8 +1083,8 @@ class StateViewTest {
 			.setTokenID(IdUtils.asToken("0.0.9"))
 			.setSerialNumber(5L)
 			.build();
-	private final PermHashLong targetNftKey = PermHashLong.fromLongs(3, 4);
-	private final PermHashLong treasuryNftKey = PermHashLong.fromLongs(3, 5);
+	private final EntityNumPair targetNftKey = EntityNumPair.fromLongs(3, 4);
+	private final EntityNumPair treasuryNftKey = EntityNumPair.fromLongs(3, 5);
 	private final MerkleUniqueToken targetNft = new MerkleUniqueToken(EntityId.fromGrpcAccountId(nftOwnerId), nftMeta,
 			fromJava(nftCreation));
 	private final MerkleUniqueToken treasuryNft = new MerkleUniqueToken(EntityId.fromGrpcAccountId(treasuryOwnerId),

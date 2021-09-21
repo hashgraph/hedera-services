@@ -24,8 +24,8 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.utils.PermHashInteger;
-import com.hedera.services.utils.PermHashLong;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.store.tokens.views.utils.GrpcUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -46,7 +46,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.utils.PermHashInteger.fromInt;
+import static com.hedera.services.utils.EntityNum.fromInt;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
@@ -56,11 +56,11 @@ class AbstractUniqTokenViewTest {
 	@Mock
 	private Iterator<Long> firstMockRange;
 	@Mock
-	private MerkleMap<PermHashInteger, MerkleToken> tokens;
+	private MerkleMap<EntityNum, MerkleToken> tokens;
 	@Mock
-	private MerkleMap<PermHashLong, MerkleUniqueToken> nfts;
+	private MerkleMap<EntityNumPair, MerkleUniqueToken> nfts;
 	@Mock
-	private FCOneToManyRelation<PermHashInteger, Long> nftsByType;
+	private FCOneToManyRelation<EntityNum, Long> nftsByType;
 
 	private AbstractUniqTokenView subject;
 
@@ -81,7 +81,7 @@ class AbstractUniqTokenViewTest {
 				treasuryId.toGrpcAccountId());
 		setupFirstMockRange();
 		given(nftsByType.get(fromInt(tokenId.identityCode()), start, end)).willReturn(firstMockRange);
-		given(tokens.get(PermHashInteger.fromLong(tokenId.num()))).willReturn(someToken);
+		given(tokens.get(EntityNum.fromLong(tokenId.num()))).willReturn(someToken);
 		given(nfts.get(someExplicitNftId)).willReturn(someExplicitNft);
 		given(nfts.get(wildcardNftId)).willReturn(wildcardNft);
 
@@ -97,7 +97,7 @@ class AbstractUniqTokenViewTest {
 		final var desired = "NFT was removed during query answering";
 
 		given(nftsByType.get(fromInt(tokenId.identityCode()), start, end)).willReturn(firstMockRange);
-		given(tokens.get(PermHashInteger.fromLong(tokenId.num()))).willReturn(someToken);
+		given(tokens.get(EntityNum.fromLong(tokenId.num()))).willReturn(someToken);
 
 		// when:
 		final var e = Assertions.assertThrows(ConcurrentModificationException.class, () ->
@@ -110,7 +110,7 @@ class AbstractUniqTokenViewTest {
 	@Test
 	void throwsCmeIfIdHasNoMatchingToken() {
 		// setup:
-		final var desired = "Token 0.0.6 was removed during query answering";
+		final var desired = "Token #6 was removed during query answering";
 
 		// when:
 		final var e = Assertions.assertThrows(ConcurrentModificationException.class, () ->
@@ -142,8 +142,8 @@ class AbstractUniqTokenViewTest {
 	private final EntityId treasuryId = new EntityId(0, 0, 3);
 	private final MerkleUniqueToken someExplicitNft = new MerkleUniqueToken(someOwnerId, someMeta, someCreationTime);
 	private final MerkleUniqueToken wildcardNft = new MerkleUniqueToken(MISSING_ENTITY_ID, wildMeta, someCreationTime);
-	private final PermHashLong someExplicitNftId = PermHashLong.fromLongs(tokenId.num(), someSerial);
-	private final PermHashLong wildcardNftId = PermHashLong.fromLongs(tokenId.num(), wildcardSerial);
+	private final EntityNumPair someExplicitNftId = EntityNumPair.fromLongs(tokenId.num(), someSerial);
+	private final EntityNumPair wildcardNftId = EntityNumPair.fromLongs(tokenId.num(), wildcardSerial);
 	private final MerkleToken someToken = new MerkleToken(
 			1_234_567L, 1, 2,
 			"THREE", "Four",

@@ -27,8 +27,8 @@ import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.utils.PermHashInteger;
-import com.hedera.services.utils.PermHashLong;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hedera.services.stream.proto.TokenUnitBalance;
@@ -60,7 +60,7 @@ import java.util.function.UnaryOperator;
 
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
-import static com.hedera.services.utils.PermHashInteger.fromTokenId;
+import static com.hedera.services.utils.EntityNum.fromTokenId;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 
 @Singleton
@@ -237,13 +237,13 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			AccountID id,
 			MerkleAccount account,
 			SingleAccountBalances.Builder sabBuilder,
-			MerkleMap<PermHashInteger, MerkleToken> tokens,
-			MerkleMap<PermHashLong, MerkleTokenRelStatus> tokenAssociations
+			MerkleMap<EntityNum, MerkleToken> tokens,
+			MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations
 	) {
 		var accountTokens = account.tokens();
 		for (TokenID tokenId : accountTokens.asTokenIds()) {
 			var token = tokens.get(fromTokenId(tokenId));
-			if (token != null && !token.isDeleted()) {
+			if (token != null) {
 				var relationship = tokenAssociations.get(fromAccountTokenRel(id, tokenId));
 				sabBuilder.addTokenUnitBalances(tb(tokenId, relationship.getBalance()));
 			}

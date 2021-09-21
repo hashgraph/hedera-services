@@ -24,7 +24,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
@@ -96,7 +96,7 @@ public class MerkleScheduleTest {
 		signatories.addAll(List.of(fpk, spk, tpk));
 
 		subject = MerkleSchedule.from(bodyBytes, expiry);
-		subject.setKey(PermHashInteger.fromInt(number));
+		subject.setKey(EntityNum.fromInt(number));
 
 		serdes = mock(DomainSerdes.class);
 		MerkleSchedule.serdes = serdes;
@@ -241,7 +241,7 @@ public class MerkleScheduleTest {
 		assertFalse(read.isDeleted());
 		assertEquals(grpcResolutionTime, read.executionTime());
 		assertEquals(subject.ordinaryViewOfScheduledTxn(), read.ordinaryViewOfScheduledTxn());
-		assertNotEquals(PermHashInteger.fromInt(number), read.getKey());
+		assertNotEquals(EntityNum.fromInt(number), read.getKey());
 	}
 
 	@Test
@@ -271,7 +271,7 @@ public class MerkleScheduleTest {
 		assertFalse(read.isDeleted());
 		assertEquals(grpcResolutionTime, read.executionTime());
 		assertEquals(subject.ordinaryViewOfScheduledTxn(), read.ordinaryViewOfScheduledTxn());
-		assertEquals(PermHashInteger.fromInt(number), read.getKey());
+		assertEquals(EntityNum.fromInt(number), read.getKey());
 	}
 
 	@Test

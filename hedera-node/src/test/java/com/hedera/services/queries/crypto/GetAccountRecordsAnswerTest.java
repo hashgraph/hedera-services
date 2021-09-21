@@ -27,7 +27,7 @@ import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
@@ -65,7 +65,7 @@ import static org.mockito.BDDMockito.verify;
 class GetAccountRecordsAnswerTest {
 	private static final long fee = 1_234L;
 	private StateView view;
-	private MerkleMap<PermHashInteger, MerkleAccount> accounts;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	private static final String target = payer;
 	private MerkleAccount payerAccount;
 	private OptionValidator optionValidator;
@@ -90,7 +90,7 @@ class GetAccountRecordsAnswerTest {
 		payerAccount.records().offer(recordTwo());
 
 		accounts = mock(MerkleMap.class);
-		given(accounts.get(PermHashInteger.fromAccountId(asAccount(target)))).willReturn(payerAccount);
+		given(accounts.get(EntityNum.fromAccountId(asAccount(target)))).willReturn(payerAccount);
 
 		nodeProps = mock(NodeLocalProperties.class);
 		final StateChildren children = new StateChildren();

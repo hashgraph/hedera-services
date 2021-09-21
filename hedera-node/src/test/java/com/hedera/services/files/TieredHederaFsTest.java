@@ -24,7 +24,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.files.TieredHederaFs.IllegalArgumentType;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleDiskFs;
+import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -78,7 +78,7 @@ class TieredHederaFsTest {
 	Supplier<Instant> clock;
 	Map<FileID, byte[]> data;
 	Map<FileID, HFileMeta> metadata;
-	MerkleDiskFs diskFs;
+	MerkleSpecialFiles specialFiles;
 	TieredHederaFs subject;
 
 	@BeforeEach
@@ -99,7 +99,7 @@ class TieredHederaFsTest {
 		ids = mock(EntityIdSource.class);
 		data = mock(Map.class);
 		metadata = mock(Map.class);
-		diskFs = mock(MerkleDiskFs.class);
+		specialFiles = mock(MerkleSpecialFiles.class);
 
 		clock = mock(Supplier.class);
 		given(clock.get()).willReturn(now);
@@ -107,7 +107,7 @@ class TieredHederaFsTest {
 		properties = mock(GlobalDynamicProperties.class);
 		given(properties.maxFileSizeKb()).willReturn(1);
 
-		subject = new TieredHederaFs(ids, properties, clock, data, metadata, () -> diskFs);
+		subject = new TieredHederaFs(ids, properties, clock, data, metadata, () -> specialFiles);
 	}
 
 	@Test
@@ -270,8 +270,8 @@ class TieredHederaFsTest {
 
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(livingAttr);
-		given(diskFs.contains(fid)).willReturn(true);
-		given(diskFs.contentsOf(fid)).willReturn(stretchContents);
+		given(specialFiles.contains(fid)).willReturn(true);
+		given(specialFiles.get(fid)).willReturn(stretchContents);
 		// and:
 		given(properties.maxFileSizeKb()).willReturn(1);
 
@@ -282,7 +282,7 @@ class TieredHederaFsTest {
 		assertEquals(SUCCESS, result.outcome());
 		assertTrue(result.fileReplaced());
 		// and:
-		verify(diskFs).put(
+		verify(specialFiles).update(
 				argThat(fid::equals),
 				argThat(bytes -> new String(bytes).equals(
 						new String(stretchContents) + new String(burstContents)
@@ -296,7 +296,7 @@ class TieredHederaFsTest {
 
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(livingAttr);
-		given(diskFs.contains(fid)).willReturn(true);
+		given(specialFiles.contains(fid)).willReturn(true);
 		// and:
 		given(properties.maxFileSizeKb()).willReturn(1);
 
@@ -307,7 +307,7 @@ class TieredHederaFsTest {
 		assertEquals(SUCCESS, result.outcome());
 		assertTrue(result.fileReplaced());
 		// and:
-		verify(diskFs).put(
+		verify(specialFiles).update(
 				argThat(fid::equals),
 				argThat(bytes -> new String(bytes).equals(
 						new String(oversizeContents)
@@ -837,8 +837,8 @@ class TieredHederaFsTest {
 		FileID fileID = FileID.newBuilder().setFileNum(150L).build();
 		given(metadata.containsKey(fileID)).willReturn(true);
 		given(metadata.get(fileID)).willReturn(livingAttr);
-		given(diskFs.contains(fileID)).willReturn(true);
-		given(diskFs.contentsOf(fileID)).willReturn(newContents);
+		given(specialFiles.contains(fileID)).willReturn(true);
+		given(specialFiles.get(fileID)).willReturn(newContents);
 		// when:
 		var result = subject.overwrite(fileID, newContents);
 
@@ -846,12 +846,12 @@ class TieredHederaFsTest {
 		assertEquals(SUCCESS, result.outcome());
 		assertTrue(result.fileReplaced());
 		// and:
-		verify(diskFs).put(fileID, newContents);
+		verify(specialFiles).update(fileID, newContents);
 
 		// and when:
 		subject.append(fileID, moreContents);
 
 		// then:
-		verify(diskFs).put(fileID, (new String(newContents) + new String(moreContents)).getBytes());
+		verify(specialFiles).update(fileID, (new String(newContents) + new String(moreContents)).getBytes());
 	}
 }

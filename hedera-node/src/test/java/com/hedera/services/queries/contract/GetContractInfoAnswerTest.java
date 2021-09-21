@@ -22,7 +22,7 @@ package com.hedera.services.queries.contract;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.utils.IdUtils;
@@ -72,7 +72,7 @@ class GetContractInfoAnswerTest {
 
 	OptionValidator optionValidator;
 	StateView view;
-	MerkleMap<PermHashInteger, MerkleAccount> contracts;
+	MerkleMap<EntityNum, MerkleAccount> contracts;
 
 	ContractGetInfoResponse.ContractInfo info;
 

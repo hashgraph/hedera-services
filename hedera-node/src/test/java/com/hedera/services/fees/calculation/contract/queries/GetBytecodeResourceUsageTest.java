@@ -43,15 +43,16 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 class GetBytecodeResourceUsageTest {
-	byte[] bytecode = "A Supermarket in California".getBytes();
-	ContractID target = asContract("0.0.123");
-	StateView view;
-	SmartContractFeeBuilder usageEstimator;
+	private static final byte[] bytecode = "A Supermarket in California".getBytes();
+	private static final ContractID target = asContract("0.0.123");
 
-	GetBytecodeResourceUsage subject;
+	private StateView view;
+	private SmartContractFeeBuilder usageEstimator;
+
+	private GetBytecodeResourceUsage subject;
 
 	@BeforeEach
-	private void setup() throws Throwable {
+	private void setup() {
 		usageEstimator = mock(SmartContractFeeBuilder.class);
 		view = mock(StateView.class);
 
@@ -60,44 +61,35 @@ class GetBytecodeResourceUsageTest {
 
 	@Test
 	void recognizesApplicableQuery() {
-		// given:
-		var applicable = bytecodeQuery(target, COST_ANSWER);
-		var inapplicable = Query.getDefaultInstance();
+		final var applicable = bytecodeQuery(target, COST_ANSWER);
+		final var inapplicable = Query.getDefaultInstance();
 
-		// expect:
 		assertTrue(subject.applicableTo(applicable));
 		assertFalse(subject.applicableTo(inapplicable));
 	}
 
 	@Test
 	void invokesEstimatorAsExpectedForType() {
-		// setup:
-		FeeData costAnswerUsage = mock(FeeData.class);
-		FeeData answerOnlyUsage = mock(FeeData.class);
-		int size = bytecode.length;
-
-		// given:
-		Query answerOnlyQuery = bytecodeQuery(target, ANSWER_ONLY);
-		Query costAnswerQuery = bytecodeQuery(target, COST_ANSWER);
-		// and:
+		final var costAnswerUsage = mock(FeeData.class);
+		final var answerOnlyUsage = mock(FeeData.class);
+		final var size = bytecode.length;
+		final var answerOnlyQuery = bytecodeQuery(target, ANSWER_ONLY);
+		final var costAnswerQuery = bytecodeQuery(target, COST_ANSWER);
 		given(view.bytecodeOf(target)).willReturn(Optional.of(bytecode));
-		// and:
 		given(usageEstimator.getContractByteCodeQueryFeeMatrices(size, COST_ANSWER))
 				.willReturn(costAnswerUsage);
 		given(usageEstimator.getContractByteCodeQueryFeeMatrices(size, ANSWER_ONLY))
 				.willReturn(answerOnlyUsage);
 
-		// when:
-		FeeData costAnswerEstimate = subject.usageGiven(costAnswerQuery, view);
-		FeeData answerOnlyEstimate = subject.usageGiven(answerOnlyQuery, view);
+		final var costAnswerEstimate = subject.usageGiven(costAnswerQuery, view);
+		final var answerOnlyEstimate = subject.usageGiven(answerOnlyQuery, view);
 
-		// then:
 		assertSame(costAnswerEstimate, costAnswerUsage);
 		assertSame(answerOnlyEstimate, answerOnlyUsage);
 	}
 
-	private Query bytecodeQuery(ContractID id, ResponseType type) {
-		ContractGetBytecodeQuery.Builder op = ContractGetBytecodeQuery.newBuilder()
+	private static final Query bytecodeQuery(final ContractID id, final ResponseType type) {
+		final var op = ContractGetBytecodeQuery.newBuilder()
 				.setContractID(id)
 				.setHeader(QueryHeader.newBuilder().setResponseType(type));
 		return Query.newBuilder()

@@ -25,9 +25,7 @@ import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.crypto.queries.GetAccountInfoResourceUsage;
 import com.hedera.services.fees.calculation.crypto.queries.GetAccountRecordsResourceUsage;
-import com.hedera.services.fees.calculation.crypto.txns.CryptoCreateResourceUsage;
 import com.hedera.services.fees.calculation.crypto.txns.CryptoDeleteResourceUsage;
-import com.hedera.services.fees.calculation.crypto.txns.CryptoUpdateResourceUsage;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
@@ -36,9 +34,7 @@ import dagger.multibindings.IntoMap;
 import java.util.List;
 import java.util.Set;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 
 @Module
 public abstract class CryptoFeesModule {
@@ -53,28 +49,10 @@ public abstract class CryptoFeesModule {
 
 	@Provides
 	@IntoMap
-	@FunctionKey(CryptoCreate)
-	public static List<TxnResourceUsageEstimator> provideCryptoCreateEstimator(
-			CryptoCreateResourceUsage cryptoCreateResourceUsage
-	) {
-		return List.of(cryptoCreateResourceUsage);
-	}
-
-	@Provides
-	@IntoMap
 	@FunctionKey(CryptoDelete)
 	public static List<TxnResourceUsageEstimator> provideCryptoDeleteEstimator(
 			CryptoDeleteResourceUsage cryptoDeleteResourceUsage
 	) {
 		return List.of(cryptoDeleteResourceUsage);
-	}
-
-	@Provides
-	@IntoMap
-	@FunctionKey(CryptoUpdate)
-	public static List<TxnResourceUsageEstimator> provideCryptoUpdateEstimator(
-			CryptoUpdateResourceUsage cryptoUpdateResourceUsage
-	) {
-		return List.of(cryptoUpdateResourceUsage);
 	}
 }

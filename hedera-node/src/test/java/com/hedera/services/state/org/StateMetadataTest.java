@@ -21,7 +21,7 @@ package com.hedera.services.state.org;
  */
 
 import com.hedera.services.ServicesApp;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,11 +39,11 @@ class StateMetadataTest {
 	@Mock
 	private ServicesApp app;
 	@Mock
-	private FCOneToManyRelation<PermHashInteger, Long> uniqueTokenAssociations;
+	private FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations;
 	@Mock
-	private FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipAssociations;
+	private FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations;
 	@Mock
-	private FCOneToManyRelation<PermHashInteger, Long> uniqueTreasuryOwnershipAssociations;
+	private FCOneToManyRelation<EntityNum, Long> uniqueTreasuryOwnershipAssociations;
 
 	private StateMetadata subject;
 

@@ -29,7 +29,7 @@ import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -72,7 +72,7 @@ public class SolvencyPrecheck {
 	private final PrecheckVerifier precheckVerifier;
 	private final Supplier<StateView> stateView;
 	private final GlobalDynamicProperties dynamicProperties;
-	private final Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts;
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
 	@Inject
 	public SolvencyPrecheck(
@@ -82,7 +82,7 @@ public class SolvencyPrecheck {
 			PrecheckVerifier precheckVerifier,
 			Supplier<StateView> stateView,
 			GlobalDynamicProperties dynamicProperties,
-			Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {
 		this.accounts = accounts;
 		this.validator = validator;
@@ -120,7 +120,7 @@ public class SolvencyPrecheck {
 	}
 
 	private TxnValidityAndFeeReq solvencyOfVerifiedPayer(SignedTxnAccessor accessor, boolean includeSvcFee) {
-		final var payerId = PermHashInteger.fromAccountId(accessor.getPayer());
+		final var payerId = EntityNum.fromAccountId(accessor.getPayer());
 		final var payerAccount = accounts.get().get(payerId);
 
 		try {

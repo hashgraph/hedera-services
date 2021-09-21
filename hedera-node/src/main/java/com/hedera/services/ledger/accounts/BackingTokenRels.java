@@ -21,7 +21,7 @@ package com.hedera.services.ledger.accounts;
  */
 
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.utils.PermHashLong;
+import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
@@ -46,10 +46,10 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
 public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> {
 	Set<Pair<AccountID, TokenID>> existingRels = new HashSet<>();
 
-	private final Supplier<MerkleMap<PermHashLong, MerkleTokenRelStatus>> delegate;
+	private final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> delegate;
 
 	@Inject
-	public BackingTokenRels(Supplier<MerkleMap<PermHashLong, MerkleTokenRelStatus>> delegate) {
+	public BackingTokenRels(Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> delegate) {
 		this.delegate = delegate;
 		/* Existing rels view is re-built on restart or reconnect */
 	}
@@ -58,7 +58,7 @@ public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, 
 	public void rebuildFromSources() {
 		existingRels.clear();
 		delegate.get().keySet().stream()
-				.map(PermHashLong::asAccountTokenRel)
+				.map(EntityNumPair::asAccountTokenRel)
 				.forEach(existingRels::add);
 	}
 

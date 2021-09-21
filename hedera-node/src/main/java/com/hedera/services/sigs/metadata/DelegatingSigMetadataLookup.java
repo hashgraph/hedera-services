@@ -38,7 +38,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SleepingPause;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -70,8 +70,8 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	public static DelegatingSigMetadataLookup backedLookupsFor(
 			HederaFs hfs,
 			BackingStore<AccountID, MerkleAccount> backingAccounts,
-			Supplier<MerkleMap<PermHashInteger, MerkleTopic>> topics,
-			Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts,
+			Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup,
 			Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleSigMetaLookup
 	) {
@@ -86,8 +86,8 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 
 	public static DelegatingSigMetadataLookup defaultLookupsFor(
 			HederaFs hfs,
-			Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts,
-			Supplier<MerkleMap<PermHashInteger, MerkleTopic>> topics,
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
 			Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup,
 			Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleLookup
 	) {
@@ -102,8 +102,8 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 
 	public static DelegatingSigMetadataLookup defaultLookupsPlusAccountRetriesFor(
 			HederaFs hfs,
-			Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts,
-			Supplier<MerkleMap<PermHashInteger, MerkleTopic>> topics,
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
 			Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup,
 			Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleLookup,
 			int maxRetries,
@@ -130,8 +130,8 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	public static DelegatingSigMetadataLookup defaultAccountRetryingLookupsFor(
 			HederaFs hfs,
 			NodeLocalProperties properties,
-			Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts,
-			Supplier<MerkleMap<PermHashInteger, MerkleTopic>> topics,
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
 			Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup,
 			Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleLookup,
 			MiscRunningAvgs runningAvgs,

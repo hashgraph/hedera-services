@@ -38,7 +38,7 @@ import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
@@ -81,7 +81,7 @@ public abstract class ContractsModule {
 	public static SoliditySigsVerifier provideSoliditySigsVerifier(
 			SyncVerifier syncVerifier,
 			TransactionContext txnCtx,
-			Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {
 		return new TxnAwareSoliditySigsVerifier(
 				syncVerifier,
@@ -109,7 +109,7 @@ public abstract class ContractsModule {
 			StoragePersistence storagePersistence,
 			Source<byte[], byte[]> bytecodeSource,
 			GlobalDynamicProperties dynamicProperties,
-			Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {
 		final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> pureDelegate = new TransactionalLedger<>(
 				AccountProperty.class,

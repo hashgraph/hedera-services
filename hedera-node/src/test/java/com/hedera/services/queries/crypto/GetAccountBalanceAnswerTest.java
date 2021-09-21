@@ -29,7 +29,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
-import com.hedera.services.utils.PermHashLong;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.utils.IdUtils;
@@ -51,8 +51,8 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
-import static com.hedera.services.utils.PermHashInteger.fromAccountId;
-import static com.hedera.services.utils.PermHashInteger.fromContractId;
+import static com.hedera.services.utils.EntityNum.fromAccountId;
+import static com.hedera.services.utils.EntityNum.fromContractId;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.tokenBalanceWith;
@@ -71,7 +71,7 @@ import static org.mockito.BDDMockito.mock;
 
 class GetAccountBalanceAnswerTest {
 	private MerkleMap accounts;
-	private MerkleMap<PermHashLong, MerkleTokenRelStatus> tokenRels;
+	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 	private StateView view;
 	private OptionValidator optionValidator;
 	private String accountIdLit = "0.0.12345";

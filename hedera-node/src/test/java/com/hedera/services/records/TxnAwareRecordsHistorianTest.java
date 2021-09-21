@@ -31,7 +31,7 @@ import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.TxnId;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -96,7 +96,7 @@ class TxnAwareRecordsHistorianTest {
 	private ExpiringCreations creator;
 	private ExpiringEntity expiringEntity;
 	private TransactionContext txnCtx;
-	private MerkleMap<PermHashInteger, MerkleAccount> accounts;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	private TxnAwareRecordsHistorian subject;
 

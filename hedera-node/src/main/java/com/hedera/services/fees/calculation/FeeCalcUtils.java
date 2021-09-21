@@ -22,7 +22,7 @@ package com.hedera.services.fees.calculation;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -45,8 +45,8 @@ public final class FeeCalcUtils {
 	}
 
 	public static Timestamp lookupAccountExpiry(
-			PermHashInteger key,
-			MerkleMap<PermHashInteger, MerkleAccount> accounts
+			EntityNum key,
+			MerkleMap<EntityNum, MerkleAccount> accounts
 	) {
 		try {
 			final var account = accounts.get(key);

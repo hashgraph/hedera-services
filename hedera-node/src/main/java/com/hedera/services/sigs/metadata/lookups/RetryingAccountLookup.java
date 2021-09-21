@@ -25,7 +25,7 @@ import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.Pause;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
@@ -54,7 +54,7 @@ public class RetryingAccountLookup extends DefaultAccountLookup {
 	private Optional<NodeLocalProperties> properties;
 
 	public RetryingAccountLookup(
-			final Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			final int maxRetries,
 			final int retryWaitIncrementMs,
 			final Pause pause,
@@ -73,7 +73,7 @@ public class RetryingAccountLookup extends DefaultAccountLookup {
 	public RetryingAccountLookup(
 			final Pause pause,
 			final NodeLocalProperties properties,
-			final Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			final MiscRunningAvgs runningAvgs,
 			final MiscSpeedometers speedometers
 	) {

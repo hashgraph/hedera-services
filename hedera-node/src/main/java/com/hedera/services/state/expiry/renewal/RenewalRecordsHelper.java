@@ -27,7 +27,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -76,7 +76,7 @@ public class RenewalRecordsHelper {
 	}
 
 	public void streamCryptoRemoval(
-			final PermHashInteger id,
+			final EntityNum id,
 			final List<EntityId> tokens,
 			final List<CurrencyAdjustments> tokenAdjustments
 	) {
@@ -95,7 +95,7 @@ public class RenewalRecordsHelper {
 		log.debug("Streamed crypto removal record {}", expirableTxnRecord);
 	}
 
-	public void streamCryptoRenewal(final PermHashInteger id, final long fee, final long newExpiry) {
+	public void streamCryptoRenewal(final EntityNum id, final long fee, final long newExpiry) {
 		assertInCycle();
 
 		final var eventTime = cycleStart.plusNanos(consensusNanosIncr++);

@@ -31,7 +31,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -61,14 +61,14 @@ class ExpiryManagerTest {
 	private final long secondThen = now + 1;
 	private final AccountID aGrpcId = IdUtils.asAccount("0.0.2");
 	private final AccountID bGrpcId = IdUtils.asAccount("0.0.4");
-	private final PermHashInteger aKey = PermHashInteger.fromAccountId(aGrpcId);
-	private final PermHashInteger bKey = PermHashInteger.fromAccountId(bGrpcId);
+	private final EntityNum aKey = EntityNum.fromAccountId(aGrpcId);
+	private final EntityNum bKey = EntityNum.fromAccountId(bGrpcId);
 	private final MerkleAccount anAccount = new MerkleAccount();
 	private final MerkleSchedule aSchedule = new MerkleSchedule();
 	private final MerkleSchedule bSchedule = new MerkleSchedule();
 
-	private MerkleMap<PermHashInteger, MerkleAccount> liveAccounts = new MerkleMap<>();
-	private MerkleMap<PermHashInteger, MerkleSchedule> liveSchedules = new MerkleMap<>();
+	private MerkleMap<EntityNum, MerkleAccount> liveAccounts = new MerkleMap<>();
+	private MerkleMap<EntityNum, MerkleSchedule> liveSchedules = new MerkleMap<>();
 	private Map<TransactionID, TxnIdRecentHistory> liveTxnHistories = new HashMap<>();
 
 	private final HederaNumbers nums = new MockHederaNumbers();
@@ -78,9 +78,9 @@ class ExpiryManagerTest {
 	@Mock
 	private Map<TransactionID, TxnIdRecentHistory> mockTxnHistories;
 	@Mock
-	private MerkleMap<PermHashInteger, MerkleAccount> mockAccounts;
+	private MerkleMap<EntityNum, MerkleAccount> mockAccounts;
 	@Mock
-	private MerkleMap<PermHashInteger, MerkleSchedule> mockSchedules;
+	private MerkleMap<EntityNum, MerkleSchedule> mockSchedules;
 
 	private ExpiryManager subject;
 
@@ -180,7 +180,7 @@ class ExpiryManagerTest {
 		assertFalse(liveTxnHistories.containsKey(newTxnId));
 	}
 
-	private void addLiveRecord(PermHashInteger key, ExpirableTxnRecord expirableTxnRecord) {
+	private void addLiveRecord(EntityNum key, ExpirableTxnRecord expirableTxnRecord) {
 		final var mutableAccount = liveAccounts.getForModify(key);
 		mutableAccount.records().offer(expirableTxnRecord);
 		liveAccounts.replace(aKey, mutableAccount);

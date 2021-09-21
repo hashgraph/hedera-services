@@ -37,7 +37,7 @@ import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.SignedTxnAccessor;
@@ -79,7 +79,7 @@ class SigVerifierRegressionTest {
 	private SigRequirements retryingKeyOrder;
 	private Predicate<TransactionBody> isQueryPayment;
 	private PlatformTxnAccessor platformTxn;
-	private MerkleMap<PermHashInteger, MerkleAccount> accounts;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	private MiscRunningAvgs runningAvgs;
 	private MiscSpeedometers speedometers;
 

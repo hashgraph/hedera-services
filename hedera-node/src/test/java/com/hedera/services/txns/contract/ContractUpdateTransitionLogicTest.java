@@ -25,7 +25,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.contract.helpers.UpdateCustomizerFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -78,7 +78,7 @@ class ContractUpdateTransitionLogicTest {
 	private TransactionBody contractUpdateTxn;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
-	private MerkleMap<PermHashInteger, MerkleAccount> contracts;
+	private MerkleMap<EntityNum, MerkleAccount> contracts;
 	private ContractUpdateTransitionLogic subject;
 
 	@BeforeEach
@@ -86,7 +86,7 @@ class ContractUpdateTransitionLogicTest {
 		consensusTime = Instant.now();
 
 		ledger = mock(HederaLedger.class);
-		contracts = (MerkleMap<PermHashInteger, MerkleAccount>) mock(MerkleMap.class);
+		contracts = (MerkleMap<EntityNum, MerkleAccount>) mock(MerkleMap.class);
 		customizerFactory = mock(UpdateCustomizerFactory.class);
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
@@ -217,7 +217,7 @@ class ContractUpdateTransitionLogicTest {
 		contractUpdateTxn = op.build();
 		given(accessor.getTxn()).willReturn(contractUpdateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(contracts.get(PermHashInteger.fromContractId(target))).willReturn(contract);
+		given(contracts.get(EntityNum.fromContractId(target))).willReturn(contract);
 	}
 
 	private TransactionID ourTxnId() {

@@ -28,8 +28,8 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.tokens.annotations.AreFcotmrQueriesDisabled;
 import com.hedera.services.store.tokens.annotations.AreTreasuryWildcardsEnabled;
-import com.hedera.services.utils.PermHashInteger;
-import com.hedera.services.utils.PermHashLong;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
@@ -45,7 +45,7 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.store.tokens.views.UniqTokenViewsManager.TargetFcotmr.NFTS_BY_OWNER;
 import static com.hedera.services.store.tokens.views.UniqTokenViewsManager.TargetFcotmr.TREASURY_NFTS_BY_TYPE;
-import static com.hedera.services.utils.PermHashInteger.fromInt;
+import static com.hedera.services.utils.EntityNum.fromInt;
 import static com.hedera.services.utils.MiscUtils.forEach;
 import static java.util.concurrent.CompletableFuture.allOf;
 import static java.util.concurrent.CompletableFuture.runAsync;
@@ -68,9 +68,9 @@ public class UniqTokenViewsManager {
 	private static final Logger log = LogManager.getLogger(UniqTokenViewsManager.class);
 
 	private final boolean doNoops;
-	private final Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByType;
-	private final Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByOwner;
-	private final Supplier<FCOneToManyRelation<PermHashInteger, Long>> treasuryNftsByType;
+	private final Supplier<FCOneToManyRelation<EntityNum, Long>> nftsByType;
+	private final Supplier<FCOneToManyRelation<EntityNum, Long>> nftsByOwner;
+	private final Supplier<FCOneToManyRelation<EntityNum, Long>> treasuryNftsByType;
 
 	enum TargetFcotmr {
 		NFTS_BY_TYPE, NFTS_BY_OWNER, TREASURY_NFTS_BY_TYPE
@@ -81,9 +81,9 @@ public class UniqTokenViewsManager {
 
 	@Inject
 	public UniqTokenViewsManager(
-			@NftsByType Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByType,
-			@NftsByOwner Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByOwner,
-			@TreasuryNftsByType Supplier<FCOneToManyRelation<PermHashInteger, Long>> treasuryNftsByType,
+			@NftsByType Supplier<FCOneToManyRelation<EntityNum, Long>> nftsByType,
+			@NftsByOwner Supplier<FCOneToManyRelation<EntityNum, Long>> nftsByOwner,
+			@TreasuryNftsByType Supplier<FCOneToManyRelation<EntityNum, Long>> treasuryNftsByType,
 			@AreFcotmrQueriesDisabled boolean doNoops,
 			@AreTreasuryWildcardsEnabled boolean useWildcards
 	) {
@@ -112,8 +112,8 @@ public class UniqTokenViewsManager {
 	 * 		unique tokens in the world state
 	 */
 	public void rebuildNotice(
-			MerkleMap<PermHashInteger, MerkleToken> tokens,
-			MerkleMap<PermHashLong, MerkleUniqueToken> nfts
+			MerkleMap<EntityNum, MerkleToken> tokens,
+			MerkleMap<EntityNumPair, MerkleUniqueToken> nfts
 	) {
 		if (doNoops) {
 			return;
@@ -133,7 +133,7 @@ public class UniqTokenViewsManager {
 	 * @param treasury
 	 * 		the treasury that received the new NFT
 	 */
-	public void mintNotice(PermHashLong nftId, EntityId treasury) {
+	public void mintNotice(EntityNumPair nftId, EntityId treasury) {
 		if (doNoops) {
 			return;
 		}
@@ -143,7 +143,7 @@ public class UniqTokenViewsManager {
 		if (isUsingTreasuryWildcards()) {
 			curTreasuryNftsByType().associate(tokenId, nftId.getValue());
 		} else {
-			nftsByOwner.get().associate(PermHashInteger.fromInt(treasury.identityCode()), nftId.getValue());
+			nftsByOwner.get().associate(EntityNum.fromInt(treasury.identityCode()), nftId.getValue());
 		}
 	}
 
@@ -156,7 +156,7 @@ public class UniqTokenViewsManager {
 	 * @param fromAccount
 	 * 		the account that was wiped
 	 */
-	public void wipeNotice(PermHashLong nftId, EntityId fromAccount) {
+	public void wipeNotice(EntityNumPair nftId, EntityId fromAccount) {
 		if (doNoops) {
 			return;
 		}
@@ -175,7 +175,7 @@ public class UniqTokenViewsManager {
 	 * @param treasury
 	 * 		the treasury of the burned NFT's token type
 	 */
-	public void burnNotice(PermHashLong nftId, EntityId treasury) {
+	public void burnNotice(EntityNumPair nftId, EntityId treasury) {
 		if (doNoops) {
 			return;
 		}
@@ -185,7 +185,7 @@ public class UniqTokenViewsManager {
 		if (isUsingTreasuryWildcards()) {
 			curTreasuryNftsByType().disassociate(tokenId, nftId.getValue());
 		} else {
-			nftsByOwner.get().disassociate(PermHashInteger.fromInt(treasury.identityCode()), nftId.getValue());
+			nftsByOwner.get().disassociate(EntityNum.fromInt(treasury.identityCode()), nftId.getValue());
 		}
 	}
 
@@ -200,7 +200,7 @@ public class UniqTokenViewsManager {
 	 * @param newOwner
 	 * 		the new owner
 	 */
-	public void exchangeNotice(PermHashLong nftId, EntityId prevOwner, EntityId newOwner) {
+	public void exchangeNotice(EntityNumPair nftId, EntityId prevOwner, EntityId newOwner) {
 		if (doNoops) {
 			return;
 		}
@@ -221,7 +221,7 @@ public class UniqTokenViewsManager {
 	 * @param newOwner
 	 * 		the new owner
 	 */
-	public void treasuryExitNotice(PermHashLong nftId, EntityId treasury, EntityId newOwner) {
+	public void treasuryExitNotice(EntityNumPair nftId, EntityId treasury, EntityId newOwner) {
 		if (doNoops) {
 			return;
 		}
@@ -246,7 +246,7 @@ public class UniqTokenViewsManager {
 	 * @param treasury
 	 * 		the relevant treasury
 	 */
-	public void treasuryReturnNotice(PermHashLong nftId, EntityId prevOwner, EntityId treasury) {
+	public void treasuryReturnNotice(EntityNumPair nftId, EntityId prevOwner, EntityId treasury) {
 		if (doNoops) {
 			return;
 		}
@@ -355,14 +355,14 @@ public class UniqTokenViewsManager {
 		}
 	}
 
-	private FCOneToManyRelation<PermHashInteger, Long> curTreasuryNftsByType() {
+	private FCOneToManyRelation<EntityNum, Long> curTreasuryNftsByType() {
 		Objects.requireNonNull(treasuryNftsByType);
 		return treasuryNftsByType.get();
 	}
 
 	private CompletableFuture<?>[] rebuildFutures(
-			MerkleMap<PermHashInteger, MerkleToken> tokens,
-			MerkleMap<PermHashLong, MerkleUniqueToken> nfts
+			MerkleMap<EntityNum, MerkleToken> tokens,
+			MerkleMap<EntityNumPair, MerkleUniqueToken> nfts
 	) {
 		if (isUsingTreasuryWildcards()) {
 			return new CompletableFuture<?>[] {
@@ -397,8 +397,8 @@ public class UniqTokenViewsManager {
 	}
 
 	private void rebuildTreasuryNftsByType(
-			MerkleMap<PermHashInteger, MerkleToken> tokens,
-			MerkleMap<PermHashLong, MerkleUniqueToken> nfts
+			MerkleMap<EntityNum, MerkleToken> tokens,
+			MerkleMap<EntityNumPair, MerkleUniqueToken> nfts
 	) {
 		final var curTreasuryNftsByType = curTreasuryNftsByType();
 		forEach(nfts, (nftId, nft) -> {
@@ -413,8 +413,8 @@ public class UniqTokenViewsManager {
 	}
 
 	private void rebuildNonTreasuryNftsByOwner(
-			MerkleMap<PermHashInteger, MerkleToken> tokens,
-			MerkleMap<PermHashLong, MerkleUniqueToken> nfts
+			MerkleMap<EntityNum, MerkleToken> tokens,
+			MerkleMap<EntityNumPair, MerkleUniqueToken> nfts
 	) {
 		final var curNftsByOwner = nftsByOwner.get();
 		forEach(nfts, (nftId, nft) -> {
@@ -428,8 +428,8 @@ public class UniqTokenViewsManager {
 	}
 
 	private void rebuildAllNftsByOwner(
-			MerkleMap<PermHashInteger, MerkleToken> tokens,
-			MerkleMap<PermHashLong, MerkleUniqueToken> nfts
+			MerkleMap<EntityNum, MerkleToken> tokens,
+			MerkleMap<EntityNumPair, MerkleUniqueToken> nfts
 	) {
 		final var curNftsByOwner = nftsByOwner.get();
 		forEach(nfts, (nftId, nft) -> {
@@ -447,8 +447,8 @@ public class UniqTokenViewsManager {
 	}
 
 	private void rebuildNftsByType(
-			MerkleMap<PermHashInteger, MerkleToken> tokens,
-			MerkleMap<PermHashLong, MerkleUniqueToken> nfts
+			MerkleMap<EntityNum, MerkleToken> tokens,
+			MerkleMap<EntityNumPair, MerkleUniqueToken> nfts
 	) {
 		final var curNftsByType = nftsByType.get();
 		forEach(nfts, (nftId, nft) -> {

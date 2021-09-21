@@ -25,55 +25,38 @@ import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.usage.token.TokenGetNftInfoUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.ResponseType;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 
-import static com.hedera.services.queries.AnswerService.NO_QUERY_CTX;
 import static com.hedera.services.queries.token.GetTokenNftInfoAnswer.NFT_INFO_CTX_KEY;
+import static com.hedera.services.utils.MiscUtils.putIfNotNull;
 
 @Singleton
-public class GetTokenNftInfoResourceUsage implements QueryResourceUsageEstimator {
-	static Function<Query, TokenGetNftInfoUsage> factory = TokenGetNftInfoUsage::newEstimate;
+public final class GetTokenNftInfoResourceUsage implements QueryResourceUsageEstimator {
+	private static final Function<Query, TokenGetNftInfoUsage> factory = TokenGetNftInfoUsage::newEstimate;
 
 	@Inject
 	public GetTokenNftInfoResourceUsage() {
+		/* No-op */
 	}
 
 	@Override
-	public boolean applicableTo(Query query) {
+	public boolean applicableTo(final Query query) {
 		return query.hasTokenGetNftInfo();
 	}
 
 	@Override
-	public FeeData usageGiven(Query query, StateView view) {
-		return usageFor(query, view, NO_QUERY_CTX);
-	}
-
-	@Override
-	public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
-		return usageFor(query, view, NO_QUERY_CTX);
-	}
-
-	@Override
-	public FeeData usageGiven(Query query, StateView view, Map<String, Object> queryCtx) {
-		return usageFor(
-				query,
-				view,
-				Optional.of(queryCtx));
-	}
-
-	private FeeData usageFor(Query query, StateView view, Optional<Map<String, Object>> queryCtx) {
-		var op = query.getTokenGetNftInfo();
-		var optionalInfo = view.infoForNft(op.getNftID());
+	public FeeData usageGiven(final Query query, final StateView view, @Nullable final Map<String, Object> queryCtx) {
+		final var op = query.getTokenGetNftInfo();
+		final var optionalInfo = view.infoForNft(op.getNftID());
 		if (optionalInfo.isPresent()) {
-			var info = optionalInfo.get();
-			queryCtx.ifPresent(ctx -> ctx.put(NFT_INFO_CTX_KEY, info));
-			var estimate = factory.apply(query)
+			final var info = optionalInfo.get();
+			putIfNotNull(queryCtx, NFT_INFO_CTX_KEY, info);
+			final var estimate = factory.apply(query)
 					.givenMetadata(info.getMetadata().toString());
 			return estimate.get();
 		} else {

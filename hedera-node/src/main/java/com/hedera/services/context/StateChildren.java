@@ -29,9 +29,9 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
-import com.hedera.services.utils.PermHashInteger;
-import com.hedera.services.utils.PermHashLong;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
@@ -44,54 +44,54 @@ import java.util.Objects;
  * we know it has not yet been updated.
  */
 public class StateChildren {
-	private MerkleMap<PermHashInteger, MerkleAccount> accounts;
-	private MerkleMap<PermHashInteger, MerkleTopic> topics;
-	private MerkleMap<PermHashInteger, MerkleToken> tokens;
-	private MerkleMap<PermHashLong, MerkleUniqueToken> uniqueTokens;
-	private MerkleMap<PermHashInteger, MerkleSchedule> schedules;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
+	private MerkleMap<EntityNum, MerkleTopic> topics;
+	private MerkleMap<EntityNum, MerkleToken> tokens;
+	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
+	private MerkleMap<EntityNum, MerkleSchedule> schedules;
 	private MerkleMap<String, MerkleOptionalBlob> storage;
-	private MerkleMap<PermHashLong, MerkleTokenRelStatus> tokenAssociations;
-	private FCOneToManyRelation<PermHashInteger, Long> uniqueTokenAssociations;
-	private FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipAssociations;
-	private FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipTreasuryAssociations;
+	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
+	private FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations;
+	private FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations;
+	private FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations;
 	private MerkleNetworkContext networkCtx;
 	private AddressBook addressBook;
 	private MerkleSpecialFiles specialFiles;
 	private RecordsRunningHashLeaf runningHashLeaf;
 
-	public MerkleMap<PermHashInteger, MerkleAccount> getAccounts() {
+	public MerkleMap<EntityNum, MerkleAccount> getAccounts() {
 		Objects.requireNonNull(accounts);
 		return accounts;
 	}
 
-	public void setAccounts(MerkleMap<PermHashInteger, MerkleAccount> accounts) {
+	public void setAccounts(MerkleMap<EntityNum, MerkleAccount> accounts) {
 		this.accounts = accounts;
 	}
 
-	public MerkleMap<PermHashInteger, MerkleTopic> getTopics() {
+	public MerkleMap<EntityNum, MerkleTopic> getTopics() {
 		Objects.requireNonNull(topics);
 		return topics;
 	}
 
-	public void setTopics(MerkleMap<PermHashInteger, MerkleTopic> topics) {
+	public void setTopics(MerkleMap<EntityNum, MerkleTopic> topics) {
 		this.topics = topics;
 	}
 
-	public MerkleMap<PermHashInteger, MerkleToken> getTokens() {
+	public MerkleMap<EntityNum, MerkleToken> getTokens() {
 		Objects.requireNonNull(tokens);
 		return tokens;
 	}
 
-	public void setTokens(MerkleMap<PermHashInteger, MerkleToken> tokens) {
+	public void setTokens(MerkleMap<EntityNum, MerkleToken> tokens) {
 		this.tokens = tokens;
 	}
 
-	public MerkleMap<PermHashInteger, MerkleSchedule> getSchedules() {
+	public MerkleMap<EntityNum, MerkleSchedule> getSchedules() {
 		Objects.requireNonNull(schedules);
 		return schedules;
 	}
 
-	public void setSchedules(MerkleMap<PermHashInteger, MerkleSchedule> schedules) {
+	public void setSchedules(MerkleMap<EntityNum, MerkleSchedule> schedules) {
 		this.schedules = schedules;
 	}
 
@@ -104,12 +104,12 @@ public class StateChildren {
 		this.storage = storage;
 	}
 
-	public MerkleMap<PermHashLong, MerkleTokenRelStatus> getTokenAssociations() {
+	public MerkleMap<EntityNumPair, MerkleTokenRelStatus> getTokenAssociations() {
 		Objects.requireNonNull(tokenAssociations);
 		return tokenAssociations;
 	}
 
-	public void setTokenAssociations(MerkleMap<PermHashLong, MerkleTokenRelStatus> tokenAssociations) {
+	public void setTokenAssociations(MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations) {
 		this.tokenAssociations = tokenAssociations;
 	}
 
@@ -140,42 +140,42 @@ public class StateChildren {
 		this.specialFiles = specialFiles;
 	}
 
-	public MerkleMap<PermHashLong, MerkleUniqueToken> getUniqueTokens() {
+	public MerkleMap<EntityNumPair, MerkleUniqueToken> getUniqueTokens() {
 		Objects.requireNonNull(uniqueTokens);
 		return uniqueTokens;
 	}
 
-	public void setUniqueTokens(MerkleMap<PermHashLong, MerkleUniqueToken> uniqueTokens) {
+	public void setUniqueTokens(MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens) {
 		this.uniqueTokens = uniqueTokens;
 	}
 
-	public FCOneToManyRelation<PermHashInteger, Long> getUniqueTokenAssociations() {
+	public FCOneToManyRelation<EntityNum, Long> getUniqueTokenAssociations() {
 		Objects.requireNonNull(uniqueTokenAssociations);
 		return uniqueTokenAssociations;
 	}
 
-	public void setUniqueTokenAssociations(FCOneToManyRelation<PermHashInteger, Long> uniqueTokenAssociations) {
+	public void setUniqueTokenAssociations(FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations) {
 		this.uniqueTokenAssociations = uniqueTokenAssociations;
 	}
 
-	public FCOneToManyRelation<PermHashInteger, Long> getUniqueOwnershipAssociations() {
+	public FCOneToManyRelation<EntityNum, Long> getUniqueOwnershipAssociations() {
 		Objects.requireNonNull(uniqueOwnershipAssociations);
 		return uniqueOwnershipAssociations;
 	}
 
 	public void setUniqueOwnershipAssociations(
-			FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipAssociations
+			FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations
 	) {
 		this.uniqueOwnershipAssociations = uniqueOwnershipAssociations;
 	}
 
-	public FCOneToManyRelation<PermHashInteger, Long> getUniqueOwnershipTreasuryAssociations() {
+	public FCOneToManyRelation<EntityNum, Long> getUniqueOwnershipTreasuryAssociations() {
 		Objects.requireNonNull(uniqueOwnershipTreasuryAssociations);
 		return uniqueOwnershipTreasuryAssociations;
 	}
 
 	public void setUniqueOwnershipTreasuryAssociations(
-			FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipTreasuryAssociations
+			FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations
 	) {
 		this.uniqueOwnershipTreasuryAssociations = uniqueOwnershipTreasuryAssociations;
 	}

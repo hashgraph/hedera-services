@@ -34,8 +34,8 @@ import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
-import com.hedera.services.utils.PermHashInteger;
-import com.hedera.services.utils.PermHashLong;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.utils.IdUtils;
@@ -84,8 +84,8 @@ class GetAccountInfoAnswerTest {
 	private StateView view;
 	private TokenStore tokenStore;
 	private ScheduleStore scheduleStore;
-	private MerkleMap<PermHashInteger, MerkleAccount> accounts;
-	private MerkleMap<PermHashLong, MerkleTokenRelStatus> tokenRels;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
+	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 	private OptionValidator optionValidator;
 
 	private String node = "0.0.3";
@@ -172,7 +172,7 @@ class GetAccountInfoAnswerTest {
 		payerAccount.setTokens(tokens);
 
 		accounts = mock(MerkleMap.class);
-		given(accounts.get(PermHashInteger.fromAccountId(asAccount(target)))).willReturn(payerAccount);
+		given(accounts.get(EntityNum.fromAccountId(asAccount(target)))).willReturn(payerAccount);
 
 		nodeProps = mock(NodeLocalProperties.class);
 		final StateChildren children = new StateChildren();

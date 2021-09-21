@@ -22,9 +22,8 @@ package com.hedera.services.store.tokens.views;
 
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.utils.PermHashInteger;
-import com.hedera.services.utils.PermHashLong;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.swirlds.fchashmap.FCOneToManyRelation;
@@ -39,13 +38,13 @@ import java.util.function.Supplier;
  * using only a {@code nftsByOwner} {@link FCOneToManyRelation}.
  */
 public class ExplicitOwnersUniqTokenView extends AbstractUniqTokenView {
-	private final Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByOwner;
+	private final Supplier<FCOneToManyRelation<EntityNum, Long>> nftsByOwner;
 
 	public ExplicitOwnersUniqTokenView(
-			Supplier<MerkleMap<PermHashInteger, MerkleToken>> tokens,
-			Supplier<MerkleMap<PermHashLong, MerkleUniqueToken>> nfts,
-			Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByType,
-			Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByOwner
+			Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
+			Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> nfts,
+			Supplier<FCOneToManyRelation<EntityNum, Long>> nftsByType,
+			Supplier<FCOneToManyRelation<EntityNum, Long>> nftsByOwner
 	) {
 		super(tokens, nfts, nftsByType);
 
@@ -54,7 +53,7 @@ public class ExplicitOwnersUniqTokenView extends AbstractUniqTokenView {
 
 	@Override
 	public List<TokenNftInfo> ownedAssociations(@Nonnull AccountID owner, long start, long end) {
-		final var accountId = EntityId.fromGrpcAccountId(owner);
-		return accumulatedInfo(nftsByOwner.get(), accountId, (int) start, (int) end, null, owner);
+		final var accountNum = EntityNum.fromAccountId(owner);
+		return accumulatedInfo(nftsByOwner.get(), accountNum, (int) start, (int) end, null, owner);
 	}
 }

@@ -27,8 +27,8 @@ import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.utils.PermHashInteger;
-import com.hedera.services.utils.PermHashLong;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hedera.services.stream.proto.TokenUnitBalance;
@@ -68,8 +68,8 @@ import java.util.function.UnaryOperator;
 
 import static com.hedera.services.state.exports.SignedStateBalancesExporter.SINGLE_ACCOUNT_BALANCES_COMPARATOR;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
-import static com.hedera.services.utils.PermHashInteger.fromAccountId;
-import static com.hedera.services.utils.PermHashInteger.fromTokenId;
+import static com.hedera.services.utils.EntityNum.fromAccountId;
+import static com.hedera.services.utils.EntityNum.fromTokenId;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -87,9 +87,9 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(LogCaptureExtension.class)
 class SignedStateBalancesExporterTest {
 	private static final NodeId nodeId = new NodeId(false, 1);
-	private MerkleMap<PermHashInteger, MerkleToken> tokens = new MerkleMap<>();
-	private MerkleMap<PermHashInteger, MerkleAccount> accounts = new MerkleMap<>();
-	private MerkleMap<PermHashLong, MerkleTokenRelStatus> tokenRels = new MerkleMap<>();
+	private MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
+	private MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
+	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels = new MerkleMap<>();
 
 	private MerkleToken token;
 	private MerkleToken deletedToken;
@@ -109,6 +109,7 @@ class SignedStateBalancesExporterTest {
 	private static final long secondNonNodeTokenBalance = 100;
 	private static final TokenID theDeletedToken = asToken("0.0.1005");
 	private static final long secondNonNodeDeletedTokenBalance = 100;
+	private static final TokenID theMissingToken = asToken("0.0.1006");
 
 	private static final byte[] sig = "not-really-a-sig".getBytes();
 	private static final byte[] fileHash = "not-really-a-hash".getBytes();
@@ -142,7 +143,7 @@ class SignedStateBalancesExporterTest {
 		firstNonNodeAccount = MerkleAccountFactory.newAccount().balance(firstNonNodeAccountBalance).get();
 		secondNonNodeAccount = MerkleAccountFactory.newAccount()
 				.balance(secondNonNodeAccountBalance)
-				.tokens(theToken, theDeletedToken)
+				.tokens(theToken, theDeletedToken, theMissingToken)
 				.get();
 		deletedAccount = MerkleAccountFactory.newAccount().deleted(true).get();
 
@@ -344,13 +345,17 @@ class SignedStateBalancesExporterTest {
 				.setAccountID(asAccount("0.0.1001"))
 				.setHbarBalance(firstNonNodeAccountBalance)
 				.build();
-		final var tokenBalances = TokenUnitBalance.newBuilder()
+		final var nonDeletedTokenUnits = TokenUnitBalance.newBuilder()
 				.setTokenId(theToken)
 				.setBalance(secondNonNodeTokenBalance);
+		final var deletedTokenUnits = TokenUnitBalance.newBuilder()
+				.setTokenId(theDeletedToken)
+				.setBalance(secondNonNodeDeletedTokenBalance);
 		final var secondNon = singleAcctBuilder
 				.setAccountID(asAccount("0.0.1002"))
 				.setHbarBalance(secondNonNodeAccountBalance)
-				.addTokenUnitBalances(tokenBalances)
+				.addTokenUnitBalances(nonDeletedTokenUnits)
+				.addTokenUnitBalances(deletedTokenUnits)
 				.build();
 
 		return List.of(thisNode, anotherNode, firstNon, secondNon);

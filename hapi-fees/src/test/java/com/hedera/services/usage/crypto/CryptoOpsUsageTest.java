@@ -20,15 +20,18 @@ package com.hedera.services.usage.crypto;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import com.hedera.services.test.IdUtils;
 import com.hedera.services.test.KeyUtils;
+import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.QueryUsage;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.file.FileOpsUsage;
+import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
@@ -38,6 +41,8 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -49,6 +54,7 @@ import org.junit.jupiter.api.Test;
 import java.util.function.Function;
 
 import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
+import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
 import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
@@ -143,50 +149,69 @@ class CryptoOpsUsageTest {
 	}
 
 	@Test
-	void estimatesCreationWithMaxAutoAssociationsAsExpected() {
+	void accumulatesBptAndRbhAsExpectedForCryptoCreateWithMaxAutoAssociations() {
 		givenCreationOpWithMaxAutoAssociaitons();
-		// and given:
-		long rb = basicReprBytes();
-		long bytesUsed = basicReprBytes() - CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
-				+ 2 * LONG_SIZE + BOOL_SIZE;
+		final ByteString canonicalSig = ByteString.copyFromUtf8(
+				"0123456789012345678901234567890123456789012345678901234567890123");
+		final SignatureMap onePairSigMap = SignatureMap.newBuilder()
+				.addSigPair(SignaturePair.newBuilder()
+						.setPubKeyPrefix(ByteString.copyFromUtf8("a"))
+						.setEd25519(canonicalSig))
+				.build();
+		final SigUsage singleSigUsage = new SigUsage(
+				1, onePairSigMap.getSerializedSize(), 1);
+		final var opMeta = new CryptoCreateMeta(txn.getCryptoCreateAccount());
+		final var baseMeta = new BaseTransactionMeta(memo.length(), 0);
 
-		// when:
-		var estimate = subject.cryptoCreateUsage(txn, sigUsage);
+		var actual = new UsageAccumulator();
+		var expected = new UsageAccumulator();
 
-		// then:
-		assertEquals(A_USAGES_MATRIX, estimate);
-		// and:
-		verify(base).addBpt(bytesUsed);
-		verify(base).addRbs(rb * secs);
-		verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+		var baseSize = memo.length() + getAccountKeyStorageSize(key) + BASIC_ENTITY_ID_SIZE + INT_SIZE;
+		expected.resetForTransaction(baseMeta, singleSigUsage);
+		expected.addBpt(baseSize + 2 * LONG_SIZE + BOOL_SIZE);
+		expected.addRbs((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + baseSize) * secs);
+		expected.addRbs(maxAutoAssociations * secs * CryptoOpsUsage.CREATE_SLOT_MULTIPLIER);
+		expected.addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+
+		subject.cryptoCreateUsage(singleSigUsage, baseMeta, opMeta, actual);
+
+		assertEquals(expected, actual);
 	}
 
 	@Test
-	void estimatesCreationWithOutMaxAutoAssociationsAsExpected() {
+	void accumulatesBptAndRbhAsExpectedForCryptoCreateWithoutMaxAutoAssociations() {
 		givenCreationOpWithOutMaxAutoAssociaitons();
-		// and given:
-		long rb = basicReprBytes() - INT_SIZE;
-		long bytesUsed = basicReprBytes() - CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
-				+ 2 * LONG_SIZE + BOOL_SIZE - INT_SIZE;
+		final ByteString canonicalSig = ByteString.copyFromUtf8(
+				"0123456789012345678901234567890123456789012345678901234567890123");
+		final SignatureMap onePairSigMap = SignatureMap.newBuilder()
+				.addSigPair(SignaturePair.newBuilder()
+						.setPubKeyPrefix(ByteString.copyFromUtf8("a"))
+						.setEd25519(canonicalSig))
+				.build();
+		final SigUsage singleSigUsage = new SigUsage(
+				1, onePairSigMap.getSerializedSize(), 1);
+		final var opMeta = new CryptoCreateMeta(txn.getCryptoCreateAccount());
+		final var baseMeta = new BaseTransactionMeta(memo.length(), 0);
 
-		// when:
-		var estimate = subject.cryptoCreateUsage(txn, sigUsage);
+		var actual = new UsageAccumulator();
+		var expected = new UsageAccumulator();
 
-		// then:
-		assertEquals(A_USAGES_MATRIX, estimate);
-		// and:
-		verify(base).addBpt(bytesUsed);
-		verify(base).addRbs(rb * secs);
-		verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+		var baseSize = memo.length() + getAccountKeyStorageSize(key) + BASIC_ENTITY_ID_SIZE;
+		expected.resetForTransaction(baseMeta, singleSigUsage);
+		expected.addBpt(baseSize + 2 * LONG_SIZE + BOOL_SIZE);
+		expected.addRbs((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + baseSize) * secs);
+		expected.addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+
+		subject.cryptoCreateUsage(singleSigUsage, baseMeta, opMeta, actual);
+
+		assertEquals(expected, actual);
 	}
 
 	@Test
 	void estimatesAutoRenewAsExpected() {
-		// setup:
 		var expectedRbsUsedInRenewal =
 				(basicReprBytes() + (numTokenRels * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr()));
 
-		// given:
 		var ctx = ExtantCryptoContext.newBuilder()
 				.setCurrentExpiry(expiry)
 				.setCurrentMemo(memo)
@@ -196,94 +221,127 @@ class CryptoOpsUsageTest {
 				.setCurrentMaxAutomaticAssociations(maxAutoAssociations)
 				.build();
 
-		// when:
 		var estimate = subject.cryptoAutoRenewRb(ctx);
 
-		// then:
 		assertEquals(expectedRbsUsedInRenewal, estimate);
 	}
 
 	@Test
 	void estimatesUpdateWithAutoAssociationsAsExpected() {
-		// setup:
+		givenUpdateOpWithMaxAutoAssociations();
+		var expected = new UsageAccumulator();
+		var baseMeta = new BaseTransactionMeta(memo.length(), 0);
+		var opMeta = new CryptoUpdateMeta(txn.getCryptoUpdateAccount(),
+				txn.getTransactionID().getTransactionValidStart().getSeconds());
+
+		expected.resetForTransaction(baseMeta, sigUsage);
+
 		Key oldKey = FileOpsUsage.asKey(KeyUtils.A_KEY_LIST.getKeyList());
 		long oldExpiry = expiry - 1_234L;
-		boolean oldWasUsingProxy = false;
 		String oldMemo = "Lettuce";
 		int oldMaxAutoAssociations = maxAutoAssociations - 5;
-		// and:
-		long bytesUsed = basicReprBytes() - CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr();
-		// and:
-		long oldRbs = (oldExpiry - now) *
-				(oldMemo.length() + getAccountKeyStorageSize(oldKey) + INT_SIZE
-						+ CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr() * numTokenRels
-						+ CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr());
-		// and:
-		long newRbs = (expiry - now) *
-				(memo.length() + getAccountKeyStorageSize(key) + BASIC_ENTITY_ID_SIZE
-						+ CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr() * numTokenRels
-						+ CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr());
 
-		givenUpdateOpWithMaxAutoAssociations();
-		// and:
 		var ctx = ExtantCryptoContext.newBuilder()
 				.setCurrentExpiry(oldExpiry)
 				.setCurrentMemo(oldMemo)
 				.setCurrentKey(oldKey)
-				.setCurrentlyHasProxy(oldWasUsingProxy)
+				.setCurrentlyHasProxy(false)
 				.setCurrentNumTokenRels(numTokenRels)
 				.setCurrentMaxAutomaticAssociations(oldMaxAutoAssociations)
 				.build();
 
-		// when:
-		var estimate = subject.cryptoUpdateUsage(txn, sigUsage, ctx);
+		long keyBytesUsed = getAccountKeyStorageSize(key);
+		long msgBytesUsed = BASIC_ENTITY_ID_SIZE + memo.getBytes().length + keyBytesUsed
+				+ LONG_SIZE + BASIC_ENTITY_ID_SIZE + INT_SIZE;
 
-		// then:
-		assertEquals(A_USAGES_MATRIX, estimate);
-		// and:
-		verify(base).addBpt(bytesUsed + BASIC_ENTITY_ID_SIZE + LONG_SIZE);
-		verify(base).addRbs(newRbs - oldRbs);
+		expected.addBpt(msgBytesUsed);
+
+		long newVariableBytes = memo.getBytes().length + keyBytesUsed + BASIC_ENTITY_ID_SIZE;
+		long tokenRelBytes = numTokenRels * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr();
+		long sharedFixedBytes = CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + tokenRelBytes;
+		long newLifetime = ESTIMATOR_UTILS.relativeLifetime(txn, expiry);
+		long oldLifetime = ESTIMATOR_UTILS.relativeLifetime(txn, oldExpiry);
+		long rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(
+				CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
+						+ ctx.currentNonBaseRb()
+						+ ctx.currentNumTokenRels() * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr(),
+				oldLifetime,
+				sharedFixedBytes + newVariableBytes,
+				newLifetime);
+		if (rbsDelta > 0) {
+			expected.addRbs(rbsDelta);
+		}
+
+		final var slotDelta = ESTIMATOR_UTILS.changeInBsUsage(
+				oldMaxAutoAssociations * CryptoOpsUsage.UPDATE_SLOT_MULTIPLIER,
+				oldLifetime,
+				maxAutoAssociations * CryptoOpsUsage.UPDATE_SLOT_MULTIPLIER,
+				newLifetime);
+		expected.addRbs(slotDelta);
+
+		var actual = new UsageAccumulator();
+
+		subject.cryptoUpdateUsage(sigUsage, baseMeta, opMeta, ctx, actual);
+
+		assertEquals(expected, actual);
 	}
 
 	@Test
 	void estimatesUpdateWithOutAutoAssociationsAsExpected() {
-		// setup:
+		givenUpdateOpWithOutMaxAutoAssociations();
+		var expected = new UsageAccumulator();
+		var baseMeta = new BaseTransactionMeta(memo.length(), 0);
+		var opMeta = new CryptoUpdateMeta(txn.getCryptoUpdateAccount(),
+				txn.getTransactionID().getTransactionValidStart().getSeconds());
+
+		expected.resetForTransaction(baseMeta, sigUsage);
+
 		Key oldKey = FileOpsUsage.asKey(KeyUtils.A_KEY_LIST.getKeyList());
 		long oldExpiry = expiry - 1_234L;
-		boolean oldWasUsingProxy = false;
 		String oldMemo = "Lettuce";
-		// and:
-		long bytesUsed = basicReprBytes() - CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() - INT_SIZE;
-		// and:
-		long oldRbs = (oldExpiry - now) *
-				(oldMemo.length() + getAccountKeyStorageSize(oldKey) + INT_SIZE
-						+ CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr() * numTokenRels
-						+ CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr());
-		// and:
-		long newRbs = (expiry - now) *
-				(memo.length() + getAccountKeyStorageSize(key) + BASIC_ENTITY_ID_SIZE
-						+ CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr() * numTokenRels
-						+ CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr());
 
-		givenUpdateOpWithOutMaxAutoAssociations();
-		// and:
 		var ctx = ExtantCryptoContext.newBuilder()
 				.setCurrentExpiry(oldExpiry)
 				.setCurrentMemo(oldMemo)
 				.setCurrentKey(oldKey)
-				.setCurrentlyHasProxy(oldWasUsingProxy)
+				.setCurrentlyHasProxy(false)
 				.setCurrentNumTokenRels(numTokenRels)
 				.setCurrentMaxAutomaticAssociations(maxAutoAssociations)
 				.build();
 
-		// when:
-		var estimate = subject.cryptoUpdateUsage(txn, sigUsage, ctx);
+		long keyBytesUsed = getAccountKeyStorageSize(key);
+		long msgBytesUsed = BASIC_ENTITY_ID_SIZE + memo.getBytes().length + keyBytesUsed
+				+ LONG_SIZE + BASIC_ENTITY_ID_SIZE;
 
-		// then:
-		assertEquals(A_USAGES_MATRIX, estimate);
-		// and:
-		verify(base).addBpt(bytesUsed + BASIC_ENTITY_ID_SIZE + LONG_SIZE);
-		verify(base).addRbs(newRbs - oldRbs);
+		expected.addBpt(msgBytesUsed);
+
+		long newVariableBytes = memo.getBytes().length + keyBytesUsed + BASIC_ENTITY_ID_SIZE;
+		long tokenRelBytes = numTokenRels * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr();
+		long sharedFixedBytes = CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + tokenRelBytes;
+		long newLifetime = ESTIMATOR_UTILS.relativeLifetime(txn, expiry);
+		long oldLifetime = ESTIMATOR_UTILS.relativeLifetime(txn, oldExpiry);
+		long rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(
+				CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
+						+ ctx.currentNonBaseRb()
+						+ ctx.currentNumTokenRels() * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr(),
+				oldLifetime,
+				sharedFixedBytes + newVariableBytes,
+				newLifetime);
+		if (rbsDelta > 0) {
+			expected.addRbs(rbsDelta);
+		}
+		final var slotDelta = ESTIMATOR_UTILS.changeInBsUsage(
+				maxAutoAssociations * CryptoOpsUsage.UPDATE_SLOT_MULTIPLIER,
+				oldLifetime,
+				maxAutoAssociations * CryptoOpsUsage.UPDATE_SLOT_MULTIPLIER,
+				newLifetime);
+		expected.addRbs(slotDelta);
+
+		var actual = new UsageAccumulator();
+
+		subject.cryptoUpdateUsage(sigUsage, baseMeta, opMeta, ctx, actual);
+
+		assertEquals(expected, actual);
 	}
 
 	private long basicReprBytes() {

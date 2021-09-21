@@ -30,8 +30,8 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
-import com.hedera.services.utils.PermHashInteger;
-import com.hedera.services.utils.PermHashLong;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
@@ -63,9 +63,9 @@ class StoreInitializationFlowTest {
 	@Mock
 	private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels;
 	@Mock
-	private MerkleMap<PermHashInteger, MerkleToken> tokens;
+	private MerkleMap<EntityNum, MerkleToken> tokens;
 	@Mock
-	private MerkleMap<PermHashLong, MerkleUniqueToken> nfts;
+	private MerkleMap<EntityNumPair, MerkleUniqueToken> nfts;
 
 	private StoreInitializationFlow subject;
 

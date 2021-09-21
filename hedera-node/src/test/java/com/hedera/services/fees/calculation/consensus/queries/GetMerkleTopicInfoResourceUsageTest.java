@@ -28,7 +28,7 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.EntityIdConverter;
 import com.hedera.test.utils.JEd25519KeyConverter;
 import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;
@@ -57,13 +57,13 @@ import static org.mockito.BDDMockito.mock;
 
 class GetMerkleTopicInfoResourceUsageTest {
 	private StateView view;
-	private MerkleMap<PermHashInteger, MerkleTopic> topics;
+	private MerkleMap<EntityNum, MerkleTopic> topics;
 	private static final TopicID topicId = asTopic("0.0.1234");
 	private GetTopicInfoResourceUsage subject;
 	private NodeLocalProperties nodeProps;
 
 	@BeforeEach
-	void setup() throws Throwable {
+	void setup() {
 		topics = mock(MerkleMap.class);
 		nodeProps = mock(NodeLocalProperties.class);
 		final var children = new StateChildren();
@@ -81,7 +81,7 @@ class GetMerkleTopicInfoResourceUsageTest {
 	@Test
 	void recognizesApplicableQuery() {
 		final var topicInfoQuery = topicInfoQuery(topicId, COST_ANSWER);
-		final var nonTopicInfoQuery = nonTopicInfoQuery();
+		final var nonTopicInfoQuery = Query.getDefaultInstance();
 
 		assertTrue(subject.applicableTo(topicInfoQuery));
 		assertFalse(subject.applicableTo(nonTopicInfoQuery));
@@ -108,12 +108,12 @@ class GetMerkleTopicInfoResourceUsageTest {
 			// for auto renew account
 	})
 	void feeDataAsExpected(
-			String memo,
-			@ConvertWith(JEd25519KeyConverter.class) JEd25519Key adminKey,
-			@ConvertWith(JEd25519KeyConverter.class) JEd25519Key submitKey,
-			@ConvertWith(EntityIdConverter.class) EntityId autoRenewAccountId,
-			int expectedBpt,  // query header + topic id size
-			int expectedBpr  // query response header + topic id size + topic info size
+			final String memo,
+			@ConvertWith(JEd25519KeyConverter.class) final JEd25519Key adminKey,
+			@ConvertWith(JEd25519KeyConverter.class) final JEd25519Key submitKey,
+			@ConvertWith(EntityIdConverter.class) final EntityId autoRenewAccountId,
+			final int expectedBpt,  // query header + topic id size
+			final int expectedBpr  // query response header + topic id size + topic info size
 	) {
 		final var merkleTopic = new MerkleTopic(memo, adminKey, submitKey, 0, autoRenewAccountId,
 				new RichInstant(1, 0));
@@ -122,7 +122,7 @@ class GetMerkleTopicInfoResourceUsageTest {
 				.setNetworkdata(FeeComponents.getDefaultInstance())
 				.setServicedata(FeeComponents.getDefaultInstance())
 				.build();
-		given(topics.get(PermHashInteger.fromTopicId(topicId))).willReturn(merkleTopic);
+		given(topics.get(EntityNum.fromTopicId(topicId))).willReturn(merkleTopic);
 
 		final var costAnswerEstimate = subject.usageGiven(topicInfoQuery(topicId, COST_ANSWER), view);
 		final var answerOnlyEstimate = subject.usageGiven(topicInfoQuery(topicId, ANSWER_ONLY), view);
@@ -138,9 +138,5 @@ class GetMerkleTopicInfoResourceUsageTest {
 		return Query.newBuilder()
 				.setConsensusGetTopicInfo(op)
 				.build();
-	}
-
-	private Query nonTopicInfoQuery() {
-		return Query.newBuilder().build();
 	}
 }

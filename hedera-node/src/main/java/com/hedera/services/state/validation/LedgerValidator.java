@@ -21,9 +21,9 @@ package com.hedera.services.state.validation;
  */
 
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
 
 public interface LedgerValidator {
-	void validate(MerkleMap<PermHashInteger, MerkleAccount> accounts);
+	void validate(MerkleMap<EntityNum, MerkleAccount> accounts);
 }

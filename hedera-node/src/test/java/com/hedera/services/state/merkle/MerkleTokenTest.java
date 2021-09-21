@@ -30,7 +30,7 @@ import com.hedera.services.state.serdes.IoReadingFunction;
 import com.hedera.services.state.serdes.IoWritingConsumer;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.fees.CustomFeeBuilder;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -255,7 +255,7 @@ class MerkleTokenTest {
 		assertNotEquals(subject, read);
 
 		// and when:
-		read.setKey(new PermHashInteger(number));
+		read.setKey(new EntityNum(number));
 
 		// expect:
 		assertEquals(subject, read);
@@ -298,7 +298,7 @@ class MerkleTokenTest {
 		read.deserialize(fin, MerkleToken.RELEASE_0160_VERSION);
 
 		// and when:
-		read.setKey(new PermHashInteger(number));
+		read.setKey(new EntityNum(number));
 
 		// expect:
 		assertEquals(subject, read);
@@ -604,7 +604,7 @@ class MerkleTokenTest {
 		identicalSubject.setSupplyType(TokenSupplyType.INFINITE);
 		identicalSubject.setMaxSupply(subject.maxSupply());
 		identicalSubject.setLastUsedSerialNumber(subject.getLastUsedSerialNumber());
-		identicalSubject.setKey(PermHashInteger.fromInt(number));
+		identicalSubject.setKey(EntityNum.fromInt(number));
 
 		final var other = new MerkleToken(
 				otherExpiry, otherTotalSupply, otherDecimals, otherSymbol, otherName,
@@ -716,7 +716,7 @@ class MerkleTokenTest {
 		final var bigNum = (long)Integer.MAX_VALUE + 123;
 
 		// given:
-		subject.setKey(PermHashInteger.fromLong(bigNum));
+		subject.setKey(EntityNum.fromLong(bigNum));
 
 		// then:
 		assertEquals(BitPackUtils.codeFromNum(bigNum), subject.getKey().intValue());

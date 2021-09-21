@@ -42,7 +42,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.mocks.SolidityLifecycleFactory;
 import com.hedera.test.mocks.StorageSourceFactory;
@@ -110,7 +110,7 @@ class SmartContractRequestHandlerPayableTest {
   private static final long contractSequenceNumber = 334L;
   SmartContractRequestHandler smartHandler;
   FileServiceHandler fsHandler;
-  MerkleMap<PermHashInteger, MerkleAccount> fcMap = null;
+  MerkleMap<EntityNum, MerkleAccount> fcMap = null;
   BackingAccounts backingAccounts;
   private MerkleMap<String, MerkleOptionalBlob> storageMap;
   ServicesRepositoryRoot repository;
@@ -615,7 +615,7 @@ class SmartContractRequestHandlerPayableTest {
   }
 
   private long getBalance(AccountID accountId) {
-    MerkleAccount mv = fcMap.get(PermHashInteger.fromLong(accountId.getAccountNum()));
+    MerkleAccount mv = fcMap.get(EntityNum.fromLong(accountId.getAccountNum()));
     if (mv == null) {
       return 0;
     } else {
@@ -624,7 +624,7 @@ class SmartContractRequestHandlerPayableTest {
   }
 
   private long getBalance(ContractID contractId) {
-    MerkleAccount mv = fcMap.get(PermHashInteger.fromLong(contractId.getContractNum()));
+    MerkleAccount mv = fcMap.get(EntityNum.fromLong(contractId.getContractNum()));
     if (mv == null) {
       return 0;
     } else {
@@ -659,7 +659,7 @@ class SmartContractRequestHandlerPayableTest {
     if (backingAccounts != null) {
       backingAccounts.put(payerAccount, mv);
     } else {
-      fcMap.put(PermHashInteger.fromAccountId(payerAccount), mv);
+      fcMap.put(EntityNum.fromAccountId(payerAccount), mv);
     }
   }
 
@@ -733,7 +733,7 @@ class SmartContractRequestHandlerPayableTest {
   }
 
   private void checkContractArtifactsExist(ContractID contractId) {
-    MerkleAccount mv = fcMap.get(PermHashInteger.fromLong(contractId.getContractNum()));
+    MerkleAccount mv = fcMap.get(EntityNum.fromLong(contractId.getContractNum()));
     Assertions.assertNotNull(mv);
     Assertions.assertNotNull(mv.getAccountKey());
     Assertions.assertNotNull(mv.getAccountKey());

@@ -23,7 +23,7 @@ package com.hedera.services.txns.customfees;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 class FcmCustomFeeSchedulesTest {
 	private FcmCustomFeeSchedules subject;
 
-	MerkleMap<PermHashInteger, MerkleToken> tokens = new MerkleMap<>();
+	MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
 
 	private final EntityId aTreasury = new EntityId(0, 0, 12);
 	private final EntityId bTreasury = new EntityId(0, 0, 13);
@@ -62,8 +62,8 @@ class FcmCustomFeeSchedulesTest {
 		bToken.setFeeScheduleFrom(tokenBFees);
 		bToken.setTreasury(bTreasury);
 
-		tokens.put(PermHashInteger.fromLong(tokenA.num()), aToken);
-		tokens.put(PermHashInteger.fromLong(tokenB.num()), bToken);
+		tokens.put(EntityNum.fromLong(tokenA.num()), aToken);
+		tokens.put(EntityNum.fromLong(tokenB.num()), bToken);
 		subject = new FcmCustomFeeSchedules(() -> tokens);
 	}
 
@@ -90,13 +90,13 @@ class FcmCustomFeeSchedulesTest {
 	@Test
 	void testObjectContract() {
 		// given:
-		MerkleMap<PermHashInteger, MerkleToken> secondMerkleMap = new MerkleMap<>();
+		MerkleMap<EntityNum, MerkleToken> secondMerkleMap = new MerkleMap<>();
 		MerkleToken token = new MerkleToken();
 		final var missingFees = List.of(
 				FcCustomFee.fixedFee(50L, missingToken, feeCollector).asGrpc());
 
 		token.setFeeScheduleFrom(missingFees);
-		secondMerkleMap.put(PermHashInteger.fromLong(missingToken.num()), new MerkleToken());
+		secondMerkleMap.put(EntityNum.fromLong(missingToken.num()), new MerkleToken());
 		final var fees1 = new FcmCustomFeeSchedules(() -> tokens);
 		final var fees2 = new FcmCustomFeeSchedules(() -> secondMerkleMap);
 

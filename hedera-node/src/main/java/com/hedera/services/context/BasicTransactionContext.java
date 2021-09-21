@@ -34,7 +34,7 @@ import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.state.submerkle.TxnId;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -61,7 +61,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import static com.hedera.services.utils.PermHashInteger.fromAccountId;
+import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
@@ -108,12 +108,12 @@ public class BasicTransactionContext implements TransactionContext {
 	private final EntityCreator creator;
 	private final NarratedCharging narratedCharging;
 	private final HbarCentExchange exchange;
-	private final Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts;
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
 	@Inject
 	BasicTransactionContext(
 			NarratedCharging narratedCharging,
-			Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts,
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			NodeInfo nodeInfo,
 			HbarCentExchange exchange,
 			EntityCreator creator

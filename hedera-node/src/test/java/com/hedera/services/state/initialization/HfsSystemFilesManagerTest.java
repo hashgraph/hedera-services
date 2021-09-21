@@ -27,7 +27,7 @@ import com.hedera.services.files.SysFileCallbacks;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.files.interceptors.MockFileNumbers;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleDiskFs;
+import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -120,7 +120,7 @@ class HfsSystemFilesManagerTest {
 	private AddressBook currentBook;
 	private HFileMeta expectedInfo;
 	private TieredHederaFs hfs;
-	private MerkleDiskFs diskFs;
+	private MerkleSpecialFiles specialFiles;
 	private MockFileNumbers fileNumbers;
 	private Consumer<ServicesConfigurationList> propertiesCb;
 	private Consumer<ServicesConfigurationList> permissionsCb;
@@ -175,14 +175,14 @@ class HfsSystemFilesManagerTest {
 		data = mock(Map.class);
 		metadata = mock(Map.class);
 		hfs = mock(TieredHederaFs.class);
-		diskFs = mock(MerkleDiskFs.class);
+		specialFiles = mock(MerkleSpecialFiles.class);
 		given(hfs.getData()).willReturn(data);
 		given(hfs.getMetadata()).willReturn(metadata);
-		given(hfs.specialFiles()).willReturn(diskFs);
+		given(hfs.specialFiles()).willReturn(specialFiles);
 		fileNumbers = new MockFileNumbers();
 		fileNumbers.setShard(1L);
 		fileNumbers.setRealm(22L);
-		given(diskFs.contains(fileNumbers.toFid(111))).willReturn(false);
+		given(specialFiles.contains(fileNumbers.toFid(111))).willReturn(false);
 
 		properties = mock(PropertySource.class);
 		given(properties.getStringProperty("bootstrap.hapiPermissions.path")).willReturn(bootstrapJutilPermsLoc);
@@ -313,14 +313,14 @@ class HfsSystemFilesManagerTest {
 
 		// setup:
 		given(hfs.exists(file150)).willReturn(false);
-		given(hfs.specialFiles()).willReturn(diskFs);
-		given(diskFs.contains(file150)).willReturn(true);
+		given(hfs.specialFiles()).willReturn(specialFiles);
+		given(specialFiles.contains(file150)).willReturn(true);
 
 		// when:
 		subject.createUpdateZipFileIfMissing();
 
 		// then:
-		verify(diskFs).put(file150, new byte[0]);
+		verify(specialFiles).update(file150, new byte[0]);
 	}
 
 	@Test

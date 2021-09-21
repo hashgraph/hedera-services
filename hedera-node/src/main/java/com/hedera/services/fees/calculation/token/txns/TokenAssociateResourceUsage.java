@@ -33,30 +33,37 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.function.BiFunction;
 
-import static com.hedera.services.utils.PermHashInteger.fromAccountId;
+import static com.hedera.services.utils.EntityNum.fromAccountId;
 
 @Singleton
-public class TokenAssociateResourceUsage implements TxnResourceUsageEstimator {
-	static BiFunction<TransactionBody, SigUsage, TokenAssociateUsage> factory = TokenAssociateUsage::newEstimate;
+public final class TokenAssociateResourceUsage implements TxnResourceUsageEstimator {
+	private static final BiFunction<TransactionBody, SigUsage, TokenAssociateUsage> factory
+			= TokenAssociateUsage::newEstimate;
 
 	@Inject
 	public TokenAssociateResourceUsage() {
+		/* No-op */
 	}
 
 	@Override
-	public boolean applicableTo(TransactionBody txn) {
+	public boolean applicableTo(final TransactionBody txn) {
 		return txn.hasTokenAssociate();
 	}
 
 	@Override
-	public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view) throws InvalidTxBodyException {
-		var op = txn.getTokenAssociate();
-		var account = view.accounts().get(fromAccountId(op.getAccount()));
+	public FeeData usageGiven(
+			final TransactionBody txn,
+			final SigValueObj svo,
+			final StateView view
+	) throws InvalidTxBodyException {
+		final var op = txn.getTokenAssociate();
+		final var account = view.accounts().get(fromAccountId(op.getAccount()));
 		if (account == null) {
 			return FeeData.getDefaultInstance();
 		} else {
-			var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
-			var estimate = factory.apply(txn, sigUsage);
+			final var sigUsage =
+					new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+			final var estimate = factory.apply(txn, sigUsage);
 			return estimate.givenCurrentExpiry(account.getExpiry()).get();
 		}
 	}

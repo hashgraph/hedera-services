@@ -23,8 +23,8 @@ package com.hedera.services.store.tokens.views;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.utils.PermHashInteger;
-import com.hedera.services.utils.PermHashLong;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
@@ -52,14 +52,14 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 @ExtendWith(MockitoExtension.class)
 class UniqTokenViewsManagerTest {
 	@Mock
-	private FCOneToManyRelation<PermHashInteger, Long> nftsByType;
+	private FCOneToManyRelation<EntityNum, Long> nftsByType;
 	@Mock
-	private FCOneToManyRelation<PermHashInteger, Long> nftsByOwner;
+	private FCOneToManyRelation<EntityNum, Long> nftsByOwner;
 	@Mock
-	private FCOneToManyRelation<PermHashInteger, Long> treasuryNftsByType;
+	private FCOneToManyRelation<EntityNum, Long> treasuryNftsByType;
 
-	private MerkleMap<PermHashInteger, MerkleToken> realTokens;
-	private MerkleMap<PermHashLong, MerkleUniqueToken> realNfts;
+	private MerkleMap<EntityNum, MerkleToken> realTokens;
+	private MerkleMap<EntityNumPair, MerkleUniqueToken> realNfts;
 
 	private UniqTokenViewsManager subject;
 
@@ -322,8 +322,8 @@ class UniqTokenViewsManagerTest {
 		subject.commit();
 
 		// then:
-		verify(nftsByOwner).disassociate(PermHashInteger.fromLong(firstOwner.num()), aOneNftId.getValue());
-		verify(nftsByOwner).associate(PermHashInteger.fromLong(secondOwner.num()), aOneNftId.getValue());
+		verify(nftsByOwner).disassociate(EntityNum.fromLong(firstOwner.num()), aOneNftId.getValue());
+		verify(nftsByOwner).associate(EntityNum.fromLong(secondOwner.num()), aOneNftId.getValue());
 	}
 
 	@Test
@@ -334,8 +334,8 @@ class UniqTokenViewsManagerTest {
 		subject.burnNotice(aOneNftId, firstOwner);
 
 		// then:
-		verify(nftsByType).disassociate(PermHashInteger.fromLong(aTokenId.num()), aOneNftId.getValue());
-		verify(nftsByOwner).disassociate(PermHashInteger.fromLong(firstOwner.num()), aOneNftId.getValue());
+		verify(nftsByType).disassociate(EntityNum.fromLong(aTokenId.num()), aOneNftId.getValue());
+		verify(nftsByOwner).disassociate(EntityNum.fromLong(firstOwner.num()), aOneNftId.getValue());
 	}
 
 	@Test
@@ -346,8 +346,8 @@ class UniqTokenViewsManagerTest {
 		subject.burnNotice(aOneNftId, firstOwner);
 
 		// then:
-		verify(nftsByType).disassociate(PermHashInteger.fromLong(aTokenId.num()), aOneNftId.getValue());
-		verify(treasuryNftsByType).disassociate(PermHashInteger.fromLong(aTokenId.num()), aOneNftId.getValue());
+		verify(nftsByType).disassociate(EntityNum.fromLong(aTokenId.num()), aOneNftId.getValue());
+		verify(treasuryNftsByType).disassociate(EntityNum.fromLong(aTokenId.num()), aOneNftId.getValue());
 	}
 
 	@Test
@@ -358,8 +358,8 @@ class UniqTokenViewsManagerTest {
 		subject.mintNotice(aOneNftId, firstOwner);
 
 		// then:
-		verify(nftsByType).associate(PermHashInteger.fromLong(aTokenId.num()), aOneNftId.getValue());
-		verify(nftsByOwner).associate(PermHashInteger.fromLong(firstOwner.num()), aOneNftId.getValue());
+		verify(nftsByType).associate(EntityNum.fromLong(aTokenId.num()), aOneNftId.getValue());
+		verify(nftsByOwner).associate(EntityNum.fromLong(firstOwner.num()), aOneNftId.getValue());
 	}
 
 	@Test
@@ -370,8 +370,8 @@ class UniqTokenViewsManagerTest {
 		subject.mintNotice(aOneNftId, firstOwner);
 
 		// then:
-		verify(nftsByType).associate(PermHashInteger.fromLong(aTokenId.identityCode()), aOneNftId.getValue());
-		verify(treasuryNftsByType).associate(PermHashInteger.fromLong(aTokenId.identityCode()), aOneNftId.getValue());
+		verify(nftsByType).associate(EntityNum.fromLong(aTokenId.identityCode()), aOneNftId.getValue());
+		verify(treasuryNftsByType).associate(EntityNum.fromLong(aTokenId.identityCode()), aOneNftId.getValue());
 	}
 
 	@Test
@@ -382,8 +382,8 @@ class UniqTokenViewsManagerTest {
 		subject.wipeNotice(aOneNftId, firstOwner);
 
 		// then:
-		verify(nftsByType).disassociate(PermHashInteger.fromLong(aTokenId.num()), aOneNftId.getValue());
-		verify(nftsByOwner).disassociate(PermHashInteger.fromLong(firstOwner.num()), aOneNftId.getValue());
+		verify(nftsByType).disassociate(EntityNum.fromLong(aTokenId.num()), aOneNftId.getValue());
+		verify(nftsByOwner).disassociate(EntityNum.fromLong(firstOwner.num()), aOneNftId.getValue());
 	}
 
 	@Test
@@ -394,8 +394,8 @@ class UniqTokenViewsManagerTest {
 		subject.wipeNotice(aOneNftId, firstOwner);
 
 		// then:
-		verify(nftsByType).disassociate(PermHashInteger.fromLong(aTokenId.num()), aOneNftId.getValue());
-		verify(nftsByOwner).disassociate(PermHashInteger.fromLong(firstOwner.num()), aOneNftId.getValue());
+		verify(nftsByType).disassociate(EntityNum.fromLong(aTokenId.num()), aOneNftId.getValue());
+		verify(nftsByOwner).disassociate(EntityNum.fromLong(firstOwner.num()), aOneNftId.getValue());
 	}
 
 	@Test
@@ -412,11 +412,11 @@ class UniqTokenViewsManagerTest {
 		subject.rebuildNotice(realTokens, realNfts);
 
 		// then:
-		verify(nftsByType).associate(PermHashInteger.fromLong(aTokenId.num()), aOneNftId.getValue());
-		verify(treasuryNftsByType).associate(PermHashInteger.fromLong(aTokenId.num()), aOneNftId.getValue());
+		verify(nftsByType).associate(EntityNum.fromLong(aTokenId.num()), aOneNftId.getValue());
+		verify(treasuryNftsByType).associate(EntityNum.fromLong(aTokenId.num()), aOneNftId.getValue());
 		// and:
-		verify(nftsByType).associate(PermHashInteger.fromLong(bTokenId.num()), bOneNftId.getValue());
-		verify(nftsByOwner).associate(PermHashInteger.fromLong(firstOwner.num()), bOneNftId.getValue());
+		verify(nftsByType).associate(EntityNum.fromLong(bTokenId.num()), bOneNftId.getValue());
+		verify(nftsByOwner).associate(EntityNum.fromLong(firstOwner.num()), bOneNftId.getValue());
 		// and:
 		verifyNoMoreInteractions(nftsByType);
 		verifyNoMoreInteractions(treasuryNftsByType);
@@ -436,11 +436,11 @@ class UniqTokenViewsManagerTest {
 		subject.rebuildNotice(realTokens, realNfts);
 
 		// then:
-		verify(nftsByType).associate(PermHashInteger.fromLong(aTokenId.num()), aOneNftId.getValue());
-		verify(nftsByOwner).associate(PermHashInteger.fromLong(firstOwner.num()), aOneNftId.getValue());
+		verify(nftsByType).associate(EntityNum.fromLong(aTokenId.num()), aOneNftId.getValue());
+		verify(nftsByOwner).associate(EntityNum.fromLong(firstOwner.num()), aOneNftId.getValue());
 		// and:
-		verify(nftsByType).associate(PermHashInteger.fromLong(bTokenId.num()), bOneNftId.getValue());
-		verify(nftsByOwner).associate(PermHashInteger.fromLong(firstOwner.num()), bOneNftId.getValue());
+		verify(nftsByType).associate(EntityNum.fromLong(bTokenId.num()), bOneNftId.getValue());
+		verify(nftsByOwner).associate(EntityNum.fromLong(firstOwner.num()), bOneNftId.getValue());
 		// and:
 		verifyNoMoreInteractions(nftsByType);
 		verifyNoMoreInteractions(nftsByOwner);
@@ -465,8 +465,8 @@ class UniqTokenViewsManagerTest {
 		realNfts.put(missingTokenNftId, tokenDeletedNft);
 
 		realTokens = new MerkleMap<>();
-		realTokens.put(PermHashInteger.fromLong(aTokenId.num()), aToken);
-		realTokens.put(PermHashInteger.fromLong(bTokenId.num()), bToken);
+		realTokens.put(EntityNum.fromLong(aTokenId.num()), aToken);
+		realTokens.put(EntityNum.fromLong(bTokenId.num()), bToken);
 	}
 
 	private void setupTreasuryTrackingSubject() {
@@ -503,9 +503,9 @@ class UniqTokenViewsManagerTest {
 	private final EntityId aTokenId = new EntityId(0, 0, 5);
 	private final EntityId bTokenId = new EntityId(0, 0, 6);
 	private final EntityId cTokenId = new EntityId(0, 0, 7);
-	private final PermHashLong aOneNftId = PermHashLong.fromLongs(aTokenId.num(), 1L);
-	private final PermHashLong bOneNftId = PermHashLong.fromLongs(bTokenId.num(), 1L);
-	private final PermHashLong missingTokenNftId = PermHashLong.fromLongs(cTokenId.num(), 666L);
+	private final EntityNumPair aOneNftId = EntityNumPair.fromLongs(aTokenId.num(), 1L);
+	private final EntityNumPair bOneNftId = EntityNumPair.fromLongs(bTokenId.num(), 1L);
+	private final EntityNumPair missingTokenNftId = EntityNumPair.fromLongs(cTokenId.num(), 666L);
 	private final MerkleToken aToken = new MerkleToken(
 			1_234_567L, 1_234L, 1,
 			"Hi", "EVERYBODY",
@@ -522,7 +522,7 @@ class UniqTokenViewsManagerTest {
 	private final MerkleUniqueToken tokenDeletedNft = new MerkleUniqueToken(MISSING_ENTITY_ID, otherMeta,
 			MISSING_INSTANT);
 
-	private PermHashInteger asPhi(int i) {
-		return new PermHashInteger(i);
+	private EntityNum asPhi(int i) {
+		return new EntityNum(i);
 	}
 }

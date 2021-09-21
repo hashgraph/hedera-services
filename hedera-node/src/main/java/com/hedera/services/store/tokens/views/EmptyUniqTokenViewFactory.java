@@ -23,8 +23,8 @@ package com.hedera.services.store.tokens.views;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.utils.PermHashInteger;
-import com.hedera.services.utils.PermHashLong;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
 
@@ -41,11 +41,11 @@ public enum EmptyUniqTokenViewFactory implements UniqTokenViewFactory {
 	@Override
 	public UniqTokenView viewFor(
 			TokenStore tokenStore,
-			Supplier<MerkleMap<PermHashInteger, MerkleToken>> tokens,
-			Supplier<MerkleMap<PermHashLong, MerkleUniqueToken>> nfts,
-			Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByType,
-			Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByOwner,
-			Supplier<FCOneToManyRelation<PermHashInteger, Long>> treasuryNftsByType
+			Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
+			Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> nfts,
+			Supplier<FCOneToManyRelation<EntityNum, Long>> nftsByType,
+			Supplier<FCOneToManyRelation<EntityNum, Long>> nftsByOwner,
+			Supplier<FCOneToManyRelation<EntityNum, Long>> treasuryNftsByType
 	) {
 		return EMPTY_UNIQUE_TOKEN_VIEW;
 	}

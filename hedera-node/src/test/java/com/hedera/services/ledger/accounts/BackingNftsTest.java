@@ -24,7 +24,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.utils.PermHashLong;
+import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,9 +46,9 @@ class BackingNftsTest {
 	private NftId aNftId = new NftId(0, 0, 3, 4);
 	private NftId bNftId = new NftId(0, 0, 4, 5);
 	private NftId cNftId = new NftId(0, 0, 5, 6);
-	private PermHashLong aKey = PermHashLong.fromLongs(3, 4);
-	private PermHashLong bKey = PermHashLong.fromLongs(4, 5);
-	private PermHashLong cKey = PermHashLong.fromLongs(5, 6);
+	private EntityNumPair aKey = EntityNumPair.fromLongs(3, 4);
+	private EntityNumPair bKey = EntityNumPair.fromLongs(4, 5);
+	private EntityNumPair cKey = EntityNumPair.fromLongs(5, 6);
 	private MerkleUniqueToken aValue = new MerkleUniqueToken(
 			new EntityId(0, 0, 3),
 			"abcdefgh".getBytes(),
@@ -62,7 +62,7 @@ class BackingNftsTest {
 			"IH".getBytes(StandardCharsets.UTF_8),
 			MISSING_INSTANT);
 
-	private MerkleMap<PermHashLong, MerkleUniqueToken> delegate;
+	private MerkleMap<EntityNumPair, MerkleUniqueToken> delegate;
 
 	private BackingNfts subject;
 

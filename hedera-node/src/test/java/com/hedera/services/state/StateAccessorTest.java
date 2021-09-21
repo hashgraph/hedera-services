@@ -30,9 +30,9 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
-import com.hedera.services.utils.PermHashInteger;
-import com.hedera.services.utils.PermHashLong;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
@@ -51,17 +51,17 @@ class StateAccessorTest {
 	@Mock
 	private ServicesState state;
 	@Mock
-	private MerkleMap<PermHashInteger, MerkleAccount> accounts;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
 	private MerkleMap<String, MerkleOptionalBlob> storage;
 	@Mock
-	private MerkleMap<PermHashInteger, MerkleTopic> topics;
+	private MerkleMap<EntityNum, MerkleTopic> topics;
 	@Mock
-	private MerkleMap<PermHashInteger, MerkleToken> tokens;
+	private MerkleMap<EntityNum, MerkleToken> tokens;
 	@Mock
-	private MerkleMap<PermHashLong, MerkleTokenRelStatus> tokenAssociations;
+	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
 	@Mock
-	private MerkleMap<PermHashInteger, MerkleSchedule> scheduleTxs;
+	private MerkleMap<EntityNum, MerkleSchedule> scheduleTxs;
 	@Mock
 	private MerkleNetworkContext networkCtx;
 	@Mock
@@ -69,13 +69,13 @@ class StateAccessorTest {
 	@Mock
 	private MerkleSpecialFiles specialFiles;
 	@Mock
-	private MerkleMap<PermHashLong, MerkleUniqueToken> uniqueTokens;
+	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
 	@Mock
-	private FCOneToManyRelation<PermHashInteger, Long> uniqueTokenAssociations;
+	private FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations;
 	@Mock
-	private FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipAssociations;
+	private FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations;
 	@Mock
-	private FCOneToManyRelation<PermHashInteger, Long> uniqueTreasuryOwnershipAssociations;
+	private FCOneToManyRelation<EntityNum, Long> uniqueTreasuryOwnershipAssociations;
 	@Mock
 	private RecordsRunningHashLeaf runningHashLeaf;
 

@@ -44,7 +44,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.mocks.SolidityLifecycleFactory;
 import com.hedera.test.mocks.StorageSourceFactory;
@@ -118,7 +118,7 @@ class SmartContractRequestHandlerMiscTest {
   private static final long secondContractSequenceNumber = 668L;
   SmartContractRequestHandler smartHandler;
   FileServiceHandler fsHandler;
-  MerkleMap<PermHashInteger, MerkleAccount> mmap = null;
+  MerkleMap<EntityNum, MerkleAccount> mmap = null;
   MerkleMap<String, MerkleOptionalBlob> storageMap;
   ServicesRepositoryRoot repository;
   LedgerAccountsSource ledgerSource;
@@ -227,7 +227,7 @@ class SmartContractRequestHandlerMiscTest {
   private void createAccount(AccountID payerAccount, long balance) throws NegativeAccountBalanceException {
     MerkleAccount mv = new MerkleAccount();
     mv.setBalance(balance);
-    mmap.put(PermHashInteger.fromAccountId(payerAccount), mv);
+    mmap.put(EntityNum.fromAccountId(payerAccount), mv);
   }
 
   private byte[] createFile(String filePath, FileID fileId) {
@@ -301,7 +301,7 @@ class SmartContractRequestHandlerMiscTest {
   }
 
   private void checkContractArtifactsExist(ContractID contractId) {
-    MerkleAccount mv = mmap.get(PermHashInteger.fromLong(contractId.getContractNum()));
+    MerkleAccount mv = mmap.get(EntityNum.fromLong(contractId.getContractNum()));
     Assertions.assertNotNull(mv);
     Assertions.assertNotNull(mv.getAccountKey());
     Assertions.assertTrue(mv.getAccountKey() instanceof JContractIDKey);
@@ -1033,7 +1033,7 @@ class SmartContractRequestHandlerMiscTest {
   }
 
   private long getBalance(AccountID accountId) {
-    MerkleAccount mv = mmap.get(PermHashInteger.fromLong(accountId.getAccountNum()));
+    MerkleAccount mv = mmap.get(EntityNum.fromLong(accountId.getAccountNum()));
     if (mv == null) {
       return 0;
     } else {

@@ -29,7 +29,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.state.submerkle.TxnId;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.merkle.io.MerkleDataInputStream;
@@ -41,7 +41,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class AccountsReader {
-	public static MerkleMap<PermHashInteger, MerkleAccount> from(String loc) throws Exception {
+	public static MerkleMap<EntityNum, MerkleAccount> from(String loc) throws Exception {
 		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
 		ConstructableRegistry.registerConstructable(
@@ -68,7 +68,7 @@ public class AccountsReader {
 				new ClassConstructorPair(SolidityFnResult.class, SolidityFnResult::new));
 
 		try (MerkleDataInputStream in = new MerkleDataInputStream(Files.newInputStream(Path.of(loc)), false)) {
-			MerkleMap<PermHashInteger, MerkleAccount> fcm = in.readMerkleTree(Integer.MAX_VALUE);
+			MerkleMap<EntityNum, MerkleAccount> fcm = in.readMerkleTree(Integer.MAX_VALUE);
 			return fcm;
 		}
 	}

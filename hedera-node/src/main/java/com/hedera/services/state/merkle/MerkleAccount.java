@@ -26,7 +26,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
@@ -39,7 +39,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleInternal, Keyed<PermHashInteger> {
+public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleInternal, Keyed<EntityNum> {
 	private static final Logger log = LogManager.getLogger(MerkleAccount.class);
 
 	static Runnable stackDump = Thread::dumpStack;
@@ -58,12 +58,12 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	static DomainSerdes serdes = new DomainSerdes();
 
 	@Override
-	public PermHashInteger getKey() {
-		return new PermHashInteger(state().number());
+	public EntityNum getKey() {
+		return new EntityNum(state().number());
 	}
 
 	@Override
-	public void setKey(PermHashInteger phi) {
+	public void setKey(EntityNum phi) {
 		state().setNumber(phi.intValue());
 	}
 

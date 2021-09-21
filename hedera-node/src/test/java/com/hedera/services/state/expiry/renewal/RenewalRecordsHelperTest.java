@@ -23,7 +23,7 @@ package com.hedera.services.state.expiry.renewal;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.test.utils.IdUtils;
@@ -65,7 +65,7 @@ class RenewalRecordsHelperTest {
 	private final Instant instantNow = Instant.ofEpochSecond(1_234_567L);
 	private final AccountID removedId = IdUtils.asAccount("0.0.3");
 	private final AccountID funding = IdUtils.asAccount("0.0.98");
-	private final PermHashInteger keyId = PermHashInteger.fromAccountId(removedId);
+	private final EntityNum keyId = EntityNum.fromAccountId(removedId);
 
 	@Mock
 	private RecordStreamManager recordStreamManager;

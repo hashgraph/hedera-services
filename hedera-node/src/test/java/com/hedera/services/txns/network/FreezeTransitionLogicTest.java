@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.files.interceptors.MockFileNumbers;
+import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -59,9 +60,11 @@ class FreezeTransitionLogicTest {
 	private FreezeTransitionLogic.LegacyFreezer delegate;
 	private TransactionBody freezeTxn;
 	private TransactionContext txnCtx;
+	private MerkleSpecialFiles specialFiles;
 	private PlatformTxnAccessor accessor;
-	FreezeTransitionLogic subject;
-	FileNumbers fileNums = new MockFileNumbers();
+	private FileNumbers fileNums = new MockFileNumbers();
+
+	private FreezeTransitionLogic subject;
 
 	@BeforeEach
 	private void setup() {
@@ -72,7 +75,7 @@ class FreezeTransitionLogicTest {
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		accessor = mock(PlatformTxnAccessor.class);
 
-		subject = new FreezeTransitionLogic(fileNums, delegate, txnCtx);
+		subject = new FreezeTransitionLogic(fileNums, delegate, txnCtx, () -> specialFiles);
 	}
 
 	@Test

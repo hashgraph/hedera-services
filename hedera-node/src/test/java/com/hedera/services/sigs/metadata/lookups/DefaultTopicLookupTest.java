@@ -3,7 +3,7 @@ package com.hedera.services.sigs.metadata.lookups;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.merkle.map.MerkleMap;
@@ -26,12 +26,12 @@ import static org.mockito.BDDMockito.given;
 class DefaultTopicLookupTest {
 	final JKey multi = new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes(StandardCharsets.UTF_8));
 	final TopicID target = IdUtils.asTopic("0.0.1234");
-	final PermHashInteger key = PermHashInteger.fromTopicId(target);
+	final EntityNum key = EntityNum.fromTopicId(target);
 
 	@Mock
 	private MerkleTopic topic;
 	@Mock
-	private MerkleMap<PermHashInteger, MerkleTopic> topics;
+	private MerkleMap<EntityNum, MerkleTopic> topics;
 
 	private DefaultTopicLookup subject;
 

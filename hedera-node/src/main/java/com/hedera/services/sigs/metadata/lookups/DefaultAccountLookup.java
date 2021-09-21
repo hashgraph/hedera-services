@@ -22,22 +22,22 @@ package com.hedera.services.sigs.metadata.lookups;
 
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 
 import java.util.function.Supplier;
 
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
-import static com.hedera.services.utils.PermHashInteger.fromAccountId;
+import static com.hedera.services.utils.EntityNum.fromAccountId;
 
 /**
  * Trivial account signing metadata lookup backed by a {@code FCMap<MapKey, MapValue>}.
  */
 public class DefaultAccountLookup implements AccountSigMetaLookup {
-	private final Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts;
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
-	public DefaultAccountLookup(Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts) {
+	public DefaultAccountLookup(Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts) {
 		this.accounts = accounts;
 	}
 

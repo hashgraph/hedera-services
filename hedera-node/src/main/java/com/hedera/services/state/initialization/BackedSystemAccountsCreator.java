@@ -30,7 +30,7 @@ import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -70,7 +70,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 	}
 
 	@Override
-	public void createSystemAccounts(MerkleMap<PermHashInteger, MerkleAccount> accounts, AddressBook addressBook) {
+	public void createSystemAccounts(MerkleMap<EntityNum, MerkleAccount> accounts, AddressBook addressBook) {
 		throw new UnsupportedOperationException();
 	}
 

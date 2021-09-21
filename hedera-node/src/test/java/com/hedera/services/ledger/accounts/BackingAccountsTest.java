@@ -21,7 +21,7 @@ package com.hedera.services.ledger.accounts;
  */
 
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.FcLong;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -55,16 +55,16 @@ class BackingAccountsTest {
 	private final AccountID b = asAccount("0.0.2");
 	private final AccountID c = asAccount("0.0.3");
 	private final AccountID d = asAccount("0.0.4");
-	private final PermHashInteger aKey = PermHashInteger.fromAccountId(a);
-	private final PermHashInteger bKey = PermHashInteger.fromAccountId(b);
-	private final PermHashInteger cKey = PermHashInteger.fromAccountId(c);
-	private final PermHashInteger dKey = PermHashInteger.fromAccountId(d);
+	private final EntityNum aKey = EntityNum.fromAccountId(a);
+	private final EntityNum bKey = EntityNum.fromAccountId(b);
+	private final EntityNum cKey = EntityNum.fromAccountId(c);
+	private final EntityNum dKey = EntityNum.fromAccountId(d);
 	private final MerkleAccount aValue = MerkleAccountFactory.newAccount().balance(123L).get();
 	private final MerkleAccount bValue = MerkleAccountFactory.newAccount().balance(122L).get();
 	private final MerkleAccount cValue = MerkleAccountFactory.newAccount().balance(121L).get();
 	private final MerkleAccount dValue = MerkleAccountFactory.newAccount().balance(120L).get();
 
-	private MerkleMap<PermHashInteger, MerkleAccount> map;
+	private MerkleMap<EntityNum, MerkleAccount> map;
 	private BackingAccounts subject;
 
 	@BeforeEach

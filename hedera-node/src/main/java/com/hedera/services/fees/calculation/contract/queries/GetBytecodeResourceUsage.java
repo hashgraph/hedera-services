@@ -29,32 +29,33 @@ import com.hederahashgraph.fee.SmartContractFeeBuilder;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Map;
 
 @Singleton
-public class GetBytecodeResourceUsage implements QueryResourceUsageEstimator {
+public final class GetBytecodeResourceUsage implements QueryResourceUsageEstimator {
 	private static final byte[] EMPTY_BYTECODE = new byte[0];
 
 	private final SmartContractFeeBuilder usageEstimator;
 
 	@Inject
-	public GetBytecodeResourceUsage(SmartContractFeeBuilder usageEstimator) {
+	public GetBytecodeResourceUsage(final SmartContractFeeBuilder usageEstimator) {
 		this.usageEstimator = usageEstimator;
 	}
 
 	@Override
-	public boolean applicableTo(Query query) {
+	public boolean applicableTo(final Query query) {
 		return query.hasContractGetBytecode();
 	}
 
 	@Override
-	public FeeData usageGiven(Query query, StateView view) {
+	public FeeData usageGiven(final Query query, final StateView view, final Map<String, Object> ignoreCtx) {
 		return usageGivenType(query, view, query.getContractGetBytecode().getHeader().getResponseType());
 	}
 
 	@Override
-	public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
-		var op = query.getContractGetBytecode();
-		var bytecode = view.bytecodeOf(op.getContractID()).orElse(EMPTY_BYTECODE);
+	public FeeData usageGivenType(final Query query, final StateView view, final ResponseType type) {
+		final var op = query.getContractGetBytecode();
+		final var bytecode = view.bytecodeOf(op.getContractID()).orElse(EMPTY_BYTECODE);
 		return usageEstimator.getContractByteCodeQueryFeeMatrices(bytecode.length, type);
 	}
 }

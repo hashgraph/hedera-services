@@ -24,7 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;
@@ -62,14 +62,14 @@ public class GetTopicInfoAnswer implements AnswerService {
 
 	@Override
 	public ResponseCodeEnum checkValidity(Query query, StateView view) {
-		MerkleMap<PermHashInteger, MerkleTopic> topics = view.topics();
+		MerkleMap<EntityNum, MerkleTopic> topics = view.topics();
 		ConsensusGetTopicInfoQuery op = query.getConsensusGetTopicInfo();
 		return validityOf(op, topics);
 	}
 
 	private ResponseCodeEnum validityOf(
 			ConsensusGetTopicInfoQuery op,
-			MerkleMap<PermHashInteger, MerkleTopic> topics
+			MerkleMap<EntityNum, MerkleTopic> topics
 	) {
 		if (op.hasTopicID()) {
 			return optionValidator.queryableTopicStatus(op.getTopicID(), topics);
@@ -119,7 +119,7 @@ public class GetTopicInfoAnswer implements AnswerService {
 	private static ConsensusTopicInfo.Builder infoBuilder(ConsensusGetTopicInfoQuery op, StateView view) {
 
 		TopicID id = op.getTopicID();
-		MerkleTopic merkleTopic = view.topics().get(PermHashInteger.fromTopicId(id));
+		MerkleTopic merkleTopic = view.topics().get(EntityNum.fromTopicId(id));
 		ConsensusTopicInfo.Builder info = ConsensusTopicInfo.newBuilder();
 		if (merkleTopic.hasMemo()) {
 			info.setMemo(merkleTopic.getMemo());

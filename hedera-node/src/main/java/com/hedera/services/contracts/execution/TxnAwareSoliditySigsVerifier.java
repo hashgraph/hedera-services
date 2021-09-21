@@ -28,7 +28,7 @@ import com.hedera.services.sigs.PlatformSigOps;
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 
@@ -39,20 +39,20 @@ import java.util.stream.Stream;
 
 import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
 import static com.hedera.services.keys.HederaKeyActivation.isActive;
-import static com.hedera.services.utils.PermHashInteger.fromAccountId;
+import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static java.util.stream.Collectors.toList;
 
 public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 	private final SyncVerifier syncVerifier;
 	private final TransactionContext txnCtx;
 	private final SyncActivationCheck check;
-	private final Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts;
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
 	public TxnAwareSoliditySigsVerifier(
 			SyncVerifier syncVerifier,
 			TransactionContext txnCtx,
 			SyncActivationCheck check,
-			Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {
 		this.txnCtx = txnCtx;
 		this.accounts = accounts;

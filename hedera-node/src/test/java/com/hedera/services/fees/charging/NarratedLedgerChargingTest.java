@@ -25,7 +25,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.utils.IdUtils;
@@ -54,8 +54,8 @@ class NarratedLedgerChargingTest {
 	private final AccountID grpcNodeId = IdUtils.asAccount("0.0.3");
 	private final AccountID grpcPayerId = IdUtils.asAccount("0.0.1234");
 	private final AccountID grpcFundingId = IdUtils.asAccount("0.0.98");
-	private final PermHashInteger nodeId = PermHashInteger.fromLong(3L);
-	private final PermHashInteger payerId = PermHashInteger.fromLong(1_234L);
+	private final EntityNum nodeId = EntityNum.fromLong(3L);
+	private final EntityNum payerId = EntityNum.fromLong(1_234L);
 
 	@Mock
 	private NodeInfo nodeInfo;
@@ -68,7 +68,7 @@ class NarratedLedgerChargingTest {
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
-	private MerkleMap<PermHashInteger, MerkleAccount> accounts;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	private NarratedLedgerCharging subject;
 

@@ -30,11 +30,12 @@ import com.hederahashgraph.fee.CryptoFeeBuilder;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Map;
 
-import static com.hedera.services.utils.PermHashInteger.fromAccountId;
+import static com.hedera.services.utils.EntityNum.fromAccountId;
 
 @Singleton
-public class GetAccountRecordsResourceUsage implements QueryResourceUsageEstimator {
+public final class GetAccountRecordsResourceUsage implements QueryResourceUsageEstimator {
 	private final AnswerFunctions answerFunctions;
 	private final CryptoFeeBuilder usageEstimator;
 
@@ -53,7 +54,7 @@ public class GetAccountRecordsResourceUsage implements QueryResourceUsageEstimat
 	}
 
 	@Override
-	public FeeData usageGiven(final Query query, final StateView view) {
+	public FeeData usageGiven(final Query query, final StateView view, final Map<String, Object> ignoreCtx) {
 		return usageGivenType(query, view, query.getCryptoGetAccountRecords().getHeader().getResponseType());
 	}
 

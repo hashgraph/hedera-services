@@ -9,9 +9,9 @@ package com.hedera.services;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,9 +28,14 @@ import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.forensics.HashLogger;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleOptionalBlob;
+import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.LegacyStateChildIndices;
 import com.hedera.services.state.migration.StateChildIndices;
@@ -38,10 +43,10 @@ import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
-import com.hedera.services.utils.PermHashInteger;
-import com.hedera.services.utils.PermHashLong;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.span.ExpandHandleSpan;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -76,6 +81,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
@@ -147,6 +153,8 @@ class ServicesStateTest {
 	private ServicesApp.Builder appBuilder;
 	@Mock
 	private ServicesState.FcmMigrator fcmMigrator;
+	@Mock
+	private Consumer<Boolean> blobMigrationFlag;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -266,7 +274,8 @@ class ServicesStateTest {
 		// then:
 		assertThat(
 				logCaptor.warnLogs(),
-				contains(Matchers.startsWith("Method expandSignatures called with non-gRPC txn")));;
+				contains(Matchers.startsWith("Method expandSignatures called with non-gRPC txn")));
+		;
 	}
 
 	@Test
@@ -395,8 +404,17 @@ class ServicesStateTest {
 	@Test
 	void migratesWhenInitializingFromRelease0180() {
 		ServicesState.setFcmMigrator(fcmMigrator);
+		ServicesState.setBlobMigrationFlag(blobMigrationFlag);
+		final MerkleMap<?, ?> pretend = new MerkleMap<>();
 
 		subject = mock(ServicesState.class);
+		given(subject.uniqueTokens()).willReturn((MerkleMap<EntityNumPair, MerkleUniqueToken>) pretend);
+		given(subject.tokenAssociations()).willReturn((MerkleMap<EntityNumPair, MerkleTokenRelStatus>) pretend);
+		given(subject.topics()).willReturn((MerkleMap<EntityNum, MerkleTopic>) pretend);
+		given(subject.storage()).willReturn((MerkleMap<String, MerkleOptionalBlob>) pretend);
+		given(subject.accounts()).willReturn((MerkleMap<EntityNum, MerkleAccount>) pretend);
+		given(subject.tokens()).willReturn((MerkleMap<EntityNum, MerkleToken>) pretend);
+		given(subject.scheduleTxs()).willReturn((MerkleMap<EntityNum, MerkleSchedule>) pretend);
 
 		willCallRealMethod().given(subject).migrate();
 		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0170_VERSION);
@@ -417,9 +435,19 @@ class ServicesStateTest {
 				logCaptor.infoLogs(),
 				contains(
 						equalTo("Beginning FCMap -> MerkleMap migrations"),
+						Matchers.startsWith("↪ Migrated 0 "),
+						Matchers.startsWith("↪ Migrated 0 "),
+						Matchers.startsWith("↪ Migrated 0 "),
+						Matchers.startsWith("↪ Migrated 0 "),
+						Matchers.startsWith("↪ Migrated 0 "),
+						Matchers.startsWith("↪ Migrated 0 "),
+						Matchers.startsWith("↪ Migrated 0 "),
 						equalTo("Finished with FCMap -> MerkleMap migrations, completing the deferred init")));
+		verify(blobMigrationFlag).accept(true);
+		verify(blobMigrationFlag).accept(false);
 
 		ServicesState.setFcmMigrator(FCMapMigration::FCMapToMerkleMap);
+		ServicesState.setBlobMigrationFlag(MerkleOptionalBlob::setInMigration);
 	}
 
 	@Test
@@ -506,11 +534,11 @@ class ServicesStateTest {
 		final var networkContext = new MerkleNetworkContext();
 		networkContext.setSeqNo(new SequenceNumber(1234L));
 		networkContext.setMidnightRates(new ExchangeRates(1, 2, 3, 4, 5, 6));
-		final MerkleMap<PermHashLong, MerkleUniqueToken> nfts = new MerkleMap<>();
-		final MerkleMap<PermHashLong, MerkleTokenRelStatus> tokenRels = new MerkleMap<>();
-		final var nftKey = PermHashLong.fromLongs(MISSING_ENTITY_ID.num(), 1L);
+		final MerkleMap<EntityNumPair, MerkleUniqueToken> nfts = new MerkleMap<>();
+		final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels = new MerkleMap<>();
+		final var nftKey = EntityNumPair.fromLongs(MISSING_ENTITY_ID.num(), 1L);
 		final var nftVal = new MerkleUniqueToken(MISSING_ENTITY_ID, "TBD".getBytes(), MISSING_INSTANT);
-		final var tokenRelsKey = PermHashLong.fromLongs(2, 3);
+		final var tokenRelsKey = EntityNumPair.fromLongs(2, 3);
 		final var tokenRelsVal = new MerkleTokenRelStatus(1_234L, true, false, true);
 		// and:
 		nfts.put(nftKey, nftVal);
@@ -533,12 +561,12 @@ class ServicesStateTest {
 		assertEquals(networkContext.midnightRates(), subject.networkCtx().midnightRates());
 		assertEquals(
 				nftVal,
-				((MerkleMap<PermHashLong, MerkleUniqueToken>) subject.getChild(StateChildIndices.UNIQUE_TOKENS))
+				((MerkleMap<EntityNumPair, MerkleUniqueToken>) subject.getChild(StateChildIndices.UNIQUE_TOKENS))
 						.get(nftKey));
 		assertEquals(nftVal, subject.uniqueTokens().get(nftKey));
 		assertEquals(
 				tokenRelsVal,
-				((MerkleMap<PermHashLong, MerkleTokenRelStatus>) subject.getChild(
+				((MerkleMap<EntityNumPair, MerkleTokenRelStatus>) subject.getChild(
 						StateChildIndices.TOKEN_ASSOCIATIONS))
 						.get(tokenRelsKey));
 		assertEquals(tokenRelsVal, subject.tokenAssociations().get(tokenRelsKey));
@@ -551,9 +579,9 @@ class ServicesStateTest {
 		final var networkContext = new MerkleNetworkContext();
 		networkContext.setSeqNo(new SequenceNumber(1234L));
 		networkContext.setMidnightRates(new ExchangeRates(1, 2, 3, 4, 5, 6));
-		final MerkleMap<PermHashLong, MerkleUniqueToken> nfts = new MerkleMap<>();
-		final MerkleMap<PermHashLong, MerkleTokenRelStatus> tokenRels = new MerkleMap<>();
-		final var tokenRelsKey = PermHashLong.fromLongs(2, 3);
+		final MerkleMap<EntityNumPair, MerkleUniqueToken> nfts = new MerkleMap<>();
+		final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels = new MerkleMap<>();
+		final var tokenRelsKey = EntityNumPair.fromLongs(2, 3);
 		final var tokenRelsVal = new MerkleTokenRelStatus(1_234L, true, false, true);
 		// and:
 		tokenRels.put(tokenRelsKey, tokenRelsVal);
@@ -575,7 +603,7 @@ class ServicesStateTest {
 		assertEquals(networkContext.midnightRates(), subject.networkCtx().midnightRates());
 		assertEquals(
 				tokenRelsVal,
-				((MerkleMap<PermHashLong, MerkleTokenRelStatus>) subject.getChild(
+				((MerkleMap<EntityNumPair, MerkleTokenRelStatus>) subject.getChild(
 						StateChildIndices.TOKEN_ASSOCIATIONS))
 						.get(tokenRelsKey));
 		assertEquals(tokenRelsVal, subject.tokenAssociations().get(tokenRelsKey));
@@ -584,9 +612,9 @@ class ServicesStateTest {
 	@Test
 	void forwardsFcomtrAsExpected() {
 		// setup:
-		final FCOneToManyRelation<PermHashInteger, Long> a = new FCOneToManyRelation<>();
-		final FCOneToManyRelation<PermHashInteger, Long> b = new FCOneToManyRelation<>();
-		final FCOneToManyRelation<PermHashInteger, Long> c = new FCOneToManyRelation<>();
+		final FCOneToManyRelation<EntityNum, Long> a = new FCOneToManyRelation<>();
+		final FCOneToManyRelation<EntityNum, Long> b = new FCOneToManyRelation<>();
+		final FCOneToManyRelation<EntityNum, Long> c = new FCOneToManyRelation<>();
 		// and:
 		subject.setMetadata(metadata);
 
@@ -658,8 +686,8 @@ class ServicesStateTest {
 	private List<MerkleNode> legacyChildrenWith(
 			AddressBook addressBook,
 			MerkleNetworkContext networkContext,
-			MerkleMap<PermHashLong, MerkleUniqueToken> nfts,
-			MerkleMap<PermHashLong, MerkleTokenRelStatus> tokenRels,
+			MerkleMap<EntityNumPair, MerkleUniqueToken> nfts,
+			MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels,
 			boolean withNfts
 	) {
 		final List<MerkleNode> legacyChildren = new ArrayList<>();

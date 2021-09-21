@@ -42,8 +42,8 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenView;
 import com.hedera.services.store.tokens.views.UniqTokenViewFactory;
-import com.hedera.services.utils.PermHashInteger;
-import com.hedera.services.utils.PermHashLong;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
@@ -86,8 +86,8 @@ import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY;
-import static com.hedera.services.utils.PermHashInteger.fromAccountId;
-import static com.hedera.services.utils.PermHashInteger.fromContractId;
+import static com.hedera.services.utils.EntityNum.fromAccountId;
+import static com.hedera.services.utils.EntityNum.fromContractId;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
@@ -289,9 +289,8 @@ public class StateView {
 
 	public Optional<TokenNftInfo> infoForNft(NftID target) {
 		final var currentNfts = uniqueTokens();
-		final var tokenTypeNum = target.getTokenID().getTokenNum();
-		final var tokenId = PermHashInteger.fromLong(tokenTypeNum);
-		final var targetKey = PermHashLong.fromLongs(tokenTypeNum, target.getSerialNumber());
+		final var tokenId = EntityNum.fromTokenId(target.getTokenID());
+		final var targetKey = EntityNumPair.fromLongs(tokenId.longValue(), target.getSerialNumber());
 		if (!currentNfts.containsKey(targetKey)) {
 			return Optional.empty();
 		}
@@ -316,7 +315,8 @@ public class StateView {
 	}
 
 	public boolean nftExists(NftID id) {
-		final var key = PermHashLong.fromLongs(id.getTokenID().getTokenNum(), id.getSerialNumber());
+		final var tokenNum = EntityNum.fromTokenId(id.getTokenID());
+		final var key = EntityNumPair.fromLongs(tokenNum.longValue(), id.getSerialNumber());
 		return uniqueTokens().containsKey(key);
 	}
 
@@ -479,23 +479,23 @@ public class StateView {
 		return Optional.of(info.build());
 	}
 
-	public MerkleMap<PermHashInteger, MerkleTopic> topics() {
+	public MerkleMap<EntityNum, MerkleTopic> topics() {
 		return stateChildren == null ? emptyMm() : stateChildren.getTopics();
 	}
 
-	public MerkleMap<PermHashInteger, MerkleAccount> accounts() {
+	public MerkleMap<EntityNum, MerkleAccount> accounts() {
 		return stateChildren == null ? emptyMm() : stateChildren.getAccounts();
 	}
 
-	public MerkleMap<PermHashInteger, MerkleAccount> contracts() {
+	public MerkleMap<EntityNum, MerkleAccount> contracts() {
 		return stateChildren == null ? emptyMm() : stateChildren.getAccounts();
 	}
 
-	public MerkleMap<PermHashLong, MerkleTokenRelStatus> tokenAssociations() {
+	public MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations() {
 		return stateChildren == null ? emptyMm() : stateChildren.getTokenAssociations();
 	}
 
-	public MerkleMap<PermHashLong, MerkleUniqueToken> uniqueTokens() {
+	public MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens() {
 		return stateChildren == null ? emptyMm() : stateChildren.getUniqueTokens();
 	}
 
@@ -503,19 +503,19 @@ public class StateView {
 		return stateChildren == null ? emptyMm() : stateChildren.getStorage();
 	}
 
-	MerkleMap<PermHashInteger, MerkleToken> tokens() {
+	MerkleMap<EntityNum, MerkleToken> tokens() {
 		return stateChildren == null ? emptyMm() : stateChildren.getTokens();
 	}
 
-	FCOneToManyRelation<PermHashInteger, Long> nftsByType() {
+	FCOneToManyRelation<EntityNum, Long> nftsByType() {
 		return stateChildren == null ? emptyFcotmr() : stateChildren.getUniqueTokenAssociations();
 	}
 
-	FCOneToManyRelation<PermHashInteger, Long> nftsByOwner() {
+	FCOneToManyRelation<EntityNum, Long> nftsByOwner() {
 		return stateChildren == null ? emptyFcotmr() : stateChildren.getUniqueOwnershipAssociations();
 	}
 
-	FCOneToManyRelation<PermHashInteger, Long> treasuryNftsByType() {
+	FCOneToManyRelation<EntityNum, Long> treasuryNftsByType() {
 		return stateChildren == null ? emptyFcotmr() : stateChildren.getUniqueOwnershipTreasuryAssociations();
 	}
 

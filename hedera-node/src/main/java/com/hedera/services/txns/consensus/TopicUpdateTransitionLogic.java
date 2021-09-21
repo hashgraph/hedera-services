@@ -26,7 +26,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -68,13 +68,13 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 	private final HederaLedger ledger;
 	private final OptionValidator validator;
 	private final TransactionContext transactionContext;
-	private final Supplier<MerkleMap<PermHashInteger, MerkleTopic>> topics;
-	private final Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts;
+	private final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics;
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
 	@Inject
 	public TopicUpdateTransitionLogic(
-			Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts,
-			Supplier<MerkleMap<PermHashInteger, MerkleTopic>> topics,
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
 			OptionValidator validator,
 			TransactionContext transactionContext,
 			HederaLedger ledger
@@ -97,7 +97,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 			return;
 		}
 
-		var topicId = PermHashInteger.fromTopicId(op.getTopicID());
+		var topicId = EntityNum.fromTopicId(op.getTopicID());
 		var topic = topics.get().get(topicId);
 		if (!topic.hasAdminKey() && wantsToMutateNonExpiryField(op)) {
 			transactionContext.setStatus(UNAUTHORIZED);

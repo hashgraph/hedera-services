@@ -26,7 +26,7 @@ import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -79,7 +79,7 @@ class AnswerFunctionsTest {
 	private MerkleAccount payerAccount;
 	private StateView view;
 	private RecordCache recordCache;
-	private MerkleMap<PermHashInteger, MerkleAccount> accounts;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	private NodeLocalProperties nodeProps;
 
@@ -92,7 +92,7 @@ class AnswerFunctionsTest {
 		payerAccount.records().offer(targetRecord);
 
 		accounts = mock(MerkleMap.class);
-		given(accounts.get(PermHashInteger.fromAccountId(asAccount(payer)))).willReturn(payerAccount);
+		given(accounts.get(EntityNum.fromAccountId(asAccount(payer)))).willReturn(payerAccount);
 		nodeProps = mock(NodeLocalProperties.class);
 		final var children = new StateChildren();
 		children.setAccounts(accounts);

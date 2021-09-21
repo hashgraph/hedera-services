@@ -28,7 +28,7 @@ import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.serdes.TopicSerde;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -70,7 +70,7 @@ import static com.swirlds.common.CommonUtils.hex;
  *   replace the Topic in the map.</li>
  * </ul>
  */
-public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<PermHashInteger> {
+public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<EntityNum> {
 	public static final int RUNNING_HASH_BYTE_ARRAY_SIZE = 48;
 	public static final long RUNNING_HASH_VERSION = 3L;
 
@@ -297,12 +297,12 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<PermH
 	}
 
 	@Override
-	public PermHashInteger getKey() {
-		return new PermHashInteger(number);
+	public EntityNum getKey() {
+		return new EntityNum(number);
 	}
 
 	@Override
-	public void setKey(PermHashInteger phi) {
+	public void setKey(EntityNum phi) {
 		number = phi.intValue();
 	}
 

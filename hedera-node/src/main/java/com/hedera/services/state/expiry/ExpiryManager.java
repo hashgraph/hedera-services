@@ -27,7 +27,7 @@ import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.fcqueue.FCQueue;
@@ -71,8 +71,8 @@ public class ExpiryManager {
 
 	private final ScheduleStore scheduleStore;
 	private final Map<TransactionID, TxnIdRecentHistory> txnHistories;
-	private final Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts;
-	private final Supplier<MerkleMap<PermHashInteger, MerkleSchedule>> schedules;
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+	private final Supplier<MerkleMap<EntityNum, MerkleSchedule>> schedules;
 
 	private final MonotonicFullQueueExpiries<Long> payerRecordExpiries =
 			new MonotonicFullQueueExpiries<>();
@@ -84,8 +84,8 @@ public class ExpiryManager {
 			final ScheduleStore scheduleStore,
 			final HederaNumbers hederaNums,
 			final Map<TransactionID, TxnIdRecentHistory> txnHistories,
-			final Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts,
-			final Supplier<MerkleMap<PermHashInteger, MerkleSchedule>> schedules
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final Supplier<MerkleMap<EntityNum, MerkleSchedule>> schedules
 	) {
 		this.accounts = accounts;
 		this.schedules = schedules;
@@ -173,7 +173,7 @@ public class ExpiryManager {
 	private void purgeExpiredRecordsAt(final long now) {
 		final var currentAccounts = accounts.get();
 		while (payerRecordExpiries.hasExpiringAt(now)) {
-			final var key = PermHashInteger.fromLong(payerRecordExpiries.expireNextAt(now));
+			final var key = EntityNum.fromLong(payerRecordExpiries.expireNextAt(now));
 
 			final var mutableAccount = currentAccounts.getForModify(key);
 			final var mutableRecords = mutableAccount.records();

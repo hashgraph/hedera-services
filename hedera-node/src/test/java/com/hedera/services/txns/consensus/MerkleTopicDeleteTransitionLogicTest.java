@@ -22,7 +22,7 @@ package com.hedera.services.txns.consensus;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -37,7 +37,7 @@ import org.mockito.InOrder;
 
 import java.time.Instant;
 
-import static com.hedera.services.utils.PermHashInteger.fromTopicId;
+import static com.hedera.services.utils.EntityNum.fromTopicId;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
 import static com.hedera.test.utils.IdUtils.asTopic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
@@ -56,12 +56,12 @@ import static org.mockito.BDDMockito.verify;
 
 class MerkleTopicDeleteTransitionLogicTest {
 	final private String TOPIC_ID = "8.6.75309";
-	final private PermHashInteger topicFcKey = fromTopicId(asTopic(TOPIC_ID));
+	final private EntityNum topicFcKey = fromTopicId(asTopic(TOPIC_ID));
 	private Instant consensusTime;
 	private TransactionBody transactionBody;
 	private TransactionContext transactionContext;
 	private PlatformTxnAccessor accessor;
-	private MerkleMap<PermHashInteger, MerkleTopic> topics = new MerkleMap<>();
+	private MerkleMap<EntityNum, MerkleTopic> topics = new MerkleMap<>();
 	private OptionValidator validator;
 	private TopicDeleteTransitionLogic subject;
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
@@ -117,7 +117,7 @@ class MerkleTopicDeleteTransitionLogicTest {
 		given(validator.queryableTopicStatus(any(), any())).willReturn(OK);
 		givenTransaction(getBasicValidTransactionBodyBuilder());
 
-		topics = (MerkleMap<PermHashInteger, MerkleTopic>) mock(MerkleMap.class);
+		topics = (MerkleMap<EntityNum, MerkleTopic>) mock(MerkleMap.class);
 
 		given(topics.get(topicFcKey)).willReturn(deletableTopic);
 		given(topics.getForModify(topicFcKey)).willReturn(deletableTopic);

@@ -27,7 +27,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -59,7 +59,7 @@ class AccountStoreTest {
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
-	private MerkleMap<PermHashInteger, MerkleAccount> accounts;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	private AccountStore subject;
 
@@ -197,11 +197,11 @@ class AccountStoreTest {
 		verify(accounts, never()).replace(miscMerkleId, expectedReplacement);
 	}
 
-	private void setupWithAccount(PermHashInteger anId, MerkleAccount anAccount) {
+	private void setupWithAccount(EntityNum anId, MerkleAccount anAccount) {
 		given(accounts.get(anId)).willReturn(anAccount);
 	}
 
-	private void setupWithMutableAccount(PermHashInteger anId, MerkleAccount anAccount) {
+	private void setupWithMutableAccount(EntityNum anId, MerkleAccount anAccount) {
 		given(accounts.getForModify(anId)).willReturn(anAccount);
 	}
 
@@ -240,7 +240,7 @@ class AccountStoreTest {
 	private final Id autoRenewId = new Id(0, 0, autoRenewAccountNum);
 	private final Id firstAssocTokenId = new Id(0, 0, firstAssocTokenNum);
 	private final Id secondAssocTokenId = new Id(0, 0, secondAssocTokenNum);
-	private final PermHashInteger miscMerkleId = PermHashInteger.fromLong(miscAccountNum);
+	private final EntityNum miscMerkleId = EntityNum.fromLong(miscAccountNum);
 	private final Account miscAccount = new Account(miscId);
 	private final Account autoRenewAccount = new Account(autoRenewId);
 

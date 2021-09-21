@@ -33,7 +33,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.function.BiFunction;
 
-import static com.hedera.services.utils.PermHashInteger.fromAccountId;
+import static com.hedera.services.utils.EntityNum.fromAccountId;
 
 @Singleton
 public class TokenDissociateResourceUsage implements TxnResourceUsageEstimator {

@@ -21,7 +21,7 @@ package com.hedera.services.state.merkle;
  */
 
 import com.hedera.services.state.merkle.internals.BitPackUtils;
-import com.hedera.services.utils.PermHashLong;
+import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.MutabilityException;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -111,7 +111,7 @@ class MerkleTokenRelStatusTest {
 		assertNotEquals(subject, defaultSubject);
 
 		// and when:
-		defaultSubject.setKey(new PermHashLong(numbers));
+		defaultSubject.setKey(new EntityNumPair(numbers));
 
 		// then:
 		assertEquals(subject, defaultSubject);
@@ -129,7 +129,7 @@ class MerkleTokenRelStatusTest {
 		// then:
 		assertNotEquals(subject, defaultSubject);
 		// and when:
-		defaultSubject.setKey(new PermHashLong(numbers));
+		defaultSubject.setKey(new EntityNumPair(numbers));
 		// then:
 		assertEquals(subject, defaultSubject);
 	}

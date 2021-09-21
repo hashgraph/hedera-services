@@ -30,7 +30,7 @@ import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.SignedTxnAccessor;
@@ -118,7 +118,7 @@ class SolvencyPrecheckTest {
 	@Mock
 	private PrecheckVerifier precheckVerifier;
 	@Mock
-	private MerkleMap<PermHashInteger, MerkleAccount> accounts;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	private SolvencyPrecheck subject;
 
@@ -338,11 +338,11 @@ class SolvencyPrecheckTest {
 	}
 
 	private void givenSolventPayer() {
-		given(accounts.get(PermHashInteger.fromAccountId(payer))).willReturn(solventPayerAccount);
+		given(accounts.get(EntityNum.fromAccountId(payer))).willReturn(solventPayerAccount);
 	}
 
 	private void givenInsolventPayer() {
-		given(accounts.get(PermHashInteger.fromAccountId(payer))).willReturn(insolventPayerAccount);
+		given(accounts.get(EntityNum.fromAccountId(payer))).willReturn(insolventPayerAccount);
 	}
 
 	private void assertJustValidity(TxnValidityAndFeeReq result, ResponseCodeEnum expected) {

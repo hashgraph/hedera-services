@@ -30,7 +30,7 @@ import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.utils.IdUtils;
@@ -82,7 +82,7 @@ class ExpiringCreationsTest {
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
-	private MerkleMap<PermHashInteger, MerkleAccount> accounts;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
 	private NarratedCharging narratedCharging;
 	@Mock
@@ -145,7 +145,7 @@ class ExpiringCreationsTest {
 	@Test
 	void addsToPayerRecordsAndTracks() {
 		// setup:
-		final var key = PermHashInteger.fromAccountId(effPayer);
+		final var key = EntityNum.fromAccountId(effPayer);
 		final var payerAccount = new MerkleAccount();
 		given(accounts.getForModify(key)).willReturn(payerAccount);
 		given(dynamicProperties.cacheRecordsTtl()).willReturn(cacheTtl);

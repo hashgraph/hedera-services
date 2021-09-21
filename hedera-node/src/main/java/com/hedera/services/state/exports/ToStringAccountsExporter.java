@@ -25,7 +25,7 @@ package com.hedera.services.state.exports;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -52,14 +52,14 @@ public class ToStringAccountsExporter implements AccountsExporter {
 	}
 
 	@Override
-	public void toFile(MerkleMap<PermHashInteger, MerkleAccount> accounts) {
+	public void toFile(MerkleMap<EntityNum, MerkleAccount> accounts) {
 		if (!nodeLocalProperties.exportAccountsOnStartup()) {
 			return;
 		}
 		final var exportLoc = nodeLocalProperties.accountsExportPath();
 		try (var writer = Files.newBufferedWriter(Paths.get(exportLoc))) {
-			List<PermHashInteger> keys = new ArrayList<>(accounts.keySet());
-			keys.sort(comparing(PermHashInteger::toGrpcAccountId, HederaLedger.ACCOUNT_ID_COMPARATOR));
+			List<EntityNum> keys = new ArrayList<>(accounts.keySet());
+			keys.sort(comparing(EntityNum::toGrpcAccountId, HederaLedger.ACCOUNT_ID_COMPARATOR));
 			var first = true;
 			for (var key : keys) {
 				if (!first) {

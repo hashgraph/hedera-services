@@ -33,7 +33,7 @@ import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.FixedFeeSpec;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.keys.KeyFactory;
@@ -83,7 +83,7 @@ public interface TxnHandlingScenario {
 
 	KeyFactory overlapFactory = new KeyFactory(OverlappingKeyGenerator.withDefaultOverlaps());
 
-	default MerkleMap<PermHashInteger, MerkleAccount> accounts() throws Exception {
+	default MerkleMap<EntityNum, MerkleAccount> accounts() throws Exception {
 		return newAccounts()
 				.withAccount(FIRST_TOKEN_SENDER_ID,
 						newAccount()
@@ -188,8 +188,8 @@ public interface TxnHandlingScenario {
 		return hfs;
 	}
 
-	default MerkleMap<PermHashInteger, MerkleTopic> topics() {
-		var topics = (MerkleMap<PermHashInteger, MerkleTopic>) mock(MerkleMap.class);
+	default MerkleMap<EntityNum, MerkleTopic> topics() {
+		var topics = (MerkleMap<EntityNum, MerkleTopic>) mock(MerkleMap.class);
 		given(topics.get(EXISTING_TOPIC)).willReturn(new MerkleTopic());
 		return topics;
 	}

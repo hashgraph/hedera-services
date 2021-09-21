@@ -24,7 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -67,7 +67,7 @@ class SubmitMessageTransitionLogicTest {
 	private PlatformTxnAccessor accessor;
 	private OptionValidator validator;
 	private SubmitMessageTransitionLogic subject;
-	private MerkleMap<PermHashInteger, MerkleTopic> topics = new MerkleMap<>();
+	private MerkleMap<EntityNum, MerkleTopic> topics = new MerkleMap<>();
 	private GlobalDynamicProperties globalDynamicProperties;
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 
@@ -110,7 +110,7 @@ class SubmitMessageTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		var topic = topics.get(PermHashInteger.fromTopicId(asTopic(TOPIC_ID)));
+		var topic = topics.get(EntityNum.fromTopicId(asTopic(TOPIC_ID)));
 		assertNotNull(topic);
 		assertEquals(1L, topic.getSequenceNumber()); // Starts at 0.
 
@@ -229,7 +229,7 @@ class SubmitMessageTransitionLogicTest {
 	}
 
 	private void assertUnchangedTopics() {
-		var topic = topics.get(PermHashInteger.fromTopicId(asTopic(TOPIC_ID)));
+		var topic = topics.get(EntityNum.fromTopicId(asTopic(TOPIC_ID)));
 		assertEquals(0L, topic.getSequenceNumber());
 		assertArrayEquals(new byte[48], topic.getRunningHash());
 	}
@@ -252,14 +252,14 @@ class SubmitMessageTransitionLogicTest {
 	private void givenValidTransactionContext() {
 		givenTransaction(getBasicValidTransactionBodyBuilder());
 		given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics)).willReturn(OK);
-		topics.put(PermHashInteger.fromTopicId(asTopic(TOPIC_ID)), new MerkleTopic());
+		topics.put(EntityNum.fromTopicId(asTopic(TOPIC_ID)), new MerkleTopic());
 	}
 
 	private void givenTransactionContextNoMessage() {
 		givenTransaction(ConsensusSubmitMessageTransactionBody.newBuilder()
 				.setTopicID(asTopic(TOPIC_ID)).setTopicID(asTopic(TOPIC_ID)));
 		given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics)).willReturn(OK);
-		topics.put(PermHashInteger.fromTopicId(asTopic(TOPIC_ID)), new MerkleTopic());
+		topics.put(EntityNum.fromTopicId(asTopic(TOPIC_ID)), new MerkleTopic());
 	}
 
 	private void givenTransactionContextInvalidTopic() {
@@ -277,7 +277,7 @@ class SubmitMessageTransitionLogicTest {
 		givenTransaction(getBasicValidTransactionBodyBuilder()
 				.setChunkInfo(chunkInfo));
 		given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics)).willReturn(OK);
-		topics.put(PermHashInteger.fromTopicId(asTopic(TOPIC_ID)), new MerkleTopic());
+		topics.put(EntityNum.fromTopicId(asTopic(TOPIC_ID)), new MerkleTopic());
 	}
 
 	private TransactionID txnId(AccountID payer, long epochSecond) {

@@ -45,7 +45,7 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
-import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -86,10 +86,10 @@ class LedgerBalanceChangesTest {
 			new HashMapBackingTokenRels();
 
 	private TokenStore tokenStore;
-	private final MerkleMap<PermHashInteger, MerkleToken> tokens = new MerkleMap<>();
-	private final FCOneToManyRelation<PermHashInteger, Long> uniqueTokenOwnerships = new FCOneToManyRelation<>();
-	private final FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipAssociations = new FCOneToManyRelation<>();
-	private final FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipTreasuryAssociations = new FCOneToManyRelation<>();
+	private final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
+	private final FCOneToManyRelation<EntityNum, Long> uniqueTokenOwnerships = new FCOneToManyRelation<>();
+	private final FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations = new FCOneToManyRelation<>();
+	private final FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations = new FCOneToManyRelation<>();
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private TransactionalLedger<
 			Pair<AccountID, TokenID>,
@@ -537,11 +537,11 @@ class LedgerBalanceChangesTest {
 	private final NftId aaNft = new NftId(aNft.getShard(), aNft.getRealm(), aNft.getNum(), aSerialNo);
 	private final NftId baNft = new NftId(bNft.getShard(), bNft.getRealm(), bNft.getNum(), aSerialNo);
 	private final NftId bbNft = new NftId(bNft.getShard(), bNft.getRealm(), bNft.getNum(), bSerialNo);
-	private final PermHashInteger aNftKey = PermHashInteger.fromLong(9999);
-	private final PermHashInteger bNftKey = PermHashInteger.fromLong(10000);
-	private final PermHashInteger tokenKey = PermHashInteger.fromLong(75231);
-	private final PermHashInteger anotherTokenKey = PermHashInteger.fromLong(75232);
-	private final PermHashInteger yetAnotherTokenKey = PermHashInteger.fromLong(75233);
+	private final EntityNum aNftKey = EntityNum.fromLong(9999);
+	private final EntityNum bNftKey = EntityNum.fromLong(10000);
+	private final EntityNum tokenKey = EntityNum.fromLong(75231);
+	private final EntityNum anotherTokenKey = EntityNum.fromLong(75232);
+	private final EntityNum yetAnotherTokenKey = EntityNum.fromLong(75233);
 
 	private final long aStartBalance = 1_000L;
 	private final long bStartBalance = 0L;
