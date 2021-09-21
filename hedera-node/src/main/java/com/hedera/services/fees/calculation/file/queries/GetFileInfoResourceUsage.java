@@ -26,34 +26,29 @@ import com.hedera.services.usage.file.ExtantFileContext;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.ResponseType;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Map;
 
 @Singleton
-public class GetFileInfoResourceUsage implements QueryResourceUsageEstimator {
+public final class GetFileInfoResourceUsage implements QueryResourceUsageEstimator {
 	private final FileOpsUsage fileOpsUsage;
 
 	@Inject
-	public GetFileInfoResourceUsage(FileOpsUsage fileOpsUsage) {
+	public GetFileInfoResourceUsage(final FileOpsUsage fileOpsUsage) {
 		this.fileOpsUsage = fileOpsUsage;
 	}
 
 	@Override
-	public boolean applicableTo(Query query) {
+	public boolean applicableTo(final Query query) {
 		return query.hasFileGetInfo();
 	}
 
 	@Override
-	public FeeData usageGiven(Query query, StateView view) {
-		return usageGivenType(query, view, query.getFileGetInfo().getHeader().getResponseType());
-	}
-
-	@Override
-	public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
-		var op = query.getFileGetInfo();
-		var info = view.infoForFile(op.getFileID());
+	public FeeData usageGiven(final Query query, final StateView view, final Map<String, Object> ignoreCtx) {
+		final var op = query.getFileGetInfo();
+		final var info = view.infoForFile(op.getFileID());
 		/* Given the test in {@code GetFileInfoAnswer.checkValidity}, this can only be empty
 		 * under the extraordinary circumstance that the desired file expired during the query
 		 * answer flow (which will now fail downstream with an appropriate status code); so
@@ -61,8 +56,8 @@ public class GetFileInfoResourceUsage implements QueryResourceUsageEstimator {
 		if (info.isEmpty()) {
 			return FeeData.getDefaultInstance();
 		}
-		var details = info.get();
-		var ctx = ExtantFileContext.newBuilder()
+		final var details = info.get();
+		final var ctx = ExtantFileContext.newBuilder()
 				.setCurrentSize(details.getSize())
 				.setCurrentWacl(details.getKeys())
 				.setCurrentMemo(details.getMemo())

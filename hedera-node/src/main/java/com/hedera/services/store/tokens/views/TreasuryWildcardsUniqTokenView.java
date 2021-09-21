@@ -22,11 +22,10 @@ package com.hedera.services.store.tokens.views;
 
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.tokens.views.utils.MultiSourceRange;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.store.tokens.views.utils.MultiSourceRange;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.swirlds.fchashmap.FCOneToManyRelation;
@@ -78,13 +77,14 @@ public class TreasuryWildcardsUniqTokenView extends AbstractUniqTokenView {
 
 	@Override
 	public List<TokenNftInfo> ownedAssociations(@Nonnull AccountID owner, long start, long end) {
-		final var accountId = EntityId.fromGrpcAccountId(owner);
+		final var accountNum = EntityNum.fromAccountId(owner);
 		final var curNftsByOwner = nftsByOwner.get();
-		final var numOwnedViaTransfer = curNftsByOwner.getCount(fromInt(accountId.identityCode()));
+		final var numOwnedViaTransfer = curNftsByOwner.getCount(fromInt(accountNum.intValue()));
 		final var multiSourceRange = new MultiSourceRange((int) start, (int) end, numOwnedViaTransfer);
 
 		final var range = multiSourceRange.rangeForCurrentSource();
-		final var answer = accumulatedInfo(nftsByOwner.get(), accountId, range.getLeft(), range.getRight(), null, owner);
+		final var answer =
+				accumulatedInfo(nftsByOwner.get(), accountNum, range.getLeft(), range.getRight(), null, owner);
 		if (!multiSourceRange.isRequestedRangeExhausted()) {
 			tryToCompleteWithTreasuryOwned(owner, multiSourceRange, answer);
 		}
@@ -99,10 +99,11 @@ public class TreasuryWildcardsUniqTokenView extends AbstractUniqTokenView {
 		final var curTreasuryNftsByType = treasuryNftsByType.get();
 		final var allServed = tokenStore.listOfTokensServed(owner);
 		for (var served : allServed) {
-			final var tokenId = EntityId.fromGrpcTokenId(served);
-			multiSourceRange.moveToNewSource(curTreasuryNftsByType.getCount(fromInt(tokenId.identityCode())));
+			final var tokenNum = EntityNum.fromTokenId(served);
+			multiSourceRange.moveToNewSource(curTreasuryNftsByType.getCount(fromInt(tokenNum.intValue())));
 			final var range = multiSourceRange.rangeForCurrentSource();
-			final var infoHere = accumulatedInfo(curTreasuryNftsByType, tokenId, range.getLeft(), range.getRight(), served, owner);
+			final var infoHere =
+					accumulatedInfo(curTreasuryNftsByType, tokenNum, range.getLeft(), range.getRight(), served, owner);
 			answer.addAll(infoHere);
 			if (multiSourceRange.isRequestedRangeExhausted()) {
 				break;

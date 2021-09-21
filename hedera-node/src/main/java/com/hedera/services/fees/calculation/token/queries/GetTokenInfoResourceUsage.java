@@ -26,9 +26,9 @@ import com.hedera.services.usage.token.TokenGetInfoUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Map;
@@ -36,48 +36,31 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.queries.AnswerService.NO_QUERY_CTX;
 import static com.hedera.services.queries.token.GetTokenInfoAnswer.TOKEN_INFO_CTX_KEY;
+import static com.hedera.services.utils.MiscUtils.putIfNotNull;
 
 @Singleton
-public class GetTokenInfoResourceUsage implements QueryResourceUsageEstimator {
-	static Function<Query, TokenGetInfoUsage> factory = TokenGetInfoUsage::newEstimate;
+public final class GetTokenInfoResourceUsage implements QueryResourceUsageEstimator {
+	private static final Function<Query, TokenGetInfoUsage> factory = TokenGetInfoUsage::newEstimate;
 
 	@Inject
 	public GetTokenInfoResourceUsage() {
+		/* No-op */
 	}
 
 	@Override
-	public boolean applicableTo(Query query) {
+	public boolean applicableTo(final Query query) {
 		return query.hasTokenGetInfo();
 	}
 
 	@Override
-	public FeeData usageGiven(Query query, StateView view) {
-		return usageFor(query, view, query.getTokenGetInfo().getHeader().getResponseType(), NO_QUERY_CTX);
-	}
-
-	@Override
-	public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
-		return usageFor(query, view, type, NO_QUERY_CTX);
-	}
-
-	@Override
-	public FeeData usageGiven(Query query, StateView view, Map<String, Object> queryCtx) {
-		return usageFor(
-				query,
-				view,
-				query.getTokenGetInfo().getHeader().getResponseType(),
-				Optional.of(queryCtx));
-	}
-
-	private FeeData usageFor(Query query, StateView view, ResponseType type, Optional<Map<String, Object>> queryCtx) {
-		var op = query.getTokenGetInfo();
-		var optionalInfo = view.infoForToken(op.getToken());
+	public FeeData usageGiven(final Query query, final StateView view, @Nullable final Map<String, Object> queryCtx) {
+		final var op = query.getTokenGetInfo();
+		final var optionalInfo = view.infoForToken(op.getToken());
 		if (optionalInfo.isPresent()) {
-			var info = optionalInfo.get();
-			queryCtx.ifPresent(ctx -> ctx.put(TOKEN_INFO_CTX_KEY, info));
-			var estimate = factory.apply(query)
+			final var info = optionalInfo.get();
+			putIfNotNull(queryCtx, TOKEN_INFO_CTX_KEY, info);
+			final var estimate = factory.apply(query)
 					.givenCurrentAdminKey(ifPresent(info, TokenInfo::hasAdminKey, TokenInfo::getAdminKey))
 					.givenCurrentFreezeKey(ifPresent(info, TokenInfo::hasFreezeKey, TokenInfo::getFreezeKey))
 					.givenCurrentWipeKey(ifPresent(info, TokenInfo::hasWipeKey, TokenInfo::getWipeKey))
@@ -95,7 +78,11 @@ public class GetTokenInfoResourceUsage implements QueryResourceUsageEstimator {
 		}
 	}
 
-	public static Optional<Key> ifPresent(TokenInfo info, Predicate<TokenInfo> check, Function<TokenInfo, Key> getter) {
+	public static Optional<Key> ifPresent(
+			final TokenInfo info,
+			final Predicate<TokenInfo> check,
+			final Function<TokenInfo, Key> getter
+	) {
 		return check.test(info) ? Optional.of(getter.apply(info)) : Optional.empty();
 	}
 }

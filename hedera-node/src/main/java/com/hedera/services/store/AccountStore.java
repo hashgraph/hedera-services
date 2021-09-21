@@ -96,7 +96,7 @@ public class AccountStore {
 	public Account loadAccountOrFailWith(Id id, @Nullable ResponseCodeEnum code) {
 		Account account;
 
-		final var key = EntityNum.fromLong(id.getNum());
+		final var key = EntityNum.fromModel(id);
 		final var merkleAccount = accounts.get().get(key);
 
 		validateUsable(merkleAccount, code);

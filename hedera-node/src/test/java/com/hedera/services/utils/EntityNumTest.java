@@ -20,6 +20,7 @@ package com.hedera.services.utils;
  * ‍
  */
 
+import com.hedera.services.store.models.Id;
 import com.hedera.test.utils.IdUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -57,7 +58,7 @@ class EntityNumTest {
 	}
 
 	@Test
-	void factoriesWork() {
+	void factoriesWorkForValidShardRealm() {
 		// setup:
 		final var expected = EntityNum.fromInt(123);
 
@@ -68,6 +69,35 @@ class EntityNumTest {
 		assertEquals(expected, EntityNum.fromScheduleId(IdUtils.asSchedule("0.0.123")));
 		assertEquals(expected, EntityNum.fromTopicId(IdUtils.asTopic("0.0.123")));
 		assertEquals(expected, EntityNum.fromContractId(IdUtils.asContract("0.0.123")));
+		assertEquals(expected, EntityNum.fromModel(new Id(0, 0, 123)));
+	}
+
+	@Test
+	void factoriesWorkForInvalidShard() {
+		// setup:
+		final var expectedVal = EntityNum.MISSING_NUM;
+
+		// expect:
+		assertEquals(expectedVal, EntityNum.fromAccountId(IdUtils.asAccount("1.0.123")));
+		assertEquals(expectedVal, EntityNum.fromTokenId(IdUtils.asToken("1.0.123")));
+		assertEquals(expectedVal, EntityNum.fromScheduleId(IdUtils.asSchedule("1.0.123")));
+		assertEquals(expectedVal, EntityNum.fromTopicId(IdUtils.asTopic("1.0.123")));
+		assertEquals(expectedVal, EntityNum.fromContractId(IdUtils.asContract("1.0.123")));
+		assertEquals(expectedVal, EntityNum.fromModel(new Id(1, 0, 123)));
+	}
+
+	@Test
+	void factoriesWorkForInvalidRealm() {
+		// setup:
+		final var expectedVal = EntityNum.MISSING_NUM;
+
+		// expect:
+		assertEquals(expectedVal, EntityNum.fromAccountId(IdUtils.asAccount("0.1.123")));
+		assertEquals(expectedVal, EntityNum.fromTokenId(IdUtils.asToken("0.1.123")));
+		assertEquals(expectedVal, EntityNum.fromScheduleId(IdUtils.asSchedule("0.1.123")));
+		assertEquals(expectedVal, EntityNum.fromTopicId(IdUtils.asTopic("0.1.123")));
+		assertEquals(expectedVal, EntityNum.fromContractId(IdUtils.asContract("0.1.123")));
+		assertEquals(expectedVal, EntityNum.fromModel(new Id(0, 1, 123)));
 	}
 
 	@Test

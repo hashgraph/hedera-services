@@ -47,7 +47,7 @@ public class FcmCustomFeeSchedules implements CustomFeeSchedules {
 	@Override
 	public CustomFeeMeta lookupMetaFor(Id tokenId) {
 		final var currentTokens = tokens.get();
-		final var key = EntityNum.fromLong(tokenId.getNum());
+		final var key = EntityNum.fromModel(tokenId);
 		if (!currentTokens.containsKey(key)) {
 			return CustomFeeMeta.MISSING_META;
 		}

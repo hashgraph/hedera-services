@@ -30,9 +30,10 @@ import com.hederahashgraph.fee.SmartContractFeeBuilder;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Map;
 
 @Singleton
-public class GetContractRecordsResourceUsage implements QueryResourceUsageEstimator {
+public final class GetContractRecordsResourceUsage implements QueryResourceUsageEstimator {
 	private final SmartContractFeeBuilder usageEstimator;
 
 	@Inject
@@ -46,7 +47,7 @@ public class GetContractRecordsResourceUsage implements QueryResourceUsageEstima
 	}
 
 	@Override
-	public FeeData usageGiven(final Query query, final StateView view) {
+	public FeeData usageGiven(final Query query, final StateView view, final Map<String, Object> ignoreCtx) {
 		return usageGivenType(query, view, query.getContractGetRecords().getHeader().getResponseType());
 	}
 
