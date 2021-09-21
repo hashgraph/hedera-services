@@ -17,7 +17,7 @@ public class DataFileOutputStream extends SerializableDataOutputStream {
     /**
      * Create a DataFileOutputStream with given initial capacity
      *
-     * @param initialCapacity The intial capacity for buffer
+     * @param initialCapacity The initial capacity for buffer
      */
     public DataFileOutputStream(int initialCapacity) {
         super(new ExtendedByteArrayOutputStream(initialCapacity));

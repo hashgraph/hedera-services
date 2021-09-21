@@ -30,7 +30,7 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable {
     /**
      * This is useful for debugging and validating but is too expensive to enable in production.
      */
-    private static final boolean ENABLE_DEEP_VALIDATION = false;
+    protected static boolean ENABLE_DEEP_VALIDATION = false;
     /**
      * Index mapping, it uses our key as the index within the list and the value is the dataLocation in fileCollection
      * where the key/value pair is stored.
@@ -73,7 +73,7 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable {
      * @param filterForFilesToMerge filter to choose which subset of files to merge
      * @throws IOException if there was a problem merging
      */
-    public void mergeAll(Function<List<DataFileReader<D>>,List<DataFileReader<D>>> filterForFilesToMerge) throws IOException {
+    public void merge(Function<List<DataFileReader<D>>,List<DataFileReader<D>>> filterForFilesToMerge) throws IOException {
         final long START = System.currentTimeMillis();
         final List<DataFileReader<D>> allFilesBefore = fileCollection.getAllFullyWrittenFiles();
         final List<DataFileReader<D>> filesToMerge = filterForFilesToMerge.apply(allFilesBefore);

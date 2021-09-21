@@ -1,14 +1,14 @@
 package com.hedera.services.state.jasperdb;
 
+import com.hedera.services.state.jasperdb.files.DataItemHeader;
+import com.hedera.services.state.jasperdb.files.DataItemSerializer;
 import com.hedera.services.state.jasperdb.utilities.HashTools;
 import com.hedera.services.state.merkle.virtual.ContractKey;
-import com.swirlds.common.FastCopyable;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
-import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
@@ -329,90 +329,4 @@ public class JasperDbTestUtils {
         }
     }
 
-    public static class LongVKeyImpl implements VirtualLongKey, FastCopyable {
-        public static final int SIZE_BYTES = Long.BYTES;
-        private static final long CLASS_ID = 2544515330134674835L;
-        private long value;
-        private int hashCode;
-
-        public LongVKeyImpl() {}
-
-        public LongVKeyImpl(long value) {
-            setValue(value);
-        }
-
-        public long getValue() {
-            return value;
-        }
-
-        public void setValue(long value) {
-            this.value = value;
-            this.hashCode = Long.hashCode(value);
-        }
-
-        public int hashCode() {
-            return this.hashCode;
-        }
-
-        @Override
-        public void serialize(ByteBuffer byteBuffer) throws IOException {
-            byteBuffer.putLong(value);
-        }
-
-        @Override
-        public void deserialize(ByteBuffer byteBuffer, int version) throws IOException {
-            setValue(byteBuffer.getLong());
-        }
-
-        @Override
-        public boolean equals(ByteBuffer byteBuffer, int version) throws IOException {
-            return byteBuffer.getLong() == value;
-        }
-
-        public LongVKeyImpl copy() {
-            return new LongVKeyImpl(this.value);
-        }
-
-        public void release() {}
-
-        public void serialize(SerializableDataOutputStream out) throws IOException {
-            out.writeLong(this.value);
-        }
-
-        public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-            this.value = in.readLong();
-        }
-
-        public long getClassId() {
-            return 8133160492230511558L;
-        }
-
-        public int getVersion() {
-            return 1;
-        }
-
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            } else if (!(o instanceof LongVKeyImpl)) {
-                return false;
-            } else {
-                LongVKeyImpl that = (LongVKeyImpl)o;
-                return this.value == that.value;
-            }
-        }
-
-        @Override
-        public String toString() {
-            return "LongVirtualKey{" +
-                    "value=" + value +
-                    ", hashCode=" + hashCode +
-                    '}';
-        }
-
-        @Override
-        public long getKeyAsLong() {
-            return value;
-        }
-    }
 }

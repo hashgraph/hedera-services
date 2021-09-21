@@ -4,7 +4,6 @@ import com.hedera.services.state.jasperdb.collections.LongList;
 import com.hedera.services.state.jasperdb.collections.LongListHeap;
 import com.hedera.services.state.jasperdb.files.DataFileCollection;
 import com.hedera.services.state.jasperdb.files.DataFileReader;
-import com.hedera.services.state.jasperdb.files.DataItemSerializer;
 import com.swirlds.virtualmap.VirtualKey;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
@@ -91,7 +90,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
      * @param storeName The name for the data store, this allows more than one data store in a single directory.
      * @throws IOException If there was a problem creating or opening a set of data files.
      */
-    public HalfDiskHashMap(long mapSize, DataItemSerializer<K> keySerializer,
+    public HalfDiskHashMap(long mapSize, KeySerializer<K> keySerializer,
                            Path storeDir, String storeName) throws IOException {
         this.mapSize = mapSize;
         this.storeName = storeName;

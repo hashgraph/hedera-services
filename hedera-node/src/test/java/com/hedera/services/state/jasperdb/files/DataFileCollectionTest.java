@@ -78,22 +78,6 @@ public class DataFileCollectionTest {
             }
         }
     }
-//
-//    protected static void check1000ImplNewData() throws Exception {
-//        // now read back all the data and check all data
-//        ByteBuffer tempResult = ByteBuffer.allocate(DATA_ITEM_KEY_SIZE + DATA_ITEM_VALUE_SIZE);
-//        for (int i = 0; i < 1000; i++) {
-//            int newI = i < 50 ? i * 31 : i;
-//            long storedOffset = storedOffsets.get(i);
-//            tempResult.clear();
-//            // read
-//            final var dataItem = fileCollection.readDataItem(storedOffset);
-//            assertNotNull(dataItem);
-//            assertEquals(2, dataItem.length); // size
-//            assertEquals(i, dataItem[0]); // key
-//            assertEquals(i*31, dataItem[1]); // value
-//        }
-//    }
 
     // =================================================================================================================
     // Tests

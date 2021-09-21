@@ -1,7 +1,6 @@
 package com.hedera.services.state.jasperdb.files.hashmap;
 
 import com.hedera.services.state.jasperdb.files.DataFileOutputStream;
-import com.hedera.services.state.jasperdb.files.DataItemSerializer;
 import com.swirlds.virtualmap.VirtualKey;
 
 import java.io.IOException;
@@ -31,7 +30,7 @@ public final class Bucket<K extends VirtualKey> {
     private static final int BUCKET_ENTRY_COUNT_OFFSET = BUCKET_INDEX_IN_HASH_MAP_SIZE;
     private static final int NEXT_BUCKET_OFFSET = BUCKET_ENTRY_COUNT_OFFSET + BUCKET_ENTRY_COUNT_SIZE;
     private final ByteBuffer bucketBuffer = ByteBuffer.allocate(BUCKET_SIZE);
-    private final DataItemSerializer<K> keySerializer;
+    private final KeySerializer<K> keySerializer;
     private final int entryValueOffset = KEY_HASHCODE_SIZE;
     private int keySerializationVersion;
 
@@ -40,7 +39,7 @@ public final class Bucket<K extends VirtualKey> {
      *
      * @param keySerializer The serializer responsible for converting keys to/from bytes
      */
-    Bucket(DataItemSerializer<K> keySerializer) {
+    Bucket(KeySerializer<K> keySerializer) {
         this.keySerializer = keySerializer;
     }
 
@@ -112,7 +111,7 @@ public final class Bucket<K extends VirtualKey> {
      * Get the buckets buffer reset ready for reading. Not this should not be changed.
      */
     public ByteBuffer getBucketBuffer() {
-        return bucketBuffer.reset();
+        return bucketBuffer.rewind();
     }
 
     /**
@@ -237,7 +236,7 @@ public final class Bucket<K extends VirtualKey> {
     private int getKeySize(int entryOffset) {
         if (!keySerializer.isVariableSize()) return keySerializer.getSerializedSize();
         bucketBuffer.position(entryOffset + KEY_HASHCODE_SIZE + VALUE_SIZE);
-        return keySerializer.deserializeHeader(bucketBuffer).getSizeBytes();
+        return keySerializer.deserializeKeySize(bucketBuffer);
     }
 
     /**

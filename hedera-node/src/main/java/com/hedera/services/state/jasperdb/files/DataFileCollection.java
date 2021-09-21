@@ -102,7 +102,6 @@ public class DataFileCollection<D> {
                 this.loadedFromExistingFiles = false;
             }
         } else {
-            System.out.println("HELLO");
             // create store dir
             Files.createDirectories(storeDir);
             // next file will have index zero

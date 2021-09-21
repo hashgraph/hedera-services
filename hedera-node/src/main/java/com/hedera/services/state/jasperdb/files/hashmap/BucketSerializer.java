@@ -14,7 +14,7 @@ public class BucketSerializer<K extends VirtualKey> implements DataItemSerialize
     /** Temporary bucket buffers. */
     private final ThreadLocal<Bucket<K>> reusableBuckets;
 
-    public BucketSerializer(DataItemSerializer<K> keySerializer) {
+    public BucketSerializer(KeySerializer<K> keySerializer) {
         reusableBuckets = ThreadLocal.withInitial(() -> new Bucket<>(keySerializer));
     }
 

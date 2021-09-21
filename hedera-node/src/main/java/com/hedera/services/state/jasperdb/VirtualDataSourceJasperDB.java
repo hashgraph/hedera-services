@@ -6,10 +6,10 @@ import com.hedera.services.state.jasperdb.collections.LongList;
 import com.hedera.services.state.jasperdb.collections.LongListHeap;
 import com.hedera.services.state.jasperdb.files.DataFileCollection.LoadedDataCallback;
 import com.hedera.services.state.jasperdb.files.DataFileReader;
-import com.hedera.services.state.jasperdb.files.DataItemSerializer;
 import com.hedera.services.state.jasperdb.files.MemoryIndexDiskKeyValueStore;
 import com.hedera.services.state.jasperdb.files.hashmap.Bucket;
 import com.hedera.services.state.jasperdb.files.hashmap.HalfDiskHashMap;
+import com.hedera.services.state.jasperdb.files.hashmap.KeySerializer;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualLongKey;
@@ -109,7 +109,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
      */
     public VirtualDataSourceJasperDB(VirtualLeafRecordSerializer<K,V> virtualLeafRecordSerializer,
                                      VirtualInternalRecordSerializer virtualInternalRecordSerializer,
-                                     DataItemSerializer<K> keySerializer,
+                                     KeySerializer<K> keySerializer,
                                      Path storageDir, long maxNumOfKeys,
                                      boolean mergingEnabled, long internalHashesRamToDiskThreshold) throws IOException {
         final LoadedDataCallback loadedDataCallback;
@@ -343,7 +343,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
                 // horrible hack to get around generics because file filters work on any type of DataFileReader
                 @SuppressWarnings("unchecked") var internalRecordFileFilter =
                         (Function<List<DataFileReader<VirtualInternalRecord>>, List<DataFileReader<VirtualInternalRecord>>>)((Object)filesToMergeFilter);
-                internalHashStoreDisk.mergeAll(internalRecordFileFilter);
+                internalHashStoreDisk.merge(internalRecordFileFilter);
             }
             // merge objectKeyToPath files
             if(!isLongKeyMode) {
@@ -356,7 +356,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
             // horrible hack to get around generics because file filters work on any type of DataFileReader
             @SuppressWarnings("unchecked") var leafRecordFileFilter =
                     (Function<List<DataFileReader<VirtualLeafRecord<K,V>>>, List<DataFileReader<VirtualLeafRecord<K,V>>>>)((Object)filesToMergeFilter);
-            pathToHashKeyValue.mergeAll(leafRecordFileFilter);
+            pathToHashKeyValue.merge(leafRecordFileFilter);
         } catch (Throwable t) {
             System.err.println("Exception while merging!");
             t.printStackTrace();
