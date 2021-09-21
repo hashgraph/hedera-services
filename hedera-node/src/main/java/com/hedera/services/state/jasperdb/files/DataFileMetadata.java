@@ -28,7 +28,7 @@ public final class DataFileMetadata {
     /** The file index, in a data file collection */
     private final int index;
     /**
-     * The creation data of this file, this is critical as it is used when merging two files to know which files data
+     * The creation date of this file, this is critical as it is used when merging two files to know which files data
      * is newer.
      */
     private final Instant creationDate;
@@ -217,5 +217,29 @@ public final class DataFileMetadata {
                 ", isMergeFile=" + isMergeFile +
                 ", serializationVersion=" + serializationVersion +
                 '}';
+    }
+
+    /**
+     * Equals for use when comparing in collections, based on all fields in the toString() output.
+     */
+    @SuppressWarnings("rawtypes")
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        DataFileMetadata that = (DataFileMetadata) o;
+        return fileFormatVersion == that.fileFormatVersion && dataItemValueSize == that.dataItemValueSize &&
+                dataItemCount == that.dataItemCount && index == that.index && minimumValidKey == that.minimumValidKey &&
+                maximumValidKey == that.maximumValidKey && isMergeFile == that.isMergeFile &&
+                serializationVersion == that.serializationVersion;
+    }
+
+    /**
+     * hashCode for use when comparing in collections, based on all fields in the toString() output.
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(fileFormatVersion, dataItemValueSize, dataItemCount, index, creationDate, minimumValidKey,
+                maximumValidKey, isMergeFile, serializationVersion);
     }
 }

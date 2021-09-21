@@ -109,7 +109,7 @@ public class PageAlignmentBench {
         long dataLocation = fileIndexShifted | blockOffset;
         // read data
         dataReadBuffer.clear();
-        blackHole.consume(dataFileCollection.readData(dataLocation,dataReadBuffer, DataFileReader.DataToRead.KEY_VALUE));
+        blackHole.consume(dataFileCollection.readData(dataLocation,dataReadBuffer));
     }
 
 }

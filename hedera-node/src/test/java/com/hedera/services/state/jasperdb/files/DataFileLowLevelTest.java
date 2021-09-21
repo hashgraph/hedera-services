@@ -21,6 +21,7 @@ import java.util.stream.IntStream;
 import static com.hedera.services.state.jasperdb.JasperDbTestUtils.deleteDirectoryAndContents;
 import static com.hedera.services.state.jasperdb.files.DataFileCommon.createDataFilePath;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SuppressWarnings("SameParameterValue")
@@ -110,10 +111,22 @@ public class DataFileLowLevelTest {
         // tests
         assertTrue(Files.exists(writer.getPath()));
         assertEquals(writer.getPath(),createDataFilePath("test_"+testType.name(), tempFileDir, DATA_FILE_INDEX, TEST_START));
+        long expectedFileSizeEstimate = (testType == TestType.fixed ? 24576L : 102400L); // TODO - explain the numbers
+        assertEquals(expectedFileSizeEstimate, writer.getFileSizeEstimate());
         // store for later tests
         dataFileMap.put(testType,writer.getPath());
         dataFileMetadataMap.put(testType,dataFileMetadata);
         listOfDataItemLocationsMap.put(testType,listOfDataItemLocations);
+    }
+
+    @Order(50)
+    @Test
+    public void checkToStringOfDataItemHeader() {
+        int size = RANDOM.nextInt(300) + 1;
+        long key = RANDOM.nextLong();
+        DataItemHeader dataItemHeader = new DataItemHeader(size, key);
+        String expectedToString = "DataItemHeader{size=" + size + ", key=" + key + "}";
+        assertEquals(expectedToString, dataItemHeader.toString());
     }
 
     @Order(100)
@@ -125,11 +138,19 @@ public class DataFileLowLevelTest {
         assertEquals(1000,dataFileMetadata.getDataItemCount());
         assertEquals(TEST_START,dataFileMetadata.getCreationDate());
         assertEquals(testType.dataItemSerializer.getSerializedSize(),dataFileMetadata.getDataItemValueSize());
+        assertEquals(testType == TestType.variable, dataFileMetadata.hasVariableSizeData());
         assertEquals(DATA_FILE_INDEX,dataFileMetadata.getIndex());
         assertEquals(0,dataFileMetadata.getMinimumValidKey());
         assertEquals(1000,dataFileMetadata.getMaximumValidKey());
+        assertFalse(dataFileMetadata.isMergeFile());
         assertEquals(testType.dataItemSerializer.getCurrentDataVersion(),dataFileMetadata.getSerializationVersion());
         assertEquals(DataFileCommon.FILE_FORMAT_VERSION,dataFileMetadata.getFileFormatVersion());
+        if (testType == TestType.fixed) {
+            String expectedToString = "DataFileMetadata{fileFormatVersion=1, dataItemValueSize=16, dataItemCount=1000, " +
+                    "index=123, creationDate=" + TEST_START + ", minimumValidKey=0, maximumValidKey=1000, " +
+                    "isMergeFile=false, serializationVersion=1}";
+            assertEquals(expectedToString, dataFileMetadata.toString());
+        }
     }
 
     @Order(101)
@@ -226,7 +247,26 @@ public class DataFileLowLevelTest {
                         e.printStackTrace();
                     }
                 });
+        // some additional asserts to increase DataFileReader's coverage.
+        DataFileReader<long[]> secondReader = new DataFileReader<>(dataFile,testType.dataItemSerializer);
+        DataFileIterator firstIterator = dataFileReader.createIterator();
+        DataFileIterator secondIterator = secondReader.createIterator();
+        assertEquals(firstIterator.getMetadata(), secondIterator.getMetadata());
+        assertEquals(firstIterator.getMetadata().hashCode(), secondIterator.getMetadata().hashCode());
+        assertEquals(firstIterator.getDataFileCreationDate(), secondIterator.getDataFileCreationDate());
+        assertEquals(firstIterator.toString(), secondIterator.toString());
+        assertEquals(firstIterator.hashCode(), secondIterator.hashCode());
+        assertEquals(firstIterator, secondIterator);
+        assertEquals(secondReader.getSize(), dataFileReader.getSize());
+        assertEquals(secondReader, dataFileReader);
+        assertEquals(secondReader.hashCode(), dataFileReader.hashCode());
+        assertEquals(0, secondReader.compareTo(dataFileReader));
+        assertEquals(secondReader.toString(), dataFileReader.toString());
+
+        firstIterator.close();
+        secondIterator.close();
         dataFileReader.close();
+        secondReader.close();
     }
 
     @Order(300)

@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
+import java.util.Objects;
 
 /**
  * Iterator class for iterating over data items in a DataFile. It is designed to be used in a while(iter.next()){...}
@@ -162,6 +163,26 @@ public final class DataFileIterator implements AutoCloseable {
                 ", currentDataItemHeader=" + currentDataItemHeader +
                 ", metadata=" + metadata +
                 '}';
+    }
+
+    /**
+     * Equals for use when comparing in collections, based on matching file paths and metadata
+     */
+    @SuppressWarnings("rawtypes")
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        DataFileIterator that = (DataFileIterator) o;
+        return path.equals(that.path) && metadata.equals(that.metadata);
+    }
+
+    /**
+     * hashCode for use when comparing in collections, based on file path and metadata
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(path, metadata);
     }
 
     // =================================================================================================================

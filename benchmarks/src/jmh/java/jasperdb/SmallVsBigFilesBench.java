@@ -126,7 +126,7 @@ public class SmallVsBigFilesBench {
         ByteBuffer dataReadBuffer = this.dataReadBuffer.get();
         // read data
         dataReadBuffer.clear();
-        blackHole.consume(dataFileCollection.readData(randomDataLocations[0],dataReadBuffer, DataFileReader.DataToRead.KEY_VALUE));
+        blackHole.consume(dataFileCollection.readData(randomDataLocations[0],dataReadBuffer));
     }
 
     @Benchmark
@@ -139,7 +139,7 @@ public class SmallVsBigFilesBench {
                 // read data
                 dataReadBuffer.clear();
                 try {
-                    blackHole.consume(dataFileCollection.readData(dataLocation,dataReadBuffer, DataFileReader.DataToRead.KEY_VALUE));
+                    blackHole.consume(dataFileCollection.readData(dataLocation,dataReadBuffer));
                 } catch (IOException e) {
                     e.printStackTrace();
                 }

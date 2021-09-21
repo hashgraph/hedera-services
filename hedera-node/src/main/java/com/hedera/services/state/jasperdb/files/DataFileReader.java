@@ -21,8 +21,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class DataFileReader<D> implements AutoCloseable, Comparable<DataFileReader<D>>, IndexedObject {
     /** SeekableByteChannel's for each thread */
     protected final ThreadLocalSeekableByteChannel seekableByteChannel;
-    /** Enum for read operation, you can read the key, value or both. */
-    public enum DataToRead{KEY,VALUE,KEY_VALUE}
+    // TODO - determine if DataToRead (enum with values KEY/VALUE/KEY_VALUE) needs to be restored.  So far, no.
     /** The path to the file on disk */
     protected final Path path;
     /** The metadata for this file read from the footer */
@@ -92,7 +91,7 @@ public class DataFileReader<D> implements AutoCloseable, Comparable<DataFileRead
     }
 
     /**
-     * Read a data item from file at dataLocation. The data returned is defined by DataToRead.
+     * Read a data item from file at dataLocation.
      *
      * @param dataLocation The file index combined with the offset for the starting block of the data in the file.
      * @throws IOException If there was a problem reading from data file
