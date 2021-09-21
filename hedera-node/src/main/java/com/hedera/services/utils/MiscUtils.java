@@ -45,6 +45,7 @@ import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.codec.DecoderException;
 
+import javax.annotation.Nullable;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -747,5 +748,11 @@ public final class MiscUtils {
 				action.accept(leaf.getKey(), leaf);
 			}
 		});
+	}
+
+	public static void putIfNotNull(@Nullable final Map<String, Object> map, final String key, final Object value) {
+		if (null != map) {
+			map.put(key, value);
+		}
 	}
 }

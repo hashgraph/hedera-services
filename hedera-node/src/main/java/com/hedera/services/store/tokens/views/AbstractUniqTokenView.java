@@ -23,10 +23,9 @@ package com.hedera.services.store.tokens.views;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.tokens.views.utils.GrpcUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.store.tokens.views.utils.GrpcUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
@@ -68,9 +67,9 @@ public abstract class AbstractUniqTokenView implements UniqTokenView {
 
 	@Override
 	public List<TokenNftInfo> typedAssociations(@Nonnull TokenID type, long start, long end) {
-		final var tokenId = EntityId.fromGrpcTokenId(type);
-		final var treasuryGrpcId = treasuryOf(tokens.get(), tokenId);
-		return accumulatedInfo(nftsByType.get(), tokenId, (int) start, (int) end, type, treasuryGrpcId);
+		final var tokenNum = EntityNum.fromTokenId(type);
+		final var treasuryGrpcId = treasuryOf(tokens.get(), tokenNum);
+		return accumulatedInfo(nftsByType.get(), tokenNum, (int) start, (int) end, type, treasuryGrpcId);
 	}
 
 	/**
@@ -97,7 +96,7 @@ public abstract class AbstractUniqTokenView implements UniqTokenView {
 	 */
 	protected List<TokenNftInfo> accumulatedInfo(
 			FCOneToManyRelation<EntityNum, Long> relation,
-			EntityId key,
+			EntityNum key,
 			int start,
 			int end,
 			@Nullable TokenID fixedType,
@@ -105,7 +104,7 @@ public abstract class AbstractUniqTokenView implements UniqTokenView {
 	) {
 		final var curNfts = nfts.get();
 		final List<TokenNftInfo> answer = new ArrayList<>();
-		relation.get(fromInt(key.identityCode()), start, end).forEachRemaining(nftIdCode -> {
+		relation.get(fromInt(key.intValue()), start, end).forEachRemaining(nftIdCode -> {
 			final var nft = curNfts.get(new EntityNumPair(nftIdCode));
 			if (nft == null) {
 				throw new ConcurrentModificationException("NFT was removed during query answering");
@@ -123,11 +122,11 @@ public abstract class AbstractUniqTokenView implements UniqTokenView {
 		return answer;
 	}
 
-	private AccountID treasuryOf(MerkleMap<EntityNum, MerkleToken> curTokens, EntityId tokenId) {
-		final var token = curTokens.get(EntityNum.fromLong(tokenId.num()));
+	private AccountID treasuryOf(MerkleMap<EntityNum, MerkleToken> curTokens, EntityNum tokenNum) {
+		final var token = curTokens.get(tokenNum);
 		if (token == null) {
 			throw new ConcurrentModificationException(
-					"Token " + tokenId.toAbbrevString() + " was removed during query answering");
+					"Token #" + tokenNum.longValue() + " was removed during query answering");
 		}
 		return token.treasury().toGrpcAccountId();
 	}

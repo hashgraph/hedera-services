@@ -26,36 +26,31 @@ import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.ResponseType;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Map;
 
 @Singleton
-public class GetAccountInfoResourceUsage implements QueryResourceUsageEstimator {
+public final class GetAccountInfoResourceUsage implements QueryResourceUsageEstimator {
 	private final CryptoOpsUsage cryptoOpsUsage;
 
 	@Inject
-	public GetAccountInfoResourceUsage(CryptoOpsUsage cryptoOpsUsage) {
+	public GetAccountInfoResourceUsage(final CryptoOpsUsage cryptoOpsUsage) {
 		this.cryptoOpsUsage = cryptoOpsUsage;
 	}
 
 	@Override
-	public boolean applicableTo(Query query) {
+	public boolean applicableTo(final Query query) {
 		return query.hasCryptoGetInfo();
 	}
 
 	@Override
-	public FeeData usageGiven(Query query, StateView view) {
-		return usageGivenType(query, view, query.getCryptoGetInfo().getHeader().getResponseType());
-	}
+	public FeeData usageGiven(final Query query, final StateView view, final Map<String, Object> ignoreCtx) {
+		final var op = query.getCryptoGetInfo();
 
-	@Override
-	public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
-		var op = query.getCryptoGetInfo();
-
-		var tgt = op.getAccountID();
-		var info = view.infoForAccount(tgt);
+		final var tgt = op.getAccountID();
+		final var info = view.infoForAccount(tgt);
 		/* Given the test in {@code GetAccountInfoAnswer.checkValidity}, this can only be empty
 		 * under the extraordinary circumstance that the desired account expired during the query
 		 * answer flow (which will now fail downstream with an appropriate status code); so
@@ -63,8 +58,8 @@ public class GetAccountInfoResourceUsage implements QueryResourceUsageEstimator 
 		if (info.isEmpty()) {
 			return FeeData.getDefaultInstance();
 		}
-		var details = info.get();
-		var ctx = ExtantCryptoContext.newBuilder()
+		final var details = info.get();
+		final var ctx = ExtantCryptoContext.newBuilder()
 				.setCurrentKey(details.getKey())
 				.setCurrentMemo(details.getMemo())
 				.setCurrentExpiry(details.getExpirationTime().getSeconds())
