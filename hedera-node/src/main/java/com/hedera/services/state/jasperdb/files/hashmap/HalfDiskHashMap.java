@@ -5,6 +5,7 @@ import com.hedera.services.state.jasperdb.collections.LongListHeap;
 import com.hedera.services.state.jasperdb.files.DataFileCollection;
 import com.hedera.services.state.jasperdb.files.DataFileReader;
 import com.swirlds.virtualmap.VirtualKey;
+import org.eclipse.collections.api.tuple.primitive.IntObjectPair;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
@@ -16,7 +17,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 
-import static com.hedera.services.state.jasperdb.files.DataFileCommon.MB;
+import static com.hedera.services.state.jasperdb.files.DataFileCommon.*;
 
 /**
  * This is a hash map implementation where the bucket index is in RAM and the buckets are on disk. It maps a VirtualKey
@@ -110,12 +111,13 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
     }
 
     /**
-     * Merge all read only files
+     * Merge all read only files that match provided filter. Important the set of files must be contiguous in time
+     * otherwise the merged data will be invalid.
      *
      * @param filterForFilesToMerge filter to choose which subset of files to merge
      * @throws IOException if there was a problem merging
      */
-    public void mergeAll(Function<List<DataFileReader<Bucket<K>>>,List<DataFileReader<Bucket<K>>>> filterForFilesToMerge) throws IOException {
+    public void merge(Function<List<DataFileReader<Bucket<K>>>,List<DataFileReader<Bucket<K>>>> filterForFilesToMerge) throws IOException {
         final long START = System.currentTimeMillis();
         final List<DataFileReader<Bucket<K>>> allFilesBefore = fileCollection.getAllFullyWrittenFiles();
         final List<DataFileReader<Bucket<K>>> filesToMerge = filterForFilesToMerge.apply(allFilesBefore);
@@ -124,14 +126,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
             System.out.println("["+storeName+"] No meed to merge as only "+size+" files.");
             return;
         }
-        double filesToMergeSizeMb = filesToMerge.stream().mapToDouble(file -> {
-            try {
-                return file.getSize();
-            } catch (IOException e) {
-                e.printStackTrace();
-                return 0;
-            }
-        }).sum() / MB;
+        double filesToMergeSizeMb = getTotalFilesSizeMb(filesToMerge);
         System.out.printf("[%s] Starting merging %,d files total %,.2f Gb...\n",storeName,size,filesToMergeSizeMb/1024);
         final List<Path> newFilesCreated = fileCollection.mergeFiles(
                 // update index with all moved data
@@ -141,15 +136,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
 
         final double tookSeconds = (double) (System.currentTimeMillis() - START) / 1000d;
 
-        double mergedFilesCreatedSizeMb = newFilesCreated.stream().mapToDouble(path -> {
-            try {
-                return Files.size(path);
-            } catch (IOException e) {
-                e.printStackTrace();
-                return 0;
-            }
-        }).sum() / MB;
-
+        double mergedFilesCreatedSizeMb = getTotalFilesSizeMbByPath(newFilesCreated);
         System.out.printf("[%s] Merged %,.2f Gb files into %,.2f Gb files in %,.2f seconds. Read at %,.2f Mb/sec Written at %,.2f\n        filesToMerge = %s\n       allFilesBefore = %s\n       allFilesAfter = %s\n",
                 storeName,
                 filesToMergeSizeMb / 1024d,
@@ -160,7 +147,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
                 Arrays.toString(filesToMerge.stream().map(reader -> reader.getMetadata().getIndex()).toArray()),
                 Arrays.toString(allFilesBefore.stream().map(reader -> reader.getMetadata().getIndex()).toArray()),
                 Arrays.toString(fileCollection.getAllFullyWrittenFiles().stream().map(reader -> reader.getMetadata().getIndex()).toArray())
-        );
+        ); // TODO should move to stats framework
     }
 
     /**
@@ -223,52 +210,42 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
             fileCollection.startWriting();
             // for each changed bucket, write the new buckets to file but do not update index yet
             final LongArrayList indexChanges = new LongArrayList();
-            try {
-                oneTransactionsData.forEachKeyValue((bucketIndex, bucketMap) -> {
-                    try {
-                        long currentBucketLocation = bucketIndexToBucketLocation.get(bucketIndex, NON_EXISTENT_BUCKET);
-                        final Bucket<K> bucket;
-                        if (currentBucketLocation == NON_EXISTENT_BUCKET) {
-                            // create a new bucket
-                            bucket = bucketSerializer.getNewEmptyBucket();
-                            bucket.setBucketIndex(bucketIndex);
-                        } else {
-                            // load bucket
-                            bucket = fileCollection.readDataItem(currentBucketLocation);
-                        }
-                        // for each changed key in bucket, update bucket
-                        bucketMap.forEachKeyValue((k,v) -> bucket.putValue(k.hashCode(),k,v));
-                        // save bucket
-                        final long bucketLocation = fileCollection.storeDataItem(bucket);
-                        // stash update bucketIndexToBucketLocation
-                        indexChanges.add(bucketIndex);
-                        indexChanges.add(bucketLocation);
-                    } catch (IllegalStateException e) { // wrap IOExceptions
-                        printStats();
-                        debugDumpTransactionCacheCondensed();
-                        debugDumpTransactionCache();
-                        throw e;
-                    } catch (IOException e) { // wrap IOExceptions
-                        throw new RuntimeException(e);
+            for (IntObjectPair<ObjectLongHashMap<K>> keyValue : oneTransactionsData.keyValuesView()) {
+                int bucketIndex = keyValue.getOne();
+                ObjectLongHashMap<K> bucketMap = keyValue.getTwo();
+                try {
+                    long currentBucketLocation = bucketIndexToBucketLocation.get(bucketIndex, NON_EXISTENT_BUCKET);
+                    final Bucket<K> bucket;
+                    if (currentBucketLocation == NON_EXISTENT_BUCKET) {
+                        // create a new bucket
+                        bucket = bucketSerializer.getNewEmptyBucket();
+                        bucket.setBucketIndex(bucketIndex);
+                    } else {
+                        // load bucket
+                        bucket = fileCollection.readDataItem(currentBucketLocation);
                     }
-                });
-            } catch (RuntimeException e) { // unwrap IOExceptions
-                if (e.getCause() instanceof IOException) throw (IOException) e.getCause();
-                throw e;
+                    // for each changed key in bucket, update bucket
+                    bucketMap.forEachKeyValue((k, v) -> bucket.putValue(k.hashCode(), k, v));
+                    // save bucket
+                    final long bucketLocation = fileCollection.storeDataItem(bucket);
+                    // stash update bucketIndexToBucketLocation
+                    indexChanges.add(bucketIndex);
+                    indexChanges.add(bucketLocation);
+                } catch (IllegalStateException e) { // TODO should be logging
+                    printStats();
+                    debugDumpTransactionCacheCondensed();
+                    debugDumpTransactionCache();
+                    throw e;
+                }
             }
             // close files session
             fileCollection.endWriting(0,numOfBuckets);
             // for each changed bucket update index
-            try {
-                for (int i = 0; i < indexChanges.size(); i+=2) {
-                    final long bucketIndex = indexChanges.get(i);
-                    final long bucketLocation = indexChanges.get(i+1);
-                    // update bucketIndexToBucketLocation
-                    bucketIndexToBucketLocation.put(bucketIndex, bucketLocation);
-                }
-            } catch (RuntimeException e) { // unwrap IOExceptions
-                if (e.getCause() instanceof IOException) throw (IOException) e.getCause();
-                throw e;
+            for (int i = 0; i < indexChanges.size(); i+=2) {
+                final long bucketIndex = indexChanges.get(i);
+                final long bucketLocation = indexChanges.get(i+1);
+                // update bucketIndexToBucketLocation
+                bucketIndexToBucketLocation.put(bucketIndex, bucketLocation);
             }
         }
         // clear put cache

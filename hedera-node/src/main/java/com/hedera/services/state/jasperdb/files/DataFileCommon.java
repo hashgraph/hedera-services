@@ -1,6 +1,7 @@
 package com.hedera.services.state.jasperdb.files;
 
 import com.hedera.services.state.jasperdb.collections.LongList;
+import com.hedera.services.state.jasperdb.files.hashmap.Bucket;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
@@ -118,6 +119,37 @@ public class DataFileCommon {
      */
     static Path getLockFilePath(Path dataFilePath) {
         return dataFilePath.resolveSibling(dataFilePath.getFileName().toString()+".lock");
+    }
+
+    /**
+     * Get the total disk space in MB for a list of files.
+     *
+     * @param files The files to get size for
+     * @param <T> Not really needed, just makes generics happy :-)
+     * @return summed size of all the files in Mb
+     * @throws IOException If there was a problem getting file size from OS
+     */
+    public static <T> double getTotalFilesSizeMb(List<DataFileReader<T>> files) throws IOException {
+        double filesToMergeSizeMb = 0;
+        for (var file:files) {
+            filesToMergeSizeMb += (double)file.getSize() / (double)MB;
+        }
+        return filesToMergeSizeMb;
+    }
+
+    /**
+     * Get the total disk space in MB for a list of files.
+     *
+     * @param filePaths The files to get size for
+     * @return summed size of all the files in Mb
+     * @throws IOException If there was a problem getting file size from OS
+     */
+    public static double getTotalFilesSizeMbByPath(List<Path> filePaths) throws IOException {
+        double filesToMergeSizeMb = 0;
+        for (var path:filePaths) {
+            filesToMergeSizeMb += (double)Files.size(path) / (double)MB;
+        }
+        return filesToMergeSizeMb;
     }
 
     /**

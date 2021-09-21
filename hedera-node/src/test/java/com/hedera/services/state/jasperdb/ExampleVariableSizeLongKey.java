@@ -2,7 +2,6 @@ package com.hedera.services.state.jasperdb;
 
 import com.hedera.services.state.jasperdb.files.DataFileCommon;
 import com.hedera.services.state.jasperdb.files.hashmap.KeySerializer;
-import com.hedera.services.state.jasperdb.utilities.NonCryptographicHashing;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualLongKey;
@@ -14,6 +13,8 @@ public class ExampleVariableSizeLongKey implements VirtualLongKey {
     private long value;
     private int hashCode;
 
+    public ExampleVariableSizeLongKey() {}
+
     public ExampleVariableSizeLongKey(long value) {
         setValue(value);
     }
@@ -24,7 +25,7 @@ public class ExampleVariableSizeLongKey implements VirtualLongKey {
 
     public void setValue(long value) {
         this.value = value;
-        this.hashCode = NonCryptographicHashing.hash32(value);
+        this.hashCode = Long.hashCode(value);
     }
 
     public int hashCode() {
@@ -33,17 +34,41 @@ public class ExampleVariableSizeLongKey implements VirtualLongKey {
 
     @Override
     public void serialize(ByteBuffer byteBuffer) throws IOException {
-        byteBuffer.putLong(value);
+        int numOfBytes = computeNonZeroBytes(value);
+        byteBuffer.put((byte)numOfBytes);
+        for (int b = numOfBytes-1; b >= 0; b--) {
+            byteBuffer.put((byte)(value >> (b*8)));
+        }
     }
 
     @Override
-    public void deserialize(ByteBuffer byteBuffer, int version) throws IOException {
-        setValue(byteBuffer.getLong());
+    public void deserialize(ByteBuffer buffer, int version) throws IOException {
+        byte numOfBytes = buffer.get();
+        long value = 0;
+        if (numOfBytes >= 8) value |= ((long)buffer.get() & 255) << 56;
+        if (numOfBytes >= 7) value |= ((long)buffer.get() & 255) << 48;
+        if (numOfBytes >= 6) value |= ((long)buffer.get() & 255) << 40;
+        if (numOfBytes >= 5) value |= ((long)buffer.get() & 255) << 32;
+        if (numOfBytes >= 4) value |= ((long)buffer.get() & 255) << 24;
+        if (numOfBytes >= 3) value |= ((long)buffer.get() & 255) << 16;
+        if (numOfBytes >= 2) value |= ((long)buffer.get() & 255) << 8;
+        if (numOfBytes >= 1) value |= ((long)buffer.get() & 255);
+        setValue(value);
     }
 
     @Override
-    public boolean equals(ByteBuffer byteBuffer, int version) throws IOException {
-        return byteBuffer.getLong() == value;
+    public boolean equals(ByteBuffer buffer, int version) throws IOException {
+        byte numOfBytes = buffer.get();
+        long value = 0;
+        if (numOfBytes >= 8) value |= ((long)buffer.get() & 255) << 56;
+        if (numOfBytes >= 7) value |= ((long)buffer.get() & 255) << 48;
+        if (numOfBytes >= 6) value |= ((long)buffer.get() & 255) << 40;
+        if (numOfBytes >= 5) value |= ((long)buffer.get() & 255) << 32;
+        if (numOfBytes >= 4) value |= ((long)buffer.get() & 255) << 24;
+        if (numOfBytes >= 3) value |= ((long)buffer.get() & 255) << 16;
+        if (numOfBytes >= 2) value |= ((long)buffer.get() & 255) << 8;
+        if (numOfBytes >= 1) value |= ((long)buffer.get() & 255);
+        return value == this.value;
     }
 
     public ExampleFixedSizeLongKey copy() {
@@ -53,12 +78,26 @@ public class ExampleVariableSizeLongKey implements VirtualLongKey {
     public void release() {
     }
 
-    public void serialize(SerializableDataOutputStream out) throws IOException {
-        out.writeLong(this.value);
+    public void serialize(SerializableDataOutputStream outputStream) throws IOException {
+        int numOfBytes = computeNonZeroBytes(value);
+        outputStream.write(numOfBytes);
+        for (int b = numOfBytes-1; b >= 0; b--) {
+            outputStream.write((byte)(value >> (b*8)));
+        }
     }
 
     public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-        this.value = in.readLong();
+        byte numOfBytes = in.readByte();
+        long value = 0;
+        if (numOfBytes >= 8) value |= ((long)in.readByte() & 255) << 56;
+        if (numOfBytes >= 7) value |= ((long)in.readByte() & 255) << 48;
+        if (numOfBytes >= 6) value |= ((long)in.readByte() & 255) << 40;
+        if (numOfBytes >= 5) value |= ((long)in.readByte() & 255) << 32;
+        if (numOfBytes >= 4) value |= ((long)in.readByte() & 255) << 24;
+        if (numOfBytes >= 3) value |= ((long)in.readByte() & 255) << 16;
+        if (numOfBytes >= 2) value |= ((long)in.readByte() & 255) << 8;
+        if (numOfBytes >= 1) value |= ((long)in.readByte() & 255);
+        setValue(value);
     }
 
     public long getClassId() {
@@ -160,17 +199,9 @@ public class ExampleVariableSizeLongKey implements VirtualLongKey {
          */
         @Override
         public ExampleVariableSizeLongKey deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
-            byte numOfBytes = buffer.get();
-            long value = 0;
-            if (numOfBytes >= 8) value |= ((long)buffer.get() & 255) << 56;
-            if (numOfBytes >= 7) value |= ((long)buffer.get() & 255) << 48;
-            if (numOfBytes >= 6) value |= ((long)buffer.get() & 255) << 40;
-            if (numOfBytes >= 5) value |= ((long)buffer.get() & 255) << 32;
-            if (numOfBytes >= 4) value |= ((long)buffer.get() & 255) << 24;
-            if (numOfBytes >= 3) value |= ((long)buffer.get() & 255) << 16;
-            if (numOfBytes >= 2) value |= ((long)buffer.get() & 255) << 8;
-            if (numOfBytes >= 1) value |= ((long)buffer.get() & 255);
-            return new ExampleVariableSizeLongKey(value);
+            ExampleVariableSizeLongKey key = new ExampleVariableSizeLongKey();
+            key.deserialize(buffer,(int)dataVersion);
+            return key;
         }
 
         /**
@@ -181,13 +212,8 @@ public class ExampleVariableSizeLongKey implements VirtualLongKey {
          */
         @Override
         public int serialize(ExampleVariableSizeLongKey data, SerializableDataOutputStream outputStream) throws IOException {
-            final long key = data.getKeyAsLong();
-            int numOfBytes = computeNonZeroBytes(key);
-            outputStream.write(numOfBytes);
-            for (int b = numOfBytes-1; b >= 0; b--) {
-                outputStream.write((byte)(key >> (b*8)));
-            }
-            return 1+numOfBytes;
+            data.serialize(outputStream);
+            return 1 + computeNonZeroBytes(data.getKeyAsLong());
         }
     }
 }
