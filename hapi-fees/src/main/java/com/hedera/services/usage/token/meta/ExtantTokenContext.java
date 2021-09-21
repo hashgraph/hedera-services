@@ -54,7 +54,7 @@ public class ExtantTokenContext {
 
 
 	public long getExistingRbSize() {
-		return existingNameLen + existingSymLen + existingMemoLen + existingAdminKeyLen
+		return (long)existingNameLen + existingSymLen + existingMemoLen + existingAdminKeyLen
 				+ existingKycKeyLen + existingFreezeKeyLen + existingWipeKeyLen
 				+ existingFreezeKeyLen;
 	}

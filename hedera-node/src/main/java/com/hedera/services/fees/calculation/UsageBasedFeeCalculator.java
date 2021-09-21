@@ -59,8 +59,6 @@ import static com.hedera.services.keys.HederaKeyTraversal.numSimpleKeys;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAccountAutoRenew;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
 import static com.hederahashgraph.fee.FeeBuilder.getFeeObject;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
@@ -225,9 +223,6 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 		final var function = accessor.getFunction();
 		if (pricedUsageCalculator.supports(function)) {
 			final var applicablePrices = prices.get(accessor.getSubType());
-//			if(accessor.getFunction() == TokenFreezeAccount || accessor.getFunction() == TokenUnfreezeAccount) {
-//				log.info("{} prices: {}", accessor.getFunction(), applicablePrices);
-//			}
 			return inHandle
 					? pricedUsageCalculator.inHandleFees(accessor, applicablePrices, rate, payerKey)
 					: pricedUsageCalculator.extraHandleFees(accessor, applicablePrices, rate, payerKey);

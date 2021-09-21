@@ -86,6 +86,10 @@ public class TokenUpdateMeta {
 		return newKeysLen;
 	}
 
+	public int getKeysLen() {
+		return newAdminKeyLen + newFreezeKeyLen + newSupplyKeyLen
+				+ newWipeKeyLen + newFreezeKeyLen + newFeeScheduleKeyLen;
+	}
 
 	public int getNewKycKeyLen() {
 		return newKycKeyLen;
@@ -239,9 +243,7 @@ public class TokenUpdateMeta {
 			this.hasTreasure = hasTreasure;
 			return this;
 		}
-
 	}
-
 
 	@Override
 	public boolean equals(Object obj) {

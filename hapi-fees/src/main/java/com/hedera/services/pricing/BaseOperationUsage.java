@@ -39,7 +39,6 @@ import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.ExtantTokenContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
-import com.hedera.services.usage.token.meta.TokenUpdateMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
@@ -442,21 +441,21 @@ class BaseOperationUsage {
 	}
 
 	UsageAccumulator tokenUpdate() {
-		final var target = TokenID.newBuilder().setTokenNum(10_001).build();
+		final var target = TokenID.newBuilder().setTokenNum(1_234).build();
 		final var now = Instant.now().getEpochSecond();
 		final var canonicalTxn = TransactionBody.newBuilder()
 				.setTokenUpdate(TokenUpdateTransactionBody.newBuilder()
 						.setMemo(StringValue.of(BLANK_MEMO))
-						.setName(A_TOKEN_NAME)
-						.setSymbol(A_TOKEN_SYMBOL)
+						.setAdminKey(A_KEY)
+						.setSupplyKey(A_KEY)
 						.setExpiry(Timestamp.newBuilder().setSeconds(now + THREE_MONTHS_IN_SECONDS).setNanos(0).build())
 						.setToken(target)
 				).build();
 		final var extantTokenContext = ExtantTokenContext.newBuilder()
 				.setExistingExpiry(now)
 				.setExistingMemoLen(0)
-				.setExistingNameLen(0)
-				.setExistingSymLen(0)
+				.setExistingNameLen(1)
+				.setExistingSymLen(1)
 				.build();
 		final var tokenUpdateMeta = TOKEN_OPS_USAGE_UTILS.tokenUpdateUsageFrom(canonicalTxn);
 		final var into = new UsageAccumulator();

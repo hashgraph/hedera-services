@@ -105,9 +105,7 @@ public enum TokenOpsUsageUtils {
 			newExpiry = op.getExpiry().getSeconds();
 		}
 
-
 		final long effectiveTxnStart = txn.getTransactionID().getTransactionValidStart().getSeconds();
-
 
 		return TokenUpdateMeta.newBuilder()
 				.setNewKeysLen(keysSize)
@@ -122,11 +120,6 @@ public enum TokenOpsUsageUtils {
 				.setNewEffectiveTxnStartTime(effectiveTxnStart)
 				.build();
 	}
-
-//	private long effectiveLifeTime(final TransactionBody txn) {
-//		long effectiveNow = txn.getTransactionID().getTransactionValidStart().getSeconds();
-//
-//	}
 
 	public TokenMintMeta tokenMintUsageFrom(
 			final TransactionBody txn,

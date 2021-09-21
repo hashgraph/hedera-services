@@ -46,8 +46,8 @@ public class ExpandHandleSpanMapAccessor {
 	private static final String TOKEN_WIPE_META_KEY = "tokenWipeMeta";
 	private static final String TOKEN_UPDATE_META_KEY = "tokenUpdateMeta";
 	private static final String TOKEN_DELETE_META_KEY = "tokenDeleteMeta";
-	private static final String TOKEN_GRANT_META_KEY = "tokenGrantKycMeta";
-	private static final String TOKEN_REVOKE_META_KEY = "tokenRevokeKycMeta";
+	private static final String TOKEN_GRANT_KYC_META_KEY = "tokenGrantKycMeta";
+	private static final String TOKEN_REVOKE_KYC_META_KEY = "tokenRevokeKycMeta";
 	private static final String CRYPTO_CREATE_META_KEY = "cryptoCreateMeta";
 	private static final String CRYPTO_UPDATE_META_KEY = "cryptoUpdateMeta";
 
@@ -119,6 +119,13 @@ public class ExpandHandleSpanMapAccessor {
 		return (TokenDeleteMeta) accessor.getSpanMap().get(TOKEN_DELETE_META_KEY);
 	}
 
+//	public void setTokenGrantKycMeta(TxnAccessor accessor, TokenGrantKycMeta tokenGrantKycMeta) {
+//		accessor.getSpanMap().put(TOKEN_GRANT_KYC_META_KEY, tokenGrantKycMeta);
+//	}
+//
+//	public TokenGrantKycMeta getTokenGrantKycMeta(TxnAccessor accessor) {
+//		return (TokenGrantKycMeta) accessor.getSpanMap().get(TOKEN_GRANT_KYC_META_KEY);
+//	}
 
 	public void setCryptoUpdate(TxnAccessor accessor, CryptoUpdateMeta cryptoUpdateMeta) {
 		accessor.getSpanMap().put(CRYPTO_UPDATE_META_KEY, cryptoUpdateMeta);
@@ -127,6 +134,4 @@ public class ExpandHandleSpanMapAccessor {
 	public CryptoUpdateMeta getCryptoUpdateMeta(TxnAccessor accessor) {
 		return (CryptoUpdateMeta) accessor.getSpanMap().get(CRYPTO_UPDATE_META_KEY);
 	}
-
-
 }

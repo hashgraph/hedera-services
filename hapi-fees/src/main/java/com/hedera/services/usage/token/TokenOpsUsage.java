@@ -175,7 +175,6 @@ public final class TokenOpsUsage {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
 
 		accumulator.addBpt(tokenDeleteMeta.getBpt());
-		//accumulator.addNetworkRbs(tokenDeleteMeta.getTransferRecordDb() * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
 	public void tokenMintUsage(final SigUsage sigUsage,
@@ -207,12 +206,7 @@ public final class TokenOpsUsage {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
 
 		long rbSize = 0;
-		rbSize += tokenUpdateMeta.getNewAdminKeyLen();
-		rbSize += tokenUpdateMeta.getNewKycKeyLen();
-		rbSize += tokenUpdateMeta.getNewFreezeKeyLen();
-		rbSize += tokenUpdateMeta.getNewWipeKeyLen();
-		rbSize += tokenUpdateMeta.getNewFeeScheduleKeyLen();
-		rbSize += tokenUpdateMeta.getNewSupplyKeyLen();
+		rbSize += tokenUpdateMeta.getKeysLen();
 		if(!tokenUpdateMeta.getRemoveAutoRenewAccount() &&
 				(extantTokenContext.getHashasAutoRenewAccount() || tokenUpdateMeta.hasAutoRenewAccount())) {
 			rbSize += BASIC_ENTITY_ID_SIZE;
@@ -222,7 +216,8 @@ public final class TokenOpsUsage {
 		rbSize += tokenUpdateMeta.getNewNameLen() > 0 ? tokenUpdateMeta.getNewNameLen() : extantTokenContext.getExistingNameLen();
 		rbSize += tokenUpdateMeta.getNewMemoLen() > 0 ? tokenUpdateMeta.getNewMemoLen() : extantTokenContext.getExistingMemoLen();
 
-		long newLifeTime = Math.max(tokenUpdateMeta.getNewEffectiveLifeTime(), extantTokenContext.getExistingExpiry());
+		long newLifeTime = Math.max(tokenUpdateMeta.getNewExpiry() - tokenUpdateMeta.getNewEffectiveTxnStartTime(),
+				extantTokenContext.getExistingExpiry() - tokenUpdateMeta.getNewEffectiveTxnStartTime());
 		newLifeTime = Math.min(newLifeTime, MAX_ENTITY_LIFETIME);
 
 		long existingRbSize = extantTokenContext.getExistingRbSize();

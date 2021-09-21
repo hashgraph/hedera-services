@@ -20,11 +20,13 @@ package com.hedera.services.bdd.suites.token;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Instant;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -43,12 +45,16 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 public class TokenDeleteSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenDeleteSpecs.class);
@@ -65,11 +71,14 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						deletionValidatesMissingAdminKey(),
-						deletionWorksAsExpected(),
-						deletionValidatesAlreadyDeletedToken(),
-						treasuryBecomesDeletableAfterTokenDelete(),
-						deletionValidatesRef(),
+				deletionValidatesMissingAdminKey(),
+				deletionWorksAsExpected(),
+				deletionValidatesAlreadyDeletedToken(),
+				treasuryBecomesDeletableAfterTokenDelete(),
+				deletionValidatesRef(),
+
+				baseTokenDeleteIsChargedExpectedFee(),
+				baseTokeUpdateIsChargedExpectedFee()
 				}
 		);
 	}
@@ -197,6 +206,73 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 				);
 	}
 
+
+	private HapiApiSpec baseTokenDeleteIsChargedExpectedFee() {
+		final var uniqueToken = "nftToken";
+		final var supplyKey = "supplyKey";
+		final var adminKey = "adminKey";
+		final var civilianPayer = "civilian";
+		final var baseTxn = "baseTxn";
+		final var expectedNftDeletePriceUsd = 0.001;
+
+		return defaultHapiSpec("baseTokenDeleteIsChargedExpectedFee")
+				.given(
+						newKeyNamed(supplyKey),
+						newKeyNamed(adminKey),
+						cryptoCreate(civilianPayer).key(adminKey).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(uniqueToken)
+								.initialSupply(0)
+								.supplyKey(supplyKey)
+								.adminKey(adminKey)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.treasury(civilianPayer)
+				)
+				.when(
+
+						tokenDelete(uniqueToken)
+								.payingWith(civilianPayer)
+								.signedBy(civilianPayer)
+								.blankMemo()
+								.via(baseTxn)
+				).then(
+						validateChargedUsdWithin(baseTxn, expectedNftDeletePriceUsd, 0.01)
+				);
+	}
+
+	private HapiApiSpec baseTokeUpdateIsChargedExpectedFee() {
+		final var updateTxn = "baseUpdateTxn";
+		final var tokenToUpdate = "tokenToUpdate";
+		final var supplyKey = "burnsupplyKey";
+		final var baseExpiry = Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS;
+		final var expectedTokenUpdatePriceUsd = 0.001;
+		return defaultHapiSpec("baseTokeUpdateIsChargedExpectedFee")
+				.given(
+						newKeyNamed(supplyKey),
+						newKeyNamed("adminKey"),
+						cryptoCreate(TOKEN_TREASURY).key("adminKey"),
+						tokenCreate(tokenToUpdate)
+								.initialSupply(1000)
+								.supplyKey(supplyKey)
+								.adminKey("adminKey")
+								.payingWith(TOKEN_TREASURY)
+								.blankMemo()
+								.treasury(TOKEN_TREASURY)
+				).when(
+						tokenUpdate(tokenToUpdate)
+						.expiry(baseExpiry)
+								.signedBy(TOKEN_TREASURY)
+								.payingWith(TOKEN_TREASURY)
+								.via(updateTxn)
+				).then(
+						validateChargedUsdWithin(updateTxn, expectedTokenUpdatePriceUsd, 0.01)
+				);
+	}
+
+
+	private ByteString metadata(String contents) {
+		return ByteString.copyFromUtf8(contents);
+	}
 
 	@Override
 	protected Logger getResultsLogger() {
