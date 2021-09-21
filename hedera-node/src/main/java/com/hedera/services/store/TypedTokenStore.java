@@ -42,7 +42,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
 
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.HashMap;
@@ -52,6 +51,10 @@ import java.util.function.Supplier;
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.store.models.TokenConversion.mapMerkleAccountsToModel;
+import static com.hedera.services.store.models.TokenConversion.mapMerkleToModel;
+import static com.hedera.services.store.models.TokenConversion.mapModelToMerkle;
+import static com.hedera.services.store.models.TokenConversion.mapUniqueTokenModelFields;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -251,8 +254,8 @@ public class TypedTokenStore {
 		validateUsable(merkleToken);
 
 		final var token = new Token(id);
-		initModelAccounts(token, merkleToken.treasury(), merkleToken.autoRenewAccount());
-		initModelFields(token, merkleToken);
+		mapMerkleAccountsToModel(token, merkleToken.treasury(), merkleToken.autoRenewAccount(), accountStore);
+		mapMerkleToModel(merkleToken, token);
 
 		return token;
 	}
@@ -278,7 +281,7 @@ public class TypedTokenStore {
 			final var merkleUniqueToken = curUniqueTokens.get(uniqueTokenKey);
 			validateUsable(merkleUniqueToken);
 			final var uniqueToken = new UniqueToken(tokenId, serialNumber);
-			initModelFields(uniqueToken, merkleUniqueToken);
+			mapUniqueTokenModelFields(uniqueToken, merkleUniqueToken);
 			loadedUniqueTokens.put(serialNumber, uniqueToken);
 		}
 		token.setLoadedUniqueTokens(loadedUniqueTokens);
@@ -298,8 +301,8 @@ public class TypedTokenStore {
 
 		final var token = new Token(id);
 		if (merkleToken != null) {
-			initModelAccounts(token, merkleToken.treasury(), merkleToken.autoRenewAccount());
-			initModelFields(token, merkleToken);
+			mapMerkleAccountsToModel(token, merkleToken.treasury(), merkleToken.autoRenewAccount(), accountStore);
+			mapMerkleToModel(merkleToken, token);
 		} else {
 			token.markAutoRemoved();
 		}
@@ -323,8 +326,8 @@ public class TypedTokenStore {
 		validateUsable(merkleToken, code);
 
 		final var token = new Token(id);
-		initModelAccounts(token, merkleToken.treasury(), merkleToken.autoRenewAccount());
-		initModelFields(token, merkleToken);
+		mapMerkleAccountsToModel(token, merkleToken.treasury(), merkleToken.autoRenewAccount(), accountStore);
+		mapMerkleToModel(merkleToken, token);
 		return token;
 	}
 
@@ -342,7 +345,7 @@ public class TypedTokenStore {
 		/* Note: this variable must be extracted BEFORE the mapping!! */
 		final var oldTreasury = mutableToken.treasury().asId().asGrpcAccount();
 
-		mapModelChangesToMutable(token, mutableToken);
+		mapModelToMerkle(token, mutableToken);
 
 		final var treasury = mutableToken.treasury();
 		if (token.hasMintedUniqueTokens()) {
@@ -390,7 +393,7 @@ public class TypedTokenStore {
 				token.getTreasury().getId().asEntityId()
 		);
 		/* map changes */
-		mapModelChangesToMutable(token, newMerkleToken);
+		mapModelToMerkle(token, newMerkleToken);
 
 		tokens.get().put(newMerkleTokenId, newMerkleToken);
 		addKnownTreasury.perform(token.getTreasury().getId().asGrpcAccount(), token.getId().asGrpcToken());
@@ -437,82 +440,6 @@ public class TypedTokenStore {
 
 	private void validateUsable(MerkleUniqueToken merkleUniqueToken) {
 		validateTrue(merkleUniqueToken != null, INVALID_NFT_ID);
-	}
-
-	private void mapModelChangesToMutable(Token token, MerkleToken mutableToken) {
-		final var newAutoRenewAccount = token.getAutoRenewAccount();
-		if (newAutoRenewAccount != null) {
-			mutableToken.setAutoRenewAccount(new EntityId(newAutoRenewAccount.getId()));
-			mutableToken.setAutoRenewPeriod(token.getAutoRenewPeriod());
-		}
-		mutableToken.setTreasury(new EntityId(token.getTreasury().getId()));
-		mutableToken.setTotalSupply(token.getTotalSupply());
-		mutableToken.setAccountsFrozenByDefault(token.isFrozenByDefault());
-		mutableToken.setLastUsedSerialNumber(token.getLastUsedSerialNumber());
-
-		mutableToken.setTokenType(token.getType());
-		mutableToken.setSupplyType(token.getSupplyType());
-
-		mutableToken.setMemo(token.getMemo());
-
-		mutableToken.setAdminKey(token.getAdminKey());
-		mutableToken.setSupplyKey(token.getSupplyKey());
-		mutableToken.setWipeKey(token.getWipeKey());
-		mutableToken.setFreezeKey(token.getFreezeKey());
-		mutableToken.setKycKey(token.getKycKey());
-		mutableToken.setFeeScheduleKey(token.getFeeScheduleKey());
-		mutableToken.setSymbol(token.getSymbol());
-		mutableToken.setName(token.getName());
-		mutableToken.setExpiry(token.getExpiry());
-		mutableToken.setDecimals(token.getDecimals());
-
-		mutableToken.setMaxSupply(token.getMaxSupply());
-		mutableToken.setDeleted(token.isDeleted());
-
-		if (token.getCustomFees() != null) {
-			mutableToken.setFeeSchedule(token.getCustomFees());
-		}
-
-		mutableToken.setExpiry(token.getExpiry());
-	}
-
-	private void initModelAccounts(Token token, EntityId _treasuryId, @Nullable EntityId _autoRenewId) {
-		if (_autoRenewId != null) {
-			final var autoRenewId = new Id(_autoRenewId.shard(), _autoRenewId.realm(), _autoRenewId.num());
-			final var autoRenew = accountStore.loadAccount(autoRenewId);
-			token.setAutoRenewAccount(autoRenew);
-		}
-		final var treasuryId = new Id(_treasuryId.shard(), _treasuryId.realm(), _treasuryId.num());
-		final var treasury = accountStore.loadAccount(treasuryId);
-		token.setTreasury(treasury);
-	}
-
-	private void initModelFields(Token token, MerkleToken immutableToken) {
-		token.initTotalSupply(immutableToken.totalSupply());
-		token.initSupplyConstraints(immutableToken.supplyType(), immutableToken.maxSupply());
-		token.setKycKey(immutableToken.getKycKey());
-		token.setFreezeKey(immutableToken.getFreezeKey());
-		token.setSupplyKey(immutableToken.getSupplyKey());
-		token.setWipeKey(immutableToken.getWipeKey());
-		token.setFrozenByDefault(immutableToken.accountsAreFrozenByDefault());
-		token.setAdminKey(immutableToken.getAdminKey());
-		token.setFeeScheduleKey(immutableToken.getFeeScheduleKey());
-		token.setType(immutableToken.tokenType());
-		token.setLastUsedSerialNumber(immutableToken.getLastUsedSerialNumber());
-		token.setIsDeleted(immutableToken.isDeleted());
-		token.setExpiry(immutableToken.expiry());
-		token.setMemo(immutableToken.memo());
-		token.setAutoRenewPeriod(immutableToken.autoRenewPeriod());
-		token.setSymbol(immutableToken.symbol());
-		token.setName(immutableToken.name());
-		token.setFeeScheduleKey(immutableToken.getFeeScheduleKey());
-		token.setDecimals(immutableToken.decimals());
-	}
-
-	private void initModelFields(UniqueToken uniqueToken, MerkleUniqueToken immutableUniqueToken) {
-		uniqueToken.setCreationTime(immutableUniqueToken.getCreationTime());
-		uniqueToken.setMetadata(immutableUniqueToken.getMetadata());
-		uniqueToken.setOwner(immutableUniqueToken.getOwner().asId());
 	}
 
 	private void alertTokenBackingStoreOfNew(TokenRelationship newRel) {

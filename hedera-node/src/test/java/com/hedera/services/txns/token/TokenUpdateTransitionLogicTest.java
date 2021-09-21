@@ -163,8 +163,14 @@ class TokenUpdateTransitionLogicTest {
 		given(token.getId()).willReturn(new Id(1, 2, 3));
 		given(token.getTreasury()).willReturn(oldTreasury);
 
-		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(oldTreasuryId)), any())).willReturn(oldTreasury);
-		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(newTreasuryId)), any())).willReturn(newTreasury);
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(oldTreasuryId)), any()))
+				.willReturn(oldTreasury);
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(newTreasuryId)), any()))
+				.willReturn(newTreasury);
+		final var autoRenew = mock(Account.class);
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(newAutoRenew)), any()))
+				.willReturn(autoRenew);
+		given(autoRenew.isSmartContract()).willReturn(false);
 
 		given(oldTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokens);
 		given(oldTreasury.getId()).willReturn(Id.fromGrpcAccount(oldTreasuryId));
@@ -315,7 +321,8 @@ class TokenUpdateTransitionLogicTest {
 		given(token.hasAdminKey()).willReturn(true);
 		given(token.getTreasury()).willReturn(oldTreasury);
 		given(oldTreasury.getId()).willReturn(Id.fromGrpcAccount(oldTreasuryId));
-
+		final var autoRenew = mock(Account.class);
+		given(accountStore.loadAccountOrFailWith(any(), any())).willReturn(autoRenew);
 		final var oldTreasuryRel = mock(TokenRelationship.class);
 		given(tokenStore.loadTokenRelationship(any(), any())).willReturn(oldTreasuryRel);
 		// when:
@@ -342,6 +349,10 @@ class TokenUpdateTransitionLogicTest {
 				.willReturn(oldTreasury);
 		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(newTreasuryId)), any()))
 				.willReturn(newTreasury);
+		final var autoRenew = mock(Account.class);
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(newAutoRenew)), any()))
+				.willReturn(autoRenew);
+		given(autoRenew.isSmartContract()).willReturn(false);
 
 		given(treasuryAssociatedTokens.contains(any(Id.class))).willReturn(true);
 		given(oldTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokens);
@@ -383,7 +394,9 @@ class TokenUpdateTransitionLogicTest {
 				.willReturn(oldTreasury);
 		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(newTreasuryId)), any()))
 				.willReturn(newTreasury);
-
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(newAutoRenew)), any()))
+				.willReturn(mock(Account.class));
+		
 		given(treasuryAssociatedTokens.contains(any(Id.class))).willReturn(true);
 		given(oldTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokens);
 		given(newTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokens);
@@ -425,11 +438,16 @@ class TokenUpdateTransitionLogicTest {
 				.willReturn(oldTreasury);
 		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(newTreasuryId)), any()))
 				.willReturn(newTreasury);
+		final var autoRenew = mock(Account.class);
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(newAutoRenew)), any()))
+				.willReturn(autoRenew);
+		given(autoRenew.isSmartContract()).willReturn(false);
+		given(token.getId()).willReturn(Id.DEFAULT);
 
 		given(treasuryAssociatedTokens.contains(any(Id.class))).willReturn(true);
 		given(oldTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokens);
 		given(newTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokens);
-
+		
 		final var oldTreasuryRel = mock(TokenRelationship.class);
 		given(tokenStore.loadTokenRelationship(token, oldTreasury)).willReturn(oldTreasuryRel);
 		given(oldTreasuryRel.getBalance()).willReturn(oldTreasuryBalance);
@@ -465,6 +483,10 @@ class TokenUpdateTransitionLogicTest {
 				.willReturn(oldTreasury);
 		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(newTreasuryId)), any()))
 				.willReturn(newTreasury);
+		final var autoRenew = mock(Account.class);
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(newAutoRenew)), any()))
+				.willReturn(autoRenew);
+		given(autoRenew.isSmartContract()).willReturn(false);
 
 		given(treasuryAssociatedTokens.contains(any(Id.class))).willReturn(true);
 		given(oldTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokens);
