@@ -39,13 +39,10 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.hedera.services.txns.token.TokenOpsValidator.validateTokenOpsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
  * Provides the state transition for wiping [part of] a token balance.
@@ -123,36 +120,13 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 		if (!op.hasAccount()) {
 			return INVALID_ACCOUNT_ID;
 		}
-
-		final var numSerialNumbers = op.getSerialNumbersCount();
-		if (numSerialNumbers > 0 && !dynamicProperties.areNftsEnabled()) {
-			return NOT_SUPPORTED;
-		}
-		final boolean bothPresent = (op.getAmount() > 0 && numSerialNumbers > 0);
-		final boolean nonePresent = (op.getAmount() <= 0 && numSerialNumbers == 0);
-
-		if (nonePresent) {
-			return INVALID_WIPING_AMOUNT;
-		}
-
-		if (bothPresent) {
-			return INVALID_TRANSACTION_BODY;
-		}
-		return validateNfts(op);
-	}
-
-	private ResponseCodeEnum validateNfts(final TokenWipeAccountTransactionBody op) {
-		if (op.getAmount() <= 0 && op.getSerialNumbersCount() > 0) {
-			var validity = validator.maxBatchSizeWipeCheck(op.getSerialNumbersCount());
-			if (validity != OK) {
-				return validity;
-			}
-			for (long serialNum : op.getSerialNumbersList()) {
-				if (serialNum <= 0) {
-					return INVALID_NFT_ID;
-				}
-			}
-		}
-		return OK;
+		return validateTokenOpsWith(
+				op.getSerialNumbersCount(),
+				op.getAmount(),
+				dynamicProperties.areNftsEnabled(),
+				INVALID_WIPING_AMOUNT,
+				op.getSerialNumbersList(),
+				validator::maxBatchSizeWipeCheck
+		);
 	}
 }

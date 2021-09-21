@@ -33,6 +33,7 @@ import org.apache.logging.log4j.Logger;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
@@ -52,6 +53,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -109,9 +112,68 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 						sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(),
 						updateFailsWithContractKey(),
 						updateFailsWithOverlyLongLifetime(),
-						updateFailsWithInvalidMaxAutoAssociations()
+						updateFailsWithInvalidMaxAutoAssociations(),
+						usdFeeAsExpected()
 				}
 		);
+	}
+
+	private HapiApiSpec usdFeeAsExpected() {
+		double autoAssocSlotPrice = 0.0018;
+		double baseFee = 0.00022;
+		double plusOneSlotFee = baseFee + autoAssocSlotPrice;
+		double plusTenSlotsFee = baseFee + 10 * autoAssocSlotPrice;
+
+		final var baseTxn = "baseTxn";
+		final var plusOneTxn = "plusOneTxn";
+		final var plusTenTxn = "plusTenTxn";
+
+		AtomicLong expiration = new AtomicLong();
+		return defaultHapiSpec("UsdFeeAsExpectedCryptoUpdate")
+				.given(
+						newKeyNamed("key").shape(SIMPLE),
+						cryptoCreate("payer")
+								.key("key")
+								.balance(1_000 * ONE_HBAR),
+						cryptoCreate("canonicalAccount")
+								.key("key")
+								.balance(100 * ONE_HBAR)
+								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
+								.blankMemo()
+								.payingWith("payer"),
+						cryptoCreate("autoAssocTarget")
+								.key("key")
+								.balance(100 * ONE_HBAR)
+								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
+								.blankMemo()
+								.payingWith("payer"),
+						getAccountInfo("canonicalAccount")
+								.exposingExpiry(expiration::set)
+				)
+				.when(
+						sourcing(() ->
+								cryptoUpdate("canonicalAccount")
+										.payingWith("canonicalAccount")
+										.expiring(expiration.get() + THREE_MONTHS_IN_SECONDS)
+										.blankMemo()
+										.via(baseTxn)
+						),
+						cryptoUpdate("autoAssocTarget")
+								.payingWith("autoAssocTarget")
+								.blankMemo()
+								.maxAutomaticAssociations(1)
+								.via(plusOneTxn),
+						cryptoUpdate("autoAssocTarget")
+								.payingWith("autoAssocTarget")
+								.blankMemo()
+								.maxAutomaticAssociations(11)
+								.via(plusTenTxn)
+				)
+				.then(
+						validateChargedUsd(baseTxn, baseFee),
+						validateChargedUsd(plusOneTxn, plusOneSlotFee),
+						validateChargedUsd(plusTenTxn, plusTenSlotsFee)
+				);
 	}
 
 	private HapiApiSpec updateFailsWithInvalidMaxAutoAssociations() {
@@ -133,7 +195,8 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 				.given(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("tokens.maxPerAccount", "" + tokenAssociations_restrictedNetwork)),
+								.overridingProps(
+										Map.of("tokens.maxPerAccount", "" + tokenAssociations_restrictedNetwork)),
 						cryptoCreate(treasury)
 								.balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(firstUser)
@@ -174,11 +237,12 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 						cryptoUpdate(firstUser)
 								.maxAutomaticAssociations(newGoodMax),
 						cryptoUpdate(firstUser)
-								.maxAutomaticAssociations(tokenAssociations_restrictedNetwork+1)
+								.maxAutomaticAssociations(tokenAssociations_restrictedNetwork + 1)
 								.hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("tokens.maxPerAccount", "" + tokenAssociations_adventurousNetwork))
+								.overridingProps(
+										Map.of("tokens.maxPerAccount", "" + tokenAssociations_adventurousNetwork))
 				);
 	}
 
