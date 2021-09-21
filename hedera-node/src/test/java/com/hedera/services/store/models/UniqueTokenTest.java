@@ -24,6 +24,7 @@ import com.hedera.services.state.submerkle.RichInstant;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 class UniqueTokenTest {
 	@Test
@@ -46,6 +47,29 @@ class UniqueTokenTest {
 		assertEquals(Id.DEFAULT, subj.getTokenId());
 		subj.setCreationTime(RichInstant.MISSING_INSTANT);
 		assertEquals(RichInstant.MISSING_INSTANT, subj.getCreationTime());
+		assertEquals("UniqueToken{owner=Id{shard=1, realm=2, num=3}, tokenId=Id{shard=0, realm=0, num=0}," +
+				" serialNum=2, creationTime=RichInstant{seconds=0, nanos=0}, metadata=[1, 2, 3]}", subj.toString());
+	}
+
+	@Test
+	void reflectionObjectHelpersWork() {
+		var metadata = new byte[] { 107, 117, 114 };
+		var token1 = new UniqueToken(Id.DEFAULT, 1);
+		token1.setCreationTime(RichInstant.MISSING_INSTANT);
+		token1.setTokenId(Id.DEFAULT);
+		token1.setMetadata(metadata);
+		var token2 = new UniqueToken(Id.DEFAULT, 2);
+		token2.setCreationTime(RichInstant.MISSING_INSTANT);
+		token2.setTokenId(Id.DEFAULT);
+		token2.setMetadata(metadata);
+
+		assertNotEquals(token1, token2);
+		assertNotEquals(token1.hashCode(), token2.hashCode());
+
+		token2.setSerialNumber(1);
+
+		assertEquals(token1, token2);
+		assertEquals(token1.hashCode(), token2.hashCode());
 	}
 
 }

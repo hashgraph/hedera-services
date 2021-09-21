@@ -370,10 +370,6 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 		return decimals;
 	}
 
-	public void setDecimals(final int decimals) {
-		this.decimals = decimals;
-	}
-
 	public boolean hasAdminKey() {
 		return adminKey != UNUSED_KEY;
 	}
@@ -559,6 +555,11 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 		this.totalSupply = totalSupply;
 	}
 
+	public void setDecimals(int decimals) {
+		throwIfImmutable("Cannot change this token's total supply if it's immutable.");
+		this.decimals = decimals;
+	}
+
 	public String memo() {
 		return memo;
 	}
@@ -571,6 +572,11 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 	public void setAccountsFrozenByDefault(boolean accountsFrozenByDefault) {
 		throwIfImmutable("Cannot change this token's default frozen status if it's immutable.");
 		this.accountsFrozenByDefault = accountsFrozenByDefault;
+	}
+
+	public void setAccountsKycGrantedByDefault(boolean accountsKycGrantedByDefault) {
+		throwIfImmutable("Cannot change this token's default frozen status if it's immutable.");
+		this.accountsKycGrantedByDefault = accountsKycGrantedByDefault;
 	}
 
 	public long getLastUsedSerialNumber() {

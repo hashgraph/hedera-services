@@ -108,6 +108,10 @@ public class Token {
 	private final List<UniqueToken> mintedUniqueTokens = new ArrayList<>();
 	private final List<UniqueToken> removedUniqueTokens = new ArrayList<>();
 	private Map<Long, UniqueToken> loadedUniqueTokens = new HashMap<>();
+	private boolean frozenByDefault;
+	private boolean kycGrantedByDefault;
+	private boolean deleted;
+	private boolean autoRemoved = false;
 	private long expiry;
 	private long totalSupply;
 	private long maxSupply;
@@ -121,9 +125,6 @@ public class Token {
 	private List<FcCustomFee> customFees;
 	private boolean supplyHasChanged;
 	private boolean hasUpdatedTreasury;
-	private boolean frozenByDefault;
-	private boolean deleted;
-	private boolean autoRemoved = false;
 	private boolean isNew;
 	static Predicate<Key> removesAdminKey = ImmutableKeyUtils::signalsKeyRemoval;
 	public Token(Id id) {
@@ -366,6 +367,7 @@ public class Token {
 		token.setDecimals(op.getDecimals());
 		token.setName(op.getName());
 		token.setFrozenByDefault(op.getFreezeDefault());
+		token.setKycGrantedByDefault(!op.hasKycKey());
 		token.setCustomFees(op.getCustomFeesList().stream().map(FcCustomFee::fromGrpc).collect(toList()));
 
 		token.setNew(true);
@@ -385,10 +387,14 @@ public class Token {
 	 * Increments the serial number of the given base unique token, and assigns each of the numbers to each new unique
 	 * token instance.
 	 *
-	 * @param ownershipTracker - a tracker of changes made to the ownership of the tokens
-	 * @param treasuryRel      - the relationship between the treasury account and the token
-	 * @param metadata         - a list of user-defined metadata, related to the nft instances.
-	 * @param creationTime     - the consensus time of the token mint transaction
+	 * @param ownershipTracker
+	 * 		- a tracker of changes made to the ownership of the tokens
+	 * @param treasuryRel
+	 * 		- the relationship between the treasury account and the token
+	 * @param metadata
+	 * 		- a list of user-defined metadata, related to the nft instances.
+	 * @param creationTime
+	 * 		- the consensus time of the token mint transaction
 	 */
 	public void mint(
 			final OwnershipTracker ownershipTracker,
@@ -424,9 +430,12 @@ public class Token {
 	/**
 	 * Burning unique tokens effectively destroys them, as well as reduces the total supply of the token.
 	 *
-	 * @param ownershipTracker     - a tracker of changes made to the nft ownership
-	 * @param treasuryRelationship - the relationship between the treasury account and the token
-	 * @param serialNumbers        - the serial numbers, representing the unique tokens which will be destroyed.
+	 * @param ownershipTracker
+	 * 		- a tracker of changes made to the nft ownership
+	 * @param treasuryRelationship
+	 * 		- the relationship between the treasury account and the token
+	 * @param serialNumbers
+	 * 		- the serial numbers, representing the unique tokens which will be destroyed.
 	 */
 	public void burn(
 			final OwnershipTracker ownershipTracker,
@@ -453,8 +462,10 @@ public class Token {
 	/**
 	 * Wiping fungible tokens removes the balance of the given account, as well as reduces the total supply.
 	 *
-	 * @param accountRel - the relationship between the account which owns the tokens and the token
-	 * @param amount     - amount to be wiped
+	 * @param accountRel
+	 * 		- the relationship between the account which owns the tokens and the token
+	 * @param amount
+	 * 		- amount to be wiped
 	 */
 	public void wipe(final TokenRelationship accountRel, final long amount) {
 		validateTrue(type == TokenType.FUNGIBLE_COMMON, FAIL_INVALID,
@@ -473,9 +484,12 @@ public class Token {
 	 * Wiping unique tokens removes the unique token instances, associated to the given account, as well as reduces the
 	 * total supply.
 	 *
-	 * @param ownershipTracker - a tracker of changes made to the ownership of the tokens
-	 * @param accountRel       - the relationship between the account, which owns the tokens, and the token
-	 * @param serialNumbers    - a list of serial numbers, representing the tokens to be wiped
+	 * @param ownershipTracker
+	 * 		- a tracker of changes made to the ownership of the tokens
+	 * @param accountRel
+	 * 		- the relationship between the account, which owns the tokens, and the token
+	 * @param serialNumbers
+	 * 		- a list of serial numbers, representing the tokens to be wiped
 	 */
 	public void wipe(OwnershipTracker ownershipTracker, TokenRelationship accountRel, List<Long> serialNumbers) {
 		validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID);
@@ -531,7 +545,8 @@ public class Token {
 	 * Creates new {@link TokenRelationship} for the specified {@link Account}
 	 * IMPORTANT: The provided account is set to KYC granted and unfrozen by default
 	 *
-	 * @param account the Account for which to create the relationship
+	 * @param account
+	 * 		the Account for which to create the relationship
 	 * @return newly created {@link TokenRelationship}
 	 */
 	public TokenRelationship newEnabledRelationship(final Account account) {
@@ -703,6 +718,14 @@ public class Token {
 		this.frozenByDefault = frozenByDefault;
 	}
 
+	public boolean isKycGrantedByDefault() {
+		return kycGrantedByDefault;
+	}
+
+	public void setKycGrantedByDefault(boolean kycGrantedByDefault) {
+		this.kycGrantedByDefault = kycGrantedByDefault;
+	}
+
 	public Id getId() {
 		return id;
 	}
@@ -853,6 +876,7 @@ public class Token {
 				.add("kycKey", describe(kycKey))
 				.add("freezeKey", describe(freezeKey))
 				.add("frozenByDefault", frozenByDefault)
+				.add("kycGrantedByDefault", kycGrantedByDefault)
 				.add("supplyKey", describe(supplyKey))
 				.add("currentSerialNumber", lastUsedSerialNumber)
 				.toString();
@@ -877,6 +901,7 @@ public class Token {
 	public List<FcCustomFee> getCustomFees() {
 		return customFees;
 	}
+
 	public void setCustomFees(final List<FcCustomFee> customFees) {
 		this.customFees = customFees;
 	}
