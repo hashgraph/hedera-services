@@ -26,6 +26,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.BaseErroringAssertsProvider;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -112,6 +113,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						handlesUseOfDefaultTokenId(),
 						contractInfoQueriesAsExpected(),
 						dissociateHasExpectedSemanticsForDeletedTokens(),
+						dissociateHasExpectedSemanticsForDissociatedContracts()
 				}
 		);
 	}
@@ -497,6 +499,38 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 												.kyc(KycNotApplicable)
 												.freeze(FreezeNotApplicable))
 								.logged()
+				);
+	}
+
+	public HapiApiSpec dissociateHasExpectedSemanticsForDissociatedContracts() {
+		final var multiKey = "multiKey";
+		final var uniqToken = "UniqToken";
+		final var contract = "1bUnfrozen";
+		final var bytecode = "bytecode";
+		final var firstMeta = ByteString.copyFrom("FIRST".getBytes(StandardCharsets.UTF_8));
+		final var secondMeta = ByteString.copyFrom("SECOND".getBytes(StandardCharsets.UTF_8));
+		final var thirdMeta = ByteString.copyFrom("THIRD".getBytes(StandardCharsets.UTF_8));
+
+		return defaultHapiSpec("DissociateHasExpectedSemanticsForDeletedTokens")
+				.given(
+						newKeyNamed(multiKey),
+						cryptoCreate(TOKEN_TREASURY).balance(0L).maxAutomaticTokenAssociations(542),
+						fileCreate(bytecode).path(ContractResources.FUSE_BYTECODE_PATH),
+						contractCreate(contract).bytecode(bytecode),
+						tokenCreate(uniqToken)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0)
+								.supplyKey(multiKey)
+								.treasury(TOKEN_TREASURY),
+						mintToken(uniqToken, List.of(firstMeta, secondMeta, thirdMeta)),
+						getAccountInfo(TOKEN_TREASURY).logged()
+				).when(
+						tokenAssociate(contract, uniqToken),
+						tokenDissociate(contract, uniqToken)
+				).then(
+						cryptoTransfer(TokenMovement.movingUnique(uniqToken, 1L)
+								.between(TOKEN_TREASURY, contract)
+						).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
 				);
 	}
 
