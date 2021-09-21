@@ -34,16 +34,6 @@ public class DataFileLowLevelTest {
     protected static final Map<TestType,Path> dataFileMap = new HashMap<>();
     protected static final Map<TestType,LongArrayList> listOfDataItemLocationsMap = new HashMap<>();
 
-    protected enum TestType {
-        fixed(new ExampleFixedSizeDataSerializer()),
-        variable(new ExampleVariableSizeDataSerializer());
-        public final DataItemSerializer<long[]> dataItemSerializer;
-
-        TestType(DataItemSerializer<long[]> dataItemSerializer) {
-            this.dataItemSerializer = dataItemSerializer;
-        }
-    }
-
     // =================================================================================================================
     // Helper Methods
 
@@ -91,7 +81,7 @@ public class DataFileLowLevelTest {
 
     @BeforeAll
     static void setup() throws IOException {
-        tempFileDir = Files.createTempDirectory("DataTest");
+        tempFileDir = Files.createTempDirectory("DataFileLowLevelTest");
     }
 
     @Order(2)
@@ -129,7 +119,7 @@ public class DataFileLowLevelTest {
     @Order(100)
     @ParameterizedTest
     @EnumSource(TestType.class)
-    public void checkMetadataOfWrittenFile(TestType testType) throws IOException {
+    public void checkMetadataOfWrittenFile(TestType testType){
         final var dataFileMetadata = dataFileMetadataMap.get(testType);
         // check metadata
         assertEquals(1000,dataFileMetadata.getDataItemCount());
@@ -179,6 +169,7 @@ public class DataFileLowLevelTest {
                     int repeatCount = getRepeatCountForKey(i);
                     // read size
                     int size = (int) longBuf.get();
+                    // TODO be nice to assert size
                     // read key
                     assertEquals(i,longBuf.get());
                     for (int j = 0; j < repeatCount; j++) {
@@ -286,7 +277,7 @@ public class DataFileLowLevelTest {
     }
 
     @AfterAll
-    static void cleanup() throws Exception {
+    static void cleanup() {
         // clean up and delete files
         deleteDirectoryAndContents(tempFileDir);
     }

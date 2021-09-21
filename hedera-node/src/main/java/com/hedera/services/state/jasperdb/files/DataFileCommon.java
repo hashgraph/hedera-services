@@ -54,8 +54,6 @@ public class DataFileCommon {
      * is needed by ThreeLongsList. For internal hashes stored that size is 32Gb.
      */
     static final long MAX_DATA_FILE_SIZE = 16*GB;
-    /** Size of keys in bytes, assumed to be a single long as all our use cases just needed a long */
-    static final int DATA_ITEM_KEY_SIZE = Long.BYTES;
     /** The current file format version, ready for if the file format needs to change */
     static final int FILE_FORMAT_VERSION = 1;
     /** Date formatter for dates used in data file names */

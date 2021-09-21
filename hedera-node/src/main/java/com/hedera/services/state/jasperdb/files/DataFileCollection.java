@@ -59,6 +59,7 @@ public class DataFileCollection<D> {
         this.storeName = storeName;
         this.dataItemSerializer = dataItemSerializer;
         // check if exists, if so open existing files
+        System.out.println("Files.exists(storeDir) = " + Files.exists(storeDir));
         if (Files.exists(storeDir)) {
             if (!Files.isDirectory(storeDir)) throw new IOException("Tried to DataFileCollection with a storage directory that is not a directory. ["+storeDir.toAbsolutePath()+"]");
             final DataFileReader<D>[] dataFileReaders = (DataFileReader<D>[]) Files.list(storeDir)
@@ -71,7 +72,7 @@ public class DataFileCollection<D> {
                             }
                         })
                         .sorted()
-                        .toArray();
+                        .toArray(DataFileReader[]::new);
             if (dataFileReaders.length > 0) {
                 System.out.println("Loading existing set of ["+dataFileReaders.length+"] data files for DataFileCollection ["+storeName+"] ...");
                 indexedFileList.set(new ImmutableIndexedObjectListUsingArray<>(dataFileReaders));
@@ -101,6 +102,7 @@ public class DataFileCollection<D> {
                 this.loadedFromExistingFiles = false;
             }
         } else {
+            System.out.println("HELLO");
             // create store dir
             Files.createDirectories(storeDir);
             // next file will have index zero

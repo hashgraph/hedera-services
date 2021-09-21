@@ -17,7 +17,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.state.jasperdb.JasperDbTestUtils.deleteDirectoryAndContents;
-import static com.hedera.services.state.jasperdb.files.DataFileCommon.DATA_ITEM_KEY_SIZE;
 import static com.hedera.services.state.jasperdb.files.DataFileCommon.VARIABLE_DATA_SIZE;
 import static org.junit.jupiter.api.Assertions.*;
 
