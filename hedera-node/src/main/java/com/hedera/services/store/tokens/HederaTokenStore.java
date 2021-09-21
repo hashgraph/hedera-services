@@ -189,8 +189,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	public ResponseCodeEnum associate(AccountID aId, List<TokenID> tokens, boolean automaticAssociation) {
 		return fullySanityChecked(true, aId, tokens, (account, tokenIds) -> {
 			final var accountTokens = hederaLedger.getAssociatedTokens(aId);
-			System.out.println("  ... Currently associated tokens for account num #"
-					+ aId.getAccountNum() + " are " + accountTokens);
 			for (var id : tokenIds) {
 				if (accountTokens.includes(id)) {
 					return TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
@@ -836,7 +834,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		if (aCounterPartyId != null) {
 			key = asTokenRel(aCounterPartyId, tId);
 			if (!tokenRelsLedger.exists(key)) {
-				validity = validateAndAutoAssociate(aId, tId);
+				validity = validateAndAutoAssociate(aCounterPartyId, tId);
 				if (validity != OK) {
 					return validity;
 				}
@@ -848,8 +846,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 	private ResponseCodeEnum validateAndAutoAssociate(AccountID aId, TokenID tId) {
 		if (hederaLedger.maxAutomaticAssociations(aId) > 0) {
-			System.out.println("Trying to auto-associate token num #"
-					+ tId.getTokenNum() + " to account num #" + aId.getAccountNum());
 			return associate(aId, List.of(tId), true);
 		}
 		return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;

@@ -127,7 +127,6 @@ public class AccountStore {
 		mutableAccount.setNftsOwned(account.getOwnedNfts());
 		mutableAccount.setMaxAutomaticAssociations(account.getMaxAutomaticAssociations());
 		mutableAccount.setAlreadyUsedAutomaticAssociations(account.getAlreadyUsedAutomaticAssociations());
-		System.out.println("Persisted account #" + id.getNum() + " -> " + mutableAccount);
 	}
 
 	private void validateUsable(MerkleAccount merkleAccount, @Nullable ResponseCodeEnum explicitResponse) {
