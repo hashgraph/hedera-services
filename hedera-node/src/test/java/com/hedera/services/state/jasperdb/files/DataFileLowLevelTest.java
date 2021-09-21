@@ -262,8 +262,7 @@ public class DataFileLowLevelTest {
         final LongArrayList newDataLocations = new LongArrayList(1000);
         while (fileIterator.next()) {
             final ByteBuffer itemData = fileIterator.getDataItemData();
-            newDataLocations.add(newDataFileWriter.writeCopiedDataItem(dataFileMetadata.getSerializationVersion(),
-                    itemData.remaining(),itemData));
+            newDataLocations.add(newDataFileWriter.writeCopiedDataItem(dataFileMetadata.getSerializationVersion(),itemData));
         }
         final var newDataFileMetadata = newDataFileWriter.finishWriting(0,1000);
         // now read back and check

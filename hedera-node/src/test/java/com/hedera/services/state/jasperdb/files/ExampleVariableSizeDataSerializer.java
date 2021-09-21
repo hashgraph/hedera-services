@@ -45,6 +45,16 @@ public class ExampleVariableSizeDataSerializer implements DataItemSerializer<lon
     }
 
     /**
+     * For variable sized data get the typical  number of bytes a data item takes when serialized
+     *
+     * @return Either for fixed size same as getSerializedSize() or an estimated typical size for data items
+     */
+    @Override
+    public int getTypicalSerializedSize() {
+        return Long.BYTES*12;
+    }
+
+    /**
      * Get the current data item serialization version
      */
     @Override

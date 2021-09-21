@@ -6,7 +6,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -14,7 +13,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.hedera.services.state.jasperdb.JasperDbTestUtils.deleteDirectoryAndContents;
 import static com.hedera.services.state.jasperdb.files.DataFileCommon.FOOTER_SIZE;
@@ -29,7 +28,6 @@ public class DataFileCollectionTest {
             new HashMap<>();
     protected static final Map<TestType,LongArrayList> storedOffsetsMap = new HashMap<>();
     protected static long fixedSizeDataFileSize;
-    protected static AtomicBoolean mergeComplete;
 
     // =================================================================================================================
     // Helper Methods
@@ -45,21 +43,21 @@ public class DataFileCollectionTest {
     /**
      * Create an example variable sized data item with lengths of data from 0 to 20.
      */
-    private static long[] getVariableSizeDataForI(int i) {
+    private static long[] getVariableSizeDataForI(int i, int valueAddition) {
         int repeatCount = getRepeatCountForKey(i);
         long[] dataValue = new long[1+repeatCount];
         dataValue[0] = i;
         for (int j = 1; j < dataValue.length; j++) {
-            dataValue[j] = i+10_000;
+            dataValue[j] = i+valueAddition;
         }
         return dataValue;
     }
 
-    protected static void check1000Impl(TestType testType) throws Exception {
+    protected static void checkData(TestType testType, int fromIndex, int toIndexExclusive, int valueAddition) throws Exception {
         final var fileCollection = fileCollectionMap.get(testType);
         final var storedOffsets = storedOffsetsMap.get(testType);
         // now read back all the data and check all data
-        for (int i = 0; i < 1000; i++) {
+        for (int i = fromIndex; i < toIndexExclusive; i++) {
             long storedOffset = storedOffsets.get(i);
             // read
             final var dataItem = fileCollection.readDataItem(storedOffset);
@@ -70,11 +68,11 @@ public class DataFileCollectionTest {
                 case fixed:
                     assertEquals(2, dataItem.length); // size
                     assertEquals(i,dataItem[0]); // key
-                    assertEquals(i+10_000,dataItem[1]); // value
+                    assertEquals(i+valueAddition,dataItem[1]); // value
                     break;
                 case variable:
                     assertEquals(
-                            Arrays.toString(getVariableSizeDataForI(i)),
+                            Arrays.toString(getVariableSizeDataForI(i, valueAddition)),
                             Arrays.toString(dataItem));
                     break;
             }
@@ -103,10 +101,8 @@ public class DataFileCollectionTest {
     @BeforeAll
     static void setup() throws IOException {
         tempFileDir = Files.createTempDirectory("DataFileReaderCollectionFixedSizeDataTest");
-        System.out.println("Files.list(tempFileDir) = " + Files.list(tempFileDir).map(Path::toString).collect(Collectors.joining(",")));
         // delete any old content there from previous tests runs
         deleteDirectoryAndContents(tempFileDir);
-//        System.out.println("Files.list(tempFileDir) = " + Files.list(tempFileDir).map(Path::toString).collect(Collectors.joining(",")));
     }
 
     @Order(1)
@@ -133,7 +129,7 @@ public class DataFileCollectionTest {
                         dataValue = new long[]{i,i+10_000};
                         break;
                     case variable:
-                        dataValue = getVariableSizeDataForI(i);
+                        dataValue = getVariableSizeDataForI(i, 10_000);
                         break;
                 }
                 // store in file
@@ -167,7 +163,7 @@ public class DataFileCollectionTest {
     @ParameterizedTest
     @EnumSource(TestType.class)
     public void check1000(TestType testType) throws Exception {
-        check1000Impl(testType);
+        checkData(testType, 0, 1000, 10_000);
     }
 
     @Order(4)
@@ -208,121 +204,146 @@ public class DataFileCollectionTest {
     @ParameterizedTest
     @EnumSource(TestType.class)
     public void check1000AfterReopen(TestType testType) throws Exception {
-        check1000Impl(testType);
+        checkData(testType, 0, 1000, 10_000);
     }
-//
-//    @Test
-//    @Order(100)
-//    public void merge() throws Exception {
-//        IntStream.range(0,2).parallel().forEach(thread -> {
-//            if (thread == 0) { // checking thread, keep reading and checking data all the time while we are merging
-//                while(!mergeComplete.get()) {
-//                    try {
-//                        check1000Impl();
-//                    } catch (Exception e) {
-//                        e.printStackTrace();
-//                    }
-//                }
-//            } else if (thread == 1) { // move thread
-//                try {
-//                    var filesToMerge = fileCollection.getAllFullyWrittenFiles(Integer.MAX_VALUE);
-//                    System.out.println("filesToMerge = " + filesToMerge.size());
-//                    fileCollection.mergeFiles(moves -> {
-//                        assertEquals(1000,moves.size());
-//                        moves.forEach((key, oldValue, newValue) -> {
-//                            System.out.printf("move from file %d item %d -> file %d item %d\n",
-//                                    DataFileCommon.fileIndexFromDataLocation(oldValue),
-//                                    DataFileCommon.byteOffsetFromDataLocation(oldValue),
-//                                    DataFileCommon.fileIndexFromDataLocation(newValue),
-//                                    DataFileCommon.byteOffsetFromDataLocation(newValue)
-//                            );
-//                            int index = storedOffsets.indexOf(oldValue);
-//                            storedOffsets.set(index, newValue);
-//                        });
-//                    }, filesToMerge);
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                }
-//                mergeComplete.set(true);
-//            }
-//        });
-//        // check we only have 1 file left
-//        assertEquals(1,Files.list(tempFileDir).count());
-//    }
-//
-//    @Test
-//    @Order(101)
-//    public void check1000AfterMerge() throws Exception {
-//        check1000Impl();
-//    }
-//
-//
-//    @Test
-//    @Order(200)
-//    public void changeSomeData() throws Exception {
-//        fileCollection.startWriting();
-//        // put in 1000 items
-//        for (int i = 0; i < 50; i++) {
-//            int newI = i * 31;
-//            // store in file
-//            storedOffsets.set(i, fileCollection.storeDataItem(new long[]{i,newI}));
-//        }
-//        fileCollection.endWriting(0,100);
-//        // check we now have 11 files
-//        assertEquals(11,Files.list(tempFileDir).count());
-//    }
-//
-//    @Test
-//    @Order(201)
-//    public void check1000BeforeMerge() throws Exception {
-//        check1000ImplNewData();
-//    }
-//
-//    @Test
-//    @Order(202)
-//    public void merge2() throws Exception {
-//        IntStream.range(0,5).parallel().forEach(thread -> {
-//            if (thread == 0) { // checking thread, keep reading and checking data all the time while we are merging
-//                while(!mergeComplete.get()) {
-//                    try {
-//                        check1000ImplNewData();
-//                    } catch (Exception e) {
-//                        e.printStackTrace();
-//                    }
-//                }
-//            } else if (thread == 1) { // move thread
-//                // merge 5 files
-//                try {
-//                    var allFiles = fileCollection.getAllFullyWrittenFiles(Integer.MAX_VALUE);
-//                    var filesToMerge = allFiles.subList(0,5);
-//                    fileCollection.mergeFiles(
-//                            moves -> moves.forEach((key, oldValue, newValue) -> {
-//
-//                                System.out.printf("move key %d from file %d item %d -> file %d item %d, updating = %b\n",
-//                                        key,
-//                                        DataFileCommon.fileIndexFromDataLocation(oldValue),
-//                                        DataFileCommon.byteOffsetFromDataLocation(oldValue),
-//                                        DataFileCommon.fileIndexFromDataLocation(newValue),
-//                                        DataFileCommon.byteOffsetFromDataLocation(newValue),
-//                                        storedOffsets.get((int)key) == oldValue
-//                                );
-//                                if (storedOffsets.get((int)key) == oldValue) storedOffsets.set((int)key, newValue);
-//                            }), filesToMerge);
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                }
-//                mergeComplete.set(true);
-//            }
-//        });
-//        // check we 7 files left, as we merged 5 out of 11
-//        assertEquals(7,Files.list(tempFileDir).count());
-//    }
-//
-//    @Test
-//    @Order(103)
-//    public void check1000AfterMerge1() throws Exception {
-//        check1000ImplNewData();
-//    }
+
+    @Order(100)
+    @ParameterizedTest
+    @EnumSource(TestType.class)
+    public void merge(TestType testType) throws Exception {
+        final var fileCollection = fileCollectionMap.get(testType);
+        final var storedOffsets = storedOffsetsMap.get(testType);
+        final AtomicBoolean mergeComplete = new AtomicBoolean(false);
+        IntStream.range(0,2).parallel().forEach(thread -> {
+            if (thread == 0) { // checking thread, keep reading and checking data all the time while we are merging
+                while(!mergeComplete.get()) {
+                    try {
+                        checkData(testType, 0, 1000, 10_000);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            } else if (thread == 1) { // move thread
+                try {
+                    var filesToMerge = fileCollection.getAllFullyWrittenFiles(Integer.MAX_VALUE);
+                    System.out.println("filesToMerge = " + filesToMerge.size());
+                    fileCollection.mergeFiles(moves -> {
+                        assertEquals(1000,moves.size());
+                        moves.forEach((key, oldValue, newValue) -> {
+                            System.out.printf("move from file %d item %d -> file %d item %d\n",
+                                    DataFileCommon.fileIndexFromDataLocation(oldValue),
+                                    DataFileCommon.byteOffsetFromDataLocation(oldValue),
+                                    DataFileCommon.fileIndexFromDataLocation(newValue),
+                                    DataFileCommon.byteOffsetFromDataLocation(newValue)
+                            );
+                            int index = storedOffsets.indexOf(oldValue);
+                            storedOffsets.set(index, newValue);
+                        });
+                    }, filesToMerge);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                mergeComplete.set(true);
+            }
+        });
+        // check we only have 1 file left
+        assertEquals(1,Files.list(tempFileDir.resolve(testType.name())).count());
+    }
+
+    @Order(101)
+    @ParameterizedTest
+    @EnumSource(TestType.class)
+    public void check1000AfterMerge(TestType testType) throws Exception {
+        checkData(testType, 0, 1000, 10_000);
+    }
+
+
+    @Order(200)
+    @ParameterizedTest
+    @EnumSource(TestType.class)
+    public void changeSomeData(TestType testType) throws Exception {
+        final var fileCollection = fileCollectionMap.get(testType);
+        final var storedOffsets = storedOffsetsMap.get(testType);
+        fileCollection.startWriting();
+        // put in 1000 items
+        for (int i = 0; i < 50; i++) {
+            long[] dataValue;
+            switch(testType) {
+                default:
+                case fixed:
+                    dataValue = new long[]{i,i+100_000};
+                    break;
+                case variable:
+                    dataValue = getVariableSizeDataForI(i, 100_000);
+                    break;
+            }
+            int newI = i * 31;
+            // store in file
+            storedOffsets.set(i, fileCollection.storeDataItem(dataValue));
+        }
+        fileCollection.endWriting(0,100);
+        // check we now have 2 files
+        assertEquals(2,Files.list(tempFileDir.resolve(testType.name())).count());
+    }
+
+    @Order(201)
+    @ParameterizedTest
+    @EnumSource(TestType.class)
+    public void check1000BeforeMerge(TestType testType) throws Exception {
+        checkData(testType,0,50,100_000);
+        checkData(testType,50,1000,10_000);
+    }
+
+    @Order(202)
+    @ParameterizedTest
+    @EnumSource(TestType.class)
+    public void merge2(TestType testType) throws Exception {
+        final var fileCollection = fileCollectionMap.get(testType);
+        final var storedOffsets = storedOffsetsMap.get(testType);
+        final AtomicBoolean mergeComplete = new AtomicBoolean(false);
+        IntStream.range(0,2).parallel().forEach(thread -> {
+            if (thread == 0) { // checking thread, keep reading and checking data all the time while we are merging
+                while(!mergeComplete.get()) {
+                    try {
+                        checkData(testType,0,50,100_000);
+                        checkData(testType,50,1000,10_000);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            } else if (thread == 1) { // move thread
+                // merge 2 files
+                try {
+                    var allFiles = fileCollection.getAllFullyWrittenFiles();
+                    fileCollection.mergeFiles(
+                            moves -> moves.forEach((key, oldValue, newValue) -> {
+                                System.out.printf("move key %d from file %d item %d -> file %d item %d, updating = %b\n",
+                                        key,
+                                        DataFileCommon.fileIndexFromDataLocation(oldValue),
+                                        DataFileCommon.byteOffsetFromDataLocation(oldValue),
+                                        DataFileCommon.fileIndexFromDataLocation(newValue),
+                                        DataFileCommon.byteOffsetFromDataLocation(newValue),
+                                        storedOffsets.get((int)key) == oldValue
+                                );
+                                if (storedOffsets.get((int)key) == oldValue) storedOffsets.set((int)key, newValue);
+                            }), allFiles);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                mergeComplete.set(true);
+            }
+        });
+        // check we 7 files left, as we merged 5 out of 11
+        assertEquals(1,Files.list(tempFileDir.resolve(testType.name())).count());
+    }
+
+    @Order(203)
+    @ParameterizedTest
+    @EnumSource(TestType.class)
+    public void check1000AfterMerge2(TestType testType) throws Exception {
+        checkData(testType,0,50,100_000);
+        checkData(testType,50,1000,10_000);
+    }
 
     @Order(1000)
     @ParameterizedTest

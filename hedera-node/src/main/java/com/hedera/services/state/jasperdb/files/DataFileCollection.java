@@ -66,7 +66,7 @@ public class DataFileCollection<D> {
                         .filter(path -> isFullyWrittenDataFile(storeName,path))
                         .map(path -> {
                             try {
-                                return new DataFileReader<D>(path, dataItemSerializer) {};
+                                return new DataFileReader<>(path, dataItemSerializer);
                             } catch (IOException e) {
                                 throw new RuntimeException(e);
                             }
@@ -245,7 +245,6 @@ public class DataFileCollection<D> {
                 // write that key from newest iterator to new merge file
                 long newDataLocation = newFileWriter.writeCopiedDataItem(
                         newestIteratorWithLowestKey.getMetadata().getSerializationVersion(),
-                        newestIteratorWithLowestKey.getMetadata().getDataItemValueSize(),
                         newestIteratorWithLowestKey.getDataItemData());
 //                long newDataLocation = newestIteratorWithLowestKey.writeItemData(newFileWriter);
 //                long newDataLocation = newFileWriter.storeData(newestIteratorWithLowestKey.getDataItemData());

@@ -91,19 +91,19 @@ public final class DataFileWriter<D> {
 
     /**
      * Write a data item copied from another file like during merge. The data item serializer copyItem() method will be
-     * called to give it a chance to pass the data for or upgrade the seralization as needed.
+     * called to give it a chance to pass the data for or upgrade the serialization as needed.
      *
      * @param serializedVersion the serialization version the item was written with
-     * @param dataItemSize The number of bytes for the data item
-     * @param dataItemData ByteBuffer containing the items data
+     * @param dataItemData ByteBuffer containing the item's data, it is assumed dataItemData.remaining() is the amount
+     *                     of data to write.
      * @return New data location in this file where it was written
      * @throws IOException If there was a problem writing the data item
      */
-    public synchronized long writeCopiedDataItem(long serializedVersion, int dataItemSize, ByteBuffer dataItemData) throws IOException {
+    public synchronized long writeCopiedDataItem(long serializedVersion, ByteBuffer dataItemData) throws IOException {
         // capture the current write position for beginning of data item
         final long byteOffset = writePosition;
         // copy the item into the file
-        final int newDataItemSize = dataItemSerializer.copyItem(serializedVersion, dataItemSize, dataItemData, writingStream);
+        final int newDataItemSize = dataItemSerializer.copyItem(serializedVersion, dataItemData.remaining(), dataItemData, writingStream);
         // update writePosition
         writePosition += newDataItemSize;
         // increment data item counter
