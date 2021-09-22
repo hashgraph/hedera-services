@@ -30,7 +30,6 @@ import com.hedera.services.queries.AnswerService;
 import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
-import com.hedera.services.txns.submission.SystemPrecheck;
 import com.hedera.services.txns.submission.TransactionPrecheck;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -44,9 +43,9 @@ import javax.annotation.Nullable;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.LongPredicate;
 import java.util.function.Supplier;
 
+import static com.hedera.services.txns.submission.SystemPrecheck.IS_THROTTLE_EXEMPT;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -54,9 +53,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 
 public final class StakedAnswerFlow implements AnswerFlow {
-	private LongPredicate isThrottleExempt = SystemPrecheck.IS_THROTTLE_EXEMPT;
-	private Supplier<Instant> now = Instant::now;
-
 	private final FeeCalculator fees;
 	private final QueryFeeCheck queryFeeCheck;
 	private final AccountNumbers accountNums;
@@ -121,7 +117,7 @@ public final class StakedAnswerFlow implements AnswerFlow {
 
 		final var bestGuessNow = (null != optionalPayment)
 				? optionalPayment.getTxnId().getTransactionValidStart()
-				: asTimestamp(now.get());
+				: asTimestamp(Instant.now());
 		final var usagePrices = resourceCosts.defaultPricesGiven(service.canonicalFunction(), bestGuessNow);
 
 		long fee = 0L;
@@ -186,7 +182,7 @@ public final class StakedAnswerFlow implements AnswerFlow {
 			}
 		}
 
-		if (payer == null || !isThrottleExempt.test(payer.getAccountNum())) {
+		if (payer == null || !IS_THROTTLE_EXEMPT.test(payer.getAccountNum())) {
 			return throttles.shouldThrottleQuery(function) ? BUSY : OK;
 		} else {
 			return OK;
@@ -195,13 +191,5 @@ public final class StakedAnswerFlow implements AnswerFlow {
 
 	private long totalOf(FeeObject costs) {
 		return costs.getNetworkFee() + costs.getServiceFee() + costs.getNodeFee();
-	}
-
-	void setIsThrottleExempt(LongPredicate isThrottleExempt) {
-		this.isThrottleExempt = isThrottleExempt;
-	}
-
-	void setNow(Supplier<Instant> now) {
-		this.now = now;
 	}
 }

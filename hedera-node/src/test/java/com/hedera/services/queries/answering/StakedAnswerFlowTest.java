@@ -69,6 +69,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -76,7 +77,8 @@ import static org.mockito.Mockito.verify;
 class StakedAnswerFlowTest {
 	private static final long queryCost = 666L;
 	private static final FeeObject detailCost = new FeeObject(111L, 222L, 333L);
-	private static final Timestamp now = MiscUtils.asTimestamp(Instant.ofEpochSecond(1_234_567L));
+	private static final Instant instant = Instant.ofEpochSecond(1_234_567L);
+	private static final Timestamp now = MiscUtils.asTimestamp(instant);
 	private static final AccountID node = IdUtils.asAccount("0.0.3");
 	private static final AccountID payer = IdUtils.asAccount("0.0.1234");
 	private static final AccountID superuser = IdUtils.asAccount("0.0.50");
@@ -289,7 +291,8 @@ class StakedAnswerFlowTest {
 	@Test
 	void returnsCostToCostAnswer() {
 		setupCostAwareSuccessServiceResponse();
-		subject.setNow(() -> Instant.ofEpochSecond(now.getSeconds()));
+		final var mockedStatic = mockStatic(Instant.class);
+		mockedStatic.when(Instant::now).thenReturn(instant);
 		givenValidHeader();
 		givenAvailFunction();
 		givenCapacity();
@@ -301,12 +304,15 @@ class StakedAnswerFlowTest {
 		final var actual = subject.satisfyUsing(service, query);
 
 		assertEquals(response, actual);
+
+		mockedStatic.close();
 	}
 
 	@Test
 	void returnsCostToCostAnswerEvenIfBadPayment() {
 		setupCostAwareSuccessServiceResponse();
-		subject.setNow(() -> Instant.ofEpochSecond(now.getSeconds()));
+		final var mockedStatic = mockStatic(Instant.class);
+		mockedStatic.when(Instant::now).thenReturn(instant);
 		givenValidHeader();
 		givenExtractablePayment();
 		givenAvailFunction();
@@ -320,12 +326,13 @@ class StakedAnswerFlowTest {
 
 		assertEquals(response, actual);
 		verify(transactionPrecheck, never()).performForQueryPayment(any());
+
+		mockedStatic.close();
 	}
 
 	@Test
 	void doesNotThrottleIfSuperuser() {
 		setupCostAwareSuccessServiceResponse();
-		subject.setIsThrottleExempt(num -> num == payer.getAccountNum());
 		givenValidHeader();
 		givenExtractablePayment();
 		givenValidExtraction();
