@@ -46,7 +46,9 @@ import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hedera.services.usage.token.meta.TokenBurnMeta;
 import com.hedera.services.usage.token.meta.TokenCreateMeta;
 import com.hedera.services.usage.token.meta.TokenDeleteMeta;
+import com.hedera.services.usage.token.meta.TokenGrantKycMeta;
 import com.hedera.services.usage.token.meta.TokenMintMeta;
+import com.hedera.services.usage.token.meta.TokenRevokeKycMeta;
 import com.hedera.services.usage.token.meta.TokenUpdateMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
 import com.hedera.services.utils.TxnAccessor;
@@ -81,6 +83,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccoun
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 import static java.util.stream.Collectors.toList;
@@ -328,6 +331,40 @@ class AccessorBasedUsagesTest {
 
 		// then:
 		verify(tokenOpsUsage).tokenDeleteUsage(sigUsage, baseMeta, tokenDeleteMeta, accumulator);
+	}
+
+	@Test
+	void worksAsExpectedForTokenGrantKyc() {
+		// setup:
+		final var baseMeta = new BaseTransactionMeta(100, 2);
+		final var tokenGrantKycMeta = new TokenGrantKycMeta(96);
+		final var accumulator = new UsageAccumulator();
+		given(txnAccessor.getFunction()).willReturn(TokenGrantKycToAccount);
+		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
+		given(txnAccessor.getSpanMapAccessor().getTokenGrantKycMeta(any())).willReturn(tokenGrantKycMeta);
+
+		// when:
+		subject.assess(sigUsage, txnAccessor, accumulator);
+
+		// then:
+		verify(tokenOpsUsage).tokenGrantKycUsage(sigUsage, baseMeta, tokenGrantKycMeta, accumulator);
+	}
+
+	@Test
+	void worksAsExpectedForTokenRevokeKyc() {
+		// setup:
+		final var baseMeta = new BaseTransactionMeta(100, 2);
+		final var tokenRevokeKycMeta = new TokenRevokeKycMeta(96);
+		final var accumulator = new UsageAccumulator();
+		given(txnAccessor.getFunction()).willReturn(TokenGrantKycToAccount);
+		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
+		given(txnAccessor.getSpanMapAccessor().getTokenRevokeKycMeta(any())).willReturn(tokenRevokeKycMeta);
+
+		// when:
+		subject.assess(sigUsage, txnAccessor, accumulator);
+
+		// then:
+		verify(tokenOpsUsage).tokenRevokeKycUsage(sigUsage, baseMeta, tokenRevokeKycMeta, accumulator);
 	}
 
 

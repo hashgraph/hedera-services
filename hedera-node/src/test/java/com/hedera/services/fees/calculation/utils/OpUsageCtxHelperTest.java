@@ -259,7 +259,6 @@ class OpUsageCtxHelperTest {
 		assertEquals(80, tokenWipeMeta.getTransferRecordDb());
 	}
 
-
 	@Test
 	void getCtxFromRealTokenInfoWorks() {
 		given(txnBody.getTokenUpdate()).willReturn(tokenUpdateTxnBody);
@@ -270,6 +269,16 @@ class OpUsageCtxHelperTest {
 
 		assertEquals(236, ctx.getExistingRbSize());
 		assertEquals(1_234_567L, ctx.getExistingExpiry());
+	}
+	@Test
+	void getCtxFromRealTokenInfoWithoutKeysWorks() {
+		given(txnBody.getTokenUpdate()).willReturn(tokenUpdateTxnBody);
+		given(tokenUpdateTxnBody.getToken()).willReturn(target);
+		given(workingView.infoForToken(target)).willReturn(Optional.of(tokenNoKeysInfo));
+
+		ExtantTokenContext ctx = subject.ctxForTokenUpdate(txnBody);
+
+		assertEquals(20, ctx.getExistingRbSize());
 	}
 
 	@Test
@@ -390,6 +399,13 @@ class OpUsageCtxHelperTest {
 			.setAutoRenewAccount(accountID)
 			.setExpiry(Timestamp.newBuilder().setSeconds(1_234_567L).build())
 			.build();
+
+	private final TokenInfo tokenNoKeysInfo = TokenInfo.newBuilder()
+			.setSymbol("ABCD")
+			.setName("token-name")
+			.setMemo("a memo")
+			.build();
+
 
 	private static final Key KEY_1 = Key.newBuilder()
 			.setEd25519(ByteString.copyFromUtf8("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))

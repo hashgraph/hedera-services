@@ -27,8 +27,12 @@ import java.io.IOException;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
@@ -65,5 +69,24 @@ class TokenFeeSchedulesTest extends FeeSchedulesTestHelper {
 	@Test
 	void computesExpectedPriceForFeeScheduleUpdate() throws IOException {
 		testCanonicalPriceFor(TokenFeeScheduleUpdate, DEFAULT);
+	}
+
+	@Test
+	void computesExpectedPriceForTokenGrantKyc() throws IOException {
+		testCanonicalPriceFor(TokenGrantKycToAccount, DEFAULT);
+	}
+	@Test
+	void computesExpectedPriceForTokenRevokeKyc() throws IOException {
+		testCanonicalPriceFor(TokenRevokeKycFromAccount, DEFAULT);
+	}
+
+	@Test
+	void computesExpectedPriceForTokenDelete() throws IOException {
+		testCanonicalPriceFor(TokenDelete, DEFAULT);
+	}
+
+	@Test
+	void computesExpectedPriceForTokenUpdate() throws IOException {
+		testCanonicalPriceFor(TokenUpdate, DEFAULT);
 	}
 }

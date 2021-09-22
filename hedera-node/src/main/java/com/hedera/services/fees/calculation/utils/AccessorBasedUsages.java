@@ -46,7 +46,9 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 
 @Singleton
@@ -116,6 +118,10 @@ public class AccessorBasedUsages {
 			estimateTokenUpdate(sigUsage, accessor, baseMeta, into);
 		} else if (function == TokenDelete) {
 			estimateTokenDelete(sigUsage, accessor, baseMeta, into);
+		} else if (function == TokenGrantKycToAccount) {
+			estimateTokenGrantKyc(sigUsage, accessor, baseMeta, into);
+		} else if (function == TokenRevokeKycFromAccount) {
+			estimateTokenRevokeKyc(sigUsage, accessor, baseMeta, into);
 		}
 	}
 

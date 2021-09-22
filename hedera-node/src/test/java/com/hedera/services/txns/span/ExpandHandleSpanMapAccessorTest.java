@@ -22,6 +22,7 @@ package com.hedera.services.txns.span;
 
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
+import com.hedera.services.usage.token.meta.TokenUpdateMeta;
 import com.hedera.services.utils.TxnAccessor;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +34,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
@@ -71,6 +73,49 @@ class ExpandHandleSpanMapAccessorTest {
 	void testsForTokenWipeMetaAsExpected() {
 		Assertions.assertDoesNotThrow(() -> subject.getTokenWipeMeta(accessor));
 	}
+
+	@Test
+	void testsForTokenGrantKycMetaAsExpected() {
+		final var tokenGrantKycMeta = TOKEN_OPS_USAGE_UTILS.tokenGrantKycUsageFrom();
+
+		subject.setTokenGrantKycMeta(accessor, tokenGrantKycMeta);
+
+		assertEquals(48,  subject.getTokenGrantKycMeta(accessor).getBpt());
+	}
+
+	@Test
+	void testsForTokenRevokeKycMetaAsExpected() {
+		final var tokenRevokeKycMeta = TOKEN_OPS_USAGE_UTILS.tokenRevokeKycUsageFrom();
+
+		subject.setTokenRevokeKycMeta(accessor, tokenRevokeKycMeta);
+
+		assertEquals(48,  subject.getTokenRevokeKycMeta(accessor).getBpt());
+	}
+
+	@Test
+	void testsForTokenDeleteMetaAsExpected() {
+		final var tokenDeleteMeta = TOKEN_OPS_USAGE_UTILS.tokenDeleteUsageFrom();
+
+		subject.setTokenDeleteMeta(accessor, tokenDeleteMeta);
+
+		assertEquals(24,  subject.getTokenDeleteMeta(accessor).getBpt());
+	}
+
+	@Test
+	void testsForTokenUpdateMetaAsExpected() {
+		final var tokenUpdateMeta  = TokenUpdateMeta.newBuilder()
+				.setNewKeysLen(132)
+				.setNewSymLen(5)
+				.setNewNameLen(12)
+				.setNewEffectiveTxnStartTime(1_234_567L)
+				.setRemoveAutoRenewAccount(true)
+				.build();
+		subject.setTokenUpdateMeta(accessor, tokenUpdateMeta);
+
+		assertEquals(132,  subject.getTokenUpdateMeta(accessor).getNewKeysLen());
+		assertEquals(12,  subject.getTokenUpdateMeta(accessor).getNewNameLen());
+	}
+
 
 	@Test
 	void testsForCryptoCreateMetaAsExpected() {

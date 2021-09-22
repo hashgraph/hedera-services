@@ -20,12 +20,26 @@ package com.hedera.services.usage.token.meta;
  * ‍
  */
 
-import com.google.common.base.MoreObjects;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.junit.jupiter.api.Test;
 
-public class TokenDeleteMeta extends TokenUntypedMetaBase {
-	public TokenDeleteMeta(final int bpt) {
-		super(bpt);
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+class TokenGrantKycMetaTest {
+	@Test
+	void getterAndToStringWork() {
+		final var expected = "TokenGrantKycMeta{bpt=96}";
+
+		final var subject = new TokenGrantKycMeta(96);
+		assertEquals(96, subject.getBpt());
+		assertEquals(expected, subject.toString());
+	}
+
+	@Test
+	void hashCodeAndEqualsWork() {
+		final var meta1 = new TokenGrantKycMeta(100);
+		final var meta2 = new TokenGrantKycMeta(100);
+
+		assertEquals(meta1, meta2);
+		assertEquals(meta1.hashCode(), meta2.hashCode());
 	}
 }
