@@ -367,6 +367,7 @@ ${git.signoff}
             <forkCount>3</forkCount>
             <reuseForks>true</reuseForks>
             <argLine>@{argLine} -Xmx5120m</argLine>
+            <useSystemClassLoader>false</useSystemClassLoader>
           </configuration>
         </plugin>
         <plugin>
