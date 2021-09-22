@@ -160,7 +160,9 @@ class TokenTest {
 		assertFalse(subject.isNew());
 		assertEquals(0, subject.getDecimals());
 		assertTrue(subject.hasUpdatedTreasury());
-		
+		assertFalse(subject.isFungibleCommon());
+		assertTrue(subject.isNonFungibleUnique());
+
 		assertNotNull(subject.getSupplyKey());
 		assertNotNull(subject.getFeeScheduleKey());
 		assertNotNull(subject.getWipeKey());
@@ -272,6 +274,8 @@ class TokenTest {
 		assertEquals(TokenSupplyType.FINITE, subject.getSupplyType());
 		assertNotNull(subject.getFeeScheduleKey());
 		assertTrue(subject.isKycGrantedByDefault());
+		assertTrue(subject.isFungibleCommon());
+		assertFalse(subject.isNonFungibleUnique());
 	}
 
 	@Test
