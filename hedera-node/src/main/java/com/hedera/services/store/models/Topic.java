@@ -40,7 +40,6 @@ public class Topic {
 	private RichInstant expirationTimestamp;
 
 	private long sequenceNumber;
-	private byte[] runningHash;
 
 	public Topic(final Id id) {
 		this.id = id;
@@ -55,9 +54,11 @@ public class Topic {
 	 * @param submitKey
 	 * 		- the key which permits submitting messages
 	 * @param adminKey
+	 * 		- the adminKey of the topic
 	 * @param autoRenewAccount
 	 * 		- the account which pays for the automatic renewal of the topic
 	 * @param memo
+	 * 		- memo of the topic
 	 * @param autoRenewPeriod
 	 * 		- the period of automatic renewal
 	 * @param expirationTime
