@@ -33,7 +33,8 @@ public class TransactionProcessor<K extends VirtualKey, V extends VirtualValue, 
                 ProducerType.SINGLE,
                 new BlockingWaitStrategy());
 
-        PreFetchHandler<K,V,T> preFetchHandlers[] = new PreFetchHandler[preFetchEventHandlers];
+        @SuppressWarnings("unchecked")
+        PreFetchHandler<K,V,T>[] preFetchHandlers = (PreFetchHandler<K,V,T>[]) new PreFetchHandler[preFetchEventHandlers];
         for (int j = 0; j < preFetchEventHandlers; j++) {
             preFetchHandlers[j] = new PreFetchHandler<>(j, preFetchEventHandlers, preFetchLogic);
         }

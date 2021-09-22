@@ -3,7 +3,6 @@ package com.hedera.services.state.jasperdb;
 import com.hedera.services.state.jasperdb.files.DataFileOutputStream;
 import com.hedera.services.state.jasperdb.files.DataItemHeader;
 import com.hedera.services.state.jasperdb.files.DataItemSerializer;
-import com.hedera.services.state.jasperdb.utilities.HashTools;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -13,29 +12,26 @@ import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.function.Supplier;
 
 import static com.hedera.services.state.jasperdb.files.DataFileCommon.VARIABLE_DATA_SIZE;
 import static com.hedera.services.state.jasperdb.utilities.HashTools.byteBufferToHash;
 
 /**
+ * VirtualLeafRecordSerializer serializer responsible for serializing and deserializing virtual leaf records. It depends
+ * on the serialization implementations of the VirtualKey and VirtualValue.
  *
- * @param <K>
- * @param <V>
+ * @param <K> VirtualKey type
+ * @param <V> VirtualValue type
  */
 @SuppressWarnings("DuplicatedCode")
-class VirtualLeafRecordSerializer<K extends VirtualKey, V extends VirtualValue> implements DataItemSerializer<VirtualLeafRecord<K, V>> {
+public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends VirtualValue> implements DataItemSerializer<VirtualLeafRecord<K, V>> {
     /** The current serialization version for hash, key and value */
     private final long currentVersion;
     /** Constructor for creating new key objects during de-serialization */
     private final Supplier<K> keyConstructor;
     /** Constructor for creating new value objects during de-serialization */
     private final Supplier<V> valueConstructor;
-    /** The size in bytes for serialized key objects */
-    private final int keySizeBytes;
-    /** The size in bytes for serialized value objects */
-    private final int valueSizeBytes;
     /** computed based on keySizeBytes or valueSizeBytes == DataFileCommon.VARIABLE_DATA_SIZE */
     private final boolean hasVariableDataSize;
     /** Total size for serialized data for hash, key and value */
@@ -45,7 +41,7 @@ class VirtualLeafRecordSerializer<K extends VirtualKey, V extends VirtualValue> 
     /** DataFileOutputStream needed when we are writing variable sized data */
     private final ThreadLocal<DataFileOutputStream> dataOutputStream;
     /** True for when max serialized size can fit in one byte */
-    private boolean byteMaxSize;
+    private final boolean byteMaxSize;
 
     /**
      * Contruct a new VirtualLeafRecordSerializer
@@ -69,12 +65,10 @@ class VirtualLeafRecordSerializer<K extends VirtualKey, V extends VirtualValue> 
                 ((0x000000000000FFFFL & valueSerializationVersion) << 32);
         this.keyConstructor = keyConstructor;
         this.valueConstructor = valueConstructor;
-        this.keySizeBytes = keySizeBytes;
-        this.valueSizeBytes = valueSizeBytes;
         this.byteMaxSize = maxKeyValueSizeLessThan198;
         this.hasVariableDataSize =  keySizeBytes == VARIABLE_DATA_SIZE || valueSizeBytes == VARIABLE_DATA_SIZE;
         this.totalSerializedSize = hasVariableDataSize ? VARIABLE_DATA_SIZE :
-                (Long.BYTES + HashTools.DEFAULT_DIGEST.digestLength() + keySizeBytes + valueSizeBytes);
+                (Long.BYTES + hashDigest.digestLength() + keySizeBytes + valueSizeBytes);
         this.dataOutputStream = ThreadLocal.withInitial(
                 () -> new DataFileOutputStream(this.getTypicalSerializedSize())
         );
@@ -199,7 +193,7 @@ class VirtualLeafRecordSerializer<K extends VirtualKey, V extends VirtualValue> 
         int bytesWritten;
         if (hasVariableDataSize) {
             dataOutputStream.flush();
-            bytesWritten = + ((DataFileOutputStream)dataOutputStream).bytesWritten();
+            bytesWritten = ((DataFileOutputStream)dataOutputStream).bytesWritten();
             // write size to stream
             if (byteMaxSize) {
                 bytesWritten += 1;

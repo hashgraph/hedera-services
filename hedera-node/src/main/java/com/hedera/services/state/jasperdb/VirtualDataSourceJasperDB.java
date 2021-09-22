@@ -34,8 +34,8 @@ import static com.hedera.services.state.jasperdb.files.DataFileCommon.newestFile
 /**
  * An implementation of VirtualDataSource that uses JasperDB.
  * <p>
- * <b>IMPORTANT: This implementation assumes a single writing thread. There can be multiple readers while writing is happening.
- * Also, we totally depend on the hash and key to be fixed sizes.</b>
+ * <b>IMPORTANT: This implementation assumes a single writing thread. There can be multiple readers while writing is
+ * happening.</b>
  * <p>
  * It uses 3 main data stores to support the API of VirtualDataSource
  * <ul>

@@ -1,0 +1,128 @@
+package virtual;
+
+import com.hedera.services.state.jasperdb.files.hashmap.KeySerializer;
+import com.swirlds.common.io.SerializableDataInputStream;
+import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.virtualmap.VirtualLongKey;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Objects;
+
+@SuppressWarnings("unused")
+final class Id implements VirtualLongKey {
+    public static final int SERIALIZED_SIZE = Long.BYTES;
+
+    private long num;
+
+    public Id() {
+    }
+
+    public Id(long num) {
+        this.num = num;
+    }
+
+    public long getRealm() {
+        return 0;
+    }
+
+    public long getShard() {
+        return 0;
+    }
+
+    public long getNum() {
+        return num;
+    }
+
+    @Override
+    public void serialize(ByteBuffer byteBuffer) {
+        byteBuffer.putLong(num);
+    }
+
+    @Override
+    public void deserialize(ByteBuffer byteBuffer, int v) {
+        num = byteBuffer.getLong();
+    }
+
+    @Override
+    public boolean equals(ByteBuffer byteBuffer, int v) {
+        return byteBuffer.getLong() == num;
+    }
+
+    @Override
+    public void deserialize(SerializableDataInputStream in, int i) throws IOException {
+        num = in.readLong();
+    }
+
+    @Override
+    public long getClassId() {
+        return 0xef6e56805f996b61L;
+    }
+
+    @Override
+    public void serialize(SerializableDataOutputStream out) throws IOException {
+        out.writeLong(num);
+    }
+
+    @Override
+    public int getVersion() {
+        return 1;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Id id = (Id) o;
+        return num == id.num;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(num);
+    }
+
+    @Override
+    public String toString() {
+        return "Id(" + num + ")";
+    }
+
+    @Override
+    public long getKeyAsLong() {
+        return num;
+    }
+
+    public static class IdKeySerializer implements KeySerializer<Id> {
+
+        @Override
+        public int deserializeKeySize(ByteBuffer byteBuffer) {
+            return Long.BYTES;
+        }
+
+        @Override
+        public boolean isVariableSize() {
+            return false;
+        }
+
+        @Override
+        public int getSerializedSize() {
+            return Long.BYTES;
+        }
+
+        @Override
+        public long getCurrentDataVersion() {
+            return 1;
+        }
+
+        @Override
+        public Id deserialize(ByteBuffer byteBuffer, long l) throws IOException {
+            return new Id(byteBuffer.getLong());
+        }
+
+        @Override
+        public int serialize(Id id, SerializableDataOutputStream serializableDataOutputStream) throws IOException {
+            serializableDataOutputStream.writeLong(id.getKeyAsLong());
+            return Long.BYTES;
+        }
+    }
+}

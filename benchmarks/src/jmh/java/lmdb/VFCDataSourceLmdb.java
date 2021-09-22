@@ -252,7 +252,8 @@ public final class VFCDataSourceLmdb<K extends VirtualKey, V extends VirtualValu
             key.deserialize(keyHashValueBuffer, keySerializationVersion);
         }
         // deserialize hash
-        final Hash hash = HashTools.byteBufferToHash(keyHashValueBuffer);
+        final Hash hash = new Hash(DigestType.SHA_384);
+        keyHashValueBuffer.get(hash.getValue());
         // deserialize value
         final int valueSerializationVersion = keyHashValueBuffer.getInt();
         final V value = valueConstructor.get();
@@ -304,13 +305,14 @@ public final class VFCDataSourceLmdb<K extends VirtualKey, V extends VirtualValu
 
     private Hash getHash(ByteBuffer hashBytes) {
         hashBytes.rewind();
-        return HashTools.byteBufferToHash(hashBytes);
+        Hash hash = new Hash(DigestType.SHA_384);
+        hashBytes.get(hash.getValue());
+        return hash;
     }
 
     private ByteBuffer getHashBytes(Hash hash) {
         ByteBuffer hashData = this.hashData.get();
-        hashData.rewind();
-        HashTools.hashToByteBuffer(hash,hashData);
+        hashData.put(hash.getValue());
         return hashData.flip();
     }
 }

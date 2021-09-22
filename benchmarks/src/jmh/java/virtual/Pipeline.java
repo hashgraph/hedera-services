@@ -54,7 +54,7 @@ public class Pipeline<K extends VirtualKey, V extends VirtualValue> {
     /**
      * Create a new pipeline. Spawns all the threads.
      */
-    public Pipeline() {
+    public Pipeline(int roundsBeforeFlush) {
         hashingService.submit(new Task(() -> {
             final var cf = new CompletableFuture<Hash>();
             final var map = hashingExchanger.exchange(new HashingData(cf)).map;
@@ -85,20 +85,33 @@ public class Pipeline<K extends VirtualKey, V extends VirtualValue> {
                 masterMap.set(map);
             }
             var currentMergedRoundsCount = mergedRoundsCount.incrementAndGet();
-            if (currentMergedRoundsCount >= 20) {
-                 if (finishedArchiving.get()) { // start a new archive job
-                     mergedRoundsCount.set(0);
-                     // start a new archiving job, if we have completed at least 30 rounds and the last archiving job is complete
-                     finishedArchiving.set(false);
-                     archiveExchanger.exchange(masterMap.getAndSet(null));
-                 } else if (currentMergedRoundsCount >= 40) { // it has taken too long for archive, need some back pressure so lets wait for it
-                     // probably better way but try for now
-                     while(!finishedArchiving.get()) {
-                         System.out.print("W");
-                         //noinspection BusyWait
-                         Thread.sleep(1000);
-                     }
-                 }
+            if (currentMergedRoundsCount >= roundsBeforeFlush) {
+                // wait if we have to for last archiving job
+                while(!finishedArchiving.get()) {
+                    System.out.print("W");
+                    //noinspection BusyWait
+                    Thread.sleep(100);
+                }
+                // start a new archive job
+                mergedRoundsCount.set(0);
+                // start a new archiving job, if we have completed at least 30 rounds and the last archiving job is complete
+                finishedArchiving.set(false);
+                archiveExchanger.exchange(masterMap.getAndSet(null));
+
+
+//                 if (finishedArchiving.get()) { // start a new archive job
+//                     mergedRoundsCount.set(0);
+//                     // start a new archiving job, if we have completed at least 30 rounds and the last archiving job is complete
+//                     finishedArchiving.set(false);
+//                     archiveExchanger.exchange(masterMap.getAndSet(null));
+//                 } else if (currentMergedRoundsCount >= 40) { // it has taken too long for archive, need some back pressure so lets wait for it
+//                     // probably better way but try for now
+//                     while(!finishedArchiving.get()) {
+//                         System.out.print("W");
+//                         //noinspection BusyWait
+//                         Thread.sleep(1000);
+//                     }
+//                 }
             }
         }));
 
@@ -137,9 +150,7 @@ public class Pipeline<K extends VirtualKey, V extends VirtualValue> {
             Thread th = group == null ? new Thread(r) : new Thread(group, r);
             th.setName(namePrefix);
             th.setDaemon(true);
-            th.setUncaughtExceptionHandler((t, e) -> {
-                e.printStackTrace();
-            });
+            th.setUncaughtExceptionHandler((t, e) -> e.printStackTrace());
             return th;
         };
     }

@@ -59,7 +59,6 @@ public class DataFileCollection<D> {
         this.storeName = storeName;
         this.dataItemSerializer = dataItemSerializer;
         // check if exists, if so open existing files
-        System.out.println("Files.exists(storeDir) = " + Files.exists(storeDir));
         if (Files.exists(storeDir)) {
             if (!Files.isDirectory(storeDir)) throw new IOException("Tried to DataFileCollection with a storage directory that is not a directory. ["+storeDir.toAbsolutePath()+"]");
             final DataFileReader<D>[] dataFileReaders = (DataFileReader<D>[]) Files.list(storeDir)

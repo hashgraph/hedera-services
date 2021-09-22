@@ -1,6 +1,7 @@
 package jasperdb;
 
 import com.hedera.services.state.jasperdb.files.*;
+import com.swirlds.common.io.SerializableDataOutputStream;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
@@ -30,11 +31,9 @@ public class SmallVsBigFilesBench {
     public int dataValueSize;
     @Param({"5","20","40"})
     public int readThreads;
-    @Param({"DataFileReaderSynchronous","DataFileReaderAsynchronous","DataFileReaderThreadLocal"})
-    public String dataFileImpl;
 
     private final Random random = new Random(32146486);
-    private DataFileCollection dataFileCollection;
+    private DataFileCollection<DataBlob> dataFileCollection;
     private int numOfFiles;
     private int numOfDataItemsPerFile;
     private final ThreadLocal<ByteBuffer> dataReadBuffer = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(dataValueSize - Long.BYTES - Integer.BYTES));
@@ -49,47 +48,28 @@ public class SmallVsBigFilesBench {
         System.out.println("numOfDataItemsPerFile = " + numOfDataItemsPerFile);
         long numOfDataItems = (long) numOfDataItemsPerFile * (long) numOfFiles;
         System.out.println("numOfDataItems = " + numOfDataItems);
-        // create data file factory
-        DataFileReaderFactory dataFileFactory = new DataFileReaderFactory() {
-            @Override
-            public DataFileReader newDataFileReader(Path path) throws IOException {
-                return switch(dataFileImpl) {
-                    case "DataFileReaderAsynchronous" -> new DataFileReaderAsynchronous(path);
-                    case "DataFileReaderThreadLocal" -> new DataFileReaderThreadLocal(path);
-                    default -> new DataFileReaderSynchronous(path);
-                };
-            }
-
-            @Override
-            public DataFileReader newDataFileReader(Path path, DataFileMetadata dataFileMetadata) throws IOException {
-                return switch(dataFileImpl) {
-                    case "DataFileReaderAsynchronous" -> new DataFileReaderAsynchronous(path,dataFileMetadata);
-                    case "DataFileReaderThreadLocal" -> new DataFileReaderThreadLocal(path,dataFileMetadata);
-                    default -> new DataFileReaderSynchronous(path,dataFileMetadata);
-                };
-            }
-        };
         // create 1Tb of data
         Path dataDir = Path.of("jasperdb_fs"+fileSizeGb+"_bs"+ dataValueSize);
         if (Files.isDirectory(dataDir)) {
-            dataFileCollection = new DataFileCollection(dataDir, "jasperdb", dataValueSize,
-                    null, dataFileFactory);
+            dataFileCollection = new DataFileCollection<>(dataDir, "jasperdb",
+                    new ByteArrayDataItemSerializer(),
+                    null);
         } else { // new
             Files.createDirectories(dataDir);
             //
-            dataFileCollection = new DataFileCollection(dataDir, "jasperdb", dataValueSize,
-                    null, dataFileFactory);
-            // create some random data to write
-            ByteBuffer dataBuffer = ByteBuffer.allocate(dataValueSize);
-            new Random(123456).nextBytes(dataBuffer.array());
+            dataFileCollection = new DataFileCollection<>(dataDir, "jasperdb",
+                    new ByteArrayDataItemSerializer(),
+                    null);
             // create files
             long START = System.currentTimeMillis();
-            long count = 0;
+            int count = 0;
             for (int f = 0; f < numOfFiles; f++) {
                 dataFileCollection.startWriting();
                 for (int i = 0; i < numOfDataItemsPerFile; i++, count++) {
-                    dataBuffer.rewind();
-                    dataFileCollection.storeData(count, dataBuffer);
+                    // create some random data to write
+                    byte[] bytes = new byte[dataValueSize];
+                    new Random(123456).nextBytes(bytes);
+                    dataFileCollection.storeDataItem(new DataBlob(count, bytes));
                     if (count % 10_000_000 == 0) System.out.printf("count = %,d\n",count);
                 }
 
@@ -126,7 +106,7 @@ public class SmallVsBigFilesBench {
         ByteBuffer dataReadBuffer = this.dataReadBuffer.get();
         // read data
         dataReadBuffer.clear();
-        blackHole.consume(dataFileCollection.readData(randomDataLocations[0],dataReadBuffer));
+        blackHole.consume(dataFileCollection.readDataItem(randomDataLocations[0]));
     }
 
     @Benchmark
@@ -139,7 +119,7 @@ public class SmallVsBigFilesBench {
                 // read data
                 dataReadBuffer.clear();
                 try {
-                    blackHole.consume(dataFileCollection.readData(dataLocation,dataReadBuffer));
+                    blackHole.consume(dataFileCollection.readDataItem(dataLocation));
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -147,4 +127,51 @@ public class SmallVsBigFilesBench {
         });
     }
 
+    public static class DataBlob {
+        public final int num;
+        public final byte[] data;
+
+        public DataBlob(int num, byte[] data) {
+            this.num = num;
+            this.data = data;
+        }
+    }
+
+    private class ByteArrayDataItemSerializer implements DataItemSerializer<DataBlob> {
+
+        @Override
+        public int getHeaderSize() {
+            return 4;
+        }
+
+        @Override
+        public DataItemHeader deserializeHeader(ByteBuffer byteBuffer) {
+            return new DataItemHeader(dataValueSize,byteBuffer.getInt());
+        }
+
+        @Override
+        public int getSerializedSize() {
+            return 4+dataValueSize;
+        }
+
+        @Override
+        public long getCurrentDataVersion() {
+            return 1;
+        }
+
+        @Override
+        public DataBlob deserialize(ByteBuffer byteBuffer, long l) {
+            int num = byteBuffer.getInt();
+            byte[] data = new byte[dataValueSize];
+            byteBuffer.get(data);
+            return new DataBlob(num, data);
+        }
+
+        @Override
+        public int serialize(DataBlob dataBlob, SerializableDataOutputStream serializableDataOutputStream) throws IOException {
+            serializableDataOutputStream.writeInt(dataBlob.num);
+            serializableDataOutputStream.write(dataBlob.data);
+            return 4+dataValueSize;
+        }
+    }
 }

@@ -1,8 +1,11 @@
 package contract;
 
 import com.hedera.services.state.jasperdb.VirtualDataSourceJasperDB;
+import com.hedera.services.state.jasperdb.VirtualInternalRecordSerializer;
+import com.hedera.services.state.jasperdb.VirtualLeafRecordSerializer;
 import com.hedera.services.state.jasperdb.files.DataFileCommon;
 import com.hedera.services.state.merkle.virtual.ContractKey;
+import com.hedera.services.state.merkle.virtual.ContractKeySerializer;
 import com.hedera.services.state.merkle.virtual.ContractValue;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -70,15 +73,19 @@ public class VirtualDataSourceNewAPIBench {
 //                            ContractValue.SERIALIZED_SIZE, ContractValue::new,
 //                            storePath);
                 case "jasperdb":
+                    VirtualLeafRecordSerializer<ContractKey,ContractValue> virtualLeafRecordSerializer =
+                            new VirtualLeafRecordSerializer<>(
+                                    1, DigestType.SHA_384,
+                                    1,DataFileCommon.VARIABLE_DATA_SIZE,ContractKey::new,
+                                    1,ContractValue.SERIALIZED_SIZE,ContractValue::new,
+                                    true);
                     dataSource = new VirtualDataSourceJasperDB<>(
-                            DataFileCommon.VARIABLE_DATA_SIZE,
-                            ContractKey.ESTIMATED_AVERAGE_SIZE,
-                            ContractKey.MAX_SIZE,
-                            ContractKey::new,
-                            ContractKey::readKeySize,
-                            ContractValue.SERIALIZED_SIZE, ContractValue::new,
+                            virtualLeafRecordSerializer,
+                            new VirtualInternalRecordSerializer(),
+                            new ContractKeySerializer(),
                             storePath,
                             numEntities+10_000_000,  // TODO see if 10 millionls extra is enough for add method
+                            true,
                             Long.MAX_VALUE);
                     break;
                 default:

@@ -25,7 +25,7 @@ import static com.hedera.services.state.jasperdb.utilities.NonCryptographicHashi
  */
 public final class ContractKey implements VirtualKey {
     /** The estimated average size for a contract key when serialized */
-    public static final int ESTIMATED_AVERAGE_SIZE = 10;
+    public static final int ESTIMATED_AVERAGE_SIZE = 20; // assume 50% full typically, max size is (1 + 8 + 32)
     /** The max size for a contract key when serialized */
     public static final int MAX_SIZE = 1 + Long.SIZE + 32;
     /** this is the number part of the contract address */

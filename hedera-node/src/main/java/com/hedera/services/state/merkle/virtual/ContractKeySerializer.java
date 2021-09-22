@@ -1,41 +1,17 @@
 package com.hedera.services.state.merkle.virtual;
 
 import com.hedera.services.state.jasperdb.files.DataFileCommon;
-import com.hedera.services.state.jasperdb.files.DataItemHeader;
-import com.hedera.services.state.jasperdb.files.DataItemSerializer;
+import com.hedera.services.state.jasperdb.files.hashmap.KeySerializer;
 import com.swirlds.common.io.SerializableDataOutputStream;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
-public class ContractKeySerializer implements DataItemSerializer<ContractKey> {
-    private final long currentDataVersion;
-
-    public ContractKeySerializer() {
-        currentDataVersion = new ContractKey().getVersion();
-    }
-
-    /**
-     * Get the number of bytes used for data item header
-     *
-     * @return size of header in bytes
-     */
-    @Override
-    public int getHeaderSize() {
-        return 1;
-    }
-
-    /**
-     * Deserialize data item header from the given byte buffer
-     *
-     * @param buffer Buffer to read from
-     * @return The read header
-     */
-    @Override
-    public DataItemHeader deserializeHeader(ByteBuffer buffer) {
-        return new DataItemHeader(ContractKey.readKeySize(buffer),-1);
-    }
-
+/**
+ * KeySerializer for ContractKeys
+ */
+public class ContractKeySerializer implements KeySerializer<ContractKey> {
     /**
      * Get if the number of bytes a data item takes when serialized is variable or fixed
      *
@@ -63,7 +39,7 @@ public class ContractKeySerializer implements DataItemSerializer<ContractKey> {
      */
     @Override
     public int getTypicalSerializedSize() {
-        return 20; // assume 50% full typically, max size is (1 + 8 + 32)
+        return ContractKey.ESTIMATED_AVERAGE_SIZE;
     }
 
     /**
@@ -71,7 +47,7 @@ public class ContractKeySerializer implements DataItemSerializer<ContractKey> {
      */
     @Override
     public long getCurrentDataVersion() {
-        return currentDataVersion;
+        return 1;
     }
 
     /**
@@ -83,6 +59,7 @@ public class ContractKeySerializer implements DataItemSerializer<ContractKey> {
      */
     @Override
     public ContractKey deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
+        Objects.requireNonNull(buffer);
         ContractKey contractKey = new ContractKey();
         contractKey.deserialize(buffer,(int)dataVersion);
         return contractKey;
@@ -96,23 +73,19 @@ public class ContractKeySerializer implements DataItemSerializer<ContractKey> {
      */
     @Override
     public int serialize(ContractKey data, SerializableDataOutputStream outputStream) throws IOException {
+        Objects.requireNonNull(data);
+        Objects.requireNonNull(outputStream);
         return  data.serializeReturningByteWritten(outputStream);
     }
 
     /**
-     * Copy the serialized data item in dataItemData into the writingStream. Important if serializedVersion is not the
-     * same as current serializedVersion then update the data to the latest serialization.
+     * Deserialize key size from the given byte buffer
      *
-     * @param serializedVersion The serialized version of the data item in dataItemData
-     * @param dataItemSize      The size in bytes of the data item dataItemData
-     * @param dataItemData      Buffer containing complete data item including the data item header
-     * @param writingStream     The stream to write data item out to
-     * @return the number of bytes written, this could be the same as dataItemSize or bigger or smaller if
-     * serialization version has changed.
-     * @throws IOException if there was a problem writing data item to stream or converting it
+     * @param buffer Buffer to read from
+     * @return The number of bytes used to store the key, including for storing the key size if needed.
      */
     @Override
-    public int copyItem(long serializedVersion, int dataItemSize, ByteBuffer dataItemData, SerializableDataOutputStream writingStream) throws IOException {
-        return DataItemSerializer.super.copyItem(serializedVersion, dataItemSize, dataItemData, writingStream);
+    public int deserializeKeySize(ByteBuffer buffer) {
+        return ContractKey.readKeySize(buffer);
     }
 }
