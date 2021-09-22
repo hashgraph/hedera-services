@@ -268,6 +268,20 @@ class TopicCreateTransitionLogicTest {
 		assertTrue(topics.isEmpty());
 	}
 
+	@Test
+	void reclaimMethodDelegates() {
+		subject.reclaimCreatedIds();
+
+		verify(entityIdSource).reclaimProvisionalIds();
+	}
+
+	@Test
+	void resetMethodDelegates() {
+		subject.resetCreatedIds();
+
+		verify(entityIdSource).resetProvisionalIds();
+	}
+
 	private void givenTransaction(ConsensusCreateTopicTransactionBody.Builder body) {
 		transactionBody = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
