@@ -13,6 +13,8 @@ public class ExampleFixedSizeLongKey implements VirtualLongKey, FastCopyable {
     private long value;
     private int hashCode;
 
+    public ExampleFixedSizeLongKey() {}
+
     public ExampleFixedSizeLongKey(long value) {
         setValue(value);
     }

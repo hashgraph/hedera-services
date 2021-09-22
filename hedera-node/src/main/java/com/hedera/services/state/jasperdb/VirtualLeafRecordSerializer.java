@@ -13,6 +13,7 @@ import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.function.Supplier;
 
 import static com.hedera.services.state.jasperdb.files.DataFileCommon.VARIABLE_DATA_SIZE;
@@ -47,17 +48,16 @@ class VirtualLeafRecordSerializer<K extends VirtualKey, V extends VirtualValue> 
     private boolean byteMaxSize;
 
     /**
-     *
-     *
+     * Contruct a new VirtualLeafRecordSerializer
      *
      * @param hashSerializationVersion The serialization version for hash, less than 65,536 // TODO accounting for digest as well
      * @param hashDigest The digest uses for hashes
      * @param keySerializationVersion The serialization version for key, less than 65,536
-     * @param keySizeBytes
-     * @param keyConstructor
+     * @param keySizeBytes The number of bytes used by a serialized keu, can be DataFileCommon.VARIABLE_DATA_SIZE
+     * @param keyConstructor Constructor for creating new key instances during deserialization
      * @param valueSerializationVersion The serialization version for value, less than 65,536
-     * @param valueSizeBytes
-     * @param valueConstructor
+     * @param valueSizeBytes The number of bytes used by a serialized value, can be DataFileCommon.VARIABLE_DATA_SIZE
+     * @param valueConstructor Constructor for creating new value instances during deserialization
      * @param maxKeyValueSizeLessThan198 Is max size of serialized key and value is less than (255-(1+8+48)) = 198
      */
     public VirtualLeafRecordSerializer(int hashSerializationVersion, DigestType hashDigest,
@@ -65,8 +65,8 @@ class VirtualLeafRecordSerializer<K extends VirtualKey, V extends VirtualValue> 
                                        int valueSerializationVersion, int valueSizeBytes, Supplier<V> valueConstructor,
                                        boolean maxKeyValueSizeLessThan198) {
         this.currentVersion = (0x000000000000FFFFL & hashSerializationVersion) |
-                ((0x000000000000FFFFL & keySerializationVersion) << 2) |
-                ((0x000000000000FFFFL & valueSerializationVersion) << 4);
+                ((0x000000000000FFFFL & keySerializationVersion) << 16) |
+                ((0x000000000000FFFFL & valueSerializationVersion) << 32);
         this.keyConstructor = keyConstructor;
         this.valueConstructor = valueConstructor;
         this.keySizeBytes = keySizeBytes;
@@ -161,11 +161,11 @@ class VirtualLeafRecordSerializer<K extends VirtualKey, V extends VirtualValue> 
     @Override
     public VirtualLeafRecord<K, V> deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
         final int hashSerializationVersion = (int) (0x000000000000FFFFL & dataVersion);
-        final int keySerializationVersion = (int) (0x000000000000FFFFL & (dataVersion >>> 2));
-        final int valueSerializationVersion = (int) (0x000000000000FFFFL & (dataVersion >>> 4));
-
+        final int keySerializationVersion = (int) (0x000000000000FFFFL & (dataVersion >>> 16));
+        final int valueSerializationVersion = (int) (0x000000000000FFFFL & (dataVersion >>> 32));
+        DataItemHeader dataItemHeader = deserializeHeader(buffer);
         // deserialize path
-        long path = buffer.getLong();
+        long path = dataItemHeader.getKey();
         // deserialize hash
         final Hash hash = byteBufferToHash(buffer, hashSerializationVersion);
         // deserialize key

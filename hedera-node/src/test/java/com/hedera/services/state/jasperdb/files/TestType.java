@@ -5,7 +5,7 @@ import com.hedera.services.state.jasperdb.ExampleVariableSizeLongKey;
 import com.hedera.services.state.jasperdb.files.hashmap.KeySerializer;
 import com.swirlds.virtualmap.VirtualLongKey;
 
-enum TestType {
+public enum TestType {
     fixed(new ExampleFixedSizeDataSerializer(), new ExampleFixedSizeLongKey.Serializer()),
     variable(new ExampleVariableSizeDataSerializer(), new ExampleVariableSizeLongKey.Serializer());
     public final DataItemSerializer<long[]> dataItemSerializer;

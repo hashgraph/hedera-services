@@ -120,7 +120,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
                         virtualInternalRecordSerializer, null)  // TODO need to implement loaded data callback maybe?
                 : null;
         this.internalHashesRamToDiskThreshold = internalHashesRamToDiskThreshold;
-        if (virtualLeafRecordSerializer.getSerializedSize() == Long.BYTES) {
+        if (keySerializer.getSerializedSize() == Long.BYTES) {
             isLongKeyMode = true;
             longKeyToPath = new LongListHeap();
             objectKeyToPath = null;

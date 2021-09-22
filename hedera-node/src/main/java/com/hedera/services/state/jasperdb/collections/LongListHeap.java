@@ -125,8 +125,13 @@ public final class LongListHeap implements LongList {
         // over the index only over the size of the buffer.
         while (newIndex > maxIndexThatCanBeStored.get()) {
             // need to expand
-            data.add(new AtomicLongArray(numLongsPerChunk));
-            maxIndexThatCanBeStored.addAndGet(numLongsPerChunk);
+            try {
+                data.add(new AtomicLongArray(numLongsPerChunk));
+                maxIndexThatCanBeStored.addAndGet(numLongsPerChunk);
+            } catch (OutOfMemoryError outOfMemoryError) {
+                System.err.println("OutOfMemoryError trying to expand LongListHeap from "+size()+". To contain long index "+newIndex);
+                throw outOfMemoryError;
+            }
         }
     }
 }
