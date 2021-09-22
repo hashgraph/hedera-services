@@ -834,7 +834,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		if (aCounterPartyId != null) {
 			key = asTokenRel(aCounterPartyId, tId);
 			if (!tokenRelsLedger.exists(key)) {
-				validity = validateAndAutoAssociate(aId, tId);
+				validity = validateAndAutoAssociate(aCounterPartyId, tId);
 				if (validity != OK) {
 					return validity;
 				}
