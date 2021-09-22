@@ -123,8 +123,7 @@ public final class StakedAnswerFlow implements AnswerFlow {
 
 		long fee = 0L;
 		final Map<String, Object> queryCtx = new HashMap<>();
-		if (isPaymentRequired) {
-			/* The hygiene check would have aborted if we were missing a payment. */
+		if (isPaymentRequired && null != optionalPayment) {
 			fee = totalOf(fees.computePayment(query, usagePrices, view, bestGuessNow, queryCtx));
 			final var paymentStatus = tryToPay(optionalPayment, fee);
 			if (paymentStatus != OK) {
