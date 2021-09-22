@@ -30,8 +30,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Optional;
-
 import static com.hedera.services.context.ServicesNodeType.STAKED_NODE;
 import static com.hedera.services.context.ServicesNodeType.ZERO_STAKE_NODE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -42,8 +40,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANS
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.never;
+import static org.mockito.BDDMockito.verify;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -77,7 +75,7 @@ class BasicSubmissionFlowTest {
 	void rejectsPrecheckFailures() {
 		setupStakedNode();
 
-		given(precheck.performForTopLevel(someTxn)).willReturn(Pair.of(someFailure, Optional.empty()));
+		given(precheck.performForTopLevel(someTxn)).willReturn(Pair.of(someFailure, null));
 
 		// when:
 		var response = subject.submit(someTxn);
@@ -103,7 +101,7 @@ class BasicSubmissionFlowTest {
 	@Test
 	void rejectsInvalidAccessor() {
 		setupStakedNode();
-		given(precheck.performForTopLevel(someTxn)).willReturn(Pair.of(someSuccess, Optional.empty()));
+		given(precheck.performForTopLevel(someTxn)).willReturn(Pair.of(someSuccess, null));
 
 		// when:
 		var response = subject.submit(someTxn);
@@ -131,7 +129,7 @@ class BasicSubmissionFlowTest {
 	}
 
 	private void givenValidPrecheck() {
-		given(precheck.performForTopLevel(someTxn)).willReturn(Pair.of(someSuccess, Optional.of(someAccessor)));
+		given(precheck.performForTopLevel(someTxn)).willReturn(Pair.of(someSuccess, someAccessor));
 	}
 
 	private void setupStakedNode() {

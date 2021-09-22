@@ -175,7 +175,7 @@ class StakedAnswerFlowTest {
 		givenExtractablePayment();
 		givenPaymentIsRequired();
 		given(transactionPrecheck.performForQueryPayment(paymentAccessor.getSignedTxnWrapper()))
-				.willReturn(Pair.of(new TxnValidityAndFeeReq(INSUFFICIENT_PAYER_BALANCE), Optional.empty()));
+				.willReturn(Pair.of(new TxnValidityAndFeeReq(INSUFFICIENT_PAYER_BALANCE), null));
 
 		// when:
 		Response actual = subject.satisfyUsing(service, query);
@@ -193,7 +193,7 @@ class StakedAnswerFlowTest {
 		givenValidSuperuserExtraction();
 		givenPaymentIsRequired();
 		given(transactionPrecheck.performForQueryPayment(superuserPaymentAccessor.getSignedTxnWrapper()))
-				.willReturn(Pair.of(new TxnValidityAndFeeReq(OK), Optional.of(superuserPaymentAccessor)));
+				.willReturn(Pair.of(new TxnValidityAndFeeReq(OK), superuserPaymentAccessor));
 		givenAvailFunction();
 		givenSuperuserPermission();
 		givenHappyService();
@@ -447,12 +447,12 @@ class StakedAnswerFlowTest {
 
 	private void givenValidExtraction() {
 		given(transactionPrecheck.performForQueryPayment(paymentAccessor.getSignedTxnWrapper()))
-				.willReturn(Pair.of(new TxnValidityAndFeeReq(OK), Optional.of(paymentAccessor)));
+				.willReturn(Pair.of(new TxnValidityAndFeeReq(OK), paymentAccessor));
 	}
 
 	private void givenValidSuperuserExtraction() {
 		given(transactionPrecheck.performForQueryPayment(superuserPaymentAccessor.getSignedTxnWrapper()))
-				.willReturn(Pair.of(new TxnValidityAndFeeReq(OK), Optional.of(superuserPaymentAccessor)));
+				.willReturn(Pair.of(new TxnValidityAndFeeReq(OK), superuserPaymentAccessor));
 	}
 
 	private void givenExtractablePayment() {

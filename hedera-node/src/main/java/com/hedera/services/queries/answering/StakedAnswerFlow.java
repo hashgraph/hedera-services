@@ -40,10 +40,10 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.fee.FeeObject;
 
+import javax.annotation.Nullable;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.LongPredicate;
 import java.util.function.Supplier;
 
@@ -100,7 +100,7 @@ public class StakedAnswerFlow implements AnswerFlow {
 			return service.responseGiven(query, view, headerStatus);
 		}
 
-		Optional<SignedTxnAccessor> optionalPayment = Optional.empty();
+		SignedTxnAccessor optionalPayment = null;
 		final var allegedPayment = service.extractPaymentFrom(query);
 		final var isPaymentRequired = service.requiresNodePayment(query);
 		if (isPaymentRequired && allegedPayment.isPresent()) {
@@ -119,18 +119,17 @@ public class StakedAnswerFlow implements AnswerFlow {
 			return service.responseGiven(query, view, hygieneStatus);
 		}
 
-		final var bestGuessNow = optionalPayment
-				.map(a -> a.getTxnId().getTransactionValidStart())
-				.orElse(asTimestamp(now.get()));
+		final var bestGuessNow = (null != optionalPayment)
+				? optionalPayment.getTxnId().getTransactionValidStart()
+				: asTimestamp(now.get());
 		final var usagePrices = resourceCosts.defaultPricesGiven(service.canonicalFunction(), bestGuessNow);
 
 		long fee = 0L;
 		final Map<String, Object> queryCtx = new HashMap<>();
 		if (isPaymentRequired) {
 			/* The hygiene check would have aborted if we were missing a payment. */
-			final var payment = optionalPayment.get();
 			fee = totalOf(fees.computePayment(query, usagePrices, view, bestGuessNow, queryCtx));
-			final var paymentStatus = tryToPay(payment, fee);
+			final var paymentStatus = tryToPay(optionalPayment, fee);
 			if (paymentStatus != OK) {
 				return service.responseGiven(query, view, paymentStatus, fee);
 			}
@@ -156,13 +155,13 @@ public class StakedAnswerFlow implements AnswerFlow {
 	}
 
 	private ResponseCodeEnum hygieneCheck(
-			Query query,
-			StateView view,
-			AnswerService service,
-			Optional<SignedTxnAccessor> optionalPayment
+			final Query query,
+			final StateView view,
+			final AnswerService service,
+			@Nullable final SignedTxnAccessor optionalPayment
 	) {
 		final var isPaymentRequired = service.requiresNodePayment(query);
-		if (isPaymentRequired && optionalPayment.isEmpty()) {
+		if (isPaymentRequired && null == optionalPayment) {
 			return INSUFFICIENT_TX_FEE;
 		}
 
@@ -174,10 +173,13 @@ public class StakedAnswerFlow implements AnswerFlow {
 		return service.checkValidity(query, view);
 	}
 
-	private ResponseCodeEnum systemScreen(HederaFunctionality function, Optional<SignedTxnAccessor> payment) {
+	private ResponseCodeEnum systemScreen(
+			final HederaFunctionality function,
+			@Nullable final SignedTxnAccessor payment
+	) {
 		AccountID payer = null;
-		if (payment.isPresent()) {
-			payer = payment.get().getPayer();
+		if (null != payment) {
+			payer = payment.getPayer();
 			final var permissionStatus = hapiOpPermissions.permissibilityOf(function, payer);
 			if (permissionStatus != OK) {
 				return permissionStatus;
@@ -199,7 +201,7 @@ public class StakedAnswerFlow implements AnswerFlow {
 		this.isThrottleExempt = isThrottleExempt;
 	}
 
-	public void setNow(Supplier<Instant> now) {
+	void setNow(Supplier<Instant> now) {
 		this.now = now;
 	}
 }

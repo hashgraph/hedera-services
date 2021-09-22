@@ -9,9 +9,9 @@ package com.hedera.services.txns.submission;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -41,7 +41,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.IntStream;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
@@ -51,7 +50,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OV
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_TOO_MANY_LAYERS;
 import static java.util.stream.Collectors.joining;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class StructuralPrecheckTest {
 	private int pretendSizeLimit = 1_000, pretendMaxMessageDepth = 42;
@@ -163,8 +163,8 @@ class StructuralPrecheckTest {
 
 		// then:
 		assertEquals(OK, assess.getLeft().getValidity());
-		assertTrue(assess.getRight().isPresent());
-		assertEquals(HederaFunctionality.CryptoCreate, assess.getRight().get().getFunction());
+		assertNotNull(assess.getRight());
+		assertEquals(HederaFunctionality.CryptoCreate, assess.getRight().getFunction());
 	}
 
 	@Test
@@ -202,9 +202,9 @@ class StructuralPrecheckTest {
 
 	private void assertExpectedFail(
 			ResponseCodeEnum error,
-			Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> resp
+			Pair<TxnValidityAndFeeReq, SignedTxnAccessor> resp
 	) {
 		assertEquals(error, resp.getLeft().getValidity());
-		assertTrue(resp.getRight().isEmpty());
+		assertNull(resp.getRight());
 	}
 }

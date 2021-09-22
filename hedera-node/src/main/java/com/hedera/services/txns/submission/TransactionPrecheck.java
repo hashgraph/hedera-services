@@ -32,7 +32,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.EnumSet;
-import java.util.Optional;
 import java.util.Set;
 
 import static com.hedera.services.txns.submission.PresolvencyFlaws.WELL_KNOWN_FLAWS;
@@ -72,26 +71,26 @@ public class TransactionPrecheck {
 		this.currentPlatformStatus = currentPlatformStatus;
 	}
 
-	public Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> performForTopLevel(final Transaction signedTxn) {
+	public Pair<TxnValidityAndFeeReq, SignedTxnAccessor> performForTopLevel(final Transaction signedTxn) {
 		return performance(signedTxn, TOP_LEVEL_CHARACTERISTICS);
 	}
 
-	public Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> performForQueryPayment(final Transaction signedTxn) {
+	public Pair<TxnValidityAndFeeReq, SignedTxnAccessor> performForQueryPayment(final Transaction signedTxn) {
 		final var prelim = performance(signedTxn, QUERY_PAYMENT_CHARACTERISTICS);
-		final var prelimOutcome = prelim.getLeft();
-		if (prelimOutcome.getValidity() != OK || prelim.getRight().isEmpty()) {
+		final var accessor = prelim.getRight();
+		if (null == accessor) {
 			return prelim;
 		}
 
-		final var xferTxn = prelim.getRight().get().getTxn();
+		final var xferTxn = accessor.getTxn();
 		final var xfersStatus = queryFeeCheck.validateQueryPaymentTransfers(xferTxn);
 		if (xfersStatus != OK) {
-			return failureFor(new TxnValidityAndFeeReq(xfersStatus, prelimOutcome.getRequiredFee()));
+			return failureFor(new TxnValidityAndFeeReq(xfersStatus, prelim.getLeft().getRequiredFee()));
 		}
 		return prelim;
 	}
 
-	private Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> performance(
+	private Pair<TxnValidityAndFeeReq, SignedTxnAccessor> performance(
 			final Transaction signedTxn,
 			final Set<Characteristic> characteristics
 	) {
@@ -100,12 +99,11 @@ public class TransactionPrecheck {
 		}
 
 		final var structuralAssessment = stagedPrechecks.assessStructure(signedTxn);
-		if (structuralAssessment.getLeft().getValidity() != OK || structuralAssessment.getRight().isEmpty()) {
+		final var accessor = structuralAssessment.getRight();
+		if (null == accessor) {
 			return structuralAssessment;
 		}
 
-		/* We can now safely proceed to the next four stages of precheck. */
-		final var accessor = structuralAssessment.getRight().get();
 		final var txn = accessor.getTxn();
 
 		final var syntaxStatus = stagedPrechecks.validateSyntax(txn);
@@ -132,11 +130,11 @@ public class TransactionPrecheck {
 			}
 		}
 
-		return Pair.of(solvencyStatus, Optional.of(accessor));
+		return Pair.of(solvencyStatus, accessor);
 	}
 
-	private Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> failureFor(final TxnValidityAndFeeReq feeReqStatus) {
-		return Pair.of(feeReqStatus, Optional.empty());
+	private Pair<TxnValidityAndFeeReq, SignedTxnAccessor> failureFor(final TxnValidityAndFeeReq feeReqStatus) {
+		return Pair.of(feeReqStatus, null);
 	}
 
 	private ResponseCodeEnum checkSemantics(

@@ -31,7 +31,6 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Optional;
 
 /**
  * A wrapper object to improve readability of {@code TransactionPrecheck}.
@@ -83,7 +82,7 @@ public class StagedPrechecks {
 		return solvencyPrecheck.assessWithSvcFees(accessor);
 	}
 
-	Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> assessStructure(Transaction signedTxn) {
+	Pair<TxnValidityAndFeeReq, SignedTxnAccessor> assessStructure(Transaction signedTxn) {
 		return structuralPrecheck.assess(signedTxn);
 	}
 }

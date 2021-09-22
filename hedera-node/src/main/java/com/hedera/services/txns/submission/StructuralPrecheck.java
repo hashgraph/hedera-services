@@ -32,7 +32,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.List;
-import java.util.Optional;
 
 import static com.hedera.services.txns.submission.PresolvencyFlaws.WELL_KNOWN_FLAWS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
@@ -66,7 +65,7 @@ public class StructuralPrecheck {
 		this.maxProtoMessageDepth = maxProtoMessageDepth;
 	}
 
-	public Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> assess(Transaction signedTxn) {
+	public Pair<TxnValidityAndFeeReq, SignedTxnAccessor> assess(Transaction signedTxn) {
 		final var hasSignedTxnBytes = !signedTxn.getSignedTransactionBytes().isEmpty();
 		final var hasDeprecatedSigMap = signedTxn.hasSigMap();
 		final var hasDeprecatedBodyBytes = !signedTxn.getBodyBytes().isEmpty();
@@ -91,7 +90,7 @@ public class StructuralPrecheck {
 			if (accessor.getFunction() == NONE) {
 				return WELL_KNOWN_FLAWS.get(INVALID_TRANSACTION_BODY);
 			}
-			return Pair.of(OK_STRUCTURALLY, Optional.of(accessor));
+			return Pair.of(OK_STRUCTURALLY, accessor);
 		} catch (InvalidProtocolBufferException e) {
 			return WELL_KNOWN_FLAWS.get(INVALID_TRANSACTION_BODY);
 		}

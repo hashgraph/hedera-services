@@ -26,6 +26,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -63,13 +64,13 @@ public class BasicSubmissionFlow implements SubmissionFlow {
 		final var precheckResult = precheck.performForTopLevel(signedTxn);
 		final var precheckResultMeta = precheckResult.getLeft();
 		final var precheckResultValidity = precheckResultMeta.getValidity();
+		@Nullable final var accessor = precheckResult.getRight();
 		if (precheckResultValidity != OK) {
 			return responseWith(precheckResultValidity, precheckResultMeta.getRequiredFee());
-		} else if (precheckResult.getRight().isEmpty()) {
+		} else if (null == accessor) {
 			return responseWith(FAIL_INVALID);
 		}
 
-		final var accessor = precheckResult.getRight().get();
 		return responseWith(submissionManager.trySubmission(accessor));
 	}
 
