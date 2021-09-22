@@ -178,6 +178,7 @@ public final class TokenConversion {
 	private static void initModelFields(final Token token, final MerkleToken immutableToken) {
 		token.setName(immutableToken.name());
 		token.setSymbol(immutableToken.symbol());
+		token.setDecimals(immutableToken.decimals());
 		token.initTotalSupply(immutableToken.totalSupply());
 		token.initSupplyConstraints(immutableToken.supplyType(), immutableToken.maxSupply());
 		token.setKycKey(immutableToken.getKycKey());
