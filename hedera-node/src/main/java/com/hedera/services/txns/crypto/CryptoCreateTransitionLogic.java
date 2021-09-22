@@ -106,7 +106,6 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 		}
 	}
 
-
 	private HederaAccountCustomizer asCustomizer(CryptoCreateTransactionBody op) {
 		long autoRenewPeriod = op.getAutoRenewPeriod().getSeconds();
 		long expiry = txnCtx.consensusTime().getEpochSecond() + autoRenewPeriod;
