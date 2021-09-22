@@ -130,17 +130,18 @@ class SeqNoEntityIdSourceTest {
 
 	@Test
 	void exceptionalSourceAlwaysThrows() {
+		var defaultAccountId = AccountID.getDefaultInstance();
 		// expect:
 		assertThrows(UnsupportedOperationException.class,
-				() -> NOOP_ID_SOURCE.newAccountId(AccountID.getDefaultInstance()));
+				() -> NOOP_ID_SOURCE.newAccountId(defaultAccountId));
 		assertThrows(UnsupportedOperationException.class,
-				() -> NOOP_ID_SOURCE.newFileId(AccountID.getDefaultInstance()));
+				() -> NOOP_ID_SOURCE.newFileId(defaultAccountId));
 		assertThrows(UnsupportedOperationException.class,
-				() -> NOOP_ID_SOURCE.newTokenId(AccountID.getDefaultInstance()));
+				() -> NOOP_ID_SOURCE.newTokenId(defaultAccountId));
 		assertThrows(UnsupportedOperationException.class,
-				() -> NOOP_ID_SOURCE.newScheduleId(AccountID.getDefaultInstance()));
+				() -> NOOP_ID_SOURCE.newScheduleId(defaultAccountId));
 		assertThrows(UnsupportedOperationException.class,
-				() -> NOOP_ID_SOURCE.newTopicId(AccountID.getDefaultInstance()));
+				() -> NOOP_ID_SOURCE.newTopicId(defaultAccountId));
 		assertThrows(UnsupportedOperationException.class, NOOP_ID_SOURCE::reclaimLastId);
 		assertThrows(UnsupportedOperationException.class, NOOP_ID_SOURCE::reclaimProvisionalIds);
 		assertThrows(UnsupportedOperationException.class, NOOP_ID_SOURCE::resetProvisionalIds);

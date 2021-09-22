@@ -59,9 +59,4 @@ class TopicStoreTest {
 		verify(topics).put(any(), any());
 		verify(mockAutoRenewId).asEntityId();
 	}
-	
-	@Test
-	void persistsAsExpected() {
-		
-	}
 }
