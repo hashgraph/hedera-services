@@ -9,9 +9,9 @@ package com.hedera.services.fees.calculation.meta.queries;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,36 +33,28 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class GetVersionInfoResourceUsageTest {
+	private static final Query versionInfoQuery = Query.newBuilder()
+			.setNetworkGetVersionInfo(NetworkGetVersionInfoQuery.getDefaultInstance())
+			.build();
 	private GetVersionInfoResourceUsage subject;
 
-	private Query nonVersionInfoQuery;
-	private Query versionInfoQuery;
-
 	@BeforeEach
-	private void setup() throws Throwable {
-		versionInfoQuery = Query.newBuilder()
-				.setNetworkGetVersionInfo(NetworkGetVersionInfoQuery.getDefaultInstance())
-				.build();
-		nonVersionInfoQuery = Query.getDefaultInstance();
-
+	private void setup() {
 		subject = new GetVersionInfoResourceUsage();
 	}
 
 	@Test
 	void recognizesApplicability() {
-		// expect:
 		assertTrue(subject.applicableTo(versionInfoQuery));
-		assertFalse(subject.applicableTo(nonVersionInfoQuery));
+		assertFalse(subject.applicableTo(Query.getDefaultInstance()));
 	}
 
 	@Test
 	void getsExpectedUsage() {
-		// expect:
-		assertEquals(
-				FixedUsageEstimates.getVersionInfoUsage(),
-				subject.usageGivenType(versionInfoQuery, null, COST_ANSWER));
-		assertEquals(
-				FixedUsageEstimates.getVersionInfoUsage(),
-				subject.usageGivenType(versionInfoQuery, null, ANSWER_ONLY));
+		final var expected = FixedUsageEstimates.getVersionInfoUsage();
+
+		assertEquals(expected, subject.usageGiven(versionInfoQuery, null));
+		assertEquals(expected, subject.usageGivenType(versionInfoQuery, null, COST_ANSWER));
+		assertEquals(expected, subject.usageGivenType(versionInfoQuery, null, ANSWER_ONLY));
 	}
 }

@@ -39,12 +39,9 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
+import static com.hedera.services.txns.token.TokenOpsValidator.validateTokenOpsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
  * Provides the state transition for token burning.
@@ -119,36 +116,13 @@ public class TokenBurnTransitionLogic implements TransitionLogic {
 			return INVALID_TOKEN_ID;
 		}
 
-		final var numSerialNumbers = op.getSerialNumbersCount();
-		if (numSerialNumbers > 0 && !dynamicProperties.areNftsEnabled()) {
-			return NOT_SUPPORTED;
-		}
-
-		boolean bothPresent = (op.getAmount() > 0 && numSerialNumbers > 0);
-		boolean nonePresent = (op.getAmount() <= 0 && numSerialNumbers == 0);
-		if (nonePresent) {
-			return INVALID_TOKEN_BURN_AMOUNT;
-		}
-		if (bothPresent) {
-			return INVALID_TRANSACTION_BODY;
-		}
-
-		if (op.getAmount() <= 0 && op.getSerialNumbersCount() > 0) {
-			return validateNfts(op);
-		}
-		return OK;
-	}
-
-	private ResponseCodeEnum validateNfts(final TokenBurnTransactionBody op) {
-		var validity = validator.maxBatchSizeBurnCheck(op.getSerialNumbersCount());
-		if (validity != OK) {
-			return validity;
-		}
-		for (long serialNum : op.getSerialNumbersList()) {
-			if (serialNum <= 0) {
-				return INVALID_NFT_ID;
-			}
-		}
-		return OK;
+		return validateTokenOpsWith(
+				op.getSerialNumbersCount(),
+				op.getAmount(),
+				dynamicProperties.areNftsEnabled(),
+				INVALID_TOKEN_BURN_AMOUNT,
+				op.getSerialNumbersList(),
+				validator::maxBatchSizeBurnCheck
+		);
 	}
 }

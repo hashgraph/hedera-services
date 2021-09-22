@@ -22,7 +22,6 @@ package com.hedera.services.usage.crypto;
 
 import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -34,11 +33,10 @@ public class CryptoCreateMeta {
 	private final long lifeTime;
 	private final int maxAutomaticAssociations;
 
-	public CryptoCreateMeta(TransactionBody transactionBody) {
-		var op = transactionBody.getCryptoCreateAccount();
-		baseSize = getCryptoCreateTxnBaseSize(op);
-		lifeTime = op.getAutoRenewPeriod().getSeconds();
-		maxAutomaticAssociations = op.getMaxAutomaticTokenAssociations();
+	public CryptoCreateMeta(CryptoCreateTransactionBody cryptoCreateTxnBody) {
+		baseSize = getCryptoCreateTxnBaseSize(cryptoCreateTxnBody);
+		lifeTime = cryptoCreateTxnBody.getAutoRenewPeriod().getSeconds();
+		maxAutomaticAssociations = cryptoCreateTxnBody.getMaxAutomaticTokenAssociations();
 	}
 
 	public CryptoCreateMeta(Builder builder) {

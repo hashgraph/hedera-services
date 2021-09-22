@@ -71,7 +71,10 @@ class BaseOperationUsageTest {
 		verify(mock).nftCryptoTransferWithCustomFee();
 
 		mock.baseUsageFor(CryptoCreate, DEFAULT);
-		verify(mock).cryptoCreate();
+		verify(mock).cryptoCreate(0);
+
+		mock.baseUsageFor(CryptoUpdate, DEFAULT);
+		verify(mock).cryptoUpdate(0);
 	}
 
 	@Test
@@ -135,9 +138,6 @@ class BaseOperationUsageTest {
 	@Test
 	void failsOnUnrecognizedCryptoTypes() {
 		final var subject = new BaseOperationUsage();
-
-		assertThrows(IllegalArgumentException.class,
-				() -> subject.baseUsageFor(CryptoUpdate, DEFAULT));
 
 		assertThrows(IllegalArgumentException.class,
 				() -> subject.baseUsageFor(CryptoTransfer, UNRECOGNIZED));
