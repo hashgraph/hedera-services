@@ -59,6 +59,7 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.fee.FeeBuilder;
 
 import java.time.Instant;
 import java.util.List;
@@ -441,22 +442,24 @@ class BaseOperationUsage {
 	}
 
 	UsageAccumulator tokenUpdate() {
-		final var target = TokenID.newBuilder().setTokenNum(1_234).build();
 		final var now = Instant.now().getEpochSecond();
+
+		final var extantTokenContext = ExtantTokenContext.newBuilder()
+				.setExistingExpiry(now)
+				.setExistingMemoLen(BLANK_MEMO.length())
+				.setExistingKeysLen(FeeBuilder.getAccountKeyStorageSize(A_KEY))
+				.setHasAutoRenewalAccount(false)
+				.setExistingNameLen(A_TOKEN_NAME.length())
+				.setExistingSymLen(A_TOKEN_SYMBOL.length())
+				.build();
+
+		final var target = TokenID.newBuilder().setTokenNum(1_234).build();
 		final var canonicalTxn = TransactionBody.newBuilder()
 				.setTokenUpdate(TokenUpdateTransactionBody.newBuilder()
 						.setMemo(StringValue.of(BLANK_MEMO))
-						.setAdminKey(A_KEY)
-						.setSupplyKey(A_KEY)
 						.setExpiry(Timestamp.newBuilder().setSeconds(now + THREE_MONTHS_IN_SECONDS).setNanos(0).build())
 						.setToken(target)
 				).build();
-		final var extantTokenContext = ExtantTokenContext.newBuilder()
-				.setExistingExpiry(now)
-				.setExistingMemoLen(0)
-				.setExistingNameLen(1)
-				.setExistingSymLen(1)
-				.build();
 		final var tokenUpdateMeta = TOKEN_OPS_USAGE_UTILS.tokenUpdateUsageFrom(canonicalTxn);
 		final var into = new UsageAccumulator();
 		TOKEN_OPS_USAGE.tokenUpdateUsage(
@@ -468,7 +471,6 @@ class BaseOperationUsage {
 		final var tokenDeleteMeta = TOKEN_OPS_USAGE_UTILS.tokenDeleteUsageFrom();
 		final var into = new UsageAccumulator();
 		TOKEN_OPS_USAGE.tokenDeleteUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenDeleteMeta, into);
-		//log.info("TokenFreeze base accumulator: {}", into);
 		return into;
 	}
 

@@ -28,22 +28,11 @@ public class TokenUpdateMeta {
 	private final int newSymLen;
 	private final int newNameLen;
 	private final int newMemoLen;
-
-	private final int newAdminKeyLen;
-	private final int newKycKeyLen;
-	private final int newFreezeKeyLen;
-	private final int newWipeKeyLen;
-	private final int newSupplyKeyLen;
-	private final int newFeeScheduleKeyLen;
-
 	private final int newKeysLen;
-
 	private final boolean hasTreasure;
 	private final boolean removeAutoRenewAccount;
 	private final boolean hasAutoRenewAccount;
 	private final long newExpiry;
-
-	private final long newEffectiveLifeTime;
 	private long newEffectiveTxnStartTime;
 	private final long newAutoRenewPeriod;
 
@@ -51,22 +40,12 @@ public class TokenUpdateMeta {
 		this.newSymLen = builder.newSymLen;
 		this.newNameLen = builder.newNameLen;
 		this.newMemoLen = builder.newMemoLen;
-
-		this.newAdminKeyLen = builder.newAdminKeyLen;
-		this.newKycKeyLen = builder.newKycKeyLen;
-		this.newFreezeKeyLen = builder.newFreezeKeyLen;
-		this.newWipeKeyLen = builder.newWipeKeyLen;
-		this.newSupplyKeyLen = builder.newSupplyKeyLen;
-		this.newFeeScheduleKeyLen = builder.newFeeScheduleKeyLen;
-
 		this.newKeysLen = builder.newKeysLen;
-
 		this.newExpiry = builder.newExpiry;
 		this.removeAutoRenewAccount = builder.removeAutoRenewAccount;
 		this.hasAutoRenewAccount = builder.hasAutoRenewAccount;
 		this.hasTreasure = builder.hasTreasure;
 		this.newAutoRenewPeriod = builder.newAutoRenewPeriod;
-		this.newEffectiveLifeTime = builder.newEffectiveLifeTime;
 		this.newEffectiveTxnStartTime = builder.newEffectiveTxnStartTime;
 	}
 
@@ -79,41 +58,13 @@ public class TokenUpdateMeta {
 	public int getNewMemoLen() {
 		return newMemoLen;
 	}
-	public int getNewAdminKeyLen() {
-		return newAdminKeyLen;
-	}
 	public int getNewKeysLen() {
 		return newKeysLen;
 	}
-
-	public int getKeysLen() {
-		return newAdminKeyLen + newFreezeKeyLen + newSupplyKeyLen
-				+ newWipeKeyLen + newFreezeKeyLen + newFeeScheduleKeyLen;
-	}
-
-	public int getNewKycKeyLen() {
-		return newKycKeyLen;
-	}
-	public int getNewWipeKeyLen() {
-		return newWipeKeyLen;
-	}
-	public int getNewFeeScheduleKeyLen() {
-		return newFeeScheduleKeyLen;
-	}
-	public int getNewFreezeKeyLen() {
-		return newFreezeKeyLen;
-	}
-	public long getNewSupplyKeyLen() {
-		return newSupplyKeyLen;
-	}
-
 	public long getNewExpiry() {
 		return newExpiry;
 	}
 
-	public long getNewEffectiveLifeTime() {
-		return newEffectiveLifeTime;
-	}
 	public long getNewEffectiveTxnStartTime() {
 		return newEffectiveTxnStartTime;
 	}
@@ -141,22 +92,13 @@ public class TokenUpdateMeta {
 		private boolean removeAutoRenewAccount;
 		private boolean hasAutoRenewAccount;
 		private long newExpiry;
-		private long newEffectiveLifeTime;
 		private long newEffectiveTxnStartTime;
 		private long newAutoRenewPeriod;
 
 		private int newKeysLen;
 
-		private int newAdminKeyLen;
-		private int newKycKeyLen;
-		private int newFreezeKeyLen;
-		private int newWipeKeyLen;
-		private int newSupplyKeyLen;
-		private int newFeeScheduleKeyLen;
-
 		private boolean hasTreasure;
 
-		// builder
 		private Builder() {
 		}
 		public TokenUpdateMeta.Builder newBuilder() {
@@ -192,10 +134,6 @@ public class TokenUpdateMeta {
 			return this;
 		}
 
-		public TokenUpdateMeta.Builder setNewEffectiveLifeTime(final long newEffectiveLifeTime) {
-			this.newEffectiveLifeTime = newEffectiveLifeTime;
-			return this;
-		}
 		public TokenUpdateMeta.Builder setNewEffectiveTxnStartTime(final long newEffectiveTxnStartTime) {
 			this.newEffectiveTxnStartTime = newEffectiveTxnStartTime;
 			return this;
@@ -206,30 +144,6 @@ public class TokenUpdateMeta {
 			return this;
 		}
 
-		public TokenUpdateMeta.Builder setNewAdminKeyLen(final int newAdminKeyLen) {
-			this.newAdminKeyLen = newAdminKeyLen;
-			return this;
-		}
-		public TokenUpdateMeta.Builder setNewKycKeyLen(final int newKycKeyLen) {
-			this.newKycKeyLen = newKycKeyLen;
-			return this;
-		}
-		public TokenUpdateMeta.Builder setNewFreezeKeyLen(final int newFreezeKeyLen) {
-			this.newFreezeKeyLen = newFreezeKeyLen;
-			return this;
-		}
-		public TokenUpdateMeta.Builder setNewWipeKeyLen(final int newWipeKeyLen) {
-			this.newWipeKeyLen = newWipeKeyLen;
-			return this;
-		}
-		public TokenUpdateMeta.Builder setNewSupplyKeyLen(final int newSupplyKeyLen) {
-			this.newSupplyKeyLen = newSupplyKeyLen;
-			return this;
-		}
-		public TokenUpdateMeta.Builder setNewFeeScheduleKeyLen(final int newFeeScheduleKeyLen) {
-			this.newFeeScheduleKeyLen = newFeeScheduleKeyLen;
-			return this;
-		}
 		public TokenUpdateMeta.Builder setRemoveAutoRenewAccount(final boolean removeAutoRenewAccount) {
 			this.removeAutoRenewAccount = removeAutoRenewAccount;
 			return this;
@@ -262,17 +176,8 @@ public class TokenUpdateMeta {
 				.add("newSymLen", newSymLen)
 				.add("newMemoLen", newMemoLen)
 				.add("newKeysLen", newKeysLen)
-
-				.add("newAdminKeyLen", newAdminKeyLen)
-				.add("newKycKeyLen", newKycKeyLen)
-				.add("newFreezeKeyLen", newFreezeKeyLen)
-				.add("newWipeKeyLen", newWipeKeyLen)
-				.add("newSupplyKeyLen", newSupplyKeyLen)
-				.add("newFeeScheduleKeyLen", newFeeScheduleKeyLen)
-
 				.add("newExpiry", newExpiry)
 				.add("newAuroRenewPeriod", newAutoRenewPeriod)
-				.add("newEffectiveLifeTime", newEffectiveLifeTime)
 				.add("removeAutoRenewAccount", removeAutoRenewAccount)
 				.add("hasAutoRenewAccount", hasAutoRenewAccount)
 				.add("hasTreasure", hasTreasure)

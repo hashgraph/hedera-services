@@ -3,9 +3,9 @@ package com.hedera.services.pricing;
 /*-
  * ‌
  * Hedera Services API Fees
- * ​
+ *
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -45,6 +45,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
@@ -58,14 +59,10 @@ public class ScheduleGenerator {
 	private static final String FEE_SCHEDULE_ENTRY_KEY = "transactionFeeSchedule";
 	private static final String FEE_SCHEDULE_FUNCTION_KEY = "hederaFunctionality";
 
-	private static final Instant CURRENT_SCHEDULE_EXPIRY =
-			LocalDateTime.of(2021, SEPTEMBER, 2, 0, 0)
-					.plusMonths(1)
-					.toInstant(ZoneOffset.UTC);
-	private static final Instant NEXT_SCHEDULE_EXPIRY =
-			LocalDateTime.of(2021, SEPTEMBER, 2, 0, 0)
-					.plusMonths(2)
-					.toInstant(ZoneOffset.UTC);
+	private static final Instant CURRENT_SCHEDULE_EXPIRY = LocalDateTime.of(2021, SEPTEMBER, 2, 0, 0).plusMonths(1)
+			.toInstant(ZoneOffset.UTC);
+	private static final Instant NEXT_SCHEDULE_EXPIRY = LocalDateTime.of(2021, SEPTEMBER, 2, 0, 0).plusMonths(2)
+			.toInstant(ZoneOffset.UTC);
 
 	private static final FeeSchedules feeSchedules = new FeeSchedules();
 
@@ -83,16 +80,13 @@ public class ScheduleGenerator {
 		currentFeeSchedules.add(Map.of("expiryTime", CURRENT_SCHEDULE_EXPIRY.getEpochSecond()));
 		nextFeeSchedules.add(Map.of("expiryTime", NEXT_SCHEDULE_EXPIRY.getEpochSecond()));
 
-		final List<Map<String, Object>> everything = List.of(
-				Map.of("currentFeeSchedule", currentFeeSchedules),
+		final List<Map<String, Object>> everything = List.of(Map.of("currentFeeSchedule", currentFeeSchedules),
 				Map.of("nextFeeSchedule", nextFeeSchedules));
 		return new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(everything);
 	}
 
-	private Map<String, Object> pricesAsTfs(
-			final HederaFunctionality function,
-			final List<SubType> subTypes
-	) throws IOException {
+	private Map<String, Object> pricesAsTfs(final HederaFunctionality function, final List<SubType> subTypes)
+			throws IOException {
 		final Map<String, Object> transactionFeeSchedule = new HashMap<>();
 
 		final Map<String, Object> details = new LinkedHashMap<>();
@@ -103,8 +97,8 @@ public class ScheduleGenerator {
 			final Map<String, Object> typedPrices = new LinkedHashMap<>();
 			typedPrices.put(FEE_SCHEDULE_TYPE_KEY, subType.toString());
 
-			final Map<ResourceProvider, Map<UsableResource, Long>> prices =
-					feeSchedules.canonicalPricesFor(function, subType);
+			final Map<ResourceProvider, Map<UsableResource, Long>> prices = feeSchedules.canonicalPricesFor(function,
+					subType);
 			for (var provider : ResourceProvider.class.getEnumConstants()) {
 				final Map<String, Long> constrainedPrices = new LinkedHashMap<>();
 				final var providerPrices = prices.get(provider);
@@ -127,32 +121,23 @@ public class ScheduleGenerator {
 	@SuppressWarnings("unchecked")
 	static final List<Pair<HederaFunctionality, List<SubType>>> SUPPORTED_FUNCTIONS = List.of(
 			/* Crypto */
-			Pair.of(CryptoTransfer, List.of(
-					DEFAULT,
-					TOKEN_FUNGIBLE_COMMON,
-					TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES,
-					TOKEN_NON_FUNGIBLE_UNIQUE,
-					TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES
-			)),
-			Pair.of(CryptoCreate, List.of(DEFAULT)),
-			Pair.of(CryptoUpdate, List.of(DEFAULT)),
-			/* File */
-			Pair.of(FileAppend, List.of(DEFAULT)),
-			/* Token */
-			Pair.of(TokenCreate, List.of(
-					TOKEN_FUNGIBLE_COMMON,
-					TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES,
-					TOKEN_NON_FUNGIBLE_UNIQUE,
-					TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES
-			)),
-			Pair.of(TokenMint, List.of(TOKEN_FUNGIBLE_COMMON,
-					TOKEN_NON_FUNGIBLE_UNIQUE)),
-			Pair.of(TokenBurn, List.of(TOKEN_FUNGIBLE_COMMON,
-					TOKEN_NON_FUNGIBLE_UNIQUE)),
-			Pair.of(TokenAccountWipe, List.of(TOKEN_FUNGIBLE_COMMON,
-					TOKEN_NON_FUNGIBLE_UNIQUE)),
-			Pair.of(TokenFeeScheduleUpdate, List.of(DEFAULT)),
-			/* Consensus */
-			Pair.of(ConsensusSubmitMessage, List.of(DEFAULT))
+//			Pair.of(CryptoTransfer,
+//					List.of(DEFAULT, TOKEN_FUNGIBLE_COMMON, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES,
+//							TOKEN_NON_FUNGIBLE_UNIQUE, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES)),
+//			Pair.of(CryptoCreate, List.of(DEFAULT)), Pair.of(CryptoUpdate, List.of(DEFAULT)),
+//			/* File */
+//			Pair.of(FileAppend, List.of(DEFAULT)),
+//			/* Token */
+//			Pair.of(TokenCreate,
+//					List.of(TOKEN_FUNGIBLE_COMMON, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES, TOKEN_NON_FUNGIBLE_UNIQUE,
+//							TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES)),
+//			Pair.of(TokenMint, List.of(TOKEN_FUNGIBLE_COMMON, TOKEN_NON_FUNGIBLE_UNIQUE)),
+//			Pair.of(TokenBurn, List.of(TOKEN_FUNGIBLE_COMMON, TOKEN_NON_FUNGIBLE_UNIQUE)),
+//			Pair.of(TokenAccountWipe, List.of(TOKEN_FUNGIBLE_COMMON, TOKEN_NON_FUNGIBLE_UNIQUE)),
+//			Pair.of(TokenFeeScheduleUpdate, List.of(DEFAULT)),
+			Pair.of(TokenUpdate, List.of(DEFAULT))
+//			Pair.of(HederaFunctionality.TokenDelete, List.of(DEFAULT)),
+//			/* Consensus */
+//			Pair.of(ConsensusSubmitMessage, List.of(DEFAULT))
 	);
 }

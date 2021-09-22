@@ -243,35 +243,35 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 	private HapiApiSpec baseTokeUpdateIsChargedExpectedFee() {
 		final var updateTxn = "baseUpdateTxn";
 		final var tokenToUpdate = "tokenToUpdate";
-		final var supplyKey = "burnsupplyKey";
-		final var baseExpiry = Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS;
+		final String A_TOKEN_NAME = "012345678912";
+		final String A_TOKEN_SYMBOL = "ABCD";
+		final var adminKey = "adminKey";
+		final var targetExpiry = Instant.now().getEpochSecond() +  THREE_MONTHS_IN_SECONDS;
+		final var baseExpiry = Instant.now().getEpochSecond() +  86400;
+		final var civilianPayer = "civilian";
 		final var expectedTokenUpdatePriceUsd = 0.001;
 		return defaultHapiSpec("baseTokeUpdateIsChargedExpectedFee")
 				.given(
-						newKeyNamed(supplyKey),
-						newKeyNamed("adminKey"),
-						cryptoCreate(TOKEN_TREASURY).key("adminKey"),
+						newKeyNamed(adminKey),
+						cryptoCreate(civilianPayer),
+						cryptoCreate(TOKEN_TREASURY).key(adminKey),
 						tokenCreate(tokenToUpdate)
 								.initialSupply(1000)
-								.supplyKey(supplyKey)
-								.adminKey("adminKey")
 								.payingWith(TOKEN_TREASURY)
+								.name(A_TOKEN_NAME)
+								.symbol(A_TOKEN_SYMBOL)
 								.blankMemo()
+								.expiry(baseExpiry)
 								.treasury(TOKEN_TREASURY)
 				).when(
 						tokenUpdate(tokenToUpdate)
-						.expiry(baseExpiry)
-								.signedBy(TOKEN_TREASURY)
+								.expiry(targetExpiry)
+								.blankMemo()
 								.payingWith(TOKEN_TREASURY)
 								.via(updateTxn)
 				).then(
 						validateChargedUsdWithin(updateTxn, expectedTokenUpdatePriceUsd, 0.01)
 				);
-	}
-
-
-	private ByteString metadata(String contents) {
-		return ByteString.copyFromUtf8(contents);
 	}
 
 	@Override

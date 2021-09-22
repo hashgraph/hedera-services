@@ -21,6 +21,7 @@ package com.hedera.services.fees.calculation.utils;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.StringValue;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
@@ -30,9 +31,11 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.FixedFeeSpec;
 import com.hedera.services.usage.token.TokenOpsUsage;
+import com.hedera.services.usage.token.meta.ExtantTokenContext;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -42,8 +45,10 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenType;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -88,6 +93,7 @@ class OpUsageCtxHelperTest {
 	private final int tokenRelationShipCount = 23;
 	private final int maxAutomaticAssociations = 12;
 	private final TokenID target = IdUtils.asToken("0.0.1003");
+	private AccountID accountID = IdUtils.asAccount("0.0.100001");
 	private final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
 	private final HFileMeta fileMeta = new HFileMeta(false, wacl, then);
 	private final TransactionBody appendTxn = TransactionBody.newBuilder()
@@ -104,6 +110,10 @@ class OpUsageCtxHelperTest {
 	private MerkleMap<EntityNum, MerkleToken> tokens;
 	@Mock
 	private StateView workingView;
+	@Mock
+	private TransactionBody txnBody;
+	@Mock
+	private TokenUpdateTransactionBody tokenUpdateTxnBody;
 
 	@Mock(answer = Answers.RETURNS_DEEP_STUBS)
 	private SignedTxnAccessor accessor;
@@ -184,7 +194,6 @@ class OpUsageCtxHelperTest {
 		assertEquals(memo, ctx.currentMemo());
 		assertEquals(maxAutomaticAssociations, ctx.currentMaxAutomaticAssociations());
 		assertEquals(now, ctx.currentExpiry());
-
 	}
 
 	@Test
@@ -250,6 +259,31 @@ class OpUsageCtxHelperTest {
 		assertEquals(80, tokenWipeMeta.getTransferRecordDb());
 	}
 
+
+	@Test
+	void getCtxFromRealTokenInfoWorks() {
+		given(txnBody.getTokenUpdate()).willReturn(tokenUpdateTxnBody);
+		given(tokenUpdateTxnBody.getToken()).willReturn(target);
+		given(workingView.infoForToken(target)).willReturn(Optional.of(tokenInfo));
+
+		ExtantTokenContext ctx = subject.ctxForTokenUpdate(txnBody);
+
+		assertEquals(236, ctx.getExistingRbSize());
+		assertEquals(1_234_567L, ctx.getExistingExpiry());
+	}
+
+	@Test
+	void getCtxFromEmptyTokenInfoWorks() {
+		given(txnBody.getTokenUpdate()).willReturn(tokenUpdateTxnBody);
+		given(tokenUpdateTxnBody.getToken()).willReturn(target);
+		given(workingView.infoForToken(target)).willReturn(Optional.empty());
+
+		ExtantTokenContext ctx = subject.ctxForTokenUpdate(txnBody);
+
+		assertEquals(0, ctx.getExistingRbSize());
+		assertEquals(0, ctx.getExistingExpiry());
+	}
+
 	private TokenFeeScheduleUpdateTransactionBody op() {
 		return TokenFeeScheduleUpdateTransactionBody.newBuilder()
 				.setTokenId(target)
@@ -302,6 +336,20 @@ class OpUsageCtxHelperTest {
 				.build();
 	}
 
+	private TokenUpdateTransactionBody getTokenUpdateOp() {
+		return TokenUpdateTransactionBody.newBuilder()
+				.setMemo(StringValue.of("A memo"))
+				.setSupplyKey(key)
+				.setName("token-name")
+				.setSymbol("ABCD")
+				.setAutoRenewAccount(accountID)
+
+				.setExpiry(Timestamp.newBuilder()
+						.setSeconds(then).setNanos(0).build())
+				.setToken(target)
+				.build();
+	}
+
 	private TransactionBody getTxnBody(final TokenMintTransactionBody op) {
 		return TransactionBody.newBuilder()
 				.setTransactionID(TransactionID.newBuilder()
@@ -319,6 +367,7 @@ class OpUsageCtxHelperTest {
 				.setTokenBurn(op)
 				.build();
 	}
+
 	private TransactionBody getTxnBody(final TokenWipeAccountTransactionBody op) {
 		return TransactionBody.newBuilder()
 				.setTransactionID(TransactionID.newBuilder()
@@ -327,4 +376,26 @@ class OpUsageCtxHelperTest {
 				.setTokenWipe(op)
 				.build();
 	}
+
+	private final TokenInfo tokenInfo = TokenInfo.newBuilder()
+			.setAdminKey(KEY_1)
+			.setFreezeKey(KEY_2)
+			.setWipeKey(KEY_1)
+			.setSupplyKey(KEY_2)
+			.setKycKey(KEY_1)
+			.setFeeScheduleKey(KEY_2)
+			.setSymbol("ABCD")
+			.setName("token-name")
+			.setMemo("a memo")
+			.setAutoRenewAccount(accountID)
+			.setExpiry(Timestamp.newBuilder().setSeconds(1_234_567L).build())
+			.build();
+
+	private static final Key KEY_1 = Key.newBuilder()
+			.setEd25519(ByteString.copyFromUtf8("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+			.build();
+	private static final Key KEY_2 = Key.newBuilder()
+			.setEd25519(ByteString.copyFromUtf8("12345678901234567890123456789012"))
+			.build();
+
 }

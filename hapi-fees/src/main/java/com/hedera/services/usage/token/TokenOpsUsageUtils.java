@@ -35,6 +35,7 @@ import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import java.time.Instant;
 import java.util.function.Function;
 import java.util.function.IntSupplier;
 import java.util.function.Predicate;
@@ -105,7 +106,8 @@ public enum TokenOpsUsageUtils {
 			newExpiry = op.getExpiry().getSeconds();
 		}
 
-		final long effectiveTxnStart = txn.getTransactionID().getTransactionValidStart().getSeconds();
+		long effectiveTxnStart = txn.getTransactionID().getTransactionValidStart().getSeconds();
+		effectiveTxnStart = effectiveTxnStart > 0 ? effectiveTxnStart : Instant.now().getEpochSecond();
 
 		return TokenUpdateMeta.newBuilder()
 				.setNewKeysLen(keysSize)

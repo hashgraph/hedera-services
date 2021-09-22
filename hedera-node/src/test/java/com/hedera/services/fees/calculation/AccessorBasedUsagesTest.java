@@ -41,10 +41,13 @@ import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.TokenOpsUsageUtils;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
+import com.hedera.services.usage.token.meta.ExtantTokenContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hedera.services.usage.token.meta.TokenBurnMeta;
 import com.hedera.services.usage.token.meta.TokenCreateMeta;
+import com.hedera.services.usage.token.meta.TokenDeleteMeta;
 import com.hedera.services.usage.token.meta.TokenMintMeta;
+import com.hedera.services.usage.token.meta.TokenUpdateMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.CustomFee;
@@ -77,7 +80,9 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -91,6 +96,7 @@ import static org.mockito.Mockito.verify;
 class AccessorBasedUsagesTest {
 	private final String memo = "Even the most cursory inspection would yield that...";
 	private final long now = 1_234_567L;
+	private final long then = 1_234_567L + 7776000L;
 	private final SigUsage sigUsage = new SigUsage(1, 2, 3);
 	private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
 
@@ -275,6 +281,57 @@ class AccessorBasedUsagesTest {
 	}
 
 	@Test
+	void worksAsExpectedForTokenUpdate() {
+		// setup:
+		final var baseMeta = new BaseTransactionMeta(100, 2);
+		final var tokenUpdateMeta = TokenUpdateMeta.newBuilder()
+				.setNewExpiry(then)
+				.setNewKeysLen(236)
+				.setHasAutoRenewAccount(true)
+				.setRemoveAutoRenewAccount(false)
+				.setHasTreasure(true)
+				.build();
+		final var ctx = ExtantTokenContext.newBuilder()
+				.setExistingKeysLen(128)
+				.setExistingExpiry(then)
+				.setExistingMemoLen(100)
+				.setExistingNameLen(12)
+				.setExistingSymLen(5)
+				.setHasAutoRenewalAccount(true)
+				.build();
+		final var accumulator = new UsageAccumulator();
+
+		given(txnAccessor.getFunction()).willReturn(TokenUpdate);
+		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
+		given(opUsageCtxHelper.ctxForTokenUpdate(txnAccessor.getTxn())).willReturn(ctx);
+		given(txnAccessor.getSpanMapAccessor().getTokenUpdateMeta(any())).willReturn(tokenUpdateMeta);
+
+		// when:
+		subject.assess(sigUsage, txnAccessor, accumulator);
+
+		// then:
+		verify(tokenOpsUsage).tokenUpdateUsage(sigUsage, baseMeta, tokenUpdateMeta, ctx, accumulator);
+	}
+
+	@Test
+	void worksAsExpectedForTokenDelete() {
+		// setup:
+		final var baseMeta = new BaseTransactionMeta(100, 2);
+		final var tokenDeleteMeta = new TokenDeleteMeta(48);
+		final var accumulator = new UsageAccumulator();
+		given(txnAccessor.getFunction()).willReturn(TokenDelete);
+		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
+		given(txnAccessor.getSpanMapAccessor().getTokenDeleteMeta(any())).willReturn(tokenDeleteMeta);
+
+		// when:
+		subject.assess(sigUsage, txnAccessor, accumulator);
+
+		// then:
+		verify(tokenOpsUsage).tokenDeleteUsage(sigUsage, baseMeta, tokenDeleteMeta, accumulator);
+	}
+
+
+	@Test
 	void worksAsExpectedForCryptoCreate() {
 		final var baseMeta = new BaseTransactionMeta(100, 0);
 		final var opMeta = new CryptoCreateMeta.Builder()
@@ -327,7 +384,6 @@ class AccessorBasedUsagesTest {
 
 		verify(cryptoOpsUsage).cryptoUpdateUsage(sigUsage, baseMeta, opMeta, cryptoContext, accumulator);
 	}
-
 
 	@Test
 	void supportsIfInSet() {

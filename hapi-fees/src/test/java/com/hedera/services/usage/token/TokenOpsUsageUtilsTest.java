@@ -21,6 +21,7 @@ package com.hedera.services.usage.token;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.StringValue;
 import com.hedera.services.test.IdUtils;
 import com.hedera.services.test.KeyUtils;
 import com.hedera.services.usage.token.meta.TokenBurnMeta;
@@ -38,6 +39,7 @@ import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenType;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -196,7 +198,7 @@ class TokenOpsUsageUtilsTest {
 	}
 
 	@Test
-	void tokenCreateWithAutoRenewAcctAndCustomFeesAndKeyWorks() {
+	void tokenCreateWithExpiryAndAutoRenewAcctAndCustomFeesAndKeyWorks() {
 		final var txn = givenTokenCreateWith(NON_FUNGIBLE_UNIQUE,
 				true, true, true, false);
 
@@ -209,6 +211,73 @@ class TokenOpsUsageUtilsTest {
 		assertEquals(0, tokenCreateMeta.getNftsTransfers());
 		assertEquals(32, tokenCreateMeta.getCustomFeeScheduleSize());
 	}
+
+	@Test
+	void tokenUpdateWithAutoRenewWorks() {
+		final var txn = givenTokenUpdateWith(true, true, true);
+
+		final var tokenUpdateMeta = TOKEN_OPS_USAGE_UTILS.tokenUpdateUsageFrom(txn);
+
+		assertEquals(expiry, tokenUpdateMeta.getNewExpiry());
+		assertEquals(now, tokenUpdateMeta.getNewEffectiveTxnStartTime());
+		assertEquals(10, tokenUpdateMeta.getNewNameLen());
+		assertEquals(10, tokenUpdateMeta.getNewSymLen());
+		assertEquals(904, tokenUpdateMeta.getNewKeysLen());
+		assertEquals(false, tokenUpdateMeta.hasTreasure());
+		assertEquals(false, tokenUpdateMeta.getRemoveAutoRenewAccount());
+		assertEquals(true, tokenUpdateMeta.hasAutoRenewAccount());
+		assertEquals(0, tokenUpdateMeta.getNewAutoRenewPeriod());
+	}
+
+	@Test
+	void tokenUpdateWithoutExpiryAndAutoRenewWorks() {
+		final var txn = givenTokenUpdateWith(false, false, false);
+
+		final var tokenUpdateMeta = TOKEN_OPS_USAGE_UTILS.tokenUpdateUsageFrom(txn);
+
+		assertEquals(0, tokenUpdateMeta.getNewExpiry());
+		assertEquals(now, tokenUpdateMeta.getNewEffectiveTxnStartTime());
+		assertEquals(10, tokenUpdateMeta.getNewNameLen());
+		assertEquals(10, tokenUpdateMeta.getNewSymLen());
+		assertEquals(904, tokenUpdateMeta.getNewKeysLen());
+		assertEquals(false, tokenUpdateMeta.hasTreasure());
+		assertEquals(false, tokenUpdateMeta.getRemoveAutoRenewAccount());
+		assertEquals(false, tokenUpdateMeta.hasAutoRenewAccount());
+		assertEquals(0, tokenUpdateMeta.getNewAutoRenewPeriod());
+	}
+
+
+	private TransactionBody givenTokenUpdateWith(
+			final boolean withAutoRenewAccount,
+			final boolean withMemo,
+			final boolean withExpiry) {
+		final var builder = TokenUpdateTransactionBody.newBuilder()
+				.setSymbol(symbol)
+				.setName(name)
+				.setKycKey(kycKey)
+				.setAdminKey(adminKey)
+				.setFreezeKey(freezeKey)
+				.setSupplyKey(supplyKey)
+				.setWipeKey(wipeKey)
+				.setToken(tokenId);
+		if(withAutoRenewAccount) {
+			builder.setAutoRenewAccount(accountID);
+		}
+		if(withMemo) {
+			builder.setMemo(StringValue.of("Some memo"));
+		}
+		if (withExpiry) {
+			builder.setExpiry(Timestamp.newBuilder().setSeconds(expiry));
+		}
+		final var txn = TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder()
+								.setSeconds(now)))
+				.setTokenUpdate(builder)
+				.build();
+		return txn;
+	}
+
 
 	private TransactionBody givenTokenCreateWith(
 			final TokenType type,
@@ -314,6 +383,7 @@ class TokenOpsUsageUtilsTest {
 	private static final Key freezeKey = KeyUtils.A_KEY_LIST;
 	private static final Key supplyKey = KeyUtils.B_COMPLEX_KEY;
 	private static final Key wipeKey = KeyUtils.C_COMPLEX_KEY;
+	private static final Key feeScheduleKey = KeyUtils.A_KEY_LIST;
 	private static final Key customFeeKey = KeyUtils.A_THRESHOLD_KEY;
 	private static final long expiry = 2_345_678L;
 	private static final long autoRenewPeriod = 1_234_567L;

@@ -206,7 +206,7 @@ public final class TokenOpsUsage {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
 
 		long rbSize = 0;
-		rbSize += tokenUpdateMeta.getKeysLen();
+		rbSize += tokenUpdateMeta.getNewKeysLen();
 		if(!tokenUpdateMeta.getRemoveAutoRenewAccount() &&
 				(extantTokenContext.getHashasAutoRenewAccount() || tokenUpdateMeta.hasAutoRenewAccount())) {
 			rbSize += BASIC_ENTITY_ID_SIZE;

@@ -214,39 +214,6 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 		return AdapterUtils.feeDataFrom(accumulator);
 	}
 
-//	private FeeData usageEstimateOld(TransactionBody txn, SigValueObj svo) {
-//		//	FeeCalculator.ActivityMetrics metricsCalc = (_txn, _svo) -> {
-//
-//		var estimate = TokenUpdateUsage.newEstimate(txn, suFrom(svo));
-//		if (info.hasFreezeKey()) {
-//			estimate.givenCurrentFreezeKey(Optional.of(info.getFreezeKey()));
-//		}
-//		if (info.hasAdminKey()) {
-//			estimate.givenCurrentAdminKey(Optional.of(info.getAdminKey()));
-//		}
-//		if (info.hasSupplyKey()) {
-//			estimate.givenCurrentSupplyKey(Optional.of(info.getSupplyKey()));
-//		}
-//		if (info.hasKycKey()) {
-//			estimate.givenCurrentKycKey(Optional.of(info.getKycKey()));
-//		}
-//		if (info.hasWipeKey()) {
-//			estimate.givenCurrentWipeKey(Optional.of(info.getWipeKey()));
-//		}
-//		if (info.hasFeeScheduleKey()) {
-//			estimate.givenCurrentFeeScheduleKey(Optional.of(info.getFeeScheduleKey()));
-//		}
-//		estimate.givenCurrentExpiry(info.getExpiry().getSeconds())
-//				.givenCurrentMemo(info.getMemo())
-//				.givenCurrentName(info.getName())
-//				.givenCurrentSymbol(info.getSymbol());
-//		if (info.hasAutoRenewAccount()) {
-//			estimate.givenCurrentlyUsingAutoRenewAccount();
-//		}
-//		return estimate.get();
-//		//	};
-//	}
-
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		var id = TxnUtils.asTokenId(token, spec);

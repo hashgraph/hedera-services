@@ -55,7 +55,8 @@ public class AccessorBasedUsages {
 			FileAppend,
 			CryptoTransfer, CryptoCreate, CryptoUpdate,
 			ConsensusSubmitMessage,
-			TokenFeeScheduleUpdate, TokenCreate, TokenBurn, TokenMint, TokenAccountWipe);
+			TokenFeeScheduleUpdate, TokenCreate, TokenBurn, TokenMint, TokenAccountWipe,
+			TokenUpdate, TokenDelete);
 
 	private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
 

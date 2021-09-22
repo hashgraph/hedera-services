@@ -117,12 +117,19 @@ public class OpUsageCtxHelper {
 		return cryptoContext;
 	}
 
-	// get the TokenInfo from StateView and fill into ExtantTokenContext
 	public ExtantTokenContext ctxForTokenUpdate(TransactionBody txn) {
 		final var op = txn.getTokenUpdate();
 		var tokenInfoMaybe = workingView.infoForToken(op.getToken());
 		if(tokenInfoMaybe.isPresent()) {
 			final var tokenInfo = tokenInfoMaybe.get();
+			int keysLen = 0;
+			keysLen += tokenInfo.hasAdminKey() ? getAccountKeyStorageSize(tokenInfo.getAdminKey()) : 0;
+			keysLen += tokenInfo.hasKycKey() ? getAccountKeyStorageSize(tokenInfo.getKycKey()) : 0;
+			keysLen += tokenInfo.hasFreezeKey() ? getAccountKeyStorageSize(tokenInfo.getFreezeKey()) : 0;
+			keysLen += tokenInfo.hasSupplyKey() ? getAccountKeyStorageSize(tokenInfo.getSupplyKey()) : 0;
+			keysLen += tokenInfo.hasWipeKey() ?	getAccountKeyStorageSize(tokenInfo.getWipeKey()) : 0;
+			keysLen += tokenInfo.hasFeeScheduleKey() ? getAccountKeyStorageSize(tokenInfo.getFeeScheduleKey()) : 0;
+
 			return ExtantTokenContext.newBuilder()
 					.setExistingNameLen(tokenInfo.getName().length())
 					.setExistingSymLen(tokenInfo.getSymbol().length())
@@ -130,20 +137,7 @@ public class OpUsageCtxHelper {
 					.setExistingExpiry(tokenInfo.hasExpiry() ?
 							tokenInfo.getExpiry().getSeconds() : 0)
 					.setHasAutoRenewalAccount(tokenInfo.hasAutoRenewAccount())
-					.setExistingAdminKeyLen(tokenInfo.hasAdminKey() ?
-							getAccountKeyStorageSize(tokenInfo.getAdminKey()) : 0)
-					.setExistingKycKeyLen(tokenInfo.hasKycKey() ?
-							getAccountKeyStorageSize(tokenInfo.getKycKey()) : 0)
-					.setExistingFreezeKeyLen(tokenInfo.hasFreezeKey() ?
-							getAccountKeyStorageSize(tokenInfo.getFreezeKey()) : 0)
-					.setExistingSupplyKeyLen(tokenInfo.hasSupplyKey() ?
-							getAccountKeyStorageSize(tokenInfo.getSupplyKey()) : 0)
-					.setExistingWipeKeyLen(tokenInfo.hasWipeKey() ?
-							getAccountKeyStorageSize(tokenInfo.getWipeKey()) : 0)
-					.setExistingFeeScheduleKeyLen(tokenInfo.hasFeeScheduleKey() ?
-							getAccountKeyStorageSize(tokenInfo.getFeeScheduleKey()) : 0)
-					.setExistingKycKeyLen(tokenInfo.hasKycKey() ?
-							getAccountKeyStorageSize(tokenInfo.getKycKey()) : 0)
+					.setExistingKeysLen(keysLen)
 					.build();
 		} else {
 			return ExtantTokenContext.newBuilder()
@@ -152,17 +146,11 @@ public class OpUsageCtxHelper {
 					.setExistingMemoLen(0)
 					.setExistingExpiry(0)
 					.setHasAutoRenewalAccount(false)
-					.setExistingAdminKeyLen(0)
-					.setExistingKycKeyLen(0)
-					.setExistingFreezeKeyLen(0)
-					.setExistingSupplyKeyLen(0)
-					.setExistingFeeScheduleKeyLen(0)
-					.setExistingWipeKeyLen(0)
+					.setExistingKeysLen(0)
 					.build();
 		}
 	}
 
-	// These two can be removed
 	public TokenBurnMeta metaForTokenBurn(TxnAccessor accessor) {
 		return TOKEN_OPS_USAGE_UTILS.tokenBurnUsageFrom(accessor.getTxn(), accessor.getSubType());
 	}

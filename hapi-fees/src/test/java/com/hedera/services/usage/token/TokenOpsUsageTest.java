@@ -28,12 +28,18 @@ import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.services.usage.token.meta.TokenUpdateMeta;
+import com.hedera.services.usage.token.meta.ExtantTokenContext;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.hederahashgraph.api.proto.java.SubType;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.junit.jupiter.api.Test;
 
@@ -144,4 +150,106 @@ class TokenOpsUsageTest {
 		assertEquals(0 , accumulator.get(ResourceProvider.SERVICE, UsableResource.BPR));
 		assertEquals( 3, accumulator.get(ResourceProvider.NODE, UsableResource.VPT));
 	}
+
+	@Test
+	void tokenUpdateUsageWithTresaureAndAutorenewalAccountWorks() {
+		final var sigUsage = new SigUsage(1, 2, 2);
+		final var baseMeta = new BaseTransactionMeta(0, 0);
+		final var tokenUpdateMeta = TokenUpdateMeta.newBuilder()
+				.setNewExpiry(then)
+				.setNewKeysLen(236)
+				.setHasAutoRenewAccount(true)
+				.setRemoveAutoRenewAccount(false)
+				.setHasTreasure(true)
+				.build();
+		final var ctx = ExtantTokenContext.newBuilder()
+				.setExistingKeysLen(128)
+				.setExistingExpiry(then)
+				.setExistingMemoLen(100)
+				.setExistingNameLen(12)
+				.setExistingSymLen(5)
+				.setHasAutoRenewalAccount(true)
+				.build();
+
+		final var accumulator = new UsageAccumulator();
+
+		subject.tokenUpdateUsage(sigUsage, baseMeta, tokenUpdateMeta, ctx, accumulator);
+
+		assertEquals(6, accumulator.getNetworkRbh());
+		assertEquals(2, accumulator.getNodeVpt());
+		assertEquals(270323, accumulator.getServiceRbh());
+		assertEquals(4, accumulator.getNodeBpr());
+		assertEquals(535, accumulator.getUniversalBpt());
+	}
+
+	@Test
+	void tokenUpdateUsageWithoutTresaureNorAutorenewalAccountWorks() {
+		final var sigUsage = new SigUsage(1, 2, 2);
+		final var baseMeta = new BaseTransactionMeta(0, 0);
+		final var tokenUpdateMeta = TokenUpdateMeta.newBuilder()
+				.setNewExpiry(then)
+				.setNewKeysLen(236)
+				.setHasAutoRenewAccount(false)
+				.setRemoveAutoRenewAccount(false)
+				.setHasTreasure(true)
+				.build();
+		final var ctx = ExtantTokenContext.newBuilder()
+				.setExistingKeysLen(128)
+				.setExistingExpiry(then)
+				.setExistingMemoLen(100)
+				.setExistingNameLen(12)
+				.setExistingSymLen(5)
+				.setHasAutoRenewalAccount(false)
+				.build();
+
+		final var accumulator = new UsageAccumulator();
+
+		subject.tokenUpdateUsage(sigUsage, baseMeta, tokenUpdateMeta, ctx, accumulator);
+
+		assertEquals(6, accumulator.getNetworkRbh());
+		assertEquals(2, accumulator.getNodeVpt());
+		assertEquals(270323, accumulator.getServiceRbh());
+		assertEquals(4, accumulator.getNodeBpr());
+		assertEquals(487, accumulator.getUniversalBpt());
+	}
+
+
+	private TransactionBody getTxnBody(final TokenWipeAccountTransactionBody op) {
+		return TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder()
+								.setSeconds(now)))
+				.setTokenWipe(op)
+				.build();
+	}
+
+	private final long now = 1_234_567L;
+	private final long then = 1_234_567L + 7776000L;
+
+//	private static final Key KEY_1 = Key.newBuilder()
+//			.setEd25519(ByteString.copyFromUtf8("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+//			.build();
+//	private static final Key KEY_2 = Key.newBuilder()
+//			.setEd25519(ByteString.copyFromUtf8("12345678901234567890123456789012"))
+//			.build();
+//	private final Key key = Key.newBuilder()
+//			.setEd25519(ByteString.copyFromUtf8("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+//			.build();
+//	private final TokenID target = IdUtils.asToken("0.0.1003");
+//	private AccountID accountID = IdUtils.asAccount("0.0.100001");
+//
+//	private TokenInfo tokenInfo = TokenInfo.newBuilder()
+//			.setAdminKey(KEY_1)
+//			.setFreezeKey(KEY_2)
+//			.setWipeKey(KEY_1)
+//			.setSupplyKey(KEY_2)
+//			.setKycKey(KEY_1)
+//			.setFeeScheduleKey(KEY_2)
+//			.setSymbol("ABCD")
+//			.setName("token-name")
+//			.setMemo("a memo")
+//			.setAutoRenewAccount(accountID)
+//			.setExpiry(Timestamp.newBuilder().setSeconds(1_234_567L).build())
+//			.build();
+
 }

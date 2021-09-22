@@ -24,16 +24,13 @@ import com.google.common.base.MoreObjects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+
 public class ExtantTokenContext {
 	private final int existingSymLen;
 	private final int existingNameLen;
 	private final int existingMemoLen;
-	private final int existingAdminKeyLen;
-	private final int existingKycKeyLen;
-	private final int existingFreezeKeyLen;
-	private final int existingWipeKeyLen;
-	private final int nexistingSupplyKeyLen;
-	private final int existingFeeScheduleKeyLen;
+	private final int existingKeysLen;
 
 	private final boolean hasAutoRenewAccount;
 	private final long existingExpiry;
@@ -42,21 +39,14 @@ public class ExtantTokenContext {
 		this.existingSymLen = builder.existingSymLen;
 		this.existingNameLen = builder.existingNameLen;
 		this.existingMemoLen = builder.existingMemoLen;
-		this.existingAdminKeyLen = builder.existingAdminKeyLen;
-		this.existingKycKeyLen = builder.existingKycKeyLen;
-		this.existingFreezeKeyLen = builder.existingFreezeKeyLen;
-		this.existingWipeKeyLen = builder.existingWipeKeyLen;
-		this.nexistingSupplyKeyLen = builder.existingSupplyKeyLen;
-		this.existingFeeScheduleKeyLen = builder.existingFeeScheduleKeyLen;
+		this.existingKeysLen = builder.existingKeysLen;
 		this.existingExpiry = builder.existingExpiry;
 		this.hasAutoRenewAccount = builder.hasAutoRenewAccount;
 	}
 
-
 	public long getExistingRbSize() {
-		return (long)existingNameLen + existingSymLen + existingMemoLen + existingAdminKeyLen
-				+ existingKycKeyLen + existingFreezeKeyLen + existingWipeKeyLen
-				+ existingFreezeKeyLen;
+		return (long)existingNameLen + existingSymLen + existingMemoLen + existingKeysLen
+				+ (hasAutoRenewAccount ? BASIC_ENTITY_ID_SIZE : 0);
 	}
 
 	public int getExistingSymLen() {
@@ -67,21 +57,6 @@ public class ExtantTokenContext {
 	}
 	public int getExistingMemoLen() {
 		return existingMemoLen;
-	}
-	public int getExistingAdminKeyLen() {
-		return existingAdminKeyLen;
-	}
-	public int getExistingKycKeyLen() {
-		return existingKycKeyLen;
-	}
-	public int getExistingWipeKeyLen() {
-		return existingWipeKeyLen;
-	}
-	public int getExistingFeeScheduleKeyLen() {
-		return existingFeeScheduleKeyLen;
-	}
-	public int getExistingFreezeKeyLen() {
-		return existingFreezeKeyLen;
 	}
 	public long getExistingExpiry() {
 		return existingExpiry;
@@ -99,21 +74,16 @@ public class ExtantTokenContext {
 		private int existingSymLen;
 		private int existingNameLen;
 		private int existingMemoLen;
+		private int existingKeysLen;
+
 		private boolean hasAutoRenewAccount;
 		private long existingExpiry;
-		private int existingAdminKeyLen;
-		private int existingKycKeyLen;
-		private int existingFreezeKeyLen;
-		private int existingWipeKeyLen;
-		private int existingSupplyKeyLen;
-		private int existingFeeScheduleKeyLen;
 
 		private Builder() {
 		}
 		public Builder newBuilder() {
 			return new Builder();
 		}
-
 
 		public ExtantTokenContext build() {
 			return new ExtantTokenContext(this);
@@ -132,41 +102,19 @@ public class ExtantTokenContext {
 			this.existingMemoLen = existingMemoLen;
 			return this;
 		}
+		public Builder setExistingKeysLen(final int existingKeysLen) {
+			this.existingKeysLen = existingKeysLen;
+			return this;
+		}
 
 		public Builder setExistingExpiry(final long existingExpiry) {
 			this.existingExpiry = existingExpiry;
-			return this;
-		}
-
-		public Builder setExistingAdminKeyLen(final int existingAdminKeyLen) {
-			this.existingAdminKeyLen = existingAdminKeyLen;
-			return this;
-		}
-		public Builder setExistingKycKeyLen(final int existingKycKeyLen) {
-			this.existingKycKeyLen = existingKycKeyLen;
-			return this;
-		}
-		public Builder setExistingFreezeKeyLen(final int existingFreezeKeyLen) {
-			this.existingFreezeKeyLen = existingFreezeKeyLen;
-			return this;
-		}
-		public Builder setExistingWipeKeyLen(final int existingWipeKeyLen) {
-			this.existingWipeKeyLen = existingWipeKeyLen;
-			return this;
-		}
-		public Builder setExistingSupplyKeyLen(final int existingSupplyKeyLen) {
-			this.existingSupplyKeyLen = existingSupplyKeyLen;
-			return this;
-		}
-		public Builder setExistingFeeScheduleKeyLen(final int existingFeeScheduleKeyLen) {
-			this.existingFeeScheduleKeyLen = existingFeeScheduleKeyLen;
 			return this;
 		}
 		public Builder setHasAutoRenewalAccount(final boolean hasAutoRenewalAccount) {
 			this.hasAutoRenewAccount = hasAutoRenewalAccount;
 			return this;
 		}
-
 	}
 
 	@Override
@@ -185,12 +133,7 @@ public class ExtantTokenContext {
 				.add("existingNameLen", existingNameLen)
 				.add("existingSymLen", existingSymLen)
 				.add("existingMemoLen", existingMemoLen)
-				.add("existingAdminKeyLen", existingAdminKeyLen)
-				.add("existingKycKeyLen", existingKycKeyLen)
-				.add("existingFreezeKeyLen", existingFreezeKeyLen)
-				.add("existingWipeKeyLen", existingWipeKeyLen)
-				.add("nexistingSupplyKeyLen", nexistingSupplyKeyLen)
-				.add("existingFeeScheduleKeyLen", existingFeeScheduleKeyLen)
+				.add("existingKeysLen", existingKeysLen)
 				.add("existingExpiry", existingExpiry)
 				.add("hasAutoRenewAccount", hasAutoRenewAccount)
 				.toString();
