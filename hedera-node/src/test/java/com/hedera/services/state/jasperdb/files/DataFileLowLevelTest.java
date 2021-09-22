@@ -5,9 +5,11 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -20,6 +22,7 @@ import java.util.stream.IntStream;
 
 import static com.hedera.services.state.jasperdb.JasperDbTestUtils.deleteDirectoryAndContents;
 import static com.hedera.services.state.jasperdb.files.DataFileCommon.createDataFilePath;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -257,6 +260,8 @@ public class DataFileLowLevelTest {
         assertEquals(firstIterator.toString(), secondIterator.toString());
         assertEquals(firstIterator.hashCode(), secondIterator.hashCode());
         assertEquals(firstIterator, secondIterator);
+        assertEquals(secondReader.getIndex(), dataFileReader.getIndex());
+        assertEquals(secondReader.getPath(), dataFileReader.getPath());
         assertEquals(secondReader.getSize(), dataFileReader.getSize());
         assertEquals(secondReader, dataFileReader);
         assertEquals(secondReader.hashCode(), dataFileReader.hashCode());
@@ -313,6 +318,49 @@ public class DataFileLowLevelTest {
             long[] dataItem = dataFileReader.readDataItem(newDataLocations.get(i));
             checkItem(testType,i,dataItem);
         }
+    }
+
+    @Order(500)
+    @ParameterizedTest
+    @EnumSource(TestType.class)
+    public void dataFileOutputStreamTests(TestType testType) throws IOException {
+        int capacity = 1000;
+        DataFileOutputStream dataFileOutputStream = new DataFileOutputStream(capacity);
+        dataFileOutputStream.write(42); // one byte
+        dataFileOutputStream.writeBoolean(true); // a second byte
+        dataFileOutputStream.writeByte(42); // a third byte
+        dataFileOutputStream.writeBytes("hello"); // 5 additional bytes, total of 8
+        dataFileOutputStream.writeChars("hi"); // 4 additional bytes, total of 12
+        assertEquals(12, dataFileOutputStream.bytesWritten());
+
+        ByteArrayOutputStream myOutputStream = new ByteArrayOutputStream(capacity);
+        dataFileOutputStream.writeTo(myOutputStream);
+        byte[] expectedBytes = "*\u0001*hello\u0000h\u0000i".getBytes(StandardCharsets.UTF_8);
+        String outputString = myOutputStream.toString(StandardCharsets.UTF_8);
+        byte[] actualBytes = outputString.getBytes();
+        assertArrayEquals(expectedBytes, actualBytes);
+
+        ByteBuffer myByteBuffer = ByteBuffer.allocate(dataFileOutputStream.bytesWritten());
+        dataFileOutputStream.writeTo(myByteBuffer);
+        actualBytes = myByteBuffer.array();
+        assertArrayEquals(expectedBytes, actualBytes);
+
+        dataFileOutputStream.reset();
+        myOutputStream.reset();
+        myByteBuffer.clear();
+
+        dataFileOutputStream.write(42); // one byte
+        assertEquals(1, dataFileOutputStream.bytesWritten());
+        dataFileOutputStream.writeTo(myOutputStream);
+        dataFileOutputStream.flush();
+        outputString = myOutputStream.toString(StandardCharsets.UTF_8);
+        assertEquals("*", outputString);
+
+        myByteBuffer = ByteBuffer.allocate(outputString.length());
+        dataFileOutputStream.writeTo(myByteBuffer);
+        actualBytes = myByteBuffer.array();
+        expectedBytes = new byte[]{42};
+        assertArrayEquals(expectedBytes, actualBytes);
     }
 
     @AfterAll
