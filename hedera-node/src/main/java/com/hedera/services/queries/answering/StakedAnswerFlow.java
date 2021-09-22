@@ -53,7 +53,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 
-public class StakedAnswerFlow implements AnswerFlow {
+public final class StakedAnswerFlow implements AnswerFlow {
 	private LongPredicate isThrottleExempt = SystemPrecheck.IS_THROTTLE_EXEMPT;
 	private Supplier<Instant> now = Instant::now;
 

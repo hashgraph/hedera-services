@@ -39,16 +39,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * Performs precheck on a top-level transaction and submits it to the Platform if precheck passes.
  */
 @Singleton
-public class BasicSubmissionFlow implements SubmissionFlow {
+public final class BasicSubmissionFlow implements SubmissionFlow {
 	private final ServicesNodeType nodeType;
 	private final TransactionPrecheck precheck;
 	private final PlatformSubmissionManager submissionManager;
 
 	@Inject
 	public BasicSubmissionFlow(
-			ServicesNodeType nodeType,
-			TransactionPrecheck precheck,
-			PlatformSubmissionManager submissionManager
+			final ServicesNodeType nodeType,
+			final TransactionPrecheck precheck,
+			final PlatformSubmissionManager submissionManager
 	) {
 		this.precheck = precheck;
 		this.nodeType = nodeType;
@@ -56,7 +56,7 @@ public class BasicSubmissionFlow implements SubmissionFlow {
 	}
 
 	@Override
-	public TransactionResponse submit(Transaction signedTxn) {
+	public TransactionResponse submit(final Transaction signedTxn) {
 		if (nodeType == ZERO_STAKE_NODE) {
 			return responseWith(INVALID_NODE_ACCOUNT);
 		}
@@ -74,11 +74,11 @@ public class BasicSubmissionFlow implements SubmissionFlow {
 		return responseWith(submissionManager.trySubmission(accessor));
 	}
 
-	private TransactionResponse responseWith(ResponseCodeEnum validity) {
+	private TransactionResponse responseWith(final ResponseCodeEnum validity) {
 		return responseWith(validity, 0);
 	}
 
-	private TransactionResponse responseWith(ResponseCodeEnum validity, long feeRequired) {
+	private TransactionResponse responseWith(final ResponseCodeEnum validity, final long feeRequired) {
 		return TransactionResponse.newBuilder()
 				.setNodeTransactionPrecheckCode(validity)
 				.setCost(feeRequired)

@@ -36,7 +36,7 @@ import javax.inject.Singleton;
  * A wrapper object to improve readability of {@code TransactionPrecheck}.
  */
 @Singleton
-public class StagedPrechecks {
+public final class StagedPrechecks {
 	private final SyntaxPrecheck syntaxPrecheck;
 	private final SystemPrecheck systemPrecheck;
 	private final SemanticPrecheck semanticPrecheck;
@@ -45,11 +45,11 @@ public class StagedPrechecks {
 
 	@Inject
 	public StagedPrechecks(
-			SyntaxPrecheck syntaxPrecheck,
-			SystemPrecheck systemPrecheck,
-			SemanticPrecheck semanticPrecheck,
-			SolvencyPrecheck solvencyPrecheck,
-			StructuralPrecheck structuralPrecheck
+			final SyntaxPrecheck syntaxPrecheck,
+			final SystemPrecheck systemPrecheck,
+			final SemanticPrecheck semanticPrecheck,
+			final SolvencyPrecheck solvencyPrecheck,
+			final StructuralPrecheck structuralPrecheck
 	) {
 		this.syntaxPrecheck = syntaxPrecheck;
 		this.systemPrecheck = systemPrecheck;
@@ -58,31 +58,31 @@ public class StagedPrechecks {
 		this.structuralPrecheck = structuralPrecheck;
 	}
 
-	ResponseCodeEnum validateSyntax(TransactionBody txn) {
+	ResponseCodeEnum validateSyntax(final TransactionBody txn) {
 		return syntaxPrecheck.validate(txn);
 	}
 
-	ResponseCodeEnum systemScreen(SignedTxnAccessor accessor) {
+	ResponseCodeEnum systemScreen(final SignedTxnAccessor accessor) {
 		return systemPrecheck.screen(accessor);
 	}
 
 	ResponseCodeEnum validateSemantics(
-			TxnAccessor accessor,
-			HederaFunctionality requiredFunction,
-			ResponseCodeEnum failureType
+			final TxnAccessor accessor,
+			final HederaFunctionality requiredFunction,
+			final ResponseCodeEnum failureType
 	) {
 		return semanticPrecheck.validate(accessor, requiredFunction, failureType);
 	}
 
-	TxnValidityAndFeeReq assessSolvencySansSvcFees(SignedTxnAccessor accessor) {
+	TxnValidityAndFeeReq assessSolvencySansSvcFees(final SignedTxnAccessor accessor) {
 		return solvencyPrecheck.assessSansSvcFees(accessor);
 	}
 
-	TxnValidityAndFeeReq assessSolvencyWithSvcFees(SignedTxnAccessor accessor) {
+	TxnValidityAndFeeReq assessSolvencyWithSvcFees(final SignedTxnAccessor accessor) {
 		return solvencyPrecheck.assessWithSvcFees(accessor);
 	}
 
-	Pair<TxnValidityAndFeeReq, SignedTxnAccessor> assessStructure(Transaction signedTxn) {
+	Pair<TxnValidityAndFeeReq, SignedTxnAccessor> assessStructure(final Transaction signedTxn) {
 		return structuralPrecheck.assess(signedTxn);
 	}
 }

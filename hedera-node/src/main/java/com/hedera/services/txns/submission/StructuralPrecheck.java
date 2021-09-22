@@ -9,9 +9,9 @@ package com.hedera.services.txns.submission;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -49,23 +49,23 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_TO
  * For more details, please see https://github.com/hashgraph/hedera-services/blob/master/docs/transaction-prechecks.md
  */
 @Singleton
-public class StructuralPrecheck {
+public final class StructuralPrecheck {
 	private static final TxnValidityAndFeeReq OK_STRUCTURALLY = new TxnValidityAndFeeReq(OK);
-	public static final int HISTORICAL_MAX_PROTO_MESSAGE_DEPTH = 50;
+	static final int HISTORICAL_MAX_PROTO_MESSAGE_DEPTH = 50;
 
 	private final int maxSignedTxnSize;
 	private final int maxProtoMessageDepth;
 
 	@Inject
 	public StructuralPrecheck(
-			@MaxSignedTxnSize int maxSignedTxnSize,
-			@MaxProtoMsgDepth int maxProtoMessageDepth
+			@MaxSignedTxnSize final int maxSignedTxnSize,
+			@MaxProtoMsgDepth final int maxProtoMessageDepth
 	) {
 		this.maxSignedTxnSize = maxSignedTxnSize;
 		this.maxProtoMessageDepth = maxProtoMessageDepth;
 	}
 
-	public Pair<TxnValidityAndFeeReq, SignedTxnAccessor> assess(Transaction signedTxn) {
+	public Pair<TxnValidityAndFeeReq, SignedTxnAccessor> assess(final Transaction signedTxn) {
 		final var hasSignedTxnBytes = !signedTxn.getSignedTransactionBytes().isEmpty();
 		final var hasDeprecatedSigMap = signedTxn.hasSigMap();
 		final var hasDeprecatedBodyBytes = !signedTxn.getBodyBytes().isEmpty();
@@ -83,26 +83,26 @@ public class StructuralPrecheck {
 		}
 
 		try {
-			var accessor = new SignedTxnAccessor(signedTxn);
-			if (hasTooManyLayers(signedTxn) || hasTooManyLayers(accessor.getTxn()))	{
+			final var accessor = new SignedTxnAccessor(signedTxn);
+			if (hasTooManyLayers(signedTxn) || hasTooManyLayers(accessor.getTxn())) {
 				return WELL_KNOWN_FLAWS.get(TRANSACTION_TOO_MANY_LAYERS);
 			}
 			if (accessor.getFunction() == NONE) {
 				return WELL_KNOWN_FLAWS.get(INVALID_TRANSACTION_BODY);
 			}
 			return Pair.of(OK_STRUCTURALLY, accessor);
-		} catch (InvalidProtocolBufferException e) {
+		} catch (final InvalidProtocolBufferException e) {
 			return WELL_KNOWN_FLAWS.get(INVALID_TRANSACTION_BODY);
 		}
 	}
 
-	int protoDepthOf(GeneratedMessageV3 msg) {
+	int protoDepthOf(final GeneratedMessageV3 msg) {
 		int depth = 0;
-		for (var field : msg.getAllFields().values()) {
+		for (final var field : msg.getAllFields().values()) {
 			if (isProtoMsg(field)) {
 				depth = Math.max(depth, 1 + protoDepthOf((GeneratedMessageV3) field));
 			} else if (field instanceof List) {
-				for (var item : (List) field) {
+				for (final var item : (List) field) {
 					depth = Math.max(depth, isProtoMsg(item) ? 1 + protoDepthOf((GeneratedMessageV3) item) : 0);
 				}
 			}
@@ -111,11 +111,11 @@ public class StructuralPrecheck {
 		return depth;
 	}
 
-	private boolean hasTooManyLayers(GeneratedMessageV3 msg) {
+	private boolean hasTooManyLayers(final GeneratedMessageV3 msg) {
 		return protoDepthOf(msg) > maxProtoMessageDepth;
 	}
 
-	private boolean isProtoMsg(Object o) {
+	private boolean isProtoMsg(final Object o) {
 		return o instanceof GeneratedMessageV3;
 	}
 }

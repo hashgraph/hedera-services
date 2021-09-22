@@ -50,7 +50,7 @@ import static com.swirlds.common.PlatformStatus.ACTIVE;
  * For more details, please see https://github.com/hashgraph/hedera-services/blob/master/docs/transaction-prechecks.md
  */
 @Singleton
-public class TransactionPrecheck {
+public final class TransactionPrecheck {
 	private final QueryFeeCheck queryFeeCheck;
 	private final StagedPrechecks stagedPrechecks;
 	private final CurrentPlatformStatus currentPlatformStatus;

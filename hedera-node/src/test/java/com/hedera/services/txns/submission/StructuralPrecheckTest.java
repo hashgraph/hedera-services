@@ -21,7 +21,6 @@ package com.hedera.services.txns.submission;
  */
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.Descriptors;
 import com.google.protobuf.GeneratedMessageV3;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.utils.SignedTxnAccessor;
@@ -40,7 +39,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.Map;
 import java.util.stream.IntStream;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
@@ -54,7 +52,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 class StructuralPrecheckTest {
-	private int pretendSizeLimit = 1_000, pretendMaxMessageDepth = 42;
+	private static final int pretendSizeLimit = 1_000;
+	private static final int pretendMaxMessageDepth = 42;
 	private StructuralPrecheck subject;
 
 	@BeforeEach
@@ -64,104 +63,85 @@ class StructuralPrecheckTest {
 
 	@Test
 	void mustHaveBodyBytes() {
-		// given:
-		var assess = subject.assess(Transaction.getDefaultInstance());
+		final var assess = subject.assess(Transaction.getDefaultInstance());
 
-		// then:
 		assertExpectedFail(INVALID_TRANSACTION_BODY, assess);
 	}
 
 	@Test
 	void cantMixSignedBytesWithBodyBytes() {
-		// given:
-		var assess = subject.assess(Transaction.newBuilder()
+		final var assess = subject.assess(Transaction.newBuilder()
 				.setSignedTransactionBytes(ByteString.copyFromUtf8("w/e"))
 				.setBodyBytes(ByteString.copyFromUtf8("doesn't matter"))
 				.build());
 
-		// then:
 		assertExpectedFail(INVALID_TRANSACTION, assess);
 	}
 
 	@Test
 	void cantMixSignedBytesWithSigMap() {
-		// given:
-		var assess = subject.assess(Transaction.newBuilder()
+		final var assess = subject.assess(Transaction.newBuilder()
 				.setSignedTransactionBytes(ByteString.copyFromUtf8("w/e"))
 				.setSigMap(SignatureMap.getDefaultInstance())
 				.build());
 
-		// then:
 		assertExpectedFail(INVALID_TRANSACTION, assess);
 	}
 
 	@Test
 	void cantBeOversize() {
-		// given:
-		var assess = subject.assess(Transaction.newBuilder()
+		final var assess = subject.assess(Transaction.newBuilder()
 				.setSignedTransactionBytes(ByteString.copyFromUtf8(IntStream.range(0, pretendSizeLimit)
 						.mapToObj(i -> "A")
 						.collect(joining())))
 				.build());
 
-		// expect:
 		assertExpectedFail(TRANSACTION_OVERSIZE, assess);
 	}
 
 	@Test
 	void mustParseViaAccessor() {
-		// given:
-		var assess = subject.assess(Transaction.newBuilder()
+		final var assess = subject.assess(Transaction.newBuilder()
 				.setSignedTransactionBytes(ByteString.copyFromUtf8("NONSENSE"))
 				.build());
 
-		// expect:
 		assertExpectedFail(INVALID_TRANSACTION_BODY, assess);
 	}
 
 	@Test
 	void cantBeUndulyNested() {
-		// given:
-		var weirdlyNestedKey = TxnUtils.nestKeys(Key.newBuilder(), pretendMaxMessageDepth);
-		var hostTxn = TransactionBody.newBuilder()
+		final var weirdlyNestedKey = TxnUtils.nestKeys(Key.newBuilder(), pretendMaxMessageDepth);
+		final var hostTxn = TransactionBody.newBuilder()
 				.setCryptoCreateAccount(CryptoCreateTransactionBody.newBuilder()
 						.setKey(weirdlyNestedKey));
-		var signedTxn = Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
+		final var signedTxn = Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
 
-		// when:
-		var assess = subject.assess(signedTxn);
+		final var assess = subject.assess(signedTxn);
 
-		// then:
 		assertExpectedFail(TRANSACTION_TOO_MANY_LAYERS, assess);
 	}
 
 	@Test
 	void cantOmitAFunction() {
-		// given:
-		var hostTxn = TransactionBody.newBuilder()
+		final var hostTxn = TransactionBody.newBuilder()
 				.setTransactionID(TransactionID.newBuilder().setAccountID(IdUtils.asAccount("0.0.2")));
-		var signedTxn = Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
+		final var signedTxn = Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
 
-		// when:
-		var assess = subject.assess(signedTxn);
+		final var assess = subject.assess(signedTxn);
 
-		// then:
 		assertExpectedFail(INVALID_TRANSACTION_BODY, assess);
 	}
 
 	@Test
 	void canBeOk() {
-		// given:
-		var reasonablyNestedKey = TxnUtils.nestKeys(Key.newBuilder(), 2);
-		var hostTxn = TransactionBody.newBuilder()
+		final var reasonablyNestedKey = TxnUtils.nestKeys(Key.newBuilder(), 2);
+		final var hostTxn = TransactionBody.newBuilder()
 				.setCryptoCreateAccount(CryptoCreateTransactionBody.newBuilder()
 						.setKey(reasonablyNestedKey));
-		var signedTxn = Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
+		final var signedTxn = Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
 
-		// when:
-		var assess = subject.assess(signedTxn);
+		final var assess = subject.assess(signedTxn);
 
-		// then:
 		assertEquals(OK, assess.getLeft().getValidity());
 		assertNotNull(assess.getRight());
 		assertEquals(HederaFunctionality.CryptoCreate, assess.getRight().getFunction());
@@ -169,28 +149,23 @@ class StructuralPrecheckTest {
 
 	@Test
 	void computesExpectedDepth() {
-		// setup:
-		var weirdlyNestedKey = TxnUtils.nestKeys(Key.newBuilder(), pretendMaxMessageDepth).build();
+		final var weirdlyNestedKey = TxnUtils.nestKeys(Key.newBuilder(), pretendMaxMessageDepth).build();
+		final var expectedDepth = verboseCalc(weirdlyNestedKey);
 
-		// given:
-		var expectedDepth = verboseCalc(weirdlyNestedKey);
+		final var actualDepth = subject.protoDepthOf(weirdlyNestedKey);
 
-		// when:
-		var actualDepth = subject.protoDepthOf(weirdlyNestedKey);
-
-		// then:
 		assertEquals(expectedDepth, actualDepth);
 	}
 
-	private int verboseCalc(GeneratedMessageV3 msg) {
-		Map<Descriptors.FieldDescriptor, Object> fields = msg.getAllFields();
+	private int verboseCalc(final GeneratedMessageV3 msg) {
+		final var fields = msg.getAllFields();
 		int depth = 0;
-		for (var field : fields.values()) {
+		for (final var field : fields.values()) {
 			if (field instanceof GeneratedMessageV3) {
 				GeneratedMessageV3 fieldMessage = (GeneratedMessageV3) field;
 				depth = Math.max(depth, verboseCalc(fieldMessage) + 1);
 			} else if (field instanceof List) {
-				for (Object ele : (List) field) {
+				for (final Object ele : (List) field) {
 					if (ele instanceof GeneratedMessageV3) {
 						depth = Math.max(depth, verboseCalc((GeneratedMessageV3) ele) + 1);
 					}
@@ -201,8 +176,8 @@ class StructuralPrecheckTest {
 	}
 
 	private void assertExpectedFail(
-			ResponseCodeEnum error,
-			Pair<TxnValidityAndFeeReq, SignedTxnAccessor> resp
+			final ResponseCodeEnum error,
+			final Pair<TxnValidityAndFeeReq, SignedTxnAccessor> resp
 	) {
 		assertEquals(error, resp.getLeft().getValidity());
 		assertNull(resp.getRight());
