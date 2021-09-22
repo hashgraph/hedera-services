@@ -180,7 +180,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	}
 
 	@Override
-	public void createUpdateZipFileIfMissing() {
+	public void createUpdateFilesIfMissing() {
 		var disFid = fileNumbers.toFid(fileNumbers.softwareUpdateZip());
 		if (!hfs.exists(disFid)) {
 			materialize(disFid, systemFileInfo(), new byte[0]);

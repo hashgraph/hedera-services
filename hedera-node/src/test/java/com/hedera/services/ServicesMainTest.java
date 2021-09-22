@@ -179,7 +179,7 @@ class ServicesMainTest {
 		// then:
 		verify(systemFilesManager).createAddressBookIfMissing();
 		verify(systemFilesManager).createNodeDetailsIfMissing();
-		verify(systemFilesManager).createUpdateZipFileIfMissing();
+		verify(systemFilesManager).createUpdateFilesIfMissing();
 		verify(networkCtxManager).loadObservableSysFilesIfNeeded();
 		// and:
 		verify(systemAccountsCreator).ensureSystemAccounts(backingAccounts, book);

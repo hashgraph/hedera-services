@@ -26,6 +26,7 @@ import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
+import org.apache.commons.lang3.tuple.Pair;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -107,7 +108,7 @@ class BootstrapPropertiesTest {
 			entry("files.hapiPermissions", 122L),
 			entry("files.throttleDefinitions", 123L),
 			entry("files.nodeDetails", 102L),
-			entry("files.softwareUpdateRange", "150-159"),
+			entry("files.softwareUpdateRange", Pair.of(150L, 159L)),
 			entry("grpc.port", 50211),
 			entry("grpc.tlsPort", 50212),
 			entry("hedera.accountsExportPath", "data/onboard/exportedAccount.txt"),
@@ -138,6 +139,8 @@ class BootstrapPropertiesTest {
 			entry("ledger.autoRenewPeriod.minDuration", 6999999L),
 			entry("ledger.schedule.txExpiryTimeSecs", 1800),
 			entry("iss.dumpFcms", false),
+			entry("iss.resetPeriod", 60),
+			entry("iss.roundsToDump", 5000),
 			entry("netty.mode", Profile.PROD),
 			entry("netty.prod.flowControlWindow", 10240),
 			entry("netty.prod.maxConcurrentCalls", 10),

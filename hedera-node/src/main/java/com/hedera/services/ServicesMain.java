@@ -156,7 +156,7 @@ public class ServicesMain implements SwirldMain {
 		final var sysFilesManager = app.sysFilesManager();
 		sysFilesManager.createAddressBookIfMissing();
 		sysFilesManager.createNodeDetailsIfMissing();
-		sysFilesManager.createUpdateZipFileIfMissing();
+		sysFilesManager.createUpdateFilesIfMissing();
 		app.networkCtxManager().loadObservableSysFilesIfNeeded();
 	}
 

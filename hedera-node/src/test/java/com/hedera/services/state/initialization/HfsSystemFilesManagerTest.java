@@ -317,7 +317,7 @@ class HfsSystemFilesManagerTest {
 		given(specialFiles.contains(file150)).willReturn(true);
 
 		// when:
-		subject.createUpdateZipFileIfMissing();
+		subject.createUpdateFilesIfMissing();
 
 		// then:
 		verify(specialFiles).update(file150, new byte[0]);

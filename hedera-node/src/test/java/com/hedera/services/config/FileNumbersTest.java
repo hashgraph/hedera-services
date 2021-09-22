@@ -22,6 +22,7 @@ package com.hedera.services.config;
 
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.test.utils.IdUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -51,6 +52,7 @@ class FileNumbersTest {
 		given(properties.getLongProperty("files.exchangeRates")).willReturn(112L);
 		given(properties.getLongProperty("files.softwareUpdateZip")).willReturn(150L);
 		given(properties.getLongProperty("files.throttleDefinitions")).willReturn(123L);
+		given(properties.getEntityNumRange("files.softwareUpdateRange")).willReturn(Pair.of(150L, 159L));
 
 		given(properties.getLongProperty("hedera.numReservedSystemEntities")).willReturn(1_000L);
 
@@ -68,6 +70,8 @@ class FileNumbersTest {
 		assertEquals(122, subject.apiPermissions());
 		assertEquals(150, subject.softwareUpdateZip());
 		assertEquals(123, subject.throttleDefinitions());
+		assertEquals(150L, subject.firstSoftwareUpdateFile());
+		assertEquals(159L, subject.lastSoftwareUpdateFile());
 	}
 
 	@Test

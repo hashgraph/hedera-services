@@ -41,6 +41,8 @@ public class FileNumbers {
 	private long apiPermissions = UNKNOWN_NUMBER;
 	private long applicationProperties = UNKNOWN_NUMBER;
 	private long softwareUpdateZip = UNKNOWN_NUMBER;
+	private long firstUpdateFile = UNKNOWN_NUMBER;
+	private long lastUpdateFile = UNKNOWN_NUMBER;
 	private long throttleDefinitions = UNKNOWN_NUMBER;
 
 	@Inject
@@ -96,6 +98,20 @@ public class FileNumbers {
 			softwareUpdateZip = properties.getLongProperty("files.softwareUpdateZip");
 		}
 		return softwareUpdateZip;
+	}
+
+	public long firstSoftwareUpdateFile() {
+		if (firstUpdateFile == UNKNOWN_NUMBER) {
+			firstUpdateFile = properties.getEntityNumRange("files.softwareUpdateRange").getLeft();
+		}
+		return firstUpdateFile;
+	}
+
+	public long lastSoftwareUpdateFile() {
+		if (lastUpdateFile == UNKNOWN_NUMBER) {
+			lastUpdateFile = properties.getEntityNumRange("files.softwareUpdateRange").getRight();
+		}
+		return lastUpdateFile;
 	}
 
 	public long throttleDefinitions() {

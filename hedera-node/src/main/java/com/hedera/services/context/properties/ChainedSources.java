@@ -44,7 +44,7 @@ public class ChainedSources implements PropertySource {
 
 	@Override
 	public Set<String> allPropertyNames() {
-		var all = new HashSet<>(first.allPropertyNames());
+		final var all = new HashSet<>(first.allPropertyNames());
 		all.addAll(second.allPropertyNames());
 		return all;
 	}
