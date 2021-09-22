@@ -48,6 +48,7 @@ import static com.hedera.test.utils.IdUtils.asContract;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class MerkleEntityIdUtilsTest {
 	@Test
@@ -225,5 +226,33 @@ class MerkleEntityIdUtilsTest {
 
 		// expect:
 		assertEquals("0.0." + bigNum + "." + serialNo, lit);
+	}
+
+	@CsvSource({ "1-2,1,2", "123-456,123,456" })
+	@ParameterizedTest
+	void canParseValidRanges(String literal, long left, long right) {
+		final var range = EntityIdUtils.parseEntityNumRange(literal);
+
+		assertEquals(left, range.getLeft(), "Left endpoint should match");
+		assertEquals(right, range.getRight(), "Right endpoint should match");
+	}
+
+	@CsvSource({
+			"nonsense,Argument literal='nonsense' is not a valid range literal",
+			"-1-,Argument literal='-1-' is not a valid range literal",
+			"-2,Argument literal='-2' is not a valid range literal",
+			"123-,Argument literal='123-' is not a valid range literal",
+			"456-123,Range left endpoint 456 should be <= right endpoint 123",
+			"12345678901234567890-123,Argument literal='12345678901234567890-123' has malformatted long value"
+	})
+	@ParameterizedTest
+	void rejectsInvalidRanges(String literal, String iaeMsg) {
+		try {
+			EntityIdUtils.parseEntityNumRange(literal);
+		} catch (IllegalArgumentException iae) {
+			assertEquals(iaeMsg, iae.getMessage(), "Exception message should be well-formatted");
+			return;
+		}
+		fail("'" + literal + "' should be rejected with " + iaeMsg);
 	}
 }

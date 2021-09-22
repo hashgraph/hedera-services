@@ -65,11 +65,11 @@ public class TieredHederaFs implements HederaFs {
 	private final Map<FileID, byte[]> data;
 	private final Map<FileID, HFileMeta> metadata;
 	private final GlobalDynamicProperties properties;
+	private final Supplier<MerkleSpecialFiles> specialFiles;
 
 	final List<FileUpdateInterceptor> updateInterceptors = new ArrayList<>();
 
 	public static final int BYTES_PER_KB = 1024;
-	private Supplier<MerkleSpecialFiles> specialFiles;
 
 	public enum IllegalArgumentType {
 		DELETED_FILE(ResponseCodeEnum.FILE_DELETED),

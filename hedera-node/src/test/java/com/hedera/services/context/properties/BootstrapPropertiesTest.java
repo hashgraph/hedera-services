@@ -107,7 +107,7 @@ class BootstrapPropertiesTest {
 			entry("files.hapiPermissions", 122L),
 			entry("files.throttleDefinitions", 123L),
 			entry("files.nodeDetails", 102L),
-			entry("files.softwareUpdateZip", 150L),
+			entry("files.softwareUpdateRange", "150-159"),
 			entry("grpc.port", 50211),
 			entry("grpc.tlsPort", 50212),
 			entry("hedera.accountsExportPath", "data/onboard/exportedAccount.txt"),
