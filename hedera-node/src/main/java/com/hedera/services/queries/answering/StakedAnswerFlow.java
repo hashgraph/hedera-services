@@ -39,6 +39,7 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.fee.FeeObject;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.time.Instant;
 import java.util.HashMap;
@@ -65,16 +66,16 @@ public final class StakedAnswerFlow implements AnswerFlow {
 	private final PlatformSubmissionManager submissionManager;
 
 	public StakedAnswerFlow(
-			FeeCalculator fees,
-			AccountNumbers accountNums,
-			Supplier<StateView> stateViews,
-			UsagePricesProvider resourceCosts,
-			FunctionalityThrottling throttles,
-			PlatformSubmissionManager submissionManager,
-			QueryHeaderValidity queryHeaderValidity,
-			TransactionPrecheck transactionPrecheck,
-			HapiOpPermissions hapiOpPermissions,
-			QueryFeeCheck queryFeeCheck
+			final FeeCalculator fees,
+			final AccountNumbers accountNums,
+			final Supplier<StateView> stateViews,
+			final UsagePricesProvider resourceCosts,
+			final FunctionalityThrottling throttles,
+			final PlatformSubmissionManager submissionManager,
+			final QueryHeaderValidity queryHeaderValidity,
+			final TransactionPrecheck transactionPrecheck,
+			final HapiOpPermissions hapiOpPermissions,
+			final QueryFeeCheck queryFeeCheck
 	) {
 		this.fees = fees;
 		this.queryFeeCheck = queryFeeCheck;
@@ -89,7 +90,7 @@ public final class StakedAnswerFlow implements AnswerFlow {
 	}
 
 	@Override
-	public Response satisfyUsing(AnswerService service, Query query) {
+	public Response satisfyUsing(final AnswerService service, final Query query) {
 		final var view = stateViews.get();
 		final var headerStatus = queryHeaderValidity.checkHeader(query);
 		if (headerStatus != OK) {
@@ -138,7 +139,7 @@ public final class StakedAnswerFlow implements AnswerFlow {
 		return service.responseGiven(query, view, OK, fee, queryCtx);
 	}
 
-	private ResponseCodeEnum tryToPay(SignedTxnAccessor payment, long fee) {
+	private ResponseCodeEnum tryToPay(@Nonnull final SignedTxnAccessor payment, final long fee) {
 		if (accountNums.isSuperuser(payment.getPayer().getAccountNum())) {
 			return OK;
 		}
@@ -189,7 +190,7 @@ public final class StakedAnswerFlow implements AnswerFlow {
 		}
 	}
 
-	private long totalOf(FeeObject costs) {
+	private long totalOf(final FeeObject costs) {
 		return costs.getNetworkFee() + costs.getServiceFee() + costs.getNodeFee();
 	}
 }
