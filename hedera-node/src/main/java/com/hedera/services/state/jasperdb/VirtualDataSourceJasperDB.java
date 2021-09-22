@@ -120,7 +120,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
                         virtualInternalRecordSerializer, null)  // TODO need to implement loaded data callback maybe?
                 : null;
         this.internalHashesRamToDiskThreshold = internalHashesRamToDiskThreshold;
-        if (virtualLeafRecordSerializer.getSerializedSize() == Long.BYTES) {
+        if (keySerializer.getSerializedSize() == Long.BYTES) {
             isLongKeyMode = true;
             longKeyToPath = new LongListHeap();
             objectKeyToPath = null;
@@ -350,7 +350,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
                 // horrible hack to get around generics because file filters work on any type of DataFileReader
                 @SuppressWarnings("unchecked") var bucketFileFilter =
                         (Function<List<DataFileReader<Bucket<K>>>, List<DataFileReader<Bucket<K>>>>)((Object)filesToMergeFilter);
-                objectKeyToPath.mergeAll(bucketFileFilter);
+                objectKeyToPath.merge(bucketFileFilter);
             }
             // now do main merge of pathToHashKeyValue store
             // horrible hack to get around generics because file filters work on any type of DataFileReader

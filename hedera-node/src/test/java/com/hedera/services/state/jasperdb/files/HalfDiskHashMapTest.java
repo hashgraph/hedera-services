@@ -51,7 +51,7 @@ public class HalfDiskHashMapTest {
         for (int i = start; i < (start+count); i++) {
             map.put(newVirtualLongKey(testType,i),i*dataMultiplier);
         }
-        map.debugDumpTransactionCache();
+//        map.debugDumpTransactionCache();
         long START = System.currentTimeMillis();
         map.endWriting();
         printTestUpdate(START, count,"Written");
@@ -62,8 +62,6 @@ public class HalfDiskHashMapTest {
         for (int i = start; i < (start+count); i++) {
             final var key = newVirtualLongKey(testType,i);
             long result = map.get(key,-1);
-            System.out.println("key = " + key+"   result = " + result);
-//            System.out.println("result = " + result);
             assertEquals(i*dataMultiplier,result, "Failed to read key="+newVirtualLongKey(testType,i)+" dataMultiplier="+dataMultiplier);
         }
         printTestUpdate(START, count,"Read");
@@ -88,7 +86,7 @@ public class HalfDiskHashMapTest {
         checkData(testType, map,1,count,1);
         // randomly check data
         Random random = new Random(1234);
-        for (int j = 1; j < count; j++) {
+        for (int j = 1; j < (count*2); j++) {
             int i = 1+random.nextInt(count);
             long result = map.get(newVirtualLongKey(testType,i),0);
             assertEquals(i,result);
@@ -99,7 +97,7 @@ public class HalfDiskHashMapTest {
 
     @ParameterizedTest
     @EnumSource(TestType.class)
-    public void multipleWriteBatches(TestType testType) throws Exception {
+    public void multipleWriteBatchesAndMerge(TestType testType) throws Exception {
         // create map
         HalfDiskHashMap<VirtualLongKey> map = createNewTempMap(testType, 10_000);
         // create some data
@@ -110,6 +108,10 @@ public class HalfDiskHashMapTest {
         checkData(testType, map,1,3333,1);
         // create some more data
         createSomeData(testType, map,1111,10_000,1);
+        checkData(testType, map,1,10_000,1);
+        // do a merge
+        map.merge(dataFileReaders -> dataFileReaders);
+        // check all data after
         checkData(testType, map,1,10_000,1);
         // cleanup
         cleanup();

@@ -1,9 +1,6 @@
 package com.hedera.services.state.jasperdb;
 
-import com.hedera.services.state.jasperdb.files.DataItemHeader;
-import com.hedera.services.state.jasperdb.files.DataItemSerializer;
 import com.hedera.services.state.jasperdb.files.hashmap.KeySerializer;
-import com.hedera.services.state.jasperdb.utilities.NonCryptographicHashing;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -16,6 +13,8 @@ public class ExampleFixedSizeLongKey implements VirtualLongKey, FastCopyable {
     private long value;
     private int hashCode;
 
+    public ExampleFixedSizeLongKey() {}
+
     public ExampleFixedSizeLongKey(long value) {
         setValue(value);
     }
@@ -26,7 +25,7 @@ public class ExampleFixedSizeLongKey implements VirtualLongKey, FastCopyable {
 
     public void setValue(long value) {
         this.value = value;
-        this.hashCode = NonCryptographicHashing.hash32(value);
+        this.hashCode = Long.hashCode(value);
     }
 
     public int hashCode() {
