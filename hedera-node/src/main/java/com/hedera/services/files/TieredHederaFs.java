@@ -23,7 +23,6 @@ package com.hedera.services.files;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -46,7 +45,6 @@ import static com.hedera.services.files.TieredHederaFs.IllegalArgumentType.DELET
 import static com.hedera.services.files.TieredHederaFs.IllegalArgumentType.FILE_WOULD_BE_EXPIRED;
 import static com.hedera.services.files.TieredHederaFs.IllegalArgumentType.OVERSIZE_CONTENTS;
 import static com.hedera.services.files.TieredHederaFs.IllegalArgumentType.UNKNOWN_FILE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.Comparator.comparingInt;
 import static java.util.function.Predicate.not;
@@ -180,34 +178,34 @@ public class TieredHederaFs implements HederaFs {
 	@Override
 	public UpdateResult overwrite(FileID id, byte[] newContents) {
 		assertUsable(id);
+
 		if (!isSpecialFile(id)) {
 			assertWithinSizeLimits(newContents);
+			return uncheckedUpdate(id, newContents);
+		} else {
+			final var curSpecialFiles = specialFiles.get();
+			curSpecialFiles.update(id, newContents);
+			return new SimpleUpdateResult(false, true, SUCCESS);
 		}
-
-		return uncheckedUpdate(id, newContents);
 	}
 
 	@Override
 	public UpdateResult append(FileID id, byte[] moreContents) {
 		assertUsable(id);
 
-		byte[] contents;
-
-		boolean isSpecialFile = isSpecialFile(id);
-		if (!isSpecialFile) {
-			contents = data.get(id);
+		if (isSpecialFile(id)) {
+			specialFiles.get().append(id, moreContents);
+			return new SimpleUpdateResult(false, true, SUCCESS);
+		} else {
+			final var contents = data.get(id);
 			var newContents = ArrayUtils.addAll(contents, moreContents);
-			String idStr = EntityIdUtils.readableId(id);
 			log.debug(
-					"Appending {} bytes to {} :: new file will have {} bytes.",
+					"Appending {} bytes to file num {} :: new file will have {} bytes.",
 					moreContents.length,
-					idStr,
+					id.getFileNum(),
 					newContents.length);
 			assertWithinSizeLimits(newContents);
 			return uncheckedUpdate(id, newContents);
-		} else {
-			specialFiles.get().append(id, moreContents);
-			return new SimpleUpdateResult(false, true, OK);
 		}
 	}
 
@@ -279,15 +277,10 @@ public class TieredHederaFs implements HederaFs {
 	}
 
 	private UpdateResult uncheckedUpdate(FileID id, byte[] newContents) {
-		var verdict = judge(id, (interceptor, ignore) -> interceptor.preUpdate(id, newContents));
-
+		var verdict =
+				judge(id, (interceptor, ignore) -> interceptor.preUpdate(id, newContents));
 		if (verdict.getValue()) {
-			final var currentSpecialFiles = specialFiles.get();
-			if (currentSpecialFiles.contains(id)) {
-				currentSpecialFiles.update(id, newContents);
-			} else {
-				data.put(id, newContents);
-			}
+			data.put(id, newContents);
 			interceptorsFor(id).forEach(interceptor -> interceptor.postUpdate(id, newContents));
 		}
 		return new SimpleUpdateResult(false, verdict.getValue(), verdict.getKey());

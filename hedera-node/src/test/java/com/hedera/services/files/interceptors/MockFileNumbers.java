@@ -74,6 +74,16 @@ public class MockFileNumbers extends FileNumbers {
 	}
 
 	@Override
+	public long firstSoftwareUpdateFile() {
+		return 150;
+	}
+
+	@Override
+	public long lastSoftwareUpdateFile() {
+		return 159;
+	}
+
+	@Override
 	public long throttleDefinitions() {
 		return 123;
 	}

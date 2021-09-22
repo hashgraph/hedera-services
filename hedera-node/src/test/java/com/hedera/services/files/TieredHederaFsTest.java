@@ -36,6 +36,7 @@ import org.mockito.InOrder;
 
 import java.time.Instant;
 import java.util.AbstractMap;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.OptionalInt;
 import java.util.function.Supplier;
@@ -46,6 +47,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
@@ -282,11 +284,9 @@ class TieredHederaFsTest {
 		assertEquals(SUCCESS, result.outcome());
 		assertTrue(result.fileReplaced());
 		// and:
-		verify(specialFiles).update(
+		verify(specialFiles).append(
 				argThat(fid::equals),
-				argThat(bytes -> new String(bytes).equals(
-						new String(stretchContents) + new String(burstContents)
-				)));
+				argThat((byte[] bytes) -> Arrays.equals(bytes, burstContents)));
 	}
 
 	@Test
@@ -307,11 +307,7 @@ class TieredHederaFsTest {
 		assertEquals(SUCCESS, result.outcome());
 		assertTrue(result.fileReplaced());
 		// and:
-		verify(specialFiles).update(
-				argThat(fid::equals),
-				argThat(bytes -> new String(bytes).equals(
-						new String(oversizeContents)
-				)));
+		verify(specialFiles).update(eq(fid), eq(oversizeContents));
 	}
 
 	@Test
@@ -447,9 +443,9 @@ class TieredHederaFsTest {
 
 		// then:
 		verify(metadata).put(argThat(fid::equals), argThat(attr ->
-			attr.isDeleted() &&
-					attr.getExpiry()	== livingAttr.getExpiry() &&
-					attr.getWacl().equals(livingAttr.getWacl())));
+				attr.isDeleted() &&
+						attr.getExpiry() == livingAttr.getExpiry() &&
+						attr.getWacl().equals(livingAttr.getWacl())));
 		verify(data).remove(fid);
 		// and:
 		assertTrue(result.attrChanged());
@@ -852,6 +848,6 @@ class TieredHederaFsTest {
 		subject.append(fileID, moreContents);
 
 		// then:
-		verify(specialFiles).update(fileID, (new String(newContents) + new String(moreContents)).getBytes());
+		verify(specialFiles).append(fileID, moreContents);
 	}
 }

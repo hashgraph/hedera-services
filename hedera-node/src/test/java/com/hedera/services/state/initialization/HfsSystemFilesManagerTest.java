@@ -308,19 +308,17 @@ class HfsSystemFilesManagerTest {
 	}
 
 	@Test
-	void createsEmptyUpdateFeatureFile() {
-		FileID file150 = fileNumbers.toFid(fileNumbers.softwareUpdateZip());
-
+	void createsEmptyUpdateFiles() {
 		// setup:
-		given(hfs.exists(file150)).willReturn(false);
 		given(hfs.specialFiles()).willReturn(specialFiles);
-		given(specialFiles.contains(file150)).willReturn(true);
 
 		// when:
 		subject.createUpdateFilesIfMissing();
 
 		// then:
-		verify(specialFiles).update(file150, new byte[0]);
+		for (var i = fileNumbers.firstSoftwareUpdateFile(); i <= fileNumbers.lastSoftwareUpdateFile(); i++) {
+			verify(specialFiles).update(fileNumbers.toFid(i), new byte[0]);
+		}
 	}
 
 	@Test
