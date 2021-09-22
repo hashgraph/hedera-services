@@ -50,11 +50,8 @@ public class AllBaseTokenOpFeesSuite extends HapiApiSuite {
 	private static final String KYC_KEY = "kycKey";
 
 	private static final String CIVILIAN_ACCT = "civilian";
-
 	private static final String UNIQUE_TOKEN = "nftType";
-
 	private static final String BASE_TXN = "baseTxn";
-
 
 	private static final double EXPECTED_GRANTKYC_PRICE_USD = 0.001;
 	private static final double EXPECTED_REVOKEKYC_PRICE_USD = 0.001;

@@ -58,7 +58,8 @@ public class AccessorBasedUsages {
 			CryptoTransfer, CryptoCreate, CryptoUpdate,
 			ConsensusSubmitMessage,
 			TokenFeeScheduleUpdate, TokenCreate, TokenBurn, TokenMint, TokenAccountWipe,
-			TokenUpdate, TokenDelete);
+			TokenUpdate, TokenDelete, TokenGrantKycToAccount, TokenRevokeKycFromAccount
+	);
 
 	private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
 
@@ -261,8 +262,8 @@ public class AccessorBasedUsages {
 			BaseTransactionMeta baseMeta,
 			UsageAccumulator into
 	) {
-		final var tokenGrantKycMeta = accessor.getSpanMapAccessor().getTokenRevokeKycMeta(accessor);
-		tokenOpsUsage.tokenRevokeKycUsage(sigUsage, baseMeta, tokenGrantKycMeta, into);
+		final var tokenRevokeKycMeta = accessor.getSpanMapAccessor().getTokenRevokeKycMeta(accessor);
+		tokenOpsUsage.tokenRevokeKycUsage(sigUsage, baseMeta, tokenRevokeKycMeta, into);
 	}
 
 }

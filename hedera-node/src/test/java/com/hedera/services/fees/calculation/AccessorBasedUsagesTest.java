@@ -85,6 +85,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -356,7 +357,7 @@ class AccessorBasedUsagesTest {
 		final var baseMeta = new BaseTransactionMeta(100, 2);
 		final var tokenRevokeKycMeta = new TokenRevokeKycMeta(96);
 		final var accumulator = new UsageAccumulator();
-		given(txnAccessor.getFunction()).willReturn(TokenGrantKycToAccount);
+		given(txnAccessor.getFunction()).willReturn(TokenRevokeKycFromAccount);
 		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
 		given(txnAccessor.getSpanMapAccessor().getTokenRevokeKycMeta(any())).willReturn(tokenRevokeKycMeta);
 
