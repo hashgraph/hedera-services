@@ -208,6 +208,11 @@ class BaseOperationUsage {
 				return tokenUpdate();
 			case TokenDelete:
 				return tokenDelete();
+			case TokenGrantKycToAccount:
+				return tokenGrantKyc();
+			case TokenRevokeKycFromAccount:
+				return tokenRevokeKyc();
+
 			case ConsensusSubmitMessage:
 				return submitMessage();
 			default:
@@ -474,6 +479,19 @@ class BaseOperationUsage {
 		return into;
 	}
 
+	UsageAccumulator tokenGrantKyc() {
+		final var tokenGrantKycMeta = TOKEN_OPS_USAGE_UTILS.tokenGrantKycUsageFrom();
+		final var into = new UsageAccumulator();
+		TOKEN_OPS_USAGE.tokenGrantKycUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenGrantKycMeta, into);
+		return into;
+	}
+
+	UsageAccumulator tokenRevokeKyc() {
+		final var tokenRevokeKycMeta = TOKEN_OPS_USAGE_UTILS.tokenRevokeKycUsageFrom();
+		final var into = new UsageAccumulator();
+		TOKEN_OPS_USAGE.tokenRevokeKycUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenRevokeKycMeta, into);
+		return into;
+	}
 
 	UsageAccumulator submitMessage() {
 		final var opMeta = new SubmitMessageMeta(100);

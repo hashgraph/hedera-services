@@ -46,6 +46,8 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
@@ -121,23 +123,25 @@ public class ScheduleGenerator {
 	@SuppressWarnings("unchecked")
 	static final List<Pair<HederaFunctionality, List<SubType>>> SUPPORTED_FUNCTIONS = List.of(
 			/* Crypto */
-//			Pair.of(CryptoTransfer,
-//					List.of(DEFAULT, TOKEN_FUNGIBLE_COMMON, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES,
-//							TOKEN_NON_FUNGIBLE_UNIQUE, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES)),
-//			Pair.of(CryptoCreate, List.of(DEFAULT)), Pair.of(CryptoUpdate, List.of(DEFAULT)),
-//			/* File */
-//			Pair.of(FileAppend, List.of(DEFAULT)),
-//			/* Token */
-//			Pair.of(TokenCreate,
-//					List.of(TOKEN_FUNGIBLE_COMMON, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES, TOKEN_NON_FUNGIBLE_UNIQUE,
-//							TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES)),
-//			Pair.of(TokenMint, List.of(TOKEN_FUNGIBLE_COMMON, TOKEN_NON_FUNGIBLE_UNIQUE)),
-//			Pair.of(TokenBurn, List.of(TOKEN_FUNGIBLE_COMMON, TOKEN_NON_FUNGIBLE_UNIQUE)),
-//			Pair.of(TokenAccountWipe, List.of(TOKEN_FUNGIBLE_COMMON, TOKEN_NON_FUNGIBLE_UNIQUE)),
-//			Pair.of(TokenFeeScheduleUpdate, List.of(DEFAULT)),
-			Pair.of(TokenUpdate, List.of(DEFAULT))
-//			Pair.of(HederaFunctionality.TokenDelete, List.of(DEFAULT)),
-//			/* Consensus */
-//			Pair.of(ConsensusSubmitMessage, List.of(DEFAULT))
+			Pair.of(CryptoTransfer,
+					List.of(DEFAULT, TOKEN_FUNGIBLE_COMMON, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES,
+							TOKEN_NON_FUNGIBLE_UNIQUE, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES)),
+			Pair.of(CryptoCreate, List.of(DEFAULT)), Pair.of(CryptoUpdate, List.of(DEFAULT)),
+			/* File */
+			Pair.of(FileAppend, List.of(DEFAULT)),
+			/* Token */
+			Pair.of(TokenCreate,
+					List.of(TOKEN_FUNGIBLE_COMMON, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES, TOKEN_NON_FUNGIBLE_UNIQUE,
+							TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES)),
+			Pair.of(TokenMint, List.of(TOKEN_FUNGIBLE_COMMON, TOKEN_NON_FUNGIBLE_UNIQUE)),
+			Pair.of(TokenBurn, List.of(TOKEN_FUNGIBLE_COMMON, TOKEN_NON_FUNGIBLE_UNIQUE)),
+			Pair.of(TokenAccountWipe, List.of(TOKEN_FUNGIBLE_COMMON, TOKEN_NON_FUNGIBLE_UNIQUE)),
+			Pair.of(TokenFeeScheduleUpdate, List.of(DEFAULT)),
+			Pair.of(TokenUpdate, List.of(DEFAULT)),
+			Pair.of(TokenGrantKycToAccount, List.of(DEFAULT)),
+			Pair.of(TokenRevokeKycFromAccount, List.of(DEFAULT)),
+			Pair.of(HederaFunctionality.TokenDelete, List.of(DEFAULT)),
+			/* Consensus */
+			Pair.of(ConsensusSubmitMessage, List.of(DEFAULT))
 	);
 }

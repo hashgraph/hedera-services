@@ -31,7 +31,9 @@ import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hedera.services.usage.token.meta.TokenBurnMeta;
 import com.hedera.services.usage.token.meta.TokenCreateMeta;
 import com.hedera.services.usage.token.meta.TokenDeleteMeta;
+import com.hedera.services.usage.token.meta.TokenGrantKycMeta;
 import com.hedera.services.usage.token.meta.TokenMintMeta;
+import com.hedera.services.usage.token.meta.TokenRevokeKycMeta;
 import com.hedera.services.usage.token.meta.TokenUpdateMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
 import com.hederahashgraph.api.proto.java.CustomFee;
@@ -196,6 +198,24 @@ public final class TokenOpsUsage {
 
 		accumulator.addBpt(tokenWipeMeta.getBpt());
 		accumulator.addNetworkRbs(tokenWipeMeta.getTransferRecordDb() * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+	}
+
+	public void tokenGrantKycUsage(final SigUsage sigUsage,
+			final BaseTransactionMeta baseMeta,
+			final TokenGrantKycMeta tokenGrantKycMeta,
+			final UsageAccumulator accumulator) {
+		accumulator.resetForTransaction(baseMeta, sigUsage);
+
+		accumulator.addBpt(tokenGrantKycMeta.getBpt());
+	}
+
+	public void tokenRevokeKycUsage(final SigUsage sigUsage,
+			final BaseTransactionMeta baseMeta,
+			final TokenRevokeKycMeta tokenRevokeKycMeta,
+			final UsageAccumulator accumulator) {
+		accumulator.resetForTransaction(baseMeta, sigUsage);
+
+		accumulator.addBpt(tokenRevokeKycMeta.getBpt());
 	}
 
 	public void tokenUpdateUsage(final SigUsage sigUsage,

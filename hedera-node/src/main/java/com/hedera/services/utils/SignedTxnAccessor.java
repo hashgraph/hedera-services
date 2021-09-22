@@ -61,8 +61,11 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
@@ -321,6 +324,13 @@ public class SignedTxnAccessor implements TxnAccessor {
 			setTokenWipeUsageMeta();
 		} else if (function == TokenUpdate) {
 			setTokenUpdateUsageMeta();
+		} else if (function == TokenDelete) {
+			setTokenDeleteUsageMeta();
+		} else if (function == TokenGrantKycToAccount) {
+			setTokenGrantKycUsageMeta();
+		} else if (function == TokenRevokeKycFromAccount) {
+			setTokenRevokeKycUsageMeta();
+
 		} else if (function == CryptoCreate) {
 			setCryptoCreateUsageMeta();
 		} else if (function == CryptoUpdate) {
@@ -373,6 +383,17 @@ public class SignedTxnAccessor implements TxnAccessor {
 		final var tokenDeleteMeta = TOKEN_OPS_USAGE_UTILS.tokenDeleteUsageFrom();
 		SPAN_MAP_ACCESSOR.setTokenDeleteMeta(this, tokenDeleteMeta);
 	}
+
+	private void setTokenGrantKycUsageMeta() {
+		final var tokenGrantKycMeta = TOKEN_OPS_USAGE_UTILS.tokenGrantKycUsageFrom();
+		SPAN_MAP_ACCESSOR.setTokenGrantKycMeta(this, tokenGrantKycMeta);
+	}
+
+	private void setTokenRevokeKycUsageMeta() {
+		final var tokenRevokeKycMeta = TOKEN_OPS_USAGE_UTILS.tokenRevokeKycUsageFrom();
+		SPAN_MAP_ACCESSOR.setTokenRevokeKycMeta(this, tokenRevokeKycMeta);
+	}
+
 
 	private void setTokenUpdateUsageMeta() {
 		final var tokenUpdateMeta = TOKEN_OPS_USAGE_UTILS.tokenUpdateUsageFrom(txn);

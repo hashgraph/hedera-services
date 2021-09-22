@@ -25,7 +25,9 @@ import com.hedera.services.usage.token.entities.TokenEntitySizes;
 import com.hedera.services.usage.token.meta.TokenBurnMeta;
 import com.hedera.services.usage.token.meta.TokenCreateMeta;
 import com.hedera.services.usage.token.meta.TokenDeleteMeta;
+import com.hedera.services.usage.token.meta.TokenGrantKycMeta;
 import com.hedera.services.usage.token.meta.TokenMintMeta;
+import com.hedera.services.usage.token.meta.TokenRevokeKycMeta;
 import com.hedera.services.usage.token.meta.TokenUpdateMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -175,6 +177,14 @@ public enum TokenOpsUsageUtils {
 		return retrieveRawDataFrom(subType, op::getSerialNumbersCount, TokenWipeMeta::new);
 	}
 
+	public TokenGrantKycMeta tokenGrantKycUsageFrom() {
+		return new TokenGrantKycMeta(2 * BASIC_ENTITY_ID_SIZE);
+	}
+
+	public TokenRevokeKycMeta tokenRevokeKycUsageFrom() {
+		return new TokenRevokeKycMeta(2 * BASIC_ENTITY_ID_SIZE);
+	}
+
 	public <R> R retrieveRawDataFrom(SubType subType, IntSupplier getDataForNFT, Producer<R> producer) {
 		int serialNumsCount = 0;
 		int bpt = 0;
@@ -244,12 +254,12 @@ public enum TokenOpsUsageUtils {
 		return check.test(op) ? getAccountKeyStorageSize(getter.apply(op)) : 0L;
 	}
 
-	private int noRbImpactBytes(TokenUpdateTransactionBody op) {
-		return ((op.getExpiry().getSeconds() > 0) ? AMOUNT_REPR_BYTES : 0) +
-				((op.getAutoRenewPeriod().getSeconds() > 0) ? AMOUNT_REPR_BYTES : 0) +
-				(op.hasTreasury() ? BASIC_ENTITY_ID_SIZE : 0) +
-				(op.hasAutoRenewAccount() ? BASIC_ENTITY_ID_SIZE : 0);
-	}
+//	private int noRbImpactBytes(TokenUpdateTransactionBody op) {
+//		return ((op.getExpiry().getSeconds() > 0) ? AMOUNT_REPR_BYTES : 0) +
+//				((op.getAutoRenewPeriod().getSeconds() > 0) ? AMOUNT_REPR_BYTES : 0) +
+//				(op.hasTreasury() ? BASIC_ENTITY_ID_SIZE : 0) +
+//				(op.hasAutoRenewAccount() ? BASIC_ENTITY_ID_SIZE : 0);
+//	}
 
 	private boolean removesAutoRenewAccount(TokenUpdateTransactionBody op) {
 		return op.hasAutoRenewAccount() && op.getAutoRenewAccount().equals(AccountID.getDefaultInstance());

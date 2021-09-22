@@ -239,4 +239,24 @@ public class AccessorBasedUsages {
 		final var tokenDeleteMeta = accessor.getSpanMapAccessor().getTokenDeleteMeta(accessor);
 		tokenOpsUsage.tokenDeleteUsage(sigUsage, baseMeta, tokenDeleteMeta, into);
 	}
+
+	private void estimateTokenGrantKyc(
+			SigUsage sigUsage,
+			TxnAccessor accessor,
+			BaseTransactionMeta baseMeta,
+			UsageAccumulator into
+	) {
+		final var tokenGrantKycMeta = accessor.getSpanMapAccessor().getTokenGrantKycMeta(accessor);
+		tokenOpsUsage.tokenGrantKycUsage(sigUsage, baseMeta, tokenGrantKycMeta, into);
+	}
+	private void estimateTokenRevokeKyc(
+			SigUsage sigUsage,
+			TxnAccessor accessor,
+			BaseTransactionMeta baseMeta,
+			UsageAccumulator into
+	) {
+		final var tokenGrantKycMeta = accessor.getSpanMapAccessor().getTokenRevokeKycMeta(accessor);
+		tokenOpsUsage.tokenRevokeKycUsage(sigUsage, baseMeta, tokenGrantKycMeta, into);
+	}
+
 }

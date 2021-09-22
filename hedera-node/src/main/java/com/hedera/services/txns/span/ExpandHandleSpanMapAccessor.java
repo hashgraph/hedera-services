@@ -27,6 +27,8 @@ import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hedera.services.usage.token.meta.TokenBurnMeta;
 import com.hedera.services.usage.token.meta.TokenCreateMeta;
 import com.hedera.services.usage.token.meta.TokenDeleteMeta;
+import com.hedera.services.usage.token.meta.TokenGrantKycMeta;
+import com.hedera.services.usage.token.meta.TokenRevokeKycMeta;
 import com.hedera.services.usage.token.meta.TokenUpdateMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
 import com.hedera.services.utils.TxnAccessor;
@@ -119,13 +121,19 @@ public class ExpandHandleSpanMapAccessor {
 		return (TokenDeleteMeta) accessor.getSpanMap().get(TOKEN_DELETE_META_KEY);
 	}
 
-//	public void setTokenGrantKycMeta(TxnAccessor accessor, TokenGrantKycMeta tokenGrantKycMeta) {
-//		accessor.getSpanMap().put(TOKEN_GRANT_KYC_META_KEY, tokenGrantKycMeta);
-//	}
-//
-//	public TokenGrantKycMeta getTokenGrantKycMeta(TxnAccessor accessor) {
-//		return (TokenGrantKycMeta) accessor.getSpanMap().get(TOKEN_GRANT_KYC_META_KEY);
-//	}
+	public void setTokenGrantKycMeta(TxnAccessor accessor, TokenGrantKycMeta tokenGrantKycMeta) {
+		accessor.getSpanMap().put(TOKEN_GRANT_KYC_META_KEY, tokenGrantKycMeta);
+	}
+	public TokenGrantKycMeta getTokenGrantKycMeta(TxnAccessor accessor) {
+		return (TokenGrantKycMeta) accessor.getSpanMap().get(TOKEN_GRANT_KYC_META_KEY);
+	}
+
+	public void setTokenRevokeKycMeta(TxnAccessor accessor, TokenRevokeKycMeta tokenRevokeKycMeta) {
+		accessor.getSpanMap().put(TOKEN_REVOKE_KYC_META_KEY, tokenRevokeKycMeta);
+	}
+	public TokenRevokeKycMeta getTokenRevokeKycMeta(TxnAccessor accessor) {
+		return (TokenRevokeKycMeta) accessor.getSpanMap().get(TOKEN_REVOKE_KYC_META_KEY);
+	}
 
 	public void setCryptoUpdate(TxnAccessor accessor, CryptoUpdateMeta cryptoUpdateMeta) {
 		accessor.getSpanMap().put(CRYPTO_UPDATE_META_KEY, cryptoUpdateMeta);
