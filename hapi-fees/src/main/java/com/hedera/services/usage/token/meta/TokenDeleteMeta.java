@@ -20,10 +20,6 @@ package com.hedera.services.usage.token.meta;
  * ‍
  */
 
-import com.google.common.base.MoreObjects;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-
 public class TokenDeleteMeta extends TokenUntypedMetaBase {
 	public TokenDeleteMeta(final int bpt) {
 		super(bpt);
