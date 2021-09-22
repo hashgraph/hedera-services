@@ -41,4 +41,8 @@ public final class SubmissionModule {
 	static int provideMaxProtoMsgDepth() {
 		return HISTORICAL_MAX_PROTO_MESSAGE_DEPTH;
 	}
+
+	private SubmissionModule() {
+		throw new UnsupportedOperationException("Utility Class");
+	}
 }
