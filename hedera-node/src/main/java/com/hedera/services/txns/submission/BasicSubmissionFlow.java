@@ -26,6 +26,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -38,16 +39,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * Performs precheck on a top-level transaction and submits it to the Platform if precheck passes.
  */
 @Singleton
-public class BasicSubmissionFlow implements SubmissionFlow {
+public final class BasicSubmissionFlow implements SubmissionFlow {
 	private final ServicesNodeType nodeType;
 	private final TransactionPrecheck precheck;
 	private final PlatformSubmissionManager submissionManager;
 
 	@Inject
 	public BasicSubmissionFlow(
-			ServicesNodeType nodeType,
-			TransactionPrecheck precheck,
-			PlatformSubmissionManager submissionManager
+			final ServicesNodeType nodeType,
+			final TransactionPrecheck precheck,
+			final PlatformSubmissionManager submissionManager
 	) {
 		this.precheck = precheck;
 		this.nodeType = nodeType;
@@ -55,7 +56,7 @@ public class BasicSubmissionFlow implements SubmissionFlow {
 	}
 
 	@Override
-	public TransactionResponse submit(Transaction signedTxn) {
+	public TransactionResponse submit(final Transaction signedTxn) {
 		if (nodeType == ZERO_STAKE_NODE) {
 			return responseWith(INVALID_NODE_ACCOUNT);
 		}
@@ -63,21 +64,21 @@ public class BasicSubmissionFlow implements SubmissionFlow {
 		final var precheckResult = precheck.performForTopLevel(signedTxn);
 		final var precheckResultMeta = precheckResult.getLeft();
 		final var precheckResultValidity = precheckResultMeta.getValidity();
+		@Nullable final var accessor = precheckResult.getRight();
 		if (precheckResultValidity != OK) {
 			return responseWith(precheckResultValidity, precheckResultMeta.getRequiredFee());
-		} else if (precheckResult.getRight().isEmpty()) {
+		} else if (null == accessor) {
 			return responseWith(FAIL_INVALID);
 		}
 
-		final var accessor = precheckResult.getRight().get();
 		return responseWith(submissionManager.trySubmission(accessor));
 	}
 
-	private TransactionResponse responseWith(ResponseCodeEnum validity) {
+	private TransactionResponse responseWith(final ResponseCodeEnum validity) {
 		return responseWith(validity, 0);
 	}
 
-	private TransactionResponse responseWith(ResponseCodeEnum validity, long feeRequired) {
+	private TransactionResponse responseWith(final ResponseCodeEnum validity, final long feeRequired) {
 		return TransactionResponse.newBuilder()
 				.setNodeTransactionPrecheckCode(validity)
 				.setCost(feeRequired)

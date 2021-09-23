@@ -50,6 +50,7 @@ import com.hedera.services.stats.ServicesStatsConfig;
 import com.hedera.services.store.models.TopicConversion;
 import com.hedera.services.store.tokens.views.utils.GrpcUtils;
 import com.hedera.services.txns.submission.PresolvencyFlaws;
+import com.hedera.services.txns.submission.SubmissionModule;
 import com.hedera.services.txns.token.TokenOpsValidator;
 import com.hedera.services.txns.token.process.NewRels;
 import com.hedera.services.txns.validation.PureValidation;
@@ -105,6 +106,7 @@ class UtilsConstructorTest {
 			UnzipUtility.class,
 			MiscUtils.class,
 			MetadataMapFactory.class,
+			SubmissionModule.class,
 			TokenOpsValidator.class,
 			TopicConversion.class
 	));
