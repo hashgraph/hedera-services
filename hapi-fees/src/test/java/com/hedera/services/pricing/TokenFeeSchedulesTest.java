@@ -70,10 +70,10 @@ class TokenFeeSchedulesTest extends FeeSchedulesTestHelper {
 	}
 	@Test
 	void computesExpectedPriceForTokenFreezeAccount() throws IOException {
-		testExpectedPriceFor(TokenFreezeAccount, DEFAULT);
+		testCanonicalPriceFor(TokenFreezeAccount, DEFAULT);
 	}
 	@Test
 	void computesExpectedPriceForTokenUnfreezeAccount() throws IOException {
-		testExpectedPriceFor(TokenUnfreezeAccount, DEFAULT);
+		testCanonicalPriceFor(TokenUnfreezeAccount, DEFAULT);
 	}
 }
