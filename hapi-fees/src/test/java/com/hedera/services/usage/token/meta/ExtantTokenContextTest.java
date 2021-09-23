@@ -47,6 +47,23 @@ class ExtantTokenContextTest {
 		assertEquals(true, subject.getHashasAutoRenewAccount());
 		assertEquals(expected, subject.toString());
 	}
+	@Test
+	void allSettersWorkForNegativeNumbers() {
+
+		final var subject = ExtantTokenContext.newBuilder()
+				.setExistingKeysLen(-132)
+				.setExistingSymLen(-5)
+				.setExistingNameLen(-12)
+				.setExistingMemoLen(-56)
+				.setExistingExpiry(-1_234_567L)
+				.build();
+
+		assertEquals(0, subject.getExistingRbSize());
+		assertEquals(0, subject.getExistingExpiry());
+		assertEquals(0, subject.getExistingSymLen());
+		assertEquals(0, subject.getExistingNameLen());
+		assertEquals(0, subject.getExistingMemoLen());
+	}
 
 	@Test
 	void hashCodeAndEqualsWork() {

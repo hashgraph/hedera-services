@@ -90,25 +90,25 @@ public class ExtantTokenContext {
 		}
 
 		public Builder setExistingSymLen(final int existingSymLen) {
-			this.existingSymLen = existingSymLen;
+			this.existingSymLen = Math.max(existingSymLen, 0);
 			return this;
 		}
 		public Builder setExistingNameLen(final int existingNameLen) {
-			this.existingNameLen = existingNameLen;
+			this.existingNameLen = Math.max(existingNameLen, 0);
 			return this;
 		}
 
 		public Builder setExistingMemoLen(final int existingMemoLen) {
-			this.existingMemoLen = existingMemoLen;
+			this.existingMemoLen = Math.max(existingMemoLen, 0);
 			return this;
 		}
 		public Builder setExistingKeysLen(final int existingKeysLen) {
-			this.existingKeysLen = existingKeysLen;
+			this.existingKeysLen = Math.max(existingKeysLen, 0);
 			return this;
 		}
 
 		public Builder setExistingExpiry(final long existingExpiry) {
-			this.existingExpiry = existingExpiry;
+			this.existingExpiry = Math.max(existingExpiry, 0);
 			return this;
 		}
 		public Builder setHasAutoRenewalAccount(final boolean hasAutoRenewalAccount) {
