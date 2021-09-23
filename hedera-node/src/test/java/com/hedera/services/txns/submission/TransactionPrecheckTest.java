@@ -40,8 +40,6 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Optional;
-
 import static com.hedera.services.txns.submission.PresolvencyFlaws.WELL_KNOWN_FLAWS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
@@ -53,7 +51,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_A
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_TOO_MANY_LAYERS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.eq;
 import static org.mockito.BDDMockito.given;
@@ -119,8 +118,8 @@ class TransactionPrecheckTest {
 	@Test
 	void abortsOnStructuralFlawWithBadAccessor() {
 		givenActivePlatform();
-		final Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> dummyPair =
-				Pair.of(new TxnValidityAndFeeReq(OK), Optional.empty());
+		final Pair<TxnValidityAndFeeReq, SignedTxnAccessor> dummyPair =
+				Pair.of(new TxnValidityAndFeeReq(OK), null);
 		given(structuralPrecheck.assess(any())).willReturn(dummyPair);
 
 		final var topLevelResponse = subject.performForTopLevel(Transaction.getDefaultInstance());
@@ -271,7 +270,7 @@ class TransactionPrecheckTest {
 		given(structuralPrecheck.assess(any()))
 				.willReturn(Pair.of(
 						new TxnValidityAndFeeReq(OK),
-						Optional.of(SignedTxnAccessor.uncheckedFrom(Transaction.getDefaultInstance())))
+						SignedTxnAccessor.uncheckedFrom(Transaction.getDefaultInstance()))
 				);
 	}
 
@@ -293,16 +292,16 @@ class TransactionPrecheckTest {
 
 	private void assertSuccess(
 			final long reqFee,
-			final Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> response
+			final Pair<TxnValidityAndFeeReq, SignedTxnAccessor> response
 	) {
 		assertEquals(OK, response.getLeft().getValidity());
 		assertEquals(reqFee, response.getLeft().getRequiredFee());
-		assertTrue(response.getRight().isPresent());
+		assertNotNull(response.getRight());
 	}
 
 	private void assertFailure(
 			final ResponseCodeEnum abort,
-			final Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> response
+			final Pair<TxnValidityAndFeeReq, SignedTxnAccessor> response
 	) {
 		assertFailure(abort, 0L, response);
 	}
@@ -310,12 +309,12 @@ class TransactionPrecheckTest {
 	private void assertFailure(
 			final ResponseCodeEnum abort,
 			final long reqFee,
-			final Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> response
+			final Pair<TxnValidityAndFeeReq, SignedTxnAccessor> response
 	) {
 		final var req = response.getLeft();
 		assertEquals(abort, req.getValidity());
 		assertEquals(reqFee, req.getRequiredFee());
-		assertTrue(response.getRight().isEmpty());
+		assertNull(response.getRight());
 	}
 
 	private static final class ResponseCodeConverter implements ArgumentConverter {
