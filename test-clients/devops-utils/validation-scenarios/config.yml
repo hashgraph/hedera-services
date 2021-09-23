@@ -65,7 +65,7 @@ networks:
     - {account: 4, ipv4Addr: 35.199.15.177}
     - {account: 5, ipv4Addr: 35.225.201.195}
     - {account: 6, ipv4Addr: 35.247.109.135}
-    scenarioPayer: 15572
+    scenarioPayer: 2099
     scenarios:
       feeSnapshots:
         appendToSnapshotCsv: true
@@ -75,24 +75,26 @@ networks:
         tinyBarsToOffer: 10000000000
       sysFilesDown:
         evalMode: snapshot
-        numsToFetch: [121]
+        numsToFetch: [122]
       sysFilesUp:
         updates:
         - {num: 121, payer: 2}
   stabletestnet:
     bootstrap: 50
-    defaultNode: 3
+    defaultNode: 4
     ensureScenarioPayerHbars: 300
     nodes:
-    - {account: 3, ipv4Addr: 34.94.106.61}
     - {account: 4, ipv4Addr: 35.237.119.55}
     - {account: 5, ipv4Addr: 35.245.27.193}
     - {account: 6, ipv4Addr: 34.83.112.116}
     scenarioPayer: 48559
     scenarios:
+      sysFilesUp:
+        updates:
+        - {num: 122, payer: 50}
       sysFilesDown:
         evalMode: snapshot
-        numsToFetch: [111]
+        numsToFetch: [122]
   mainnet:
     bootstrap: 950
     defaultNode: 3
@@ -120,7 +122,7 @@ networks:
         persistent: {contents: MrBleaney.txt, num: 39283}
       sysFilesDown:
         evalMode: snapshot
-        numsToFetch: [111]
+        numsToFetch: [122]
   localhost:
     bootstrap: 2
     defaultNode: 3
