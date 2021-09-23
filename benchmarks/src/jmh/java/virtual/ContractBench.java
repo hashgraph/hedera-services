@@ -133,9 +133,10 @@ public class ContractBench {
                     System.out.printf("Completed: %,d contracts and %,d key/value pairs\n", i, countOfKeyValuePairs);
                     virtualMap = pipeline.endRound(virtualMap);
                 }
-                if (i>0 && i%50==0) {
+                if (i>0 && i%10000==0) {
+                    System.out.println("=============== GC =======================");
                     // loading is really intense so give GC a chance to catch up
-                    System.gc(); Thread.sleep(2000);
+                    System.gc(); Thread.sleep(1000);
                 }
 
                 // We generate a different number of key/value pairs depending on whether it is

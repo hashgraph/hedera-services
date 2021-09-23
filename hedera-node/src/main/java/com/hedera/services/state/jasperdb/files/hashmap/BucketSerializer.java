@@ -117,6 +117,8 @@ public class BucketSerializer<K extends VirtualKey> implements DataItemSerialize
     @Override
     public int copyItem(long serializedVersion, int dataItemSize, ByteBuffer dataItemData, SerializableDataOutputStream writingStream) throws IOException {
         // TODO need to process bucket and remove deleted entries
+        // this needs to depend on the path, which is the value in the bucket. We know a range of valid paths so
+        // we can delete any entries with paths(values) outside that range from a bucket
         return DataItemSerializer.super.copyItem(serializedVersion, dataItemSize, dataItemData, writingStream);
     }
 }

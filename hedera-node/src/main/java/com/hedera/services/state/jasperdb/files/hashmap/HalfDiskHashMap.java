@@ -53,7 +53,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
     /** The amount of data used for a header in each bucket */
     protected static final int BUCKET_HEADER_SIZE = BUCKET_INDEX_SIZE + BUCKET_ENTRY_COUNT_SIZE + BUCKET_NEXT_BUCKET_POINTER_SIZE;
     /** how full should all available bins be if we are at the specified map size */
-    public static final double LOADING_FACTOR = 0.5;
+    public static final double LOADING_FACTOR = 0.6;
     /** Long list used for mapping bucketIndex(index into list) to disk location for latest copy of bucket */
     private final LongList bucketIndexToBucketLocation = new LongListHeap();
     /** DataFileCollection manages the files storing the buckets on disk */

@@ -134,6 +134,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
             isLongKeyMode = false;
             longKeyToPath =  null;
             objectKeyToPath = new HalfDiskHashMap<>(maxNumOfKeys,keySerializer,storageDir, "objectKeyToPath");
+            objectKeyToPath.printStats();
             // we do not need callback as HalfDiskHashMap loads its own data from disk
             loadedDataCallback = null;
         }
@@ -328,10 +329,10 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
     private void doMerge() {
         final Instant startMerge = Instant.now();
         Function<List<DataFileReader>, List<DataFileReader>> filesToMergeFilter;
-        if (startMerge.minus(2, ChronoUnit.HOURS).isAfter(lastFullMerge)) { // every 2 hours
+        if (startMerge.minus(30, ChronoUnit.MINUTES).isAfter(lastFullMerge)) { // every 2 hours
             lastFullMerge = startMerge;
             filesToMergeFilter = dataFileReaders -> dataFileReaders; // everything
-        } else if (startMerge.minus(30, ChronoUnit.MINUTES).isAfter(lastMediumMerge)) { // every 30 min
+        } else if (startMerge.minus(10, ChronoUnit.MINUTES).isAfter(lastMediumMerge)) { // every 30 min
             lastMediumMerge = startMerge;
             filesToMergeFilter = newestFilesSmallerThan(10*1024); // < 10Gb
         } else { // every 5 minutes
