@@ -3,7 +3,6 @@ package com.hedera.services.state.jasperdb.files;
 import com.hedera.services.state.jasperdb.collections.ImmutableIndexedObjectList;
 import com.hedera.services.state.jasperdb.collections.ImmutableIndexedObjectListUsingArray;
 import com.hedera.services.state.jasperdb.collections.ThreeLongsList;
-import com.swirlds.common.io.SerializableDataOutputStream;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -29,69 +28,44 @@ import static com.hedera.services.state.jasperdb.files.DataFileCommon.*;
  * The reason the keys are separate from the values is so that we can merge matching keys. We only keep the newest
  * key/value pair for any matching key. It may look like a map, but it is not. You need an external index outside this
  * class to be able to store key -> data location mappings.
+ *
+ * @param <D> type for data items
  */
-@SuppressWarnings("unused")
-public class DataFileCollection {
+@SuppressWarnings({"unused", "unchecked"})
+public class DataFileCollection<D> {
     private final Path storeDir;
     private final String storeName;
-    private final int dataItemValueSize;
+    private final DataItemSerializer<D> dataItemSerializer;
     private final boolean loadedFromExistingFiles;
-    private final DataFileReaderFactory dataFileReaderFactory;
     private final AtomicInteger nextFileIndex = new AtomicInteger();
     private final AtomicLong minimumValidKey = new AtomicLong();
     private final AtomicLong maximumValidKey = new AtomicLong();
-    private final AtomicReference<ImmutableIndexedObjectList<DataFileReader>> indexedFileList = new AtomicReference<>();
-    private final AtomicReference<DataFileWriter> currentDataFileWriter = new AtomicReference<>();
+    private final AtomicReference<ImmutableIndexedObjectList<DataFileReader<D>>> indexedFileList = new AtomicReference<>();
+    private final AtomicReference<DataFileWriter<D>> currentDataFileWriter = new AtomicReference<>();
     private final AtomicReference<Instant> lastMerge = new AtomicReference<>(Instant.ofEpochSecond(0));
-
-    /**
-     * Construct a new DataFileCollection with the default DataFileReaderFactory
-     *
-     * @param storeDir The directory to store data files
-     * @param storeName Name for the data files, allowing more than one DataFileCollection to share a directory
-     * @param dataItemValueSize the size in bytes for data values being stored. It can be set to
-     *                          DataFileCommon.VARIABLE_DATA_SIZE if you want to store variable size data values.
-     * @param loadedDataCallback call back for rebuilding indexes from existing files, can be null if not needed.
-     * @throws IOException If there was a problem creating new data set or opening existing one
-     */
-    public DataFileCollection(Path storeDir, String storeName, int dataItemValueSize,
-                              LoadedDataCallback loadedDataCallback) throws IOException {
-         this(storeDir,storeName,dataItemValueSize, loadedDataCallback, new DataFileReaderFactory() {
-             public DataFileReader newDataFileReader(Path path) throws IOException {
-                 return new DataFileReaderThreadLocal(path);
-             }
-
-             public DataFileReader newDataFileReader(Path path, DataFileMetadata metadata) throws IOException {
-                 return new DataFileReaderThreadLocal(path, metadata);
-             }
-         });
-    }
 
     /**
      * Construct a new DataFileCollection with custom DataFileReaderFactory
      *
      * @param storeDir The directory to store data files
      * @param storeName Name for the data files, allowing more than one DataFileCollection to share a directory
-     * @param dataItemValueSize the size in bytes for data values being stored.
      * @param loadedDataCallback call back for rebuilding indexes from existing files, can be null if not needed.
-     * @param dataFileReaderFactory factory to use for creating data file readers, allows pluggable reader implementations
      * @throws IOException If there was a problem creating new data set or opening existing one
      */
-    public DataFileCollection(Path storeDir, String storeName, int dataItemValueSize,
-                              LoadedDataCallback loadedDataCallback, DataFileReaderFactory dataFileReaderFactory)
-                              throws IOException {
+    public DataFileCollection(Path storeDir, String storeName,
+                              DataItemSerializer<D> dataItemSerializer,
+                              LoadedDataCallback loadedDataCallback) throws IOException {
         this.storeDir = storeDir;
         this.storeName = storeName;
-        this.dataItemValueSize = dataItemValueSize;
-        this.dataFileReaderFactory = dataFileReaderFactory;
+        this.dataItemSerializer = dataItemSerializer;
         // check if exists, if so open existing files
         if (Files.exists(storeDir)) {
             if (!Files.isDirectory(storeDir)) throw new IOException("Tried to DataFileCollection with a storage directory that is not a directory. ["+storeDir.toAbsolutePath()+"]");
-            final DataFileReader[] dataFileReaders = Files.list(storeDir)
+            final DataFileReader<D>[] dataFileReaders = (DataFileReader<D>[]) Files.list(storeDir)
                         .filter(path -> isFullyWrittenDataFile(storeName,path))
                         .map(path -> {
                             try {
-                                return dataFileReaderFactory.newDataFileReader(path);
+                                return new DataFileReader<>(path, dataItemSerializer);
                             } catch (IOException e) {
                                 throw new RuntimeException(e);
                             }
@@ -101,7 +75,6 @@ public class DataFileCollection {
             if (dataFileReaders.length > 0) {
                 System.out.println("Loading existing set of ["+dataFileReaders.length+"] data files for DataFileCollection ["+storeName+"] ...");
                 indexedFileList.set(new ImmutableIndexedObjectListUsingArray<>(dataFileReaders));
-//                indexedFileList.set(new ImmutableIndexedObjectListUsingMap<>(dataFileReaders));
                 // work out what the next index would be, the highest current index plus one
                 nextFileIndex.set(dataFileReaders[dataFileReaders.length-1].getMetadata().getIndex() + 1);
                 // we loaded an existing set of files
@@ -110,7 +83,8 @@ public class DataFileCollection {
                 if (loadedDataCallback != null) {
                     // now iterate over every file and every key
                     for(var file:dataFileReaders) {
-                        try (DataFileIterator iterator = new DataFileIteratorSingleBuffered(file.getPath(), file.getMetadata())) {
+                        try (DataFileIterator iterator =
+                                     new DataFileIterator(file.getPath(), file.getMetadata(),dataItemSerializer)) {
                             while(iterator.next()) {
                                 loadedDataCallback.newIndexEntry(
                                         iterator.getDataItemsKey(),
@@ -157,7 +131,7 @@ public class DataFileCollection {
      *
      * @param maxSizeMb all files returned are smaller than this number of MB
      */
-    public List<DataFileReader> getAllFullyWrittenFiles(int maxSizeMb) {
+    public List<DataFileReader<D>> getAllFullyWrittenFiles(int maxSizeMb) {
         final var indexedFileList = this.indexedFileList.get();
         if (maxSizeMb == Integer.MAX_VALUE) return indexedFileList.stream().collect(Collectors.toList());
         final long maxSizeBytes = maxSizeMb * MB;
@@ -176,7 +150,7 @@ public class DataFileCollection {
     /**
      * Get a list of all files in this collection that have been fully finished writing and are read only
      */
-    public List<DataFileReader> getAllFullyWrittenFiles() {
+    public List<DataFileReader<D>> getAllFullyWrittenFiles() {
         var indexedFileList = this.indexedFileList.get();
         if (indexedFileList == null) return Collections.emptyList();
         return indexedFileList.stream().collect(Collectors.toList());
@@ -192,7 +166,7 @@ public class DataFileCollection {
      * @return list of files created during the merge
      */
     public synchronized List<Path> mergeFiles(Consumer<ThreeLongsList> locationChangeHandler,
-                                        List<DataFileReader> filesToMerge) throws IOException {
+                                        List<DataFileReader<D>> filesToMerge) throws IOException {
         final var indexedFileList = this.indexedFileList.get();
         // check if anything new has been written since we last merged
         final Instant lastMerge = this.lastMerge.get();
@@ -210,12 +184,9 @@ public class DataFileCollection {
                 filesToMerge.stream().map(file -> file.getMetadata().getCreationDate()).max(Instant::compareTo).get();
         // update last merge time
         this.lastMerge.set(mergeTime);
-        // compute how many moves can come from one file
-        int maxMovesFromOneFile = 5000;
-        if (dataItemValueSize != VARIABLE_DATA_SIZE) {
-            maxMovesFromOneFile = (int)(MAX_DATA_FILE_SIZE / ((long)KEY_SIZE+dataItemValueSize));
-            System.out.printf("maxMovesFromOneFile %,d which means merge moves list is %,.2f Mb of ram\n",maxMovesFromOneFile,(maxMovesFromOneFile*3*8)/1024/1024D);
-        }
+        // compute how many moves can come from one file as hint for movesMap initial size
+        int maxMovesFromOneFile =  Math.min(10_000,
+                (int)(MAX_DATA_FILE_SIZE / dataItemSerializer.getTypicalSerializedSize()));
         // TODO need to handle variable size here as we don't want to have to grow move map too many times as it stresses the GC.
         // TODO We could solve it by making ThreeLongsList be array of arrays so better for growing. Or we could make merge files max number of items rather than max Gb.
         // create new map for keeping track of moves
@@ -223,16 +194,17 @@ public class DataFileCollection {
         // create list of paths of files created during merge
         final List<Path> newFilesCreated = new ArrayList<>();
         // Open a new merge file for writing
-        DataFileWriter newFileWriter = newDataFile(mergeTime,true);
+        DataFileWriter<D> newFileWriter = newDataFile(mergeTime,true);
         newFilesCreated.add(newFileWriter.getPath());
         // get the most recent min and max key
         final DataFileMetadata mostRecentDataFileMetadata = indexedFileList.getLast().getMetadata();
         long minimumValidKey = mostRecentDataFileMetadata.getMinimumValidKey();
         long maximumValidKey = mostRecentDataFileMetadata.getMaximumValidKey();
         // open iterators, first iterator will be on oldest file
-        List<DataFileIterator> blockIterators = filesToMerge.stream()
-                .map(DataFileReader::createIterator)
-                .collect(Collectors.toList());
+        List<DataFileIterator> blockIterators = new ArrayList<>(filesToMerge.size());
+        for (final var fileReader: filesToMerge){
+            blockIterators.add(fileReader.createIterator());
+        }
         // move all iterators to first block
         ListIterator<DataFileIterator> blockIteratorsIterator = blockIterators.listIterator();
         while (blockIteratorsIterator.hasNext()) {
@@ -270,7 +242,10 @@ public class DataFileCollection {
                 }
                 assert newestIteratorWithLowestKey != null;
                 // write that key from newest iterator to new merge file
-                long newDataLocation = newestIteratorWithLowestKey.writeItemData(newFileWriter);
+                long newDataLocation = newFileWriter.writeCopiedDataItem(
+                        newestIteratorWithLowestKey.getMetadata().getSerializationVersion(),
+                        newestIteratorWithLowestKey.getDataItemData());
+//                long newDataLocation = newestIteratorWithLowestKey.writeItemData(newFileWriter);
 //                long newDataLocation = newFileWriter.storeData(newestIteratorWithLowestKey.getDataItemData());
                 // check if newFile is full
                 if (newFileWriter.getFileSizeEstimate() >= MAX_DATA_FILE_SIZE) {
@@ -312,17 +287,15 @@ public class DataFileCollection {
     }
 
     /** Finish a merge file and close it. */
-    private void closeCurrentMergeFile(DataFileWriter newFileWriter, long minimumValidKey, long maximumValidKey,
+    private void closeCurrentMergeFile(DataFileWriter<D> newFileWriter, long minimumValidKey, long maximumValidKey,
                                        Consumer<ThreeLongsList> locationChangeHandler,
                                        ThreeLongsList movesMap) throws IOException {
         // close current file
-        final DataFileMetadata metadata = newFileWriter.finishWriting(minimumValidKey, maximumValidKey);
+        final DataFileMetadata metadata = newFileWriter.finishWriting( minimumValidKey, maximumValidKey);
         // add it for reading
         addNewDataFileReader(newFileWriter.getPath(), metadata);
-        // call locationChangeHandler with the write-lock so no writes are changing the index while we are
-//        writeLock.lock(); //System.out.println("WRITE LOCK - LOCK - MERGE FILE location change handler");
+        // call locationChangeHandler
         locationChangeHandler.accept(movesMap);
-//        writeLock.unlock(); //System.out.println("WRITE LOCK - UNLOCK - MERGE FILE location change handler");
     }
 
     /**
@@ -336,7 +309,7 @@ public class DataFileCollection {
         }
         final var fileList = this.indexedFileList.getAndSet(null);
         if (fileList != null) {
-            for (var file : (Iterable<DataFileReader>) fileList.stream()::iterator) {
+            for (var file : (Iterable<DataFileReader<D>>) fileList.stream()::iterator) {
                 file.close();
             }
         }
@@ -350,8 +323,22 @@ public class DataFileCollection {
     public void startWriting() throws IOException {
         var currentDataFileWriter = this.currentDataFileWriter.get();
         if (currentDataFileWriter != null) throw new IOException("Tried to start writing when we were already writing.");
-//        writeLock.lock();// System.out.println("WRITE LOCK - LOCK - START WRITING");
         this.currentDataFileWriter.set(newDataFile(Instant.now(), false));
+    }
+
+
+    /**
+     * Store a data item into the current file opened with startWriting().
+     *
+     * @param dataItem The data item to write into file
+     * @return the location where data item was stored. This contains both the file and the location within the file.
+     * @throws IOException If there was a problem writing this data item to the file.
+     */
+    public long storeDataItem(D dataItem) throws IOException {
+        var currentDataFileForWriting = this.currentDataFileWriter.get();
+        if (currentDataFileForWriting == null) throw new IOException("Tried to put data when we never started writing.");
+        // TODO detect if the file is full and start a new one if needed
+        return currentDataFileForWriting.storeDataItem(dataItem);
     }
 
     /**
@@ -370,49 +357,6 @@ public class DataFileCollection {
         DataFileMetadata metadata = currentDataFileWriter.finishWriting(minimumValidKey, maximumValidKey);
         // open reader on newly written file and add it to indexedFileList ready to be read.
         addNewDataFileReader(currentDataFileWriter.getPath(), metadata);
-//        writeLock.unlock();// System.out.println("WRITE LOCK - UNLOCK - END WRITING - minimumValidKey="+minimumValidKey+" maximumValidKey="+maximumValidKey);
-    }
-
-    /**
-     * Store a data item into the current file opened with startWriting().
-     *
-     * @param key the key for the data item
-     * @param data the data items data, it will be written from position() to limit() of ByteBuffer
-     * @return the location where data item was stored. This contains both the file and the location within the file.
-     * @throws IOException If there was a problem writing this data item to the file.
-     */
-    public long storeData(long key, ByteBuffer data) throws IOException {
-        var currentDataFileForWriting = this.currentDataFileWriter.get();
-        if (currentDataFileForWriting == null) throw new IOException("Tried to put data when we never started writing.");
-        // TODO detect if the file is full and start a new one if needed
-        // store key,hash and data in current file and get the offset where it was stored
-        return currentDataFileForWriting.storeData(key, data);
-    }
-
-    /**
-     * Start writing an item to current new file, this allows you to stream directly into the file. You will need to call
-     * endStreamingItem() after each item you write to the stream.
-     *
-     * @param key The long key for the data item
-     * @param dataItemSize The size of the data item you are going to write, this is total number of bytes. Only needed
-     *                     when in hasVariableDataSize mode.
-     * @return direct access to stream to file
-     */
-    public SerializableDataOutputStream startStreamingItem(long key, int dataItemSize) throws IOException {
-        var currentDataFileForWriting = this.currentDataFileWriter.get();
-        if (currentDataFileForWriting == null) throw new IOException("Tried to put data when we never started writing.");
-        return currentDataFileForWriting.startStreamingItem(key,dataItemSize);
-    }
-
-    /**
-     * End streaming an item, updating the data item count and returning the disk location to find that item later.
-     *
-     * @return the data location of written data in bytes
-     */
-    public long endStreamingItem() throws IOException {
-        var currentDataFileForWriting = this.currentDataFileWriter.get();
-        if (currentDataFileForWriting == null) throw new IOException("Tried to put data when we never started writing.");
-        return currentDataFileForWriting.endStreamingItem();
     }
 
     /**
@@ -420,48 +364,16 @@ public class DataFileCollection {
      *
      * @param dataLocation the location of the data item to read. This contains both the file and the location within
      *                     the file.
-     * @param toReadDataInto Byte buffer to read data into. Data will be read up to the remaining() bytes in the
-     *                       ByteBuffer or the maximum amount of stored data, which ever is less.
-     * @param dataToRead What data you want to read, key, value or both
-     * @return true if the data location was found in files
+     * @return File metadata if the data location was found in files or null if not found
      * @throws IOException If there was a problem reading the data item.
      */
-    public boolean readData(long dataLocation, ByteBuffer toReadDataInto, DataFileReader.DataToRead dataToRead) throws IOException {
-        // check if found
-        if (dataLocation == 0) return false;
-        // split up location
-        int fileIndex = fileIndexFromDataLocation(dataLocation);
-        // check if file for fileIndex exists
-        DataFileReader file;
-        final var currentIndexedFileList = this.indexedFileList.get();
-        if (fileIndex < 0 || currentIndexedFileList == null || (file  = currentIndexedFileList.get(fileIndex)) == null) {
-            throw new IOException("Got a data location from index for a file that doesn't exist. dataLocation=" +
-                   DataFileCommon.dataLocationToString(dataLocation) + " fileIndex=" + fileIndex +
-                    " minimumValidKey=" + minimumValidKey.get() + " maximumValidKey=" + maximumValidKey.get() +
-                    "\ncurrentIndexedFileList=" + currentIndexedFileList);
-        }
-        // read data
-        file.readData(toReadDataInto,dataLocation,dataToRead);
-        return true;
-    }
-
-    /**
-     * Read a data item from any file that has finished being written. This is needed because in variable size data a
-     * pre-sized buffer can not be provided
-     *
-     * @param dataLocation the location of the data item to read. This contains both the file and the location within
-     *                     the file.
-     * @param dataToRead What data you want to read, key, value or both
-     * @return ByteBuffer containing data or null if not found
-     * @throws IOException If there was a problem reading the data item.
-     */
-    public ByteBuffer readData(long dataLocation, DataFileReader.DataToRead dataToRead) throws IOException {
+    public D readDataItem(long dataLocation) throws IOException {
         // check if found
         if (dataLocation == 0) return null;
         // split up location
         int fileIndex = fileIndexFromDataLocation(dataLocation);
         // check if file for fileIndex exists
-        DataFileReader file;
+        DataFileReader<D> file;
         final var currentIndexedFileList = this.indexedFileList.get();
         if (fileIndex < 0 || currentIndexedFileList == null || (file  = currentIndexedFileList.get(fileIndex)) == null) {
             throw new IOException("Got a data location from index for a file that doesn't exist. dataLocation=" +
@@ -470,7 +382,7 @@ public class DataFileCollection {
                     "\ncurrentIndexedFileList=" + currentIndexedFileList);
         }
         // read data
-        return file.readData(dataLocation,dataToRead);
+        return file.readDataItem(dataLocation);
     }
 
     // =================================================================================================================
@@ -495,7 +407,7 @@ public class DataFileCollection {
      * @param index data file index
      * @return the data file if one exists at that index
      */
-    DataFileReader getDataFile(int index) {
+    DataFileReader<D> getDataFile(int index) {
         final var fileList = this.indexedFileList.get();
         return fileList == null ? null : fileList.get(index);
     }
@@ -510,7 +422,7 @@ public class DataFileCollection {
         this.indexedFileList.getAndUpdate(
                 currentFileList -> {
                     try {
-                        DataFileReader newDataFileReader = dataFileReaderFactory.newDataFileReader(filePath,metadata);
+                        DataFileReader<D> newDataFileReader = new DataFileReader<>(filePath,dataItemSerializer,metadata);
                         return (currentFileList == null) ?
                             new ImmutableIndexedObjectListUsingArray<>(Collections.singletonList(newDataFileReader)) :
                             currentFileList.withAddedObject(newDataFileReader);
@@ -526,12 +438,12 @@ public class DataFileCollection {
      * @param filesToDelete the list of files to delete
      * @throws IOException If there was a problem deleting the files
      */
-    private void deleteFiles(List<DataFileReader> filesToDelete) throws IOException {
+    private void deleteFiles(List<DataFileReader<D>> filesToDelete) throws IOException {
         // remove files from index
         this.indexedFileList.getAndUpdate(
                 currentFileList -> (currentFileList == null) ? null : currentFileList.withDeletingObjects(filesToDelete));
         // now close and delete all the files
-        for(DataFileReader fileReader: filesToDelete) {
+        for(DataFileReader<D> fileReader: filesToDelete) {
             fileReader.close();
             Files.delete(fileReader.getPath());
         }
@@ -540,11 +452,13 @@ public class DataFileCollection {
     /**
      * Create a new data file writer
      *
+     * @param creationTime The creation time for the data in the new file. It could be now or old in case of merge.
      * @param isMergeFile if the new file is a merge file or not
      * @return the newly created data file
      */
-    private DataFileWriter newDataFile(Instant creationTime, boolean isMergeFile) throws IOException {
-        return new DataFileWriter(storeName,storeDir,nextFileIndex.getAndIncrement(),dataItemValueSize,creationTime,isMergeFile);
+    private DataFileWriter<D> newDataFile(Instant creationTime, boolean isMergeFile) throws IOException {
+        return new DataFileWriter<>(storeName,storeDir,nextFileIndex.getAndIncrement(),
+                dataItemSerializer,creationTime,isMergeFile);
     }
 
 }

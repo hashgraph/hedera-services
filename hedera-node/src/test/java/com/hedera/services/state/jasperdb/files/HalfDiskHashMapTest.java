@@ -1,11 +1,12 @@
 package com.hedera.services.state.jasperdb.files;
 
-import com.hedera.services.state.jasperdb.files.DataFileCommon;
-import com.hedera.services.state.jasperdb.files.HalfDiskHashMap;
-import com.hedera.services.state.merkle.virtual.ContractKey;
-import org.junit.jupiter.api.Test;
+import com.hedera.services.state.jasperdb.ExampleFixedSizeLongKey;
+import com.hedera.services.state.jasperdb.ExampleVariableSizeLongKey;
+import com.hedera.services.state.jasperdb.files.hashmap.HalfDiskHashMap;
+import com.hedera.services.state.jasperdb.files.hashmap.KeySerializer;
+import com.swirlds.virtualmap.VirtualLongKey;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -13,35 +14,42 @@ import java.nio.file.Path;
 import java.util.Random;
 
 import static com.hedera.services.state.jasperdb.JasperDbTestUtils.deleteDirectoryAndContents;
-import static com.hedera.services.state.jasperdb.JasperDbTestUtils.newContractKey;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@SuppressWarnings("SameParameterValue")
+@SuppressWarnings({"SameParameterValue", "unchecked"})
 public class HalfDiskHashMapTest {
+    // get non-existent temp dir
+    private static final Path tempDirPath;
+    static {
+        try {
+            tempDirPath =  Files.createTempDirectory("HalfDiskHashMapTest");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-    private static HalfDiskHashMap<ContractKey> createNewTempMap(int count) throws IOException {
-        // get non-existent temp dir
-        Path tempDirPath = Files.createTempDirectory("HalfDiskHashMapTest");
-        deleteDirectoryAndContents(tempDirPath);
+    // =================================================================================================================
+    // Helper Methods
+
+    private static HalfDiskHashMap<VirtualLongKey> createNewTempMap(TestType testType, int count) throws IOException {
         // create map
-        HalfDiskHashMap<ContractKey> map = new HalfDiskHashMap<>(
+        HalfDiskHashMap<VirtualLongKey> map = new HalfDiskHashMap<>(
                 count,
-                DataFileCommon.VARIABLE_DATA_SIZE,
-                ContractKey.ESTIMATED_AVERAGE_SIZE,
-                ContractKey.MAX_SIZE,
-                ContractKey::new,
-                ContractKey::readKeySize,
-                false,
-                tempDirPath,
+                (KeySerializer<VirtualLongKey>) testType.keySerializer,
+                tempDirPath.resolve(testType.name()),
                 "HalfDiskHashMapTest");
         map.printStats();
         return map;
     }
 
-    private static void createSomeData(HalfDiskHashMap<ContractKey> map, int start, int count, long dataMultiplier) throws IOException  {
+    private static VirtualLongKey newVirtualLongKey(TestType testType, int i) {
+        return testType == TestType.fixed ? new ExampleFixedSizeLongKey(i) : new ExampleVariableSizeLongKey(i);
+    }
+
+    private static void createSomeData(TestType testType, HalfDiskHashMap<VirtualLongKey> map, int start, int count, long dataMultiplier) throws IOException  {
         map.startWriting();
         for (int i = start; i < (start+count); i++) {
-            map.put(newContractKey(i),i*dataMultiplier);
+            map.put(newVirtualLongKey(testType,i),i*dataMultiplier);
         }
 //        map.debugDumpTransactionCache();
         long START = System.currentTimeMillis();
@@ -49,70 +57,88 @@ public class HalfDiskHashMapTest {
         printTestUpdate(START, count,"Written");
     }
 
-    private static void checkData(HalfDiskHashMap<ContractKey> map, int start, int count, long dataMultiplier) throws IOException  {
+    private static void checkData(TestType testType, HalfDiskHashMap<VirtualLongKey> map, int start, int count, long dataMultiplier) throws IOException  {
         long START = System.currentTimeMillis();
         for (int i = start; i < (start+count); i++) {
-            long result = map.get(newContractKey(i),-1);
-//            System.out.println("result = " + result);
-            assertEquals(i*dataMultiplier,result, "Failed to read key="+newContractKey(i)+" dataMultiplier="+dataMultiplier);
+            final var key = newVirtualLongKey(testType,i);
+            long result = map.get(key,-1);
+            assertEquals(i*dataMultiplier,result, "Failed to read key="+newVirtualLongKey(testType,i)+" dataMultiplier="+dataMultiplier);
         }
         printTestUpdate(START, count,"Read");
     }
 
+    private static void cleanup() {
+        deleteDirectoryAndContents(tempDirPath);
+    }
+
+    // =================================================================================================================
+    // Tests
 
     @ParameterizedTest
-    @ValueSource(ints = {1, 10, 31, 128, 10_000, 1_000_000})
-    public void createDataAndCheck(int count) throws Exception {
+    @EnumSource(TestType.class)
+    public void createDataAndCheck(TestType testType) throws Exception {
+        final int count = 10_000;
         // create map
-        HalfDiskHashMap<ContractKey> map = createNewTempMap(count);
+        final HalfDiskHashMap<VirtualLongKey> map = createNewTempMap(testType, count);
         // create some data
-        createSomeData(map,1,count,1);
+        createSomeData(testType, map,1,count,1);
         // sequentially check data
-        checkData(map,1,count,1);
+        checkData(testType, map,1,count,1);
         // randomly check data
         Random random = new Random(1234);
-        for (int j = 1; j < count; j++) {
+        for (int j = 1; j < (count*2); j++) {
             int i = 1+random.nextInt(count);
-            long result = map.get(newContractKey(i),0);
+            long result = map.get(newVirtualLongKey(testType,i),0);
             assertEquals(i,result);
         }
+        // cleanup
+        cleanup();
     }
 
-    @Test
-    public void multipleWriteBatches() throws Exception {
+    @ParameterizedTest
+    @EnumSource(TestType.class)
+    public void multipleWriteBatchesAndMerge(TestType testType) throws Exception {
         // create map
-        HalfDiskHashMap<ContractKey> map = createNewTempMap(10_000);
+        HalfDiskHashMap<VirtualLongKey> map = createNewTempMap(testType, 10_000);
         // create some data
-        createSomeData(map,1,1111,1);
-        checkData(map,1,1111,1);
+        createSomeData(testType, map,1,1111,1);
+        checkData(testType, map,1,1111,1);
         // create some more data
-        createSomeData(map,1111,3333,1);
-        checkData(map,1,3333,1);
+        createSomeData(testType, map,1111,3333,1);
+        checkData(testType, map,1,3333,1);
         // create some more data
-        createSomeData(map,1111,10_000,1);
-        checkData(map,1,10_000,1);
+        createSomeData(testType, map,1111,10_000,1);
+        checkData(testType, map,1,10_000,1);
+        // do a merge
+        map.merge(dataFileReaders -> dataFileReaders);
+        // check all data after
+        checkData(testType, map,1,10_000,1);
+        // cleanup
+        cleanup();
     }
 
-    @Test
-    public void updateData() throws Exception {
+    @ParameterizedTest
+    @EnumSource(TestType.class)
+    public void updateData(TestType testType) throws Exception {
         // create map
-        HalfDiskHashMap<ContractKey> map = createNewTempMap(1000);
+        HalfDiskHashMap<VirtualLongKey> map = createNewTempMap(testType, 1000);
         // create some data
-        createSomeData(map,0,1000,1);
-        checkData(map,0,1000,1);
+        createSomeData(testType, map,0,1000,1);
+        checkData(testType, map,0,1000,1);
         // update some data
-        createSomeData(map,200,400,2);
-        checkData(map,0,200,1);
-        checkData(map,200,400,2);
-        checkData(map,600,400,1);
+        createSomeData(testType, map,200,400,2);
+        checkData(testType, map,0,200,1);
+        checkData(testType, map,200,400,2);
+        checkData(testType, map,600,400,1);
+        // cleanup
+        cleanup();
     }
 
 
-    private static double printTestUpdate(long start, long count, String msg) {
+    private static void printTestUpdate(long start, long count, String msg) {
         long took = System.currentTimeMillis() - start;
         double timeSeconds = (double)took/1000d;
         double perSecond = (double)count / timeSeconds;
         System.out.printf("%s : [%,d] at %,.0f per/sec, took %,.2f seconds\n",msg, count, perSecond, timeSeconds);
-        return perSecond;
     }
 }

@@ -12,6 +12,13 @@ public class HashTools {
     public static final DigestType DEFAULT_DIGEST = DigestType.SHA_384;
     public static final int HASH_SIZE_BYTES = DEFAULT_DIGEST.digestLength();
 
+    /**
+     * This is a version for all hashes written It can be used to represent both the storage format and the digest
+     */
+    public static int getSerializationVersion() {
+        return 1;
+    }
+
     public static ByteBuffer hashToByteBuffer(Hash hash) {
         ByteBuffer buf = ByteBuffer.allocate(HASH_SIZE_BYTES);
         buf.put(hash.getValue());
@@ -22,25 +29,20 @@ public class HashTools {
         buf.put(hash.getValue());
     }
 
-    public static Hash byteBufferToHash(ByteBuffer buffer) {
+    public static Hash byteBufferToHash(ByteBuffer buffer, int serializationVersion) {
+        assert serializationVersion == 1;
         byte[] hashBytes = new byte[HASH_SIZE_BYTES];
         buffer.get(hashBytes);
         return new NoCopyHash(hashBytes);
     }
 
-    public static Hash byteBufferToHashNoCopy(ByteBuffer buffer) {
+    public static Hash byteBufferToHashNoCopy(ByteBuffer buffer, int serializationVersion) {
+        assert serializationVersion == 1;
         return new NoCopyHash(buffer.array());
     }
 
-    public static void hashToByteArray(Hash hash, byte[] array,int offset) {
-        System.arraycopy(hash.getValue(),0,array,offset,HASH_SIZE_BYTES);
-    }
-
-    public static Hash byteArrayToHash(byte[] array) {
-        return new NoCopyHash(array);
-    }
-
-    public static Hash byteArrayToHash(byte[] array, int offset) {
+    public static Hash byteArrayToHash(byte[] array, int offset, int serializationVersion) {
+        assert serializationVersion == 1;
         byte[] hashBytes = new byte[HASH_SIZE_BYTES];
         System.arraycopy(array,offset,hashBytes,0,HASH_SIZE_BYTES);
         return new NoCopyHash(hashBytes);

@@ -1,15 +1,23 @@
 package virtual;
 
+import com.hedera.services.state.jasperdb.VirtualLeafRecordSerializer;
 import com.hedera.services.state.jasperdb.files.DataFileCommon;
 import com.hedera.services.state.merkle.virtual.ContractKey;
-import com.hedera.services.state.merkle.virtual.ContractUint256;
+import com.hedera.services.state.merkle.virtual.ContractKeySerializer;
+import com.hedera.services.state.merkle.virtual.ContractValue;
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.virtualmap.VirtualMap;
 import disruptor.Transaction;
 import disruptor.TransactionProcessor;
 import disruptor.TransactionPublisher;
 import org.openjdk.jmh.annotations.*;
+import virtual.VFCMapBenchBase.DataSourceType;
 
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
+
+import static virtual.VFCMapBenchBase.createMap;
+import static virtual.VFCMapBenchBase.printDataStoreSize;
 
 /**
  */
@@ -17,10 +25,13 @@ import java.util.concurrent.TimeUnit;
 @State(Scope.Thread)
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
-public class ContractBench extends VFCMapBenchBase<ContractKey, ContractUint256> {
+public class ContractBench {
     /** guess at average ContractKey size as it is variable length */
     private static final int ESTIMATED_CONTRACT_KEY_SERIALIZED_SIZE = 10;
-    private static final int ESTIMATED_KEY_VALUE_SIZE = ESTIMATED_CONTRACT_KEY_SERIALIZED_SIZE + ContractUint256.SERIALIZED_SIZE;
+    private static final int ESTIMATED_KEY_VALUE_SIZE = ESTIMATED_CONTRACT_KEY_SERIALIZED_SIZE + ContractValue.SERIALIZED_SIZE;
+
+    @Param({"1", "10", "20"})
+    public int roundsBeforeFlush;
 
     @Param({"5", "15", "25"})
     public int numUpdatesPerOperation;
@@ -49,52 +60,62 @@ public class ContractBench extends VFCMapBenchBase<ContractKey, ContractUint256>
     @Param("true") // TODO Remove and replace with a benchmark that measures additions?
     public boolean preFill;
 
-    @Param({"lmdb", "jasperdbIhRam","jasperdbIhDisk","jasperdbIhHalf"})
+    @Param({/*"lmdb",*/ "jasperdbIhRam","jasperdbIhDisk","jasperdbIhHalf"})
     public DataSourceType dsType;
 
     @Param({"4"})
     public int preFetchEventHandlers;
 
     // This is the map we will be testing!
-    private VirtualMap<ContractKey, ContractUint256> virtualMap;
+    private VirtualMap<ContractKey, ContractValue> virtualMap;
     private int[] keyValuePairsPerContract;
 
-    private TransactionProcessor<ContractKey, ContractUint256, Data> txProcessor;
+    private TransactionProcessor<ContractKey, ContractValue, Data> txProcessor;
+
+    protected static final Random rand = new Random(1234);
+    protected Pipeline<ContractKey, ContractValue> pipeline;
 
     // Need to wrap in accessor since lambdas need a level of indirection, so they can fetch
     // the latest copy of the map after the copy() call.
-    VirtualMap<ContractKey, ContractUint256> getVirtualMap() {
+    VirtualMap<ContractKey, ContractValue> getVirtualMap() {
         return virtualMap;
+    }
+
+    private ContractKey asContractKey(long contractIndex, long index) {
+        return new ContractKey(contractIndex, index);
     }
 
     @Setup
     public void prepare() throws Exception {
+        pipeline = new Pipeline<>(roundsBeforeFlush);
         final long estimatedNumKeyValuePairs =
                 (long)(numContracts * (1-bigPercent-hugePercent) * ((kbPerContract * 1024L) / ESTIMATED_KEY_VALUE_SIZE)) +
                 (long)(numContracts * bigPercent * ((kbPerBigContract * 1024L) / ESTIMATED_KEY_VALUE_SIZE)) +
                 (long)(numContracts * hugePercent * ((kbPerHugeContract * 1024L) / ESTIMATED_KEY_VALUE_SIZE));
         System.out.println("estimatedNumKeyValuePairs = " + estimatedNumKeyValuePairs);
+        VirtualLeafRecordSerializer<ContractKey,ContractValue> virtualLeafRecordSerializer =
+                new VirtualLeafRecordSerializer<>(
+                        1, DigestType.SHA_384,
+                        1,DataFileCommon.VARIABLE_DATA_SIZE,ContractKey::new,
+                        1,ContractValue.SERIALIZED_SIZE,ContractValue::new,
+                        true);
         virtualMap = createMap(dsType,
-                DataFileCommon.VARIABLE_DATA_SIZE,
-                ContractKey.ESTIMATED_AVERAGE_SIZE,
-                ContractKey.MAX_SIZE,
-                ContractKey::new,
-                ContractKey::readKeySize,
-                ContractUint256.SERIALIZED_SIZE,
-                ContractUint256::new,
-                estimatedNumKeyValuePairs);
+                virtualLeafRecordSerializer,
+                new ContractKeySerializer(),
+                estimatedNumKeyValuePairs,
+                Integer.toString(roundsBeforeFlush));
 
         txProcessor = new TransactionProcessor<>(
                 preFetchEventHandlers,
                 (Transaction<Data> tx) -> {   // preFetch logic
-                    VirtualMap<ContractKey, ContractUint256> map = getVirtualMap();
+                    VirtualMap<ContractKey, ContractValue> map = getVirtualMap();
 
                     final Data data = tx.getData();
                     data.setValue(map.getForModify(data.getKey()));
                 },
                 (Transaction<Data> tx) -> {   // handleTransaction logic
                     final Data data = tx.getData();
-                    final ContractUint256 value = data.getValue();
+                    @SuppressWarnings("unused") final ContractValue value = data.getValue();
                 }
         );
 
@@ -112,9 +133,10 @@ public class ContractBench extends VFCMapBenchBase<ContractKey, ContractUint256>
                     System.out.printf("Completed: %,d contracts and %,d key/value pairs\n", i, countOfKeyValuePairs);
                     virtualMap = pipeline.endRound(virtualMap);
                 }
-                if (i>0 && i%50==0) {
+                if (i>0 && i%10000==0) {
+                    System.out.println("=============== GC =======================");
                     // loading is really intense so give GC a chance to catch up
-                    System.gc(); Thread.sleep(2000);
+                    System.gc(); Thread.sleep(1000);
                 }
 
                 // We generate a different number of key/value pairs depending on whether it is
@@ -135,7 +157,7 @@ public class ContractBench extends VFCMapBenchBase<ContractKey, ContractUint256>
 
                 for (int j=0; j<numKeyValuePairs; j++) {
                     final var key = asContractKey(i, j);
-                    final var value = new ContractUint256(j);
+                    final var value = new ContractValue(j);
                     try {
                         virtualMap.put(key, value);
                     } catch (Exception e) {
@@ -187,7 +209,7 @@ public class ContractBench extends VFCMapBenchBase<ContractKey, ContractUint256>
 //        final var kvIndex = rand.nextInt(kvPairCount);
 //        final var key = asContractKey(keyIndex, kvIndex);
 //        final var value = virtualMap.getForModify(key);
-//        value.setValue(asContractUint256(rand.nextInt(kvPairCount)));
+//        value.setValue(asContractValue(rand.nextInt(kvPairCount)));
 
         // In EventFlow, copy() is called before noMoreTransactions() but since the disruptor
         // cycle is async, we need to be sure we're done with the transactions before moving
@@ -199,21 +221,16 @@ public class ContractBench extends VFCMapBenchBase<ContractKey, ContractUint256>
 
     public static class Data {
         ContractKey key;
-        ContractUint256 value;
+        ContractValue value;
 
         public Data(ContractKey key, int value) {
             this.key = key;
-            this.value = new ContractUint256(value);
-        }
-
-        public Data(ContractKey key, ContractUint256 value) {
-            this.key = key;
-            this.value = value;
+            this.value = new ContractValue(value);
         }
 
         public ContractKey getKey() { return this.key; }
-        public ContractUint256 getValue() { return this.value; }
+        public ContractValue getValue() { return this.value; }
 
-        public void setValue(ContractUint256 value) { this.value = value; }
+        public void setValue(ContractValue value) { this.value = value; }
     }
 }

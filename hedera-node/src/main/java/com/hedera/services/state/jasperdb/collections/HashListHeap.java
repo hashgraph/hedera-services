@@ -34,7 +34,7 @@ public final class HashListHeap implements HashList {
     @Override
     public Hash get(long index) throws IOException {
         if (index <= maxIndexThatCanBeStored.get()) {
-            return byteBufferToHash(getBuffer(index));
+            return byteBufferToHash(getBuffer(index),1);
         } else {
             return null;
         }

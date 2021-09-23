@@ -1,6 +1,6 @@
 package maps;
 
-import com.hedera.services.state.merkle.virtual.ContractUint256;
+import com.hedera.services.state.merkle.virtual.ContractValue;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
@@ -27,7 +27,7 @@ import java.util.stream.IntStream;
 public class ConcurrentMapBench {
     public Random random = new Random(1234);
     private long randomIndex;
-    private Map<Long,ContractUint256> map;
+    private Map<Long,ContractValue> map;
     private long nextIndex;
 
 
@@ -39,14 +39,19 @@ public class ConcurrentMapBench {
     @Setup(Level.Trial)
     public void setup() {
         nextIndex = numEntities;
-        map = switch(impl) {
-            case "SynchronizedHashMap" -> Collections.synchronizedMap(new HashMap<>());
-            case "ConcurrentSkipListMap" -> new ConcurrentSkipListMap<>();
-            default -> new ConcurrentHashMap<>();
+        switch(impl) {
+            case "SynchronizedHashMap":
+                map = Collections.synchronizedMap(new HashMap<>());
+                break;
+            case "ConcurrentSkipListMap":
+                map = new ConcurrentSkipListMap<>();
+                break;
+            default:
+                map = new ConcurrentHashMap<>();
         };
         // fill with some data
         for (long i = 0; i < numEntities; i++) {
-            map.put(i, new ContractUint256(i));
+            map.put(i, new ContractValue(i));
         }
         // print memory usage
         System.out.printf("Memory for initial %,d accounts:\n", numEntities);
@@ -65,12 +70,12 @@ public class ConcurrentMapBench {
 
     @Benchmark
     public void updateRandom() {
-        map.put(randomIndex,new ContractUint256(randomIndex*2));
+        map.put(randomIndex,new ContractValue(randomIndex*2));
     }
 
     @Benchmark
     public void add() throws Exception {
-        map.put(nextIndex,new ContractUint256(nextIndex));
+        map.put(nextIndex,new ContractValue(nextIndex));
         nextIndex ++;
     }
 
@@ -92,7 +97,7 @@ public class ConcurrentMapBench {
             ThreadLocalRandom random = ThreadLocalRandom.current();
             for (int i = 0; i < 2000; i++) {
                 blackHole.consume(map.get((long)random.nextInt(numEntities)));
-                map.put((long)random.nextInt(numEntities), new ContractUint256(random.nextLong()));
+                map.put((long)random.nextInt(numEntities), new ContractValue(random.nextLong()));
             }
         });
     }

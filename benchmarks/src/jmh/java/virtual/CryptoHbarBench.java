@@ -1,5 +1,7 @@
 package virtual;
 
+import com.hedera.services.state.jasperdb.VirtualLeafRecordSerializer;
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.virtualmap.VirtualMap;
 import disruptor.Transaction;
 import disruptor.TransactionProcessor;
@@ -15,9 +17,13 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
+import virtual.VFCMapBenchBase.DataSourceType;
 
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+
+import static virtual.VFCMapBenchBase.createMap;
+import static virtual.VFCMapBenchBase.printDataStoreSize;
 
 /**
  * Benchmark for simulating swirlds/hedera lifecycle doing chunks of 10k crypto transfers. Results are multiplied by 10k
@@ -28,8 +34,10 @@ import java.util.concurrent.TimeUnit;
 @Measurement(iterations = 500, time = 1, timeUnit = TimeUnit.MINUTES)
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
-public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapBenchBase.Account> {
-//    private static final ThreadGroup PREPPER_GROUP = new ThreadGroup("PrepperGroup");
+public class CryptoHbarBench {
+
+    @Param({"1", "10", "20"})
+    public int roundsBeforeFlush;
 
     @Param({"10000"})
     public int targetOpsPerSecond;
@@ -40,7 +48,7 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
     @Param("true") // TODO Remove and replace with a benchmark that measures additions?
     public boolean preFill;
 
-    @Param({"lmdb", "jasperdbIhRam","jasperdbIhDisk","jasperdbIhHalf"})
+    @Param({/*"lmdb",*/ "jasperdbIhRam","jasperdbIhDisk","jasperdbIhHalf"})
     public DataSourceType dsType;
 
     @Param({"5"})
@@ -54,48 +62,68 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
 
     private TransactionProcessor<Id, Account, Data> txProcessor;
 
+
+    protected static final Random rand = new Random(1234);
+    protected Pipeline<Id,Account> pipeline;
+
     // Need to wrap in accessor since lambdas need a level of indirection so they can fetch
     // the latest copy of the map after the copy() call.
     VirtualMap<Id, Account> getVirtualMap() {
         return virtualMap;
     }
 
+
+    private static Id asId(long index) {
+        return new Id(index);
+    }
+
+    private static Account asAccount(long index) {
+        final var a = new Account();
+        a.setHbarBalance(rand.nextInt(100_000));
+//        a.setHbarBalance(index);
+        a.setMemo("Sample memo for index " + index);
+        return a;
+    }
+
     @Setup
     public void prepare() throws Exception {
+        pipeline = new Pipeline<>(roundsBeforeFlush);
+        VirtualLeafRecordSerializer<Id,Account> virtualLeafRecordSerializer = new VirtualLeafRecordSerializer<>(
+                1, DigestType.SHA_384,
+                1, Id.SERIALIZED_SIZE,Id::new,
+                1,Account.SERIALIZED_SIZE,Account::new,
+                false
+        );
         virtualMap = createMap(dsType,
-                Id.SERIALIZED_SIZE,
-                Id.SERIALIZED_SIZE,
-                Id.SERIALIZED_SIZE,
-                Id::new,
-                null,
-                Account.SERIALIZED_SIZE,
-                Account::new,
-                numEntities);
+                virtualLeafRecordSerializer,
+                new Id.IdKeySerializer(),
+                numEntities,
+                Integer.toString(roundsBeforeFlush));
 
         final var rand = new Random();
-        txProcessor = new TransactionProcessor<VFCMapBenchBase.Id, VFCMapBenchBase.Account, Data>(
+        txProcessor = new TransactionProcessor<>(
                 preFetchEventHandlers,
                 (Transaction<Data> tx) -> {   // preFetch logic
                     VirtualMap<Id, Account> map = getVirtualMap();
 
                     final Data data = tx.getData();
-                    final Account sender = map.getForModify((Id) data.getSenderId());
+                    final Account sender = map.getForModify( data.getSenderId());
                     if (sender == null) {
                         System.out.println("NULL SENDER " + data.getSenderId() + ", last = " + tx.isLast());
                     }
 
-                    final Account receiver = map.getForModify((Id) data.getReceiverId());
+                    final Account receiver = map.getForModify(data.getReceiverId());
                     if (receiver == null)
                         System.out.println("NULL RECEIVER " + data.getReceiverId() + ", last = " + tx.isLast());
 
-                    data.setSender(map.getForModify((Id) data.getSenderId()));
-                    data.setReceiver(map.getForModify((Id) data.getReceiverId()));
+                    data.setSender(map.getForModify(data.getSenderId()));
+                    data.setReceiver(map.getForModify(data.getReceiverId()));
                 },
                 (Transaction<Data> tx) -> {   // handleTransaction logic
                     final var tinyBars = rand.nextInt(10);
                     final Data data = tx.getData();
-                    final Account sender = (Account) data.getSender();
-                    final Account receiver = (Account) data.getReceiver();
+                    final Account sender = data.getSender();
+                    final Account receiver = data.getReceiver();
 
                     sender.setHbarBalance(sender.getHbarBalance() - tinyBars);
                     receiver.setHbarBalance(receiver.getHbarBalance() + tinyBars);

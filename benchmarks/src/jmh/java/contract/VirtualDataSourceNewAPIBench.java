@@ -1,9 +1,12 @@
 package contract;
 
 import com.hedera.services.state.jasperdb.VirtualDataSourceJasperDB;
+import com.hedera.services.state.jasperdb.VirtualInternalRecordSerializer;
+import com.hedera.services.state.jasperdb.VirtualLeafRecordSerializer;
 import com.hedera.services.state.jasperdb.files.DataFileCommon;
 import com.hedera.services.state.merkle.virtual.ContractKey;
-import com.hedera.services.state.merkle.virtual.ContractUint256;
+import com.hedera.services.state.merkle.virtual.ContractKeySerializer;
+import com.hedera.services.state.merkle.virtual.ContractValue;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
@@ -42,7 +45,7 @@ public class VirtualDataSourceNewAPIBench {
 
     // state
     public Path storePath;
-    public VirtualDataSource<ContractKey,ContractUint256> dataSource;
+    public VirtualDataSource<ContractKey,ContractValue> dataSource;
     public Random random = new Random(1234);
     public long nextPath = 0;
     private ContractKey key1 = null;
@@ -61,24 +64,28 @@ public class VirtualDataSourceNewAPIBench {
                 case "lmdb":
                     dataSource = new VFCDataSourceLmdb<>(
                         1+8+32, ContractKey::new, // max seralized size
-                        ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
+                        ContractValue.SERIALIZED_SIZE, ContractValue::new,
                         storePath);
                     break;
 //                case "rocksdb" ->
 //                    new VFCDataSourceRocksDb<>(
 //                            ContractKey.SERIALIZED_SIZE, ContractKey::new,
-//                            ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
+//                            ContractValue.SERIALIZED_SIZE, ContractValue::new,
 //                            storePath);
                 case "jasperdb":
+                    VirtualLeafRecordSerializer<ContractKey,ContractValue> virtualLeafRecordSerializer =
+                            new VirtualLeafRecordSerializer<>(
+                                    1, DigestType.SHA_384,
+                                    1,DataFileCommon.VARIABLE_DATA_SIZE,ContractKey::new,
+                                    1,ContractValue.SERIALIZED_SIZE,ContractValue::new,
+                                    true);
                     dataSource = new VirtualDataSourceJasperDB<>(
-                            DataFileCommon.VARIABLE_DATA_SIZE,
-                            ContractKey.ESTIMATED_AVERAGE_SIZE,
-                            ContractKey.MAX_SIZE,
-                            ContractKey::new,
-                            ContractKey::readKeySize,
-                            ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
+                            virtualLeafRecordSerializer,
+                            new VirtualInternalRecordSerializer(),
+                            new ContractKeySerializer(),
                             storePath,
                             numEntities+10_000_000,  // TODO see if 10 millionls extra is enough for add method
+                            true,
                             Long.MAX_VALUE);
                     break;
                 default:
@@ -97,11 +104,11 @@ public class VirtualDataSourceNewAPIBench {
                             numEntities,numEntities*2,
                             LongStream.range(iHaveWritten,iHaveWritten+batchSize).mapToObj(i -> new VirtualInternalRecord(i,hash((int)i))),
                             LongStream.range(iHaveWritten,iHaveWritten+batchSize).mapToObj(i -> new VirtualLeafRecord<>(
-                                    i+numEntities,hash((int)i),new ContractKey(i, i), new ContractUint256(i) )
+                                    i+numEntities,hash((int)i),new ContractKey(i, i), new ContractValue(i) )
                             )
                     );
                     iHaveWritten += batchSize;
-                    printUpdate(start, batchSize, ContractUint256.SERIALIZED_SIZE, "Created " + iHaveWritten + " Nodes");
+                    printUpdate(start, batchSize, ContractValue.SERIALIZED_SIZE, "Created " + iHaveWritten + " Nodes");
                 }
                 System.out.println("================================================================================");
                 // set nextPath
@@ -172,7 +179,7 @@ public class VirtualDataSourceNewAPIBench {
                 numEntities,numEntities*2,
                 null,
                 LongStream.range(0,Math.min(10_000,numEntities)).mapToObj(i -> new VirtualLeafRecord<>(
-                        i+numEntities,hash((int)i),new ContractKey(i, i), new ContractUint256(randomNodeIndex1) )
+                        i+numEntities,hash((int)i),new ContractKey(i, i), new ContractValue(randomNodeIndex1) )
                 )
         );
         // add a small delay between iterations for merging to get a chance on write heavy benchmarks
@@ -188,11 +195,11 @@ public class VirtualDataSourceNewAPIBench {
      */
     @Benchmark
     public void w1_updateRandom10kLeafValues() throws Exception {
-        List<VirtualLeafRecord<ContractKey,ContractUint256>> changes = new ArrayList<>(10_000);
+        List<VirtualLeafRecord<ContractKey,ContractValue>> changes = new ArrayList<>(10_000);
         for (int i = 0; i < 10_000; i++) {
             long path = random10kLeafPaths.get(i);
             changes.add(new VirtualLeafRecord<>(
-                    path,hash((int)path),new ContractKey(path, path), new ContractUint256(i) ));
+                    path,hash((int)path),new ContractKey(path, path), new ContractValue(i) ));
         }
         dataSource.saveRecords(
                 numEntities,numEntities*2,
@@ -223,7 +230,7 @@ public class VirtualDataSourceNewAPIBench {
                 numEntities,numEntities*2,
                 null,
                 LongStream.range(nextPath,nextPath+10_000).mapToObj(i -> new VirtualLeafRecord<>(
-                        i+numEntities,hash((int)i),new ContractKey(i, i), new ContractUint256(i) )
+                        i+numEntities,hash((int)i),new ContractKey(i, i), new ContractValue(i) )
                 )
         );
         nextPath += 10_000;

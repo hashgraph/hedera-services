@@ -1,6 +1,7 @@
 package com.hedera.services.state.jasperdb.files;
 
 import com.hedera.services.state.jasperdb.collections.LongList;
+import com.hedera.services.state.jasperdb.files.hashmap.Bucket;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 /**
  * Common static content for data files.
  */
+@SuppressWarnings("rawtypes")
 public class DataFileCommon {
     /** Constant for 1 Mb of bytes */
     public static final long MB = 1024*1024;
@@ -52,9 +54,7 @@ public class DataFileCommon {
      * MAX_DATA_FILE_SIZE divided by (8+key+hash+value) size. That number should be less than Integer.MAX_VALUE/3 which
      * is needed by ThreeLongsList. For internal hashes stored that size is 32Gb.
      */
-    static final long MAX_DATA_FILE_SIZE = 32*GB;
-    /** Size of keys in bytes, assumed to be a single long as all our use cases just needed a long */
-    static final int KEY_SIZE = Long.BYTES;
+    static final long MAX_DATA_FILE_SIZE = 16*GB;
     /** The current file format version, ready for if the file format needs to change */
     static final int FILE_FORMAT_VERSION = 1;
     /** Date formatter for dates used in data file names */
@@ -122,6 +122,37 @@ public class DataFileCommon {
     }
 
     /**
+     * Get the total disk space in MB for a list of files.
+     *
+     * @param files The files to get size for
+     * @param <T> Not really needed, just makes generics happy :-)
+     * @return summed size of all the files in Mb
+     * @throws IOException If there was a problem getting file size from OS
+     */
+    public static <T> double getTotalFilesSizeMb(List<DataFileReader<T>> files) throws IOException {
+        double filesToMergeSizeMb = 0;
+        for (var file:files) {
+            filesToMergeSizeMb += (double)file.getSize() / (double)MB;
+        }
+        return filesToMergeSizeMb;
+    }
+
+    /**
+     * Get the total disk space in MB for a list of files.
+     *
+     * @param filePaths The files to get size for
+     * @return summed size of all the files in Mb
+     * @throws IOException If there was a problem getting file size from OS
+     */
+    public static double getTotalFilesSizeMbByPath(List<Path> filePaths) throws IOException {
+        double filesToMergeSizeMb = 0;
+        for (var path:filePaths) {
+            filesToMergeSizeMb += (double)Files.size(path) / (double)MB;
+        }
+        return filesToMergeSizeMb;
+    }
+
+    /**
      * Get the packed data location from file index and byte offset.
      *
      * @param fileIndex the index for the file
@@ -177,7 +208,7 @@ public class DataFileCommon {
     /**
      * print debug info showing if all links in index are still valid
      */
-    public static void printDataLinkValidation(LongList index, List<DataFileReader> fileList) {
+    public static <D> void printDataLinkValidation(LongList index, List<DataFileReader<D>> fileList) {
         System.out.println("DataFileCommon.printDataLinkValidation");
         SortedSet<Integer> validFileIds = new TreeSet<>();
         for(var file:fileList) validFileIds.add(file.getMetadata().getIndex());
@@ -196,20 +227,5 @@ public class DataFileCommon {
 
         goodFileCounts.forEach((id,count)->System.out.println(      "       good    file "+id+" has "+count+" references"));
         missingFileCounts.forEach((id,count)->System.out.println(   "       missing file "+id+" has "+count+" references"));
-    }
-
-    // =================================================================================================================
-    // BufferTooSmallException
-
-    /**
-     * Special exception for when we are asked to read data and given a buffer that is too small
-     */
-    static class BufferTooSmallException extends IOException {
-        /**
-         * Constructs an BufferTooSmallException
-         */
-        public BufferTooSmallException(int expectedSize, int actualSize) {
-            super("BufferTooSmallException needed "+expectedSize+" bytes but only had "+actualSize+" bytes.");
-        }
     }
 }

@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
+import java.util.Objects;
 
 import static com.hedera.services.state.jasperdb.files.DataFileCommon.FOOTER_SIZE;
 
@@ -27,7 +28,7 @@ public final class DataFileMetadata {
     /** The file index, in a data file collection */
     private final int index;
     /**
-     * The creation data of this file, this is critical as it is used when merging two files to know which files data
+     * The creation date of this file, this is critical as it is used when merging two files to know which files data
      * is newer.
      */
     private final Instant creationDate;
@@ -43,6 +44,8 @@ public final class DataFileMetadata {
      * select if we want to include previously merged files in a merging round or not.
      */
     private final boolean isMergeFile;
+    /** Serialization version for data stored in the file */
+    private final long serializationVersion;
 
     /**
      * Create a new DataFileMetadata with complete set of data
@@ -63,10 +66,11 @@ public final class DataFileMetadata {
      * @param isMergeFile True if this file was created as part of a merge, false if it was fresh data. This can be used
      *                    during merging to select if we want to include previously merged files in a merging round or
      *                    not.
+     * @param serializationVersion Serialization version for data stored in the file
      */
     public DataFileMetadata(int fileFormatVersion, int dataItemValueSize, long dataItemCount, int index,
                             Instant creationDate, long minimumValidKey, long maximumValidKey,
-                            boolean isMergeFile) {
+                            boolean isMergeFile, long serializationVersion) {
         this.fileFormatVersion = fileFormatVersion;
         this.dataItemValueSize = dataItemValueSize;
         this.dataItemCount = dataItemCount;
@@ -75,6 +79,7 @@ public final class DataFileMetadata {
         this.minimumValidKey = minimumValidKey;
         this.maximumValidKey = maximumValidKey;
         this.isMergeFile = isMergeFile;
+        this.serializationVersion = serializationVersion;
     }
 
     /**
@@ -99,6 +104,7 @@ public final class DataFileMetadata {
             this.minimumValidKey = buf.getLong();
             this.maximumValidKey = buf.getLong();
             this.isMergeFile = buf.get() == 1;
+            this.serializationVersion = buf.getLong();
         }
     }
 
@@ -118,6 +124,7 @@ public final class DataFileMetadata {
         buf.putLong(this.minimumValidKey);
         buf.putLong(this.maximumValidKey);
         buf.put((byte)(this.isMergeFile ? 1 : 0));
+        buf.putLong(this.serializationVersion);
         buf.rewind();
         return buf;
     }
@@ -189,6 +196,13 @@ public final class DataFileMetadata {
         return isMergeFile;
     }
 
+    /**
+     * Get the serialization version for data stored in this file
+     */
+    public long getSerializationVersion() {
+        return serializationVersion;
+    }
+
     /** toString for debugging */
     @Override
     public String toString() {
@@ -201,6 +215,31 @@ public final class DataFileMetadata {
                 ", minimumValidKey=" + minimumValidKey +
                 ", maximumValidKey=" + maximumValidKey +
                 ", isMergeFile=" + isMergeFile +
+                ", serializationVersion=" + serializationVersion +
                 '}';
+    }
+
+    /**
+     * Equals for use when comparing in collections, based on all fields in the toString() output.
+     */
+    @SuppressWarnings("rawtypes")
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        DataFileMetadata that = (DataFileMetadata) o;
+        return fileFormatVersion == that.fileFormatVersion && dataItemValueSize == that.dataItemValueSize &&
+                dataItemCount == that.dataItemCount && index == that.index && minimumValidKey == that.minimumValidKey &&
+                maximumValidKey == that.maximumValidKey && isMergeFile == that.isMergeFile &&
+                serializationVersion == that.serializationVersion;
+    }
+
+    /**
+     * hashCode for use when comparing in collections, based on all fields in the toString() output.
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(fileFormatVersion, dataItemValueSize, dataItemCount, index, creationDate, minimumValidKey,
+                maximumValidKey, isMergeFile, serializationVersion);
     }
 }

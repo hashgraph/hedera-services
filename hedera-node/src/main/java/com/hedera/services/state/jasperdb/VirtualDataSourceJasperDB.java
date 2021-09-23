@@ -1,13 +1,16 @@
 package com.hedera.services.state.jasperdb;
 
-import com.hedera.services.state.jasperdb.collections.*;
+import com.hedera.services.state.jasperdb.collections.HashList;
+import com.hedera.services.state.jasperdb.collections.HashListOffHeap;
+import com.hedera.services.state.jasperdb.collections.LongList;
+import com.hedera.services.state.jasperdb.collections.LongListHeap;
 import com.hedera.services.state.jasperdb.files.DataFileCollection.LoadedDataCallback;
 import com.hedera.services.state.jasperdb.files.DataFileReader;
-import com.hedera.services.state.jasperdb.files.HalfDiskHashMap;
 import com.hedera.services.state.jasperdb.files.MemoryIndexDiskKeyValueStore;
-import com.hedera.services.state.jasperdb.utilities.HashTools;
+import com.hedera.services.state.jasperdb.files.hashmap.Bucket;
+import com.hedera.services.state.jasperdb.files.hashmap.HalfDiskHashMap;
+import com.hedera.services.state.jasperdb.files.hashmap.KeySerializer;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.VirtualValue;
@@ -15,46 +18,37 @@ import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.*;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import static com.hedera.services.state.jasperdb.utilities.HashTools.HASH_SIZE_BYTES;
-import static com.hedera.services.state.jasperdb.utilities.HashTools.byteBufferToHash;
-import static com.hedera.services.state.jasperdb.files.DataFileCommon.VARIABLE_DATA_SIZE;
 import static com.hedera.services.state.jasperdb.files.DataFileCommon.newestFilesSmallerThan;
-import static java.nio.ByteBuffer.allocate;
 
 /**
  * An implementation of VirtualDataSource that uses JasperDB.
- *
- * IMPORTANT: This implementation assumes a single writing thread. There can be multiple readers while writing is happening.
- * Also, we totally depend on the hash and key to be fixed sizes.
+ * <p>
+ * <b>IMPORTANT: This implementation assumes a single writing thread. There can be multiple readers while writing is
+ * happening.</b>
+ * <p>
+ * It uses 3 main data stores to support the API of VirtualDataSource
+ * <ul>
+ *     <li>Path -> Internal Hashes (internalHashStoreRam or internalHashStoreDisk)</li>
+ *     <li>Key -> Path (longKeyToPath or objectKeyToPath)</li>
+ *     <li>Path -> Hash,Key & Value (pathToHashKeyValue)</li>
+ * </ul>
  *
  * @param <K> type for keys
  * @param <V> type for values
  */
 @SuppressWarnings({"jol", "DuplicatedCode"})
 public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue> implements VirtualDataSource<K, V> {
-    /** Flag to enable multi-threaded serialization */
-    private static final boolean multiThreadedSerializationEnabled = Boolean.getBoolean("multiThreadedSerializationEnabled");
-    /** The size in bytes for serialized key objects */
-    private final int keySizeBytes;
-    /** Constructor for creating new key objects during de-serialization */
-    private final Supplier<K> keyConstructor;
-    /** The size in bytes for serialized value objects */
-    private final int valueSizeBytes;
-    /** Constructor for creating new value objects during de-serialization */
-    private final Supplier<V> valueConstructor;
     /** We have an optimized mode when the keys can be represented by a single long */
     private final boolean isLongKeyMode;
     /**
@@ -62,12 +56,12 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
      * will be empty. That should cause all internal node hashes to have to be computed on the first round which will be
      * expensive. TODO is it worth saving this to disk on close? Should we use a memMap file after all for this?
      */
-    private final HashListOffHeap internalHashStoreRam;
+    private final HashList internalHashStoreRam;
     /**
      * On disk store for internal hashes. Can be null if all hashes are being stored in ram by setting
      * internalHashesRamToDiskThreshold to Long.MAX_VALUE.
      */
-    private final MemoryIndexDiskKeyValueStore internalHashStoreDisk;
+    private final MemoryIndexDiskKeyValueStore<VirtualInternalRecord> internalHashStoreDisk;
     /**
      * Threshold where we switch from storing internal hashes in ram to storing them on disk. If it is 0 then everything
      * is on disk, if it is Long.MAX_VALUE then everything is in ram. Any value in the middle is the path value at which
@@ -82,9 +76,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
     /** Mixed disk and off-heap memory store for key to path map, this is used if isLongKeyMode=false, and we have complex keys. */
     private final HalfDiskHashMap<K> objectKeyToPath;
     /** Mixed disk and off-heap memory store for path to leaf key, hash and value */
-    private final MemoryIndexDiskKeyValueStore pathToKeyHashValue;
-    /** Thread local reusable buffer for reading key, hash and value sets */
-    private final ThreadLocal<ByteBuffer> keyHashValue;
+    private final MemoryIndexDiskKeyValueStore<VirtualLeafRecord<K,V>> pathToHashKeyValue;
     /** Group for all our threads */
     private final ThreadGroup threadGroup = new ThreadGroup("JasperDB");
     /** ScheduledThreadPool for executing merges */
@@ -100,89 +92,54 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
     /** Thead pool storing internal records */
     private final ExecutorService storeKeyToPathExecutor = Executors.newSingleThreadExecutor(
             runnable -> new Thread(threadGroup, runnable,"Store Key to Path"));
-    /** computed based on valueSizeBytes == DataFileCommon.VARIABLE_DATA_SIZE */
-    private final boolean hasVariableDataSize;
     /** When was the last medium-sized merge, only touched from single merge thread. */
     private Instant lastMediumMerge = Instant.now();
     /** When was the last full merge, only touched from single merge thread. */
     private Instant lastFullMerge = Instant.now();
 
     /**
-     * Create new VirtualDataSourceJasperDB with merging enabled
-     * @param keySizeBytes the size of key when serialized in bytes
-     * @param estimatedAverageKeySizeBytes when key size is VARIABLE_DATA_SIZE we need an estimated average key size for
-     *                                     sizing calculations.
-     * @param maxKeySize when key size is VARIABLE_DATA_SIZE we need an max key size for sizing calculations.
-     * @param keyConstructor constructor for creating keys for deserialization
-     * @param valueSizeBytes the size of value when serialized in bytes
-     * @param valueConstructor constructor for creating values for deserialization
-     * @param storageDir directory to store data files in
-     * @param maxNumOfKeys the maximum number of unique keys. This is used for calculating in memory index sizes
-     * @param internalHashesRamToDiskThreshold When path value at which we switch from hashes in ram to hashes stored on
-     *                                         disk. 0 means all on disk and Long.MAX_VALUE means all in ram.
-     */
-    public VirtualDataSourceJasperDB(int keySizeBytes,int estimatedAverageKeySizeBytes, int maxKeySize,
-                                     Supplier<K> keyConstructor, HalfDiskHashMap.KeySizeReader keySizeReader,
-                                     int valueSizeBytes, Supplier<V> valueConstructor,
-                                     Path storageDir, long maxNumOfKeys, long internalHashesRamToDiskThreshold) throws IOException {
-        this(keySizeBytes, estimatedAverageKeySizeBytes, maxKeySize, keyConstructor, keySizeReader, valueSizeBytes,valueConstructor,storageDir,
-                maxNumOfKeys,true, internalHashesRamToDiskThreshold);
-    }
-
-    /**
      * Create new VirtualDataSourceJasperDB
-     * @param keySizeBytes the size of key when serialized in bytes, can be VARIABLE_DATA_SIZE
-     * @param estimatedAverageKeySizeBytes when key size is VARIABLE_DATA_SIZE we need an estimated average key size for
-     *                                     sizing calculations.
-     * @param maxKeySize when key size is VARIABLE_DATA_SIZE we need an max key size for sizing calculations.
-     * @param keyConstructor constructor for creating keys for deserialization
-     * @param keySizeReader Reader for reading key sizes from byte buffers containing a serialized key. This can be null
-     *                      if using fixed size keys.
-     * @param valueSizeBytes the size of value when serialized in bytes
-     * @param valueConstructor constructor for creating values for deserialization
+     *
+     * @param virtualLeafRecordSerializer Serializer for converting raw data to/from VirtualLeafRecords
+     * @param virtualInternalRecordSerializer Serializer for converting raw data to/from VirtualInternalRecords
+     * @param keySerializer Serializer for converting raw data to/from keys
      * @param storageDir directory to store data files in
      * @param maxNumOfKeys the maximum number of unique keys. This is used for calculating in memory index sizes
      * @param internalHashesRamToDiskThreshold When path value at which we switch from hashes in ram to stored on disk
      */
-    public VirtualDataSourceJasperDB(int keySizeBytes,int estimatedAverageKeySizeBytes, int maxKeySize,
-                                     Supplier<K> keyConstructor, HalfDiskHashMap.KeySizeReader keySizeReader,
-                                     int valueSizeBytes, Supplier<V> valueConstructor, Path storageDir, long maxNumOfKeys,
+    public VirtualDataSourceJasperDB(VirtualLeafRecordSerializer<K,V> virtualLeafRecordSerializer,
+                                     VirtualInternalRecordSerializer virtualInternalRecordSerializer,
+                                     KeySerializer<K> keySerializer,
+                                     Path storageDir, long maxNumOfKeys,
                                      boolean mergingEnabled, long internalHashesRamToDiskThreshold) throws IOException {
-        System.out.println("multiThreadedSerializationEnabled = " + multiThreadedSerializationEnabled);
-        this.keySizeBytes = Integer.BYTES + keySizeBytes; // extra leading integer keeps track of the version
-        this.keyConstructor = keyConstructor;
-        this.valueSizeBytes = Integer.BYTES + valueSizeBytes;  // extra leading integer keeps track of the version
-        this.valueConstructor = valueConstructor;
-        this.hasVariableDataSize = valueSizeBytes == VARIABLE_DATA_SIZE;
-        final var keyHashValueSize = hasVariableDataSize ? VARIABLE_DATA_SIZE :
-                this.keySizeBytes + HASH_SIZE_BYTES + this.valueSizeBytes;
-        this.keyHashValue = hasVariableDataSize ? null : ThreadLocal.withInitial(() -> allocate(keyHashValueSize));
         final LoadedDataCallback loadedDataCallback;
         this.hasDiskStoreForInternalHashes = internalHashesRamToDiskThreshold < Long.MAX_VALUE;
         this.internalHashStoreRam = (internalHashesRamToDiskThreshold > 0) ? new HashListOffHeap() : null;
-        this.internalHashStoreDisk = hasDiskStoreForInternalHashes ?  new MemoryIndexDiskKeyValueStore(storageDir,"internalHashes",
-                    HASH_SIZE_BYTES,null) : null;
+        this.internalHashStoreDisk = hasDiskStoreForInternalHashes ?
+                new MemoryIndexDiskKeyValueStore<>(storageDir,"internalHashes",
+                        virtualInternalRecordSerializer, null)  // TODO need to implement loaded data callback maybe?
+                : null;
         this.internalHashesRamToDiskThreshold = internalHashesRamToDiskThreshold;
-        if (keySizeBytes == Long.BYTES) {
+        if (keySerializer.getSerializedSize() == Long.BYTES) {
             isLongKeyMode = true;
             longKeyToPath = new LongListHeap();
             objectKeyToPath = null;
-            loadedDataCallback = (path, dataLocation, keyHashValueData) -> {
-                // read key from keyHashValueData, as we are in isLongKeyMode mode then the key is a single long
-                long key = keyHashValueData.getLong(0);
+            loadedDataCallback = (path, dataLocation, hashKeyValueData) -> {
+                // read key from hashKeyValueData, as we are in isLongKeyMode mode then the key is a single long
+                long key = hashKeyValueData.getLong(0);
                 // update index
                 longKeyToPath.put(key,path);
             };
         } else {
             isLongKeyMode = false;
             longKeyToPath =  null;
-            objectKeyToPath = new HalfDiskHashMap<>(maxNumOfKeys,keySizeBytes,estimatedAverageKeySizeBytes,maxKeySize,
-                    keyConstructor,keySizeReader, false,
-                    storageDir, "objectKeyToPath");
+            objectKeyToPath = new HalfDiskHashMap<>(maxNumOfKeys,keySerializer,storageDir, "objectKeyToPath");
+            objectKeyToPath.printStats();
             // we do not need callback as HalfDiskHashMap loads its own data from disk
             loadedDataCallback = null;
         }
-        pathToKeyHashValue = new MemoryIndexDiskKeyValueStore(storageDir,"pathToKeyHashValue", keyHashValueSize, loadedDataCallback);
+        pathToHashKeyValue = new MemoryIndexDiskKeyValueStore<>(storageDir,"pathToHashKeyValue",
+                virtualLeafRecordSerializer, loadedDataCallback);
         // If merging is enabled then merge all data files every 5 minutes
         if (mergingEnabled) {
             mergingExecutor.scheduleWithFixedDelay(this::doMerge,1,5, TimeUnit.MINUTES);
@@ -202,8 +159,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
      */
     @Override
     public void saveRecords(long firstLeafPath, long lastLeafPath, Stream<VirtualInternalRecord> internalRecords,
-                            Stream<VirtualLeafRecord<K, V>> leafRecords) {
-        System.out.println("VirtualDataSourceJasperDB.saveRecords "+Thread.currentThread());
+                            Stream<VirtualLeafRecord<K, V>> leafRecords) throws IOException {
         final var countDownLatch = new CountDownLatch(1);
         // might as well write to the 3 data stores in parallel, so lets fork 2 threads for the easy stuff
         storeInternalExecutor.execute(() -> {
@@ -216,7 +172,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
             countDownLatch.countDown();
         });
         // we might as well do this in the archive thread rather than leaving it waiting
-        writeLeavesToPathToKeyHashValue(firstLeafPath, lastLeafPath, leafRecords);
+        writeLeavesToPathToHashKeyValue(firstLeafPath, lastLeafPath, leafRecords);
         // wait for the other two threads in the rare case they are not finished yet. We need to have all writing done
         // before we return as when we return the state version we are writing is deleted from the cache and the flood
         // gates are opened for reads through to the data we have written here.
@@ -241,7 +197,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
                 ? longKeyToPath.get(((VirtualLongKey)key).getKeyAsLong(), INVALID_PATH)
                 : objectKeyToPath.get(key, INVALID_PATH);
         if (path == INVALID_PATH) return null;
-        return loadLeafRecord(path,key);
+        return pathToHashKeyValue.get(path);
     }
 
     /**
@@ -253,7 +209,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
      */
     @Override
     public VirtualLeafRecord<K, V> loadLeafRecord(long path) throws IOException {
-        return loadLeafRecord(path,null);
+        return pathToHashKeyValue.get(path);
     }
 
     /**
@@ -266,21 +222,12 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
     @Override
     public Hash loadLeafHash(long path) throws IOException {
         if (path < 0) throw new IllegalArgumentException("path is less than 0");
-        final ByteBuffer keyHashValueBuffer; // TODO can we add method to data files to read a subset of data
-        if (hasVariableDataSize) {
-            // read value
-            keyHashValueBuffer =  pathToKeyHashValue.get(path);
-            if (keyHashValueBuffer == null) return null;
-        } else {
-            keyHashValueBuffer = this.keyHashValue.get().clear();
-            // read value
-            boolean found = pathToKeyHashValue.get(path, keyHashValueBuffer);
-            if (!found) return null;
-        }
+        // read value
+        // TODO could do with a way to deserialize only the hash
+        final var leafRecord = pathToHashKeyValue.get(path);
+        if (leafRecord == null) return null;
         // deserialize hash
-        keyHashValueBuffer.rewind();
-        keyHashValueBuffer.position(keySizeBytes); // jump over key
-        return byteBufferToHash(keyHashValueBuffer);
+        return leafRecord.getHash();
     }
 
     /**
@@ -294,11 +241,11 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
     public VirtualInternalRecord loadInternalRecord(long path) throws IOException {
         if (path < 0) throw new IllegalArgumentException("path is less than 0");
         if (path < internalHashesRamToDiskThreshold) {
-            return new VirtualInternalRecord(path,internalHashStoreRam.get(path));
+            final Hash hash = internalHashStoreRam.get(path);
+            if (hash == null) return null;
+            return new VirtualInternalRecord(path,hash);
         } else {
-            ByteBuffer buf = ByteBuffer.allocate(HASH_SIZE_BYTES);
-            internalHashStoreDisk.get(path,buf);
-            return new VirtualInternalRecord(path, HashTools.byteBufferToHashNoCopy(buf));
+            return internalHashStoreDisk.get(path);
         }
     }
 
@@ -318,7 +265,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
             throw new IOException("Interrupted while waiting for merge to finish.",e);
         } finally {
             if (objectKeyToPath!= null) objectKeyToPath.close();
-            pathToKeyHashValue.close();
+            pathToHashKeyValue.close();
         }
     }
 
@@ -326,138 +273,50 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
     // private methods
 
     /**
-     * load a leaf record by path, using the provided key or if null deserializing the key.
-     */
-    private VirtualLeafRecord<K, V> loadLeafRecord(long path, K key) throws IOException {
-        final ByteBuffer keyHashValueBuffer;
-        if (hasVariableDataSize) {
-            // read value
-            keyHashValueBuffer = pathToKeyHashValue.get(path);
-            if (keyHashValueBuffer == null) return null;
-        } else {
-            // get reusable buffer
-            keyHashValueBuffer = this.keyHashValue.get().clear();
-            // read value
-            final boolean found = pathToKeyHashValue.get(path, keyHashValueBuffer);
-            if (!found) return null;
-        }
-        // deserialize
-        keyHashValueBuffer.rewind();
-        // deserialize key
-        if (key != null) {
-            // jump past the key because we don't need to deserialize it
-            keyHashValueBuffer.position(keySizeBytes);
-        } else {
-            final int keySerializationVersion = keyHashValueBuffer.getInt();
-            key = keyConstructor.get();
-            key.deserialize(keyHashValueBuffer, keySerializationVersion);
-        }
-        // deserialize hash
-        final Hash hash = byteBufferToHash(keyHashValueBuffer);
-        // deserialize value
-        final int valueSerializationVersion = keyHashValueBuffer.getInt();
-        final V value = valueConstructor.get();
-        value.deserialize(keyHashValueBuffer, valueSerializationVersion);
-        // return new VirtualLeafRecord
-        return new VirtualLeafRecord<>(path, hash, key, value);
-    }
-
-    /**
      * Write all internal records hashes to internalHashStore
      */
     private void writeInternalRecords(long firstLeafPath, Stream<VirtualInternalRecord> internalRecords) throws IOException {
         if (internalRecords != null) {
+            // use an iterator rather than stream.forEach so that exceptions are propagated properly
+            final Iterator<VirtualInternalRecord> internalRecordIter = internalRecords.iterator();
             if (hasDiskStoreForInternalHashes) internalHashStoreDisk.startWriting();
-            internalRecords.forEachOrdered(rec -> {
-                try {
-                    if (rec.getPath() < internalHashesRamToDiskThreshold) {
-                        internalHashStoreRam.put(rec.getPath(), rec.getHash());
-                    } else {
-                        var out = internalHashStoreDisk.startStreamingPut(rec.getPath(), HASH_SIZE_BYTES);
-                        out.write(rec.getHash().getValue());
-                        internalHashStoreDisk.endStreamingPut();
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    throw new RuntimeException(e);
+            while (internalRecordIter.hasNext()) {
+                VirtualInternalRecord rec = internalRecordIter.next();
+                if (rec.getPath() < internalHashesRamToDiskThreshold) {
+                    internalHashStoreRam.put(rec.getPath(), rec.getHash());
+                } else {
+                    internalHashStoreDisk.put(rec.getPath(), rec);
                 }
-            });
+            }
             if (hasDiskStoreForInternalHashes) internalHashStoreDisk.endWriting(0,firstLeafPath-1);
         }
     }
 
     /**
-     * Write all the given leaf records to pathToKeyHashValue
+     * Write all the given leaf records to pathToHashKeyValue
      */
-    private void writeLeavesToPathToKeyHashValue(long firstLeafPath, long lastLeafPath,
-                                                 Stream<VirtualLeafRecord<K, V>> leafRecords) {
-
+    private void writeLeavesToPathToHashKeyValue(long firstLeafPath, long lastLeafPath,
+                                                 Stream<VirtualLeafRecord<K, V>> leafRecords) throws IOException {
         if (leafRecords != null) {
-            try {
-                pathToKeyHashValue.startWriting();
-                // get reusable buffer
-                if (!isLongKeyMode) objectKeyToPath.startWriting();
-
-                if (multiThreadedSerializationEnabled) {
-                    leafRecords
-                            .peek(rec -> {
-                                // update objectKeyToPath
-                                if (isLongKeyMode) {
-                                    longKeyToPath.put(((VirtualLongKey) rec.getKey()).getKeyAsLong(), rec.getPath());
-                                } else {
-                                    objectKeyToPath.put(rec.getKey(), rec.getPath());
-                                }
-                            })
-                            .parallel()
-                            .map(rec -> new SerializedVirtualLeafRecord<>(rec, hasVariableDataSize, valueSizeBytes))
-                            .forEachOrdered(serializedVirtualLeafRecord -> {
-                                try {
-                                    // now save pathToKeyHashValue
-                                    final var out = pathToKeyHashValue.startStreamingPut(
-                                            serializedVirtualLeafRecord.path, serializedVirtualLeafRecord.valueSize);
-                                    out.write(serializedVirtualLeafRecord.keyHashValue);
-                                    pathToKeyHashValue.endStreamingPut();
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                    throw new RuntimeException(e);
-                                }
-                            });
+            var leafRecordIter = leafRecords.iterator();
+            // start writing
+            pathToHashKeyValue.startWriting();
+            if (!isLongKeyMode) objectKeyToPath.startWriting();
+            // iterate over leaf records
+            while (leafRecordIter.hasNext()) {
+                VirtualLeafRecord<K, V> leafRecord = leafRecordIter.next();
+                // update objectKeyToPath
+                if (isLongKeyMode) {
+                    longKeyToPath.put(((VirtualLongKey) leafRecord.getKey()).getKeyAsLong(), leafRecord.getPath());
                 } else {
-                    final ByteArrayOutputStream bout = new ByteArrayOutputStream(1024);
-                    final SerializableDataOutputStream outputStream = new SerializableDataOutputStream(bout);
-                    leafRecords
-                            .peek(rec -> {
-                                // update objectKeyToPath
-                                if (isLongKeyMode) {
-                                    longKeyToPath.put(((VirtualLongKey) rec.getKey()).getKeyAsLong(), rec.getPath());
-                                } else {
-                                    objectKeyToPath.put(rec.getKey(), rec.getPath());
-                                }
-                            })
-                            .forEachOrdered(virtualLeafRecord -> {
-                                try {
-                                    // clean reusable buffer
-                                    bout.reset();
-                                    // serialize leaf key, hash and value to stream
-                                    int valueSize = serializeKeyHashValue(bout,outputStream,virtualLeafRecord,
-                                            hasVariableDataSize, valueSizeBytes);
-                                    // now save pathToKeyHashValue
-                                    final var out = pathToKeyHashValue.startStreamingPut(
-                                            virtualLeafRecord.getPath(), valueSize);
-                                    bout.writeTo(out);
-                                    pathToKeyHashValue.endStreamingPut();
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                    throw new RuntimeException(e);
-                                }
-                            });
+                    objectKeyToPath.put(leafRecord.getKey(), leafRecord.getPath());
                 }
-                pathToKeyHashValue.endWriting(firstLeafPath, lastLeafPath);
-                if(!isLongKeyMode) objectKeyToPath.endWriting();
-            } catch (IOException e) {
-                // TODO maybe need a way to make sure streams / writers are closed if there is an exception?
-                throw new RuntimeException(e); // TODO maybe re-wrap into IOException?
+                // update pathToHashKeyValue
+                pathToHashKeyValue.put(leafRecord.getPath(),leafRecord);
             }
+            // end writing
+            pathToHashKeyValue.endWriting(firstLeafPath, lastLeafPath);
+            if(!isLongKeyMode) objectKeyToPath.endWriting();
         }
     }
 
@@ -466,105 +325,42 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
      * must always be contiguous in order of time contained data created. As merged files have a later index but old
      * data the index can not be used alone to work out order of files to merge.
      */
+    @SuppressWarnings("rawtypes")
     private void doMerge() {
         final Instant startMerge = Instant.now();
         Function<List<DataFileReader>, List<DataFileReader>> filesToMergeFilter;
-        if (startMerge.minus(2, ChronoUnit.HOURS).isAfter(lastFullMerge)) { // every 2 hours
+        if (startMerge.minus(30, ChronoUnit.MINUTES).isAfter(lastFullMerge)) { // every 2 hours
             lastFullMerge = startMerge;
             filesToMergeFilter = dataFileReaders -> dataFileReaders; // everything
-        } else if (startMerge.minus(30, ChronoUnit.MINUTES).isAfter(lastMediumMerge)) { // every 30 min
+        } else if (startMerge.minus(10, ChronoUnit.MINUTES).isAfter(lastMediumMerge)) { // every 30 min
             lastMediumMerge = startMerge;
             filesToMergeFilter = newestFilesSmallerThan(10*1024); // < 10Gb
         } else { // every 5 minutes
             filesToMergeFilter = newestFilesSmallerThan(3*1024); // < 3Gb
         }
         try {
-            // we need to merge disk files for internal hashes if they exist and pathToKeyHashValue store
-            if (hasDiskStoreForInternalHashes) internalHashStoreDisk.mergeAll(filesToMergeFilter);
+            // we need to merge disk files for internal hashes if they exist and pathToHashKeyValue store
+            if (hasDiskStoreForInternalHashes) {
+                // horrible hack to get around generics because file filters work on any type of DataFileReader
+                @SuppressWarnings("unchecked") var internalRecordFileFilter =
+                        (Function<List<DataFileReader<VirtualInternalRecord>>, List<DataFileReader<VirtualInternalRecord>>>)((Object)filesToMergeFilter);
+                internalHashStoreDisk.merge(internalRecordFileFilter);
+            }
             // merge objectKeyToPath files
-            if(!isLongKeyMode) objectKeyToPath.mergeAll(filesToMergeFilter);
-            // now do main merge of pathToKeyHashValue store
-            pathToKeyHashValue.mergeAll(filesToMergeFilter);
+            if(!isLongKeyMode) {
+                // horrible hack to get around generics because file filters work on any type of DataFileReader
+                @SuppressWarnings("unchecked") var bucketFileFilter =
+                        (Function<List<DataFileReader<Bucket<K>>>, List<DataFileReader<Bucket<K>>>>)((Object)filesToMergeFilter);
+                objectKeyToPath.merge(bucketFileFilter);
+            }
+            // now do main merge of pathToHashKeyValue store
+            // horrible hack to get around generics because file filters work on any type of DataFileReader
+            @SuppressWarnings("unchecked") var leafRecordFileFilter =
+                    (Function<List<DataFileReader<VirtualLeafRecord<K,V>>>, List<DataFileReader<VirtualLeafRecord<K,V>>>>)((Object)filesToMergeFilter);
+            pathToHashKeyValue.merge(leafRecordFileFilter);
         } catch (Throwable t) {
             System.err.println("Exception while merging!");
             t.printStackTrace();
-        }
-    }
-
-    private static <K extends VirtualKey, V extends VirtualValue> int serializeKeyHashValue(
-                        ByteArrayOutputStream bout,
-                        SerializableDataOutputStream outputStream,
-                        VirtualLeafRecord<K,V> leafRecord,
-                        boolean hasVariableDataSize, int valueSizeBytes) throws IOException {
-        final VirtualKey key = leafRecord.getKey();
-        final Hash hash = leafRecord.getHash();
-        final VirtualValue value = leafRecord.getValue();
-        int valueSize;
-        if (hasVariableDataSize) {
-            // now write key, hash and value to stream 1
-            // put key
-            outputStream.writeInt(key.getVersion());
-            key.serialize(outputStream);
-            // put hash
-            outputStream.write(hash.getValue());
-            // put value
-            outputStream.writeInt(value.getVersion());
-            outputStream.flush();
-            final int sizeBefore = bout.size();
-            // write value to second stream as we need its size
-            value.serialize(outputStream);
-            outputStream.flush();
-            // get value size
-            valueSize = bout.size() - sizeBefore;
-        } else {
-            valueSize = valueSizeBytes;
-            // put key
-            outputStream.writeInt(key.getVersion());
-            key.serialize(outputStream);
-            // put hash
-            outputStream.write(hash.getValue());
-            // put value
-            outputStream.writeInt(value.getVersion());
-            value.serialize(outputStream);
-        }
-        // flush everything
-        outputStream.flush();
-        return valueSize;
-    }
-
-    //==================================================================================================================
-    // SerializedVirtualRecord class
-
-    /**
-     * Class used for temporary storage of serialized virtual leaf records. The allows us to use parallel background
-     * threads to serialize VirtualRecord before they are written to disk.
-     */
-    private static final class SerializedVirtualLeafRecord<K extends VirtualKey, V extends VirtualValue> {
-        /** Reusable ByteArrayOutputStreams */
-        private static final ThreadLocal<ByteArrayOutputStream> reusableStreams =
-                ThreadLocal.withInitial(() -> new ByteArrayOutputStream(1024));
-        /** leaf path */
-        final long path;
-        /** leaf value size when serialized in bytes */
-        final int valueSize;
-        /** key, hash and value serialized to byte[] */
-        final byte[] keyHashValue;
-
-        public SerializedVirtualLeafRecord(VirtualLeafRecord<K,V> leafRecord, boolean hasVariableDataSize, int valueSizeBytes) {
-            try {
-                this.path = leafRecord.getPath();
-                // get thread local buffer for reuse
-                final ByteArrayOutputStream bout = reusableStreams.get();
-                bout.reset();
-                final SerializableDataOutputStream outputStream = new SerializableDataOutputStream(bout);
-                // serialize the key hash and value
-                valueSize = serializeKeyHashValue(bout,outputStream,leafRecord,hasVariableDataSize,valueSizeBytes);
-                // store a copy of array data
-                keyHashValue = bout.toByteArray();
-            } catch (IOException e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
         }
     }
 }

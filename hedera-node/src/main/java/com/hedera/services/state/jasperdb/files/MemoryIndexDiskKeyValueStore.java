@@ -2,16 +2,11 @@ package com.hedera.services.state.jasperdb.files;
 
 import com.hedera.services.state.jasperdb.collections.LongList;
 import com.hedera.services.state.jasperdb.collections.LongListHeap;
-import com.hedera.services.state.jasperdb.files.DataFileCollection;
 import com.hedera.services.state.jasperdb.files.DataFileCollection.LoadedDataCallback;
-import com.hedera.services.state.jasperdb.files.DataFileReader;
-import com.swirlds.common.io.SerializableDataOutputStream;
 import org.eclipse.collections.impl.map.mutable.primitive.LongLongHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -20,53 +15,56 @@ import java.util.function.Function;
 import static com.hedera.services.state.jasperdb.files.DataFileCommon.*;
 
 /**
- * A specialized map like data store with long keys. The index is in RAM and the data is stored in a set o files on
- * disk. It assumes that the keys long start at 0. If they do not then a lot of RAM will be wasted.
+ * A specialized map like disk based data store with long keys. It is assumed the keys are a single sequential block of
+ * numbers that does not need to start at zero. The index from long key to disk location for value is in RAM and the
+ * value data is stored in a set o files on disk.
  *
  * There is an assumption that keys are a contiguous range of incrementing numbers. This allows easy deletion during
  * merging by accepting any key/value with a key outside this range is not needed any more. This design comes from being
  * used where keys are leaf paths in a binary tree.
+ *
+ * @param <D> type for data items
  */
-public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
+@SuppressWarnings({"DuplicatedCode", "rawtypes"})
+public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable {
     /**
      * This is useful for debugging and validating but is too expensive to enable in production.
      */
-    private static final boolean ENABLE_DEEP_VALIDATION = false;
+    protected static boolean ENABLE_DEEP_VALIDATION = false;
     /**
-     * Off-heap index mapping, it uses our key as the index within the list and the value is the dataLocation in
-     * fileCollection where the key/value pair is stored.
+     * Index mapping, it uses our key as the index within the list and the value is the dataLocation in fileCollection
+     * where the key/value pair is stored.
      */
     private final LongList index = new LongListHeap();
     /** On disk set of DataFiles that contain our key/value pairs */
-    private final DataFileCollection fileCollection;
+    private final DataFileCollection<D> fileCollection;
     /**
      * The name for the data store, this allows more than one data store in a single directory. Also, useful for
      * identifying what files are used by what part of the code.
      */
     private final String storeName;
-    /** A temporary key used for start/end streaming put */
-    private long tempKey;
 
     /**
      * Construct a new MemoryIndexDiskKeyValueStore
      *
      * @param storeDir The directory to store data files in
      * @param storeName The name for the data store, this allows more than one data store in a single directory.
-     * @param dataValueSizeBytes the size in bytes for data values being stored. It can be set to
-     *                           DataFileCommon.VARIABLE_DATA_SIZE if you want to store variable size data values.
+     * @param dataItemSerializer Serializer for converting raw data to/from data items
      * @param loadedDataCallback call back for handing loaded data from existing files on startup. Can be null if not needed.
      * @throws IOException If there was a problem opening data files
      */
-    public MemoryIndexDiskKeyValueStore(Path storeDir, String storeName, int dataValueSizeBytes,
+    public MemoryIndexDiskKeyValueStore(Path storeDir, String storeName,
+                                        DataItemSerializer<D> dataItemSerializer,
                                         LoadedDataCallback loadedDataCallback) throws IOException {
         this.storeName = storeName;
         // create store dir
         Files.createDirectories(storeDir);
         // create file collection
-        fileCollection = new DataFileCollection(storeDir,storeName,dataValueSizeBytes, (key, dataLocation, dataValue) -> {
-            index.put(key,dataLocation);
-            if (loadedDataCallback != null) loadedDataCallback.newIndexEntry(key,dataLocation,dataValue);
-        });
+        fileCollection = new DataFileCollection<>(storeDir,storeName,dataItemSerializer,
+                (key, dataLocation, dataValue) -> {
+                    index.put(key,dataLocation);
+                    if (loadedDataCallback != null) loadedDataCallback.newIndexEntry(key,dataLocation,dataValue);
+                });
     }
 
     /**
@@ -75,10 +73,10 @@ public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
      * @param filterForFilesToMerge filter to choose which subset of files to merge
      * @throws IOException if there was a problem merging
      */
-    public void mergeAll(Function<List<DataFileReader>,List<DataFileReader>> filterForFilesToMerge) throws IOException {
+    public void merge(Function<List<DataFileReader<D>>,List<DataFileReader<D>>> filterForFilesToMerge) throws IOException {
         final long START = System.currentTimeMillis();
-        final List<DataFileReader> allFilesBefore = fileCollection.getAllFullyWrittenFiles();
-        final List<DataFileReader> filesToMerge = filterForFilesToMerge.apply(allFilesBefore);
+        final List<DataFileReader<D>> allFilesBefore = fileCollection.getAllFullyWrittenFiles();
+        final List<DataFileReader<D>> filesToMerge = filterForFilesToMerge.apply(allFilesBefore);
         final int size = filesToMerge == null ? 0 : filesToMerge.size();
         if (size < 2) {
             System.out.println("["+storeName+"] No meed to merge as only "+size+" files.");
@@ -141,39 +139,17 @@ public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
      * Put a value into this store, you must be in a writing session started with startWriting()
      *
      * @param key The key to store value for
-     * @param data Buffer containing the data's value, it should have its position and limit set correctly
+     * @param dataItem Buffer containing the data's value, it should have its position and limit set correctly
      * @throws IOException If there was a problem write key/value to the store
      */
-    public void put(long key, ByteBuffer data) throws IOException {
-        long dataLocation = fileCollection.storeData(key,data);
+    public void put(long key, D dataItem) throws IOException {
+        long dataLocation = fileCollection.storeDataItem(dataItem);
         // store data location in index
         index.put(key,dataLocation);
     }
 
     /**
-     * Start streaming put of an item. You will need to call endStreamingPut() after each item you write to the stream.
-     *
-     * @param key The key to store value for
-     * @param dataItemSize The size of the data item you are going to write, this is total number of bytes. Only needed
-     *                     when in hasVariableDataSize mode.
-     * @return direct access to stream to file
-     */
-    public synchronized SerializableDataOutputStream startStreamingPut(long key, int dataItemSize) throws IOException {
-        this.tempKey = key;
-        return fileCollection.startStreamingItem(key,dataItemSize);
-    }
-
-    /**
-     * End streaming put of an item.
-     */
-    public synchronized void endStreamingPut() throws IOException {
-        long dataLocation = fileCollection.endStreamingItem();
-        // store data location in index
-        index.put(tempKey,dataLocation);
-    }
-
-    /**
-     * End s a session of writing
+     * End a session of writing
      *
      * @param minimumValidKey The minimum valid key at this point in time.
      * @param maximumValidKey The maximum valid key at this point in time.
@@ -184,57 +160,13 @@ public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
     }
 
     /**
-     * Get a value by reading it from disk and storing it into toReadDataInto
+     * Get a value by reading it from disk.
      *
      * @param key The key to find and read value for
-     * @param toReadDataInto The buffer to fill with value
-     * @return true if the value was read or false if not found
+     * @return Array of serialization version for data if the value was read or null if not found
      * @throws IOException If there was a problem reading the value from file
      */
-    public boolean get(long key, ByteBuffer toReadDataInto) throws IOException {
-        // check if out of range
-        if (key < fileCollection.getMinimumValidKey() || key > fileCollection.getMaximumValidKey()) {
-            if (ENABLE_DEEP_VALIDATION && key != 0) {
-                System.err.println("get path ["+key+"] that is not in index any more."+
-                        ((key < fileCollection.getMinimumValidKey()) ? "\n      Key is less than min "+fileCollection.getMinimumValidKey()+". " : "") +
-                        ((key > fileCollection.getMaximumValidKey()) ? "\n      Key is greater than max "+fileCollection.getMaximumValidKey()+". " : "")
-                );
-            }
-            return false;
-        }
-        // get from index
-        long dataLocation = index.get(key, 0);
-        // check if found
-        if (dataLocation == 0) {
-            if (ENABLE_DEEP_VALIDATION && key != 0) {
-                System.err.println("get path ["+key+"] that is not in index any more."+
-                        ((key < fileCollection.getMinimumValidKey()) ? "\n      Key is less than min "+fileCollection.getMinimumValidKey()+". " : "") +
-                        ((key > fileCollection.getMaximumValidKey()) ? "\n      Key is greater than max "+fileCollection.getMaximumValidKey()+". " : "")
-                );
-                new Exception().printStackTrace();
-            }
-            return false;
-        }
-        // read data
-        try {
-            return fileCollection.readData(dataLocation,toReadDataInto, DataFileReader.DataToRead.VALUE);
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.err.println("MemoryIndexDiskKeyValueStore.get key="+key);
-            printDataLinkValidation(index, fileCollection.getAllFullyWrittenFiles(Integer.MAX_VALUE));
-            throw e;
-        }
-    }
-
-    /**
-     * Get a value by reading it from disk into a byte buffer and returning it. This is needed for variable size data
-     * because we do not know the length to preallocate the buffer.
-     *
-     * @param key The key to find and read value for
-     * @return ByteBuffer buffer containing data if the value was read or null if not found
-     * @throws IOException If there was a problem reading the value from file
-     */
-    public ByteBuffer get(long key) throws IOException {
+    public D get(long key) throws IOException {
         // check if out of range
         if (key < fileCollection.getMinimumValidKey() || key > fileCollection.getMaximumValidKey()) {
             if (ENABLE_DEEP_VALIDATION && key != 0) {
@@ -260,7 +192,7 @@ public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
         }
         // read data
         try {
-            return fileCollection.readData(dataLocation, DataFileReader.DataToRead.VALUE);
+            return fileCollection.readDataItem(dataLocation);
         } catch (IOException e) {
             e.printStackTrace();
             System.err.println("MemoryIndexDiskKeyValueStore.get key="+key);
@@ -306,7 +238,7 @@ public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
     }
 
     /** End debugging integrity checking and print results */
-    private void endChecking(List<DataFileReader> filesToMerge) {
+    private void endChecking(List<DataFileReader<D>> filesToMerge) {
         // set of merged files
         SortedSet<Integer> mergedFileIds = new TreeSet<>();
         for(var file:filesToMerge) mergedFileIds.add(file.getMetadata().getIndex());
