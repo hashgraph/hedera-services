@@ -44,8 +44,8 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.mocks.SolidityLifecycleFactory;
 import com.hedera.test.mocks.StorageSourceFactory;
 import com.hedera.test.mocks.TestContextValidator;
@@ -81,6 +81,7 @@ import org.ethereum.db.ServicesRepositoryRoot;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -99,6 +100,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+@Disabled
 class SmartContractRequestHandlerMiscTest {
 
   private static final String MAPPING_STORAGE_BIN = "/testfiles/MapStorage.bin";
