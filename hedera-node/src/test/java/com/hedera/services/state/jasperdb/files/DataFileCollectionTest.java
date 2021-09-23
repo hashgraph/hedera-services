@@ -6,6 +6,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -33,7 +34,7 @@ public class DataFileCollectionTest {
     // Helper Methods
 
     /**
-     * For tests, we want to have all different dta sizes, so we use this function to choose how many times to repeat
+     * For tests, we want to have all different data sizes, so we use this function to choose how many times to repeat
      * the data value long
      */
     private static int getRepeatCountForKey(long key) {
@@ -41,7 +42,7 @@ public class DataFileCollectionTest {
     }
 
     /**
-     * Create an example variable sized data item with lengths of data from 0 to 20.
+     * Create an example variable sized data item with lengths of data from 1 to 20.
      */
     private static long[] getVariableSizeDataForI(int i, int valueAddition) {
         int repeatCount = getRepeatCountForKey(i);
@@ -53,7 +54,8 @@ public class DataFileCollectionTest {
         return dataValue;
     }
 
-    protected static void checkData(TestType testType, int fromIndex, int toIndexExclusive, int valueAddition) throws Exception {
+    protected static void checkData(TestType testType, int fromIndex, int toIndexExclusive, int valueAddition)
+                throws Exception {
         final var fileCollection = fileCollectionMap.get(testType);
         final var storedOffsets = storedOffsetsMap.get(testType);
         // now read back all the data and check all data
@@ -170,6 +172,47 @@ public class DataFileCollectionTest {
                 assertEquals(fixedSizeDataFileSize, dataFileReader.getSize());
             }
         }
+    }
+
+    @Order(10)
+    @ParameterizedTest
+    @EnumSource(TestType.class)
+    public void createDataFileCollectionWithLoadedDataCallback(TestType testType) throws Exception {
+        final LoadedDataCallbackImpl loadedDataCallbackImpl = new LoadedDataCallbackImpl();
+        final var fileCollection = new DataFileCollection<>(tempFileDir.resolve(testType.name()), "test",
+                testType.dataItemSerializer,
+                loadedDataCallbackImpl);
+        fileCollectionMap.put(testType,fileCollection);
+        // create stored offsets list
+        final var storedOffsets = new LongArrayList(1000);
+        storedOffsetsMap.put(testType,storedOffsets);
+        // create 10x 100 item files
+        int count = 0;
+        for (int f = 0; f < 10; f++) {
+            fileCollection.startWriting();
+            // put in 1000 items
+            for (int i = count; i < count+100; i++) {
+                long[] dataValue;
+                switch(testType) {
+                    default:
+                    case fixed:
+                        dataValue = new long[]{i,i+10_000};
+                        break;
+                    case variable:
+                        dataValue = getVariableSizeDataForI(i, 10_000);
+                        break;
+                }
+                // store in file
+                storedOffsets.add(fileCollection.storeDataItem(dataValue));
+            }
+            fileCollection.endWriting(0,count+100);
+            count += 100;
+        }
+        // check that 10 additional files were created
+        assertEquals(20,Files.list(tempFileDir.resolve(testType.name())).count());
+        // examine loadedDataCallbackImpl content's map sizes
+        assertEquals(1000,loadedDataCallbackImpl.dataLocationMap.size());
+        assertEquals(1000,loadedDataCallbackImpl.dataValueMap.size());
     }
 
     @Order(50)
@@ -340,5 +383,16 @@ public class DataFileCollectionTest {
     static void cleanup() {
         // clean up and delete files
         deleteDirectoryAndContents(tempFileDir);
+    }
+
+    public class LoadedDataCallbackImpl implements DataFileCollection.LoadedDataCallback {
+        public Map<Long, Long> dataLocationMap = new HashMap<>();
+        public Map<Long, ByteBuffer> dataValueMap = new HashMap<>();
+
+        @Override
+        public void newIndexEntry(long key, long dataLocation, ByteBuffer dataValue) {
+            dataLocationMap.put(key, dataLocation);
+            dataValueMap.put(key, dataValue);
+        }
     }
 }
