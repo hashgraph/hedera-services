@@ -170,7 +170,7 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void logsSummaryAsExpected() {
+	void logsSummaryAsExpectedWithAppAvailable() {
 		// setup:
 		subject.setMetadata(metadata);
 
@@ -178,13 +178,27 @@ class ServicesStateTest {
 
 		given(metadata.app()).willReturn(app);
 		given(app.hashLogger()).willReturn(hashLogger);
-		given(networkContext.toString()).willReturn("IMAGINE");
+		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+		given(networkContext.summarizedWith(dualStateAccessor)).willReturn("IMAGINE");
 
 		// when:
 		subject.logSummary();
 
 		// then:
 		verify(hashLogger).logHashesFor(subject);
+		assertEquals("IMAGINE", logCaptor.infoLogs().get(0));
+	}
+
+	@Test
+	void logsSummaryAsExpectedWithNoAppAvailable() {
+		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+
+		given(networkContext.summarized()).willReturn("IMAGINE");
+
+		// when:
+		subject.logSummary();
+
+		// then:
 		assertEquals("IMAGINE", logCaptor.infoLogs().get(0));
 	}
 

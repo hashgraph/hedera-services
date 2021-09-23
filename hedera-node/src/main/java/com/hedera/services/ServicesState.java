@@ -134,7 +134,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	public int getMinimumChildCount(int version) {
 		if (version < StateVersions.RELEASE_0160_VERSION) {
 			return StateChildIndices.NUM_PRE_0160_CHILDREN;
-		} else if (version <= StateVersions.RELEASE_0180_VERSION) {
+		} else if (version <= StateVersions.CURRENT_VERSION) {
 			return StateChildIndices.NUM_POST_0160_CHILDREN;
 		} else {
 			throw new IllegalArgumentException("Argument 'version='" + version + "' is invalid!");
@@ -348,9 +348,12 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	public void logSummary() {
 		if (metadata != null) {
-			metadata.app().hashLogger().logHashesFor(this);
+			final var app = metadata.app();
+			app.hashLogger().logHashesFor(this);
+			log.info(networkCtx().summarizedWith(app.dualStateAccessor()));
+		} else {
+			log.info(networkCtx().summarized());
 		}
-		log.info(networkCtx());
 	}
 
 	public MerkleMap<EntityNum, MerkleAccount> accounts() {

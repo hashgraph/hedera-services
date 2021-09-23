@@ -71,10 +71,11 @@ import static org.mockito.Mockito.times;
 
 @ExtendWith(LogCaptureExtension.class)
 class MerkleNetworkContextTest {
-	private int stateVersion = 13;
-	private long lastScannedEntity = 1000L;
-	private long entitiesTouchedThisSecond = 123L;
-	private long entitiesScannedThisSecond = 123_456L;
+	private final int stateVersion = 13;
+	private final long pendingUpdateFileNum = 150L;
+	private final long lastScannedEntity = 1000L;
+	private final long entitiesTouchedThisSecond = 123L;
+	private final long entitiesScannedThisSecond = 123_456L;
 	private Instant lastMidnightBoundaryCheck;
 	private Instant consensusTimeOfLastHandledTxn;
 	private SequenceNumber seqNo;
@@ -90,7 +91,6 @@ class MerkleNetworkContextTest {
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
-
 	@LoggingSubject
 	private MerkleNetworkContext subject;
 
@@ -122,17 +122,14 @@ class MerkleNetworkContextTest {
 		serdes = mock(DomainSerdes.class, RETURNS_DEEP_STUBS);
 		MerkleNetworkContext.serdes = serdes;
 
-		subject = new MerkleNetworkContext(
-				consensusTimeOfLastHandledTxn,
-				seqNo,
-				lastScannedEntity,
-				midnightRateSet,
-				usageSnapshots,
-				congestionStarts(),
-				stateVersion,
-				entitiesScannedThisSecond,
-				entitiesTouchedThisSecond,
-				lastMidnightBoundaryCheck);
+		subject = new MerkleNetworkContext(consensusTimeOfLastHandledTxn, seqNo, lastScannedEntity, midnightRateSet);
+
+		subject.setUsageSnapshots(usageSnapshots);
+		subject.setCongestionLevelStarts(congestionStarts());
+		subject.setStateVersion(stateVersion);
+		subject.updateAutoRenewSummaryCounts((int) entitiesScannedThisSecond, (int) entitiesTouchedThisSecond);
+		subject.setLastMidnightBoundaryCheck(lastMidnightBoundaryCheck);
+		subject.setPendingUpdateFileNum(pendingUpdateFileNum);
 	}
 
 	@AfterEach
@@ -156,6 +153,7 @@ class MerkleNetworkContextTest {
 		assertEquals(subjectCopy.getStateVersion(), stateVersion);
 		assertEquals(subjectCopy.getEntitiesScannedThisSecond(), entitiesScannedThisSecond);
 		assertEquals(subjectCopy.getEntitiesTouchedThisSecond(), entitiesTouchedThisSecond);
+		assertEquals(subjectCopy.getPendingUpdateFileNum(), pendingUpdateFileNum);
 		// and:
 		assertTrue(subject.isImmutable());
 		assertFalse(subjectCopy.isImmutable());
@@ -263,6 +261,7 @@ class MerkleNetworkContextTest {
 		// and:
 		var desiredWithStateVersion = "The network context (state version 13) is,\n" +
 				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
+				"  Pending maintenance                        :: NONE\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
 				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
 				"  Next entity number                         :: 1234\n" +
@@ -278,6 +277,7 @@ class MerkleNetworkContextTest {
 				"    1970-01-15T06:59:49.000012345Z";
 		var desiredWithoutStateVersion = "The network context (state version <N/A>) is,\n" +
 				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
+				"  Pending maintenance                        :: NONE\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
 				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
 				"  Next entity number                         :: 1234\n" +
@@ -291,9 +291,9 @@ class MerkleNetworkContextTest {
 				"  Congestion level start times are           ::\n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
 				"    1970-01-15T06:59:49.000012345Z";
-
-		var noStateVersionAndNulConsensusHandledTxn = "The network context (state version <N/A>) is,\n" +
+		var desiredWithNoStateVersionOrHandledTxn = "The network context (state version <N/A>) is,\n" +
 				"  Consensus time of last handled transaction :: <N/A>\n" +
+				"  Pending maintenance                        :: NONE\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
 				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
 				"  Next entity number                         :: 1234\n" +
@@ -309,18 +309,17 @@ class MerkleNetworkContextTest {
 				"    1970-01-15T06:59:49.000012345Z";
 
 		// then:
-		assertEquals(desiredWithStateVersion, subject.toString());
+		assertEquals(desiredWithStateVersion, subject.summarized());
 
 		// and when:
 		subject.setStateVersion(MerkleNetworkContext.UNRECORDED_STATE_VERSION);
 		// then:
-		assertEquals(desiredWithoutStateVersion, subject.toString());
+		assertEquals(desiredWithoutStateVersion, subject.summarized());
 
 		// and when:
 		subject.setConsensusTimeOfLastHandledTxn(null);
 		// then:
-		assertEquals(noStateVersionAndNulConsensusHandledTxn, subject.toString());
-
+		assertEquals(desiredWithNoStateVersionOrHandledTxn, subject.summarized());
 	}
 
 	@Test
@@ -666,6 +665,54 @@ class MerkleNetworkContextTest {
 	}
 
 	@Test
+	void deserializeWorksFor0190() throws IOException {
+		// setup:
+		var in = mock(SerializableDataInputStream.class);
+		MerkleNetworkContext.ratesSupplier = () -> midnightRateSet;
+		MerkleNetworkContext.seqNoSupplier = () -> seqNo;
+		InOrder inOrder = inOrder(in, seqNo);
+
+		subject = new MerkleNetworkContext();
+
+		given(in.readInt())
+				.willReturn(usageSnapshots.length)
+				.willReturn(congestionStarts.length)
+				.willReturn(stateVersion);
+		given(in.readLong())
+				.willReturn(usageSnapshots[0].used())
+				.willReturn(usageSnapshots[1].used())
+				.willReturn(lastScannedEntity)
+				.willReturn(entitiesScannedThisSecond)
+				.willReturn(entitiesTouchedThisSecond)
+				.willReturn(pendingUpdateFileNum);
+		given(serdes.readNullableInstant(in))
+				.willReturn(fromJava(consensusTimeOfLastHandledTxn))
+				.willReturn(fromJava(usageSnapshots[0].lastDecisionTime()))
+				.willReturn(fromJava(usageSnapshots[1].lastDecisionTime()))
+				.willReturn(fromJava(congestionStarts[0]))
+				.willReturn(fromJava(congestionStarts[1]))
+				.willReturn(fromJava(lastMidnightBoundaryCheck));
+
+		// when:
+		subject.deserialize(in, MerkleNetworkContext.RELEASE_0190_VERSION);
+
+		// then:
+		assertEquals(lastMidnightBoundaryCheck, subject.lastMidnightBoundaryCheck());
+		assertEquals(consensusTimeOfLastHandledTxn, subject.getConsensusTimeOfLastHandledTxn());
+		assertEquals(entitiesScannedThisSecond, subject.getEntitiesScannedThisSecond());
+		assertEquals(entitiesTouchedThisSecond, subject.getEntitiesTouchedThisSecond());
+		assertArrayEquals(usageSnapshots, subject.usageSnapshots());
+		assertArrayEquals(congestionStarts(), subject.getCongestionLevelStarts());
+		// and:
+		inOrder.verify(seqNo).deserialize(in);
+		inOrder.verify(in).readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class));
+		// and:
+		assertEquals(lastScannedEntity, subject.lastScannedEntity());
+		assertEquals(stateVersion, subject.getStateVersion());
+		assertEquals(pendingUpdateFileNum, subject.getPendingUpdateFileNum());
+	}
+
+	@Test
 	void deserializeWorksForNullInstants() throws IOException {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
@@ -744,6 +791,7 @@ class MerkleNetworkContextTest {
 		inOrder.verify(out).writeLong(entitiesTouchedThisSecond);
 		inOrder.verify(out).writeInt(stateVersion);
 		inOrder.verify(serdes).writeNullableInstant(fromJava(lastMidnightBoundaryCheck), out);
+		inOrder.verify(out).writeLong(pendingUpdateFileNum);
 	}
 
 	@Test
@@ -762,7 +810,7 @@ class MerkleNetworkContextTest {
 
 	@Test
 	void sanityChecks() {
-		assertEquals(MerkleNetworkContext.MERKLE_VERSION, subject.getVersion());
+		assertEquals(MerkleNetworkContext.CURRENT_VERSION, subject.getVersion());
 		assertEquals(MerkleNetworkContext.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 

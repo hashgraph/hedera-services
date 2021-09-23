@@ -219,10 +219,15 @@ public class SystemOpPolicies {
 		} else if (payer == entityNums.accounts().feeSchedulesAdmin()) {
 			return nonAccountSystemEntity == entityNums.files().feeSchedules();
 		} else if (payer == entityNums.accounts().freezeAdmin()) {
-			return nonAccountSystemEntity == entityNums.files().softwareUpdateZip();
+			return canFreezeAdminUpdate(nonAccountSystemEntity);
 		} else {
 			return false;
 		}
+	}
+
+	private boolean canFreezeAdminUpdate(long entity) {
+		return entityNums.files().firstSoftwareUpdateFile() <= entity &&
+				entity <= entityNums.files().lastSoftwareUpdateFile();
 	}
 
 	private boolean canExchangeRatesAdminUpdate(long entity) {

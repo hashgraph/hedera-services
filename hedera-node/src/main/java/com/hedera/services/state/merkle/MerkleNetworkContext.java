@@ -21,6 +21,7 @@ package com.hedera.services.state.merkle;
  */
 
 import com.hedera.services.fees.FeeMultiplierSource;
+import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
@@ -29,6 +30,7 @@ import com.hedera.services.throttling.FunctionalityThrottling;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.platform.state.DualStateImpl;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -37,18 +39,21 @@ import java.time.Instant;
 import java.util.List;
 import java.util.function.Supplier;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 import static java.util.stream.Collectors.toList;
 
 public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private static final Logger log = LogManager.getLogger(MerkleNetworkContext.class);
 
-	static final int UNRECORDED_STATE_VERSION = -1;
+	public static final int UNRECORDED_STATE_VERSION = -1;
+	public static final int NO_PENDING_UPDATE_FILE_NUM = -1;
 
 	static final int RELEASE_0130_VERSION = 2;
 	static final int RELEASE_0140_VERSION = 3;
 	static final int RELEASE_0150_VERSION = 4;
-	static final int MERKLE_VERSION = RELEASE_0150_VERSION;
+	static final int RELEASE_0190_VERSION = 5;
+	static final int CURRENT_VERSION = RELEASE_0150_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d4aa0f0a968a9f3L;
 	static final Instant[] NO_CONGESTION_STARTS = new Instant[0];
 	static final DeterministicThrottle.UsageSnapshot[] NO_SNAPSHOTS = new DeterministicThrottle.UsageSnapshot[0];
@@ -68,6 +73,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private long lastScannedEntity;
 	private long entitiesScannedThisSecond = 0L;
 	private long entitiesTouchedThisSecond = 0L;
+	private long pendingUpdateFileNum = NO_PENDING_UPDATE_FILE_NUM;
 	private FeeMultiplierSource multiplierSource = null;
 	private FunctionalityThrottling throttling = null;
 	private DeterministicThrottle.UsageSnapshot[] usageSnapshots = NO_SNAPSHOTS;
@@ -89,7 +95,20 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.midnightRates = midnightRates;
 	}
 
-	/* Used by copy() */
+	public MerkleNetworkContext(MerkleNetworkContext that) {
+		this.consensusTimeOfLastHandledTxn = that.consensusTimeOfLastHandledTxn;
+		this.seqNo = that.seqNo.copy();
+		this.lastScannedEntity = that.lastScannedEntity;
+		this.midnightRates = that.midnightRates.copy();
+		this.usageSnapshots = that.usageSnapshots;
+		this.congestionLevelStarts = that.congestionLevelStarts;
+		this.stateVersion = that.stateVersion;
+		this.entitiesScannedThisSecond = that.entitiesScannedThisSecond;
+		this.entitiesTouchedThisSecond = that.entitiesTouchedThisSecond;
+		this.lastMidnightBoundaryCheck = that.lastMidnightBoundaryCheck;
+		this.pendingUpdateFileNum = that.pendingUpdateFileNum;
+	}
+
 	public MerkleNetworkContext(
 			Instant consensusTimeOfLastHandledTxn,
 			SequenceNumber seqNo,
@@ -160,6 +179,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	public void syncMultiplierSource(FeeMultiplierSource multiplierSource) {
 		this.multiplierSource = multiplierSource;
 	}
+
 	public void setConsensusTimeOfLastHandledTxn(Instant consensusTimeOfLastHandledTxn) {
 		throwIfImmutable("Cannot set consensus time of last transaction on an immutable context");
 		this.consensusTimeOfLastHandledTxn = consensusTimeOfLastHandledTxn;
@@ -189,17 +209,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 		setImmutable(true);
 
-		return new MerkleNetworkContext(
-				consensusTimeOfLastHandledTxn,
-				seqNo.copy(),
-				lastScannedEntity,
-				midnightRates.copy(),
-				usageSnapshots,
-				congestionLevelStarts,
-				stateVersion,
-				entitiesScannedThisSecond,
-				entitiesTouchedThisSecond,
-				lastMidnightBoundaryCheck);
+		return new MerkleNetworkContext(this);
 	}
 
 	@Override
@@ -214,12 +224,14 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		if (version >= RELEASE_0130_VERSION) {
 			readCongestionControlData(in);
 		}
-
 		if (version >= RELEASE_0140_VERSION) {
 			whenVersionHigherOrEqualTo0140(in);
 		}
 		if (version >= RELEASE_0150_VERSION) {
 			whenVersionHigherOrEqualTo0150(in);
+		}
+		if (version >= RELEASE_0190_VERSION) {
+			pendingUpdateFileNum = in.readLong();
 		}
 	}
 
@@ -278,6 +290,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		out.writeLong(entitiesTouchedThisSecond);
 		out.writeInt(stateVersion);
 		serdes.writeNullableInstant(fromJava(lastMidnightBoundaryCheck), out);
+		out.writeLong(pendingUpdateFileNum);
 	}
 
 	@Override
@@ -287,16 +300,31 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	@Override
 	public int getVersion() {
-		return MERKLE_VERSION;
+		return CURRENT_VERSION;
 	}
 
-	@Override
-	public String toString() {
+	public String summarized() {
+		return summarizedWith(null);
+	}
+
+	public String summarizedWith(DualStateAccessor dualStateAccessor) {
+		final var freezeTime = dualStateAccessor == null
+				? null
+				: ((DualStateImpl)dualStateAccessor.getDualState()).getFreezeTime();
+		final var pendingUpdateDesc = pendingUpdateFileNum != NO_PENDING_UPDATE_FILE_NUM
+				? " update from file " + STATIC_PROPERTIES.scopedIdLiteralWith(pendingUpdateFileNum)
+				: " no update";
+		final var pendingMaintenanceDesc = freezeTime == null
+				? "NONE"
+				: "at freeze time " + freezeTime + " with " + pendingUpdateDesc;
+
 		var sb = new StringBuilder("The network context (state version ")
 				.append(stateVersion == UNRECORDED_STATE_VERSION ? "<N/A>" : stateVersion)
 				.append(") is,")
 				.append("\n  Consensus time of last handled transaction :: ")
 				.append(reprOf(consensusTimeOfLastHandledTxn))
+				.append("\n  Pending maintenance                        :: ")
+				.append(pendingMaintenanceDesc)
 				.append("\n  Midnight rate set                          :: ")
 				.append(midnightRates.readableRepr())
 				.append("\n  Last midnight boundary check               :: ")
@@ -319,6 +347,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		for (var start : congestionLevelStarts) {
 			sb.append("\n    ").append(reprOf(start));
 		}
+
 		return sb.toString();
 	}
 
@@ -417,6 +446,14 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return consensusTime == null ? "<N/A>" : consensusTime.toString();
 	}
 
+	public long getPendingUpdateFileNum() {
+		return pendingUpdateFileNum;
+	}
+
+	public void setPendingUpdateFileNum(long pendingUpdateFileNum) {
+		this.pendingUpdateFileNum = pendingUpdateFileNum;
+	}
+
 	/* Only used for unit tests */
 	void setCongestionLevelStarts(Instant[] congestionLevelStarts) {
 		this.congestionLevelStarts = congestionLevelStarts;
@@ -444,7 +481,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	public void setSeqNo(SequenceNumber seqNo) {
 		this.seqNo = seqNo;
-        }
+	}
 
 	FeeMultiplierSource getMultiplierSource() {
 		return multiplierSource;
