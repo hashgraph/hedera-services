@@ -1,5 +1,6 @@
 package com.hedera.services.state.jasperdb.files;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.state.jasperdb.collections.ImmutableIndexedObjectList;
 import com.hedera.services.state.jasperdb.collections.ImmutableIndexedObjectListUsingArray;
 import com.hedera.services.state.jasperdb.collections.ThreeLongsList;
@@ -22,34 +23,52 @@ import java.util.stream.Collectors;
 import static com.hedera.services.state.jasperdb.files.DataFileCommon.*;
 
 /**
- * DataFileCollection manages a set of data files and the compaction of them over time. It stores key,value pairs and
- * returns a long representing the location it was stored. You can then retrieve that key/value pair later using the
- * location you got when storing. There is not understanding of what the keys mean and no way to look up data by key.
- * The reason the keys are separate from the values is so that we can merge matching keys. We only keep the newest
- * key/value pair for any matching key. It may look like a map, but it is not. You need an external index outside this
- * class to be able to store key -> data location mappings.
+ * DataFileCollection manages a set of data files and the compaction of them over time. It stores data items which are
+ * key,value pairs and returns a long representing the location it was stored. You can then retrieve that data item
+ * later using the location you got when storing. There is not understanding of what the keys mean and no way to look
+ * up data by key. The reason the keys are separate from the values is so that we can merge data items with matching
+ * keys. We only keep the newest data item for any matching key. It may look like a map, but it is not. You need an
+ * external index outside this class to be able to store key -> data location mappings.
+ * <p>
+ * The keys are assumed to be a contiguous block of long values. We do not have an explicit way of deleting data, we
+ * depend on the range of valid keys. Any data items with keys outside the current valid range will be deleted the next
+ * time they are merged. This works for our VirtualMap use cases where the key is always a path and there is a valid
+ * range of path keys for internal and leaf nodes. It allows very easy and efficient deleting without the need to
+ * maintain a list of deleted keys.
  *
  * @param <D> type for data items
  */
 @SuppressWarnings({"unused", "unchecked"})
 public class DataFileCollection<D> {
+    /** The directory to store data files */
     private final Path storeDir;
+    /** Base name for the data files, allowing more than one DataFileCollection to share a directory */
     private final String storeName;
+    /** Serializer responsible for serializing/deserializing data items into and out of files */
     private final DataItemSerializer<D> dataItemSerializer;
+    /** True if this DataFileCollection was loaded from an existing set of files */
     private final boolean loadedFromExistingFiles;
+    /** The index to use for the next file we create */
     private final AtomicInteger nextFileIndex = new AtomicInteger();
+    /** The minimum valid data item key for data currently stored by this data file collection */
     private final AtomicLong minimumValidKey = new AtomicLong();
+    /** The maximum valid data item key for data currently stored by this data file collection */
     private final AtomicLong maximumValidKey = new AtomicLong();
+    /** The list of current files in this data file collection */
     private final AtomicReference<ImmutableIndexedObjectList<DataFileReader<D>>> indexedFileList = new AtomicReference<>();
+    /** The current open file writer, if we are in the middle of writing a new file or null if not writing */
     private final AtomicReference<DataFileWriter<D>> currentDataFileWriter = new AtomicReference<>();
+    /** The instant in time when we did the last merge, used to track how long it has been till */
     private final AtomicReference<Instant> lastMerge = new AtomicReference<>(Instant.ofEpochSecond(0));
 
     /**
      * Construct a new DataFileCollection with custom DataFileReaderFactory
      *
      * @param storeDir The directory to store data files
-     * @param storeName Name for the data files, allowing more than one DataFileCollection to share a directory
-     * @param loadedDataCallback call back for rebuilding indexes from existing files, can be null if not needed.
+     * @param storeName Base name for the data files, allowing more than one DataFileCollection to share a directory
+     * @param dataItemSerializer Serializer responsible for serializing/deserializing data items into and out of files.
+     * @param loadedDataCallback Callback for rebuilding indexes from existing files, can be null if not needed. Using
+     *                           this is expensive as it requires all files to be read and parsed.
      * @throws IOException If there was a problem creating new data set or opening existing one
      */
     public DataFileCollection(Path storeDir, String storeName,
@@ -109,10 +128,22 @@ public class DataFileCollection<D> {
         }
     }
 
+    /**
+     * Get the minimum valid data item key for data currently stored by this data file collection. Any data items with
+     * keys below this can be deleted during a merge.
+     *
+     * @return Minimum valid key, keep this key up to and including getMaximumValidKey()
+     */
     public long getMinimumValidKey() {
         return minimumValidKey.get();
     }
 
+    /**
+     * Get the maximum valid data item key for data currently stored by this data file collection. Any data items with
+     * keys above this can be deleted during a merge.
+     *
+     * @return maximum valid key, keep this key down to and including getMinimumValidKey()
+     */
     public long getMaximumValidKey() {
         return maximumValidKey.get();
     }
@@ -407,6 +438,7 @@ public class DataFileCollection<D> {
      * @param index data file index
      * @return the data file if one exists at that index
      */
+    @VisibleForTesting
     DataFileReader<D> getDataFile(int index) {
         final var fileList = this.indexedFileList.get();
         return fileList == null ? null : fileList.get(index);

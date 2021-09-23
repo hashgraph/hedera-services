@@ -17,18 +17,19 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 
-import static com.hedera.services.state.jasperdb.files.DataFileCommon.*;
+import static com.hedera.services.state.jasperdb.files.DataFileCommon.getTotalFilesSizeMb;
+import static com.hedera.services.state.jasperdb.files.DataFileCommon.getTotalFilesSizeMbByPath;
 
 /**
  * This is a hash map implementation where the bucket index is in RAM and the buckets are on disk. It maps a VirtualKey
  * to a long value. This allows very large maps with minimal RAM usage and the best performance profile as by using an
  * in memory index we avoid the need for random disk writes. Random disk writes are horrible performance wise in our
  * testing.
- *
+ * <p>
  * This implementation depends on good hashCode() implementation on the keys, if there are too many hash collisions the
  * performance can get bad.
- *
- * IMPORTANT: This implementation assumes a single writing thread. There can be multiple readers while writing is happening.
+ * <p>
+ * <b>IMPORTANT: This implementation assumes a single writing thread. There can be multiple readers while writing is happening.</b>
  */
 public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
     /**
@@ -104,7 +105,8 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
         final int entrySize = KEY_HASHCODE_SIZE + keySizeForCalculations + VALUE_SIZE;
         entriesPerBucket = ((BUCKET_SIZE -BUCKET_HEADER_SIZE) / entrySize);
         minimumBuckets = (int)Math.ceil(((double)mapSize/LOADING_FACTOR)/entriesPerBucket);
-        numOfBuckets = Math.max(4096,Integer.highestOneBit(minimumBuckets)*2); // nearest greater power of two with a min of 4096
+        // numOfBuckets is the nearest power of two greater than minimumBuckets with a min of 4096
+        numOfBuckets = Math.max(4096,Integer.highestOneBit(minimumBuckets)*2);
         // create file collection
         fileCollection = new DataFileCollection<>(storeDir,storeName, bucketSerializer,
                 (key, dataLocation, dataValue) -> bucketIndexToBucketLocation.put(key,dataLocation));
@@ -338,5 +340,4 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
     private int computeBucketIndex(int keyHash) {
         return (numOfBuckets-1) & keyHash;
     }
-
 }

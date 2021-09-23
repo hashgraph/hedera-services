@@ -94,7 +94,7 @@ public class DataFileOutputStream extends SerializableDataOutputStream {
          * @throws  NullPointerException if {@code out} is {@code null}.
          * @throws  IOException if an I/O error occurs.
          */
-        public synchronized void writeTo(ByteBuffer byteBuffer) throws IOException {
+        public synchronized void writeTo(ByteBuffer byteBuffer) {
             byteBuffer.put(Objects.requireNonNull(buf), 0, count);
         }
     }

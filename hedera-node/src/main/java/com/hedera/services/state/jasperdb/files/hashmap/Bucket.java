@@ -12,16 +12,18 @@ import static com.hedera.services.state.jasperdb.files.hashmap.HalfDiskHashMap.*
  * Class for accessing the data in a bucket. This is designed to be used from a single thread.
  * <p>
  * Each bucket has a header containing:
- * - int - Bucket index in map hash index
- * - int - Count of keys stored
- * - long - pointer to next bucket if this one is full. TODO implement this
- * - Entry[] - array of entries
+ * <ul>
+ *     <li><b>int</b> - Bucket index in map hash index</li>
+ *     <li><b>long</b>  - pointer to next bucket if this one is full. TODO implement this</li>
+ *     <li><b>Entry[]</b>  - array of entries</li>
+ * </ul>
  * <p>
  * Each Entry contains:
- * - KEY_HASHCODE_SIZE(int/long) - key hash code
- * - value - the value of the key/value pair. It is here because it is fixed size
- * - optional int - key serialization version
- * - key data - can be fixed size of entryKeySize or variable size
+ * <ul>
+ *     <li><b>KEY_HASHCODE_SIZE(int/long)</b>  - key hash code</li>
+ *     <li><b>value</b>  - the value of the key/value pair. It is here because it is fixed size</li>
+ *     <li><b>key data</b>  - can be fixed size of entryKeySize or variable size</li>
+ * </ul>
  */
 @SuppressWarnings("unused")
 public final class Bucket<K extends VirtualKey> {
@@ -195,6 +197,9 @@ public final class Bucket<K extends VirtualKey> {
         }
     }
 
+    // =================================================================================================================
+    // Private API
+
     /**
      * Find the offset in bucket for an entry matching the given key, if not found then just return the offset for
      * the end of all entries.
@@ -302,5 +307,22 @@ public final class Bucket<K extends VirtualKey> {
             sb.append(String.format("%02X ", b).toUpperCase());
         }
         return sb.toString();
+    }
+
+
+    // =================================================================================================================
+    // FindResult class
+
+    /**
+     * Simple struct style data class for allowing return of two things
+     */
+    private static class FindResult {
+        public final int entryOffset;
+        public final boolean found;
+
+        public FindResult(int entryOffset, boolean found) {
+            this.entryOffset = entryOffset;
+            this.found = found;
+        }
     }
 }

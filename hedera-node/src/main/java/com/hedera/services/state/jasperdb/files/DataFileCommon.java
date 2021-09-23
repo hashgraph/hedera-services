@@ -1,7 +1,6 @@
 package com.hedera.services.state.jasperdb.files;
 
 import com.hedera.services.state.jasperdb.collections.LongList;
-import com.hedera.services.state.jasperdb.files.hashmap.Bucket;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
@@ -15,7 +14,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Common static content for data files.
+ * Common static content for data files. As much as possible is package protected but some is used outside.
  */
 @SuppressWarnings("rawtypes")
 public class DataFileCommon {
@@ -23,8 +22,12 @@ public class DataFileCommon {
     public static final long MB = 1024*1024;
     /** Data size constant used when the data size is variable */
     public static final int VARIABLE_DATA_SIZE = -1;
-    /** This is the size of the header written for each variable size data item to store its size */
-    public static final int SIZE_OF_DATA_ITEM_SIZE_IN_FILE = Integer.BYTES;
+    /**
+     * Nominal value to indicate a non-existent data location. This was carefully crafted to be 0 so that a new long
+     * array of data location pointers will be initialized to be all non-existent.
+     */
+    public static long NON_EXISTENT_DATA_LOCATION = 0;
+
     /**
      * The data item byte offset is packed into lower 40 bits and file index upper 24 bits.
      * This allows for 16 million files 1 trillion bytes of data.
@@ -39,11 +42,6 @@ public class DataFileCommon {
     static final long MAX_ADDRESSABLE_DATA_FILE_SIZE_BYTES = 1L << DATA_ITEM_OFFSET_BITS;
     /** Bit mask to remove file index from data location long */
     static final long ITEM_OFFSET_MASK = MAX_ADDRESSABLE_DATA_FILE_SIZE_BYTES -1;
-    /**
-     * Nominal value to indicate a non-existent data location. This was carefully crafted to be 0 so that a new long
-     * array of data location pointers will be initialized to be all non-existent.
-     */
-    public static long NON_EXISTENT_DATA_LOCATION = 0;
     /** Just a handy constant for one GB */
     static final long GB = 1024*1024*1024;
     /**
@@ -159,14 +157,21 @@ public class DataFileCommon {
      * @param byteOffset the offset for the data within the file in bytes
      * @return packed data location
      */
-    public static long dataLocation(int fileIndex, long byteOffset) {
+    static long dataLocation(int fileIndex, long byteOffset) {
         // we add 1 to file index so that 0 works for NON_EXISTENT_DATA_LOCATION
         final long indexShifted = (long) (fileIndex + 1) << DATA_ITEM_OFFSET_BITS;
         final long byteOffsetMasked = byteOffset & ITEM_OFFSET_MASK;
         return indexShifted | byteOffsetMasked;
     }
 
-    public static String dataLocationToString(long dataLocation) {
+    /**
+     * Get a friendly string with the disk data location split into its file and offset parts. Very useful for
+     * debugging and logging.
+     *
+     * @param dataLocation Packed disk location containing file and offset.
+     * @return String with split file and offset
+     */
+    static String dataLocationToString(long dataLocation) {
         return "{"+fileIndexFromDataLocation(dataLocation)+","+byteOffsetFromDataLocation(dataLocation)+"}";
     }
 
@@ -176,7 +181,7 @@ public class DataFileCommon {
      * @param dataLocation packed data location
      * @return file index
      */
-   public static int fileIndexFromDataLocation(long dataLocation) {
+    static int fileIndexFromDataLocation(long dataLocation) {
         // we subtract 1 from file index so that 0 works for NON_EXISTENT_DATA_LOCATION
         return (int)(dataLocation >> DATA_ITEM_OFFSET_BITS) - 1;
     }
@@ -187,7 +192,7 @@ public class DataFileCommon {
      * @param dataLocation packed data location
      * @return data offset in bytes
      */
-    public static long byteOffsetFromDataLocation(long dataLocation) {
+    static long byteOffsetFromDataLocation(long dataLocation) {
         return dataLocation & ITEM_OFFSET_MASK;
     }
 
@@ -208,7 +213,7 @@ public class DataFileCommon {
     /**
      * print debug info showing if all links in index are still valid
      */
-    public static <D> void printDataLinkValidation(LongList index, List<DataFileReader<D>> fileList) {
+    static <D> void printDataLinkValidation(LongList index, List<DataFileReader<D>> fileList) {
         System.out.println("DataFileCommon.printDataLinkValidation");
         SortedSet<Integer> validFileIds = new TreeSet<>();
         for(var file:fileList) validFileIds.add(file.getMetadata().getIndex());

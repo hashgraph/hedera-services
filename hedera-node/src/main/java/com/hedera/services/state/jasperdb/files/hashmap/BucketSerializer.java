@@ -10,6 +10,11 @@ import java.nio.ByteBuffer;
 
 import static com.hedera.services.state.jasperdb.files.hashmap.HalfDiskHashMap.BUCKET_SIZE;
 
+/**
+ * Serializer for writing buckets into a DataFile.
+ *
+ * @param <K> The map key type stored in the buckets
+ */
 public class BucketSerializer<K extends VirtualKey> implements DataItemSerializer<Bucket<K>> {
     /** Temporary bucket buffers. */
     private final ThreadLocal<Bucket<K>> reusableBuckets;
