@@ -50,11 +50,10 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.store.models.TokenConversion.mapMerkleAccountsToModel;
-import static com.hedera.services.store.models.TokenConversion.mapMerkleToModel;
-import static com.hedera.services.store.models.TokenConversion.mapModelToMerkle;
-import static com.hedera.services.store.models.TokenConversion.mapUniqueTokenModelFields;
+import static com.hedera.services.store.models.TokenConversion.fromMerkle;
+import static com.hedera.services.store.models.TokenConversion.fromMerkleUnique;
+import static com.hedera.services.store.models.TokenConversion.fromToken;
+import static com.hedera.services.store.models.TokenConversion.fromUniqueToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -253,11 +252,7 @@ public class TypedTokenStore {
 
 		validateUsable(merkleToken);
 
-		final var token = new Token(id);
-		mapMerkleAccountsToModel(token, merkleToken.treasury(), merkleToken.autoRenewAccount(), accountStore);
-		mapMerkleToModel(merkleToken, token);
-
-		return token;
+		return loadTokenFromMerkle(merkleToken, id);
 	}
 
 	/**
@@ -272,16 +267,15 @@ public class TypedTokenStore {
 	 * 		if the requested token class is missing, deleted, or expired and pending removal
 	 */
 	public void loadUniqueTokens(Token token, List<Long> serialNumbers) {
-		final var tokenNum = EntityNum.fromModel(token.getId());
+		final var tokenId = token.getId();
+		final var tokenNum = EntityNum.fromModel(tokenId);
 		final var loadedUniqueTokens = new HashMap<Long, UniqueToken>();
 		final var curUniqueTokens = uniqueTokens.get();
 		for (long serialNumber : serialNumbers) {
 			final var uniqueTokenKey = EntityNumPair.fromLongs(tokenNum.longValue(), serialNumber);
 			final var merkleUniqueToken = curUniqueTokens.get(uniqueTokenKey);
 			validateUsable(merkleUniqueToken);
-			final var uniqueToken = new UniqueToken(token.getId(), serialNumber);
-			mapUniqueTokenModelFields(uniqueToken, merkleUniqueToken);
-			loadedUniqueTokens.put(serialNumber, uniqueToken);
+			loadedUniqueTokens.put(serialNumber, fromMerkleUnique(merkleUniqueToken, tokenId, serialNumber));
 		}
 		token.setLoadedUniqueTokens(loadedUniqueTokens);
 	}
@@ -298,15 +292,13 @@ public class TypedTokenStore {
 		final var key = EntityNum.fromModel(id);
 		final var merkleToken = tokens.get().get(key);
 
-		final var token = new Token(id);
 		if (merkleToken != null) {
-			mapMerkleAccountsToModel(token, merkleToken.treasury(), merkleToken.autoRenewAccount(), accountStore);
-			mapMerkleToModel(merkleToken, token);
+			return loadTokenFromMerkle(merkleToken, id);
 		} else {
+			final var token = new Token(id);
 			token.markAutoRemoved();
+			return token;
 		}
-
-		return token;
 	}
 
 	/**
@@ -323,11 +315,7 @@ public class TypedTokenStore {
 		final var merkleToken = tokens.get().get(key);
 
 		validateUsable(merkleToken, code);
-
-		final var token = new Token(id);
-		mapMerkleAccountsToModel(token, merkleToken.treasury(), merkleToken.autoRenewAccount(), accountStore);
-		mapMerkleToModel(merkleToken, token);
-		return token;
+		return loadTokenFromMerkle(merkleToken, id);
 	}
 
 	/**
@@ -344,7 +332,7 @@ public class TypedTokenStore {
 		/* Note: this variable must be extracted BEFORE the mapping!! */
 		final var oldTreasury = mutableToken.treasury().asId().asGrpcAccount();
 
-		mapModelToMerkle(token, mutableToken);
+		fromToken(token, mutableToken);
 
 		final var treasury = mutableToken.treasury();
 		if (token.hasMintedUniqueTokens()) {
@@ -381,23 +369,19 @@ public class TypedTokenStore {
 	public void persistNew(Token token) {
 		/* create new merkle token */
 		final var newMerkleTokenId = EntityNum.fromLong(token.getId().getNum());
-		final var newMerkleToken = new MerkleToken(
-				token.getExpiry(),
-				token.getTotalSupply(),
-				token.getDecimals(),
-				token.getSymbol(),
-				token.getName(),
-				token.isFrozenByDefault(),
-				!token.hasKycKey(),
-				token.getTreasury().getId().asEntityId()
-		);
-		/* map changes */
-		mapModelToMerkle(token, newMerkleToken);
+		final var newMerkleToken = fromToken(token);
 
 		tokens.get().put(newMerkleTokenId, newMerkleToken);
 		addKnownTreasury.perform(token.getTreasury().getId().asGrpcAccount(), token.getId().asGrpcToken());
 
 		transactionRecordService.includeChangesToToken(token);
+	}
+
+	private Token loadTokenFromMerkle(final MerkleToken merkleToken, Id id) {
+		var treasuryAccount = accountStore.loadAccount(merkleToken.treasury().asId());
+		var autoRenewAccount = merkleToken.hasAutoRenewAccount() ?
+				accountStore.loadAccount(merkleToken.autoRenewAccount().asId()) : null;
+		return fromMerkle(merkleToken, id, treasuryAccount, autoRenewAccount);
 	}
 
 	private void destroyRemoved(List<UniqueToken> nfts, EntityId treasury) {
@@ -417,8 +401,7 @@ public class TypedTokenStore {
 		final var curNfts = uniqueTokens.get();
 		for (var nft : nfts) {
 			final var merkleNftId = EntityNumPair.fromLongs(nft.getTokenId().getNum(), nft.getSerialNumber());
-			final var merkleNft = new MerkleUniqueToken(MISSING_ENTITY_ID, nft.getMetadata(), nft.getCreationTime());
-			curNfts.put(merkleNftId, merkleNft);
+			curNfts.put(merkleNftId, fromUniqueToken(nft));
 			uniqTokenViewsManager.mintNotice(merkleNftId, treasury);
 		}
 	}

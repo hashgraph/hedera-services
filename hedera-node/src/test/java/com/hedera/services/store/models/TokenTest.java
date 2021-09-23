@@ -162,7 +162,7 @@ class TokenTest {
 		assertTrue(subject.hasUpdatedTreasury());
 		assertFalse(subject.isFungibleCommon());
 		assertTrue(subject.isNonFungibleUnique());
-		
+
 		assertNotNull(subject.getSupplyKey());
 		assertNotNull(subject.getFeeScheduleKey());
 		assertNotNull(subject.getWipeKey());
@@ -273,8 +273,40 @@ class TokenTest {
 		assertEquals(123L, subject.getExpiry());
 		assertEquals(TokenSupplyType.FINITE, subject.getSupplyType());
 		assertNotNull(subject.getFeeScheduleKey());
+		assertTrue(subject.isKycGrantedByDefault());
 		assertTrue(subject.isFungibleCommon());
 		assertFalse(subject.isNonFungibleUnique());
+	}
+
+	@Test
+	void setKycGrantedByDefaultFalseIfKycKeyPresent() {
+		final var kycKey = TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT.asKey();
+		final var op = TransactionBody.newBuilder()
+				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
+						.setTokenType(com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON)
+						.setInitialSupply(25)
+						.setMaxSupply(21_000_000)
+						.setSupplyType(com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE)
+						.setDecimals(10)
+						.setFreezeDefault(false)
+						.setMemo("the mother")
+						.setName("bitcoin")
+						.setSymbol("BTC")
+						.setKycKey(kycKey)
+						.setAutoRenewAccount(nonTreasuryAccount.getId().asGrpcAccount())
+						.setExpiry(Timestamp.newBuilder().setSeconds(1000L).build())
+						.build())
+				.build();
+
+		subject = Token.fromGrpcOpAndMeta(id, op.getTokenCreation(), treasuryAccount, nonTreasuryAccount, 123);
+
+		assertEquals("bitcoin", subject.getName());
+		assertEquals("the mother", subject.getMemo());
+		assertEquals("BTC", subject.getSymbol());
+		assertEquals(123L, subject.getExpiry());
+		assertEquals(TokenSupplyType.FINITE, subject.getSupplyType());
+		assertNotNull(subject.getKycKey());
+		assertFalse(subject.isKycGrantedByDefault());
 	}
 
 	@Test
@@ -666,7 +698,9 @@ class TokenTest {
 		subject.setLastUsedSerialNumber(1);
 		assertEquals(1, subject.getLastUsedSerialNumber());
 		subject.setFrozenByDefault(false);
+		subject.setKycGrantedByDefault(false);
 		assertFalse(subject.isFrozenByDefault());
+		assertFalse(subject.isKycGrantedByDefault());
 
 		final var wipeKey = TxnHandlingScenario.TOKEN_WIPE_KT.asJKeyUnchecked();
 		subject.setWipeKey(wipeKey);
@@ -698,7 +732,7 @@ class TokenTest {
 		final var desired = "Token{id=Id{shard=1, realm=2, num=3}, type=null, deleted=false, autoRemoved=false, " +
 				"treasury=Account{id=Id{shard=0, realm=0, num=0}, expiry=0, balance=0, deleted=false, tokens=<N/A>, " +
 				"ownedNfts=0, alreadyUsedAutoAssociations=0, maxAutoAssociations=0}, autoRenewAccount=null, " +
-				"kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, currentSerialNumber=0}";
+				"kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, kycGrantedByDefault=false, supplyKey=<N/A>, currentSerialNumber=0}";
 
 		assertEquals(desired, subject.toString());
 	}

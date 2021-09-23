@@ -20,7 +20,10 @@ package com.hedera.services.store.models;
  * ‍
  */
 
+import com.google.common.base.MoreObjects;
 import com.hedera.services.state.submerkle.RichInstant;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * Encapsulates the state and operations of a Hedera Unique token.
@@ -92,5 +95,29 @@ public class UniqueToken {
 
 	public void setMetadata(byte[] metadata) {
 		this.metadata = metadata;
+	}
+
+	/* NOTE: The object methods below are only overridden to improve
+		readability of unit tests; this model object is not used in hash-based
+		collections, so the performance of these methods doesn't matter. */
+	@Override
+	public boolean equals(Object obj) {
+		return EqualsBuilder.reflectionEquals(this, obj);
+	}
+
+	@Override
+	public int hashCode() {
+		return HashCodeBuilder.reflectionHashCode(this);
+	}
+
+	@Override
+	public String toString() {
+		return MoreObjects.toStringHelper(UniqueToken.class)
+				.add("owner", owner)
+				.add("tokenId", tokenId)
+				.add("serialNum", serialNumber)
+				.add("creationTime", creationTime)
+				.add("metadata", metadata)
+				.toString();
 	}
 }
