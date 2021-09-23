@@ -43,9 +43,11 @@ import com.hedera.services.usage.token.TokenOpsUsageUtils;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.ExtantTokenContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.services.usage.token.meta.TokenAssociateMeta;
 import com.hedera.services.usage.token.meta.TokenBurnMeta;
 import com.hedera.services.usage.token.meta.TokenCreateMeta;
 import com.hedera.services.usage.token.meta.TokenDeleteMeta;
+import com.hedera.services.usage.token.meta.TokenDissociateMeta;
 import com.hedera.services.usage.token.meta.TokenGrantKycMeta;
 import com.hedera.services.usage.token.meta.TokenMintMeta;
 import com.hedera.services.usage.token.meta.TokenRevokeKycMeta;
@@ -80,9 +82,11 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTrans
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
@@ -366,6 +370,41 @@ class AccessorBasedUsagesTest {
 
 		// then:
 		verify(tokenOpsUsage).tokenRevokeKycUsage(sigUsage, baseMeta, tokenRevokeKycMeta, accumulator);
+	}
+
+
+	@Test
+	void worksAsExpectedForTokenAssociate() {
+		// setup:
+		final var baseMeta = new BaseTransactionMeta(100, 2);
+		final var tokenAssociateMeta = new TokenAssociateMeta(96, 2);
+		final var accumulator = new UsageAccumulator();
+		given(txnAccessor.getFunction()).willReturn(TokenAssociateToAccount);
+		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
+		given(txnAccessor.getSpanMapAccessor().getTokenAssociateMeta(any())).willReturn(tokenAssociateMeta);
+		tokenAssociateMeta.setRelativeLifeTime(777_600L);
+		// when:
+		subject.assess(sigUsage, txnAccessor, accumulator);
+
+		// then:
+		verify(tokenOpsUsage).tokenAssociateUsage(sigUsage, baseMeta, tokenAssociateMeta, accumulator);
+	}
+
+	@Test
+	void worksAsExpectedForTokenDissociate() {
+		// setup:
+		final var baseMeta = new BaseTransactionMeta(100, 2);
+		final var tokenDissociateMeta = new TokenDissociateMeta(196);
+		final var accumulator = new UsageAccumulator();
+		given(txnAccessor.getFunction()).willReturn(TokenDissociateFromAccount);
+		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
+		given(txnAccessor.getSpanMapAccessor().getTokenDissociateMeta(any())).willReturn(tokenDissociateMeta);
+
+		// when:
+		subject.assess(sigUsage, txnAccessor, accumulator);
+
+		// then:
+		verify(tokenOpsUsage).tokenDissociateUsage(sigUsage, baseMeta, tokenDissociateMeta, accumulator);
 	}
 
 

@@ -26,12 +26,14 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKeyList;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.FixedFeeSpec;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.ExtantTokenContext;
+import com.hedera.services.usage.token.meta.TokenAssociateMeta;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
@@ -42,6 +44,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -61,6 +64,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -73,6 +77,7 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQ
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
@@ -111,9 +116,14 @@ class OpUsageCtxHelperTest {
 	@Mock
 	private StateView workingView;
 	@Mock
+	private MerkleMap<EntityNum, MerkleAccount>  accounts;
+
+	@Mock
 	private TransactionBody txnBody;
 	@Mock
 	private TokenUpdateTransactionBody tokenUpdateTxnBody;
+	@Mock
+	private MerkleAccount merkleAccount;
 
 	@Mock(answer = Answers.RETURNS_DEEP_STUBS)
 	private SignedTxnAccessor accessor;
@@ -293,6 +303,40 @@ class OpUsageCtxHelperTest {
 		assertEquals(0, ctx.getExistingExpiry());
 	}
 
+	@Test
+	void updateTokenAssociateMetaWithRealAccountWorks() {
+		final var op = getTokenAssociateOp();
+		final var txn = getTxnBody(op);
+		final var tokenAssociateMeta = new TokenAssociateMeta(96, 2);
+
+		assertEquals(0, tokenAssociateMeta.getRelativeLifeTime());
+
+		given(workingView.accounts()).willReturn(accounts);
+		given(accounts.get(any())).willReturn(merkleAccount);
+		given(merkleAccount.getExpiry()).willReturn(now + 777_600L);
+
+		subject.updateTokenAssociateMeta(txn, tokenAssociateMeta);
+
+		assertEquals(777_600, tokenAssociateMeta.getRelativeLifeTime());
+		assertEquals(2, tokenAssociateMeta.getNumOfTokens());
+		assertEquals(96, tokenAssociateMeta.getBpt());
+	}
+
+	@Test
+	void updateTokenAssociateMetaWithEmptyAccountWorks() {
+		final var op = getTokenAssociateOp();
+		final var txn = getTxnBody(op);
+		final var tokenAssociateMeta = new TokenAssociateMeta(96, 2);
+
+		given(workingView.accounts()).willReturn(accounts);
+		given(accounts.get(any())).willReturn(null);
+
+		subject.updateTokenAssociateMeta(txn, tokenAssociateMeta);
+
+		assertEquals(0, tokenAssociateMeta.getRelativeLifeTime());
+	}
+
+
 	private TokenFeeScheduleUpdateTransactionBody op() {
 		return TokenFeeScheduleUpdateTransactionBody.newBuilder()
 				.setTokenId(target)
@@ -345,6 +389,15 @@ class OpUsageCtxHelperTest {
 				.build();
 	}
 
+
+	private TokenAssociateTransactionBody getTokenAssociateOp() {
+		return TokenAssociateTransactionBody.newBuilder()
+				.setAccount(accountID)
+				.addAllTokens(List.of(target))
+				.build();
+	}
+
+
 	private TokenUpdateTransactionBody getTokenUpdateOp() {
 		return TokenUpdateTransactionBody.newBuilder()
 				.setMemo(StringValue.of("A memo"))
@@ -365,6 +418,15 @@ class OpUsageCtxHelperTest {
 						.setTransactionValidStart(Timestamp.newBuilder()
 								.setSeconds(now)))
 				.setTokenMint(op)
+				.build();
+	}
+
+	private TransactionBody getTxnBody(final TokenAssociateTransactionBody op) {
+		return TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder()
+								.setSeconds(now)))
+				.setTokenAssociate(op)
 				.build();
 	}
 
