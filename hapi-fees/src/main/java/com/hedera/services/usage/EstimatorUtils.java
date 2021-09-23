@@ -41,7 +41,11 @@ public interface EstimatorUtils {
 
 	default long relativeLifetime(TransactionBody txn, long expiry) {
 		long effectiveNow = txn.getTransactionID().getTransactionValidStart().getSeconds();
-		return expiry - effectiveNow;
+		return relativeLifetime(effectiveNow, expiry);
+	}
+
+	default long relativeLifetime(long now, long expiry) {
+		return expiry - now;
 	}
 
 	default long changeInBsUsage(long oldB, long oldLifetimeSecs, long newB, long newLifetimeSecs) {

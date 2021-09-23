@@ -63,6 +63,11 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 	}
 
 	@Override
+	public boolean getDeferResultsSummary() {
+		return true;
+	}
+
+	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				createAccount()

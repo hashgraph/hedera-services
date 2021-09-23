@@ -34,7 +34,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.NoFungibleTransfers.changingNoFungibleBalances;
 import static com.hedera.services.bdd.spec.assertions.NoNftTransfers.changingNoNftOwners;
-import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingSomeFungibleBalances;
+import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -1556,7 +1556,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.via(nonExemptFundedTxn),
 						getTxnRecord(nonExemptFundedTxn)
 								.hasPriority(recordWith()
-										.tokenTransfers(changingSomeFungibleBalances()
+										.tokenTransfers(changingFungibleBalances()
 												.including(protocolToken, gabriella, +100L)
 												.including(protocolToken, harry, -100L)))
 				);

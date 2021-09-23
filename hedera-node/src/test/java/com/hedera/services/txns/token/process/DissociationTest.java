@@ -42,7 +42,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -221,12 +220,41 @@ class DissociationTest {
 
 	@Test
 	void oksDissociatedDeletedTokenTreasury() {
+		final long balance = 1_234L;
+		dissociatingAccountRel.initBalance(balance);
 		token.setTreasury(account);
 		token.setIsDeleted(true);
+		final List<TokenRelationship> accum = new ArrayList<>();
 
 		final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel);
 
-		assertDoesNotThrow(() -> subject.updateModelRelsSubjectTo(validator));
+		subject.updateModelRelsSubjectTo(validator);
+		subject.addUpdatedModelRelsTo(accum);
+
+		assertEquals(1, accum.size());
+		assertSame(dissociatingAccountRel, accum.get(0));
+		assertEquals(-balance, dissociatingAccountRel.getBalanceChange());
+	}
+
+	@Test
+	void oksDissociatedDeletedUniqueTokenTreasury() {
+		final long balance = 1_234L;
+		account.setOwnedNfts(balance);
+		dissociatingAccountRel.initBalance(balance);
+		token.setTreasury(account);
+		token.setIsDeleted(true);
+		token.setType(NON_FUNGIBLE_UNIQUE);
+		final List<TokenRelationship> accum = new ArrayList<>();
+
+		final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel);
+
+		subject.updateModelRelsSubjectTo(validator);
+		subject.addUpdatedModelRelsTo(accum);
+
+		assertEquals(1, accum.size());
+		assertSame(dissociatingAccountRel, accum.get(0));
+		assertEquals(-balance, dissociatingAccountRel.getBalanceChange());
+		assertEquals(0, account.getOwnedNfts());
 	}
 
 	@Test

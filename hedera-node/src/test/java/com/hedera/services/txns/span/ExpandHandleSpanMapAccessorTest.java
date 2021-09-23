@@ -21,6 +21,7 @@ package com.hedera.services.txns.span;
  */
 
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
+import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.utils.TxnAccessor;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,6 +33,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
@@ -72,6 +74,24 @@ class ExpandHandleSpanMapAccessorTest {
 	}
 
 	@Test
+	void testsForTokenFreezeMetaAsExpected() {
+		final var tokenFreezeMeta = TOKEN_OPS_USAGE_UTILS.tokenFreezeUsageFrom();
+
+		subject.setTokenFreezeMeta(accessor, tokenFreezeMeta);
+
+		assertEquals(48,  subject.getTokenFreezeMeta(accessor).getBpt());
+	}
+
+	@Test
+	void testsForTokenUnfreezeMetaAsExpected() {
+		final var tokenUnfreezeMeta = TOKEN_OPS_USAGE_UTILS.tokenUnfreezeUsageFrom();
+
+		subject.setTokenUnfreezeMeta(accessor, tokenUnfreezeMeta);
+
+		assertEquals(48,  subject.getTokenUnfreezeMeta(accessor).getBpt());
+	}
+
+	@Test
 	void testsForCryptoCreateMetaAsExpected() {
 		var opMeta = new CryptoCreateMeta.Builder()
 				.baseSize(1_234)
@@ -82,5 +102,23 @@ class ExpandHandleSpanMapAccessorTest {
 		subject.setCryptoCreateMeta(accessor, opMeta);
 
 		assertEquals(1_234, subject.getCryptoCreateMeta(accessor).getBaseSize());
+	}
+
+	@Test
+	void testsForCryptoUpdateMetaAsExpected() {
+		final var opMeta = new CryptoUpdateMeta.Builder()
+				.keyBytesUsed(123)
+				.msgBytesUsed(1_234)
+				.memoSize(100)
+				.effectiveNow(1_234_000L)
+				.expiry(1_234_567L)
+				.hasProxy(false)
+				.maxAutomaticAssociations(3)
+				.hasMaxAutomaticAssociations(true)
+				.build();
+
+		subject.setCryptoUpdate(accessor, opMeta);
+
+		assertEquals(3, subject.getCryptoUpdateMeta(accessor).getMaxAutomaticAssociations());
 	}
 }

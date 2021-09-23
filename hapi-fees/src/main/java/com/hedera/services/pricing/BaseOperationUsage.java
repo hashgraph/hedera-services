@@ -21,6 +21,8 @@ package com.hedera.services.pricing;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.Int32Value;
+import com.google.protobuf.StringValue;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.consensus.ConsensusOpsUsage;
@@ -28,6 +30,8 @@ import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
+import com.hedera.services.usage.crypto.CryptoUpdateMeta;
+import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.services.usage.file.FileAppendMeta;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.services.usage.state.UsageAccumulator;
@@ -36,6 +40,7 @@ import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FixedFee;
@@ -44,6 +49,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SubType;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -51,7 +57,10 @@ import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+import java.time.Instant;
 import java.util.List;
 
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
@@ -68,6 +77,8 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQ
  * adds a single custom HTS fee to a token, etc.)
  */
 class BaseOperationUsage {
+
+	static final Logger log = LogManager.getLogger(BaseOperationUsage.class);
 	private static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 	private static final ByteString CANONICAL_SIG = ByteString.copyFromUtf8(
 			"0123456789012345678901234567890123456789012345678901234567890123");
@@ -149,7 +160,12 @@ class BaseOperationUsage {
 				break;
 			case CryptoCreate:
 				if (type == DEFAULT) {
-					return cryptoCreate();
+					return cryptoCreate(0);
+				}
+				break;
+			case CryptoUpdate:
+				if (type == DEFAULT) {
+					return cryptoUpdate(0);
 				}
 				break;
 			case TokenCreate:
@@ -187,6 +203,10 @@ class BaseOperationUsage {
 					return fungibleCommonTokenBurn();
 				}
 				break;
+			case TokenFreezeAccount:
+				return tokenFreezeAccount();
+			case TokenUnfreezeAccount:
+				return tokenUnfreezeAccount();
 			case TokenFeeScheduleUpdate:
 				return feeScheduleUpdate();
 			case ConsensusSubmitMessage:
@@ -198,16 +218,39 @@ class BaseOperationUsage {
 		throw new IllegalArgumentException("Canonical usage unknown");
 	}
 
-	UsageAccumulator cryptoCreate() {
-		final var canonicalTxn = TransactionBody.newBuilder()
-				.setCryptoCreateAccount(CryptoCreateTransactionBody.newBuilder()
+	UsageAccumulator cryptoCreate(int autoAssocSlots) {
+		final var cryptoCreateTxnBody = CryptoCreateTransactionBody.newBuilder()
 						.setMemo(BLANK_MEMO)
+						.setMaxAutomaticTokenAssociations(autoAssocSlots)
 						.setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS))
-						.setKey(A_KEY))
-				.build();
-		final var cryptoCreateMeta = new CryptoCreateMeta(canonicalTxn);
+						.setKey(A_KEY).build();
+		final var cryptoCreateMeta = new CryptoCreateMeta(cryptoCreateTxnBody);
 		final var into = new UsageAccumulator();
 		CRYPTO_OPS_USAGE.cryptoCreateUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, cryptoCreateMeta, into);
+		return into;
+	}
+
+	UsageAccumulator cryptoUpdate(int newAutoAssocSlots) {
+		final var now = Instant.now().getEpochSecond();
+		final var canonicalTxn = TransactionBody.newBuilder()
+				.setCryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder()
+						.setMemo(StringValue.of(BLANK_MEMO))
+						.setExpirationTime(Timestamp.newBuilder().setSeconds(now + THREE_MONTHS_IN_SECONDS))
+						.setMaxAutomaticTokenAssociations(Int32Value.newBuilder().setValue(newAutoAssocSlots))
+						.setAccountIDToUpdate(AN_ACCOUNT)
+				).build();
+		final var ctx = ExtantCryptoContext.newBuilder()
+				.setCurrentExpiry(now)
+				.setCurrentMemo(BLANK_MEMO)
+				.setCurrentKey(A_KEY)
+				.setCurrentlyHasProxy(false)
+				.setCurrentNumTokenRels(0)
+				.setCurrentMaxAutomaticAssociations(0)
+				.build();
+		final var cryptoUpdateMeta = new CryptoUpdateMeta(canonicalTxn.getCryptoUpdateAccount(), now);
+		final var into = new UsageAccumulator();
+		CRYPTO_OPS_USAGE.cryptoUpdateUsage(
+				SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, cryptoUpdateMeta, ctx, into);
 		return into;
 	}
 
@@ -216,6 +259,22 @@ class BaseOperationUsage {
 		final var opMeta = new FileAppendMeta(1_000, THREE_MONTHS_IN_SECONDS);
 		final var into = new UsageAccumulator();
 		FILE_OPS_USAGE.fileAppendUsage(SINGLE_SIG_USAGE, opMeta, NO_MEMO_AND_NO_EXPLICIT_XFERS, into);
+		return into;
+	}
+
+
+	UsageAccumulator tokenFreezeAccount() {
+		final var tokenFreezeMeta = TOKEN_OPS_USAGE_UTILS.tokenFreezeUsageFrom();
+		final var into = new UsageAccumulator();
+		TOKEN_OPS_USAGE.tokenFreezeUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenFreezeMeta, into);
+		log.info("TokenFreeze base accumulator: {}", into);
+		return into;
+	}
+
+	UsageAccumulator tokenUnfreezeAccount() {
+		final var tokenUnfreezeMeta = TOKEN_OPS_USAGE_UTILS.tokenUnfreezeUsageFrom();
+		final var into = new UsageAccumulator();
+		TOKEN_OPS_USAGE.tokenFreezeUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenUnfreezeMeta, into);
 		return into;
 	}
 

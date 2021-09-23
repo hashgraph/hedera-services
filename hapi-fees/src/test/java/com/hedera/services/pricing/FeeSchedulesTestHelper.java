@@ -50,19 +50,26 @@ class FeeSchedulesTestHelper {
 		canonicalTotalPricesInUsd = assetsLoader.loadCanonicalPrices();
 	}
 
-	protected void testExpectedPriceFor(HederaFunctionality function, SubType subType) throws IOException {
-		// setup:
+	protected void testCanonicalPriceFor(HederaFunctionality function, SubType subType) throws IOException {
 		final var expectedBasePrice = canonicalTotalPricesInUsd.get(function).get(subType);
-
-		// given:
-		final var computedResourcePrices = subject.canonicalPricesFor(function, subType);
 		final var canonicalUsage = baseOperationUsage.baseUsageFor(function, subType);
 
-		// when:
-		final var actualBasePrice = feeInUsd(computedResourcePrices, canonicalUsage);
+		testExpected(expectedBasePrice, canonicalUsage, function, subType, ALLOWED_DEVIATION);
+	}
+
+	protected void testExpected(
+			BigDecimal expectedBasePrice,
+			UsageAccumulator usage,
+			HederaFunctionality function,
+			SubType subType,
+			double allowedDeviation
+	) throws IOException {
+		final var computedResourcePrices = subject.canonicalPricesFor(function, subType);
+
+		final var actualBasePrice = feeInUsd(computedResourcePrices, usage);
 
 		// then:
-		assertEquals(expectedBasePrice.doubleValue(), actualBasePrice.doubleValue(), ALLOWED_DEVIATION);
+		assertEquals(expectedBasePrice.doubleValue(), actualBasePrice.doubleValue(), allowedDeviation);
 	}
 
 	private BigDecimal feeInUsd(Map<ResourceProvider, Map<UsableResource, Long>> prices, UsageAccumulator usage) {

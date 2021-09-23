@@ -44,11 +44,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 
 @Singleton
-public class AwareNodeDiligenceScreen {
+public final class AwareNodeDiligenceScreen {
 	private static final Logger log = LogManager.getLogger(AwareNodeDiligenceScreen.class);
 
-	final static String WRONG_NODE_LOG_TPL = "Node {} (member #{}) submitted a txn meant for node account {} :: {}";
-	final static String MISSING_NODE_LOG_TPL = "Node {} (member #{}) submitted a txn w/ missing node account {} :: {}";
+	private static final String WRONG_NODE_LOG_TPL =
+			"Node {} (member #{}) submitted a txn meant for node account {} :: {}";
+	private static final String MISSING_NODE_LOG_TPL =
+			"Node {} (member #{}) submitted a txn w/ missing node account {} :: {}";
 
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
@@ -56,21 +58,21 @@ public class AwareNodeDiligenceScreen {
 
 	@Inject
 	public AwareNodeDiligenceScreen(
-			OptionValidator validator,
-			TransactionContext txnCtx,
-			BackingStore<AccountID, MerkleAccount> backingAccounts
+			final OptionValidator validator,
+			final TransactionContext txnCtx,
+			final BackingStore<AccountID, MerkleAccount> backingAccounts
 	) {
 		this.txnCtx = txnCtx;
 		this.validator = validator;
 		this.backingAccounts = backingAccounts;
 	}
 
-	public boolean nodeIgnoredDueDiligence(DuplicateClassification duplicity) {
-		var accessor = txnCtx.accessor();
+	public boolean nodeIgnoredDueDiligence(final DuplicateClassification duplicity) {
+		final var accessor = txnCtx.accessor();
 
-		var submittingAccount = txnCtx.submittingNodeAccount();
-		var designatedAccount = accessor.getTxn().getNodeAccountID();
-		boolean designatedNodeExists = backingAccounts.contains(designatedAccount);
+		final var submittingAccount = txnCtx.submittingNodeAccount();
+		final var designatedAccount = accessor.getTxn().getNodeAccountID();
+		final var designatedNodeExists = backingAccounts.contains(designatedAccount);
 		if (!designatedNodeExists) {
 			logAccountWarning(
 					MISSING_NODE_LOG_TPL,
@@ -82,15 +84,15 @@ public class AwareNodeDiligenceScreen {
 			return true;
 		}
 
-		var payerAccountId = accessor.getPayer();
-		boolean payerAccountExists = backingAccounts.contains(payerAccountId);
+		final var payerAccountId = accessor.getPayer();
+		final var payerAccountExists = backingAccounts.contains(payerAccountId);
 
 		if (!payerAccountExists) {
 			txnCtx.setStatus(ACCOUNT_ID_DOES_NOT_EXIST);
 			return true;
 		}
 
-		var payerAccountRef = backingAccounts.getImmutableRef(payerAccountId);
+		final var payerAccountRef = backingAccounts.getImmutableRef(payerAccountId);
 
 		if (payerAccountRef.isDeleted()) {
 			txnCtx.setStatus(PAYER_ACCOUNT_DELETED);
@@ -118,19 +120,19 @@ public class AwareNodeDiligenceScreen {
 			return true;
 		}
 
-		long txnDuration = accessor.getTxn().getTransactionValidDuration().getSeconds();
+		final var txnDuration = accessor.getTxn().getTransactionValidDuration().getSeconds();
 		if (!validator.isValidTxnDuration(txnDuration)) {
 			txnCtx.setStatus(INVALID_TRANSACTION_DURATION);
 			return true;
 		}
 
-		var cronStatus = validator.chronologyStatus(accessor, txnCtx.consensusTime());
+		final var cronStatus = validator.chronologyStatus(accessor, txnCtx.consensusTime());
 		if (cronStatus != OK) {
 			txnCtx.setStatus(cronStatus);
 			return true;
 		}
 
-		var memoValidity = validator.rawMemoCheck(accessor.getMemoUtf8Bytes(), accessor.memoHasZeroByte());
+		final var memoValidity = validator.rawMemoCheck(accessor.getMemoUtf8Bytes(), accessor.memoHasZeroByte());
 		if (memoValidity != OK) {
 			txnCtx.setStatus(memoValidity);
 			return true;
@@ -154,11 +156,11 @@ public class AwareNodeDiligenceScreen {
 	 * 		transaction accessor
 	 */
 	private void logAccountWarning(
-			String message,
-			AccountID submittingNodeAccount,
-			long submittingMember,
-			AccountID relatedAccount,
-			TxnAccessor accessor
+			final String message,
+			final AccountID submittingNodeAccount,
+			final long submittingMember,
+			final AccountID relatedAccount,
+			final TxnAccessor accessor
 	) {
 		log.warn(message,
 				readableId(submittingNodeAccount),
@@ -166,5 +168,4 @@ public class AwareNodeDiligenceScreen {
 				readableId(relatedAccount),
 				accessor.getSignedTxnWrapper());
 	}
-
 }

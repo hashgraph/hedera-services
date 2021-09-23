@@ -89,12 +89,28 @@ public class Dissociation {
 		auto-removed; and there is nothing more to do or validate in that case. */
 		if (dissociatedTokenTreasuryRel != null) {
 			/* Also nothing more to do for an association with a deleted token. */
-			if (!dissociatingAccountRel.getToken().isDeleted()) {
+			if (dissociatingAccountRel.getToken().isDeleted()) {
+				updateModelsForDissociationFromDeletedToken();
+			} else {
 				updateModelsForDissociationFromActiveToken(validator);
 			}
 		}
 		dissociatingAccountRel.markAsDestroyed();
 		modelsAreUpdated = true;
+	}
+
+	private void updateModelsForDissociationFromDeletedToken() {
+		Objects.requireNonNull(dissociatingAccountRel);
+
+		final var disappearingUnits = dissociatingAccountRel.getBalance();
+		dissociatingAccountRel.setBalance(0L);
+
+		final var token = dissociatingAccountRel.getToken();
+		if (token.getType() == NON_FUNGIBLE_UNIQUE) {
+			final var account = dissociatingAccountRel.getAccount();
+			final var curOwnedNfts = account.getOwnedNfts();
+			account.setOwnedNfts(curOwnedNfts - disappearingUnits);
+		}
 	}
 
 	private void updateModelsForDissociationFromActiveToken(OptionValidator validator) {

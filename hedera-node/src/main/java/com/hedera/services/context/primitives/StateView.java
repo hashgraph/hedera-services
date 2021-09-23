@@ -289,9 +289,8 @@ public class StateView {
 
 	public Optional<TokenNftInfo> infoForNft(NftID target) {
 		final var currentNfts = uniqueTokens();
-		final var tokenTypeNum = target.getTokenID().getTokenNum();
-		final var tokenId = EntityNum.fromLong(tokenTypeNum);
-		final var targetKey = EntityNumPair.fromLongs(tokenTypeNum, target.getSerialNumber());
+		final var tokenId = EntityNum.fromTokenId(target.getTokenID());
+		final var targetKey = EntityNumPair.fromLongs(tokenId.longValue(), target.getSerialNumber());
 		if (!currentNfts.containsKey(targetKey)) {
 			return Optional.empty();
 		}
@@ -316,7 +315,8 @@ public class StateView {
 	}
 
 	public boolean nftExists(NftID id) {
-		final var key = EntityNumPair.fromLongs(id.getTokenID().getTokenNum(), id.getSerialNumber());
+		final var tokenNum = EntityNum.fromTokenId(id.getTokenID());
+		final var key = EntityNumPair.fromLongs(tokenNum.longValue(), id.getSerialNumber());
 		return uniqueTokens().containsKey(key);
 	}
 

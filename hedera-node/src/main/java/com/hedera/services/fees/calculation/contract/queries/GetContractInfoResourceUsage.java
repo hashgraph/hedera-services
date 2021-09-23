@@ -25,56 +25,38 @@ import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.usage.contract.ContractGetInfoUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.ResponseType;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 
-import static com.hedera.services.queries.AnswerService.NO_QUERY_CTX;
 import static com.hedera.services.queries.contract.GetContractInfoAnswer.CONTRACT_INFO_CTX_KEY;
+import static com.hedera.services.utils.MiscUtils.putIfNotNull;
 
 @Singleton
-public class GetContractInfoResourceUsage implements QueryResourceUsageEstimator {
-	static Function<Query, ContractGetInfoUsage> factory = ContractGetInfoUsage::newEstimate;
+public final class GetContractInfoResourceUsage implements QueryResourceUsageEstimator {
+	private static final Function<Query, ContractGetInfoUsage> factory = ContractGetInfoUsage::newEstimate;
 
 	@Inject
 	public GetContractInfoResourceUsage() {
+		/* No-op */
 	}
 
 	@Override
-	public boolean applicableTo(Query query) {
+	public boolean applicableTo(final Query query) {
 		return query.hasContractGetInfo();
 	}
 
 	@Override
-	public FeeData usageGiven(Query query, StateView view) {
-		return usageFor(query, view, query.getContractGetInfo().getHeader().getResponseType(), NO_QUERY_CTX);
-	}
-
-	@Override
-	public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
-		return usageFor(query, view, type, NO_QUERY_CTX);
-	}
-
-	@Override
-	public FeeData usageGiven(Query query, StateView view, Map<String, Object> queryCtx) {
-		return usageFor(
-				query,
-				view,
-				query.getContractGetInfo().getHeader().getResponseType(),
-				Optional.of(queryCtx));
-	}
-
-	private FeeData usageFor(Query query, StateView view, ResponseType type, Optional<Map<String, Object>> queryCtx) {
-		var op = query.getContractGetInfo();
-		var tentativeInfo = view.infoForContract(op.getContractID());
+	public FeeData usageGiven(final Query query, final StateView view, @Nullable final Map<String, Object> queryCtx) {
+		final var op = query.getContractGetInfo();
+		final var tentativeInfo = view.infoForContract(op.getContractID());
 		if (tentativeInfo.isPresent()) {
-			var info = tentativeInfo.get();
-			queryCtx.ifPresent(ctx -> ctx.put(CONTRACT_INFO_CTX_KEY, info));
-			var estimate = factory.apply(query)
+			final var info = tentativeInfo.get();
+			putIfNotNull(queryCtx, CONTRACT_INFO_CTX_KEY, info);
+			final var estimate = factory.apply(query)
 					.givenCurrentKey(info.getAdminKey())
 					.givenCurrentMemo(info.getMemo())
 					.givenCurrentTokenAssocs(info.getTokenRelationshipsCount());
