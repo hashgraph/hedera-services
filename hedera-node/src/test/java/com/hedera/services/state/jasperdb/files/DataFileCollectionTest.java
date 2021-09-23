@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
@@ -183,36 +184,22 @@ public class DataFileCollectionTest {
                 testType.dataItemSerializer,
                 loadedDataCallbackImpl);
         fileCollectionMap.put(testType,fileCollection);
-        // create stored offsets list
-        final var storedOffsets = new LongArrayList(1000);
-        storedOffsetsMap.put(testType,storedOffsets);
-        // create 10x 100 item files
-        int count = 0;
-        for (int f = 0; f < 10; f++) {
-            fileCollection.startWriting();
-            // put in 1000 items
-            for (int i = count; i < count+100; i++) {
-                long[] dataValue;
-                switch(testType) {
-                    default:
-                    case fixed:
-                        dataValue = new long[]{i,i+10_000};
-                        break;
-                    case variable:
-                        dataValue = getVariableSizeDataForI(i, 10_000);
-                        break;
-                }
-                // store in file
-                storedOffsets.add(fileCollection.storeDataItem(dataValue));
-            }
-            fileCollection.endWriting(0,count+100);
-            count += 100;
-        }
-        // check that 10 additional files were created
-        assertEquals(20,Files.list(tempFileDir.resolve(testType.name())).count());
-        // examine loadedDataCallbackImpl content's map sizes
+        // check that the 10 files were created previously (in the very first unit test) still are readable
+        assertEquals(10,Files.list(tempFileDir.resolve(testType.name())).count());
+        // examine loadedDataCallbackImpl content's map sizes as well as checking the data
         assertEquals(1000,loadedDataCallbackImpl.dataLocationMap.size());
         assertEquals(1000,loadedDataCallbackImpl.dataValueMap.size());
+        checkData(testType, 0, 1000, 10_000);
+        assertTrue(fileCollection.isLoadedFromExistingFiles());
+
+       // also try specifying a testStore (that doesn't exist) in a storeDir that does
+        final LoadedDataCallbackImpl loadedDataCallbackImpl2 = new LoadedDataCallbackImpl();
+        final var fileCollection2 = new DataFileCollection<>(tempFileDir.resolve(testType.name()), "test2",
+                testType.dataItemSerializer,
+                loadedDataCallbackImpl2);
+        assertEquals(0,loadedDataCallbackImpl2.dataLocationMap.size());
+        assertEquals(0,loadedDataCallbackImpl2.dataValueMap.size());
+        assertFalse(fileCollection2.isLoadedFromExistingFiles());
     }
 
     @Order(50)
@@ -251,10 +238,11 @@ public class DataFileCollectionTest {
                     }
                 }
             } else if (thread == 1) { // move thread
+                List<Path> mergeResults = null;
                 try {
                     var filesToMerge = fileCollection.getAllFullyWrittenFiles(Integer.MAX_VALUE);
                     System.out.println("filesToMerge = " + filesToMerge.size());
-                    fileCollection.mergeFiles(moves -> {
+                    mergeResults = fileCollection.mergeFiles(moves -> {
                         assertEquals(1000,moves.size());
                         moves.forEach((key, oldValue, newValue) -> {
                             System.out.printf("move from file %d item %d -> file %d item %d\n",
@@ -270,11 +258,25 @@ public class DataFileCollectionTest {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
+                // after merge is complete, both minimum and maximum valid keys should be reset back to 0.
+                assertEquals(0, fileCollection.getMinimumValidKey());
+                assertEquals(0, fileCollection.getMaximumValidKey());
                 mergeComplete.set(true);
+                // all files should have been merged into 1.
+                assertEquals(1, mergeResults.size());
             }
         });
         // check we only have 1 file left
         assertEquals(1,Files.list(tempFileDir.resolve(testType.name())).count());
+        // After merge is complete, there should be only 1 "fully written" file, and that it is empty.
+        var filesLeft = fileCollection.getAllFullyWrittenFiles(Integer.MAX_VALUE);
+        assertEquals(1,filesLeft.size());
+        filesLeft = fileCollection.getAllFullyWrittenFiles(1); // files with size less than 1 are empty
+        assertEquals(1,filesLeft.size());
+
+        // and trying to merge just one file is a no-op
+        var secondMergeResults = fileCollection.mergeFiles(moves -> {}, filesLeft);
+        assertEquals(0, secondMergeResults.size());
     }
 
     @Order(101)
