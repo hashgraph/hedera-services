@@ -16,9 +16,12 @@ package com.hedera.services.store.models;
  * limitations under the License.
  */
 
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.submerkle.RichInstant;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
 import java.io.ByteArrayOutputStream;
@@ -30,20 +33,14 @@ import static com.hedera.services.state.merkle.MerkleTopic.RUNNING_HASH_BYTE_ARR
 import static com.hedera.services.state.merkle.MerkleTopic.RUNNING_HASH_VERSION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.submerkle.RichInstant;
-
-import javax.annotation.Nullable;
-import javax.annotation.Nullable;
-import java.time.Instant;
-
 /**
  * Represents the model of a {@link com.hedera.services.state.merkle.MerkleTopic}.
  *
  * @author Yoan Sredkov
  */
 public class Topic {
-
+	private final Logger log = LogManager.getLogger(Topic.class);
+	
 	private final Id id;
 	private String memo;
 	private JKey adminKey;
@@ -54,7 +51,7 @@ public class Topic {
 	private boolean isNew;
 	private boolean hasUpdatedHashAndSeqNo;
 	private RichInstant expirationTimestamp;
-
+	private byte[] runningHash;
 	private long sequenceNumber;
 
 	public Topic(final Id id) {
