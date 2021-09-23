@@ -3,9 +3,9 @@ package com.hedera.services.usage.token;
 /*-
  * ‌
  * Hedera Services API Fees
- * ​
+ *
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -28,9 +28,11 @@ import com.hedera.services.usage.token.meta.TokenCreateMeta;
 import com.hedera.services.usage.token.meta.TokenDeleteMeta;
 import com.hedera.services.usage.token.meta.TokenDissociateMeta;
 import com.hedera.services.usage.token.meta.TokenGrantKycMeta;
+import com.hedera.services.usage.token.meta.TokenFreezeMeta;
 import com.hedera.services.usage.token.meta.TokenMintMeta;
 import com.hedera.services.usage.token.meta.TokenRevokeKycMeta;
 import com.hedera.services.usage.token.meta.TokenUpdateMeta;
+import com.hedera.services.usage.token.meta.TokenUnfreezeMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -150,8 +152,18 @@ public enum TokenOpsUsageUtils {
 		return new TokenMintMeta(bpt, subType, transferRecordRb, rbs);
 	}
 
+
 	public TokenDeleteMeta tokenDeleteUsageFrom() {
 		return new TokenDeleteMeta(BASIC_ENTITY_ID_SIZE);
+	}
+
+
+	public TokenFreezeMeta tokenFreezeUsageFrom() {
+		return new TokenFreezeMeta(2 * BASIC_ENTITY_ID_SIZE);
+	}
+
+	public TokenUnfreezeMeta tokenUnfreezeUsageFrom() {
+		return new TokenUnfreezeMeta(2 * BASIC_ENTITY_ID_SIZE);
 	}
 
 	public TokenBurnMeta tokenBurnUsageFrom(final TransactionBody txn) {

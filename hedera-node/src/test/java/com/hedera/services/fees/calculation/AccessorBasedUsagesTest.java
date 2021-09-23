@@ -1,77 +1,5 @@
 package com.hedera.services.fees.calculation;
 
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ‍
- */
-
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.fees.calculation.utils.AccessorBasedUsages;
-import com.hedera.services.fees.calculation.utils.OpUsageCtxHelper;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcCustomFee;
-import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
-import com.hedera.services.usage.BaseTransactionMeta;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.consensus.ConsensusOpsUsage;
-import com.hedera.services.usage.consensus.SubmitMessageMeta;
-import com.hedera.services.usage.crypto.CryptoCreateMeta;
-import com.hedera.services.usage.crypto.CryptoOpsUsage;
-import com.hedera.services.usage.crypto.CryptoTransferMeta;
-import com.hedera.services.usage.crypto.CryptoUpdateMeta;
-import com.hedera.services.usage.crypto.ExtantCryptoContext;
-import com.hedera.services.usage.file.FileAppendMeta;
-import com.hedera.services.usage.file.FileOpsUsage;
-import com.hedera.services.usage.state.UsageAccumulator;
-import com.hedera.services.usage.token.TokenOpsUsage;
-import com.hedera.services.usage.token.TokenOpsUsageUtils;
-import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
-import com.hedera.services.usage.token.meta.ExtantTokenContext;
-import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
-import com.hedera.services.usage.token.meta.TokenAssociateMeta;
-import com.hedera.services.usage.token.meta.TokenBurnMeta;
-import com.hedera.services.usage.token.meta.TokenCreateMeta;
-import com.hedera.services.usage.token.meta.TokenDeleteMeta;
-import com.hedera.services.usage.token.meta.TokenDissociateMeta;
-import com.hedera.services.usage.token.meta.TokenGrantKycMeta;
-import com.hedera.services.usage.token.meta.TokenMintMeta;
-import com.hedera.services.usage.token.meta.TokenRevokeKycMeta;
-import com.hedera.services.usage.token.meta.TokenUpdateMeta;
-import com.hedera.services.usage.token.meta.TokenWipeMeta;
-import com.hedera.services.utils.TxnAccessor;
-import com.hederahashgraph.api.proto.java.CustomFee;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.SubType;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Answers;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.List;
-
 import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
 import static com.hedera.services.utils.SignedTxnAccessor.uncheckedFrom;
@@ -87,9 +15,11 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -99,6 +29,82 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+
+import java.util.List;
+
+/*-
+ * ‌
+ * Hedera Services Node
+ *
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.fees.calculation.utils.OpUsageCtxHelper;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.usage.BaseTransactionMeta;
+import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.consensus.ConsensusOpsUsage;
+import com.hedera.services.usage.consensus.SubmitMessageMeta;
+import com.hedera.services.usage.crypto.CryptoCreateMeta;
+import com.hedera.services.usage.crypto.CryptoOpsUsage;
+import com.hedera.services.usage.crypto.CryptoTransferMeta;
+import com.hedera.services.usage.crypto.CryptoUpdateMeta;
+import com.hedera.services.usage.crypto.ExtantCryptoContext;
+import com.hedera.services.usage.file.FileAppendMeta;
+import com.hedera.services.usage.file.FileOpsUsage;
+import com.hedera.services.usage.state.UsageAccumulator;
+import com.hedera.services.usage.token.TokenOpsUsageUtils;
+import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
+import com.hedera.services.usage.token.meta.ExtantTokenContext;
+import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.services.usage.token.meta.TokenAssociateMeta;
+import com.hedera.services.usage.token.meta.TokenBurnMeta;
+import com.hedera.services.usage.token.meta.TokenCreateMeta;
+import com.hedera.services.usage.token.meta.TokenDeleteMeta;
+import com.hedera.services.usage.token.meta.TokenDissociateMeta;
+import com.hedera.services.usage.token.meta.TokenFreezeMeta;
+import com.hedera.services.usage.token.meta.TokenGrantKycMeta;
+import com.hedera.services.usage.token.meta.TokenMintMeta;
+import com.hedera.services.usage.token.meta.TokenRevokeKycMeta;
+import com.hedera.services.usage.token.meta.TokenUnfreezeMeta;
+import com.hedera.services.usage.token.meta.TokenUpdateMeta;
+import com.hedera.services.usage.token.meta.TokenWipeMeta;
+import com.hedera.services.utils.TxnAccessor;
+import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.SubType;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import com.hedera.services.fees.calculation.utils.AccessorBasedUsages;
+import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
+import com.hedera.services.usage.token.TokenOpsUsage;
 
 @ExtendWith(MockitoExtension.class)
 class AccessorBasedUsagesTest {
@@ -131,8 +137,8 @@ class AccessorBasedUsagesTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new AccessorBasedUsages(
-				fileOpsUsage, tokenOpsUsage, cryptoOpsUsage, opUsageCtxHelper, consensusOpsUsage, dynamicProperties);
+		subject = new AccessorBasedUsages(fileOpsUsage, tokenOpsUsage, cryptoOpsUsage, opUsageCtxHelper,
+				consensusOpsUsage, dynamicProperties);
 	}
 
 	@Test
@@ -211,21 +217,12 @@ class AccessorBasedUsagesTest {
 		verify(tokenOpsUsage).feeScheduleUpdateUsage(sigUsage, baseMeta, opMeta, feeScheduleCtx, accum);
 	}
 
-
 	@Test
 	void worksAsExpectedForTokenCreate() {
 		final var baseMeta = new BaseTransactionMeta(100, 2);
-		final var opMeta = new TokenCreateMeta.Builder()
-				.baseSize(1_234)
-				.customFeeScheleSize(0)
-				.lifeTime(1_234_567L)
-				.fungibleNumTransfers(0)
-				.nftsTranfers(0)
-				.nftsTranfers(1000)
-				.nftsTranfers(1)
-				.build();
+		final var opMeta = new TokenCreateMeta.Builder().baseSize(1_234).customFeeScheleSize(0).lifeTime(1_234_567L)
+				.fungibleNumTransfers(0).nftsTranfers(0).nftsTranfers(1000).nftsTranfers(1).build();
 		final var accumulator = new UsageAccumulator();
-
 
 		given(txnAccessor.getFunction()).willReturn(TokenCreate);
 		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
@@ -289,23 +286,47 @@ class AccessorBasedUsagesTest {
 	}
 
 	@Test
+	void worksAsExpectedForTokeFreezeAccount() {
+		// setup:
+		final var baseMeta = new BaseTransactionMeta(0, 0);
+		final var tokenFreezeMeta = new TokenFreezeMeta(48);
+		final var accumulator = new UsageAccumulator();
+		given(txnAccessor.getFunction()).willReturn(TokenFreezeAccount);
+		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
+		given(txnAccessor.getSpanMapAccessor().getTokenFreezeMeta(any())).willReturn(tokenFreezeMeta);
+
+		// when:
+		subject.assess(sigUsage, txnAccessor, accumulator);
+
+		// then:
+		verify(tokenOpsUsage).tokenFreezeUsage(sigUsage, baseMeta, tokenFreezeMeta, accumulator);
+	}
+
+	@Test
+	void worksAsExpectedForTokeIUnfreezeAccount() {
+		// setup:
+		final var baseMeta = new BaseTransactionMeta(0, 0);
+		final var tokenUnfreezeMeta = new TokenUnfreezeMeta(48);
+		final var accumulator = new UsageAccumulator();
+		given(txnAccessor.getFunction()).willReturn(TokenUnfreezeAccount);
+		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
+		given(txnAccessor.getSpanMapAccessor().getTokenUnfreezeMeta(any())).willReturn(tokenUnfreezeMeta);
+
+		// when:
+		subject.assess(sigUsage, txnAccessor, accumulator);
+
+		// then:
+		verify(tokenOpsUsage).tokenUnfreezeUsage(sigUsage, baseMeta, tokenUnfreezeMeta, accumulator);
+	}
+
+	@Test
 	void worksAsExpectedForTokenUpdate() {
 		// setup:
 		final var baseMeta = new BaseTransactionMeta(100, 2);
-		final var tokenUpdateMeta = TokenUpdateMeta.newBuilder()
-				.setNewExpiry(then)
-				.setNewKeysLen(236)
-				.setHasAutoRenewAccount(true)
-				.setRemoveAutoRenewAccount(false)
-				.setHasTreasure(true)
-				.build();
-		final var ctx = ExtantTokenContext.newBuilder()
-				.setExistingKeysLen(128)
-				.setExistingExpiry(then)
-				.setExistingMemoLen(100)
-				.setExistingNameLen(12)
-				.setExistingSymLen(5)
-				.setHasAutoRenewalAccount(true)
+		final var tokenUpdateMeta = TokenUpdateMeta.newBuilder().setNewExpiry(then).setNewKeysLen(236)
+				.setHasAutoRenewAccount(true).setRemoveAutoRenewAccount(false).setHasTreasure(true).build();
+		final var ctx = ExtantTokenContext.newBuilder().setExistingKeysLen(128).setExistingExpiry(then)
+				.setExistingMemoLen(100).setExistingNameLen(12).setExistingSymLen(5).setHasAutoRenewalAccount(true)
 				.build();
 		final var accumulator = new UsageAccumulator();
 
@@ -372,7 +393,6 @@ class AccessorBasedUsagesTest {
 		verify(tokenOpsUsage).tokenRevokeKycUsage(sigUsage, baseMeta, tokenRevokeKycMeta, accumulator);
 	}
 
-
 	@Test
 	void worksAsExpectedForTokenAssociate() {
 		// setup:
@@ -407,15 +427,11 @@ class AccessorBasedUsagesTest {
 		verify(tokenOpsUsage).tokenDissociateUsage(sigUsage, baseMeta, tokenDissociateMeta, accumulator);
 	}
 
-
 	@Test
 	void worksAsExpectedForCryptoCreate() {
 		final var baseMeta = new BaseTransactionMeta(100, 0);
-		final var opMeta = new CryptoCreateMeta.Builder()
-				.baseSize(1_234)
-				.lifeTime(1_234_567L)
-				.maxAutomaticAssociations(3)
-				.build();
+		final var opMeta = new CryptoCreateMeta.Builder().baseSize(1_234).lifeTime(1_234_567L)
+				.maxAutomaticAssociations(3).build();
 		final var accumulator = new UsageAccumulator();
 
 		given(txnAccessor.getFunction()).willReturn(CryptoCreate);
@@ -431,24 +447,12 @@ class AccessorBasedUsagesTest {
 	@Test
 	void worksAsExpectedForCryptoUpdate() {
 		final var baseMeta = new BaseTransactionMeta(100, 0);
-		final var opMeta = new CryptoUpdateMeta.Builder()
-				.keyBytesUsed(123)
-				.msgBytesUsed(1_234)
-				.memoSize(100)
-				.effectiveNow(now)
-				.expiry(1_234_567L)
-				.hasProxy(false)
-				.maxAutomaticAssociations(3)
-				.hasMaxAutomaticAssociations(true)
-				.build();
-		final var cryptoContext = ExtantCryptoContext.newBuilder()
-				.setCurrentKey(Key.getDefaultInstance())
-				.setCurrentMemo(memo)
-				.setCurrentExpiry(now)
-				.setCurrentlyHasProxy(false)
-				.setCurrentNumTokenRels(0)
-				.setCurrentMaxAutomaticAssociations(0)
-				.build();
+		final var opMeta = new CryptoUpdateMeta.Builder().keyBytesUsed(123).msgBytesUsed(1_234).memoSize(100)
+				.effectiveNow(now).expiry(1_234_567L).hasProxy(false).maxAutomaticAssociations(3)
+				.hasMaxAutomaticAssociations(true).build();
+		final var cryptoContext = ExtantCryptoContext.newBuilder().setCurrentKey(Key.getDefaultInstance())
+				.setCurrentMemo(memo).setCurrentExpiry(now).setCurrentlyHasProxy(false).setCurrentNumTokenRels(0)
+				.setCurrentMaxAutomaticAssociations(0).build();
 		final var accumulator = new UsageAccumulator();
 
 		given(txnAccessor.getFunction()).willReturn(CryptoUpdate);
@@ -472,21 +476,15 @@ class AccessorBasedUsagesTest {
 	}
 
 	private Transaction signedFeeScheduleUpdateTxn() {
-		return Transaction.newBuilder()
-				.setSignedTransactionBytes(SignedTransaction.newBuilder()
-						.setBodyBytes(feeScheduleUpdateTxn().toByteString())
-						.build().toByteString())
-				.build();
+		return Transaction.newBuilder().setSignedTransactionBytes(SignedTransaction.newBuilder()
+				.setBodyBytes(feeScheduleUpdateTxn().toByteString()).build().toByteString()).build();
 	}
 
 	private TransactionBody feeScheduleUpdateTxn() {
-		return TransactionBody.newBuilder()
-				.setMemo(memo)
-				.setTransactionID(TransactionID.newBuilder()
-						.setTransactionValidStart(Timestamp.newBuilder()
-								.setSeconds(now)))
-				.setTokenFeeScheduleUpdate(TokenFeeScheduleUpdateTransactionBody.newBuilder()
-						.addAllCustomFees(fees()))
+		return TransactionBody.newBuilder().setMemo(memo)
+				.setTransactionID(
+						TransactionID.newBuilder().setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)))
+				.setTokenFeeScheduleUpdate(TokenFeeScheduleUpdateTransactionBody.newBuilder().addAllCustomFees(fees()))
 				.build();
 	}
 
@@ -495,16 +493,10 @@ class AccessorBasedUsagesTest {
 		final var aDenom = new EntityId(2, 3, 4);
 		final var bDenom = new EntityId(3, 4, 5);
 
-		return List.of(
-				fixedFee(1, null, collector),
-				fixedFee(2, aDenom, collector),
-				fixedFee(2, bDenom, collector),
-				fractionalFee(
-						1, 2, 1, 2, false, collector),
-				fractionalFee(
-						1, 3, 1, 2, false, collector),
-				fractionalFee(
-						1, 4, 1, 2, false, collector)
-		).stream().map(FcCustomFee::asGrpc).collect(toList());
+		return List
+				.of(fixedFee(1, null, collector), fixedFee(2, aDenom, collector), fixedFee(2, bDenom, collector),
+						fractionalFee(1, 2, 1, 2, false, collector), fractionalFee(1, 3, 1, 2, false, collector),
+						fractionalFee(1, 4, 1, 2, false, collector))
+				.stream().map(FcCustomFee::asGrpc).collect(toList());
 	}
 }

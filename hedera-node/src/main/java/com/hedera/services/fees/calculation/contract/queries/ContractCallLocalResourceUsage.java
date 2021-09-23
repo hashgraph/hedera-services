@@ -9,9 +9,9 @@ package com.hedera.services.fees.calculation.contract.queries;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -36,18 +36,17 @@ import com.hederahashgraph.fee.SmartContractFeeBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.Map;
-import java.util.Optional;
 
-import static com.hedera.services.queries.AnswerService.NO_QUERY_CTX;
 import static com.hedera.services.queries.contract.ContractCallLocalAnswer.CONTRACT_CALL_LOCAL_CTX_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 @Singleton
-public class ContractCallLocalResourceUsage implements QueryResourceUsageEstimator {
+public final class ContractCallLocalResourceUsage implements QueryResourceUsageEstimator {
 	private static final Logger log = LogManager.getLogger(ContractCallLocalResourceUsage.class);
 
 	private final ContractCallLocalAnswer.LegacyLocalCaller delegate;
@@ -56,9 +55,9 @@ public class ContractCallLocalResourceUsage implements QueryResourceUsageEstimat
 
 	@Inject
 	public ContractCallLocalResourceUsage(
-			ContractCallLocalAnswer.LegacyLocalCaller delegate,
-			SmartContractFeeBuilder usageEstimator,
-			GlobalDynamicProperties properties
+			final ContractCallLocalAnswer.LegacyLocalCaller delegate,
+			final SmartContractFeeBuilder usageEstimator,
+			final GlobalDynamicProperties properties
 	) {
 		this.delegate = delegate;
 		this.properties = properties;
@@ -66,57 +65,48 @@ public class ContractCallLocalResourceUsage implements QueryResourceUsageEstimat
 	}
 
 	@Override
-	public boolean applicableTo(Query query) {
+	public boolean applicableTo(final Query query) {
 		return query.hasContractCallLocal();
 	}
 
 	@Override
-	public FeeData usageGiven(Query query, StateView view) {
-		return usageFor(query, view, query.getContractCallLocal().getHeader().getResponseType(), NO_QUERY_CTX);
+	public FeeData usageGivenType(final Query query, final StateView view, final ResponseType type) {
+		return usageFor(query, type, null);
 	}
 
 	@Override
-	public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
-		return usageFor(query, view, type, NO_QUERY_CTX);
+	public FeeData usageGiven(final Query query, final StateView view, @Nullable final Map<String, Object> queryCtx) {
+		return usageFor(query, query.getContractCallLocal().getHeader().getResponseType(), queryCtx);
 	}
 
-	@Override
-	public FeeData usageGiven(Query query, StateView view, Map<String, Object> queryCtx) {
-		return usageFor(
-				query,
-				view,
-				query.getContractCallLocal().getHeader().getResponseType(),
-				Optional.of(queryCtx));
-	}
-
-	private FeeData usageFor(Query query, StateView view, ResponseType type, Optional<Map<String, Object>> queryCtx) {
+	private FeeData usageFor(final Query query, final ResponseType type, @Nullable final Map<String, Object> queryCtx) {
 		try {
-			var op = query.getContractCallLocal();
+			final var op = query.getContractCallLocal();
 			ContractCallLocalResponse response;
-			if (queryCtx.isEmpty()) {
+			if (null == queryCtx) {
 				response = dummyResponse(op.getContractID());
 			} else {
 				response = delegate.perform(op, Instant.now().getEpochSecond());
-				queryCtx.get().put(CONTRACT_CALL_LOCAL_CTX_KEY, response);
+				queryCtx.put(CONTRACT_CALL_LOCAL_CTX_KEY, response);
 			}
-			var nonGasUsage = usageEstimator.getContractCallLocalFeeMatrices(
+			final var nonGasUsage = usageEstimator.getContractCallLocalFeeMatrices(
 					op.getFunctionParameters().size(),
 					response.getFunctionResult(),
 					type);
 			return nonGasUsage.toBuilder()
 					.setNodedata(nonGasUsage.getNodedata().toBuilder().setGas(op.getGas()))
 					.build();
-		} catch (Exception internal) {
+		} catch (final Exception internal) {
 			log.warn("Usage estimation unexpectedly failed for {}!", query, internal);
 			throw new IllegalStateException(internal);
 		}
 	}
 
-	ContractCallLocalResponse dummyResponse(ContractID target) {
+	ContractCallLocalResponse dummyResponse(final ContractID target) {
 		return ContractCallLocalResponse.newBuilder()
 				.setFunctionResult(ContractFunctionResult.newBuilder()
-								.setContractCallResult(ByteString.copyFrom(new byte[properties.localCallEstRetBytes()]))
-								.setContractID(target))
+						.setContractCallResult(ByteString.copyFrom(new byte[properties.localCallEstRetBytes()]))
+						.setContractID(target))
 				.setHeader(ResponseHeader.newBuilder().setNodeTransactionPrecheckCode(OK))
 				.build();
 	}

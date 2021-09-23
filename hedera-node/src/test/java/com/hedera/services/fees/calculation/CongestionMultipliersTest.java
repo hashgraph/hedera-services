@@ -21,6 +21,8 @@ package com.hedera.services.fees.calculation;
  */
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -49,66 +51,19 @@ class CongestionMultipliersTest {
 		assertEquals(cm, cmFloat);
 	}
 
-	@Test
-	void throwsOnNonPositiveMultiplier() {
-		final var prop = "90,10x,95,25x,99,-100";
-
-		assertThrows(IllegalArgumentException.class, () -> CongestionMultipliers.from(prop));
-	}
-
-	@Test
-	void throwsOnOmittedLastMultiplier() {
-		final var prop = "90,10x,95,25x,99";
-
-		assertThrows(IllegalArgumentException.class, () -> CongestionMultipliers.from(prop));
-	}
-
-	@Test
-	void throwsOnMissingMultiplier() {
-		final var prop = "90,x,95,25x,99,100x";
-
-		assertThrows(IllegalArgumentException.class, () -> CongestionMultipliers.from(prop));
-	}
-
-	@Test
-	void throwsOnNonsenseTrigger() {
-		final var prop = "90,10x,950,25x,99,100x";
-
-		assertThrows(IllegalArgumentException.class, () -> CongestionMultipliers.from(prop));
-	}
-
-	@Test
-	void throwsOnMissingTrigger() {
-		final var prop = "90,10x,95,25x,,100x";
-
-		assertThrows(IllegalArgumentException.class, () -> CongestionMultipliers.from(prop));
-	}
-
-	@Test
-	void throwsOnMalformedTrigger() {
-		final var prop = "90,10x,95,25x,99x,100x";
-
-		assertThrows(IllegalArgumentException.class, () -> CongestionMultipliers.from(prop));
-	}
-
-	@Test
-	void throwsOnUnparseableMultiplier() {
-		final var prop = "90,10y,95,25x,99,100x";
-
-		assertThrows(IllegalArgumentException.class, () -> CongestionMultipliers.from(prop));
-	}
-
-	@Test
-	void throwsOnNonincreasingTriggers() {
-		final var prop = "90,10,95,25,94,100";
-
-		assertThrows(IllegalArgumentException.class, () -> CongestionMultipliers.from(prop));
-	}
-
-	@Test
-	void throwsOnNonincreasingMultipliers() {
-		final var prop = "90,10,95,25,99,24";
-
+	@ParameterizedTest
+	@ValueSource(strings = {
+			"90,10x,95,25x,99,-100",
+			"90,10x,95,25x,99",
+			"90,x,95,25x,99,100x",
+			"90,10x,950,25x,99,100x",
+			"90,10x,95,25x,,100x",
+			"90,10x,95,25x,99x,100x",
+			"90,10y,95,25x,99,100x",
+			"90,10,95,25,94,100",
+			"90,10,95,25,99,24"
+	})
+	void throwsOnMalformedProps(final String prop) {
 		assertThrows(IllegalArgumentException.class, () -> CongestionMultipliers.from(prop));
 	}
 

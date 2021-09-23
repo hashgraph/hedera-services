@@ -3,9 +3,9 @@ package com.hedera.services.usage.token;
 /*-
  * ‌
  * Hedera Services API Fees
- * ​
+ *
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -34,9 +34,11 @@ import com.hedera.services.usage.token.meta.TokenCreateMeta;
 import com.hedera.services.usage.token.meta.TokenDeleteMeta;
 import com.hedera.services.usage.token.meta.TokenDissociateMeta;
 import com.hedera.services.usage.token.meta.TokenGrantKycMeta;
+import com.hedera.services.usage.token.meta.TokenFreezeMeta;
 import com.hedera.services.usage.token.meta.TokenMintMeta;
 import com.hedera.services.usage.token.meta.TokenRevokeKycMeta;
 import com.hedera.services.usage.token.meta.TokenUpdateMeta;
+import com.hedera.services.usage.token.meta.TokenUnfreezeMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
 import com.hederahashgraph.api.proto.java.CustomFee;
 
@@ -70,22 +72,15 @@ public final class TokenOpsUsage {
 		/* No-op */
 	}
 
-	public void feeScheduleUpdateUsage(
-			final SigUsage sigUsage,
-			final BaseTransactionMeta baseMeta,
-			final FeeScheduleUpdateMeta opMeta,
-			final ExtantFeeScheduleContext ctx,
-			final UsageAccumulator accumulator
-	) {
+	public void feeScheduleUpdateUsage(final SigUsage sigUsage, final BaseTransactionMeta baseMeta,
+			final FeeScheduleUpdateMeta opMeta, final ExtantFeeScheduleContext ctx,
+			final UsageAccumulator accumulator) {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
 
 		accumulator.addBpt(LONG_BASIC_ENTITY_ID_SIZE + opMeta.numBytesInNewFeeScheduleRepr());
 		final var lifetime = Math.max(0, ctx.expiry() - opMeta.effConsensusTime());
-		final var rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(
-				ctx.numBytesInFeeScheduleRepr(),
-				lifetime,
-				opMeta.numBytesInNewFeeScheduleRepr(),
-				lifetime);
+		final var rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(ctx.numBytesInFeeScheduleRepr(), lifetime,
+				opMeta.numBytesInNewFeeScheduleRepr(), lifetime);
 		accumulator.addRbs(rbsDelta);
 	}
 
@@ -118,23 +113,13 @@ public final class TokenOpsUsage {
 				}
 			}
 		}
-		return bytesNeededToRepr(
-				numFixedHbarFees,
-				numFixedHtsFees,
-				numFractionalFees,
-				numRoyaltyNoFallbackFees,
-				numRoyaltyHtsFallbackFees,
-				numRoyaltyHbarFallbackFees);
+		return bytesNeededToRepr(numFixedHbarFees, numFixedHtsFees, numFractionalFees, numRoyaltyNoFallbackFees,
+				numRoyaltyHtsFallbackFees, numRoyaltyHbarFallbackFees);
 	}
 
-	public int bytesNeededToRepr(
-			final int numFixedHbarFees,
-			final int numFixedHtsFees,
-			final int numFractionalFees,
-			final int numRoyaltyNoFallbackFees,
-			final int numRoyaltyHtsFallbackFees,
-			final int numRoyaltyHbarFallbackFees
-	) {
+	public int bytesNeededToRepr(final int numFixedHbarFees, final int numFixedHtsFees, final int numFractionalFees,
+			final int numRoyaltyNoFallbackFees, final int numRoyaltyHtsFallbackFees,
+			final int numRoyaltyHbarFallbackFees) {
 		return numFixedHbarFees * plusCollectorSize(FIXED_HBAR_REPR_SIZE)
 				+ numFixedHtsFees * plusCollectorSize(FIXED_HTS_REPR_SIZE)
 				+ numFractionalFees * plusCollectorSize(FRACTIONAL_REPR_SIZE)
@@ -144,46 +129,39 @@ public final class TokenOpsUsage {
 
 	}
 
-	public void tokenCreateUsage(final SigUsage sigUsage,
-			final BaseTransactionMeta baseMeta,
-			final TokenCreateMeta tokenCreateMeta,
-			final UsageAccumulator accumulator) {
+	public void tokenCreateUsage(final SigUsage sigUsage, final BaseTransactionMeta baseMeta,
+			final TokenCreateMeta tokenCreateMeta, final UsageAccumulator accumulator) {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
 
 		accumulator.addBpt(tokenCreateMeta.getBaseSize());
-		accumulator.addRbs((tokenCreateMeta.getBaseSize() + tokenCreateMeta.getCustomFeeScheduleSize()) *
-				tokenCreateMeta.getLifeTime());
+		accumulator.addRbs((tokenCreateMeta.getBaseSize() + tokenCreateMeta.getCustomFeeScheduleSize())
+				* tokenCreateMeta.getLifeTime());
 
 		final long tokenSizes = TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(tokenCreateMeta.getNumTokens(),
-				tokenCreateMeta.getFungibleNumTransfers(), tokenCreateMeta.getNftsTransfers()) *
-				USAGE_PROPERTIES.legacyReceiptStorageSecs();
+				tokenCreateMeta.getFungibleNumTransfers(), tokenCreateMeta.getNftsTransfers())
+				* USAGE_PROPERTIES.legacyReceiptStorageSecs();
 		accumulator.addRbs(tokenSizes);
 
 		accumulator.addNetworkRbs(tokenCreateMeta.getNetworkRecordRb() * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
-	public void tokenBurnUsage(final SigUsage sigUsage,
-			final BaseTransactionMeta baseMeta,
-			final TokenBurnMeta tokenBurnMeta,
-			final UsageAccumulator accumulator) {
+	public void tokenBurnUsage(final SigUsage sigUsage, final BaseTransactionMeta baseMeta,
+			final TokenBurnMeta tokenBurnMeta, final UsageAccumulator accumulator) {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
 
 		accumulator.addBpt(tokenBurnMeta.getBpt());
 		accumulator.addNetworkRbs(tokenBurnMeta.getTransferRecordDb() * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
-	public void tokenDeleteUsage(final SigUsage sigUsage,
-			final BaseTransactionMeta baseMeta,
-			final TokenDeleteMeta tokenDeleteMeta,
-			final UsageAccumulator accumulator) {
+
+	public void tokenDeleteUsage(final SigUsage sigUsage, final BaseTransactionMeta baseMeta,
+			final TokenDeleteMeta tokenDeleteMeta, final UsageAccumulator accumulator) {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
 
 		accumulator.addBpt(tokenDeleteMeta.getBpt());
 	}
 
-	public void tokenMintUsage(final SigUsage sigUsage,
-			final BaseTransactionMeta baseMeta,
-			final TokenMintMeta tokenMintMeta,
-			final UsageAccumulator accumulator) {
+	public void tokenMintUsage(final SigUsage sigUsage, final BaseTransactionMeta baseMeta,
+			final TokenMintMeta tokenMintMeta, final UsageAccumulator accumulator) {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
 
 		accumulator.addBpt(tokenMintMeta.getBpt());
@@ -191,51 +169,60 @@ public final class TokenOpsUsage {
 		accumulator.addNetworkRbs(tokenMintMeta.getTransferRecordDb() * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
-	public void tokenWipeUsage(final SigUsage sigUsage,
-			final BaseTransactionMeta baseMeta,
-			final TokenWipeMeta tokenWipeMeta,
-			final UsageAccumulator accumulator) {
+	public void tokenWipeUsage(final SigUsage sigUsage, final BaseTransactionMeta baseMeta,
+			final TokenWipeMeta tokenWipeMeta, final UsageAccumulator accumulator) {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
 
 		accumulator.addBpt(tokenWipeMeta.getBpt());
 		accumulator.addNetworkRbs(tokenWipeMeta.getTransferRecordDb() * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
-	public void tokenGrantKycUsage(final SigUsage sigUsage,
-			final BaseTransactionMeta baseMeta,
-			final TokenGrantKycMeta tokenGrantKycMeta,
-			final UsageAccumulator accumulator) {
+	public void tokenGrantKycUsage(final SigUsage sigUsage, final BaseTransactionMeta baseMeta,
+			final TokenGrantKycMeta tokenGrantKycMeta, final UsageAccumulator accumulator) {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
 
 		accumulator.addBpt(tokenGrantKycMeta.getBpt());
 	}
 
-	public void tokenRevokeKycUsage(final SigUsage sigUsage,
-			final BaseTransactionMeta baseMeta,
-			final TokenRevokeKycMeta tokenRevokeKycMeta,
-			final UsageAccumulator accumulator) {
+	public void tokenRevokeKycUsage(final SigUsage sigUsage, final BaseTransactionMeta baseMeta,
+			final TokenRevokeKycMeta tokenRevokeKycMeta, final UsageAccumulator accumulator) {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
 
 		accumulator.addBpt(tokenRevokeKycMeta.getBpt());
 	}
 
-	public void tokenUpdateUsage(final SigUsage sigUsage,
-			final BaseTransactionMeta baseMeta,
-			final TokenUpdateMeta tokenUpdateMeta,
-			final ExtantTokenContext extantTokenContext,
+	public void tokenFreezeUsage(final SigUsage sigUsage, final BaseTransactionMeta baseMeta,
+			final TokenFreezeMeta tokenFreezeMeta, final UsageAccumulator accumulator) {
+		accumulator.resetForTransaction(baseMeta, sigUsage);
+
+		accumulator.addBpt(tokenFreezeMeta.getBpt());
+	}
+
+	public void tokenUnfreezeUsage(final SigUsage sigUsage, final BaseTransactionMeta baseMeta,
+			final TokenUnfreezeMeta tokenUnfreezeMeta, final UsageAccumulator accumulator) {
+		accumulator.resetForTransaction(baseMeta, sigUsage);
+
+		accumulator.addBpt(tokenUnfreezeMeta.getBpt());
+	}
+
+	public void tokenUpdateUsage(final SigUsage sigUsage, final BaseTransactionMeta baseMeta,
+			final TokenUpdateMeta tokenUpdateMeta, final ExtantTokenContext extantTokenContext,
 			final UsageAccumulator accumulator) {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
 
 		long rbSize = 0;
 		rbSize += tokenUpdateMeta.getNewKeysLen();
-		if(!tokenUpdateMeta.getRemoveAutoRenewAccount() &&
-				(extantTokenContext.getHashasAutoRenewAccount() || tokenUpdateMeta.hasAutoRenewAccount())) {
+		if (!tokenUpdateMeta.getRemoveAutoRenewAccount()
+				&& (extantTokenContext.getHashasAutoRenewAccount() || tokenUpdateMeta.hasAutoRenewAccount())) {
 			rbSize += BASIC_ENTITY_ID_SIZE;
 		}
 
-		rbSize += tokenUpdateMeta.getNewSymLen() > 0 ? tokenUpdateMeta.getNewSymLen() : extantTokenContext.getExistingSymLen();
-		rbSize += tokenUpdateMeta.getNewNameLen() > 0 ? tokenUpdateMeta.getNewNameLen() : extantTokenContext.getExistingNameLen();
-		rbSize += tokenUpdateMeta.getNewMemoLen() > 0 ? tokenUpdateMeta.getNewMemoLen() : extantTokenContext.getExistingMemoLen();
+		rbSize += tokenUpdateMeta.getNewSymLen() > 0 ? tokenUpdateMeta.getNewSymLen()
+				: extantTokenContext.getExistingSymLen();
+		rbSize += tokenUpdateMeta.getNewNameLen() > 0 ? tokenUpdateMeta.getNewNameLen()
+				: extantTokenContext.getExistingNameLen();
+		rbSize += tokenUpdateMeta.getNewMemoLen() > 0 ? tokenUpdateMeta.getNewMemoLen()
+				: extantTokenContext.getExistingMemoLen();
 
 		long newLifeTime = Math.max(tokenUpdateMeta.getNewExpiry(), extantTokenContext.getExistingExpiry())
 				- tokenUpdateMeta.getNewEffectiveTxnStartTime();
@@ -244,45 +231,37 @@ public final class TokenOpsUsage {
 		long existingRbSize = extantTokenContext.getExistingRbSize();
 
 		long rbsDelta = Math.max(0, newLifeTime * (rbSize - existingRbSize));
-		if(rbsDelta > 0) {
+		if (rbsDelta > 0) {
 			accumulator.addRbs(rbsDelta);
 		}
 
 		long txnBytes = rbSize + BASIC_ENTITY_ID_SIZE + noRbImpactBytes(tokenUpdateMeta);
 		accumulator.addBpt(txnBytes);
-		if(tokenUpdateMeta.hasTreasury()) {
-			accumulator.addNetworkRbs(
-					tokenEntitySizes.bytesUsedToRecordTokenTransfers(1, 2, 0)
-							* usageProperties.legacyReceiptStorageSecs());
+		if (tokenUpdateMeta.hasTreasury()) {
+			accumulator.addNetworkRbs(tokenEntitySizes.bytesUsedToRecordTokenTransfers(1, 2, 0)
+					* usageProperties.legacyReceiptStorageSecs());
 		}
 	}
 
-	public void tokenAssociateUsage(final SigUsage sigUsage,
-			final BaseTransactionMeta baseMeta,
-			final TokenAssociateMeta tokenAssociateMeta,
-			final UsageAccumulator accumulator) {
+	public void tokenAssociateUsage(final SigUsage sigUsage, final BaseTransactionMeta baseMeta,
+			final TokenAssociateMeta tokenAssociateMeta, final UsageAccumulator accumulator) {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
 		accumulator.addBpt(tokenAssociateMeta.getBpt());
-		accumulator.addRbs(tokenAssociateMeta.getNumOfTokens()
-				* tokenEntitySizes.bytesUsedPerAccountRelationship() * tokenAssociateMeta.getRelativeLifeTime());
+		accumulator.addRbs(tokenAssociateMeta.getNumOfTokens() * tokenEntitySizes.bytesUsedPerAccountRelationship()
+				* tokenAssociateMeta.getRelativeLifeTime());
 	}
 
-	public void tokenDissociateUsage(final SigUsage sigUsage,
-			final BaseTransactionMeta baseMeta,
-			final TokenDissociateMeta tokenDissociateMeta,
-			final UsageAccumulator accumulator) {
+	public void tokenDissociateUsage(final SigUsage sigUsage, final BaseTransactionMeta baseMeta,
+			final TokenDissociateMeta tokenDissociateMeta, final UsageAccumulator accumulator) {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
 
 		accumulator.addBpt(tokenDissociateMeta.getBpt());
 	}
 
-
-
 	private int noRbImpactBytes(TokenUpdateMeta opMeta) {
-		return ((opMeta.getNewExpiry() > 0) ? LONG_SIZE : 0) +
-				((opMeta.getNewAutoRenewPeriod() > 0) ? LONG_SIZE : 0) +
-				(opMeta.hasTreasury() ? BASIC_ENTITY_ID_SIZE : 0) +
-				(opMeta.hasAutoRenewAccount() ? BASIC_ENTITY_ID_SIZE : 0);
+		return ((opMeta.getNewExpiry() > 0) ? LONG_SIZE : 0) + ((opMeta.getNewAutoRenewPeriod() > 0) ? LONG_SIZE : 0)
+				+ (opMeta.hasTreasury() ? BASIC_ENTITY_ID_SIZE : 0)
+				+ (opMeta.hasAutoRenewAccount() ? BASIC_ENTITY_ID_SIZE : 0);
 	}
 
 	private int plusCollectorSize(final int feeReprSize) {

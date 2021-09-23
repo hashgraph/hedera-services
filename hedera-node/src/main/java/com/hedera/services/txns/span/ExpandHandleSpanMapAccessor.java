@@ -3,15 +3,15 @@ package com.hedera.services.txns.span;
 /*-
  * ‌
  * Hedera Services Node
- * ​
+ *
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -32,6 +32,8 @@ import com.hedera.services.usage.token.meta.TokenDissociateMeta;
 import com.hedera.services.usage.token.meta.TokenGrantKycMeta;
 import com.hedera.services.usage.token.meta.TokenRevokeKycMeta;
 import com.hedera.services.usage.token.meta.TokenUpdateMeta;
+import com.hedera.services.usage.token.meta.TokenFreezeMeta;
+import com.hedera.services.usage.token.meta.TokenUnfreezeMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
 import com.hedera.services.utils.TxnAccessor;
 
@@ -54,6 +56,8 @@ public class ExpandHandleSpanMapAccessor {
 	private static final String TOKEN_REVOKE_KYC_META_KEY = "tokenRevokeKycMeta";
 	private static final String TOKEN_ASSOCIATE_META_KEY = "tokenAssociateMeta";
 	private static final String TOKEN_DISSOCIATE_META_KEY = "tokenDissociateMeta";
+	private static final String TOKEN_FREEZE_META_KEY = "tokenFreezeMeta";
+	private static final String TOKEN_UNFREEZE_META_KEY = "tokenUnfreezeMeta";
 	private static final String CRYPTO_CREATE_META_KEY = "cryptoCreateMeta";
 	private static final String CRYPTO_UPDATE_META_KEY = "cryptoUpdateMeta";
 
@@ -101,6 +105,22 @@ public class ExpandHandleSpanMapAccessor {
 		return (TokenWipeMeta) accessor.getSpanMap().get(TOKEN_WIPE_META_KEY);
 	}
 
+	public void setTokenFreezeMeta(TxnAccessor accessor, TokenFreezeMeta tokenFreezeMeta) {
+		accessor.getSpanMap().put(TOKEN_FREEZE_META_KEY, tokenFreezeMeta);
+	}
+
+	public TokenFreezeMeta getTokenFreezeMeta(TxnAccessor accessor) {
+		return (TokenFreezeMeta) accessor.getSpanMap().get(TOKEN_FREEZE_META_KEY);
+	}
+
+	public void setTokenUnfreezeMeta(TxnAccessor accessor, TokenUnfreezeMeta tokenUnfreezeMeta) {
+		accessor.getSpanMap().put(TOKEN_UNFREEZE_META_KEY, tokenUnfreezeMeta);
+	}
+
+	public TokenUnfreezeMeta getTokenUnfreezeMeta(TxnAccessor accessor) {
+		return (TokenUnfreezeMeta) accessor.getSpanMap().get(TOKEN_UNFREEZE_META_KEY);
+	}
+
 	public void setCryptoCreateMeta(TxnAccessor accessor, CryptoCreateMeta cryptoCreateMeta) {
 		accessor.getSpanMap().put(CRYPTO_CREATE_META_KEY, cryptoCreateMeta);
 	}
@@ -128,6 +148,7 @@ public class ExpandHandleSpanMapAccessor {
 	public void setTokenGrantKycMeta(TxnAccessor accessor, TokenGrantKycMeta tokenGrantKycMeta) {
 		accessor.getSpanMap().put(TOKEN_GRANT_KYC_META_KEY, tokenGrantKycMeta);
 	}
+
 	public TokenGrantKycMeta getTokenGrantKycMeta(TxnAccessor accessor) {
 		return (TokenGrantKycMeta) accessor.getSpanMap().get(TOKEN_GRANT_KYC_META_KEY);
 	}
@@ -135,6 +156,7 @@ public class ExpandHandleSpanMapAccessor {
 	public void setTokenRevokeKycMeta(TxnAccessor accessor, TokenRevokeKycMeta tokenRevokeKycMeta) {
 		accessor.getSpanMap().put(TOKEN_REVOKE_KYC_META_KEY, tokenRevokeKycMeta);
 	}
+
 	public TokenRevokeKycMeta getTokenRevokeKycMeta(TxnAccessor accessor) {
 		return (TokenRevokeKycMeta) accessor.getSpanMap().get(TOKEN_REVOKE_KYC_META_KEY);
 	}
@@ -142,6 +164,7 @@ public class ExpandHandleSpanMapAccessor {
 	public void setTokenAssociateMeta(TxnAccessor accessor, TokenAssociateMeta tokenAssociateMeta) {
 		accessor.getSpanMap().put(TOKEN_ASSOCIATE_META_KEY, tokenAssociateMeta);
 	}
+
 	public TokenAssociateMeta getTokenAssociateMeta(TxnAccessor accessor) {
 		return (TokenAssociateMeta) accessor.getSpanMap().get(TOKEN_ASSOCIATE_META_KEY);
 	}
@@ -149,6 +172,7 @@ public class ExpandHandleSpanMapAccessor {
 	public void setTokenDissociateMeta(TxnAccessor accessor, TokenDissociateMeta tokenDissociateMeta) {
 		accessor.getSpanMap().put(TOKEN_DISSOCIATE_META_KEY, tokenDissociateMeta);
 	}
+
 	public TokenDissociateMeta getTokenDissociateMeta(TxnAccessor accessor) {
 		return (TokenDissociateMeta) accessor.getSpanMap().get(TOKEN_DISSOCIATE_META_KEY);
 	}
