@@ -29,6 +29,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -58,5 +59,36 @@ class TopicStoreTest {
 		
 		verify(topics).put(any(), any());
 		verify(mockAutoRenewId).asEntityId();
+	}
+	@Test
+	void persistsAsExpected() {
+		final var id = Id.DEFAULT;
+		final var topic = new Topic(id);
+		topic.setMemo("newMemo");
+		topic.setSequenceNumber(11);
+		final var merkleTopic = new MerkleTopic();
+		merkleTopic.setMemo("memo");
+		merkleTopic.setSequenceNumber(10);
+		given(topics.getForModify(any())).willReturn(merkleTopic);
+		subject.persistTopic(topic);
+		
+		verify(topics).getForModify(any());
+		assertEquals("newMemo", merkleTopic.getMemo());
+		assertEquals(11, merkleTopic.getSequenceNumber());
+	}
+	
+	@Test
+	void loadsAsExpected() {
+		topics = new MerkleMap<>();
+		final var merkleTopic = new MerkleTopic();
+		merkleTopic.setMemo("memo");
+		merkleTopic.setSequenceNumber(12);
+		topics.put(EntityNum.fromTopicId(Id.DEFAULT.asGrpcTopic()), merkleTopic);
+		
+		subject = new TopicStore(() -> topics, transactionRecordService);
+		
+		var model = subject.loadTopic(Id.DEFAULT);
+		assertEquals(merkleTopic.getMemo(), model.getMemo());
+		assertEquals(merkleTopic.getSequenceNumber(), model.getSequenceNumber());
 	}
 }

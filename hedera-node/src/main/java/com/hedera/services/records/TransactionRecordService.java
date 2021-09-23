@@ -163,5 +163,8 @@ public class TransactionRecordService {
 		if (topic.isNew()) {
 			txnCtx.setCreated(topic.getId().asGrpcTopic());
 		}
+		if (topic.hasUpdatedHashAndSeqNo()) {
+			txnCtx.setTopicRunningHash(topic.getRunningHash(), topic.getSequenceNumber());
+		}
 	}
 }

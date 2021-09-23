@@ -23,9 +23,13 @@ package com.hedera.services.txns.consensus;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.services.store.TopicStore;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.Topic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
@@ -41,21 +45,22 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 
 import static com.hedera.test.utils.IdUtils.asTopic;
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_MESSAGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.never;
 
 class SubmitMessageTransitionLogicTest {
 	private static final String TOPIC_ID = "8.6.75";
@@ -67,9 +72,11 @@ class SubmitMessageTransitionLogicTest {
 	private PlatformTxnAccessor accessor;
 	private OptionValidator validator;
 	private SubmitMessageTransitionLogic subject;
-	private MerkleMap<EntityNum, MerkleTopic> topics = new MerkleMap<>();
+	private final MerkleMap<EntityNum, MerkleTopic> topics = new MerkleMap<>();
 	private GlobalDynamicProperties globalDynamicProperties;
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
+	private final TopicStore topicStore = mock(TopicStore.class);
+	private final Topic topic = mock(Topic.class);
 
 	@BeforeEach
 	private void setup() {
@@ -82,7 +89,7 @@ class SubmitMessageTransitionLogicTest {
 		topics.clear();
 		globalDynamicProperties = mock(GlobalDynamicProperties.class);
 		given(globalDynamicProperties.messageMaxBytesAllowed()).willReturn(1024);
-		subject = new SubmitMessageTransitionLogic(() -> topics, validator, transactionContext, globalDynamicProperties);
+		subject = new SubmitMessageTransitionLogic(transactionContext, globalDynamicProperties, topicStore);
 	}
 
 	@Test
@@ -105,34 +112,30 @@ class SubmitMessageTransitionLogicTest {
 	void followsHappyPath() {
 		// given:
 		givenValidTransactionContext();
-
+		final var happyTopic = new Topic(Id.fromGrpcTopic(asTopic(TOPIC_ID)));
+		given(topicStore.loadTopic(any())).willReturn(happyTopic);
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		var topic = topics.get(EntityNum.fromTopicId(asTopic(TOPIC_ID)));
-		assertNotNull(topic);
-		assertEquals(1L, topic.getSequenceNumber()); // Starts at 0.
+		assertEquals(1L, happyTopic.getSequenceNumber()); // Starts at 0.
 
 		// Hash depends on prior state of topic (default topic object has 0s for runningHash and 0L for seqNum),
 		// consensus timestamp, message.
 		assertEquals("c44860f057eca2ea865821f5211420afe231dc2a485c277405d14f8421bb97f4a34ddd53db84bcf064045d10e7fca822",
-				CommonUtils.hex(topic.getRunningHash()));
-
-		verify(transactionContext).setStatus(SUCCESS);
+				CommonUtils.hex(happyTopic.getRunningHash()));
 	}
 
 	@Test
 	void failsWithEmptyMessage() {
 		// given:
 		givenTransactionContextNoMessage();
-
+		
 		// when:
-		subject.doStateTransition();
+		assertFailsWith(() -> subject.doStateTransition(), INVALID_TOPIC_MESSAGE);
 
 		// then:
 		assertUnchangedTopics();
-		verify(transactionContext).setStatus(INVALID_TOPIC_MESSAGE);
 	}
 
 	@Test
@@ -142,11 +145,10 @@ class SubmitMessageTransitionLogicTest {
 		given(globalDynamicProperties.messageMaxBytesAllowed()).willReturn(5);
 
 		// when:
-		subject.doStateTransition();
+		assertFailsWith(() -> subject.doStateTransition(), MESSAGE_SIZE_TOO_LARGE);
 
 		// then:
 		assertUnchangedTopics();
-		verify(transactionContext).setStatus(MESSAGE_SIZE_TOO_LARGE);
 	}
 
 
@@ -155,25 +157,18 @@ class SubmitMessageTransitionLogicTest {
 	void failsForInvalidTopic() {
 		// given:
 		givenTransactionContextInvalidTopic();
-
+		given(topicStore.loadTopic(any())).willThrow(new InvalidTransactionException(INVALID_TOPIC_ID));
 		// when:
-		subject.doStateTransition();
-
-		// then:
-		assertTrue(topics.isEmpty());
-		verify(transactionContext).setStatus(INVALID_TOPIC_ID);
+		assertFailsWith(() -> subject.doStateTransition(), INVALID_TOPIC_ID);
 	}
 
 	@Test
 	void failsForInvalidChunkNumber() {
 		// given:
 		givenChunkMessage(2, 3, defaultTxnId());
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(transactionContext).setStatus(INVALID_CHUNK_NUMBER);
+		
+		// when & then:
+		assertFailsWith(() -> subject.doStateTransition(), INVALID_CHUNK_NUMBER);
 	}
 
 	@Test
@@ -185,23 +180,21 @@ class SubmitMessageTransitionLogicTest {
 				.build();
 		givenChunkMessage(3, 2, txnId(initialTransactionPayer, EPOCH_SECOND));
 
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(transactionContext).setStatus(INVALID_CHUNK_TRANSACTION_ID);
+		// when & then:
+		assertFailsWith(() -> subject.doStateTransition(), INVALID_CHUNK_TRANSACTION_ID);
 	}
 
 	@Test
 	void acceptsChunkNumberDifferentThan1HavingTheSamePayerEvenWhenNotMatchingValidStart() {
 		// given:
 		givenChunkMessage(5, 5, txnId(payer, EPOCH_SECOND - 30));
+		given(topicStore.loadTopic(any())).willReturn(topic);
 
 		// when:
 		subject.doStateTransition();
 
-		// then:
-		verify(transactionContext).setStatus(SUCCESS);
+		// 
+		verify(topicStore).persistTopic(any());
 	}
 
 	@Test
@@ -209,29 +202,27 @@ class SubmitMessageTransitionLogicTest {
 		// given:
 		givenChunkMessage(4, 1, txnId(payer, EPOCH_SECOND - 30));
 
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(transactionContext).setStatus(INVALID_CHUNK_TRANSACTION_ID);
+		// when & then:
+		assertFailsWith(() -> subject.doStateTransition(), INVALID_CHUNK_TRANSACTION_ID);
 	}
 
 	@Test
 	void acceptsChunkNumber1WhenItsTransactionIDMatchesTheEntireInitialTransactionID() {
 		// given:
 		givenChunkMessage(1, 1, defaultTxnId());
-
+		given(topicStore.loadTopic(any())).willReturn(topic);
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(transactionContext).setStatus(SUCCESS);
+		verify(topicStore).persistTopic(any());
 	}
 
 	private void assertUnchangedTopics() {
 		var topic = topics.get(EntityNum.fromTopicId(asTopic(TOPIC_ID)));
 		assertEquals(0L, topic.getSequenceNumber());
 		assertArrayEquals(new byte[48], topic.getRunningHash());
+		verify(topicStore, never()).persistTopic(any());
 	}
 
 	private ConsensusSubmitMessageTransactionBody.Builder getBasicValidTransactionBodyBuilder() {

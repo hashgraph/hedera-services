@@ -46,6 +46,7 @@ public class TopicConversion {
 		model.setExpirationTimestamp(merkle.getExpirationTimestamp());
 		model.setDeleted(merkle.isDeleted());
 		model.setSequenceNumber(merkle.getSequenceNumber());
+		model.setRunningHash(merkle.getRunningHash());
 	}
 
 	public static MerkleTopic fromModel(final Topic model) {
@@ -60,7 +61,7 @@ public class TopicConversion {
 	 * @param model - the Topic model which will be used to map into a MerkleTopic
 	 * @param merkle - the merkle topic
 	 */
-	private static void modelToMerkle(final Topic model, final MerkleTopic merkle) {
+	public static void modelToMerkle(final Topic model, final MerkleTopic merkle) {
 		merkle.setAdminKey(model.getAdminKey());
 		merkle.setSubmitKey(model.getSubmitKey());
 		merkle.setMemo(model.getMemo());
@@ -71,5 +72,6 @@ public class TopicConversion {
 		merkle.setExpirationTimestamp(model.getExpirationTimestamp());
 		merkle.setDeleted(model.isDeleted());
 		merkle.setSequenceNumber(model.getSequenceNumber());
+		merkle.setRunningHash(model.getRunningHash());
 	}
 }
