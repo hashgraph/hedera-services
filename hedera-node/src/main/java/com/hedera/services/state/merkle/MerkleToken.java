@@ -564,17 +564,17 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 		return memo;
 	}
 
-	public void setMemo(String memo) {
+	public void setMemo(final String memo) {
 		throwIfImmutable("Cannot change this token's memo if it's immutable.");
 		this.memo = memo;
 	}
 
-	public void setAccountsFrozenByDefault(boolean accountsFrozenByDefault) {
+	public void setAccountsFrozenByDefault(final boolean accountsFrozenByDefault) {
 		throwIfImmutable("Cannot change this token's default frozen status if it's immutable.");
 		this.accountsFrozenByDefault = accountsFrozenByDefault;
 	}
 
-	public void setAccountsKycGrantedByDefault(boolean accountsKycGrantedByDefault) {
+	public void setAccountsKycGrantedByDefault(final boolean accountsKycGrantedByDefault) {
 		throwIfImmutable("Cannot change this token's default frozen status if it's immutable.");
 		this.accountsKycGrantedByDefault = accountsKycGrantedByDefault;
 	}
@@ -583,7 +583,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 		return lastUsedSerialNumber;
 	}
 
-	public void setLastUsedSerialNumber(long serialNum) {
+	public void setLastUsedSerialNumber(final long serialNum) {
 		throwIfImmutable("Cannot change this token's last used serial number if it's immutable.");
 		this.lastUsedSerialNumber = serialNum;
 	}
@@ -592,12 +592,12 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 		return tokenType;
 	}
 
-	public void setTokenType(TokenType tokenType) {
+	public void setTokenType(final TokenType tokenType) {
 		throwIfImmutable("Cannot change this token's token type if it's immutable.");
 		this.tokenType = tokenType;
 	}
 
-	public void setTokenType(int tokenTypeInt) {
+	public void setTokenType(final int tokenTypeInt) {
 		throwIfImmutable("Cannot change this token's token type through value if it's immutable.");
 		this.tokenType = TokenType.values()[tokenTypeInt];
 	}
@@ -606,12 +606,12 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 		return supplyType;
 	}
 
-	public void setSupplyType(TokenSupplyType supplyType) {
+	public void setSupplyType(final TokenSupplyType supplyType) {
 		throwIfImmutable("Cannot change this token's supply type if it's immutable.");
 		this.supplyType = supplyType;
 	}
 
-	public void setSupplyType(int supplyTypeInt) {
+	public void setSupplyType(final int supplyTypeInt) {
 		throwIfImmutable("Cannot change this token's supply type through value if it's immutable.");
 		this.supplyType = TokenSupplyType.values()[supplyTypeInt];
 	}
@@ -620,7 +620,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 		return maxSupply;
 	}
 
-	public void setMaxSupply(long maxSupply) {
+	public void setMaxSupply(final long maxSupply) {
 		throwIfImmutable("Cannot change this token's max supply if it's immutable.");
 		this.maxSupply = maxSupply;
 	}
@@ -629,7 +629,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 		return feeSchedule;
 	}
 
-	public void setFeeSchedule(List<FcCustomFee> feeSchedule) {
+	public void setFeeSchedule(final List<FcCustomFee> feeSchedule) {
 		throwIfImmutable("Cannot change this token's fee schedule if it's immutable.");
 		this.feeSchedule = feeSchedule;
 	}
@@ -642,7 +642,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 		return grpcList;
 	}
 
-	public void setFeeScheduleFrom(List<CustomFee> grpcFeeSchedule) {
+	public void setFeeScheduleFrom(final List<CustomFee> grpcFeeSchedule) {
 		throwIfImmutable("Cannot change this token's fee schedule from grpc if it's immutable.");
 		feeSchedule = grpcFeeSchedule.stream().map(FcCustomFee::fromGrpc).collect(toList());
 	}
