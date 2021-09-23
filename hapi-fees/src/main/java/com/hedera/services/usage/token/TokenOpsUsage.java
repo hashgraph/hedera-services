@@ -61,7 +61,6 @@ public final class TokenOpsUsage {
 	private static final int ROYALTY_HBAR_FALLBACK_REPR_SIZE = ROYALTY_NO_FALLBACK_REPR_SIZE + FIXED_HBAR_REPR_SIZE;
 	private static final int ROYALTY_HTS_FALLBACK_REPR_SIZE = ROYALTY_NO_FALLBACK_REPR_SIZE + FIXED_HTS_REPR_SIZE;
 	private static final long LONG_BASIC_ENTITY_ID_SIZE = BASIC_ENTITY_ID_SIZE;
-	private static final int AMOUNT_REPR_BYTES = 8;
 
 	static TokenEntitySizes tokenEntitySizes = TOKEN_ENTITY_SIZES;
 	protected static UsageProperties usageProperties = USAGE_PROPERTIES;
@@ -238,8 +237,8 @@ public final class TokenOpsUsage {
 		rbSize += tokenUpdateMeta.getNewNameLen() > 0 ? tokenUpdateMeta.getNewNameLen() : extantTokenContext.getExistingNameLen();
 		rbSize += tokenUpdateMeta.getNewMemoLen() > 0 ? tokenUpdateMeta.getNewMemoLen() : extantTokenContext.getExistingMemoLen();
 
-		long newLifeTime = Math.max(tokenUpdateMeta.getNewExpiry() - tokenUpdateMeta.getNewEffectiveTxnStartTime(),
-				extantTokenContext.getExistingExpiry() - tokenUpdateMeta.getNewEffectiveTxnStartTime());
+		long newLifeTime = Math.max(tokenUpdateMeta.getNewExpiry(), extantTokenContext.getExistingExpiry())
+				- tokenUpdateMeta.getNewEffectiveTxnStartTime();
 		newLifeTime = Math.min(newLifeTime, MAX_ENTITY_LIFETIME);
 
 		long existingRbSize = extantTokenContext.getExistingRbSize();
@@ -251,7 +250,7 @@ public final class TokenOpsUsage {
 
 		long txnBytes = rbSize + BASIC_ENTITY_ID_SIZE + noRbImpactBytes(tokenUpdateMeta);
 		accumulator.addBpt(txnBytes);
-		if(tokenUpdateMeta.hasTreasure()) {
+		if(tokenUpdateMeta.hasTreasury()) {
 			accumulator.addNetworkRbs(
 					tokenEntitySizes.bytesUsedToRecordTokenTransfers(1, 2, 0)
 							* usageProperties.legacyReceiptStorageSecs());
@@ -280,9 +279,9 @@ public final class TokenOpsUsage {
 
 
 	private int noRbImpactBytes(TokenUpdateMeta opMeta) {
-		return ((opMeta.getNewExpiry() > 0) ? AMOUNT_REPR_BYTES : 0) +
-				((opMeta.getNewAutoRenewPeriod() > 0) ? AMOUNT_REPR_BYTES : 0) +
-				(opMeta.hasTreasure() ? BASIC_ENTITY_ID_SIZE : 0) +
+		return ((opMeta.getNewExpiry() > 0) ? LONG_SIZE : 0) +
+				((opMeta.getNewAutoRenewPeriod() > 0) ? LONG_SIZE : 0) +
+				(opMeta.hasTreasury() ? BASIC_ENTITY_ID_SIZE : 0) +
 				(opMeta.hasAutoRenewAccount() ? BASIC_ENTITY_ID_SIZE : 0);
 	}
 

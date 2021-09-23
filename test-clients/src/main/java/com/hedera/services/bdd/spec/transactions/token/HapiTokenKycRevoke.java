@@ -82,10 +82,6 @@ public class HapiTokenKycRevoke extends HapiTxnOp<HapiTokenKycRevoke> {
 		return AdapterUtils.feeDataFrom(accumulator);
 	}
 
-//	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
-//		return TokenRevokeKycUsage.newEstimate(txn, suFrom(svo)).get();
-//	}
-
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		var aId = TxnUtils.asId(account, spec);

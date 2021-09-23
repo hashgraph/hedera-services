@@ -29,7 +29,7 @@ public class TokenUpdateMeta {
 	private final int newNameLen;
 	private final int newMemoLen;
 	private final int newKeysLen;
-	private final boolean hasTreasure;
+	private final boolean hasTreasury;
 	private final boolean removeAutoRenewAccount;
 	private final boolean hasAutoRenewAccount;
 	private final long newExpiry;
@@ -44,7 +44,7 @@ public class TokenUpdateMeta {
 		this.newExpiry = builder.newExpiry;
 		this.removeAutoRenewAccount = builder.removeAutoRenewAccount;
 		this.hasAutoRenewAccount = builder.hasAutoRenewAccount;
-		this.hasTreasure = builder.hasTreasure;
+		this.hasTreasury = builder.hasTreasure;
 		this.newAutoRenewPeriod = builder.newAutoRenewPeriod;
 		this.newEffectiveTxnStartTime = builder.newEffectiveTxnStartTime;
 	}
@@ -77,8 +77,8 @@ public class TokenUpdateMeta {
 	public boolean hasAutoRenewAccount() {
 		return hasAutoRenewAccount;
 	}
-	public boolean hasTreasure() {
-		return hasTreasure;
+	public boolean hasTreasury() {
+		return hasTreasury;
 	}
 
 	public static TokenUpdateMeta.Builder newBuilder() {
@@ -180,7 +180,7 @@ public class TokenUpdateMeta {
 				.add("newAuroRenewPeriod", newAutoRenewPeriod)
 				.add("removeAutoRenewAccount", removeAutoRenewAccount)
 				.add("hasAutoRenewAccount", hasAutoRenewAccount)
-				.add("hasTreasure", hasTreasure)
+				.add("hasTreasure", hasTreasury)
 				.toString();
 	}
 }

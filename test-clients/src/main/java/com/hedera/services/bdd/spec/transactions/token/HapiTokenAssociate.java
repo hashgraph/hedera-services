@@ -86,7 +86,7 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
 		try {
 			expiry = lookupExpiry(spec);
 			return spec.fees().forActivityBasedOp(
-					HederaFunctionality.TokenDissociateFromAccount, this::usageEstimate, txn, numPayerKeys);
+					HederaFunctionality.TokenAssociateToAccount, this::usageEstimate, txn, numPayerKeys);
 		} catch (Throwable ignore) {
 			return 100_000_000L;
 		}

@@ -59,8 +59,6 @@ import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_EN
 public enum TokenOpsUsageUtils {
 	TOKEN_OPS_USAGE_UTILS;
 
-	private static final int AMOUNT_REPR_BYTES = 8;
-
 	public TokenCreateMeta tokenCreateUsageFrom(final TransactionBody txn) {
 		final var baseSize = getTokenTxnBaseSize(txn);
 
@@ -145,7 +143,7 @@ public enum TokenOpsUsageUtils {
 			rbs = metadataBytes * expectedLifeTime;
 			transferRecordRb = TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 0, op.getMetadataCount());
 		} else {
-			bpt = AMOUNT_REPR_BYTES;
+			bpt = LONG_SIZE;
 			transferRecordRb = TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 1, 0);
 		}
 		bpt += BASIC_ENTITY_ID_SIZE;
@@ -208,7 +206,7 @@ public enum TokenOpsUsageUtils {
 			transferRecordRb = TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 0, serialNumsCount);
 			bpt = serialNumsCount * LONG_SIZE;
 		} else {
-			bpt = AMOUNT_REPR_BYTES;
+			bpt = LONG_SIZE;
 			transferRecordRb = TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 1, 0);
 		}
 		bpt += BASIC_ENTITY_ID_SIZE;

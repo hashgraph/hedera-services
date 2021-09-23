@@ -223,7 +223,7 @@ class TokenOpsUsageUtilsTest {
 		assertEquals(10, tokenUpdateMeta.getNewNameLen());
 		assertEquals(10, tokenUpdateMeta.getNewSymLen());
 		assertEquals(904, tokenUpdateMeta.getNewKeysLen());
-		assertEquals(false, tokenUpdateMeta.hasTreasure());
+		assertEquals(false, tokenUpdateMeta.hasTreasury());
 		assertEquals(false, tokenUpdateMeta.getRemoveAutoRenewAccount());
 		assertEquals(true, tokenUpdateMeta.hasAutoRenewAccount());
 		assertEquals(0, tokenUpdateMeta.getNewAutoRenewPeriod());
@@ -240,7 +240,7 @@ class TokenOpsUsageUtilsTest {
 		assertEquals(10, tokenUpdateMeta.getNewNameLen());
 		assertEquals(10, tokenUpdateMeta.getNewSymLen());
 		assertEquals(904, tokenUpdateMeta.getNewKeysLen());
-		assertEquals(false, tokenUpdateMeta.hasTreasure());
+		assertEquals(false, tokenUpdateMeta.hasTreasury());
 		assertEquals(false, tokenUpdateMeta.getRemoveAutoRenewAccount());
 		assertEquals(false, tokenUpdateMeta.hasAutoRenewAccount());
 		assertEquals(0, tokenUpdateMeta.getNewAutoRenewPeriod());
