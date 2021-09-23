@@ -29,9 +29,8 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TopicStore;
 import com.hedera.services.store.models.Account;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hedera.test.utils.TxnUtils;
@@ -40,6 +39,7 @@ import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.merkle.map.MerkleMap;
@@ -52,8 +52,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
-import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asTopic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
@@ -62,25 +61,21 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class MerkleTopicCreateTransitionLogicTest {
+class TopicCreateTransitionLogicTest {
 	private static final long VALID_AUTORENEW_PERIOD_SECONDS = 30 * 86400L;
 	private static final long INVALID_AUTORENEW_PERIOD_SECONDS = -1L;
 	private static final String TOO_LONG_MEMO = "too-long";
 	private static final String VALID_MEMO = "memo";
-	private static final AccountID NEW_TOPIC_ID = asAccount("7.6.54321");
+	private static final TopicID NEW_TOPIC_ID = asTopic("7.6.54321");
 
 	// key to be used as a valid admin or submit key.
 	final private Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
@@ -157,9 +152,8 @@ class MerkleTopicCreateTransitionLogicTest {
 		given(autoRenew.isSmartContract()).willReturn(false);
 		given(validator.isValidAutoRenewPeriod(Duration.newBuilder().setSeconds(VALID_AUTORENEW_PERIOD_SECONDS).build()))
 				.willReturn(true);
-		given(validator.hasGoodEncoding(any())).willReturn(true);
 		given(transactionContext.consensusTime()).willReturn(consensusTimestamp);
-		given(entityIdSource.newAccountId(any())).willReturn(NEW_TOPIC_ID);
+		given(entityIdSource.newTopicId(any())).willReturn(NEW_TOPIC_ID);
 		// when:
 		subject.doStateTransition();
 		// then:
@@ -183,10 +177,10 @@ class MerkleTopicCreateTransitionLogicTest {
 	void badSubmitKey() {
 		// given:
 		givenTransactionWithInvalidSubmitKey();
-		given(validator.memoCheck(anyString())).willReturn(OK);
 		given(transactionContext.accessor()).willReturn(accessor);
 		given(accessor.getTxn()).willReturn(transactionBody);
 		// when:
+		given(validator.attemptDecodeOrThrow(any())).willThrow(new InvalidTransactionException(BAD_ENCODING));
 		TxnUtils.assertFailsWith(() -> subject.doStateTransition(), BAD_ENCODING);
 
 		// then:
@@ -274,6 +268,20 @@ class MerkleTopicCreateTransitionLogicTest {
 		assertTrue(topics.isEmpty());
 	}
 
+	@Test
+	void reclaimMethodDelegates() {
+		subject.reclaimCreatedIds();
+
+		verify(entityIdSource).reclaimProvisionalIds();
+	}
+
+	@Test
+	void resetMethodDelegates() {
+		subject.resetCreatedIds();
+
+		verify(entityIdSource).resetProvisionalIds();
+	}
+
 	private void givenTransaction(ConsensusCreateTopicTransactionBody.Builder body) {
 		transactionBody = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
@@ -307,9 +315,8 @@ class MerkleTopicCreateTransitionLogicTest {
 	private void givenTransactionWithInvalidSubmitKey() {
 		givenTransaction(
 				getBasicValidTransactionBodyBuilder()
-						.setSubmitKey(MISC_ACCOUNT_KT.asKey())
+						.setSubmitKey(Key.getDefaultInstance())
 		);
-		given(validator.hasGoodEncoding(MISC_ACCOUNT_KT.asKey())).willReturn(false);
 	}
 
 	private void givenTransactionWithInvalidAutoRenewPeriod() {

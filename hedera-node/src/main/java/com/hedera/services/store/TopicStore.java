@@ -26,6 +26,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.function.Supplier;
 
+import static com.hedera.services.store.models.TopicConversion.fromModel;
+
 /**
  * A store which interacts with the state topics, represented in a {@link MerkleMap}.
  * 
@@ -49,36 +51,15 @@ public class TopicStore {
 	/**
 	 * Persists a new {@link Topic} into the state, as well as exporting its ID to the transaction receipt.
 	 *
-	 * @param model
-	 * 		- the model to be mapped onto a new {@link MerkleTopic} and persisted.
+	 * @param topic
+	 * 		- the topic to be mapped onto a new {@link MerkleTopic} and persisted.
 	 */
-	public void persistNew(Topic model) {
-		final var id = model.getId().asEntityNum();
+	public void persistNew(Topic topic) {
+		final var id = topic.getId().asEntityNum();
 		final var currentTopics = topics.get();
-		final var merkleTopic = new MerkleTopic();
-		mapModelToMerkle(model, merkleTopic);
+		final var merkleTopic = fromModel(topic);
 		merkleTopic.setSequenceNumber(0);
 		currentTopics.put(id, merkleTopic);
-		transactionRecordService.includeChangesToTopic(model);
+		transactionRecordService.includeChangesToTopic(topic);
 	}
-
-	/**
-	 * Maps properties between a model {@link Topic} and a {@link MerkleTopic}
-	 * 
-	 * @param model - the Topic model which will be used to map into a MerkleTopic
-	 * @param merkle - the merkle topic
-	 */
-	private void mapModelToMerkle(Topic model, MerkleTopic merkle) {
-		merkle.setAdminKey(model.getAdminKey());
-		merkle.setSubmitKey(model.getSubmitKey());
-		merkle.setMemo(model.getMemo());
-		if (model.getAutoRenewAccountId() != null) {
-			merkle.setAutoRenewAccountId(model.getAutoRenewAccountId().asEntityId());
-		}
-		merkle.setAutoRenewDurationSeconds(model.getAutoRenewDurationSeconds());
-		merkle.setExpirationTimestamp(model.getExpirationTimestamp());
-		merkle.setDeleted(model.isDeleted());
-		merkle.setSequenceNumber(model.getSequenceNumber());
-	}
-
 }

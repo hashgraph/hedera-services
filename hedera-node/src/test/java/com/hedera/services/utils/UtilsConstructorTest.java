@@ -47,8 +47,11 @@ import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stats.ServicesStatsConfig;
+import com.hedera.services.store.models.TopicConversion;
 import com.hedera.services.store.tokens.views.utils.GrpcUtils;
 import com.hedera.services.txns.submission.PresolvencyFlaws;
+import com.hedera.services.txns.submission.SubmissionModule;
+import com.hedera.services.txns.token.TokenOpsValidator;
 import com.hedera.services.txns.token.process.NewRels;
 import com.hedera.services.txns.validation.PureValidation;
 import com.hedera.services.txns.validation.TokenListChecks;
@@ -102,7 +105,10 @@ class UtilsConstructorTest {
 			TokenTypesMapper.class,
 			UnzipUtility.class,
 			MiscUtils.class,
-			MetadataMapFactory.class
+			MetadataMapFactory.class,
+			SubmissionModule.class,
+			TokenOpsValidator.class,
+			TopicConversion.class
 	));
 
 	@Test

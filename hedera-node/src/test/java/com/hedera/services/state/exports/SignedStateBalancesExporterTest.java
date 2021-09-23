@@ -109,6 +109,7 @@ class SignedStateBalancesExporterTest {
 	private static final long secondNonNodeTokenBalance = 100;
 	private static final TokenID theDeletedToken = asToken("0.0.1005");
 	private static final long secondNonNodeDeletedTokenBalance = 100;
+	private static final TokenID theMissingToken = asToken("0.0.1006");
 
 	private static final byte[] sig = "not-really-a-sig".getBytes();
 	private static final byte[] fileHash = "not-really-a-hash".getBytes();
@@ -142,7 +143,7 @@ class SignedStateBalancesExporterTest {
 		firstNonNodeAccount = MerkleAccountFactory.newAccount().balance(firstNonNodeAccountBalance).get();
 		secondNonNodeAccount = MerkleAccountFactory.newAccount()
 				.balance(secondNonNodeAccountBalance)
-				.tokens(theToken, theDeletedToken)
+				.tokens(theToken, theDeletedToken, theMissingToken)
 				.get();
 		deletedAccount = MerkleAccountFactory.newAccount().deleted(true).get();
 
@@ -344,13 +345,17 @@ class SignedStateBalancesExporterTest {
 				.setAccountID(asAccount("0.0.1001"))
 				.setHbarBalance(firstNonNodeAccountBalance)
 				.build();
-		final var tokenBalances = TokenUnitBalance.newBuilder()
+		final var nonDeletedTokenUnits = TokenUnitBalance.newBuilder()
 				.setTokenId(theToken)
 				.setBalance(secondNonNodeTokenBalance);
+		final var deletedTokenUnits = TokenUnitBalance.newBuilder()
+				.setTokenId(theDeletedToken)
+				.setBalance(secondNonNodeDeletedTokenBalance);
 		final var secondNon = singleAcctBuilder
 				.setAccountID(asAccount("0.0.1002"))
 				.setHbarBalance(secondNonNodeAccountBalance)
-				.addTokenUnitBalances(tokenBalances)
+				.addTokenUnitBalances(nonDeletedTokenUnits)
+				.addTokenUnitBalances(deletedTokenUnits)
 				.build();
 
 		return List.of(thisNode, anotherNode, firstNon, secondNon);

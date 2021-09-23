@@ -49,7 +49,7 @@ class TopicStoreTest {
 	}
 	
 	@Test
-	void persistNew() {
+	void persistNewAsExpected() {
 		final var mockAutoRenewId = mock(Id.class);
 		final var topic = new Topic(Id.DEFAULT);
 		topic.setAutoRenewAccountId(mockAutoRenewId);

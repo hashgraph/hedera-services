@@ -16,26 +16,19 @@ package com.hedera.services.store.models;
  * limitations under the License.
  */
 
-import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.apache.commons.codec.DecoderException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nullable;
 import java.time.Instant;
 
 /**
  * Represents the model of a {@link com.hedera.services.state.merkle.MerkleTopic}.
- * 
+ *
  * @author Yoan Sredkov
  */
 public class Topic {
-	private final static Logger log = LogManager.getLogger(Topic.class);
-	
+
 	private final Id id;
 	private String memo;
 	private JKey adminKey;
@@ -45,33 +38,48 @@ public class Topic {
 	private boolean deleted;
 	private boolean isNew;
 	private RichInstant expirationTimestamp;
-	
+
 	private long sequenceNumber;
-	private byte[] runningHash;
-	
- 	public Topic(final Id id) {
+
+	public Topic(final Id id) {
 		this.id = id;
 	}
 
 	/**
 	 * Creates a new {@link Topic} from the given body.
 	 * Note: The created model is not added to state, and must be explicitly persisted via {@link com.hedera.services.store.TopicStore#persistNew(Topic)}
-	 * 
-	 * @param body - the gRPC transaction body
-	 * @param id - the id generated in the transition logic
-	 * @param expirationTime - expiration time of the topic,
-	 *               or when {@link com.hedera.services.txns.consensus.SubmitMessageTransitionLogic} will start failing.
+	 *
+	 * @param id
+	 * 		- the id generated in the transition logic
+	 * @param submitKey
+	 * 		- the key which permits submitting messages
+	 * @param adminKey
+	 * 		- the adminKey of the topic
+	 * @param autoRenewAccount
+	 * 		- the account which pays for the automatic renewal of the topic
+	 * @param memo
+	 * 		- memo of the topic
+	 * @param autoRenewPeriod
+	 * 		- the period of automatic renewal
+	 * @param expirationTime
+	 * 		- expiration time of the topic,
+	 * 		or when {@link com.hedera.services.txns.consensus.SubmitMessageTransitionLogic} will start failing.
 	 * @return - the new topic
 	 */
-	public static Topic fromGrpcTopicCreate(ConsensusCreateTopicTransactionBody body, Id id, Instant expirationTime) {
+	public static Topic fromGrpcTopicCreate(
+			Id id,
+			@Nullable JKey submitKey,
+			@Nullable JKey adminKey,
+			@Nullable Account autoRenewAccount,
+			String memo,
+			long autoRenewPeriod,
+			Instant expirationTime) {
 		final var topic = new Topic(id);
-		final var submitKey = body.hasSubmitKey() ? attemptDecodeOrThrow(body.getSubmitKey()) : null;
-		final var adminKey = body.hasAdminKey() ? attemptDecodeOrThrow(body.getAdminKey()) : null;
-		
-		topic.setMemo(body.getMemo());
+
+		topic.setMemo(memo);
 		topic.setDeleted(false);
-		topic.setAutoRenewDurationSeconds(body.getAutoRenewPeriod().getSeconds());
-		topic.setAutoRenewAccountId(body.hasAutoRenewAccount() ? Id.fromGrpcAccount(body.getAutoRenewAccount()) : null);
+		topic.setAutoRenewDurationSeconds(autoRenewPeriod);
+		topic.setAutoRenewAccountId(autoRenewAccount != null ? autoRenewAccount.getId() : null);
 		topic.setSubmitKey(submitKey);
 		topic.setAdminKey(adminKey);
 		topic.setExpirationTimestamp(RichInstant.fromJava(expirationTime));
@@ -79,14 +87,6 @@ public class Topic {
 		return topic;
 	}
 
-	private static JKey attemptDecodeOrThrow(Key k) {
-		try {
-			return JKey.mapKey(k);
-		} catch (DecoderException e) {
-			log.error("DecoderException should have been hit in TopicCreateTransitionLogic.validatePreStateTransition().", e);
-			throw new InvalidTransactionException(ResponseCodeEnum.BAD_ENCODING);
-		}
-	}
 
 	public Id getId() {
 		return id;

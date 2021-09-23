@@ -239,7 +239,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 								"0.0.123231", List.of(
 										ByteString.copyFromUtf8("m1")
 								)
-						))
+						).fee(ONE_HBAR))
 								.designatingPayer("schedulePayer")
 								.hasKnownStatus(UNRESOLVABLE_REQUIRED_SIGNERS)
 				).then();

@@ -22,7 +22,6 @@ package com.hedera.services.store.tokens.views;
 
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -54,7 +53,7 @@ public class ExplicitOwnersUniqTokenView extends AbstractUniqTokenView {
 
 	@Override
 	public List<TokenNftInfo> ownedAssociations(@Nonnull AccountID owner, long start, long end) {
-		final var accountId = EntityId.fromGrpcAccountId(owner);
-		return accumulatedInfo(nftsByOwner.get(), accountId, (int) start, (int) end, null, owner);
+		final var accountNum = EntityNum.fromAccountId(owner);
+		return accumulatedInfo(nftsByOwner.get(), accountNum, (int) start, (int) end, null, owner);
 	}
 }

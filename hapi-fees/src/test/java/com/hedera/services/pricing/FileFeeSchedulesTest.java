@@ -24,18 +24,12 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 
 class FileFeeSchedulesTest extends FeeSchedulesTestHelper {
 	@Test
 	void computesExpectedPriceForBaseAppend() throws IOException {
-		testExpectedPriceFor(FileAppend, DEFAULT);
-	}
-
-	@Test
-	void computesExpectedPriceForBaseCryptoCreate() throws IOException {
-		testExpectedPriceFor(CryptoCreate, DEFAULT);
+		testCanonicalPriceFor(FileAppend, DEFAULT);
 	}
 }

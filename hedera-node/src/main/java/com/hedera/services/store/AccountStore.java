@@ -94,7 +94,7 @@ public class AccountStore {
 	public Account loadAccountOrFailWith(Id id, @Nullable ResponseCodeEnum code) {
 		Account account;
 
-		final var key = EntityNum.fromLong(id.getNum());
+		final var key = EntityNum.fromModel(id);
 		final var merkleAccount = accounts.get().get(key);
 
 		validateUsable(merkleAccount, code);
@@ -127,6 +127,7 @@ public class AccountStore {
 		mutableAccount.setNftsOwned(account.getOwnedNfts());
 		mutableAccount.setMaxAutomaticAssociations(account.getMaxAutomaticAssociations());
 		mutableAccount.setAlreadyUsedAutomaticAssociations(account.getAlreadyUsedAutomaticAssociations());
+		mutableAccount.setSmartContract(account.isSmartContract());
 	}
 
 	private void validateUsable(MerkleAccount merkleAccount, @Nullable ResponseCodeEnum explicitResponse) {
