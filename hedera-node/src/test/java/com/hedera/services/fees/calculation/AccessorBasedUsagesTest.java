@@ -33,6 +33,8 @@ import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
+import com.hedera.services.usage.crypto.CryptoUpdateMeta;
+import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.services.usage.file.FileAppendMeta;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.services.usage.state.UsageAccumulator;
@@ -42,10 +44,13 @@ import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hedera.services.usage.token.meta.TokenBurnMeta;
 import com.hedera.services.usage.token.meta.TokenCreateMeta;
+import com.hedera.services.usage.token.meta.TokenFreezeMeta;
 import com.hedera.services.usage.token.meta.TokenMintMeta;
+import com.hedera.services.usage.token.meta.TokenUnfreezeMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -74,7 +79,9 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -271,6 +278,41 @@ class AccessorBasedUsagesTest {
 		verify(tokenOpsUsage).tokenMintUsage(sigUsage, baseMeta, tokenMintMeta, accumulator);
 	}
 
+
+	@Test
+	void worksAsExpectedForTokeFreezeAccount() {
+		// setup:
+		final var baseMeta = new BaseTransactionMeta(0, 0);
+		final var tokenFreezeMeta = new TokenFreezeMeta(48 );
+		final var accumulator = new UsageAccumulator();
+		given(txnAccessor.getFunction()).willReturn(TokenFreezeAccount);
+		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
+		given(txnAccessor.getSpanMapAccessor().getTokenFreezeMeta(any())).willReturn(tokenFreezeMeta);
+
+		// when:
+		subject.assess(sigUsage, txnAccessor, accumulator);
+
+		// then:
+		verify(tokenOpsUsage).tokenFreezeUsage(sigUsage, baseMeta, tokenFreezeMeta, accumulator);
+	}
+
+	@Test
+	void worksAsExpectedForTokeIUnfreezeAccount() {
+		// setup:
+		final var baseMeta = new BaseTransactionMeta(0, 0);
+		final var tokenUnfreezeMeta = new TokenUnfreezeMeta(48 );
+		final var accumulator = new UsageAccumulator();
+		given(txnAccessor.getFunction()).willReturn(TokenUnfreezeAccount);
+		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
+		given(txnAccessor.getSpanMapAccessor().getTokenUnfreezeMeta(any())).willReturn(tokenUnfreezeMeta);
+
+		// when:
+		subject.assess(sigUsage, txnAccessor, accumulator);
+
+		// then:
+		verify(tokenOpsUsage).tokenUnfreezeUsage(sigUsage, baseMeta, tokenUnfreezeMeta, accumulator);
+	}
+
 	@Test
 	void worksAsExpectedForCryptoCreate() {
 		final var baseMeta = new BaseTransactionMeta(100, 0);
@@ -291,13 +333,48 @@ class AccessorBasedUsagesTest {
 		verify(cryptoOpsUsage).cryptoCreateUsage(sigUsage, baseMeta, opMeta, accumulator);
 	}
 
+	@Test
+	void worksAsExpectedForCryptoUpdate() {
+		final var baseMeta = new BaseTransactionMeta(100, 0);
+		final var opMeta = new CryptoUpdateMeta.Builder()
+				.keyBytesUsed(123)
+				.msgBytesUsed(1_234)
+				.memoSize(100)
+				.effectiveNow(now)
+				.expiry(1_234_567L)
+				.hasProxy(false)
+				.maxAutomaticAssociations(3)
+				.hasMaxAutomaticAssociations(true)
+				.build();
+		final var cryptoContext = ExtantCryptoContext.newBuilder()
+				.setCurrentKey(Key.getDefaultInstance())
+				.setCurrentMemo(memo)
+				.setCurrentExpiry(now)
+				.setCurrentlyHasProxy(false)
+				.setCurrentNumTokenRels(0)
+				.setCurrentMaxAutomaticAssociations(0)
+				.build();
+		final var accumulator = new UsageAccumulator();
+
+		given(txnAccessor.getFunction()).willReturn(CryptoUpdate);
+		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
+		given(txnAccessor.getTxn()).willReturn(TransactionBody.getDefaultInstance());
+		given(txnAccessor.getSpanMapAccessor().getCryptoUpdateMeta(any())).willReturn(opMeta);
+		given(opUsageCtxHelper.ctxForCryptoUpdate(any())).willReturn(cryptoContext);
+
+		subject.assess(sigUsage, txnAccessor, accumulator);
+
+		verify(cryptoOpsUsage).cryptoUpdateUsage(sigUsage, baseMeta, opMeta, cryptoContext, accumulator);
+	}
+
 
 	@Test
 	void supportsIfInSet() {
 		assertTrue(subject.supports(CryptoTransfer));
 		assertTrue(subject.supports(ConsensusSubmitMessage));
 		assertTrue(subject.supports(CryptoCreate));
-		assertFalse(subject.supports(CryptoUpdate));
+		assertTrue(subject.supports(CryptoUpdate));
+		assertFalse(subject.supports(ContractCreate));
 	}
 
 	private Transaction signedFeeScheduleUpdateTxn() {

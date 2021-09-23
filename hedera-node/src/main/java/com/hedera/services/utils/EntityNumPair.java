@@ -31,8 +31,11 @@ import static com.hedera.services.context.properties.StaticPropertiesHolder.STAT
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedNums;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedLowOrder32From;
+import static com.hedera.services.utils.EntityNum.areValidNums;
 
 public class EntityNumPair {
+	static final EntityNumPair MISSING_NUM_PAIR = new EntityNumPair(0);
+
 	private final long value;
 
 	public EntityNumPair(long value) {
@@ -45,6 +48,9 @@ public class EntityNumPair {
 	}
 
 	public static EntityNumPair fromNftId(NftId id) {
+		if (!areValidNums(id.shard(), id.realm())) {
+			return MISSING_NUM_PAIR;
+		}
 		return fromLongs(id.num(), id.serialNo());
 	}
 

@@ -157,9 +157,9 @@ public class TypedTokenStore {
 	 * 		if the requested relationship does not exist
 	 */
 	public TokenRelationship loadTokenRelationship(Token token, Account account) {
-		final var tokenId = token.getId();
-		final var accountId = account.getId();
-		final var key = EntityNumPair.fromLongs(accountId.getNum(), tokenId.getNum());
+		final var tokenNum = EntityNum.fromModel(token.getId());
+		final var accountNum = EntityNum.fromModel(account.getId());
+		final var key = EntityNumPair.fromLongs(accountNum.longValue(), tokenNum.longValue());
 		final var merkleTokenRel = tokenRels.get().get(key);
 
 		validateUsable(merkleTokenRel);
@@ -246,7 +246,7 @@ public class TypedTokenStore {
 	 * 		if the requested token is missing, deleted, or expired and pending removal
 	 */
 	public Token loadToken(Id id) {
-		final var merkleToken = tokens.get().get(EntityNum.fromLong(id.getNum()));
+		final var merkleToken = tokens.get().get(EntityNum.fromModel(id));
 
 		validateUsable(merkleToken);
 
@@ -269,15 +269,14 @@ public class TypedTokenStore {
 	 * 		if the requested token class is missing, deleted, or expired and pending removal
 	 */
 	public void loadUniqueTokens(Token token, List<Long> serialNumbers) {
-		final var tokenId = token.getId();
-		final var tokenAsEntityId = tokenId.asEntityId();
+		final var tokenNum = EntityNum.fromModel(token.getId());
 		final var loadedUniqueTokens = new HashMap<Long, UniqueToken>();
 		final var curUniqueTokens = uniqueTokens.get();
 		for (long serialNumber : serialNumbers) {
-			final var uniqueTokenKey = EntityNumPair.fromLongs(tokenAsEntityId.num(), serialNumber);
+			final var uniqueTokenKey = EntityNumPair.fromLongs(tokenNum.longValue(), serialNumber);
 			final var merkleUniqueToken = curUniqueTokens.get(uniqueTokenKey);
 			validateUsable(merkleUniqueToken);
-			final var uniqueToken = new UniqueToken(tokenId, serialNumber);
+			final var uniqueToken = new UniqueToken(token.getId(), serialNumber);
 			initModelFields(uniqueToken, merkleUniqueToken);
 			loadedUniqueTokens.put(serialNumber, uniqueToken);
 		}
@@ -293,7 +292,7 @@ public class TypedTokenStore {
 	 * @return a usable model of the token
 	 */
 	public Token loadPossiblyDeletedOrAutoRemovedToken(Id id) {
-		final var key = EntityNum.fromLong(id.getNum());
+		final var key = EntityNum.fromModel(id);
 		final var merkleToken = tokens.get().get(key);
 
 		final var token = new Token(id);
@@ -317,7 +316,7 @@ public class TypedTokenStore {
 	 * @return - the loaded token
 	 */
 	public Token loadTokenOrFailWith(Id id, ResponseCodeEnum code) {
-		final var key = EntityNum.fromLong(id.getNum());
+		final var key = EntityNum.fromModel(id);
 		final var merkleToken = tokens.get().get(key);
 
 		validateUsable(merkleToken, code);

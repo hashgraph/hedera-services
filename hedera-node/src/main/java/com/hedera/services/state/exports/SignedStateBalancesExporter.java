@@ -243,7 +243,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		var accountTokens = account.tokens();
 		for (TokenID tokenId : accountTokens.asTokenIds()) {
 			var token = tokens.get(fromTokenId(tokenId));
-			if (token != null && !token.isDeleted()) {
+			if (token != null) {
 				var relationship = tokenAssociations.get(fromAccountTokenRel(id, tokenId));
 				sabBuilder.addTokenUnitBalances(tb(tokenId, relationship.getBalance()));
 			}

@@ -28,7 +28,9 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccoun
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
@@ -38,32 +40,40 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQ
 class TokenFeeSchedulesTest extends FeeSchedulesTestHelper {
 	@Test
 	void computesExpectedPriceForTokenCreateSubyptes() throws IOException {
-		testExpectedPriceFor(TokenCreate, TOKEN_FUNGIBLE_COMMON);
-		testExpectedPriceFor(TokenCreate, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES);
-		testExpectedPriceFor(TokenCreate, TOKEN_NON_FUNGIBLE_UNIQUE);
-		testExpectedPriceFor(TokenCreate, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES);
+		testCanonicalPriceFor(TokenCreate, TOKEN_FUNGIBLE_COMMON);
+		testCanonicalPriceFor(TokenCreate, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES);
+		testCanonicalPriceFor(TokenCreate, TOKEN_NON_FUNGIBLE_UNIQUE);
+		testCanonicalPriceFor(TokenCreate, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES);
 	}
 
 	@Test
-	void computesExpectedPriceForTokenMintSubtypes() throws IOException {
-		testExpectedPriceFor(TokenMint, TOKEN_NON_FUNGIBLE_UNIQUE);
-		testExpectedPriceFor(TokenMint, TOKEN_FUNGIBLE_COMMON);
+	void computesExpectedPriceForUniqueTokenMint() throws IOException {
+		testCanonicalPriceFor(TokenMint, TOKEN_NON_FUNGIBLE_UNIQUE);
+		testCanonicalPriceFor(TokenMint, TOKEN_FUNGIBLE_COMMON);
 	}
 
 	@Test
-	void computesExpectedPriceForTokenWipeSubtypes() throws IOException {
-		testExpectedPriceFor(TokenAccountWipe, TOKEN_FUNGIBLE_COMMON);
-		testExpectedPriceFor(TokenAccountWipe, TOKEN_NON_FUNGIBLE_UNIQUE);
+	void computesExpectedPriceForUniqueTokenWipe() throws IOException {
+		testCanonicalPriceFor(TokenAccountWipe, TOKEN_NON_FUNGIBLE_UNIQUE);
+		testCanonicalPriceFor(TokenAccountWipe, TOKEN_FUNGIBLE_COMMON);
 	}
 
 	@Test
-	void computesExpectedPriceForTokenBurnSubtypes() throws IOException {
-		testExpectedPriceFor(TokenBurn, TOKEN_NON_FUNGIBLE_UNIQUE);
-		testExpectedPriceFor(TokenBurn, TOKEN_FUNGIBLE_COMMON);
+	void computesExpectedPriceForUniqueTokenBurn() throws IOException {
+		testCanonicalPriceFor(TokenBurn, TOKEN_NON_FUNGIBLE_UNIQUE);
+		testCanonicalPriceFor(TokenBurn, TOKEN_FUNGIBLE_COMMON);
 	}
 
 	@Test
 	void computesExpectedPriceForFeeScheduleUpdate() throws IOException {
-		testExpectedPriceFor(TokenFeeScheduleUpdate, DEFAULT);
+		testCanonicalPriceFor(TokenFeeScheduleUpdate, DEFAULT);
+	}
+	@Test
+	void computesExpectedPriceForTokenFreezeAccount() throws IOException {
+		testCanonicalPriceFor(TokenFreezeAccount, DEFAULT);
+	}
+	@Test
+	void computesExpectedPriceForTokenUnfreezeAccount() throws IOException {
+		testCanonicalPriceFor(TokenUnfreezeAccount, DEFAULT);
 	}
 }

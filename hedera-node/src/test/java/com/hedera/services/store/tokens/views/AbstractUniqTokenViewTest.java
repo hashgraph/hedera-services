@@ -110,7 +110,7 @@ class AbstractUniqTokenViewTest {
 	@Test
 	void throwsCmeIfIdHasNoMatchingToken() {
 		// setup:
-		final var desired = "Token 0.0.6 was removed during query answering";
+		final var desired = "Token #6 was removed during query answering";
 
 		// when:
 		final var e = Assertions.assertThrows(ConcurrentModificationException.class, () ->

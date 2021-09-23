@@ -29,6 +29,7 @@ import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
+import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -55,12 +56,15 @@ import static com.hedera.services.utils.MiscUtils.functionOf;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
@@ -316,8 +320,14 @@ public class SignedTxnAccessor implements TxnAccessor {
 			setTokenBurnUsageMeta();
 		} else if (function == TokenAccountWipe) {
 			setTokenWipeUsageMeta();
+		} else if (function == TokenFreezeAccount) {
+			setTokenFreezeUsageMeta();
+		} else if (function == TokenUnfreezeAccount) {
+			setTokenUnfreezeUsageMeta();
 		} else if (function == CryptoCreate) {
 			setCryptoCreateUsageMeta();
+		} else if (function == CryptoUpdate) {
+			setCryptoUpdateUsageMeta();
 		}
 	}
 
@@ -362,8 +372,24 @@ public class SignedTxnAccessor implements TxnAccessor {
 		SPAN_MAP_ACCESSOR.setTokenWipeMeta(this, tokenWipeMeta);
 	}
 
+	private void setTokenFreezeUsageMeta() {
+		final var tokenFreezeMeta = TOKEN_OPS_USAGE_UTILS.tokenFreezeUsageFrom();
+		SPAN_MAP_ACCESSOR.setTokenFreezeMeta(this, tokenFreezeMeta);
+	}
+
+	private void setTokenUnfreezeUsageMeta() {
+		final var tokenUnfreezeMeta = TOKEN_OPS_USAGE_UTILS.tokenUnfreezeUsageFrom();
+		SPAN_MAP_ACCESSOR.setTokenUnfreezeMeta(this, tokenUnfreezeMeta);
+	}
+
 	private void setCryptoCreateUsageMeta() {
-		final var cryptoCreateMeta = new CryptoCreateMeta(txn);
+		final var cryptoCreateMeta = new CryptoCreateMeta(txn.getCryptoCreateAccount());
 		SPAN_MAP_ACCESSOR.setCryptoCreateMeta(this, cryptoCreateMeta);
+	}
+
+	private void setCryptoUpdateUsageMeta() {
+		final var cryptoUpdateMeta = new CryptoUpdateMeta(txn.getCryptoUpdateAccount(),
+				txn.getTransactionID().getTransactionValidStart().getSeconds());
+		SPAN_MAP_ACCESSOR.setCryptoUpdate(this, cryptoUpdateMeta);
 	}
 }
