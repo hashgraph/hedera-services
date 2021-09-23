@@ -1,3 +1,8 @@
+### 
+# A script to augment deprecated-format 0.0.101 and 0.0.102 system 
+# files with ServiceEndpoint fields.
+### 
+
 import sys
 import json
 from collections import defaultdict
