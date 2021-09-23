@@ -40,10 +40,10 @@ class TopicTest {
 		final var id = Id.DEFAULT;
 		final var created = Topic.fromGrpcTopicCreate(grpc, id, Instant.MAX);
 		assertNotNull(created.getMemo());
-		assertEquals(created.getMemo(), "memo");
+		assertEquals("memo", created.getMemo());
 		assertNotNull(created.getAdminKey());
 		assertNotNull(created.getAutoRenewAccountId());
-		assertEquals(created.getAutoRenewAccountId(), Id.DEFAULT);
+		assertEquals(Id.DEFAULT, created.getAutoRenewAccountId());
 		assertEquals(0, created.getSequenceNumber());
 	}
 	

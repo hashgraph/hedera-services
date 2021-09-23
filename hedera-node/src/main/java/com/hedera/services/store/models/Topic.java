@@ -34,7 +34,7 @@ import java.time.Instant;
  * @author Yoan Sredkov
  */
 public class Topic {
-	private final static Logger log = LogManager.getLogger(Topic.class);
+	private static final Logger log = LogManager.getLogger(Topic.class);
 	
 	private final Id id;
 	private String memo;
@@ -47,7 +47,6 @@ public class Topic {
 	private RichInstant expirationTimestamp;
 	
 	private long sequenceNumber;
-	private byte[] runningHash;
 	
  	public Topic(final Id id) {
 		this.id = id;

@@ -51,11 +51,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  */
 @Singleton
 public class TopicCreateTransitionLogic implements TransitionLogic {
+	private final Function<TransactionBody, ResponseCodeEnum> semanticCheck = this::validate;
+	
 	private final AccountStore accountStore;
 	private final TopicStore topicStore;
 	private final EntityIdSource entityIdSource;
 	private final OptionValidator validator;
-	private final Function<TransactionBody, ResponseCodeEnum> PRE_SIGNATURE_VALIDATION_SEMANTIC_CHECK = this::validate;
 	private final TransactionContext transactionContext;
 
 	@Inject
@@ -106,7 +107,7 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return PRE_SIGNATURE_VALIDATION_SEMANTIC_CHECK;
+		return semanticCheck;
 	}
 
 	/**
