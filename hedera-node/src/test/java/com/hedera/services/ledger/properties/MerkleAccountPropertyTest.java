@@ -31,7 +31,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -73,38 +72,29 @@ class MerkleAccountPropertyTest {
 
 	@Test
 	void tokenGetterWorksWithNewFcmParadigm() {
-		// setup:
 		final var ids = new CopyOnWriteIds(new long[] { 1, 2, 3 });
 		final var copyResult = new MerkleAccountTokens(ids);
-
 		given(mockAccountTokens.tmpNonMerkleCopy()).willReturn(copyResult);
 		given(mockAccount.tokens()).willReturn(mockAccountTokens);
 
-		// when:
 		final var result = TOKENS.getter().apply(mockAccount);
 
-		// then:
 		assertSame(copyResult, result);
 	}
 
 	@Test
 	void tokenSetterWorksWithNewFcmParadigm() {
-		// setup:
 		final var ids = new CopyOnWriteIds(new long[] { 1, 2, 3, 4, 5, 6 });
 		final var newTokens = new MerkleAccountTokens(ids);
-
 		given(mockAccount.tokens()).willReturn(mockAccountTokens);
 
-		// when:
 		TOKENS.setter().accept(mockAccount, newTokens);
 
-		// then:
 		verify(mockAccountTokens).shareTokensOf(newTokens);
 	}
 
 	@Test
 	void cannotSetNegativeBalance() {
-		// expect:
 		assertThrows(
 				IllegalArgumentException.class,
 				() -> BALANCE.setter().accept(new MerkleAccount(), -1L));
@@ -112,7 +102,6 @@ class MerkleAccountPropertyTest {
 
 	@Test
 	void cannotConvertNonNumericObjectToBalance() {
-		// expect:
 		assertThrows(
 				IllegalArgumentException.class,
 				() -> BALANCE.setter().accept(new MerkleAccount(), "NotNumeric"));
@@ -120,40 +109,38 @@ class MerkleAccountPropertyTest {
 
 	@Test
 	void gettersAndSettersWork() throws Exception {
-		// given:
-		boolean origIsDeleted = false;
-		boolean origIsReceiverSigReq = false;
-		boolean origIsContract = false;
-		long origBalance = 1L;
-		long origAutoRenew = 1L;
-		long origNumNfts = 123;
-		long origExpiry = 1L;
-		int origMaxAutoAssociations = 10;
-		int origAlreadyUsedAutoAssociations = 7;
-		Key origKey = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
-		String origMemo = "a";
-		AccountID origProxy = AccountID.getDefaultInstance();
-		List<ExpirableTxnRecord> origRecords = new ArrayList<>();
+		final boolean origIsDeleted = false;
+		final boolean origIsReceiverSigReq = false;
+		final boolean origIsContract = false;
+		final long origBalance = 1L;
+		final long origAutoRenew = 1L;
+		final long origNumNfts = 123L;
+		final long origExpiry = 1L;
+		final int origMaxAutoAssociations = 10;
+		final int origAlreadyUsedAutoAssociations = 7;
+		final var origKey = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
+		final String origMemo = "a";
+		final var origProxy = AccountID.getDefaultInstance();
+		final List<ExpirableTxnRecord> origRecords = new ArrayList<>();
 		origRecords.add(expirableRecord(ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT));
 		origRecords.add(expirableRecord(ResponseCodeEnum.INVALID_PAYER_SIGNATURE));
-		List<ExpirableTxnRecord> origPayerRecords = new ArrayList<>();
+		final List<ExpirableTxnRecord> origPayerRecords = new ArrayList<>();
 		origPayerRecords.add(expirableRecord(ResponseCodeEnum.INVALID_CHUNK_NUMBER));
 		origPayerRecords.add(expirableRecord(ResponseCodeEnum.INSUFFICIENT_TX_FEE));
-		// and:
-		boolean newIsDeleted = true;
-		boolean newIsReceiverSigReq = true;
-		boolean newIsContract = true;
-		long newBalance = 2L;
-		long newAutoRenew = 2L;
-		long newExpiry = 2L;
-		long newNumNfts = 321;
-		int newMaxAutoAssociations = 15;
-		int newAlreadyUsedAutoAssociations = 11;
-		JKey newKey = new JKeyList();
-		String newMemo = "b";
-		EntityId newProxy = new EntityId(0, 0, 2);
-		// and:
-		MerkleAccount account = new HederaAccountCustomizer()
+		final boolean newIsDeleted = true;
+		final boolean newIsReceiverSigReq = true;
+		final boolean newIsContract = true;
+		final long newBalance = 2L;
+		final long newAutoRenew = 2L;
+		final long newExpiry = 2L;
+		final long newNumNfts = 321L;
+		final int newMaxAutoAssociations = 15;
+		final int newAlreadyUsedAutoAssociations = 11;
+		final JKey newKey = new JKeyList();
+		final String newMemo = "b";
+		final EntityId newProxy = new EntityId(0, 0, 2);
+
+		final var account = new HederaAccountCustomizer()
 				.key(JKey.mapKey(origKey))
 				.expiry(origExpiry)
 				.proxy(EntityId.fromGrpcAccountId(origProxy))
@@ -169,22 +156,21 @@ class MerkleAccountPropertyTest {
 		account.records().offer(origPayerRecords.get(1));
 		account.setMaxAutomaticAssociations(origMaxAutoAssociations);
 		account.setAlreadyUsedAutomaticAssociations(origAlreadyUsedAutoAssociations);
-		// and:
-		var adminKey = TOKEN_ADMIN_KT.asJKeyUnchecked();
-		var unfrozenToken = new MerkleToken(
+
+		final var adminKey = TOKEN_ADMIN_KT.asJKeyUnchecked();
+		final var unfrozenToken = new MerkleToken(
 				Long.MAX_VALUE, 100, 1,
 				"UnfrozenToken", "UnfrozenTokenName", false, true,
 				new EntityId(1, 2, 3));
 		unfrozenToken.setFreezeKey(adminKey);
 		unfrozenToken.setKycKey(adminKey);
-		var frozenToken = new MerkleToken(
+		final var frozenToken = new MerkleToken(
 				Long.MAX_VALUE, 100, 1,
 				"FrozenToken", "FrozenTokenName", true, false,
 				new EntityId(1, 2, 3));
 		frozenToken.setFreezeKey(adminKey);
 		frozenToken.setKycKey(adminKey);
 
-		// expect:
 		IS_DELETED.setter().accept(account, newIsDeleted);
 		IS_RECEIVER_SIG_REQUIRED.setter().accept(account, newIsReceiverSigReq);
 		IS_SMART_CONTRACT.setter().accept(account, newIsContract);
@@ -198,7 +184,6 @@ class MerkleAccountPropertyTest {
 		MAX_AUTOMATIC_ASSOCIATIONS.setter().accept(account, newMaxAutoAssociations);
 		ALREADY_USED_AUTOMATIC_ASSOCIATIONS.setter().accept(account, newAlreadyUsedAutoAssociations);
 
-		// then:
 		assertEquals(newIsDeleted, IS_DELETED.getter().apply(account));
 		assertEquals(newIsReceiverSigReq, IS_RECEIVER_SIG_REQUIRED.getter().apply(account));
 		assertEquals(newIsContract, IS_SMART_CONTRACT.getter().apply(account));
@@ -213,7 +198,7 @@ class MerkleAccountPropertyTest {
 		assertEquals(newMaxAutoAssociations, MAX_AUTOMATIC_ASSOCIATIONS.getter().apply(account));
 	}
 
-	private ExpirableTxnRecord expirableRecord(ResponseCodeEnum status) {
+	private ExpirableTxnRecord expirableRecord(final ResponseCodeEnum status) {
 		return fromGprc(
 				TransactionRecord.newBuilder()
 						.setReceipt(TransactionReceipt.newBuilder().setStatus(status))
