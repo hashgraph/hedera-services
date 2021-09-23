@@ -120,6 +120,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		var helper = MoreObjects.toStringHelper(this)
 				.omitNullValues()
 				.add("receipt", receipt)
+				.add("fee", fee)
 				.add("txnHash", CommonUtils.hex(txnHash))
 				.add("txnId", txnId)
 				.add("consensusTimestamp", consensusTimestamp)

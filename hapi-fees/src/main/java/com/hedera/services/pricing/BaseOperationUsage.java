@@ -57,6 +57,8 @@ import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.List;
@@ -75,6 +77,8 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQ
  * adds a single custom HTS fee to a token, etc.)
  */
 class BaseOperationUsage {
+
+	static final Logger log = LogManager.getLogger(BaseOperationUsage.class);
 	private static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 	private static final ByteString CANONICAL_SIG = ByteString.copyFromUtf8(
 			"0123456789012345678901234567890123456789012345678901234567890123");
@@ -199,6 +203,10 @@ class BaseOperationUsage {
 					return fungibleCommonTokenBurn();
 				}
 				break;
+			case TokenFreezeAccount:
+				return tokenFreezeAccount();
+			case TokenUnfreezeAccount:
+				return tokenUnfreezeAccount();
 			case TokenFeeScheduleUpdate:
 				return feeScheduleUpdate();
 			case ConsensusSubmitMessage:
@@ -251,6 +259,22 @@ class BaseOperationUsage {
 		final var opMeta = new FileAppendMeta(1_000, THREE_MONTHS_IN_SECONDS);
 		final var into = new UsageAccumulator();
 		FILE_OPS_USAGE.fileAppendUsage(SINGLE_SIG_USAGE, opMeta, NO_MEMO_AND_NO_EXPLICIT_XFERS, into);
+		return into;
+	}
+
+
+	UsageAccumulator tokenFreezeAccount() {
+		final var tokenFreezeMeta = TOKEN_OPS_USAGE_UTILS.tokenFreezeUsageFrom();
+		final var into = new UsageAccumulator();
+		TOKEN_OPS_USAGE.tokenFreezeUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenFreezeMeta, into);
+		log.info("TokenFreeze base accumulator: {}", into);
+		return into;
+	}
+
+	UsageAccumulator tokenUnfreezeAccount() {
+		final var tokenUnfreezeMeta = TOKEN_OPS_USAGE_UTILS.tokenUnfreezeUsageFrom();
+		final var into = new UsageAccumulator();
+		TOKEN_OPS_USAGE.tokenFreezeUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenUnfreezeMeta, into);
 		return into;
 	}
 
