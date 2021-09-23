@@ -31,7 +31,9 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 
@@ -50,11 +52,14 @@ public class AllBaseTokenOpFeesSuite extends HapiApiSuite {
 	private static final String KYC_KEY = "kycKey";
 
 	private static final String CIVILIAN_ACCT = "civilian";
+	private static final String COMMON_TOKEN = "FCType";
 	private static final String UNIQUE_TOKEN = "nftType";
 	private static final String BASE_TXN = "baseTxn";
 
-	private static final double EXPECTED_GRANTKYC_PRICE_USD = 0.001;
-	private static final double EXPECTED_REVOKEKYC_PRICE_USD = 0.001;
+	private static final double EXPECTED_TOKEN_GRANTKYC_PRICE_USD = 0.001;
+	private static final double EXPECTED_TOKEN_REVOKEKYC_PRICE_USD = 0.001;
+	private static final double EXPECTED_TOKEN_ASSOCIATE_PRICE_USD = 0.05;
+	private static final double EXPECTED_TOKEN_DISSOCIATE_PRICE_USD = 0.05;
 
 	public static void main(String... args) {
 		new AllBaseTokenOpFeesSuite().runSuiteSync();
@@ -63,14 +68,15 @@ public class AllBaseTokenOpFeesSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(List.of(new HapiApiSpec[] {
-				baseGrantKycChargedAsExpected(),
+				baseTokenGrantRevokeKycChargedAsExpected(),
+				baseTokenAssociateDissociateCharedAsExpected()
 				}
 			)
 		);
 	}
 
 
-	private HapiApiSpec baseGrantKycChargedAsExpected() {
+	private HapiApiSpec baseTokenGrantRevokeKycChargedAsExpected() {
 		return defaultHapiSpec("baseGrantKycChargedAsExpected")
 				.given(
 						newKeyNamed(TREASURE_KEY),
@@ -80,20 +86,46 @@ public class AllBaseTokenOpFeesSuite extends HapiApiSuite {
 						cryptoCreate(CIVILIAN_ACCT),
 						tokenCreate(FUNGIBLE_COMMON_TOKEN)
 								.kycKey(TREASURE_KEY)
-								//.blankMemo()
 								.treasury(TOKEN_TREASURY)
 				).when(
 						grantTokenKyc(FUNGIBLE_COMMON_TOKEN, TOKEN_TREASURY)
 								.payingWith(TOKEN_TREASURY)
 								.blankMemo()
-								.via("grantKyc"),
+								.via("grantKycTxn"),
 						revokeTokenKyc(FUNGIBLE_COMMON_TOKEN, TOKEN_TREASURY)
 								.payingWith(TOKEN_TREASURY)
 								.blankMemo()
-								.via("revokeKyc")
+								.via("revokeKycTxn")
 				).then(
-						validateChargedUsdWithin("grantKyc", EXPECTED_GRANTKYC_PRICE_USD, ALLOWED_DIFFERENCE_PERCENTAGE),
-						validateChargedUsdWithin("revokeKyc", EXPECTED_REVOKEKYC_PRICE_USD, ALLOWED_DIFFERENCE_PERCENTAGE)
+						validateChargedUsdWithin("grantKycTxn", EXPECTED_TOKEN_GRANTKYC_PRICE_USD, ALLOWED_DIFFERENCE_PERCENTAGE),
+						validateChargedUsdWithin("revokeKycTxn", EXPECTED_TOKEN_REVOKEKYC_PRICE_USD, ALLOWED_DIFFERENCE_PERCENTAGE)
+				);
+	}
+
+	public HapiApiSpec baseTokenAssociateDissociateCharedAsExpected() {
+		return defaultHapiSpec("baseTokenAssociateDissociateCharedAsExpected")
+				.given(
+						newKeyNamed(TREASURE_KEY),
+						cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS).key(TREASURE_KEY),
+						cryptoCreate(CIVILIAN_ACCT)
+								.key(TREASURE_KEY)
+								.autoRenewSecs(THREE_MONTHS_IN_SECONDS),
+
+						tokenCreate(COMMON_TOKEN)
+								.treasury(TOKEN_TREASURY)
+								.payingWith(TOKEN_TREASURY)
+				).when(
+						tokenAssociate(CIVILIAN_ACCT, COMMON_TOKEN)
+								.payingWith(TOKEN_TREASURY)
+								.blankMemo()
+								.via("tokenAssociateTxn"),
+						tokenDissociate(CIVILIAN_ACCT, COMMON_TOKEN)
+								.payingWith(TOKEN_TREASURY)
+								.blankMemo()
+								.via("tokenDissociateTxn")
+				).then(
+						validateChargedUsdWithin("tokenAssociateTxn", EXPECTED_TOKEN_ASSOCIATE_PRICE_USD, ALLOWED_DIFFERENCE_PERCENTAGE),
+						validateChargedUsdWithin("tokenDissociateTxn", EXPECTED_TOKEN_DISSOCIATE_PRICE_USD, ALLOWED_DIFFERENCE_PERCENTAGE)
 				);
 	}
 

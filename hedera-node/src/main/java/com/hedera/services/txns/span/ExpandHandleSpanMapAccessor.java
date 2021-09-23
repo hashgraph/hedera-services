@@ -24,9 +24,11 @@ import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.services.usage.token.meta.TokenAssociateMeta;
 import com.hedera.services.usage.token.meta.TokenBurnMeta;
 import com.hedera.services.usage.token.meta.TokenCreateMeta;
 import com.hedera.services.usage.token.meta.TokenDeleteMeta;
+import com.hedera.services.usage.token.meta.TokenDissociateMeta;
 import com.hedera.services.usage.token.meta.TokenGrantKycMeta;
 import com.hedera.services.usage.token.meta.TokenRevokeKycMeta;
 import com.hedera.services.usage.token.meta.TokenUpdateMeta;
@@ -50,6 +52,8 @@ public class ExpandHandleSpanMapAccessor {
 	private static final String TOKEN_DELETE_META_KEY = "tokenDeleteMeta";
 	private static final String TOKEN_GRANT_KYC_META_KEY = "tokenGrantKycMeta";
 	private static final String TOKEN_REVOKE_KYC_META_KEY = "tokenRevokeKycMeta";
+	private static final String TOKEN_ASSOCIATE_META_KEY = "tokenAssociateMeta";
+	private static final String TOKEN_DISSOCIATE_META_KEY = "tokenDissociateMeta";
 	private static final String CRYPTO_CREATE_META_KEY = "cryptoCreateMeta";
 	private static final String CRYPTO_UPDATE_META_KEY = "cryptoUpdateMeta";
 
@@ -133,6 +137,20 @@ public class ExpandHandleSpanMapAccessor {
 	}
 	public TokenRevokeKycMeta getTokenRevokeKycMeta(TxnAccessor accessor) {
 		return (TokenRevokeKycMeta) accessor.getSpanMap().get(TOKEN_REVOKE_KYC_META_KEY);
+	}
+
+	public void setTokenAssociateMeta(TxnAccessor accessor, TokenAssociateMeta tokenAssociateMeta) {
+		accessor.getSpanMap().put(TOKEN_ASSOCIATE_META_KEY, tokenAssociateMeta);
+	}
+	public TokenAssociateMeta getTokenAssociateMeta(TxnAccessor accessor) {
+		return (TokenAssociateMeta) accessor.getSpanMap().get(TOKEN_ASSOCIATE_META_KEY);
+	}
+
+	public void setTokenDissociateMeta(TxnAccessor accessor, TokenDissociateMeta tokenDissociateMeta) {
+		accessor.getSpanMap().put(TOKEN_DISSOCIATE_META_KEY, tokenDissociateMeta);
+	}
+	public TokenDissociateMeta getTokenDissociateMeta(TxnAccessor accessor) {
+		return (TokenDissociateMeta) accessor.getSpanMap().get(TOKEN_DISSOCIATE_META_KEY);
 	}
 
 	public void setCryptoUpdate(TxnAccessor accessor, CryptoUpdateMeta cryptoUpdateMeta) {

@@ -42,9 +42,11 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTrans
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
@@ -58,7 +60,8 @@ public class AccessorBasedUsages {
 			CryptoTransfer, CryptoCreate, CryptoUpdate,
 			ConsensusSubmitMessage,
 			TokenFeeScheduleUpdate, TokenCreate, TokenBurn, TokenMint, TokenAccountWipe,
-			TokenUpdate, TokenDelete, TokenGrantKycToAccount, TokenRevokeKycFromAccount
+			TokenUpdate, TokenDelete, TokenGrantKycToAccount, TokenRevokeKycFromAccount,
+			TokenAssociateToAccount, TokenDissociateFromAccount
 	);
 
 	private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
@@ -123,6 +126,10 @@ public class AccessorBasedUsages {
 			estimateTokenGrantKyc(sigUsage, accessor, baseMeta, into);
 		} else if (function == TokenRevokeKycFromAccount) {
 			estimateTokenRevokeKyc(sigUsage, accessor, baseMeta, into);
+		} else if (function == TokenAssociateToAccount) {
+			estimateTokenAssociate(sigUsage, accessor, baseMeta, into);
+		} else if (function == TokenDissociateFromAccount) {
+			estimateTokenDissociate(sigUsage, accessor, baseMeta, into);
 		}
 	}
 
@@ -256,6 +263,7 @@ public class AccessorBasedUsages {
 		final var tokenGrantKycMeta = accessor.getSpanMapAccessor().getTokenGrantKycMeta(accessor);
 		tokenOpsUsage.tokenGrantKycUsage(sigUsage, baseMeta, tokenGrantKycMeta, into);
 	}
+
 	private void estimateTokenRevokeKyc(
 			SigUsage sigUsage,
 			TxnAccessor accessor,
@@ -266,4 +274,26 @@ public class AccessorBasedUsages {
 		tokenOpsUsage.tokenRevokeKycUsage(sigUsage, baseMeta, tokenRevokeKycMeta, into);
 	}
 
+	private void estimateTokenAssociate(
+			SigUsage sigUsage,
+			TxnAccessor accessor,
+			BaseTransactionMeta baseMeta,
+			UsageAccumulator into
+	) {
+		final var tokenAssociateMeta = accessor.getSpanMapAccessor().getTokenAssociateMeta(accessor);
+		if(tokenAssociateMeta.getRelativeLifeTime() == 0) {
+			opUsageCtxHelper.updateTokenAssociateMeta(accessor.getTxn(), tokenAssociateMeta);
+		}
+		tokenOpsUsage.tokenAssociateUsage(sigUsage, baseMeta, tokenAssociateMeta, into);
+	}
+
+	private void estimateTokenDissociate(
+			SigUsage sigUsage,
+			TxnAccessor accessor,
+			BaseTransactionMeta baseMeta,
+			UsageAccumulator into
+	) {
+		final var tokenDissociateMeta = accessor.getSpanMapAccessor().getTokenDissociateMeta(accessor);
+		tokenOpsUsage.tokenDissociateUsage(sigUsage, baseMeta, tokenDissociateMeta, into);
+	}
 }

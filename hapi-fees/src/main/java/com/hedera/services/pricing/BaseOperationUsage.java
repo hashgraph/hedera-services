@@ -51,8 +51,10 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -114,6 +116,7 @@ class BaseOperationUsage {
 			.setEd25519(ByteString.copyFromUtf8("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
 			.build();
 	private static final AccountID AN_ACCOUNT = AccountID.newBuilder().setAccountNum(1_234L).build();
+	private static final TokenID AN_TOKEN = TokenID.newBuilder().setTokenNum(1_235L).build();
 
 	private static final String A_TOKEN_NAME = "012345678912";
 	private static final String A_TOKEN_SYMBOL = "ABCD";
@@ -212,6 +215,10 @@ class BaseOperationUsage {
 				return tokenGrantKyc();
 			case TokenRevokeKycFromAccount:
 				return tokenRevokeKyc();
+			case TokenAssociateToAccount:
+				return tokenAssociate();
+			case TokenDissociateFromAccount:
+				return tokenDissociate();
 
 			case ConsensusSubmitMessage:
 				return submitMessage();
@@ -490,6 +497,35 @@ class BaseOperationUsage {
 		final var tokenRevokeKycMeta = TOKEN_OPS_USAGE_UTILS.tokenRevokeKycUsageFrom();
 		final var into = new UsageAccumulator();
 		TOKEN_OPS_USAGE.tokenRevokeKycUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenRevokeKycMeta, into);
+		return into;
+	}
+
+	UsageAccumulator tokenAssociate() {
+		final var txn = TransactionBody.newBuilder()
+				.setTokenAssociate(TokenAssociateTransactionBody.newBuilder()
+						.setAccount(AN_ACCOUNT)
+						.addAllTokens(List.of(AN_TOKEN))
+				)
+				.build();
+
+		final var tokenAssociateMeta = TOKEN_OPS_USAGE_UTILS.tokenAssociateUsageFrom(txn);
+		tokenAssociateMeta.setRelativeLifeTime(THREE_MONTHS_IN_SECONDS);
+		final var into = new UsageAccumulator();
+		TOKEN_OPS_USAGE.tokenAssociateUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenAssociateMeta, into);
+		return into;
+	}
+
+	UsageAccumulator tokenDissociate() {
+		final var txn = TransactionBody.newBuilder()
+				.setTokenDissociate(TokenDissociateTransactionBody.newBuilder()
+						.setAccount(AN_ACCOUNT)
+						.addAllTokens(List.of(AN_TOKEN))
+				)
+				.build();
+
+		final var tokenDissociateMeta = TOKEN_OPS_USAGE_UTILS.tokenDissociateUsageFrom(txn);
+		final var into = new UsageAccumulator();
+		TOKEN_OPS_USAGE.tokenDissociateUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenDissociateMeta, into);
 		return into;
 	}
 

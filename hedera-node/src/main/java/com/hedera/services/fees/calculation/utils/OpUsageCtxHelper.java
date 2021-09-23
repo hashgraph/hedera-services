@@ -29,6 +29,7 @@ import com.hedera.services.usage.file.FileAppendMeta;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.ExtantTokenContext;
+import com.hedera.services.usage.token.meta.TokenAssociateMeta;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hedera.services.usage.token.meta.TokenBurnMeta;
 import com.hedera.services.usage.token.meta.TokenMintMeta;
@@ -48,6 +49,7 @@ import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FIXED_FEE;
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FRACTIONAL_FEE;
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
+import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
@@ -115,6 +117,15 @@ public class OpUsageCtxHelper {
 					.build();
 		}
 		return cryptoContext;
+	}
+
+	public void updateTokenAssociateMeta(final TransactionBody txn, TokenAssociateMeta tokenAssociateMeta) {
+		final var op = txn.getTokenAssociate();
+		final var account = workingView.accounts().get(fromAccountId(op.getAccount()));
+		if(account != null) {
+			tokenAssociateMeta.setRelativeLifeTime(account.getExpiry() -
+					txn.getTransactionID().getTransactionValidStart().getSeconds());
+		}
 	}
 
 	public ExtantTokenContext ctxForTokenUpdate(TransactionBody txn) {

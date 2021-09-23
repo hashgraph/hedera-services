@@ -23,14 +23,17 @@ package com.hedera.services.usage.token;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.UsageProperties;
+import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.usage.token.entities.TokenEntitySizes;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.ExtantTokenContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.services.usage.token.meta.TokenAssociateMeta;
 import com.hedera.services.usage.token.meta.TokenBurnMeta;
 import com.hedera.services.usage.token.meta.TokenCreateMeta;
 import com.hedera.services.usage.token.meta.TokenDeleteMeta;
+import com.hedera.services.usage.token.meta.TokenDissociateMeta;
 import com.hedera.services.usage.token.meta.TokenGrantKycMeta;
 import com.hedera.services.usage.token.meta.TokenMintMeta;
 import com.hedera.services.usage.token.meta.TokenRevokeKycMeta;
@@ -255,6 +258,27 @@ public final class TokenOpsUsage {
 							* usageProperties.legacyReceiptStorageSecs());
 		}
 	}
+
+	public void tokenAssociateUsage(final SigUsage sigUsage,
+			final BaseTransactionMeta baseMeta,
+			final TokenAssociateMeta tokenAssociateMeta,
+			final UsageAccumulator accumulator) {
+		accumulator.resetForTransaction(baseMeta, sigUsage);
+		accumulator.addBpt(tokenAssociateMeta.getBpt());
+		accumulator.addRbs(tokenAssociateMeta.getNumOfTokens()
+				* tokenEntitySizes.bytesUsedPerAccountRelationship() * tokenAssociateMeta.getRelativeLifeTime());
+	}
+
+	public void tokenDissociateUsage(final SigUsage sigUsage,
+			final BaseTransactionMeta baseMeta,
+			final TokenDissociateMeta tokenDissociateMeta,
+			final UsageAccumulator accumulator) {
+		accumulator.resetForTransaction(baseMeta, sigUsage);
+
+		accumulator.addBpt(tokenDissociateMeta.getBpt());
+	}
+
+
 
 	private int noRbImpactBytes(TokenUpdateMeta opMeta) {
 		return ((opMeta.getNewExpiry() > 0) ? AMOUNT_REPR_BYTES : 0) +

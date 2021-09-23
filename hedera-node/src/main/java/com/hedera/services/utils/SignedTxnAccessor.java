@@ -59,9 +59,11 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTrans
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
@@ -330,7 +332,10 @@ public class SignedTxnAccessor implements TxnAccessor {
 			setTokenGrantKycUsageMeta();
 		} else if (function == TokenRevokeKycFromAccount) {
 			setTokenRevokeKycUsageMeta();
-
+		} else if (function == TokenAssociateToAccount) {
+			setTokenAssociateUsageMeta();
+		} else if (function == TokenDissociateFromAccount) {
+			setTokenDissociateUsageMeta();
 		} else if (function == CryptoCreate) {
 			setCryptoCreateUsageMeta();
 		} else if (function == CryptoUpdate) {
@@ -398,6 +403,16 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private void setTokenUpdateUsageMeta() {
 		final var tokenUpdateMeta = TOKEN_OPS_USAGE_UTILS.tokenUpdateUsageFrom(txn);
 		SPAN_MAP_ACCESSOR.setTokenUpdateMeta(this, tokenUpdateMeta);
+	}
+
+	private void setTokenAssociateUsageMeta() {
+		final var tokenAssociateMeta = TOKEN_OPS_USAGE_UTILS.tokenAssociateUsageFrom(txn);
+		SPAN_MAP_ACCESSOR.setTokenAssociateMeta(this, tokenAssociateMeta);
+	}
+
+	private void setTokenDissociateUsageMeta() {
+		final var tokenDissociateMeta = TOKEN_OPS_USAGE_UTILS.tokenDissociateUsageFrom(txn);
+		SPAN_MAP_ACCESSOR.setTokenDissociateMeta(this, tokenDissociateMeta);
 	}
 
 	private void setCryptoCreateUsageMeta() {

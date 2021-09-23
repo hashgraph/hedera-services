@@ -41,8 +41,10 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTrans
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
@@ -140,6 +142,8 @@ public class ScheduleGenerator {
 			Pair.of(TokenUpdate, List.of(DEFAULT)),
 			Pair.of(TokenGrantKycToAccount, List.of(DEFAULT)),
 			Pair.of(TokenRevokeKycFromAccount, List.of(DEFAULT)),
+			Pair.of(TokenAssociateToAccount, List.of(DEFAULT)),
+			Pair.of(TokenDissociateFromAccount, List.of(DEFAULT)),
 			Pair.of(HederaFunctionality.TokenDelete, List.of(DEFAULT)),
 			/* Consensus */
 			Pair.of(ConsensusSubmitMessage, List.of(DEFAULT))

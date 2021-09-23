@@ -22,9 +22,12 @@ package com.hedera.services.bdd.spec.transactions.token;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.usage.token.TokenDissociateUsage;
+import com.hedera.services.usage.BaseTransactionMeta;
+import com.hedera.services.usage.state.UsageAccumulator;
+import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
@@ -42,6 +45,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static java.util.stream.Collectors.toList;
 
 public class HapiTokenDissociate extends HapiTxnOp<HapiTokenDissociate> {
@@ -72,7 +76,12 @@ public class HapiTokenDissociate extends HapiTxnOp<HapiTokenDissociate> {
 	}
 
 	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
-		return TokenDissociateUsage.newEstimate(txn, suFrom(svo)).get();
+		UsageAccumulator accumulator = new UsageAccumulator();
+		final var tokenDissociateMeta = TOKEN_OPS_USAGE_UTILS.tokenDissociateUsageFrom(txn);
+		final var baseTransactionMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
+		TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
+		tokenOpsUsage.tokenDissociateUsage(suFrom(svo), baseTransactionMeta, tokenDissociateMeta, accumulator );
+		return AdapterUtils.feeDataFrom(accumulator);
 	}
 
 	@Override

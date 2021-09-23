@@ -23,18 +23,22 @@ package com.hedera.services.bdd.spec.transactions.token;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.fees.FeeCalculator;
+import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.usage.token.TokenAssociateUsage;
+import com.hedera.services.usage.BaseTransactionMeta;
+import com.hedera.services.usage.state.UsageAccumulator;
+import com.hedera.services.usage.token.TokenOpsUsage;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -47,6 +51,7 @@ import java.util.function.Function;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.stream.Collectors.toList;
 
@@ -55,6 +60,7 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
 
 	private String account;
 	private List<String> tokens = new ArrayList<>();
+	private long expiry;
 
 	@Override
 	public HederaFunctionality type() {
@@ -78,17 +84,24 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
 		try {
-			final long expiry = lookupExpiry(spec);
-			FeeCalculator.ActivityMetrics metricsCalc = (_txn, svo) -> {
-				var estimate = TokenAssociateUsage.newEstimate(_txn, suFrom(svo))
-						.givenCurrentExpiry(expiry);
-				return estimate.get();
-			};
+			expiry = lookupExpiry(spec);
 			return spec.fees().forActivityBasedOp(
-					HederaFunctionality.TokenAssociateToAccount, metricsCalc, txn, numPayerKeys);
+					HederaFunctionality.TokenDissociateFromAccount, this::usageEstimate, txn, numPayerKeys);
 		} catch (Throwable ignore) {
 			return 100_000_000L;
 		}
+
+	}
+
+
+	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
+		UsageAccumulator accumulator = new UsageAccumulator();
+		final var tokenAssociateMeta = TOKEN_OPS_USAGE_UTILS.tokenAssociateUsageFrom(txn);
+		tokenAssociateMeta.setRelativeLifeTime(expiry - txn.getTransactionID().getTransactionValidStart().getSeconds());
+		final var baseTransactionMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
+		TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
+		tokenOpsUsage.tokenAssociateUsage(suFrom(svo), baseTransactionMeta, tokenAssociateMeta, accumulator );
+		return AdapterUtils.feeDataFrom(accumulator);
 	}
 
 	private long lookupExpiry(HapiApiSpec spec) throws Throwable {

@@ -87,11 +87,6 @@ public class HapiTokenDelete extends HapiTxnOp<HapiTokenDelete> {
 		return AdapterUtils.feeDataFrom(accumulator);
 	}
 
-//
-//	private FeeData usageEstimateOld(TransactionBody txn, SigValueObj svo) {
-//		return TokenDeleteUsage.newEstimate(txn, suFrom(svo)).get();
-//	}
-
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		var tId = TxnUtils.asTokenId(token, spec);
