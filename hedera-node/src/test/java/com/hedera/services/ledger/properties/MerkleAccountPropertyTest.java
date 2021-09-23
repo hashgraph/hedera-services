@@ -74,7 +74,6 @@ class MerkleAccountPropertyTest {
 	void tokenGetterWorksWithNewFcmParadigm() {
 		final var ids = new CopyOnWriteIds(new long[] { 1, 2, 3 });
 		final var copyResult = new MerkleAccountTokens(ids);
-
 		given(mockAccountTokens.tmpNonMerkleCopy()).willReturn(copyResult);
 		given(mockAccount.tokens()).willReturn(mockAccountTokens);
 
@@ -87,7 +86,6 @@ class MerkleAccountPropertyTest {
 	void tokenSetterWorksWithNewFcmParadigm() {
 		final var ids = new CopyOnWriteIds(new long[] { 1, 2, 3, 4, 5, 6 });
 		final var newTokens = new MerkleAccountTokens(ids);
-
 		given(mockAccount.tokens()).willReturn(mockAccountTokens);
 
 		TOKENS.setter().accept(mockAccount, newTokens);
@@ -116,7 +114,7 @@ class MerkleAccountPropertyTest {
 		final boolean origIsContract = false;
 		final long origBalance = 1L;
 		final long origAutoRenew = 1L;
-		final long origNumNfts = 123;
+		final long origNumNfts = 123L;
 		final long origExpiry = 1L;
 		final int origMaxAutoAssociations = 10;
 		final int origAlreadyUsedAutoAssociations = 7;
@@ -135,7 +133,7 @@ class MerkleAccountPropertyTest {
 		final long newBalance = 2L;
 		final long newAutoRenew = 2L;
 		final long newExpiry = 2L;
-		final long newNumNfts = 321;
+		final long newNumNfts = 321L;
 		final int newMaxAutoAssociations = 15;
 		final int newAlreadyUsedAutoAssociations = 11;
 		final JKey newKey = new JKeyList();

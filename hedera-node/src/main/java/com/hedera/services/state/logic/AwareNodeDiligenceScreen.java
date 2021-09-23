@@ -44,7 +44,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 
 @Singleton
-public class AwareNodeDiligenceScreen {
+public final class AwareNodeDiligenceScreen {
 	private static final Logger log = LogManager.getLogger(AwareNodeDiligenceScreen.class);
 
 	private static final String WRONG_NODE_LOG_TPL =
@@ -168,5 +168,4 @@ public class AwareNodeDiligenceScreen {
 				readableId(relatedAccount),
 				accessor.getSignedTxnWrapper());
 	}
-
 }
