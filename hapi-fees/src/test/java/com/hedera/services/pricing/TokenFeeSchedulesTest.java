@@ -28,7 +28,9 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccoun
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
@@ -65,5 +67,13 @@ class TokenFeeSchedulesTest extends FeeSchedulesTestHelper {
 	@Test
 	void computesExpectedPriceForFeeScheduleUpdate() throws IOException {
 		testCanonicalPriceFor(TokenFeeScheduleUpdate, DEFAULT);
+	}
+	@Test
+	void computesExpectedPriceForTokenFreezeAccount() throws IOException {
+		testExpectedPriceFor(TokenFreezeAccount, DEFAULT);
+	}
+	@Test
+	void computesExpectedPriceForTokenUnfreezeAccount() throws IOException {
+		testExpectedPriceFor(TokenUnfreezeAccount, DEFAULT);
 	}
 }
