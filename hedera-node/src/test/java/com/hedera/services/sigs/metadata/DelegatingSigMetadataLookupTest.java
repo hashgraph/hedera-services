@@ -36,30 +36,30 @@ import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
+import static org.mockito.Mockito.mock;
 
 class DelegatingSigMetadataLookupTest {
-	private JKey freezeKey;
-	private String symbol = "NotAnHbar";
-	private String tokenName = "TokenName";
-	private int decimals = 2;
-	private long totalSupply = 1_000_000;
-	private boolean freezeDefault = true;
-	private boolean accountsKycGrantedByDefault = true;
-	private EntityId treasury = new EntityId(1,2, 3);
-	private TokenID id = IdUtils.asToken("1.2.666");
+	private static final String SYMBOL = "NotAnHbar";
+	private static final String TOKEN_NAME = "TokenName";
+	private static final int DECIMALS = 2;
+	private static final long TOTAL_SUPPLY = 1_000_000;
+	private static final boolean FREEZE_DEFAULT = true;
+	private static final boolean ACCOUNTS_KYC_GRANTED_BY_DEFAULT = true;
 
-	private MerkleToken token;
+	private static final EntityId treasury = new EntityId(1,2, 3);
+	private static final TokenID id = IdUtils.asToken("1.2.666");
+
+	private static final MerkleToken token = new MerkleToken(
+			Long.MAX_VALUE, TOTAL_SUPPLY, DECIMALS, SYMBOL, TOKEN_NAME,
+			FREEZE_DEFAULT, ACCOUNTS_KYC_GRANTED_BY_DEFAULT, treasury);
+	private static final JKey freezeKey = new JEd25519Key("not-a-real-freeze-key".getBytes());
+
 	private TokenStore tokenStore;
 
 	private Function<TokenID, SafeLookupResult<TokenSigningMetadata>> subject;
 
 	@BeforeEach
 	void setup() {
-		freezeKey = new JEd25519Key("not-a-real-freeze-key".getBytes());
-
-		token = new MerkleToken(Long.MAX_VALUE, totalSupply, decimals, symbol, tokenName,  freezeDefault, accountsKycGrantedByDefault, treasury);
-
 		tokenStore = mock(TokenStore.class);
 
 		subject = SigMetadataLookup.REF_LOOKUP_FACTORY.apply(tokenStore);
@@ -73,10 +73,8 @@ class DelegatingSigMetadataLookupTest {
 				.setTokenNum(0L)
 				.build());
 
-		// when:
-		var result = subject.apply(id);
+		final var result = subject.apply(id);
 
-		// then:
 		assertEquals(KeyOrderingFailure.MISSING_TOKEN, result.failureIfAny());
 	}
 
@@ -84,28 +82,21 @@ class DelegatingSigMetadataLookupTest {
 	void returnsExpectedFailIfMissing() {
 		given(tokenStore.resolve(id)).willReturn(TokenStore.MISSING_TOKEN);
 
-		// when:
-		var result = subject.apply(id);
+		final var result = subject.apply(id);
 
-		// then:
 		assertEquals(KeyOrderingFailure.MISSING_TOKEN, result.failureIfAny());
 	}
 
 	@Test
 	void returnsExpectedMetaIfPresent() {
-		// setup:
 		token.setFreezeKey(freezeKey);
-		var expected = TokenSigningMetadata.from(token);
-
+		final var expected = TokenSigningMetadata.from(token);
 		given(tokenStore.resolve(id)).willReturn(id);
 		given(tokenStore.get(id)).willReturn(token);
 
-		// when:
-		var result = subject.apply(id);
+		final var result = subject.apply(id);
 
-		// then:
 		assertEquals(KeyOrderingFailure.NONE, result.failureIfAny());
-		// and:
 		assertEquals(expected.adminKey(), result.metadata().adminKey());
 		assertEquals(expected.optionalFreezeKey(), result.metadata().optionalFreezeKey());
 	}

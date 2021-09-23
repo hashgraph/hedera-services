@@ -39,8 +39,6 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.Pause;
-import com.hedera.services.utils.SleepingPause;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -52,13 +50,13 @@ import com.swirlds.merkle.map.MerkleMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static com.hedera.services.utils.SleepingPause.SLEEPING_PAUSE;
+
 /**
  * Convenience class that gives unified access to Hedera signing metadata by
  * delegating to type-specific lookups.
  */
-public class DelegatingSigMetadataLookup implements SigMetadataLookup {
-	private final static Pause pause = SleepingPause.SLEEPING_PAUSE;
-
+public final class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	private final FileSigMetaLookup fileSigMetaLookup;
 	private final AccountSigMetaLookup accountSigMetaLookup;
 	private final ContractSigMetaLookup contractSigMetaLookup;
@@ -68,12 +66,12 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	private final Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleSigMetaLookup;
 
 	public static DelegatingSigMetadataLookup backedLookupsFor(
-			HederaFs hfs,
-			BackingStore<AccountID, MerkleAccount> backingAccounts,
-			Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-			Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup,
-			Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleSigMetaLookup
+			final HederaFs hfs,
+			final BackingStore<AccountID, MerkleAccount> backingAccounts,
+			final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup,
+			final Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleSigMetaLookup
 	) {
 		return new DelegatingSigMetadataLookup(
 				new HfsSigMetaLookup(hfs),
@@ -85,11 +83,11 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	}
 
 	public static DelegatingSigMetadataLookup defaultLookupsFor(
-			HederaFs hfs,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-			Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
-			Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup,
-			Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleLookup
+			final HederaFs hfs,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
+			final Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup,
+			final Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleLookup
 	) {
 		return new DelegatingSigMetadataLookup(
 				new HfsSigMetaLookup(hfs),
@@ -101,21 +99,21 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	}
 
 	public static DelegatingSigMetadataLookup defaultLookupsPlusAccountRetriesFor(
-			HederaFs hfs,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-			Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
-			Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup,
-			Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleLookup,
-			int maxRetries,
-			int retryWaitIncrementMs,
-			MiscRunningAvgs runningAvgs,
-			MiscSpeedometers speedometers
+			final HederaFs hfs,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
+			final Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup,
+			final Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleLookup,
+			final int maxRetries,
+			final int retryWaitIncrementMs,
+			final MiscRunningAvgs runningAvgs,
+			final MiscSpeedometers speedometers
 	) {
-		var accountLookup = new RetryingAccountLookup(
+		final var accountLookup = new RetryingAccountLookup(
 				accounts,
 				maxRetries,
 				retryWaitIncrementMs,
-				pause,
+				SLEEPING_PAUSE,
 				runningAvgs,
 				speedometers);
 		return new DelegatingSigMetadataLookup(
@@ -128,16 +126,17 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	}
 
 	public static DelegatingSigMetadataLookup defaultAccountRetryingLookupsFor(
-			HederaFs hfs,
-			NodeLocalProperties properties,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-			Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
-			Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup,
-			Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleLookup,
-			MiscRunningAvgs runningAvgs,
-			MiscSpeedometers speedometers
+			final HederaFs hfs,
+			final NodeLocalProperties properties,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
+			final Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup,
+			final Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleLookup,
+			final MiscRunningAvgs runningAvgs,
+			final MiscSpeedometers speedometers
 	) {
-		var accountLookup = new RetryingAccountLookup(pause, properties, accounts, runningAvgs, speedometers);
+		final var accountLookup =
+				new RetryingAccountLookup(SLEEPING_PAUSE, properties, accounts, runningAvgs, speedometers);
 		return new DelegatingSigMetadataLookup(
 				new HfsSigMetaLookup(hfs),
 				accountLookup,
@@ -148,12 +147,12 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	}
 
 	public DelegatingSigMetadataLookup(
-			FileSigMetaLookup fileSigMetaLookup,
-			AccountSigMetaLookup accountSigMetaLookup,
-			ContractSigMetaLookup contractSigMetaLookup,
-			TopicSigMetaLookup topicSigMetaLookup,
-			Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenSigMetaLookup,
-			Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleSigMetaLookup
+			final FileSigMetaLookup fileSigMetaLookup,
+			final AccountSigMetaLookup accountSigMetaLookup,
+			final ContractSigMetaLookup contractSigMetaLookup,
+			final TopicSigMetaLookup topicSigMetaLookup,
+			final Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenSigMetaLookup,
+			final Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleSigMetaLookup
 	) {
 		this.fileSigMetaLookup = fileSigMetaLookup;
 		this.accountSigMetaLookup = accountSigMetaLookup;
@@ -164,32 +163,32 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	}
 
 	@Override
-	public SafeLookupResult<ContractSigningMetadata> contractSigningMetaFor(ContractID id) {
+	public SafeLookupResult<ContractSigningMetadata> contractSigningMetaFor(final ContractID id) {
 		return contractSigMetaLookup.safeLookup(id);
 	}
 
 	@Override
-	public SafeLookupResult<FileSigningMetadata> fileSigningMetaFor(FileID id) {
+	public SafeLookupResult<FileSigningMetadata> fileSigningMetaFor(final FileID id) {
 		return fileSigMetaLookup.safeLookup(id);
 	}
 
 	@Override
-	public SafeLookupResult<ScheduleSigningMetadata> scheduleSigningMetaFor(ScheduleID id) {
+	public SafeLookupResult<ScheduleSigningMetadata> scheduleSigningMetaFor(final ScheduleID id) {
 		return scheduleSigMetaLookup.apply(id);
 	}
 
 	@Override
-	public SafeLookupResult<AccountSigningMetadata> accountSigningMetaFor(AccountID id) {
+	public SafeLookupResult<AccountSigningMetadata> accountSigningMetaFor(final AccountID id) {
 		return accountSigMetaLookup.safeLookup(id);
 	}
 
 	@Override
-	public SafeLookupResult<TopicSigningMetadata> topicSigningMetaFor(TopicID id) {
+	public SafeLookupResult<TopicSigningMetadata> topicSigningMetaFor(final TopicID id) {
 		return topicSigMetaLookup.safeLookup(id);
 	}
 
 	@Override
-	public SafeLookupResult<TokenSigningMetadata> tokenSigningMetaFor(TokenID id) {
+	public SafeLookupResult<TokenSigningMetadata> tokenSigningMetaFor(final TokenID id) {
 		return tokenSigMetaLookup.apply(id);
 	}
 }
