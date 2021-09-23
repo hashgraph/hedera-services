@@ -26,7 +26,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.EnumMap;
-import java.util.Optional;
+import java.util.Map;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -49,42 +49,43 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_TO
  * Error response factory that caches well-known responses by status code.
  */
 public final class PresolvencyFlaws {
-	private static Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> failureWithUnknownFeeReq(
-			final ResponseCodeEnum error
-	) {
-		return Pair.of(new TxnValidityAndFeeReq(error), Optional.empty());
-	}
-
-	static final EnumMap<ResponseCodeEnum, Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>>> WELL_KNOWN_FLAWS =
+	static final Map<ResponseCodeEnum, Pair<TxnValidityAndFeeReq, SignedTxnAccessor>> WELL_KNOWN_FLAWS =
 			new EnumMap<>(ResponseCodeEnum.class);
 
 	static {
-		WELL_KNOWN_FLAWS.put(PLATFORM_NOT_ACTIVE, failureWithUnknownFeeReq(PLATFORM_NOT_ACTIVE));
+		putTo(WELL_KNOWN_FLAWS, PLATFORM_NOT_ACTIVE);
 		/* Structural */
-		WELL_KNOWN_FLAWS.put(INVALID_TRANSACTION, failureWithUnknownFeeReq(INVALID_TRANSACTION));
-		WELL_KNOWN_FLAWS.put(TRANSACTION_OVERSIZE, failureWithUnknownFeeReq(TRANSACTION_OVERSIZE));
-		WELL_KNOWN_FLAWS.put(INVALID_TRANSACTION_BODY, failureWithUnknownFeeReq(INVALID_TRANSACTION_BODY));
-		WELL_KNOWN_FLAWS.put(TRANSACTION_TOO_MANY_LAYERS, failureWithUnknownFeeReq(TRANSACTION_TOO_MANY_LAYERS));
+		putTo(WELL_KNOWN_FLAWS, INVALID_TRANSACTION);
+		putTo(WELL_KNOWN_FLAWS, TRANSACTION_OVERSIZE);
+		putTo(WELL_KNOWN_FLAWS, INVALID_TRANSACTION_BODY);
+		putTo(WELL_KNOWN_FLAWS, TRANSACTION_TOO_MANY_LAYERS);
 		/* Syntactic */
-		WELL_KNOWN_FLAWS.put(INVALID_TRANSACTION_ID, failureWithUnknownFeeReq(INVALID_TRANSACTION_ID));
-		WELL_KNOWN_FLAWS.put(TRANSACTION_ID_FIELD_NOT_ALLOWED,
-				failureWithUnknownFeeReq(TRANSACTION_ID_FIELD_NOT_ALLOWED));
-		WELL_KNOWN_FLAWS.put(INSUFFICIENT_TX_FEE, failureWithUnknownFeeReq(INSUFFICIENT_TX_FEE));
-		WELL_KNOWN_FLAWS.put(PAYER_ACCOUNT_NOT_FOUND, failureWithUnknownFeeReq(PAYER_ACCOUNT_NOT_FOUND));
-		WELL_KNOWN_FLAWS.put(INVALID_NODE_ACCOUNT, failureWithUnknownFeeReq(INVALID_NODE_ACCOUNT));
-		WELL_KNOWN_FLAWS.put(MEMO_TOO_LONG, failureWithUnknownFeeReq(MEMO_TOO_LONG));
-		WELL_KNOWN_FLAWS.put(INVALID_ZERO_BYTE_IN_STRING, failureWithUnknownFeeReq(INVALID_ZERO_BYTE_IN_STRING));
-		WELL_KNOWN_FLAWS.put(INVALID_TRANSACTION_DURATION, failureWithUnknownFeeReq(INVALID_TRANSACTION_DURATION));
-		WELL_KNOWN_FLAWS.put(INVALID_TRANSACTION_START, failureWithUnknownFeeReq(INVALID_TRANSACTION_START));
-		WELL_KNOWN_FLAWS.put(TRANSACTION_EXPIRED, failureWithUnknownFeeReq(TRANSACTION_EXPIRED));
-		WELL_KNOWN_FLAWS.put(DUPLICATE_TRANSACTION, failureWithUnknownFeeReq(DUPLICATE_TRANSACTION));
+		putTo(WELL_KNOWN_FLAWS, INVALID_TRANSACTION_ID);
+		putTo(WELL_KNOWN_FLAWS, TRANSACTION_ID_FIELD_NOT_ALLOWED);
+		putTo(WELL_KNOWN_FLAWS, INSUFFICIENT_TX_FEE);
+		putTo(WELL_KNOWN_FLAWS, PAYER_ACCOUNT_NOT_FOUND);
+		putTo(WELL_KNOWN_FLAWS, INVALID_NODE_ACCOUNT);
+		putTo(WELL_KNOWN_FLAWS, MEMO_TOO_LONG);
+		putTo(WELL_KNOWN_FLAWS, INVALID_ZERO_BYTE_IN_STRING);
+		putTo(WELL_KNOWN_FLAWS, INVALID_TRANSACTION_DURATION);
+		putTo(WELL_KNOWN_FLAWS, INVALID_TRANSACTION_START);
+		putTo(WELL_KNOWN_FLAWS, TRANSACTION_EXPIRED);
+		putTo(WELL_KNOWN_FLAWS, DUPLICATE_TRANSACTION);
 	}
 
-	static Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> responseForFlawed(final ResponseCodeEnum status) {
-		final Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> response;
-		return (response = WELL_KNOWN_FLAWS.get(status)) != null
-				? response
-				: Pair.of(new TxnValidityAndFeeReq(status), Optional.empty());
+	static Pair<TxnValidityAndFeeReq, SignedTxnAccessor> responseForFlawed(final ResponseCodeEnum status) {
+		final var response = WELL_KNOWN_FLAWS.get(status);
+		return (null != response) ? response : failureWithUnknownFeeReq(status);
+	}
+
+	private static Pair<TxnValidityAndFeeReq, SignedTxnAccessor> failureWithUnknownFeeReq(final ResponseCodeEnum error) {
+		return Pair.of(new TxnValidityAndFeeReq(error), null);
+	}
+
+	private static void putTo(
+			final Map<ResponseCodeEnum, Pair<TxnValidityAndFeeReq, SignedTxnAccessor>> map,
+			final ResponseCodeEnum code) {
+		map.put(code, failureWithUnknownFeeReq(code));
 	}
 
 	private PresolvencyFlaws() {

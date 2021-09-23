@@ -1,5 +1,6 @@
 package com.hedera.services.txns.consensus;
 
+
 /*-
  * ‌
  * Hedera Services Node
@@ -24,6 +25,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TopicStore;
+import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Topic;
 import com.hedera.services.txns.TransitionLogic;
@@ -51,11 +53,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  */
 @Singleton
 public class TopicCreateTransitionLogic implements TransitionLogic {
+	private final Function<TransactionBody, ResponseCodeEnum> semanticCheck = this::validate;
+
 	private final AccountStore accountStore;
 	private final TopicStore topicStore;
 	private final EntityIdSource entityIdSource;
 	private final OptionValidator validator;
-	private final Function<TransactionBody, ResponseCodeEnum> PRE_SIGNATURE_VALIDATION_SEMANTIC_CHECK = this::validate;
 	private final TransactionContext transactionContext;
 
 	@Inject
@@ -64,7 +67,8 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 			final EntityIdSource entityIdSource,
 			final OptionValidator validator,
 			final TransactionContext transactionContext,
-			final AccountStore accountStore) {
+			final AccountStore accountStore
+	) {
 		this.accountStore = accountStore;
 		this.topicStore = topicStore;
 		this.entityIdSource = entityIdSource;
@@ -78,25 +82,48 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 		final var transactionBody = transactionContext.accessor().getTxn();
 		final var payerAccountId = transactionBody.getTransactionID().getAccountID();
 		final var op = transactionBody.getConsensusCreateTopic();
+		final var submitKey = op.hasSubmitKey() ? validator.attemptDecodeOrThrow(op.getSubmitKey()) : null;
+		final var adminKey = op.hasAdminKey() ? validator.attemptDecodeOrThrow(op.getAdminKey()) : null;
+		final var memo = op.getMemo();
+		final var autoRenewPeriod = op.getAutoRenewPeriod();
+		final var autoRenewAccountId = Id.fromGrpcAccount(op.getAutoRenewAccount());
+
 		/* --- Validate --- */
-		final var memoValidationResult = validator.memoCheck(op.getMemo());
+		final var memoValidationResult = validator.memoCheck(memo);
 		validateTrue(OK == memoValidationResult, memoValidationResult);
-		validateFalse(op.hasSubmitKey() && !validator.hasGoodEncoding(op.getSubmitKey()), BAD_ENCODING);
 		validateTrue(op.hasAutoRenewPeriod(), INVALID_RENEWAL_PERIOD);
-		validateTrue(validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod()), AUTORENEW_DURATION_NOT_IN_RANGE);
+		validateTrue(validator.isValidAutoRenewPeriod(autoRenewPeriod), AUTORENEW_DURATION_NOT_IN_RANGE);
+		Account autoRenewAccount = null;
 		if (op.hasAutoRenewAccount()) {
-			final var autoRenew = accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(op.getAutoRenewAccount()), INVALID_AUTORENEW_ACCOUNT);
-			validateFalse(autoRenew.isSmartContract(), INVALID_AUTORENEW_ACCOUNT);
+			autoRenewAccount = accountStore.loadAccountOrFailWith(autoRenewAccountId, INVALID_AUTORENEW_ACCOUNT);
+			validateFalse(autoRenewAccount.isSmartContract(), INVALID_AUTORENEW_ACCOUNT);
 			validateTrue(op.hasAdminKey(), AUTORENEW_ACCOUNT_NOT_ALLOWED);
 		}
 
 		/* --- Do business logic --- */
-		final var expirationTime = transactionContext.consensusTime().plusSeconds(op.getAutoRenewPeriod().getSeconds());
-		final var topicId = entityIdSource.newAccountId(payerAccountId);
-		final var topic = Topic.fromGrpcTopicCreate(op, Id.fromGrpcAccount(topicId), expirationTime);
+		final var expirationTime = transactionContext.consensusTime().plusSeconds(autoRenewPeriod.getSeconds());
+		final var topicId = entityIdSource.newTopicId(payerAccountId);
+		final var topic = Topic.fromGrpcTopicCreate(
+				Id.fromGrpcTopic(topicId),
+				submitKey,
+				adminKey,
+				autoRenewAccount,
+				memo,
+				autoRenewPeriod.getSeconds(),
+				expirationTime);
 
 		/* --- Persist the topic --- */
 		topicStore.persistNew(topic);
+	}
+
+	@Override
+	public void reclaimCreatedIds() {
+		entityIdSource.reclaimProvisionalIds();
+	}
+
+	@Override
+	public void resetCreatedIds() {
+		entityIdSource.resetProvisionalIds();
 	}
 
 	@Override
@@ -106,7 +133,7 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return PRE_SIGNATURE_VALIDATION_SEMANTIC_CHECK;
+		return semanticCheck;
 	}
 
 	/**
@@ -119,11 +146,10 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 	 */
 	private ResponseCodeEnum validate(TransactionBody transactionBody) {
 		var op = transactionBody.getConsensusCreateTopic();
-
 		if (op.hasAdminKey() && !validator.hasGoodEncoding(op.getAdminKey())) {
 			return BAD_ENCODING;
 		}
-
 		return OK;
 	}
+
 }

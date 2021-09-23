@@ -23,25 +23,19 @@ package com.hedera.services.state.merkle;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.serdes.TopicSerde;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
 
 import javax.annotation.Nullable;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
@@ -242,58 +236,6 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<Entit
 
 	private JKey getDefaultJKey() {
 		return new JKeyList(new ArrayList<>());
-	}
-
-	/**
-	 * Increment the sequence number if this is not the initial transaction on the topic (the create), and update the
-	 * running hash of the Transactions on this topic (submitted messages and modifications of the topic).
-	 *
-	 * @param payer
-	 * 		the account id to pay for the transaction
-	 * @param message
-	 * 		the message submitted to the topic
-	 * @param topicId
-	 * 		the topic id to receive the message
-	 * @param consensusTimestamp
-	 * 		the consensus timestamp
-	 * @throws IOException
-	 * 		when any component fails to write to a temporary stream for computing the running hash
-	 */
-	public void updateRunningHashAndSequenceNumber(
-			final AccountID payer,
-			@Nullable byte[] message,
-			@Nullable TopicID topicId,
-			@Nullable Instant consensusTimestamp
-	) throws IOException {
-		throwIfImmutable("Cannot change this topic's running hash or sequence number if it's immutable.");
-		if (null == message) {
-			message = new byte[0];
-		}
-		if (null == topicId) {
-			topicId = TopicID.newBuilder().build();
-		}
-		if (null == consensusTimestamp) {
-			consensusTimestamp = Instant.ofEpochSecond(0);
-		}
-
-		var boas = new ByteArrayOutputStream();
-		try (var out = new ObjectOutputStream(boas)) {
-			out.writeObject(getRunningHash());
-			out.writeLong(RUNNING_HASH_VERSION);
-			out.writeLong(payer.getShardNum());
-			out.writeLong(payer.getRealmNum());
-			out.writeLong(payer.getAccountNum());
-			out.writeLong(topicId.getShardNum());
-			out.writeLong(topicId.getRealmNum());
-			out.writeLong(topicId.getTopicNum());
-			out.writeLong(consensusTimestamp.getEpochSecond());
-			out.writeInt(consensusTimestamp.getNano());
-			++sequenceNumber;
-			out.writeLong(sequenceNumber);
-			out.writeObject(CommonUtils.noThrowSha384HashOf(message));
-			out.flush();
-			runningHash = CommonUtils.noThrowSha384HashOf(boas.toByteArray());
-		}
 	}
 
 	@Override

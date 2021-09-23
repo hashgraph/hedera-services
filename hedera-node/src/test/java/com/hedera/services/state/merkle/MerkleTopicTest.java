@@ -28,15 +28,12 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
-import java.time.Instant;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -155,8 +152,8 @@ class MerkleTopicTest {
 						"adminKey=" + MiscUtils.describe(adminKeys[1]) + ", " +
 						"submitKey=" + MiscUtils.describe(submitKeys[1]) + ", " +
 						"runningHash" +
-						"=3c8e1604b2cd20068f02976fa10217491561cc864b7bff28451e1f1a0a8c58c02df56f60562f129e845e0ba16e3420eb, " +
-						"sequenceNumber=1, " +
+						"=<N/A>, " +
+						"sequenceNumber=0, " +
 						"autoRenewSecs=2234567, " +
 						"autoRenewAccount=2.4.6}",
 				topicFrom(1).toString());
@@ -169,8 +166,8 @@ class MerkleTopicTest {
 						"adminKey=" + MiscUtils.describe(adminKeys[2]) + ", " +
 						"submitKey=" + MiscUtils.describe(submitKeys[2]) + ", " +
 						"runningHash" +
-						"=a19f77d351424204e3eeec1bb42bcdc728e521483bb99103dc7fa7c527db0c14aeefe4b0a8a7d0924b2f2c4a1d237bc5, " +
-						"sequenceNumber=2, " +
+						"=<N/A>, " +
+						"sequenceNumber=0, " +
 						"autoRenewSecs=3234567, " +
 						"autoRenewAccount=3.6.9}",
 				topicFrom(2).toString());
@@ -183,11 +180,9 @@ class MerkleTopicTest {
 		assertEquals(MerkleTopic.RUNTIME_CONSTRUCTABLE_ID, topic.getClassId());
 	}
 
-	private MerkleTopic topicFrom(int s) throws IOException {
+	private MerkleTopic topicFrom(int s) {
 		long v = 1_234_567L + s * 1_000_000L;
 		long t = s + 1;
-		AccountID payer = AccountID.newBuilder().setAccountNum(123).build();
-		TopicID id = TopicID.newBuilder().setTopicNum(s).build();
 		var topic = new MerkleTopic(
 				memos[s],
 				adminKeys[s],
@@ -195,13 +190,6 @@ class MerkleTopicTest {
 				v,
 				new EntityId(t, t * 2, t * 3),
 				new RichInstant(v, s));
-		for (int i = 0; i < s; i++) {
-			topic.updateRunningHashAndSequenceNumber(
-					payer,
-					"Hello world!".getBytes(),
-					id,
-					Instant.ofEpochSecond(v, i));
-		}
 		topic.setKey(EntityNum.fromInt(s));
 		return topic;
 	}

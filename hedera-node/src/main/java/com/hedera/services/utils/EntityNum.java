@@ -20,6 +20,7 @@ package com.hedera.services.utils;
  * ‍
  */
 
+import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -36,6 +37,8 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCod
  * when compared to the {@code java.lang.Integer} boxed type.
  */
 public class EntityNum {
+	static final EntityNum MISSING_NUM = new EntityNum(0);
+
 	private final int value;
 
 	public EntityNum(int value) {
@@ -51,23 +54,45 @@ public class EntityNum {
 		return new EntityNum(value);
 	}
 
+	public static EntityNum fromModel(Id id) {
+		if (!areValidNums(id.getShard(), id.getRealm())) {
+			return MISSING_NUM;
+		}
+		return fromLong(id.getNum());
+	}
+
 	public static EntityNum fromAccountId(AccountID grpc) {
+		if (!areValidNums(grpc.getShardNum(), grpc.getRealmNum())) {
+			return MISSING_NUM;
+		}
 		return fromLong(grpc.getAccountNum());
 	}
 
 	public static EntityNum fromTokenId(TokenID grpc) {
+		if (!areValidNums(grpc.getShardNum(), grpc.getRealmNum())) {
+			return MISSING_NUM;
+		}
 		return fromLong(grpc.getTokenNum());
 	}
 
 	public static EntityNum fromTopicId(TopicID grpc) {
+		if (!areValidNums(grpc.getShardNum(), grpc.getRealmNum())) {
+			return MISSING_NUM;
+		}
 		return fromLong(grpc.getTopicNum());
 	}
 
 	public static EntityNum fromContractId(ContractID grpc) {
+		if (!areValidNums(grpc.getShardNum(), grpc.getRealmNum())) {
+			return MISSING_NUM;
+		}
 		return fromLong(grpc.getContractNum());
 	}
 
 	public static EntityNum fromScheduleId(ScheduleID grpc) {
+		if (!areValidNums(grpc.getShardNum(), grpc.getRealmNum())) {
+			return MISSING_NUM;
+		}
 		return fromLong(grpc.getScheduleNum());
 	}
 
@@ -112,5 +137,9 @@ public class EntityNum {
 		var that = (EntityNum) o;
 
 		return this.value == that.value;
+	}
+
+	static boolean areValidNums(long shard, long realm) {
+		return shard == STATIC_PROPERTIES.getShard() && realm == STATIC_PROPERTIES.getRealm();
 	}
 }

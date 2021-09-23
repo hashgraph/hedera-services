@@ -29,9 +29,10 @@ import com.hederahashgraph.fee.FileFeeBuilder;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Map;
 
 @Singleton
-public class GetFileContentsResourceUsage implements QueryResourceUsageEstimator {
+public final class GetFileContentsResourceUsage implements QueryResourceUsageEstimator {
 	private final FileFeeBuilder usageEstimator;
 
 	@Inject
@@ -45,7 +46,7 @@ public class GetFileContentsResourceUsage implements QueryResourceUsageEstimator
 	}
 
 	@Override
-	public FeeData usageGiven(final Query query, final StateView view) {
+	public FeeData usageGiven(final Query query, final StateView view, final Map<String, Object> ignoreCtx) {
 		return usageGivenType(query, view, query.getFileGetContents().getHeader().getResponseType());
 	}
 

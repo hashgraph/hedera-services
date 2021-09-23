@@ -29,26 +29,24 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class TxnValidityAndFeeReqTest {
 	@Test
 	void defaultFeeReqIsZero() {
-		// expect:
-		assertEquals(0, new TxnValidityAndFeeReq(INVALID_ACCOUNT_AMOUNTS).getRequiredFee());
+		final var subject = new TxnValidityAndFeeReq(INVALID_ACCOUNT_AMOUNTS);
+
+		assertEquals(INVALID_ACCOUNT_AMOUNTS, subject.getValidity());
+		assertEquals(0L, subject.getRequiredFee());
 	}
 
 	@Test
 	void beanWorks() {
-		// given:
-		var subject = new TxnValidityAndFeeReq(OK, 123L);
+		final var subject = new TxnValidityAndFeeReq(OK, 123L);
 
-		// expect:
 		assertEquals(OK, subject.getValidity());
 		assertEquals(123L, subject.getRequiredFee());
 	}
 
 	@Test
 	void toStringWorks() {
-		// given:
-		var subject = new TxnValidityAndFeeReq(OK, 123L);
+		final var subject = new TxnValidityAndFeeReq(OK, 123L);
 
-		// expect:
 		assertEquals(
 				TxnValidityAndFeeReq.class.getSimpleName()
 						+ "{validity=" + OK + ", requiredFee=" + 123 + "}",

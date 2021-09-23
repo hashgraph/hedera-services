@@ -522,7 +522,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 			} else {
 				var fee = record.getTransactionFee();
 				var rates = spec.ratesProvider();
-				var priceInUsd = sdec(rates.toUsdWithActiveRates(fee), 4);
+				var priceInUsd = sdec(rates.toUsdWithActiveRates(fee), 5);
 				log.info("Record (charged ${}): {}", priceInUsd, record);
 			}
 		}

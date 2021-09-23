@@ -18,22 +18,29 @@ package com.hedera.services.store;
 
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Topic;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.function.Supplier;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.services.store.models.TopicConversion.fromMerkle;
+import static com.hedera.services.store.models.TopicConversion.fromModel;
+import static com.hedera.services.store.models.TopicConversion.modelToMerkle;
+
 /**
  * A store which interacts with the state topics, represented in a {@link MerkleMap}.
- * 
+ *
  * @author Yoan Sredkov
  */
 @Singleton
 public class TopicStore {
-	
+
 	private final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics;
 	private final TransactionRecordService transactionRecordService;
 
@@ -49,36 +56,82 @@ public class TopicStore {
 	/**
 	 * Persists a new {@link Topic} into the state, as well as exporting its ID to the transaction receipt.
 	 *
-	 * @param model
-	 * 		- the model to be mapped onto a new {@link MerkleTopic} and persisted.
+	 * @param topic
+	 * 		- the topic to be mapped onto a new {@link MerkleTopic} and persisted.
 	 */
-	public void persistNew(Topic model) {
-		final var id = model.getId().asEntityNum();
+	public void persistNew(Topic topic) {
+		final var id = topic.getId().asEntityNum();
 		final var currentTopics = topics.get();
-		final var merkleTopic = new MerkleTopic();
-		mapModelToMerkle(model, merkleTopic);
+		final var merkleTopic = fromModel(topic);
 		merkleTopic.setSequenceNumber(0);
 		currentTopics.put(id, merkleTopic);
-		transactionRecordService.includeChangesToTopic(model);
+		transactionRecordService.includeChangesToTopic(topic);
 	}
 
 	/**
-	 * Maps properties between a model {@link Topic} and a {@link MerkleTopic}
-	 * 
-	 * @param model - the Topic model which will be used to map into a MerkleTopic
-	 * @param merkle - the merkle topic
+	 * Persists the changes made to a {@link Topic} model into the state,
+	 * by mapping those changes onto a {@link MerkleTopic}.
+	 *
+	 * @param topic
+	 * 		- the model to be persisted
 	 */
-	private void mapModelToMerkle(Topic model, MerkleTopic merkle) {
-		merkle.setAdminKey(model.getAdminKey());
-		merkle.setSubmitKey(model.getSubmitKey());
-		merkle.setMemo(model.getMemo());
-		if (model.getAutoRenewAccountId() != null) {
-			merkle.setAutoRenewAccountId(model.getAutoRenewAccountId().asEntityId());
-		}
-		merkle.setAutoRenewDurationSeconds(model.getAutoRenewDurationSeconds());
-		merkle.setExpirationTimestamp(model.getExpirationTimestamp());
-		merkle.setDeleted(model.isDeleted());
-		merkle.setSequenceNumber(model.getSequenceNumber());
+	public void persistTopic(Topic topic) {
+		final var id = topic.getId().asEntityNum();
+		final var mutableMerkleTopic = topics.get().getForModify(id);
+		
+		modelToMerkle(topic, mutableMerkleTopic);
+		transactionRecordService.includeChangesToTopic(topic);
 	}
 
+	/**
+	 * Performs loading of a given merkle topic from state. The merkle topic is mapped to a model.
+	 * Please note that the model should be explicitly persisted with {@link TopicStore#persistTopic}
+	 * in order to apply the changes made.
+	 *
+	 * @param id
+	 * 		- model ID of the topic to be loaded.
+	 * @return {@link Topic} - the loaded topic
+	 */
+	public Topic loadTopic(Id id) {
+		final var entityNum = id.asEntityNum();
+		final var currentTopics = topics.get();
+		final var merkleTopic = currentTopics.get(entityNum);
+
+		validateUsable(merkleTopic);
+		return fromMerkle(merkleTopic, id);
+	}
+
+	/**
+	 * Validates whether the given {@link MerkleTopic} is usable for operations.
+	 * 
+	 * @param topic - the topic to be validated
+	 */
+	private void validateUsable(MerkleTopic topic) {
+		validateFalse(topic == null, ResponseCodeEnum.INVALID_TOPIC_ID);
+		validateFalse(topic.isDeleted(), ResponseCodeEnum.INVALID_TOPIC_ID);
+	}
+
+	/**
+	 * Maps properties between a {@link MerkleTopic} and a {@link Topic}.
+	 * Used while loading the model topic from state.
+	 *
+	 * @param merkle
+	 * 		- the merkle topic which has the properties
+	 * @param model
+	 * 		- the model topic which will obtain those properties
+	 */
+	private void mapMerkleToModel(MerkleTopic merkle, Topic model) {
+		model.setAdminKey(merkle.getAdminKey());
+		model.setSubmitKey(merkle.getSubmitKey());
+		model.setMemo(merkle.getMemo());
+		if (merkle.getAutoRenewAccountId() != null) {
+			model.setAutoRenewAccountId(merkle.getAutoRenewAccountId().asId());
+		}
+		model.setAutoRenewDurationSeconds(merkle.getAutoRenewDurationSeconds());
+		model.setExpirationTimestamp(merkle.getExpirationTimestamp());
+		model.setDeleted(merkle.isDeleted());
+		model.setSequenceNumber(merkle.getSequenceNumber());
+		model.setRunningHash(merkle.getRunningHash());
+	}
+	
 }

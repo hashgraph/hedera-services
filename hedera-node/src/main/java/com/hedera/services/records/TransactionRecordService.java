@@ -92,7 +92,7 @@ public class TransactionRecordService {
 	public void includeChangesToTokenRels(final List<TokenRelationship> tokenRels) {
 		final Map<Id, TokenTransferList.Builder> transferListMap = new HashMap<>();
 		for (final var tokenRel : tokenRels) {
-			if (tokenRel.getBalanceChange() == 0L || !tokenRel.hasCommonRepresentation()) {
+			if (!tokenRel.hasChangesForRecord()) {
 				continue;
 			}
 			final var tokenId = tokenRel.getToken().getId();
@@ -162,6 +162,9 @@ public class TransactionRecordService {
 	public void includeChangesToTopic(Topic topic) {
 		if (topic.isNew()) {
 			txnCtx.setCreated(topic.getId().asGrpcTopic());
+		}
+		if (topic.hasUpdatedHashAndSeqNo()) {
+			txnCtx.setTopicRunningHash(topic.getRunningHash(), topic.getSequenceNumber());
 		}
 	}
 }

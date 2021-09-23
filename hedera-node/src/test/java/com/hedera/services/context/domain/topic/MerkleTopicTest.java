@@ -26,23 +26,16 @@ import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.test.utils.AccountIDConverter;
 import com.hedera.test.utils.ByteArrayConverter;
 import com.hedera.test.utils.EntityIdConverter;
-import com.hedera.test.utils.InstantConverter;
 import com.hedera.test.utils.JEd25519KeyConverter;
 import com.hedera.test.utils.RichInstantConverter;
-import com.hedera.test.utils.TopicIDConverter;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TopicID;
-import org.apache.commons.codec.binary.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import java.io.IOException;
-import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -272,34 +265,6 @@ class MerkleTopicTest {
 		topic.setRunningHash(new byte[0]);
 
 		assertFalse(() -> topic.hasRunningHash());
-	}
-
-	@ParameterizedTest
-	@CsvSource({
-			"0, message, 4.5.6, 1.2.3, 0000, 1577401723000000000, " +
-					"46d4ef0126b7be6c1c11ea854d5732a50aa0d7fb17b325c6977cec284c76814f969234d67c0b8cc414b9c84ff3e2bcb3",
-			"1, '', 7.8.9, 0.0.0, , 1577401723987654321, " +
-					"7547461ccf9bc8b598006f84c86bedee16967ba661da6f0c59c33476f8010932969b85aae59aff067e01e0fac6d45bda",
-			"0, , 10.11.12, , , , " +
-					"79200c525a751761dc25356d3dd01a34cf2a517e9c78e4b359ffd792f98f33f1ac1440dcd5e282abe73f6b265356218b"
-	})
-	void updateRunningHash(
-			final long initialSequenceNumber,
-			final String message,
-			final @ConvertWith(AccountIDConverter.class) AccountID payer,
-			final @ConvertWith(TopicIDConverter.class) TopicID topicId,
-			final @ConvertWith(ByteArrayConverter.class) byte[] initialRunningHash,
-			final @ConvertWith(InstantConverter.class) Instant consensusTimestampSeconds,
-			final @ConvertWith(ByteArrayConverter.class) byte[] expectedRunningHash
-	) throws IOException {
-		final var topic = new MerkleTopic();
-		topic.setSequenceNumber(initialSequenceNumber);
-		topic.setRunningHash(initialRunningHash);
-		topic.updateRunningHashAndSequenceNumber(payer, StringUtils.getBytesUtf8(message), topicId,
-				consensusTimestampSeconds);
-
-		assertEquals(initialSequenceNumber + 1, topic.getSequenceNumber());
-		assertArrayEquals(expectedRunningHash, topic.getRunningHash());
 	}
 
 	/**

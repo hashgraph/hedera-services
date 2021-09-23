@@ -24,9 +24,15 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TopicID;
 
 public enum ExceptionalEntityIdSource implements EntityIdSource {
 	NOOP_ID_SOURCE;
+
+	@Override
+	public TopicID newTopicId(final AccountID sponsor) {
+		throw new UnsupportedOperationException();
+	}
 
 	@Override
 	public AccountID newAccountId(AccountID newAccountSponsor) {
