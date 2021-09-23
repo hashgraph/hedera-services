@@ -39,8 +39,6 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.Pause;
-import com.hedera.services.utils.SleepingPause;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -52,13 +50,13 @@ import com.swirlds.merkle.map.MerkleMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static com.hedera.services.utils.SleepingPause.SLEEPING_PAUSE;
+
 /**
  * Convenience class that gives unified access to Hedera signing metadata by
  * delegating to type-specific lookups.
  */
-public class DelegatingSigMetadataLookup implements SigMetadataLookup {
-	private static final Pause pause = SleepingPause.SLEEPING_PAUSE;
-
+public final class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	private final FileSigMetaLookup fileSigMetaLookup;
 	private final AccountSigMetaLookup accountSigMetaLookup;
 	private final ContractSigMetaLookup contractSigMetaLookup;
@@ -115,7 +113,7 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 				accounts,
 				maxRetries,
 				retryWaitIncrementMs,
-				pause,
+				SLEEPING_PAUSE,
 				runningAvgs,
 				speedometers);
 		return new DelegatingSigMetadataLookup(
@@ -137,7 +135,8 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 			final MiscRunningAvgs runningAvgs,
 			final MiscSpeedometers speedometers
 	) {
-		final var accountLookup = new RetryingAccountLookup(pause, properties, accounts, runningAvgs, speedometers);
+		final var accountLookup =
+				new RetryingAccountLookup(SLEEPING_PAUSE, properties, accounts, runningAvgs, speedometers);
 		return new DelegatingSigMetadataLookup(
 				new HfsSigMetaLookup(hfs),
 				accountLookup,
