@@ -13,6 +13,7 @@ import java.util.stream.IntStream;
 import static com.hedera.services.state.jasperdb.JasperDbTestUtils.deleteDirectoryAndContents;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class MemoryIndexDiskKeyValueStoreTest {
 
@@ -92,10 +93,12 @@ public class MemoryIndexDiskKeyValueStoreTest {
         MemoryIndexDiskKeyValueStore.ENABLE_DEEP_VALIDATION = true;
         // let's store hashes as easy test class
         Path tempDir = Files.createTempDirectory("DataFileTest");
+        // reuse the LoadedDataCallbackImpl simple implementation developed in DataFileCollectionTest
+        DataFileCollection.LoadedDataCallback loadedDataCallback = new DataFileCollectionTest.LoadedDataCallbackImpl();
         MemoryIndexDiskKeyValueStore<long[]> store = new MemoryIndexDiskKeyValueStore<>(
                 tempDir,"MemoryIndexDiskKeyValueStoreTest", testType.dataItemSerializer,
-                null);
-        // write some batches of data, then check all the contents, we should end up with 3 files
+                loadedDataCallback);
+        // write some batches of data, then check all the contents, we should end up with 3 data files.
         writeBatch(testType, store,0,1000,1234);
         checkRange(testType, store,0,1000,1234);
         writeBatch(testType, store,1000,1500,1234);
@@ -155,7 +158,12 @@ public class MemoryIndexDiskKeyValueStoreTest {
         // check number of files created
         assertEquals(2,Files.list(tempDir).count());
 
+        // call get() on invalid keys .
+        assertNull(store.get(-1));
+        assertNull(store.get(60000));
+
         // clean up and delete files
         deleteDirectoryAndContents(tempDir);
+        store.close();
     }
 }

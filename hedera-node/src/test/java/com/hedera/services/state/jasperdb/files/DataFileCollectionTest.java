@@ -387,7 +387,7 @@ public class DataFileCollectionTest {
         deleteDirectoryAndContents(tempFileDir);
     }
 
-    public class LoadedDataCallbackImpl implements DataFileCollection.LoadedDataCallback {
+    public static class LoadedDataCallbackImpl implements DataFileCollection.LoadedDataCallback {
         public Map<Long, Long> dataLocationMap = new HashMap<>();
         public Map<Long, ByteBuffer> dataValueMap = new HashMap<>();
 
