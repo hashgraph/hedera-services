@@ -45,7 +45,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,8 +63,6 @@ public class HederaWorldState implements HederaMutableWorldState {
 	private final ServicesRepositoryRoot repositoryRoot;
 
 	private final List<Address> provisionalAccountDeletes = new ArrayList<>();
-
-	private final Map<Address, ContractDetails> provisionalStorageUpdates = new HashMap<>();
 	private final Map<Address, Bytes> provisionalCodeUpdates = new HashMap<>();
 	private final Map<Address, WorldStateAccount> provisionalAccountUpdates = new HashMap<>();
 
@@ -78,10 +75,6 @@ public class HederaWorldState implements HederaMutableWorldState {
 		this.ids = ids;
 		this.accountStore = accountStore;
 		this.repositoryRoot = repositoryRoot;
-	}
-
-	private void clearStorage(Address address) {
-		//todo implement me
 	}
 
 	@Override
@@ -116,9 +109,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 		});
 
 		/* Commit code updates for each updated address */
-		provisionalCodeUpdates.forEach((address, code) -> {
-			repositoryRoot.saveCode(address.toArray(), code.toArray());
-		});
+		provisionalCodeUpdates.forEach((address, code) -> repositoryRoot.saveCode(address.toArray(), code.toArray()));
 
 		repositoryRoot.flush();
 
@@ -126,7 +117,6 @@ public class HederaWorldState implements HederaMutableWorldState {
 		provisionalCodeUpdates.clear();
 		provisionalAccountUpdates.clear();
 		provisionalAccountDeletes.clear();
-		provisionalStorageUpdates.clear();
 	}
 
 	@Override
@@ -181,8 +171,6 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 	public class WorldStateAccount implements Account {
 
-		private volatile ContractDetails storageTrie;
-
 		private final Address address;
 		private final Wei balance;
 		private String memo;
@@ -195,14 +183,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 		}
 
 		private ContractDetails storageTrie() {
-			final ContractDetails updatedTrie = provisionalStorageUpdates.get(getAddress());
-			if (updatedTrie != null) {
-				storageTrie = updatedTrie;
-			}
-			if (storageTrie == null) {
-				storageTrie = repositoryRoot.getContractDetails(getAddress().toArray());
-			}
-			return storageTrie;
+			return repositoryRoot.getContractDetails(getAddress().toArray());
 		}
 
 		@Override
@@ -359,7 +340,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 				// ...and storage in the account trie first.
 				final boolean freshState = origin == null || updated.getStorageWasCleared();
 				if (freshState) {
-					wrapped.clearStorage(updated.getAddress());
+					wrapped.repositoryRoot.delete(updated.getAddress().toArray());
 				}
 
 				final Map<UInt256, UInt256> updatedStorage = updated.getUpdatedStorage();
@@ -369,7 +350,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 							freshState ? wrapped.repositoryRoot.getContractDetails(
 									updated.getAddress().toArray()) : origin.storageTrie();
 					final TreeSet<Map.Entry<UInt256, UInt256>> entries =
-							new TreeSet<>(Comparator.comparing(Map.Entry::getKey));
+							new TreeSet<>(Map.Entry.comparingByKey());
 					entries.addAll(updatedStorage.entrySet());
 
 					for (final Map.Entry<UInt256, UInt256> entry : entries) {
@@ -380,8 +361,6 @@ public class HederaWorldState implements HederaMutableWorldState {
 							storageTrie.put(DWUtil.fromUInt256(entry.getKey()), DWUtil.fromUInt256(value));
 						}
 					}
-
-					wrapped.provisionalStorageUpdates.put(updated.getAddress(), storageTrie);
 				}
 
 				if (updated.getWrappedAccount() != null) {

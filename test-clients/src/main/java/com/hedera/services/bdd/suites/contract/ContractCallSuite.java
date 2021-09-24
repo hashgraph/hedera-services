@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.apache.logging.log4j.LogManager;
@@ -85,6 +86,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -116,7 +118,8 @@ public class ContractCallSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-				Arrays.asList(benchmarkSingleSetter())
+				Arrays.asList(simpleUpdate())
+//				Arrays.asList(payableSuccess())
 //				positiveSpecs()
 //				negativeSpecs(),
 //				Arrays.asList(fridayThe13thSpec())
@@ -710,24 +713,23 @@ public class ContractCallSuite extends HapiApiSuite {
 								.hasPriority(recordWith().contractCallResult(
 										resultWith().logs(
 												inOrder(
-														logWith().longAtBytes(depositAmount, 24))))));
+														logWith().longAtBytes(depositAmount, 24)))))
+														);
 	}
 
 	HapiApiSpec simpleUpdate() {
 		return defaultHapiSpec("SimpleUpdate")
 				.given(
-						fileCreate("simpleUpdateBytecode").path(ContractResources.SIMPLE_UPDATE),
-						contractCreate("simpleUpdateContract").bytecode("simpleUpdateBytecode").adminKey(THRESHOLD)
+						cryptoCreate("payer").balance(1_000_000_000_000L).logged(),
+						fileCreate("simpleUpdateBytecode").path(ContractResources.SIMPLE_UPDATE)
 				).when(
-						contractCall("simpleUpdateContract", ContractResources.SIMPLE_UPDATE_ABI, 5),
-						contractCall("simpleUpdateContract", ContractResources.SIMPLE_UPDATE_ABI, 15)
+						contractCreate("simpleUpdateContract").bytecode("simpleUpdateBytecode").gas(1_000_000),
+						contractCall("simpleUpdateContract", ContractResources.SIMPLE_UPDATE_ABI, 5, 42).gas(1_000_000),
+						contractCall("simpleUpdateContract", ContractResources.SIMPLE_SELFDESTRUCT_UPDATE_ABI, "0x0000000000000000000000000000000000000002").gas(1_000_000),
+						contractCall("simpleUpdateContract", ContractResources.SIMPLE_UPDATE_ABI, 15, 434).gas(1_000_000).hasKnownStatus(CONTRACT_DELETED)
 				).then(
-//						getTxnRecord("payTxn")
-//								.hasPriority(recordWith().contractCallResult(
-//										resultWith().logs(
-//												inOrder(
-//														logWith().longAtBytes(depositAmount, 24)))))
-														);
+						contractCall("simpleUpdateContract", ContractResources.SIMPLE_UPDATE_ABI, 15, 434).gas(1_000_000).hasKnownStatus(CONTRACT_DELETED)
+				);
 	}
 
 	HapiApiSpec vanillaSuccess() {

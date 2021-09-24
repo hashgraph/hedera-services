@@ -340,9 +340,14 @@ public class ContractResources {
 			"\"name\":\"toFirst\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"toSecond\"," +
 			"\"type\":\"uint32\"}],\"name\":\"donate\",\"outputs\":[],\"payable\":true," +
 			"\"stateMutability\":\"payable\",\"type\":\"function\"}";
-	public static final String SIMPLE_UPDATE_ABI = "{\"inputs\": [{\"internalType\": \"uint256\"," +
-			"\"name\": \"n\",\"type\": \"uint256\"}],\"name\": \"set\",\"outputs\": []," +
-			"\"stateMutability\": \"nonpayable\",\"type\": \"function\"}]";
+	public static final String SIMPLE_UPDATE_ABI = "{\"inputs\": [" +
+			"{\"internalType\": \"uint256\",\"name\": \"n\",\"type\": \"uint256\"}," +
+			"{\"internalType\": \"uint256\",\"name\": \"m\",\"type\": \"uint256\"}]," +
+			"\"name\": \"set\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String SIMPLE_SELFDESTRUCT_UPDATE_ABI = "{\"inputs\": [" +
+			"{\"internalType\": \"address payable\",\"name\": \"beneficiary\"," +
+			"\"type\": \"address\"}],\"name\": \"del\",\"outputs\": [],\"stateMutability\": \"nonpayable\"," +
+			"\"type\": \"function\"}";
 
 	public static final String bytecodePath(String bytecode) {
 		return String.format("src/main/resource/contract/bytecodes/%s.bin", bytecode);
