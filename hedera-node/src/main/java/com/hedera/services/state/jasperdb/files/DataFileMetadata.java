@@ -222,7 +222,6 @@ public final class DataFileMetadata {
     /**
      * Equals for use when comparing in collections, based on all fields in the toString() output.
      */
-    @SuppressWarnings("rawtypes")
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

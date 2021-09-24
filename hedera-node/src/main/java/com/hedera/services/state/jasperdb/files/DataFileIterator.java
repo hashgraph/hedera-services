@@ -168,7 +168,6 @@ public final class DataFileIterator implements AutoCloseable {
     /**
      * Equals for use when comparing in collections, based on matching file paths and metadata
      */
-    @SuppressWarnings("rawtypes")
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -188,6 +187,12 @@ public final class DataFileIterator implements AutoCloseable {
     // =================================================================================================================
     // Private methods
 
+    /**
+     * Get the dataItemBuffer sized big enough for capacityNeeded
+     *
+     * @param capacityNeeded The number of bytes we need to have of capacity before limit in dataItemBuffer
+     * @return dataItemBuffer, created and sized as needed. With position at 0 and limit set for capacityNeeded
+     */
     private ByteBuffer getResetDataItemBuffer(int capacityNeeded) {
         if (dataItemBuffer == null || dataItemBuffer.capacity() < capacityNeeded) {
             dataItemBuffer = ByteBuffer.allocate(capacityNeeded);

@@ -1,7 +1,6 @@
 package com.hedera.services.state.jasperdb.files.hashmap;
 
 import com.hedera.services.state.jasperdb.files.BaseSerializer;
-import com.hedera.services.state.jasperdb.files.DataItemHeader;
 
 import java.nio.ByteBuffer;
 

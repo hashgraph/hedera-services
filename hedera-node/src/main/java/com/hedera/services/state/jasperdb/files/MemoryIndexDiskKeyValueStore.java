@@ -25,7 +25,7 @@ import static com.hedera.services.state.jasperdb.files.DataFileCommon.*;
  *
  * @param <D> type for data items
  */
-@SuppressWarnings({"DuplicatedCode", "rawtypes"})
+@SuppressWarnings({"DuplicatedCode"})
 public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable {
     /**
      * This is useful for debugging and validating but is too expensive to enable in production.
