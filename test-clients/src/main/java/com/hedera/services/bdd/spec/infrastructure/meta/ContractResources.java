@@ -53,6 +53,7 @@ public class ContractResources {
 	public static final String BENCHMARK_CONTRACT = bytecodePath("Benchmark");
 	public static final String SIMPLE_UPDATE = bytecodePath("SimpleUpdate");
 	public static final String LOGS = bytecodePath("Logs");
+	public static final String CALLING_CONTRACT = bytecodePath("CallingContract");
 
 	public static final String TWO_SSTORES = "{ \"inputs\": [ { \"internalType\": \"bytes32\", \"name\": \"_singleProp\", \"type\": \"bytes32\" } ], \"name\": \"twoSSTOREs\", \"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
@@ -349,6 +350,9 @@ public class ContractResources {
 			"{\"internalType\": \"address payable\",\"name\": \"beneficiary\"," +
 			"\"type\": \"address\"}],\"name\": \"del\",\"outputs\": [],\"stateMutability\": \"nonpayable\"," +
 			"\"type\": \"function\"}";
+	public static final String CALLING_CONTRACT_SET_VALUE = "{ \"constant\": false, \"inputs\": [ { \"name\": \"_var1\", \"type\": \"uint256\" } ], \"name\": \"setVar1\", \"outputs\": [], \"payable\": false, \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+	public static final String CALLING_CONTRACT_CALL_CONTRACT = "{ \"constant\": false, \"inputs\": [ { \"name\": \"_addr\", \"type\": \"address\" }, { \"name\": \"_var1\", \"type\": \"uint256\" } ], \"name\": \"callContract\", \"outputs\": [], \"payable\": false, \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+	public static final String CALLING_CONTRACT_VIEW_VAR = "{ \"constant\": true, \"inputs\": [], \"name\": \"getVar1\", \"outputs\": [ { \"name\": \"\", \"type\": \"uint256\" } ], \"payable\": false, \"stateMutability\": \"view\", \"type\": \"function\" }";
 
 	public static final String LOGS_LOG0_ABI = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"n\"," +
 			"\"type\":\"uint256\"}],\"name\":\"log0\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";

@@ -118,7 +118,7 @@ public class ContractCallSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-				Arrays.asList(simpleUpdate())
+				Arrays.asList(callingContract())
 //				Arrays.asList(payableSuccess())
 //				positiveSpecs()
 //				negativeSpecs(),
@@ -725,10 +725,30 @@ public class ContractCallSuite extends HapiApiSuite {
 				).when(
 						contractCreate("simpleUpdateContract").bytecode("simpleUpdateBytecode").gas(1_000_000),
 						contractCall("simpleUpdateContract", ContractResources.SIMPLE_UPDATE_ABI, 5, 42).gas(1_000_000),
-						contractCall("simpleUpdateContract", ContractResources.SIMPLE_SELFDESTRUCT_UPDATE_ABI, "0x0000000000000000000000000000000000000002").gas(1_000_000),
-						contractCall("simpleUpdateContract", ContractResources.SIMPLE_UPDATE_ABI, 15, 434).gas(1_000_000).hasKnownStatus(CONTRACT_DELETED)
+						contractCall("simpleUpdateContract", ContractResources.SIMPLE_SELFDESTRUCT_UPDATE_ABI, "0x0000000000000000000000000000000000000002").gas(1_000_000)
 				).then(
 						contractCall("simpleUpdateContract", ContractResources.SIMPLE_UPDATE_ABI, 15, 434).gas(1_000_000).hasKnownStatus(CONTRACT_DELETED)
+				);
+	}
+
+	HapiApiSpec callingContract() {
+		return defaultHapiSpec("CallingContract")
+				.given(
+						cryptoCreate("payer").balance(1_000_000_000_000L).logged(),
+						fileCreate("callingContractBytecode").path(ContractResources.CALLING_CONTRACT)
+				).when(
+						contractCreate("callingContract").bytecode("callingContractBytecode").gas(1_000_000),
+						contractCall("callingContract", ContractResources.CALLING_CONTRACT_SET_VALUE,
+								35).gas(1_000_000),
+						contractCallLocal("callingContract",
+								ContractResources.CALLING_CONTRACT_VIEW_VAR)
+								.gas(300_000L).logged(),
+						contractCall("callingContract", ContractResources.CALLING_CONTRACT_CALL_CONTRACT,
+								"0x0000000000000000000000000000000000000123", 222).gas(1_000_000)
+				).then(
+						contractCallLocal("callingContract",
+								ContractResources.CALLING_CONTRACT_VIEW_VAR)
+									.gas(300_000L).logged()
 				);
 	}
 
