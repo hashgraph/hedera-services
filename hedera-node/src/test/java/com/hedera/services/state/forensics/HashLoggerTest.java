@@ -50,7 +50,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.mockito.BDDMockito.given;
 
-
 @ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class HashLoggerTest {
 	@Mock
@@ -101,7 +100,7 @@ class HashLoggerTest {
 				"333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333\n" +
 				"  TokenAssociations      :: " +
 				"373737373737373737373737373737373737373737373737373737373737373737373737373737373737373737373737\n" +
-				"  DiskFs                 :: " +
+				"  SpecialFiles           :: " +
 				"5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a\n" +
 				"  ScheduledTxs           :: " +
 				"353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535\n" +

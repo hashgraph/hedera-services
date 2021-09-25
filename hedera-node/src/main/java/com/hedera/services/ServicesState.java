@@ -93,7 +93,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	/* All of the state that is not itself hashed or serialized, but only derived from such state */
 	private StateMetadata metadata;
 
-	/* Only needed for 0.18.0 to support migration from a 0.17.x state */
+	/* Only needed for to support migration from a 0.17.x state */
 	private Platform platformForDeferredInit;
 	private AddressBook addressBookForDeferredInit;
 
@@ -154,7 +154,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			}
 			moveLargeFcmsToBinaryRoutePositions(this, deserializedVersion);
 		}
-		if (deserializedVersion < StateVersions.CURRENT_VERSION) {
+		if (deserializedVersion < StateVersions.RELEASE_0190_VERSION) {
 			final var specialFiles = new MerkleSpecialFiles();
 			setChild(SPECIAL_FILES, specialFiles);
 		}

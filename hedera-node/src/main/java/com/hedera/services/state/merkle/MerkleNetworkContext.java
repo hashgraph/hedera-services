@@ -27,6 +27,7 @@ import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
@@ -34,6 +35,7 @@ import com.swirlds.platform.state.DualStateImpl;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
@@ -46,8 +48,10 @@ import static java.util.stream.Collectors.toList;
 public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private static final Logger log = LogManager.getLogger(MerkleNetworkContext.class);
 
+	public static final int UPDATE_FILE_HASH_LEN = 48;
 	public static final int UNRECORDED_STATE_VERSION = -1;
-	public static final int NO_PENDING_UPDATE_FILE_NUM = -1;
+	public static final long NO_PREPARED_UPDATE_FILE_NUM = -1;
+	public static final byte[] NO_PREPARED_UPDATE_FILE_HASH = new byte[0];
 
 	static final int RELEASE_0130_VERSION = 2;
 	static final int RELEASE_0140_VERSION = 3;
@@ -73,7 +77,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private long lastScannedEntity;
 	private long entitiesScannedThisSecond = 0L;
 	private long entitiesTouchedThisSecond = 0L;
-	private long pendingUpdateFileNum = NO_PENDING_UPDATE_FILE_NUM;
+	private long preparedUpdateFileNum = NO_PREPARED_UPDATE_FILE_NUM;
+	private byte[] preparedUpdateFileHash = NO_PREPARED_UPDATE_FILE_HASH;
 	private FeeMultiplierSource multiplierSource = null;
 	private FunctionalityThrottling throttling = null;
 	private DeterministicThrottle.UsageSnapshot[] usageSnapshots = NO_SNAPSHOTS;
@@ -106,31 +111,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.entitiesScannedThisSecond = that.entitiesScannedThisSecond;
 		this.entitiesTouchedThisSecond = that.entitiesTouchedThisSecond;
 		this.lastMidnightBoundaryCheck = that.lastMidnightBoundaryCheck;
-		this.pendingUpdateFileNum = that.pendingUpdateFileNum;
-	}
-
-	public MerkleNetworkContext(
-			Instant consensusTimeOfLastHandledTxn,
-			SequenceNumber seqNo,
-			long lastScannedEntity,
-			ExchangeRates midnightRates,
-			DeterministicThrottle.UsageSnapshot[] usageSnapshots,
-			Instant[] congestionStartPeriods,
-			int stateVersion,
-			long entitiesScannedThisSecond,
-			long entitiesTouchedThisSecond,
-			Instant lastMidnightBoundaryCheck
-	) {
-		this.consensusTimeOfLastHandledTxn = consensusTimeOfLastHandledTxn;
-		this.seqNo = seqNo;
-		this.lastScannedEntity = lastScannedEntity;
-		this.midnightRates = midnightRates;
-		this.usageSnapshots = usageSnapshots;
-		this.congestionLevelStarts = congestionStartPeriods;
-		this.stateVersion = stateVersion;
-		this.entitiesScannedThisSecond = entitiesScannedThisSecond;
-		this.entitiesTouchedThisSecond = entitiesTouchedThisSecond;
-		this.lastMidnightBoundaryCheck = lastMidnightBoundaryCheck;
+		this.preparedUpdateFileNum = that.preparedUpdateFileNum;
+		this.preparedUpdateFileHash = that.preparedUpdateFileHash;
 	}
 
 	/* --- Helpers that reset the received argument based on the network context */
@@ -231,7 +213,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			whenVersionHigherOrEqualTo0150(in);
 		}
 		if (version >= RELEASE_0190_VERSION) {
-			pendingUpdateFileNum = in.readLong();
+			preparedUpdateFileNum = in.readLong();
+			preparedUpdateFileHash = in.readByteArray(UPDATE_FILE_HASH_LEN);
 		}
 	}
 
@@ -290,7 +273,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		out.writeLong(entitiesTouchedThisSecond);
 		out.writeInt(stateVersion);
 		serdes.writeNullableInstant(fromJava(lastMidnightBoundaryCheck), out);
-		out.writeLong(pendingUpdateFileNum);
+		out.writeLong(preparedUpdateFileNum);
+		out.writeByteArray(preparedUpdateFileHash);
 	}
 
 	@Override
@@ -310,13 +294,9 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	public String summarizedWith(DualStateAccessor dualStateAccessor) {
 		final var freezeTime = dualStateAccessor == null
 				? null
-				: ((DualStateImpl)dualStateAccessor.getDualState()).getFreezeTime();
-		final var pendingUpdateDesc = pendingUpdateFileNum != NO_PENDING_UPDATE_FILE_NUM
-				? " update from file " + STATIC_PROPERTIES.scopedIdLiteralWith(pendingUpdateFileNum)
-				: " no update";
-		final var pendingMaintenanceDesc = freezeTime == null
-				? "NONE"
-				: "at freeze time " + freezeTime + " with " + pendingUpdateDesc;
+				: ((DualStateImpl) dualStateAccessor.getDualState()).getFreezeTime();
+		final var pendingUpdateDesc = currentPendingUpdateDesc();
+		final var pendingMaintenanceDesc = freezeTimeDesc(freezeTime) + pendingUpdateDesc;
 
 		var sb = new StringBuilder("The network context (state version ")
 				.append(stateVersion == UNRECORDED_STATE_VERSION ? "<N/A>" : stateVersion)
@@ -349,6 +329,25 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		}
 
 		return sb.toString();
+	}
+
+	private String currentPendingUpdateDesc() {
+		final var nmtDescStart = "Prepped NMT upgrade                    :: ";
+		if (preparedUpdateFileNum == NO_PREPARED_UPDATE_FILE_NUM) {
+			return nmtDescStart + "<NONE>";
+		}
+		return nmtDescStart
+				+ "from "
+				+ STATIC_PROPERTIES.scopedIdLiteralWith(preparedUpdateFileNum)
+				+ " # " + CommonUtils.hex(preparedUpdateFileHash).substring(0, 8);
+	}
+
+	private String freezeTimeDesc(@Nullable Instant freezeTime) {
+		final var nmtDescSkip = "\n    + ";
+		if (freezeTime == null) {
+			return "<NONE>";
+		}
+		return (Instant.EPOCH.equals(freezeTime) ? "TBD" : freezeTime.toString()) + nmtDescSkip;
 	}
 
 	/* --- Getters --- */
@@ -446,12 +445,22 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return consensusTime == null ? "<N/A>" : consensusTime.toString();
 	}
 
-	public long getPendingUpdateFileNum() {
-		return pendingUpdateFileNum;
+	public long getPreparedUpdateFileNum() {
+		return preparedUpdateFileNum;
 	}
 
-	public void setPendingUpdateFileNum(long pendingUpdateFileNum) {
-		this.pendingUpdateFileNum = pendingUpdateFileNum;
+	public void setPreparedUpdateFileNum(long preparedUpdateFileNum) {
+		throwIfImmutable("Cannot update prepared update file num on an immutable context");
+		this.preparedUpdateFileNum = preparedUpdateFileNum;
+	}
+
+	public byte[] getPreparedUpdateFileHash() {
+		return preparedUpdateFileHash;
+	}
+
+	public void setPreparedUpdateFileHash(byte[] preparedUpdateFileHash) {
+		throwIfImmutable("Cannot update prepared update file hash on an immutable context");
+		this.preparedUpdateFileHash = preparedUpdateFileHash;
 	}
 
 	/* Only used for unit tests */

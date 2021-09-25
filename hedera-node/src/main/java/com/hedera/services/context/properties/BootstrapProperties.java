@@ -249,7 +249,8 @@ public final class BootstrapProperties implements PropertySource {
 			"tokens.nfts.maxQueryRange",
 			"tokens.nfts.mintThrottleScaleFactor",
 			"tokens.nfts.useTreasuryWildcards",
-			"consensus.message.maxBytesAllowed"
+			"consensus.message.maxBytesAllowed",
+			"upgrade.artifacts.path"
 	);
 
 	static final Set<String> NODE_PROPS = Set.of(

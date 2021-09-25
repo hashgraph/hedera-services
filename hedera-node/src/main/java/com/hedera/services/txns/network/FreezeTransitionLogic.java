@@ -20,15 +20,16 @@ package com.hedera.services.txns.network;
  * ‍
  */
 
-import com.hedera.services.config.FileNumbers;
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -39,50 +40,52 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_UPDATE_FILE_NUM;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.UPDATE_FILE_HASH_LEN;
+import static com.hedera.services.utils.MiscUtils.timestampToInstant;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_UPDATE_FILE_DOES_NOT_EXIST;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_UPGRADE_HAS_BEEN_PREPARED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UPDATE_FILE_HASH_CHANGED_SINCE_PREPARE_UPGRADE;
 
 @Singleton
 public class FreezeTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(FreezeTransitionLogic.class);
 
-	private final FileID softwareUpdateZipFid;
-	private final LegacyFreezer delegate;
+	private final UpgradeHelper upgradeHelper;
 	private final TransactionContext txnCtx;
 	private final Supplier<MerkleSpecialFiles> specialFiles;
+	private final Supplier<MerkleNetworkContext> networkCtx;
 
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
+	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validateBasics;
 
 	@Inject
 	public FreezeTransitionLogic(
-			FileNumbers fileNums,
-			LegacyFreezer delegate,
-			TransactionContext txnCtx,
-			Supplier<MerkleSpecialFiles> specialFiles
+			final UpgradeHelper upgradeHelper,
+			final TransactionContext txnCtx,
+			final Supplier<MerkleSpecialFiles> specialFiles,
+			final Supplier<MerkleNetworkContext> networkCtx
 	) {
 		this.txnCtx = txnCtx;
+		this.networkCtx = networkCtx;
 		this.specialFiles = specialFiles;
-		this.delegate = delegate;
-
-		softwareUpdateZipFid = fileNums.toFid(fileNums.softwareUpdateZip());
-	}
-
-	@FunctionalInterface
-	public interface LegacyFreezer {
-		TransactionRecord perform(TransactionBody txn, Instant consensusTime);
+		this.upgradeHelper = upgradeHelper;
 	}
 
 	@Override
 	public void doStateTransition() {
-		try {
-			var freezeTxn = txnCtx.accessor().getTxn();
-			var legacyRecord = delegate.perform(freezeTxn, txnCtx.consensusTime());
-			txnCtx.setStatus(legacyRecord.getReceipt().getStatus());
-		} catch (Exception e) {
-			log.warn("Avoidable exception!", e);
-			txnCtx.setStatus(FAIL_INVALID);
+		final var op = txnCtx.accessor().getTxn().getFreeze();
+
+		assertValidityAtCons(op);
+
+		switch (op.getFreezeType()) {
+			case FREEZE_UPGRADE:
+			case FREEZE_ONLY:
+				upgradeHelper.scheduleFreezeAt(timestampToInstant(op.getStartTime()));
 		}
 	}
 
@@ -96,43 +99,60 @@ public class FreezeTransitionLogic implements TransitionLogic {
 		return SEMANTIC_CHECK;
 	}
 
-	public ResponseCodeEnum validate(TransactionBody freezeTxn) {
-		/* TODO - the details of this validation will be quite different based on the enum types */
+	private void assertValidityAtCons(FreezeTransactionBody op) {
+		switch (op.getFreezeType()) {
+			case FREEZE_UPGRADE:
+				final var curNetworkCtx = networkCtx.get();
+				final var preparedFileNum = curNetworkCtx.getPreparedUpdateFileNum();
+				validateTrue(preparedFileNum != NO_PREPARED_UPDATE_FILE_NUM, NO_UPGRADE_HAS_BEEN_PREPARED);
+				final var preparedFileId = STATIC_PROPERTIES.scopedFileWith(preparedFileNum);
+				final var preparedFileHash = curNetworkCtx.getPreparedUpdateFileHash();
+				final var hashIsUnchanged = specialFiles.get().hashMatches(preparedFileId, preparedFileHash);
+				validateTrue(hashIsUnchanged, UPDATE_FILE_HASH_CHANGED_SINCE_PREPARE_UPGRADE);
+			case FREEZE_ONLY:
+				final var timeIsValid = isValidFreezeTime(op.getStartTime(), txnCtx.consensusTime());
+				validateTrue(timeIsValid, INVALID_FREEZE_TRANSACTION_BODY);
+				break;
+			case PREPARE_UPGRADE:
+				throw new AssertionError("Not implemented");
+		}
+	}
+
+	public ResponseCodeEnum validateBasics(TransactionBody freezeTxn) {
 		final var op = freezeTxn.getFreeze();
 
-		if (op.hasStartTime()) {
-			final var txnStartTime = freezeTxn.getTransactionID().getTransactionValidStart();
-			if (!isValidTimestamp(op.getStartTime(), txnStartTime)) {
-				return INVALID_FREEZE_TRANSACTION_BODY;
-			}
-		} else {
-			if (!isValidTime(op.getStartHour(), op.getStartMin()) || !isValidTime(op.getEndHour(), op.getEndMin())) {
-				return INVALID_FREEZE_TRANSACTION_BODY;
-			}
+		if (op.getStartHour() != 0 || op.getStartMin() != 0 || op.getEndHour() != 0 || op.getEndMin() != 0) {
+			return INVALID_FREEZE_TRANSACTION_BODY;
 		}
 
-		if (op.hasUpdateFile()) {
-			final var fileHash = op.getFileHash();
-			if (op.getFileHash().isEmpty()) {
-				return INVALID_FREEZE_TRANSACTION_BODY;
-			}
-			final var updateFile = op.getUpdateFile();
-			if (!specialFiles.get().hashMatches(updateFile, fileHash.toByteArray())) {
-				return INVALID_FREEZE_TRANSACTION_BODY;
-			}
-			if (!op.getUpdateFile().equals(softwareUpdateZipFid)) {
-				return INVALID_FILE_ID;
-			}
+		switch (op.getFreezeType()) {
+			case FREEZE_ONLY:
+			case FREEZE_UPGRADE:
+				return freezeTimeValidity(
+						op.getStartTime(),
+						timestampToInstant(freezeTxn.getTransactionID().getTransactionValidStart()));
+			case PREPARE_UPGRADE:
+				return sanityCheckUpgradeMeta(op.getUpdateFile(), op.getFileHash());
+			default:
+				return OK;
+		}
+	}
+
+	private ResponseCodeEnum sanityCheckUpgradeMeta(final FileID updateFile, final ByteString allegedSha384Hash) {
+		if (!specialFiles.get().contains(updateFile)) {
+			return FREEZE_UPDATE_FILE_DOES_NOT_EXIST;
+		}
+		if (allegedSha384Hash.size() != UPDATE_FILE_HASH_LEN) {
+			return FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH;
 		}
 		return OK;
 	}
 
-	private boolean isValidTime(final int hr, final int min) {
-		return hr >= 0 && hr <= 23 && min >= 0 && min <= 59;
+	private ResponseCodeEnum freezeTimeValidity(final Timestamp freezeStartTime, final Instant now) {
+		return isValidFreezeTime(freezeStartTime, now) ? OK : INVALID_FREEZE_TRANSACTION_BODY;
 	}
 
-	private boolean isValidTimestamp(final Timestamp freezeStartTime, final Timestamp txnStartTime) {
-		return Instant.ofEpochSecond(freezeStartTime.getSeconds(), freezeStartTime.getNanos())
-				.isAfter(Instant.ofEpochSecond(txnStartTime.getSeconds(), txnStartTime.getNanos()));
+	private boolean isValidFreezeTime(final Timestamp freezeStartTime, final Instant now) {
+		return Instant.ofEpochSecond(freezeStartTime.getSeconds(), freezeStartTime.getNanos()).isAfter(now);
 	}
 }

@@ -21,6 +21,7 @@ package com.hedera.services.state.merkle;
  */
 
 import com.hedera.services.fees.FeeMultiplierSource;
+import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
@@ -33,6 +34,7 @@ import com.hedera.test.extensions.LoggingTarget;
 import com.swirlds.common.MutabilityException;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.platform.state.DualStateImpl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,6 +43,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -48,6 +51,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_CONGESTION_STARTS;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_UPDATE_FILE_HASH;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_SNAPSHOTS;
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -72,10 +76,14 @@ import static org.mockito.Mockito.times;
 @ExtendWith(LogCaptureExtension.class)
 class MerkleNetworkContextTest {
 	private final int stateVersion = 13;
-	private final long pendingUpdateFileNum = 150L;
+	private final long preparedUpdateFileNum = 150L;
 	private final long lastScannedEntity = 1000L;
 	private final long entitiesTouchedThisSecond = 123L;
 	private final long entitiesScannedThisSecond = 123_456L;
+	private final byte[] preparedUpdateFileHash =
+			"012345678901234567890123456789012345678901234567".getBytes(StandardCharsets.UTF_8);
+	private final byte[] otherPreparedUpdateFileHash =
+			"x123456789x123456789x123456789x123456789x1234567".getBytes(StandardCharsets.UTF_8);
 	private Instant lastMidnightBoundaryCheck;
 	private Instant consensusTimeOfLastHandledTxn;
 	private SequenceNumber seqNo;
@@ -129,7 +137,8 @@ class MerkleNetworkContextTest {
 		subject.setStateVersion(stateVersion);
 		subject.updateAutoRenewSummaryCounts((int) entitiesScannedThisSecond, (int) entitiesTouchedThisSecond);
 		subject.setLastMidnightBoundaryCheck(lastMidnightBoundaryCheck);
-		subject.setPendingUpdateFileNum(pendingUpdateFileNum);
+		subject.setPreparedUpdateFileNum(preparedUpdateFileNum);
+		subject.setPreparedUpdateFileHash(preparedUpdateFileHash);
 	}
 
 	@AfterEach
@@ -153,7 +162,8 @@ class MerkleNetworkContextTest {
 		assertEquals(subjectCopy.getStateVersion(), stateVersion);
 		assertEquals(subjectCopy.getEntitiesScannedThisSecond(), entitiesScannedThisSecond);
 		assertEquals(subjectCopy.getEntitiesTouchedThisSecond(), entitiesTouchedThisSecond);
-		assertEquals(subjectCopy.getPendingUpdateFileNum(), pendingUpdateFileNum);
+		assertEquals(subjectCopy.getPreparedUpdateFileNum(), preparedUpdateFileNum);
+		assertSame(subjectCopy.getPreparedUpdateFileHash(), subject.getPreparedUpdateFileHash());
 		// and:
 		assertTrue(subject.isImmutable());
 		assertFalse(subjectCopy.isImmutable());
@@ -198,6 +208,8 @@ class MerkleNetworkContextTest {
 		assertEquals(subjectCopy.getStateVersion(), stateVersion);
 		assertEquals(subjectCopy.getEntitiesScannedThisSecond(), entitiesScannedThisSecond);
 		assertEquals(subjectCopy.getEntitiesTouchedThisSecond(), entitiesTouchedThisSecond);
+		assertEquals(subjectCopy.getPreparedUpdateFileNum(), preparedUpdateFileNum);
+		assertSame(subjectCopy.getPreparedUpdateFileHash(), subject.getPreparedUpdateFileHash());
 		// and:
 		assertTrue(subject.isImmutable());
 		assertFalse(subjectCopy.isImmutable());
@@ -222,6 +234,17 @@ class MerkleNetworkContextTest {
 		assertThrows(MutabilityException.class, () -> subject.setStateVersion(1));
 		assertThrows(MutabilityException.class, () -> subject.setLastMidnightBoundaryCheck(null));
 		assertThrows(MutabilityException.class, () -> subject.setConsensusTimeOfLastHandledTxn(null));
+		assertThrows(MutabilityException.class, () -> subject.setPreparedUpdateFileNum(123));
+		assertThrows(MutabilityException.class, () -> subject.setPreparedUpdateFileHash(NO_PREPARED_UPDATE_FILE_HASH));
+	}
+
+	@Test
+	void canSetPreparedUpdateFileMeta() {
+		subject.setPreparedUpdateFileNum(789);
+		subject.setPreparedUpdateFileHash(otherPreparedUpdateFileHash);
+
+		assertEquals(789, subject.getPreparedUpdateFileNum());
+		assertSame(otherPreparedUpdateFileHash, subject.getPreparedUpdateFileHash());
 	}
 
 	@Test
@@ -251,7 +274,7 @@ class MerkleNetworkContextTest {
 	}
 
 	@Test
-	void toStringRendersAsExpected() {
+	void summarizesStateVersionAsExpected() {
 		// setup:
 		throttling = mock(FunctionalityThrottling.class);
 
@@ -261,7 +284,7 @@ class MerkleNetworkContextTest {
 		// and:
 		var desiredWithStateVersion = "The network context (state version 13) is,\n" +
 				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
-				"  Pending maintenance                        :: NONE\n" +
+				"  Pending maintenance                        :: <NONE>\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
 				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
 				"  Next entity number                         :: 1234\n" +
@@ -277,7 +300,7 @@ class MerkleNetworkContextTest {
 				"    1970-01-15T06:59:49.000012345Z";
 		var desiredWithoutStateVersion = "The network context (state version <N/A>) is,\n" +
 				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
-				"  Pending maintenance                        :: NONE\n" +
+				"  Pending maintenance                        :: <NONE>\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
 				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
 				"  Next entity number                         :: 1234\n" +
@@ -293,7 +316,7 @@ class MerkleNetworkContextTest {
 				"    1970-01-15T06:59:49.000012345Z";
 		var desiredWithNoStateVersionOrHandledTxn = "The network context (state version <N/A>) is,\n" +
 				"  Consensus time of last handled transaction :: <N/A>\n" +
-				"  Pending maintenance                        :: NONE\n" +
+				"  Pending maintenance                        :: <NONE>\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
 				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
 				"  Next entity number                         :: 1234\n" +
@@ -320,6 +343,59 @@ class MerkleNetworkContextTest {
 		subject.setConsensusTimeOfLastHandledTxn(null);
 		// then:
 		assertEquals(desiredWithNoStateVersionOrHandledTxn, subject.summarized());
+	}
+
+	@Test
+	void summarizesPendingUpdateAsExpected() {
+		final var someTime = Instant.ofEpochSecond(1_234_567L, 890);
+
+		throttling = mock(FunctionalityThrottling.class);
+		final var dualState = mock(DualStateImpl.class);
+		final var accessor = mock(DualStateAccessor.class);
+
+		given(dualState.getFreezeTime()).willReturn(Instant.EPOCH);
+		given(accessor.getDualState()).willReturn(dualState);
+
+		// and:
+		var desiredWithPreparedUnscheduledMaintenance = "The network context (state version 13) is,\n" +
+				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
+				"  Pending maintenance                        :: TBD\n" +
+				"    + Prepped NMT upgrade                    :: from 0.0.150 # 30313233\n" +
+				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
+				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
+				"  Next entity number                         :: 1234\n" +
+				"  Last scanned entity                        :: 1000\n" +
+				"  Entities scanned last consensus second     :: 123456\n" +
+				"  Entities touched last consensus second     :: 123\n" +
+				"  Throttle usage snapshots are               ::\n" +
+				"    123 used (last decision time 1970-01-15T06:56:07.000054321Z)\n" +
+				"    456 used (last decision time 1970-01-15T06:56:08.000054321Z)\n" +
+				"  Congestion level start times are           ::\n" +
+				"    1970-01-15T06:56:07.000054321Z\n" +
+				"    1970-01-15T06:59:49.000012345Z";
+		// and:
+		var desiredWithPreparedAndScheduledMaintenance = "The network context (state version 13) is,\n" +
+				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
+				"  Pending maintenance                        :: 1970-01-15T06:56:07.000000890Z\n" +
+				"    + Prepped NMT upgrade                    :: from 0.0.150 # 30313233\n" +
+				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
+				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
+				"  Next entity number                         :: 1234\n" +
+				"  Last scanned entity                        :: 1000\n" +
+				"  Entities scanned last consensus second     :: 123456\n" +
+				"  Entities touched last consensus second     :: 123\n" +
+				"  Throttle usage snapshots are               ::\n" +
+				"    123 used (last decision time 1970-01-15T06:56:07.000054321Z)\n" +
+				"    456 used (last decision time 1970-01-15T06:56:08.000054321Z)\n" +
+				"  Congestion level start times are           ::\n" +
+				"    1970-01-15T06:56:07.000054321Z\n" +
+				"    1970-01-15T06:59:49.000012345Z";
+
+		// then:
+		assertEquals(desiredWithPreparedUnscheduledMaintenance, subject.summarizedWith(accessor));
+
+		given(dualState.getFreezeTime()).willReturn(someTime);
+		assertEquals(desiredWithPreparedAndScheduledMaintenance, subject.summarizedWith(accessor));
 	}
 
 	@Test
@@ -684,7 +760,7 @@ class MerkleNetworkContextTest {
 				.willReturn(lastScannedEntity)
 				.willReturn(entitiesScannedThisSecond)
 				.willReturn(entitiesTouchedThisSecond)
-				.willReturn(pendingUpdateFileNum);
+				.willReturn(preparedUpdateFileNum);
 		given(serdes.readNullableInstant(in))
 				.willReturn(fromJava(consensusTimeOfLastHandledTxn))
 				.willReturn(fromJava(usageSnapshots[0].lastDecisionTime()))
@@ -692,6 +768,7 @@ class MerkleNetworkContextTest {
 				.willReturn(fromJava(congestionStarts[0]))
 				.willReturn(fromJava(congestionStarts[1]))
 				.willReturn(fromJava(lastMidnightBoundaryCheck));
+		given(in.readByteArray(48)).willReturn(preparedUpdateFileHash);
 
 		// when:
 		subject.deserialize(in, MerkleNetworkContext.RELEASE_0190_VERSION);
@@ -709,7 +786,8 @@ class MerkleNetworkContextTest {
 		// and:
 		assertEquals(lastScannedEntity, subject.lastScannedEntity());
 		assertEquals(stateVersion, subject.getStateVersion());
-		assertEquals(pendingUpdateFileNum, subject.getPendingUpdateFileNum());
+		assertEquals(preparedUpdateFileNum, subject.getPreparedUpdateFileNum());
+		assertArrayEquals(preparedUpdateFileHash, subject.getPreparedUpdateFileHash());
 	}
 
 	@Test
@@ -791,7 +869,8 @@ class MerkleNetworkContextTest {
 		inOrder.verify(out).writeLong(entitiesTouchedThisSecond);
 		inOrder.verify(out).writeInt(stateVersion);
 		inOrder.verify(serdes).writeNullableInstant(fromJava(lastMidnightBoundaryCheck), out);
-		inOrder.verify(out).writeLong(pendingUpdateFileNum);
+		inOrder.verify(out).writeLong(preparedUpdateFileNum);
+		inOrder.verify(out).writeByteArray(preparedUpdateFileHash);
 	}
 
 	@Test

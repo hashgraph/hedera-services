@@ -21,7 +21,6 @@ package com.hedera.services.txns.network;
  */
 
 import com.hedera.services.fees.annotations.FunctionKey;
-import com.hedera.services.legacy.handler.FreezeHandler;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.txns.TransitionLogic;
 import com.swirlds.common.SwirldDualState;
@@ -42,12 +41,6 @@ public abstract class NetworkLogicModule {
 	@Singleton
 	public static Supplier<SwirldDualState> provideDualState(DualStateAccessor dualStateAccessor) {
 		return dualStateAccessor::getDualState;
-	}
-
-	@Provides
-	@Singleton
-	public static FreezeTransitionLogic.LegacyFreezer provideLegacyFreezer(FreezeHandler freezeHandler) {
-		return freezeHandler::freeze;
 	}
 
 	@Provides

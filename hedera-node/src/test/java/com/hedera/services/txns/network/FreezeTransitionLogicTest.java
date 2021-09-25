@@ -21,173 +21,286 @@ package com.hedera.services.txns.network;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.files.interceptors.MockFileNumbers;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
+import com.hederahashgraph.api.proto.java.FreezeType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.Optional;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_UPDATE_FILE_NUM;
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ABORT;
+import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ONLY;
+import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_UPGRADE;
+import static com.hederahashgraph.api.proto.java.FreezeType.PREPARE_UPGRADE;
+import static com.hederahashgraph.api.proto.java.FreezeType.TELEMETRY_UPGRADE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_UPDATE_FILE_DOES_NOT_EXIST;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_UPGRADE_HAS_BEEN_PREPARED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UPDATE_FILE_HASH_CHANGED_SINCE_PREPARE_UPGRADE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.verify;
 
+@ExtendWith(MockitoExtension.class)
 class FreezeTransitionLogicTest {
-	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
+	private static final FileID CANONICAL_FILE = IdUtils.asFile("0.0.150");
+	private static final FileID ILLEGAL_FILE = IdUtils.asFile("0.0.160");
+	private static final AccountID PAYER = IdUtils.asAccount("0.0.1234");
+	private static final Instant CONSENSUS_TIME = Instant.ofEpochSecond(1_234_567L, 890);
+	private static final Instant VALID_START_TIME = CONSENSUS_TIME.plusSeconds(120);
+	private static final ByteString PRETEND_HASH =
+			ByteString.copyFromUtf8("012345678901234567890123456789012345678901234567");
 
-	private Instant consensusTime;
-	private FreezeTransitionLogic.LegacyFreezer delegate;
 	private TransactionBody freezeTxn;
-	private TransactionContext txnCtx;
-	private MerkleSpecialFiles specialFiles;
+
+	@Mock
+	private UpgradeHelper upgradeHelper;
+	@Mock
 	private PlatformTxnAccessor accessor;
-	private FileNumbers fileNums = new MockFileNumbers();
+	@Mock
+	private TransactionContext txnCtx;
+	@Mock
+	private MerkleSpecialFiles specialFiles;
+	@Mock
+	private MerkleNetworkContext networkCtx;
 
 	private FreezeTransitionLogic subject;
 
 	@BeforeEach
 	private void setup() {
-		consensusTime = Instant.now();
+		subject = new FreezeTransitionLogic(upgradeHelper, txnCtx, () -> specialFiles, () -> networkCtx);
+	}
 
-		delegate = mock(FreezeTransitionLogic.LegacyFreezer.class);
-		txnCtx = mock(TransactionContext.class);
-		given(txnCtx.consensusTime()).willReturn(consensusTime);
-		accessor = mock(PlatformTxnAccessor.class);
+	@Test
+	void rejectsPostConsensusFreezeOnlyWithInvalidTime() {
+		givenTypicalTxnInCtx(true, FREEZE_ONLY, Optional.empty(), Optional.empty());
+		given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME.plusSeconds(Integer.MAX_VALUE));
 
-		subject = new FreezeTransitionLogic(fileNums, delegate, txnCtx, () -> specialFiles);
+		assertFailsWith(() -> subject.doStateTransition(), INVALID_FREEZE_TRANSACTION_BODY);
+	}
+
+	@Test
+	void acceptsPostConsensusFreezeOnlyWithValidTime() {
+		givenTypicalTxnInCtx(true, FREEZE_ONLY, Optional.empty(), Optional.empty());
+		given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME);
+
+		subject.doStateTransition();
+
+		verify(upgradeHelper).scheduleFreezeAt(VALID_START_TIME);
+	}
+
+	@Test
+	void rejectsPostConsensusFreezeUpgradeWithNoUpdatePrepared() {
+		given(networkCtx.getPreparedUpdateFileNum()).willReturn(NO_PREPARED_UPDATE_FILE_NUM);
+		givenTypicalTxnInCtx(true, FREEZE_UPGRADE, Optional.empty(), Optional.empty());
+
+		assertFailsWith(() -> subject.doStateTransition(), NO_UPGRADE_HAS_BEEN_PREPARED);
+	}
+
+	@Test
+	void rejectsPostConsensusFreezeUpgradeWithNonMatchingUpdateFileHash() {
+		final var pretendHash = PRETEND_HASH.toByteArray();
+		given(networkCtx.getPreparedUpdateFileNum()).willReturn(150L);
+		given(networkCtx.getPreparedUpdateFileHash()).willReturn(pretendHash);
+		givenTypicalTxnInCtx(true, FREEZE_UPGRADE, Optional.empty(), Optional.empty());
+
+		assertFailsWith(() -> subject.doStateTransition(), UPDATE_FILE_HASH_CHANGED_SINCE_PREPARE_UPGRADE);
+	}
+
+	@Test
+	void rejectsPostConsensusFreezeUpgradeWithInvalidTime() {
+		final var pretendHash = PRETEND_HASH.toByteArray();
+		given(networkCtx.getPreparedUpdateFileNum()).willReturn(150L);
+		given(networkCtx.getPreparedUpdateFileHash()).willReturn(pretendHash);
+		given(specialFiles.hashMatches(CANONICAL_FILE, pretendHash)).willReturn(true);
+		givenTypicalTxnInCtx(true, FREEZE_UPGRADE, Optional.empty(), Optional.empty());
+		given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME.plusSeconds(Integer.MAX_VALUE));
+
+		assertFailsWith(() -> subject.doStateTransition(), INVALID_FREEZE_TRANSACTION_BODY);
+	}
+
+	@Test
+	void acceptsPostConsensusFreezeUpgradeWithEverythingInPlace() {
+		final var pretendHash = PRETEND_HASH.toByteArray();
+		given(networkCtx.getPreparedUpdateFileNum()).willReturn(150L);
+		given(networkCtx.getPreparedUpdateFileHash()).willReturn(pretendHash);
+		given(specialFiles.hashMatches(CANONICAL_FILE, pretendHash)).willReturn(true);
+		givenTypicalTxnInCtx(true, FREEZE_UPGRADE, Optional.empty(), Optional.empty());
+		given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME);
+
+		subject.doStateTransition();
+
+		verify(upgradeHelper).scheduleFreezeAt(VALID_START_TIME);
 	}
 
 	@Test
 	void hasCorrectApplicability() {
-		givenTxnCtx();
+		givenTypicalTxn(true, FREEZE_ONLY, Optional.empty(), Optional.empty());
 
 		assertTrue(subject.applicability().test(freezeTxn));
 		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
 	}
 
 	@Test
-	void capturesBadFreeze() {
-		TransactionRecord freezeRec = TransactionRecord.newBuilder()
-				.setReceipt(TransactionReceipt.newBuilder()
-						.setStatus(INVALID_FREEZE_TRANSACTION_BODY)
-						.build())
-				.build();
-		givenTxnCtx();
-		given(delegate.perform(freezeTxn, consensusTime)).willReturn(freezeRec);
+	void freezeOnlyPrecheckRejectsDeprecatedStartHour() {
+		givenTxn(false, FREEZE_ONLY, Optional.empty(), Optional.empty(), false,
+				true, false, false, false);
 
-		subject.doStateTransition();
-
-		verify(txnCtx).setStatus(INVALID_FREEZE_TRANSACTION_BODY);
+		assertEquals(INVALID_FREEZE_TRANSACTION_BODY, subject.semanticCheck().apply(freezeTxn));
 	}
 
 	@Test
-	void followsHappyPathWithOverrides() {
-		TransactionRecord freezeRec = TransactionRecord.newBuilder()
-				.setReceipt(TransactionReceipt.newBuilder()
-						.setStatus(SUCCESS)
-						.build())
-				.build();
-		givenTxnCtx();
-		given(delegate.perform(freezeTxn, consensusTime)).willReturn(freezeRec);
+	void freezeOnlyPrecheckRejectsDeprecatedStartMin() {
+		givenTxn(false, FREEZE_ONLY, Optional.empty(), Optional.empty(), false,
+				false, true, false, false);
 
-		subject.doStateTransition();
-
-		verify(txnCtx).setStatus(SUCCESS);
+		assertEquals(INVALID_FREEZE_TRANSACTION_BODY, subject.semanticCheck().apply(freezeTxn));
 	}
 
 	@Test
-	void acceptsOkSyntax() {
-		givenTxnCtx();
+	void freezeOnlyPrecheckRejectsDeprecatedEndHour() {
+		givenTxn(false, FREEZE_ONLY, Optional.empty(), Optional.empty(), false,
+				false, false, true, false);
+
+		assertEquals(INVALID_FREEZE_TRANSACTION_BODY, subject.semanticCheck().apply(freezeTxn));
+	}
+
+	@Test
+	void freezeOnlyPrecheckRejectsDeprecatedEndMin() {
+		givenTxn(false, FREEZE_ONLY, Optional.empty(), Optional.empty(), false,
+				false, false, false, true);
+
+		assertEquals(INVALID_FREEZE_TRANSACTION_BODY, subject.semanticCheck().apply(freezeTxn));
+	}
+
+	@Test
+	void freezeOnlyPrecheckRejectsInvalidTime() {
+		givenTypicalTxn(false, FREEZE_ONLY, Optional.empty(), Optional.empty());
+
+		assertEquals(INVALID_FREEZE_TRANSACTION_BODY, subject.semanticCheck().apply(freezeTxn));
+	}
+
+	@Test
+	void freezeUpgradePrecheckRejectsInvalidTime() {
+		givenTypicalTxn(false, FREEZE_UPGRADE, Optional.empty(), Optional.empty());
+
+		assertEquals(INVALID_FREEZE_TRANSACTION_BODY, subject.semanticCheck().apply(freezeTxn));
+	}
+
+	@Test
+	void freezeOnlyPrecheckAcceptsGivenValidTime() {
+		givenTypicalTxn(true, FREEZE_ONLY, Optional.empty(), Optional.empty());
 
 		assertEquals(OK, subject.semanticCheck().apply(freezeTxn));
 	}
 
 	@Test
-	void rejectsInvalidTime() {
-		givenTxnCtx(false, Optional.empty(), Optional.empty(), false);
+	void prepPrecheckRejectsImpossibleFile() {
+		givenTypicalTxn(false, PREPARE_UPGRADE, Optional.of(ILLEGAL_FILE), Optional.empty());
 
-		assertEquals(INVALID_FREEZE_TRANSACTION_BODY, subject.semanticCheck().apply(freezeTxn));
+		assertEquals(FREEZE_UPDATE_FILE_DOES_NOT_EXIST, subject.semanticCheck().apply(freezeTxn));
 	}
 
 	@Test
-	void acceptValidFreezeStartTimeStamp() {
-		givenTxnCtx(true, Optional.empty(), Optional.empty(), true);
+	void prepPrecheckRejectsImpossibleHash() {
+		given(specialFiles.contains(CANONICAL_FILE)).willReturn(true);
+		givenTypicalTxn(false, PREPARE_UPGRADE, Optional.of(CANONICAL_FILE), Optional.empty());
+
+		assertEquals(FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH, subject.semanticCheck().apply(freezeTxn));
+	}
+
+	@Test
+	void prepPrecheckAcceptsViableValues() {
+		given(specialFiles.contains(CANONICAL_FILE)).willReturn(true);
+		givenTypicalTxn(false, PREPARE_UPGRADE, Optional.of(CANONICAL_FILE), Optional.of(PRETEND_HASH));
 
 		assertEquals(OK, subject.semanticCheck().apply(freezeTxn));
 	}
 
-
 	@Test
-	void rejectsInvalidFreezeStartTimeStamp() {
-		givenTxnCtx(false, Optional.empty(), Optional.empty(), true);
+	void abortPrecheckAcceptsWhatever() {
+		givenTypicalTxn(false, FREEZE_ABORT, Optional.empty(), Optional.of(PRETEND_HASH));
 
-		assertEquals(INVALID_FREEZE_TRANSACTION_BODY, subject.semanticCheck().apply(freezeTxn));
-	}
-
-	@Test
-	void rejectsInvalidUpdateTarget() {
-		givenTxnCtx(true, Optional.of(fileNums.toFid(fileNums.feeSchedules())), Optional.empty(), false);
-
-		assertEquals(INVALID_FILE_ID, subject.semanticCheck().apply(freezeTxn));
+		assertEquals(OK, subject.semanticCheck().apply(freezeTxn));
 	}
 
 	@Test
-	void rejectsMissingFileHash() {
-		givenTxnCtx(true, Optional.of(fileNums.toFid(fileNums.softwareUpdateZip())), Optional.empty(), false);
+	void telemetryPrecheckAcceptsWhatever() {
+		givenTypicalTxn(false, TELEMETRY_UPGRADE, Optional.empty(), Optional.of(PRETEND_HASH));
 
-		assertEquals(INVALID_FREEZE_TRANSACTION_BODY, subject.semanticCheck().apply(freezeTxn));
+		assertEquals(OK, subject.semanticCheck().apply(freezeTxn));
 	}
 
-	@Test
-	void translatesUnknownException() {
-		givenTxnCtx();
-		given(delegate.perform(any(), any())).willThrow(IllegalStateException.class);
-
-		subject.doStateTransition();
-
-		verify(txnCtx).setStatus(FAIL_INVALID);
-	}
-
-	private void givenTxnCtx() {
-		givenTxnCtx(true, Optional.empty(), Optional.empty(), false);
-	}
-
-	private void givenTxnCtx(
+	private void givenTypicalTxnInCtx(
 			final boolean validTime,
+			final FreezeType enumValue,
+			final Optional<FileID> target,
+			final Optional<ByteString> hash
+	) {
+		givenTypicalTxn(validTime, enumValue, target, hash);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(accessor.getTxn()).willReturn(freezeTxn);
+	}
+
+	private void givenTypicalTxn(
+			final boolean validTime,
+			final FreezeType enumValue,
+			final Optional<FileID> target,
+			final Optional<ByteString> hash
+	) {
+		givenTxn(validTime, enumValue, target, hash, true,
+				false, false, false, false);
+	}
+
+	private void givenTxn(
+			final boolean validTime,
+			final FreezeType enumValue,
 			final Optional<FileID> updateTarget,
 			final Optional<ByteString> fileHash,
-			final boolean useTimeStamp
+			final boolean useNonRejectedTimestamp,
+			final boolean useRejectedStartHour,
+			final boolean useRejectedStartMin,
+			final boolean useRejectedEndHour,
+			final boolean useRejectedEndMin
+
 	) {
 		final var txn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId());
 
-		final var op = FreezeTransactionBody.newBuilder();
-		if (!useTimeStamp) {
-			if (validTime) {
-				plusValidTime(op);
-			} else {
-				plusInvalidTime(op);
+		final var op = FreezeTransactionBody.newBuilder()
+				.setFreezeType(enumValue);
+		if (!useNonRejectedTimestamp) {
+			if (useRejectedStartHour) {
+				addRejectedStartHour(op);
+			}
+			if (useRejectedStartMin) {
+				addRejectedStartMin(op);
+			}
+			if (useRejectedEndHour) {
+				addRejectedEndHour(op);
+			}
+			if (useRejectedEndMin) {
+				addRejectedEndMin(op);
 			}
 		} else {
 			if (validTime) {
@@ -201,12 +314,22 @@ class FreezeTransitionLogicTest {
 
 		txn.setFreeze(op);
 		freezeTxn = txn.build();
-		given(accessor.getTxn()).willReturn(freezeTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
 	}
 
-	private void plusValidTime(final FreezeTransactionBody.Builder op) {
+	private void addRejectedStartHour(final FreezeTransactionBody.Builder op) {
 		op.setStartHour(15).setStartMin(15).setEndHour(15).setEndMin(20);
+	}
+
+	private void addRejectedStartMin(final FreezeTransactionBody.Builder op) {
+		op.setStartMin(15);
+	}
+
+	private void addRejectedEndHour(final FreezeTransactionBody.Builder op) {
+		op.setEndHour(15);
+	}
+
+	private void addRejectedEndMin(final FreezeTransactionBody.Builder op) {
+		op.setEndMin(20);
 	}
 
 	private void plusInvalidTime(final FreezeTransactionBody.Builder op) {
@@ -214,14 +337,13 @@ class FreezeTransitionLogicTest {
 	}
 
 	private void setValidFreezeStartTimeStamp(final FreezeTransactionBody.Builder op) {
-		final var validFreezeStartTime = Instant.now().plusSeconds(120);
 		op.setStartTime(Timestamp.newBuilder()
-				.setSeconds(validFreezeStartTime.getEpochSecond())
-				.setNanos(validFreezeStartTime.getNano()));
+				.setSeconds(VALID_START_TIME.getEpochSecond())
+				.setNanos(VALID_START_TIME.getNano()));
 	}
 
 	private void setInvalidFreezeStartTimeStamp(final FreezeTransactionBody.Builder op) {
-		final var inValidFreezeStartTime = Instant.now().minusSeconds(60);
+		final var inValidFreezeStartTime = CONSENSUS_TIME.minusSeconds(60);
 		op.setStartTime(Timestamp.newBuilder()
 				.setSeconds(inValidFreezeStartTime.getEpochSecond())
 				.setNanos(inValidFreezeStartTime.getNano()));
@@ -229,9 +351,9 @@ class FreezeTransitionLogicTest {
 
 	private TransactionID ourTxnId() {
 		return TransactionID.newBuilder()
-				.setAccountID(payer)
+				.setAccountID(PAYER)
 				.setTransactionValidStart(
-						Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
+						Timestamp.newBuilder().setSeconds(CONSENSUS_TIME.getEpochSecond()))
 				.build();
 	}
 }

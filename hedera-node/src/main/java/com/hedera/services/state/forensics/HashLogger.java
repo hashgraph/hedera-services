@@ -43,7 +43,7 @@ public class HashLogger {
 						"  Topics                 :: {}\n" +
 						"  Tokens                 :: {}\n" +
 						"  TokenAssociations      :: {}\n" +
-						"  DiskFs                 :: {}\n" +
+						"  SpecialFiles           :: {}\n" +
 						"  ScheduledTxs           :: {}\n" +
 						"  NetworkContext         :: {}\n" +
 						"  AddressBook            :: {}\n" +

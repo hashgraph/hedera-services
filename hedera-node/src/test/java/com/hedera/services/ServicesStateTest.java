@@ -33,6 +33,7 @@ import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -123,6 +124,8 @@ class ServicesStateTest {
 	private ServicesApp app;
 	@Mock
 	private MerkleDiskFs diskFs;
+	@Mock
+	private MerkleSpecialFiles specialFiles;
 	@Mock
 	private MerkleNetworkContext networkContext;
 	@Mock
@@ -389,11 +392,10 @@ class ServicesStateTest {
 
 	@Test
 	void doesntMigrateWhenInitializingFromRelease0170() {
-		// given:
 		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0170_VERSION);
 
-		// expect:
 		assertDoesNotThrow(subject::initialize);
+		assertNotNull(subject.specialFiles());
 	}
 
 	@Test
@@ -530,7 +532,6 @@ class ServicesStateTest {
 		assertSame(app, subject.getMetadata().app());
 		// and:
 		verify(initFlow).runWith(subject);
-		verify(diskFs).checkHashesAgainstDiskContents();
 		verify(hashLogger).logHashesFor(subject);
 	}
 
@@ -672,14 +673,14 @@ class ServicesStateTest {
 		// setup:
 		subject.setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
-		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
+		subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
 		// and:
 		subject.setMetadata(metadata);
 		subject.setDeserializedVersion(10);
 
 		given(addressBook.copy()).willReturn(addressBook);
 		given(networkContext.copy()).willReturn(networkContext);
-		given(diskFs.copy()).willReturn(diskFs);
+		given(specialFiles.copy()).willReturn(specialFiles);
 		given(metadata.copy()).willReturn(metadata);
 		given(metadata.app()).willReturn(app);
 		given(app.workingState()).willReturn(workingState);
@@ -694,7 +695,7 @@ class ServicesStateTest {
 		// and:
 		assertSame(addressBook, copy.addressBook());
 		assertSame(networkContext, copy.networkCtx());
-		assertSame(diskFs, copy.specialFiles());
+		assertSame(specialFiles, copy.specialFiles());
 	}
 
 	private List<MerkleNode> legacyChildrenWith(
