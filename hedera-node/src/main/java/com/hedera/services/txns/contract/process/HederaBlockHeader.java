@@ -26,6 +26,8 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.fluent.SimpleBlockHeader;
 
+import java.util.Optional;
+
 public class HederaBlockHeader extends SimpleBlockHeader {
 
 	protected final long gasLimit;
@@ -57,4 +59,7 @@ public class HederaBlockHeader extends SimpleBlockHeader {
 	public long getTimestamp() {
 		return timestamp;
 	}
+
+	@Override
+	public Optional<Long> getBaseFee() { return Optional.of(0L); }
 }

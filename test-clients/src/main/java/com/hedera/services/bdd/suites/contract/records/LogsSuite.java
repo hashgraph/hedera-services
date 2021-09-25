@@ -20,15 +20,11 @@ package com.hedera.services.bdd.suites.contract.records;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.hyperledger.besu.crypto.Hash;
 
 import java.util.List;
 
@@ -41,6 +37,8 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
+import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 
 public class LogsSuite extends HapiApiSuite {
 
@@ -177,12 +175,4 @@ public class LogsSuite extends HapiApiSuite {
 				);
 	}
 
-	private ByteString eventSignatureOf(String event) {
-		return ByteString.copyFrom(Hash.keccak256(
-				Bytes.wrap(event.getBytes())).toArray());
-	}
-
-	private ByteString parsedToByteString(long n) {
-		return ByteString.copyFrom(Bytes32.fromHexStringLenient(Long.toHexString(n)).toArray());
-	}
 }

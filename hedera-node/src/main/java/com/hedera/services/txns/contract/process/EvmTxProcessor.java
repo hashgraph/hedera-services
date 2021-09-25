@@ -93,10 +93,9 @@ abstract class EvmTxProcessor {
 		this.dynamicProperties = dynamicProperties;
 		this.gasCalculator = new LondonGasCalculator();
 
-		var chainId = BigInteger.valueOf(0x0130);
 		var gasCalculator = new LondonGasCalculator();
 		var operationRegistry = new OperationRegistry();
-		registerLondonOperations(operationRegistry, gasCalculator, chainId);
+		registerLondonOperations(operationRegistry, gasCalculator, BigInteger.valueOf(dynamicProperties.getChainId()));
 		// TODO add HederaCreateOperation
 		// make CREATE2 invalid
 		operationRegistry.put(new InvalidOperation(0xF5, gasCalculator));
