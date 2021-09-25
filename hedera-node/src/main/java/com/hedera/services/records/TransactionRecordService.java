@@ -159,8 +159,19 @@ public class TransactionRecordService {
 	 * Updates the record of the active transaction with the {@link TransactionProcessingResult} of the EVM transaction
 	 * @param result the processing result of the EVM transaction
 	 */
-	public void externaliseEvmTransaction(TransactionProcessingResult result) {
+	public void externaliseEvmCreateTransaction(TransactionProcessingResult result) {
 		txnCtx.setStatus(result.isSuccessful() ? SUCCESS : CONTRACT_REVERT_EXECUTED);
 		txnCtx.setCreateResult(result.toGrpc());
+	}
+
+	/**
+	 * Updates the record of the active transaction with the {@link TransactionProcessingResult} of the EVM transaction
+	 *
+	 * @param result
+	 * 		the processing result of the EVM transaction
+	 */
+	public void externaliseEvmCallTransaction(TransactionProcessingResult result) {
+		txnCtx.setStatus(result.isSuccessful() ? SUCCESS : CONTRACT_REVERT_EXECUTED);
+		txnCtx.setCallResult(result.toGrpc());
 	}
 }

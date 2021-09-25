@@ -29,7 +29,7 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.contracts.world.HederaWorldState;
+import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.txns.contract.process.CreateEvmTxProcessor;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;

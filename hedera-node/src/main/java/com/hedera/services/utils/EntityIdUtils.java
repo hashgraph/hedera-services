@@ -203,10 +203,6 @@ public final class EntityIdUtils {
 				.build();
 	}
 
-	public static Id idParsedFromEvmAddress(final byte[] evmAddress) {
-		return Id.fromGrpcAccount(accountParsedFromSolidityAddress(evmAddress));
-	}
-
 	public static String asLiteralString(final AccountID id) {
 		return String.format(
 				ENTITY_ID_FORMAT,

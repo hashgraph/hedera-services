@@ -1,4 +1,4 @@
-package com.hedera.services.store.contracts.world;
+package com.hedera.services.store.contracts;
 
 /*
  * -
@@ -23,9 +23,12 @@ package com.hedera.services.store.contracts.world;
  */
 
 import com.hedera.services.store.models.Id;
+import com.hederahashgraph.api.proto.java.ContractID;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.worldstate.WorldState;
 import org.hyperledger.besu.evm.worldstate.WorldView;
+
+import java.util.List;
 
 public interface HederaMutableWorldState extends WorldState, WorldView {
 
@@ -54,5 +57,5 @@ public interface HederaMutableWorldState extends WorldState, WorldView {
 	/**
 	 * Persists accumulated changes to the underlying storage
 	 */
-	void persist();
+	List<ContractID> persist();
 }

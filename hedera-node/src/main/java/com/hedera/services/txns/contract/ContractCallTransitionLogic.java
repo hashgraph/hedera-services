@@ -26,7 +26,7 @@ import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.contracts.world.HederaWorldState;
+import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.contract.process.CallEvmTxProcessor;
@@ -96,9 +96,11 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 				txnCtx.consensusTime());
 
 		/* --- Persist changes into state --- */
-		worldState.persist();
+		final var createdContracts = worldState.persist();
+		result.setCreatedContracts(createdContracts);
+
 		/* --- Externalise result --- */
-		recordService.externaliseEvmTransaction(result);
+		recordService.externaliseEvmCallTransaction(result);
 	}
 
 	@Override

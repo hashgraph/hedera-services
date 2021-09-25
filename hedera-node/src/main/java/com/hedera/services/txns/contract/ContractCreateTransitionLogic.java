@@ -29,7 +29,7 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.contracts.world.HederaWorldState;
+import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.contract.process.CreateEvmTxProcessor;
@@ -135,13 +135,14 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		}
 
 		/* --- Persist changes into state --- */
-		worldState.persist();
+		final var createdContracts = worldState.persist();
+		result.setCreatedContracts(createdContracts);
 
 		/* --- Externalise changes --- */
 		if (result.isSuccessful()) {
 			txnCtx.setCreated(newContractId.asGrpcContract());
 		}
-		recordService.externaliseEvmTransaction(result);
+		recordService.externaliseEvmCreateTransaction(result);
 	}
 
 

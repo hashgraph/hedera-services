@@ -52,6 +52,7 @@ public class ContractResources {
 	public static final String EMPTY_CONSTRUCTOR = bytecodePath("EmptyConstructor");
 	public static final String BENCHMARK_CONTRACT = bytecodePath("Benchmark");
 	public static final String SIMPLE_UPDATE = bytecodePath("SimpleUpdate");
+	public static final String LOGS = bytecodePath("Logs");
 
 	public static final String TWO_SSTORES = "{ \"inputs\": [ { \"internalType\": \"bytes32\", \"name\": \"_singleProp\", \"type\": \"bytes32\" } ], \"name\": \"twoSSTOREs\", \"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
@@ -349,7 +350,17 @@ public class ContractResources {
 			"\"type\": \"address\"}],\"name\": \"del\",\"outputs\": [],\"stateMutability\": \"nonpayable\"," +
 			"\"type\": \"function\"}";
 
-	public static final String bytecodePath(String bytecode) {
+	public static final String LOGS_LOG0_ABI = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"n\"," +
+			"\"type\":\"uint256\"}],\"name\":\"log0\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String LOGS_LOG1_ABI = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"n\"," +
+			"\"type\":\"uint256\"}],\"name\":\"log1\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String LOGS_LOG2_ABI = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"n0\"," +
+			"\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"n1\",\"type\":\"uint256\"}],\"name\":\"log2\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String LOGS_LOG3_ABI = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"n0\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"n1\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"n2\",\"type\":\"uint256\"}],\"name\":\"log3\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String LOGS_LOG4_ABI = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"n0\"," +
+			"\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"n1\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"n2\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"n3\",\"type\":\"uint256\"}],\"name\":\"log4\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+
+	public static String bytecodePath(String bytecode) {
 		return String.format("src/main/resource/contract/bytecodes/%s.bin", bytecode);
 	}
 

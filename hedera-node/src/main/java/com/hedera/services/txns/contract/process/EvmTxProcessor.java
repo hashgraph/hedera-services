@@ -26,7 +26,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.store.contracts.world.HederaWorldState;
+import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -117,11 +117,11 @@ abstract class EvmTxProcessor {
 
 	// TODO we can remove the Transaction object
 	protected TransactionProcessingResult execute(Account sender, Optional<Account> receiver, long gasPrice,
-			long gasLimit, long value, Bytes payload, boolean contractCreation, Instant consensusTime) {
+												  long gasLimit, long value, Bytes payload, boolean contractCreation, Instant consensusTime) {
 		try {
 			final Wei upfrontCost = Wei.of(Math.addExact(Math.multiplyExact(gasLimit, gasPrice), value));
 			final Gas intrinsicGas =
-					gasCalculator.transactionIntrinsicGasCost(payload, contractCreation);
+					gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
 
 			validateFalse(upfrontCost.compareTo(Wei.of(sender.getBalance())) > 0,
 					ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);

@@ -1,4 +1,4 @@
-package com.hedera.services.store.contracts.world;
+package com.hedera.services.store.contracts;
 
 /*
  * -
@@ -22,11 +22,16 @@ package com.hedera.services.store.contracts.world;
  *
  */
 
+import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.store.AccountStore;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -53,13 +58,14 @@ import java.util.TreeSet;
 import java.util.stream.Stream;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 @Singleton
 public class HederaWorldState implements HederaMutableWorldState {
 
 	private final EntityIdSource ids;
-	private final AccountStore accountStore;
+	private final HederaLedger ledger;
 	private final ServicesRepositoryRoot repositoryRoot;
 
 	private final List<Address> provisionalAccountDeletes = new ArrayList<>();
@@ -69,42 +75,46 @@ public class HederaWorldState implements HederaMutableWorldState {
 	@Inject
 	public HederaWorldState(
 			final EntityIdSource ids,
-			final AccountStore accountStore,
+			final HederaLedger ledger,
 			final ServicesRepositoryRoot repositoryRoot
 	) {
 		this.ids = ids;
-		this.accountStore = accountStore;
+		this.ledger = ledger;
 		this.repositoryRoot = repositoryRoot;
 	}
 
 	@Override
-	public void persist() {
+	public List<ContractID> persist() {
 		provisionalAccountDeletes.forEach(address -> {
-			final var accountId = EntityIdUtils.idParsedFromEvmAddress(address.toArray());
-			validateTrue(accountStore.exists(accountId), FAIL_INVALID);
-			final var account = accountStore.loadAccount(accountId);
-			account.setDeleted(true);
-			accountStore.persistAccount(account);
+			final var accountId = accountParsedFromSolidityAddress(address.toArray());
+			validateTrue(ledger.exists(accountId) && !ledger.isDeleted(accountId), FAIL_INVALID);
+			HederaAccountCustomizer customizer = new HederaAccountCustomizer()
+					.isDeleted(true);
+			ledger.customize(accountId, customizer);
 		});
 
-		//todo implement light account balance update in accountStore and use it
+		final var createdContracts = new ArrayList<ContractID>();
 		provisionalAccountUpdates.forEach((address, worldStateAccount) -> {
-			final var accountId = EntityIdUtils.idParsedFromEvmAddress(address.toArray());
-			if (accountStore.exists(accountId)) {
-				final var account = accountStore.loadAccount(accountId);
-				//todo are we setting the correct balance here?
-				account.setBalance(worldStateAccount.balance.toLong());
-				accountStore.persistAccount(account);
+			final var accountId = accountParsedFromSolidityAddress(address.toArray());
+			if (ledger.exists(accountId)) {
+				long oldBalance = ledger.getBalance(accountId);
+				long newBalance = worldStateAccount.getBalance().toLong();
+				long adjustment = newBalance - oldBalance;
+				ledger.adjustBalance(accountId, adjustment);
 			} else {
-				com.hedera.services.store.models.Account toPersist = new com.hedera.services.store.models.Account(
-						accountId);
-				toPersist.setSmartContract(true);
-				toPersist.setMemo(worldStateAccount.getMemo());
-				toPersist.setKey(worldStateAccount.getKey());
-				toPersist.setProxy(worldStateAccount.getProxyAccount());
-				toPersist.setBalance(worldStateAccount.getBalance().toLong());
-				// TODO expiry, autoRenewSecs
-				accountStore.persistNew(toPersist);
+				var key = new JContractIDKey(worldStateAccount.getProxyAccount().toGrpcContractId());
+				HederaAccountCustomizer customizer = new HederaAccountCustomizer()
+						.key(key)
+						.memo("")
+						//TODO will be populated once UpdateTrackingAccount is extended
+//						.proxy(worldStateAccount.getProxyAccount().asEntityId())
+//						.expiry(worldStateAccount.getExpiry())
+//						.autoRenewPeriod(worldStateAccount.getAutoRenew())
+						.isSmartContract(true);
+
+				long balance = worldStateAccount.getBalance().toLong();
+				ledger.spawn(accountId, balance, customizer);
+				createdContracts.add(EntityIdUtils.asContract(accountId));
 			}
 		});
 
@@ -117,6 +127,8 @@ public class HederaWorldState implements HederaMutableWorldState {
 		provisionalCodeUpdates.clear();
 		provisionalAccountUpdates.clear();
 		provisionalAccountDeletes.clear();
+
+		return createdContracts;
 	}
 
 	@Override
@@ -151,35 +163,49 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 	@Override
 	public WorldStateAccount get(Address address) {
-		Id id = Id.fromEvmAddress(address);
-		if (accountStore.exists(id)) {
-			// TODO introduce a more lightweight method for getting the balance
-			final var account = accountStore.loadAccount(id);
-			return new WorldStateAccount(address, Wei.of(account.getBalance()));
+		AccountID id = accountParsedFromSolidityAddress(address.toArray());
+		if (!ledger.exists(id) || ledger.isDetached(id) || ledger.isDeleted(id)) {
+			return null;
 		}
-		return null;
+
+		final long expiry = ledger.expiry(id);
+		final EntityId proxy = ledger.proxy(id);
+		final long balance = ledger.getBalance(id);
+		final long autoRenewPeriod = ledger.autoRenewPeriod(id);
+		return new WorldStateAccount(address, Wei.of(balance), expiry, autoRenewPeriod, proxy);
 	}
 
 	public void addPropertiesFor(Address address, String memo, JKey key, Id proxyAccount) {
 		WorldStateAccount account = this.provisionalAccountUpdates.get(address);
 		account.setMemo(memo);
 		account.setKey(key);
-		account.setProxyAccount(proxyAccount);
+		account.setProxyAccount(proxyAccount.asEntityId());
 
 		this.provisionalAccountUpdates.put(address, account);
 	}
 
 	public class WorldStateAccount implements Account {
 
-		private final Address address;
 		private final Wei balance;
-		private String memo;
+		private final Address address;
+
 		private JKey key;
-		private Id proxyAccount;
+		private String memo;
+		private EntityId proxyAccount;
+		private long expiry;
+		private long autoRenew;
 
 		public WorldStateAccount(final Address address, final Wei balance) {
 			this.address = address;
 			this.balance = balance;
+		}
+
+		public WorldStateAccount(final Address address, final Wei balance, long expiry, long autoRenew, EntityId proxyAccount) {
+			this.expiry = expiry;
+			this.address = address;
+			this.balance = balance;
+			this.autoRenew = autoRenew;
+			this.proxyAccount = proxyAccount;
 		}
 
 		private ContractDetails storageTrie() {
@@ -261,7 +287,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 			this.key = key;
 		}
 
-		public void setProxyAccount(Id proxyAccount) {
+		public void setProxyAccount(EntityId proxyAccount) {
 			this.proxyAccount = proxyAccount;
 		}
 
@@ -273,30 +299,15 @@ public class HederaWorldState implements HederaMutableWorldState {
 			return key;
 		}
 
-		public Id getProxyAccount() {
+		public EntityId getProxyAccount() {
 			return proxyAccount;
 		}
+
+		public long getAutoRenew() { return autoRenew; }
+
+		public long getExpiry() { return expiry; }
 	}
 
-	/**
-	 * This updater must extend `HederaAbstractWorldUpdater` instead of {@link AbstractWorldUpdater}
-	 * - HederaAbstractWorldUpdater must use HederaUpdateTrackingAccount instead of {@link UpdateTrackingAccount}
-	 * - HederaAbstractWorldUpdater must have new method: allocateNewContractAddress.
-	 * The method will:
-	 * - count the number of times the method is called
-	 * - call the `HederaWorldView` to allocate new ID from {@link com.hedera.services.ledger.ids.SeqNoEntityIdSource}
-	 * - HederaAbstractWorldUpdater must have new method: reclaimContractAddress
-	 * The method will:
-	 * - call the `HederaWorldView` to reclaim an ID from {@link com.hedera.services.ledger.ids.SeqNoEntityIdSource}
-	 * - decrement the counter for `newContractAddressesAllocated`
-	 * - StackedUpdater in HederaAbstractWorldUpdater must extend `HederaAbstractWorldUpdater` instead of {@link
-	 * AbstractWorldUpdater}
-	 * - HederaAbstractWorldUpdater on { UpdateTrackingAccount.reset} must clear the number of times
-	 * `allocateNewContractAddress` was called
-	 * - HederaAbstractWorldUpdater on { UpdateTrackingAccount.revert} must call the
-	 * `HederaWorldView` and execute { com.hedera.services.ledger.ids.SeqNoEntityIdSource.reclaim}
-	 * `newContractAddressesAllocated` times
-	 */
 	public static class Updater extends AbstractWorldUpdater<HederaWorldState, WorldStateAccount> {
 
 		protected Updater(final HederaWorldState world) {
@@ -363,12 +374,10 @@ public class HederaWorldState implements HederaMutableWorldState {
 					}
 				}
 
-				if (updated.getWrappedAccount() != null) {
-					wrapped.provisionalAccountUpdates.put(updated.getAddress(), updated.getWrappedAccount());
-				} else {
-					wrapped.provisionalAccountUpdates.put(updated.getAddress(),
-							wrapped.new WorldStateAccount(updated.getAddress(), updated.getBalance()));
-				}
+				// TODO once UpdateTrackingAccount is extended - expiry, proxyAccount and autoRenew will be
+				//  populated
+				wrapped.provisionalAccountUpdates.put(updated.getAddress(),
+						wrapped.new WorldStateAccount(updated.getAddress(), updated.getBalance()));
 			}
 		}
 	}

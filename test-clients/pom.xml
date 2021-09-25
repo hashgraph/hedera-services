@@ -300,6 +300,12 @@
       <artifactId>snakeyaml</artifactId>
       <version>${snakeyaml.version}</version>
     </dependency>
+      <dependency>
+          <groupId>org.hyperledger.besu.internal</groupId>
+          <artifactId>crypto</artifactId>
+          <version>21.7.4</version>
+          <scope>compile</scope>
+      </dependency>
   </dependencies>
   <profiles>
     <profile>
