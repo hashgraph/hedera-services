@@ -413,8 +413,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	private void internalInit(Platform platform, BootstrapProperties bootstrapProps) {
-		networkCtx().setStateVersion(StateVersions.CURRENT_VERSION);
-
 		final var selfId = platform.getSelfId().getId();
 
 		ServicesApp app;
@@ -430,11 +428,20 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			APPS.save(selfId, app);
 		}
 
-		metadata = new StateMetadata(app);
-		app.initializationFlow().runWith(this);
+		if (networkCtx().getStateVersion() > StateVersions.CURRENT_VERSION) {
+			log.error("Fatal error, network state version {} > node software version {}",
+					networkCtx().getStateVersion(),
+					StateVersions.CURRENT_VERSION);
+			app.systemExits().fail(1);
+		} else {
+			networkCtx().setStateVersion(StateVersions.CURRENT_VERSION);
 
-		logSummary();
-		log.info("  --> Context initialized accordingly on Services node {}", selfId);
+			metadata = new StateMetadata(app);
+			app.initializationFlow().runWith(this);
+
+			logSummary();
+			log.info("  --> Context initialized accordingly on Services node {}", selfId);
+		}
 	}
 
 	int getDeserializedVersion() {

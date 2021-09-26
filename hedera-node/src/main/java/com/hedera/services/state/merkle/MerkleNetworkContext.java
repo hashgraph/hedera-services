@@ -27,6 +27,7 @@ import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
+import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.swirlds.common.CommonUtils;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -175,6 +176,26 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	public void setStateVersion(int stateVersion) {
 		throwIfImmutable("Cannot set state version on an immutable context");
 		this.stateVersion = stateVersion;
+	}
+
+	public void recordPreparedUpgrade(FreezeTransactionBody op) {
+		throwIfImmutable("Cannot record a prepared upgrade on an immutable context");
+		preparedUpdateFileNum = op.getUpdateFile().getFileNum();
+		preparedUpdateFileHash = op.getFileHash().toByteArray();
+	}
+
+	public boolean isPreparedFileHashValidGiven(MerkleSpecialFiles specialFiles) {
+		if (preparedUpdateFileNum == NO_PREPARED_UPDATE_FILE_NUM) {
+			return true;
+		}
+		final var fid = STATIC_PROPERTIES.scopedFileWith(preparedUpdateFileNum);
+		return specialFiles.hashMatches(fid, preparedUpdateFileHash);
+	}
+
+	public void rollbackPreparedUpgrade() {
+		throwIfImmutable("Cannot rollback a prepared upgrade on an immutable context");
+		preparedUpdateFileNum = NO_PREPARED_UPDATE_FILE_NUM;
+		preparedUpdateFileHash = NO_PREPARED_UPDATE_FILE_HASH;
 	}
 
 	/* --- MerkleLeaf --- */

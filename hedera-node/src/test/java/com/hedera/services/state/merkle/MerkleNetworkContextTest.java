@@ -20,6 +20,7 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.serdes.DomainSerdes;
@@ -31,6 +32,8 @@ import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.swirlds.common.MutabilityException;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -52,6 +55,7 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_CONGESTION_STARTS;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_UPDATE_FILE_HASH;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_UPDATE_FILE_NUM;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_SNAPSHOTS;
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -147,6 +151,20 @@ class MerkleNetworkContextTest {
 	}
 
 	@Test
+	void preparedHashValidIfMatchesOrAbsent() {
+		final var fid = IdUtils.asFile("0.0.150");
+		final var specialFiles = mock(MerkleSpecialFiles.class);
+
+		given(specialFiles.hashMatches(fid, preparedUpdateFileHash)).willReturn(true);
+
+		assertTrue(subject.isPreparedFileHashValidGiven(specialFiles));
+
+		subject.setPreparedUpdateFileNum(NO_PREPARED_UPDATE_FILE_NUM);
+
+		assertTrue(subject.isPreparedFileHashValidGiven(specialFiles));
+	}
+
+	@Test
 	void copyWorks() {
 		// given:
 		var subjectCopy = subject.copy();
@@ -236,6 +254,8 @@ class MerkleNetworkContextTest {
 		assertThrows(MutabilityException.class, () -> subject.setConsensusTimeOfLastHandledTxn(null));
 		assertThrows(MutabilityException.class, () -> subject.setPreparedUpdateFileNum(123));
 		assertThrows(MutabilityException.class, () -> subject.setPreparedUpdateFileHash(NO_PREPARED_UPDATE_FILE_HASH));
+		assertThrows(MutabilityException.class, () -> subject.recordPreparedUpgrade(null));
+		assertThrows(MutabilityException.class, () -> subject.rollbackPreparedUpgrade());
 	}
 
 	@Test
@@ -245,6 +265,27 @@ class MerkleNetworkContextTest {
 
 		assertEquals(789, subject.getPreparedUpdateFileNum());
 		assertSame(otherPreparedUpdateFileHash, subject.getPreparedUpdateFileHash());
+	}
+
+	@Test
+	void recordsPreparedUpgrade() {
+		final var op = FreezeTransactionBody.newBuilder()
+				.setUpdateFile(IdUtils.asFile("0.0.789"))
+				.setFileHash(ByteString.copyFrom(otherPreparedUpdateFileHash))
+				.build();
+
+		subject.recordPreparedUpgrade(op);
+
+		assertEquals(789, subject.getPreparedUpdateFileNum());
+		assertArrayEquals(otherPreparedUpdateFileHash, subject.getPreparedUpdateFileHash());
+	}
+
+	@Test
+	void rollbackWorksOnPreparedUpgrade() {
+		subject.rollbackPreparedUpgrade();
+
+		assertEquals(NO_PREPARED_UPDATE_FILE_NUM, subject.getPreparedUpdateFileNum());
+		assertSame(NO_PREPARED_UPDATE_FILE_HASH, subject.getPreparedUpdateFileHash());
 	}
 
 	@Test

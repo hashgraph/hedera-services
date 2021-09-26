@@ -40,14 +40,15 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_UPDATE_FILE_NUM;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UPDATE_FILE_HASH_LEN;
 import static com.hedera.services.utils.MiscUtils.timestampToInstant;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_START_TIME_MUST_BE_FUTURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_UPDATE_FILE_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_FREEZE_IS_SCHEDULED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_UPGRADE_HAS_BEEN_PREPARED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UPDATE_FILE_HASH_CHANGED_SINCE_PREPARE_UPGRADE;
@@ -83,9 +84,20 @@ public class FreezeTransitionLogic implements TransitionLogic {
 		assertValidityAtCons(op);
 
 		switch (op.getFreezeType()) {
-			case FREEZE_UPGRADE:
+			case PREPARE_UPGRADE:
+				final var archiveData = specialFiles.get().get(op.getUpdateFile());
+				upgradeHelper.prepareUpgradeNow(archiveData);
+				networkCtx.get().recordPreparedUpgrade(op);
+				break;
 			case FREEZE_ONLY:
+				networkCtx.get().rollbackPreparedUpgrade();
+			case FREEZE_UPGRADE:
 				upgradeHelper.scheduleFreezeAt(timestampToInstant(op.getStartTime()));
+				break;
+			case FREEZE_ABORT:
+				upgradeHelper.abortScheduledFreeze();
+				networkCtx.get().rollbackPreparedUpgrade();
+				break;
 		}
 	}
 
@@ -99,26 +111,7 @@ public class FreezeTransitionLogic implements TransitionLogic {
 		return SEMANTIC_CHECK;
 	}
 
-	private void assertValidityAtCons(FreezeTransactionBody op) {
-		switch (op.getFreezeType()) {
-			case FREEZE_UPGRADE:
-				final var curNetworkCtx = networkCtx.get();
-				final var preparedFileNum = curNetworkCtx.getPreparedUpdateFileNum();
-				validateTrue(preparedFileNum != NO_PREPARED_UPDATE_FILE_NUM, NO_UPGRADE_HAS_BEEN_PREPARED);
-				final var preparedFileId = STATIC_PROPERTIES.scopedFileWith(preparedFileNum);
-				final var preparedFileHash = curNetworkCtx.getPreparedUpdateFileHash();
-				final var hashIsUnchanged = specialFiles.get().hashMatches(preparedFileId, preparedFileHash);
-				validateTrue(hashIsUnchanged, UPDATE_FILE_HASH_CHANGED_SINCE_PREPARE_UPGRADE);
-			case FREEZE_ONLY:
-				final var timeIsValid = isValidFreezeTime(op.getStartTime(), txnCtx.consensusTime());
-				validateTrue(timeIsValid, INVALID_FREEZE_TRANSACTION_BODY);
-				break;
-			case PREPARE_UPGRADE:
-				throw new AssertionError("Not implemented");
-		}
-	}
-
-	public ResponseCodeEnum validateBasics(TransactionBody freezeTxn) {
+	private ResponseCodeEnum validateBasics(TransactionBody freezeTxn) {
 		final var op = freezeTxn.getFreeze();
 
 		if (op.getStartHour() != 0 || op.getStartMin() != 0 || op.getEndHour() != 0 || op.getEndMin() != 0) {
@@ -149,10 +142,42 @@ public class FreezeTransitionLogic implements TransitionLogic {
 	}
 
 	private ResponseCodeEnum freezeTimeValidity(final Timestamp freezeStartTime, final Instant now) {
-		return isValidFreezeTime(freezeStartTime, now) ? OK : INVALID_FREEZE_TRANSACTION_BODY;
+		return isInTheFuture(freezeStartTime, now) ? OK : FREEZE_START_TIME_MUST_BE_FUTURE;
 	}
 
-	private boolean isValidFreezeTime(final Timestamp freezeStartTime, final Instant now) {
+	private void assertValidityAtCons(FreezeTransactionBody op) {
+		switch (op.getFreezeType()) {
+			case FREEZE_UPGRADE:
+				assertValidFreezeUpgrade();
+			case FREEZE_ONLY:
+				final var timeIsValid = isInTheFuture(op.getStartTime(), txnCtx.consensusTime());
+				validateTrue(timeIsValid, FREEZE_START_TIME_MUST_BE_FUTURE);
+				break;
+			case FREEZE_ABORT:
+				validateTrue(upgradeHelper.isFreezeScheduled(), NO_FREEZE_IS_SCHEDULED);
+				break;
+			case PREPARE_UPGRADE:
+				assertValidPrepareUpgrade(op);
+				break;
+		}
+	}
+
+	private void assertValidPrepareUpgrade(FreezeTransactionBody op) {
+		final var curSpecialFiles = specialFiles.get();
+		final boolean isMatch = curSpecialFiles.hashMatches(op.getUpdateFile(), op.getFileHash().toByteArray());
+		validateTrue(isMatch, FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
+	}
+
+	private void assertValidFreezeUpgrade() {
+		final var curNetworkCtx = networkCtx.get();
+		final var preparedFileNum = curNetworkCtx.getPreparedUpdateFileNum();
+		validateTrue(preparedFileNum != NO_PREPARED_UPDATE_FILE_NUM, NO_UPGRADE_HAS_BEEN_PREPARED);
+
+		final var isHashUnchanged = curNetworkCtx.isPreparedFileHashValidGiven(specialFiles.get());
+		validateTrue(isHashUnchanged, UPDATE_FILE_HASH_CHANGED_SINCE_PREPARE_UPGRADE);
+	}
+
+	private boolean isInTheFuture(final Timestamp freezeStartTime, final Instant now) {
 		return Instant.ofEpochSecond(freezeStartTime.getSeconds(), freezeStartTime.getNanos()).isAfter(now);
 	}
 }

@@ -39,6 +39,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Optional;
 
@@ -49,15 +50,18 @@ import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ONLY;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_UPGRADE;
 import static com.hederahashgraph.api.proto.java.FreezeType.PREPARE_UPGRADE;
 import static com.hederahashgraph.api.proto.java.FreezeType.TELEMETRY_UPGRADE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_START_TIME_MUST_BE_FUTURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_UPDATE_FILE_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_FREEZE_IS_SCHEDULED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_UPGRADE_HAS_BEEN_PREPARED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UPDATE_FILE_HASH_CHANGED_SINCE_PREPARE_UPGRADE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -70,6 +74,8 @@ class FreezeTransitionLogicTest {
 	private static final Instant VALID_START_TIME = CONSENSUS_TIME.plusSeconds(120);
 	private static final ByteString PRETEND_HASH =
 			ByteString.copyFromUtf8("012345678901234567890123456789012345678901234567");
+	private static final byte[] PRETEND_ARCHIVE =
+			"This is missing something. Hard to put a finger on what...".getBytes(StandardCharsets.UTF_8);
 
 	private TransactionBody freezeTxn;
 
@@ -96,7 +102,7 @@ class FreezeTransitionLogicTest {
 		givenTypicalTxnInCtx(true, FREEZE_ONLY, Optional.empty(), Optional.empty());
 		given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME.plusSeconds(Integer.MAX_VALUE));
 
-		assertFailsWith(() -> subject.doStateTransition(), INVALID_FREEZE_TRANSACTION_BODY);
+		assertFailsWith(() -> subject.doStateTransition(), FREEZE_START_TIME_MUST_BE_FUTURE);
 	}
 
 	@Test
@@ -106,6 +112,7 @@ class FreezeTransitionLogicTest {
 
 		subject.doStateTransition();
 
+		verify(networkCtx).rollbackPreparedUpgrade();
 		verify(upgradeHelper).scheduleFreezeAt(VALID_START_TIME);
 	}
 
@@ -119,9 +126,7 @@ class FreezeTransitionLogicTest {
 
 	@Test
 	void rejectsPostConsensusFreezeUpgradeWithNonMatchingUpdateFileHash() {
-		final var pretendHash = PRETEND_HASH.toByteArray();
 		given(networkCtx.getPreparedUpdateFileNum()).willReturn(150L);
-		given(networkCtx.getPreparedUpdateFileHash()).willReturn(pretendHash);
 		givenTypicalTxnInCtx(true, FREEZE_UPGRADE, Optional.empty(), Optional.empty());
 
 		assertFailsWith(() -> subject.doStateTransition(), UPDATE_FILE_HASH_CHANGED_SINCE_PREPARE_UPGRADE);
@@ -129,28 +134,63 @@ class FreezeTransitionLogicTest {
 
 	@Test
 	void rejectsPostConsensusFreezeUpgradeWithInvalidTime() {
-		final var pretendHash = PRETEND_HASH.toByteArray();
 		given(networkCtx.getPreparedUpdateFileNum()).willReturn(150L);
-		given(networkCtx.getPreparedUpdateFileHash()).willReturn(pretendHash);
-		given(specialFiles.hashMatches(CANONICAL_FILE, pretendHash)).willReturn(true);
+		given(networkCtx.isPreparedFileHashValidGiven(specialFiles)).willReturn(true);
 		givenTypicalTxnInCtx(true, FREEZE_UPGRADE, Optional.empty(), Optional.empty());
 		given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME.plusSeconds(Integer.MAX_VALUE));
 
-		assertFailsWith(() -> subject.doStateTransition(), INVALID_FREEZE_TRANSACTION_BODY);
+		assertFailsWith(() -> subject.doStateTransition(), FREEZE_START_TIME_MUST_BE_FUTURE);
 	}
 
 	@Test
 	void acceptsPostConsensusFreezeUpgradeWithEverythingInPlace() {
-		final var pretendHash = PRETEND_HASH.toByteArray();
 		given(networkCtx.getPreparedUpdateFileNum()).willReturn(150L);
-		given(networkCtx.getPreparedUpdateFileHash()).willReturn(pretendHash);
-		given(specialFiles.hashMatches(CANONICAL_FILE, pretendHash)).willReturn(true);
+		given(networkCtx.isPreparedFileHashValidGiven(specialFiles)).willReturn(true);
 		givenTypicalTxnInCtx(true, FREEZE_UPGRADE, Optional.empty(), Optional.empty());
 		given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME);
 
 		subject.doStateTransition();
 
 		verify(upgradeHelper).scheduleFreezeAt(VALID_START_TIME);
+	}
+
+	@Test
+	void rejectsPostConsensusFreezeAbortWithNoPendingFreeze() {
+		givenTypicalTxnInCtx(false, FREEZE_ABORT, Optional.empty(), Optional.empty());
+
+		assertFailsWith(() -> subject.doStateTransition(), NO_FREEZE_IS_SCHEDULED);
+	}
+
+	@Test
+	void freezeAbortWithPendingFreezeWorks() {
+		givenTypicalTxnInCtx(false, FREEZE_ABORT, Optional.empty(), Optional.empty());
+		given(upgradeHelper.isFreezeScheduled()).willReturn(true);
+
+		subject.doStateTransition();
+
+		verify(upgradeHelper).abortScheduledFreeze();
+		verify(networkCtx).rollbackPreparedUpgrade();
+	}
+
+	@Test
+	void rejectsPostConsensusPrepareUpgradeWithUnmatchedHash() {
+		givenTypicalTxnInCtx(false, PREPARE_UPGRADE, Optional.of(CANONICAL_FILE), Optional.of(PRETEND_HASH));
+
+		assertFailsWith(() -> subject.doStateTransition(), FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
+	}
+
+	@Test
+	void unarchivesDataWithMatchingHash() {
+		final var hashBytes = PRETEND_HASH.toByteArray();
+
+		givenTypicalTxnInCtx(false, PREPARE_UPGRADE, Optional.of(CANONICAL_FILE), Optional.of(PRETEND_HASH));
+		given(specialFiles.hashMatches(eq(CANONICAL_FILE), eq(hashBytes))).willReturn(true);
+		given(specialFiles.get(CANONICAL_FILE)).willReturn(PRETEND_ARCHIVE);
+
+		subject.doStateTransition();
+
+		verify(upgradeHelper).prepareUpgradeNow(PRETEND_ARCHIVE);
+		verify(networkCtx).recordPreparedUpgrade(freezeTxn.getFreeze());
 	}
 
 	@Test
@@ -197,14 +237,14 @@ class FreezeTransitionLogicTest {
 	void freezeOnlyPrecheckRejectsInvalidTime() {
 		givenTypicalTxn(false, FREEZE_ONLY, Optional.empty(), Optional.empty());
 
-		assertEquals(INVALID_FREEZE_TRANSACTION_BODY, subject.semanticCheck().apply(freezeTxn));
+		assertEquals(FREEZE_START_TIME_MUST_BE_FUTURE, subject.semanticCheck().apply(freezeTxn));
 	}
 
 	@Test
 	void freezeUpgradePrecheckRejectsInvalidTime() {
 		givenTypicalTxn(false, FREEZE_UPGRADE, Optional.empty(), Optional.empty());
 
-		assertEquals(INVALID_FREEZE_TRANSACTION_BODY, subject.semanticCheck().apply(freezeTxn));
+		assertEquals(FREEZE_START_TIME_MUST_BE_FUTURE, subject.semanticCheck().apply(freezeTxn));
 	}
 
 	@Test

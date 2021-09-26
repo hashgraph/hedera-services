@@ -33,9 +33,8 @@ import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.validation.LedgerValidator;
 import com.hedera.services.stats.ServicesStatsManager;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.stream.RecordStreamManager;
-import com.hedera.services.txns.network.UpdateHelper;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.NamedDigestFactory;
 import com.hedera.services.utils.SystemExits;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -126,8 +125,6 @@ class ServicesMainTest {
 	private CurrentPlatformStatus currentPlatformStatus;
 	@Mock
 	private RecordStreamManager recordStreamManager;
-	@Mock
-	private UpdateHelper updateHelper;
 	@Mock
 	private ServicesState signedState;
 	@Mock
@@ -248,7 +245,6 @@ class ServicesMainTest {
 		withRunnableApp();
 		withChangeableApp();
 
-		given(app.updateHelper()).willReturn(updateHelper);
 		given(app.recordStreamManager()).willReturn(recordStreamManager);
 		// and:
 		subject.init(platform, nodeId);
@@ -259,7 +255,6 @@ class ServicesMainTest {
 		// then:
 		verify(currentPlatformStatus).set(MAINTENANCE);
 		verify(recordStreamManager).setInFreeze(true);
-		verify(updateHelper).runIfAppropriateOn(os);
 	}
 
 	@Test

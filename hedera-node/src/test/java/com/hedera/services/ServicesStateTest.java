@@ -49,6 +49,7 @@ import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.SystemExits;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -418,6 +419,7 @@ class ServicesStateTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	void migratesWhenInitializingFromRelease0180() {
 		ServicesState.setFcmMigrator(fcmMigrator);
 		ServicesState.setBlobMigrationFlag(blobMigrationFlag);
@@ -533,6 +535,26 @@ class ServicesStateTest {
 		// and:
 		verify(initFlow).runWith(subject);
 		verify(hashLogger).logHashesFor(subject);
+		verify(networkContext).setStateVersion(StateVersions.CURRENT_VERSION);
+	}
+
+	@Test
+	void nonGenesisInitExitsIfStateVersionLaterThanCurentSoftware() {
+		final var mockExit = mock(SystemExits.class);
+
+		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
+		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		given(networkContext.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION + 1);
+
+		given(platform.getSelfId()).willReturn(selfId);
+		given(app.systemExits()).willReturn(mockExit);
+		// and:
+		APPS.save(selfId.getId(), app);
+
+		// when:
+		subject.init(platform, addressBook);
+
+		verify(mockExit).fail(1);
 	}
 
 	@Test

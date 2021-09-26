@@ -46,17 +46,13 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.TimeZone;
 import java.util.function.Supplier;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
 import static com.hederahashgraph.builder.RequestBuilder.getTransactionReceipt;
-import static com.swirlds.common.CommonUtils.hex;
 import static java.util.Calendar.HOUR_OF_DAY;
 import static java.util.Calendar.MINUTE;
 
@@ -151,49 +147,6 @@ public class FreezeHandler {
 		final var calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
 		calendar.setTimeInMillis(now.getEpochSecond() * 1_000);
 		return calendar.get(HOUR_OF_DAY) * 60 + calendar.get(MINUTE);
-	}
-
-	public void handleUpdateFeature() {
-		if (updateFeatureFile == null) {
-			log.info("{} Update file id is not defined, no update will be conducted", LOG_PREFIX);
-			return;
-		}
-		log.info("{} Running update with FileID {}", LOG_PREFIX, updateFeatureFile);
-
-		final var fileIDtoUse = updateFeatureFile;
-		updateFeatureFile = null; // reset to null since next freeze may not need file update
-		if (hfs.exists(fileIDtoUse)) {
-			log.info("{} ready to read file content, FileID = {}", LOG_PREFIX, fileIDtoUse);
-			final var fileBytes = hfs.cat(fileIDtoUse);
-			if (fileBytes == null || fileBytes.length == 0) {
-				logOnEmptyUpdateFile();
-				return;
-			}
-			try {
-				final var readFileHash = MessageDigest.getInstance("SHA-384").digest(fileBytes);
-				if (Arrays.equals(readFileHash, updateFileHash)) {
-					updateFeatureWithFileContents(fileBytes);
-				} else {
-					logOnFileHashMismatch(readFileHash);
-				}
-			} catch (NoSuchAlgorithmException e) {
-				log.error("{} Exception {}", LOG_PREFIX, e);
-			}
-		} else {
-			log.error("{} File ID {} not found in file system", LOG_PREFIX, fileIDtoUse);
-		}
-	}
-
-	private void logOnEmptyUpdateFile() {
-		log.error("{} Update file is empty", LOG_PREFIX);
-		log.error("{} {}", LOG_PREFIX, ABORT_UDPATE_MESSAGE);
-	}
-
-	private void logOnFileHashMismatch(final byte[] readFileHash) {
-		log.error("{} File hash mismatch", LOG_PREFIX);
-		log.error("{} Hash from transaction body {}", LOG_PREFIX, hex(updateFileHash));
-		log.error("{} Hash from file system {}", LOG_PREFIX, hex(readFileHash));
-		log.error("{} {}", LOG_PREFIX, ABORT_UDPATE_MESSAGE);
 	}
 
 	private void updateFeatureWithFileContents(final byte[] fileBytes) {
