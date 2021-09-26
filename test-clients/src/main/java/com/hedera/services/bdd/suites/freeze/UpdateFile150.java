@@ -82,8 +82,8 @@ public class UpdateFile150 extends HapiApiSuite {
 		return defaultHapiSpec("updateWithWrongFileID")
 				.given(
 				).when(
-						freeze().setFileID("0.0.152")
-								.startingIn(60).seconds().andLasting(FREEZE_LAST_MINUTES).minutes()
+						freeze().withUpdateFile("0.0.152")
+								.startingIn(60).seconds()
 								.hasPrecheck(ResponseCodeEnum.INVALID_FILE_ID)
 				).then(
 				);
@@ -116,9 +116,9 @@ public class UpdateFile150 extends HapiApiSuite {
 				.given(
 						UtilVerbs.updateLargeFile(GENESIS, fileIDString, ByteString.copyFrom(new4k))
 				).when(
-						freeze().setFileID(fileIDString)
+						freeze().withUpdateFile(fileIDString)
 								.startingIn(1)
-								.minutes().andLasting(FREEZE_LAST_MINUTES).minutes()
+								.minutes()
 								.hasPrecheck(ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY)
 				).then(
 				);
@@ -186,10 +186,10 @@ public class UpdateFile150 extends HapiApiSuite {
 						})
 				).when(
 						UtilVerbs.updateLargeFile(GENESIS, fileIDString, ByteString.copyFrom(largeContent)),
-						freeze().setFileID(fileIDString)
-								.setFileHash(hash)
+						freeze().withUpdateFile(fileIDString)
+								.havingHash(hash)
 								.startingIn(1)
-								.minutes().andLasting(FREEZE_LAST_MINUTES).minutes()
+								.minutes()
 				).then(
 				);
 	}
@@ -200,10 +200,10 @@ public class UpdateFile150 extends HapiApiSuite {
 		final byte[] hash = sha384Digest(notUsed);
 		return defaultHapiSpec("emptyUpdateFile")
 				.given(
-						freeze().setFileID(fileIDString)
+						freeze().withUpdateFile(fileIDString)
 								.startingIn(1)
-								.setFileHash(hash)
-								.minutes().andLasting(FREEZE_LAST_MINUTES).minutes()
+								.havingHash(hash)
+								.minutes()
 						// check server log it should has error about empty file
 				).when(
 				).then(
@@ -222,10 +222,9 @@ public class UpdateFile150 extends HapiApiSuite {
 				.given(
 						UtilVerbs.updateLargeFile(GENESIS, fileIDString, ByteString.copyFrom(new4k))
 				).when(
-						freeze().setFileID(fileIDString)
-								.setFileHash(hash)
-								.startingIn(1)
-								.minutes().andLasting(FREEZE_LAST_MINUTES).minutes()
+						freeze().withUpdateFile(fileIDString)
+								.havingHash(hash)
+								.startingIn(1).minutes()
 						// check server log it should has error about hash mismatch
 				).then(
 				);

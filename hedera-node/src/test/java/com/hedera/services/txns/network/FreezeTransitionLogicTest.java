@@ -80,7 +80,7 @@ class FreezeTransitionLogicTest {
 	private TransactionBody freezeTxn;
 
 	@Mock
-	private UpgradeHelper upgradeHelper;
+	private UpgradeActions upgradeActions;
 	@Mock
 	private PlatformTxnAccessor accessor;
 	@Mock
@@ -94,7 +94,7 @@ class FreezeTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new FreezeTransitionLogic(upgradeHelper, txnCtx, () -> specialFiles, () -> networkCtx);
+		subject = new FreezeTransitionLogic(upgradeActions, txnCtx, () -> specialFiles, () -> networkCtx);
 	}
 
 	@Test
@@ -113,7 +113,7 @@ class FreezeTransitionLogicTest {
 		subject.doStateTransition();
 
 		verify(networkCtx).rollbackPreparedUpgrade();
-		verify(upgradeHelper).scheduleFreezeAt(VALID_START_TIME);
+		verify(upgradeActions).scheduleFreezeAt(VALID_START_TIME);
 	}
 
 	@Test
@@ -151,7 +151,7 @@ class FreezeTransitionLogicTest {
 
 		subject.doStateTransition();
 
-		verify(upgradeHelper).scheduleFreezeAt(VALID_START_TIME);
+		verify(upgradeActions).scheduleFreezeAt(VALID_START_TIME);
 	}
 
 	@Test
@@ -164,11 +164,11 @@ class FreezeTransitionLogicTest {
 	@Test
 	void freezeAbortWithPendingFreezeWorks() {
 		givenTypicalTxnInCtx(false, FREEZE_ABORT, Optional.empty(), Optional.empty());
-		given(upgradeHelper.isFreezeScheduled()).willReturn(true);
+		given(upgradeActions.isFreezeScheduled()).willReturn(true);
 
 		subject.doStateTransition();
 
-		verify(upgradeHelper).abortScheduledFreeze();
+		verify(upgradeActions).abortScheduledFreeze();
 		verify(networkCtx).rollbackPreparedUpgrade();
 	}
 
@@ -189,7 +189,7 @@ class FreezeTransitionLogicTest {
 
 		subject.doStateTransition();
 
-		verify(upgradeHelper).prepareUpgradeNow(PRETEND_ARCHIVE);
+		verify(upgradeActions).prepareUpgradeNow(PRETEND_ARCHIVE);
 		verify(networkCtx).recordPreparedUpgrade(freezeTxn.getFreeze());
 	}
 

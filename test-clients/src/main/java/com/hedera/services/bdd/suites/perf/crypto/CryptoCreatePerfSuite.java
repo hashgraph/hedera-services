@@ -68,7 +68,7 @@ public class CryptoCreatePerfSuite extends LoadTest {
 								)
 						)
 				).then(
-						freeze().payingWith(GENESIS).startingIn(60).seconds().andLasting(1).minutes()
+						freeze().payingWith(GENESIS).startingIn(60).seconds()
 				);
 	}
 

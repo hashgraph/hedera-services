@@ -60,7 +60,7 @@ public class AddWellKnownEntities extends HapiApiSuite {
 						expectedEntitiesExist()
 				).when().then(
 						sleepFor(10_000L),
-						freeze().startingIn(60).seconds().andLasting(1).minutes()
+						freeze().startingIn(60).seconds()
 								.payingWith(GENESIS)
 				);
 	}

@@ -77,6 +77,7 @@ public class ServicesMain implements SwirldMain {
 			app.recordStreamManager().setInFreeze(false);
 		} else if (status == MAINTENANCE) {
 			app.recordStreamManager().setInFreeze(true);
+			app.upgradeActions().externalizeFreeze();
 		} else {
 			log.info("Platform {} status set to : {}", nodeId, status);
 		}

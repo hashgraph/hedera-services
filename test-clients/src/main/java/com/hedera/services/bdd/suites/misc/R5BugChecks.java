@@ -298,7 +298,7 @@ public class R5BugChecks extends HapiApiSuite {
 				).when(
 						contractCreate("fuse").bytecode("bytecode")
 				).then(
-						freeze().startingIn(1).minutes().andLasting(1).minutes()
+						freeze().startingIn(1).minutes()
 				);
 	}
 

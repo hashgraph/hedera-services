@@ -34,6 +34,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.validation.LedgerValidator;
 import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stream.RecordStreamManager;
+import com.hedera.services.txns.network.UpgradeActions;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.NamedDigestFactory;
 import com.hedera.services.utils.SystemExits;
@@ -123,6 +124,8 @@ class ServicesMainTest {
 	private GrpcStarter grpcStarter;
 	@Mock
 	private CurrentPlatformStatus currentPlatformStatus;
+	@Mock
+	private UpgradeActions upgradeActions;
 	@Mock
 	private RecordStreamManager recordStreamManager;
 	@Mock
@@ -239,12 +242,10 @@ class ServicesMainTest {
 
 	@Test
 	void updatesCurrentMaintenancePlatformStatus() throws NoSuchAlgorithmException {
-		// setup:
-		final var os = System.getProperty("os.name").toLowerCase();
-
 		withRunnableApp();
 		withChangeableApp();
 
+		given(app.upgradeActions()).willReturn(upgradeActions);
 		given(app.recordStreamManager()).willReturn(recordStreamManager);
 		// and:
 		subject.init(platform, nodeId);
@@ -254,6 +255,7 @@ class ServicesMainTest {
 
 		// then:
 		verify(currentPlatformStatus).set(MAINTENANCE);
+		verify(upgradeActions).externalizeFreeze();
 		verify(recordStreamManager).setInFreeze(true);
 	}
 

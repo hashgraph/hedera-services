@@ -57,7 +57,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UPDATE_FILE_HA
 public class FreezeTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(FreezeTransitionLogic.class);
 
-	private final UpgradeHelper upgradeHelper;
+	private final UpgradeActions upgradeActions;
 	private final TransactionContext txnCtx;
 	private final Supplier<MerkleSpecialFiles> specialFiles;
 	private final Supplier<MerkleNetworkContext> networkCtx;
@@ -66,7 +66,7 @@ public class FreezeTransitionLogic implements TransitionLogic {
 
 	@Inject
 	public FreezeTransitionLogic(
-			final UpgradeHelper upgradeHelper,
+			final UpgradeActions upgradeActions,
 			final TransactionContext txnCtx,
 			final Supplier<MerkleSpecialFiles> specialFiles,
 			final Supplier<MerkleNetworkContext> networkCtx
@@ -74,7 +74,7 @@ public class FreezeTransitionLogic implements TransitionLogic {
 		this.txnCtx = txnCtx;
 		this.networkCtx = networkCtx;
 		this.specialFiles = specialFiles;
-		this.upgradeHelper = upgradeHelper;
+		this.upgradeActions = upgradeActions;
 	}
 
 	@Override
@@ -86,16 +86,16 @@ public class FreezeTransitionLogic implements TransitionLogic {
 		switch (op.getFreezeType()) {
 			case PREPARE_UPGRADE:
 				final var archiveData = specialFiles.get().get(op.getUpdateFile());
-				upgradeHelper.prepareUpgradeNow(archiveData);
+				upgradeActions.prepareUpgradeNow(archiveData);
 				networkCtx.get().recordPreparedUpgrade(op);
 				break;
 			case FREEZE_ONLY:
 				networkCtx.get().rollbackPreparedUpgrade();
 			case FREEZE_UPGRADE:
-				upgradeHelper.scheduleFreezeAt(timestampToInstant(op.getStartTime()));
+				upgradeActions.scheduleFreezeAt(timestampToInstant(op.getStartTime()));
 				break;
 			case FREEZE_ABORT:
-				upgradeHelper.abortScheduledFreeze();
+				upgradeActions.abortScheduledFreeze();
 				networkCtx.get().rollbackPreparedUpgrade();
 				break;
 		}
@@ -154,7 +154,7 @@ public class FreezeTransitionLogic implements TransitionLogic {
 				validateTrue(timeIsValid, FREEZE_START_TIME_MUST_BE_FUTURE);
 				break;
 			case FREEZE_ABORT:
-				validateTrue(upgradeHelper.isFreezeScheduled(), NO_FREEZE_IS_SCHEDULED);
+				validateTrue(upgradeActions.isFreezeScheduled(), NO_FREEZE_IS_SCHEDULED);
 				break;
 			case PREPARE_UPGRADE:
 				assertValidPrepareUpgrade(op);

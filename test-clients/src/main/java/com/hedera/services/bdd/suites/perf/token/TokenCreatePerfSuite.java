@@ -67,7 +67,7 @@ public class TokenCreatePerfSuite extends LoadTest {
 						)
 				).then(
 						UtilVerbs.sleepFor(200000),
-						freeze().payingWith(GENESIS).startingIn(60).seconds().andLasting(1).minutes()
+						freeze().payingWith(GENESIS).startingIn(60).seconds()
 				);
 	}
 

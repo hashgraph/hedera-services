@@ -266,7 +266,7 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 		return defaultHapiSpec("freezeAtTheEnd")
 				.given()
 				.when(
-						freeze().startingIn(0).minutes().andLasting(2).minutes().payingWith(GENESIS)
+						freeze().startingIn(0).minutes().payingWith(GENESIS)
 				)
 				.then(
 						// sleep for a while to wait for this freeze transaction be handled

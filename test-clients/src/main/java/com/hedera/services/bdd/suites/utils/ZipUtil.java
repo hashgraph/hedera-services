@@ -67,7 +67,7 @@ public class ZipUtil {
 	 * 		current working directory
 	 */
 	public static void addZipEntry(ZipOutputStream zos, File rootDirectory, File currentDirectory) {
-		log.info("Root = " + rootDirectory + ", current = " + currentDirectory);
+		log.info("Root = {}, current = {}", rootDirectory, currentDirectory);
 		if (!rootDirectory.equals(currentDirectory)) {
 			try {
 				String pathDiff = currentDirectory.toString().replace(rootDirectory.toString(), "");
@@ -83,7 +83,7 @@ public class ZipUtil {
 			}
 		}
 
-		log.info("Current directory " + currentDirectory.toString());
+		log.info("Current directory {}", currentDirectory);
 		File[] files = currentDirectory.listFiles();
 		byte[] buffer = new byte[BUFFER_SIZE];
 

@@ -121,7 +121,6 @@ public class MixedOpsTransactionsSuite extends HapiApiSuite {
 				).then(
 						freeze().payingWith(GENESIS)
 								.startingIn(60).seconds()
-								.andLasting(1).minutes()
 				);
 	}
 

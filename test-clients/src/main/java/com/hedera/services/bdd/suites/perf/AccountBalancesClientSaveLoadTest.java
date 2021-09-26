@@ -211,8 +211,6 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 
 						freeze().payingWith(GENESIS)
 								.startingIn(10).seconds()
-								.andLasting(2).minutes()
-
 						);
 	}
 

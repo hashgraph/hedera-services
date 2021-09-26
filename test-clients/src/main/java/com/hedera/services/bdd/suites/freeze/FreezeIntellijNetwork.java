@@ -50,7 +50,7 @@ public class FreezeIntellijNetwork extends HapiApiSuite {
 		return defaultHapiSpec("JustFreeze")
 				.given( ).when(
 				).then(
-						freeze().startingIn(60).seconds().andLasting(1).minutes()
+						freeze().startingIn(60).seconds()
 				);
 	}
 

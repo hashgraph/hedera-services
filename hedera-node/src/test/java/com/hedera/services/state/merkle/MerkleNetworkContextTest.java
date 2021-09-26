@@ -315,9 +315,29 @@ class MerkleNetworkContextTest {
 	}
 
 	@Test
+	void summarizesUnavailableAsExpected() {
+		subject.setCongestionLevelStarts(new Instant[0]);
+		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[0]);
+
+		final var desired = "The network context (state version 13) is,\n" +
+				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
+				"  Pending maintenance                        :: <N/A>\n" +
+				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
+				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
+				"  Next entity number                         :: 1234\n" +
+				"  Last scanned entity                        :: 1000\n" +
+				"  Entities scanned last consensus second     :: 123456\n" +
+				"  Entities touched last consensus second     :: 123\n" +
+				"  Throttle usage snapshots are               :: <N/A>\n" +
+				"  Congestion level start times are           :: <N/A>";
+
+		assertEquals(desired, subject.summarized());
+	}
+
+	@Test
 	void summarizesStateVersionAsExpected() {
-		// setup:
 		throttling = mock(FunctionalityThrottling.class);
+		final var accessor = mock(DualStateAccessor.class);
 
 		given(throttling.allActiveThrottles()).willReturn(activeThrottles());
 		// and:
@@ -325,7 +345,7 @@ class MerkleNetworkContextTest {
 		// and:
 		var desiredWithStateVersion = "The network context (state version 13) is,\n" +
 				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
-				"  Pending maintenance                        :: <NONE>\n" +
+				"  Pending maintenance                        :: <N/A>\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
 				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
 				"  Next entity number                         :: 1234\n" +
@@ -341,7 +361,7 @@ class MerkleNetworkContextTest {
 				"    1970-01-15T06:59:49.000012345Z";
 		var desiredWithoutStateVersion = "The network context (state version <N/A>) is,\n" +
 				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
-				"  Pending maintenance                        :: <NONE>\n" +
+				"  Pending maintenance                        :: <N/A>\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
 				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
 				"  Next entity number                         :: 1234\n" +
@@ -357,7 +377,7 @@ class MerkleNetworkContextTest {
 				"    1970-01-15T06:59:49.000012345Z";
 		var desiredWithNoStateVersionOrHandledTxn = "The network context (state version <N/A>) is,\n" +
 				"  Consensus time of last handled transaction :: <N/A>\n" +
-				"  Pending maintenance                        :: <NONE>\n" +
+				"  Pending maintenance                        :: <N/A>\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
 				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
 				"  Next entity number                         :: 1234\n" +
@@ -374,6 +394,7 @@ class MerkleNetworkContextTest {
 
 		// then:
 		assertEquals(desiredWithStateVersion, subject.summarized());
+		assertEquals(desiredWithStateVersion, subject.summarizedWith(accessor));
 
 		// and when:
 		subject.setStateVersion(MerkleNetworkContext.UNRECORDED_STATE_VERSION);

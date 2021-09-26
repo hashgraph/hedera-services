@@ -71,7 +71,7 @@ public class MigrationValidation extends HapiApiSuite {
 						doRecordWorthyTransfers(NUM_ACCOUNTS, NUM_RECORDS_PER_ACCOUNT, TRANSFER_AMOUNT)
 				)).when(flattened(
 						takeRecordSnapshots(NUM_ACCOUNTS),
-						freeze().startingIn(60).seconds().andLasting(1).minutes(),
+						freeze().startingIn(60).seconds(),
 						sleepFor(WAIT_FOR_NEW_VERSION_TO_START_MS)
 				)).then(flattened(
 						checkForExpectedRecords(NUM_ACCOUNTS)

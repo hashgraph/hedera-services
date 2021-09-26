@@ -42,6 +42,11 @@ class GlobalDynamicPropertiesTest {
 			"data/saved/accountBalances"
 	};
 
+	private static final String[] upgradeArtifactLocs = new String[] {
+			"/opt/hgcapp/HapiApp2.0/data/upgrade",
+			"data/upgrade"
+	};
+
 	private PropertySource properties;
 
 	private HederaNumbers numbers;
@@ -152,6 +157,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(balanceExportPaths[1], subject.pathToBalancesExportDir());
 		assertEquals(Set.of(HederaFunctionality.CryptoTransfer), subject.schedulingWhitelist());
 		assertEquals(oddCongestion, subject.congestionMultipliers());
+		assertEquals(upgradeArtifactLocs[1], subject.upgradeArtifactsLoc());
 	}
 
 	@Test
@@ -233,6 +239,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(Set.of(HederaFunctionality.CryptoCreate), subject.schedulingWhitelist());
 		assertEquals(evenCongestion, subject.congestionMultipliers());
 		assertEquals(evenFactor, subject.nftMintScaleFactor());
+		assertEquals(upgradeArtifactLocs[0], subject.upgradeArtifactsLoc());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -290,6 +297,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getIntProperty("tokens.maxCustomFeeDepth")).willReturn(i + 45);
 		given(properties.getThrottleScaleFactor("tokens.nfts.mintThrottleScaleFactor"))
 				.willReturn(i % 2 == 0 ? evenFactor : oddFactor);
+		given(properties.getStringProperty("upgrade.artifacts.path")).willReturn(upgradeArtifactLocs[i % 2]);
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {

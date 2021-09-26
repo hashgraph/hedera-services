@@ -129,7 +129,7 @@ public class RandomOps extends HapiApiSuite {
 						"nodes", "127.0.0.1:50213:0.0.3,127.0.0.1:50214:0.0.4,127.0.0.1:50215:0.0.5"
 				)).given().when(
 				).then(
-						freeze().startingIn(60).seconds().andLasting(1).minutes()
+						freeze().startingIn(60).seconds()
 				);
 	}
 

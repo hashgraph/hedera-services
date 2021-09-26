@@ -313,46 +313,68 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	public String summarizedWith(DualStateAccessor dualStateAccessor) {
-		final var freezeTime = dualStateAccessor == null
-				? null
-				: ((DualStateImpl) dualStateAccessor.getDualState()).getFreezeTime();
-		final var pendingUpdateDesc = currentPendingUpdateDesc();
-		final var pendingMaintenanceDesc = freezeTimeDesc(freezeTime) + pendingUpdateDesc;
+		final var isDualStateAvailable = dualStateAccessor != null && dualStateAccessor.getDualState() != null;
+		final var freezeTime = isDualStateAvailable
+				? ((DualStateImpl) dualStateAccessor.getDualState()).getFreezeTime()
+				: null;
+		final var pendingUpdateDesc = currentPendingUpdateDesc(freezeTime);
+		final var pendingMaintenanceDesc = freezeTimeDesc(freezeTime, isDualStateAvailable) + pendingUpdateDesc;
 
-		var sb = new StringBuilder("The network context (state version ")
-				.append(stateVersion == UNRECORDED_STATE_VERSION ? "<N/A>" : stateVersion)
-				.append(") is,")
-				.append("\n  Consensus time of last handled transaction :: ")
-				.append(reprOf(consensusTimeOfLastHandledTxn))
-				.append("\n  Pending maintenance                        :: ")
-				.append(pendingMaintenanceDesc)
-				.append("\n  Midnight rate set                          :: ")
-				.append(midnightRates.readableRepr())
-				.append("\n  Last midnight boundary check               :: ")
-				.append(reprOf(lastMidnightBoundaryCheck))
-				.append("\n  Next entity number                         :: ")
-				.append(seqNo.current())
-				.append("\n  Last scanned entity                        :: ")
-				.append(lastScannedEntity)
-				.append("\n  Entities scanned last consensus second     :: ")
-				.append(entitiesScannedThisSecond)
-				.append("\n  Entities touched last consensus second     :: ")
-				.append(entitiesTouchedThisSecond);
-		sb.append("\n  Throttle usage snapshots are               ::");
-		for (var snapshot : usageSnapshots) {
-			sb.append("\n    ").append(snapshot.used())
-					.append(" used (last decision time ")
-					.append(reprOf(snapshot.lastDecisionTime())).append(")");
-		}
-		sb.append("\n  Congestion level start times are           ::");
-		for (var start : congestionLevelStarts) {
-			sb.append("\n    ").append(reprOf(start));
-		}
-
-		return sb.toString();
+		return "The network context (state version " +
+				(stateVersion == UNRECORDED_STATE_VERSION ? "<N/A>" : stateVersion) +
+				") is," +
+				"\n  Consensus time of last handled transaction :: " +
+				reprOf(consensusTimeOfLastHandledTxn) +
+				"\n  Pending maintenance                        :: " +
+				pendingMaintenanceDesc +
+				"\n  Midnight rate set                          :: " +
+				midnightRates.readableRepr() +
+				"\n  Last midnight boundary check               :: " +
+				reprOf(lastMidnightBoundaryCheck) +
+				"\n  Next entity number                         :: " +
+				seqNo.current() +
+				"\n  Last scanned entity                        :: " +
+				lastScannedEntity +
+				"\n  Entities scanned last consensus second     :: " +
+				entitiesScannedThisSecond +
+				"\n  Entities touched last consensus second     :: " +
+				entitiesTouchedThisSecond +
+				"\n  Throttle usage snapshots are               ::" +
+				usageSnapshotsDesc() +
+				"\n  Congestion level start times are           ::" +
+				congestionStartsDesc();
 	}
 
-	private String currentPendingUpdateDesc() {
+	private String usageSnapshotsDesc() {
+		if (usageSnapshots.length == 0) {
+			return " <N/A>";
+		} else {
+			final var sb = new StringBuilder();
+			for (var snapshot : usageSnapshots) {
+				sb.append("\n    ").append(snapshot.used())
+						.append(" used (last decision time ")
+						.append(reprOf(snapshot.lastDecisionTime())).append(")");
+			}
+			return sb.toString();
+		}
+	}
+
+	private String congestionStartsDesc() {
+		if (congestionLevelStarts.length == 0)	 {
+			return " <N/A>";
+		} else {
+			final var sb = new StringBuilder();
+			for (var start : congestionLevelStarts) {
+				sb.append("\n    ").append(reprOf(start));
+			}
+			return sb.toString();
+		}
+	}
+
+	private String currentPendingUpdateDesc(@Nullable Instant freezeTime) {
+		if (freezeTime == null) {
+			return "";
+		}
 		final var nmtDescStart = "Prepped NMT upgrade                    :: ";
 		if (preparedUpdateFileNum == NO_PREPARED_UPDATE_FILE_NUM) {
 			return nmtDescStart + "<NONE>";
@@ -363,10 +385,10 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				+ " # " + CommonUtils.hex(preparedUpdateFileHash).substring(0, 8);
 	}
 
-	private String freezeTimeDesc(@Nullable Instant freezeTime) {
+	private String freezeTimeDesc(@Nullable Instant freezeTime, boolean isDualStateAvailable) {
 		final var nmtDescSkip = "\n    + ";
 		if (freezeTime == null) {
-			return "<NONE>";
+			return isDualStateAvailable ? "<NONE>" : "<N/A>";
 		}
 		return (Instant.EPOCH.equals(freezeTime) ? "TBD" : freezeTime.toString()) + nmtDescSkip;
 	}

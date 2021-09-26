@@ -66,7 +66,7 @@ public class SimpleFreezeOnly extends HapiApiSuite {
 		return defaultHapiSpec("SimpleFreezeWithHoursAndMins")
 				.given(
 				).when(
-						freeze().payingWith(GENESIS).startingIn(60).seconds().andLasting(10).minutes()
+						freeze().payingWith(GENESIS).startingIn(60).seconds()
 				).then(
 				);
 	}
@@ -74,7 +74,7 @@ public class SimpleFreezeOnly extends HapiApiSuite {
 	private HapiApiSpec simpleFreezeWithTimestamp() {
 		return defaultHapiSpec("SimpleFreezeWithTimeStamp")
 				.given(
-						freeze().payingWith(GENESIS).startAt(Instant.now().plusSeconds(10))
+						freeze().payingWith(GENESIS).startingAt(Instant.now().plusSeconds(10))
 				).when(
 						sleepFor(11000)
 				).then(

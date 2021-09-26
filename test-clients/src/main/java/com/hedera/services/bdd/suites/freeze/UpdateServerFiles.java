@@ -127,9 +127,9 @@ public class UpdateServerFiles extends HapiApiSuite {
 								.overridingProps(Map.of("maxFileSize", "2048000")),
 						UtilVerbs.updateLargeFile(GENESIS, fileIDString, ByteString.copyFrom(data))
 				).when(
-						freeze().setFileID(fileIDString)
-								.setFileHash(hash).payingWith(GENESIS)
-								.startingIn(60).seconds().andLasting(10).minutes()
+						freeze().withUpdateFile(fileIDString)
+								.havingHash(hash).payingWith(GENESIS)
+								.startingIn(60).seconds()
 				).then(
 				);
 	}

@@ -112,8 +112,7 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 						freeze().payingWith(GENESIS)
 								.startingIn(30).seconds()
 								.hasKnownStatusFrom(SUCCESS, UNKNOWN)
-								.hasAnyPrecheck()
-								.andLasting(10).minutes(),
+								.hasAnyPrecheck(),
 						sleepFor(60_000)
 				);
 	}
