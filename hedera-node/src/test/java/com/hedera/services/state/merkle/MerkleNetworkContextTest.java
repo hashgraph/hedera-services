@@ -322,6 +322,7 @@ class MerkleNetworkContextTest {
 		final var desired = "The network context (state version 13) is,\n" +
 				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
 				"  Pending maintenance                        :: <N/A>\n" +
+				"    w/ NMT upgrade prepped                   :: from 0.0.150 # 30313233\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
 				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
 				"  Next entity number                         :: 1234\n" +
@@ -342,10 +343,12 @@ class MerkleNetworkContextTest {
 		given(throttling.allActiveThrottles()).willReturn(activeThrottles());
 		// and:
 		subject.updateSnapshotsFrom(throttling);
+		subject.setPreparedUpdateFileNum(NO_PREPARED_UPDATE_FILE_NUM);
 		// and:
 		var desiredWithStateVersion = "The network context (state version 13) is,\n" +
 				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
 				"  Pending maintenance                        :: <N/A>\n" +
+				"    w/ NMT upgrade prepped                   :: <NONE>\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
 				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
 				"  Next entity number                         :: 1234\n" +
@@ -362,6 +365,7 @@ class MerkleNetworkContextTest {
 		var desiredWithoutStateVersion = "The network context (state version <N/A>) is,\n" +
 				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
 				"  Pending maintenance                        :: <N/A>\n" +
+				"    w/ NMT upgrade prepped                   :: <NONE>\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
 				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
 				"  Next entity number                         :: 1234\n" +
@@ -378,6 +382,7 @@ class MerkleNetworkContextTest {
 		var desiredWithNoStateVersionOrHandledTxn = "The network context (state version <N/A>) is,\n" +
 				"  Consensus time of last handled transaction :: <N/A>\n" +
 				"  Pending maintenance                        :: <N/A>\n" +
+				"    w/ NMT upgrade prepped                   :: <NONE>\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
 				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
 				"  Next entity number                         :: 1234\n" +
@@ -415,14 +420,13 @@ class MerkleNetworkContextTest {
 		final var dualState = mock(DualStateImpl.class);
 		final var accessor = mock(DualStateAccessor.class);
 
-		given(dualState.getFreezeTime()).willReturn(Instant.EPOCH);
 		given(accessor.getDualState()).willReturn(dualState);
 
 		// and:
 		var desiredWithPreparedUnscheduledMaintenance = "The network context (state version 13) is,\n" +
 				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
-				"  Pending maintenance                        :: TBD\n" +
-				"    + Prepped NMT upgrade                    :: from 0.0.150 # 30313233\n" +
+				"  Pending maintenance                        :: <NONE>\n" +
+				"    w/ NMT upgrade prepped                   :: from 0.0.150 # 30313233\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
 				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
 				"  Next entity number                         :: 1234\n" +
@@ -439,7 +443,7 @@ class MerkleNetworkContextTest {
 		var desiredWithPreparedAndScheduledMaintenance = "The network context (state version 13) is,\n" +
 				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
 				"  Pending maintenance                        :: 1970-01-15T06:56:07.000000890Z\n" +
-				"    + Prepped NMT upgrade                    :: from 0.0.150 # 30313233\n" +
+				"    w/ NMT upgrade prepped                   :: from 0.0.150 # 30313233\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
 				"  Last midnight boundary check               :: 1970-01-15T06:54:04.000054321Z\n" +
 				"  Next entity number                         :: 1234\n" +

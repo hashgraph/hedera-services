@@ -37,6 +37,13 @@ public class ZipUtil {
 	private static final Logger log = LogManager.getLogger(ZipUtil.class);
 	private static final int BUFFER_SIZE = 4096;
 
+	public static void main(String... args) {
+		final var toyArchiveDir = "poems";
+		final var toyArchive = "poeticUpgrade.zip";
+
+		createZip(toyArchiveDir, toyArchive, null);
+	}
+
 	public static void createZip(String srcDirName, String zipFile, String defaultScript) {
 		try (FileOutputStream fos = new FileOutputStream(zipFile);
 			 ZipOutputStream zos = new ZipOutputStream(fos)) {

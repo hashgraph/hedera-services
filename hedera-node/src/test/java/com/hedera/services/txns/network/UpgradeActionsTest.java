@@ -14,10 +14,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Instant;
 
+import static com.hedera.services.txns.network.UpgradeActions.EXEC_IMMEDIATE_MARKER;
 import static com.hedera.services.txns.network.UpgradeActions.FREEZE_ABORTED_MARKER;
 import static com.hedera.services.txns.network.UpgradeActions.FREEZE_SCHEDULED_MARKER;
 import static com.hedera.services.txns.network.UpgradeActions.NOW_FROZEN_MARKER;
@@ -27,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
@@ -34,11 +37,15 @@ class UpgradeActionsTest {
 	private static final Instant then = Instant.ofEpochSecond(1_234_567L, 890);
 	private static final String markerFilesLoc = "src/test/resources/upgrade";
 	private static final String nonexistentMarkerFilesLoc = "src/test/resources/edargpu";
+	private static final byte[] PRETEND_ARCHIVE =
+			"This is missing something. Hard to put a finger on what...".getBytes(StandardCharsets.UTF_8);
 
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private DualStateImpl dualState;
+	@Mock
+	private UpgradeActions.UnzipAction unzipAction;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -47,11 +54,44 @@ class UpgradeActionsTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new UpgradeActions(dynamicProperties, () -> dualState);
+		subject = new UpgradeActions(unzipAction, dynamicProperties, () -> dualState);
+	}
+
+	@Test
+	void complainsLoudlyWhenUnableToUnzipArchive() throws IOException {
+		rmIfPresent(EXEC_IMMEDIATE_MARKER);
+
+		given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
+		willThrow(IOException.class).given(unzipAction).unzip(PRETEND_ARCHIVE, markerFilesLoc);
+
+		subject.prepareUpgradeNow(PRETEND_ARCHIVE);
+
+		assertThat(
+				logCaptor.errorLogs(),
+				contains(
+						Matchers.startsWith("Failed to unzip archive for NMT consumption java.io.IOException: "),
+						Matchers.equalTo("Manual remediation may be necessary to avoid node ISS")));
+		assertFalse(
+				Paths.get(markerFilesLoc, EXEC_IMMEDIATE_MARKER).toFile().exists(),
+				"Should not create " + EXEC_IMMEDIATE_MARKER + " if unzip failed");
+	}
+
+	@Test
+	void preparesForUpgrade() throws IOException {
+		rmIfPresent(EXEC_IMMEDIATE_MARKER);
+
+		given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
+
+		subject.prepareUpgradeNow(PRETEND_ARCHIVE);
+
+		verify(unzipAction).unzip(PRETEND_ARCHIVE, markerFilesLoc);
+		assertMarkerCreated(EXEC_IMMEDIATE_MARKER);
 	}
 
 	@Test
 	void externalizesFreeze() throws IOException {
+		rmIfPresent(NOW_FROZEN_MARKER);
+
 		given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
 
 		subject.externalizeFreeze();
@@ -61,6 +101,8 @@ class UpgradeActionsTest {
 
 	@Test
 	void abortsScheduledFreeze() throws IOException {
+		rmIfPresent(FREEZE_SCHEDULED_MARKER);
+
 		given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
 
 		subject.scheduleFreezeAt(then);
@@ -72,6 +114,8 @@ class UpgradeActionsTest {
 
 	@Test
 	void schedulesFreeze() throws IOException {
+		rmIfPresent(FREEZE_ABORTED_MARKER);
+
 		given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
 
 		subject.abortScheduledFreeze();
@@ -108,6 +152,14 @@ class UpgradeActionsTest {
 		given(dualState.getFreezeTime()).willReturn(then);
 
 		assertTrue(subject.isFreezeScheduled());
+	}
+
+	private void rmIfPresent(String file) {
+		final var p = Paths.get(markerFilesLoc, file);
+		final var f = p.toFile();
+		if (f.exists()) {
+			f.delete();
+		}
 	}
 
 	private void assertMarkerCreated(String file) throws IOException {

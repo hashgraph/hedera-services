@@ -23,6 +23,7 @@ package com.hedera.services.txns.network;
 import com.hedera.services.fees.annotations.FunctionKey;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.txns.TransitionLogic;
+import com.hedera.services.utils.UnzipUtility;
 import com.swirlds.common.SwirldDualState;
 import dagger.Module;
 import dagger.Provides;
@@ -37,6 +38,12 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSu
 
 @Module
 public abstract class NetworkLogicModule {
+	@Provides
+	@Singleton
+	public static UpgradeActions.UnzipAction provideUnzipAction() {
+		return UnzipUtility::unzip;
+	}
+
 	@Provides
 	@Singleton
 	public static Supplier<SwirldDualState> provideDualState(DualStateAccessor dualStateAccessor) {

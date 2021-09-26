@@ -317,7 +317,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		final var freezeTime = isDualStateAvailable
 				? ((DualStateImpl) dualStateAccessor.getDualState()).getFreezeTime()
 				: null;
-		final var pendingUpdateDesc = currentPendingUpdateDesc(freezeTime);
+		final var pendingUpdateDesc = currentPendingUpdateDesc();
 		final var pendingMaintenanceDesc = freezeTimeDesc(freezeTime, isDualStateAvailable) + pendingUpdateDesc;
 
 		return "The network context (state version " +
@@ -371,11 +371,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		}
 	}
 
-	private String currentPendingUpdateDesc(@Nullable Instant freezeTime) {
-		if (freezeTime == null) {
-			return "";
-		}
-		final var nmtDescStart = "Prepped NMT upgrade                    :: ";
+	private String currentPendingUpdateDesc() {
+		final var nmtDescStart = "w/ NMT upgrade prepped                   :: ";
 		if (preparedUpdateFileNum == NO_PREPARED_UPDATE_FILE_NUM) {
 			return nmtDescStart + "<NONE>";
 		}
@@ -386,11 +383,11 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	private String freezeTimeDesc(@Nullable Instant freezeTime, boolean isDualStateAvailable) {
-		final var nmtDescSkip = "\n    + ";
+		final var nmtDescSkip = "\n    ";
 		if (freezeTime == null) {
-			return isDualStateAvailable ? "<NONE>" : "<N/A>";
+			return (isDualStateAvailable ? "<NONE>" : "<N/A>") + nmtDescSkip;
 		}
-		return (Instant.EPOCH.equals(freezeTime) ? "TBD" : freezeTime.toString()) + nmtDescSkip;
+		return freezeTime + nmtDescSkip;
 	}
 
 	/* --- Getters --- */

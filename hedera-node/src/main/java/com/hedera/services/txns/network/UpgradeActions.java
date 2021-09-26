@@ -21,6 +21,8 @@ import java.util.function.Supplier;
 public class UpgradeActions {
 	private static final Logger log = LogManager.getLogger(UpgradeActions.class);
 
+	private static final String MANUAL_REMEDIATION_ALERT = "Manual remediation may be necessary to avoid node ISS";
+
 	public static final String NOW_FROZEN_MARKER = "now_frozen.mf";
 	public static final String EXEC_IMMEDIATE_MARKER = "execute_immediate.mf";
 	public static final String FREEZE_SCHEDULED_MARKER = "freeze_scheduled.mf";
@@ -28,20 +30,37 @@ public class UpgradeActions {
 
 	public static final String MARK = "✓";
 
+	public interface UnzipAction {
+		void unzip(byte[] archiveData, String artifactsLoc) throws IOException;
+	}
+
+	private final UnzipAction unzipAction;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<SwirldDualState> dualState;
 
 	@Inject
 	public UpgradeActions(
+			final UnzipAction unzipAction,
 			final GlobalDynamicProperties dynamicProperties,
 			final Supplier<SwirldDualState> dualState
 	) {
 		this.dualState = dualState;
+		this.unzipAction = unzipAction;
 		this.dynamicProperties = dynamicProperties;
 	}
 
+	public void externalizeFreeze() {
+		writeMarker(NOW_FROZEN_MARKER);
+	}
+
 	public void prepareUpgradeNow(byte[] archiveData) {
-		throw new AssertionError("Not implemented");
+		try {
+			unzipAction.unzip(archiveData, dynamicProperties.upgradeArtifactsLoc());
+			writeMarker(EXEC_IMMEDIATE_MARKER);
+		} catch (IOException e) {
+			log.error("Failed to unzip archive for NMT consumption", e);
+			log.error(MANUAL_REMEDIATION_ALERT);
+		}
 	}
 
 	public void scheduleFreezeAt(final Instant freezeTime) {
@@ -56,10 +75,6 @@ public class UpgradeActions {
 			ds.setFreezeTime(null);
 			writeMarker(FREEZE_ABORTED_MARKER);
 		});
-	}
-
-	public void externalizeFreeze() {
-		writeMarker(NOW_FROZEN_MARKER);
 	}
 
 	public boolean isFreezeScheduled() {
@@ -84,7 +99,7 @@ public class UpgradeActions {
 			log.info("Wrote marker {}", path);
 		} catch (IOException e) {
 			log.error("Failed to write NMT marker {}", path, e);
-			log.error("Manual remediation may be necessary to avoid node ISS");
+			log.error(MANUAL_REMEDIATION_ALERT);
 		}
 	}
 }
