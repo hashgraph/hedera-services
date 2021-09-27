@@ -25,28 +25,19 @@ import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
 import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hedera.test.factories.txns.SignedTxnFactory;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.Instant;
 import java.util.List;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.buildAutomaticAssociationMetaData;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -61,15 +52,7 @@ class AccountTest {
 	private final int maxAutoAssociations = 1234;
 	private final int autoAssociationMetadata = buildAutomaticAssociationMetaData(maxAutoAssociations, alreadyUsedAutoAssociations);
 
-	private final Id accountId = Id.DEFAULT;
-	final private Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
-	final private long customAutoRenewPeriod = 100_001L;
-	final private Long balance = 200L;
-	final private String memo = "MEMO";
-	final private AccountID proxy = AccountID.newBuilder().setAccountNum(4_321L).build();
-
 	private Account subject;
-	private Account recipient;
 	private OptionValidator validator;
 
 	@BeforeEach
@@ -80,41 +63,6 @@ class AccountTest {
 		subject.setOwnedNfts(ownedNfts);
 
 		validator = mock(ContextOptionValidator.class);
-		recipient = mock(Account.class);
-	}
-	
-	@Test
-	void transfersHbarsAsExpected() {
-		given(recipient.getId()).willReturn(Id.DEFAULT);
-		
-		subject.setBalance(0);
-		assertFailsWith(() -> subject.transferHbar(recipient, 10), INSUFFICIENT_ACCOUNT_BALANCE);
-		subject.setBalance(10000);
-		var changes = subject.transferHbar(recipient, 500);
-		assertNotNull(changes);
-		assertEquals(changes.size(), 2);
-		assertTrue(changes.get(0).isForHbar());
-		assertTrue(changes.get(1).isForHbar());
-	}
-	
-	@Test
-	void objectContractWorks() {
-		subject.setNew(true);
-		assertTrue(subject.isNew());
-		final var key = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKeyUnchecked(); 
-		subject.setKey(key);
-		assertEquals(subject.getKey(), key);
-		
-		subject.setDeleted(true);
-		assertTrue(subject.isDeleted());
-		
-		subject.setReceiverSigRequired(true);
-		assertTrue(subject.isReceiverSigRequired());
-		
-		subject.setSmartContract(true);
-		assertTrue(subject.isSmartContract());
-		
-		assertEquals(0, subject.getExpiry());
 	}
 
 	@Test
@@ -213,14 +161,14 @@ class AccountTest {
 		var account = new Account(subjectId);
 		account.setAssociatedTokens(assocTokens);
 		account.setExpiry(1000L);
-		account.setBalance(100L);
+		account.initBalance(100L);
 		account.setOwnedNfts(1L);
 		account.incrementOwnedNfts();
 		account.setMaxAutomaticAssociations(123);
 		account.setAlreadyUsedAutomaticAssociations(12);
 
 		subject.setExpiry(1000L);
-		subject.setBalance(100L);
+		subject.initBalance(100L);
 		subject.setOwnedNfts(1L);
 		subject.incrementOwnedNfts();
 		subject.setAutoAssociationMetadata(account.getAutoAssociationMetadata());
@@ -296,46 +244,6 @@ class AccountTest {
 		assertFailsWith(
 				() -> subject.decrementUsedAutomaticAssocitions(),
 				NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
-	}
-
-	@Test
-	public void createAccountFromGrpcTransaction() {
-		// setup:
-		var op =
-				CryptoCreateTransactionBody.newBuilder()
-					.setMemo(memo)
-					.setInitialBalance(balance)
-					.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod))
-					.setKey(key)
-					.setProxyAccountID(proxy)
-					.setMaxAutomaticTokenAssociations(maxAutoAssociations)
-					.build();
-
-
-		Account created = subject.createFromGrpc(accountId, op, Instant.now().getEpochSecond());
-
-		assertEquals(created.getId(), accountId);
-		assertTrue(Id.ID_COMPARATOR.compare(created.getProxy(), Id.fromGrpcAccount(proxy)) == 0);
-		assertEquals(created.getBalance(), 0);
-		assertEquals(created.getMemo(), memo);
-		assertEquals(created.getAutoRenewSecs(), customAutoRenewPeriod);
-		assertEquals(created.getMaxAutomaticAssociations(), maxAutoAssociations);
-	}
-
-	@Test
-	public void transferHbar(){
-		final var recipient = new Account(Id.DEFAULT);
-		subject.setBalance(200L);
-		subject.transferHbar(recipient, 100L);
-		assertEquals(recipient.getBalance(), 100L);
-	}
-
-	@Test
-	public void transferHbarWithInsufficientBalance(){
-		final var recipient = new Account(Id.DEFAULT);
-		subject.setBalance(50L);
-
-		assertFailsWith(() -> subject.transferHbar(recipient, 100L), INSUFFICIENT_ACCOUNT_BALANCE);
 	}
 
 	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {

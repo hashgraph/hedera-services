@@ -69,7 +69,7 @@ public class AccountStore {
 	 * to state! The altered model must be passed to {@link AccountStore#persistAccount(Account)}
 	 * in order for its changes to be applied to the Swirlds state, and included in the
 	 * {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} for the active transaction.
-	 * <p>
+	 *
 	 * The method uses the {@link AccountStore#loadAccountOrFailWith(Id, ResponseCodeEnum)} by passing a `null` explicit response code
 	 *
 	 * @param id the account to load
@@ -119,7 +119,7 @@ public class AccountStore {
 
 		final var account = new Account(id);
 		account.setExpiry(merkleAccount.getExpiry());
-		account.setBalance(merkleAccount.getBalance());
+		account.initBalance(merkleAccount.getBalance());
 		account.setAssociatedTokens(merkleAccount.tokens().getIds().copy());
 		account.setOwnedNfts(merkleAccount.getNftsOwned());
 		account.setMaxAutomaticAssociations(merkleAccount.getMaxAutomaticAssociations());
@@ -153,22 +153,6 @@ public class AccountStore {
 		mutableAccount.tokens().updateAssociationsFrom(account.getAssociatedTokens());
 	}
 
-	/**
-	 * Creates the given {@link Account} to the Swirlds state
-	 *
-	 * @param account the account to create
-	 */
-	public void persistNew(Account account) {
-		final var newMerkleId = EntityNum.fromAccountId(account.getId().asGrpcAccount());
-		final var mutableAccount = new MerkleAccount();
-
-		mapModelToMutable(account, mutableAccount);
-		mutableAccount.setMemo(account.getMemo());
-		mutableAccount.setSmartContract(account.isSmartContract());
-
-		accounts.get().put(newMerkleId, mutableAccount);
-	}
-
 	private void mapModelToMutable(Account model, MerkleAccount mutableAccount) {
 		if (model.getProxy() != null) {
 			mutableAccount.setProxy(model.getProxy().asEntityId());
@@ -182,19 +166,6 @@ public class AccountStore {
 		mutableAccount.setReceiverSigRequired(model.isReceiverSigRequired());
 		mutableAccount.setDeleted(model.isDeleted());
 		mutableAccount.setAutoRenewSecs(model.getAutoRenewSecs());
-	}
-
-	/**
-	 * Checks whether a given account exists and is usable
-	 *
-	 * @param id Id of the account
-	 * @return whether the account exists and it is usable
-	 */
-	public boolean exists(Id id) {
-		final var key = EntityNum.fromModel(id);
-		final var merkleAccount = accounts.get().get(key);
-		return merkleAccount != null && !merkleAccount.isDeleted()
-				&& !isExpired(merkleAccount.getBalance(), merkleAccount.getExpiry());
 	}
 
 	private void validateUsable(MerkleAccount merkleAccount, @Nullable ResponseCodeEnum explicitResponse, ResponseCodeEnum nonExistingCode, ResponseCodeEnum deletedCode) {

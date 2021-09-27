@@ -44,9 +44,10 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.mocks.SolidityLifecycleFactory;
+import com.hedera.test.mocks.StorageSourceFactory;
 import com.hedera.test.mocks.TestContextValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
@@ -72,7 +73,10 @@ import com.swirlds.common.CommonUtils;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.merkle.map.MerkleMap;
+import org.ethereum.core.AccountState;
 import org.ethereum.crypto.HashUtil;
+import org.ethereum.datasource.DbSource;
+import org.ethereum.datasource.Source;
 import org.ethereum.db.ServicesRepositoryRoot;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -140,7 +144,7 @@ class SmartContractRequestHandlerMiscTest {
    */
 
   private ServicesRepositoryRoot getLocalRepositoryInstance() {
-//    DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
+    DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
     backingAccounts = new BackingAccounts(() -> mmap);
     TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
             AccountProperty.class,
@@ -156,9 +160,9 @@ class SmartContractRequestHandlerMiscTest {
             new MockGlobalDynamicProps(),
             delegate);
     ledgerSource = new LedgerAccountsSource(ledger);
-//    Source<byte[], AccountState> repDatabase = ledgerSource;
-//    ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);
-//    repository.setStoragePersistence(new StoragePersistenceImpl(storageMap));
+    Source<byte[], AccountState> repDatabase = ledgerSource;
+    ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);
+    repository.setStoragePersistence(new StoragePersistenceImpl(storageMap));
     return repository;
   }
 

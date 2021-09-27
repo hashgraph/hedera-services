@@ -21,16 +21,13 @@ package com.hedera.services.store.models;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
 import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -42,9 +39,7 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.getAlready
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getMaxAutomaticAssociationsFrom;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setMaxAutomaticAssociationsTo;
-import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
@@ -74,66 +69,37 @@ public class Account {
 	private String memo = "";
 	private Id proxy;
 	private int autoAssociationMetadata;
-	private boolean isNew;
 
 	public Account(Id id) {
 		this.id = id;
 	}
 
-	/**
-	 * Creates a new {@link Account} instance from the given gRPC.
-	 *
-	 * @param accountId
-	 * 		specifies the id of the newly created account
-	 * @param op
-	 * 		gRPC Transaction body
-	 * @param consensusTimestamp
-	 * 		consensus timestamp of the current transaction
-	 * @return Account
-	 */
-	public static Account createFromGrpc(final Id accountId, final CryptoCreateTransactionBody op, long consensusTimestamp) {
-		final var created = new Account(accountId);
-
-		final long autoRenewPeriod = op.getAutoRenewPeriod().getSeconds();
-		final long expiry = consensusTimestamp + autoRenewPeriod;
-		final var key = asFcKeyUnchecked(op.getKey());
-		created.setKey(key);
-		created.setMemo(op.getMemo());
-		created.setExpiry(expiry);
-		created.setAutoRenewSecs(autoRenewPeriod);
-		created.setMaxAutomaticAssociations(op.getMaxAutomaticTokenAssociations());
-
-		if (op.hasProxyAccountID()) {
-			created.setProxy(Id.fromGrpcAccount(op.getProxyAccountID()));
-		}
-		created.setReceiverSigRequired(op.getReceiverSigRequired());
-		created.setNew(true);
-
-		return created;
+	public void setAssociatedTokens(CopyOnWriteIds associatedTokens) {
+		this.associatedTokens = associatedTokens;
 	}
 
-	/**
-	 * Transfers the provided Hbar amount from the current Account model to the provided
-	 *
-	 * @param recipient
-	 * 		the {@link Account} that will get the transferred Hbars
-	 * @param amount
-	 * 		amount to transfer
-	 * @return The list of balance changes to be externalized
-	 */
-	public List<BalanceChange> transferHbar(final Account recipient, long amount) {
-		validateTrue(getBalance() > amount, INSUFFICIENT_ACCOUNT_BALANCE);
-		this.balance -= amount;
-		recipient.setBalance(recipient.getBalance() + amount);
+	public void setExpiry(long expiry) {
+		this.expiry = expiry;
+	}
 
-		final var balanceAdjustments = new ArrayList<BalanceChange>();
-		balanceAdjustments.add(BalanceChange.hbarAdjust(recipient.getId(), -1 * amount));
-		balanceAdjustments.add(BalanceChange.hbarAdjust(this.getId(), amount));
-		return balanceAdjustments;
+	public void initBalance(long balance) {
+		this.balance = balance;
+	}
+
+	public long getOwnedNfts() {
+		return ownedNfts;
+	}
+
+	public void setOwnedNfts(long ownedNfts) {
+		this.ownedNfts = ownedNfts;
 	}
 
 	public void incrementOwnedNfts() {
 		this.ownedNfts++;
+	}
+
+	public void setAutoAssociationMetadata(int autoAssociationMetadata) {
+		this.autoAssociationMetadata = autoAssociationMetadata;
 	}
 
 	public int getAutoAssociationMetadata() {
@@ -144,16 +110,12 @@ public class Account {
 		return getMaxAutomaticAssociationsFrom(autoAssociationMetadata);
 	}
 
-	public void setMaxAutomaticAssociations(int maxAutomaticAssociations) {
-		autoAssociationMetadata = setMaxAutomaticAssociationsTo(autoAssociationMetadata, maxAutomaticAssociations);
-	}
-
-	public void setAutoAssociationMetadata(int autoAssociationMetadata) {
-		this.autoAssociationMetadata = autoAssociationMetadata;
-	}
-
 	public int getAlreadyUsedAutomaticAssociations() {
 		return getAlreadyUsedAutomaticAssociationsFrom(autoAssociationMetadata);
+	}
+
+	public void setMaxAutomaticAssociations(int maxAutomaticAssociations) {
+		autoAssociationMetadata = setMaxAutomaticAssociationsTo(autoAssociationMetadata, maxAutomaticAssociations);
 	}
 
 	public void setAlreadyUsedAutomaticAssociations(int alreadyUsedCount) {
@@ -219,10 +181,6 @@ public class Account {
 		return associatedTokens;
 	}
 
-	public void setAssociatedTokens(CopyOnWriteIds associatedTokens) {
-		this.associatedTokens = associatedTokens;
-	}
-
 	public boolean isAssociatedWith(Id token) {
 		return associatedTokens.contains(token);
 	}
@@ -266,10 +224,6 @@ public class Account {
 		return expiry;
 	}
 
-	public void setExpiry(long expiry) {
-		this.expiry = expiry;
-	}
-
 	public boolean isDeleted() {
 		return deleted;
 	}
@@ -296,18 +250,6 @@ public class Account {
 
 	public long getBalance() {
 		return balance;
-	}
-
-	public void setBalance(long balance) {
-		this.balance = balance;
-	}
-
-	public long getOwnedNfts() {
-		return ownedNfts;
-	}
-
-	public void setOwnedNfts(long ownedNfts) {
-		this.ownedNfts = ownedNfts;
 	}
 
 	public long getAutoRenewSecs() {
@@ -340,14 +282,6 @@ public class Account {
 
 	public void setProxy(final Id proxy) {
 		this.proxy = proxy;
-	}
-
-	public boolean isNew() {
-		return this.isNew;
-	}
-
-	public void setNew(boolean isNew) {
-		this.isNew = isNew;
 	}
 
 }

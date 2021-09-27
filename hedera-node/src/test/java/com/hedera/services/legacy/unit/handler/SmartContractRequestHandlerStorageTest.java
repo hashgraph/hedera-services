@@ -44,9 +44,12 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.test.mocks.SolidityLifecycleFactory;
+import com.hedera.test.mocks.StorageSourceFactory;
 import com.hedera.test.mocks.TestContextValidator;
+import com.hedera.test.mocks.TestUsagePricesProvider;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
@@ -72,6 +75,9 @@ import com.swirlds.merkle.map.MerkleMap;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.apache.commons.collections4.Predicate;
+import org.ethereum.core.AccountState;
+import org.ethereum.datasource.DbSource;
+import org.ethereum.datasource.Source;
 import org.ethereum.db.ServicesRepositoryRoot;
 import org.ethereum.solidity.Abi;
 import org.ethereum.solidity.Abi.Event;
@@ -130,7 +136,7 @@ class SmartContractRequestHandlerStorageTest {
   private BackingAccounts backingAccounts;
 
   private ServicesRepositoryRoot getLocalRepositoryInstance() {
-//    DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
+    DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
     backingAccounts = new BackingAccounts(() -> contracts);
     TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
             AccountProperty.class,
@@ -146,9 +152,9 @@ class SmartContractRequestHandlerStorageTest {
             new MockGlobalDynamicProps(),
             delegate);
     ledgerSource = new LedgerAccountsSource(ledger);
-//    Source<byte[], AccountState> repDatabase = ledgerSource;
-//    ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);
-//    repository.setStoragePersistence(new StoragePersistenceImpl(storageMap));
+    Source<byte[], AccountState> repDatabase = ledgerSource;
+    ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);
+    repository.setStoragePersistence(new StoragePersistenceImpl(storageMap));
     return repository;
   }
 
@@ -181,18 +187,18 @@ class SmartContractRequestHandlerStorageTest {
                     expiryTime);
     given(exchange.activeRates()).willReturn(rates);
     given(exchange.rate(any())).willReturn(rates.getCurrentRate());
-//    smartHandler = new SmartContractRequestHandler(
-//            repository,
-//            ledger,
-//            () -> contracts,
-//            null,
-//            exchange,
-//            TestUsagePricesProvider.TEST_USAGE_PRICES,
-//            () -> repository,
-//            SolidityLifecycleFactory.newTestInstance(),
-//            ignore -> true,
-//            null,
-//            new MockGlobalDynamicProps());
+    smartHandler = new SmartContractRequestHandler(
+            repository,
+            ledger,
+            () -> contracts,
+            null,
+            exchange,
+            TestUsagePricesProvider.TEST_USAGE_PRICES,
+            () -> repository,
+            SolidityLifecycleFactory.newTestInstance(),
+            ignore -> true,
+            null,
+            new MockGlobalDynamicProps());
     storageWrapper = new StorageTestHelper(storageMap);
     fsHandler = new FileServiceHandler(storageWrapper);
     String key = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, payerAccount));

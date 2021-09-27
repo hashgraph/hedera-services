@@ -42,9 +42,12 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.test.mocks.SolidityLifecycleFactory;
+import com.hedera.test.mocks.StorageSourceFactory;
 import com.hedera.test.mocks.TestContextValidator;
+import com.hedera.test.mocks.TestUsagePricesProvider;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
@@ -67,6 +70,9 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.merkle.map.MerkleMap;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
+import org.ethereum.core.AccountState;
+import org.ethereum.datasource.DbSource;
+import org.ethereum.datasource.Source;
 import org.ethereum.db.ServicesRepositoryRoot;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -121,7 +127,7 @@ class SmartContractRequestHandlerPayableTest {
   HederaLedger ledger;
 
   private ServicesRepositoryRoot getLocalRepositoryInstance() {
-//    DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
+    DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
     backingAccounts = new BackingAccounts(() -> fcMap);
     TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
             AccountProperty.class,
@@ -137,8 +143,8 @@ class SmartContractRequestHandlerPayableTest {
             new MockGlobalDynamicProps(),
             delegate);
     ledgerSource = new LedgerAccountsSource(ledger);
-//    Source<byte[], AccountState> repDatabase = ledgerSource;
-//    ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);
+    Source<byte[], AccountState> repDatabase = ledgerSource;
+    ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);
     return repository;
   }
 
@@ -174,18 +180,18 @@ class SmartContractRequestHandlerPayableTest {
                     expiryTime);
     given(exchange.activeRates()).willReturn(rates);
     given(exchange.rate(any())).willReturn(rates.getCurrentRate());
-//    smartHandler = new SmartContractRequestHandler(
-//            repository,
-//            ledger,
-//            () -> fcMap,
-//            null,
-//            exchange,
-//            TestUsagePricesProvider.TEST_USAGE_PRICES,
-//            () -> repository,
-//            SolidityLifecycleFactory.newTestInstance(),
-//            ignore -> true,
-//            null,
-//            new MockGlobalDynamicProps());
+    smartHandler = new SmartContractRequestHandler(
+            repository,
+            ledger,
+            () -> fcMap,
+            null,
+            exchange,
+            TestUsagePricesProvider.TEST_USAGE_PRICES,
+            () -> repository,
+            SolidityLifecycleFactory.newTestInstance(),
+            ignore -> true,
+            null,
+            new MockGlobalDynamicProps());
     storageWrapper = new StorageTestHelper(storageMap);
     fsHandler = new FileServiceHandler(storageWrapper);
     String key = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, payerAccount));
