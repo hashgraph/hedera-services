@@ -39,7 +39,6 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
-import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
@@ -61,7 +60,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
@@ -411,19 +409,6 @@ public class HederaLedger {
 		return validity;
 	}
 
-	public ResponseCodeEnum onlyHbarZeroSumDryRun(List<Pair<Account, BalanceChange>> changes, Function<Account, ResponseCodeEnum> validator) {
-		var validity = OK;
-		for (var change : changes) {
-			if (change.getRight().isForHbar()) {
-				validity = validator.apply(change.getLeft());
-			}
-			if (validity != OK) {
-				return validity;
-			}
-		}
-		return OK;
-	}
-
 	public void doZeroSum(List<BalanceChange> changes) {
 		var validity = OK;
 		for (var change : changes) {
@@ -449,14 +434,6 @@ public class HederaLedger {
 	}
 
 	/* -- ACCOUNT META MANIPULATION -- */
-	public void createProvisionally(AccountID newId) {
-		accountsLedger.create(newId);
-	}
-
-	public void rollbackProvisionalAccount() {
-		accountsLedger.rollback();
-	}
-
 	public void spawn(AccountID id, long balance, HederaAccountCustomizer customizer) {
 		accountsLedger.create(id);
 		setBalance(id, balance);

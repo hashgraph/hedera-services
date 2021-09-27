@@ -40,13 +40,11 @@ import java.util.List;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.buildAutomaticAssociationMetaData;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -69,7 +67,6 @@ class AccountTest {
 	final private AccountID proxy = AccountID.newBuilder().setAccountNum(4_321L).build();
 
 	private Account subject;
-	private Account recipient;
 	private OptionValidator validator;
 
 	@BeforeEach
@@ -80,22 +77,8 @@ class AccountTest {
 		subject.setOwnedNfts(ownedNfts);
 
 		validator = mock(ContextOptionValidator.class);
-		recipient = mock(Account.class);
 	}
 	
-	@Test
-	void transfersHbarsAsExpected() {
-		given(recipient.getId()).willReturn(Id.DEFAULT);
-		
-		subject.setBalance(0);
-		assertFailsWith(() -> subject.transferHbar(recipient, 10), INSUFFICIENT_ACCOUNT_BALANCE);
-		subject.setBalance(10000);
-		var changes = subject.transferHbar(recipient, 500);
-		assertNotNull(changes);
-		assertEquals(changes.size(), 2);
-		assertTrue(changes.get(0).getRight().isForHbar());
-		assertTrue(changes.get(1).getRight().isForHbar());
-	}
 	
 	@Test
 	void objectContractWorks() {
@@ -321,23 +304,7 @@ class AccountTest {
 		assertEquals(created.getAutoRenewSecs(), customAutoRenewPeriod);
 		assertEquals(created.getMaxAutomaticAssociations(), maxAutoAssociations);
 	}
-
-	@Test
-	public void transferHbar(){
-		final var recipient = new Account(Id.DEFAULT);
-		subject.setBalance(200L);
-		var res = subject.transferHbar(recipient, 100L);
-		assertEquals(res.get(1).getRight().units(), 100L);
-	}
-
-	@Test
-	public void transferHbarWithInsufficientBalance(){
-		final var recipient = new Account(Id.DEFAULT);
-		subject.setBalance(50L);
-
-		assertFailsWith(() -> subject.transferHbar(recipient, 100L), INSUFFICIENT_ACCOUNT_BALANCE);
-	}
-
+	
 	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
 		var ex = assertThrows(InvalidTransactionException.class, something::run);
 		assertEquals(status, ex.getResponseCode());

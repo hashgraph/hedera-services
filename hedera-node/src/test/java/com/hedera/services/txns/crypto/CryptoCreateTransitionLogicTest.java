@@ -23,6 +23,7 @@ package com.hedera.services.txns.crypto;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.TransactionRecordService;
@@ -105,13 +106,15 @@ class CryptoCreateTransitionLogicTest {
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private TransactionRecordService transactionRecordService;
+	@Mock
+	private HederaLedger ledger;
 
 	private CryptoCreateTransitionLogic subject;
 	private TransactionBody cryptoCreateTxn;
 
 	@BeforeEach
 	private void setup() {
-		subject = new CryptoCreateTransitionLogic(validator, txnCtx, accountStore, dynamicProperties, ids,  transactionRecordService, null);
+		subject = new CryptoCreateTransitionLogic(validator, txnCtx, accountStore, dynamicProperties, ids, transactionRecordService, ledger);
 	}
 
 	@Test
@@ -255,14 +258,14 @@ class CryptoCreateTransitionLogicTest {
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		given(ids.newAccountId(any())).willReturn(mock(AccountID.class));
 		given(sponsor.getId()).willReturn(mock(Id.class));
-
+		given(sponsor.getBalance()).willReturn(100_000L);
 		subject.doStateTransition();
 
 		// then:
 		verify(accountStore).persistNew(any());
 		verify(accountStore).persistAccount(any());
 		verify(transactionRecordService).includeChangesToAccount(any());
-//		verify(transactionRecordService).includeHbarBalanceChanges(any());
+		verify(ledger).doZeroSum(any());
 	}
 
 	@Test
@@ -308,10 +311,6 @@ class CryptoCreateTransitionLogicTest {
 				() -> subject.doStateTransition(),
 				ACCOUNT_EXPIRED_AND_PENDING_REMOVAL
 		);
-	}
-
-	private Key unmappableKey() {
-		return Key.getDefaultInstance();
 	}
 
 	private void givenMissingKey() {

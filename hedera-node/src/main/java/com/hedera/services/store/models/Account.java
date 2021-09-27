@@ -21,7 +21,6 @@ package com.hedera.services.store.models;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
 import com.hedera.services.txns.token.process.Dissociation;
@@ -29,9 +28,7 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.apache.commons.lang3.tuple.Pair;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -45,7 +42,6 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.setAlready
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setMaxAutomaticAssociationsTo;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
@@ -111,30 +107,6 @@ public class Account {
 		created.setNew(true);
 
 		return created;
-	}
-
-	/**
-	 * Transfers the provided Hbar amount from the current Account model to the provided
-	 *
-	 * @param recipient
-	 * 		the {@link Account} that will get the transferred Hbars
-	 * @param amount
-	 * 		amount to transfer
-	 * @return The list of balance changes to be externalized
-	 */
-	public List<Pair<Account, BalanceChange>> transferHbar(final Account recipient, long amount) {
-		validateTrue(getBalance() >= amount, INSUFFICIENT_ACCOUNT_BALANCE);
-
-		final var balanceAdjustments = new ArrayList<Pair<Account, BalanceChange>>();
-		balanceAdjustments.add(Pair.of(
-				this,
-				BalanceChange.hbarAdjust(getId(), -1 * amount)
-		));
-		balanceAdjustments.add(Pair.of(
-				recipient,
-				BalanceChange.hbarAdjust(recipient.getId(), amount)
-		));
-		return balanceAdjustments;
 	}
 
 	public void incrementOwnedNfts() {

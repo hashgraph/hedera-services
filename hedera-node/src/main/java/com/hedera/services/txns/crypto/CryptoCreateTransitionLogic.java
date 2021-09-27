@@ -22,7 +22,7 @@ package com.hedera.services.txns.crypto;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.records.TransactionRecordService;
@@ -34,21 +34,20 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.commons.lang3.tuple.Pair;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.ArrayList;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_INITIAL_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
@@ -68,13 +67,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_
 public class CryptoCreateTransitionLogic implements TransitionLogic {
 
 	private final EntityIdSource ids;
+	private final HederaLedger ledger;
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
 	private final AccountStore accountStore;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 	private final TransactionRecordService transactionRecordService;
-	private final HederaLedger ledger;
 	
 
 	@Inject
@@ -111,33 +110,18 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 		/* --- Do the business logic --- */
 		var createdIdGrpc = ids.newAccountId(sponsor.getId().asGrpcAccount());
 		final var created = Account.createFromGrpc(Id.fromGrpcAccount(createdIdGrpc), op, txnCtx.consensusTime().getEpochSecond());
-		final var balanceChanges = sponsor.transferHbar(created, op.getInitialBalance());
 		
-		final Function<Account, ResponseCodeEnum> accountValidator = (account) -> {
-			if (account.isDeleted()) {
-				return ACCOUNT_DELETED;
-			}
-			if (account.isSmartContract()) {
-				return INVALID_ACCOUNT_ID;
-			}
-			if (dynamicProperties.autoRenewEnabled()) {
-				if (account.getBalance() == 0) {
-					final boolean isExpired = !validator.isAfterConsensusSecond(account.getExpiry());
-					validateFalse(isExpired, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-				}
-			}
-			return OK;
-		};
-
-		final var dryRunZeroSumResult = ledger.onlyHbarZeroSumDryRun(balanceChanges, accountValidator);
-		if (dryRunZeroSumResult != OK) {
-			throw new InvalidTransactionException(dryRunZeroSumResult);
-		}
-		this.accountStore.persistNew(created);
-		ledger.doZeroSum(balanceChanges.stream().map(Pair::getRight).collect(Collectors.toUnmodifiableList()));
+		validateTrue(sponsor.getBalance() > op.getInitialBalance(), INSUFFICIENT_PAYER_BALANCE);
+		final var balanceAdjustments = new ArrayList<BalanceChange>();
+		balanceAdjustments.add(BalanceChange.hbarAdjust(sponsorId, -1 * op.getInitialBalance()));
+		balanceAdjustments.add(BalanceChange.hbarAdjust(created.getId(), op.getInitialBalance()));
 
 		/* --- Persist the models --- */
+		this.accountStore.persistNew(created);
 		this.accountStore.persistAccount(sponsor);
+		
+		/* --- Transfer the initial balance --- */
+		ledger.doZeroSum(balanceAdjustments);
 
 		/* --- Externalise the transaction effects in the record stream */
 		transactionRecordService.includeChangesToAccount(created);
