@@ -92,7 +92,7 @@ public class StandardProcessLogic implements ProcessLogic {
 			}
 
 			expiries.purge(effectiveConsensusTime.getEpochSecond());
-			doProcess(submittingMember, effectiveConsensusTime, accessor);
+			doProcess(submittingMember, consensusTime, effectiveConsensusTime, accessor);
 			autoRenewal.execute(consensusTime);
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("Consensus platform txn was not gRPC!", e);
@@ -102,10 +102,11 @@ public class StandardProcessLogic implements ProcessLogic {
 	private void doProcess(
 			final long submittingMember,
 			final Instant consensusTime,
+			final Instant effectiveConsensusTime,
 			final PlatformTxnAccessor accessor
 	) {
 		executionTimeTracker.start();
-		txnManager.process(accessor, consensusTime, submittingMember);
+		txnManager.process(accessor, effectiveConsensusTime, submittingMember);
 		final var triggeredAccessor = txnCtx.triggeredTxn();
 		if (triggeredAccessor != null) {
 			txnManager.process(triggeredAccessor, consensusTime, submittingMember);

@@ -215,10 +215,6 @@ class UpgradeActionsTest {
 	void determinesIfFreezeIsScheduled() {
 		assertFalse(subject.isFreezeScheduled());
 
-		given(dualState.getFreezeTime()).willReturn(Instant.EPOCH);
-
-		assertFalse(subject.isFreezeScheduled());
-
 		given(dualState.getFreezeTime()).willReturn(then);
 
 		assertTrue(subject.isFreezeScheduled());
