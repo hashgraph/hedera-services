@@ -88,9 +88,9 @@ class AccountTest {
 		given(recipient.getId()).willReturn(Id.DEFAULT);
 		
 		subject.setBalance(0);
-		assertFailsWith(() -> subject.transferHbar(recipient, 10), INSUFFICIENT_ACCOUNT_BALANCE);
+		assertFailsWith(() -> subject.transferHbar(Id.DEFAULT, 10), INSUFFICIENT_ACCOUNT_BALANCE);
 		subject.setBalance(10000);
-		var changes = subject.transferHbar(recipient, 500);
+		var changes = subject.transferHbar(Id.DEFAULT, 500);
 		assertNotNull(changes);
 		assertEquals(changes.size(), 2);
 		assertTrue(changes.get(0).isForHbar());
@@ -326,7 +326,7 @@ class AccountTest {
 	public void transferHbar(){
 		final var recipient = new Account(Id.DEFAULT);
 		subject.setBalance(200L);
-		subject.transferHbar(recipient, 100L);
+		subject.transferHbar(recipient.getId(), 100L);
 		assertEquals(recipient.getBalance(), 100L);
 	}
 
@@ -335,7 +335,7 @@ class AccountTest {
 		final var recipient = new Account(Id.DEFAULT);
 		subject.setBalance(50L);
 
-		assertFailsWith(() -> subject.transferHbar(recipient, 100L), INSUFFICIENT_ACCOUNT_BALANCE);
+		assertFailsWith(() -> subject.transferHbar(recipient.getId(), 100L), INSUFFICIENT_ACCOUNT_BALANCE);
 	}
 
 	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {

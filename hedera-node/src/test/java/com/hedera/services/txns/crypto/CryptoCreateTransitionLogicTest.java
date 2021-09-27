@@ -111,7 +111,7 @@ class CryptoCreateTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new CryptoCreateTransitionLogic(validator, txnCtx, accountStore, dynamicProperties, ids, transactionRecordService);
+		subject = new CryptoCreateTransitionLogic(validator, txnCtx, accountStore, dynamicProperties, ids,  transactionRecordService, null);
 	}
 
 	@Test
@@ -262,7 +262,7 @@ class CryptoCreateTransitionLogicTest {
 		verify(accountStore).persistNew(any());
 		verify(accountStore).persistAccount(any());
 		verify(transactionRecordService).includeChangesToAccount(any());
-		verify(transactionRecordService).includeHbarBalanceChanges(any());
+//		verify(transactionRecordService).includeHbarBalanceChanges(any());
 	}
 
 	@Test

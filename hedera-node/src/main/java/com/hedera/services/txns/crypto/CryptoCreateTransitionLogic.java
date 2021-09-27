@@ -22,6 +22,8 @@ package com.hedera.services.txns.crypto;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
@@ -61,14 +63,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_
 @Singleton
 public class CryptoCreateTransitionLogic implements TransitionLogic {
 
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
-
 	private final EntityIdSource ids;
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
 	private final AccountStore accountStore;
 	private final GlobalDynamicProperties dynamicProperties;
+	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 	private final TransactionRecordService transactionRecordService;
+	private final HederaLedger ledger;
 
 	@Inject
 	public CryptoCreateTransitionLogic(
@@ -77,14 +79,16 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 			final AccountStore accountStore,
 			final GlobalDynamicProperties dynamicProperties,
 			final EntityIdSource ids,
-			final TransactionRecordService transactionRecordService
-			) {
+			final TransactionRecordService transactionRecordService,
+			final HederaLedger ledger
+	) {
 		this.txnCtx = txnCtx;
 		this.validator = validator;
 		this.accountStore = accountStore;
 		this.dynamicProperties = dynamicProperties;
 		this.ids = ids;
 		this.transactionRecordService = transactionRecordService;
+		this.ledger = ledger;
 	}
 
 	@Override
@@ -102,15 +106,25 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 		/* --- Do the business logic --- */
 		var createdIdGrpc = ids.newAccountId(sponsor.getId().asGrpcAccount());
 		final var created = Account.createFromGrpc(Id.fromGrpcAccount(createdIdGrpc), op, txnCtx.consensusTime().getEpochSecond());
-		final var balanceChanges = sponsor.transferHbar(created, op.getInitialBalance());
-
+		final var balanceChanges = sponsor.transferHbar(created.getId(), op.getInitialBalance());
+		
+		ledger.createProvisionally(createdIdGrpc);
+		
+		final var dryRunZeroSumResult = ledger.onlyHbarZeroSumDryRun(balanceChanges);
+		if (dryRunZeroSumResult != OK) {
+			created.setDeleted(true);
+			ledger.rollbackProvisionalAccount();
+			throw new InvalidTransactionException(dryRunZeroSumResult);
+		}
+		ledger.doZeroSum(balanceChanges);
+		ledger.rollbackProvisionalAccount();
 		/* --- Persist the models --- */
+		
 		this.accountStore.persistNew(created);
 		this.accountStore.persistAccount(sponsor);
 
 		/* --- Externalise the transaction effects in the record stream */
 		transactionRecordService.includeChangesToAccount(created);
-		transactionRecordService.includeHbarBalanceChanges(balanceChanges);
 	}
 
 	@Override

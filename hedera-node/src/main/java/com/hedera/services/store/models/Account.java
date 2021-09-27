@@ -121,14 +121,12 @@ public class Account {
 	 * 		amount to transfer
 	 * @return The list of balance changes to be externalized
 	 */
-	public List<BalanceChange> transferHbar(final Account recipient, long amount) {
+	public List<BalanceChange> transferHbar(final Id recipient, long amount) {
 		validateTrue(getBalance() >= amount, INSUFFICIENT_ACCOUNT_BALANCE);
-		this.balance -= amount;
-		recipient.setBalance(recipient.getBalance() + amount);
 
 		final var balanceAdjustments = new ArrayList<BalanceChange>();
-		balanceAdjustments.add(BalanceChange.hbarAdjust(this.getId(), -1 * amount));
-		balanceAdjustments.add(BalanceChange.hbarAdjust(recipient.getId(), amount));
+		balanceAdjustments.add(BalanceChange.hbarAdjust(getId(), -1 * amount));
+		balanceAdjustments.add(BalanceChange.hbarAdjust(recipient, amount));
 		return balanceAdjustments;
 	}
 
