@@ -428,12 +428,17 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			APPS.save(selfId, app);
 		}
 
-		if (networkCtx().getStateVersion() > StateVersions.CURRENT_VERSION) {
+		final var stateVersion = networkCtx().getStateVersion();
+		if (stateVersion > StateVersions.CURRENT_VERSION) {
 			log.error("Fatal error, network state version {} > node software version {}",
 					networkCtx().getStateVersion(),
 					StateVersions.CURRENT_VERSION);
 			app.systemExits().fail(1);
 		} else {
+			if (stateVersion < StateVersions.CURRENT_VERSION) {
+				/* This was an upgrade, discard now-obsolete preparation history */
+				networkCtx().discardPreparedUpgrade();
+			}
 			networkCtx().setStateVersion(StateVersions.CURRENT_VERSION);
 
 			metadata = new StateMetadata(app);

@@ -90,13 +90,13 @@ public class FreezeTransitionLogic implements TransitionLogic {
 				networkCtx.get().recordPreparedUpgrade(op);
 				break;
 			case FREEZE_ONLY:
-				networkCtx.get().rollbackPreparedUpgrade();
+				networkCtx.get().discardPreparedUpgrade();
 			case FREEZE_UPGRADE:
 				upgradeActions.scheduleFreezeAt(timestampToInstant(op.getStartTime()));
 				break;
 			case FREEZE_ABORT:
 				upgradeActions.abortScheduledFreeze();
-				networkCtx.get().rollbackPreparedUpgrade();
+				networkCtx.get().discardPreparedUpgrade();
 				break;
 		}
 	}

@@ -539,7 +539,7 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void nonGenesisInitExitsIfStateVersionLaterThanCurentSoftware() {
+	void nonGenesisInitExitsIfStateVersionLaterThanCurrentSoftware() {
 		final var mockExit = mock(SystemExits.class);
 
 		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
@@ -555,6 +555,25 @@ class ServicesStateTest {
 		subject.init(platform, addressBook);
 
 		verify(mockExit).fail(1);
+	}
+
+	@Test
+	void nonGenesisInitClearsPreparedUpgradeIfStateVersionLessThanCurrentSoftware() {
+		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
+		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+
+		given(networkContext.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION - 1);
+
+		given(app.hashLogger()).willReturn(hashLogger);
+		given(app.initializationFlow()).willReturn(initFlow);
+		given(platform.getSelfId()).willReturn(selfId);
+		// and:
+		APPS.save(selfId.getId(), app);
+
+		// when:
+		subject.init(platform, addressBook);
+
+		verify(networkContext).discardPreparedUpgrade();
 	}
 
 	@Test

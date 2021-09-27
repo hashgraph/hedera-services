@@ -1,10 +1,13 @@
 package com.hedera.services.txns.network;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
+import com.hedera.test.utils.IdUtils;
 import com.swirlds.platform.state.DualStateImpl;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,6 +49,10 @@ class UpgradeActionsTest {
 	private DualStateImpl dualState;
 	@Mock
 	private UpgradeActions.UnzipAction unzipAction;
+	@Mock
+	private MerkleSpecialFiles specialFiles;
+	@Mock
+	private MerkleNetworkContext networkCtx;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -54,7 +61,70 @@ class UpgradeActionsTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new UpgradeActions(unzipAction, dynamicProperties, () -> dualState);
+		subject = new UpgradeActions(
+				unzipAction, dynamicProperties, () -> dualState, () -> specialFiles, () -> networkCtx);
+	}
+
+	@Test
+	void complainsLoudlyIfUpgradeHashDoesntMatch() {
+		rmIfPresent(EXEC_IMMEDIATE_MARKER);
+
+		given(networkCtx.hasPreparedUpgrade()).willReturn(true);
+		given(networkCtx.getPreparedUpdateFileNum()).willReturn(150L);
+
+		subject.catchUpOnMissedSideEffects();
+
+		assertThat(
+				logCaptor.errorLogs(),
+				contains(
+						Matchers.startsWith("Cannot redo NMT upgrade prep, file 0.0.150 changed since FREEZE_UPGRADE"),
+						Matchers.equalTo("Manual remediation may be necessary to avoid node ISS")));
+		assertFalse(
+				Paths.get(markerFilesLoc, EXEC_IMMEDIATE_MARKER).toFile().exists(),
+				"Should not create " + EXEC_IMMEDIATE_MARKER + " if prepared file hash doesn't match");
+	}
+
+	@Test
+	void catchesUpOnUpgradePreparationIfInContext() throws IOException {
+		rmIfPresent(EXEC_IMMEDIATE_MARKER);
+
+		given(networkCtx.hasPreparedUpgrade()).willReturn(true);
+		given(networkCtx.isPreparedFileHashValidGiven(specialFiles)).willReturn(true);
+		given(networkCtx.getPreparedUpdateFileNum()).willReturn(150L);
+		given(specialFiles.get(IdUtils.asFile("0.0.150"))).willReturn(PRETEND_ARCHIVE);
+		given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
+
+		subject.catchUpOnMissedSideEffects();
+
+		verify(unzipAction).unzip(PRETEND_ARCHIVE, markerFilesLoc);
+		assertMarkerCreated(EXEC_IMMEDIATE_MARKER);
+	}
+
+	@Test
+	void catchUpIsNoopWithNothingToDo() {
+		rmIfPresent(FREEZE_SCHEDULED_MARKER);
+		rmIfPresent(EXEC_IMMEDIATE_MARKER);
+
+		subject.catchUpOnMissedSideEffects();
+
+		assertFalse(
+				Paths.get(markerFilesLoc, EXEC_IMMEDIATE_MARKER).toFile().exists(),
+				"Should not create " + EXEC_IMMEDIATE_MARKER + " if no prepared upgrade in state");
+		assertFalse(
+				Paths.get(markerFilesLoc, FREEZE_SCHEDULED_MARKER).toFile().exists(),
+				"Should not create " + FREEZE_SCHEDULED_MARKER + " if dual freeze time is null");
+	}
+
+	@Test
+	void catchesUpOnFreezeScheduleIfInDual() throws IOException {
+		rmIfPresent(FREEZE_SCHEDULED_MARKER);
+
+		given(dualState.getFreezeTime()).willReturn(then);
+		given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
+
+		subject.catchUpOnMissedSideEffects();
+
+		assertMarkerCreated(FREEZE_SCHEDULED_MARKER);
 	}
 
 	@Test

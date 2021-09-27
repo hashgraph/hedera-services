@@ -26,7 +26,9 @@ import com.hedera.services.state.expiry.EntityAutoRenewal;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.stats.ExecutionTimeTracker;
 import com.hedera.services.txns.ProcessLogic;
+import com.hedera.services.txns.network.UpgradeActions;
 import com.hedera.services.txns.span.ExpandHandleSpan;
+import com.hedera.services.utils.PlatformTxnAccessor;
 import com.swirlds.common.SwirldTransaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -40,6 +42,7 @@ public class StandardProcessLogic implements ProcessLogic {
 	private static final Logger log = LogManager.getLogger(StandardProcessLogic.class);
 
 	private final ExpiryManager expiries;
+	private final UpgradeActions upgradeActions;
 	private final InvariantChecks invariantChecks;
 	private final ExpandHandleSpan expandHandleSpan;
 	private final EntityAutoRenewal autoRenewal;
@@ -47,9 +50,12 @@ public class StandardProcessLogic implements ProcessLogic {
 	private final TransactionContext txnCtx;
 	private final ExecutionTimeTracker executionTimeTracker;
 
+	private boolean isFirstHandled = true;
+
 	@Inject
 	public StandardProcessLogic(
 			ExpiryManager expiries,
+			UpgradeActions upgradeActions,
 			InvariantChecks invariantChecks,
 			ExpandHandleSpan expandHandleSpan,
 			EntityAutoRenewal autoRenewal,
@@ -58,6 +64,7 @@ public class StandardProcessLogic implements ProcessLogic {
 			ExecutionTimeTracker executionTimeTracker
 	) {
 		this.expiries = expiries;
+		this.upgradeActions = upgradeActions;
 		this.invariantChecks = invariantChecks;
 		this.expandHandleSpan = expandHandleSpan;
 		this.executionTimeTracker = executionTimeTracker;
@@ -68,6 +75,11 @@ public class StandardProcessLogic implements ProcessLogic {
 
 	@Override
 	public void incorporateConsensusTxn(SwirldTransaction platformTxn, Instant consensusTime, long submittingMember) {
+		if (isFirstHandled) {
+			upgradeActions.catchUpOnMissedSideEffects();
+			isFirstHandled = false;
+		}
+
 		try {
 			final var accessor = expandHandleSpan.accessorFor(platformTxn);
 			Instant effectiveConsensusTime = consensusTime;
@@ -80,18 +92,24 @@ public class StandardProcessLogic implements ProcessLogic {
 			}
 
 			expiries.purge(effectiveConsensusTime.getEpochSecond());
-
-			executionTimeTracker.start();
-			txnManager.process(accessor, effectiveConsensusTime, submittingMember);
-			final var triggeredAccessor = txnCtx.triggeredTxn();
-			if (triggeredAccessor != null) {
-				txnManager.process(triggeredAccessor, consensusTime, submittingMember);
-			}
-			executionTimeTracker.stop();
-
+			doProcess(submittingMember, effectiveConsensusTime, accessor);
 			autoRenewal.execute(consensusTime);
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("Consensus platform txn was not gRPC!", e);
 		}
+	}
+
+	private void doProcess(
+			final long submittingMember,
+			final Instant consensusTime,
+			final PlatformTxnAccessor accessor
+	) {
+		executionTimeTracker.start();
+		txnManager.process(accessor, consensusTime, submittingMember);
+		final var triggeredAccessor = txnCtx.triggeredTxn();
+		if (triggeredAccessor != null) {
+			txnManager.process(triggeredAccessor, consensusTime, submittingMember);
+		}
+		executionTimeTracker.stop();
 	}
 }

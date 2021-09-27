@@ -178,6 +178,10 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.stateVersion = stateVersion;
 	}
 
+	public boolean hasPreparedUpgrade() {
+		return preparedUpdateFileNum != NO_PREPARED_UPDATE_FILE_NUM;
+	}
+
 	public void recordPreparedUpgrade(FreezeTransactionBody op) {
 		throwIfImmutable("Cannot record a prepared upgrade on an immutable context");
 		preparedUpdateFileNum = op.getUpdateFile().getFileNum();
@@ -192,7 +196,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return specialFiles.hashMatches(fid, preparedUpdateFileHash);
 	}
 
-	public void rollbackPreparedUpgrade() {
+	public void discardPreparedUpgrade() {
 		throwIfImmutable("Cannot rollback a prepared upgrade on an immutable context");
 		preparedUpdateFileNum = NO_PREPARED_UPDATE_FILE_NUM;
 		preparedUpdateFileHash = NO_PREPARED_UPDATE_FILE_HASH;

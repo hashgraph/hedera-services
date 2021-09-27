@@ -1,6 +1,8 @@
 package com.hedera.services.txns.network;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.swirlds.common.SwirldDualState;
 import com.swirlds.platform.state.DualStateImpl;
 import org.apache.logging.log4j.LogManager;
@@ -16,6 +18,9 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.services.utils.EntityIdUtils.readableId;
 
 @Singleton
 public class UpgradeActions {
@@ -37,15 +42,21 @@ public class UpgradeActions {
 	private final UnzipAction unzipAction;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<SwirldDualState> dualState;
+	private final Supplier<MerkleSpecialFiles> specialFiles;
+	private final Supplier<MerkleNetworkContext> networkCtx;
 
 	@Inject
 	public UpgradeActions(
 			final UnzipAction unzipAction,
 			final GlobalDynamicProperties dynamicProperties,
-			final Supplier<SwirldDualState> dualState
+			final Supplier<SwirldDualState> dualState,
+			final Supplier<MerkleSpecialFiles> specialFiles,
+			final Supplier<MerkleNetworkContext> networkCtx
 	) {
 		this.dualState = dualState;
+		this.networkCtx = networkCtx;
 		this.unzipAction = unzipAction;
+		this.specialFiles = specialFiles;
 		this.dynamicProperties = dynamicProperties;
 	}
 
@@ -81,9 +92,41 @@ public class UpgradeActions {
 		final var ans = new AtomicBoolean();
 		withNonNullDualState("check freeze schedule", ds -> {
 			final var freezeTime = ((DualStateImpl) ds).getFreezeTime();
-			ans.set(freezeTime != null && !Instant.EPOCH.equals(freezeTime));
+			ans.set(freezeTime != null);
 		});
 		return ans.get();
+	}
+
+	public void catchUpOnMissedSideEffects() {
+		catchUpOnMissedUpgradePrep();
+		catchUpOnMissedFreezeScheduling();
+	}
+
+	private void catchUpOnMissedUpgradePrep() {
+		final var curNetworkCtx = networkCtx.get();
+		if (!curNetworkCtx.hasPreparedUpgrade()) {
+			return;
+		}
+
+		final var curSpecialFiles = specialFiles.get();
+		final var upgradeFileNum = curNetworkCtx.getPreparedUpdateFileNum();
+		final var upgradeFileId = STATIC_PROPERTIES.scopedFileWith(upgradeFileNum);
+		if (!curNetworkCtx.isPreparedFileHashValidGiven(curSpecialFiles)) {
+			log.error(
+					"Cannot redo NMT upgrade prep, file {} changed since FREEZE_UPGRADE",
+					readableId(upgradeFileId));
+			log.error(MANUAL_REMEDIATION_ALERT);
+			return;
+		}
+
+		final var archiveData = curSpecialFiles.get(upgradeFileId);
+		prepareUpgradeNow(archiveData);
+	}
+
+	private void catchUpOnMissedFreezeScheduling() {
+		if (isFreezeScheduled()) {
+			writeMarker(FREEZE_SCHEDULED_MARKER);
+		}
 	}
 
 	private void withNonNullDualState(String actionDesc, Consumer<SwirldDualState> action) {

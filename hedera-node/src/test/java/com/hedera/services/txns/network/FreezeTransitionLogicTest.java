@@ -112,7 +112,7 @@ class FreezeTransitionLogicTest {
 
 		subject.doStateTransition();
 
-		verify(networkCtx).rollbackPreparedUpgrade();
+		verify(networkCtx).discardPreparedUpgrade();
 		verify(upgradeActions).scheduleFreezeAt(VALID_START_TIME);
 	}
 
@@ -169,7 +169,7 @@ class FreezeTransitionLogicTest {
 		subject.doStateTransition();
 
 		verify(upgradeActions).abortScheduledFreeze();
-		verify(networkCtx).rollbackPreparedUpgrade();
+		verify(networkCtx).discardPreparedUpgrade();
 	}
 
 	@Test

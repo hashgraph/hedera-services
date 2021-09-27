@@ -151,6 +151,15 @@ class MerkleNetworkContextTest {
 	}
 
 	@Test
+	void knowsIfUpgradeIsPrepared() {
+		assertTrue(subject.hasPreparedUpgrade());
+
+		subject.discardPreparedUpgrade();
+
+		assertFalse(subject.hasPreparedUpgrade());
+	}
+
+	@Test
 	void preparedHashValidIfMatchesOrAbsent() {
 		final var fid = IdUtils.asFile("0.0.150");
 		final var specialFiles = mock(MerkleSpecialFiles.class);
@@ -255,7 +264,7 @@ class MerkleNetworkContextTest {
 		assertThrows(MutabilityException.class, () -> subject.setPreparedUpdateFileNum(123));
 		assertThrows(MutabilityException.class, () -> subject.setPreparedUpdateFileHash(NO_PREPARED_UPDATE_FILE_HASH));
 		assertThrows(MutabilityException.class, () -> subject.recordPreparedUpgrade(null));
-		assertThrows(MutabilityException.class, () -> subject.rollbackPreparedUpgrade());
+		assertThrows(MutabilityException.class, () -> subject.discardPreparedUpgrade());
 	}
 
 	@Test
@@ -282,7 +291,7 @@ class MerkleNetworkContextTest {
 
 	@Test
 	void rollbackWorksOnPreparedUpgrade() {
-		subject.rollbackPreparedUpgrade();
+		subject.discardPreparedUpgrade();
 
 		assertEquals(NO_PREPARED_UPDATE_FILE_NUM, subject.getPreparedUpdateFileNum());
 		assertSame(NO_PREPARED_UPDATE_FILE_HASH, subject.getPreparedUpdateFileHash());

@@ -15,8 +15,9 @@ appear below.
 3. [Checking account balances](#getting-account-balances)
 4. [Updating system files](#updating-system-files)
 5. [Validating network services](#validating-network-services)
-6. [Scheduling a network freeze](#scheduling-a-network-freeze)
-7. [Re-keying an account](#updating-account-keys)
+6. [Preparing for an NMT upgrade](#preparing-an-nmt-software-upgrade)
+7. [Scheduling a network freeze](#scheduling-a-network-freeze)
+8. [Re-keying an account](#updating-account-keys)
 
 # Setting up the working directory
 
@@ -231,12 +232,40 @@ Services will be validated by type; to see all supported options, run,
 $ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 2 validate help
 ```
 
-# Scheduling a network freeze
+# Preparing an NMT software upgrade
 
-A freeze time (in consensus UTC) is specified in the pattern `yyyy-MM-dd.HH:mm:ss`; for example,
+To prepare for an automatic software upgrade, there must exist a system file in the range `0.0.150-159` 
+that is a ZIP archive with artifacts listed in the [NMT requirements document](https://github.com/swirlds/swirlds-docker/blob/main/docs/docker-infrastructure-design.md#toc-phase-1-feat-hedera-node-protobuf-defs-current). The SHA-384 hash of this ZIP must be known so 
+the nodes can validate the integrity of the upgrade file before staging its artifacts for NMT to use.
+This looks like,
 
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 2 freeze --start-time 2021-09-09.20:11:13
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 2 \
+> stage --upgrade-file-num 150 --upgrade-zip-hash 5d3b0e619d8513dfbf606ef00a2e83ba97d736f5f5ba61561d895ea83a6d4c34fce05d6cd74c83ec171f710e37e12aab
+```
+
+# Scheduling a network freeze
+
+A freeze time (in consensus UTC) is specified in the pattern `yyyy-MM-dd.HH:mm:ss`. Freezes may be
+both scheduled and aborted; and a scheduled freeze may also be flagged as the trigger for an NMT
+software upgrade.
+
+A vanilla freeze with no NMT upgrade looks like, 
+```
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 2 \
+> freeze --start-time 2021-09-09.20:11:13
+```
+
+While a freeze triggering a staged NMT upgrade includes the `--trigger-staged-upgrade` flag,
+```
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 2 \
+> freeze --start-time 2021-09-09.20:11:13 --trigger-staged-upgrade
+```
+
+To abort a scheduled freeze, omit the `--start-time` option and use the `--abort` flag. 
+```
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 2 \
+> freeze --abort 
 ```
 
 # Updating account keys

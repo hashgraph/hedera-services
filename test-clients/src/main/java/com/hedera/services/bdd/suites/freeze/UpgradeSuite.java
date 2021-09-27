@@ -23,11 +23,11 @@ package com.hedera.services.bdd.suites.freeze;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
@@ -60,7 +60,6 @@ public class UpgradeSuite extends HapiApiSuite {
 	}
 
 	private final byte[] poeticUpgradeHash;
-	private final byte[] pragmaticUpgradeHash;
 
 	private final String canonicalUpdateFile = "0.0.150";
 
@@ -68,7 +67,7 @@ public class UpgradeSuite extends HapiApiSuite {
 		try {
 			final var sha384 = MessageDigest.getInstance("SHA-384");
 			poeticUpgradeHash = sha384.digest(Files.readAllBytes(Paths.get(poeticUpgradeLoc)));
-			pragmaticUpgradeHash = sha384.digest(pragmatism.getBytes(StandardCharsets.UTF_8));
+			log.info("Poetic upgrade hash: " + CommonUtils.hex(poeticUpgradeHash));
 		} catch (NoSuchAlgorithmException | IOException e) {
 			throw new IllegalStateException("UpgradeSuite environment is unsuitable", e);
 		}
@@ -83,11 +82,11 @@ public class UpgradeSuite extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						/* Negative tests */
-//						freezeOnlyPrecheckRejectsInvalid(),
-//						freezeUpgradeValidationRejectsInvalid(),
-//						freezeAbortValidationRejectsInvalid(),
-//						freezeUpgradeValidationRejectsInvalid(),
-//						prepareUpgradeValidationRejectsInvalid(),
+						freezeOnlyPrecheckRejectsInvalid(),
+						freezeUpgradeValidationRejectsInvalid(),
+						freezeAbortValidationRejectsInvalid(),
+						freezeUpgradeValidationRejectsInvalid(),
+						prepareUpgradeValidationRejectsInvalid(),
 
 						/* Happy paths */
 						canFreezeUpgradeWithPreparedUpgrade(),

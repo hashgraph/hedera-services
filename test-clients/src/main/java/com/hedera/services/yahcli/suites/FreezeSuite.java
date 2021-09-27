@@ -21,6 +21,7 @@ package com.hedera.services.yahcli.suites;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,16 +30,27 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.hapiFreeze;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeAbort;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeUpgrade;
 
 public class FreezeSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(FreezeSuite.class);
 
 	private final Instant freezeStartTime;
+	private final boolean isAbort;
+	private final boolean isNmtUpgrade;
 
 	private final Map<String, String> specConfig;
 
-	public FreezeSuite(final Map<String, String> specConfig, final Instant freezeStartTime) {
+	public FreezeSuite(
+			final Map<String, String> specConfig,
+			final Instant freezeStartTime,
+			final boolean isAbort,
+			final boolean isNmtUpgrade
+	) {
+		this.isAbort = isAbort;
+		this.isNmtUpgrade = isNmtUpgrade;
 		this.specConfig = specConfig;
 		this.freezeStartTime = freezeStartTime;
 	}
@@ -46,19 +58,26 @@ public class FreezeSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				freezeSystem(freezeStartTime)
+				doFreeze()
 		});
 	}
 
-	private HapiApiSpec freezeSystem(final Instant freezeStartTime) {
-		return HapiApiSpec.customHapiSpec(("freezeSystem"))
+	private HapiApiSpec doFreeze() {
+		return HapiApiSpec.customHapiSpec("DoFreeze")
 				.withProperties(specConfig)
-				.given().when()
-				.then(
-						hapiFreeze(freezeStartTime)
-								.noLogging()
-								.yahcliLogging()
+				.given( ).when( ).then(
+						requestedFreezeOp()
 				);
+	}
+
+	private HapiSpecOperation requestedFreezeOp() {
+		if (isAbort) {
+			return freezeAbort().noLogging().yahcliLogging();
+		} else {
+			return isNmtUpgrade
+					? freezeUpgrade().startingAt(freezeStartTime).noLogging()
+					: freezeOnly().startingAt(freezeStartTime).noLogging();
+		}
 	}
 
 	@Override
