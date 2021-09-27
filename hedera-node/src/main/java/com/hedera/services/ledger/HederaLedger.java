@@ -39,6 +39,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
+import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
@@ -60,6 +61,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
@@ -99,10 +101,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  */
 @SuppressWarnings("unchecked")
 public class HederaLedger {
-	private static final int MAX_CONCEIVABLE_TOKENS_PER_TXN = 1_000;
-	private static final long[] NO_NEW_BALANCES = new long[0];
-
-	static final String NO_ACTIVE_TXN_CHANGE_SET = "{*NO ACTIVE TXN*}";
 	public static final Comparator<AccountID> ACCOUNT_ID_COMPARATOR = Comparator
 			.comparingLong(AccountID::getAccountNum)
 			.thenComparingLong(AccountID::getShardNum)
@@ -115,7 +113,12 @@ public class HederaLedger {
 			.comparingLong(FileID::getFileNum)
 			.thenComparingLong(FileID::getShardNum)
 			.thenComparingLong(FileID::getRealmNum);
-
+	static final String NO_ACTIVE_TXN_CHANGE_SET = "{*NO ACTIVE TXN*}";
+	private static final int MAX_CONCEIVABLE_TOKENS_PER_TXN = 1_000;
+	private static final long[] NO_NEW_BALANCES = new long[0];
+	final TokenID[] tokensTouched = new TokenID[MAX_CONCEIVABLE_TOKENS_PER_TXN];
+	final Map<TokenID, TransferList.Builder> netTokenTransfers = new HashMap<>();
+	final Map<TokenID, TokenTransferList.Builder> uniqueTokenTransfers = new HashMap<>();
 	private final TokenStore tokenStore;
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties dynamicProperties;
@@ -123,20 +126,15 @@ public class HederaLedger {
 	private final List<FcTokenAssociation> newTokenAssociations = new ArrayList<>();
 	private final AccountRecordsHistorian historian;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	private final MerkleAccountScopedCheck scopedCheck;
 
+	int numTouches = 0;
 	private UniqTokenViewsManager tokenViewsManager = null;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger = null;
 	private TransactionalLedger<
 			Pair<AccountID, TokenID>,
 			TokenRelProperty,
 			MerkleTokenRelStatus> tokenRelsLedger = null;
-
-	private final MerkleAccountScopedCheck scopedCheck;
-
-	int numTouches = 0;
-	final TokenID[] tokensTouched = new TokenID[MAX_CONCEIVABLE_TOKENS_PER_TXN];
-	final Map<TokenID, TransferList.Builder> netTokenTransfers = new HashMap<>();
-	final Map<TokenID, TokenTransferList.Builder> uniqueTokenTransfers = new HashMap<>();
 
 	public HederaLedger(
 			TokenStore tokenStore,
@@ -412,15 +410,12 @@ public class HederaLedger {
 		}
 		return validity;
 	}
-	
-	public ResponseCodeEnum onlyHbarZeroSumDryRun(List<BalanceChange> changes) {
+
+	public ResponseCodeEnum onlyHbarZeroSumDryRun(List<Pair<Account, BalanceChange>> changes, Function<Account, ResponseCodeEnum> validator) {
 		var validity = OK;
 		for (var change : changes) {
-			if (change.isForHbar()) {
-				validity = accountsLedger.validate(
-						change.accountId(),
-						scopedCheck.setBalanceChange(change)
-				);
+			if (change.getRight().isForHbar()) {
+				validity = validator.apply(change.getLeft());
 			}
 			if (validity != OK) {
 				return validity;
@@ -457,7 +452,7 @@ public class HederaLedger {
 	public void createProvisionally(AccountID newId) {
 		accountsLedger.create(newId);
 	}
-	
+
 	public void rollbackProvisionalAccount() {
 		accountsLedger.rollback();
 	}

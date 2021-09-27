@@ -92,9 +92,9 @@ public class CryptoCreateSuite extends HapiApiSuite {
 //				createAnAccountThresholdKeyWithInvalidThreshold(),
 //				createAnAccountInvalidED25519(),
 //				syntaxChecksAreAsExpected(),
-				xferRequiresCrypto(),
-				maxAutoAssociationSpec(),
-				usdFeeAsExpected(),
+//				xferRequiresCrypto(),
+//				maxAutoAssociationSpec(),
+//				usdFeeAsExpected(),
 				transactionRecordShowsCorrectTransfers()
 		);
 	}
@@ -110,7 +110,8 @@ public class CryptoCreateSuite extends HapiApiSuite {
 						getTxnRecord("createTxn")
 								.hasHbarAmount("account", 10)
 								.hasHbarAmount(GENESIS, -10)
-								.logged()
+								.logged(),
+						getAccountBalance("account").hasTinyBars(10L)
 				);
 	}
 

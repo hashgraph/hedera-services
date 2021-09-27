@@ -34,17 +34,21 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.apache.commons.lang3.tuple.Pair;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_INITIAL_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
@@ -71,6 +75,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 	private final TransactionRecordService transactionRecordService;
 	private final HederaLedger ledger;
+	
 
 	@Inject
 	public CryptoCreateTransitionLogic(
@@ -106,21 +111,32 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 		/* --- Do the business logic --- */
 		var createdIdGrpc = ids.newAccountId(sponsor.getId().asGrpcAccount());
 		final var created = Account.createFromGrpc(Id.fromGrpcAccount(createdIdGrpc), op, txnCtx.consensusTime().getEpochSecond());
-		final var balanceChanges = sponsor.transferHbar(created.getId(), op.getInitialBalance());
+		final var balanceChanges = sponsor.transferHbar(created, op.getInitialBalance());
 		
-		ledger.createProvisionally(createdIdGrpc);
-		
-		final var dryRunZeroSumResult = ledger.onlyHbarZeroSumDryRun(balanceChanges);
+		final Function<Account, ResponseCodeEnum> accountValidator = (account) -> {
+			if (account.isDeleted()) {
+				return ACCOUNT_DELETED;
+			}
+			if (account.isSmartContract()) {
+				return INVALID_ACCOUNT_ID;
+			}
+			if (dynamicProperties.autoRenewEnabled()) {
+				if (account.getBalance() == 0) {
+					final boolean isExpired = !validator.isAfterConsensusSecond(account.getExpiry());
+					validateFalse(isExpired, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+				}
+			}
+			return OK;
+		};
+
+		final var dryRunZeroSumResult = ledger.onlyHbarZeroSumDryRun(balanceChanges, accountValidator);
 		if (dryRunZeroSumResult != OK) {
-			created.setDeleted(true);
-			ledger.rollbackProvisionalAccount();
 			throw new InvalidTransactionException(dryRunZeroSumResult);
 		}
-		ledger.doZeroSum(balanceChanges);
-		ledger.rollbackProvisionalAccount();
-		/* --- Persist the models --- */
-		
 		this.accountStore.persistNew(created);
+		ledger.doZeroSum(balanceChanges.stream().map(Pair::getRight).collect(Collectors.toUnmodifiableList()));
+
+		/* --- Persist the models --- */
 		this.accountStore.persistAccount(sponsor);
 
 		/* --- Externalise the transaction effects in the record stream */

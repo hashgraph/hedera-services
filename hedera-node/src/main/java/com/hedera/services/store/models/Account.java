@@ -29,6 +29,7 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -121,12 +122,18 @@ public class Account {
 	 * 		amount to transfer
 	 * @return The list of balance changes to be externalized
 	 */
-	public List<BalanceChange> transferHbar(final Id recipient, long amount) {
+	public List<Pair<Account, BalanceChange>> transferHbar(final Account recipient, long amount) {
 		validateTrue(getBalance() >= amount, INSUFFICIENT_ACCOUNT_BALANCE);
 
-		final var balanceAdjustments = new ArrayList<BalanceChange>();
-		balanceAdjustments.add(BalanceChange.hbarAdjust(getId(), -1 * amount));
-		balanceAdjustments.add(BalanceChange.hbarAdjust(recipient, amount));
+		final var balanceAdjustments = new ArrayList<Pair<Account, BalanceChange>>();
+		balanceAdjustments.add(Pair.of(
+				this,
+				BalanceChange.hbarAdjust(getId(), -1 * amount)
+		));
+		balanceAdjustments.add(Pair.of(
+				recipient,
+				BalanceChange.hbarAdjust(recipient.getId(), amount)
+		));
 		return balanceAdjustments;
 	}
 

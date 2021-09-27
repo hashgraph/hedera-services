@@ -88,13 +88,13 @@ class AccountTest {
 		given(recipient.getId()).willReturn(Id.DEFAULT);
 		
 		subject.setBalance(0);
-		assertFailsWith(() -> subject.transferHbar(Id.DEFAULT, 10), INSUFFICIENT_ACCOUNT_BALANCE);
+		assertFailsWith(() -> subject.transferHbar(recipient, 10), INSUFFICIENT_ACCOUNT_BALANCE);
 		subject.setBalance(10000);
-		var changes = subject.transferHbar(Id.DEFAULT, 500);
+		var changes = subject.transferHbar(recipient, 500);
 		assertNotNull(changes);
 		assertEquals(changes.size(), 2);
-		assertTrue(changes.get(0).isForHbar());
-		assertTrue(changes.get(1).isForHbar());
+		assertTrue(changes.get(0).getRight().isForHbar());
+		assertTrue(changes.get(1).getRight().isForHbar());
 	}
 	
 	@Test
@@ -312,10 +312,10 @@ class AccountTest {
 					.build();
 
 
-		Account created = subject.createFromGrpc(accountId, op, Instant.now().getEpochSecond());
+		Account created = Account.createFromGrpc(accountId, op, Instant.now().getEpochSecond());
 
 		assertEquals(created.getId(), accountId);
-		assertTrue(Id.ID_COMPARATOR.compare(created.getProxy(), Id.fromGrpcAccount(proxy)) == 0);
+		assertEquals(0, Id.ID_COMPARATOR.compare(created.getProxy(), Id.fromGrpcAccount(proxy)));
 		assertEquals(created.getBalance(), 0);
 		assertEquals(created.getMemo(), memo);
 		assertEquals(created.getAutoRenewSecs(), customAutoRenewPeriod);
@@ -326,8 +326,8 @@ class AccountTest {
 	public void transferHbar(){
 		final var recipient = new Account(Id.DEFAULT);
 		subject.setBalance(200L);
-		subject.transferHbar(recipient.getId(), 100L);
-		assertEquals(recipient.getBalance(), 100L);
+		var res = subject.transferHbar(recipient, 100L);
+		assertEquals(res.get(1).getRight().units(), 100L);
 	}
 
 	@Test
@@ -335,7 +335,7 @@ class AccountTest {
 		final var recipient = new Account(Id.DEFAULT);
 		subject.setBalance(50L);
 
-		assertFailsWith(() -> subject.transferHbar(recipient.getId(), 100L), INSUFFICIENT_ACCOUNT_BALANCE);
+		assertFailsWith(() -> subject.transferHbar(recipient, 100L), INSUFFICIENT_ACCOUNT_BALANCE);
 	}
 
 	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
