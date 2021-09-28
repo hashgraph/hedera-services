@@ -182,6 +182,8 @@ public enum TokenOpsUsageUtils {
 				op, TokenCreateTransactionBody::hasFreezeKey, TokenCreateTransactionBody::getFreezeKey);
 		baseSize += keySizeIfPresent(
 				op, TokenCreateTransactionBody::hasFeeScheduleKey, TokenCreateTransactionBody::getFeeScheduleKey);
+		baseSize += keySizeIfPresent(
+				op, TokenCreateTransactionBody::hasPauseKey, TokenCreateTransactionBody::getPauseKey);
 		baseSize += op.getMemoBytes().size();
 		if (op.hasAutoRenewAccount()) {
 			baseSize += BASIC_ENTITY_ID_SIZE;

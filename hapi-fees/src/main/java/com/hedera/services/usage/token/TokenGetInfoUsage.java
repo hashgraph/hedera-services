@@ -66,6 +66,11 @@ public class TokenGetInfoUsage extends QueryUsage {
 		return this;
 	}
 
+	public TokenGetInfoUsage givenCurrentPauseKey(Optional<Key> pauseKey) {
+		pauseKey.map(FeeBuilder::getAccountKeyStorageSize).ifPresent(this::addRb);
+		return this;
+	}
+
 	public TokenGetInfoUsage givenCurrentMemo(String memo) {
 		addRb(memo.length());
 		return this;

@@ -96,6 +96,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
@@ -512,6 +513,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				? asUsableFcKey(changes.getFreezeKey()) : Optional.empty();
 		final var newFeeScheduleKey = changes.hasFeeScheduleKey()
 				? asUsableFcKey(changes.getFeeScheduleKey()) : Optional.empty();
+		final var newPauseKey = changes.hasPauseKey()
+				? asUsableFcKey(changes.getPauseKey()) : Optional.empty();
 
 		var appliedValidity = new AtomicReference<>(OK);
 		apply(tId, token -> {
@@ -520,6 +523,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 			checkKeyOfType(appliedValidity, token.hasKycKey(), newKycKey.isPresent(), TOKEN_HAS_NO_KYC_KEY);
 			checkKeyOfType(appliedValidity, token.hasFreezeKey(), newFreezeKey.isPresent(), TOKEN_HAS_NO_FREEZE_KEY);
+			checkKeyOfType(appliedValidity, token.hasPauseKey(), newPauseKey.isPresent(), TOKEN_HAS_NO_PAUSE_KEY);
 			checkKeyOfType(appliedValidity, token.hasWipeKey(), newWipeKey.isPresent(), TOKEN_HAS_NO_WIPE_KEY);
 			checkKeyOfType(appliedValidity, token.hasSupplyKey(), newSupplyKey.isPresent(), TOKEN_HAS_NO_SUPPLY_KEY);
 			checkKeyOfType(appliedValidity, token.hasAdminKey(), !isExpiryOnly, TOKEN_IS_IMMUTABLE);
@@ -541,6 +545,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 			updateKeyOfTypeIfAppropriate(changes.hasFreezeKey(), token::setFreezeKey, changes::getFreezeKey);
 			updateKeyOfTypeIfAppropriate(changes.hasKycKey(), token::setKycKey, changes::getKycKey);
+			updateKeyOfTypeIfAppropriate(changes.hasPauseKey(), token::setPauseKey, changes::getPauseKey);
 			updateKeyOfTypeIfAppropriate(changes.hasSupplyKey(), token::setSupplyKey, changes::getSupplyKey);
 			updateKeyOfTypeIfAppropriate(changes.hasWipeKey(), token::setWipeKey, changes::getWipeKey);
 			updateKeyOfTypeIfAppropriate(changes.hasFeeScheduleKey(), token::setFeeScheduleKey,

@@ -591,6 +591,10 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 		return freezeKey;
 	}
 
+	public JKey getPauseKey() {
+		return pauseKey;
+	}
+
 	public void setTotalSupply(long totalSupply) {
 		throwIfImmutable("Cannot change this token's total supply if it's immutable.");
 		this.totalSupply = totalSupply;

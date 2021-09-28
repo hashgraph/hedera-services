@@ -106,11 +106,14 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SCHEDULE_A
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_PAUSE_KT;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.asFile;
 import static com.hedera.test.utils.IdUtils.asSchedule;
 import static com.hedera.test.utils.IdUtils.asToken;
+import static com.hederahashgraph.api.proto.java.TokenPauseStatus.PauseNotApplicable;
+import static com.hederahashgraph.api.proto.java.TokenPauseStatus.Paused;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -263,10 +266,12 @@ class StateViewTest {
 		token.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKey());
 		token.setWipeKey(MISC_ACCOUNT_KT.asJKey());
 		token.setFeeScheduleKey(MISC_ACCOUNT_KT.asJKey());
+		token.setPauseKey(TxnHandlingScenario.TOKEN_PAUSE_KT.asJKey());
 		token.setAutoRenewAccount(EntityId.fromGrpcAccountId(autoRenew));
 		token.setExpiry(expiry);
 		token.setAutoRenewPeriod(autoRenewPeriod);
 		token.setDeleted(true);
+		token.setPaused(true);
 		token.setTokenType(TokenType.FUNGIBLE_COMMON);
 		token.setSupplyType(TokenSupplyType.FINITE);
 		token.setFeeScheduleFrom(grpcCustomFees);
@@ -490,6 +495,26 @@ class StateViewTest {
 	}
 
 	@Test
+	void getsTokenInfoMinusPauseIfMissing() {
+		// setup:
+		token.setPauseKey(MerkleToken.UNUSED_KEY);
+
+		// when:
+		var info = subject.infoForToken(tokenId).get();
+
+		// then:
+		assertEquals(tokenId, info.getTokenId());
+		assertEquals(token.symbol(), info.getSymbol());
+		assertEquals(token.name(), info.getName());
+		assertEquals(token.treasury().toGrpcAccountId(), info.getTreasury());
+		assertEquals(token.totalSupply(), info.getTotalSupply());
+		assertEquals(token.decimals(), info.getDecimals());
+		assertEquals(TOKEN_ADMIN_KT.asKey(), info.getAdminKey());
+		assertEquals(PauseNotApplicable, info.getPauseStatus());
+		assertFalse(info.hasPauseKey());
+	}
+
+	@Test
 	void getsTokenInfo() {
 		// setup:
 		final var miscKey = MISC_ACCOUNT_KT.asKey();
@@ -498,6 +523,7 @@ class StateViewTest {
 
 		// then:
 		assertTrue(info.getDeleted());
+		assertEquals(Paused, info.getPauseStatus());
 		assertEquals(token.memo(), info.getMemo());
 		assertEquals(tokenId, info.getTokenId());
 		assertEquals(token.symbol(), info.getSymbol());
@@ -509,6 +535,7 @@ class StateViewTest {
 		assertEquals(TOKEN_ADMIN_KT.asKey(), info.getAdminKey());
 		assertEquals(TOKEN_FREEZE_KT.asKey(), info.getFreezeKey());
 		assertEquals(TOKEN_KYC_KT.asKey(), info.getKycKey());
+		assertEquals(TOKEN_PAUSE_KT.asKey(), info.getPauseKey());
 		assertEquals(miscKey, info.getWipeKey());
 		assertEquals(miscKey, info.getFeeScheduleKey());
 		assertEquals(autoRenew, info.getAutoRenewAccount());

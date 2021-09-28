@@ -28,6 +28,7 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
+import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -540,6 +541,8 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						newKeyNamed("newSupplyKey"),
 						newKeyNamed("wipeKey"),
 						newKeyNamed("newWipeKey"),
+						newKeyNamed("pauseKey"),
+						newKeyNamed("newPauseKey"),
 						tokenCreate("primary")
 								.name(saltedName)
 								.entityMemo(originalMemo)
@@ -553,6 +556,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.kycKey("kycKey")
 								.supplyKey("supplyKey")
 								.wipeKey("wipeKey")
+								.pauseKey("pauseKey")
 				).when(
 						tokenAssociate("newTokenTreasury", "primary"),
 						tokenUpdate("primary")
@@ -568,6 +572,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.kycKey("newKycKey")
 								.supplyKey("newSupplyKey")
 								.wipeKey("newWipeKey")
+								.pauseKey("newPauseKey")
 				).then(
 						getAccountBalance(TOKEN_TREASURY)
 								.hasTokenBalance("primary", 0),
@@ -595,8 +600,10 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.hasKycKey("primary")
 								.hasSupplyKey("primary")
 								.hasWipeKey("primary")
+								.hasPauseKey("primary")
 								.hasTotalSupply(500)
 								.hasAutoRenewAccount("newAutoRenewAccount")
+								.hasPauseStatus(TokenPauseStatus.Unpaused)
 								.hasAutoRenewPeriod(101L)
 				);
 	}

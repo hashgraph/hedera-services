@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import java.util.function.Predicate;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAUSE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_DECIMALS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_INITIAL_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MAX_SUPPLY;
@@ -49,6 +50,7 @@ class TokenListChecksTest {
 
 		final var validity = TokenListChecks.checkKeys(
 				true, Key.getDefaultInstance(),
+				false, Key.getDefaultInstance(),
 				false, Key.getDefaultInstance(),
 				false, Key.getDefaultInstance(),
 				false, Key.getDefaultInstance(),
@@ -119,8 +121,26 @@ class TokenListChecksTest {
 				false, Key.getDefaultInstance(),
 				false, Key.getDefaultInstance(),
 				false, Key.getDefaultInstance(),
-				true, invalidFeeScheduleKey);
+				true, invalidFeeScheduleKey,
+				false, Key.getDefaultInstance());
 
 		assertEquals(INVALID_CUSTOM_FEE_SCHEDULE_KEY, validity);
+	}
+
+	@Test
+	void checksInvalidPauseKey() {
+		final var invalidKeyList1 = KeyList.newBuilder().build();
+		final var invalidPauseKey = Key.newBuilder().setKeyList(invalidKeyList1).build();
+
+		final var validity = TokenListChecks.checkKeys(
+				false, Key.getDefaultInstance(),
+				false, Key.getDefaultInstance(),
+				false, Key.getDefaultInstance(),
+				false, Key.getDefaultInstance(),
+				false, Key.getDefaultInstance(),
+				false, Key.getDefaultInstance(),
+		true, invalidPauseKey);
+
+		assertEquals(INVALID_PAUSE_KEY, validity);
 	}
 }

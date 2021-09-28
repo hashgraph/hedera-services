@@ -63,6 +63,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
+import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.swirlds.common.merkle.MerkleNode;
@@ -227,6 +228,12 @@ public class StateView {
 			wipeCandidate.ifPresent(k -> info.setWipeKey(asKeyUnchecked(k)));
 			var feeScheduleCandidate = token.feeScheduleKey();
 			feeScheduleCandidate.ifPresent(k -> info.setFeeScheduleKey(asKeyUnchecked(k)));
+
+			var pauseCandidate = token.pauseKey();
+			pauseCandidate.ifPresentOrElse(k -> {
+				info.setPauseKey(asKeyUnchecked(k));
+				info.setPauseStatus(tpsFor(token.isPaused()));
+			}, () -> info.setPauseStatus(TokenPauseStatus.PauseNotApplicable));
 
 			if (token.hasAutoRenewAccount()) {
 				info.setAutoRenewAccount(token.autoRenewAccount().toGrpcAccountId());
@@ -529,6 +536,10 @@ public class StateView {
 
 	private TokenKycStatus tksFor(boolean flag) {
 		return flag ? TokenKycStatus.Granted : TokenKycStatus.Revoked;
+	}
+
+	private TokenPauseStatus tpsFor(boolean flag) {
+		return flag ? TokenPauseStatus.Paused : TokenPauseStatus.Unpaused;
 	}
 
 	static List<TokenRelationship> tokenRels(StateView view, AccountID id) {
