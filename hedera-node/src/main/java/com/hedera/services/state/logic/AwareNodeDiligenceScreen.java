@@ -63,7 +63,7 @@ public final class AwareNodeDiligenceScreen {
 			final OptionValidator validator,
 			final TransactionContext txnCtx,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
-	) {
+	) { 
 		this.txnCtx = txnCtx;
 		this.validator = validator;
 		this.accounts = accounts;
