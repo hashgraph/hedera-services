@@ -36,7 +36,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransferList;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -264,13 +263,6 @@ public interface TransactionContext {
 	 * @param tokenTransfers the token transfers to record
 	 */
 	void setTokenTransferLists(List<TokenTransferList> tokenTransfers);
-
-	/**
-	 * Set the hbar transfers that occurred as a result of the active transaction.
-	 *
-	 * @param hbarTransfers the hbar transfers to record
-	 */
-	void setHbarTransfers(TransferList hbarTransfers);
 
 	/**
 	 * Update the serial numbers after minting unique tokens

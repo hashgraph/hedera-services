@@ -29,7 +29,6 @@ import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.TransferList;
 
 import java.time.Instant;
 import java.util.List;
@@ -91,7 +90,6 @@ public interface EntityCreator {
 			TxnAccessor accessor,
 			Instant consensusTime,
 			TxnReceipt receipt,
-			TransferList explicitHbarTransfers,
 			List<TokenTransferList> explicitTokenTransfers,
 			List<FcAssessedCustomFee> assessedCustomFees,
 			List<FcTokenAssociation> newTokenAssociations);

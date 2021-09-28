@@ -44,10 +44,10 @@ import java.util.function.Predicate;
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_INITIAL_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
@@ -72,9 +72,8 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 	private final TransactionContext txnCtx;
 	private final AccountStore accountStore;
 	private final GlobalDynamicProperties dynamicProperties;
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 	private final TransactionRecordService transactionRecordService;
-	
+	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
 	@Inject
 	public CryptoCreateTransitionLogic(
@@ -105,13 +104,13 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 
 		/* --- Load the model objects --- */
 		final var sponsor = accountStore.loadAccount(sponsorId);
-		validateFalse(sponsor.isSmartContract(), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+		validateFalse(sponsor.isSmartContract(), INVALID_ACCOUNT_ID);
 
 		/* --- Do the business logic --- */
 		var createdIdGrpc = ids.newAccountId(sponsor.getId().asGrpcAccount());
 		final var created = Account.createFromGrpc(Id.fromGrpcAccount(createdIdGrpc), op, txnCtx.consensusTime().getEpochSecond());
-		
-		validateTrue(sponsor.getBalance() > op.getInitialBalance(), INSUFFICIENT_PAYER_BALANCE);
+
+		validateTrue(sponsor.getBalance() >= op.getInitialBalance(), INSUFFICIENT_PAYER_BALANCE);
 		final var balanceAdjustments = new ArrayList<BalanceChange>();
 		balanceAdjustments.add(BalanceChange.hbarAdjust(sponsorId, -1 * op.getInitialBalance()));
 		balanceAdjustments.add(BalanceChange.hbarAdjust(created.getId(), op.getInitialBalance()));
@@ -119,7 +118,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 		/* --- Persist the models --- */
 		this.accountStore.persistNew(created);
 		this.accountStore.persistAccount(sponsor);
-		
+
 		/* --- Transfer the initial balance --- */
 		ledger.doZeroSum(balanceAdjustments);
 

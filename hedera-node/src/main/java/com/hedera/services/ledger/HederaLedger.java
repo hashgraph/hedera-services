@@ -523,10 +523,6 @@ public class HederaLedger {
 				&& !validator.isAfterConsensusSecond((long) accountsLedger.get(id, EXPIRY));
 	}
 
-	public boolean isPendingCreation(AccountID id) {
-		return accountsLedger.existsPending(id);
-	}
-
 	public MerkleAccount get(AccountID id) {
 		return accountsLedger.getFinalized(id);
 	}

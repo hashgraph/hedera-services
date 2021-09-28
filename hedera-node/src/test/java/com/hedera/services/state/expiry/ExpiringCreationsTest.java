@@ -164,7 +164,7 @@ class ExpiringCreationsTest {
 						null, null, 0L, submittingMember));
 		Assertions.assertThrows(UnsupportedOperationException.class, () ->
 				NOOP_EXPIRING_CREATIONS.buildExpiringRecord(
-						0L, null, null, null, null,
+						0L, null, null, null,
 						null, null, null, null));
 		Assertions.assertThrows(UnsupportedOperationException.class, () ->
 				NOOP_EXPIRING_CREATIONS.buildFailedExpiringRecord(null, null));
@@ -179,7 +179,7 @@ class ExpiringCreationsTest {
 		given(ledger.getNewTokenAssociations()).willReturn(newTokenAssociations);
 
 		final var builder = subject.buildExpiringRecord(
-				100L, hash, accessor, timestamp, receipt, null, null, customFeesCharged, null);
+				100L, hash, accessor, timestamp, receipt,  null, customFeesCharged, null);
 		final var actualRecord = builder.build();
 
 		validateCommonFields(actualRecord, receipt);
@@ -196,7 +196,7 @@ class ExpiringCreationsTest {
 		given(ledger.netTokenTransfersInTxn()).willReturn(List.of(tokenTransfers));
 
 		final var builder = subject.buildExpiringRecord(
-				100L, hash, accessor, timestamp, receipt, null, null, customFeesCharged, newTokenAssociations);
+				100L, hash, accessor, timestamp, receipt, null, customFeesCharged, newTokenAssociations);
 		final var actualRecord = builder.build();
 
 		validateTokensAndTokenAdjustments(actualRecord);
@@ -217,7 +217,7 @@ class ExpiringCreationsTest {
 				.build());
 
 		final var builder = subject.buildExpiringRecord(
-				100L, hash, accessor, timestamp, receipt, null, someTokenXfers, null, null);
+				100L, hash, accessor, timestamp, receipt, someTokenXfers, null, null);
 		final var actualRecord = builder.build();
 
 		verify(ledger, never()).netTokenTransfersInTxn();

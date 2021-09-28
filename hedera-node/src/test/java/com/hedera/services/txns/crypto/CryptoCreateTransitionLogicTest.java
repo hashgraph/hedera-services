@@ -52,7 +52,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -309,7 +308,7 @@ class CryptoCreateTransitionLogicTest {
 		// then:
 		assertFailsWith(
 				() -> subject.doStateTransition(),
-				ACCOUNT_EXPIRED_AND_PENDING_REMOVAL
+				INVALID_ACCOUNT_ID
 		);
 	}
 

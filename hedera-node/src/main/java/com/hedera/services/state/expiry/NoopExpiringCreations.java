@@ -29,7 +29,6 @@ import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.TransferList;
 
 import java.time.Instant;
 import java.util.List;
@@ -59,7 +58,6 @@ public enum NoopExpiringCreations implements EntityCreator {
 			final TxnAccessor accessor,
 			final Instant consensusTime,
 			final TxnReceipt receipt,
-			final TransferList explicitHbarTransfers,
 			final List<TokenTransferList> explicitTokenTransfers,
 			final List<FcAssessedCustomFee> customFeesCharged,
 			final List<FcTokenAssociation> newTokenAssociations

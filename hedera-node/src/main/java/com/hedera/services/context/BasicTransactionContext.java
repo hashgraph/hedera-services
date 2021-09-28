@@ -48,7 +48,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -98,7 +97,6 @@ public class BasicTransactionContext implements TransactionContext {
 	private final List<ExpiringEntity> expiringEntities = new ArrayList<>();
 	private Consumer<TxnReceipt.Builder> receiptConfig = noopReceiptConfig;
 	private Consumer<ExpirableTxnRecord.Builder> recordConfig = noopRecordConfig;
-	private TransferList explicitHbarTransfers;
 	private List<TokenTransferList> explicitTokenTransfers;
 	private List<FcAssessedCustomFee> assessedCustomFees;
 	private List<FcTokenAssociation> newTokenAssociations;
@@ -142,7 +140,6 @@ public class BasicTransactionContext implements TransactionContext {
 		receiptConfig = noopReceiptConfig;
 		isPayerSigKnownActive = false;
 		hasComputedRecordSoFar = false;
-		explicitHbarTransfers = null;
 		explicitTokenTransfers = null;
 		assessedCustomFees = null;
 		newTokenAssociations = null;
@@ -156,12 +153,7 @@ public class BasicTransactionContext implements TransactionContext {
 	public void setTokenTransferLists(List<TokenTransferList> tokenTransfers) {
 		explicitTokenTransfers = tokenTransfers;
 	}
-
-	@Override
-	public void setHbarTransfers(TransferList hbarTransfers) {
-		explicitHbarTransfers = hbarTransfers;
-	}
-
+	
 	@Override
 	public void setAssessedCustomFees(List<FcAssessedCustomFee> assessedCustomFees) {
 		this.assessedCustomFees = assessedCustomFees;
@@ -212,7 +204,6 @@ public class BasicTransactionContext implements TransactionContext {
 				accessor,
 				consensusTime,
 				receipt,
-				explicitHbarTransfers,
 				explicitTokenTransfers,
 				assessedCustomFees,
 				newTokenAssociations);
