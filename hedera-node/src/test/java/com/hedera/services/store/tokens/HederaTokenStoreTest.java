@@ -79,6 +79,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMI
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_PAUSE_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_TREASURY_KT;
 import static com.hedera.test.mocks.TestContextValidator.CONSENSUS_NOW;
 import static com.hedera.test.mocks.TestContextValidator.TEST_VALIDATOR;
@@ -102,6 +103,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
@@ -134,6 +136,7 @@ class HederaTokenStoreTest {
 	private static final Key wipeKey = MISC_ACCOUNT_KT.asKey();
 	private static final Key supplyKey = COMPLEX_KEY_ACCOUNT_KT.asKey();
 	private static final Key feeScheduleKey = TOKEN_FEE_SCHEDULE_KT.asKey();
+	private static final Key pauseKey = TOKEN_PAUSE_KT.asKey();
 
 	private static final String symbol = "NOTHBAR";
 	private static final String newSymbol = "REALLYSOM";
@@ -848,6 +851,18 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	void cannotUpdateNewPauseKeyIfTokenHasNoPauseKey() {
+		givenUpdateTarget(ALL_KEYS, token);
+		given(token.hasPauseKey()).willReturn(false);
+		var op = updateWith(ALL_KEYS, misc, false, false, false);
+		op = op.toBuilder().setPauseKey(pauseKey).build();
+
+		final var outcome = subject.update(op, CONSENSUS_NOW);
+
+		assertEquals(TOKEN_HAS_NO_PAUSE_KEY, outcome);
+	}
+
+	@Test
 	void updateRejectsInvalidNewAutoRenew() {
 		given(accountsLedger.exists(newAutoRenewAccount)).willReturn(false);
 		final var op = updateWith(NO_KEYS, misc, true, true, false, true, false);
@@ -1125,7 +1140,7 @@ class HederaTokenStoreTest {
 	}
 
 	enum KeyType {
-		WIPE, FREEZE, SUPPLY, KYC, ADMIN, EMPTY_ADMIN, FEE_SCHEDULE
+		WIPE, FREEZE, SUPPLY, KYC, ADMIN, EMPTY_ADMIN, FEE_SCHEDULE, PAUSE
 	}
 
 	private static final EnumSet<KeyType> NO_KEYS = EnumSet.noneOf(KeyType.class);
@@ -1233,6 +1248,9 @@ class HederaTokenStoreTest {
 		}
 		if (keys.contains(KeyType.FEE_SCHEDULE)) {
 			given(token.hasFeeScheduleKey()).willReturn(true);
+		}
+		if(keys.contains(KeyType.PAUSE)) {
+			given(token.hasPauseKey()).willReturn(true);
 		}
 	}
 

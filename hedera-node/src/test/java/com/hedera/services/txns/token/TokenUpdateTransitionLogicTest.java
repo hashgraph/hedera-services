@@ -63,6 +63,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_B
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -350,6 +351,19 @@ class TokenUpdateTransitionLogicTest {
 
 		// then:
 		verify(txnCtx).setStatus(TOKEN_WAS_DELETED);
+	}
+
+	@Test
+	void abortsOnPausedToken() {
+		givenValidTxnCtx(true);
+		// and:
+		given(token.isPaused()).willReturn(true);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(txnCtx).setStatus(TOKEN_IS_PAUSED);
 	}
 
 	@Test

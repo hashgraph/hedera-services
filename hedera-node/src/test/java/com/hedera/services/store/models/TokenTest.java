@@ -110,6 +110,15 @@ class TokenTest {
 	}
 
 	@Test
+	void recognizesPauseKey() {
+		assertFalse(subject.hasPauseKey());
+
+		subject.setPauseKey(TxnHandlingScenario.TOKEN_PAUSE_KT.asJKeyUnchecked());
+
+		assertTrue(subject.hasPauseKey());
+	}
+
+	@Test
 	void deleteFailsAsExpected() {
 		subject.setAdminKey(null);
 		assertFailsWith(() -> subject.delete(), TOKEN_IS_IMMUTABLE);

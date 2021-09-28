@@ -422,7 +422,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 	}
 
 	public void setPauseKey(JKey pauseKey) {
-		throwIfImmutable("Cannot change this token's freeze key if it's immutable.");
+		throwIfImmutable("Cannot change this token's pause key if it's immutable.");
 		this.pauseKey = pauseKey;
 	}
 

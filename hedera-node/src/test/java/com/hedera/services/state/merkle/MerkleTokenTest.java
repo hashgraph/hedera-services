@@ -210,6 +210,7 @@ class MerkleTokenTest {
 
 	@Test
 	void copyWorks() {
+		subject.setPauseKey(pauseKey);
 		final var copySubject = subject.copy();
 
 		assertNotSame(copySubject, subject);
@@ -623,6 +624,7 @@ class MerkleTokenTest {
 
 	@Test
 	void objectContractPropertiesCheck() {
+		subject.setPauseKey(pauseKey);
 		assertTrue(subject.hasAdminKey());
 		assertEquals(adminKey, subject.adminKey().get());
 		assertEquals(freezeKey, subject.freezeKey().get());
@@ -644,6 +646,8 @@ class MerkleTokenTest {
 		assertEquals(kycKey, subject.getKycKey());
 		assertEquals(freezeKey, subject.getFreezeKey());
 		assertEquals(memo, subject.memo());
+		assertEquals(pauseKey, subject.pauseKey().get());
+		assertTrue(subject.hasPauseKey());
 	}
 
 	@Test
