@@ -224,8 +224,6 @@ class ExpiringCreationsTest {
 		assertEquals(someTokenXfers, actualRecord.asGrpc().getTokenTransferListsList());
 	}
 
-	// TODO can override hbar transfers
-
 	@Test
 	void validateBuildFailedExpiringRecord() {
 		setUpForExpiringRecordBuilder();
