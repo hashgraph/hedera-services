@@ -193,8 +193,8 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 	};
 
 	@Override
-	abstract public BiConsumer<MerkleAccount, Object> setter();
+	public abstract BiConsumer<MerkleAccount, Object> setter();
 
 	@Override
-	abstract public Function<MerkleAccount, Object> getter();
+	public abstract Function<MerkleAccount, Object> getter();
 }

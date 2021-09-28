@@ -47,11 +47,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 
 @Singleton
-public class AwareNodeDiligenceScreen {
+public final class AwareNodeDiligenceScreen {
 	private static final Logger log = LogManager.getLogger(AwareNodeDiligenceScreen.class);
 
-	final static String WRONG_NODE_LOG_TPL = "Node {} (member #{}) submitted a txn meant for node account {} :: {}";
-	final static String MISSING_NODE_LOG_TPL = "Node {} (member #{}) submitted a txn w/ missing node account {} :: {}";
+	private static final String WRONG_NODE_LOG_TPL =
+			"Node {} (member #{}) submitted a txn meant for node account {} :: {}";
+	private static final String MISSING_NODE_LOG_TPL =
+			"Node {} (member #{}) submitted a txn w/ missing node account {} :: {}";
 
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
@@ -120,19 +122,19 @@ public class AwareNodeDiligenceScreen {
 			return true;
 		}
 
-		long txnDuration = accessor.getTxn().getTransactionValidDuration().getSeconds();
+		final var txnDuration = accessor.getTxn().getTransactionValidDuration().getSeconds();
 		if (!validator.isValidTxnDuration(txnDuration)) {
 			txnCtx.setStatus(INVALID_TRANSACTION_DURATION);
 			return true;
 		}
 
-		var cronStatus = validator.chronologyStatus(accessor, txnCtx.consensusTime());
+		final var cronStatus = validator.chronologyStatus(accessor, txnCtx.consensusTime());
 		if (cronStatus != OK) {
 			txnCtx.setStatus(cronStatus);
 			return true;
 		}
 
-		var memoValidity = validator.rawMemoCheck(accessor.getMemoUtf8Bytes(), accessor.memoHasZeroByte());
+		final var memoValidity = validator.rawMemoCheck(accessor.getMemoUtf8Bytes(), accessor.memoHasZeroByte());
 		if (memoValidity != OK) {
 			txnCtx.setStatus(memoValidity);
 			return true;
@@ -156,11 +158,11 @@ public class AwareNodeDiligenceScreen {
 	 * 		transaction accessor
 	 */
 	private void logAccountWarning(
-			String message,
-			AccountID submittingNodeAccount,
-			long submittingMember,
-			AccountID relatedAccount,
-			TxnAccessor accessor
+			final String message,
+			final AccountID submittingNodeAccount,
+			final long submittingMember,
+			final AccountID relatedAccount,
+			final TxnAccessor accessor
 	) {
 		log.warn(message,
 				readableId(submittingNodeAccount),
@@ -168,5 +170,4 @@ public class AwareNodeDiligenceScreen {
 				readableId(relatedAccount),
 				accessor.getSignedTxnWrapper());
 	}
-
 }

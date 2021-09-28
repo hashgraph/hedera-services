@@ -23,17 +23,17 @@ package com.hedera.services.context.domain.process;
 import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
-public class TxnValidityAndFeeReq {
+public final class TxnValidityAndFeeReq {
 	private static final long NO_REQUIRED_FEE = 0;
 
 	private long requiredFee = NO_REQUIRED_FEE;
-	private ResponseCodeEnum validity;
+	private final ResponseCodeEnum validity;
 
-	public TxnValidityAndFeeReq(ResponseCodeEnum validity) {
+	public TxnValidityAndFeeReq(final ResponseCodeEnum validity) {
 		this.validity = validity;
 	}
 
-	public TxnValidityAndFeeReq(ResponseCodeEnum validity, long requiredFee) {
+	public TxnValidityAndFeeReq(final ResponseCodeEnum validity, final long requiredFee) {
 		this.validity = validity;
 		this.requiredFee = requiredFee;
 	}

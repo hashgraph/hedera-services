@@ -38,14 +38,13 @@ import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import static com.hedera.services.utils.EntityNum.fromScheduleId;
 import static com.hedera.services.store.CreationResult.failure;
 import static com.hedera.services.store.CreationResult.success;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
+import static com.hedera.services.utils.EntityNum.fromScheduleId;
 import static com.hedera.services.utils.MiscUtils.forEach;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
@@ -59,7 +58,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IM
  * Provides a managing store for Scheduled Entities.
  */
 @Singleton
-public class HederaScheduleStore extends HederaStore implements ScheduleStore {
+public final class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	static final ScheduleID NO_PENDING_ID = ScheduleID.getDefaultInstance();
 
 	private final GlobalDynamicProperties properties;
@@ -181,20 +180,20 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	}
 
 	@Override
-	public Pair<Optional<ScheduleID>, MerkleSchedule> lookupSchedule(byte[] bodyBytes) {
-		var schedule = MerkleSchedule.from(bodyBytes, 0L);
+	public Pair<ScheduleID, MerkleSchedule> lookupSchedule(final byte[] bodyBytes) {
+		final var schedule = MerkleSchedule.from(bodyBytes, 0L);
 
 		if (isCreationPending()) {
 			if (schedule.equals(pendingCreation)) {
-				return Pair.of(Optional.of(pendingId), pendingCreation);
+				return Pair.of(pendingId, pendingCreation);
 			}
 		}
 		if (extantSchedules.containsKey(schedule)) {
-			var extantId = extantSchedules.get(schedule);
-			return Pair.of(Optional.of(extantId.toGrpcScheduleId()), schedules.get().get(extantId));
+			final var extantId = extantSchedules.get(schedule);
+			return Pair.of(extantId.toGrpcScheduleId(), schedules.get().get(extantId));
 		}
 
-		return Pair.of(Optional.empty(), schedule);
+		return Pair.of(null, schedule);
 	}
 
 	@Override

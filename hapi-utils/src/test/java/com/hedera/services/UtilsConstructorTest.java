@@ -27,6 +27,7 @@ import com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde;
 import com.hedera.services.sysfiles.validation.ErrorCodeUtils;
 import com.hedera.services.sysfiles.validation.ExpectedCustomThrottles;
 import com.hederahashgraph.builder.RequestBuilder;
+import com.hederahashgraph.fee.ConsensusServiceFeeBuilder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -43,7 +44,8 @@ class UtilsConstructorTest {
 			ThrottlesJsonToProtoSerde.class,
 			ErrorCodeUtils.class,
 			ExpectedCustomThrottles.class,
-			RequestBuilder.class
+			RequestBuilder.class,
+			ConsensusServiceFeeBuilder.class
 	));
 
 	@Test
