@@ -28,6 +28,7 @@ import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.services.usage.token.meta.TokenUnfreezeMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.FixedFee;
@@ -143,5 +144,21 @@ class TokenOpsUsageTest {
 		assertEquals( 1078, accumulator.get(ResourceProvider.NODE, UsableResource.BPT));
 		assertEquals(0 , accumulator.get(ResourceProvider.SERVICE, UsableResource.BPR));
 		assertEquals( 3, accumulator.get(ResourceProvider.NODE, UsableResource.VPT));
+	}
+
+	@Test
+	void tokenFreezeUsageAccumulatorWorks() {
+		final var sigUsage = new SigUsage(1, 2, 1);
+		final var baseMeta = new BaseTransactionMeta(0, 0);
+		final var tokenUnfreezeMeta = new TokenUnfreezeMeta(256) ;
+		final var accumulator = new UsageAccumulator();
+
+		subject.tokenUnfreezeUsage(sigUsage, baseMeta, tokenUnfreezeMeta, accumulator);
+
+		assertEquals( 334, accumulator.get(ResourceProvider.NETWORK, UsableResource.BPT));
+		assertEquals( 1, accumulator.get(ResourceProvider.NETWORK, UsableResource.VPT));
+		assertEquals( 334, accumulator.get(ResourceProvider.NODE, UsableResource.BPT));
+		assertEquals(0 , accumulator.get(ResourceProvider.SERVICE, UsableResource.BPR));
+		assertEquals( 1, accumulator.get(ResourceProvider.NODE, UsableResource.VPT));
 	}
 }

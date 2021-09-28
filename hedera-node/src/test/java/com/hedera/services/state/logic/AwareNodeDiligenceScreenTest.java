@@ -70,14 +70,15 @@ import static org.mockito.Mockito.mock;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class AwareNodeDiligenceScreenTest {
-	private long submittingMember = 2L;
-	private String pretendMemo = "ignored";
-	private Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
-	private AccountID aNodeAccount = IdUtils.asAccount("0.0.3");
-	private AccountID bNodeAccount = IdUtils.asAccount("0.0.4");
-	private AccountID payerAccountId = IdUtils.asAccount("0.0.5");
+	private static final long SUBMITTING_MEMBER = 2L;
+	private static final String PRETEND_MEMO = "ignored";
+	private static final Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
+	private static final AccountID aNodeAccount = IdUtils.asAccount("0.0.3");
+	private static final AccountID bNodeAccount = IdUtils.asAccount("0.0.4");
+	private static final AccountID payerAccountId = IdUtils.asAccount("0.0.5");
+	private static final Duration validDuration = Duration.newBuilder().setSeconds(1_234_567L).build();
+
 	private TxnAccessor accessor;
-	private Duration validDuration = Duration.newBuilder().setSeconds(1_234_567L).build();
 
 	@Mock
 	private TransactionContext txnCtx;
@@ -100,14 +101,11 @@ class AwareNodeDiligenceScreenTest {
 	@Test
 	void flagsMissingNodeAccount() throws InvalidProtocolBufferException {
 		givenHandleCtx(aNodeAccount, aNodeAccount);
-		given(txnCtx.submittingSwirldsMember()).willReturn(submittingMember);
+		given(txnCtx.submittingSwirldsMember()).willReturn(SUBMITTING_MEMBER);
 		given(backingAccounts.contains(aNodeAccount)).willReturn(false);
 
-		// then:
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
-		// and:
 		verify(txnCtx).setStatus(INVALID_NODE_ACCOUNT);
-		// and:
 		assertThat(
 				logCaptor.warnLogs(),
 				contains(Matchers.startsWith("Node 0.0.3 (member #2) submitted a txn w/ missing node account 0.0.3")));
@@ -116,15 +114,12 @@ class AwareNodeDiligenceScreenTest {
 	@Test
 	void flagsNodeSubmittingTxnWithDiffNodeAccountId() throws InvalidProtocolBufferException {
 		givenHandleCtx(bNodeAccount, aNodeAccount);
-		given(txnCtx.submittingSwirldsMember()).willReturn(submittingMember);
+		given(txnCtx.submittingSwirldsMember()).willReturn(SUBMITTING_MEMBER);
 		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
 		handleValidPayerAccount();
 
-		// then:
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
-		// and:
 		verify(txnCtx).setStatus(INVALID_NODE_ACCOUNT);
-		// and:
 		assertThat(
 				logCaptor.warnLogs(),
 				contains(Matchers.startsWith("Node 0.0.4 (member #2) submitted a txn meant for node account 0.0.3")));
@@ -137,9 +132,7 @@ class AwareNodeDiligenceScreenTest {
 		given(txnCtx.isPayerSigKnownActive()).willReturn(false);
 		handleValidPayerAccount();
 
-		// then:
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
-		// and:
 		verify(txnCtx).setStatus(INVALID_PAYER_SIGNATURE);
 	}
 
@@ -150,9 +143,7 @@ class AwareNodeDiligenceScreenTest {
 		given(txnCtx.isPayerSigKnownActive()).willReturn(true);
 		handleValidPayerAccount();
 
-		// then:
 		assertTrue(subject.nodeIgnoredDueDiligence(NODE_DUPLICATE));
-		// and:
 		verify(txnCtx).setStatus(DUPLICATE_TRANSACTION);
 	}
 
@@ -164,9 +155,7 @@ class AwareNodeDiligenceScreenTest {
 		given(validator.isValidTxnDuration(validDuration.getSeconds())).willReturn(false);
 		handleValidPayerAccount();
 
-		// then:
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
-		// and:
 		verify(txnCtx).setStatus(INVALID_TRANSACTION_DURATION);
 	}
 
@@ -180,9 +169,7 @@ class AwareNodeDiligenceScreenTest {
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		handleValidPayerAccount();
 
-		// then:
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
-		// and:
 		verify(txnCtx).setStatus(TRANSACTION_EXPIRED);
 	}
 
@@ -198,9 +185,7 @@ class AwareNodeDiligenceScreenTest {
 				.willReturn(INVALID_ZERO_BYTE_IN_STRING);
 		handleValidPayerAccount();
 
-		// then:
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
-		// and:
 		verify(txnCtx).setStatus(INVALID_ZERO_BYTE_IN_STRING);
 	}
 
@@ -216,9 +201,7 @@ class AwareNodeDiligenceScreenTest {
 				.willReturn(OK);
 		handleValidPayerAccount();
 
-		// then:
 		assertFalse(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
-		// and:
 		verify(txnCtx, never()).setStatus(any());
 	}
 
@@ -227,10 +210,8 @@ class AwareNodeDiligenceScreenTest {
 		givenHandleCtx(aNodeAccount, aNodeAccount);
 		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
 
-		// then:
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
 
-		// and:
 		verify(txnCtx).setStatus(ACCOUNT_ID_DOES_NOT_EXIST);
 	}
 
@@ -238,38 +219,36 @@ class AwareNodeDiligenceScreenTest {
 	void payerAccountDeleted() throws InvalidProtocolBufferException {
 		givenHandleCtx(aNodeAccount, aNodeAccount);
 		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
-		var payerAccountRef = mock(MerkleAccount.class);
+		final var payerAccountRef = mock(MerkleAccount.class);
 		given(payerAccountRef.isDeleted()).willReturn(true);
 		given(backingAccounts.getImmutableRef(payerAccountId)).willReturn(payerAccountRef);
 		given(backingAccounts.contains(payerAccountId)).willReturn(true);
 
-		// then:
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
 
-		// and:
 		verify(txnCtx).setStatus(PAYER_ACCOUNT_DELETED);
 	}
 
 	private void givenHandleCtx(
-			AccountID submittingNodeAccount,
-			AccountID designatedNodeAccount
+			final AccountID submittingNodeAccount,
+			final AccountID designatedNodeAccount
 	) throws InvalidProtocolBufferException {
 		given(txnCtx.submittingNodeAccount()).willReturn(submittingNodeAccount);
 		accessor = accessorWith(designatedNodeAccount);
 		given(txnCtx.accessor()).willReturn(accessor);
 	}
 
-	private TxnAccessor accessorWith(AccountID designatedNodeAccount) throws InvalidProtocolBufferException {
-		var transactionId = TransactionID.newBuilder().setAccountID(payerAccountId);
+	private TxnAccessor accessorWith(final AccountID designatedNodeAccount) throws InvalidProtocolBufferException {
+		final var transactionId = TransactionID.newBuilder().setAccountID(payerAccountId);
 
-		var bodyBytes = TransactionBody.newBuilder()
-				.setMemo(pretendMemo)
+		final var bodyBytes = TransactionBody.newBuilder()
+				.setMemo(PRETEND_MEMO)
 				.setTransactionValidDuration(validDuration)
 				.setNodeAccountID(designatedNodeAccount)
 				.setTransactionID(transactionId)
 				.build()
 				.toByteString();
-		var signedTxn = Transaction.newBuilder()
+		final var signedTxn = Transaction.newBuilder()
 				.setSignedTransactionBytes(SignedTransaction.newBuilder()
 						.setBodyBytes(bodyBytes)
 						.build()
@@ -283,7 +262,7 @@ class AwareNodeDiligenceScreenTest {
 	 * the backing accounts recognizes that the payer account exists
 	 */
 	private void handleValidPayerAccount() {
-		var payerAccountRef = mock(MerkleAccount.class);
+		final var payerAccountRef = mock(MerkleAccount.class);
 		given(payerAccountRef.isDeleted()).willReturn(false);
 		given(backingAccounts.getImmutableRef(payerAccountId)).willReturn(payerAccountRef);
 		given(backingAccounts.contains(payerAccountId)).willReturn(true);

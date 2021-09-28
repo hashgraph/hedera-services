@@ -27,6 +27,10 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallLocalExecutor;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.queries.contract.ContractCallLocalAnswer;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.contract.process.TransactionProcessingResult;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -44,6 +48,7 @@ import com.hederahashgraph.fee.SmartContractFeeBuilder;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -52,6 +57,9 @@ import java.util.Optional;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -60,26 +68,33 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+@ExtendWith(LogCaptureExtension.class)
 class ContractCallLocalResourceUsageTest {
-	int gas = 1_234;
-	ByteString params = ByteString.copyFrom("Hungry, and...".getBytes());
-	Id callerID = new Id(0, 0, 123);
-	Id contractID = new Id(0, 0, 456);
-	AccountID caller = callerID.asGrpcAccount();
-	ContractID target = contractID.asGrpcContract();
+	private static final int gas = 1_234;
+	private static final ByteString params = ByteString.copyFrom("Hungry, and...".getBytes());
 
-	StateView view;
-	SmartContractFeeBuilder usageEstimator;
-	GlobalDynamicProperties properties = new MockGlobalDynamicProps();
+	private final Id callerID = new Id(0, 0, 123);
+	private final Id contractID = new Id(0, 0, 456);
+	private final AccountID caller = callerID.asGrpcAccount();
+	private final ContractID target = contractID.asGrpcContract();
+
+	private static final ByteString result = ByteString.copyFrom("Searching for images".getBytes());
+	private static final Query satisfiableCostAnswer = localCallQuery(target, COST_ANSWER);
+	private static final Query satisfiableAnswerOnly = localCallQuery(target, ANSWER_ONLY);
+	private static final GlobalDynamicProperties properties = new MockGlobalDynamicProps();
+
+	private StateView view;
+	private SmartContractFeeBuilder usageEstimator;
 	CallLocalExecutor executor;
 
-	Query satisfiableCostAnswer = localCallQuery(target, COST_ANSWER);
-	Query satisfiableAnswerOnly = localCallQuery(target, ANSWER_ONLY);
+	@LoggingTarget
+	private LogCaptor logCaptor;
 
-	ContractCallLocalResourceUsage subject;
+	@LoggingSubject
+	private ContractCallLocalResourceUsage subject;
 
 	@BeforeEach
-	private void setup() throws Throwable {
+	private void setup() {
 		view = mock(StateView.class);
 		usageEstimator = mock(SmartContractFeeBuilder.class);
 		executor = mock(CallLocalExecutor.class);
@@ -89,24 +104,20 @@ class ContractCallLocalResourceUsageTest {
 
 	@Test
 	void recognizesApplicableQuery() {
-		// given:
-		var applicable = localCallQuery(target, COST_ANSWER);
-		var inapplicable = Query.getDefaultInstance();
+		final var applicable = localCallQuery(target, COST_ANSWER);
+		final var inapplicable = Query.getDefaultInstance();
 
-		// expect:
 		assertTrue(subject.applicableTo(applicable));
 		assertFalse(subject.applicableTo(inapplicable));
 	}
 
 	@Test
 	void setsResultInQueryCxtIfPresent() {
-		// setup:
-		var queryCtx = new HashMap<String, Object>();
+		final var queryCtx = new HashMap<String, Object>();
 		final var transactionProcessingResult = TransactionProcessingResult.successful(new ArrayList<>(), Optional.empty(), 0, Bytes.EMPTY, callerID.asEvmAddress());
-		var response = okResponse(transactionProcessingResult);
-		var estimateResponse = subject.dummyResponse(target);
-		var expected = expectedUsage();
-
+		final var response = okResponse(transactionProcessingResult);
+		final var estimateResponse = subject.dummyResponse(target);
+		final var expected = expectedUsage();
 
 		given(executor.execute(satisfiableAnswerOnly.getContractCallLocal()))
 				.willReturn(response);
@@ -119,12 +130,10 @@ class ContractCallLocalResourceUsageTest {
 				estimateResponse.getFunctionResult(),
 				ANSWER_ONLY)).willReturn(nonGasUsage);
 
-		// when:
-		var actualUsage1 = subject.usageGiven(satisfiableAnswerOnly, view);
-		var actualUsage2 = subject.usageGivenType(satisfiableAnswerOnly, view, ANSWER_ONLY);
-		var actualUsage3 = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
+		final var actualUsage1 = subject.usageGiven(satisfiableAnswerOnly, view);
+		final var actualUsage2 = subject.usageGivenType(satisfiableAnswerOnly, view, ANSWER_ONLY);
+		final var actualUsage3 = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
 
-		// then:
 		assertEquals(response, queryCtx.get(ContractCallLocalAnswer.CONTRACT_CALL_LOCAL_CTX_KEY));
 		assertEquals(expected, actualUsage1);
 		assertEquals(expected, actualUsage2);
@@ -133,50 +142,42 @@ class ContractCallLocalResourceUsageTest {
 
 	@Test
 	void treatsAnswerOnlyEstimateAsExpected() {
-		// setup:
-		var response = subject.dummyResponse(target);
-		var expected = expectedUsage();
-
+		final var response = subject.dummyResponse(target);
+		final var expected = expectedUsage();
 		given(usageEstimator.getContractCallLocalFeeMatrices(
 				params.size(),
 				response.getFunctionResult(),
 				ANSWER_ONLY)).willReturn(nonGasUsage);
 
-		// when:
-		var actualUsage = subject.usageGivenType(satisfiableCostAnswer, view, ANSWER_ONLY);
+		final var actualUsage = subject.usageGivenType(satisfiableCostAnswer, view, ANSWER_ONLY);
 
-		// then:
 		assertEquals(expected, actualUsage);
 		verifyNoInteractions(executor);
 	}
 
 	@Test
 	void translatesExecutionException() {
-		// setup:
-		var queryCtx = new HashMap<String, Object>();
+		final var queryCtx = new HashMap<String, Object>();
 
 		given(executor.execute(satisfiableAnswerOnly.getContractCallLocal())).willThrow(InvalidTransactionException.class);
 
-		// expect:
 		assertThrows(IllegalStateException.class, () -> subject.usageGiven(satisfiableAnswerOnly, view, queryCtx));
-		// and:
 		assertFalse(queryCtx.containsKey(ContractCallLocalAnswer.CONTRACT_CALL_LOCAL_CTX_KEY));
+		assertThat(logCaptor.warnLogs(), contains(startsWith("Usage estimation unexpectedly failed for")));
 	}
 
 	@Test
 	void dummyResponseAsExpected() {
-		// given:
-		var dummy = subject.dummyResponse(target);
+		final var dummy = subject.dummyResponse(target);
 
-		// then:
 		assertEquals(OK, dummy.getHeader().getNodeTransactionPrecheckCode());
 		assertEquals(target, dummy.getFunctionResult().getContractID());
 		assertEquals(properties.localCallEstRetBytes(), dummy.getFunctionResult().getContractCallResult().size());
 	}
 
 
-	private Query localCallQuery(ContractID id, ResponseType type) {
-		ContractCallLocalQuery.Builder op = ContractCallLocalQuery.newBuilder()
+	private static final Query localCallQuery(final ContractID id, final ResponseType type) {
+		final var op = ContractCallLocalQuery.newBuilder()
 				.setContractID(id)
 				.setGas(gas)
 				.setFunctionParameters(params)
@@ -192,15 +193,15 @@ class ContractCallLocalResourceUsageTest {
 		return response(OK, result);
 	}
 
-	private ContractCallLocalResponse response(ResponseCodeEnum status, TransactionProcessingResult result) {
+	private ContractCallLocalResponse response(final ResponseCodeEnum status, final TransactionProcessingResult result) {
 		return ContractCallLocalResponse.newBuilder()
 				.setHeader(ResponseHeader.newBuilder().setNodeTransactionPrecheckCode(status))
 				.setFunctionResult(result.toGrpc())
 				.build();
 	}
 
-	static final FeeData nonGasUsage = FeeData.newBuilder().setNodedata(
-					FeeComponents.newBuilder()
+	private static final FeeData nonGasUsage = FeeData.newBuilder()
+			.setNodedata(FeeComponents.newBuilder()
 							.setMin(1)
 							.setMax(1_000_000)
 							.setConstant(1)
@@ -214,7 +215,7 @@ class ContractCallLocalResourceUsageTest {
 							.setSbpr(1))
 			.build();
 
-	private FeeData expectedUsage() {
+	private static final FeeData expectedUsage() {
 		return nonGasUsage.toBuilder()
 				.setNodedata(nonGasUsage.toBuilder().getNodedataBuilder().setGas(gas).build())
 				.build();

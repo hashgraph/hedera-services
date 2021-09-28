@@ -33,6 +33,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
@@ -70,6 +71,24 @@ class ExpandHandleSpanMapAccessorTest {
 	@Test
 	void testsForTokenWipeMetaAsExpected() {
 		Assertions.assertDoesNotThrow(() -> subject.getTokenWipeMeta(accessor));
+	}
+
+	@Test
+	void testsForTokenFreezeMetaAsExpected() {
+		final var tokenFreezeMeta = TOKEN_OPS_USAGE_UTILS.tokenFreezeUsageFrom();
+
+		subject.setTokenFreezeMeta(accessor, tokenFreezeMeta);
+
+		assertEquals(48,  subject.getTokenFreezeMeta(accessor).getBpt());
+	}
+
+	@Test
+	void testsForTokenUnfreezeMetaAsExpected() {
+		final var tokenUnfreezeMeta = TOKEN_OPS_USAGE_UTILS.tokenUnfreezeUsageFrom();
+
+		subject.setTokenUnfreezeMeta(accessor, tokenUnfreezeMeta);
+
+		assertEquals(48,  subject.getTokenUnfreezeMeta(accessor).getBpt());
 	}
 
 	@Test

@@ -39,7 +39,7 @@ public class SomeFungibleTransfers implements ErroringAssertsProvider<List<Token
 	private final Map<String, List<Pair<String, Long>>> changes = new HashMap<>();
 	private boolean noOtherChangesTolerated = false;
 
-	public static SomeFungibleTransfers changingSomeFungibleBalances() {
+	public static SomeFungibleTransfers changingFungibleBalances() {
 		return new SomeFungibleTransfers();
 	}
 
