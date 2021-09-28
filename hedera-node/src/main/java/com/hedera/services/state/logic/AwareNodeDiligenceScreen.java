@@ -60,9 +60,9 @@ public final class AwareNodeDiligenceScreen {
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 	@Inject
 	public AwareNodeDiligenceScreen(
-			OptionValidator validator,
-			TransactionContext txnCtx,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
+			final OptionValidator validator,
+			final TransactionContext txnCtx,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {
 		this.txnCtx = txnCtx;
 		this.validator = validator;
@@ -70,11 +70,11 @@ public final class AwareNodeDiligenceScreen {
 	}
 
 	public boolean nodeIgnoredDueDiligence(DuplicateClassification duplicity) {
-		var accessor = txnCtx.accessor();
+		final var accessor = txnCtx.accessor();
 		final var currentAccounts = accounts.get();
-		var submittingAccount = txnCtx.submittingNodeAccount();
-		var designatedAccount = accessor.getTxn().getNodeAccountID();
-		boolean designatedNodeExists = currentAccounts.containsKey(fromAccountId(designatedAccount));
+		final var submittingAccount = txnCtx.submittingNodeAccount();
+		final var designatedAccount = accessor.getTxn().getNodeAccountID();
+		final boolean designatedNodeExists = currentAccounts.containsKey(fromAccountId(designatedAccount));
 		if (!designatedNodeExists) {
 			logAccountWarning(
 					MISSING_NODE_LOG_TPL,
@@ -86,15 +86,15 @@ public final class AwareNodeDiligenceScreen {
 			return true;
 		}
 
-		var payerAccountId = accessor.getPayer();
-		boolean payerAccountExists = currentAccounts.containsKey(fromAccountId(payerAccountId));
+		final var payerAccountId = accessor.getPayer();
+		final boolean payerAccountExists = currentAccounts.containsKey(fromAccountId(payerAccountId));
 
 		if (!payerAccountExists) {
 			txnCtx.setStatus(ACCOUNT_ID_DOES_NOT_EXIST);
 			return true;
 		}
 
-		var payerAccountRef = currentAccounts.get(fromAccountId(payerAccountId));
+		final var payerAccountRef = currentAccounts.get(fromAccountId(payerAccountId));
 
 		if (payerAccountRef.isDeleted()) {
 			txnCtx.setStatus(PAYER_ACCOUNT_DELETED);

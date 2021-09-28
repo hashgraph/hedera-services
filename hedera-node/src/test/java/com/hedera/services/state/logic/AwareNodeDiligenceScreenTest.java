@@ -74,7 +74,7 @@ import static org.mockito.Mockito.mock;
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class AwareNodeDiligenceScreenTest {
 	private static final long submittingMember = 2L;
-	private static final String pretendMemo = "ignored";
+	private static final String PRETEND_MEMO = "ignored";
 	private final Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
 	private final AccountID aNodeAccount = IdUtils.asAccount("0.0.3");
 	private final AccountID bNodeAccount = IdUtils.asAccount("0.0.4");
