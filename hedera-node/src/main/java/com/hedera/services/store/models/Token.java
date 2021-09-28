@@ -88,10 +88,12 @@ public class Token {
 	private JKey wipeKey;
 	private JKey adminKey;
 	private JKey feeScheduleKey;
+	private JKey pauseKey;
 	private boolean frozenByDefault;
 	private Account treasury;
 	private Account autoRenewAccount;
 	private boolean deleted;
+	private boolean paused;
 	private boolean autoRemoved = false;
 	private long expiry;
 	private boolean isNew;
@@ -140,6 +142,7 @@ public class Token {
 		var wipeKey = asUsableFcKey(op.getWipeKey());
 		var supplyKey = asUsableFcKey(op.getSupplyKey());
 		var feeScheduleKey = asUsableFcKey(op.getFeeScheduleKey());
+		var pauseKey = asUsableFcKey(op.getPauseKey());
 
 		freezeKey.ifPresent(token::setFreezeKey);
 		adminKey.ifPresent(token::setAdminKey);
@@ -147,6 +150,7 @@ public class Token {
 		wipeKey.ifPresent(token::setWipeKey);
 		supplyKey.ifPresent(token::setSupplyKey);
 		feeScheduleKey.ifPresent(token::setFeeScheduleKey);
+		pauseKey.ifPresent(token::setPauseKey);
 
 		token.initSupplyConstraints(TokenTypesMapper.mapToDomain(op.getSupplyType()), op.getMaxSupply());
 		token.setType(TokenTypesMapper.mapToDomain(op.getTokenType()));
@@ -164,6 +168,7 @@ public class Token {
 		token.setName(op.getName());
 		token.setFrozenByDefault(op.getFreezeDefault());
 		token.setCustomFees(op.getCustomFeesList().stream().map(FcCustomFee::fromGrpc).collect(toList()));
+		token.setPaused(false);
 
 		token.setNew(true);
 		return token;
@@ -480,6 +485,17 @@ public class Token {
 		return freezeKey;
 	}
 
+	public JKey getPauseKey() {
+		return pauseKey;
+	}
+
+	public boolean hasPauseKey() {
+		return pauseKey != null;
+	}
+
+	public void setPauseKey(final JKey pauseKey) {
+		this.pauseKey = pauseKey;
+	}
 	/* supply is changed only after the token is created */
 	public boolean hasChangedSupply() {
 		return supplyHasChanged && !isNew;
@@ -491,6 +507,14 @@ public class Token {
 
 	public void setFrozenByDefault(boolean frozenByDefault) {
 		this.frozenByDefault = frozenByDefault;
+	}
+
+	public boolean isPaused() {
+		return paused;
+	}
+
+	public void setPaused(final boolean paused) {
+		this.paused = paused;
 	}
 
 	public Id getId() {
@@ -657,6 +681,8 @@ public class Token {
 				.add("frozenByDefault", frozenByDefault)
 				.add("supplyKey", describe(supplyKey))
 				.add("currentSerialNumber", lastUsedSerialNumber)
+				.add("pauseKey", describe(pauseKey))
+				.add("paused", paused)
 				.toString();
 	}
 

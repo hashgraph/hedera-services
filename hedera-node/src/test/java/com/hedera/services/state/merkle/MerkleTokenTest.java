@@ -81,6 +81,8 @@ class MerkleTokenTest {
 	private static final JKey otherKycKey = new JEd25519Key("not-a-real-kyc-key-either".getBytes());
 	private static final JKey feeScheduleKey = new JEd25519Key("not-a-real-fee-schedule-key".getBytes());
 	private static final JKey otherFeeScheduleKey = new JEd25519Key("not-a-real-fee-schedule-key-either".getBytes());
+	private static final JKey pauseKey = new JEd25519Key("not-a-real-pause-key".getBytes());
+	private static final JKey otherPauseKey = new JEd25519Key("not-a-real-pause-key-either".getBytes());
 
 	private static final String symbol = "NotAnHbar";
 	private static final String otherSymbol = "NotAnHbarEither";
@@ -106,6 +108,8 @@ class MerkleTokenTest {
 	private static final EntityId otherAutoRenewAccount = new EntityId(4, 3, 2);
 	private static final boolean isDeleted = true;
 	private static final boolean otherIsDeleted = false;
+	private static final boolean isPaused = false;
+	private static final boolean otherIsPaused = true;
 
 	private static final long validNumerator = 5L;
 	private static final long validDenominator = 100L;
@@ -339,6 +343,52 @@ class MerkleTokenTest {
 				.willReturn(feeSchedule);
 		final var read = new MerkleToken();
 
+		read.deserialize(fin, MerkleToken.RELEASE_0180_VERSION);
+
+		// expect:
+		assertEquals(subject, read);
+	}
+
+	@Test
+	void v0190DeserializeWorks() throws IOException {
+		subject.setPauseKey(pauseKey);
+		subject.setPaused(isPaused);
+		final var fin = mock(SerializableDataInputStream.class);
+		given(serdes.readNullableSerializable(any())).willReturn(autoRenewAccount);
+		given(serdes.deserializeKey(fin)).willReturn(adminKey);
+		given(serdes.readNullable(argThat(fin::equals), any(IoReadingFunction.class)))
+				.willReturn(adminKey)
+				.willReturn(freezeKey)
+				.willReturn(kycKey)
+				.willReturn(supplyKey)
+				.willReturn(wipeKey)
+				.willReturn(feeScheduleKey)
+				.willReturn(pauseKey);
+		given(fin.readNormalisedString(anyInt()))
+				.willReturn(symbol)
+				.willReturn(name)
+				.willReturn(memo);
+		given(fin.readLong())
+				.willReturn(subject.expiry())
+				.willReturn(subject.autoRenewPeriod())
+				.willReturn(subject.totalSupply())
+				.willReturn(subject.maxSupply())
+				.willReturn(subject.getLastUsedSerialNumber());
+		given(fin.readInt())
+				.willReturn(subject.decimals())
+				.willReturn(subject.tokenType().ordinal())
+				.willReturn(subject.supplyType().ordinal())
+				.willReturn(subject.getKey().intValue());
+		given(fin.readBoolean())
+				.willReturn(isDeleted)
+				.willReturn(subject.accountsAreFrozenByDefault())
+				.willReturn(subject.accountsKycGrantedByDefault())
+				.willReturn(isPaused);
+		given(fin.readSerializable()).willReturn(subject.treasury());
+		given(fin.<FcCustomFee>readSerializableList(eq(Integer.MAX_VALUE), eq(true), any()))
+				.willReturn(feeSchedule);
+		final var read = new MerkleToken();
+
 		read.deserialize(fin, MerkleToken.CURRENT_VERSION);
 
 		// expect:
@@ -399,6 +449,20 @@ class MerkleTokenTest {
 	}
 
 	@Test
+	void objectContractHoldsForDifferentPauseKey() {
+		subject.setPauseKey(pauseKey);
+		subject.setPaused(isPaused);
+		final var other = new MerkleToken(
+				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
+		setOptionalElements(other);
+		other.setPauseKey(otherPauseKey);
+		other.setPaused(isPaused);
+
+		assertNotEquals(subject, other);
+		assertNotEquals(subject.hashCode(), other.hashCode());
+	}
+
+	@Test
 	void objectContractHoldsForDifferentSupply() {
 		final var other = new MerkleToken(
 				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
@@ -415,6 +479,20 @@ class MerkleTokenTest {
 				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
 		setOptionalElements(other);
 		other.setDeleted(otherIsDeleted);
+
+		assertNotEquals(subject, other);
+		assertNotEquals(subject.hashCode(), other.hashCode());
+	}
+
+	@Test
+	void objectContractHoldsForDifferentPaused() {
+		subject.setPauseKey(pauseKey);
+		subject.setPaused(isPaused);
+		final var other = new MerkleToken(
+				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
+		setOptionalElements(other);
+		other.setPauseKey(pauseKey);
+		other.setPaused(otherIsPaused);
 
 		assertNotEquals(subject, other);
 		assertNotEquals(subject.hashCode(), other.hashCode());
@@ -628,6 +706,8 @@ class MerkleTokenTest {
 
 	@Test
 	void toStringWorks() {
+		subject.setPauseKey(pauseKey);
+		subject.setPaused(isPaused);
 		final var desired = "MerkleToken{number=123456 <-> 0.0.123456, " +
 				"tokenType=FUNGIBLE_COMMON, supplyType=INFINITE, deleted=true, " +
 				"expiry=1234567," +
@@ -640,7 +720,8 @@ class MerkleTokenTest {
 				", wipeKey=ed25519: \"not-a-real-wipe-key\"\n" +
 				", supplyKey=ed25519: \"not-a-real-supply-key\"\n" +
 				", freezeKey=ed25519: \"not-a-real-freeze-key\"\n" +
-				", accountsKycGrantedByDefault=true, accountsFrozenByDefault=true, " +
+				", pauseKey=ed25519: \"not-a-real-pause-key\"\n" +
+				", accountsKycGrantedByDefault=true, accountsFrozenByDefault=true, pauseStatus=false, " +
 				"feeSchedules=[FcCustomFee{feeType=FIXED_FEE, fixedFee=FixedFeeSpec{unitsToCollect=7, " +
 				"tokenDenomination=1" +
 				".2.3}, feeCollector=EntityId{shard=4, realm=5, num=6}}, FcCustomFee{feeType=FRACTIONAL_FEE, " +
