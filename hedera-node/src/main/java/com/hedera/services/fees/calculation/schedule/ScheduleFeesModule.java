@@ -9,9 +9,9 @@ package com.hedera.services.fees.calculation.schedule;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -40,11 +40,11 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDel
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSign;
 
 @Module
-public abstract class ScheduleFeesModule {
+public final class ScheduleFeesModule {
 	@Provides
 	@ElementsIntoSet
 	public static Set<QueryResourceUsageEstimator> provideScheuleQueryEstimators(
-			GetScheduleInfoResourceUsage getScheduleInfoResourceUsage
+			final GetScheduleInfoResourceUsage getScheduleInfoResourceUsage
 	) {
 		return Set.of(getScheduleInfoResourceUsage);
 	}
@@ -53,7 +53,7 @@ public abstract class ScheduleFeesModule {
 	@IntoMap
 	@FunctionKey(ScheduleCreate)
 	public static List<TxnResourceUsageEstimator> provideScheduleCreateEstimator(
-			ScheduleCreateResourceUsage scheduleCreateResourceUsage
+			final ScheduleCreateResourceUsage scheduleCreateResourceUsage
 	) {
 		return List.of(scheduleCreateResourceUsage);
 	}
@@ -62,7 +62,7 @@ public abstract class ScheduleFeesModule {
 	@IntoMap
 	@FunctionKey(ScheduleDelete)
 	public static List<TxnResourceUsageEstimator> provideScheduleDeleteEstimator(
-			ScheduleDeleteResourceUsage scheduleDeleteResourceUsage
+			final ScheduleDeleteResourceUsage scheduleDeleteResourceUsage
 	) {
 		return List.of(scheduleDeleteResourceUsage);
 	}
@@ -71,8 +71,12 @@ public abstract class ScheduleFeesModule {
 	@IntoMap
 	@FunctionKey(ScheduleSign)
 	public static List<TxnResourceUsageEstimator> provideScheduleSignEstimator(
-			ScheduleSignResourceUsage scheduleSignResourceUsage
+			final ScheduleSignResourceUsage scheduleSignResourceUsage
 	) {
 		return List.of(scheduleSignResourceUsage);
+	}
+
+	private ScheduleFeesModule() {
+		throw new UnsupportedOperationException("Dagger2 module");
 	}
 }
