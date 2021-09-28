@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.contract;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
@@ -117,11 +118,14 @@ public class ContractCallSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-				Arrays.asList(callingContract())
+				Arrays.asList(
+						benchmarkSingleSetter()
+//						callingContract()
 //				Arrays.asList(payableSuccess())
 //				positiveSpecs()
 //				negativeSpecs(),
 //				Arrays.asList(fridayThe13thSpec())
+				)
 		);
 	}
 
@@ -177,17 +181,17 @@ public class ContractCallSuite extends HapiApiSuite {
 								.gas(GAS_LIMIT)
 								.via("storageTx")
 				).then(
-//						contractCallLocal("immutableContract", ContractResources.BENCHMARK_GET_COUNTER)
-//								.nodePayment(1_234_567)
-//								.has(
-//										ContractFnResultAsserts.resultWith()
-//												.resultThruAbi(
-//														ContractResources.BENCHMARK_GET_COUNTER,
-//														ContractFnResultAsserts.isLiteralResult(
-//																new Object[]{BigInteger.valueOf(1L)}
-//														)
-//												)
-//								)
+						contractCallLocal("immutableContract", ContractResources.BENCHMARK_GET_COUNTER)
+								.nodePayment(1_234_567)
+								.has(
+										ContractFnResultAsserts.resultWith()
+												.resultThruAbi(
+														ContractResources.BENCHMARK_GET_COUNTER,
+														ContractFnResultAsserts.isLiteralResult(
+																new Object[]{BigInteger.valueOf(1L)}
+														)
+												)
+								)
 				);
 	}
 

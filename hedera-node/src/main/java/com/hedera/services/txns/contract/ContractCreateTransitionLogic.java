@@ -21,9 +21,6 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
@@ -61,12 +58,10 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 	private final EntityIdSource ids;
 	private final AccountStore accountStore;
 	private final OptionValidator validator;
-	private final HbarCentExchange exchange;
 	private final TransactionContext txnCtx;
 	private final HederaWorldState worldState;
-	private final UsagePricesProvider usagePrices;
-	private final GlobalDynamicProperties properties;
 	private final TransactionRecordService recordService;
+	private final CreateEvmTxProcessor evmTxProcessor;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
@@ -77,22 +72,18 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 			TransactionContext txnCtx,
 			AccountStore accountStore,
 			OptionValidator validator,
-			HbarCentExchange exchange,
 			HederaWorldState worldState,
-			UsagePricesProvider usagePrices,
-			GlobalDynamicProperties properties,
-			TransactionRecordService recordService
+			TransactionRecordService recordService,
+			CreateEvmTxProcessor evmTxProcessor
 	) {
 		this.ids = ids;
 		this.hfs = hfs;
 		this.txnCtx = txnCtx;
-		this.exchange = exchange;
 		this.validator = validator;
 		this.worldState = worldState;
-		this.properties = properties;
-		this.usagePrices = usagePrices;
 		this.accountStore = accountStore;
 		this.recordService = recordService;
+		this.evmTxProcessor = evmTxProcessor;
 	}
 
 	@Override
@@ -114,15 +105,9 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 
 		/* --- Do the business logic --- */
 		final var newContractId = worldState.newContractId(sender.getId().asEvmAddress());
-		final var txProcessor = new CreateEvmTxProcessor(
-				exchange,
-				worldState.updater(),
-				usagePrices,
-				properties,
-				newContractId.asEvmAddress()
-		);
-		final var result = txProcessor.execute(
+		final var result = evmTxProcessor.execute(
 				sender,
+				newContractId.asEvmAddress(),
 				op.getGas(),
 				op.getInitialBalance(),
 				codeWithConstructorArgs,

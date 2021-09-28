@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
-
 /**
  * @title Benchmarks
  */
@@ -34,7 +33,7 @@ contract Benchmarks {
     function sstoreCreate(uint256 n) public {
         for (uint256 i = 0; i < n; i++) {
             bytes32 pseudoRandom =
-            keccak256(abi.encodePacked(bytes32(i), block.number));
+                keccak256(abi.encodePacked(bytes32(i), block.number));
             benchmarkingMap[pseudoRandom] = pseudoRandom;
             mapKeys.push(pseudoRandom);
         }
@@ -48,7 +47,7 @@ contract Benchmarks {
         require(n <= mapKeys.length, "not enough keys have been generated");
         for (uint256 i = 0; i < n; i++) {
             bytes32 pseudoRandom =
-            keccak256(abi.encodePacked(bytes32(i), block.number));
+                keccak256(abi.encodePacked(bytes32(i), block.number));
             benchmarkingMap[mapKeys[i]] = pseudoRandom;
         }
         counter++;

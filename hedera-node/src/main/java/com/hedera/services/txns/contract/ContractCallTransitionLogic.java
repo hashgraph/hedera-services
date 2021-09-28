@@ -21,9 +21,6 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaWorldState;
@@ -32,6 +29,8 @@ import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.contract.process.CallEvmTxProcessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.common.CommonUtils;
+import org.apache.tuweni.bytes.Bytes;
 
 import javax.inject.Inject;
 import java.util.function.Function;
@@ -44,12 +43,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public class ContractCallTransitionLogic implements TransitionLogic {
 
 	private final AccountStore accountStore;
-	private final HbarCentExchange exchange;
 	private final TransactionContext txnCtx;
 	private final HederaWorldState worldState;
-	private final UsagePricesProvider usagePrices;
-	private final GlobalDynamicProperties properties;
 	private final TransactionRecordService recordService;
+	private final CallEvmTxProcessor evmTxProcessor;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validateSemantics;
 
@@ -57,19 +54,15 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 	public ContractCallTransitionLogic(
 			TransactionContext txnCtx,
 			AccountStore accountStore,
-			HbarCentExchange exchange,
 			HederaWorldState worldState,
-			UsagePricesProvider usagePrices,
-			GlobalDynamicProperties properties,
-			TransactionRecordService recordService
+			TransactionRecordService recordService,
+			CallEvmTxProcessor evmTxProcessor
 	) {
 		this.txnCtx = txnCtx;
-		this.exchange = exchange;
 		this.worldState = worldState;
-		this.properties = properties;
-		this.usagePrices = usagePrices;
 		this.accountStore = accountStore;
 		this.recordService = recordService;
+		this.evmTxProcessor = evmTxProcessor;
 	}
 
 	@Override
@@ -84,15 +77,16 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 		/* --- Load the model objects --- */
 		final var sender = accountStore.loadAccount(senderId);
 		final var receiver = accountStore.loadContract(contractId);
+		final var callData = !op.getFunctionParameters().isEmpty()
+				? Bytes.fromHexString(CommonUtils.hex(op.getFunctionParameters().toByteArray())) : Bytes.EMPTY;
 
 		/* --- Do the business logic --- */
-		final var txProcessor = new CallEvmTxProcessor(exchange, worldState.updater(), usagePrices, properties);
-		final var result = txProcessor.execute(
+		final var result = evmTxProcessor.execute(
 				sender,
-				receiver,
+				receiver.getId().asEvmAddress(),
 				op.getGas(),
 				op.getAmount(),
-				op.getFunctionParameters(),
+				callData,
 				txnCtx.consensusTime());
 
 		/* --- Persist changes into state --- */

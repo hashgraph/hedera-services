@@ -22,46 +22,52 @@ package com.hedera.services.txns.contract.process;
  *
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.swirlds.common.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
-import java.util.Optional;
 
+@Singleton
 public class CallEvmTxProcessor extends EvmTxProcessor {
 
+	@Inject
 	public CallEvmTxProcessor(
+			HederaWorldState worldState,
 			HbarCentExchange exchange,
-			HederaWorldState.Updater worldUpdater,
 			UsagePricesProvider usagePrices,
 			GlobalDynamicProperties dynamicProperties) {
-		super(exchange, usagePrices, worldUpdater, dynamicProperties);
+		super(worldState, exchange, usagePrices, dynamicProperties);
 	}
 
 	public TransactionProcessingResult execute(
 			final Account sender,
-			final Account receiver,
+			final Address receiver,
 			final long providedGasLimit,
 			final long value,
-			final ByteString callData,
+			final Bytes callData,
 			final Instant consensusTime
 	) {
 		final long gasPrice = gasPriceTinyBarsGiven(consensusTime);
-		final long gasLimit = providedGasLimit > dynamicProperties.maxGas() ? dynamicProperties.maxGas() : providedGasLimit;
-		final Bytes payload = callData != null && !callData.isEmpty()
-				? Bytes.fromHexString(CommonUtils.hex(callData.toByteArray())) : Bytes.EMPTY;
 
-		return super.execute(sender, Optional.of(receiver), gasPrice, gasLimit, value, payload, false, consensusTime);
+		return super.execute(sender,
+				receiver,
+				gasPrice,
+				providedGasLimit,
+				value,
+				callData,
+				false,
+				consensusTime,
+				false);
 	}
 
 	@Override
@@ -70,14 +76,14 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 	}
 
 	@Override
-	protected MessageFrame buildInitialFrame(MessageFrame.Builder baseInitialFrame, Address to, Bytes payload) {
+	protected MessageFrame buildInitialFrame(MessageFrame.Builder baseInitialFrame, HederaWorldState.Updater updater, Address to, Bytes payload) {
 
 		return baseInitialFrame
-						.type(MessageFrame.Type.MESSAGE_CALL)
-						.address(to)
-						.contract(to)
-						.inputData(payload)
-						.code(new Code(updater.get(to).getCode()))
-						.build();
+				.type(MessageFrame.Type.MESSAGE_CALL)
+				.address(to)
+				.contract(to)
+				.inputData(payload)
+				.code(new Code(updater.get(to).getCode()))
+				.build();
 	}
 }

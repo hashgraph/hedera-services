@@ -9,9 +9,9 @@ package com.hedera.services.fees.calculation.contract.queries;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,8 +23,8 @@ package com.hedera.services.fees.calculation.contract.queries;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.contracts.execution.CallLocalExecutor;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
-import com.hedera.services.queries.contract.ContractCallLocalAnswer;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -38,7 +38,6 @@ import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 
@@ -50,17 +49,19 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public class ContractCallLocalResourceUsage implements QueryResourceUsageEstimator {
 	private static final Logger log = LogManager.getLogger(ContractCallLocalResourceUsage.class);
 
-	private final ContractCallLocalAnswer.LegacyLocalCaller delegate;
 	private final SmartContractFeeBuilder usageEstimator;
 	private final GlobalDynamicProperties properties;
 
+	private final CallLocalExecutor executor;
+
 	@Inject
 	public ContractCallLocalResourceUsage(
-			ContractCallLocalAnswer.LegacyLocalCaller delegate,
 			SmartContractFeeBuilder usageEstimator,
-			GlobalDynamicProperties properties
+			GlobalDynamicProperties properties,
+			CallLocalExecutor executor
 	) {
-		this.delegate = delegate;
+		this.executor = executor;
+
 		this.properties = properties;
 		this.usageEstimator = usageEstimator;
 	}
@@ -96,7 +97,7 @@ public class ContractCallLocalResourceUsage implements QueryResourceUsageEstimat
 			if (queryCtx.isEmpty()) {
 				response = dummyResponse(op.getContractID());
 			} else {
-				response = delegate.perform(op, Instant.now().getEpochSecond());
+				response = executor.execute(op);
 				queryCtx.get().put(CONTRACT_CALL_LOCAL_CTX_KEY, response);
 			}
 			var nonGasUsage = usageEstimator.getContractCallLocalFeeMatrices(
@@ -115,8 +116,8 @@ public class ContractCallLocalResourceUsage implements QueryResourceUsageEstimat
 	ContractCallLocalResponse dummyResponse(ContractID target) {
 		return ContractCallLocalResponse.newBuilder()
 				.setFunctionResult(ContractFunctionResult.newBuilder()
-								.setContractCallResult(ByteString.copyFrom(new byte[properties.localCallEstRetBytes()]))
-								.setContractID(target))
+						.setContractCallResult(ByteString.copyFrom(new byte[properties.localCallEstRetBytes()]))
+						.setContractID(target))
 				.setHeader(ResponseHeader.newBuilder().setNodeTransactionPrecheckCode(OK))
 				.build();
 	}

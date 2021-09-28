@@ -96,6 +96,7 @@ class ContractCreateTransitionLogicTest {
 	private HederaWorldState worldState;
 	private UsagePricesProvider usagePrices;
 	private TransactionRecordService recordServices;
+	private CreateEvmTxProcessor evmTxProcessor;
 
 	@BeforeEach
 	private void setup() {
@@ -114,8 +115,9 @@ class ContractCreateTransitionLogicTest {
 		worldState = mock(HederaWorldState.class);
 		usagePrices = mock(UsagePricesProvider.class);
 		recordServices = mock(TransactionRecordService.class);
+		evmTxProcessor = mock(CreateEvmTxProcessor.class);
 
-		subject = new ContractCreateTransitionLogic(hfs, entityIdSource, txnCtx, accountStore, validator, exchange, worldState, usagePrices, properties, recordServices);
+		subject = new ContractCreateTransitionLogic(hfs, entityIdSource, txnCtx, accountStore, validator, worldState, recordServices, evmTxProcessor);
 	}
 
 	@Test

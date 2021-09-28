@@ -38,16 +38,19 @@ import javax.inject.Singleton;
 import java.time.Instant;
 
 @Singleton
-public class CreateEvmTxProcessor extends EvmTxProcessor {
-
+public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 	@Inject
-	public CreateEvmTxProcessor(
+	public CallLocalEvmTxProcessor(
 			HederaWorldState worldState,
 			HbarCentExchange exchange,
 			UsagePricesProvider usagePrices,
-			GlobalDynamicProperties globalDynamicProperties
-	) {
-		super(worldState, exchange, usagePrices, globalDynamicProperties);
+			GlobalDynamicProperties dynamicProperties) {
+		super(worldState, exchange, usagePrices, dynamicProperties);
+	}
+
+	@Override
+	protected HederaFunctionality getFunctionType() {
+		return HederaFunctionality.ContractCallLocal;
 	}
 
 	public TransactionProcessingResult execute(
@@ -55,27 +58,30 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 			final Address receiver,
 			final long providedGasLimit,
 			final long value,
-			final Bytes code,
-			final Instant consensusTime) {
-		final long gasPrice = gasPriceTinyBarsGiven(consensusTime);
+			final Bytes callData,
+			final Instant consensusTime
+	) {
+		final long gasPrice = 1; // SmartContractRequestHandler L560
 
-		return super.execute(sender, receiver, gasPrice, providedGasLimit, value, code, true, consensusTime, false);
+		return super.execute(sender,
+				receiver,
+				gasPrice,
+				providedGasLimit,
+				value,
+				callData,
+				false,
+				consensusTime,
+				true);
 	}
 
-
 	@Override
-	protected HederaFunctionality getFunctionType() {
-		return HederaFunctionality.ContractCreate;
-	}
-
-	@Override
-	protected MessageFrame buildInitialFrame(MessageFrame.Builder commonInitialFrame, HederaWorldState.Updater updater, Address to, Bytes payload) {
-		return commonInitialFrame
-				.type(MessageFrame.Type.CONTRACT_CREATION)
+	protected MessageFrame buildInitialFrame(MessageFrame.Builder baseInitialFrame, HederaWorldState.Updater updater, Address to, Bytes payload) {
+		return baseInitialFrame
+				.type(MessageFrame.Type.MESSAGE_CALL)
 				.address(to)
 				.contract(to)
-				.inputData(Bytes.EMPTY)
-				.code(new Code(payload))
+				.inputData(payload)
+				.code(new Code(updater.get(to).getCode()))
 				.build();
 	}
 }

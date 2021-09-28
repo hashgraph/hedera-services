@@ -22,14 +22,13 @@ package com.hedera.services.txns.contract;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.txns.contract.process.CallEvmTxProcessor;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -69,10 +68,9 @@ class ContractCallTransitionLogicTest {
 	private PlatformTxnAccessor accessor;
 	private GlobalDynamicProperties properties;
 	private AccountStore accountStore;
-	private HbarCentExchange exchange;
 	private HederaWorldState worldState;
-	private UsagePricesProvider usagePrices;
 	private TransactionRecordService recordService;
+	private CallEvmTxProcessor evmTxProcessor;
 
 	MerkleMap<EntityNum, MerkleAccount> contracts;
 	ContractCallTransitionLogic subject;
@@ -86,13 +84,12 @@ class ContractCallTransitionLogicTest {
 		validator = mock(OptionValidator.class);
 		properties = mock(GlobalDynamicProperties.class);
 		accountStore = mock(AccountStore.class);
-		exchange = mock(HbarCentExchange.class);
 		worldState = mock(HederaWorldState.class);
-		usagePrices = mock(UsagePricesProvider.class);
 		recordService = mock(TransactionRecordService.class);
+		evmTxProcessor = mock(CallEvmTxProcessor.class);
 		withRubberstampingValidator();
 
-		subject = new ContractCallTransitionLogic(txnCtx, accountStore, exchange, worldState, usagePrices, properties, recordService);
+		subject = new ContractCallTransitionLogic(txnCtx, accountStore, worldState, recordService, evmTxProcessor);
 	}
 
 	@Test

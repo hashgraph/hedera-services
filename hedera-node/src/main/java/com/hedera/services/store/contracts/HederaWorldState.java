@@ -102,9 +102,9 @@ public class HederaWorldState implements HederaMutableWorldState {
 				long adjustment = newBalance - oldBalance;
 				ledger.adjustBalance(accountId, adjustment);
 			} else {
-				var key = new JContractIDKey(worldStateAccount.getProxyAccount().toGrpcContractId());
+				var key = new JContractIDKey(worldStateAccount.getProxyAccount().toGrpcContractId()); // TODO: might be used for factory contracts
 				HederaAccountCustomizer customizer = new HederaAccountCustomizer()
-						.key(key)
+						.key(worldStateAccount.getKey())
 						.memo("")
 						//TODO will be populated once UpdateTrackingAccount is extended
 //						.proxy(worldStateAccount.getProxyAccount().asEntityId())

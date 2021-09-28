@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.contract.operations;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -35,6 +36,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -67,35 +69,48 @@ public class GlobalPropertiesSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec chainIdWorks() {
+		final BigInteger expectedChainID = new BigInteger(HapiSpecSetup.getDefaultNodeProps().get("contracts.chainId"));
 		return defaultHapiSpec("chainIdWorks")
 				.given(
 						fileCreate("globalProps").path(ContractResources.GLOBAL_PROPERTIES),
 						contractCreate("globalPropsContract").bytecode("globalProps")
 				).when(
-						contractCall("globalPropsContract", ContractResources.GLOBAL_PROPERTIES_CHAIN_ID_ABI).via(
-								"chainId")
+						contractCall("globalPropsContract", ContractResources.GLOBAL_PROPERTIES_CHAIN_ID_ABI)
+								.via("chainId")
 				).then(
 						getTxnRecord("chainId").logged().hasPriority(
 								recordWith().contractCallResult(
 										resultWith().resultThruAbi(
 												ContractResources.GLOBAL_PROPERTIES_CHAIN_ID_ABI,
 												isLiteralResult(
-														new Object[]{BigInteger.valueOf(293)}
+														new Object[]{expectedChainID}
 												)
 										)
 								)
-						)
+						),
+						contractCallLocal("globalPropsContract", ContractResources.GLOBAL_PROPERTIES_CHAIN_ID_ABI)
+								.nodePayment(1_234_567)
+								.has(
+										ContractFnResultAsserts.resultWith()
+												.resultThruAbi(
+														ContractResources.GLOBAL_PROPERTIES_CHAIN_ID_ABI,
+														ContractFnResultAsserts.isLiteralResult(
+																new Object[]{expectedChainID}
+														)
+												)
+								)
 				);
 	}
 
 	private HapiApiSpec baseFeeWorks() {
+		final BigInteger expectedBaseFee = BigInteger.valueOf(0);
 		return defaultHapiSpec("baseFeeWorks")
 				.given(
 						fileCreate("globalProps").path(ContractResources.GLOBAL_PROPERTIES),
 						contractCreate("globalPropsContract").bytecode("globalProps")
 				).when(
-						contractCall("globalPropsContract", ContractResources.GLOBAL_PROPERTIES_BASE_FEE_ABI).via(
-								"baseFee")
+						contractCall("globalPropsContract", ContractResources.GLOBAL_PROPERTIES_BASE_FEE_ABI)
+								.via("baseFee")
 				).then(
 						getTxnRecord("baseFee").logged().hasPriority(
 								recordWith().contractCallResult(
@@ -106,7 +121,18 @@ public class GlobalPropertiesSuite extends HapiApiSuite {
 												)
 										)
 								)
-						)
+						),
+						contractCallLocal("globalPropsContract", ContractResources.GLOBAL_PROPERTIES_BASE_FEE_ABI)
+								.nodePayment(1_234_567)
+								.has(
+										ContractFnResultAsserts.resultWith()
+												.resultThruAbi(
+														ContractResources.GLOBAL_PROPERTIES_BASE_FEE_ABI,
+														ContractFnResultAsserts.isLiteralResult(
+																new Object[]{expectedBaseFee}
+														)
+												)
+								)
 				);
 	}
 
@@ -120,11 +146,18 @@ public class GlobalPropertiesSuite extends HapiApiSuite {
 								.via("coinbase")
 				).then(
 						withOpContext((spec, opLog) -> {
-							var record = getTxnRecord("coinbase");
-							allRunFor(spec, record);
-							final var result = record.getResponseRecord().getContractCallResult();
-							Assertions.assertEquals(result.getContractCallResult(),
-									parsedToByteString(DEFAULT_PROPS.fundingAccount().getAccountNum()));
+							final var expectedCoinbase = parsedToByteString(DEFAULT_PROPS.fundingAccount().getAccountNum());
+
+							final var callLocal = contractCallLocal("globalPropsContract", ContractResources.GLOBAL_PROPERTIES_COINBASE_ABI)
+									.nodePayment(1_234_567)
+									.saveResultTo("callLocalCoinbase");
+							final var callRecord = getTxnRecord("coinbase");
+
+							allRunFor(spec, callRecord, callLocal);
+							final var recordResult = callRecord.getResponseRecord().getContractCallResult();
+							final var callLocalResult = spec.registry().getBytes("callLocalCoinbase");
+							Assertions.assertEquals(recordResult.getContractCallResult(), expectedCoinbase);
+							Assertions.assertArrayEquals(callLocalResult, expectedCoinbase.toByteArray());
 						})
 				);
 	}
@@ -136,8 +169,9 @@ public class GlobalPropertiesSuite extends HapiApiSuite {
 						fileCreate("globalProps").path(ContractResources.GLOBAL_PROPERTIES),
 						contractCreate("globalPropsContract").bytecode("globalProps")
 				).when(
-						contractCall("globalPropsContract", ContractResources.GLOBAL_PROPERTIES_GASLIMIT_ABI).via(
-								"gasLimit").gas(gasLimit)
+						contractCall("globalPropsContract", ContractResources.GLOBAL_PROPERTIES_GASLIMIT_ABI)
+								.via("gasLimit")
+								.gas(gasLimit)
 				).then(
 						getTxnRecord("gasLimit").logged().hasPriority(
 								recordWith().contractCallResult(
@@ -148,7 +182,19 @@ public class GlobalPropertiesSuite extends HapiApiSuite {
 												)
 										)
 								)
-						)
+						),
+						contractCallLocal("globalPropsContract", ContractResources.GLOBAL_PROPERTIES_GASLIMIT_ABI)
+								.gas(gasLimit)
+								.nodePayment(1_234_567)
+								.has(
+										ContractFnResultAsserts.resultWith()
+												.resultThruAbi(
+														ContractResources.GLOBAL_PROPERTIES_GASLIMIT_ABI,
+														ContractFnResultAsserts.isLiteralResult(
+																new Object[]{BigInteger.valueOf(gasLimit)}
+														)
+												)
+								)
 				);
 	}
 }

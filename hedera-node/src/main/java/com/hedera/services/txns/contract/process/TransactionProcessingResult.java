@@ -139,6 +139,15 @@ public class TransactionProcessingResult {
 	}
 
 	/**
+	 * Returns the exceptional halt reason
+	 *
+	 * @return the halt reason
+	 */
+	public Optional<ExceptionalHaltReason> getHaltReason() {
+		return haltReason;
+	}
+
+	/**
 	 * Converts the {@link TransactionProcessingResult} into {@link ContractFunctionResult} GRPC model
 	 * @return the {@link ContractFunctionResult} model to externalise
 	 */
