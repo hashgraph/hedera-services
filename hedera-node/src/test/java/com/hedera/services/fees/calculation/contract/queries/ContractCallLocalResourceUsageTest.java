@@ -27,13 +27,12 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallLocalExecutor;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.queries.contract.ContractCallLocalAnswer;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.txns.contract.process.TransactionProcessingResult;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
-import com.hedera.services.store.models.Id;
-import com.hedera.services.txns.contract.process.TransactionProcessingResult;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -49,6 +48,8 @@ import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -65,26 +66,26 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-@ExtendWith(LogCaptureExtension.class)
+@ExtendWith({LogCaptureExtension.class, MockitoExtension.class})
 class ContractCallLocalResourceUsageTest {
 	private static final int gas = 1_234;
 	private static final ByteString params = ByteString.copyFrom("Hungry, and...".getBytes());
 
-	private final Id callerID = new Id(0, 0, 123);
-	private final Id contractID = new Id(0, 0, 456);
-	private final AccountID caller = callerID.asGrpcAccount();
-	private final ContractID target = contractID.asGrpcContract();
+	private static final Id callerID = new Id(0, 0, 123);
+	private static final Id contractID = new Id(0, 0, 456);
+	private static final ContractID target = contractID.asGrpcContract();
 
-	private static final ByteString result = ByteString.copyFrom("Searching for images".getBytes());
 	private static final Query satisfiableCostAnswer = localCallQuery(target, COST_ANSWER);
 	private static final Query satisfiableAnswerOnly = localCallQuery(target, ANSWER_ONLY);
 	private static final GlobalDynamicProperties properties = new MockGlobalDynamicProps();
 
+	@Mock
 	private StateView view;
+	@Mock
 	private SmartContractFeeBuilder usageEstimator;
+	@Mock
 	CallLocalExecutor executor;
 
 	@LoggingTarget
@@ -95,10 +96,6 @@ class ContractCallLocalResourceUsageTest {
 
 	@BeforeEach
 	private void setup() {
-		view = mock(StateView.class);
-		usageEstimator = mock(SmartContractFeeBuilder.class);
-		executor = mock(CallLocalExecutor.class);
-
 		subject = new ContractCallLocalResourceUsage(usageEstimator, properties, executor);
 	}
 
@@ -176,7 +173,7 @@ class ContractCallLocalResourceUsageTest {
 	}
 
 
-	private static final Query localCallQuery(final ContractID id, final ResponseType type) {
+	private static Query localCallQuery(final ContractID id, final ResponseType type) {
 		final var op = ContractCallLocalQuery.newBuilder()
 				.setContractID(id)
 				.setGas(gas)
@@ -190,12 +187,12 @@ class ContractCallLocalResourceUsageTest {
 	}
 
 	private ContractCallLocalResponse okResponse(TransactionProcessingResult result) {
-		return response(OK, result);
+		return response(result);
 	}
 
-	private ContractCallLocalResponse response(final ResponseCodeEnum status, final TransactionProcessingResult result) {
+	private ContractCallLocalResponse response(final TransactionProcessingResult result) {
 		return ContractCallLocalResponse.newBuilder()
-				.setHeader(ResponseHeader.newBuilder().setNodeTransactionPrecheckCode(status))
+				.setHeader(ResponseHeader.newBuilder().setNodeTransactionPrecheckCode(ResponseCodeEnum.OK))
 				.setFunctionResult(result.toGrpc())
 				.build();
 	}
