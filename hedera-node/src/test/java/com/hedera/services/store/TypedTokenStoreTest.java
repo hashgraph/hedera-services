@@ -208,6 +208,34 @@ class TypedTokenStoreTest {
 	}
 
 	@Test
+	void canLoadPausedTokenUsingLoadPossiblyPausedToken() {
+		given(accountStore.loadAccount(autoRenewId)).willReturn(autoRenewAccount);
+		given(accountStore.loadAccount(treasuryId)).willReturn(treasuryAccount);
+		givenToken(merkleTokenId, merkleToken);
+		merkleToken.setPaused(true);
+		token.setPaused(true);
+
+		final var actualToken = subject.loadPossiblyPausedToken(tokenId);
+
+		assertEquals(token.toString(), actualToken.toString());
+		assertEquals(token.isPaused(), actualToken.isPaused());
+		assertTrue(actualToken.isPaused());
+	}
+
+	@Test
+	void failsLoadPossiblyPausedTokenMissingToken() {
+		assertLoadPossiblyPausedTokenFailsWith(INVALID_TOKEN_ID);
+	}
+
+	@Test
+	void failsLoadPossiblyPausedTokenDeletedToken() {
+		givenToken(merkleTokenId, merkleToken);
+		merkleToken.setDeleted(true);
+
+		assertLoadPossiblyPausedTokenFailsWith(TOKEN_WAS_DELETED);
+	}
+
+	@Test
 	void loadsExpectedToken() {
 		given(accountStore.loadAccount(autoRenewId)).willReturn(autoRenewAccount);
 		given(accountStore.loadAccount(treasuryId)).willReturn(treasuryAccount);
@@ -341,6 +369,7 @@ class TypedTokenStoreTest {
 		expectedReplacementToken.setSupplyKey(supplyKey);
 		expectedReplacementToken.setFreezeKey(freezeKey);
 		expectedReplacementToken.setKycKey(kycKey);
+		expectedReplacementToken.setPauseKey(pauseKey);
 		expectedReplacementToken.setAccountsFrozenByDefault(!freezeDefault);
 		expectedReplacementToken.setMemo(memo);
 		expectedReplacementToken.setAutoRenewPeriod(autoRenewPeriod);
@@ -355,6 +384,7 @@ class TypedTokenStoreTest {
 		expectedReplacementToken2.setSupplyKey(supplyKey);
 		expectedReplacementToken2.setFreezeKey(freezeKey);
 		expectedReplacementToken2.setKycKey(kycKey);
+		expectedReplacementToken2.setPauseKey(pauseKey);
 		expectedReplacementToken2.setAccountsFrozenByDefault(!freezeDefault);
 		expectedReplacementToken2.setMemo(memo);
 		expectedReplacementToken2.setAutoRenewPeriod(autoRenewPeriod);
@@ -477,6 +507,11 @@ class TypedTokenStoreTest {
 		assertEquals(status, ex.getResponseCode());
 	}
 
+	private void assertLoadPossiblyPausedTokenFailsWith(final ResponseCodeEnum status) {
+		final var ex = assertThrows(InvalidTransactionException.class, () -> subject.loadPossiblyPausedToken(tokenId));
+		assertEquals(status, ex.getResponseCode());
+	}
+
 	private void assertLoadPossiblyDeletedTokenFailsWith(final ResponseCodeEnum status) {
 		final var ex = assertThrows(InvalidTransactionException.class,
 				() -> subject.loadPossiblyDeletedOrAutoRemovedToken(tokenId));
@@ -500,6 +535,7 @@ class TypedTokenStoreTest {
 		merkleToken.setKycKey(kycKey);
 		merkleToken.setFreezeKey(freezeKey);
 		merkleToken.setPauseKey(pauseKey);
+		merkleToken.setPaused(false);
 
 		token.setTreasury(treasuryAccount);
 		token.setAutoRenewAccount(autoRenewAccount);
@@ -507,6 +543,7 @@ class TypedTokenStoreTest {
 		token.setKycKey(kycKey);
 		token.setSupplyKey(supplyKey);
 		token.setFreezeKey(freezeKey);
+		token.setPauseKey(pauseKey);
 		token.setFrozenByDefault(freezeDefault);
 		token.setIsDeleted(false);
 		token.setPaused(false);

@@ -259,6 +259,27 @@ public class TypedTokenStore {
 	}
 
 	/**
+	 * This is only to be used when pausing/unpausing token as this method ignores the pause status
+	 * of the token.
+	 * @param id
+	 * 		the token to load
+	 * @return
+	 * 		a usable model of the token which is possibly paused.
+	 */
+	public Token loadPossiblyPausedToken(Id id) {
+		final var merkleToken = tokens.get().get(EntityNum.fromModel(id));
+
+		validateTrue(merkleToken != null, INVALID_TOKEN_ID);
+		validateFalse(merkleToken.isDeleted(), TOKEN_WAS_DELETED);
+
+		final var token = new Token(id);
+		initModelAccounts(token, merkleToken.treasury(), merkleToken.autoRenewAccount());
+		initModelFields(token, merkleToken);
+
+		return token;
+	}
+
+	/**
 	 * Returns a {@link UniqueToken} model of the requested unique token, with operations that can be used to
 	 * implement business logic in a transaction.
 	 *

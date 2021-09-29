@@ -51,6 +51,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_METADATA;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIAL_NUMBER_LIMIT_REACHED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
@@ -116,6 +117,24 @@ class TokenTest {
 		subject.setPauseKey(TxnHandlingScenario.TOKEN_PAUSE_KT.asJKeyUnchecked());
 
 		assertTrue(subject.hasPauseKey());
+	}
+
+	@Test
+	void changingPauseStatusFailsIfNoPauseKey() {
+		assertFalse(subject.hasPauseKey());
+		assertFailsWith(() -> subject.changePauseStatus(true), TOKEN_HAS_NO_PAUSE_KEY);
+	}
+
+	@Test
+	void changingPauseStatusWorksIfTokenHasPauseKey() {
+		subject.setPauseKey(TxnHandlingScenario.TOKEN_PAUSE_KT.asJKeyUnchecked());
+		assertTrue(subject.hasPauseKey());
+
+		subject.changePauseStatus(true);
+		assertTrue(subject.isPaused());
+
+		subject.changePauseStatus(false);
+		assertFalse(subject.isPaused());
 	}
 
 	@Test

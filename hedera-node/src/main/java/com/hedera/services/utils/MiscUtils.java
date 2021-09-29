@@ -153,8 +153,10 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetNft
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetNftInfos;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenPause;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
@@ -232,6 +234,8 @@ public final class MiscUtils {
 	static final String TOKEN_GET_ACCOUNT_NFT_INFOS_METRIC = "getAccountNftInfos";
 	static final String TOKEN_FEE_SCHEDULE_UPDATE_METRIC = "tokenFeeScheduleUpdate";
 	static final String TOKEN_GET_NFT_INFOS_METRIC = "getTokenNftInfos";
+	static final String TOKEN_PAUSE_METRIC = "tokenPause";
+	static final String TOKEN_UNPAUSE_METRIC = "tokenUnpause";
 
 	static final String SCHEDULE_CREATE_METRIC = "createSchedule";
 	static final String SCHEDULE_DELETE_METRIC = "deleteSchedule";
@@ -300,6 +304,8 @@ public final class MiscUtils {
 		BASE_STAT_NAMES.put(TokenUpdate, TOKEN_UPDATE_METRIC);
 		BASE_STAT_NAMES.put(TokenAssociateToAccount, TOKEN_ASSOCIATE_METRIC);
 		BASE_STAT_NAMES.put(TokenDissociateFromAccount, TOKEN_DISSOCIATE_METRIC);
+		BASE_STAT_NAMES.put(TokenPause, TOKEN_PAUSE_METRIC);
+		BASE_STAT_NAMES.put(TokenUnpause, TOKEN_UNPAUSE_METRIC);
 		BASE_STAT_NAMES.put(ScheduleCreate, SCHEDULE_CREATE_METRIC);
 		BASE_STAT_NAMES.put(ScheduleSign, SCHEDULE_SIGN_METRIC);
 		BASE_STAT_NAMES.put(ScheduleDelete, SCHEDULE_DELETE_METRIC);
@@ -604,6 +610,12 @@ public final class MiscUtils {
 		if (txn.hasTokenFeeScheduleUpdate()) {
 			return TokenFeeScheduleUpdate;
 		}
+		if (txn.hasTokenPause()) {
+			return TokenPause;
+		}
+		if (txn.hasTokenUnpause()) {
+			return TokenUnpause;
+		}
 		if (txn.hasScheduleCreate()) {
 			return ScheduleCreate;
 		}
@@ -709,6 +721,10 @@ public final class MiscUtils {
 			ordinary.setTokenDissociate(scheduledTxn.getTokenDissociate());
 		} else if (scheduledTxn.hasScheduleDelete()) {
 			ordinary.setScheduleDelete(scheduledTxn.getScheduleDelete());
+		} else if (scheduledTxn.hasTokenPause()) {
+			ordinary.setTokenPause(scheduledTxn.getTokenPause());
+		} else if (scheduledTxn.hasTokenUnpause()) {
+			ordinary.setTokenUnpause(scheduledTxn.getTokenUnpause());
 		}
 		return ordinary.build();
 	}
