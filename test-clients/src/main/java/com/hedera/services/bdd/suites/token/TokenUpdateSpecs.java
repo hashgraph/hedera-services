@@ -643,12 +643,14 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						cryptoCreate("newTokenTreasury"),
 						newKeyNamed("adminKeyA"),
 						newKeyNamed("supplyKeyA"),
+						newKeyNamed("pauseKeyA"),
 						tokenCreate("primary")
 								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
 								.treasury(TOKEN_TREASURY)
 								.initialSupply(0)
 								.adminKey("adminKeyA")
-								.supplyKey("supplyKeyA"),
+								.supplyKey("supplyKeyA")
+								.pauseKey("pauseKeyA"),
 						mintToken("primary", List.of(ByteString.copyFromUtf8("memo1")))
 				)
 				.when(
@@ -663,6 +665,8 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.hasTokenBalance("primary", 1),
 						getTokenInfo("primary")
 								.hasTreasury("newTokenTreasury")
+								.hasPauseKey("primary")
+								.hasPauseStatus(TokenPauseStatus.Unpaused)
 								.logged(),
 						getTokenNftInfo("primary", 1)
 								.hasAccountID("newTokenTreasury")

@@ -425,6 +425,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						tokenCreate("non-fungible-unique-finite")
 								.tokenType(NON_FUNGIBLE_UNIQUE)
 								.supplyType(TokenSupplyType.FINITE)
+								.pauseKey("pauseKey")
 								.initialSupply(0)
 								.maxSupply(100)
 								.treasury(TOKEN_TREASURY)
@@ -458,9 +459,12 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.hasTotalSupply(500)
 								.hasAutoRenewAccount("autoRenewAccount"),
 						getTokenInfo("non-fungible-unique-finite")
+								.logged()
 								.hasRegisteredId("non-fungible-unique-finite")
 								.hasTokenType(NON_FUNGIBLE_UNIQUE)
 								.hasSupplyType(TokenSupplyType.FINITE)
+								.hasPauseKey("primary")
+								.hasPauseStatus(TokenPauseStatus.Unpaused)
 								.hasTotalSupply(0)
 								.hasMaxSupply(100),
 						getAccountInfo(TOKEN_TREASURY)
