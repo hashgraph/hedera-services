@@ -9,9 +9,9 @@ package com.hedera.services.txns.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,30 +21,27 @@ package com.hedera.services.txns.crypto;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.exceptions.DeletedAccountException;
-import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.services.ledger.BalanceChange.hbarAdjust;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT;
 
@@ -57,50 +54,65 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_ACCOU
  */
 @Singleton
 public class CryptoDeleteTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(CryptoDeleteTransitionLogic.class);
-
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
-	private final HederaLedger ledger;
 	private final TransactionContext txnCtx;
+	private final HederaLedger ledger;
+	private final AccountStore accountStore;
+	private final TypedTokenStore tokenStore;
 
 	@Inject
-	public CryptoDeleteTransitionLogic(HederaLedger ledger, TransactionContext txnCtx) {
-		this.ledger = ledger;
+	public CryptoDeleteTransitionLogic(
+			TransactionContext txnCtx,
+			HederaLedger ledger,
+			AccountStore accountStore,
+			TypedTokenStore tokenStore
+	) {
 		this.txnCtx = txnCtx;
+		this.ledger = ledger;
+		this.accountStore = accountStore;
+		this.tokenStore = tokenStore;
 	}
 
 	@Override
 	public void doStateTransition() {
-		try {
-			CryptoDeleteTransactionBody op = txnCtx.accessor().getTxn().getCryptoDelete();
+		/* --- Translate from gRPC types --- */
+		final var op = txnCtx.accessor().getTxn().getCryptoDelete();
 
-			AccountID id = op.getDeleteAccountID();
-			if (ledger.isKnownTreasury(id)) {
-				txnCtx.setStatus(ACCOUNT_IS_TREASURY);
-				return;
+		final var targetId = Id.fromGrpcAccount(op.getDeleteAccountID());
+		final var beneficiaryId = Id.fromGrpcAccount(op.getTransferAccountID());
+
+		final var target = accountStore.loadAccount(targetId);
+		final var beneficiary = accountStore.loadAccount(beneficiaryId);
+
+		/* --- Validate --- */
+		validateFalse(tokenStore.isKnownTreasury(target.getId().asGrpcAccount()), ACCOUNT_IS_TREASURY);
+		validateNoTokenBalancesPresent(target);
+
+		/* --- Do the business logic --- */
+		final var balanceChanges = List.of(
+				hbarAdjust(targetId, -1 * target.getBalance()),
+				hbarAdjust(beneficiaryId, target.getBalance())
+		);
+		ledger.doZeroSum(balanceChanges);
+
+		target.delete();
+
+		/* --- Persist the changes --- */
+		accountStore.persistAccount(target);
+		accountStore.persistAccount(beneficiary);
+	}
+
+	private void validateNoTokenBalancesPresent(final Account target) {
+		final var associatedTokens = target.getAssociatedTokens().getAsIds();
+
+		for (var tokenId : associatedTokens) {
+			final var token = tokenStore.loadToken(Id.fromGrpcToken(tokenId));
+			if (token.isDeleted()) {
+				continue;
 			}
-			AccountID beneficiary = op.getTransferAccountID();
-			if (ledger.isDetached(id) || ledger.isDetached(beneficiary)) {
-				txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-				return;
-			}
-
-			if (!ledger.allTokenBalancesVanish(id)) {
-				txnCtx.setStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
-				return;
-			}
-
-			ledger.delete(id, beneficiary);
-
-			txnCtx.setStatus(SUCCESS);
-		} catch (MissingAccountException mae) {
-			txnCtx.setStatus(INVALID_ACCOUNT_ID);
-		} catch (DeletedAccountException dae) {
-			txnCtx.setStatus(ACCOUNT_DELETED);
-		} catch (Exception e) {
-			log.warn("Avoidable exception!", e);
-			txnCtx.setStatus(FAIL_INVALID);
+			final var tokenRelationship = tokenStore.loadTokenRelationship(token, target);
+			validateFalse(tokenRelationship.getBalance() > 0L, TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
 		}
 	}
 

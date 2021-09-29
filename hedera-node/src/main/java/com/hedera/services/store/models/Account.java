@@ -80,12 +80,9 @@ public class Account {
 	/**
 	 * Creates a new {@link Account} instance from the given gRPC.
 	 *
-	 * @param accountId
-	 * 		specifies the id of the newly created account
-	 * @param op
-	 * 		gRPC Transaction body
-	 * @param consensusTimestamp
-	 * 		consensus timestamp of the current transaction
+	 * @param accountId          specifies the id of the newly created account
+	 * @param op                 gRPC Transaction body
+	 * @param consensusTimestamp consensus timestamp of the current transaction
 	 * @return Account
 	 */
 	public static Account createFromGrpc(final Id accountId, final CryptoCreateTransactionBody op, long consensusTimestamp) {
@@ -170,10 +167,8 @@ public class Account {
 	 * Applies the given list of {@link Dissociation}s, validating that this account is
 	 * indeed associated to each involved token.
 	 *
-	 * @param dissociations
-	 * 		the dissociations to perform.
-	 * @param validator
-	 * 		the validator to use for each dissociation
+	 * @param dissociations the dissociations to perform.
+	 * @param validator     the validator to use for each dissociation
 	 */
 	public void dissociateUsing(List<Dissociation> dissociations, OptionValidator validator) {
 		final Set<Id> dissociatedTokenIds = new HashSet<>();
@@ -252,6 +247,10 @@ public class Account {
 
 	public void setDeleted(final boolean deleted) {
 		this.deleted = deleted;
+	}
+
+	public void delete() {
+		this.deleted = true;
 	}
 
 	public boolean isSmartContract() {

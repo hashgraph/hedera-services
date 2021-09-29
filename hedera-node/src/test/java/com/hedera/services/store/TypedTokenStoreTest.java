@@ -73,8 +73,7 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class TypedTokenStoreTest {
-	@Mock
-	private AccountStore accountStore;
+	@Mock private AccountStore accountStore;
 	@Mock
 	private UniqTokenViewsManager uniqTokenViewsManager;
 	@Mock
@@ -89,9 +88,8 @@ class TypedTokenStoreTest {
 	private BackingTokenRels backingTokenRels;
 	@Mock
 	private TokenStore legacyStore;
-
 	@Mock
-	private TokenStore tokenStore;
+	private KnownTreasuriesDelegator knownTreasuriesDelegator;
 
 	private TypedTokenStore subject;
 
@@ -108,8 +106,7 @@ class TypedTokenStoreTest {
 				() -> tokenRels,
 				backingTokenRels,
 				uniqTokenViewsManager,
-				tokenStore::addKnownTreasury,
-				legacyStore::removeKnownTreasuryForToken);
+				knownTreasuriesDelegator);
 	}
 
 	/* --- Token relationship loading --- */
@@ -287,7 +284,7 @@ class TypedTokenStoreTest {
 		subject.persistToken(token);
 
 		assertTrue(merkleToken.isDeleted());
-		verify(legacyStore).removeKnownTreasuryForToken(any(), any());
+		verify(knownTreasuriesDelegator).performRemoval(any(), any());
 	}
 
 

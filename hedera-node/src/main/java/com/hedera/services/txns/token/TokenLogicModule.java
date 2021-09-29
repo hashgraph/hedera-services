@@ -9,9 +9,9 @@ package com.hedera.services.txns.token;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,9 +21,7 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.fees.annotations.FunctionKey;
-import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
-import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.token.process.DissociationFactory;
@@ -147,18 +145,6 @@ public abstract class TokenLogicModule {
 	@Singleton
 	public static Predicate<TokenUpdateTransactionBody> provideAffectsExpiryOnly() {
 		return HederaTokenStore::affectsExpiryAtMost;
-	}
-
-	@Provides
-	@Singleton
-	public static TypedTokenStore.LegacyTreasuryRemover provideLegacyTreasuryRemover(TokenStore tokenStore) {
-		return tokenStore::removeKnownTreasuryForToken;
-	}
-
-	@Provides
-	@Singleton
-	public static TypedTokenStore.LegacyTreasuryAdder provideLegacyTreasuryAdder(TokenStore tokenStore) {
-		return tokenStore::addKnownTreasury;
 	}
 
 	@Provides

@@ -90,8 +90,7 @@ public class TypedTokenStore {
 
 	/* Only needed for interoperability with legacy HTS during refactor */
 	private final BackingTokenRels backingTokenRels;
-	private final LegacyTreasuryRemover delegate;
-	private final LegacyTreasuryAdder addKnownTreasury;
+	private final KnownTreasuriesDelegator knownTreasuriesDelegator;
 
 	@Inject
 	public TypedTokenStore(
@@ -102,8 +101,7 @@ public class TypedTokenStore {
 			Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels,
 			BackingTokenRels backingTokenRels,
 			UniqTokenViewsManager uniqTokenViewsManager,
-			LegacyTreasuryAdder legacyStoreDelegate,
-			LegacyTreasuryRemover delegate
+			KnownTreasuriesDelegator delegator
 	) {
 		this.tokens = tokens;
 		this.uniqTokenViewsManager = uniqTokenViewsManager;
@@ -111,15 +109,18 @@ public class TypedTokenStore {
 		this.uniqueTokens = uniqueTokens;
 		this.accountStore = accountStore;
 		this.transactionRecordService = transactionRecordService;
-		this.delegate = delegate;
 		this.backingTokenRels = backingTokenRels;
-		this.addKnownTreasury = legacyStoreDelegate;
+		this.knownTreasuriesDelegator = delegator;
 	}
 
 	static Pair<AccountID, TokenID> legacyReprOf(TokenRelationship rel) {
 		final var tokenId = rel.getToken().getId();
 		final var accountId = rel.getAccount().getId();
 		return Pair.of(accountId.asGrpcAccount(), tokenId.asGrpcToken());
+	}
+
+	public boolean isKnownTreasury(AccountID aId) {
+		return knownTreasuriesDelegator.performCheck(aId);
 	}
 
 	/**
@@ -353,7 +354,7 @@ public class TypedTokenStore {
 		if (token.isDeleted()) {
 			final AccountID affectedTreasury = token.getTreasury().getId().asGrpcAccount();
 			final TokenID mutatedToken = token.getId().asGrpcToken();
-			delegate.removeKnownTreasuryForToken(affectedTreasury, mutatedToken);
+			knownTreasuriesDelegator.performRemoval(affectedTreasury, mutatedToken);
 		}
 		transactionRecordService.includeChangesToToken(token);
 	}
@@ -383,7 +384,7 @@ public class TypedTokenStore {
 		mapModelChangesToMutable(token, newMerkleToken);
 
 		tokens.get().put(newMerkleTokenId, newMerkleToken);
-		addKnownTreasury.perform(token.getTreasury().getId().asGrpcAccount(), token.getId().asGrpcToken());
+		knownTreasuriesDelegator.performInsertion(token.getTreasury().getId().asGrpcAccount(), token.getId().asGrpcToken());
 
 		transactionRecordService.includeChangesToToken(token);
 	}
@@ -499,15 +500,5 @@ public class TypedTokenStore {
 
 	private void alertTokenBackingStoreOfNew(TokenRelationship newRel) {
 		backingTokenRels.addToExistingRels(legacyReprOf(newRel));
-	}
-
-	@FunctionalInterface
-	public interface LegacyTreasuryAdder {
-		void perform(final AccountID aId, final TokenID tId);
-	}
-
-	@FunctionalInterface
-	public interface LegacyTreasuryRemover {
-		void removeKnownTreasuryForToken(final AccountID aId, final TokenID tId);
 	}
 }

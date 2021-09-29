@@ -97,6 +97,21 @@ public abstract class StoresModule {
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 		return tokenRelsLedger;
 	}
+	
+	@Provides
+	public static KnownTreasuriesDelegator.LegacyTreasuryChecker provideLegacyTreasuryChecker(HederaTokenStore tokenStore) {
+		return tokenStore::isKnownTreasury;
+	}
+	
+	@Provides
+	public static KnownTreasuriesDelegator.LegacyTreasuryRemover provideLegacyTreasuryRemover(HederaTokenStore tokenStore) {
+		return tokenStore::removeKnownTreasuryForToken;
+	}
+	
+	@Provides
+	public static KnownTreasuriesDelegator.LegacyTreasuryAdder provideLegacyTreasuryAdder(HederaTokenStore tokenStore) {
+		return tokenStore::addKnownTreasury;
+	}
 
 	@Provides
 	@AreFcotmrQueriesDisabled
