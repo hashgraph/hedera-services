@@ -246,7 +246,7 @@ $ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localh
 
 # Scheduling a network freeze
 
-Freeze start times are consensus UTC times formatted as `yyyy-MM-dd.HH:mm:ss`. Freezes may be
+Freeze start times are (consensus) UTC times formatted as `yyyy-MM-dd.HH:mm:ss`. Freezes may be
 both scheduled and aborted; and a scheduled freeze may also be flagged as the trigger for an NMT
 software upgrade.
 
