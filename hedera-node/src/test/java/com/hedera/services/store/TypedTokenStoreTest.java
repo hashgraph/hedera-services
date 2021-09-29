@@ -59,6 +59,7 @@ import static com.hedera.services.store.TypedTokenStore.legacyReprOf;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -258,6 +259,28 @@ class TypedTokenStoreTest {
 		merkleToken.setDeleted(true);
 
 		assertTokenLoadFailsWith(TOKEN_WAS_DELETED);
+	}
+
+	@Test
+	void failsLoadingPausedTokenUsingLoadPossiblyDeletedOrAutoRemovedToken() {
+		givenToken(merkleTokenId, merkleToken);
+		merkleToken.setPaused(true);
+		assertLoadPossiblyDeletedTokenFailsWith(TOKEN_IS_PAUSED);
+	}
+
+	@Test
+	void failsLoadingPausedToken() {
+		givenToken(merkleTokenId, merkleToken);
+		merkleToken.setPaused(true);
+
+		assertTokenLoadFailsWith(TOKEN_IS_PAUSED);
+	}
+
+	@Test
+	void loadOrFailsCantLoadPausedToken() {
+		givenToken(merkleTokenId, merkleToken);
+		merkleToken.setPaused(true);
+		assertFailsWith(() -> subject.loadTokenOrFailWith(tokenId, FAIL_INVALID), FAIL_INVALID);
 	}
 
 	@Test
@@ -476,6 +499,7 @@ class TypedTokenStoreTest {
 		merkleToken.setSupplyKey(supplyKey);
 		merkleToken.setKycKey(kycKey);
 		merkleToken.setFreezeKey(freezeKey);
+		merkleToken.setPauseKey(pauseKey);
 
 		token.setTreasury(treasuryAccount);
 		token.setAutoRenewAccount(autoRenewAccount);
@@ -485,6 +509,7 @@ class TypedTokenStoreTest {
 		token.setFreezeKey(freezeKey);
 		token.setFrozenByDefault(freezeDefault);
 		token.setIsDeleted(false);
+		token.setPaused(false);
 		token.setExpiry(expiry);
 	}
 
@@ -515,6 +540,7 @@ class TypedTokenStoreTest {
 	private final JKey supplyKey = TxnHandlingScenario.TOKEN_SUPPLY_KT.asJKeyUnchecked();
 	private final JKey wipeKey = TxnHandlingScenario.TOKEN_WIPE_KT.asJKeyUnchecked();
 	private final JKey adminKey = TxnHandlingScenario.TOKEN_ADMIN_KT.asJKeyUnchecked();
+	private final JKey pauseKey = TxnHandlingScenario.TOKEN_PAUSE_KT.asJKeyUnchecked();
 	private final long tokenNum = 4_234L;
 	private final long tokenSupply = 777L;
 	private final String name = "Testing123";
