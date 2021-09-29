@@ -21,13 +21,9 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.records.TransactionRecordService;
-import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.txns.contract.process.CreateEvmTxProcessor;
@@ -80,23 +76,18 @@ class ContractCreateTransitionLogicTest {
 	final private FileID bytecodeSrc = IdUtils.asFile("0.0.75231");
 	final private byte[] bytecode = "NotReallyEvmBytecode".getBytes();
 
-	private Instant consensusTime;
 	private HederaFs hfs;
-	private SequenceNumber seqNo;
-	private OptionValidator validator;
-	private GlobalDynamicProperties properties;
-	private TransactionBody contractCreateTxn;
+	private Instant consensusTime;
 	private TransactionContext txnCtx;
-	private PlatformTxnAccessor accessor;
-	private ContractCreateTransitionLogic subject;
 	private AccountStore accountStore;
-	private CreateEvmTxProcessor txProcessor;
-	private EntityIdSource entityIdSource;
-	private HbarCentExchange exchange;
+	private OptionValidator validator;
 	private HederaWorldState worldState;
-	private UsagePricesProvider usagePrices;
-	private TransactionRecordService recordServices;
+	private PlatformTxnAccessor accessor;
+	private EntityIdSource entityIdSource;
+	private TransactionBody contractCreateTxn;
 	private CreateEvmTxProcessor evmTxProcessor;
+	private ContractCreateTransitionLogic subject;
+	private TransactionRecordService recordServices;
 
 	@BeforeEach
 	private void setup() {
@@ -107,15 +98,11 @@ class ContractCreateTransitionLogicTest {
 		accessor = mock(PlatformTxnAccessor.class);
 		validator = mock(OptionValidator.class);
 		withRubberstampingValidator();
-		seqNo = mock(SequenceNumber.class);
-		properties = mock(GlobalDynamicProperties.class);
-		txProcessor = mock(CreateEvmTxProcessor.class);
 		entityIdSource = mock(EntityIdSource.class);
-		exchange = mock(HbarCentExchange.class);
 		worldState = mock(HederaWorldState.class);
-		usagePrices = mock(UsagePricesProvider.class);
 		recordServices = mock(TransactionRecordService.class);
 		evmTxProcessor = mock(CreateEvmTxProcessor.class);
+		accountStore = mock(AccountStore.class);
 
 		subject = new ContractCreateTransitionLogic(hfs, entityIdSource, txnCtx, accountStore, validator, worldState, recordServices, evmTxProcessor);
 	}

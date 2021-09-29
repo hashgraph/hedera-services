@@ -26,6 +26,7 @@
     <ant-contrib.version>1.0b3</ant-contrib.version>
     <ant-nodeps.version>1.8.1</ant-nodeps.version>
     <jackson.version>2.11.2</jackson.version>
+    <besu.version>21.10.0-RC1-SNAPSHOT</besu.version>
   </properties>
 
   <build>
@@ -299,18 +300,18 @@
     </dependency>
     <dependency>
       <groupId>org.hyperledger.besu</groupId>
-      <artifactId>plugin-api</artifactId>
-      <version>21.7.4</version>
-    </dependency>
+      <artifactId>bls12-381</artifactId>
+      <version>0.3.0</version>
+	</dependency>
     <dependency>
       <groupId>org.hyperledger.besu</groupId>
       <artifactId>evm</artifactId>
-      <version>21.7.4</version>
+      <version>${besu.version}</version>
     </dependency>
     <dependency>
       <groupId>org.hyperledger.besu</groupId>
       <artifactId>besu-datatypes</artifactId>
-      <version>21.7.4</version>
+      <version>${besu.version}</version>
     </dependency>
   </dependencies>
 
@@ -332,7 +333,7 @@
     </repository>
     <repository>
       <snapshots>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
       </snapshots>
       <id>besu</id>
       <name>Hyperledger Besu</name>

@@ -31,6 +31,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.contract.process.CreateEvmTxProcessor;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -104,17 +105,18 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		final var codeWithConstructorArgs = prepareCodeWithConstructorArguments(op);
 
 		/* --- Do the business logic --- */
-		final var newContractId = worldState.newContractId(sender.getId().asEvmAddress());
+		final var newContractAddress = worldState.newContractAddress(sender.getId().asEvmAddress());
 		final var result = evmTxProcessor.execute(
 				sender,
-				newContractId.asEvmAddress(),
+				newContractAddress,
 				op.getGas(),
 				op.getInitialBalance(),
 				codeWithConstructorArgs,
 				txnCtx.consensusTime()
 		);
 		if (result.isSuccessful()) {
-			worldState.addPropertiesFor(newContractId.asEvmAddress(), op.getMemo(), key, proxyAccount);
+			worldState.addPropertiesFor(newContractAddress,
+					op.getMemo(), key, proxyAccount);
 		} else {
 			worldState.reclaimContractId();
 		}
@@ -125,7 +127,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 
 		/* --- Externalise changes --- */
 		if (result.isSuccessful()) {
-			txnCtx.setCreated(newContractId.asGrpcContract());
+			txnCtx.setCreated(EntityIdUtils.contractParsedFromSolidityAddress(newContractAddress.toArray()));
 		}
 		recordService.externaliseEvmCreateTransaction(result);
 	}

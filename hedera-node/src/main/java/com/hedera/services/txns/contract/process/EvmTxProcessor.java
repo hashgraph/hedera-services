@@ -29,6 +29,9 @@ import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.txns.contract.gascalculator.GasCalculatorHedera_0_19_0;
+import com.hedera.services.txns.contract.operation.HederaCreateOperation;
+import com.hedera.services.txns.contract.operation.HederaSelfDestructOperation;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -44,7 +47,6 @@ import org.hyperledger.besu.evm.contractvalidation.MaxCodeSizeRule;
 import org.hyperledger.besu.evm.contractvalidation.PrefixCodeRule;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogsBloomFilter;
 import org.hyperledger.besu.evm.operation.InvalidOperation;
@@ -55,12 +57,17 @@ import org.hyperledger.besu.evm.processor.AbstractMessageProcessor;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
+import org.hyperledger.besu.evm.tracing.StandardJsonTracer;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
@@ -91,13 +98,14 @@ abstract class EvmTxProcessor {
 		this.exchange = exchange;
 		this.usagePrices = usagePrices;
 		this.dynamicProperties = dynamicProperties;
-		this.gasCalculator = new LondonGasCalculator();
+		this.gasCalculator = new GasCalculatorHedera_0_19_0();
 
-		var gasCalculator = new LondonGasCalculator();
 		var operationRegistry = new OperationRegistry();
 		registerLondonOperations(operationRegistry, gasCalculator, BigInteger.valueOf(dynamicProperties.getChainId()));
-		// TODO add HederaCreateOperation
-		// make CREATE2 invalid
+		/* Register customized Hedera Opcodes */
+		operationRegistry.put(new HederaCreateOperation(gasCalculator));
+		operationRegistry.put(new HederaSelfDestructOperation(gasCalculator));
+		/* Deregister CREATE2 Opcode */
 		operationRegistry.put(new InvalidOperation(0xF5, gasCalculator));
 		var evm = new EVM(operationRegistry, gasCalculator);
 
@@ -119,7 +127,8 @@ abstract class EvmTxProcessor {
 												  Instant consensusTime, boolean isStatic) {
 		try {
 			final long gasLimit = providedGasLimit > dynamicProperties.maxGas() ? dynamicProperties.maxGas() : providedGasLimit;
-			final Wei upfrontCost = Wei.of(Math.addExact(Math.multiplyExact(gasLimit, gasPrice), value));
+			final Wei gasCost = Wei.of(Math.multiplyExact(gasLimit, gasPrice));
+			final Wei upfrontCost = gasCost.add(value);
 			final Gas intrinsicGas =
 					gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
 			final var updater = worldState.updater();
@@ -133,13 +142,12 @@ abstract class EvmTxProcessor {
 			}
 
 			final Address coinbase = Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress();
-			final HederaBlockHeader blockHeader = new HederaBlockHeader(coinbase, gasLimit,
+			final HederaBlockValues blockValues = new HederaBlockValues(gasLimit,
 					consensusTime.getEpochSecond());
 			Address senderEvmAddress = sender.getId().asEvmAddress();
 			final MutableAccount mutableSender = updater.getOrCreateSenderAccount(senderEvmAddress).getMutable();
-
 			if (!isStatic) {
-				mutableSender.decrementBalance(upfrontCost);
+				mutableSender.decrementBalance(gasCost);
 			}
 
 			final Gas gasAvailable = Gas.of(gasLimit).minus(intrinsicGas);
@@ -158,13 +166,15 @@ abstract class EvmTxProcessor {
 							.sender(senderEvmAddress)
 							.value(valueAsWei)
 							.apparentValue(valueAsWei)
-							.blockHeader(blockHeader)
+							.blockValues(blockValues)
 							.depth(0)
 							.completer(__ -> {
 							})
 							.isStatic(isStatic)
 							.miningBeneficiary(coinbase)
-							.blockHashLookup(h -> null);
+							.blockHashLookup(h -> null)
+							.contextVariables(Map.of("rbh", storageByteHoursTinyBarsGiven(consensusTime)));
+
 			final MessageFrame initialFrame = buildInitialFrame(commonInitialFrame,
 					updater,
 					receiver, payload);
@@ -210,11 +220,13 @@ abstract class EvmTxProcessor {
 						logs,
 						Optional.of(bloom),
 						gasUsedByTransaction.toLong(),
+						gasPrice,
 						initialFrame.getOutputData(),
 						initialFrame.getRecipientAddress());
 			} else {
 				return TransactionProcessingResult.failed(
 						gasUsedByTransaction.toLong(),
+						gasPrice,
 						initialFrame.getRevertReason(),
 						initialFrame.getExceptionalHaltReason());
 			}
@@ -228,6 +240,15 @@ abstract class EvmTxProcessor {
 		final var timestamp = Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build();
 		FeeData prices = usagePrices.defaultPricesGiven(functionType, timestamp);
 		long feeInTinyCents = prices.getServicedata().getGas() / 1000;
+		long feeInTinyBars = FeeBuilder.getTinybarsFromTinyCents(exchange.rate(timestamp), feeInTinyCents);
+		return Math.max(1L, feeInTinyBars);
+	}
+
+	protected long storageByteHoursTinyBarsGiven(Instant consensusTime) {
+		final var functionType = getFunctionType();
+		final var timestamp = Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build();
+		FeeData prices = usagePrices.defaultPricesGiven(functionType, timestamp);
+		long feeInTinyCents = prices.getServicedata().getRbh() / 1000;
 		long feeInTinyBars = FeeBuilder.getTinybarsFromTinyCents(exchange.rate(timestamp), feeInTinyCents);
 		return Math.max(1L, feeInTinyBars);
 	}

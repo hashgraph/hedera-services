@@ -111,7 +111,8 @@ class ContractCallLocalResourceUsageTest {
 	@Test
 	void setsResultInQueryCxtIfPresent() {
 		final var queryCtx = new HashMap<String, Object>();
-		final var transactionProcessingResult = TransactionProcessingResult.successful(new ArrayList<>(), Optional.empty(), 0, Bytes.EMPTY, callerID.asEvmAddress());
+		final var transactionProcessingResult = TransactionProcessingResult.successful(new ArrayList<>(),
+				Optional.empty(), 0, 1, Bytes.EMPTY, callerID.asEvmAddress());
 		final var response = okResponse(transactionProcessingResult);
 		final var estimateResponse = subject.dummyResponse(target);
 		final var expected = expectedUsage();

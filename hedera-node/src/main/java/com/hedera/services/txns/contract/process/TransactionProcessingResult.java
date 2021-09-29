@@ -61,6 +61,7 @@ public class TransactionProcessingResult {
 
 	private final Bytes output;
 	private final long gasUsed;
+	private final long gasPrice;
 	private final Status status;
 	private final List<Log> logs;
 	private final Optional<Address> recipient;
@@ -72,6 +73,7 @@ public class TransactionProcessingResult {
 
 	public static TransactionProcessingResult failed(
 			final long gasUsed,
+			final long gasPrice,
 			final Optional<Bytes> revertReason,
 			final Optional<ExceptionalHaltReason> haltReason) {
 		return new TransactionProcessingResult(
@@ -79,6 +81,7 @@ public class TransactionProcessingResult {
 				new ArrayList<>(),
 				Optional.empty(),
 				gasUsed,
+				gasPrice,
 				Bytes.EMPTY,
 				Optional.empty(),
 				revertReason,
@@ -89,6 +92,7 @@ public class TransactionProcessingResult {
 			final List<Log> logs,
 			final Optional<LogsBloomFilter> bloom,
 			final long gasUsed,
+			final long gasPrice,
 			final Bytes output,
 			final Address recipient) {
 		return new TransactionProcessingResult(
@@ -96,6 +100,7 @@ public class TransactionProcessingResult {
 				logs,
 				bloom,
 				gasUsed,
+				gasPrice,
 				output,
 				Optional.of(recipient),
 				Optional.empty(),
@@ -107,6 +112,7 @@ public class TransactionProcessingResult {
 			final List<Log> logs,
 			final Optional<LogsBloomFilter> bloom,
 			final long gasUsed,
+			final long gasPrice,
 			final Bytes output,
 			final Optional<Address> recipient,
 			final Optional<Bytes> revertReason,
@@ -115,6 +121,7 @@ public class TransactionProcessingResult {
 		this.output = output;
 		this.status = status;
 		this.gasUsed = gasUsed;
+		this.gasPrice = gasPrice;
 		this.bloomFilter = bloom;
 		this.recipient = recipient;
 		this.haltReason = haltReason;
@@ -137,6 +144,12 @@ public class TransactionProcessingResult {
 	public boolean isSuccessful() {
 		return status == Status.SUCCESSFUL;
 	}
+
+	public long getGasPrice() {
+		return gasPrice;
+	}
+
+	public long getGasUsed() { return gasUsed; }
 
 	/**
 	 * Returns the exceptional halt reason

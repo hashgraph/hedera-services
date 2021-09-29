@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.CommonUtils;
+import org.hyperledger.besu.datatypes.Address;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -173,6 +174,9 @@ public final class EntityIdUtils {
 	public static byte[] asSolidityAddress(final ContractID id) {
 		return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum());
 	}
+	public static byte[] asSolidityAddress(final AccountID id) {
+		return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum());
+	}
 	public static String asSolidityAddressHex(Id id) {
 		return CommonUtils.hex(asSolidityAddress((int) id.getShard(), id.getRealm(), id.getNum()));
 	}
@@ -235,4 +239,5 @@ public final class EntityIdUtils {
 		final var rightNum = unsignedLowOrder32From(scopedSerialNo);
 		return STATIC_PROPERTIES.scopedIdLiteralWith(leftNum) + "." + rightNum;
 	}
+
 }

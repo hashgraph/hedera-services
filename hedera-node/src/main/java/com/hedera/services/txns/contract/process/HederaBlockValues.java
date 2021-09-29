@@ -22,32 +22,18 @@ package com.hedera.services.txns.contract.process;
  *
  */
 
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Hash;
-import org.hyperledger.besu.evm.fluent.SimpleBlockHeader;
+import org.hyperledger.besu.evm.frame.BlockValues;
 
 import java.util.Optional;
 
-public class HederaBlockHeader extends SimpleBlockHeader {
+public class HederaBlockValues implements BlockValues {
 
 	protected final long gasLimit;
 	protected final long timestamp;
-	protected final Address coinbase;
 
-	public HederaBlockHeader(Address coinbase, long gasLimit, long timestamp) {
-		this.coinbase = coinbase;
+	public HederaBlockValues(long gasLimit, long timestamp) {
 		this.gasLimit = gasLimit;
 		this.timestamp = timestamp;
-	}
-
-	@Override
-	public Address getCoinbase() {
-		return coinbase;
-	}
-
-	@Override
-	public Hash getBlockHash() {
-		return Hash.EMPTY;
 	}
 
 	@Override
@@ -61,5 +47,7 @@ public class HederaBlockHeader extends SimpleBlockHeader {
 	}
 
 	@Override
-	public Optional<Long> getBaseFee() { return Optional.of(0L); }
+	public Optional<Long> getBaseFee() {
+		return Optional.of(0L);
+	}
 }

@@ -49,7 +49,7 @@ public interface EntityIdSource {
 	 * @param newContractSponsor the account of the new contract
 	 * @return an appropriate id to use
 	 */
-	Id newContractId(Id newContractSponsor);
+	ContractID newContractId(AccountID newContractSponsor);
 
 	/**
 	 * Returns the {@link FileID} to use for a new account with the given sponsor.

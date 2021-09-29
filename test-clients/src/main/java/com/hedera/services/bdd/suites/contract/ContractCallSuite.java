@@ -51,7 +51,6 @@ import java.util.function.BiConsumer;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
-import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isContractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -83,10 +82,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -118,41 +115,33 @@ public class ContractCallSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-				Arrays.asList(
-						benchmarkSingleSetter()
-//						callingContract()
-//				Arrays.asList(payableSuccess())
-//				positiveSpecs()
-//				negativeSpecs(),
-//				Arrays.asList(fridayThe13thSpec())
-				)
+				positiveSpecs(),
+				negativeSpecs(),
+				Arrays.asList(fridayThe13thSpec())
 		);
 	}
 
 	List<HapiApiSpec> negativeSpecs() {
 		return Arrays.asList(
-				insufficientFee(),
-				insufficientGas(),
-				invalidContract(),
-				invalidAbi(),
-				nonPayable(),
-				smartContractFailFirst()
+//				insufficientGas(), //pass
+//				invalidContract(), //pass
+//				smartContractFailFirst()
 		);
 	}
 
 	List<HapiApiSpec> positiveSpecs() {
 		return Arrays.asList(
-//				vanillaSuccess(),
-//				resultSizeAffectsFees(),
-//				payableSuccess()
-				simpleUpdate()
-//				depositSuccess(),
+//				resultSizeAffectsFees(), //pass
+//				payableSuccess(), //pass
+				benchmarkSingleSetter()
+//				depositSuccess(), //pass
 //				depositDeleteSuccess(),
 //				multipleDepositSuccess(),
 //				payTestSelfDestructCall(),
 //				multipleSelfDestructsAreSafe(),
-//				smartContractInlineAssemblyCheck(),
-//				ocToken()
+//				smartContractInlineAssemblyCheck(), //pass
+//				ocToken(),
+//				callingContract() //pass
 		);
 	}
 
@@ -720,20 +709,6 @@ public class ContractCallSuite extends HapiApiSuite {
 														);
 	}
 
-	HapiApiSpec simpleUpdate() {
-		return defaultHapiSpec("SimpleUpdate")
-				.given(
-						cryptoCreate("payer").balance(1_000_000_000_000L).logged(),
-						fileCreate("simpleUpdateBytecode").path(ContractResources.SIMPLE_UPDATE)
-				).when(
-						contractCreate("simpleUpdateContract").bytecode("simpleUpdateBytecode").gas(1_000_000),
-						contractCall("simpleUpdateContract", ContractResources.SIMPLE_UPDATE_ABI, 5, 42).gas(1_000_000),
-						contractCall("simpleUpdateContract", ContractResources.SIMPLE_SELFDESTRUCT_UPDATE_ABI, "0x0000000000000000000000000000000000000002").gas(1_000_000)
-				).then(
-						contractCall("simpleUpdateContract", ContractResources.SIMPLE_UPDATE_ABI, 15, 434).gas(1_000_000).hasKnownStatus(CONTRACT_DELETED)
-				);
-	}
-
 	HapiApiSpec callingContract() {
 		return defaultHapiSpec("CallingContract")
 				.given(
@@ -755,39 +730,6 @@ public class ContractCallSuite extends HapiApiSuite {
 				);
 	}
 
-	HapiApiSpec vanillaSuccess() {
-		return defaultHapiSpec("VanillaSuccess")
-				.given(
-						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
-						contractCreate("parentDelegate").bytecode("parentDelegateBytecode").adminKey(THRESHOLD),
-						getContractInfo("parentDelegate").saveToRegistry("parentInfo")
-				).when(
-						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI).via("createChildTxn"),
-						contractCall("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI).via("getChildResultTxn"),
-						contractCall("parentDelegate", ContractResources.GET_CHILD_ADDRESS_ABI).via(
-								"getChildAddressTxn")
-				).then(
-						getTxnRecord("createChildTxn")
-								.saveCreatedContractListToRegistry("createChild")
-								.logged(),
-						getTxnRecord("getChildResultTxn")
-								.hasPriority(recordWith().contractCallResult(
-										resultWith().resultThruAbi(
-												ContractResources.GET_CHILD_RESULT_ABI,
-												isLiteralResult(new Object[] { BigInteger.valueOf(7L) })))),
-						getTxnRecord("getChildAddressTxn")
-								.hasPriority(recordWith().contractCallResult(
-										resultWith()
-												.resultThruAbi(
-														ContractResources.GET_CHILD_ADDRESS_ABI,
-														isContractWith(contractWith()
-																.nonNullContractId()
-																.propertiesInheritedFrom("parentInfo")))
-												.logs(inOrder()))),
-						contractListWithPropertiesInheritedFrom("createChildCallResult", 1, "parentInfo")
-				);
-	}
-
 	HapiApiSpec insufficientGas() {
 		return defaultHapiSpec("InsufficientGas")
 				.given(
@@ -802,36 +744,6 @@ public class ContractCallSuite extends HapiApiSuite {
 				);
 	}
 
-	HapiApiSpec insufficientFee() {
-		return defaultHapiSpec("InsufficientFee")
-				.given(
-						cryptoCreate("accountToPay"),
-						fileCreate("parentDelegateBytecode")
-								.path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
-						contractCreate("parentDelegate").bytecode("parentDelegateBytecode")
-				).when().then(
-						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI).fee(0L)
-								.payingWith("accountToPay")
-								.hasPrecheck(INSUFFICIENT_TX_FEE));
-	}
-
-	HapiApiSpec nonPayable() {
-		return defaultHapiSpec("NonPayable")
-				.given(
-						fileCreate("parentDelegateBytecode")
-								.path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
-						contractCreate("parentDelegate").bytecode("parentDelegateBytecode")
-				).when(
-						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI).via("callTxn").sending(
-								depositAmount)
-								.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-				).then(
-						getTxnRecord("callTxn").hasPriority(
-								recordWith().contractCallResult(
-										resultWith().logs(inOrder())))
-				);
-	}
-
 	HapiApiSpec invalidContract() {
 		String invalidContract = HapiSpecSetup.getDefaultInstance().invalidContractName();
 
@@ -839,17 +751,6 @@ public class ContractCallSuite extends HapiApiSuite {
 				.given().when().then(
 						contractCall(invalidContract, ContractResources.CREATE_CHILD_ABI)
 								.hasPrecheck(INVALID_CONTRACT_ID));
-	}
-
-	HapiApiSpec invalidAbi() {
-		return defaultHapiSpec("InvalidAbi")
-				.given(
-						fileCreate("parentDelegateBytecode")
-								.path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
-						contractCreate("parentDelegate").bytecode("parentDelegateBytecode")
-				).when().then(
-						contractCall("parentDelegate", ContractResources.SEND_FUNDS_ABI)
-								.hasKnownStatus(CONTRACT_REVERT_EXECUTED));
 	}
 
 	private HapiApiSpec resultSizeAffectsFees() {

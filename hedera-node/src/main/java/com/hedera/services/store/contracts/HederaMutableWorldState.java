@@ -39,7 +39,7 @@ public interface HederaMutableWorldState extends WorldState, WorldView {
 	 * @param sponsor sponsor of the new contract
 	 * @return newly generated Id
 	 */
-	Id newContractId(Address sponsor);
+	Address newContractAddress(Address sponsor);
 
 	/**
 	 * Reclaims the last created {@link Id}

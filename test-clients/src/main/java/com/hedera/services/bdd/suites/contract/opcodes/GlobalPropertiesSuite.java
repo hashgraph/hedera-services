@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.suites.contract.operations;
+package com.hedera.services.bdd.suites.contract.opcodes;
 
 /*-
  * ‌

@@ -23,6 +23,7 @@ package com.hedera.services.ledger.ids;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -52,11 +53,13 @@ public class SeqNoEntityIdSource implements EntityIdSource {
 	}
 
 	@Override
-	public Id newContractId(Id newContractSponsor) {
+	public ContractID newContractId(AccountID newContractSponsor) {
 		provisionalIds++;
-		return new Id(newContractSponsor.getRealm(),
-				newContractSponsor.getShard(),
-				seqNo.get().getAndIncrement());
+		return ContractID.newBuilder()
+				.setRealmNum(newContractSponsor.getRealmNum())
+				.setShardNum(newContractSponsor.getShardNum())
+				.setContractNum(seqNo.get().getAndIncrement())
+				.build();
 	}
 
 	@Override

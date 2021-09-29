@@ -51,10 +51,8 @@ public class ContractResources {
 	public static final String DOUBLE_SEND_BYTECODE_PATH = bytecodePath("DoubleSend");
 	public static final String EMPTY_CONSTRUCTOR = bytecodePath("EmptyConstructor");
 	public static final String BENCHMARK_CONTRACT = bytecodePath("Benchmark");
-	public static final String SIMPLE_UPDATE = bytecodePath("SimpleUpdate");
-	public static final String LOGS = bytecodePath("Logs");
+
 	public static final String CALLING_CONTRACT = bytecodePath("CallingContract");
-	public static final String GLOBAL_PROPERTIES = bytecodePath("GlobalProperties");
 
 	public static final String TWO_SSTORES = "{ \"inputs\": [ { \"internalType\": \"bytes32\", \"name\": \"_singleProp\", \"type\": \"bytes32\" } ], \"name\": \"twoSSTOREs\", \"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
@@ -357,6 +355,8 @@ public class ContractResources {
 	public static final String CALLING_CONTRACT_CALL_CONTRACT = "{ \"constant\": false, \"inputs\": [ { \"name\": \"_addr\", \"type\": \"address\" }, { \"name\": \"_var1\", \"type\": \"uint256\" } ], \"name\": \"callContract\", \"outputs\": [], \"payable\": false, \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 	public static final String CALLING_CONTRACT_VIEW_VAR = "{ \"constant\": true, \"inputs\": [], \"name\": \"getVar1\", \"outputs\": [ { \"name\": \"\", \"type\": \"uint256\" } ], \"payable\": false, \"stateMutability\": \"view\", \"type\": \"function\" }";
 
+	/* Bytecode & ABI for Logs.sol */
+	public static final String LOGS = bytecodePath("Logs");
 	public static final String LOGS_LOG0_ABI = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"n\"," +
 			"\"type\":\"uint256\"}],\"name\":\"log0\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	public static final String LOGS_LOG1_ABI = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"n\"," +
@@ -367,6 +367,8 @@ public class ContractResources {
 	public static final String LOGS_LOG4_ABI = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"n0\"," +
 			"\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"n1\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"n2\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"n3\",\"type\":\"uint256\"}],\"name\":\"log4\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
+	/* Bytecode & ABI for GlobalProperties.sol */
+	public static final String GLOBAL_PROPERTIES = bytecodePath("GlobalProperties");
 	public static final String GLOBAL_PROPERTIES_CHAIN_ID_ABI = "{\"inputs\":[],\"name\":\"getChainID\"," +
 			"\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}]," +
 			"\"stateMutability\":\"view\",\"type\":\"function\"}";
@@ -379,6 +381,16 @@ public class ContractResources {
 	public static final String GLOBAL_PROPERTIES_GASLIMIT_ABI = "{\"inputs\":[],\"name\":\"getGasLimit\"," +
 			"\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}]," +
 			"\"stateMutability\":\"view\",\"type\":\"function\"}";
+
+	/* ABI for FactoryContract.sol */
+	public static final String FACTORY_CONTRACT = bytecodePath("FactoryContract");
+	public static final String FACTORY_CONTRACT_SUCCESS = "{ \"constant\": false, \"inputs\": [], \"name\": \"deploymentSuccess\", \"outputs\": [], \"payable\": false, \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+	public static final String FACTORY_CONTRACT_FAILURE_AFTER_DEPLOY = "{ \"constant\": false, \"inputs\": [], \"name\": \"failureAfterDeploy\", \"outputs\": [], \"payable\": false, \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+	public static final String FACTORY_CONTRACT_FAILURE = "{ \"constant\": false, \"inputs\": [], \"name\": \"deploymentFailure\", \"outputs\": [], \"payable\": false, \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+	public static final String FACTORY_CONTRACT_STACKED_DEPLOYMENT_SUCCESS = "{ \"constant\": false, \"inputs\": [], " +
+			"\"name\": \"stackedDeploymentSuccess\", \"outputs\": [], \"payable\": false, \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+	public static final String FACTORY_CONTRACT_STACKED_DEPLOYMENT_FAILURE = "{ \"constant\": false, \"inputs\": [], " +
+			"\"name\": \"stackedDeploymentFailure\", \"outputs\": [], \"payable\": false, \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
 	public static String bytecodePath(String bytecode) {
 		return String.format("src/main/resource/contract/bytecodes/%s.bin", bytecode);

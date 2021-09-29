@@ -25,8 +25,8 @@ package com.hedera.services.store.contracts;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
@@ -45,12 +45,14 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.AccountStorageEntry;
 import org.hyperledger.besu.evm.worldstate.AbstractWorldUpdater;
 import org.hyperledger.besu.evm.worldstate.UpdateTrackingAccount;
+import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -71,6 +73,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 	private final List<Address> provisionalAccountDeletes = new ArrayList<>();
 	private final Map<Address, Bytes> provisionalCodeUpdates = new HashMap<>();
 	private final Map<Address, WorldStateAccount> provisionalAccountUpdates = new HashMap<>();
+	private final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
 
 	@Inject
 	public HederaWorldState(
@@ -83,17 +86,49 @@ public class HederaWorldState implements HederaMutableWorldState {
 		this.repositoryRoot = repositoryRoot;
 	}
 
+
 	@Override
 	public List<ContractID> persist() {
 		provisionalAccountDeletes.forEach(address -> {
 			final var accountId = accountParsedFromSolidityAddress(address.toArray());
-			validateTrue(ledger.exists(accountId) && !ledger.isDeleted(accountId), FAIL_INVALID);
-			HederaAccountCustomizer customizer = new HederaAccountCustomizer()
-					.isDeleted(true);
-			ledger.customize(accountId, customizer);
+			// account may have been created and deleted within the same transaction.
+			if (ledger.exists(accountId)) {
+				var merkleAccount = ledger.get(accountId);
+				// selfdestruct adjusts balances to zero
+				ledger.adjustBalance(accountId, -merkleAccount.getBalance());
+
+				validateTrue(!ledger.isDeleted(accountId), FAIL_INVALID);
+				HederaAccountCustomizer customizer = new HederaAccountCustomizer().isDeleted(true);
+				ledger.customize(accountId, customizer);
+			}
 		});
 
 		final var createdContracts = new ArrayList<ContractID>();
+
+		// copy over sponsor account info for CREATE operations
+		sponsorMap.forEach((contract, sponsorAddress) -> {
+			if (!provisionalAccountUpdates.containsKey(contract)) return;
+
+			AccountID sponsorAccount = EntityIdUtils.accountParsedFromSolidityAddress(sponsorAddress.toArrayUnsafe());
+
+			WorldStateAccount provisionalAccount = provisionalAccountUpdates.get(contract);
+			if (ledger.exists(sponsorAccount)) {
+				MerkleAccount sponsorMerkleAccount = ledger.get(sponsorAccount);
+				provisionalAccount.setProxyAccount(sponsorMerkleAccount.getProxy());
+				provisionalAccount.setKey(sponsorMerkleAccount.getAccountKey());
+				provisionalAccount.setMemo(sponsorMerkleAccount.getMemo());
+				provisionalAccount.setAutoRenew(sponsorMerkleAccount.getAutoRenewSecs());
+				provisionalAccount.setExpiry(sponsorMerkleAccount.getExpiry());
+			} else if (provisionalAccountUpdates.containsKey(sponsorAddress)) {
+				WorldStateAccount sponsorProvisionalAccount = provisionalAccountUpdates.get(sponsorAddress);
+				provisionalAccount.setProxyAccount(sponsorProvisionalAccount.getProxyAccount());
+				provisionalAccount.setKey(sponsorProvisionalAccount.getKey());
+				provisionalAccount.setMemo(sponsorProvisionalAccount.getMemo());
+				provisionalAccount.setAutoRenew(sponsorProvisionalAccount.getAutoRenew());
+				provisionalAccount.setExpiry(sponsorProvisionalAccount.getExpiry());
+			}
+		});
+
 		provisionalAccountUpdates.forEach((address, worldStateAccount) -> {
 			final var accountId = accountParsedFromSolidityAddress(address.toArray());
 			if (ledger.exists(accountId)) {
@@ -102,15 +137,17 @@ public class HederaWorldState implements HederaMutableWorldState {
 				long adjustment = newBalance - oldBalance;
 				ledger.adjustBalance(accountId, adjustment);
 			} else {
-				var key = new JContractIDKey(worldStateAccount.getProxyAccount().toGrpcContractId()); // TODO: might be used for factory contracts
+//				var key = new JContractIDKey(worldStateAccount.getProxyAccount().toGrpcContractId()); // TODO: might be used for factory contracts
 				HederaAccountCustomizer customizer = new HederaAccountCustomizer()
 						.key(worldStateAccount.getKey())
 						.memo("")
-						//TODO will be populated once UpdateTrackingAccount is extended
-//						.proxy(worldStateAccount.getProxyAccount().asEntityId())
-//						.expiry(worldStateAccount.getExpiry())
-//						.autoRenewPeriod(worldStateAccount.getAutoRenew())
+						.proxy(worldStateAccount.getProxyAccount())
+						.expiry(worldStateAccount.getExpiry())
+						.autoRenewPeriod(worldStateAccount.getAutoRenew())
 						.isSmartContract(true);
+				if (provisionalAccountDeletes.contains(address)) {
+					customizer.isDeleted(true);
+				}
 
 				long balance = worldStateAccount.getBalance().toLong();
 				ledger.spawn(accountId, balance, customizer);
@@ -127,13 +164,16 @@ public class HederaWorldState implements HederaMutableWorldState {
 		provisionalCodeUpdates.clear();
 		provisionalAccountUpdates.clear();
 		provisionalAccountDeletes.clear();
+		sponsorMap.clear();
 
 		return createdContracts;
 	}
 
 	@Override
-	public Id newContractId(Address sponsor) {
-		return ids.newContractId(Id.fromEvmAddress(sponsor));
+	public Address newContractAddress(Address sponsor) {
+		final var newContractId =
+				ids.newContractId(EntityIdUtils.accountParsedFromSolidityAddress(sponsor.toArrayUnsafe()));
+		return Address.wrap(Bytes.wrap(EntityIdUtils.asSolidityAddress(newContractId)));
 	}
 
 	@Override
@@ -200,7 +240,8 @@ public class HederaWorldState implements HederaMutableWorldState {
 			this.balance = balance;
 		}
 
-		public WorldStateAccount(final Address address, final Wei balance, long expiry, long autoRenew, EntityId proxyAccount) {
+		public WorldStateAccount(final Address address, final Wei balance, long expiry, long autoRenew,
+				EntityId proxyAccount) {
 			this.expiry = expiry;
 			this.address = address;
 			this.balance = balance;
@@ -279,40 +320,54 @@ public class HederaWorldState implements HederaMutableWorldState {
 					"}";
 		}
 
-		public void setMemo(String memo) {
-			this.memo = memo;
-		}
-
-		public void setKey(JKey key) {
-			this.key = key;
-		}
-
-		public void setProxyAccount(EntityId proxyAccount) {
-			this.proxyAccount = proxyAccount;
-		}
-
 		public String getMemo() {
 			return memo;
+		}
+
+		public void setMemo(String memo) {
+			this.memo = memo;
 		}
 
 		public JKey getKey() {
 			return key;
 		}
 
+		public void setKey(JKey key) {
+			this.key = key;
+		}
+
 		public EntityId getProxyAccount() {
 			return proxyAccount;
 		}
 
-		public long getAutoRenew() { return autoRenew; }
+		public void setProxyAccount(EntityId proxyAccount) {
+			this.proxyAccount = proxyAccount;
+		}
 
-		public long getExpiry() { return expiry; }
+		public long getAutoRenew() {
+			return autoRenew;
+		}
+
+		public void setAutoRenew(final long autoRenew) {
+			this.autoRenew = autoRenew;
+		}
+
+		public long getExpiry() {
+			return expiry;
+		}
+
+		public void setExpiry(final long expiry) {
+			this.expiry = expiry;
+		}
 	}
 
-	public static class Updater extends AbstractWorldUpdater<HederaWorldState, WorldStateAccount> {
+	public static class Updater
+			extends AbstractWorldUpdater<HederaWorldState, WorldStateAccount>
+			implements HederaWorldUpdater {
 
-		protected Updater(final HederaWorldState world) {
-			super(world);
-		}
+		final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
+
+		protected Updater(final HederaWorldState world) { super(world); }
 
 		@Override
 		protected WorldStateAccount getForMutation(final Address address) {
@@ -331,15 +386,29 @@ public class HederaWorldState implements HederaMutableWorldState {
 		}
 
 		@Override
+		public Address allocateNewContractAddress(final Address sponsor) {
+			return wrappedWorldView().newContractAddress(sponsor);
+		}
+
+		public Map<Address, Address> getSponsorMap() {
+			return sponsorMap;
+		}
+
+		@Override
 		public void revert() {
 			getDeletedAccounts().clear();
 			getUpdatedAccounts().clear();
+			for (int i = 0; i < sponsorMap.size(); i++) {
+				wrappedWorldView().reclaimContractId();
+			}
+			sponsorMap.clear();
 		}
 
 		@Override
 		public void commit() {
 			final HederaWorldState wrapped = wrappedWorldView();
 			wrapped.provisionalAccountDeletes.addAll(getDeletedAccountAddresses());
+			wrapped.sponsorMap.putAll(sponsorMap);
 
 			for (final UpdateTrackingAccount<WorldStateAccount> updated : getUpdatedAccounts()) {
 				final WorldStateAccount origin = updated.getWrappedAccount();
@@ -379,6 +448,18 @@ public class HederaWorldState implements HederaMutableWorldState {
 				wrapped.provisionalAccountUpdates.put(updated.getAddress(),
 						wrapped.new WorldStateAccount(updated.getAddress(), updated.getBalance()));
 			}
+		}
+
+		@Override
+		public WorldUpdater updater() {
+			return new HederaStackedWorldStateUpdater(this, wrappedWorldView());
+		}
+
+		@Override
+		public WorldStateAccount getHederaAccount(final Address address) {
+			final HederaWorldState wrapped = wrappedWorldView();
+			var result = wrapped.provisionalAccountUpdates.get(address);
+			return result != null ? result : wrapped.get(address);
 		}
 	}
 }

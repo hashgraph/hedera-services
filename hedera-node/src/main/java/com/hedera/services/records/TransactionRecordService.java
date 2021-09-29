@@ -26,11 +26,14 @@ import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
+import com.hedera.services.txns.contract.operation.HederaExceptionalHaltReason;
 import com.hedera.services.txns.contract.process.TransactionProcessingResult;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
+import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -40,6 +43,8 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 @Singleton
@@ -160,8 +165,9 @@ public class TransactionRecordService {
 	 * @param result the processing result of the EVM transaction
 	 */
 	public void externaliseEvmCreateTransaction(TransactionProcessingResult result) {
-		txnCtx.setStatus(result.isSuccessful() ? SUCCESS : CONTRACT_REVERT_EXECUTED);
+		txnCtx.setStatus(getStatus(result));
 		txnCtx.setCreateResult(result.toGrpc());
+		txnCtx.addNonThresholdFeeChargedToPayer(result.getGasPrice() * result.getGasUsed());
 	}
 
 	/**
@@ -171,7 +177,26 @@ public class TransactionRecordService {
 	 * 		the processing result of the EVM transaction
 	 */
 	public void externaliseEvmCallTransaction(TransactionProcessingResult result) {
-		txnCtx.setStatus(result.isSuccessful() ? SUCCESS : CONTRACT_REVERT_EXECUTED);
+		txnCtx.setStatus(getStatus(result));
 		txnCtx.setCallResult(result.toGrpc());
+		txnCtx.addNonThresholdFeeChargedToPayer(result.getGasPrice() * result.getGasUsed());
 	}
+
+	@NotNull
+	private ResponseCodeEnum getStatus(final TransactionProcessingResult result) {
+		if (result.isSuccessful()) {
+			return SUCCESS;
+		} else if (result.getHaltReason().isPresent()) {
+			var haltReason = result.getHaltReason().get();
+			if (HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF == haltReason) {
+				return OBTAINER_SAME_CONTRACT_ID;
+			} else if (HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS == haltReason) {
+				return INVALID_SOLIDITY_ADDRESS;
+			}
+		}
+
+		return CONTRACT_REVERT_EXECUTED;
+	}
+
+
 }
