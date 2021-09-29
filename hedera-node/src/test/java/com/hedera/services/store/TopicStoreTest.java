@@ -16,6 +16,7 @@ package com.hedera.services.store;
  * limitations under the License.
  */
 
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
@@ -29,9 +30,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -40,11 +43,20 @@ class TopicStoreTest {
 	private MerkleMap<EntityNum, MerkleTopic> topics;
 	@Mock
 	private TransactionRecordService transactionRecordService;
-	
+
+	final private EntityNum entityNum = EntityNum.fromInt(1);
+
+	final private Id id = new Id(0, 0, 1);
+
+	Topic topic = new Topic(id);
+
+	private MerkleTopic merkleTopic;
+
 	private TopicStore subject;
 	
 	@BeforeEach
 	void setup() {
+		merkleTopic = new MerkleTopic();
 		subject	= new TopicStore(() -> topics, transactionRecordService);
 	}
 	
@@ -59,9 +71,27 @@ class TopicStoreTest {
 		verify(topics).put(any(), any());
 		verify(mockAutoRenewId).asEntityId();
 	}
-	
+
 	@Test
-	void persistsAsExpected() {
-		
+	void loadTopic() {
+		given(topics.get(entityNum)).willReturn(merkleTopic);
+		var resultTopic = subject.loadTopic(id);
+		assertEquals(topic.getId(), resultTopic.getId());
+		verify(topics).get(entityNum);
+	}
+
+	@Test
+	void loadTopicThrows() {
+		merkleTopic.setDeleted(true);
+		given(topics.get(entityNum)).willReturn(merkleTopic);
+		assertThrows(InvalidTransactionException.class, () -> subject.loadTopic(id));
+		verify(topics).get(entityNum);
+	}
+
+	@Test
+	void persistTopic() {
+		given(topics.getForModify(entityNum)).willReturn(merkleTopic);
+		subject.persistTopic(topic);
+		verify(topics).getForModify(entityNum);
 	}
 }

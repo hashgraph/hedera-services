@@ -21,67 +21,50 @@ package com.hedera.services.txns.consensus;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.services.store.TopicStore;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
 @Singleton
 public class TopicDeleteTransitionLogic implements TransitionLogic {
 	private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP = ignore -> OK;
 
-	private final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics;
-	private final OptionValidator validator;
 	private final TransactionContext transactionContext;
+	private final TopicStore store;
 
 	@Inject
 	public TopicDeleteTransitionLogic(
-			Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
-			OptionValidator validator,
+			TopicStore store,
 			TransactionContext transactionContext
 	) {
-		this.topics = topics;
-		this.validator = validator;
+		this.store = store;
 		this.transactionContext = transactionContext;
 	}
 
 	@Override
 	public void doStateTransition() {
+		/* --- Extract gRPC --- */
 		var op = transactionContext.accessor().getTxn().getConsensusDeleteTopic();
-		var topicId = op.getTopicID();
 
-		var topicStatus = validator.queryableTopicStatus(topicId, topics.get());
-		if (OK != topicStatus) {
-			// Should not get here as the adminKey lookup should have failed.
-			transactionContext.setStatus(topicStatus);
-			return;
-		}
+		/* --- Do the business logic --- */
+		var topicId = Id.fromGrpcTopic(op.getTopicID());
+		var topic = store.loadTopic(topicId);
+		validateTrue(topic.getAdminKey() != null, UNAUTHORIZED);
+		topic.setDeleted(true);
 
-		var topicMapKey = EntityNum.fromTopicId(topicId);
-		var topic = topics.get().get(topicMapKey);
-		if (!topic.hasAdminKey()) {
-			// Topics without adminKeys can't be deleted.
-			transactionContext.setStatus(UNAUTHORIZED);
-			return;
-		}
-
-		var mutableTopic = topics.get().getForModify(topicMapKey);
-		mutableTopic.setDeleted(true);
-
-		transactionContext.setStatus(SUCCESS);
+		/* --- Persist the changes --- */
+		store.persistTopic(topic);
 	}
 
 	@Override

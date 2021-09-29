@@ -16,8 +16,10 @@ package com.hedera.services.store;
  * limitations under the License.
  */
 
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Topic;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
@@ -26,7 +28,11 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.function.Supplier;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.services.store.models.TopicConversion.fromMerkle;
 import static com.hedera.services.store.models.TopicConversion.fromModel;
+import static com.hedera.services.store.models.TopicConversion.modelToMerkle;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 
 /**
  * A store which interacts with the state topics, represented in a {@link MerkleMap}.
@@ -61,5 +67,42 @@ public class TopicStore {
 		merkleTopic.setSequenceNumber(0);
 		currentTopics.put(id, merkleTopic);
 		transactionRecordService.includeChangesToTopic(model);
+	}
+
+	/**
+	 * Returns a model of the requested topic, with operations that can be used to
+	 * implement business logic in a transaction.
+	 *
+	 * <b>IMPORTANT:</b> Changes to the returned model are not automatically persisted
+	 * to state! The altered model must be passed to {@link TopicStore#persistTopic(Topic)}
+	 * in order for its changes to be applied to the Swirlds state, and included in the
+	 * {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} for the active transaction.
+	 *
+	 * @param id
+	 * 		the topic to load
+	 * @return a usable model of the topic
+	 * @throws InvalidTransactionException
+	 * 		if the requested topic is missing, deleted, or expired and pending removal
+	 */
+	public Topic loadTopic(Id id) {
+		final var merkleTopic = topics.get().get(EntityNum.fromLong(id.getNum()));
+		validateUsable(merkleTopic);
+		return fromMerkle(merkleTopic, id);
+	}
+
+	/**
+	 * Takes a Topic model and parses it to the corresponding MerkleTopic.
+	 *
+	 * @param topic
+	 * 		the topic model
+	 */
+	public void persistTopic(Topic topic) {
+		final var key = EntityNum.fromLong(topic.getId().getNum());
+		var mutableTopic = topics.get().getForModify(key);
+		modelToMerkle(topic, mutableTopic);
+	}
+
+	private void validateUsable(MerkleTopic merkleTopic) {
+		validateFalse(merkleTopic == null || merkleTopic.isDeleted(), INVALID_TOPIC_ID);
 	}
 }

@@ -16,7 +16,10 @@
 
 package com.hedera.services.store.models;
 
+import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.state.merkle.MerkleTopic;
+
+import java.util.ArrayList;
 
 /**
  * A utility class responsible for the mapping between a {@link Topic} and {@link MerkleTopic} ( and vice-versa ).
@@ -36,7 +39,11 @@ public class TopicConversion {
 	}
 
 	private static void merkleToModel(final MerkleTopic merkle, final Topic model) {
-		model.setAdminKey(merkle.getAdminKey());
+		if (JKeyList.equalUpToDecodability(merkle.getAdminKey(), new JKeyList(new ArrayList<>()))) {
+			model.setAdminKey(null);
+		} else {
+			model.setAdminKey(merkle.getAdminKey());
+		}
 		model.setSubmitKey(merkle.getSubmitKey());
 		model.setMemo(merkle.getMemo());
 		if (merkle.getAutoRenewAccountId() != null) {
@@ -60,7 +67,7 @@ public class TopicConversion {
 	 * @param model - the Topic model which will be used to map into a MerkleTopic
 	 * @param merkle - the merkle topic
 	 */
-	private static void modelToMerkle(final Topic model, final MerkleTopic merkle) {
+	public static void modelToMerkle(final Topic model, final MerkleTopic merkle) {
 		merkle.setAdminKey(model.getAdminKey());
 		merkle.setSubmitKey(model.getSubmitKey());
 		merkle.setMemo(model.getMemo());
