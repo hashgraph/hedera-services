@@ -25,10 +25,7 @@ import com.hedera.services.state.expiry.EntityAutoRenewal;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.stats.ExecutionTimeTracker;
 import com.hedera.services.txns.ProcessLogic;
-import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.PlatformTxnAccessor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -36,11 +33,8 @@ import java.time.Instant;
 
 @Singleton
 public class StandardProcessLogic implements ProcessLogic {
-	private static final Logger log = LogManager.getLogger(StandardProcessLogic.class);
-
 	private final ExpiryManager expiries;
 	private final InvariantChecks invariantChecks;
-	private final ExpandHandleSpan expandHandleSpan;
 	private final EntityAutoRenewal autoRenewal;
 	private final ServicesTxnManager txnManager;
 	private final TransactionContext txnCtx;
@@ -50,7 +44,6 @@ public class StandardProcessLogic implements ProcessLogic {
 	public StandardProcessLogic(
 			ExpiryManager expiries,
 			InvariantChecks invariantChecks,
-			ExpandHandleSpan expandHandleSpan,
 			EntityAutoRenewal autoRenewal,
 			ServicesTxnManager txnManager,
 			TransactionContext txnCtx,
@@ -58,7 +51,6 @@ public class StandardProcessLogic implements ProcessLogic {
 	) {
 		this.expiries = expiries;
 		this.invariantChecks = invariantChecks;
-		this.expandHandleSpan = expandHandleSpan;
 		this.executionTimeTracker = executionTimeTracker;
 		this.autoRenewal = autoRenewal;
 		this.txnManager = txnManager;

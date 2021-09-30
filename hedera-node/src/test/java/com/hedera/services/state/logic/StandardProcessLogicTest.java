@@ -25,7 +25,6 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.expiry.EntityAutoRenewal;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.stats.ExecutionTimeTracker;
-import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
@@ -58,8 +57,6 @@ class StandardProcessLogicTest {
 	@Mock
 	private InvariantChecks invariantChecks;
 	@Mock
-	private ExpandHandleSpan expandHandleSpan;
-	@Mock
 	private EntityAutoRenewal autoRenewal;
 	@Mock
 	private ServicesTxnManager txnManager;
@@ -82,7 +79,7 @@ class StandardProcessLogicTest {
 	@BeforeEach
 	void setUp() {
 		subject = new StandardProcessLogic(
-				expiries, invariantChecks, expandHandleSpan, autoRenewal, txnManager, txnCtx, executionTimeTracker);
+				expiries, invariantChecks, autoRenewal, txnManager, txnCtx, executionTimeTracker);
 	}
 
 	@Test

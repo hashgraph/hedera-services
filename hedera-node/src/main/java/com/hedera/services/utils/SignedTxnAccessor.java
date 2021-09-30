@@ -103,7 +103,6 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private HederaFunctionality function;
 
 	// Validation status is tracked here to avoid creating yet another cache.
-	// TODO: change this into internal model enum instead of gRPC class
 	private ResponseCodeEnum validationStatus = null;
 
 	private boolean activePayerSig;

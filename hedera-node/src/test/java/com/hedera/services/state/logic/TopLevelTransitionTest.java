@@ -38,7 +38,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class TopLevelTransitionTest {
@@ -54,8 +53,6 @@ class TopLevelTransitionTest {
 	private TxnAccessor accessor;
 	@Mock
 	private ScreenedTransition screenedTransition;
-	@Mock
-	private TxnIndependentValidator txnValidator;
 
 	private TopLevelTransition subject;
 
@@ -65,14 +62,13 @@ class TopLevelTransitionTest {
 				screenedTransition,
 				networkCtxManager,
 				txnCtx,
-				chargingPolicyAgent,
-				txnValidator);
+				chargingPolicyAgent);
 	}
 
 	@Test
 	void validatedScopedProcessFlows() {
 		// setup:
-		InOrder inOrder = Mockito.inOrder(networkCtxManager, chargingPolicyAgent, txnValidator);
+		InOrder inOrder = Mockito.inOrder(networkCtxManager, chargingPolicyAgent);
 
 		given(accessor.getValidationStatus()).willReturn(OK);
 		given(accessor.hasActivePayerSig()).willReturn(true);
@@ -86,14 +82,13 @@ class TopLevelTransitionTest {
 		// then:
 		inOrder.verify(networkCtxManager).advanceConsensusClockTo(consensusNow);
 		inOrder.verify(chargingPolicyAgent).applyPolicyFor(accessor);
-		verifyNoInteractions(txnValidator);
 		verify(screenedTransition).finishFor(accessor);
 	}
 
 	@Test
 	void notActivePayerSig() {
 		// setup:
-		InOrder inOrder = Mockito.inOrder(networkCtxManager, chargingPolicyAgent, txnValidator);
+		InOrder inOrder = Mockito.inOrder(networkCtxManager, chargingPolicyAgent);
 
 		given(accessor.getValidationStatus()).willReturn(OK);
 		given(accessor.hasActivePayerSig()).willReturn(false);

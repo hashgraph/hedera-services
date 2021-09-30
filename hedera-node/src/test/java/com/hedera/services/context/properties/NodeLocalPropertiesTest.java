@@ -60,6 +60,10 @@ class NodeLocalPropertiesTest {
 		assertEquals(20, subject.nettyFlowControlWindow());
 		assertEquals(23, subject.nettyStartRetries());
 		assertEquals(25, subject.numExecutionTimesToTrack());
+		assertEquals(26, subject.preConsensusRingBufferPower());
+		assertEquals(27, subject.preConsensusValidationHandlerCount());
+		assertEquals(28, subject.consensusRingBufferPower());
+		assertEquals(29, subject.consensusValidationHandlerCount());
 	}
 
 	@Test
@@ -176,6 +180,10 @@ class NodeLocalPropertiesTest {
 		given(properties.getLongProperty("netty.startRetryIntervalMs")).willReturn(i + 23L);
 		given(properties.getBooleanProperty("iss.dumpFcms")).willReturn(i % 2 == 1);
 		given(properties.getIntProperty("stats.executionTimesToTrack")).willReturn(i + 24);
+		given(properties.getIntProperty("hedera.preConsensus.ringBufferPower")).willReturn(i + 25);
+		given(properties.getIntProperty("hedera.preConsensus.validationHandlerCount")).willReturn(i + 26);
+		given(properties.getIntProperty("hedera.consensus.ringBufferPower")).willReturn(i + 27);
+		given(properties.getIntProperty("hedera.consensus.validationHandlerCount")).willReturn(i + 28);
 	}
 
 	static String logDir(int num) {

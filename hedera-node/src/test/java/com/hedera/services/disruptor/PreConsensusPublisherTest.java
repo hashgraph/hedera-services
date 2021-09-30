@@ -40,7 +40,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith({ MockitoExtension.class })
-public class PreConsensusPublisherTest {
+class PreConsensusPublisherTest {
     @Mock RingBuffer<TransactionEvent> ringBuffer;
     @Mock ExpandHandleSpan expandHandleSpan;
     @Mock PlatformTxnAccessor txnAccessor;
@@ -60,15 +60,13 @@ public class PreConsensusPublisherTest {
 
         given(ringBuffer.next()).willReturn(1L);
         given(ringBuffer.get(1L)).willReturn(event);
-        given(expandHandleSpan.accessorFor(transaction)).willReturn(txnAccessor);
+        given(expandHandleSpan.track(transaction)).willReturn(txnAccessor);
 
         // when:
         publisher.submit(transaction);
 
         // then:
         verify(ringBuffer).publish(1L);
-        assertEquals(123, event.getSubmittingMember());
-        assertEquals(now, event.getCreationTime());
         assertEquals(txnAccessor, event.getAccessor());
         assertFalse(event.isErrored());
     }
@@ -80,7 +78,7 @@ public class PreConsensusPublisherTest {
 
         given(ringBuffer.next()).willReturn(1L);
         given(ringBuffer.get(1L)).willReturn(event);
-        given(expandHandleSpan.accessorFor(transaction)).willThrow(new InvalidProtocolBufferException("bad"));
+        given(expandHandleSpan.track(transaction)).willThrow(new InvalidProtocolBufferException("bad"));
 
         // when:
         publisher.submit(transaction);

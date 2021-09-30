@@ -21,6 +21,7 @@ package com.hedera.services.disruptor;
  */
 
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.swirlds.common.SwirldDualState;
 
 import java.time.Instant;
 
@@ -35,6 +36,7 @@ public class TransactionEvent {
     Instant creationTime;
     Instant consensusTime;
     PlatformTxnAccessor accessor;
+    SwirldDualState dualState;
     boolean errored = false;
 
     public long getSubmittingMember() {
@@ -61,6 +63,10 @@ public class TransactionEvent {
 
     public void setAccessor(PlatformTxnAccessor accessor) { this.accessor = accessor; }
 
+    public SwirldDualState getDualState() { return dualState; }
+
+    public void setDualState(SwirldDualState dualState) { this.dualState = dualState; }
+
     public boolean isErrored() { return errored; }
 
     public void setErrored(boolean errored) { this.errored = errored; }
@@ -71,6 +77,7 @@ public class TransactionEvent {
         creationTime = null;
         consensusTime = null;
         accessor = null;
+        dualState = null;
         errored = false;
     }
 }

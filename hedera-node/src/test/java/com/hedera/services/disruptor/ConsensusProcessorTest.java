@@ -34,13 +34,12 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 
 @ExtendWith({ MockitoExtension.class })
 @MockitoSettings(strictness = Strictness.LENIENT)
-public class ConsensusProcessorTest {
+class ConsensusProcessorTest {
     @Mock
     NodeLocalProperties properties;
     @Mock
@@ -63,9 +62,9 @@ public class ConsensusProcessorTest {
     void createSuccessful() {
         given(properties.consensusRingBufferPower()).willReturn(2);
         given(properties.consensusValidationHandlerCount()).willReturn(2);
-        given(validationHandlerFactory.createForConsensus(eq(0), eq(2), eq(false))).willReturn(Mockito.mock(ValidationHandler.class));
-        given(validationHandlerFactory.createForConsensus(eq(1), eq(2), eq(false))).willReturn(Mockito.mock(ValidationHandler.class));
-        given(executionHandlerFactory.create(eq(true))).willReturn(Mockito.mock(ExecutionHandler.class));
+        given(validationHandlerFactory.createForConsensus(0,2,false)).willReturn(Mockito.mock(ValidationHandler.class));
+        given(validationHandlerFactory.createForConsensus(1, 2, false)).willReturn(Mockito.mock(ValidationHandler.class));
+        given(executionHandlerFactory.create(true)).willReturn(Mockito.mock(ExecutionHandler.class));
         given(publisherFactory.create(captor.capture())).willReturn(Mockito.mock(ConsensusPublisher.class));
 
         // when:
@@ -83,9 +82,9 @@ public class ConsensusProcessorTest {
     void createWithInvalidParameters() {
         given(properties.consensusRingBufferPower()).willReturn(-1);
         given(properties.consensusValidationHandlerCount()).willReturn(-1);
-        given(validationHandlerFactory.createForConsensus(eq(0), eq(2), eq(false))).willReturn(Mockito.mock(ValidationHandler.class));
-        given(validationHandlerFactory.createForConsensus(eq(1), eq(2), eq(false))).willReturn(Mockito.mock(ValidationHandler.class));
-        given(executionHandlerFactory.create(eq(true))).willReturn(Mockito.mock(ExecutionHandler.class));
+        given(validationHandlerFactory.createForConsensus(0, 2, false)).willReturn(Mockito.mock(ValidationHandler.class));
+        given(validationHandlerFactory.createForConsensus(1, 2, false)).willReturn(Mockito.mock(ValidationHandler.class));
+        given(executionHandlerFactory.create(true)).willReturn(Mockito.mock(ExecutionHandler.class));
         given(publisherFactory.create(captor.capture())).willReturn(Mockito.mock(ConsensusPublisher.class));
 
         // when:

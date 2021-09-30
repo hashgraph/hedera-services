@@ -184,7 +184,11 @@ class BootstrapPropertiesTest {
 			entry("tokens.nfts.maxBatchSizeBurn", 10),
 			entry("tokens.nfts.maxMetadataBytes", 100),
 			entry("tokens.nfts.maxAllowedMints", 5000000L),
-			entry("tokens.nfts.mintThrottleScaleFactor", ThrottleReqOpsScaleFactor.from("5:2"))
+			entry("tokens.nfts.mintThrottleScaleFactor", ThrottleReqOpsScaleFactor.from("5:2")),
+			entry("hedera.preConsensus.ringBufferPower", 14),
+			entry("hedera.preConsensus.validationHandlerCount", 1),
+			entry("hedera.consensus.ringBufferPower", 14),
+			entry("hedera.consensus.validationHandlerCount", 2)
 	);
 
 	@BeforeEach

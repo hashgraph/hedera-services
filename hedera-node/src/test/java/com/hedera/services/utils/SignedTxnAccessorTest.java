@@ -40,6 +40,7 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -488,6 +489,18 @@ class SignedTxnAccessorTest {
 		assertEquals(memo.getBytes().length, expandedMeta.getMemoSize());
 		assertEquals(25, expandedMeta.getMaxAutomaticAssociations());
 		assertTrue(expandedMeta.hasProxy());
+	}
+
+	@Test
+	void validationFieldSettersWorks() {
+		final var txn = signedCryptoUpdateTxn();
+		final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
+
+		accessor.setValidationStatus(ResponseCodeEnum.INVALID_TRANSACTION);
+		accessor.setActivePayerSig(true);
+
+		assertEquals(ResponseCodeEnum.INVALID_TRANSACTION, accessor.getValidationStatus());
+		assertTrue(accessor.hasActivePayerSig());
 	}
 
 	private Transaction signedCryptoCreateTxn() {

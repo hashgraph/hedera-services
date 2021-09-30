@@ -41,8 +41,6 @@ import static com.hedera.services.keys.HederaKeyTraversal.visitSimpleKeys;
  *
  * In particular, lets a visitor traverse these Ed25519 keys along with
  * their expanded {@code TransactionSignature}s (if present).
- *
- * TODO: remove assumption of singleton state from this class, should allow for txn to be specified by calling layer.
  */
 public class InHandleActivationHelper {
 	private static final List<JKey> NO_OTHER_PARTIES = null;
@@ -81,8 +79,11 @@ public class InHandleActivationHelper {
 	 * allows the transaction accessor to be passed in rather than being inferred from the
 	 * singleton state. This method is used during the validation phase when access to the
 	 * regular execution singleton state objects is not available (due to potential parallelism).
+	 *
+	 * @param txnAccessor the accessor for the platform txn
+	 * @param tests the predicate(s) to use for testing if an Ed25519 key has signed
+	 * @return whether or not the given set of keys are sufficient for signing the active transaction
 	 */
-	// TODO: can predicate be embedded here instead of passed in? if so, remove and simplify
 	public boolean areOtherPartiesActive(TxnAccessor txnAccessor, BiPredicate<JKey, TransactionSignature> tests) {
 		final var sigMeta = txnAccessor.getSigMeta();
 		final List<JKey> parties = sigMeta.couldRationalizeOthers() ? sigMeta.othersReqSigs() : Collections.emptyList();

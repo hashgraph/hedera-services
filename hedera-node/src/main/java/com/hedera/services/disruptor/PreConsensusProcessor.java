@@ -50,9 +50,9 @@ public class PreConsensusProcessor extends AbstractProcessor {
             ValidationHandlerFactory validationHandlerFactory,
             PreConsensusPublisher.Factory publisherFactory
     ) {
-        super(properties.preConsensusRingBufferPower(), "pre-consensus-handler", (disruptor) -> {
+        super(properties.preConsensusRingBufferPower(), "pre-consensus-handler", disruptor -> {
             int numHandlers = Math.max(properties.preConsensusValidationHandlerCount(), DEFAULT_VALIDATION_HANDLERS);
-            ValidationHandler validationHandlers[] = new ValidationHandler[numHandlers];
+            ValidationHandler[] validationHandlers = new ValidationHandler[numHandlers];
             for (int j = 0; j < numHandlers; j++) {
                 validationHandlers[j] = validationHandlerFactory.createForPreConsensus(j, numHandlers, true);
             }

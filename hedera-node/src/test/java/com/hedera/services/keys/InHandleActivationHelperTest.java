@@ -146,6 +146,39 @@ class InHandleActivationHelperTest {
 	}
 
 	@Test
+	void usesExpectedKeysForOtherPartiesActivePassInTxn() {
+		// setup:
+		BiPredicate<JKey, TransactionSignature> tests = (BiPredicate<JKey, TransactionSignature>) mock(BiPredicate.class);
+
+		given(activation.test(other, sigsFn, tests, DEFAULT_ACTIVATION_CHARACTERISTICS)).willReturn(true);
+
+		// when:
+		boolean ans = subject.areOtherPartiesActive(accessor, tests);
+		boolean ansAgain = subject.areOtherPartiesActive(accessor, tests);
+
+		// then:
+		assertTrue(ans);
+		assertTrue(ansAgain);
+	}
+
+	@Test
+	void cannotRationalizeOtherPartiesActivePassInTxn() {
+		// setup:
+		BiPredicate<JKey, TransactionSignature> tests = (BiPredicate<JKey, TransactionSignature>) mock(BiPredicate.class);
+
+		given(activation.test(other, sigsFn, tests, DEFAULT_ACTIVATION_CHARACTERISTICS)).willReturn(true);
+		given(sigMeta.couldRationalizeOthers()).willReturn(false);
+
+		// when:
+		boolean ans = subject.areOtherPartiesActive(accessor, tests);
+		boolean ansAgain = subject.areOtherPartiesActive(accessor, tests);
+
+		// then:
+		assertTrue(ans);
+		assertTrue(ansAgain);
+	}
+
+	@Test
 	@SuppressWarnings("unchecked")
 	void usesExpectedKeysForScheduled() {
 		// setup:

@@ -21,7 +21,6 @@ package com.hedera.services.utils;
  */
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.SwirldTransaction;
 

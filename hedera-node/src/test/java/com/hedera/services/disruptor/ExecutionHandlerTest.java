@@ -20,8 +20,10 @@ package com.hedera.services.disruptor;
  * ‍
  */
 
+import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.logic.StandardProcessLogic;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.swirlds.common.SwirldDualState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,6 +34,7 @@ import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -39,12 +42,14 @@ import static org.mockito.Mockito.verifyNoInteractions;
 class ExecutionHandlerTest {
     @Mock StandardProcessLogic processLogic;
     @Mock PlatformTxnAccessor accessor;
+    @Mock DualStateAccessor dualStateAccessor;
+    @Mock SwirldDualState dualState;
 
     private ExecutionHandler handler;
 
     @BeforeEach
     void setUp() {
-        handler = new ExecutionHandler(true, processLogic);
+        handler = new ExecutionHandler(true, processLogic, dualStateAccessor);
     }
 
     @Test
@@ -53,6 +58,7 @@ class ExecutionHandlerTest {
         final var event = new TransactionEvent();
         event.setSubmittingMember(123);
         event.setAccessor(accessor);
+        event.setDualState(dualState);
         event.setConsensusTime(now);
         event.setErrored(false);
 
@@ -60,6 +66,7 @@ class ExecutionHandlerTest {
         handler.onEvent(event, 4, false);
 
         // then:
+        verify(dualStateAccessor).setDualState(dualState);
         verify(processLogic).incorporateConsensusTxn(accessor, now, 123);
         assertNull(event.getAccessor());
     }
@@ -70,15 +77,17 @@ class ExecutionHandlerTest {
         final var event = new TransactionEvent();
         event.setSubmittingMember(123);
         event.setAccessor(accessor);
+        event.setDualState(dualState);
         event.setConsensusTime(now);
         event.setErrored(false);
 
-        handler = new ExecutionHandler(false, processLogic);
+        handler = new ExecutionHandler(false, processLogic, dualStateAccessor);
 
         // when:
         handler.onEvent(event, 4, false);
 
         // then:
+        verify(dualStateAccessor).setDualState(dualState);
         verify(processLogic).incorporateConsensusTxn(accessor, now, 123);
         assertNotNull(event.getAccessor());
     }
@@ -93,7 +102,27 @@ class ExecutionHandlerTest {
         handler.onEvent(event, 4, false);
 
         // then:
+        verifyNoInteractions(dualStateAccessor);
         verifyNoInteractions(processLogic);
+        assertNull(event.getAccessor());
+    }
+
+    @Test
+    void errorDuringHandle() {
+        final var now = Instant.now();
+        final var event = new TransactionEvent();
+        event.setSubmittingMember(123);
+        event.setAccessor(accessor);
+        event.setDualState(dualState);
+        event.setConsensusTime(now);
+        event.setErrored(false);
+
+        doThrow(new RuntimeException("bad")).when(processLogic).incorporateConsensusTxn(accessor, now, 123);
+
+        // when:
+        handler.onEvent(event, 4, false);
+
+        // then:
         assertNull(event.getAccessor());
     }
 }

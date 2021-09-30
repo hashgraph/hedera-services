@@ -23,35 +23,28 @@ package com.hedera.services.state.logic;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.charging.TxnChargingPolicyAgent;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
 public class TopLevelTransition implements Runnable {
-	private static final Logger logger = LogManager.getLogger(TopLevelTransition.class);
-
 	private final ScreenedTransition screenedTransition;
 	private final TransactionContext txnCtx;
 	private final NetworkCtxManager networkCtxManager;
 	private final TxnChargingPolicyAgent chargingPolicyAgent;
-	private final TxnIndependentValidator independentValidator;
 
 	@Inject
 	public TopLevelTransition(
 			ScreenedTransition screenedTransition,
 			NetworkCtxManager networkCtxManager,
 			TransactionContext txnCtx,
-			TxnChargingPolicyAgent chargingPolicyAgent,
-			TxnIndependentValidator independentValidator
+			TxnChargingPolicyAgent chargingPolicyAgent
 	) {
 		this.txnCtx = txnCtx;
 		this.networkCtxManager = networkCtxManager;
 		this.chargingPolicyAgent = chargingPolicyAgent;
 		this.screenedTransition = screenedTransition;
-		this.independentValidator = independentValidator;
 	}
 
 	@Override

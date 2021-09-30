@@ -41,36 +41,37 @@ import java.util.function.Consumer;
  * choice must be balanced by the number of dedicated CPU cores available to the application
  * process. Below are our findings for various wait strategies tested via JMH.
  *
- * PhasedBackoffWaitStrategy
- * 1 handler (events/s) -> 38.44M ± 2.96M
- * 2 handlers           -> 9.34M ± 2.69M
- * 3 handlers           -> 7.62M ± 1.69M
- * 4 handlers           -> 9.24M ± 4.62M
- * 10 handlers          -> 7.47M ± 5.8M
- *
- * BlockingWaitStrategy
- *  1 handler (events/s) -> 38.9M ± 2.02M
- *  2 handlers           -> 12.33M ± 2.14M
- *  3 handlers           -> 8.79M ± 2.51M
- *  4 handlers           -> 6M ± 1.54M
- *  10 handlers          -> 3.05M ± 0.53M
- *
- * BusySpinWaitStrategy
- *  1 handler (events/s) -> 35.59M ± 0.27M
- *  2 handlers           -> 33.19M ± 4.72M
- *  3 handlers           -> 30.72M ± 2.2M
- *  4 handlers           -> 28.15M ± 4.55M
- *  10 handlers          -> 23.89M ± 5.64M
- *
- * YieldingWaitStrategy
- *  1 handler (events/s) -> 35.83M ± 0.62M
- *  2 handlers           -> 28.5M ± 2.33M
- *  3 handlers           -> 26.2M ± 2.92M
- *  4 handlers           -> 25.7M ± 3M
- *  10 handlers          -> 23.02M ± 5.44M
+ * <table>
+ *   <caption>Wait strategy benchmark results</caption>
+ *   <tr><th>Strategy</th><th>Test</th><th>Result (events/s)</th></tr>
+ *   <tr><td>PhasedBackoffWaitStrategy</td><td></td><td></td></tr>
+ *   <tr><td></td><td>1 handler</td><td>38.44M ± 2.96M</td></tr>
+ *   <tr><td></td><td>2 handlers</td><td>9.34M ± 2.69M</td></tr>
+ *   <tr><td></td><td>3 handlers</td><td>7.62M ± 1.69M</td></tr>
+ *   <tr><td></td><td>4 handlers</td><td>9.24M ± 4.62M</td></tr>
+ *   <tr><td></td><td>10 handlers</td><td>7.47M ± 5.8M</td></tr>
+ *   <tr><td>BlockingWaitStrategy</td><td></td><td></td></tr>
+ *   <tr><td></td><td>1 handler</td><td>38.9M ± 2.02M</td></tr>
+ *   <tr><td></td><td>2 handlers</td><td>12.33M ± 2.14M</td></tr>
+ *   <tr><td></td><td>3 handlers</td><td>8.79M ± 2.51M</td></tr>
+ *   <tr><td></td><td>4 handlers</td><td>6M ± 1.54M</td></tr>
+ *   <tr><td></td><td>10 handlers</td><td>3.05M ± 0.53M</td></tr>
+ *   <tr><td>BusySpinWaitStrategy</td><td></td><td></td></tr>
+ *   <tr><td></td><td>1 handler</td><td>35.59M ± 0.27M</td></tr>
+ *   <tr><td></td><td>2 handlers</td><td>33.19M ± 4.72M</td></tr>
+ *   <tr><td></td><td>3 handlers</td><td>30.72M ± 2.2M</td></tr>
+ *   <tr><td></td><td>4 handlers</td><td>28.15M ± 4.55M</td></tr>
+ *   <tr><td></td><td>10 handlers</td><td>23.89M ± 5.64M</td></tr>
+ *   <tr><td>YieldingWaitStrategy</td><td></td><td></td></tr>
+ *   <tr><td></td><td>1 handler</td><td>35.83M ± 0.62M</td></tr>
+ *   <tr><td></td><td>2 handlers</td><td>28.5M ± 2.33M</td></tr>
+ *   <tr><td></td><td>3 handlers</td><td>26.2M ± 2.92M</td></tr>
+ *   <tr><td></td><td>4 handlers</td><td>25.7M ± 3M</td></tr>
+ *   <tr><td></td><td>10 handlers</td><td>23.02M ± 5.44M</td></tr>
+ * </table>
  *
  * We selected YieldingWaitStrategy due to its resilience with large numbers of handlers. Each handler
- * will consume CPU vigorously if allowed but will yield to other tasks (via Thread.yield) if the
+ * will consume CPU vigorously if allowed but will yield to other tasks (via {@code }Thread.yield}) if the
  * scheduler elects to do so.
  */
 public abstract class AbstractProcessor {

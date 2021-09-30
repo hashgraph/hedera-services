@@ -330,7 +330,7 @@ class ServicesStateTest {
 				1L, true, creationTime, consensusTime, transaction, dualState);
 
 		// then:
-		verify(consensusPublisher).submit(1L, creationTime, consensusTime, transaction);
+		verify(consensusPublisher).submit(1L, creationTime, consensusTime, transaction, dualState);
 	}
 
 	@Test

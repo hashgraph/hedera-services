@@ -72,14 +72,11 @@ public class TxnIndependentValidator {
             // can either by-pass the check or transition the transaction into an error state.
             accessor.setValidationStatus(sigStatus);
 
-            if (TerminalSigStatuses.TERMINAL_SIG_STATUSES.test(sigStatus)) {
-                accessor.setValidationStatus(sigStatus);
-            }
-            if (!activationHelper.areOtherPartiesActive(accessor, validityTest)) {
+            if (TerminalSigStatuses.TERMINAL_SIG_STATUSES.test(sigStatus))
+                return;
+            if (!activationHelper.areOtherPartiesActive(accessor, validityTest))
                 accessor.setValidationStatus(INVALID_SIGNATURE);
-            }
 
-            logger.info("Finished validation tx=", accessor.getPlatformTxn(), ", status=", sigStatus);
         } catch (Exception e) {
             logger.warn("Unable to verify transaction", e);
             accessor.setValidationStatus(INVALID_TRANSACTION);

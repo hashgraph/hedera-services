@@ -24,6 +24,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.lmax.disruptor.RingBuffer;
+import com.swirlds.common.SwirldDualState;
 import com.swirlds.common.SwirldTransaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,11 +41,12 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith({ MockitoExtension.class })
-public class ConsensusPublisherTest {
+class ConsensusPublisherTest {
     @Mock RingBuffer<TransactionEvent> ringBuffer;
     @Mock ExpandHandleSpan expandHandleSpan;
     @Mock PlatformTxnAccessor txnAccessor;
     @Mock SwirldTransaction transaction;
+    @Mock SwirldDualState dualState;
 
     ConsensusPublisher publisher;
 
@@ -63,7 +65,7 @@ public class ConsensusPublisherTest {
         given(expandHandleSpan.accessorFor(transaction)).willReturn(txnAccessor);
 
         // when:
-        publisher.submit(123, now, now, transaction);
+        publisher.submit(123, now, now, transaction, dualState);
 
         // then:
         verify(ringBuffer).publish(1L);
@@ -83,7 +85,7 @@ public class ConsensusPublisherTest {
         given(expandHandleSpan.accessorFor(transaction)).willThrow(new InvalidProtocolBufferException("bad"));
 
         // when:
-        publisher.submit(123, now, now, transaction);
+        publisher.submit(123, now, now, transaction, dualState);
 
         // then:
         verify(ringBuffer).publish(1L);

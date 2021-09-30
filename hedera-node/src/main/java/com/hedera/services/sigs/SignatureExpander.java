@@ -20,10 +20,13 @@ package com.hedera.services.sigs;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.annotations.RetryingSigReqs;
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
+import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.order.SigRequirements;
+import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -80,20 +83,34 @@ public class SignatureExpander {
      *     objects for either the payer or the entities in non-payer roles, ignore
      *     it silently. </li>
      * </ul>
+     *
+     * @param txnAccessor the accessor for the platform txn
      */
     public void accept(PlatformTxnAccessor txnAccessor) {
         txnAccessor.getPlatformTxn().clear();
 
         try {
-            new Expansion(
+            createExpansion(
                     txnAccessor,
                     keyOrderer,
                     txnAccessor.getPkToSigsFn(),
                     new BodySigningSigFactory(txnAccessor)
             ).execute();
         } catch (Exception e) {
-            e.printStackTrace();
             logger.warn("Unable to expand signatures, will be verified synchronously in handleTransaction", e);
         }
+    }
+
+    /*
+     * Make this package protected to avoid having to mock everything within {@code Expansion}.
+     */
+    @VisibleForTesting
+    Expansion createExpansion(
+            PlatformTxnAccessor txnAccessor,
+            SigRequirements keyOrderer,
+            PubKeyToSigBytes pkToSigFn,
+            TxnScopedPlatformSigFactory sigFactory
+    ) {
+        return new Expansion(txnAccessor, keyOrderer, pkToSigFn, sigFactory);
     }
 }

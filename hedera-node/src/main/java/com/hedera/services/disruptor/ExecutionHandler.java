@@ -20,6 +20,7 @@ package com.hedera.services.disruptor;
  * ‍
  */
 
+import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.logic.StandardProcessLogic;
 import com.lmax.disruptor.EventHandler;
 import dagger.assisted.Assisted;
@@ -33,17 +34,24 @@ public class ExecutionHandler implements EventHandler<TransactionEvent> {
 
     boolean isLastHandler;
     StandardProcessLogic processLogic;
+    DualStateAccessor dualStateAccessor;
 
     @AssistedInject
-    public ExecutionHandler(@Assisted boolean isLastHandler, StandardProcessLogic processLogic) {
+    public ExecutionHandler(
+            @Assisted boolean isLastHandler,
+            StandardProcessLogic processLogic,
+            DualStateAccessor dualStateAccessor
+    ) {
         this.isLastHandler = isLastHandler;
         this.processLogic = processLogic;
+        this.dualStateAccessor = dualStateAccessor;
     }
 
     public void onEvent(TransactionEvent event, long sequence, boolean endOfBatch) {
         try {
             // Don't process if we encountered a parsing error from the event publisher
             if (!event.isErrored()) {
+                dualStateAccessor.setDualState(event.getDualState());
                 processLogic.incorporateConsensusTxn(
                         event.getAccessor(),
                         event.getConsensusTime(),

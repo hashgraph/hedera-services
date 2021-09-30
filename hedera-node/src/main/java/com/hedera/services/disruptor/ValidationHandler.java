@@ -22,18 +22,14 @@ package com.hedera.services.disruptor;
 
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.lmax.disruptor.EventHandler;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.function.Consumer;
 
 public class ValidationHandler implements EventHandler<TransactionEvent> {
-    private static final Logger logger = LogManager.getLogger(ValidationHandler.class);
-
     long id;
     int numHandlers;
     boolean isLastHandler;
-    Consumer<PlatformTxnAccessor> actions[];
+    Consumer<PlatformTxnAccessor>[] actions;
 
     public ValidationHandler(
             long id,

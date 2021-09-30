@@ -24,6 +24,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.lmax.disruptor.RingBuffer;
+import com.swirlds.common.SwirldDualState;
 import com.swirlds.common.SwirldTransaction;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedFactory;
@@ -53,12 +54,21 @@ public class ConsensusPublisher {
      * same arguments that are received by ServicesState.handleTransaction and do not bother to wrap these
      * arguments in an event object. The ring buffer is composed of event objects which should just be populated.
      * This pattern cuts down on unnecessary object creation.
+     *
+     * @param submittingMember the ID number of the member who created this transaction
+     * @param creationTime the time when this transaction was first created and sent to the network, as claimed by
+     *                     the member that created it (which might be dishonest or mistaken)
+     * @param consensusTime the consensus timestamp for when this transaction happened (or an estimate of it, if it
+     *                      hasn't reached consensus yet)
+     * @param transaction the transaction to handle, encoded any way the swirld app author chooses
+     * @param dualState current dualState object which can be read/written by the application
      */
     public void submit(
             long submittingMember,
             Instant creationTime,
             Instant consensusTime,
-            SwirldTransaction transaction
+            SwirldTransaction transaction,
+            SwirldDualState dualState
     ) {
         long sequence = ringBuffer.next();
         TransactionEvent event = ringBuffer.get(sequence);
@@ -74,6 +84,7 @@ public class ConsensusPublisher {
             event.setCreationTime(creationTime);
             event.setConsensusTime(consensusTime);
             event.setAccessor(accessor);
+            event.setDualState(dualState);
         } catch (InvalidProtocolBufferException e) {
             event.setErrored(true);
             logger.warn("Consensus platform txn was not gRPC!", e);

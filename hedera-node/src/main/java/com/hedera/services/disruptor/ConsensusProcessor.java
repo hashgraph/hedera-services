@@ -55,9 +55,9 @@ public class ConsensusProcessor extends AbstractProcessor {
             ExecutionHandler.Factory executionHandlerFactory,
             ConsensusPublisher.Factory publisherFactory
     ) {
-        super(properties.consensusRingBufferPower(), "consensus-handler", (disruptor) -> {
+        super(properties.consensusRingBufferPower(), "consensus-handler", disruptor -> {
             int numHandlers = Math.max(properties.consensusValidationHandlerCount(), DEFAULT_VALIDATION_HANDLERS);
-            ValidationHandler validationHandlers[] = new ValidationHandler[numHandlers];
+            ValidationHandler[] validationHandlers = new ValidationHandler[numHandlers];
             for (int j = 0; j < numHandlers; j++) {
                 validationHandlers[j] = validationHandlerFactory.createForConsensus(j, numHandlers, false);
             }

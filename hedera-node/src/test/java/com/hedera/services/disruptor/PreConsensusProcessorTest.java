@@ -34,13 +34,12 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 
 @ExtendWith({ MockitoExtension.class })
 @MockitoSettings(strictness = Strictness.LENIENT)
-public class PreConsensusProcessorTest {
+class PreConsensusProcessorTest {
     @Mock
     NodeLocalProperties properties;
     @Mock
@@ -61,8 +60,8 @@ public class PreConsensusProcessorTest {
     void createSuccessful() {
         given(properties.preConsensusRingBufferPower()).willReturn(2);
         given(properties.preConsensusValidationHandlerCount()).willReturn(2);
-        given(handlerFactory.createForPreConsensus(eq(0), eq(2), eq(true))).willReturn(Mockito.mock(ValidationHandler.class));
-        given(handlerFactory.createForPreConsensus(eq(1), eq(2), eq(true))).willReturn(Mockito.mock(ValidationHandler.class));
+        given(handlerFactory.createForPreConsensus(0, 2, true)).willReturn(Mockito.mock(ValidationHandler.class));
+        given(handlerFactory.createForPreConsensus(1, 2, true)).willReturn(Mockito.mock(ValidationHandler.class));
         given(publisherFactory.create(captor.capture())).willReturn(Mockito.mock(PreConsensusPublisher.class));
 
         // when:
@@ -79,7 +78,7 @@ public class PreConsensusProcessorTest {
     void createWithInvalidParameters() {
         given(properties.preConsensusRingBufferPower()).willReturn(-1);
         given(properties.preConsensusValidationHandlerCount()).willReturn(-1);
-        given(handlerFactory.createForPreConsensus(eq(0), eq(1), eq(true))).willReturn(Mockito.mock(ValidationHandler.class));
+        given(handlerFactory.createForPreConsensus(0, 1, true)).willReturn(Mockito.mock(ValidationHandler.class));
         given(publisherFactory.create(captor.capture())).willReturn(Mockito.mock(PreConsensusPublisher.class));
 
         // when:

@@ -51,6 +51,8 @@ public class PreConsensusPublisher {
      * same arguments that are received by ServicesState.expandSignatures and do not bother to wrap these
      * arguments in an event object. The ring buffer is composed of event objects which should just be populated.
      * This pattern cuts down on unnecessary object creation.
+     *
+     * @param transaction the transaction to handle, encoded any way the swirld app author chooses
      */
     public void submit(SwirldTransaction transaction) {
         long sequence = ringBuffer.next();

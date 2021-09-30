@@ -96,7 +96,7 @@ class SignatureScreenTest {
 		final var result = subject.applyTo(accessor);
 
 		// then:
-		verify(accessor).hasActivePayerSig();
+		verify(payerSigValidity).test(accessor, validityTest);
 		// and:
 		Assertions.assertEquals(OK, result);
 	}
