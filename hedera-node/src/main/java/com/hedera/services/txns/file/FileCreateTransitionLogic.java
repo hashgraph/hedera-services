@@ -39,15 +39,13 @@ import javax.inject.Singleton;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.txns.file.FileUpdateTransitionLogic.mapToStatus;
+import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.txns.file.FileUpdateTransitionLogic.wrapped;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_WACL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 @Singleton
 public class FileCreateTransitionLogic implements TransitionLogic {
@@ -74,25 +72,13 @@ public class FileCreateTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		var op = txnCtx.accessor().getTxn().getFileCreate();
 
-		try {
-			var validity = assessedValidity(op);
-			if (validity != OK) {
-				txnCtx.setStatus(validity);
-				return;
-			}
+		validateFalse(op.hasKeys() && !validator.hasGoodEncoding(wrapped(op.getKeys())), INVALID_FILE_WACL);
 
-			var attr = asAttr(op);
-			var sponsor = txnCtx.activePayer();
-			var created = hfs.create(op.getContents().toByteArray(), attr, sponsor);
+		var attr = asAttr(op);
+		var sponsor = txnCtx.activePayer();
+		var created = hfs.create(op.getContents().toByteArray(), attr, sponsor);
 
-			txnCtx.setCreated(created);
-			txnCtx.setStatus(SUCCESS);
-		} catch (IllegalArgumentException iae) {
-			mapToStatus(iae, txnCtx);
-		} catch (Exception unknown) {
-			log.warn("Unrecognized failure handling {}!", txnCtx.accessor().getSignedTxnWrapper(), unknown);
-			txnCtx.setStatus(FAIL_INVALID);
-		}
+		txnCtx.setCreated(created);
 	}
 
 	@Override
@@ -103,14 +89,6 @@ public class FileCreateTransitionLogic implements TransitionLogic {
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
 		return SEMANTIC_CHECK;
-	}
-
-	private ResponseCodeEnum assessedValidity(FileCreateTransactionBody op) {
-		if (op.hasKeys() && !validator.hasGoodEncoding(wrapped(op.getKeys()))) {
-			return INVALID_FILE_WACL;
-		}
-
-		return OK;
 	}
 
 	private HFileMeta asAttr(FileCreateTransactionBody op) {

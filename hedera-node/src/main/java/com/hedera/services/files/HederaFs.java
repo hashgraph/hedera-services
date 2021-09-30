@@ -20,7 +20,6 @@ package com.hedera.services.files;
  * ‍
  */
 
-import com.hedera.services.files.TieredHederaFs.IllegalArgumentType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -62,8 +61,6 @@ public interface HederaFs {
 	 * @param attr the metadata of the file
 	 * @param sponsor the payer for the creation of the file
 	 * @return a globally unique entity id
-	 * @throws IllegalArgumentException with {@link IllegalArgumentType#FILE_WOULD_BE_EXPIRED} if expiry is past
-	 * @throws IllegalArgumentException with {@link IllegalArgumentType#OVERSIZE_CONTENTS} if the data are too large
 	 */
 	FileID create(byte[] contents, HFileMeta attr, AccountID sponsor);
 
@@ -80,8 +77,6 @@ public interface HederaFs {
 	 *
 	 * @param id the file to cat
 	 * @return its contents
-	 * @throws IllegalArgumentException with {@link IllegalArgumentType#UNKNOWN_FILE} if file is missing
-	 * @throws IllegalArgumentException with {@link IllegalArgumentType#DELETED_FILE} if the file is deleted
 	 */
 	byte[] cat(FileID id);
 
@@ -90,8 +85,6 @@ public interface HederaFs {
 	 *
 	 * @param id the file to examine
 	 * @return its metadata
-	 * @throws IllegalArgumentException with {@link IllegalArgumentType#UNKNOWN_FILE} if file is missing
-	 * @throws IllegalArgumentException with {@link IllegalArgumentType#DELETED_FILE} if the file is deleted
 	 */
 	HFileMeta getattr(FileID id);
 
@@ -102,9 +95,6 @@ public interface HederaFs {
 	 * @param id the file to update
 	 * @param attr the new metadata
 	 * @return an {@link UpdateResult} summarizing the result of the update metadata attempt
-	 * @throws IllegalArgumentException with {@link IllegalArgumentType#UNKNOWN_FILE} if file is missing
-	 * @throws IllegalArgumentException with {@link IllegalArgumentType#DELETED_FILE} if the file is deleted
-	 * @throws IllegalArgumentException with {@link IllegalArgumentType#FILE_WOULD_BE_EXPIRED} if expiry is past
 	 */
 	UpdateResult setattr(FileID id, HFileMeta attr);
 
@@ -114,8 +104,6 @@ public interface HederaFs {
 	 * @param id the file to update
 	 * @param attr the new metadata
 	 * @return an {@link UpdateResult} summarizing the result of the update metadata attempt
-	 * @throws IllegalArgumentException with {@link IllegalArgumentType#UNKNOWN_FILE} if file is missing
-	 * @throws IllegalArgumentException with {@link IllegalArgumentType#FILE_WOULD_BE_EXPIRED} if expiry is past
 	 */
 	UpdateResult sudoSetattr(FileID id, HFileMeta attr);
 
@@ -125,9 +113,6 @@ public interface HederaFs {
 	 * @param id the file to replace
 	 * @param newContents its proposed contents
 	 * @return an {@link UpdateResult} summarizing the result of the update attempt
-	 * @throws IllegalArgumentException with {@link IllegalArgumentType#UNKNOWN_FILE} if the file is missing
-	 * @throws IllegalArgumentException with {@link IllegalArgumentType#DELETED_FILE} if the file is deleted
-	 * @throws IllegalArgumentException with {@link IllegalArgumentType#OVERSIZE_CONTENTS} if the data are too large
 	 */
 	UpdateResult overwrite(FileID id, byte[] newContents);
 
@@ -137,9 +122,6 @@ public interface HederaFs {
 	 * @param id the file to extend
 	 * @param moreContents its proposed extension
 	 * @return an {@link UpdateResult} summarizing the result of the append attempt
-	 * @throws IllegalArgumentException with {@link IllegalArgumentType#UNKNOWN_FILE} if the file is missing
-	 * @throws IllegalArgumentException with {@link IllegalArgumentType#DELETED_FILE} if the file is deleted
-	 * @throws IllegalArgumentException with {@link IllegalArgumentType#OVERSIZE_CONTENTS} if the extended data are too large
 	 */
 	UpdateResult append(FileID id, byte[] moreContents);
 
@@ -148,8 +130,6 @@ public interface HederaFs {
 	 *
 	 * @param id the file to delete
 	 * @return an {@link UpdateResult} summarizing the result of the delete attempt
-	 * @throws IllegalArgumentException with {@link IllegalArgumentType#UNKNOWN_FILE} if the file is missing
-	 * @throws IllegalArgumentException with {@link IllegalArgumentType#DELETED_FILE} if the file is deleted
 	 */
 	UpdateResult delete(FileID id);
 
@@ -157,7 +137,6 @@ public interface HederaFs {
 	 * Removes the given file from the system (both metadata and data).
 	 *
 	 * @param id the file to purge
-	 * @throws IllegalArgumentException with {@link IllegalArgumentType#UNKNOWN_FILE} if the file is missing
 	 */
 	void rm(FileID id);
 }

@@ -35,7 +35,6 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.txns.file.FileUpdateTransitionLogic.mapToStatus;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
@@ -75,7 +74,8 @@ public class FileAppendTransitionLogic implements TransitionLogic {
 			var result = hfs.append(target, data);
 			txnCtx.setStatus(result.outcome());
 		} catch (IllegalArgumentException iae) {
-			mapToStatus(iae, txnCtx);
+			// TODO: revise
+//			mapToStatus(iae, txnCtx);
 		} catch (Exception unknown) {
 			log.warn("Unrecognized failure handling {}!", txnCtx.accessor().getSignedTxnWrapper(), unknown);
 			txnCtx.setStatus(FAIL_INVALID);

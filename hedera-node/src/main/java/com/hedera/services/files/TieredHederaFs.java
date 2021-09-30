@@ -42,10 +42,12 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
-import static com.hedera.services.files.TieredHederaFs.IllegalArgumentType.DELETED_FILE;
-import static com.hedera.services.files.TieredHederaFs.IllegalArgumentType.FILE_WOULD_BE_EXPIRED;
-import static com.hedera.services.files.TieredHederaFs.IllegalArgumentType.OVERSIZE_CONTENTS;
-import static com.hedera.services.files.TieredHederaFs.IllegalArgumentType.UNKNOWN_FILE;
+import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.Comparator.comparingInt;
 import static java.util.function.Predicate.not;
@@ -69,22 +71,6 @@ public class TieredHederaFs implements HederaFs {
 
 	public static final int BYTES_PER_KB = 1024;
 	private Supplier<MerkleDiskFs> diskFs;
-	public enum IllegalArgumentType {
-		DELETED_FILE(ResponseCodeEnum.FILE_DELETED),
-		UNKNOWN_FILE(ResponseCodeEnum.INVALID_FILE_ID),
-		FILE_WOULD_BE_EXPIRED(ResponseCodeEnum.INVALID_EXPIRATION_TIME),
-		OVERSIZE_CONTENTS(ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED);
-
-		private final ResponseCodeEnum suggestedStatus;
-
-		IllegalArgumentType(ResponseCodeEnum suggestedStatus) {
-			this.suggestedStatus = suggestedStatus;
-		}
-
-		public ResponseCodeEnum suggestedStatus() {
-			return suggestedStatus;
-		}
-	}
 
 	@Inject
 	public TieredHederaFs(
@@ -326,31 +312,19 @@ public class TieredHederaFs implements HederaFs {
 	}
 
 	private void assertExtant(FileID id) {
-		if (!metadata.containsKey(id)) {
-			throwIllegal(UNKNOWN_FILE);
-		}
+		validateTrue(metadata.containsKey(id), INVALID_FILE_ID);
 	}
 
 	private void assertUsable(FileID id) {
 		assertExtant(id);
-		if (metadata.get(id).isDeleted()) {
-			throwIllegal(DELETED_FILE);
-		}
+		validateFalse(metadata.get(id).isDeleted(), FILE_DELETED);
 	}
 
 	private void assertWithinSizeLimits(byte[] data) {
-		if (data.length > properties.maxFileSizeKb() * BYTES_PER_KB) {
-			throwIllegal(OVERSIZE_CONTENTS);
-		}
+		validateFalse(data.length > properties.maxFileSizeKb() * BYTES_PER_KB, MAX_FILE_SIZE_EXCEEDED);
 	}
 
 	private void assertValid(HFileMeta attr) {
-		if (attr.getExpiry() < now.get().getEpochSecond()) {
-			throwIllegal(FILE_WOULD_BE_EXPIRED);
-		}
-	}
-
-	private void throwIllegal(IllegalArgumentType type) {
-		throw new IllegalArgumentException(type.toString());
+		validateFalse(attr.getExpiry() < now.get().getEpochSecond(), INVALID_EXPIRATION_TIME);
 	}
 }

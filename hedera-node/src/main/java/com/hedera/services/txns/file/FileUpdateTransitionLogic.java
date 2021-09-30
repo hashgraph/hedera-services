@@ -121,7 +121,8 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 					changeResult.map(HederaFs.UpdateResult::outcome)
 							.orElse(SUCCESS)));
 		} catch (IllegalArgumentException iae) {
-			mapToStatus(iae, txnCtx);
+			// TODO: Revise this one
+//			mapToStatus(iae, txnCtx);
 		} catch (Exception unknown) {
 			log.warn("Unrecognized failure handling {}!", txnCtx.accessor().getSignedTxnWrapper(), unknown);
 			txnCtx.setStatus(FAIL_INVALID);
@@ -151,24 +152,6 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 			}
 		}
 		return true;
-	}
-
-	static void mapToStatus(IllegalArgumentException iae, TransactionContext txnCtx) {
-		if (iae.getCause() instanceof DecoderException) {
-			txnCtx.setStatus(BAD_ENCODING);
-			return;
-		}
-		try {
-			var type = TieredHederaFs.IllegalArgumentType.valueOf(iae.getMessage());
-			txnCtx.setStatus(type.suggestedStatus());
-		} catch (IllegalArgumentException untyped) {
-			log.warn(
-					"Unrecognized detail message '{}' handling {}!",
-					iae.getMessage(),
-					txnCtx.accessor().getSignedTxnWrapper(),
-					untyped);
-			txnCtx.setStatus(FAIL_INVALID);
-		}
 	}
 
 	private ResponseCodeEnum assessedValidity(FileUpdateTransactionBody op) {
