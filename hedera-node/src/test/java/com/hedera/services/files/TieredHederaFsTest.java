@@ -41,7 +41,10 @@ import java.util.OptionalInt;
 import java.util.function.Supplier;
 
 import static com.hedera.services.files.TieredHederaFs.BYTES_PER_KB;
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -381,16 +384,10 @@ class TieredHederaFsTest {
 		given(metadata.containsKey(missing)).willReturn(false);
 
 		// when:
-		try {
-			subject.delete(missing);
-		} catch (IllegalArgumentException thrown) {
-			iae = thrown;
-		}
-
-		// then:
-		assertEquals(
-				IllegalArgumentType.UNKNOWN_FILE,
-				IllegalArgumentType.valueOf(iae.getMessage()));
+		assertFailsWith(
+				() -> subject.delete(missing),
+				INVALID_FILE_ID
+		);
 	}
 
 	@Test
@@ -402,16 +399,10 @@ class TieredHederaFsTest {
 		given(metadata.get(fid)).willReturn(deletedAttr);
 
 		// when:
-		try {
-			subject.delete(fid);
-		} catch (IllegalArgumentException thrown) {
-			iae = thrown;
-		}
-
-		// then:
-		assertEquals(
-				IllegalArgumentType.DELETED_FILE,
-				IllegalArgumentType.valueOf(iae.getMessage()));
+		assertFailsWith(
+				() -> subject.delete(fid),
+				FILE_DELETED
+		);
 	}
 
 	@Test
@@ -426,15 +417,11 @@ class TieredHederaFsTest {
 
 		// when:
 		subject.register(authPolicy);
-		var result = subject.delete(fid);
+		assertFailsWith(() -> subject.delete(fid), AUTHORIZATION_FAILED);
 
 		// then:
 		verify(metadata, never()).put(argThat(fid::equals), any());
 		verify(data, never()).remove(fid);
-		// and:
-		assertFalse(result.attrChanged());
-		assertFalse(result.fileReplaced());
-		assertEquals(AUTHORIZATION_FAILED, result.outcome());
 	}
 
 	@Test
@@ -443,7 +430,7 @@ class TieredHederaFsTest {
 		given(metadata.get(fid)).willReturn(livingAttr);
 
 		// when:
-		var result = subject.delete(fid);
+		subject.delete(fid);
 
 		// then:
 		verify(metadata).put(argThat(fid::equals), argThat(attr ->
@@ -452,9 +439,7 @@ class TieredHederaFsTest {
 					attr.getWacl().equals(livingAttr.getWacl())));
 		verify(data).remove(fid);
 		// and:
-		assertTrue(result.attrChanged());
-		assertTrue(result.fileReplaced());
-		assertEquals(SUCCESS, result.outcome());
+		assertEquals(subject.getattr(fid).isDeleted(), true);
 	}
 
 	@Test

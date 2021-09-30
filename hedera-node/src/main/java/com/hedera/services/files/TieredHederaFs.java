@@ -21,6 +21,7 @@ package com.hedera.services.files;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.utils.EntityIdUtils;
@@ -46,6 +47,8 @@ import static com.hedera.services.files.TieredHederaFs.IllegalArgumentType.DELET
 import static com.hedera.services.files.TieredHederaFs.IllegalArgumentType.FILE_WOULD_BE_EXPIRED;
 import static com.hedera.services.files.TieredHederaFs.IllegalArgumentType.OVERSIZE_CONTENTS;
 import static com.hedera.services.files.TieredHederaFs.IllegalArgumentType.UNKNOWN_FILE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.Comparator.comparingInt;
 import static java.util.function.Predicate.not;
@@ -213,8 +216,8 @@ public class TieredHederaFs implements HederaFs {
 	}
 
 	@Override
-	public UpdateResult delete(FileID id) {
-		assertUsable(id);
+	public void delete(FileID id) {
+		validateUsable(id);
 
 		var verdict = judge(id, FileUpdateInterceptor::preDelete);
 		if (verdict.getValue()) {
@@ -223,7 +226,9 @@ public class TieredHederaFs implements HederaFs {
 			metadata.put(id, attr);
 			data.remove(id);
 		}
-		return new SimpleUpdateResult(verdict.getValue(), verdict.getValue(), verdict.getKey());
+		if (verdict.getKey() != SUCCESS) {
+			throw new InvalidTransactionException(verdict.getKey());
+		}
 	}
 
 	@Override
@@ -335,6 +340,19 @@ public class TieredHederaFs implements HederaFs {
 		assertExtant(id);
 		if (metadata.get(id).isDeleted()) {
 			throwIllegal(DELETED_FILE);
+		}
+	}
+	
+	private void validateUsable(FileID id) {
+		validateExtant(id);
+		if (metadata.get(id).isDeleted()) {
+			throw new InvalidTransactionException(FILE_DELETED);
+		}
+	}
+	
+	private void validateExtant(FileID id) {
+		if (!metadata.containsKey(id)) {
+			throw new InvalidTransactionException(INVALID_FILE_ID);
 		}
 	}
 

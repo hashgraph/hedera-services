@@ -9,9 +9,9 @@ package com.hedera.services.txns.file;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -42,30 +42,27 @@ import org.mockito.InOrder;
 
 import java.time.Instant;
 
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.never;
 
 class FileDeleteTransitionLogicTest {
-	enum TargetType { IMMUTABLE, VALID, MISSING, DELETED }
-
 	FileID tbd = IdUtils.asFile("0.0.13257");
 	FileID missing = IdUtils.asFile("0.0.75231");
 	FileID deleted = IdUtils.asFile("0.0.666");
 	FileID immutable = IdUtils.asFile("0.0.667");
-
 	HederaFs.UpdateResult success = new TieredHederaFs.SimpleUpdateResult(
 			true,
 			true,
@@ -76,14 +73,11 @@ class FileDeleteTransitionLogicTest {
 			ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE);
 	JKey wacl;
 	HFileMeta attr, deletedAttr, immutableAttr;
-
 	TransactionID txnId;
 	TransactionBody fileDeleteTxn;
 	PlatformTxnAccessor accessor;
-
 	HederaFs hfs;
 	TransactionContext txnCtx;
-
 	FileDeleteTransitionLogic subject;
 
 	@BeforeEach
@@ -114,15 +108,12 @@ class FileDeleteTransitionLogicTest {
 		InOrder inOrder = inOrder(hfs, txnCtx);
 
 		givenTxnCtxDeleting(TargetType.VALID);
-		// and:
-		given(hfs.delete(any())).willReturn(success);
 
 		// when:
 		subject.doStateTransition();
 
 		// then:
 		inOrder.verify(hfs).delete(tbd);
-		inOrder.verify(txnCtx).setStatus(SUCCESS);
 	}
 
 	@Test
@@ -130,10 +121,13 @@ class FileDeleteTransitionLogicTest {
 		givenTxnCtxDeleting(TargetType.DELETED);
 
 		// when:
-		subject.doStateTransition();
+
+		assertFailsWith(
+				() -> subject.doStateTransition(),
+				FILE_DELETED);
 
 		// then:
-		verify(txnCtx).setStatus(FILE_DELETED);
+		verify(hfs, never()).delete(any());
 	}
 
 	@Test
@@ -141,48 +135,36 @@ class FileDeleteTransitionLogicTest {
 		givenTxnCtxDeleting(TargetType.MISSING);
 
 		// when:
-		subject.doStateTransition();
+		assertFailsWith(
+				() -> subject.doStateTransition(),
+				INVALID_FILE_ID);
 
 		// then:
-		verify(txnCtx).setStatus(INVALID_FILE_ID);
-	}
-
-	@Test
-	void setsFailInvalidOnException() {
-		givenTxnCtxDeleting(TargetType.VALID);
-		willThrow(new IllegalStateException("Hmm...")).given(hfs).delete(any());
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx).setStatus(FAIL_INVALID);
+		verify(hfs, never()).delete(any());
 	}
 
 	@Test
 	void resultIsRespected() {
 		givenTxnCtxDeleting(TargetType.VALID);
-		// and:
-		given(hfs.delete(any())).willReturn(noAuth);
 
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx).setStatus(ENTITY_NOT_ALLOWED_TO_DELETE);
+		// when & then:
+		assertFailsWith(
+				() -> subject.doStateTransition(),
+				ENTITY_NOT_ALLOWED_TO_DELETE);
 	}
 
 	@Test
 	void rejectsImmutableTarget() {
 		givenTxnCtxDeleting(TargetType.IMMUTABLE);
-		// and:
-		given(hfs.delete(any())).willReturn(success);
 
 		// when:
-		subject.doStateTransition();
+
+		assertFailsWith(
+				() -> subject.doStateTransition(),
+				UNAUTHORIZED);
 
 		// then:
-		verify(txnCtx).setStatus(UNAUTHORIZED);
+		verify(hfs, never()).delete(any());
 	}
 
 	@Test
@@ -232,4 +214,6 @@ class FileDeleteTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(fileDeleteTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 	}
+
+	enum TargetType {IMMUTABLE, VALID, MISSING, DELETED}
 }
