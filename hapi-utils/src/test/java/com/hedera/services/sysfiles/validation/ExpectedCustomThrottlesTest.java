@@ -80,7 +80,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ExpectedCustomThrottlesTest {
 	@Test
 	void release0160HasExpected() {
-		assertEquals(50, OPS_FOR_RELEASE_0160.size());
+		assertEquals(52, OPS_FOR_RELEASE_0160.size());
 
 		assertTrue(OPS_FOR_RELEASE_0160.contains(CryptoCreate), "Missing CryptoCreate!");
 		assertTrue(OPS_FOR_RELEASE_0160.contains(CryptoTransfer), "Missing CryptoTransfer!");
