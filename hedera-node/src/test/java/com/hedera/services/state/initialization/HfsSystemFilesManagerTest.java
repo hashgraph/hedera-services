@@ -28,6 +28,7 @@ import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.files.interceptors.MockFileNumbers;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleDiskFs;
+import com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -64,6 +65,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -77,6 +79,8 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willCallRealMethod;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
 
 @ExtendWith(LogCaptureExtension.class)
 class HfsSystemFilesManagerTest {
@@ -294,12 +298,26 @@ class HfsSystemFilesManagerTest {
 	void createsEmptyUpdateFeatureFile() {
 		final var file150 = fileNumbers.toFid(fileNumbers.softwareUpdateZip());
 		given(hfs.exists(file150)).willReturn(false);
-		given(hfs.diskFs()).willReturn(diskFs);
 		given(diskFs.contains(file150)).willReturn(true);
 
 		subject.createUpdateZipFileIfMissing();
 
+		verify(metadata).put(
+				argThat(file150::equals),
+				argThat(info -> expectedInfo.toString().equals(info.toString())));
 		verify(diskFs).put(file150, new byte[0]);
+	}
+
+	@Test
+	void noOpsOnExistingUpdateFeatureFile() {
+		final var file150 = fileNumbers.toFid(fileNumbers.softwareUpdateZip());
+		given(hfs.exists(file150)).willReturn(true);
+
+		subject.createUpdateZipFileIfMissing();
+
+		verify(hfs, never()).getMetadata();
+		verify(hfs, never()).diskFs();
+		verify(hfs, never()).getData();
 	}
 
 	@Test
@@ -413,6 +431,20 @@ class HfsSystemFilesManagerTest {
 
 		verify(hfs).exists(schedulesId);
 		assertThat(logCaptor.errorLogs(), contains(desired));
+	}
+
+	@Test
+	void throwsIseOnBootstrapLoaderException() {
+		given(hfs.exists(schedulesId)).willReturn(false);
+		final var mockedStatic = mockStatic(FeesJsonToProtoSerde.class);
+		mockedStatic.when(() -> FeesJsonToProtoSerde.loadFeeScheduleFromStream(any())).thenThrow(IOException.class);
+
+		assertThrows(IllegalStateException.class, subject::loadFeeSchedules);
+
+		assertThat(logCaptor.errorLogs(), contains(
+				"Failed to read bootstrap fee schedules, unable to continue! java.io.IOException: null"));
+
+		mockedStatic.close();
 	}
 
 	@Test
@@ -551,6 +583,25 @@ class HfsSystemFilesManagerTest {
 		given(hfs.cat(appPropsId)).willReturn(nonsense);
 
 		assertThrows(IllegalStateException.class, subject::loadApplicationProperties);
+	}
+
+	@Test
+	void getsMasterKeyOnlyOnce() {
+		final var file150 = fileNumbers.toFid(fileNumbers.softwareUpdateZip());
+		given(hfs.exists(file150)).willReturn(false);
+		given(diskFs.contains(file150)).willReturn(true);
+		final var keySupplier = mock(Supplier.class);
+		given(keySupplier.get()).willReturn(masterKey);
+		subject = new HfsSystemFilesManager(() -> currentBook, fileNumbers, properties, hfs, keySupplier, callbacks);
+
+		subject.createUpdateZipFileIfMissing();
+		subject.createUpdateZipFileIfMissing();
+
+		verify(metadata, times(2)).put(
+				argThat(file150::equals),
+				argThat(info -> expectedInfo.toString().equals(info.toString())));
+		verify(diskFs, times(2)).put(file150, new byte[0]);
+		verify(keySupplier).get();
 	}
 
 	private static final FileID expectedFid(final long num) {
