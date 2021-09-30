@@ -78,7 +78,7 @@ public class ExpandHandleSpan {
 			spanMapManager.rationalizeSpan(cachedAccessor);
 			return cachedAccessor;
 		} else {
-			return spanAccessorFor(transaction);
+			return track(transaction);
 		}
 	}
 

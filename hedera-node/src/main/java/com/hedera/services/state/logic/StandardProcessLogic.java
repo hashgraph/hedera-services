@@ -20,14 +20,13 @@ package com.hedera.services.state.logic;
  * ‍
  */
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.expiry.EntityAutoRenewal;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.stats.ExecutionTimeTracker;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.span.ExpandHandleSpan;
-import com.swirlds.common.SwirldTransaction;
+import com.hedera.services.utils.PlatformTxnAccessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -67,31 +66,26 @@ public class StandardProcessLogic implements ProcessLogic {
 	}
 
 	@Override
-	public void incorporateConsensusTxn(SwirldTransaction platformTxn, Instant consensusTime, long submittingMember) {
-		try {
-			final var accessor = expandHandleSpan.accessorFor(platformTxn);
-			Instant effectiveConsensusTime = consensusTime;
-			if (accessor.canTriggerTxn()) {
-				effectiveConsensusTime = consensusTime.minusNanos(1);
-			}
-
-			if (!invariantChecks.holdFor(accessor, effectiveConsensusTime, submittingMember)) {
-				return;
-			}
-
-			expiries.purge(effectiveConsensusTime.getEpochSecond());
-
-			executionTimeTracker.start();
-			txnManager.process(accessor, effectiveConsensusTime, submittingMember);
-			final var triggeredAccessor = txnCtx.triggeredTxn();
-			if (triggeredAccessor != null) {
-				txnManager.process(triggeredAccessor, consensusTime, submittingMember);
-			}
-			executionTimeTracker.stop();
-
-			autoRenewal.execute(consensusTime);
-		} catch (InvalidProtocolBufferException e) {
-			log.warn("Consensus platform txn was not gRPC!", e);
+	public void incorporateConsensusTxn(PlatformTxnAccessor accessor, Instant consensusTime, long submittingMember) {
+		Instant effectiveConsensusTime = consensusTime;
+		if (accessor.canTriggerTxn()) {
+			effectiveConsensusTime = consensusTime.minusNanos(1);
 		}
+
+		if (!invariantChecks.holdFor(accessor, effectiveConsensusTime, submittingMember)) {
+			return;
+		}
+
+		expiries.purge(effectiveConsensusTime.getEpochSecond());
+
+		executionTimeTracker.start();
+		txnManager.process(accessor, effectiveConsensusTime, submittingMember);
+		final var triggeredAccessor = txnCtx.triggeredTxn();
+		if (triggeredAccessor != null) {
+			txnManager.process(triggeredAccessor, consensusTime, submittingMember);
+		}
+		executionTimeTracker.stop();
+
+		autoRenewal.execute(consensusTime);
 	}
 }

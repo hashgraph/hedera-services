@@ -20,7 +20,7 @@ package com.hedera.services.txns;
  * ‍
  */
 
-import com.swirlds.common.SwirldTransaction;
+import com.hedera.services.utils.PlatformTxnAccessor;
 
 import java.time.Instant;
 
@@ -39,9 +39,9 @@ public interface ProcessLogic {
 	 * Orchestrates a process to express the full implications of the given
 	 * consensus transaction at the specified time.
 	 *
-	 * @param platformTxn the consensus transaction to incorporate.
+	 * @param accessor wrapper for consensus transaction to incorporate.
 	 * @param consensusTime the authoritative time of consensus.
 	 * @param submittingMember the id of the member that submitted the txn
 	 */
-	void incorporateConsensusTxn(SwirldTransaction platformTxn, Instant consensusTime, long submittingMember);
+	void incorporateConsensusTxn(PlatformTxnAccessor accessor, Instant consensusTime, long submittingMember);
 }

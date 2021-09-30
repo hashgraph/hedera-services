@@ -34,6 +34,7 @@ import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -100,6 +101,12 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private CryptoTransferMeta xferUsageMeta;
 	private BaseTransactionMeta txnUsageMeta;
 	private HederaFunctionality function;
+
+	// Validation status is tracked here to avoid creating yet another cache.
+	// TODO: change this into internal model enum instead of gRPC class
+	private ResponseCodeEnum validationStatus = null;
+
+	private boolean activePayerSig;
 
 	static Function<TransactionBody, HederaFunctionality> functionExtractor = txn -> {
 		try {
@@ -308,6 +315,18 @@ public class SignedTxnAccessor implements TxnAccessor {
 	public ExpandHandleSpanMapAccessor getSpanMapAccessor() {
 		return SPAN_MAP_ACCESSOR;
 	}
+
+	@Override
+	public ResponseCodeEnum getValidationStatus() { return validationStatus; }
+
+	@Override
+	public void setValidationStatus(ResponseCodeEnum status) { this.validationStatus = status; }
+
+	@Override
+	public boolean hasActivePayerSig() { return activePayerSig; }
+
+	@Override
+	public void setActivePayerSig(boolean activePayerSig) { this.activePayerSig = activePayerSig; }
 
 	private void setOpUsageMeta() {
 		if (function == CryptoTransfer) {

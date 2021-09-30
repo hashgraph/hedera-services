@@ -281,21 +281,14 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		if (isConsensus) {
 			final var app = metadata.app();
 			app.dualStateAccessor().setDualState(dualState);
-			app.logic().incorporateConsensusTxn(transaction, consensusTime, submittingMember);
+			app.consensusProcessor().getPublisher().submit(submittingMember, creationTime, consensusTime, transaction);
 		}
 	}
 
 	@Override
 	public void expandSignatures(SwirldTransaction platformTxn) {
-		try {
-			final var app = metadata.app();
-			final var accessor = app.expandHandleSpan().track(platformTxn);
-			app.expansionHelper().expandIn(accessor, app.retryingSigReqs(), accessor.getPkToSigsFn());
-		} catch (InvalidProtocolBufferException e) {
-			log.warn("Method expandSignatures called with non-gRPC txn", e);
-		} catch (Exception race) {
-			log.warn("Unable to expand signatures, will be verified synchronously in handleTransaction", race);
-		}
+		// Allow the pre-consensus layer to perform pre-work before consensus is reached
+		metadata.app().preConsensusProcessor().getPublisher().submit(platformTxn);
 	}
 
 	@Override

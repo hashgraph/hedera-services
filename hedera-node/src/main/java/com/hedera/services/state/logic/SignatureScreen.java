@@ -20,7 +20,6 @@ package com.hedera.services.state.logic;
  * ‍
  */
 
-import com.hedera.services.context.TransactionContext;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.Rationalization;
 import com.hedera.services.stats.MiscSpeedometers;
@@ -43,25 +42,19 @@ public class SignatureScreen {
 	private final Rationalization rationalization;
 	private final PayerSigValidity payerSigValidity;
 	private final MiscSpeedometers speedometers;
-	private final TransactionContext txnCtx;
-	private final NetworkCtxManager networkCtxManager;
 	private final BiPredicate<JKey, TransactionSignature> validityTest;
 
 	@Inject
 	public SignatureScreen(
 			Rationalization rationalization,
 			PayerSigValidity payerSigValidity,
-			TransactionContext txnCtx,
-			NetworkCtxManager networkCtxManager,
 			MiscSpeedometers speedometers,
 			BiPredicate<JKey, TransactionSignature> validityTest
 	) {
-		this.txnCtx = txnCtx;
 		this.validityTest = validityTest;
 		this.speedometers = speedometers;
 		this.rationalization = rationalization;
 		this.payerSigValidity = payerSigValidity;
-		this.networkCtxManager = networkCtxManager;
 	}
 
 	public ResponseCodeEnum applyTo(TxnAccessor accessor) {
@@ -76,11 +69,7 @@ public class SignatureScreen {
 			}
 		}
 
-		if (hasActivePayerSig(accessor)) {
-			txnCtx.payerSigIsKnownActive();
-			networkCtxManager.prepareForIncorporating(accessor);
-		}
-
+		accessor.setActivePayerSig(hasActivePayerSig(accessor));
 		return sigStatus;
 	}
 

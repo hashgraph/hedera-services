@@ -27,6 +27,7 @@ import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SubType;
@@ -84,6 +85,12 @@ public interface TxnAccessor {
     boolean canTriggerTxn();
     boolean isTriggeredTxn();
     ScheduleID getScheduleRef();
+
+    ResponseCodeEnum getValidationStatus();
+    void setValidationStatus(ResponseCodeEnum status);
+
+    boolean hasActivePayerSig();
+    void setActivePayerSig(boolean activePayerSig);
 
     default SwirldTransaction getPlatformTxn() {
         throw new UnsupportedOperationException();

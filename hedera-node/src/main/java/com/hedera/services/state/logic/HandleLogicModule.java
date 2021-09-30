@@ -20,6 +20,7 @@ package com.hedera.services.state.logic;
  * ‍
  */
 
+import com.hedera.services.sigs.SigsModule;
 import com.hedera.services.state.annotations.RunRecordStreaming;
 import com.hedera.services.state.annotations.RunTopLevelTransition;
 import com.hedera.services.state.annotations.RunTriggeredTransition;
@@ -29,7 +30,7 @@ import dagger.Module;
 
 import javax.inject.Singleton;
 
-@Module
+@Module(includes = SigsModule.class)
 public abstract class HandleLogicModule {
 	@Binds
 	@Singleton

@@ -283,7 +283,11 @@ public final class BootstrapProperties implements PropertySource {
 			"stats.executionTimesToTrack",
 			"stats.hapiOps.speedometerUpdateIntervalMs",
 			"stats.runningAvgHalfLifeSecs",
-			"stats.speedometerHalfLifeSecs"
+			"stats.speedometerHalfLifeSecs",
+			"hedera.preConsensus.ringBufferPower",
+			"hedera.preConsensus.validationHandlerCount",
+			"hedera.consensus.ringBufferPower",
+			"hedera.consensus.validationHandlerCount"
 	);
 
 	public static final Set<String> BOOTSTRAP_PROP_NAMES = unmodifiableSet(
@@ -399,6 +403,10 @@ public final class BootstrapProperties implements PropertySource {
 			entry("stats.speedometerHalfLifeSecs", AS_DOUBLE),
 			entry("consensus.message.maxBytesAllowed", AS_INT),
 			entry("tokens.nfts.areEnabled", AS_BOOLEAN),
-			entry("stats.executionTimesToTrack", AS_INT)
+			entry("stats.executionTimesToTrack", AS_INT),
+			entry("hedera.preConsensus.ringBufferPower", AS_INT),
+			entry("hedera.preConsensus.validationHandlerCount", AS_INT),
+			entry("hedera.consensus.ringBufferPower", AS_INT),
+			entry("hedera.consensus.validationHandlerCount", AS_INT)
 	);
 }

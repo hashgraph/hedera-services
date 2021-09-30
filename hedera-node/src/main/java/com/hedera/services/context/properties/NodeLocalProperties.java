@@ -60,6 +60,10 @@ public class NodeLocalProperties {
 	private long nettyStartRetryIntervalMs;
 	private boolean dumpFcmsOnIss;
 	private int numExecutionTimesToTrack;
+	private int preConsensusRingBufferPower;
+	private int preConsensusValidationHandlerCount;
+	private int consensusRingBufferPower;
+	private int consensusValidationHandlerCount;
 
 	@Inject
 	public NodeLocalProperties(@CompositeProps PropertySource properties) {
@@ -100,6 +104,10 @@ public class NodeLocalProperties {
 		nettyStartRetryIntervalMs = properties.getLongProperty("netty.startRetryIntervalMs");
 		dumpFcmsOnIss = properties.getBooleanProperty("iss.dumpFcms");
 		numExecutionTimesToTrack = properties.getIntProperty("stats.executionTimesToTrack");
+		preConsensusRingBufferPower = properties.getIntProperty("hedera.preConsensus.ringBufferPower");
+		preConsensusValidationHandlerCount = properties.getIntProperty("hedera.preConsensus.validationHandlerCount");
+		consensusRingBufferPower = properties.getIntProperty("hedera.consensus.ringBufferPower");
+		consensusValidationHandlerCount = properties.getIntProperty("hedera.consensus.validationHandlerCount");
 	}
 
 	public int port() {
@@ -225,4 +233,12 @@ public class NodeLocalProperties {
 	public int numExecutionTimesToTrack() {
 		return numExecutionTimesToTrack;
 	}
+
+	public int preConsensusRingBufferPower() { return preConsensusRingBufferPower; }
+
+	public int preConsensusValidationHandlerCount() { return preConsensusValidationHandlerCount; }
+
+	public int consensusRingBufferPower() { return consensusRingBufferPower; }
+
+	public int consensusValidationHandlerCount() { return consensusValidationHandlerCount; }
 }

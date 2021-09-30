@@ -29,6 +29,7 @@ import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.crypto.TransactionSignature;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
@@ -55,10 +56,6 @@ class SignatureScreenTest {
 	@Mock
 	private PayerSigValidity payerSigValidity;
 	@Mock
-	private TransactionContext txnCtx;
-	@Mock
-	private NetworkCtxManager networkCtxManager;
-	@Mock
 	private MiscSpeedometers speedometers;
 	@Mock
 	private BiPredicate<JKey, TransactionSignature> validityTest;
@@ -73,7 +70,7 @@ class SignatureScreenTest {
 	@BeforeEach
 	void setUp() {
 		subject = new SignatureScreen(
-				rationalization, payerSigValidity, txnCtx, networkCtxManager, speedometers, validityTest);
+				rationalization, payerSigValidity, speedometers, validityTest);
 	}
 
 	@Test
@@ -99,8 +96,7 @@ class SignatureScreenTest {
 		final var result = subject.applyTo(accessor);
 
 		// then:
-		verify(txnCtx).payerSigIsKnownActive();
-		verify(networkCtxManager).prepareForIncorporating(accessor);
+		verify(accessor).hasActivePayerSig();
 		// and:
 		Assertions.assertEquals(OK, result);
 	}

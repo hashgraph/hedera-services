@@ -33,7 +33,6 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.swirlds.common.SwirldTransaction;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,8 +43,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -92,11 +89,10 @@ class StandardProcessLogicTest {
 	void happyPathFlowsForNonTriggered() throws InvalidProtocolBufferException {
 		final InOrder inOrder = Mockito.inOrder(expiries, executionTimeTracker, txnManager, autoRenewal);
 
-		given(expandHandleSpan.accessorFor(swirldTransaction)).willReturn(accessor);
 		given(invariantChecks.holdFor(accessor, consensusNow, member)).willReturn(true);
 
 		// when:
-		subject.incorporateConsensusTxn(swirldTransaction, consensusNow, member);
+		subject.incorporateConsensusTxn(accessor, consensusNow, member);
 
 		// then:
 		inOrder.verify(expiries).purge(consensusNow.getEpochSecond());
@@ -108,10 +104,8 @@ class StandardProcessLogicTest {
 
 	@Test
 	void abortsOnFailedInvariantCheck() throws InvalidProtocolBufferException {
-		given(expandHandleSpan.accessorFor(swirldTransaction)).willReturn(accessor);
-
 		// when:
-		subject.incorporateConsensusTxn(swirldTransaction, consensusNow, member);
+		subject.incorporateConsensusTxn(accessor, consensusNow, member);
 
 		// then:
 		verifyNoInteractions(expiries, txnManager, autoRenewal);
@@ -120,28 +114,16 @@ class StandardProcessLogicTest {
 	@Test
 	void happyPathFlowsForTriggered() throws InvalidProtocolBufferException {
 		given(accessor.canTriggerTxn()).willReturn(true);
-		given(expandHandleSpan.accessorFor(swirldTransaction)).willReturn(accessor);
 		given(invariantChecks.holdFor(accessor, triggeredConsensusNow, member)).willReturn(true);
 		given(txnCtx.triggeredTxn()).willReturn(triggeredAccessor);
 
 		// when:
-		subject.incorporateConsensusTxn(swirldTransaction, consensusNow, member);
+		subject.incorporateConsensusTxn(accessor, consensusNow, member);
 
 		// then:
 		verify(expiries).purge(consensusNow.getEpochSecond());
 		verify(txnManager).process(accessor, triggeredConsensusNow, member);
 		verify(txnManager).process(triggeredAccessor, consensusNow, member);
 		verify(autoRenewal).execute(consensusNow);
-	}
-
-	@Test
-	void warnsOnNonGrpc() throws InvalidProtocolBufferException {
-		given(expandHandleSpan.accessorFor(swirldTransaction)).willThrow(InvalidProtocolBufferException.class);
-
-		// when:
-		subject.incorporateConsensusTxn(swirldTransaction, consensusNow, member);
-
-		// then:
-		assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith("Consensus platform txn was not gRPC!")));
 	}
 }

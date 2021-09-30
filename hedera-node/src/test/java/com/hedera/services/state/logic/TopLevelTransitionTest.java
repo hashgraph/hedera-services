@@ -33,10 +33,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class TopLevelTransitionTest {
@@ -53,9 +55,7 @@ class TopLevelTransitionTest {
 	@Mock
 	private ScreenedTransition screenedTransition;
 	@Mock
-	private SignatureScreen signatureScreen;
-	@Mock
-	private KeyActivationScreen keyActivationScreen;
+	private TxnIndependentValidator txnValidator;
 
 	private TopLevelTransition subject;
 
@@ -65,30 +65,48 @@ class TopLevelTransitionTest {
 				screenedTransition,
 				networkCtxManager,
 				txnCtx,
-				signatureScreen,
 				chargingPolicyAgent,
-				keyActivationScreen);
+				txnValidator);
 	}
 
 	@Test
-	void happyPathScopedProcessFlows() {
+	void validatedScopedProcessFlows() {
 		// setup:
-		InOrder inOrder = Mockito.inOrder(networkCtxManager, signatureScreen, chargingPolicyAgent, keyActivationScreen);
+		InOrder inOrder = Mockito.inOrder(networkCtxManager, chargingPolicyAgent, txnValidator);
 
+		given(accessor.getValidationStatus()).willReturn(OK);
+		given(accessor.hasActivePayerSig()).willReturn(true);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(consensusNow);
-		given(signatureScreen.applyTo(accessor)).willReturn(OK);
 		given(chargingPolicyAgent.applyPolicyFor(accessor)).willReturn(true);
-		given(keyActivationScreen.reqKeysAreActiveGiven(OK)).willReturn(true);
 
 		// when:
 		subject.run();
 
 		// then:
 		inOrder.verify(networkCtxManager).advanceConsensusClockTo(consensusNow);
-		inOrder.verify(signatureScreen).applyTo(accessor);
 		inOrder.verify(chargingPolicyAgent).applyPolicyFor(accessor);
-		inOrder.verify(keyActivationScreen).reqKeysAreActiveGiven(OK);
+		verifyNoInteractions(txnValidator);
+		verify(screenedTransition).finishFor(accessor);
+	}
+
+	@Test
+	void notActivePayerSig() {
+		// setup:
+		InOrder inOrder = Mockito.inOrder(networkCtxManager, chargingPolicyAgent, txnValidator);
+
+		given(accessor.getValidationStatus()).willReturn(OK);
+		given(accessor.hasActivePayerSig()).willReturn(false);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.consensusTime()).willReturn(consensusNow);
+		given(chargingPolicyAgent.applyPolicyFor(accessor)).willReturn(true);
+
+		// when:
+		subject.run();
+
+		// then:
+		verify(txnCtx, never()).payerSigIsKnownActive();
+		verify(networkCtxManager, never()).prepareForIncorporating(accessor);
 		verify(screenedTransition).finishFor(accessor);
 	}
 
@@ -96,7 +114,8 @@ class TopLevelTransitionTest {
 	void abortsWhenChargingPolicyAgentFails() {
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(consensusNow);
-		given(signatureScreen.applyTo(accessor)).willReturn(OK);
+		given(accessor.getValidationStatus()).willReturn(OK);
+		given(accessor.hasActivePayerSig()).willReturn(true);
 
 		// when:
 		subject.run();
@@ -106,16 +125,16 @@ class TopLevelTransitionTest {
 	}
 
 	@Test
-	void abortsWhenKeyActivationScreenFails() {
+	void abortsWhenValidationFails() {
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(consensusNow);
-		given(signatureScreen.applyTo(accessor)).willReturn(OK);
-		given(chargingPolicyAgent.applyPolicyFor(accessor)).willReturn(true);
+		given(accessor.getValidationStatus()).willReturn(INVALID_SIGNATURE);
 
 		// when:
 		subject.run();
 
 		// then:
+		verify(txnCtx).setStatus(INVALID_SIGNATURE);
 		verify(screenedTransition, never()).finishFor(accessor);
 	}
 }

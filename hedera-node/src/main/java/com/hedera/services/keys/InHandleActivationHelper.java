@@ -41,6 +41,8 @@ import static com.hedera.services.keys.HederaKeyTraversal.visitSimpleKeys;
  *
  * In particular, lets a visitor traverse these Ed25519 keys along with
  * their expanded {@code TransactionSignature}s (if present).
+ *
+ * TODO: remove assumption of singleton state from this class, should allow for txn to be specified by calling layer.
  */
 public class InHandleActivationHelper {
 	private static final List<JKey> NO_OTHER_PARTIES = null;
@@ -72,6 +74,21 @@ public class InHandleActivationHelper {
 	public boolean areOtherPartiesActive(BiPredicate<JKey, TransactionSignature> tests) {
 		ensureUpToDate();
 		return arePartiesActive(false, accessor.getTxn(), tests);
+	}
+
+	/**
+	 * Override of {@code areOtherPartiesActive(BiPredicate<JKey, TransactionSignature>)} that
+	 * allows the transaction accessor to be passed in rather than being inferred from the
+	 * singleton state. This method is used during the validation phase when access to the
+	 * regular execution singleton state objects is not available (due to potential parallelism).
+	 */
+	// TODO: can predicate be embedded here instead of passed in? if so, remove and simplify
+	public boolean areOtherPartiesActive(TxnAccessor txnAccessor, BiPredicate<JKey, TransactionSignature> tests) {
+		final var sigMeta = txnAccessor.getSigMeta();
+		final List<JKey> parties = sigMeta.couldRationalizeOthers() ? sigMeta.othersReqSigs() : Collections.emptyList();
+		final var sigFn = sigMeta.pkToVerifiedSigFn();
+
+		return arePartiesActive(false, txnAccessor.getTxn(), parties, sigFn, tests);
 	}
 
 	/**
@@ -121,13 +138,26 @@ public class InHandleActivationHelper {
 			boolean useScheduleKeys,
 			TransactionBody txn,
 			BiPredicate<JKey, TransactionSignature> givenTests
+	){
+		return arePartiesActive(useScheduleKeys, txn, otherParties, sigsFn, givenTests);
+	}
+
+	/**
+	 * This method has a minimal reliance on internal state and allows for predicates to be passed in.
+	 */
+	private boolean arePartiesActive(
+			boolean useScheduleKeys,
+			TransactionBody txn,
+			List<JKey> otherParties,
+			Function<byte[], TransactionSignature> sigFn,
+			BiPredicate<JKey, TransactionSignature> givenTests
 	) {
 		var activeCharacter = characteristics.inferredFor(txn);
 		for (JKey req : otherParties) {
 			if (req.isForScheduledTxn() != useScheduleKeys) {
 				continue;
 			}
-			if (!activation.test(req, sigsFn, givenTests, activeCharacter)) {
+			if (!activation.test(req, sigFn, givenTests, activeCharacter)) {
 				return false;
 			}
 		}

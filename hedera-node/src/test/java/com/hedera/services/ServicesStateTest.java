@@ -22,6 +22,10 @@ package com.hedera.services;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.init.ServicesInitFlow;
+import com.hedera.services.disruptor.ConsensusProcessor;
+import com.hedera.services.disruptor.ConsensusPublisher;
+import com.hedera.services.disruptor.PreConsensusProcessor;
+import com.hedera.services.disruptor.PreConsensusPublisher;
 import com.hedera.services.sigs.ExpansionHelper;
 import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
@@ -79,7 +83,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -155,12 +158,18 @@ class ServicesStateTest {
 	private ServicesState.FcmMigrator fcmMigrator;
 	@Mock
 	private Consumer<Boolean> blobMigrationFlag;
-
+	@Mock
+	private PreConsensusProcessor preConsensusProcessor;
+	@Mock
+	private PreConsensusPublisher preConsensusPublisher;
+	@Mock
+	private ConsensusProcessor consensusProcessor;
+	@Mock
+	private ConsensusPublisher consensusPublisher;
 	@LoggingTarget
 	private LogCaptor logCaptor;
 	@LoggingSubject
 	private ServicesState subject = new ServicesState();
-
 
 	@AfterEach
 	void cleanup() {
@@ -246,55 +255,53 @@ class ServicesStateTest {
 		subject.setMetadata(metadata);
 
 		given(metadata.app()).willReturn(app);
-		given(app.expansionHelper()).willReturn(expansionHelper);
-		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
-		given(app.retryingSigReqs()).willReturn(retryingKeyOrder);
-		given(txnAccessor.getPkToSigsFn()).willReturn(pubKeyToSigBytes);
-		given(expandHandleSpan.track(transaction)).willReturn(txnAccessor);
+		given(app.preConsensusProcessor()).willReturn(preConsensusProcessor);
+		given(preConsensusProcessor.getPublisher()).willReturn(preConsensusPublisher);
 
 		// when:
 		subject.expandSignatures(transaction);
 
 		// then:
-		verify(expansionHelper).expandIn(txnAccessor, retryingKeyOrder, pubKeyToSigBytes);
+		verify(preConsensusProcessor).getPublisher();
+		verify(preConsensusPublisher).submit(transaction);
 	}
-
-	@Test
-	void warnsOfIpbe() throws InvalidProtocolBufferException {
-		// setup:
-		subject.setMetadata(metadata);
-
-		given(metadata.app()).willReturn(app);
-		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
-		given(expandHandleSpan.track(transaction)).willThrow(InvalidProtocolBufferException.class);
-
-		// when:
-		subject.expandSignatures(transaction);
-
-		// then:
-		assertThat(
-				logCaptor.warnLogs(),
-				contains(Matchers.startsWith("Method expandSignatures called with non-gRPC txn")));
-		;
-	}
-
-	@Test
-	void warnsOfRace() throws InvalidProtocolBufferException {
-		// setup:
-		subject.setMetadata(metadata);
-
-		given(metadata.app()).willReturn(app);
-		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
-		given(expandHandleSpan.track(transaction)).willThrow(ConcurrentModificationException.class);
-
-		// when:
-		subject.expandSignatures(transaction);
-
-		// then:
-		assertThat(
-				logCaptor.warnLogs(),
-				contains(Matchers.startsWith("Unable to expand signatures, will be verified synchronously")));
-	}
+//
+//	@Test
+//	void warnsOfIpbe() throws InvalidProtocolBufferException {
+//		// setup:
+//		subject.setMetadata(metadata);
+//
+//		given(metadata.app()).willReturn(app);
+//		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
+//		given(expandHandleSpan.track(transaction)).willThrow(InvalidProtocolBufferException.class);
+//
+//		// when:
+//		subject.expandSignatures(transaction);
+//
+//		// then:
+//		assertThat(
+//				logCaptor.warnLogs(),
+//				contains(Matchers.startsWith("Method expandSignatures called with non-gRPC txn")));
+//		;
+//	}
+//
+//	@Test
+//	void warnsOfRace() throws InvalidProtocolBufferException {
+//		// setup:
+//		subject.setMetadata(metadata);
+//
+//		given(metadata.app()).willReturn(app);
+//		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
+//		given(expandHandleSpan.track(transaction)).willThrow(ConcurrentModificationException.class);
+//
+//		// when:
+//		subject.expandSignatures(transaction);
+//
+//		// then:
+//		assertThat(
+//				logCaptor.warnLogs(),
+//				contains(Matchers.startsWith("Unable to expand signatures, will be verified synchronously")));
+//	}
 
 	@Test
 	void handleNonConsensusTransactionAsExpected() {
@@ -315,16 +322,15 @@ class ServicesStateTest {
 		subject.setMetadata(metadata);
 
 		given(metadata.app()).willReturn(app);
-		given(app.logic()).willReturn(logic);
-		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+		given(app.consensusProcessor()).willReturn(consensusProcessor);
+		given(consensusProcessor.getPublisher()).willReturn(consensusPublisher);
 
 		// when:
 		subject.handleTransaction(
 				1L, true, creationTime, consensusTime, transaction, dualState);
 
 		// then:
-		verify(dualStateAccessor).setDualState(dualState);
-		verify(logic).incorporateConsensusTxn(transaction, consensusTime, 1L);
+		verify(consensusPublisher).submit(1L, creationTime, consensusTime, transaction);
 	}
 
 	@Test
