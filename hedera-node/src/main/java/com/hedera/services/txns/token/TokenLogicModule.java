@@ -54,6 +54,10 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate
 
 @Module
 public abstract class TokenLogicModule {
+	private TokenLogicModule() {
+		throw new UnsupportedOperationException("Abstract Class");
+	}
+
 	@Provides
 	@IntoMap
 	@FunctionKey(TokenCreate)

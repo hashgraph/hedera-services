@@ -47,7 +47,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-public class TokenUnpauseTransitionLogicTest {
+class TokenUnpauseTransitionLogicTest {
 	private long tokenNum = 12345L;
 	private TokenID tokenID = IdUtils.asToken("0.0." + tokenNum);
 	private Id tokenId = new Id(0,0,tokenNum);

@@ -21,7 +21,7 @@ package com.hedera.services.usage.token.meta;
  */
 
 
-public class TokenUnpauseMeta extends TokenPauseMeta {
+public class TokenUnpauseMeta  extends TokenFreezeMeta {
 	public TokenUnpauseMeta(final int bpt) {
 		super(bpt);
 	}
