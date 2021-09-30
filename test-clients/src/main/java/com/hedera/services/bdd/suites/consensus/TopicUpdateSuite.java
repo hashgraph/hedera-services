@@ -84,7 +84,7 @@ public class TopicUpdateSuite extends HapiApiSuite {
 
 	@Override
 	public boolean canRunAsync() {
-		return true;
+		return false;
 	}
 
 	private HapiApiSpec updateToMissingTopicFails() {
@@ -225,7 +225,7 @@ public class TopicUpdateSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec updateMultipleFields() {
-		long updateAutoRenewPeriod = 1200L;
+		long updateAutoRenewPeriod = 7_000_000L;
 		long expirationTimestamp = Instant.now().getEpochSecond() + 10000000; // more than default.autorenew
 		// .secs=7000000
 		return defaultHapiSpec("updateMultipleFields")
@@ -249,7 +249,7 @@ public class TopicUpdateSuite extends HapiApiSuite {
 								.submitKey("submitKey")
 								.adminKey("adminKey2")
 								.expiry(expirationTimestamp)
-								.autoRenewPeriod(updateAutoRenewPeriod * 2)
+								.autoRenewPeriod(updateAutoRenewPeriod + 5_000L)
 								.autoRenewAccountId("nextAutoRenewAccount")
 								.hasKnownStatus(SUCCESS)
 				)
@@ -259,7 +259,7 @@ public class TopicUpdateSuite extends HapiApiSuite {
 								.hasSubmitKey("submitKey")
 								.hasAdminKey("adminKey2")
 								.hasExpiry(expirationTimestamp)
-								.hasAutoRenewPeriod(updateAutoRenewPeriod * 2)
+								.hasAutoRenewPeriod(updateAutoRenewPeriod + 5_000L)
 								.hasAutoRenewAccount("nextAutoRenewAccount")
 								.logged()
 				);
@@ -270,7 +270,7 @@ public class TopicUpdateSuite extends HapiApiSuite {
 		return defaultHapiSpec("expirationTimestampIsValidated")
 				.given(
 						createTopic("testTopic")
-								.autoRenewPeriod(3600)
+								.autoRenewPeriod(7_000_000L)
 				)
 				.when()
 				.then(
