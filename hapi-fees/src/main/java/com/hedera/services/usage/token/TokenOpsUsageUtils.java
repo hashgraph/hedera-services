@@ -26,7 +26,9 @@ import com.hedera.services.usage.token.meta.TokenBurnMeta;
 import com.hedera.services.usage.token.meta.TokenCreateMeta;
 import com.hedera.services.usage.token.meta.TokenFreezeMeta;
 import com.hedera.services.usage.token.meta.TokenMintMeta;
+import com.hedera.services.usage.token.meta.TokenPauseMeta;
 import com.hedera.services.usage.token.meta.TokenUnfreezeMeta;
+import com.hedera.services.usage.token.meta.TokenUnpauseMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SubType;
@@ -39,6 +41,7 @@ import java.util.function.Predicate;
 
 import static com.hedera.services.usage.EstimatorUtils.MAX_ENTITY_LIFETIME;
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
@@ -47,7 +50,6 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
-import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 
 public enum TokenOpsUsageUtils {
 	TOKEN_OPS_USAGE_UTILS;
@@ -118,6 +120,14 @@ public enum TokenOpsUsageUtils {
 
 	public TokenUnfreezeMeta tokenUnfreezeUsageFrom() {
 		return new TokenUnfreezeMeta(2 * BASIC_ENTITY_ID_SIZE);
+	}
+
+	public TokenPauseMeta tokenPauseUsageFrom() {
+		return new TokenPauseMeta(BASIC_ENTITY_ID_SIZE);
+	}
+
+	public TokenUnpauseMeta tokenUnpauseUsageFrom() {
+		return new TokenUnpauseMeta(BASIC_ENTITY_ID_SIZE);
 	}
 
 	public TokenBurnMeta tokenBurnUsageFrom(final TransactionBody txn) {

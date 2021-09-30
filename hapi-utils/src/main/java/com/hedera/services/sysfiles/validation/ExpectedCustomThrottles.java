@@ -70,8 +70,10 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetNft
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetNftInfos;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenPause;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
@@ -127,7 +129,9 @@ public final class ExpectedCustomThrottles {
 			GetVersionInfo,
 			TokenGetInfo,
 			ScheduleGetInfo,
-			TokenFeeScheduleUpdate
+			TokenFeeScheduleUpdate,
+			TokenPause,
+			TokenUnpause
 	);
 
 	private ExpectedCustomThrottles() {

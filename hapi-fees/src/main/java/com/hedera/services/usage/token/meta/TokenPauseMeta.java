@@ -1,17 +1,17 @@
-package com.hedera.services.keys;
+package com.hedera.services.usage.token.meta;
 
 /*-
  * ‌
- * Hedera Services Node
+ * Hedera Services API Fees
  * ​
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,24 +20,9 @@ package com.hedera.services.keys;
  * ‍
  */
 
-import com.hedera.services.context.TransactionContext;
-import dagger.Module;
-import dagger.Provides;
 
-import javax.inject.Singleton;
-
-@Module
-public final class KeysModule {
-	@Provides
-	@Singleton
-	public static InHandleActivationHelper provideActivationHelper(
-			final TransactionContext txnCtx,
-			final CharacteristicsFactory characteristicsFactory
-	) {
-		return new InHandleActivationHelper(characteristicsFactory, txnCtx::accessor);
-	}
-
-	private KeysModule() {
-		throw new UnsupportedOperationException("Dagger2 module");
+public class TokenPauseMeta extends TokenFreezeMeta {
+	public TokenPauseMeta(final int bpt) {
+		super(bpt);
 	}
 }

@@ -1659,6 +1659,92 @@
 			}
 		  } ]
 		}
+	  }, {
+		"transactionFeeSchedule" : {
+		  "hederaFunctionality" : "TokenPause",
+		  "fees" : [ {
+			"subType" : "DEFAULT",
+			"nodedata" : {
+			  "constant" : 76523246,
+			  "bpt" : 122338,
+			  "vpt" : 305844348,
+			  "rbh" : 82,
+			  "sbh" : 6,
+			  "gas" : 816,
+			  "bpr" : 122338,
+			  "sbpr" : 3058,
+			  "min" : 0,
+			  "max" : 1000000000000000
+			},
+			"networkdata" : {
+			  "constant" : 1530464926,
+			  "bpt" : 2446755,
+			  "vpt" : 6116886962,
+			  "rbh" : 1631,
+			  "sbh" : 122,
+			  "gas" : 16312,
+			  "bpr" : 2446755,
+			  "sbpr" : 61169,
+			  "min" : 0,
+			  "max" : 1000000000000000
+			},
+			"servicedata" : {
+			  "constant" : 1530464926,
+			  "bpt" : 2446755,
+			  "vpt" : 6116886962,
+			  "rbh" : 1631,
+			  "sbh" : 122,
+			  "gas" : 16312,
+			  "bpr" : 2446755,
+			  "sbpr" : 61169,
+			  "min" : 0,
+			  "max" : 1000000000000000
+			}
+		  } ]
+		}
+	  }, {
+		"transactionFeeSchedule" : {
+		  "hederaFunctionality" : "TokenUnpause",
+		  "fees" : [ {
+			"subType" : "DEFAULT",
+			"nodedata" : {
+			  "constant" : 76523246,
+			  "bpt" : 122338,
+			  "vpt" : 305844348,
+			  "rbh" : 82,
+			  "sbh" : 6,
+			  "gas" : 816,
+			  "bpr" : 122338,
+			  "sbpr" : 3058,
+			  "min" : 0,
+			  "max" : 1000000000000000
+			},
+			"networkdata" : {
+			  "constant" : 1530464926,
+			  "bpt" : 2446755,
+			  "vpt" : 6116886962,
+			  "rbh" : 1631,
+			  "sbh" : 122,
+			  "gas" : 16312,
+			  "bpr" : 2446755,
+			  "sbpr" : 61169,
+			  "min" : 0,
+			  "max" : 1000000000000000
+			},
+			"servicedata" : {
+			  "constant" : 1530464926,
+			  "bpt" : 2446755,
+			  "vpt" : 6116886962,
+			  "rbh" : 1631,
+			  "sbh" : 122,
+			  "gas" : 16312,
+			  "bpr" : 2446755,
+			  "sbpr" : 61169,
+			  "min" : 0,
+			  "max" : 1000000000000000
+			}
+		  } ]
+		}
 	  },
 	  {
 		"transactionFeeSchedule": {
@@ -4666,6 +4752,92 @@
 			  "gas" : 16212,
 			  "bpr" : 2431761,
 			  "sbpr" : 60794,
+			  "min" : 0,
+			  "max" : 1000000000000000
+			}
+		  } ]
+		}
+	  }, {
+		"transactionFeeSchedule" : {
+		  "hederaFunctionality" : "TokenPause",
+		  "fees" : [ {
+			"subType" : "DEFAULT",
+			"nodedata" : {
+			  "constant" : 76523246,
+			  "bpt" : 122338,
+			  "vpt" : 305844348,
+			  "rbh" : 82,
+			  "sbh" : 6,
+			  "gas" : 816,
+			  "bpr" : 122338,
+			  "sbpr" : 3058,
+			  "min" : 0,
+			  "max" : 1000000000000000
+			},
+			"networkdata" : {
+			  "constant" : 1530464926,
+			  "bpt" : 2446755,
+			  "vpt" : 6116886962,
+			  "rbh" : 1631,
+			  "sbh" : 122,
+			  "gas" : 16312,
+			  "bpr" : 2446755,
+			  "sbpr" : 61169,
+			  "min" : 0,
+			  "max" : 1000000000000000
+			},
+			"servicedata" : {
+			  "constant" : 1530464926,
+			  "bpt" : 2446755,
+			  "vpt" : 6116886962,
+			  "rbh" : 1631,
+			  "sbh" : 122,
+			  "gas" : 16312,
+			  "bpr" : 2446755,
+			  "sbpr" : 61169,
+			  "min" : 0,
+			  "max" : 1000000000000000
+			}
+		  } ]
+		}
+	  }, {
+		"transactionFeeSchedule" : {
+		  "hederaFunctionality" : "TokenUnpause",
+		  "fees" : [ {
+			"subType" : "DEFAULT",
+			"nodedata" : {
+			  "constant" : 76523246,
+			  "bpt" : 122338,
+			  "vpt" : 305844348,
+			  "rbh" : 82,
+			  "sbh" : 6,
+			  "gas" : 816,
+			  "bpr" : 122338,
+			  "sbpr" : 3058,
+			  "min" : 0,
+			  "max" : 1000000000000000
+			},
+			"networkdata" : {
+			  "constant" : 1530464926,
+			  "bpt" : 2446755,
+			  "vpt" : 6116886962,
+			  "rbh" : 1631,
+			  "sbh" : 122,
+			  "gas" : 16312,
+			  "bpr" : 2446755,
+			  "sbpr" : 61169,
+			  "min" : 0,
+			  "max" : 1000000000000000
+			},
+			"servicedata" : {
+			  "constant" : 1530464926,
+			  "bpt" : 2446755,
+			  "vpt" : 6116886962,
+			  "rbh" : 1631,
+			  "sbh" : 122,
+			  "gas" : 16312,
+			  "bpr" : 2446755,
+			  "sbpr" : 61169,
 			  "min" : 0,
 			  "max" : 1000000000000000
 			}

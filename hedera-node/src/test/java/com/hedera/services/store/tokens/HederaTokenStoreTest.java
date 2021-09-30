@@ -1330,6 +1330,15 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	void adjustingRejectsPausedToken() {
+		given(token.isPaused()).willReturn(true);
+
+		final var status = subject.adjustBalance(treasury, misc, 1);
+
+		assertEquals(ResponseCodeEnum.TOKEN_IS_PAUSED, status);
+	}
+
+	@Test
 	void adjustingRejectsFungibleUniqueToken() {
 		given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 

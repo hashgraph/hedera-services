@@ -28,7 +28,9 @@ import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.services.usage.token.meta.TokenPauseMeta;
 import com.hedera.services.usage.token.meta.TokenUnfreezeMeta;
+import com.hedera.services.usage.token.meta.TokenUnpauseMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.FixedFee;
@@ -42,6 +44,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.hedera.services.test.AdapterUtils.feeDataFrom;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class TokenOpsUsageTest {
@@ -49,12 +52,12 @@ class TokenOpsUsageTest {
 
 	@Test
 	void knowsBytesNeededToReprCustomFeeSchedule() {
-		final var expectedHbarFixed = FeeBuilder.LONG_SIZE + FeeBuilder.BASIC_ENTITY_ID_SIZE;
-		final var expectedHtsFixed = FeeBuilder.LONG_SIZE + 2 * FeeBuilder.BASIC_ENTITY_ID_SIZE;
-		final var expectedFractional = 4 * FeeBuilder.LONG_SIZE + FeeBuilder.BASIC_ENTITY_ID_SIZE;
-		final var expectedRoyaltyNoFallback = 2 * FeeBuilder.LONG_SIZE + FeeBuilder.BASIC_ENTITY_ID_SIZE;
-		final var expectedRoyaltyHtsFallback = 3 * FeeBuilder.LONG_SIZE + 2 * FeeBuilder.BASIC_ENTITY_ID_SIZE;
-		final var expectedRoyaltyHbarFallback = 3 * FeeBuilder.LONG_SIZE + FeeBuilder.BASIC_ENTITY_ID_SIZE;
+		final var expectedHbarFixed = FeeBuilder.LONG_SIZE + BASIC_ENTITY_ID_SIZE;
+		final var expectedHtsFixed = FeeBuilder.LONG_SIZE + 2 * BASIC_ENTITY_ID_SIZE;
+		final var expectedFractional = 4 * FeeBuilder.LONG_SIZE + BASIC_ENTITY_ID_SIZE;
+		final var expectedRoyaltyNoFallback = 2 * FeeBuilder.LONG_SIZE + BASIC_ENTITY_ID_SIZE;
+		final var expectedRoyaltyHtsFallback = 3 * FeeBuilder.LONG_SIZE + 2 * BASIC_ENTITY_ID_SIZE;
+		final var expectedRoyaltyHbarFallback = 3 * FeeBuilder.LONG_SIZE + BASIC_ENTITY_ID_SIZE;
 
 		final var perHbarFixedFee = subject.bytesNeededToRepr(1, 0, 0, 0, 0, 0);
 		final var perHtsFixedFee = subject.bytesNeededToRepr(0, 1, 0, 0, 0, 0);
@@ -120,7 +123,7 @@ class TokenOpsUsageTest {
 		final var baseMeta = new BaseTransactionMeta(50, 0);
 		final var exp = new UsageAccumulator();
 		exp.resetForTransaction(baseMeta, sigUsage);
-		exp.addBpt(newSize + FeeBuilder.BASIC_ENTITY_ID_SIZE);
+		exp.addBpt(newSize + BASIC_ENTITY_ID_SIZE);
 		exp.addRbs((newSize - curSize) * lifetime);
 
 		final var ans = new UsageAccumulator();
@@ -158,6 +161,38 @@ class TokenOpsUsageTest {
 		assertEquals( 334, accumulator.get(ResourceProvider.NETWORK, UsableResource.BPT));
 		assertEquals( 1, accumulator.get(ResourceProvider.NETWORK, UsableResource.VPT));
 		assertEquals( 334, accumulator.get(ResourceProvider.NODE, UsableResource.BPT));
+		assertEquals(0 , accumulator.get(ResourceProvider.SERVICE, UsableResource.BPR));
+		assertEquals( 1, accumulator.get(ResourceProvider.NODE, UsableResource.VPT));
+	}
+
+	@Test
+	void tokenPauseUsageAccumulatorWorks() {
+		final var sigUsage = new SigUsage(1, 2, 1);
+		final var baseMeta = new BaseTransactionMeta(0, 0);
+		final var tokenPauseMeta = new TokenPauseMeta(BASIC_ENTITY_ID_SIZE) ;
+		final var accumulator = new UsageAccumulator();
+
+		subject.tokenPauseUsage(sigUsage, baseMeta, tokenPauseMeta, accumulator);
+
+		assertEquals( 102, accumulator.get(ResourceProvider.NETWORK, UsableResource.BPT));
+		assertEquals( 1, accumulator.get(ResourceProvider.NETWORK, UsableResource.VPT));
+		assertEquals( 102, accumulator.get(ResourceProvider.NODE, UsableResource.BPT));
+		assertEquals(0 , accumulator.get(ResourceProvider.SERVICE, UsableResource.BPR));
+		assertEquals( 1, accumulator.get(ResourceProvider.NODE, UsableResource.VPT));
+	}
+
+	@Test
+	void tokenUnpauseUsageAccumulatorWorks() {
+		final var sigUsage = new SigUsage(1, 2, 1);
+		final var baseMeta = new BaseTransactionMeta(0, 0);
+		final var tokenUnpauseMeta = new TokenUnpauseMeta(BASIC_ENTITY_ID_SIZE) ;
+		final var accumulator = new UsageAccumulator();
+
+		subject.tokenUnpauseUsage(sigUsage, baseMeta, tokenUnpauseMeta, accumulator);
+
+		assertEquals( 102, accumulator.get(ResourceProvider.NETWORK, UsableResource.BPT));
+		assertEquals( 1, accumulator.get(ResourceProvider.NETWORK, UsableResource.VPT));
+		assertEquals( 102, accumulator.get(ResourceProvider.NODE, UsableResource.BPT));
 		assertEquals(0 , accumulator.get(ResourceProvider.SERVICE, UsableResource.BPR));
 		assertEquals( 1, accumulator.get(ResourceProvider.NODE, UsableResource.VPT));
 	}
