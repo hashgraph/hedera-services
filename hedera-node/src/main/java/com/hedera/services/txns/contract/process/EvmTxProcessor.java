@@ -102,7 +102,7 @@ abstract class EvmTxProcessor {
 		this.exchange = exchange;
 		this.usagePrices = usagePrices;
 		this.dynamicProperties = dynamicProperties;
-		this.gasCalculator = new GasCalculatorHedera_0_19_0();
+		this.gasCalculator = new GasCalculatorHedera_0_19_0(dynamicProperties, usagePrices, exchange);
 
 		var operationRegistry = new OperationRegistry();
 		registerLondonOperations(operationRegistry, gasCalculator, BigInteger.valueOf(dynamicProperties.getChainId()));
@@ -186,7 +186,9 @@ abstract class EvmTxProcessor {
 							.isStatic(isStatic)
 							.miningBeneficiary(coinbase)
 							.blockHashLookup(h -> null)
-							.contextVariables(Map.of("rbh", storageByteHoursTinyBarsGiven(consensusTime)));
+							.contextVariables(Map.of(
+									"rbh", storageByteHoursTinyBarsGiven(consensusTime),
+									"HederaFunctionality", getFunctionType()));
 
 			final MessageFrame initialFrame = buildInitialFrame(commonInitialFrame,
 					updater,
@@ -261,7 +263,7 @@ abstract class EvmTxProcessor {
 		final var functionType = getFunctionType();
 		final var timestamp = Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build();
 		FeeData prices = usagePrices.defaultPricesGiven(functionType, timestamp);
-		long feeInTinyCents = prices.getServicedata().getRbh() / 1000;
+		long feeInTinyCents = prices.getServicedata().getSbh() / 1000;
 		long feeInTinyBars = FeeBuilder.getTinybarsFromTinyCents(exchange.rate(timestamp), feeInTinyCents);
 		return Math.max(1L, feeInTinyBars);
 	}

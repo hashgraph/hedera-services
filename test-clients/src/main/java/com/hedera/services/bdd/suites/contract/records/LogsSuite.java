@@ -75,13 +75,8 @@ public class LogsSuite extends HapiApiSuite {
 						getTxnRecord("log0").logged().hasPriority(
 								recordWith().contractCallResult(
 										resultWith().logs(
-												inOrder(
-														logWith().noTopics().longValue(15)
-												)
-										)
-								)
-						)
-				);
+												inOrder(logWith().noTopics().longValue(15))
+										).gasUsed(654))));
 	}
 
 	private HapiApiSpec log1Works() {
@@ -93,15 +88,11 @@ public class LogsSuite extends HapiApiSuite {
 						contractCall("logsContract", ContractResources.LOGS_LOG1_ABI, 15).via("log1")
 				).then(
 						getTxnRecord("log1").logged().hasPriority(recordWith().contractCallResult(resultWith()
-										.logs(inOrder(logWith().noData().withTopicsInOrder(
-												List.of(
-														eventSignatureOf("Log1(uint256)"),
-														parsedToByteString(15)
-												)
-										)))
-								)
-						)
-				);
+								.logs(inOrder(logWith().noData().withTopicsInOrder(
+										List.of(
+												eventSignatureOf("Log1(uint256)"),
+												parsedToByteString(15))))
+								).gasUsed(458))));
 	}
 
 	private HapiApiSpec log2Works() {
@@ -118,12 +109,8 @@ public class LogsSuite extends HapiApiSuite {
 												List.of(
 														eventSignatureOf("Log2(uint256,uint256)"),
 														parsedToByteString(1),
-														parsedToByteString(2)
-												)
-										)))
-								)
-						)
-				);
+														parsedToByteString(2))))
+										).gasUsed(612))));
 	}
 
 	private HapiApiSpec log3Works() {
@@ -141,12 +128,8 @@ public class LogsSuite extends HapiApiSuite {
 														eventSignatureOf("Log3(uint256,uint256,uint256)"),
 														parsedToByteString(1),
 														parsedToByteString(2),
-														parsedToByteString(3)
-												)
-										)))
-								)
-						)
-				);
+														parsedToByteString(3))))
+										).gasUsed(763))));
 	}
 
 	private HapiApiSpec log4Works() {
@@ -167,12 +150,8 @@ public class LogsSuite extends HapiApiSuite {
 																		"uint256)"),
 																parsedToByteString(1),
 																parsedToByteString(2),
-																parsedToByteString(3)
-														)
-												)))
-								)
-						)
-				);
+																parsedToByteString(3))))
+										).gasUsed(1163))));
 	}
 
 }
