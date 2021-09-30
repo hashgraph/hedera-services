@@ -55,6 +55,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 public class TopicUpdateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TopicUpdateSuite.class);
 
+	private static final long validAutoRenewPeriod = 7_000_000L;
 	private static final long defaultMaxLifetime =
 			Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
 
@@ -89,7 +90,7 @@ public class TopicUpdateSuite extends HapiApiSuite {
 
 	private HapiApiSpec updateToMissingTopicFails() {
 		return defaultHapiSpec("UpdateTopicHandlesMissingTopicGracefully")
-				.given( ).when( ).then(
+				.given().when().then(
 						updateTopic("1.2.3").hasKnownStatus(INVALID_TOPIC_ID)
 				);
 	}
@@ -153,8 +154,8 @@ public class TopicUpdateSuite extends HapiApiSuite {
 								.hasKnownStatus(INVALID_SIGNATURE),
 						updateTopicSignedBy.apply(new String[] { "payer", "newAdminKey", "newAutoRenewAccount" })
 								.hasKnownStatus(INVALID_SIGNATURE),
-						updateTopicSignedBy.apply(
-								new String[] { "payer", "oldAdminKey", "newAdminKey", "newAutoRenewAccount" })
+						updateTopicSignedBy
+								.apply(new String[] { "payer", "oldAdminKey", "newAdminKey", "newAutoRenewAccount" })
 								.hasKnownStatus(SUCCESS)
 				).then(
 						getTopicInfo("testTopic")
@@ -225,7 +226,6 @@ public class TopicUpdateSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec updateMultipleFields() {
-		long updateAutoRenewPeriod = 7_000_000L;
 		long expirationTimestamp = Instant.now().getEpochSecond() + 10000000; // more than default.autorenew
 		// .secs=7000000
 		return defaultHapiSpec("updateMultipleFields")
@@ -240,7 +240,7 @@ public class TopicUpdateSuite extends HapiApiSuite {
 						createTopic("testTopic")
 								.topicMemo("initialmemo")
 								.adminKeyName("adminKey")
-								.autoRenewPeriod(updateAutoRenewPeriod)
+								.autoRenewPeriod(validAutoRenewPeriod)
 								.autoRenewAccountId("autoRenewAccount")
 				)
 				.when(
@@ -249,7 +249,7 @@ public class TopicUpdateSuite extends HapiApiSuite {
 								.submitKey("submitKey")
 								.adminKey("adminKey2")
 								.expiry(expirationTimestamp)
-								.autoRenewPeriod(updateAutoRenewPeriod + 5_000L)
+								.autoRenewPeriod(validAutoRenewPeriod + 5_000L)
 								.autoRenewAccountId("nextAutoRenewAccount")
 								.hasKnownStatus(SUCCESS)
 				)
@@ -259,7 +259,7 @@ public class TopicUpdateSuite extends HapiApiSuite {
 								.hasSubmitKey("submitKey")
 								.hasAdminKey("adminKey2")
 								.hasExpiry(expirationTimestamp)
-								.hasAutoRenewPeriod(updateAutoRenewPeriod + 5_000L)
+								.hasAutoRenewPeriod(validAutoRenewPeriod + 5_000L)
 								.hasAutoRenewAccount("nextAutoRenewAccount")
 								.logged()
 				);
@@ -270,7 +270,7 @@ public class TopicUpdateSuite extends HapiApiSuite {
 		return defaultHapiSpec("expirationTimestampIsValidated")
 				.given(
 						createTopic("testTopic")
-								.autoRenewPeriod(7_000_000L)
+								.autoRenewPeriod(validAutoRenewPeriod)
 				)
 				.when()
 				.then(
