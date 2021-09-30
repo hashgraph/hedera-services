@@ -9,9 +9,9 @@ package com.hedera.services.txns.token;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -54,98 +54,97 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate
 
 @Module
 public final class TokenLogicModule {
-	private TokenLogicModule() {
-		throw new UnsupportedOperationException("Abstract Class");
-	}
-
 	@Provides
 	@IntoMap
 	@FunctionKey(TokenCreate)
-	public static List<TransitionLogic> provideTokenCreateLogic(TokenCreateTransitionLogic tokenCreateLogic) {
+	public static List<TransitionLogic> provideTokenCreateLogic(final TokenCreateTransitionLogic tokenCreateLogic) {
 		return List.of(tokenCreateLogic);
 	}
 
 	@Provides
 	@IntoMap
 	@FunctionKey(TokenUpdate)
-	public static List<TransitionLogic> provideTokenUpdateLogic(TokenUpdateTransitionLogic tokenUpdateLogic) {
+	public static List<TransitionLogic> provideTokenUpdateLogic(final TokenUpdateTransitionLogic tokenUpdateLogic) {
 		return List.of(tokenUpdateLogic);
 	}
 
 	@Provides
 	@IntoMap
 	@FunctionKey(TokenFeeScheduleUpdate)
-	public static List<TransitionLogic> provideFeesUpdateLogic(TokenFeeScheduleUpdateTransitionLogic feesUpdateLogic) {
+	public static List<TransitionLogic> provideFeesUpdateLogic(
+			final TokenFeeScheduleUpdateTransitionLogic feesUpdateLogic
+	) {
 		return List.of(feesUpdateLogic);
 	}
 
 	@Provides
 	@IntoMap
 	@FunctionKey(TokenFreezeAccount)
-	public static List<TransitionLogic> provideTokenFreezeLogic(TokenFreezeTransitionLogic tokenFreezeLogic) {
+	public static List<TransitionLogic> provideTokenFreezeLogic(final TokenFreezeTransitionLogic tokenFreezeLogic) {
 		return List.of(tokenFreezeLogic);
 	}
 
 	@Provides
 	@IntoMap
 	@FunctionKey(TokenUnfreezeAccount)
-	public static List<TransitionLogic> provideTokenUnfreezeLogic(TokenUnfreezeTransitionLogic tokenUnfreezeLogic) {
+	public static List<TransitionLogic> provideTokenUnfreezeLogic(
+			final TokenUnfreezeTransitionLogic tokenUnfreezeLogic) {
 		return List.of(tokenUnfreezeLogic);
 	}
 
 	@Provides
 	@IntoMap
 	@FunctionKey(TokenGrantKycToAccount)
-	public static List<TransitionLogic> provideTokenGrantLogic(TokenGrantKycTransitionLogic tokenGrantLogic) {
+	public static List<TransitionLogic> provideTokenGrantLogic(final TokenGrantKycTransitionLogic tokenGrantLogic) {
 		return List.of(tokenGrantLogic);
 	}
 
 	@Provides
 	@IntoMap
 	@FunctionKey(TokenRevokeKycFromAccount)
-	public static List<TransitionLogic> provideTokenRevokeLogic(TokenRevokeKycTransitionLogic tokenRevokeLogic) {
+	public static List<TransitionLogic> provideTokenRevokeLogic(final TokenRevokeKycTransitionLogic tokenRevokeLogic) {
 		return List.of(tokenRevokeLogic);
 	}
 
 	@Provides
 	@IntoMap
 	@FunctionKey(TokenDelete)
-	public static List<TransitionLogic> provideTokenDeleteLogic(TokenDeleteTransitionLogic tokenDeleteLogic) {
+	public static List<TransitionLogic> provideTokenDeleteLogic(final TokenDeleteTransitionLogic tokenDeleteLogic) {
 		return List.of(tokenDeleteLogic);
 	}
 
 	@Provides
 	@IntoMap
 	@FunctionKey(TokenMint)
-	public static List<TransitionLogic> provideTokenMintLogic(TokenMintTransitionLogic tokenMintLogic) {
+	public static List<TransitionLogic> provideTokenMintLogic(final TokenMintTransitionLogic tokenMintLogic) {
 		return List.of(tokenMintLogic);
 	}
 
 	@Provides
 	@IntoMap
 	@FunctionKey(TokenBurn)
-	public static List<TransitionLogic> provideTokenBurnLogic(TokenBurnTransitionLogic tokenBurnLogic) {
+	public static List<TransitionLogic> provideTokenBurnLogic(final TokenBurnTransitionLogic tokenBurnLogic) {
 		return List.of(tokenBurnLogic);
 	}
 
 	@Provides
 	@IntoMap
 	@FunctionKey(TokenAccountWipe)
-	public static List<TransitionLogic> provideTokenWipeLogic(TokenWipeTransitionLogic tokenWipeLogic) {
+	public static List<TransitionLogic> provideTokenWipeLogic(final TokenWipeTransitionLogic tokenWipeLogic) {
 		return List.of(tokenWipeLogic);
 	}
 
 	@Provides
 	@IntoMap
 	@FunctionKey(TokenAssociateToAccount)
-	public static List<TransitionLogic> provideTokenAssocLogic(TokenAssociateTransitionLogic tokenAssocLogic) {
+	public static List<TransitionLogic> provideTokenAssocLogic(final TokenAssociateTransitionLogic tokenAssocLogic) {
 		return List.of(tokenAssocLogic);
 	}
 
 	@Provides
 	@IntoMap
 	@FunctionKey(TokenDissociateFromAccount)
-	public static List<TransitionLogic> provideTokenDissocLogic(TokenDissociateTransitionLogic tokenDissocLogic) {
+	public static List<TransitionLogic> provideTokenDissocLogic(final TokenDissociateTransitionLogic tokenDissocLogic) {
 		return List.of(tokenDissocLogic);
 	}
 
@@ -171,13 +170,13 @@ public final class TokenLogicModule {
 
 	@Provides
 	@Singleton
-	public static TypedTokenStore.LegacyTreasuryRemover provideLegacyTreasuryRemover(TokenStore tokenStore) {
+	public static TypedTokenStore.LegacyTreasuryRemover provideLegacyTreasuryRemover(final TokenStore tokenStore) {
 		return tokenStore::removeKnownTreasuryForToken;
 	}
 
 	@Provides
 	@Singleton
-	public static TypedTokenStore.LegacyTreasuryAdder provideLegacyTreasuryAdder(TokenStore tokenStore) {
+	public static TypedTokenStore.LegacyTreasuryAdder provideLegacyTreasuryAdder(final TokenStore tokenStore) {
 		return tokenStore::addKnownTreasury;
 	}
 
@@ -185,5 +184,9 @@ public final class TokenLogicModule {
 	@Singleton
 	public static DissociationFactory provideDissociationFactory() {
 		return Dissociation::loadFrom;
+	}
+
+	private TokenLogicModule() {
+		throw new UnsupportedOperationException("Dagger2 module");
 	}
 }

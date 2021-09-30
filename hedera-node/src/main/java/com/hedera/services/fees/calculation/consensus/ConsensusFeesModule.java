@@ -9,9 +9,9 @@ package com.hedera.services.fees.calculation.consensus;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -40,11 +40,11 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDe
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
 
 @Module
-public abstract class ConsensusFeesModule {
+public final class ConsensusFeesModule {
 	@Provides
 	@ElementsIntoSet
 	public static Set<QueryResourceUsageEstimator> provideConsensusQueryEstimators(
-			GetTopicInfoResourceUsage getTopicInfoResourceUsage
+			final GetTopicInfoResourceUsage getTopicInfoResourceUsage
 	) {
 		return Set.of(getTopicInfoResourceUsage);
 	}
@@ -53,7 +53,7 @@ public abstract class ConsensusFeesModule {
 	@IntoMap
 	@FunctionKey(ConsensusCreateTopic)
 	public static List<TxnResourceUsageEstimator> provideTopicCreateEstimator(
-			CreateTopicResourceUsage createTopicResourceUsage
+			final CreateTopicResourceUsage createTopicResourceUsage
 	) {
 		return List.of(createTopicResourceUsage);
 	}
@@ -62,7 +62,7 @@ public abstract class ConsensusFeesModule {
 	@IntoMap
 	@FunctionKey(ConsensusUpdateTopic)
 	public static List<TxnResourceUsageEstimator> provideTopicUpdateEstimator(
-			UpdateTopicResourceUsage updateTopicResourceUsage
+			final UpdateTopicResourceUsage updateTopicResourceUsage
 	) {
 		return List.of(updateTopicResourceUsage);
 	}
@@ -71,8 +71,12 @@ public abstract class ConsensusFeesModule {
 	@IntoMap
 	@FunctionKey(ConsensusDeleteTopic)
 	public static List<TxnResourceUsageEstimator> provideTopicDeleteEstimator(
-			DeleteTopicResourceUsage deleteTopicResourceUsage
+			final DeleteTopicResourceUsage deleteTopicResourceUsage
 	) {
 		return List.of(deleteTopicResourceUsage);
+	}
+
+	private ConsensusFeesModule() {
+		throw new UnsupportedOperationException("Dagger2 module");
 	}
 }

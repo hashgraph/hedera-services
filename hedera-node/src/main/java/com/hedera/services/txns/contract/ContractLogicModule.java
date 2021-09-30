@@ -9,9 +9,9 @@ package com.hedera.services.txns.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,10 +25,10 @@ import com.hedera.services.fees.annotations.FunctionKey;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.contract.helpers.UpdateCustomizerFactory;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
 import dagger.Module;
 import dagger.Provides;
@@ -44,11 +44,11 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractDel
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractUpdate;
 
 @Module
-public class ContractLogicModule {
+public final class ContractLogicModule {
 	@Provides
 	@Singleton
 	public static ContractCreateTransitionLogic.LegacyCreator provideLegacyCreator(
-		SmartContractRequestHandler contracts
+			final SmartContractRequestHandler contracts
 	) {
 		return contracts::createContract;
 	}
@@ -56,7 +56,7 @@ public class ContractLogicModule {
 	@Provides
 	@Singleton
 	public static ContractDeleteTransitionLogic.LegacyDeleter provideLegacyDeleter(
-			SmartContractRequestHandler contracts
+			final SmartContractRequestHandler contracts
 	) {
 		return contracts::deleteContract;
 	}
@@ -64,7 +64,7 @@ public class ContractLogicModule {
 	@Provides
 	@Singleton
 	public static ContractCallTransitionLogic.LegacyCaller provideLegacyCaller(
-			SmartContractRequestHandler contracts
+			final SmartContractRequestHandler contracts
 	) {
 		return contracts::contractCall;
 	}
@@ -73,7 +73,7 @@ public class ContractLogicModule {
 	@IntoMap
 	@FunctionKey(ContractCreate)
 	public static List<TransitionLogic> provideContractCreateLogic(
-			ContractCreateTransitionLogic contractCreateTransitionLogic
+			final ContractCreateTransitionLogic contractCreateTransitionLogic
 	) {
 		return List.of(contractCreateTransitionLogic);
 	}
@@ -82,7 +82,7 @@ public class ContractLogicModule {
 	@IntoMap
 	@FunctionKey(ContractDelete)
 	public static List<TransitionLogic> provideContractDeleteLogic(
-			ContractDeleteTransitionLogic contractDeleteTransitionLogic
+			final ContractDeleteTransitionLogic contractDeleteTransitionLogic
 	) {
 		return List.of(contractDeleteTransitionLogic);
 	}
@@ -91,7 +91,7 @@ public class ContractLogicModule {
 	@IntoMap
 	@FunctionKey(ContractCall)
 	public static List<TransitionLogic> provideContractCallLogic(
-			ContractCallTransitionLogic contractCallTransitionLogic
+			final ContractCallTransitionLogic contractCallTransitionLogic
 	) {
 		return List.of(contractCallTransitionLogic);
 	}
@@ -100,13 +100,17 @@ public class ContractLogicModule {
 	@IntoMap
 	@FunctionKey(ContractUpdate)
 	public static List<TransitionLogic> provideContractUpdateLogic(
-			HederaLedger ledger,
-			OptionValidator validator,
-			TransactionContext txntCtx,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
+			final HederaLedger ledger,
+			final OptionValidator validator,
+			final TransactionContext txntCtx,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {
 		final var contractUpdateTransitionLogic = new ContractUpdateTransitionLogic(
 				ledger, validator, txntCtx, new UpdateCustomizerFactory(), accounts);
 		return List.of(contractUpdateTransitionLogic);
+	}
+
+	private ContractLogicModule() {
+		throw new UnsupportedOperationException("Dagger2 module");
 	}
 }
