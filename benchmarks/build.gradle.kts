@@ -21,6 +21,7 @@ dependencies {
     jmhImplementation("com.swirlds:swirlds-common:0.18.1")
     jmhImplementation("com.swirlds:swirlds-merkle:0.18.1")
     jmhImplementation("com.swirlds:swirlds-virtualmap:0.18.1")
+    jmhImplementation("com.swirlds:swirlds-jasperdb:0.18.1")
     jmhImplementation("com.swirlds:swirlds-logging:0.18.1")
     jmhImplementation("com.lmax:disruptor:3.4.4")
     jmhRuntimeOnly("io.grpc:grpc-okhttp:1.35.0")

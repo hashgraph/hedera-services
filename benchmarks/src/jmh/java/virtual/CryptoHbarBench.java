@@ -1,7 +1,7 @@
 package virtual;
 
-import com.hedera.services.state.jasperdb.VirtualLeafRecordSerializer;
 import com.swirlds.common.crypto.DigestType;
+import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
 import com.swirlds.virtualmap.VirtualMap;
 import disruptor.Transaction;
 import disruptor.TransactionProcessor;

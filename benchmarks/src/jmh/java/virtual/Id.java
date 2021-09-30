@@ -1,8 +1,8 @@
 package virtual;
 
-import com.hedera.services.state.jasperdb.files.hashmap.KeySerializer;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.jasperdb.files.hashmap.KeySerializer;
 import com.swirlds.virtualmap.VirtualLongKey;
 
 import java.io.IOException;

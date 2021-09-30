@@ -416,6 +416,11 @@ ${git.signoff}
       </dependency>
       <dependency>
         <groupId>com.swirlds</groupId>
+        <artifactId>swirlds-jasperdb</artifactId>
+        <version>${swirlds.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.swirlds</groupId>
         <artifactId>swirlds-fcqueue</artifactId>
         <version>${swirlds.version}</version>
       </dependency>

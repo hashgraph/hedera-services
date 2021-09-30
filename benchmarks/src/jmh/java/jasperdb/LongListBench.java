@@ -1,8 +1,8 @@
 package jasperdb;
 
-import com.hedera.services.state.jasperdb.collections.LongList;
-import com.hedera.services.state.jasperdb.collections.LongListHeap;
-import com.hedera.services.state.jasperdb.collections.LongListOffHeap;
+import com.swirlds.jasperdb.collections.LongList;
+import com.swirlds.jasperdb.collections.LongListHeap;
+import com.swirlds.jasperdb.collections.LongListOffHeap;
 import org.openjdk.jmh.annotations.*;
 
 import java.lang.management.ManagementFactory;

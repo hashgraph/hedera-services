@@ -1,6 +1,7 @@
 package jasperdb;
 
-import com.hedera.services.state.jasperdb.collections.*;
+import com.swirlds.jasperdb.collections.HashList;
+import com.swirlds.jasperdb.collections.HashListByteBuffer;
 import org.openjdk.jmh.annotations.*;
 import utils.CommonTestUtils;
 
@@ -28,17 +29,13 @@ public class HashListBench {
     private int randomIndex;
     private HashList list;
 
-    @Param({"HashListHeap","HashListOffHeap","HashListHeapArrays"})
+    @Param({"HashListHeap","HashListOffHeap"})
     public String listImpl;
 
     @Setup(Level.Trial)
     public void setup() {
         random = new Random(1234);
-        list = switch (listImpl) {
-            default -> new HashListHeap();
-            case "HashListOffHeap" -> new HashListOffHeap();
-            case "HashListHeapArrays" -> new HashListHeapArrays();
-        };
+        list = new HashListByteBuffer(100_000,INITIAL_DATA_SIZE,"HashListOffHeap".equals(listImpl));
         // fill with some data
         for (int i = 0; i < INITIAL_DATA_SIZE; i++) {
             list.put(i, hash(i));

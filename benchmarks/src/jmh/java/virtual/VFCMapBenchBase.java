@@ -1,9 +1,7 @@
 package virtual;
 
-import com.hedera.services.state.jasperdb.VirtualDataSourceJasperDB;
-import com.hedera.services.state.jasperdb.VirtualInternalRecordSerializer;
-import com.hedera.services.state.jasperdb.VirtualLeafRecordSerializer;
-import com.hedera.services.state.jasperdb.files.hashmap.KeySerializer;
+import com.swirlds.jasperdb.*;
+import com.swirlds.jasperdb.files.hashmap.*;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;

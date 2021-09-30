@@ -1,8 +1,8 @@
 package com.hedera.services.state.merkle.virtual;
 
-import com.hedera.services.state.jasperdb.files.DataFileCommon;
-import com.hedera.services.state.jasperdb.files.hashmap.KeySerializer;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.jasperdb.files.DataFileCommon;
+import com.swirlds.jasperdb.files.hashmap.KeySerializer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

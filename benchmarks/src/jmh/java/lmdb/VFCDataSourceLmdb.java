@@ -1,8 +1,8 @@
 package lmdb;
 
-import com.hedera.services.state.jasperdb.utilities.HashTools;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.jasperdb.utilities.HashTools;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;

@@ -5,15 +5,12 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static com.hedera.services.state.jasperdb.utilities.NonCryptographicHashing.perm64;
+import static com.swirlds.jasperdb.utilities.NonCryptographicHashing.perm64;
 
 /**
  * The key of a key/value pair used by a Smart Contract for storage purposes.
