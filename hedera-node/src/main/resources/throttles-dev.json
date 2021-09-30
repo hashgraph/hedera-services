@@ -14,7 +14,7 @@
                         "FileGetContents", "FileGetInfo",
                         "ContractUpdate", "ContractDelete", "ContractGetInfo", "ContractGetBytecode", "ContractGetRecords", "ContractCallLocal", 
                         "TransactionGetRecord",
-                        "GetVersionInfo", "NetworkGetExecutionTime"
+                        "GetVersionInfo"
                     ]
                 },
                 {
