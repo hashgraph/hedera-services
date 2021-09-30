@@ -233,7 +233,6 @@ class AccessorBasedUsagesTest {
 
 	@Test
 	void worksAsExpectedForTokenBurn() {
-		// setup:
 		final var baseMeta = new BaseTransactionMeta(100, 2);
 		final var tokenBurnMeta = new TokenBurnMeta(1000, SubType.TOKEN_FUNGIBLE_COMMON, 2345L, 2);
 		final var accumulator = new UsageAccumulator();
@@ -241,16 +240,13 @@ class AccessorBasedUsagesTest {
 		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
 		given(txnAccessor.getSpanMapAccessor().getTokenBurnMeta(any())).willReturn(tokenBurnMeta);
 
-		// when:
 		subject.assess(sigUsage, txnAccessor, accumulator);
 
-		// then:
 		verify(tokenOpsUsage).tokenBurnUsage(sigUsage, baseMeta, tokenBurnMeta, accumulator);
 	}
 
 	@Test
 	void worksAsExpectedForTokenWipe() {
-		// setup:
 		final var baseMeta = new BaseTransactionMeta(100, 2);
 		final var tokenWipeMeta = new TokenWipeMeta(1000, SubType.TOKEN_NON_FUNGIBLE_UNIQUE, 2345L, 2);
 		final var accumulator = new UsageAccumulator();
@@ -258,16 +254,13 @@ class AccessorBasedUsagesTest {
 		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
 		given(txnAccessor.getSpanMapAccessor().getTokenWipeMeta(any())).willReturn(tokenWipeMeta);
 
-		// when:
 		subject.assess(sigUsage, txnAccessor, accumulator);
 
-		// then:
 		verify(tokenOpsUsage).tokenWipeUsage(sigUsage, baseMeta, tokenWipeMeta, accumulator);
 	}
 
 	@Test
 	void worksAsExpectedForTokenMint() {
-		// setup:
 		final var baseMeta = new BaseTransactionMeta(100, 2);
 		final var tokenMintMeta = new TokenMintMeta(1000, SubType.TOKEN_NON_FUNGIBLE_UNIQUE, 2345L, 20000);
 		final var accumulator = new UsageAccumulator();
@@ -275,16 +268,13 @@ class AccessorBasedUsagesTest {
 		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
 		given(opUsageCtxHelper.metaForTokenMint(txnAccessor)).willReturn(tokenMintMeta);
 
-		// when:
 		subject.assess(sigUsage, txnAccessor, accumulator);
 
-		// then:
 		verify(tokenOpsUsage).tokenMintUsage(sigUsage, baseMeta, tokenMintMeta, accumulator);
 	}
 
 	@Test
 	void worksAsExpectedForTokenFreezeAccount() {
-		// setup:
 		final var baseMeta = new BaseTransactionMeta(0, 0);
 		final var tokenFreezeMeta = new TokenFreezeMeta(48 );
 		final var accumulator = new UsageAccumulator();
@@ -292,16 +282,13 @@ class AccessorBasedUsagesTest {
 		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
 		given(txnAccessor.getSpanMapAccessor().getTokenFreezeMeta(any())).willReturn(tokenFreezeMeta);
 
-		// when:
 		subject.assess(sigUsage, txnAccessor, accumulator);
 
-		// then:
 		verify(tokenOpsUsage).tokenFreezeUsage(sigUsage, baseMeta, tokenFreezeMeta, accumulator);
 	}
 
 	@Test
 	void worksAsExpectedForTokenUnfreezeAccount() {
-		// setup:
 		final var baseMeta = new BaseTransactionMeta(0, 0);
 		final var tokenUnfreezeMeta = new TokenUnfreezeMeta(48 );
 		final var accumulator = new UsageAccumulator();
@@ -309,16 +296,13 @@ class AccessorBasedUsagesTest {
 		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
 		given(txnAccessor.getSpanMapAccessor().getTokenUnfreezeMeta(any())).willReturn(tokenUnfreezeMeta);
 
-		// when:
 		subject.assess(sigUsage, txnAccessor, accumulator);
 
-		// then:
 		verify(tokenOpsUsage).tokenUnfreezeUsage(sigUsage, baseMeta, tokenUnfreezeMeta, accumulator);
 	}
 
 	@Test
 	void worksAsExpectedForTokenPause() {
-		// setup:
 		final var baseMeta = new BaseTransactionMeta(0, 0);
 		final var tokenPauseMeta = new TokenPauseMeta(24);
 		final var accumulator = new UsageAccumulator();
@@ -326,16 +310,13 @@ class AccessorBasedUsagesTest {
 		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
 		given(txnAccessor.getSpanMapAccessor().getTokenPauseMeta(any())).willReturn(tokenPauseMeta);
 
-		// when:
 		subject.assess(sigUsage, txnAccessor, accumulator);
 
-		// then:
 		verify(tokenOpsUsage).tokenPauseUsage(sigUsage, baseMeta, tokenPauseMeta, accumulator);
 	}
 
 	@Test
 	void worksAsExpectedForTokenUnpause() {
-		// setup:
 		final var baseMeta = new BaseTransactionMeta(0, 0);
 		final var tokenUnpauseMeta = new TokenUnpauseMeta(24);
 		final var accumulator = new UsageAccumulator();
@@ -343,10 +324,8 @@ class AccessorBasedUsagesTest {
 		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
 		given(txnAccessor.getSpanMapAccessor().getTokenUnpauseMeta(any())).willReturn(tokenUnpauseMeta);
 
-		// when:
 		subject.assess(sigUsage, txnAccessor, accumulator);
 
-		// then:
 		verify(tokenOpsUsage).tokenUnpauseUsage(sigUsage, baseMeta, tokenUnpauseMeta, accumulator);
 	}
 

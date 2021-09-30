@@ -74,11 +74,9 @@ class TokenUnpauseTransitionLogicTest {
 	@Test
 	void capturesInvalidPause() {
 		givenValidTxnCtx();
-		// and:
 		doThrow(new InvalidTransactionException(TOKEN_HAS_NO_PAUSE_KEY))
 				.when(token).changePauseStatus(false);
 
-		// verify:
 		assertFailsWith(() -> subject.doStateTransition(), TOKEN_HAS_NO_PAUSE_KEY);
 		verify(tokenStore, never()).persistToken(token);
 	}
@@ -86,13 +84,10 @@ class TokenUnpauseTransitionLogicTest {
 	@Test
 	void followsHappyPath() {
 		givenValidTxnCtx();
-		// and:
 		given(token.hasPauseKey()).willReturn(true);
 
-		// when:
 		subject.doStateTransition();
 
-		// then:
 		verify(token).changePauseStatus(false);
 		verify(tokenStore).persistToken(token);
 	}
@@ -101,7 +96,6 @@ class TokenUnpauseTransitionLogicTest {
 	void hasCorrectApplicability() {
 		givenValidTxnCtx();
 
-		// expect:
 		assertTrue(subject.applicability().test(tokenUnpauseTxn));
 		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
 	}
@@ -110,7 +104,6 @@ class TokenUnpauseTransitionLogicTest {
 	void acceptsValidTxn() {
 		givenValidTxnCtx();
 
-		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(tokenUnpauseTxn));
 	}
 
@@ -118,7 +111,6 @@ class TokenUnpauseTransitionLogicTest {
 	void rejectsMissingToken() {
 		givenMissingToken();
 
-		// expect:
 		assertEquals(INVALID_TOKEN_ID, subject.semanticCheck().apply(tokenUnpauseTxn));
 	}
 
@@ -138,7 +130,7 @@ class TokenUnpauseTransitionLogicTest {
 	}
 
 	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
-		var ex = assertThrows(InvalidTransactionException.class, something::run);
+		final var ex = assertThrows(InvalidTransactionException.class, something::run);
 		assertEquals(status, ex.getResponseCode());
 	}
 }
