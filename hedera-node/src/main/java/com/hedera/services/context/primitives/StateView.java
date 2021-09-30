@@ -232,7 +232,7 @@ public class StateView {
 			var pauseCandidate = token.pauseKey();
 			pauseCandidate.ifPresentOrElse(k -> {
 				info.setPauseKey(asKeyUnchecked(k));
-				info.setPauseStatus(tpsFor(token.isPaused()));
+				info.setPauseStatus(tokenPauseStatusOf(token.isPaused()));
 			}, () -> info.setPauseStatus(TokenPauseStatus.PauseNotApplicable));
 
 			if (token.hasAutoRenewAccount()) {
@@ -538,7 +538,7 @@ public class StateView {
 		return flag ? TokenKycStatus.Granted : TokenKycStatus.Revoked;
 	}
 
-	private TokenPauseStatus tpsFor(boolean flag) {
+	private TokenPauseStatus tokenPauseStatusOf(boolean flag) {
 		return flag ? TokenPauseStatus.Paused : TokenPauseStatus.Unpaused;
 	}
 
