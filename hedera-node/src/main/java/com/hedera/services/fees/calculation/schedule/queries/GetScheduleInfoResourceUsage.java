@@ -26,55 +26,37 @@ import com.hedera.services.usage.schedule.ExtantScheduleContext;
 import com.hedera.services.usage.schedule.ScheduleOpsUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.ResponseType;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Map;
-import java.util.Optional;
 
-import static com.hedera.services.queries.AnswerService.NO_QUERY_CTX;
 import static com.hedera.services.queries.schedule.GetScheduleInfoAnswer.SCHEDULE_INFO_CTX_KEY;
+import static com.hedera.services.utils.MiscUtils.putIfNotNull;
 
 @Singleton
-public class GetScheduleInfoResourceUsage implements QueryResourceUsageEstimator {
+public final class GetScheduleInfoResourceUsage implements QueryResourceUsageEstimator {
 	private final ScheduleOpsUsage scheduleOpsUsage;
 
 	@Inject
-	public GetScheduleInfoResourceUsage(ScheduleOpsUsage scheduleOpsUsage) {
+	public GetScheduleInfoResourceUsage(final ScheduleOpsUsage scheduleOpsUsage) {
 		this.scheduleOpsUsage = scheduleOpsUsage;
 	}
 
 	@Override
-	public boolean applicableTo(Query query) {
+	public boolean applicableTo(final Query query) {
 		return query.hasScheduleGetInfo();
 	}
 
 	@Override
-	public FeeData usageGiven(Query query, StateView view) {
-		return usageFor(query, view, NO_QUERY_CTX);
-	}
-
-	@Override
-	public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
-		return usageFor(query, view, NO_QUERY_CTX);
-	}
-
-	@Override
-	public FeeData usageGiven(Query query, StateView view, Map<String, Object> queryCtx) {
-		return usageFor(
-				query,
-				view,
-				Optional.of(queryCtx));
-	}
-
-	private FeeData usageFor(Query query, StateView view, Optional<Map<String, Object>> queryCtx) {
-		var op = query.getScheduleGetInfo();
-		var optionalInfo = view.infoForSchedule(op.getScheduleID());
+	public FeeData usageGiven(final Query query, final StateView view, @Nullable final Map<String, Object> queryCtx) {
+		final var op = query.getScheduleGetInfo();
+		final var optionalInfo = view.infoForSchedule(op.getScheduleID());
 		if (optionalInfo.isPresent()) {
-			var info = optionalInfo.get();
-			queryCtx.ifPresent(ctx -> ctx.put(SCHEDULE_INFO_CTX_KEY, info));
-			var scheduleCtxBuilder = ExtantScheduleContext.newBuilder()
+			final var info = optionalInfo.get();
+			putIfNotNull(queryCtx, SCHEDULE_INFO_CTX_KEY, info);
+			final var scheduleCtxBuilder = ExtantScheduleContext.newBuilder()
 					.setScheduledTxn(info.getScheduledTransactionBody())
 					.setMemo(info.getMemo())
 					.setNumSigners(info.getSigners().getKeysCount())

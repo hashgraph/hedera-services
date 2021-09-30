@@ -57,16 +57,16 @@ public class TopicStore {
 	/**
 	 * Persists a new {@link Topic} into the state, as well as exporting its ID to the transaction receipt.
 	 *
-	 * @param model
-	 * 		- the model to be mapped onto a new {@link MerkleTopic} and persisted.
+	 * @param topic
+	 * 		- the topic to be mapped onto a new {@link MerkleTopic} and persisted.
 	 */
-	public void persistNew(Topic model) {
-		final var id = model.getId().asEntityNum();
+	public void persistNew(Topic topic) {
+		final var id = topic.getId().asEntityNum();
 		final var currentTopics = topics.get();
-		final var merkleTopic = fromModel(model);
+		final var merkleTopic = fromModel(topic);
 		merkleTopic.setSequenceNumber(0);
 		currentTopics.put(id, merkleTopic);
-		transactionRecordService.includeChangesToTopic(model);
+		transactionRecordService.includeChangesToTopic(topic);
 	}
 
 	/**

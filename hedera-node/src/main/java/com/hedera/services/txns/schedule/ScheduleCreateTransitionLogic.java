@@ -37,6 +37,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Collections;
@@ -62,7 +63,6 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 
 	private final OptionValidator validator;
 	private final InHandleActivationHelper activationHelper;
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
 	private final ScheduleExecutor executor;
 	private final ScheduleStore store;
@@ -89,7 +89,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 	@Override
 	public void doStateTransition() {
 		try {
-			var accessor = txnCtx.accessor();
+			final var accessor = txnCtx.accessor();
 			transitionFor(accessor.getTxnBytes(), accessor.getSigMap());
 		} catch (Exception e) {
 			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
@@ -97,32 +97,31 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 		}
 	}
 
-	private void transitionFor(byte[] bodyBytes, SignatureMap sigMap) throws InvalidProtocolBufferException {
-		var idSchedulePair = store.lookupSchedule(bodyBytes);
-		if (idSchedulePair.getLeft().isPresent()) {
-			completeContextWith(
-					idSchedulePair.getLeft().get(),
-					idSchedulePair.getRight(),
-					IDENTICAL_SCHEDULE_ALREADY_CREATED);
+	private void transitionFor(final byte[] bodyBytes, final SignatureMap sigMap) throws InvalidProtocolBufferException {
+		final var idSchedulePair = store.lookupSchedule(bodyBytes);
+		@Nullable final var existingScheduleId = idSchedulePair.getLeft();
+		final var schedule = idSchedulePair.getRight();
+		if (null != existingScheduleId) {
+			completeContextWith(existingScheduleId, schedule, IDENTICAL_SCHEDULE_ALREADY_CREATED);
 			return;
 		}
 
-		var schedule = idSchedulePair.getRight();
-		var result = store.createProvisionally(schedule, fromJava(txnCtx.consensusTime()));
-		if (result.getCreated().isEmpty()) {
+		final var result = store.createProvisionally(schedule, fromJava(txnCtx.consensusTime()));
+		final var scheduleId = result.getCreated();
+		if (null == scheduleId) {
 			abortWith(result.getStatus());
 			return;
 		}
 
-		var scheduleId = result.getCreated().get();
-		var payerKey = txnCtx.activePayerKey();
-		var topLevelKeys = schedule.adminKey().map(ak -> List.of(payerKey, ak)).orElse(List.of(payerKey));
-		var validScheduleKeys = classifier.validScheduleKeys(
+		final var payerKey = txnCtx.activePayerKey();
+		final var topLevelKeys = schedule.adminKey().map(ak -> List.of(payerKey, ak)).orElse(List.of(payerKey));
+		final var validScheduleKeys = classifier.validScheduleKeys(
 				topLevelKeys,
 				sigMap,
 				activationHelper.currentSigsFn(),
 				activationHelper::visitScheduledCryptoSigs);
-		var signingOutcome = signingsWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper);
+		final var signingOutcome =
+				signingsWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper);
 		if (!ACCEPTABLE_SIGNING_OUTCOMES.contains(signingOutcome.getLeft())) {
 			abortWith(signingOutcome.getLeft());
 			return;
@@ -130,7 +129,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 
 		if (store.isCreationPending()) {
 			store.commitCreation();
-			var expiringEntity = new ExpiringEntity(
+			final var expiringEntity = new ExpiringEntity(
 					EntityId.fromGrpcScheduleId(scheduleId),
 					store::expire,
 					schedule.expiry());
@@ -164,12 +163,12 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
+		return this::validate;
 	}
 
-	public ResponseCodeEnum validate(TransactionBody txnBody) {
+	private ResponseCodeEnum validate(final TransactionBody txnBody) {
 		var validity = OK;
-		var op = txnBody.getScheduleCreate();
+		final var op = txnBody.getScheduleCreate();
 		if (op.hasAdminKey()) {
 			validity = PureValidation.checkKey(op.getAdminKey(), INVALID_ADMIN_KEY);
 		}

@@ -56,6 +56,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Optional;
 
+import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.utils.EntityNum.fromContractId;
 import static com.hedera.test.utils.IdUtils.asFile;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
@@ -162,6 +163,13 @@ class ContextOptionValidatorTest {
 				.setDeleted(meta.isDeleted())
 				.setKeys(JKey.mapJKey(meta.getWacl()).getKeyList())
 				.build();
+	}
+
+	@Test
+	void decodesKeyAsExpected() throws Exception {
+		final var key = TxnHandlingScenario.SIMPLE_NEW_WACL_KT.asKey();
+		wacl = TxnHandlingScenario.SIMPLE_NEW_WACL_KT.asJKey();
+		assertTrue(equalUpToDecodability(wacl, subject.attemptDecodeOrThrow(key)));
 	}
 
 	@Test

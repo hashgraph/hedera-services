@@ -24,34 +24,34 @@ import com.hedera.services.usage.QueryUsage;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
-public class CryptoGetInfoUsage extends QueryUsage {
-	private CryptoGetInfoUsage(Query query) {
+public final class CryptoGetInfoUsage extends QueryUsage {
+	private CryptoGetInfoUsage(final Query query) {
 		super(query.getCryptoGetInfo().getHeader().getResponseType());
 		addTb(BASIC_ENTITY_ID_SIZE);
 		addRb(CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr());
 	}
 
-	public static CryptoGetInfoUsage newEstimate(Query query) {
+	public static CryptoGetInfoUsage newEstimate(final Query query) {
 		return new CryptoGetInfoUsage(query);
 	}
 
-	public CryptoGetInfoUsage givenCurrentKey(Key key) {
+	public CryptoGetInfoUsage givenCurrentKey(final Key key) {
 		addRb(getAccountKeyStorageSize(key));
 		return this;
 	}
 
-	public CryptoGetInfoUsage givenCurrentMemo(String memo) {
-		addRb(memo.getBytes(Charset.forName("UTF-8")).length);
+	public CryptoGetInfoUsage givenCurrentMemo(final String memo) {
+		addRb(memo.getBytes(StandardCharsets.UTF_8).length);
 		return this;
 	}
 
-	public CryptoGetInfoUsage givenCurrentTokenAssocs(int count) {
+	public CryptoGetInfoUsage givenCurrentTokenAssocs(final int count) {
 		addRb(count * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr());
 		return this;
 	}

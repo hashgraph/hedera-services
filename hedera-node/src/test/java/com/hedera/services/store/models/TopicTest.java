@@ -42,12 +42,12 @@ class TopicTest {
 				100,
 				Instant.MAX);
 		assertNotNull(topic);
-		assertEquals(topic.getAutoRenewAccountId(), new Id(1, 2, 3));
-		assertEquals(topic.getMemo(), "memo");
-		assertEquals(topic.getId(), Id.DEFAULT);
-		assertEquals(topic.getExpirationTimestamp(), RichInstant.fromJava(Instant.MAX));
-		assertEquals(topic.getAutoRenewDurationSeconds(), 100);
-		assertEquals(topic.getSequenceNumber(), 0);
+		assertEquals(new Id(1, 2, 3), topic.getAutoRenewAccountId());
+		assertEquals("memo", topic.getMemo());
+		assertEquals(Id.DEFAULT, topic.getId());
+		assertEquals(RichInstant.fromJava(Instant.MAX), topic.getExpirationTimestamp());
+		assertEquals(100, topic.getAutoRenewDurationSeconds());
+		assertEquals(0, topic.getSequenceNumber());
 	}
 
 	@Test

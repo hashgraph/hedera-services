@@ -24,35 +24,35 @@ import com.hedera.services.usage.QueryUsage;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import static com.hedera.services.usage.contract.entities.ContractEntitySizes.CONTRACT_ENTITY_SIZES;
 import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
-public class ContractGetInfoUsage extends QueryUsage {
-	private ContractGetInfoUsage(Query query) {
+public final class ContractGetInfoUsage extends QueryUsage {
+	private ContractGetInfoUsage(final Query query) {
 		super(query.getContractGetInfo().getHeader().getResponseType());
 		addTb(BASIC_ENTITY_ID_SIZE);
 		addRb(CONTRACT_ENTITY_SIZES.fixedBytesInContractRepr());
 	}
 
-	public static ContractGetInfoUsage newEstimate(Query query) {
+	public static ContractGetInfoUsage newEstimate(final Query query) {
 		return new ContractGetInfoUsage(query);
 	}
 
-	public ContractGetInfoUsage givenCurrentKey(Key key) {
+	public ContractGetInfoUsage givenCurrentKey(final Key key) {
 		addRb(getAccountKeyStorageSize(key));
 		return this;
 	}
 
-	public ContractGetInfoUsage givenCurrentMemo(String memo) {
-		addRb(memo.getBytes(Charset.forName("UTF-8")).length);
+	public ContractGetInfoUsage givenCurrentMemo(final String memo) {
+		addRb(memo.getBytes(StandardCharsets.UTF_8).length);
 		return this;
 	}
 
-	public ContractGetInfoUsage givenCurrentTokenAssocs(int count) {
+	public ContractGetInfoUsage givenCurrentTokenAssocs(final int count) {
 		addRb(count * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr());
 		return this;
 	}

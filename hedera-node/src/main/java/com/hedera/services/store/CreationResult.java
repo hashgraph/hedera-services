@@ -22,7 +22,7 @@ package com.hedera.services.store;
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
-import java.util.Optional;
+import javax.annotation.Nullable;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -31,13 +31,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  *
  * @param <T> the type of the store member.
  */
-public class CreationResult<T> {
+public final class CreationResult<T> {
     private final ResponseCodeEnum status;
-    private final Optional<T> created;
+    @Nullable private final T created;
 
     private CreationResult(
-            ResponseCodeEnum status,
-            Optional<T> created
+            final ResponseCodeEnum status,
+            @Nullable final T created
     ) {
         this.status = status;
         this.created = created;
@@ -50,8 +50,8 @@ public class CreationResult<T> {
      * @param <T> the type of store member being created.
      * @return the summary constructed.
      */
-    public static <T> CreationResult<T> failure(ResponseCodeEnum type) {
-        return new CreationResult<>(type, Optional.empty());
+    public static <T> CreationResult<T> failure(final ResponseCodeEnum type) {
+        return new CreationResult<>(type, null);
     }
 
     /**
@@ -61,15 +61,15 @@ public class CreationResult<T> {
      * @param <T> the type of store member being created.
      * @return the summary constructed.
      */
-    public static <T> CreationResult<T> success(T created) {
-        return new CreationResult<>(OK, Optional.of(created));
+    public static <T> CreationResult<T> success(final T created) {
+        return new CreationResult<>(OK, created);
     }
 
     public ResponseCodeEnum getStatus() {
         return status;
     }
 
-    public Optional<T> getCreated() {
+    public @Nullable T getCreated() {
         return created;
     }
 }

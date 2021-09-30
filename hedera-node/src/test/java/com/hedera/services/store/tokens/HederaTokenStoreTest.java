@@ -162,7 +162,6 @@ class HederaTokenStoreTest {
 	private static final AccountID newTreasury = IdUtils.asAccount("0.0.1");
 	private static final AccountID sponsor = IdUtils.asAccount("0.0.666");
 	private static final AccountID counterparty = IdUtils.asAccount("0.0.777");
-	private static final AccountID feeCollector = treasury;
 	private static final AccountID anotherFeeCollector = IdUtils.asAccount("0.0.777");
 	private static final TokenID created = IdUtils.asToken("0.0.666666");
 	private static final TokenID pending = IdUtils.asToken("0.0.555555");
@@ -620,6 +619,27 @@ class HederaTokenStoreTest {
 		final var status = subject.changeOwner(aNft, sponsor, counterparty);
 
 		assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, status);
+	}
+
+	@Test
+	void changingOwnerAutoAssociatesCounterpartyWithOpenSlots() {
+		final long startSponsorNfts = 5;
+		final long startCounterpartyNfts = 8;
+		final long startSponsorANfts = 4;
+		final long startCounterpartyANfts = 1;
+		final var tokens = mock(MerkleAccountTokens.class);
+		given(tokenRelsLedger.exists(counterpartyNft)).willReturn(false);
+		given(hederaLedger.maxAutomaticAssociations(counterparty)).willReturn(100);
+		given(hederaLedger.getAssociatedTokens(counterparty)).willReturn(tokens);
+		given(accountsLedger.get(sponsor, NUM_NFTS_OWNED)).willReturn(startSponsorNfts);
+		given(accountsLedger.get(counterparty, NUM_NFTS_OWNED)).willReturn(startCounterpartyNfts);
+		given(tokenRelsLedger.get(sponsorNft, TOKEN_BALANCE)).willReturn(startSponsorANfts);
+		given(tokenRelsLedger.get(counterpartyNft, TOKEN_BALANCE)).willReturn(startCounterpartyANfts);
+
+		final var status = subject.changeOwner(aNft, sponsor, counterparty);
+
+		verify(tokens).associateAll(Set.of(aNft.tokenId()));
+		assertEquals(OK, status);
 	}
 
 	@Test

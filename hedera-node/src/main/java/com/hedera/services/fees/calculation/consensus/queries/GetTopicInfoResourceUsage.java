@@ -30,6 +30,7 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Map;
 
 import static com.hedera.services.utils.EntityNum.fromTopicId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
@@ -55,7 +56,7 @@ public final class GetTopicInfoResourceUsage implements QueryResourceUsageEstima
 	}
 
 	@Override
-	public FeeData usageGiven(final Query query, final StateView view) {
+	public FeeData usageGiven(final Query query, final StateView view, final Map<String, Object> ignoreCtx) {
 		return usageGivenType(query, view, query.getConsensusGetTopicInfo().getHeader().getResponseType());
 	}
 

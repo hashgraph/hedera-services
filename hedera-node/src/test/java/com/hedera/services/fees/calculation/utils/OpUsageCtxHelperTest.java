@@ -29,12 +29,14 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.FixedFeeSpec;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.usage.token.TokenOpsUsage;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
@@ -57,13 +59,16 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
 
+import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
 import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.royaltyFee;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class OpUsageCtxHelperTest {
@@ -71,11 +76,17 @@ class OpUsageCtxHelperTest {
 	private final long now = 1_234_567L;
 	private final long then = 1_234_567L + 7776000L;
 	private final FileID targetFile = IdUtils.asFile("0.0.123456");
+	private final Key key = Key.newBuilder()
+			.setEd25519(ByteString.copyFromUtf8("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+			.build();
 	private final JKeyList wacl = new JKeyList(List.of(
 			new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes(StandardCharsets.UTF_8))));
 	private final MerkleToken extant = new MerkleToken(now, 1, 2,
 			"shLong.asPhlThree", "FOUR", false, true,
 			EntityId.MISSING_ENTITY_ID);
+	private final String memo = "accountInfo";
+	private final int tokenRelationShipCount = 23;
+	private final int maxAutomaticAssociations = 12;
 	private final TokenID target = IdUtils.asToken("0.0.1003");
 	private final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
 	private final HFileMeta fileMeta = new HFileMeta(false, wacl, then);
@@ -153,6 +164,37 @@ class OpUsageCtxHelperTest {
 		// then:
 		assertEquals(now, ctx.expiry());
 		assertEquals(expBytes, ctx.numBytesInFeeScheduleRepr());
+	}
+
+	@Test
+	void returnsExpectedCtxForAccount() {
+		var mockInfo = mock(AccountInfo.class);
+		var mockTimeStamp = mock(Timestamp.class);
+		given(workingView.infoForAccount(any())).willReturn(Optional.ofNullable(mockInfo));
+		given(mockInfo.getKey()).willReturn(key);
+		given(mockInfo.getMemo()).willReturn(memo);
+		given(mockInfo.getExpirationTime()).willReturn(mockTimeStamp);
+		given(mockTimeStamp.getSeconds()).willReturn(now);
+		given(mockInfo.getTokenRelationshipsCount()).willReturn(tokenRelationShipCount);
+		given(mockInfo.getMaxAutomaticTokenAssociations()).willReturn(maxAutomaticAssociations);
+		given(mockInfo.hasProxyAccountID()).willReturn(true);
+
+		final var ctx = subject.ctxForCryptoUpdate(TransactionBody.getDefaultInstance());
+
+		assertEquals(memo, ctx.currentMemo());
+		assertEquals(maxAutomaticAssociations, ctx.currentMaxAutomaticAssociations());
+		assertEquals(now, ctx.currentExpiry());
+
+	}
+
+	@Test
+	void returnsMissingCtxWhenAccountNotFound() {
+		given(workingView.infoForAccount(any())).willReturn(Optional.empty());
+
+		final var ctx = subject.ctxForCryptoUpdate(TransactionBody.getDefaultInstance());
+
+		assertEquals(DEFAULT_MEMO, ctx.currentMemo());
+		assertEquals(0, ctx.currentExpiry());
 	}
 
 	@Test

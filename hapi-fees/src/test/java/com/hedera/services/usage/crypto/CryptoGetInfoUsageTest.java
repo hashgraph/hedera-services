@@ -36,41 +36,36 @@ import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class CryptoGetInfoUsageTest {
-	private Query query = Query.newBuilder().setCryptoGetInfo(CryptoGetInfoQuery.getDefaultInstance()).build();
+	private final Query query = Query.newBuilder().setCryptoGetInfo(CryptoGetInfoQuery.getDefaultInstance()).build();
 
-	private int numTokenAssocs = 3;
-	private Key key = KeyUtils.A_COMPLEX_KEY;
-	private String memo = "Hey there!";
+	private static final int NUM_TOKEN_ASSOCS = 3;
+	private static final Key KEY = KeyUtils.A_COMPLEX_KEY;
+	private static final String MEMO = "Hey there!";
 
 	private CryptoGetInfoUsage subject;
 
 	@Test
 	void getsExpectedUsage() {
-		// setup:
-		long expectedTb = BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE;
-		long expectedRb = BASIC_QUERY_RES_HEADER + numTokenAssocs * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr()
+		final var expectedTb = BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE;
+		final var expectedRb = BASIC_QUERY_RES_HEADER + NUM_TOKEN_ASSOCS * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr()
 				+ CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
-				+ getAccountKeyStorageSize(key)
-				+ memo.length()
+				+ getAccountKeyStorageSize(KEY)
+				+ MEMO.length()
 				+ BASIC_ENTITY_ID_SIZE;
-		// and:
-		var usage = FeeComponents.newBuilder()
+		final var usage = FeeComponents.newBuilder()
 				.setBpt(expectedTb)
 				.setBpr(expectedRb)
 				.build();
-		var expected = ESTIMATOR_UTILS.withDefaultQueryPartitioning(usage);
+		final var expected = ESTIMATOR_UTILS.withDefaultQueryPartitioning(usage);
 
-		// given:
 		subject = CryptoGetInfoUsage.newEstimate(query);
 
-		// when:
-		var actual = subject.givenCurrentKey(key)
+		var actual = subject.givenCurrentKey(KEY)
 				.givenCurrentlyUsingProxy()
-				.givenCurrentMemo(memo)
-				.givenCurrentTokenAssocs(numTokenAssocs)
+				.givenCurrentMemo(MEMO)
+				.givenCurrentTokenAssocs(NUM_TOKEN_ASSOCS)
 				.get();
 
-		// then:
 		assertEquals(expected, actual);
 	}
 }

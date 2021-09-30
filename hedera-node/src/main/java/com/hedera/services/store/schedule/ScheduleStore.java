@@ -30,7 +30,6 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.time.Instant;
-import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
@@ -44,7 +43,7 @@ public interface ScheduleStore extends Store<ScheduleID, MerkleSchedule> {
 
 	CreationResult<ScheduleID> createProvisionally(MerkleSchedule candidate, RichInstant consensusTime);
 
-	Pair<Optional<ScheduleID>, MerkleSchedule> lookupSchedule(byte[] bodyBytes);
+	Pair<ScheduleID, MerkleSchedule> lookupSchedule(byte[] bodyBytes);
 	ResponseCodeEnum markAsExecuted(ScheduleID id, Instant consensusTime);
 	void expire(EntityId id);
 
