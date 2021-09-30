@@ -22,6 +22,7 @@ package com.hedera.services.txns.file;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.TieredHederaFs;
@@ -56,6 +57,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 
 class FileDeleteTransitionLogicTest {
@@ -147,6 +149,7 @@ class FileDeleteTransitionLogicTest {
 	void resultIsRespected() {
 		givenTxnCtxDeleting(TargetType.VALID);
 
+		doThrow(new InvalidTransactionException(ENTITY_NOT_ALLOWED_TO_DELETE)).when(hfs).delete(any());
 		// when & then:
 		assertFailsWith(
 				() -> subject.doStateTransition(),
