@@ -107,8 +107,7 @@ class UtilsConstructorTest {
 			MiscUtils.class,
 			MetadataMapFactory.class,
 			TokenOpsValidator.class,
-			SubmissionModule.class,
-			TokenLogicModule.class
+			SubmissionModule.class
 	));
 
 	@Test
