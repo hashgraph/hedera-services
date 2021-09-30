@@ -315,7 +315,7 @@ class StateViewTest {
 		StateView.tokenRelsFn = mockTokenRelsFn;
 		given(mockTokenRelsFn.apply(any(), any())).willReturn(Collections.emptyList());
 
-		var uniqueTokens = new MerkleMap<EntityNumPair, MerkleUniqueToken>();
+		final var uniqueTokens = new MerkleMap<EntityNumPair, MerkleUniqueToken>();
 		uniqueTokens.put(targetNftKey, targetNft);
 		uniqueTokens.put(treasuryNftKey, treasuryNft);
 
@@ -360,21 +360,18 @@ class StateViewTest {
 
 	@Test
 	void tokenExistsWorks() {
-		// expect:
 		assertTrue(subject.tokenExists(tokenId));
 		assertFalse(subject.tokenExists(missingTokenId));
 	}
 
 	@Test
 	void nftExistsWorks() {
-		// expect:
 		assertTrue(subject.nftExists(targetNftId));
 		assertFalse(subject.nftExists(missingNftId));
 	}
 
 	@Test
 	void scheduleExistsWorks() {
-		// expect:
 		assertTrue(subject.scheduleExists(scheduleId));
 		assertFalse(subject.scheduleExists(missingScheduleId));
 	}
@@ -384,7 +381,6 @@ class StateViewTest {
 		given(tokenStore.exists(tokenId)).willReturn(true);
 		given(tokenStore.get(tokenId)).willReturn(token);
 
-		// expect:
 		assertSame(token, subject.tokenWith(tokenId).get());
 	}
 
@@ -392,16 +388,13 @@ class StateViewTest {
 	void tokenWithWorksForMissing() {
 		given(tokenStore.exists(tokenId)).willReturn(false);
 
-		// expect:
 		assertTrue(subject.tokenWith(tokenId).isEmpty());
 	}
 
 	@Test
 	void recognizesMissingSchedule() {
-		// when:
-		var info = subject.infoForSchedule(missingScheduleId);
+		final var info = subject.infoForSchedule(missingScheduleId);
 
-		// then:
 		assertTrue(info.isEmpty());
 	}
 
@@ -409,29 +402,24 @@ class StateViewTest {
 	void infoForScheduleFailsGracefully() {
 		given(scheduleStore.get(any())).willThrow(IllegalArgumentException.class);
 
-		// when:
-		var info = subject.infoForSchedule(scheduleId);
+		final var info = subject.infoForSchedule(scheduleId);
 
-		// then:
 		assertTrue(info.isEmpty());
 	}
 
 	@Test
 	void getsScheduleInfoForDeleted() {
-		// setup:
-		var expectedScheduledTxn = parentScheduleCreate.getScheduleCreate().getScheduledTransactionBody();
+		final var expectedScheduledTxn = parentScheduleCreate.getScheduleCreate().getScheduledTransactionBody();
 
-		// when:
 		schedule.markDeleted(resolutionTime);
-		var gotten = subject.infoForSchedule(scheduleId);
-		var info = gotten.get();
+		final var gotten = subject.infoForSchedule(scheduleId);
+		final var info = gotten.get();
 
-		// then:
 		assertEquals(scheduleId, info.getScheduleID());
 		assertEquals(schedule.schedulingAccount().toGrpcAccountId(), info.getCreatorAccountID());
 		assertEquals(schedule.payer().toGrpcAccountId(), info.getPayerAccountID());
 		assertEquals(Timestamp.newBuilder().setSeconds(expiry).build(), info.getExpirationTime());
-		var expectedSignatoryList = KeyList.newBuilder();
+		final var expectedSignatoryList = KeyList.newBuilder();
 		schedule.signatories()
 				.forEach(a -> expectedSignatoryList.addKeys(Key.newBuilder().setEd25519(ByteString.copyFrom(a))));
 		assertArrayEquals(
@@ -445,21 +433,17 @@ class StateViewTest {
 
 	@Test
 	void getsScheduleInfoForExecuted() {
-		// when:
 		schedule.markExecuted(resolutionTime);
-		var gotten = subject.infoForSchedule(scheduleId);
-		var info = gotten.get();
+		final var gotten = subject.infoForSchedule(scheduleId);
+		final var info = gotten.get();
 
-		// then:
 		assertEquals(fromJava(resolutionTime).toGrpc(), info.getExecutionTime());
 	}
 
 	@Test
 	void recognizesMissingToken() {
-		// when:
-		var info = subject.infoForToken(missingTokenId);
+		final var info = subject.infoForToken(missingTokenId);
 
-		// then:
 		assertTrue(info.isEmpty());
 	}
 
@@ -467,22 +451,17 @@ class StateViewTest {
 	void infoForTokenFailsGracefully() {
 		given(tokenStore.get(any())).willThrow(IllegalArgumentException.class);
 
-		// when:
-		var info = subject.infoForToken(tokenId);
+		final var info = subject.infoForToken(tokenId);
 
-		// then:
 		assertTrue(info.isEmpty());
 	}
 
 	@Test
 	void getsTokenInfoMinusFreezeIfMissing() {
-		// setup:
 		token.setFreezeKey(MerkleToken.UNUSED_KEY);
 
-		// when:
-		var info = subject.infoForToken(tokenId).get();
+		final var info = subject.infoForToken(tokenId).get();
 
-		// then:
 		assertEquals(tokenId, info.getTokenId());
 		assertEquals(token.symbol(), info.getSymbol());
 		assertEquals(token.name(), info.getName());
@@ -496,13 +475,10 @@ class StateViewTest {
 
 	@Test
 	void getsTokenInfoMinusPauseIfMissing() {
-		// setup:
 		token.setPauseKey(MerkleToken.UNUSED_KEY);
 
-		// when:
-		var info = subject.infoForToken(tokenId).get();
+		final var info = subject.infoForToken(tokenId).get();
 
-		// then:
 		assertEquals(tokenId, info.getTokenId());
 		assertEquals(token.symbol(), info.getSymbol());
 		assertEquals(token.name(), info.getName());
@@ -516,12 +492,10 @@ class StateViewTest {
 
 	@Test
 	void getsTokenInfo() {
-		// setup:
 		final var miscKey = MISC_ACCOUNT_KT.asKey();
-		// when:
-		var info = subject.infoForToken(tokenId).get();
 
-		// then:
+		final var info = subject.infoForToken(tokenId).get();
+
 		assertTrue(info.getDeleted());
 		assertEquals(Paused, info.getPauseStatus());
 		assertEquals(token.memo(), info.getMemo());
@@ -547,7 +521,6 @@ class StateViewTest {
 
 	@Test
 	void getsContractInfo() throws Exception {
-		// setup:
 		List<TokenRelationship> rels = List.of(
 				TokenRelationship.newBuilder()
 						.setTokenId(TokenID.newBuilder().setTokenNum(123L))
@@ -557,10 +530,8 @@ class StateViewTest {
 						.build());
 		given(mockTokenRelsFn.apply(subject, asAccount(cid))).willReturn(rels);
 
-		// when:
-		var info = subject.infoForContract(cid).get();
+		final var info = subject.infoForContract(cid).get();
 
-		// then:
 		assertEquals(cid, info.getContractID());
 		assertEquals(asAccount(cid), info.getAccountID());
 		assertEquals(JKey.mapJKey(contract.getAccountKey()), info.getAdminKey());
@@ -571,13 +542,11 @@ class StateViewTest {
 		assertEquals(contract.getExpiry(), info.getExpirationTime().getSeconds());
 		assertEquals(rels, info.getTokenRelationshipsList());
 		assertTrue(info.getDeleted());
-		// and:
 		assertEquals(expectedStorage.length + expectedBytecode.length, info.getStorage());
 	}
 
 	@Test
 	void getTokenRelationship() {
-		// given:
 		given(tokenStore.exists(tokenId)).willReturn(true);
 		given(tokenStore.get(tokenId)).willReturn(token);
 
@@ -592,62 +561,48 @@ class StateViewTest {
 						.setDecimals(1)
 						.build());
 
-		// when:
-		var actualRels = StateView.tokenRels(subject, tokenAccountId);
+		final var actualRels = StateView.tokenRels(subject, tokenAccountId);
 
-		// then:
 		assertEquals(expectedRels, actualRels);
 	}
 
 	@Test
 	void getInfoForNftMissing() {
-		// setup:
-		var nftID = NftID.newBuilder().setTokenID(tokenId).setSerialNumber(123L).build();
+		final var nftID = NftID.newBuilder().setTokenID(tokenId).setSerialNumber(123L).build();
 
-		// when:
-		var actualTokenNftInfo = subject.infoForNft(nftID);
+		final var actualTokenNftInfo = subject.infoForNft(nftID);
 
-		// then:
 		assertEquals(Optional.empty(), actualTokenNftInfo);
 	}
 
 	@Test
 	void getTokenType() {
-		// when:
-		var actualTokenType = subject.tokenType(tokenId).get();
+		final var actualTokenType = subject.tokenType(tokenId).get();
 
-		// then:
 		assertEquals(FUNGIBLE_COMMON, actualTokenType);
 	}
 
 	@Test
 	void getTokenTypeMissing() {
-		// setup:
 		given(tokenStore.resolve(tokenId)).willReturn(MISSING_TOKEN);
 
-		// when:
-		var actualTokenType = subject.tokenType(tokenId);
+		final var actualTokenType = subject.tokenType(tokenId);
 
-		// then:
 		assertEquals(Optional.empty(), actualTokenType);
 	}
 
 	@Test
 	void getTokenTypeException() {
-		// setup:
 		given(tokenStore.get(tokenId)).willThrow(new RuntimeException());
 
-		// when:
-		var actualTokenType = subject.tokenType(tokenId);
+		final var actualTokenType = subject.tokenType(tokenId);
 
-		// then:
 		assertEquals(Optional.empty(), actualTokenType);
 	}
 
 	@Test
 	void infoForAccount() {
-		// setup:
-		var expectedResponse = CryptoGetInfoResponse.AccountInfo.newBuilder()
+		final var expectedResponse = CryptoGetInfoResponse.AccountInfo.newBuilder()
 				.setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
 				.setAccountID(tokenAccountId)
 				.setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
@@ -661,44 +616,35 @@ class StateViewTest {
 				.setMaxAutomaticTokenAssociations(tokenAccount.getMaxAutomaticAssociations())
 				.build();
 
-		// when:
-		var actualResponse = subject.infoForAccount(tokenAccountId);
+		final var actualResponse = subject.infoForAccount(tokenAccountId);
 
-		// then:
 		assertEquals(expectedResponse, actualResponse.get());
 	}
 
 	@Test
 	void numNftsOwnedWorksForExisting() {
-		// expect:
 		assertEquals(tokenAccount.getNftsOwned(), subject.numNftsOwnedBy(tokenAccountId));
 	}
 
 	@Test
 	void infoForAccountEmpty() {
-		// setup:
 		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(null);
 
-		// when:
-		var actualResponse = subject.infoForAccount(tokenAccountId);
+		final var actualResponse = subject.infoForAccount(tokenAccountId);
 
-		// then:
 		assertEquals(Optional.empty(), actualResponse);
 	}
 
 	@Test
 	void getTopics() {
-		// setup:
 		final var children = new StateChildren();
 		children.setTopics(topics);
 
 		subject = new StateView(
 				null, null, null, children, EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 
-		// when:
-		var actualTopics = subject.topics();
+		final var actualTopics = subject.topics();
 
-		// then:
 		assertEquals(topics, actualTopics);
 	}
 
@@ -706,19 +652,15 @@ class StateViewTest {
 	void returnsEmptyOptionalIfContractMissing() {
 		given(contracts.get(any())).willReturn(null);
 
-		// expect:
 		assertTrue(subject.infoForContract(cid).isEmpty());
 	}
 
 	@Test
 	void handlesNullKey() {
-		// given:
 		contract.setAccountKey(null);
 
-		// when:
-		var info = subject.infoForContract(cid).get();
+		final var info = subject.infoForContract(cid).get();
 
-		// then:
 		assertFalse(info.hasAdminKey());
 	}
 
@@ -726,28 +668,22 @@ class StateViewTest {
 	void getsAttrs() {
 		given(attrs.get(target)).willReturn(metadata);
 
-		// when
-		var stuff = subject.attrOf(target);
+		final var stuff = subject.attrOf(target);
 
-		// then:
 		assertEquals(metadata.toString(), stuff.get().toString());
 	}
 
 	@Test
 	void getsBytecode() {
-		// when:
-		var actual = subject.bytecodeOf(cid);
+		final var actual = subject.bytecodeOf(cid);
 
-		// then:
 		assertArrayEquals(expectedBytecode, actual.get());
 	}
 
 	@Test
 	void getsStorage() {
-		// when:
-		var actual = subject.storageOf(cid);
+		final var actual = subject.storageOf(cid);
 
-		// then:
 		assertArrayEquals(expectedStorage, actual.get());
 	}
 
@@ -755,11 +691,10 @@ class StateViewTest {
 	void getsContents() {
 		given(contents.get(target)).willReturn(data);
 
-		// when
-		var stuff = subject.contentsOf(target);
+		final var stuff = subject.contentsOf(target);
 
-		// then:
-		assertTrue(Arrays.equals(data, stuff.get()));
+		assertTrue(stuff.isPresent());
+		assertArrayEquals(data, stuff.get());
 	}
 
 	@Test
@@ -767,17 +702,14 @@ class StateViewTest {
 		given(attrs.get(target)).willReturn(metadata);
 		given(contents.get(target)).willReturn(data);
 
-		// when:
-		var info = subject.infoForFile(target);
+		final var info = subject.infoForFile(target);
 
-		// then:
 		assertTrue(info.isPresent());
 		assertEquals(expected, info.get());
 	}
 
 	@Test
 	void returnFileInfoForBinaryObjectNotFoundExceptionAfterRetries() {
-		// setup:
 		given(attrs.get(target))
 				.willThrow(new com.swirlds.blob.BinaryObjectNotFoundException())
 				.willThrow(new com.swirlds.blob.BinaryObjectNotFoundException())
@@ -785,10 +717,8 @@ class StateViewTest {
 		given(nodeProps.queryBlobLookupRetries()).willReturn(2);
 		given(contents.get(target)).willReturn(data);
 
-		// when:
-		var info = subject.infoForFile(target);
+		final var info = subject.infoForFile(target);
 
-		// then:
 		assertTrue(info.isPresent());
 		assertEquals(expected, info.get());
 	}
@@ -798,17 +728,14 @@ class StateViewTest {
 		given(attrs.get(target)).willReturn(immutableMetadata);
 		given(contents.get(target)).willReturn(data);
 
-		// when:
-		var info = subject.infoForFile(target);
+		final var info = subject.infoForFile(target);
 
-		// then:
 		assertTrue(info.isPresent());
 		assertEquals(expectedImmutable, info.get());
 	}
 
 	@Test
 	void assemblesFileInfoForDeleted() {
-		// setup:
 		expected = expected.toBuilder()
 				.setDeleted(true)
 				.setSize(0)
@@ -817,30 +744,24 @@ class StateViewTest {
 
 		given(attrs.get(target)).willReturn(metadata);
 
-		// when:
-		var info = subject.infoForFile(target);
+		final var info = subject.infoForFile(target);
 
-		// then:
 		assertTrue(info.isPresent());
 		assertEquals(expected, info.get());
 	}
 
 	@Test
 	void returnEmptyFileInfoForBinaryObjectNotFoundException() {
-		// setup:
 		given(attrs.get(target)).willThrow(new com.swirlds.blob.BinaryObjectNotFoundException());
 		given(nodeProps.queryBlobLookupRetries()).willReturn(1);
 
-		// when:
-		var info = subject.infoForFile(target);
+		final var info = subject.infoForFile(target);
 
-		// then:
 		assertTrue(info.isEmpty());
 	}
 
 	@Test
 	void returnEmptyFileInfoForBinaryObjectDeletedExceptionAfterRetries() {
-		// setup:
 		given(attrs.get(target))
 				.willThrow(new com.swirlds.blob.BinaryObjectDeletedException())
 				.willThrow(new com.swirlds.blob.BinaryObjectDeletedException())
@@ -848,16 +769,13 @@ class StateViewTest {
 				.willReturn(metadata);
 		given(nodeProps.queryBlobLookupRetries()).willReturn(2);
 
-		// when:
-		var info = subject.infoForFile(target);
+		final var info = subject.infoForFile(target);
 
-		// then:
 		assertTrue(info.isEmpty());
 	}
 
 	@Test
 	void returnFileInfoForBinaryObjectDeletedExceptionAfterRetries() {
-		// setup:
 		expected = expected.toBuilder()
 				.setDeleted(true)
 				.setSize(0)
@@ -870,23 +788,18 @@ class StateViewTest {
 				.willReturn(metadata);
 		given(nodeProps.queryBlobLookupRetries()).willReturn(2);
 
-		// when:
-		var info = subject.infoForFile(target);
+		final var info = subject.infoForFile(target);
 
-		// then:
 		assertTrue(info.isPresent());
 		assertEquals(expected, info.get());
 	}
 
 	@Test
 	void returnEmptyFileForOtherBinaryObjectException() {
-		// setup:
 		given(attrs.get(target)).willThrow(new com.swirlds.blob.BinaryObjectException());
 
-		// when:
-		var info = subject.infoForFile(target);
+		final var info = subject.infoForFile(target);
 
-		// then:
 		assertTrue(info.isEmpty());
 		final var warnLogs = logCaptor.warnLogs();
 		assertEquals(1, warnLogs.size());
@@ -895,23 +808,18 @@ class StateViewTest {
 
 	@Test
 	void logsAtDebugWhenInterrupted() throws InterruptedException {
-		// setup:
 		final var finalAnswer = new AtomicReference<Optional<FileGetInfoResponse.FileInfo>>();
 
 		given(attrs.get(target)).willThrow(new com.swirlds.blob.BinaryObjectNotFoundException());
 		given(nodeProps.queryBlobLookupRetries()).willReturn(5);
 
-		// when:
 		final var t = new Thread(() -> finalAnswer.set(subject.infoForFile(target)));
-		// and:
 		t.start();
-		// and:
 		for (int i = 0; i < 5; i++) {
 			t.interrupt();
 		}
 		t.join();
 
-		// then:
 		final var debugLogs = logCaptor.debugLogs();
 		assertTrue(finalAnswer.get().isEmpty());
 		assertTrue(debugLogs.size() >= 2);
@@ -921,28 +829,22 @@ class StateViewTest {
 
 	@Test
 	void returnsEmptyForMissing() {
-		// when:
-		var info = subject.infoForFile(target);
+		final var info = subject.infoForFile(target);
 
-		// then:
 		assertTrue(info.isEmpty());
 	}
 
 	@Test
 	void returnsEmptyForMissingContent() {
-		// when:
-		var info = subject.contentsOf(target);
+		final var info = subject.contentsOf(target);
 
-		// then:
 		assertTrue(info.isEmpty());
 	}
 
 	@Test
 	void returnsEmptyForMissingAttr() {
-		// when:
-		var info = subject.attrOf(target);
+		final var info = subject.attrOf(target);
 
-		// then:
 		assertTrue(info.isEmpty());
 	}
 
@@ -953,53 +855,41 @@ class StateViewTest {
 		given(diskFs.contentsOf(file150)).willReturn(data);
 		given(diskFs.contains(file150)).willReturn(true);
 
-		// when
-		var stuff = subject.contentsOf(file150);
+		final var stuff = subject.contentsOf(file150);
 
-		// then:
 		assertTrue(Arrays.equals(data, stuff.get()));
 	}
 
 	@Test
 	void rejectsMissingNft() {
-		// when:
 		final var optionalNftInfo = subject.infoForNft(missingNftId);
 
-		// then:
 		assertTrue(optionalNftInfo.isEmpty());
 	}
 
 	@Test
 	void abortsNftGetWhenMissingTreasuryAsExpected() {
-		// setup:
 		tokens = mock(MerkleMap.class);
 		children.setTokens(tokens);
-		// and:
 		targetNft.setOwner(MISSING_ENTITY_ID);
 
-		// when:
 		final var optionalNftInfo = subject.infoForNft(targetNftId);
 
-		// then:
 		assertTrue(optionalNftInfo.isEmpty());
 	}
 
 	@Test
 	void interpolatesTreasuryIdOnNftGet() {
-		// setup:
 		tokens = mock(MerkleMap.class);
 		children.setTokens(tokens);
-		// and:
 		targetNft.setOwner(MISSING_ENTITY_ID);
 
 		final var token = new MerkleToken();
 		token.setTreasury(EntityId.fromGrpcAccountId(tokenAccountId));
 		given(tokens.get(targetNftKey.getHiPhi())).willReturn(token);
 
-		// when:
 		final var optionalNftInfo = subject.infoForNft(targetNftId);
 
-		// then:
 		final var info = optionalNftInfo.get();
 		assertEquals(targetNftId, info.getNftID());
 		assertEquals(tokenAccountId, info.getAccountID());
@@ -1009,12 +899,9 @@ class StateViewTest {
 
 	@Test
 	void getNftsAsExpected() {
-		// when:
 		final var optionalNftInfo = subject.infoForNft(targetNftId);
 
-		// then:
 		assertTrue(optionalNftInfo.isPresent());
-		// and:
 		final var info = optionalNftInfo.get();
 		assertEquals(targetNftId, info.getNftID());
 		assertEquals(nftOwnerId, info.getAccountID());
@@ -1024,13 +911,11 @@ class StateViewTest {
 
 	@Test
 	void infoForAccountNftsWorks() {
-		// setup:
 		final List<TokenNftInfo> mockInfo = new ArrayList<>();
 
 		given(uniqTokenView.ownedAssociations(tokenAccountId, 3L, 4L)).willReturn(mockInfo);
 
-		// when:
-		var result = subject.infoForAccountNfts(tokenAccountId, 3L, 4L);
+		final var result = subject.infoForAccountNfts(tokenAccountId, 3L, 4L);
 
 		assertFalse(result.isEmpty());
 		assertSame(mockInfo, result.get());
@@ -1038,19 +923,17 @@ class StateViewTest {
 
 	@Test
 	void infoForMissingAccountNftsReturnsEmpty() {
-		var result = subject.infoForAccountNfts(creatorAccountID, 0, 1);
+		final var result = subject.infoForAccountNfts(creatorAccountID, 0, 1);
 		assertTrue(result.isEmpty());
 	}
 
 	@Test
 	void infoForTokenNftsWorks() {
-		// setup:
 		final List<TokenNftInfo> mockInfo = new ArrayList<>();
 
 		given(uniqTokenView.typedAssociations(nftTokenId, 3L, 4L)).willReturn(mockInfo);
 
-		// when:
-		var result = subject.infosForTokenNfts(nftTokenId, 3L, 4L);
+		final var result = subject.infosForTokenNfts(nftTokenId, 3L, 4L);
 
 		assertFalse(result.isEmpty());
 		assertSame(mockInfo, result.get());
@@ -1058,22 +941,18 @@ class StateViewTest {
 
 	@Test
 	void infoForMissingTokenNftsReturnsEmpty() {
-		var result = subject.infosForTokenNfts(missingTokenId, 0, 1);
+		final var result = subject.infosForTokenNfts(missingTokenId, 0, 1);
 		assertTrue(result.isEmpty());
 	}
 
 	@Test
 	void viewAdaptToNullChildren() {
-		// given:
 		subject = new StateView(null, null, null, null, EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 
-		// expect:
 		assertSame(EMPTY_UNIQUE_TOKEN_VIEW, subject.uniqTokenView());
-		// and:
 		assertSame(StateView.EMPTY_FCOTMR, subject.treasuryNftsByType());
 		assertSame(StateView.EMPTY_FCOTMR, subject.nftsByOwner());
 		assertSame(StateView.EMPTY_FCOTMR, subject.nftsByType());
-		// and:
 		assertSame(StateView.EMPTY_FCM, subject.tokens());
 		assertSame(StateView.EMPTY_FCM, subject.storage());
 		assertSame(StateView.EMPTY_FCM, subject.uniqueTokens());
@@ -1081,7 +960,6 @@ class StateViewTest {
 		assertSame(StateView.EMPTY_FCM, subject.contracts());
 		assertSame(StateView.EMPTY_FCM, subject.accounts());
 		assertSame(StateView.EMPTY_FCM, subject.topics());
-		// and:
 		assertTrue(subject.contentsOf(target).isEmpty());
 		assertTrue(subject.infoForFile(target).isEmpty());
 		assertTrue(subject.infoForContract(cid).isEmpty());
@@ -1096,7 +974,6 @@ class StateViewTest {
 		assertFalse(subject.nftExists(targetNftId));
 		assertFalse(subject.scheduleExists(scheduleId));
 		assertFalse(subject.tokenExists(tokenId));
-		// and:
 		assertEquals(0, subject.numNftsOwnedBy(nftOwnerId));
 	}
 
