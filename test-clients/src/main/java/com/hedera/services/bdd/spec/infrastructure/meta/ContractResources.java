@@ -50,9 +50,16 @@ public class ContractResources {
 	public static final String PAY_TEST_BYTECODE_PATH = bytecodePath("PayTest");
 	public static final String DOUBLE_SEND_BYTECODE_PATH = bytecodePath("DoubleSend");
 	public static final String EMPTY_CONSTRUCTOR = bytecodePath("EmptyConstructor");
+
 	public static final String BENCHMARK_CONTRACT = bytecodePath("Benchmark");
+	public static final String SIMPLE_UPDATE = bytecodePath("SimpleUpdate");
+	public static final String LOGS = bytecodePath("Logs");
 
 	public static final String CALLING_CONTRACT = bytecodePath("CallingContract");
+	public static final String GLOBAL_PROPERTIES = bytecodePath("GlobalProperties");
+	public static final String BALANCE_CHECKER_CONTRACT = bytecodePath("BalanceChecker");
+	public static final String EXT_CODE_OPERATIONS_CHECKER_CONTRACT = bytecodePath("ExtCodeOperationsChecker");
+	public static final String CALL_OPERATIONS_CHECKER = bytecodePath("CallOperationsChecker");
 
 	public static final String TWO_SSTORES = "{ \"inputs\": [ { \"internalType\": \"bytes32\", \"name\": \"_singleProp\", \"type\": \"bytes32\" } ], \"name\": \"twoSSTOREs\", \"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
@@ -331,7 +338,7 @@ public class ContractResources {
 			"\"inputs\":[],\"name\":\"seven\"," +
 			"\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}]," +
 			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-	public static final String MINT_OWNER_ABI ="{\"constant\":true," +
+	public static final String MINT_OWNER_ABI = "{\"constant\":true," +
 			"\"inputs\":[],\"name\":\"owner\"," +
 			"\"outputs\":[{\"name\":\"\",\"type\":\"address\"}]," +
 			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
@@ -356,7 +363,6 @@ public class ContractResources {
 	public static final String CALLING_CONTRACT_VIEW_VAR = "{ \"constant\": true, \"inputs\": [], \"name\": \"getVar1\", \"outputs\": [ { \"name\": \"\", \"type\": \"uint256\" } ], \"payable\": false, \"stateMutability\": \"view\", \"type\": \"function\" }";
 
 	/* Bytecode & ABI for Logs.sol */
-	public static final String LOGS = bytecodePath("Logs");
 	public static final String LOGS_LOG0_ABI = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"n\"," +
 			"\"type\":\"uint256\"}],\"name\":\"log0\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	public static final String LOGS_LOG1_ABI = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"n\"," +
@@ -368,7 +374,6 @@ public class ContractResources {
 			"\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"n1\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"n2\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"n3\",\"type\":\"uint256\"}],\"name\":\"log4\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
 	/* Bytecode & ABI for GlobalProperties.sol */
-	public static final String GLOBAL_PROPERTIES = bytecodePath("GlobalProperties");
 	public static final String GLOBAL_PROPERTIES_CHAIN_ID_ABI = "{\"inputs\":[],\"name\":\"getChainID\"," +
 			"\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}]," +
 			"\"stateMutability\":\"view\",\"type\":\"function\"}";
@@ -381,6 +386,43 @@ public class ContractResources {
 	public static final String GLOBAL_PROPERTIES_GASLIMIT_ABI = "{\"inputs\":[],\"name\":\"getGasLimit\"," +
 			"\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}]," +
 			"\"stateMutability\":\"view\",\"type\":\"function\"}";
+
+	public static final String BALANCE_CHECKER_BALANCE_OF = "{ \"constant\": true, " +
+			"\"inputs\": [ { \"name\": \"_address\", \"type\": \"address\" } ], \"name\": \"balanceOf\", " +
+			"\"outputs\": [ { \"name\": \"\", \"type\": \"uint256\" } ], " +
+			"\"payable\": false, \"stateMutability\": \"view\", \"type\": \"function\" }";
+
+	public static final String EXT_CODE_OP_CHECKER_SIZE_OF = "{ \"constant\": true, " +
+			"\"inputs\": [ { \"internalType\": \"address\", \"name\": \"_address\", \"type\": \"address\" } ], " +
+			"\"name\": \"sizeOf\", \"outputs\": [ { \"internalType\": \"uint256\", \"name\": \"size\", \"type\": " +
+			"\"uint256\" } ], \"payable\": false, \"stateMutability\": \"view\", \"type\": \"function\" }";
+
+	public static final String EXT_CODE_OP_CHECKER_HASH_OF = "{ \"constant\": true, " +
+			"\"inputs\": [ { \"internalType\": \"address\", \"name\": \"_address\", \"type\": \"address\" } ], " +
+			"\"name\": \"hashOf\", \"outputs\": [ { \"internalType\": \"bytes32\", \"name\": \"hash\", \"type\": " +
+			"\"bytes32\" } ], \"payable\": false, \"stateMutability\": \"view\", \"type\": \"function\" }";
+
+	public static final String EXT_CODE_OP_CHECKER_CODE_COPY_OF = "{ \"constant\": true, " +
+			"\"inputs\": [ { \"internalType\": \"address\", \"name\": \"_address\", \"type\": " +
+			"\"address\" } ], \"name\": \"codeCopyOf\", \"outputs\": [ { \"internalType\": \"bytes\", " +
+			"\"name\": \"code\", \"type\": \"bytes\" } ], \"payable\": false, \"stateMutability\": \"view\", " +
+			"\"type\": \"function\" }";
+
+	public static final String CALL_CODE_OP_CHECKER_ABI = "{ \"constant\": false, " +
+			"\"inputs\": [ { \"name\": \"_address\", \"type\": \"address\" } ], \"name\": \"callCode\", " +
+			"\"outputs\": [], \"payable\": true, \"stateMutability\": \"payable\", \"type\": \"function\" }";
+
+	public static final String CALL_OP_CHECKER_ABI = "{ \"constant\": false, " +
+			"\"inputs\": [ { \"name\": \"_address\", \"type\": \"address\" } ], \"name\": \"call\", " +
+			"\"outputs\": [], \"payable\": true, \"stateMutability\": \"payable\", \"type\": \"function\" }";
+
+	public static final String DELEGATE_CALL_OP_CHECKER_ABI = "{ \"constant\": false, " +
+			"\"inputs\": [ { \"name\": \"_address\", \"type\": \"address\" } ], \"name\": \"delegateCall\", " +
+			"\"outputs\": [], \"payable\": true, \"stateMutability\": \"payable\", \"type\": \"function\" }";
+
+	public static final String STATIC_CALL_OP_CHECKER_ABI = "{ \"constant\": false, " +
+			"\"inputs\": [ { \"name\": \"_address\", \"type\": \"address\" } ], \"name\": \"staticcall\", " +
+			"\"outputs\": [], \"payable\": true, \"stateMutability\": \"payable\", \"type\": \"function\" }";
 
 	/* ABI for FactoryContract.sol */
 	public static final String FACTORY_CONTRACT = bytecodePath("FactoryContract");

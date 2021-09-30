@@ -290,7 +290,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		@Override
 		public Hash getCodeHash() {
-			return Hash.EMPTY; // Not supported!
+			return Hash.hash(this.getCode());
 		}
 
 		@Override

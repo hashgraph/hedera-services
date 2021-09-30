@@ -42,6 +42,7 @@ public class HapiGetContractBytecode extends HapiQueryOp<HapiGetContractBytecode
 	static final Logger log = LogManager.getLogger(HapiGetContractBytecode.class);
 	private final String contract;
 	private Optional<byte[]> expected = Optional.empty();
+	private Optional<String> saveResultToEntry = Optional.empty();
 	private boolean hasExpectations = false;
 
 	public HapiGetContractBytecode(String contract) {
@@ -55,6 +56,11 @@ public class HapiGetContractBytecode extends HapiQueryOp<HapiGetContractBytecode
 
 	public HapiGetContractBytecode hasBytecode(byte[] c) {
 		expected = Optional.of(c);
+		return this;
+	}
+
+	public HapiGetContractBytecode saveResultTo(String key) {
+		saveResultToEntry = Optional.of(key);
 		return this;
 	}
 
@@ -86,6 +92,10 @@ public class HapiGetContractBytecode extends HapiQueryOp<HapiGetContractBytecode
 	protected void submitWith(HapiApiSpec spec, Transaction payment) throws Throwable {
 		Query query = getContractBytecodeQuery(spec, payment, false);
 		response = spec.clients().getScSvcStub(targetNodeFor(spec), useTls).contractGetBytecode(query);
+
+		if(saveResultToEntry.isPresent()) {
+			spec.registry().saveBytes(saveResultToEntry.get(), response.getContractGetBytecodeResponse().getBytecode());
+		}
 	}
 
 	@Override

@@ -29,6 +29,14 @@ import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.txns.contract.operation.HederaBalanceOperation;
+import com.hedera.services.txns.contract.operation.HederaCallCodeOperation;
+import com.hedera.services.txns.contract.operation.HederaCallOperation;
+import com.hedera.services.txns.contract.operation.HederaDelegateCallOperation;
+import com.hedera.services.txns.contract.operation.HederaExtCodeCopyOperation;
+import com.hedera.services.txns.contract.operation.HederaExtCodeHashOperation;
+import com.hedera.services.txns.contract.operation.HederaExtCodeSizeOperation;
+import com.hedera.services.txns.contract.operation.HederaStaticCallOperation;
 import com.hedera.services.txns.contract.gascalculator.GasCalculatorHedera_0_19_0;
 import com.hedera.services.txns.contract.operation.HederaCreateOperation;
 import com.hedera.services.txns.contract.operation.HederaSelfDestructOperation;
@@ -57,12 +65,8 @@ import org.hyperledger.besu.evm.processor.AbstractMessageProcessor;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
-import org.hyperledger.besu.evm.tracing.StandardJsonTracer;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -103,10 +107,19 @@ abstract class EvmTxProcessor {
 		var operationRegistry = new OperationRegistry();
 		registerLondonOperations(operationRegistry, gasCalculator, BigInteger.valueOf(dynamicProperties.getChainId()));
 		/* Register customized Hedera Opcodes */
+		operationRegistry.put(new HederaBalanceOperation(gasCalculator));
+		operationRegistry.put(new HederaCallCodeOperation(gasCalculator));
+		operationRegistry.put(new HederaCallOperation(gasCalculator));
 		operationRegistry.put(new HederaCreateOperation(gasCalculator));
+		operationRegistry.put(new HederaDelegateCallOperation(gasCalculator));
+		operationRegistry.put(new HederaExtCodeCopyOperation(gasCalculator));
+		operationRegistry.put(new HederaExtCodeHashOperation(gasCalculator));
+		operationRegistry.put(new HederaExtCodeSizeOperation(gasCalculator));
 		operationRegistry.put(new HederaSelfDestructOperation(gasCalculator));
+		operationRegistry.put(new HederaStaticCallOperation(gasCalculator));
 		/* Deregister CREATE2 Opcode */
 		operationRegistry.put(new InvalidOperation(0xF5, gasCalculator));
+
 		var evm = new EVM(operationRegistry, gasCalculator);
 
 		final PrecompileContractRegistry precompileContractRegistry = new PrecompileContractRegistry();

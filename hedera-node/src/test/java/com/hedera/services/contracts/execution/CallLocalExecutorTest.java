@@ -25,6 +25,7 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.txns.contract.operation.HederaExceptionalHaltReason;
 import com.hedera.services.txns.contract.process.CallLocalEvmTxProcessor;
 import com.hedera.services.txns.contract.process.TransactionProcessingResult;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
@@ -45,6 +46,7 @@ import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
@@ -98,11 +100,30 @@ class CallLocalExecutorTest {
 	}
 
 	@Test
-	void processingReturnsHaltReason() {
+	void processingReturnsModificationHaltReason() {
 		// setup:
 		final var transactionProcessingResult = TransactionProcessingResult
 				.failed(0, 1, Optional.empty(), Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE));
 		final var expected = response(LOCAL_CALL_MODIFICATION_EXCEPTION, transactionProcessingResult);
+
+		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
+		given(accountStore.loadContract(any())).willReturn(new Account(contractID));
+		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
+				.willReturn(transactionProcessingResult);
+
+		// when:
+		final var result = subject.execute(query);
+
+		// then:
+		assertEquals(expected, result);
+	}
+
+	@Test
+	void processingReturnsInvalidSolidityAddressHaltReason() {
+		// setup:
+		final var transactionProcessingResult = TransactionProcessingResult
+				.failed(0, 1, Optional.empty(), Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
+		final var expected = response(INVALID_SOLIDITY_ADDRESS, transactionProcessingResult);
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
 		given(accountStore.loadContract(any())).willReturn(new Account(contractID));

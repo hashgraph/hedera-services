@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.txns.contract.operation.HederaExceptionalHaltReason;
 import com.hedera.services.txns.contract.process.CallLocalEvmTxProcessor;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
@@ -41,6 +42,7 @@ import javax.inject.Singleton;
 import java.time.Instant;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
@@ -91,6 +93,8 @@ public class CallLocalExecutor {
 					final var haltReason = result.getHaltReason().get();
 					if (haltReason.equals(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE)) {
 						status = LOCAL_CALL_MODIFICATION_EXCEPTION;
+					} else if (haltReason.equals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS)) {
+						status = INVALID_SOLIDITY_ADDRESS;
 					}
 				}
 			}
