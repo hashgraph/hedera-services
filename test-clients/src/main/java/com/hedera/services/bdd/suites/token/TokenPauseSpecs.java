@@ -34,6 +34,7 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fix
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
@@ -59,7 +60,8 @@ public class TokenPauseSpecs extends HapiApiSuite {
 				cannotChangePauseStatusIfMissingPauseKey(),
 				pausedFungibleTokenCannotBeUsed(),
 				pausedNonFungibleUniqueCannotBeUsed(),
-				unpauseWorks()
+				unpauseWorks(),
+				basePauseAndUnpauseHaveExpectedPrices()
 		});
 	}
 
@@ -272,6 +274,44 @@ public class TokenPauseSpecs extends HapiApiSuite {
 						tokenUnpause("non-fungible-unique-primary")
 								.signedBy(GENESIS)
 								.hasKnownStatus(ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY)
+				);
+	}
+
+	private HapiApiSpec basePauseAndUnpauseHaveExpectedPrices() {
+		final var expectedBaseFee = 0.001;
+		final var pauseKey = "pauseKey";
+		final var token = "token";
+		final var tokenPauseTransaction = "tokenPauseTxn";
+		final var tokenUnpauseTransaction = "tokenUnpauseTxn";
+		final var civilian = "NonExemptPayer";
+
+		return defaultHapiSpec("BasePauseAndUnpauseHaveExpectedPrices")
+				.given(
+						cryptoCreate(TOKEN_TREASURY),
+						newKeyNamed(pauseKey),
+						cryptoCreate(civilian).key(pauseKey)
+				)
+				.when(
+						tokenCreate(token)
+								.pauseKey(pauseKey)
+								.treasury(TOKEN_TREASURY)
+								.payingWith(civilian),
+						tokenPause(token)
+								.blankMemo()
+								.payingWith(civilian)
+								.via(tokenPauseTransaction),
+						getTokenInfo(token)
+								.hasPauseStatus(TokenPauseStatus.Paused),
+						tokenUnpause(token)
+								.blankMemo()
+								.payingWith(civilian)
+								.via(tokenUnpauseTransaction),
+						getTokenInfo(token)
+								.hasPauseStatus(TokenPauseStatus.Unpaused)
+						)
+				.then(
+						validateChargedUsd(tokenPauseTransaction, expectedBaseFee),
+						validateChargedUsd(tokenUnpauseTransaction, expectedBaseFee)
 				);
 	}
 }
