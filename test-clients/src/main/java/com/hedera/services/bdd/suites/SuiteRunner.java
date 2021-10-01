@@ -146,6 +146,7 @@ import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
 import com.hedera.services.bdd.suites.token.TokenCreateSpecs;
 import com.hedera.services.bdd.suites.token.TokenDeleteSpecs;
 import com.hedera.services.bdd.suites.token.TokenManagementSpecs;
+import com.hedera.services.bdd.suites.token.TokenPauseSpecs;
 import com.hedera.services.bdd.suites.token.TokenTransactSpecs;
 import com.hedera.services.bdd.suites.token.TokenUpdateSpecs;
 import com.hedera.services.legacy.regression.SmartContractAggregatedTests;
@@ -334,6 +335,7 @@ public class SuiteRunner {
 		put("TokenTransactSpecs", aof(TokenTransactSpecs::new));
 		put("TokenManagementSpecs", aof(TokenManagementSpecs::new));
 		put("TokenAssociationSpecs", aof(TokenAssociationSpecs::new));
+		put("TokenPauseSpecs", aof(TokenPauseSpecs::new));
 		put("Hip17UnhappyTokensSuite", aof(Hip17UnhappyTokensSuite::new));
 		/* Functional tests - CRYPTO */
 		put("CryptoTransferSuite", aof(CryptoTransferSuite::new));

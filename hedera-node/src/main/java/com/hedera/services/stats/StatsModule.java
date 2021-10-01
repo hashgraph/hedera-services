@@ -29,17 +29,17 @@ import dagger.Provides;
 import javax.inject.Singleton;
 
 @Module
-public abstract class StatsModule {
+public final class StatsModule {
 	@Provides
 	@Singleton
-	public static MiscRunningAvgs provideMiscRunningAvgs(NodeLocalProperties nodeLocalProperties) {
+	public static MiscRunningAvgs provideMiscRunningAvgs(final NodeLocalProperties nodeLocalProperties) {
 		return new MiscRunningAvgs(new RunningAvgFactory() {
 		}, nodeLocalProperties.statsRunningAvgHalfLifeSecs());
 	}
 
 	@Provides
 	@Singleton
-	public static MiscSpeedometers provideMiscSpeedometers(NodeLocalProperties nodeLocalProperties) {
+	public static MiscSpeedometers provideMiscSpeedometers(final NodeLocalProperties nodeLocalProperties) {
 		return new MiscSpeedometers(new SpeedometerFactory() {
 		}, nodeLocalProperties.statsSpeedometerHalfLifeSecs());
 	}
@@ -47,8 +47,8 @@ public abstract class StatsModule {
 	@Provides
 	@Singleton
 	public static HapiOpSpeedometers provideHapiOpSpeedometers(
-			HapiOpCounters counters,
-			NodeLocalProperties nodeLocalProperties
+			final HapiOpCounters counters,
+			final NodeLocalProperties nodeLocalProperties
 	) {
 		return new HapiOpSpeedometers(
 				counters,
@@ -60,8 +60,14 @@ public abstract class StatsModule {
 
 	@Provides
 	@Singleton
-	public static HapiOpCounters provideHapiOpCounters(MiscRunningAvgs runningAvgs, TransactionContext txnCtx) {
+	public static HapiOpCounters provideHapiOpCounters(
+			final MiscRunningAvgs runningAvgs,
+			final TransactionContext txnCtx) {
 		return new HapiOpCounters(new CounterFactory() {
 		}, runningAvgs, txnCtx, MiscUtils::baseStatNameOf);
+	}
+
+	private StatsModule() {
+		throw new UnsupportedOperationException("Dagger2 module");
 	}
 }

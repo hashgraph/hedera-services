@@ -47,8 +47,10 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetNft
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetNftInfos;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenPause;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 
 @Singleton
@@ -106,6 +108,16 @@ public class TokenController extends TokenServiceGrpc.TokenServiceImplBase {
 	@Override
 	public void unfreezeTokenAccount(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
 		txnHelper.submit(signedTxn, observer, TokenUnfreezeAccount);
+	}
+
+	@Override
+	public void pauseToken(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+		txnHelper.submit(signedTxn, observer, TokenPause);
+	}
+
+	@Override
+	public void unpauseToken(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+		txnHelper.submit(signedTxn, observer, TokenUnpause);
 	}
 
 	@Override

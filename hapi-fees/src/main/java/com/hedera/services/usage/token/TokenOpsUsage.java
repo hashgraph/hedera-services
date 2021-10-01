@@ -29,7 +29,9 @@ import com.hedera.services.usage.token.meta.TokenBurnMeta;
 import com.hedera.services.usage.token.meta.TokenCreateMeta;
 import com.hedera.services.usage.token.meta.TokenFreezeMeta;
 import com.hedera.services.usage.token.meta.TokenMintMeta;
+import com.hedera.services.usage.token.meta.TokenPauseMeta;
 import com.hedera.services.usage.token.meta.TokenUnfreezeMeta;
+import com.hedera.services.usage.token.meta.TokenUnpauseMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
 import com.hederahashgraph.api.proto.java.CustomFee;
 
@@ -200,7 +202,23 @@ public final class TokenOpsUsage {
 		accumulator.addBpt(tokenUnfreezeMeta.getBpt());
 	}
 
+	public void tokenPauseUsage(final SigUsage sigUsage,
+			final BaseTransactionMeta baseMeta,
+			final TokenPauseMeta tokenPauseMeta,
+			final UsageAccumulator accumulator) {
+		accumulator.resetForTransaction(baseMeta, sigUsage);
 
+		accumulator.addBpt(tokenPauseMeta.getBpt());
+	}
+
+	public void tokenUnpauseUsage(final SigUsage sigUsage,
+			final BaseTransactionMeta baseMeta,
+			final TokenUnpauseMeta tokenUnpauseMeta,
+			final UsageAccumulator accumulator) {
+		accumulator.resetForTransaction(baseMeta, sigUsage);
+
+		accumulator.addBpt(tokenUnpauseMeta.getBpt());
+	}
 
 	private int plusCollectorSize(final int feeReprSize) {
 		return feeReprSize + BASIC_ENTITY_ID_SIZE;

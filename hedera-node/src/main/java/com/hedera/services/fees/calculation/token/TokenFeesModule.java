@@ -9,9 +9,9 @@ package com.hedera.services.fees.calculation.token;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -51,14 +51,14 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevoke
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 
 @Module
-public abstract class TokenFeesModule {
+public final class TokenFeesModule {
 	@Provides
 	@ElementsIntoSet
 	public static Set<QueryResourceUsageEstimator> provideTokenQueryEstimators(
-			GetTokenInfoResourceUsage getTokenInfoResourceUsage,
-			GetTokenNftInfoResourceUsage getTokenNftInfoResourceUsage,
-			GetTokenNftInfosResourceUsage getTokenNftInfosResourceUsage,
-			GetAccountNftInfosResourceUsage getAccountNftInfosResourceUsage
+			final GetTokenInfoResourceUsage getTokenInfoResourceUsage,
+			final GetTokenNftInfoResourceUsage getTokenNftInfoResourceUsage,
+			final GetTokenNftInfosResourceUsage getTokenNftInfosResourceUsage,
+			final GetAccountNftInfosResourceUsage getAccountNftInfosResourceUsage
 	) {
 		return Set.of(
 				getTokenInfoResourceUsage,
@@ -71,7 +71,7 @@ public abstract class TokenFeesModule {
 	@IntoMap
 	@FunctionKey(TokenCreate)
 	public static List<TxnResourceUsageEstimator> provideTokenCreateEstimator(
-			TokenCreateResourceUsage tokenCreateResourceUsage
+			final TokenCreateResourceUsage tokenCreateResourceUsage
 	) {
 		return List.of(tokenCreateResourceUsage);
 	}
@@ -80,7 +80,7 @@ public abstract class TokenFeesModule {
 	@IntoMap
 	@FunctionKey(TokenUpdate)
 	public static List<TxnResourceUsageEstimator> provideTokenUpdateEstimator(
-			TokenUpdateResourceUsage tokenUpdateResourceUsage
+			final TokenUpdateResourceUsage tokenUpdateResourceUsage
 	) {
 		return List.of(tokenUpdateResourceUsage);
 	}
@@ -89,7 +89,7 @@ public abstract class TokenFeesModule {
 	@IntoMap
 	@FunctionKey(TokenGrantKycToAccount)
 	public static List<TxnResourceUsageEstimator> provideTokenGrantKycEstimator(
-			TokenGrantKycResourceUsage tokenGrantKycResourceUsage
+			final TokenGrantKycResourceUsage tokenGrantKycResourceUsage
 	) {
 		return List.of(tokenGrantKycResourceUsage);
 	}
@@ -98,7 +98,7 @@ public abstract class TokenFeesModule {
 	@IntoMap
 	@FunctionKey(TokenRevokeKycFromAccount)
 	public static List<TxnResourceUsageEstimator> provideTokenRevokeKycEstimator(
-			TokenRevokeKycResourceUsage tokenRevokeKycResourceUsage
+			final TokenRevokeKycResourceUsage tokenRevokeKycResourceUsage
 	) {
 		return List.of(tokenRevokeKycResourceUsage);
 	}
@@ -107,7 +107,7 @@ public abstract class TokenFeesModule {
 	@IntoMap
 	@FunctionKey(TokenDelete)
 	public static List<TxnResourceUsageEstimator> provideTokenDelete(
-			TokenDeleteResourceUsage tokenDeleteResourceUsage
+			final TokenDeleteResourceUsage tokenDeleteResourceUsage
 	) {
 		return List.of(tokenDeleteResourceUsage);
 	}
@@ -116,7 +116,7 @@ public abstract class TokenFeesModule {
 	@IntoMap
 	@FunctionKey(TokenAssociateToAccount)
 	public static List<TxnResourceUsageEstimator> provideTokenAssociate(
-			TokenAssociateResourceUsage tokenAssociateResourceUsage
+			final TokenAssociateResourceUsage tokenAssociateResourceUsage
 	) {
 		return List.of(tokenAssociateResourceUsage);
 	}
@@ -125,8 +125,12 @@ public abstract class TokenFeesModule {
 	@IntoMap
 	@FunctionKey(TokenDissociateFromAccount)
 	public static List<TxnResourceUsageEstimator> provideTokenDissociate(
-			TokenDissociateResourceUsage tokenDissociateResourceUsage
+			final TokenDissociateResourceUsage tokenDissociateResourceUsage
 	) {
 		return List.of(tokenDissociateResourceUsage);
+	}
+
+	private TokenFeesModule() {
+		throw new UnsupportedOperationException("Dagger2 module");
 	}
 }

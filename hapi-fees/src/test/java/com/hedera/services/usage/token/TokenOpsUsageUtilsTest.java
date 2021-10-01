@@ -26,6 +26,8 @@ import com.hedera.services.test.KeyUtils;
 import com.hedera.services.usage.token.meta.TokenBurnMeta;
 import com.hedera.services.usage.token.meta.TokenCreateMeta;
 import com.hedera.services.usage.token.meta.TokenMintMeta;
+import com.hedera.services.usage.token.meta.TokenPauseMeta;
+import com.hedera.services.usage.token.meta.TokenUnpauseMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
@@ -193,6 +195,20 @@ class TokenOpsUsageUtilsTest {
 		assertEquals(1296000, tokenMintMeta.getRbs());
 		assertEquals(42, tokenMintMeta.getBpt());
 		assertEquals(136, tokenMintMeta.getTransferRecordDb());
+	}
+
+	@Test
+	void tokenPauseMetaWorks() {
+		TokenPauseMeta tokenPauseMeta = TOKEN_OPS_USAGE_UTILS.tokenPauseUsageFrom();
+
+		assertEquals(24, tokenPauseMeta.getBpt());
+	}
+
+	@Test
+	void tokenUnpauseMetaWorks() {
+		TokenUnpauseMeta tokenUnpauseMeta = TOKEN_OPS_USAGE_UTILS.tokenUnpauseUsageFrom();
+
+		assertEquals(24, tokenUnpauseMeta.getBpt());
 	}
 
 	@Test
