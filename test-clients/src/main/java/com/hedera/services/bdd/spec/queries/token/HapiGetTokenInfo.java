@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
+import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -76,7 +77,9 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 	private Optional<String> expectedSupplyKey = Optional.empty();
 	private Optional<String> expectedWipeKey = Optional.empty();
 	private Optional<String> expectedFeeScheduleKey = Optional.empty();
+	private Optional<String> expectedPauseKey = Optional.empty();
 	private Optional<Boolean> expectedDeletion = Optional.empty();
+	private Optional<TokenPauseStatus> expectedPauseStatus = Optional.empty();
 	private Optional<TokenKycStatus> expectedKycDefault = Optional.empty();
 	private Optional<TokenFreezeStatus> expectedFreezeDefault = Optional.empty();
 	private Optional<String> expectedAutoRenewAccount = Optional.empty();
@@ -176,6 +179,16 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 
 	public HapiGetTokenInfo hasAdminKey(String name) {
 		expectedAdminKey = Optional.of(name);
+		return this;
+	}
+
+	public HapiGetTokenInfo hasPauseKey(String name) {
+		expectedPauseKey = Optional.of(name);
+		return this;
+	}
+
+	public HapiGetTokenInfo hasPauseStatus(TokenPauseStatus status) {
+		expectedPauseStatus = Optional.of(status);
 		return this;
 	}
 
@@ -286,6 +299,11 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 					"Wrong treasury account!");
 		}
 
+		expectedPauseStatus.ifPresent(status -> Assertions.assertEquals(
+				status,
+				actualInfo.getPauseStatus(),
+				"wrong Pause status"));
+
 		final var actualFees = actualInfo.getCustomFeesList();
 		for (var expectedFee : expectedFees) {
 			expectedFee.accept(spec, actualFees);
@@ -348,6 +366,13 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 				expectedFeeScheduleKey,
 				(n, r) -> r.getFeeScheduleKey(n),
 				"Wrong token fee schedule key!",
+				registry);
+
+		assertFor(
+				actualInfo.getPauseKey(),
+				expectedPauseKey,
+				(n, r) -> r.getPauseKey(n),
+				"Wrong token pause key!",
 				registry);
 	}
 

@@ -62,7 +62,11 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccoun
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenPause;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
@@ -318,6 +322,14 @@ public class SignedTxnAccessor implements TxnAccessor {
 			setTokenBurnUsageMeta();
 		} else if (function == TokenAccountWipe) {
 			setTokenWipeUsageMeta();
+		} else if (function == TokenFreezeAccount) {
+			setTokenFreezeUsageMeta();
+		} else if (function == TokenUnfreezeAccount) {
+			setTokenUnfreezeUsageMeta();
+		} else if (function == TokenPause) {
+			setTokenPauseUsageMeta();
+		} else if (function == TokenUnpause) {
+			setTokenUnpauseUsageMeta();
 		} else if (function == CryptoCreate) {
 			setCryptoCreateUsageMeta();
 		} else if (function == CryptoUpdate) {
@@ -364,6 +376,26 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private void setTokenWipeUsageMeta() {
 		final var tokenWipeMeta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(txn);
 		SPAN_MAP_ACCESSOR.setTokenWipeMeta(this, tokenWipeMeta);
+	}
+
+	private void setTokenFreezeUsageMeta() {
+		final var tokenFreezeMeta = TOKEN_OPS_USAGE_UTILS.tokenFreezeUsageFrom();
+		SPAN_MAP_ACCESSOR.setTokenFreezeMeta(this, tokenFreezeMeta);
+	}
+
+	private void setTokenUnfreezeUsageMeta() {
+		final var tokenUnfreezeMeta = TOKEN_OPS_USAGE_UTILS.tokenUnfreezeUsageFrom();
+		SPAN_MAP_ACCESSOR.setTokenUnfreezeMeta(this, tokenUnfreezeMeta);
+	}
+
+	private void setTokenPauseUsageMeta() {
+		final var tokenPauseMeta = TOKEN_OPS_USAGE_UTILS.tokenPauseUsageFrom();
+		SPAN_MAP_ACCESSOR.setTokenPauseMeta(this, tokenPauseMeta);
+	}
+
+	private void setTokenUnpauseUsageMeta() {
+		final var tokenUnpauseMeta = TOKEN_OPS_USAGE_UTILS.tokenUnpauseUsageFrom();
+		SPAN_MAP_ACCESSOR.setTokenUnpauseMeta(this, tokenUnpauseMeta);
 	}
 
 	private void setCryptoCreateUsageMeta() {

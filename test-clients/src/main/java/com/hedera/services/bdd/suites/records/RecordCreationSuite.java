@@ -26,6 +26,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
@@ -36,6 +37,10 @@ import com.hederahashgraph.fee.FeeObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -93,7 +98,7 @@ public class RecordCreationSuite extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
-						ensureDefaultFeeSchedules(),
+						ensureDefaultSystemFiles(),
 						confirmNftToggleIsWorksThenReenable(),
 						payerRecordCreationSanityChecks(),
 						newlyCreatedContractNoLongerGetsRecord(),
@@ -187,11 +192,22 @@ public class RecordCreationSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec ensureDefaultFeeSchedules() {
-		return defaultHapiSpec("EnsureDefaultFeeSchedules")
-				.given( ).when( ).then(
-						uploadDefaultFeeSchedules(GENESIS)
-				);
+	private HapiApiSpec ensureDefaultSystemFiles() {
+		try {
+			final var defaultPermissionsLoc = "src/main/resource/api-permission.properties";
+			final var stylized121 = Files.readString(Paths.get(defaultPermissionsLoc));
+			final var serde = StandardSerdes.SYS_FILE_SERDES.get(122L);
+
+			return defaultHapiSpec("EnsureDefaultSystemFiles")
+					.given( ).when( ).then(
+							uploadDefaultFeeSchedules(GENESIS),
+							fileUpdate(API_PERMISSIONS)
+									.payingWith(GENESIS)
+									.contents(serde.toValidatedRawFile(stylized121))
+					);
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 
 	private HapiApiSpec submittingNodeStillPaidIfServiceFeesOmitted() {

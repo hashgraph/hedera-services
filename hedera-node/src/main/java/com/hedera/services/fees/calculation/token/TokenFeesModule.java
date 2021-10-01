@@ -9,9 +9,9 @@ package com.hedera.services.fees.calculation.token;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,10 +31,8 @@ import com.hedera.services.fees.calculation.token.txns.TokenAssociateResourceUsa
 import com.hedera.services.fees.calculation.token.txns.TokenCreateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenDeleteResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenDissociateResourceUsage;
-import com.hedera.services.fees.calculation.token.txns.TokenFreezeResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenGrantKycResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenRevokeKycResourceUsage;
-import com.hedera.services.fees.calculation.token.txns.TokenUnfreezeResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenUpdateResourceUsage;
 import dagger.Module;
 import dagger.Provides;
@@ -48,21 +46,19 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssoci
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 
 @Module
-public abstract class TokenFeesModule {
+public final class TokenFeesModule {
 	@Provides
 	@ElementsIntoSet
 	public static Set<QueryResourceUsageEstimator> provideTokenQueryEstimators(
-			GetTokenInfoResourceUsage getTokenInfoResourceUsage,
-			GetTokenNftInfoResourceUsage getTokenNftInfoResourceUsage,
-			GetTokenNftInfosResourceUsage getTokenNftInfosResourceUsage,
-			GetAccountNftInfosResourceUsage getAccountNftInfosResourceUsage
+			final GetTokenInfoResourceUsage getTokenInfoResourceUsage,
+			final GetTokenNftInfoResourceUsage getTokenNftInfoResourceUsage,
+			final GetTokenNftInfosResourceUsage getTokenNftInfosResourceUsage,
+			final GetAccountNftInfosResourceUsage getAccountNftInfosResourceUsage
 	) {
 		return Set.of(
 				getTokenInfoResourceUsage,
@@ -75,7 +71,7 @@ public abstract class TokenFeesModule {
 	@IntoMap
 	@FunctionKey(TokenCreate)
 	public static List<TxnResourceUsageEstimator> provideTokenCreateEstimator(
-			TokenCreateResourceUsage tokenCreateResourceUsage
+			final TokenCreateResourceUsage tokenCreateResourceUsage
 	) {
 		return List.of(tokenCreateResourceUsage);
 	}
@@ -84,34 +80,16 @@ public abstract class TokenFeesModule {
 	@IntoMap
 	@FunctionKey(TokenUpdate)
 	public static List<TxnResourceUsageEstimator> provideTokenUpdateEstimator(
-			TokenUpdateResourceUsage tokenUpdateResourceUsage
+			final TokenUpdateResourceUsage tokenUpdateResourceUsage
 	) {
 		return List.of(tokenUpdateResourceUsage);
 	}
 
 	@Provides
 	@IntoMap
-	@FunctionKey(TokenFreezeAccount)
-	public static List<TxnResourceUsageEstimator> provideTokenFreezeEstimator(
-			TokenFreezeResourceUsage tokenFreezeResourceUsage
-	) {
-		return List.of(tokenFreezeResourceUsage);
-	}
-
-	@Provides
-	@IntoMap
-	@FunctionKey(TokenUnfreezeAccount)
-	public static List<TxnResourceUsageEstimator> provideTokenUnfreezeEstimator(
-			TokenUnfreezeResourceUsage tokenUnfreezeResourceUsage
-	) {
-		return List.of(tokenUnfreezeResourceUsage);
-	}
-
-	@Provides
-	@IntoMap
 	@FunctionKey(TokenGrantKycToAccount)
 	public static List<TxnResourceUsageEstimator> provideTokenGrantKycEstimator(
-			TokenGrantKycResourceUsage tokenGrantKycResourceUsage
+			final TokenGrantKycResourceUsage tokenGrantKycResourceUsage
 	) {
 		return List.of(tokenGrantKycResourceUsage);
 	}
@@ -120,7 +98,7 @@ public abstract class TokenFeesModule {
 	@IntoMap
 	@FunctionKey(TokenRevokeKycFromAccount)
 	public static List<TxnResourceUsageEstimator> provideTokenRevokeKycEstimator(
-			TokenRevokeKycResourceUsage tokenRevokeKycResourceUsage
+			final TokenRevokeKycResourceUsage tokenRevokeKycResourceUsage
 	) {
 		return List.of(tokenRevokeKycResourceUsage);
 	}
@@ -129,7 +107,7 @@ public abstract class TokenFeesModule {
 	@IntoMap
 	@FunctionKey(TokenDelete)
 	public static List<TxnResourceUsageEstimator> provideTokenDelete(
-			TokenDeleteResourceUsage tokenDeleteResourceUsage
+			final TokenDeleteResourceUsage tokenDeleteResourceUsage
 	) {
 		return List.of(tokenDeleteResourceUsage);
 	}
@@ -138,7 +116,7 @@ public abstract class TokenFeesModule {
 	@IntoMap
 	@FunctionKey(TokenAssociateToAccount)
 	public static List<TxnResourceUsageEstimator> provideTokenAssociate(
-			TokenAssociateResourceUsage tokenAssociateResourceUsage
+			final TokenAssociateResourceUsage tokenAssociateResourceUsage
 	) {
 		return List.of(tokenAssociateResourceUsage);
 	}
@@ -147,8 +125,12 @@ public abstract class TokenFeesModule {
 	@IntoMap
 	@FunctionKey(TokenDissociateFromAccount)
 	public static List<TxnResourceUsageEstimator> provideTokenDissociate(
-			TokenDissociateResourceUsage tokenDissociateResourceUsage
+			final TokenDissociateResourceUsage tokenDissociateResourceUsage
 	) {
 		return List.of(tokenDissociateResourceUsage);
+	}
+
+	private TokenFeesModule() {
+		throw new UnsupportedOperationException("Dagger2 module");
 	}
 }

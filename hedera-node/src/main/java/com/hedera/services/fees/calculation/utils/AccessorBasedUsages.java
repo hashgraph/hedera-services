@@ -25,7 +25,11 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccoun
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenPause;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
 
 /*-
  * ‌
@@ -53,7 +57,9 @@ public class AccessorBasedUsages {
 			FileAppend,
 			CryptoTransfer, CryptoCreate, CryptoUpdate,
 			ConsensusSubmitMessage,
-			TokenFeeScheduleUpdate, TokenCreate, TokenBurn, TokenMint, TokenAccountWipe);
+			TokenFeeScheduleUpdate, TokenCreate, TokenBurn, TokenMint, TokenAccountWipe,
+			TokenFreezeAccount, TokenUnfreezeAccount, TokenPause, TokenUnpause
+	);
 
 	private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
 
@@ -107,8 +113,16 @@ public class AccessorBasedUsages {
 			estimateTokenBurn(sigUsage, accessor, baseMeta, into);
 		} else if (function == TokenMint) {
 			estimateTokenMint(sigUsage, accessor, baseMeta, into);
+		} else if (function == TokenFreezeAccount) {
+			estimateTokenFreezeAccount(sigUsage, accessor, baseMeta, into);
+		} else if (function == TokenUnfreezeAccount) {
+			estimateTokenUnfreezeAccount(sigUsage, accessor, baseMeta, into);
 		} else if (function == TokenAccountWipe) {
 			estimateTokenWipe(sigUsage, accessor, baseMeta, into);
+		} else if (function == TokenPause) {
+			estimateTokenPause(sigUsage, accessor, baseMeta, into);
+		} else if (function == TokenUnpause) {
+			estimateTokenUnpause(sigUsage, accessor, baseMeta, into);
 		}
 	}
 
@@ -214,5 +228,41 @@ public class AccessorBasedUsages {
 	) {
 		final var tokenWipeMeta = accessor.getSpanMapAccessor().getTokenWipeMeta(accessor);
 		tokenOpsUsage.tokenWipeUsage(sigUsage, baseMeta, tokenWipeMeta, into);
+	}
+	private void estimateTokenFreezeAccount(
+			SigUsage sigUsage,
+			TxnAccessor accessor,
+			BaseTransactionMeta baseMeta,
+			UsageAccumulator into
+	) {
+		final var tokenFreezeMeta = accessor.getSpanMapAccessor().getTokenFreezeMeta(accessor);
+		tokenOpsUsage.tokenFreezeUsage(sigUsage, baseMeta, tokenFreezeMeta, into);
+	}
+	private void estimateTokenUnfreezeAccount(
+			SigUsage sigUsage,
+			TxnAccessor accessor,
+			BaseTransactionMeta baseMeta,
+			UsageAccumulator into
+	) {
+		final var tokenUnFreezeMeta = accessor.getSpanMapAccessor().getTokenUnfreezeMeta(accessor);
+		tokenOpsUsage.tokenUnfreezeUsage(sigUsage, baseMeta, tokenUnFreezeMeta, into);
+	}
+	private void estimateTokenPause(
+			SigUsage sigUsage,
+			TxnAccessor accessor,
+			BaseTransactionMeta baseMeta,
+			UsageAccumulator into
+	) {
+		final var tokenPauseMeta = accessor.getSpanMapAccessor().getTokenPauseMeta(accessor);
+		tokenOpsUsage.tokenPauseUsage(sigUsage, baseMeta, tokenPauseMeta, into);
+	}
+	private void estimateTokenUnpause(
+			SigUsage sigUsage,
+			TxnAccessor accessor,
+			BaseTransactionMeta baseMeta,
+			UsageAccumulator into
+	) {
+		final var tokenUnpauseMeta = accessor.getSpanMapAccessor().getTokenUnpauseMeta(accessor);
+		tokenOpsUsage.tokenUnpauseUsage(sigUsage, baseMeta, tokenUnpauseMeta, into);
 	}
 }
