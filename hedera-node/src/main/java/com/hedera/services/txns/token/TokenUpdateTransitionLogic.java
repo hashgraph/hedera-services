@@ -55,6 +55,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
 /**
@@ -122,6 +123,11 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 
 		if (token.isDeleted()) {
 			txnCtx.setStatus(TOKEN_WAS_DELETED);
+			return;
+		}
+
+		if (token.isPaused()) {
+			txnCtx.setStatus(TOKEN_IS_PAUSED);
 			return;
 		}
 
@@ -234,7 +240,8 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 				op.hasWipeKey(), op.getWipeKey(),
 				op.hasSupplyKey(), op.getSupplyKey(),
 				op.hasFreezeKey(), op.getFreezeKey(),
-				op.hasFeeScheduleKey(), op.getFeeScheduleKey());
+				op.hasFeeScheduleKey(), op.getFeeScheduleKey(),
+				op.hasPauseKey(), op.getPauseKey());
 		if (validity != OK) {
 			return validity;
 		}

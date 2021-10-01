@@ -86,6 +86,11 @@ public class TokenUpdateUsage extends TokenTxnUsage<TokenUpdateUsage> {
 		return this;
 	}
 
+	public TokenUpdateUsage givenCurrentPauseKey(Optional<Key> pauseKey) {
+		pauseKey.map(FeeBuilder::getAccountKeyStorageSize).ifPresent(this::updateCurrentRb);
+		return this;
+	}
+
 	public TokenUpdateUsage givenCurrentMemo(String memo) {
 		currentMemoLen = memo.length();
 		updateCurrentRb(currentMemoLen);
@@ -129,6 +134,8 @@ public class TokenUpdateUsage extends TokenTxnUsage<TokenUpdateUsage> {
 				op, TokenUpdateTransactionBody::hasSupplyKey, TokenUpdateTransactionBody::getSupplyKey);
 		newMutableRb += keySizeIfPresent(
 				op, TokenUpdateTransactionBody::hasFreezeKey, TokenUpdateTransactionBody::getFreezeKey);
+		newMutableRb += keySizeIfPresent(
+				op, TokenUpdateTransactionBody::hasPauseKey, TokenUpdateTransactionBody::getPauseKey);
 		if (!removesAutoRenewAccount(op) && (currentlyUsingAutoRenew || op.hasAutoRenewAccount())) {
 			newMutableRb += BASIC_ENTITY_ID_SIZE;
 		}

@@ -27,13 +27,17 @@ import dagger.Provides;
 import javax.inject.Singleton;
 
 @Module
-public abstract class KeysModule {
+public final class KeysModule {
 	@Provides
 	@Singleton
 	public static InHandleActivationHelper provideActivationHelper(
-			TransactionContext txnCtx,
-			CharacteristicsFactory characteristicsFactory
+			final TransactionContext txnCtx,
+			final CharacteristicsFactory characteristicsFactory
 	) {
 		return new InHandleActivationHelper(characteristicsFactory, txnCtx::accessor);
+	}
+
+	private KeysModule() {
+		throw new UnsupportedOperationException("Dagger2 module");
 	}
 }

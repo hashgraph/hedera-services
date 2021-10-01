@@ -254,6 +254,10 @@ public class SpecKey {
 			return new RegistryForms(adminKeyFor(entity), (registry, key) -> registry.saveAdminKey(entity, key));
 		}
 
+		public static RegistryForms asPauseKeyFor(String token) {
+			return new RegistryForms(pauseKeyFor(token), (registry, key) -> registry.savePauseKey(token, key));
+		}
+
 		public String name() {
 			return name;
 		}
@@ -285,5 +289,9 @@ public class SpecKey {
 
 	public static String submitKeyFor(String name) {
 		return name + "Submit";
+	}
+
+	public static String pauseKeyFor(String name) {
+		return name + "Pause";
 	}
 }
