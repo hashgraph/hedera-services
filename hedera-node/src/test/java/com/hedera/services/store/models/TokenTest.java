@@ -59,6 +59,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_METADATA;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIAL_NUMBER_LIMIT_REACHED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
@@ -96,7 +97,7 @@ class TokenTest {
 	private Token subject;
 	private TokenRelationship treasuryRel;
 	private TokenRelationship nonTreasuryRel;
-	
+
 	@BeforeEach
 	void setUp() {
 		subject = new Token(id);
@@ -108,7 +109,7 @@ class TokenTest {
 		treasuryRel.setAutomaticAssociation(true);
 		nonTreasuryRel = new TokenRelationship(subject, nonTreasuryAccount);
 	}
-	
+
 	@Test
 	void updatesAsExpected() throws DecoderException {
 		final var newTreasuryId = new Id(1, 2, 12);
@@ -129,7 +130,7 @@ class TokenTest {
 				.setTreasury(newTreasuryId.asGrpcAccount())
 				.setAdminKey(key)
 				.build();
-		
+
 		given(validator.isValidExpiry(any())).willReturn(true);
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 		/* set some values before update */
@@ -146,12 +147,12 @@ class TokenTest {
 		subject.setMemo("oldMemo");
 		subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
 		treasuryRel.initBalance(0);
-		
+
 		subject.update(changes,
 				autoRenew,
 				newTreasury,
 				validator);
-		
+
 		assertEquals("name", subject.getName());
 		assertEquals("smb", subject.getSymbol());
 		assertEquals("memo", subject.getMemo());
@@ -171,7 +172,7 @@ class TokenTest {
 
 		assertEquals(subject.getCustomFees(), List.of());
 	}
-	
+
 	@Test
 	void removesAdminKey() {
 		final var changes = TokenUpdateTransactionBody.newBuilder()
@@ -180,14 +181,14 @@ class TokenTest {
 				.setExpiry(Timestamp.newBuilder().setSeconds(expiry + 1000L).build())
 				.setAdminKey(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build())
 				.build();
-		
+
 		given(validator.isValidExpiry(any())).willReturn(true);
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 
 		subject.setAdminKey(someKey);
 		subject.setExpiry(expiry);
 		subject.update(changes, autoRenew, null, validator);
-		
+
 		assertNull(subject.getAdminKey());
 	}
 
@@ -239,6 +240,33 @@ class TokenTest {
 	}
 
 	@Test
+	void recognizesPauseKey() {
+		assertFalse(subject.hasPauseKey());
+
+		subject.setPauseKey(TxnHandlingScenario.TOKEN_PAUSE_KT.asJKeyUnchecked());
+
+		assertTrue(subject.hasPauseKey());
+	}
+
+	@Test
+	void changingPauseStatusFailsIfNoPauseKey() {
+		assertFalse(subject.hasPauseKey());
+		assertFailsWith(() -> subject.changePauseStatus(true), TOKEN_HAS_NO_PAUSE_KEY);
+	}
+
+	@Test
+	void changingPauseStatusWorksIfTokenHasPauseKey() {
+		subject.setPauseKey(TxnHandlingScenario.TOKEN_PAUSE_KT.asJKeyUnchecked());
+		assertTrue(subject.hasPauseKey());
+
+		subject.changePauseStatus(true);
+		assertTrue(subject.isPaused());
+
+		subject.changePauseStatus(false);
+		assertFalse(subject.isPaused());
+	}
+
+	@Test
 	void deleteFailsAsExpected() {
 		subject.setAdminKey(null);
 		assertFailsWith(() -> subject.delete(), TOKEN_IS_IMMUTABLE);
@@ -247,6 +275,7 @@ class TokenTest {
 	@Test
 	void constructsOkToken() {
 		final var feeScheduleKey = TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT.asKey();
+		final var pauseKey = TxnHandlingScenario.TOKEN_PAUSE_KT.asKey();
 		final var op = TransactionBody.newBuilder()
 				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
 						.setTokenType(com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON)
@@ -259,6 +288,7 @@ class TokenTest {
 						.setName("bitcoin")
 						.setSymbol("BTC")
 						.setFeeScheduleKey(feeScheduleKey)
+						.setPauseKey(pauseKey)
 						.addAllCustomFees(List.of(CustomFee.newBuilder().setFixedFee(
 								FixedFee.newBuilder().setAmount(10).build())
 								.setFeeCollectorAccountId(IdUtils.asAccount("1.2.3")).build()))
@@ -273,6 +303,8 @@ class TokenTest {
 		assertEquals(123L, subject.getExpiry());
 		assertEquals(TokenSupplyType.FINITE, subject.getSupplyType());
 		assertNotNull(subject.getFeeScheduleKey());
+		assertNotNull(subject.getPauseKey());
+		assertFalse(subject.isPaused());
 		assertTrue(subject.isKycGrantedByDefault());
 		assertTrue(subject.isFungibleCommon());
 		assertFalse(subject.isNonFungibleUnique());
@@ -732,7 +764,8 @@ class TokenTest {
 		final var desired = "Token{id=Id{shard=1, realm=2, num=3}, type=null, deleted=false, autoRemoved=false, " +
 				"treasury=Account{id=Id{shard=0, realm=0, num=0}, expiry=0, balance=0, deleted=false, tokens=<N/A>, " +
 				"ownedNfts=0, alreadyUsedAutoAssociations=0, maxAutoAssociations=0}, autoRenewAccount=null, " +
-				"kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, kycGrantedByDefault=false, supplyKey=<N/A>, currentSerialNumber=0}";
+				"kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, kycGrantedByDefault=false, supplyKey=<N/A>, currentSerialNumber=0, " +
+				"pauseKey=<N/A>, paused=false}";
 
 		assertEquals(desired, subject.toString());
 	}

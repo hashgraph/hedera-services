@@ -79,6 +79,8 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMI
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_PAUSE_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_TREASURY_KT;
 import static com.hedera.test.mocks.TestContextValidator.CONSENSUS_NOW;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
@@ -92,6 +94,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
@@ -119,6 +127,7 @@ class HederaTokenStoreTest {
 	private static final Key wipeKey = MISC_ACCOUNT_KT.asKey();
 	private static final Key supplyKey = COMPLEX_KEY_ACCOUNT_KT.asKey();
 	private static final Key feeScheduleKey = TOKEN_FEE_SCHEDULE_KT.asKey();
+	private static final Key pauseKey = TOKEN_PAUSE_KT.asKey();
 
 	private static final String symbol = "NOTHBAR";
 	private static final String newSymbol = "REALLYSOM";
@@ -662,7 +671,7 @@ class HederaTokenStoreTest {
 		verify(uniqTokenViewsManager).treasuryExitNotice(muti, sender, receiver);
 		verify(hederaLedger).updateOwnershipChanges(tNft, primaryTreasury, counterparty);
 	}
-	
+
 
 	@Test
 	void changingOwnerRejectsFromFreezeAndKYC() {
@@ -761,7 +770,7 @@ class HederaTokenStoreTest {
 	}
 
 	enum KeyType {
-		WIPE, FREEZE, SUPPLY, KYC, ADMIN, EMPTY_ADMIN, FEE_SCHEDULE
+		WIPE, FREEZE, SUPPLY, KYC, ADMIN, EMPTY_ADMIN, FEE_SCHEDULE, PAUSE
 	}
 
 	private static final EnumSet<KeyType> NO_KEYS = EnumSet.noneOf(KeyType.class);
@@ -870,6 +879,9 @@ class HederaTokenStoreTest {
 		if (keys.contains(KeyType.FEE_SCHEDULE)) {
 			given(token.hasFeeScheduleKey()).willReturn(true);
 		}
+		if(keys.contains(KeyType.PAUSE)) {
+			given(token.hasPauseKey()).willReturn(true);
+		}
 	}
 
 	@Test
@@ -896,6 +908,15 @@ class HederaTokenStoreTest {
 		final var status = subject.adjustBalance(treasury, misc, 1);
 
 		assertEquals(ResponseCodeEnum.TOKEN_WAS_DELETED, status);
+	}
+
+	@Test
+	void adjustingRejectsPausedToken() {
+		given(token.isPaused()).willReturn(true);
+
+		final var status = subject.adjustBalance(treasury, misc, 1);
+
+		assertEquals(ResponseCodeEnum.TOKEN_IS_PAUSED, status);
 	}
 
 	@Test

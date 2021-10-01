@@ -60,6 +60,7 @@ class TokenConversionTest {
 	private static final JKey WIPE_KEY = TxnHandlingScenario.TOKEN_WIPE_KT.asJKeyUnchecked();
 	private static final JKey ADMIN_KEY = TxnHandlingScenario.TOKEN_ADMIN_KT.asJKeyUnchecked();
 	private static final JKey FEE_SCHEDULE_KEY = TxnHandlingScenario.TOKEN_ADMIN_KT.asJKeyUnchecked();
+	private static final JKey PAUSE_KEY = TxnHandlingScenario.TOKEN_PAUSE_KT.asJKeyUnchecked();
 	private static final long TOKEN_SUPPLY = 777L;
 	private static final long AUTORENEW_PERIOD = 1234L;
 	private static final String NAME = "Testing123";
@@ -88,9 +89,12 @@ class TokenConversionTest {
 		merkleToken.setWipeKey(WIPE_KEY);
 		merkleToken.setAdminKey(ADMIN_KEY);
 		merkleToken.setFreezeKey(FREEZE_KEY);
+		merkleToken.setPauseKey(PAUSE_KEY);
 		merkleToken.setFeeScheduleKey(FEE_SCHEDULE_KEY);
 		merkleToken.setMemo(MEMO);
 		merkleToken.setAutoRenewPeriod(AUTORENEW_PERIOD);
+		merkleToken.setPaused(true);
+		merkleToken.setDeleted(false);
 
 		TOKEN.setName(NAME);
 		TOKEN.setSymbol(SYMBOL);
@@ -104,9 +108,11 @@ class TokenConversionTest {
 		TOKEN.setWipeKey(WIPE_KEY);
 		TOKEN.setAdminKey(ADMIN_KEY);
 		TOKEN.setFeeScheduleKey(FEE_SCHEDULE_KEY);
+		TOKEN.setPauseKey(PAUSE_KEY);
 		TOKEN.setFrozenByDefault(FREEZE_DEFAULT);
 		TOKEN.setKycGrantedByDefault(KYC_GRANTED_DEFAULT);
 		TOKEN.setIsDeleted(false);
+		TOKEN.setPaused(true);
 		TOKEN.setExpiry(EXPIRY);
 		TOKEN.setAutoRenewPeriod(AUTORENEW_PERIOD);
 

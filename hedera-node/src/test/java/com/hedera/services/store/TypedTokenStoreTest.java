@@ -59,6 +59,7 @@ import static com.hedera.services.store.TypedTokenStore.legacyReprOf;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -170,18 +171,18 @@ class TypedTokenStoreTest {
 		verify(backingTokenRels).removeFromExistingRels(legacyReprOf(destroyedRel));
 		verify(transactionRecordService).includeChangesToTokenRels(List.of(destroyedRel));
 	}
-	
+
 	@Test
 	void persistsUpdatedTokenAsExpected() {
 		final var mockToken = mock(Token.class);
 		given(tokens.getForModify(any())).willReturn(merkleToken);
-		
+
 		given(mockToken.hasUpdatedTreasury()).willReturn(true);
 		given(mockToken.getId()).willReturn(Id.DEFAULT);
 		given(mockToken.getTreasury()).willReturn(treasuryAccount);
-		
+
 		subject.persistToken(mockToken);
-		
+
 		var inOrder = inOrder(mockToken);
 		inOrder.verify(mockToken).getTreasury();
 		inOrder.verify(mockToken).getTreasury();
@@ -221,6 +222,34 @@ class TypedTokenStoreTest {
 
 		// expect:
 		assertEquals(123L, subject.currentMintedNfts());
+	}
+
+	@Test
+	void canLoadPausedTokenUsingLoadPossiblyPausedToken() {
+		given(accountStore.loadAccount(autoRenewId)).willReturn(autoRenewAccount);
+		given(accountStore.loadAccount(treasuryId)).willReturn(treasuryAccount);
+		givenToken(merkleTokenId, merkleToken);
+		merkleToken.setPaused(true);
+		token.setPaused(true);
+
+		final var actualToken = subject.loadPossiblyPausedToken(tokenId);
+
+		assertEquals(token.toString(), actualToken.toString());
+		assertEquals(token.isPaused(), actualToken.isPaused());
+		assertTrue(actualToken.isPaused());
+	}
+
+	@Test
+	void failsLoadPossiblyPausedTokenMissingToken() {
+		assertLoadPossiblyPausedTokenFailsWith(INVALID_TOKEN_ID);
+	}
+
+	@Test
+	void failsLoadPossiblyPausedTokenDeletedToken() {
+		givenToken(merkleTokenId, merkleToken);
+		merkleToken.setDeleted(true);
+
+		assertLoadPossiblyPausedTokenFailsWith(TOKEN_WAS_DELETED);
 	}
 
 	@Test
@@ -276,6 +305,28 @@ class TypedTokenStoreTest {
 		merkleToken.setDeleted(true);
 
 		assertTokenLoadFailsWith(TOKEN_WAS_DELETED);
+	}
+
+	@Test
+	void failsLoadingPausedTokenUsingLoadPossiblyDeletedOrAutoRemovedToken() {
+		givenToken(merkleTokenId, merkleToken);
+		merkleToken.setPaused(true);
+		assertLoadPossiblyDeletedTokenFailsWith(TOKEN_IS_PAUSED);
+	}
+
+	@Test
+	void failsLoadingPausedToken() {
+		givenToken(merkleTokenId, merkleToken);
+		merkleToken.setPaused(true);
+
+		assertTokenLoadFailsWith(TOKEN_IS_PAUSED);
+	}
+
+	@Test
+	void loadOrFailsCantLoadPausedToken() {
+		givenToken(merkleTokenId, merkleToken);
+		merkleToken.setPaused(true);
+		assertFailsWith(() -> subject.loadTokenOrFailWith(tokenId, FAIL_INVALID), FAIL_INVALID);
 	}
 
 	@Test
@@ -337,6 +388,7 @@ class TypedTokenStoreTest {
 		expectedReplacementToken.setFreezeKey(freezeKey);
 		expectedReplacementToken.setFeeScheduleKey(feeScheduleKey);
 		expectedReplacementToken.setKycKey(kycKey);
+		expectedReplacementToken.setPauseKey(pauseKey);
 		expectedReplacementToken.setAccountsFrozenByDefault(!freezeDefault);
 		expectedReplacementToken.setMemo(memo);
 		expectedReplacementToken.setAutoRenewPeriod(autoRenewPeriod);
@@ -352,6 +404,7 @@ class TypedTokenStoreTest {
 		expectedReplacementToken2.setFreezeKey(freezeKey);
 		expectedReplacementToken2.setFeeScheduleKey(feeScheduleKey);
 		expectedReplacementToken2.setKycKey(kycKey);
+		expectedReplacementToken2.setPauseKey(pauseKey);
 		expectedReplacementToken2.setAccountsFrozenByDefault(!freezeDefault);
 		expectedReplacementToken2.setMemo(memo);
 		expectedReplacementToken2.setAutoRenewPeriod(autoRenewPeriod);
@@ -475,6 +528,11 @@ class TypedTokenStoreTest {
 		assertEquals(status, ex.getResponseCode());
 	}
 
+	private void assertLoadPossiblyPausedTokenFailsWith(final ResponseCodeEnum status) {
+		final var ex = assertThrows(InvalidTransactionException.class, () -> subject.loadPossiblyPausedToken(tokenId));
+		assertEquals(status, ex.getResponseCode());
+	}
+
 	private void assertLoadPossiblyDeletedTokenFailsWith(final ResponseCodeEnum status) {
 		final var ex = assertThrows(InvalidTransactionException.class,
 				() -> subject.loadPossiblyDeletedOrAutoRemovedToken(tokenId));
@@ -498,6 +556,8 @@ class TypedTokenStoreTest {
 		merkleToken.setKycKey(kycKey);
 		merkleToken.setFreezeKey(freezeKey);
 		merkleToken.setFeeScheduleKey(feeScheduleKey);
+		merkleToken.setPauseKey(pauseKey);
+		merkleToken.setPaused(false);
 
 		token.setTreasury(treasuryAccount);
 		token.setAutoRenewAccount(autoRenewAccount);
@@ -505,10 +565,12 @@ class TypedTokenStoreTest {
 		token.setKycKey(kycKey);
 		token.setSupplyKey(supplyKey);
 		token.setFreezeKey(freezeKey);
+		token.setPauseKey(pauseKey);
 		token.setFeeScheduleKey(feeScheduleKey);
 		token.setFrozenByDefault(freezeDefault);
 		token.setKycGrantedByDefault(true);
 		token.setIsDeleted(false);
+		token.setPaused(false);
 		token.setExpiry(expiry);
 	}
 
@@ -539,6 +601,7 @@ class TypedTokenStoreTest {
 	private final JKey supplyKey = TxnHandlingScenario.TOKEN_SUPPLY_KT.asJKeyUnchecked();
 	private final JKey wipeKey = TxnHandlingScenario.TOKEN_WIPE_KT.asJKeyUnchecked();
 	private final JKey adminKey = TxnHandlingScenario.TOKEN_ADMIN_KT.asJKeyUnchecked();
+	private final JKey pauseKey = TxnHandlingScenario.TOKEN_PAUSE_KT.asJKeyUnchecked();
 	private final JKey feeScheduleKey = TxnHandlingScenario.TOKEN_ADMIN_KT.asJKeyUnchecked();
 	private final long tokenNum = 4_234L;
 	private final long tokenSupply = 777L;

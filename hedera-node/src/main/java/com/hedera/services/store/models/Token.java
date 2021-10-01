@@ -54,6 +54,7 @@ import static com.hedera.services.state.merkle.MerkleToken.UNUSED_KEY;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.MAX_NUM_ALLOWED;
 import static com.hedera.services.store.models.Token.CandidateKeys.FREEZE_KEY_CANDIDATE;
 import static com.hedera.services.store.models.Token.CandidateKeys.KYC_KEY_CANDIDATE;
+import static com.hedera.services.store.models.Token.CandidateKeys.PAUSE_KEY_CANDIDATE;
 import static com.hedera.services.store.models.Token.CandidateKeys.SCHEDULE_KEY_CANDIDATE;
 import static com.hedera.services.store.models.Token.CandidateKeys.SUPPLY_KEY_CANDIDATE;
 import static com.hedera.services.store.models.Token.CandidateKeys.WIPE_KEY_CANDIDATE;
@@ -75,6 +76,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIAL_NUMBER_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
@@ -105,12 +107,14 @@ public class Token {
 	private JKey wipeKey;
 	private JKey adminKey;
 	private JKey feeScheduleKey;
+	private JKey pauseKey;
 	private final List<UniqueToken> mintedUniqueTokens = new ArrayList<>();
 	private final List<UniqueToken> removedUniqueTokens = new ArrayList<>();
 	private Map<Long, UniqueToken> loadedUniqueTokens = new HashMap<>();
 	private boolean frozenByDefault;
 	private boolean kycGrantedByDefault;
 	private boolean deleted;
+	private boolean paused;
 	private boolean autoRemoved = false;
 	private long expiry;
 	private long totalSupply;
@@ -167,6 +171,7 @@ public class Token {
 		updateKeyOfTypeIfAppropriate(changes.hasSupplyKey(), changes::getSupplyKey, this::setSupplyKey);
 		updateKeyOfTypeIfAppropriate(changes.hasWipeKey(), changes::getWipeKey, this::setWipeKey);
 		updateKeyOfTypeIfAppropriate(changes.hasFeeScheduleKey(), changes::getFeeScheduleKey, this::setFeeScheduleKey);
+		updateKeyOfTypeIfAppropriate(changes.hasPauseKey(), changes::getPauseKey, this::setPauseKey);
 
 		updateSymbolIfAppropriate(changes);
 		updateNameIfAppropriate(changes);
@@ -211,6 +216,7 @@ public class Token {
 		validateFalse(keyIsNotPresent(WIPE_KEY_CANDIDATE, newKeys), TOKEN_HAS_NO_WIPE_KEY);
 		validateFalse(keyIsNotPresent(SUPPLY_KEY_CANDIDATE, newKeys), TOKEN_HAS_NO_SUPPLY_KEY);
 		validateFalse(keyIsNotPresent(SCHEDULE_KEY_CANDIDATE, newKeys), TOKEN_HAS_NO_FEE_SCHEDULE_KEY);
+		validateFalse(keyIsNotPresent(PAUSE_KEY_CANDIDATE, newKeys), TOKEN_HAS_NO_PAUSE_KEY);
 	}
 
 	private Map<CandidateKeys, Optional<?>> getCandidateKeys(final TokenUpdateTransactionBody changes) {
@@ -229,6 +235,9 @@ public class Token {
 						: Optional.empty(),
 				SCHEDULE_KEY_CANDIDATE, changes.hasFeeScheduleKey()
 						? asUsableFcKey(changes.getFeeScheduleKey())
+						: Optional.empty(),
+				PAUSE_KEY_CANDIDATE, changes.hasPauseKey()
+						? asUsableFcKey(changes.getPauseKey())
 						: Optional.empty());
 	}
 
@@ -242,6 +251,8 @@ public class Token {
 				return !this.hasWipeKey() && newKeys.get(key).isPresent();
 			case SUPPLY_KEY_CANDIDATE:
 				return !this.hasSupplyKey() && newKeys.get(key).isPresent();
+			case PAUSE_KEY_CANDIDATE:
+				return !this.hasPauseKey() && newKeys.get(key).isPresent();
 			default:
 				return !this.hasFeeScheduleKey() && newKeys.get(key).isPresent();
 		}
@@ -344,6 +355,7 @@ public class Token {
 		var wipeKey = asUsableFcKey(op.getWipeKey());
 		var supplyKey = asUsableFcKey(op.getSupplyKey());
 		var feeScheduleKey = asUsableFcKey(op.getFeeScheduleKey());
+		var pauseKey = asUsableFcKey(op.getPauseKey());
 
 		freezeKey.ifPresent(token::setFreezeKey);
 		adminKey.ifPresent(token::setAdminKey);
@@ -351,6 +363,7 @@ public class Token {
 		wipeKey.ifPresent(token::setWipeKey);
 		supplyKey.ifPresent(token::setSupplyKey);
 		feeScheduleKey.ifPresent(token::setFeeScheduleKey);
+		pauseKey.ifPresent(token::setPauseKey);
 
 		token.initSupplyConstraints(TokenTypesMapper.mapToDomain(op.getSupplyType()), op.getMaxSupply());
 		token.setType(TokenTypesMapper.mapToDomain(op.getTokenType()));
@@ -369,6 +382,7 @@ public class Token {
 		token.setFrozenByDefault(op.getFreezeDefault());
 		token.setKycGrantedByDefault(!op.hasKycKey());
 		token.setCustomFees(op.getCustomFeesList().stream().map(FcCustomFee::fromGrpc).collect(toList()));
+		token.setPaused(false);
 
 		token.setNew(true);
 		return token;
@@ -705,6 +719,17 @@ public class Token {
 		this.adminKey = adminKey;
 	}
 
+	public JKey getPauseKey() {
+		return pauseKey;
+	}
+
+	public boolean hasPauseKey() {
+		return pauseKey != null;
+	}
+
+	public void setPauseKey(final JKey pauseKey) {
+		this.pauseKey = pauseKey;
+	}
 	/* supply is changed only after the token is created */
 	public boolean hasChangedSupply() {
 		return supplyHasChanged && !isNew;
@@ -724,6 +749,19 @@ public class Token {
 
 	public void setKycGrantedByDefault(boolean kycGrantedByDefault) {
 		this.kycGrantedByDefault = kycGrantedByDefault;
+	}
+
+	public boolean isPaused() {
+		return paused;
+	}
+
+	public void setPaused(final boolean paused) {
+		this.paused = paused;
+	}
+
+	public void changePauseStatus(final boolean paused) {
+		validateTrue(hasPauseKey(), TOKEN_HAS_NO_PAUSE_KEY);
+		this.paused = paused;
 	}
 
 	public Id getId() {
@@ -879,6 +917,8 @@ public class Token {
 				.add("kycGrantedByDefault", kycGrantedByDefault)
 				.add("supplyKey", describe(supplyKey))
 				.add("currentSerialNumber", lastUsedSerialNumber)
+				.add("pauseKey", describe(pauseKey))
+				.add("paused", paused)
 				.toString();
 	}
 
@@ -916,6 +956,7 @@ public class Token {
 		WIPE_KEY_CANDIDATE,
 		SUPPLY_KEY_CANDIDATE,
 		SCHEDULE_KEY_CANDIDATE,
+		PAUSE_KEY_CANDIDATE
 	}
 
 }

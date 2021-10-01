@@ -101,8 +101,9 @@ class TokenRelationshipTest {
 				" expiry=0, balance=0, deleted=false, tokens=<N/A>, ownedNfts=0, alreadyUsedAutoAssociations=0, " +
 				"maxAutoAssociations=0}, token=Token{id=Id{shard=0, realm=0, num=1234}, " +
 				"type=null, deleted=false, autoRemoved=false, treasury=null, autoRenewAccount=null, kycKey=<N/A>, " +
-				"freezeKey=<N/A>, frozenByDefault=false, kycGrantedByDefault=false, supplyKey=<N/A>, currentSerialNumber=0}, balance=1234, " +
-				"balanceChange=0, frozen=false, kycGranted=false, isAutomaticAssociation=false}";
+				"freezeKey=<N/A>, frozenByDefault=false, kycGrantedByDefault=false, supplyKey=<N/A>, currentSerialNumber=0, pauseKey=<N/A>," +
+				" paused=false}, balance=1234, balanceChange=0, frozen=false, kycGranted=false, " +
+				"isAutomaticAssociation=false}";
 
 		// expect:
 		assertEquals(desired, subject.toString());

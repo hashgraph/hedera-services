@@ -114,9 +114,11 @@ public final class TokenConversion {
 		mutableToken.setFreezeKey(token.getFreezeKey());
 		mutableToken.setKycKey(token.getKycKey());
 		mutableToken.setFeeScheduleKey(token.getFeeScheduleKey());
+		mutableToken.setPauseKey(token.getPauseKey());
 
 		mutableToken.setMaxSupply(token.getMaxSupply());
 		mutableToken.setDeleted(token.isDeleted());
+		mutableToken.setPaused(token.isPaused());
 
 		if (token.getCustomFees() != null) {
 			mutableToken.setFeeSchedule(token.getCustomFees());
@@ -189,9 +191,11 @@ public final class TokenConversion {
 		token.setKycGrantedByDefault(immutableToken.accountsKycGrantedByDefault());
 		token.setAdminKey(immutableToken.getAdminKey());
 		token.setFeeScheduleKey(immutableToken.getFeeScheduleKey());
+		token.setPauseKey(immutableToken.getPauseKey());
 		token.setType(immutableToken.tokenType());
 		token.setLastUsedSerialNumber(immutableToken.getLastUsedSerialNumber());
 		token.setIsDeleted(immutableToken.isDeleted());
+		token.setPaused(immutableToken.isPaused());
 		token.setExpiry(immutableToken.expiry());
 		token.setMemo(immutableToken.memo());
 		token.setAutoRenewPeriod(immutableToken.autoRenewPeriod());

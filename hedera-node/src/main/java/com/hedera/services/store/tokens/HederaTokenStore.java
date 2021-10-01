@@ -77,6 +77,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static java.util.stream.Collectors.toList;
@@ -378,7 +379,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		ids.reclaimLastId();
 		resetPendingCreation();
 	}
-	
 
 	private ResponseCodeEnum fullySanityChecked(
 			final boolean strictTokenCheck,
@@ -470,6 +470,9 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		final var token = get(tId);
 		if (token.isDeleted()) {
 			return TOKEN_WAS_DELETED;
+		}
+		if (token.isPaused()) {
+			return TOKEN_IS_PAUSED;
 		}
 		if (onlyFungibleCommon && token.tokenType() == NON_FUNGIBLE_UNIQUE) {
 			return ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;

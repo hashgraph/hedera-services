@@ -28,6 +28,7 @@ import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
+import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
@@ -400,7 +401,8 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						newKeyNamed("kycKey"),
 						newKeyNamed("supplyKey"),
 						newKeyNamed("wipeKey"),
-						newKeyNamed("feeScheduleKey")
+						newKeyNamed("feeScheduleKey"),
+						newKeyNamed("pauseKey")
 				).when(
 						tokenCreate("primary")
 								.supplyType(TokenSupplyType.FINITE)
@@ -418,10 +420,12 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.supplyKey("supplyKey")
 								.wipeKey("wipeKey")
 								.feeScheduleKey("feeScheduleKey")
+								.pauseKey("pauseKey")
 								.via("createTxn"),
 						tokenCreate("non-fungible-unique-finite")
 								.tokenType(NON_FUNGIBLE_UNIQUE)
 								.supplyType(TokenSupplyType.FINITE)
+								.pauseKey("pauseKey")
 								.initialSupply(0)
 								.maxSupply(100)
 								.treasury(TOKEN_TREASURY)
@@ -449,13 +453,18 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.hasSupplyKey("primary")
 								.hasWipeKey("primary")
 								.hasFeeScheduleKey("primary")
+								.hasPauseKey("primary")
+								.hasPauseStatus(TokenPauseStatus.Unpaused)
 								.hasMaxSupply(1000)
 								.hasTotalSupply(500)
 								.hasAutoRenewAccount("autoRenewAccount"),
 						getTokenInfo("non-fungible-unique-finite")
+								.logged()
 								.hasRegisteredId("non-fungible-unique-finite")
 								.hasTokenType(NON_FUNGIBLE_UNIQUE)
 								.hasSupplyType(TokenSupplyType.FINITE)
+								.hasPauseKey("primary")
+								.hasPauseStatus(TokenPauseStatus.Unpaused)
 								.hasTotalSupply(0)
 								.hasMaxSupply(100),
 						getAccountInfo(TOKEN_TREASURY)

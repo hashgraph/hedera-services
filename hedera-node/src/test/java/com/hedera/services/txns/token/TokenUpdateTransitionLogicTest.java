@@ -64,6 +64,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPE_K
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
@@ -130,7 +131,7 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
-		var ex = assertThrows(InvalidTransactionException.class, something::run);
+		final var ex = assertThrows(InvalidTransactionException.class, something::run);
 		assertEquals(status, ex.getResponseCode());
 	}
 
@@ -188,9 +189,8 @@ class TokenUpdateTransitionLogicTest {
 						any(),
 						any(),
 						any());
-		// when:
+
 		assertFailsWith(() -> subject.doStateTransition(), FAIL_INVALID);
-		// then:
 
 		verifyBalanceDoesNotChange();
 	}
@@ -227,7 +227,6 @@ class TokenUpdateTransitionLogicTest {
 	@Test
 	void abortsOnInvalidNewTreasury() {
 		givenValidTxnCtx(true);
-//		givenToken(true, true);
 
 		given(tokenStore.loadToken(any())).willReturn(token);
 		given(token.hasAdminKey()).willReturn(true);
@@ -264,17 +263,15 @@ class TokenUpdateTransitionLogicTest {
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(tokenStore.loadToken(any())).willReturn(token);
 		given(token.hasAdminKey()).willReturn(false);
-		// when:
+
 		subject.doStateTransition();
 
-		// then:
 		verify(tokenStore).persistToken(any());
 	}
 
 	@Test
 	void abortsOnNotSetAdminKey() {
 		givenValidTxnCtx(true);
-		// and:
 
 		given(tokenStore.loadToken(any())).willReturn(token);
 		given(token.getTreasury()).willReturn(oldTreasury);
@@ -282,7 +279,6 @@ class TokenUpdateTransitionLogicTest {
 		given(token.getAdminKey()).willReturn(null);
 		given(token.hasAdminKey()).willReturn(false);
 
-		// when:
 		assertFailsWith(() -> subject.doStateTransition(), TOKEN_IS_IMMUTABLE);
 	}
 
@@ -290,7 +286,7 @@ class TokenUpdateTransitionLogicTest {
 	void abortsOnInvalidNewExpiry() {
 		final var expiry = Timestamp.newBuilder().setSeconds(thisSecond + thisSecond).build();
 
-		var builder = TransactionBody.newBuilder()
+		final var builder = TransactionBody.newBuilder()
 				.setTokenUpdate(TokenUpdateTransactionBody.newBuilder()
 						.setExpiry(expiry));
 		tokenUpdateTxn = builder.build();
@@ -302,17 +298,24 @@ class TokenUpdateTransitionLogicTest {
 		given(token.hasAdminKey()).willReturn(true);
 		given(token.getTreasury()).willReturn(oldTreasury);
 		given(oldTreasury.getId()).willReturn(Id.fromGrpcAccount(oldTreasuryId));
-		// when:
+
 		assertFailsWith(() -> subject.doStateTransition(), INVALID_EXPIRATION_TIME);
 	}
 
 	@Test
 	void abortsOnAlreadyDeletedToken() {
 		givenValidTxnCtx(true);
-		// and:
 		given(tokenStore.loadToken(any())).willThrow(new InvalidTransactionException(TOKEN_WAS_DELETED));
-		// when:
+
 		assertFailsWith(() -> subject.doStateTransition(), TOKEN_WAS_DELETED);
+	}
+
+	@Test
+	void abortsOnPausedToken() {
+		givenValidTxnCtx(true);
+		given(tokenStore.loadToken(any())).willThrow(new InvalidTransactionException(TOKEN_IS_PAUSED));
+
+		assertFailsWith(() -> subject.doStateTransition(), TOKEN_IS_PAUSED);
 	}
 
 	@Test
@@ -326,15 +329,14 @@ class TokenUpdateTransitionLogicTest {
 		given(accountStore.loadAccountOrFailWith(any(), any())).willReturn(autoRenew);
 		final var oldTreasuryRel = mock(TokenRelationship.class);
 		given(tokenStore.loadTokenRelationship(any(), any())).willReturn(oldTreasuryRel);
-		// when:
+
 		subject.doStateTransition();
 		verify(oldTreasuryRel, never()).setBalance(0);
 	}
 
 	@Test
 	void followsHappyPathWithNewTreasury() {
-		// setup:
-		long oldTreasuryBalance = 1000;
+		final long oldTreasuryBalance = 1000;
 		givenValidTxnCtx(true);
 
 		given(tokenStore.loadToken(any())).willReturn(token);
@@ -364,20 +366,16 @@ class TokenUpdateTransitionLogicTest {
 		given(oldTreasuryRel.getBalance()).willReturn(oldTreasuryBalance);
 		final var newTreasuryRel = mock(TokenRelationship.class);
 		given(tokenStore.loadTokenRelationship(token, newTreasury)).willReturn(newTreasuryRel);
-		// and:
 
-		// when:
 		subject.doStateTransition();
 
-		// then:
 		verify(oldTreasuryRel).setBalance(0);
 		verify(newTreasuryRel).setBalance(oldTreasuryBalance);
 	}
 
 	@Test
 	void followsHappyPathWithNewTreasuryAndZeroBalanceOldTreasury() {
-		// setup:
-		long oldTreasuryBalance = 0;
+		final long oldTreasuryBalance = 0;
 		givenValidTxnCtx(true);
 
 		given(tokenStore.loadToken(any())).willReturn(token);
@@ -397,7 +395,7 @@ class TokenUpdateTransitionLogicTest {
 				.willReturn(newTreasury);
 		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(newAutoRenew)), any()))
 				.willReturn(mock(Account.class));
-		
+
 		given(treasuryAssociatedTokens.contains(any(Id.class))).willReturn(true);
 		given(oldTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokens);
 		given(newTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokens);
@@ -408,10 +406,8 @@ class TokenUpdateTransitionLogicTest {
 		final var newTreasuryRel = mock(TokenRelationship.class);
 		given(tokenStore.loadTokenRelationship(token, newTreasury)).willReturn(newTreasuryRel);
 
-		// when:
 		subject.doStateTransition();
 
-		// then:
 		verify(oldTreasuryRel, never()).setBalance(0);
 		verify(newTreasuryRel, never()).setBalance(oldTreasuryBalance);
 		verify(newTreasuryRel).changeFrozenState(anyBoolean());
@@ -420,8 +416,7 @@ class TokenUpdateTransitionLogicTest {
 
 	@Test
 	void followsHappyPathNftWithNewTreasury() {
-		// setup:
-		long oldTreasuryBalance = 1;
+		final long oldTreasuryBalance = 1;
 		givenValidTxnCtx(true);
 
 		given(tokenStore.loadToken(any())).willReturn(token);
@@ -448,7 +443,7 @@ class TokenUpdateTransitionLogicTest {
 		given(treasuryAssociatedTokens.contains(any(Id.class))).willReturn(true);
 		given(oldTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokens);
 		given(newTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokens);
-		
+
 		final var oldTreasuryRel = mock(TokenRelationship.class);
 		given(tokenStore.loadTokenRelationship(token, oldTreasury)).willReturn(oldTreasuryRel);
 		given(oldTreasuryRel.getBalance()).willReturn(oldTreasuryBalance);
@@ -456,10 +451,9 @@ class TokenUpdateTransitionLogicTest {
 		final var newTreasuryRel = mock(TokenRelationship.class);
 		given(tokenStore.loadTokenRelationship(token, newTreasury)).willReturn(newTreasuryRel);
 		given(newTreasuryRel.getAccount()).willReturn(newTreasury);
-		// when:
+
 		subject.doStateTransition();
 
-		// then:
 		verify(oldTreasury).setOwnedNfts(0);
 		verify(newTreasury).setOwnedNfts(1);
 		verify(oldTreasuryRel).setBalance(0);
@@ -469,8 +463,6 @@ class TokenUpdateTransitionLogicTest {
 	@Test
 	void doesntGrantKycOrUnfreezeNewTreasuryIfNoKeyIsPresent() {
 		givenValidTxnCtx(true);
-		// and:
-
 		given(tokenStore.loadToken(any())).willReturn(token);
 		given(token.hasAdminKey()).willReturn(true);
 		given(token.getTreasury()).willReturn(oldTreasury);
@@ -492,7 +484,6 @@ class TokenUpdateTransitionLogicTest {
 		given(treasuryAssociatedTokens.contains(any(Id.class))).willReturn(true);
 		given(oldTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokens);
 		given(newTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokens);
-		// when:
 		final var oldTreasuryRel = mock(TokenRelationship.class);
 		given(tokenStore.loadTokenRelationship(token, oldTreasury)).willReturn(oldTreasuryRel);
 		given(oldTreasuryRel.getAccount()).willReturn(oldTreasury);
@@ -502,17 +493,14 @@ class TokenUpdateTransitionLogicTest {
 
 		subject.doStateTransition();
 
-		// then:
 		verify(newTreasuryRel, never()).changeFrozenState(anyBoolean());
 		verify(newTreasuryRel, never()).changeKycState(anyBoolean());
-		// and:
 	}
 
 	@Test
 	void hasCorrectApplicability() {
 		givenValidTxnCtx();
 
-		// expect:
 		assertTrue(subject.applicability().test(tokenUpdateTxn));
 		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
 	}
@@ -521,7 +509,6 @@ class TokenUpdateTransitionLogicTest {
 	void acceptsValidTxn() {
 		givenValidTxnCtx();
 
-		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(tokenUpdateTxn));
 	}
 
@@ -529,7 +516,6 @@ class TokenUpdateTransitionLogicTest {
 	void rejectsExcessiveMemo() {
 		givenValidTxnCtx();
 
-		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(tokenUpdateTxn));
 	}
 
@@ -537,7 +523,6 @@ class TokenUpdateTransitionLogicTest {
 	void rejectsMissingToken() {
 		givenMissingToken();
 
-		// expect:
 		assertEquals(INVALID_TOKEN_ID, subject.semanticCheck().apply(tokenUpdateTxn));
 	}
 
@@ -546,7 +531,6 @@ class TokenUpdateTransitionLogicTest {
 		givenValidTxnCtx();
 		given(validator.tokenSymbolCheck(any())).willReturn(TOKEN_SYMBOL_TOO_LONG);
 
-		// expect:
 		assertEquals(TOKEN_SYMBOL_TOO_LONG, subject.semanticCheck().apply(tokenUpdateTxn));
 	}
 
@@ -555,7 +539,6 @@ class TokenUpdateTransitionLogicTest {
 		givenValidTxnCtx();
 		given(validator.tokenSymbolCheck(any())).willReturn(INVALID_TOKEN_SYMBOL);
 
-		// expect:
 		assertEquals(INVALID_TOKEN_SYMBOL, subject.semanticCheck().apply(tokenUpdateTxn));
 	}
 
@@ -564,7 +547,6 @@ class TokenUpdateTransitionLogicTest {
 		givenValidTxnCtx();
 		given(validator.tokenNameCheck(any())).willReturn(TOKEN_SYMBOL_TOO_LONG);
 
-		// expect:
 		assertEquals(TOKEN_SYMBOL_TOO_LONG, subject.semanticCheck().apply(tokenUpdateTxn));
 	}
 
@@ -572,7 +554,6 @@ class TokenUpdateTransitionLogicTest {
 	void rejectsInvalidAdminKey() {
 		givenInvalidAdminKey();
 
-		// expect:
 		assertEquals(INVALID_ADMIN_KEY, subject.semanticCheck().apply(tokenUpdateTxn));
 	}
 
@@ -580,7 +561,6 @@ class TokenUpdateTransitionLogicTest {
 	void rejectsInvalidKycKey() {
 		givenInvalidKycKey();
 
-		// expect:
 		assertEquals(INVALID_KYC_KEY, subject.semanticCheck().apply(tokenUpdateTxn));
 	}
 
@@ -588,7 +568,6 @@ class TokenUpdateTransitionLogicTest {
 	void rejectsInvalidWipeKey() {
 		givenInvalidWipeKey();
 
-		// expect:
 		assertEquals(INVALID_WIPE_KEY, subject.semanticCheck().apply(tokenUpdateTxn));
 	}
 
@@ -596,7 +575,6 @@ class TokenUpdateTransitionLogicTest {
 	void rejectsInvalidSupplyKey() {
 		givenInvalidSupplyKey();
 
-		// expect:
 		assertEquals(INVALID_SUPPLY_KEY, subject.semanticCheck().apply(tokenUpdateTxn));
 	}
 
@@ -605,7 +583,6 @@ class TokenUpdateTransitionLogicTest {
 		givenValidTxnCtx();
 		given(validator.memoCheck(any())).willReturn(INVALID_ZERO_BYTE_IN_STRING);
 
-		// expect:
 		assertEquals(INVALID_ZERO_BYTE_IN_STRING, subject.semanticCheck().apply(tokenUpdateTxn));
 	}
 
@@ -613,18 +590,16 @@ class TokenUpdateTransitionLogicTest {
 	void rejectsInvalidFreezeKey() {
 		givenInvalidFreezeKey();
 
-		// expect:
 		assertEquals(INVALID_FREEZE_KEY, subject.semanticCheck().apply(tokenUpdateTxn));
 	}
 
 	@Test
 	void rejectsTreasuryUpdateIfNonzeroBalanceForUnique() {
-		// setup:
+		final long oldTreasuryBalance = 1;
 		subject = new TokenUpdateTransitionLogic(
 				false, validator, txnCtx, tokenStore, accountStore);
 
 		givenValidTxnCtx(true);
-		long oldTreasuryBalance = 1;
 
 		given(tokenStore.loadToken(any())).willReturn(token);
 		given(token.hasAdminKey()).willReturn(true);
@@ -652,7 +627,6 @@ class TokenUpdateTransitionLogicTest {
 
 		assertFailsWith(() -> subject.doStateTransition(), CURRENT_TREASURY_STILL_OWNS_NFTS);
 
-		// and when:
 		given(newTreasuryRel.getBalance()).willReturn(1L);
 
 		assertFailsWith(() -> subject.doStateTransition(), TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
@@ -734,7 +708,7 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	private void givenValidTxnCtx(boolean withNewTreasury, boolean useDuplicateTreasury) {
-		var builder = TransactionBody.newBuilder()
+		final var builder = TransactionBody.newBuilder()
 				.setTokenUpdate(TokenUpdateTransactionBody.newBuilder()
 						.setSymbol(symbol)
 						.setAutoRenewAccount(newAutoRenew)

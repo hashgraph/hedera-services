@@ -151,6 +151,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 				!changes.hasWipeKey() &&
 				!changes.hasFreezeKey() &&
 				!changes.hasSupplyKey() &&
+				!changes.hasPauseKey() &&
 				!changes.hasFeeScheduleKey() &&
 				!changes.hasTreasury() &&
 				!changes.hasAutoRenewAccount() &&
@@ -262,7 +263,8 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 				op.hasWipeKey(), op.getWipeKey(),
 				op.hasSupplyKey(), op.getSupplyKey(),
 				op.hasFreezeKey(), op.getFreezeKey(),
-				op.hasFeeScheduleKey(), op.getFeeScheduleKey());
+				op.hasFeeScheduleKey(), op.getFeeScheduleKey(),
+				op.hasPauseKey(), op.getPauseKey());
 
 		return validity;
 	}

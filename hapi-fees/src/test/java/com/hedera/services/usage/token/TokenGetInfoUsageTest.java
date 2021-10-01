@@ -59,12 +59,13 @@ class TokenGetInfoUsageTest {
 				.givenCurrentWipeKey(aKey)
 				.givenCurrentKycKey(aKey)
 				.givenCurrentSupplyKey(aKey)
+				.givenCurrentPauseKey(aKey)
 				.givenCurrentlyUsingAutoRenewAccount()
 				.givenCurrentName(name)
 				.givenCurrentMemo(memo)
 				.givenCurrentSymbol(symbol);
 		// and:
-		var expectedKeyBytes = 5 * FeeBuilder.getAccountKeyStorageSize(aKey.get());
+		var expectedKeyBytes = 6 * FeeBuilder.getAccountKeyStorageSize(aKey.get());
 		var expectedBytes = BASIC_QUERY_RES_HEADER
 				+ expectedKeyBytes
 				+ TOKEN_ENTITY_SIZES.totalBytesInTokenReprGiven(symbol, name)

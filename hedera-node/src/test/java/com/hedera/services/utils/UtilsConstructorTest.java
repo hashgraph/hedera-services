@@ -26,13 +26,21 @@ import com.hedera.services.contracts.execution.DomainUtils;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
 import com.hedera.services.exceptions.ValidationUtils;
 import com.hedera.services.fees.calculation.FeeCalcUtils;
+import com.hedera.services.fees.calculation.consensus.ConsensusFeesModule;
+import com.hedera.services.fees.calculation.contract.ContractFeesModule;
+import com.hedera.services.fees.calculation.crypto.CryptoFeesModule;
+import com.hedera.services.fees.calculation.file.FileFeesModule;
 import com.hedera.services.fees.calculation.meta.FixedUsageEstimates;
+import com.hedera.services.fees.calculation.schedule.ScheduleFeesModule;
+import com.hedera.services.fees.calculation.token.TokenFeesModule;
 import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.grpc.marshalling.AdjustmentUtils;
 import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.HederaKeyTraversal;
+import com.hedera.services.keys.KeysModule;
 import com.hedera.services.keys.RevocationServiceCharacteristics;
 import com.hedera.services.keys.StandardSyncActivationCheck;
+import com.hedera.services.queries.QueriesModule;
 import com.hedera.services.sigs.HederaToPlatformSigOps;
 import com.hedera.services.sigs.PlatformSigOps;
 import com.hedera.services.sigs.factories.PlatformSigFactory;
@@ -48,9 +56,18 @@ import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stats.ServicesStatsConfig;
 import com.hedera.services.store.models.TokenConversion;
+import com.hedera.services.stats.StatsModule;
 import com.hedera.services.store.tokens.views.utils.GrpcUtils;
+import com.hedera.services.throttling.ThrottlingModule;
+import com.hedera.services.txns.contract.ConsensusLogicModule;
+import com.hedera.services.txns.contract.ContractLogicModule;
+import com.hedera.services.txns.crypto.CryptoLogicModule;
+import com.hedera.services.txns.file.FileLogicModule;
+import com.hedera.services.txns.network.NetworkLogicModule;
+import com.hedera.services.txns.schedule.ScheduleLogicModule;
 import com.hedera.services.txns.submission.PresolvencyFlaws;
 import com.hedera.services.txns.submission.SubmissionModule;
+import com.hedera.services.txns.token.TokenLogicModule;
 import com.hedera.services.txns.token.TokenOpsValidator;
 import com.hedera.services.txns.token.process.NewRels;
 import com.hedera.services.txns.validation.PureValidation;
@@ -107,8 +124,25 @@ class UtilsConstructorTest {
 			MiscUtils.class,
 			MetadataMapFactory.class,
 			TokenOpsValidator.class,
+			SubmissionModule.class,
+			ConsensusFeesModule.class,
+			ContractFeesModule.class,
+			CryptoFeesModule.class,
+			FileFeesModule.class,
+			ScheduleFeesModule.class,
+			TokenFeesModule.class,
+			KeysModule.class,
+			QueriesModule.class,
+			StatsModule.class,
+			ThrottlingModule.class,
+			ConsensusLogicModule.class,
+			ContractLogicModule.class,
+			CryptoLogicModule.class,
+			FileLogicModule.class,
+			NetworkLogicModule.class,
+			ScheduleLogicModule.class,
 			TokenConversion.class,
-			SubmissionModule.class
+			TokenLogicModule.class
 	));
 
 	@Test
