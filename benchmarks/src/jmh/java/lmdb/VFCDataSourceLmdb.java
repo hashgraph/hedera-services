@@ -168,6 +168,11 @@ public final class VFCDataSourceLmdb<K extends VirtualKey, V extends VirtualValu
         }
     }
 
+    @Override
+    public void snapshot(Path path) throws IOException {
+
+    }
+
     /**
      * Load hash for a leaf node with given path
      *
