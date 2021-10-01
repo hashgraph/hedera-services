@@ -25,9 +25,9 @@ import com.hederahashgraph.api.proto.java.SemanticVersion;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
@@ -53,14 +53,15 @@ public final class SemanticVersions {
 
 	private AtomicReference<ActiveVersions> knownActive = new AtomicReference<>(null);
 
-	public Optional<ActiveVersions> getDeployed() {
-		return Optional.ofNullable(knownActive.get())
-				.or(() -> Optional.ofNullable(fromResource(
-						versionInfoResource,
-						HAPI_VERSION_KEY,
-						HEDERA_VERSION_KEY)));
+	@Nonnull
+	public ActiveVersions getDeployed() {
+		if (null != knownActive.get()) {
+			return knownActive.get();
+		}
+		return fromResource(versionInfoResource, HAPI_VERSION_KEY, HEDERA_VERSION_KEY);
 	}
 
+	@Nonnull
 	ActiveVersions fromResource(final String propertiesFile, final String protoKey, final String servicesKey) {
 		try (final var in = GetVersionInfoAnswer.class.getClassLoader().getResourceAsStream(propertiesFile)) {
 			final var props = new Properties();

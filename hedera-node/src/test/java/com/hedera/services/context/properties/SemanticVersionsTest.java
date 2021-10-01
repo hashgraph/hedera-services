@@ -115,7 +115,7 @@ class SemanticVersionsTest {
 	void recognizesAvailableResource() {
 		subject.setVersionInfoResource("frozen-semantic-version.properties");
 
-		final var versions = subject.getDeployed().get();
+		final var versions = subject.getDeployed();
 
 		assertEquals(FROZEN_PROTO_SEMVER, versions.protoSemVer());
 		assertEquals(FROZEN_SERVICES_SEMVER, versions.hederaSemVer());
