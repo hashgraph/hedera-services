@@ -20,7 +20,6 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
-import com.hedera.services.queries.meta.GetVersionInfoAnswer;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -63,7 +62,7 @@ public final class SemanticVersions {
 
 	@Nonnull
 	ActiveVersions fromResource(final String propertiesFile, final String protoKey, final String servicesKey) {
-		try (final var in = GetVersionInfoAnswer.class.getClassLoader().getResourceAsStream(propertiesFile)) {
+		try (final var in = SemanticVersions.class.getClassLoader().getResourceAsStream(propertiesFile)) {
 			final var props = new Properties();
 			props.load(in);
 			log.info("Discovered semantic versions {} from resource '{}'", props, propertiesFile);
