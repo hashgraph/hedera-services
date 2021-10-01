@@ -46,8 +46,10 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeSch
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenPause;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 
 @Module
@@ -144,6 +146,20 @@ public final class TokenLogicModule {
 	@FunctionKey(TokenDissociateFromAccount)
 	public static List<TransitionLogic> provideTokenDissocLogic(final TokenDissociateTransitionLogic tokenDissocLogic) {
 		return List.of(tokenDissocLogic);
+	}
+
+	@Provides
+	@IntoMap
+	@FunctionKey(TokenPause)
+	public static List<TransitionLogic> provideTokenPauseLogic(TokenPauseTransitionLogic tokenPauseLogic) {
+		return List.of(tokenPauseLogic);
+	}
+
+	@Provides
+	@IntoMap
+	@FunctionKey(TokenUnpause)
+	public static List<TransitionLogic> provideTokenUnpauseLogic(TokenUnpauseTransitionLogic tokenUnpauseLogic) {
+		return List.of(tokenUnpauseLogic);
 	}
 
 	@Provides

@@ -103,8 +103,10 @@ import com.hederahashgraph.api.proto.java.TokenGetNftInfoQuery;
 import com.hederahashgraph.api.proto.java.TokenGetNftInfosQuery;
 import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenPauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -155,8 +157,10 @@ import static com.hedera.services.utils.MiscUtils.TOKEN_FEE_SCHEDULE_UPDATE_METR
 import static com.hedera.services.utils.MiscUtils.TOKEN_FREEZE_METRIC;
 import static com.hedera.services.utils.MiscUtils.TOKEN_GRANT_KYC_METRIC;
 import static com.hedera.services.utils.MiscUtils.TOKEN_MINT_METRIC;
+import static com.hedera.services.utils.MiscUtils.TOKEN_PAUSE_METRIC;
 import static com.hedera.services.utils.MiscUtils.TOKEN_REVOKE_KYC_METRIC;
 import static com.hedera.services.utils.MiscUtils.TOKEN_UNFREEZE_METRIC;
+import static com.hedera.services.utils.MiscUtils.TOKEN_UNPAUSE_METRIC;
 import static com.hedera.services.utils.MiscUtils.TOKEN_UPDATE_METRIC;
 import static com.hedera.services.utils.MiscUtils.TOKEN_WIPE_ACCOUNT_METRIC;
 import static com.hedera.services.utils.MiscUtils.activeHeaderFrom;
@@ -229,8 +233,10 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreeze
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenPause;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
@@ -512,6 +518,8 @@ class MiscUtilsTest {
 			put("TokenWipe", new BodySetter<>(TokenWipeAccountTransactionBody.class));
 			put("TokenAssociate", new BodySetter<>(TokenAssociateTransactionBody.class));
 			put("TokenDissociate", new BodySetter<>(TokenDissociateTransactionBody.class));
+			put("TokenUnpause", new BodySetter<>(TokenUnpauseTransactionBody.class));
+			put("TokenPause", new BodySetter<>(TokenPauseTransactionBody.class));
 			put("ScheduleDelete", new BodySetter<>(ScheduleDeleteTransactionBody.class));
 		}};
 
@@ -573,6 +581,8 @@ class MiscUtilsTest {
 			put(TOKEN_ASSOCIATE_METRIC, new BodySetter<>(TokenAssociateTransactionBody.class));
 			put(TOKEN_DISSOCIATE_METRIC, new BodySetter<>(TokenDissociateTransactionBody.class));
 			put(TOKEN_FEE_SCHEDULE_UPDATE_METRIC, new BodySetter<>(TokenFeeScheduleUpdateTransactionBody.class));
+			put(TOKEN_UNPAUSE_METRIC, new BodySetter<>(TokenUnpauseTransactionBody.class));
+			put(TOKEN_PAUSE_METRIC, new BodySetter<>(TokenPauseTransactionBody.class));
 			put(SCHEDULE_CREATE_METRIC, new BodySetter<>(ScheduleCreateTransactionBody.class));
 			put(SCHEDULE_SIGN_METRIC, new BodySetter<>(ScheduleSignTransactionBody.class));
 			put(SCHEDULE_DELETE_METRIC, new BodySetter<>(ScheduleDeleteTransactionBody.class));
@@ -697,6 +707,8 @@ class MiscUtilsTest {
 			put(TokenAccountWipe, new BodySetter<>(TokenWipeAccountTransactionBody.class));
 			put(TokenAssociateToAccount, new BodySetter<>(TokenAssociateTransactionBody.class));
 			put(TokenDissociateFromAccount, new BodySetter<>(TokenDissociateTransactionBody.class));
+			put(TokenUnpause, new BodySetter<>(TokenUnpauseTransactionBody.class));
+			put(TokenPause, new BodySetter<>(TokenPauseTransactionBody.class));
 			put(ScheduleCreate, new BodySetter<>(ScheduleCreateTransactionBody.class));
 			put(ScheduleSign, new BodySetter<>(ScheduleSignTransactionBody.class));
 			put(ScheduleDelete, new BodySetter<>(ScheduleDeleteTransactionBody.class));
