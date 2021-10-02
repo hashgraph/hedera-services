@@ -50,9 +50,12 @@ import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ONLY;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_UPGRADE;
 import static com.hederahashgraph.api.proto.java.FreezeType.PREPARE_UPGRADE;
 import static com.hederahashgraph.api.proto.java.FreezeType.TELEMETRY_UPGRADE;
+import static com.hederahashgraph.api.proto.java.FreezeType.UNKNOWN_FREEZE_TYPE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_ALREADY_SCHEDULED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_START_TIME_MUST_BE_FUTURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_UPDATE_FILE_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_UPGRADE_IN_PROGRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_FREEZE_IS_SCHEDULED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_UPGRADE_HAS_BEEN_PREPARED;
@@ -95,6 +98,40 @@ class FreezeTransitionLogicTest {
 	@BeforeEach
 	private void setup() {
 		subject = new FreezeTransitionLogic(upgradeActions, txnCtx, () -> specialFiles, () -> networkCtx);
+	}
+
+	@Test
+	void rejectsPostConsensusTelemetryUpgradeWithInvalidTime() {
+		givenTypicalTxnInCtx(true, TELEMETRY_UPGRADE, Optional.empty(), Optional.empty());
+		given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME.plusSeconds(Integer.MAX_VALUE));
+
+		assertFailsWith(() -> subject.doStateTransition(), FREEZE_START_TIME_MUST_BE_FUTURE);
+	}
+
+	@Test
+	void rejectsPostConsensusTelemetryUpgradeWithAlreadyScheduledFreeze() {
+		givenTypicalTxnInCtx(true, TELEMETRY_UPGRADE, Optional.empty(), Optional.empty());
+		given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME);
+		given(upgradeActions.isFreezeScheduled()).willReturn(true);
+
+		assertFailsWith(() -> subject.doStateTransition(), FREEZE_ALREADY_SCHEDULED);
+	}
+
+	@Test
+	void rejectsPostConsensusTelemetryUpgradeWithAlreadyPreparedUpgrade() {
+		givenTypicalTxnInCtx(true, TELEMETRY_UPGRADE, Optional.empty(), Optional.empty());
+		given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME);
+		given(networkCtx.hasPreparedUpgrade()).willReturn(true);
+
+		assertFailsWith(() -> subject.doStateTransition(), FREEZE_UPGRADE_IN_PROGRESS);
+	}
+
+	@Test
+	void rejectsPostConsensusTelemetryUpgradeWithMismatchedHash() {
+		givenTypicalTxnInCtx(true, TELEMETRY_UPGRADE, Optional.of(CANONICAL_FILE), Optional.of(PRETEND_HASH));
+		given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME);
+
+		assertFailsWith(() -> subject.doStateTransition(), FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
 	}
 
 	@Test
@@ -189,7 +226,7 @@ class FreezeTransitionLogicTest {
 
 		subject.doStateTransition();
 
-		verify(upgradeActions).prepareUpgradeNow(PRETEND_ARCHIVE);
+		verify(upgradeActions).extractNow(PRETEND_ARCHIVE);
 		verify(networkCtx).recordPreparedUpgrade(freezeTxn.getFreeze());
 	}
 
@@ -199,6 +236,13 @@ class FreezeTransitionLogicTest {
 
 		assertTrue(subject.applicability().test(freezeTxn));
 		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
+	}
+
+	@Test
+	void mustHaveValidTypeSetExplicitly() {
+		givenTypicalTxn(true, UNKNOWN_FREEZE_TYPE, Optional.empty(), Optional.empty());
+
+		assertEquals(INVALID_FREEZE_TRANSACTION_BODY, subject.semanticCheck().apply(freezeTxn));
 	}
 
 	@Test
@@ -248,6 +292,20 @@ class FreezeTransitionLogicTest {
 	}
 
 	@Test
+	void telemetryUpgradePrecheckRejectsInvalidTime() {
+		givenTypicalTxn(false, TELEMETRY_UPGRADE, Optional.empty(), Optional.empty());
+
+		assertEquals(FREEZE_START_TIME_MUST_BE_FUTURE, subject.semanticCheck().apply(freezeTxn));
+	}
+
+	@Test
+	void telemetryUpgradePrecheckRejectsImpossibleFile() {
+		givenTypicalTxn(true, TELEMETRY_UPGRADE, Optional.of(ILLEGAL_FILE), Optional.empty());
+
+		assertEquals(FREEZE_UPDATE_FILE_DOES_NOT_EXIST, subject.semanticCheck().apply(freezeTxn));
+	}
+
+	@Test
 	void freezeOnlyPrecheckAcceptsGivenValidTime() {
 		givenTypicalTxn(true, FREEZE_ONLY, Optional.empty(), Optional.empty());
 
@@ -280,13 +338,6 @@ class FreezeTransitionLogicTest {
 	@Test
 	void abortPrecheckAcceptsWhatever() {
 		givenTypicalTxn(false, FREEZE_ABORT, Optional.empty(), Optional.of(PRETEND_HASH));
-
-		assertEquals(OK, subject.semanticCheck().apply(freezeTxn));
-	}
-
-	@Test
-	void telemetryPrecheckAcceptsWhatever() {
-		givenTypicalTxn(false, TELEMETRY_UPGRADE, Optional.empty(), Optional.of(PRETEND_HASH));
 
 		assertEquals(OK, subject.semanticCheck().apply(freezeTxn));
 	}

@@ -29,7 +29,7 @@ import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 
 public class CryptoCreatePerfSuite extends LoadTest {
@@ -68,7 +68,7 @@ public class CryptoCreatePerfSuite extends LoadTest {
 								)
 						)
 				).then(
-						freeze().payingWith(GENESIS).startingIn(60).seconds()
+						freezeOnly().payingWith(GENESIS).startingIn(60).seconds()
 				);
 	}
 

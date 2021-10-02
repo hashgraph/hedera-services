@@ -38,6 +38,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static com.hederahashgraph.api.proto.java.FreezeType.UNKNOWN_FREEZE_TYPE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
 import static com.swirlds.common.CommonUtils.hex;
 import static java.time.temporal.ChronoUnit.MINUTES;
@@ -60,6 +61,7 @@ public class HapiFreeze extends HapiTxnOp<HapiFreeze> {
 	private FreezeType action;
 
 	public HapiFreeze() {
+		this(UNKNOWN_FREEZE_TYPE);
 	}
 
 	public HapiFreeze(FreezeType action) {

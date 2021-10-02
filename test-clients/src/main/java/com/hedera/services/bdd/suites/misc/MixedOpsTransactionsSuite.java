@@ -41,7 +41,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
 
@@ -119,7 +119,7 @@ public class MixedOpsTransactionsSuite extends HapiApiSuite {
 										.withEntityMemo("This is the " + i + "th scheduled txn.")
 						).toArray(HapiSpecOperation[]::new)
 				).then(
-						freeze().payingWith(GENESIS)
+						freezeOnly().payingWith(GENESIS)
 								.startingIn(60).seconds()
 				);
 	}

@@ -58,7 +58,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	static final int RELEASE_0140_VERSION = 3;
 	static final int RELEASE_0150_VERSION = 4;
 	static final int RELEASE_0190_VERSION = 5;
-	static final int CURRENT_VERSION = RELEASE_0150_VERSION;
+	static final int CURRENT_VERSION = RELEASE_0190_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d4aa0f0a968a9f3L;
 	static final Instant[] NO_CONGESTION_STARTS = new Instant[0];
 	static final DeterministicThrottle.UsageSnapshot[] NO_SNAPSHOTS = new DeterministicThrottle.UsageSnapshot[0];

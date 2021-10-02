@@ -118,6 +118,7 @@ import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ABORT;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ONLY;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_UPGRADE;
 import static com.hederahashgraph.api.proto.java.FreezeType.PREPARE_UPGRADE;
+import static com.hederahashgraph.api.proto.java.FreezeType.TELEMETRY_UPGRADE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED;
@@ -133,6 +134,10 @@ public class UtilVerbs {
 
 	public static HapiFreeze prepareUpgrade() {
 		return new HapiFreeze(PREPARE_UPGRADE);
+	}
+
+	public static HapiFreeze telemetryUpgrade() {
+		return new HapiFreeze(TELEMETRY_UPGRADE);
 	}
 
 	public static HapiFreeze freezeOnly() {

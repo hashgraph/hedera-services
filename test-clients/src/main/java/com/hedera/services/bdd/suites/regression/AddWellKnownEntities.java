@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.expectedEntitiesExist;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 
 public class AddWellKnownEntities extends HapiApiSuite {
@@ -60,7 +60,7 @@ public class AddWellKnownEntities extends HapiApiSuite {
 						expectedEntitiesExist()
 				).when().then(
 						sleepFor(10_000L),
-						freeze().startingIn(60).seconds()
+						freezeOnly().startingIn(60).seconds()
 								.payingWith(GENESIS)
 				);
 	}

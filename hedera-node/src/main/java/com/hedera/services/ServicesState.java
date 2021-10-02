@@ -96,6 +96,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	/* Only needed for to support migration from a 0.17.x state */
 	private Platform platformForDeferredInit;
 	private AddressBook addressBookForDeferredInit;
+	private SwirldDualState dualStateForDeferredInit;
 
 	public ServicesState() {
 		/* RuntimeConstructable */
@@ -233,17 +234,18 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			blobMigrationFlag.accept(false);
 			log.info("Finished with FCMap -> MerkleMap migrations, completing the deferred init");
 
-			init(getPlatformForDeferredInit(), getAddressBookForDeferredInit());
+			init(getPlatformForDeferredInit(), getAddressBookForDeferredInit(), getDualStateForDeferredInit());
 		}
 	}
 
 	/* --- SwirldState --- */
 	@Override
-	public void init(Platform platform, AddressBook addressBook) {
+	public void init(final Platform platform, final AddressBook addressBook, final SwirldDualState dualState) {
 		if (deserializedVersion < StateVersions.RELEASE_0180_VERSION && platform != platformForDeferredInit) {
 			/* Due to design issues with the BinaryObjectStore, which will not be finished
 			initializing here, we need to defer initialization until post-FCM migration. */
 			platformForDeferredInit = platform;
+			dualStateForDeferredInit = dualState;
 			addressBookForDeferredInit = addressBook;
 			log.info("Deferring init for 0.17.x -> 0.18.x upgrade on Services node {}", platform.getSelfId());
 			return;
@@ -254,11 +256,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		/* Immediately override the address book from the saved state */
 		setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
 
-		internalInit(platform, new BootstrapProperties());
+		internalInit(platform, new BootstrapProperties(), dualState);
 	}
 
 	@Override
-	public void genesisInit(Platform platform, AddressBook addressBook) {
+	public void genesisInit(Platform platform, AddressBook addressBook, final SwirldDualState dualState) {
 		log.info("Init called on Services node {} WITHOUT Merkle saved state", platform.getSelfId());
 
 		/* Create the top-level children in the Merkle tree */
@@ -266,7 +268,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		final var seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
 		createGenesisChildren(addressBook, seqStart);
 
-		internalInit(platform, bootstrapProps);
+		internalInit(platform, bootstrapProps, dualState);
 	}
 
 	@Override
@@ -412,7 +414,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return metadata.getUniqueTreasuryOwnershipAssociations();
 	}
 
-	private void internalInit(Platform platform, BootstrapProperties bootstrapProps) {
+	private void internalInit(
+			final Platform platform,
+			final BootstrapProperties bootstrapProps,
+			final SwirldDualState dualState
+	) {
 		final var selfId = platform.getSelfId().getId();
 
 		ServicesApp app;
@@ -427,6 +433,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 					.build();
 			APPS.save(selfId, app);
 		}
+		app.dualStateAccessor().setDualState(dualState);
+		log.info("Dual state includes freeze time={} and last frozen={}",
+				dualState.getFreezeTime(),
+				dualState.getLastFrozenTime());
 
 		final var stateVersion = networkCtx().getStateVersion();
 		if (stateVersion > StateVersions.CURRENT_VERSION) {
@@ -459,6 +469,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	AddressBook getAddressBookForDeferredInit() {
 		return addressBookForDeferredInit;
+	}
+
+	SwirldDualState getDualStateForDeferredInit() {
+		return dualStateForDeferredInit;
 	}
 
 	void createGenesisChildren(AddressBook addressBook, long seqStart) {

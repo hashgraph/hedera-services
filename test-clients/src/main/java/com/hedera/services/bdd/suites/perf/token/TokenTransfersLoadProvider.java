@@ -55,7 +55,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
@@ -109,7 +109,7 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 						// The freeze and long wait after freeze means to keep the server in MAINTENANCE state till test
 						// end to prevent it from making new export files that may cause account balances validator to
 						// be inconsistent. The freeze shouldn't cause normal perf test any issue.
-						freeze().payingWith(GENESIS)
+						freezeOnly().payingWith(GENESIS)
 								.startingIn(30).seconds()
 								.hasKnownStatusFrom(SUCCESS, UNKNOWN)
 								.hasAnyPrecheck(),

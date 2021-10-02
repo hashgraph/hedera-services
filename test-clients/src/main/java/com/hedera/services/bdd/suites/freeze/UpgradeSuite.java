@@ -38,10 +38,12 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeAbort;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeUpgrade;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.prepareUpgrade;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.telemetryUpgrade;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_START_TIME_MUST_BE_FUTURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_UPDATE_FILE_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH;
@@ -61,7 +63,8 @@ public class UpgradeSuite extends HapiApiSuite {
 
 	private final byte[] poeticUpgradeHash;
 
-	private final String canonicalUpdateFile = "0.0.150";
+	private final String standardUpdateFile = "0.0.150";
+	private final String standardTelemetryFile = "0.0.159";
 
 	public UpgradeSuite() {
 		try {
@@ -82,16 +85,25 @@ public class UpgradeSuite extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						/* Negative tests */
+						precheckRejectsUnknownFreezeType(),
 						freezeOnlyPrecheckRejectsInvalid(),
 						freezeUpgradeValidationRejectsInvalid(),
 						freezeAbortValidationRejectsInvalid(),
 						freezeUpgradeValidationRejectsInvalid(),
 						prepareUpgradeValidationRejectsInvalid(),
+						telemetryUpgradeValidationRejectsInvalid(),
 
 						/* Happy paths */
 						canFreezeUpgradeWithPreparedUpgrade(),
 				}
 		);
+	}
+
+	private HapiApiSpec precheckRejectsUnknownFreezeType() {
+		return defaultHapiSpec("PrejectRejectsUnknownFreezeType")
+				.given().when().then(
+						freeze().hasPrecheck(INVALID_FREEZE_TRANSACTION_BODY)
+				);
 	}
 
 	private HapiApiSpec freezeOnlyPrecheckRejectsInvalid() {
@@ -130,16 +142,39 @@ public class UpgradeSuite extends HapiApiSuite {
 						cryptoTransfer(tinyBarsFromTo(GENESIS, FREEZE_ADMIN, ONE_HUNDRED_HBARS)),
 						prepareUpgrade().withUpdateFile("0.0.149")
 								.hasPrecheck(FREEZE_UPDATE_FILE_DOES_NOT_EXIST),
-						prepareUpgrade().withUpdateFile(canonicalUpdateFile)
+						prepareUpgrade().withUpdateFile(standardUpdateFile)
 								.hasPrecheck(FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH)
 				).when(
-						fileUpdate(canonicalUpdateFile)
+						fileUpdate(standardUpdateFile)
 								.signedBy(FREEZE_ADMIN)
 								.contents(pragmatism)
 								.payingWith(FREEZE_ADMIN)
 				).then(
 						prepareUpgrade()
-								.withUpdateFile(canonicalUpdateFile)
+								.withUpdateFile(standardUpdateFile)
+								.havingHash(poeticUpgradeHash)
+								.hasKnownStatus(FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH)
+				);
+	}
+
+	private HapiApiSpec telemetryUpgradeValidationRejectsInvalid() {
+		return defaultHapiSpec("TelemetryUpgradeValidationRejectsInvalid")
+				.given(
+						cryptoTransfer(tinyBarsFromTo(GENESIS, FREEZE_ADMIN, ONE_HUNDRED_HBARS)),
+						telemetryUpgrade().startingIn(-60).minutes()
+								.hasPrecheck(FREEZE_START_TIME_MUST_BE_FUTURE),
+						telemetryUpgrade().startingIn(3).minutes().withUpdateFile("0.0.149")
+								.hasPrecheck(FREEZE_UPDATE_FILE_DOES_NOT_EXIST),
+						telemetryUpgrade().startingIn(3).minutes().withUpdateFile(standardTelemetryFile)
+								.hasPrecheck(FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH)
+				).when(
+						fileUpdate(standardTelemetryFile)
+								.signedBy(FREEZE_ADMIN)
+								.contents(pragmatism)
+								.payingWith(FREEZE_ADMIN)
+				).then(
+						telemetryUpgrade().startingIn(3).minutes()
+								.withUpdateFile(standardTelemetryFile)
 								.havingHash(poeticUpgradeHash)
 								.hasKnownStatus(FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH)
 				);
@@ -149,13 +184,13 @@ public class UpgradeSuite extends HapiApiSuite {
 		return defaultHapiSpec("CanFreezeUpgradeWithPreparedUpgrade")
 				.given(
 						cryptoTransfer(tinyBarsFromTo(GENESIS, FREEZE_ADMIN, ONE_HUNDRED_HBARS)),
-						fileUpdate(canonicalUpdateFile)
+						fileUpdate(standardUpdateFile)
 								.signedBy(FREEZE_ADMIN)
 								.path(poeticUpgradeLoc)
 								.payingWith(FREEZE_ADMIN)
 				).when(
 						prepareUpgrade()
-								.withUpdateFile(canonicalUpdateFile)
+								.withUpdateFile(standardUpdateFile)
 								.havingHash(poeticUpgradeHash)
 				).then(
 						freezeUpgrade().startingIn(60).minutes(),

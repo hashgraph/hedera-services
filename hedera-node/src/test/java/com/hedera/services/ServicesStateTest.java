@@ -293,7 +293,6 @@ class ServicesStateTest {
 		assertThat(
 				logCaptor.warnLogs(),
 				contains(Matchers.startsWith("Method expandSignatures called with non-gRPC txn")));
-		;
 	}
 
 	@Test
@@ -403,10 +402,11 @@ class ServicesStateTest {
 	void defersInitWhenInitializingFromRelease0170() {
 		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0170_VERSION);
 
-		subject.init(platform, addressBook);
+		subject.init(platform, addressBook, dualState);
 
 		assertSame(platform, subject.getPlatformForDeferredInit());
 		assertSame(addressBook, subject.getAddressBookForDeferredInit());
+		assertSame(dualState, subject.getDualStateForDeferredInit());
 	}
 
 	@Test
@@ -438,6 +438,7 @@ class ServicesStateTest {
 		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0170_VERSION);
 		given(subject.getPlatformForDeferredInit()).willReturn(platform);
 		given(subject.getAddressBookForDeferredInit()).willReturn(addressBook);
+		given(subject.getDualStateForDeferredInit()).willReturn(dualState);
 
 		subject.migrate();
 
@@ -448,7 +449,7 @@ class ServicesStateTest {
 		verify(fcmMigrator).toMerkleMap(eq(subject), eq(StateChildIndices.ACCOUNTS), any(), any());
 		verify(fcmMigrator).toMerkleMap(eq(subject), eq(StateChildIndices.TOKENS), any(), any());
 		verify(fcmMigrator).toMerkleMap(eq(subject), eq(StateChildIndices.SCHEDULE_TXS), any(), any());
-		verify(subject).init(platform, addressBook);
+		verify(subject).init(platform, addressBook, dualState);
 		assertThat(
 				logCaptor.infoLogs(),
 				contains(
@@ -481,10 +482,11 @@ class ServicesStateTest {
 		// and:
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
+		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
 
 		// when:
-		subject.genesisInit(platform, addressBook);
+		subject.genesisInit(platform, addressBook, dualState);
 
 		// then:
 		assertFalse(subject.isImmutable());
@@ -503,6 +505,7 @@ class ServicesStateTest {
 		assertEquals(1001L, subject.networkCtx().seqNo().current());
 		assertNotNull(subject.specialFiles());
 		// and:
+		verify(dualStateAccessor).setDualState(dualState);
 		verify(initFlow).runWith(subject);
 		verify(appBuilder).bootstrapProps(any());
 		verify(appBuilder).initialState(subject);
@@ -522,12 +525,13 @@ class ServicesStateTest {
 
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
+		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
 		// and:
 		APPS.save(selfId.getId(), app);
 
 		// when:
-		subject.init(platform, addressBook);
+		subject.init(platform, addressBook, dualState);
 
 		// then:
 		assertSame(addressBook, subject.addressBook());
@@ -548,11 +552,12 @@ class ServicesStateTest {
 
 		given(platform.getSelfId()).willReturn(selfId);
 		given(app.systemExits()).willReturn(mockExit);
+		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		// and:
 		APPS.save(selfId.getId(), app);
 
 		// when:
-		subject.init(platform, addressBook);
+		subject.init(platform, addressBook, dualState);
 
 		verify(mockExit).fail(1);
 	}
@@ -566,12 +571,13 @@ class ServicesStateTest {
 
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
+		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
 		// and:
 		APPS.save(selfId.getId(), app);
 
 		// when:
-		subject.init(platform, addressBook);
+		subject.init(platform, addressBook, dualState);
 
 		verify(networkContext).discardPreparedUpgrade();
 	}

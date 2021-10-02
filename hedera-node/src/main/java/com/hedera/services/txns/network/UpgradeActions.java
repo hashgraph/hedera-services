@@ -64,9 +64,12 @@ public class UpgradeActions {
 		writeMarker(NOW_FROZEN_MARKER);
 	}
 
-	public void prepareUpgradeNow(byte[] archiveData) {
+	public void extractNow(byte[] archiveData) {
 		try {
-			unzipAction.unzip(archiveData, dynamicProperties.upgradeArtifactsLoc());
+			final var artifactsLoc = dynamicProperties.upgradeArtifactsLoc();
+			log.info("About to unzip {} bytes into {}", archiveData.length, artifactsLoc);
+			unzipAction.unzip(archiveData, artifactsLoc);
+			log.info("Finished unzipping {} bytes into {}", archiveData.length, artifactsLoc);
 			writeMarker(EXEC_IMMEDIATE_MARKER);
 		} catch (IOException e) {
 			log.error("Failed to unzip archive for NMT consumption", e);
@@ -120,7 +123,7 @@ public class UpgradeActions {
 		}
 
 		final var archiveData = curSpecialFiles.get(upgradeFileId);
-		prepareUpgradeNow(archiveData);
+		extractNow(archiveData);
 	}
 
 	private void catchUpOnMissedFreezeScheduling() {

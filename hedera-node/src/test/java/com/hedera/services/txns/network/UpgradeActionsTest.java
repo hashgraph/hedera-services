@@ -134,7 +134,7 @@ class UpgradeActionsTest {
 		given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
 		willThrow(IOException.class).given(unzipAction).unzip(PRETEND_ARCHIVE, markerFilesLoc);
 
-		subject.prepareUpgradeNow(PRETEND_ARCHIVE);
+		subject.extractNow(PRETEND_ARCHIVE);
 
 		assertThat(
 				logCaptor.errorLogs(),
@@ -152,7 +152,7 @@ class UpgradeActionsTest {
 
 		given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
 
-		subject.prepareUpgradeNow(PRETEND_ARCHIVE);
+		subject.extractNow(PRETEND_ARCHIVE);
 
 		verify(unzipAction).unzip(PRETEND_ARCHIVE, markerFilesLoc);
 		assertMarkerCreated(EXEC_IMMEDIATE_MARKER);

@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.suites.misc.RekeySavedStateTreasury.newTreasuryStartUpAccountLoc;
 
 /**
@@ -59,7 +59,7 @@ public class FreezeRekeyedState extends HapiApiSuite {
 						"startupAccounts.path", newTreasuryStartUpAccountLoc
 				))
 				.given().when().then(
-						freeze().startingIn(60).seconds()
+						freezeOnly().startingIn(60).seconds()
 				);
 	}
 
