@@ -68,7 +68,6 @@ class FileNumbersTest {
 		assertEquals(112, subject.exchangeRates());
 		assertEquals(121, subject.applicationProperties());
 		assertEquals(122, subject.apiPermissions());
-		assertEquals(150, subject.softwareUpdateZip());
 		assertEquals(123, subject.throttleDefinitions());
 		assertEquals(150L, subject.firstSoftwareUpdateFile());
 		assertEquals(159L, subject.lastSoftwareUpdateFile());

@@ -69,11 +69,6 @@ public class MockFileNumbers extends FileNumbers {
 	}
 
 	@Override
-	public long softwareUpdateZip() {
-		return 150;
-	}
-
-	@Override
 	public long firstSoftwareUpdateFile() {
 		return 150;
 	}

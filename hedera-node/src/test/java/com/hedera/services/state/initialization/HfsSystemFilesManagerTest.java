@@ -80,7 +80,7 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.times;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 @ExtendWith(LogCaptureExtension.class)
 class HfsSystemFilesManagerTest {
@@ -310,13 +310,12 @@ class HfsSystemFilesManagerTest {
 
 	@Test
 	void noOpsOnExistingUpdateFeatureFile() {
-		final var file150 = fileNumbers.toFid(fileNumbers.softwareUpdateZip());
-		given(hfs.exists(file150)).willReturn(true);
+		given(hfs.exists(any())).willReturn(true);
 
-		subject.createUpdateZipFileIfMissing();
+		subject.createUpdateFilesIfMissing();
 
 		verify(hfs, never()).getMetadata();
-		verify(hfs, never()).diskFs();
+		verify(hfs, never()).specialFiles();
 		verify(hfs, never()).getData();
 	}
 
@@ -587,20 +586,21 @@ class HfsSystemFilesManagerTest {
 
 	@Test
 	void getsMasterKeyOnlyOnce() {
-		final var file150 = fileNumbers.toFid(fileNumbers.softwareUpdateZip());
+		final var file150 = fileNumbers.toFid(150L);
+		given(hfs.exists(any())).willReturn(true);
 		given(hfs.exists(file150)).willReturn(false);
-		given(diskFs.contains(file150)).willReturn(true);
+		given(specialFiles.contains(any())).willReturn(true);
 		final var keySupplier = mock(Supplier.class);
 		given(keySupplier.get()).willReturn(masterKey);
 		subject = new HfsSystemFilesManager(() -> currentBook, fileNumbers, properties, hfs, keySupplier, callbacks);
 
-		subject.createUpdateZipFileIfMissing();
-		subject.createUpdateZipFileIfMissing();
+		subject.createUpdateFilesIfMissing();
+		subject.createUpdateFilesIfMissing();
 
 		verify(metadata, times(2)).put(
 				argThat(file150::equals),
 				argThat(info -> expectedInfo.toString().equals(info.toString())));
-		verify(diskFs, times(2)).put(file150, new byte[0]);
+		verify(specialFiles, times(2)).update(file150, new byte[0]);
 		verify(keySupplier).get();
 	}
 

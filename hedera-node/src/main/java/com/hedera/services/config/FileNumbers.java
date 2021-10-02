@@ -93,13 +93,6 @@ public class FileNumbers {
 		return apiPermissions;
 	}
 
-	public long softwareUpdateZip() {
-		if (softwareUpdateZip == UNKNOWN_NUMBER) {
-			softwareUpdateZip = properties.getLongProperty("files.softwareUpdateZip");
-		}
-		return softwareUpdateZip;
-	}
-
 	public long firstSoftwareUpdateFile() {
 		if (firstUpdateFile == UNKNOWN_NUMBER) {
 			firstUpdateFile = properties.getEntityNumRange("files.softwareUpdateRange").getLeft();
