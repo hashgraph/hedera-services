@@ -9,9 +9,9 @@ package com.hedera.services.txns.schedule;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,25 +33,33 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDel
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSign;
 
 @Module
-public abstract class ScheduleLogicModule {
+public final class ScheduleLogicModule {
 	@Provides
 	@IntoMap
 	@FunctionKey(ScheduleCreate)
-	public static List<TransitionLogic> provideScheduleCreateLogic(ScheduleCreateTransitionLogic scheduleCreateLogic) {
+	public static List<TransitionLogic> provideScheduleCreateLogic(
+			final ScheduleCreateTransitionLogic scheduleCreateLogic
+	) {
 		return List.of(scheduleCreateLogic);
 	}
 
 	@Provides
 	@IntoMap
 	@FunctionKey(ScheduleSign)
-	public static List<TransitionLogic> provideScheduleSignLogic(ScheduleSignTransitionLogic scheduleSignLogic) {
+	public static List<TransitionLogic> provideScheduleSignLogic(final ScheduleSignTransitionLogic scheduleSignLogic) {
 		return List.of(scheduleSignLogic);
 	}
 
 	@Provides
 	@IntoMap
 	@FunctionKey(ScheduleDelete)
-	public static List<TransitionLogic> provideScheduleDeleteLogic(ScheduleDeleteTransitionLogic scheduleDeleteLogic) {
+	public static List<TransitionLogic> provideScheduleDeleteLogic(
+			final ScheduleDeleteTransitionLogic scheduleDeleteLogic
+	) {
 		return List.of(scheduleDeleteLogic);
+	}
+
+	private ScheduleLogicModule() {
+		throw new UnsupportedOperationException("Dagger2 module");
 	}
 }

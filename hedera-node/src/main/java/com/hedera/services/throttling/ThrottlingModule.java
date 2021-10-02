@@ -9,9 +9,9 @@ package com.hedera.services.throttling;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -32,13 +32,13 @@ import javax.inject.Singleton;
 import java.util.function.Supplier;
 
 @Module
-public abstract class ThrottlingModule {
+public final class ThrottlingModule {
 	@Provides
 	@Singleton
 	@HapiThrottle
 	public static FunctionalityThrottling provideHapiThrottling(
-			Supplier<AddressBook> addressBook,
-			GlobalDynamicProperties dynamicProperties
+			final Supplier<AddressBook> addressBook,
+			final GlobalDynamicProperties dynamicProperties
 	) {
 		final var delegate = new DeterministicThrottling(() -> addressBook.get().getSize(), dynamicProperties);
 		return new HapiThrottling(delegate);
@@ -48,10 +48,14 @@ public abstract class ThrottlingModule {
 	@Singleton
 	@HandleThrottle
 	public static FunctionalityThrottling provideHandleThrottling(
-			TransactionContext txnCtx,
-			GlobalDynamicProperties dynamicProperties
+			final TransactionContext txnCtx,
+			final GlobalDynamicProperties dynamicProperties
 	) {
 		final var delegate = new DeterministicThrottling(() -> 1, dynamicProperties);
 		return new TxnAwareHandleThrottling(txnCtx, delegate);
+	}
+
+	private ThrottlingModule() {
+		throw new UnsupportedOperationException("Dagger2 module");
 	}
 }

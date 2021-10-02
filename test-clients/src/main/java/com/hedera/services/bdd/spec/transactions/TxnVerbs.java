@@ -55,7 +55,9 @@ import com.hedera.services.bdd.spec.transactions.token.HapiTokenFreeze;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenKycGrant;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenKycRevoke;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenMint;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenPause;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenUnfreeze;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenUnpause;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenUpdate;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenWipe;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
@@ -141,6 +143,12 @@ public class TxnVerbs {
 	}
 	public static HapiTokenFeeScheduleUpdate tokenFeeScheduleUpdate(String token) {
 		return new HapiTokenFeeScheduleUpdate(token);
+	}
+	public static HapiTokenPause tokenPause(String token) {
+		return new HapiTokenPause(token);
+	}
+	public static HapiTokenUnpause tokenUnpause(String token) {
+		return new HapiTokenUnpause(token);
 	}
 	public static HapiTokenDelete tokenDelete(String token) {
 		return new HapiTokenDelete(token);

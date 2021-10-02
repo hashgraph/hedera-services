@@ -500,6 +500,7 @@ public interface TxnHandlingScenario {
 	KeyTree TOKEN_SUPPLY_KT = withRoot(ed25519());
 	KeyTree TOKEN_WIPE_KT = withRoot(ed25519());
 	KeyTree TOKEN_KYC_KT = withRoot(ed25519());
+	KeyTree TOKEN_PAUSE_KT = withRoot(ed25519());
 	KeyTree TOKEN_REPLACE_KT = withRoot(ed25519());
 	KeyTree MISC_TOPIC_SUBMIT_KT = withRoot(ed25519());
 	KeyTree MISC_TOPIC_ADMIN_KT = withRoot(ed25519());
