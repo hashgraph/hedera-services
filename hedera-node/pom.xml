@@ -299,6 +299,14 @@
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
+      <id>sdk-staging</id>
+      <name>OSSRH Staging</name>
+      <url>https://oss.sonatype.org/content/repositories/comswirlds-1152</url>
+    </repository>
+    <repository>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
       <id>local-repo-for-swirlds-sdk</id>
       <url>file:${project.basedir}/localSwirldsSDK</url>
     </repository>
