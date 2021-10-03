@@ -25,7 +25,6 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.expiry.EntityAutoRenewal;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.stats.ExecutionTimeTracker;
-import com.hedera.services.txns.network.UpgradeActions;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
@@ -50,7 +49,6 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 @ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class StandardProcessLogicTest {
@@ -60,8 +58,6 @@ class StandardProcessLogicTest {
 
 	@Mock
 	private ExpiryManager expiries;
-	@Mock
-	private UpgradeActions upgradeActions;
 	@Mock
 	private InvariantChecks invariantChecks;
 	@Mock
@@ -89,14 +85,14 @@ class StandardProcessLogicTest {
 	@BeforeEach
 	void setUp() {
 		subject = new StandardProcessLogic(
-				expiries, upgradeActions,
+				expiries,
 				invariantChecks, expandHandleSpan, autoRenewal,
 				txnManager, txnCtx, executionTimeTracker);
 	}
 
 	@Test
 	void happyPathFlowsForNonTriggered() throws InvalidProtocolBufferException {
-		final InOrder inOrder = Mockito.inOrder(expiries, executionTimeTracker, txnManager, autoRenewal, upgradeActions);
+		final InOrder inOrder = Mockito.inOrder(expiries, executionTimeTracker, txnManager, autoRenewal);
 
 		given(expandHandleSpan.accessorFor(swirldTransaction)).willReturn(accessor);
 		given(invariantChecks.holdFor(accessor, consensusNow, member)).willReturn(true);
@@ -105,25 +101,11 @@ class StandardProcessLogicTest {
 		subject.incorporateConsensusTxn(swirldTransaction, consensusNow, member);
 
 		// then:
-		inOrder.verify(upgradeActions).catchUpOnMissedSideEffects();
 		inOrder.verify(expiries).purge(consensusNow.getEpochSecond());
 		inOrder.verify(executionTimeTracker).start();
 		inOrder.verify(txnManager).process(accessor, consensusNow, member);
 		inOrder.verify(executionTimeTracker).stop();
 		inOrder.verify(autoRenewal).execute(consensusNow);
-	}
-
-	@Test
-	void doesntRepeatUpgradeCatchup() throws InvalidProtocolBufferException {
-		given(expandHandleSpan.accessorFor(swirldTransaction)).willReturn(accessor);
-		given(invariantChecks.holdFor(accessor, consensusNow, member)).willReturn(true);
-
-		// when:
-		subject.incorporateConsensusTxn(swirldTransaction, consensusNow, member);
-		subject.incorporateConsensusTxn(swirldTransaction, consensusNow, member);
-
-		// then:
-		verify(upgradeActions, times(1)).catchUpOnMissedSideEffects();
 	}
 
 	@Test

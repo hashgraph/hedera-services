@@ -77,7 +77,13 @@ public class UpgradeActions {
 		return extractNow(archiveData, PREPARE_UPGRADE_DESC, EXEC_IMMEDIATE_MARKER, null);
 	}
 
-	public void scheduleFreezeAt(final Instant freezeTime) {
+	public void scheduleFreezeOnlyAt(final Instant freezeTime) {
+		withNonNullDualState("schedule freeze", ds -> {
+			ds.setFreezeTime(freezeTime);
+		});
+	}
+
+	public void scheduleFreezeUpgradeAt(final Instant freezeTime) {
 		withNonNullDualState("schedule freeze", ds -> {
 			ds.setFreezeTime(freezeTime);
 			writeSecondMarker(FREEZE_SCHEDULED_MARKER, freezeTime);
@@ -129,7 +135,7 @@ public class UpgradeActions {
 	}
 
 	private void catchUpOnMissedFreezeScheduling() {
-		if (isFreezeScheduled()) {
+		if (isFreezeScheduled() && networkCtx.get().hasPreparedUpgrade()) {
 			writeMarker(FREEZE_SCHEDULED_MARKER, dualState.get().getFreezeTime());
 		} else {
 			/* Must be non-null or isFreezeScheduled() would have thrown */

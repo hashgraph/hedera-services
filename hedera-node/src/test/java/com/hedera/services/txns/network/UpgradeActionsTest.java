@@ -132,10 +132,24 @@ class UpgradeActionsTest {
 	}
 
 	@Test
-	void catchesUpOnFreezeScheduleIfInDual() throws IOException {
+	void doesntCatchUpOnFreezeScheduleIfInDualAndNoUpgradeIsPrepared() {
 		rmIfPresent(FREEZE_SCHEDULED_MARKER);
 
 		given(dualState.getFreezeTime()).willReturn(then);
+
+		subject.catchUpOnMissedSideEffects();
+
+		assertFalse(
+				Paths.get(markerFilesLoc, FREEZE_SCHEDULED_MARKER).toFile().exists(),
+				"Should not create " + FREEZE_SCHEDULED_MARKER + " if no upgrade is prepared");
+	}
+
+	@Test
+	void catchesUpOnFreezeScheduleIfInDualAndUpgradeIsPrepared() throws IOException {
+		rmIfPresent(FREEZE_SCHEDULED_MARKER);
+
+		given(dualState.getFreezeTime()).willReturn(then);
+		given(networkCtx.hasPreparedUpgrade()).willReturn(true);
 		given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
 
 		subject.catchUpOnMissedSideEffects();
@@ -228,12 +242,12 @@ class UpgradeActionsTest {
 	}
 
 	@Test
-	void abortsScheduledFreeze() throws IOException {
+	void setsExpectedFreezeAndWritesMarkerForFreezeUpgrade() throws IOException {
 		rmIfPresent(FREEZE_SCHEDULED_MARKER);
 
 		given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
 
-		subject.scheduleFreezeAt(then);
+		subject.scheduleFreezeUpgradeAt(then);
 
 		verify(dualState).setFreezeTime(then);
 
@@ -241,7 +255,20 @@ class UpgradeActionsTest {
 	}
 
 	@Test
-	void schedulesFreeze() throws IOException {
+	void setsExpectedFreezeOnlyForFreezeOnly() {
+		rmIfPresent(FREEZE_SCHEDULED_MARKER);
+
+		subject.scheduleFreezeOnlyAt(then);
+
+		verify(dualState).setFreezeTime(then);
+
+		assertFalse(
+				Paths.get(markerFilesLoc, FREEZE_SCHEDULED_MARKER).toFile().exists(),
+				"Should not create " + FREEZE_SCHEDULED_MARKER + " for FREEZE_ONLY");
+	}
+
+	@Test
+	void nullsOutDualOnAborting() throws IOException {
 		rmIfPresent(FREEZE_ABORTED_MARKER);
 
 		given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);

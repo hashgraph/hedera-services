@@ -196,7 +196,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return specialFiles.hashMatches(fid, preparedUpdateFileHash);
 	}
 
-	public void discardPreparedUpgrade() {
+	public void discardPreparedUpgradeMeta() {
 		throwIfImmutable("Cannot rollback a prepared upgrade on an immutable context");
 		preparedUpdateFileNum = NO_PREPARED_UPDATE_FILE_NUM;
 		preparedUpdateFileHash = NO_PREPARED_UPDATE_FILE_HASH;

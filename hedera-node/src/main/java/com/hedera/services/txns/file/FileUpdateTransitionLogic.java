@@ -9,9 +9,9 @@ package com.hedera.services.txns.file;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,6 +25,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.TieredHederaFs;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -43,6 +44,7 @@ import javax.inject.Singleton;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import static com.hedera.services.files.TieredHederaFs.firstUnsuccessful;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
@@ -52,6 +54,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PREPARED_UPDATE_FILE_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static java.lang.Boolean.TRUE;
@@ -67,23 +70,26 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 	private final EntityNumbers entityNums;
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
+	private final Supplier<MerkleNetworkContext> networkCtx;
 
 	@Inject
 	public FileUpdateTransitionLogic(
-			HederaFs hfs,
-			EntityNumbers entityNums,
-			OptionValidator validator,
-			TransactionContext txnCtx
+			final HederaFs hfs,
+			final EntityNumbers entityNums,
+			final OptionValidator validator,
+			final TransactionContext txnCtx,
+			final Supplier<MerkleNetworkContext> networkCtx
 	) {
 		this.hfs = hfs;
 		this.entityNums = entityNums;
 		this.txnCtx = txnCtx;
 		this.validator = validator;
+		this.networkCtx = networkCtx;
 	}
 
 	@Override
 	public void doStateTransition() {
-		var op = txnCtx.accessor().getTxn().getFileUpdate();
+		final var op = txnCtx.accessor().getTxn().getFileUpdate();
 
 		try {
 			var validity = assessedValidity(op);
@@ -92,14 +98,14 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 				return;
 			}
 
-			var target = op.getFileID();
-			var attr = hfs.getattr(target);
+			final var target = op.getFileID();
+			final var attr = hfs.getattr(target);
 			if (attr.isDeleted()) {
 				txnCtx.setStatus(FILE_DELETED);
 				return;
 			}
 
-			if(!isAuthorizedToProcessFile(op, attr, target)) {
+			if (!isAuthorizedToProcessFile(op, attr, target)) {
 				return;
 			}
 
@@ -128,7 +134,7 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 		}
 	}
 
-	private void updateAttrBased(final HFileMeta attr, final FileUpdateTransactionBody op ) {
+	private void updateAttrBased(final HFileMeta attr, final FileUpdateTransactionBody op) {
 		if (op.hasKeys()) {
 			attr.setWacl(asFcKeyUnchecked(wrapped(op.getKeys())));
 		}
@@ -143,8 +149,8 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 		if (attr.getWacl().isEmpty() && (op.hasKeys() || !op.getContents().isEmpty())) {
 				/* The transaction is trying to update an immutable file; in general, not a legal operation,
 				but the semantics change for a superuser (i.e., sysadmin or treasury) updating a system file. */
-			var isSysFile = entityNums.isSystemFile(target);
-			var isSysAdmin = entityNums.accounts().isSuperuser(txnCtx.activePayer().getAccountNum());
+			final var isSysFile = entityNums.isSystemFile(target);
+			final var isSysAdmin = entityNums.accounts().isSuperuser(txnCtx.activePayer().getAccountNum());
 			if (!(isSysAdmin && isSysFile)) {
 				txnCtx.setStatus(UNAUTHORIZED);
 				return false;
@@ -153,7 +159,7 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 		return true;
 	}
 
-	static void mapToStatus(IllegalArgumentException iae, TransactionContext txnCtx) {
+	static void mapToStatus(final IllegalArgumentException iae, final TransactionContext txnCtx) {
 		if (iae.getCause() instanceof DecoderException) {
 			txnCtx.setStatus(BAD_ENCODING);
 			return;
@@ -171,9 +177,13 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 		}
 	}
 
-	private ResponseCodeEnum assessedValidity(FileUpdateTransactionBody op) {
+	private ResponseCodeEnum assessedValidity(final FileUpdateTransactionBody op) {
 		if (!op.hasFileID() || !hfs.exists(op.getFileID())) {
 			return INVALID_FILE_ID;
+		}
+
+		if (networkCtx.get().getPreparedUpdateFileNum() == op.getFileID().getFileNum()) {
+			return PREPARED_UPDATE_FILE_IS_IMMUTABLE;
 		}
 
 		if (op.hasKeys() && !validator.hasGoodEncoding(wrapped(op.getKeys()))) {
@@ -193,16 +203,16 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 		return SEMANTIC_CHECK;
 	}
 
-	private ResponseCodeEnum validate(TransactionBody fileUpdateTxn) {
+	private ResponseCodeEnum validate(final TransactionBody fileUpdateTxn) {
 		var op = fileUpdateTxn.getFileUpdate();
 
-		var memoValidity = !op.hasMemo() ? OK : validator.memoCheck(op.getMemo().getValue());
+		final var memoValidity = !op.hasMemo() ? OK : validator.memoCheck(op.getMemo().getValue());
 		if (memoValidity != OK) {
 			return memoValidity;
 		}
 
 		if (op.hasExpirationTime()) {
-			var effectiveDuration = Duration.newBuilder()
+			final var effectiveDuration = Duration.newBuilder()
 					.setSeconds(
 							op.getExpirationTime().getSeconds() -
 									fileUpdateTxn.getTransactionID().getTransactionValidStart().getSeconds())
@@ -215,7 +225,7 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 		return OK;
 	}
 
-	static Key wrapped(KeyList wacl) {
+	static Key wrapped(final KeyList wacl) {
 		return Key.newBuilder().setKeyList(wacl).build();
 	}
 }

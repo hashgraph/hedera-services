@@ -47,6 +47,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.telemetryUpgrade;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_START_TIME_MUST_BE_FUTURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_UPDATE_FILE_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_UPGRADE_IN_PROGRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_FREEZE_IS_SCHEDULED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_UPGRADE_HAS_BEEN_PREPARED;
@@ -89,7 +90,6 @@ public class UpgradeSuite extends HapiApiSuite {
 						freezeOnlyPrecheckRejectsInvalid(),
 						freezeUpgradeValidationRejectsInvalid(),
 						freezeAbortValidationRejectsInvalid(),
-						freezeUpgradeValidationRejectsInvalid(),
 						prepareUpgradeValidationRejectsInvalid(),
 						telemetryUpgradeValidationRejectsInvalid(),
 
@@ -153,7 +153,25 @@ public class UpgradeSuite extends HapiApiSuite {
 						prepareUpgrade()
 								.withUpdateFile(standardUpdateFile)
 								.havingHash(poeticUpgradeHash)
-								.hasKnownStatus(FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH)
+								.hasKnownStatus(FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH),
+						fileUpdate(standardUpdateFile)
+								.signedBy(FREEZE_ADMIN)
+								.path(poeticUpgradeLoc)
+								.payingWith(FREEZE_ADMIN),
+						prepareUpgrade()
+								.withUpdateFile(standardUpdateFile)
+								.havingHash(poeticUpgradeHash),
+						prepareUpgrade()
+								.withUpdateFile(standardUpdateFile)
+								.havingHash(poeticUpgradeHash)
+								.hasKnownStatus(FREEZE_UPGRADE_IN_PROGRESS),
+						freezeOnly().startingIn(60).minutes()
+								.hasKnownStatus(FREEZE_UPGRADE_IN_PROGRESS),
+						telemetryUpgrade()
+								.withUpdateFile(standardUpdateFile)
+								.havingHash(poeticUpgradeHash)
+								.hasKnownStatus(FREEZE_UPGRADE_IN_PROGRESS),
+						freezeAbort()
 				);
 	}
 

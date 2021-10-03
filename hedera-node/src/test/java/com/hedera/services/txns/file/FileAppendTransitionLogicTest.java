@@ -27,6 +27,7 @@ import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -49,6 +50,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_F
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PREPARED_UPDATE_FILE_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -89,6 +91,7 @@ class FileAppendTransitionLogicTest {
 
 	HederaFs hfs;
 	TransactionContext txnCtx;
+	MerkleNetworkContext networkCtx;
 
 	FileAppendTransitionLogic subject;
 
@@ -101,6 +104,7 @@ class FileAppendTransitionLogicTest {
 
 		accessor = mock(PlatformTxnAccessor.class);
 		txnCtx = mock(TransactionContext.class);
+		networkCtx = mock(MerkleNetworkContext.class);
 
 		hfs = mock(HederaFs.class);
 		given(hfs.exists(target)).willReturn(true);
@@ -111,7 +115,7 @@ class FileAppendTransitionLogicTest {
 		given(hfs.getattr(deleted)).willReturn(deletedAttr);
 		given(hfs.getattr(immutable)).willReturn(immutableAttr);
 
-		subject = new FileAppendTransitionLogic(hfs, txnCtx);
+		subject = new FileAppendTransitionLogic(hfs, txnCtx, () -> networkCtx);
 	}
 
 	@Test
@@ -150,6 +154,18 @@ class FileAppendTransitionLogicTest {
 
 		// then:
 		verify(txnCtx).setStatus(MAX_FILE_SIZE_EXCEEDED);
+	}
+
+	@Test
+	void detectsPendingUpdate() {
+		givenTxnCtxAppending(TargetType.VALID);
+		given(networkCtx.getPreparedUpdateFileNum()).willReturn(target.getFileNum());
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(txnCtx).setStatus(PREPARED_UPDATE_FILE_IS_IMMUTABLE);
 	}
 
 	@Test

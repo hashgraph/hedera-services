@@ -43,7 +43,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Optional;
 
-import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_UPDATE_FILE_NUM;
 import static com.hedera.services.utils.MiscUtils.timestampToInstant;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ABORT;
@@ -77,6 +76,8 @@ class FreezeTransitionLogicTest {
 	private static final AccountID PAYER = IdUtils.asAccount("0.0.1234");
 	private static final Instant CONSENSUS_TIME = Instant.ofEpochSecond(1_234_567L, 890);
 	private static final Instant VALID_START_TIME = CONSENSUS_TIME.plusSeconds(120);
+	private static final ByteString IMPOSSIBLE_HASH =
+			ByteString.copyFromUtf8("012345678901234567890123456789");
 	private static final ByteString PRETEND_HASH =
 			ByteString.copyFromUtf8("012345678901234567890123456789012345678901234567");
 	private static final byte[] hashBytes = PRETEND_HASH.toByteArray();
@@ -179,26 +180,36 @@ class FreezeTransitionLogicTest {
 	}
 
 	@Test
+	void rejectsPostConsensusFreezeUpgradeWithPendingFreeze() {
+		givenTypicalTxnInCtx(true, FREEZE_UPGRADE, Optional.empty(), Optional.empty());
+		given(upgradeActions.isFreezeScheduled()).willReturn(true);
+		given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME);
+
+		assertFailsWith(() -> subject.doStateTransition(), FREEZE_ALREADY_SCHEDULED);
+	}
+
+	@Test
 	void acceptsPostConsensusFreezeOnlyWithValidTimeNoPendingWork() {
 		givenTypicalTxnInCtx(true, FREEZE_ONLY, Optional.empty(), Optional.empty());
 		given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME);
 
 		subject.doStateTransition();
 
-		verify(upgradeActions).scheduleFreezeAt(VALID_START_TIME);
+		verify(upgradeActions).scheduleFreezeOnlyAt(VALID_START_TIME);
 	}
 
 	@Test
 	void rejectsPostConsensusFreezeUpgradeWithNoUpdatePrepared() {
-		given(networkCtx.getPreparedUpdateFileNum()).willReturn(NO_PREPARED_UPDATE_FILE_NUM);
 		givenTypicalTxnInCtx(true, FREEZE_UPGRADE, Optional.empty(), Optional.empty());
+		given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME);
 
 		assertFailsWith(() -> subject.doStateTransition(), NO_UPGRADE_HAS_BEEN_PREPARED);
 	}
 
 	@Test
 	void rejectsPostConsensusFreezeUpgradeWithNonMatchingUpdateFileHash() {
-		given(networkCtx.getPreparedUpdateFileNum()).willReturn(150L);
+		given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME);
+		given(networkCtx.hasPreparedUpgrade()).willReturn(true);
 		givenTypicalTxnInCtx(true, FREEZE_UPGRADE, Optional.empty(), Optional.empty());
 
 		assertFailsWith(() -> subject.doStateTransition(), UPDATE_FILE_HASH_CHANGED_SINCE_PREPARE_UPGRADE);
@@ -206,8 +217,6 @@ class FreezeTransitionLogicTest {
 
 	@Test
 	void rejectsPostConsensusFreezeUpgradeWithInvalidTime() {
-		given(networkCtx.getPreparedUpdateFileNum()).willReturn(150L);
-		given(networkCtx.isPreparedFileHashValidGiven(specialFiles)).willReturn(true);
 		givenTypicalTxnInCtx(true, FREEZE_UPGRADE, Optional.empty(), Optional.empty());
 		given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME.plusSeconds(Integer.MAX_VALUE));
 
@@ -216,21 +225,31 @@ class FreezeTransitionLogicTest {
 
 	@Test
 	void acceptsPostConsensusFreezeUpgradeWithEverythingInPlace() {
-		given(networkCtx.getPreparedUpdateFileNum()).willReturn(150L);
+		given(networkCtx.hasPreparedUpgrade()).willReturn(true);
 		given(networkCtx.isPreparedFileHashValidGiven(specialFiles)).willReturn(true);
 		givenTypicalTxnInCtx(true, FREEZE_UPGRADE, Optional.empty(), Optional.empty());
 		given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME);
 
 		subject.doStateTransition();
 
-		verify(upgradeActions).scheduleFreezeAt(VALID_START_TIME);
+		verify(upgradeActions).scheduleFreezeUpgradeAt(VALID_START_TIME);
 	}
 
 	@Test
-	void rejectsPostConsensusFreezeAbortWithNoPendingFreeze() {
+	void rejectsPostConsensusFreezeAbortWithNoPendingFreezeOrPreparedUpgrade() {
 		givenTypicalTxnInCtx(false, FREEZE_ABORT, Optional.empty(), Optional.empty());
 
 		assertFailsWith(() -> subject.doStateTransition(), NO_FREEZE_IS_SCHEDULED);
+	}
+
+	@Test
+	void performsFreezeAbortWithJustPreparedUpgrade() {
+		givenTypicalTxnInCtx(false, FREEZE_ABORT, Optional.empty(), Optional.empty());
+		given(networkCtx.hasPreparedUpgrade()).willReturn(true);
+
+		subject.doStateTransition();
+
+		verify(upgradeActions).abortScheduledFreeze();
 	}
 
 	@Test
@@ -241,7 +260,7 @@ class FreezeTransitionLogicTest {
 		subject.doStateTransition();
 
 		verify(upgradeActions).abortScheduledFreeze();
-		verify(networkCtx).discardPreparedUpgrade();
+		verify(networkCtx).discardPreparedUpgradeMeta();
 	}
 
 	@Test
@@ -333,7 +352,7 @@ class FreezeTransitionLogicTest {
 
 	@Test
 	void telemetryUpgradePrecheckRejectsImpossibleFile() {
-		givenTypicalTxn(true, TELEMETRY_UPGRADE, Optional.of(ILLEGAL_FILE), Optional.empty());
+		givenTypicalTxn(true, TELEMETRY_UPGRADE, Optional.of(ILLEGAL_FILE), Optional.of(PRETEND_HASH));
 
 		assertEquals(FREEZE_UPDATE_FILE_DOES_NOT_EXIST, subject.semanticCheck().apply(freezeTxn));
 	}
@@ -346,8 +365,22 @@ class FreezeTransitionLogicTest {
 	}
 
 	@Test
+	void prepPrecheckRejectsMissingFile() {
+		givenTypicalTxn(false, PREPARE_UPGRADE, Optional.empty(), Optional.empty());
+
+		assertEquals(INVALID_FREEZE_TRANSACTION_BODY, subject.semanticCheck().apply(freezeTxn));
+	}
+
+	@Test
+	void prepPrecheckRejectsMissingHash() {
+		givenTypicalTxn(false, PREPARE_UPGRADE, Optional.of(SOFTWARE_UPGRADE_FILE), Optional.empty());
+
+		assertEquals(INVALID_FREEZE_TRANSACTION_BODY, subject.semanticCheck().apply(freezeTxn));
+	}
+
+	@Test
 	void prepPrecheckRejectsImpossibleFile() {
-		givenTypicalTxn(false, PREPARE_UPGRADE, Optional.of(ILLEGAL_FILE), Optional.empty());
+		givenTypicalTxn(false, PREPARE_UPGRADE, Optional.of(ILLEGAL_FILE), Optional.of(PRETEND_HASH));
 
 		assertEquals(FREEZE_UPDATE_FILE_DOES_NOT_EXIST, subject.semanticCheck().apply(freezeTxn));
 	}
@@ -355,7 +388,7 @@ class FreezeTransitionLogicTest {
 	@Test
 	void prepPrecheckRejectsImpossibleHash() {
 		given(specialFiles.contains(SOFTWARE_UPGRADE_FILE)).willReturn(true);
-		givenTypicalTxn(false, PREPARE_UPGRADE, Optional.of(SOFTWARE_UPGRADE_FILE), Optional.empty());
+		givenTypicalTxn(false, PREPARE_UPGRADE, Optional.of(SOFTWARE_UPGRADE_FILE), Optional.of(IMPOSSIBLE_HASH));
 
 		assertEquals(FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH, subject.semanticCheck().apply(freezeTxn));
 	}

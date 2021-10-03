@@ -447,7 +447,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		} else {
 			if (stateVersion < StateVersions.CURRENT_VERSION) {
 				/* This was an upgrade, discard now-obsolete preparation history */
-				networkCtx().discardPreparedUpgrade();
+				networkCtx().discardPreparedUpgradeMeta();
 			}
 			networkCtx().setStateVersion(StateVersions.CURRENT_VERSION);
 

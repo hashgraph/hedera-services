@@ -579,7 +579,7 @@ class ServicesStateTest {
 		// when:
 		subject.init(platform, addressBook, dualState);
 
-		verify(networkContext).discardPreparedUpgrade();
+		verify(networkContext).discardPreparedUpgradeMeta();
 	}
 
 	@Test

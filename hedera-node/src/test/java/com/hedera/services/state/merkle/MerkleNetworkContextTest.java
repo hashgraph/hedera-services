@@ -155,7 +155,7 @@ class MerkleNetworkContextTest {
 	void knowsIfUpgradeIsPrepared() {
 		assertTrue(subject.hasPreparedUpgrade());
 
-		subject.discardPreparedUpgrade();
+		subject.discardPreparedUpgradeMeta();
 
 		assertFalse(subject.hasPreparedUpgrade());
 	}
@@ -265,7 +265,7 @@ class MerkleNetworkContextTest {
 		assertThrows(MutabilityException.class, () -> subject.setPreparedUpdateFileNum(123));
 		assertThrows(MutabilityException.class, () -> subject.setPreparedUpdateFileHash(NO_PREPARED_UPDATE_FILE_HASH));
 		assertThrows(MutabilityException.class, () -> subject.recordPreparedUpgrade(null));
-		assertThrows(MutabilityException.class, () -> subject.discardPreparedUpgrade());
+		assertThrows(MutabilityException.class, () -> subject.discardPreparedUpgradeMeta());
 	}
 
 	@Test
@@ -292,7 +292,7 @@ class MerkleNetworkContextTest {
 
 	@Test
 	void rollbackWorksOnPreparedUpgrade() {
-		subject.discardPreparedUpgrade();
+		subject.discardPreparedUpgradeMeta();
 
 		assertEquals(NO_PREPARED_UPDATE_FILE_NUM, subject.getPreparedUpdateFileNum());
 		assertSame(NO_PREPARED_UPDATE_FILE_HASH, subject.getPreparedUpdateFileHash());
