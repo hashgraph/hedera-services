@@ -65,11 +65,9 @@ class MerkleSpecialFilesTest {
 
 		subject.copy();
 
-		assertThrows(MutabilityException.class, () ->
-				subject.update(fid, stuff),
+		assertThrows(MutabilityException.class, () -> subject.update(fid, stuff),
 				"Copies shouldn't be updatable");
-		assertThrows(MutabilityException.class, () ->
-						subject.append(fid, "asdf".getBytes(StandardCharsets.UTF_8)),
+		assertThrows(MutabilityException.class, () -> subject.append(fid, stuff),
 				"Copies shouldn't be appendable");
 	}
 

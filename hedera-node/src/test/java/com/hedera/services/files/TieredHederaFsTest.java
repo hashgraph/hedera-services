@@ -47,7 +47,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
@@ -307,7 +306,7 @@ class TieredHederaFsTest {
 		assertEquals(SUCCESS, result.outcome());
 		assertTrue(result.fileReplaced());
 		// and:
-		verify(specialFiles).update(eq(fid), eq(oversizeContents));
+		verify(specialFiles).update(fid, oversizeContents);
 	}
 
 	@Test

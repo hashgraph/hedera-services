@@ -349,13 +349,15 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	public void logSummary() {
+		String ctxSummary;
 		if (metadata != null) {
 			final var app = metadata.app();
 			app.hashLogger().logHashesFor(this);
-			log.info(networkCtx().summarizedWith(app.dualStateAccessor()));
+			ctxSummary = networkCtx().summarizedWith(app.dualStateAccessor());
 		} else {
-			log.info(networkCtx().summarized());
+			ctxSummary = networkCtx().summarized();
 		}
+		log.info(ctxSummary);
 	}
 
 	public MerkleMap<EntityNum, MerkleAccount> accounts() {

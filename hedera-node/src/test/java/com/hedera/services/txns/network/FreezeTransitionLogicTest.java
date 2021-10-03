@@ -51,6 +51,7 @@ import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_UPGRADE;
 import static com.hederahashgraph.api.proto.java.FreezeType.PREPARE_UPGRADE;
 import static com.hederahashgraph.api.proto.java.FreezeType.TELEMETRY_UPGRADE;
 import static com.hederahashgraph.api.proto.java.FreezeType.UNKNOWN_FREEZE_TYPE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_ALREADY_SCHEDULED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_START_TIME_MUST_BE_FUTURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_UPDATE_FILE_DOES_NOT_EXIST;
@@ -64,7 +65,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UPDATE_FILE_HA
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -144,7 +144,7 @@ class FreezeTransitionLogicTest {
 		givenTypicalTxnInCtx(
 				true, TELEMETRY_UPGRADE, Optional.of(TELEMETRY_UPGRADE_FILE), Optional.of(PRETEND_HASH));
 		given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME);
-		given(specialFiles.hashMatches(eq(TELEMETRY_UPGRADE_FILE), eq(hashBytes))).willReturn(true);
+		given(specialFiles.hashMatches(TELEMETRY_UPGRADE_FILE, hashBytes)).willReturn(true);
 		given(specialFiles.get(TELEMETRY_UPGRADE_FILE)).willReturn(PRETEND_ARCHIVE);
 
 		subject.doStateTransition();
@@ -271,9 +271,16 @@ class FreezeTransitionLogicTest {
 	}
 
 	@Test
+	void rejectsPostConsensusUnrecognizedFreeze() {
+		givenTypicalTxnInCtx(false, UNKNOWN_FREEZE_TYPE, Optional.empty(), Optional.empty());
+
+		assertFailsWith(() -> subject.doStateTransition(), FAIL_INVALID);
+	}
+
+	@Test
 	void unarchivesDataWithMatchingHash() {
 		givenTypicalTxnInCtx(false, PREPARE_UPGRADE, Optional.of(SOFTWARE_UPGRADE_FILE), Optional.of(PRETEND_HASH));
-		given(specialFiles.hashMatches(eq(SOFTWARE_UPGRADE_FILE), eq(hashBytes))).willReturn(true);
+		given(specialFiles.hashMatches(SOFTWARE_UPGRADE_FILE, hashBytes)).willReturn(true);
 		given(specialFiles.get(SOFTWARE_UPGRADE_FILE)).willReturn(PRETEND_ARCHIVE);
 
 		subject.doStateTransition();

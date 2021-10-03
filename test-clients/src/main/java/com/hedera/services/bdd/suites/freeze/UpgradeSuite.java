@@ -28,6 +28,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
@@ -36,6 +37,7 @@ import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
@@ -51,6 +53,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_UPGRADE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_FREEZE_IS_SCHEDULED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_UPGRADE_HAS_BEEN_PREPARED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PREPARED_UPDATE_FILE_IS_IMMUTABLE;
 
 public class UpgradeSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(UpgradeSuite.class);
@@ -63,6 +66,7 @@ public class UpgradeSuite extends HapiApiSuite {
 	}
 
 	private final byte[] poeticUpgradeHash;
+	private final byte[] notEvenASha384Hash = "abcdefgh".getBytes(StandardCharsets.UTF_8);
 
 	private final String standardUpdateFile = "0.0.150";
 	private final String standardTelemetryFile = "0.0.159";
@@ -85,16 +89,15 @@ public class UpgradeSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						/* Negative tests */
-						precheckRejectsUnknownFreezeType(),
-						freezeOnlyPrecheckRejectsInvalid(),
-						freezeUpgradeValidationRejectsInvalid(),
-						freezeAbortValidationRejectsInvalid(),
+//						precheckRejectsUnknownFreezeType(),
+//						freezeOnlyPrecheckRejectsInvalid(),
+//						freezeUpgradeValidationRejectsInvalid(),
+//						freezeAbortValidationRejectsInvalid(),
 						prepareUpgradeValidationRejectsInvalid(),
-						telemetryUpgradeValidationRejectsInvalid(),
+//						telemetryUpgradeValidationRejectsInvalid(),
 
 						/* Happy paths */
-						canFreezeUpgradeWithPreparedUpgrade(),
+//						canFreezeUpgradeWithPreparedUpgrade(),
 				}
 		);
 	}
@@ -139,11 +142,23 @@ public class UpgradeSuite extends HapiApiSuite {
 	private HapiApiSpec prepareUpgradeValidationRejectsInvalid() {
 		return defaultHapiSpec("freezeUpgradeValidationRejectsInvalid")
 				.given(
+						fileUpdate(standardUpdateFile)
+								.signedBy(FREEZE_ADMIN)
+								.contents(pragmatism)
+								.payingWith(FREEZE_ADMIN),
 						cryptoTransfer(tinyBarsFromTo(GENESIS, FREEZE_ADMIN, ONE_HUNDRED_HBARS)),
-						prepareUpgrade().withUpdateFile("0.0.149")
+						prepareUpgrade()
+								.withUpdateFile("0.0.149")
+								.havingHash(poeticUpgradeHash)
 								.hasPrecheck(FREEZE_UPDATE_FILE_DOES_NOT_EXIST),
-						prepareUpgrade().withUpdateFile(standardUpdateFile)
-								.hasPrecheck(FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH)
+						prepareUpgrade()
+								.withUpdateFile(standardUpdateFile)
+								.havingHash(notEvenASha384Hash)
+								.hasPrecheck(FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH),
+						prepareUpgrade()
+								.withUpdateFile(standardUpdateFile)
+								.havingHash(poeticUpgradeHash)
+								.hasKnownStatus(FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH)
 				).when(
 						fileUpdate(standardUpdateFile)
 								.signedBy(FREEZE_ADMIN)
@@ -170,7 +185,19 @@ public class UpgradeSuite extends HapiApiSuite {
 						telemetryUpgrade()
 								.withUpdateFile(standardUpdateFile)
 								.havingHash(poeticUpgradeHash)
+								.startingIn(60)
+								.minutes()
 								.hasKnownStatus(FREEZE_UPGRADE_IN_PROGRESS),
+						fileUpdate(standardUpdateFile)
+								.signedBy(FREEZE_ADMIN)
+								.path(poeticUpgradeLoc)
+								.payingWith(FREEZE_ADMIN)
+								.hasKnownStatus(PREPARED_UPDATE_FILE_IS_IMMUTABLE),
+						fileAppend(standardUpdateFile)
+								.signedBy(FREEZE_ADMIN)
+								.path(poeticUpgradeLoc)
+								.payingWith(FREEZE_ADMIN)
+								.hasKnownStatus(PREPARED_UPDATE_FILE_IS_IMMUTABLE),
 						freezeAbort()
 				);
 	}

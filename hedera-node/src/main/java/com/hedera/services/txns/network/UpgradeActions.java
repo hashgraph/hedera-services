@@ -69,18 +69,16 @@ public class UpgradeActions {
 		writeCheckMarker(NOW_FROZEN_MARKER);
 	}
 
-	public CompletableFuture<?> extractTelemetryUpgrade(final byte[] archiveData, final Instant now) {
+	public CompletableFuture<Void> extractTelemetryUpgrade(final byte[] archiveData, final Instant now) {
 		return extractNow(archiveData, TELEMETRY_UPGRADE_DESC, EXEC_TELEMETRY_MARKER, now);
 	}
 
-	public CompletableFuture<?> extractSoftwareUpgrade(final byte[] archiveData) {
+	public CompletableFuture<Void> extractSoftwareUpgrade(final byte[] archiveData) {
 		return extractNow(archiveData, PREPARE_UPGRADE_DESC, EXEC_IMMEDIATE_MARKER, null);
 	}
 
 	public void scheduleFreezeOnlyAt(final Instant freezeTime) {
-		withNonNullDualState("schedule freeze", ds -> {
-			ds.setFreezeTime(freezeTime);
-		});
+		withNonNullDualState("schedule freeze", ds -> ds.setFreezeTime(freezeTime));
 	}
 
 	public void scheduleFreezeUpgradeAt(final Instant freezeTime) {
@@ -113,7 +111,7 @@ public class UpgradeActions {
 
 	/* --- Internal methods --- */
 
-	private CompletableFuture<?> extractNow(
+	private CompletableFuture<Void> extractNow(
 			final byte[] archiveData,
 			final String desc,
 			final String marker,
@@ -163,7 +161,7 @@ public class UpgradeActions {
 		if (!curNetworkCtx.isPreparedFileHashValidGiven(curSpecialFiles)) {
 			log.error(
 					"Cannot redo NMT upgrade prep, file {} changed since FREEZE_UPGRADE",
-					readableId(upgradeFileId));
+					() -> readableId(upgradeFileId));
 			log.error(MANUAL_REMEDIATION_ALERT);
 			return;
 		}

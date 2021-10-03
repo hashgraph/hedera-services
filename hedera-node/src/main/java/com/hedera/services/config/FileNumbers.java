@@ -40,7 +40,6 @@ public class FileNumbers {
 	private long exchangeRates = UNKNOWN_NUMBER;
 	private long apiPermissions = UNKNOWN_NUMBER;
 	private long applicationProperties = UNKNOWN_NUMBER;
-	private long softwareUpdateZip = UNKNOWN_NUMBER;
 	private long firstUpdateFile = UNKNOWN_NUMBER;
 	private long lastUpdateFile = UNKNOWN_NUMBER;
 	private long throttleDefinitions = UNKNOWN_NUMBER;

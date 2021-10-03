@@ -49,6 +49,11 @@ import static java.util.stream.Collectors.toList;
 public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private static final Logger log = LogManager.getLogger(MerkleNetworkContext.class);
 
+	private static final String LINE_WRAP = "\n    ";
+	private static final String NOT_EXTANT = "<NONE>";
+	private static final String NOT_AVAILABLE = "<N/A>";
+	private static final String NOT_AVAILABLE_SUFFIX = " <N/A>";
+
 	public static final int UPDATE_FILE_HASH_LEN = 48;
 	public static final int UNRECORDED_STATE_VERSION = -1;
 	public static final long NO_PREPARED_UPDATE_FILE_NUM = -1;
@@ -325,7 +330,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		final var pendingMaintenanceDesc = freezeTimeDesc(freezeTime, isDualStateAvailable) + pendingUpdateDesc;
 
 		return "The network context (state version " +
-				(stateVersion == UNRECORDED_STATE_VERSION ? "<N/A>" : stateVersion) +
+				(stateVersion == UNRECORDED_STATE_VERSION ? NOT_AVAILABLE : stateVersion) +
 				") is," +
 				"\n  Consensus time of last handled transaction :: " +
 				reprOf(consensusTimeOfLastHandledTxn) +
@@ -351,11 +356,11 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	private String usageSnapshotsDesc() {
 		if (usageSnapshots.length == 0) {
-			return " <N/A>";
+			return NOT_AVAILABLE_SUFFIX;
 		} else {
 			final var sb = new StringBuilder();
 			for (var snapshot : usageSnapshots) {
-				sb.append("\n    ").append(snapshot.used())
+				sb.append(LINE_WRAP).append(snapshot.used())
 						.append(" used (last decision time ")
 						.append(reprOf(snapshot.lastDecisionTime())).append(")");
 			}
@@ -365,11 +370,11 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	private String congestionStartsDesc() {
 		if (congestionLevelStarts.length == 0)	 {
-			return " <N/A>";
+			return NOT_AVAILABLE_SUFFIX;
 		} else {
 			final var sb = new StringBuilder();
 			for (var start : congestionLevelStarts) {
-				sb.append("\n    ").append(reprOf(start));
+				sb.append(LINE_WRAP).append(reprOf(start));
 			}
 			return sb.toString();
 		}
@@ -378,7 +383,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private String currentPendingUpdateDesc() {
 		final var nmtDescStart = "w/ NMT upgrade prepped                   :: ";
 		if (preparedUpdateFileNum == NO_PREPARED_UPDATE_FILE_NUM) {
-			return nmtDescStart + "<NONE>";
+			return nmtDescStart + NOT_EXTANT;
 		}
 		return nmtDescStart
 				+ "from "
@@ -387,9 +392,9 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	private String freezeTimeDesc(@Nullable Instant freezeTime, boolean isDualStateAvailable) {
-		final var nmtDescSkip = "\n    ";
+		final var nmtDescSkip = LINE_WRAP;
 		if (freezeTime == null) {
-			return (isDualStateAvailable ? "<NONE>" : "<N/A>") + nmtDescSkip;
+			return (isDualStateAvailable ? NOT_EXTANT : NOT_AVAILABLE) + nmtDescSkip;
 		}
 		return freezeTime + nmtDescSkip;
 	}
@@ -486,7 +491,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	private String reprOf(Instant consensusTime) {
-		return consensusTime == null ? "<N/A>" : consensusTime.toString();
+		return consensusTime == null ? NOT_AVAILABLE : consensusTime.toString();
 	}
 
 	public long getPreparedUpdateFileNum() {

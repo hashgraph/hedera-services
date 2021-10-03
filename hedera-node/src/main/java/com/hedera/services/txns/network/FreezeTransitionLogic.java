@@ -21,6 +21,7 @@ package com.hedera.services.txns.network;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.txns.TransitionLogic;
@@ -28,8 +29,6 @@ import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -43,6 +42,7 @@ import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UPDATE_FILE_HASH_LEN;
 import static com.hedera.services.utils.MiscUtils.timestampToInstant;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_ALREADY_SCHEDULED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_START_TIME_MUST_BE_FUTURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_UPDATE_FILE_DOES_NOT_EXIST;
@@ -56,14 +56,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UPDATE_FILE_HA
 
 @Singleton
 public class FreezeTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(FreezeTransitionLogic.class);
-
 	private final UpgradeActions upgradeActions;
 	private final TransactionContext txnCtx;
 	private final Supplier<MerkleSpecialFiles> specialFiles;
 	private final Supplier<MerkleNetworkContext> networkCtx;
 
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validateBasics;
+	private final Function<TransactionBody, ResponseCodeEnum> semanticCheck = this::validateBasics;
 
 	@Inject
 	public FreezeTransitionLogic(
@@ -90,9 +88,6 @@ public class FreezeTransitionLogic implements TransitionLogic {
 				upgradeActions.extractSoftwareUpgrade(softwareUpdateZip);
 				networkCtx.get().recordPreparedUpgrade(op);
 				break;
-			case FREEZE_ONLY:
-				upgradeActions.scheduleFreezeOnlyAt(timestampToInstant(op.getStartTime()));
-				break;
 			case FREEZE_UPGRADE:
 				upgradeActions.scheduleFreezeUpgradeAt(timestampToInstant(op.getStartTime()));
 				break;
@@ -104,6 +99,10 @@ public class FreezeTransitionLogic implements TransitionLogic {
 				final var telemetryUpdateZip = specialFiles.get().get(op.getUpdateFile());
 				upgradeActions.extractTelemetryUpgrade(telemetryUpdateZip, timestampToInstant(op.getStartTime()));
 				break;
+			default:
+			case FREEZE_ONLY:
+				upgradeActions.scheduleFreezeOnlyAt(timestampToInstant(op.getStartTime()));
+				break;
 		}
 	}
 
@@ -114,7 +113,7 @@ public class FreezeTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
+		return semanticCheck;
 	}
 
 	private ResponseCodeEnum validateBasics(TransactionBody freezeTxn) {
@@ -174,7 +173,8 @@ public class FreezeTransitionLogic implements TransitionLogic {
 	}
 
 	private void assertValidityAtCons(FreezeTransactionBody op) {
-		switch (op.getFreezeType()) {
+		final var freezeType = op.getFreezeType();
+		switch (freezeType) {
 			case FREEZE_UPGRADE:
 				assertValidFreezeUpgrade(op);
 				break;
@@ -190,6 +190,10 @@ public class FreezeTransitionLogic implements TransitionLogic {
 			case TELEMETRY_UPGRADE:
 				assertValidTelemetryUpgrade(op);
 				break;
+			default:
+				throw new InvalidTransactionException(
+						"Transaction type '" + freezeType + "' should have been rejected in precheck",
+						FAIL_INVALID);
 		}
 	}
 
