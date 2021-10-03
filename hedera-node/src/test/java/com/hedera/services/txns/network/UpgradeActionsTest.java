@@ -10,19 +10,23 @@ import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
 import com.swirlds.platform.state.DualStateImpl;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.List;
 
 import static com.hedera.services.txns.network.UpgradeActions.EXEC_IMMEDIATE_MARKER;
+import static com.hedera.services.txns.network.UpgradeActions.EXEC_TELEMETRY_MARKER;
 import static com.hedera.services.txns.network.UpgradeActions.FREEZE_ABORTED_MARKER;
 import static com.hedera.services.txns.network.UpgradeActions.FREEZE_SCHEDULED_MARKER;
 import static com.hedera.services.txns.network.UpgradeActions.NOW_FROZEN_MARKER;
@@ -65,12 +69,22 @@ class UpgradeActionsTest {
 				unzipAction, dynamicProperties, () -> dualState, () -> specialFiles, () -> networkCtx);
 	}
 
+	@AfterAll
+	static void cleanup() {
+		List.of(
+				EXEC_IMMEDIATE_MARKER,
+				FREEZE_ABORTED_MARKER,
+				FREEZE_SCHEDULED_MARKER,
+				NOW_FROZEN_MARKER).forEach(UpgradeActionsTest::rmIfPresent);
+	}
+
 	@Test
 	void complainsLoudlyIfUpgradeHashDoesntMatch() {
 		rmIfPresent(EXEC_IMMEDIATE_MARKER);
 
 		given(networkCtx.hasPreparedUpgrade()).willReturn(true);
 		given(networkCtx.getPreparedUpdateFileNum()).willReturn(150L);
+		given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
 
 		subject.catchUpOnMissedSideEffects();
 
@@ -93,11 +107,13 @@ class UpgradeActionsTest {
 		given(networkCtx.getPreparedUpdateFileNum()).willReturn(150L);
 		given(specialFiles.get(IdUtils.asFile("0.0.150"))).willReturn(PRETEND_ARCHIVE);
 		given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
+		given(dualState.getFreezeTime()).willReturn(then);
+		given(dualState.getLastFrozenTime()).willReturn(then);
 
 		subject.catchUpOnMissedSideEffects();
 
 		verify(unzipAction).unzip(PRETEND_ARCHIVE, markerFilesLoc);
-		assertMarkerCreated(EXEC_IMMEDIATE_MARKER);
+		assertMarkerCreated(EXEC_IMMEDIATE_MARKER, null);
 	}
 
 	@Test
@@ -124,7 +140,37 @@ class UpgradeActionsTest {
 
 		subject.catchUpOnMissedSideEffects();
 
-		assertMarkerCreated(FREEZE_SCHEDULED_MARKER);
+		assertMarkerCreated(FREEZE_SCHEDULED_MARKER, then);
+	}
+
+	@Test
+	void freezeCatchUpClearsDualAndWritesNoMarkersIfJustUnfrozen() {
+		rmIfPresent(FREEZE_ABORTED_MARKER);
+		rmIfPresent(FREEZE_SCHEDULED_MARKER);
+
+		given(dualState.getFreezeTime()).willReturn(then);
+		given(dualState.getLastFrozenTime()).willReturn(then);
+
+		subject.catchUpOnMissedSideEffects();
+
+		assertFalse(
+				Paths.get(markerFilesLoc, FREEZE_ABORTED_MARKER).toFile().exists(),
+				"Should not create " + FREEZE_ABORTED_MARKER + " if dual last frozen time is freeze time");
+		assertFalse(
+				Paths.get(markerFilesLoc, FREEZE_SCHEDULED_MARKER).toFile().exists(),
+				"Should not create " + FREEZE_SCHEDULED_MARKER + " if dual last frozen time is freeze time");
+		verify(dualState).setFreezeTime(null);
+	}
+
+	@Test
+	void catchesUpOnFreezeAbortIfNullInDual() throws IOException {
+		rmIfPresent(FREEZE_ABORTED_MARKER);
+
+		given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
+
+		subject.catchUpOnMissedSideEffects();
+
+		assertMarkerCreated(FREEZE_ABORTED_MARKER, null);
 	}
 
 	@Test
@@ -134,7 +180,7 @@ class UpgradeActionsTest {
 		given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
 		willThrow(IOException.class).given(unzipAction).unzip(PRETEND_ARCHIVE, markerFilesLoc);
 
-		subject.extractNow(PRETEND_ARCHIVE);
+		subject.extractSoftwareUpgrade(PRETEND_ARCHIVE).join();
 
 		assertThat(
 				logCaptor.errorLogs(),
@@ -152,10 +198,22 @@ class UpgradeActionsTest {
 
 		given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
 
-		subject.extractNow(PRETEND_ARCHIVE);
+		subject.extractSoftwareUpgrade(PRETEND_ARCHIVE).join();
 
 		verify(unzipAction).unzip(PRETEND_ARCHIVE, markerFilesLoc);
-		assertMarkerCreated(EXEC_IMMEDIATE_MARKER);
+		assertMarkerCreated(EXEC_IMMEDIATE_MARKER, null);
+	}
+
+	@Test
+	void upgradesTelemetry() throws IOException {
+		rmIfPresent(EXEC_TELEMETRY_MARKER);
+
+		given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
+
+		subject.extractTelemetryUpgrade(PRETEND_ARCHIVE, then).join();
+
+		verify(unzipAction).unzip(PRETEND_ARCHIVE, markerFilesLoc);
+		assertMarkerCreated(EXEC_TELEMETRY_MARKER, then);
 	}
 
 	@Test
@@ -166,7 +224,7 @@ class UpgradeActionsTest {
 
 		subject.externalizeFreeze();
 
-		assertMarkerCreated(NOW_FROZEN_MARKER);
+		assertMarkerCreated(NOW_FROZEN_MARKER, null);
 	}
 
 	@Test
@@ -179,7 +237,7 @@ class UpgradeActionsTest {
 
 		verify(dualState).setFreezeTime(then);
 
-		assertMarkerCreated(FREEZE_SCHEDULED_MARKER);
+		assertMarkerCreated(FREEZE_SCHEDULED_MARKER, then);
 	}
 
 	@Test
@@ -192,7 +250,7 @@ class UpgradeActionsTest {
 
 		verify(dualState).setFreezeTime(null);
 
-		assertMarkerCreated(FREEZE_ABORTED_MARKER);
+		assertMarkerCreated(FREEZE_ABORTED_MARKER, null);
 	}
 
 	@Test
@@ -220,7 +278,7 @@ class UpgradeActionsTest {
 		assertTrue(subject.isFreezeScheduled());
 	}
 
-	private void rmIfPresent(String file) {
+	private static void rmIfPresent(String file) {
 		final var p = Paths.get(markerFilesLoc, file);
 		final var f = p.toFile();
 		if (f.exists()) {
@@ -228,15 +286,40 @@ class UpgradeActionsTest {
 		}
 	}
 
-	private void assertMarkerCreated(String file) throws IOException {
+	private void assertMarkerCreated(final String file, final @Nullable Instant when) throws IOException {
 		final var p = Paths.get(markerFilesLoc, file);
 		final var f = p.toFile();
 		assertTrue(f.exists(), file + " should have been created, but wasn't");
 		final var contents = Files.readString(p);
-		assertEquals(UpgradeActions.MARK, contents);
 		f.delete();
-		assertThat(
-				logCaptor.infoLogs(),
-				contains(Matchers.equalTo("Wrote marker " + p)));
+		if (file.equals(EXEC_IMMEDIATE_MARKER)) {
+			assertThat(
+					logCaptor.infoLogs(),
+					contains(
+							Matchers.equalTo(
+									"About to unzip 58 bytes for software update into " + markerFilesLoc),
+							Matchers.equalTo(
+									"Finished unzipping 58 bytes for software update into " + markerFilesLoc),
+							Matchers.equalTo("Wrote marker " + p)));
+		} else if (file.equals(EXEC_TELEMETRY_MARKER)) {
+			assertThat(
+					logCaptor.infoLogs(),
+					contains(
+							Matchers.equalTo(
+									"About to unzip 58 bytes for telemetry update into " + markerFilesLoc),
+							Matchers.equalTo(
+									"Finished unzipping 58 bytes for telemetry update into " + markerFilesLoc),
+							Matchers.equalTo("Wrote marker " + p)));
+		} else {
+			assertThat(
+					logCaptor.infoLogs(),
+					contains(Matchers.equalTo("Wrote marker " + p)));
+		}
+		if (when != null) {
+			final var writtenEpochSecond = Long.parseLong(contents);
+			assertEquals(when.getEpochSecond(), writtenEpochSecond);
+		} else {
+			assertEquals(UpgradeActions.MARK, contents);
+		}
 	}
 }

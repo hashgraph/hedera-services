@@ -89,18 +89,21 @@ public class FreezeTransitionLogic implements TransitionLogic {
 
 		switch (op.getFreezeType()) {
 			case PREPARE_UPGRADE:
-				final var archiveData = specialFiles.get().get(op.getUpdateFile());
-				upgradeActions.extractNow(archiveData);
+				final var softwareUpdateZip = specialFiles.get().get(op.getUpdateFile());
+				upgradeActions.extractSoftwareUpgrade(softwareUpdateZip);
 				networkCtx.get().recordPreparedUpgrade(op);
 				break;
 			case FREEZE_ONLY:
-				networkCtx.get().discardPreparedUpgrade();
 			case FREEZE_UPGRADE:
 				upgradeActions.scheduleFreezeAt(timestampToInstant(op.getStartTime()));
 				break;
 			case FREEZE_ABORT:
 				upgradeActions.abortScheduledFreeze();
 				networkCtx.get().discardPreparedUpgrade();
+				break;
+			case TELEMETRY_UPGRADE:
+				final var telemetryUpdateZip = specialFiles.get().get(op.getUpdateFile());
+				upgradeActions.extractTelemetryUpgrade(telemetryUpdateZip, timestampToInstant(op.getStartTime()));
 				break;
 		}
 	}
@@ -171,8 +174,7 @@ public class FreezeTransitionLogic implements TransitionLogic {
 			case FREEZE_UPGRADE:
 				assertValidFreezeUpgrade(op);
 			case FREEZE_ONLY:
-				final var timeIsValid = isInTheFuture(op.getStartTime(), txnCtx.consensusTime());
-				validateTrue(timeIsValid, FREEZE_START_TIME_MUST_BE_FUTURE);
+				assertNoPendingFreezeOrUpgradeAtValidTime(op.getStartTime());
 				break;
 			case FREEZE_ABORT:
 				validateTrue(upgradeActions.isFreezeScheduled(), NO_FREEZE_IS_SCHEDULED);
@@ -187,16 +189,20 @@ public class FreezeTransitionLogic implements TransitionLogic {
 	}
 
 	private void assertValidTelemetryUpgrade(final FreezeTransactionBody op) {
-		final var timeIsValid = isInTheFuture(op.getStartTime(), txnCtx.consensusTime());
+		assertNoPendingFreezeOrUpgradeAtValidTime(op.getStartTime());
+
+		final var curSpecialFiles = specialFiles.get();
+		final var isMatch = curSpecialFiles.hashMatches(op.getUpdateFile(), op.getFileHash().toByteArray());
+		validateTrue(isMatch, FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
+	}
+
+	private void assertNoPendingFreezeOrUpgradeAtValidTime(final Timestamp now) {
+		final var timeIsValid = isInTheFuture(now, txnCtx.consensusTime());
 		validateTrue(timeIsValid, FREEZE_START_TIME_MUST_BE_FUTURE);
 		validateFalse(upgradeActions.isFreezeScheduled(), FREEZE_ALREADY_SCHEDULED);
 
 		final var curNetworkCtx = networkCtx.get();
 		validateFalse(curNetworkCtx.hasPreparedUpgrade(), FREEZE_UPGRADE_IN_PROGRESS);
-
-		final var curSpecialFiles = specialFiles.get();
-		final var isMatch = curSpecialFiles.hashMatches(op.getUpdateFile(), op.getFileHash().toByteArray());
-		validateTrue(isMatch, FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
 	}
 
 	private void assertValidPrepareUpgrade(final FreezeTransactionBody op) {

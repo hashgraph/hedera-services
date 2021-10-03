@@ -44,6 +44,7 @@ import java.time.Instant;
 import java.util.Optional;
 
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_UPDATE_FILE_NUM;
+import static com.hedera.services.utils.MiscUtils.timestampToInstant;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ABORT;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ONLY;
@@ -70,13 +71,15 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class FreezeTransitionLogicTest {
-	private static final FileID CANONICAL_FILE = IdUtils.asFile("0.0.150");
+	private static final FileID SOFTWARE_UPGRADE_FILE = IdUtils.asFile("0.0.150");
+	private static final FileID TELEMETRY_UPGRADE_FILE = IdUtils.asFile("0.0.159");
 	private static final FileID ILLEGAL_FILE = IdUtils.asFile("0.0.160");
 	private static final AccountID PAYER = IdUtils.asAccount("0.0.1234");
 	private static final Instant CONSENSUS_TIME = Instant.ofEpochSecond(1_234_567L, 890);
 	private static final Instant VALID_START_TIME = CONSENSUS_TIME.plusSeconds(120);
 	private static final ByteString PRETEND_HASH =
 			ByteString.copyFromUtf8("012345678901234567890123456789012345678901234567");
+	private static final byte[] hashBytes = PRETEND_HASH.toByteArray();
 	private static final byte[] PRETEND_ARCHIVE =
 			"This is missing something. Hard to put a finger on what...".getBytes(StandardCharsets.UTF_8);
 
@@ -128,10 +131,25 @@ class FreezeTransitionLogicTest {
 
 	@Test
 	void rejectsPostConsensusTelemetryUpgradeWithMismatchedHash() {
-		givenTypicalTxnInCtx(true, TELEMETRY_UPGRADE, Optional.of(CANONICAL_FILE), Optional.of(PRETEND_HASH));
+		givenTypicalTxnInCtx(
+				true, TELEMETRY_UPGRADE, Optional.of(TELEMETRY_UPGRADE_FILE), Optional.of(PRETEND_HASH));
 		given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME);
 
 		assertFailsWith(() -> subject.doStateTransition(), FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
+	}
+
+	@Test
+	void acceptsPostConsensusTelemetryUpgradeWithMatchingHash() {
+		givenTypicalTxnInCtx(
+				true, TELEMETRY_UPGRADE, Optional.of(TELEMETRY_UPGRADE_FILE), Optional.of(PRETEND_HASH));
+		given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME);
+		given(specialFiles.hashMatches(eq(TELEMETRY_UPGRADE_FILE), eq(hashBytes))).willReturn(true);
+		given(specialFiles.get(TELEMETRY_UPGRADE_FILE)).willReturn(PRETEND_ARCHIVE);
+
+		subject.doStateTransition();
+
+		final var timeUsed = timestampToInstant(freezeTxn.getFreeze().getStartTime());
+		verify(upgradeActions).extractTelemetryUpgrade(PRETEND_ARCHIVE, timeUsed);
 	}
 
 	@Test
@@ -143,13 +161,30 @@ class FreezeTransitionLogicTest {
 	}
 
 	@Test
-	void acceptsPostConsensusFreezeOnlyWithValidTime() {
+	void rejectsPostConsensusFreezeOnlyWithPendingFreeze() {
+		givenTypicalTxnInCtx(true, FREEZE_ONLY, Optional.empty(), Optional.empty());
+		given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME);
+		given(upgradeActions.isFreezeScheduled()).willReturn(true);
+
+		assertFailsWith(() -> subject.doStateTransition(), FREEZE_ALREADY_SCHEDULED);
+	}
+
+	@Test
+	void rejectsPostConsensusFreezeOnlyWithPendingUpgrade() {
+		givenTypicalTxnInCtx(true, FREEZE_ONLY, Optional.empty(), Optional.empty());
+		given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME);
+		given(networkCtx.hasPreparedUpgrade()).willReturn(true);
+
+		assertFailsWith(() -> subject.doStateTransition(), FREEZE_UPGRADE_IN_PROGRESS);
+	}
+
+	@Test
+	void acceptsPostConsensusFreezeOnlyWithValidTimeNoPendingWork() {
 		givenTypicalTxnInCtx(true, FREEZE_ONLY, Optional.empty(), Optional.empty());
 		given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME);
 
 		subject.doStateTransition();
 
-		verify(networkCtx).discardPreparedUpgrade();
 		verify(upgradeActions).scheduleFreezeAt(VALID_START_TIME);
 	}
 
@@ -211,22 +246,20 @@ class FreezeTransitionLogicTest {
 
 	@Test
 	void rejectsPostConsensusPrepareUpgradeWithUnmatchedHash() {
-		givenTypicalTxnInCtx(false, PREPARE_UPGRADE, Optional.of(CANONICAL_FILE), Optional.of(PRETEND_HASH));
+		givenTypicalTxnInCtx(false, PREPARE_UPGRADE, Optional.of(SOFTWARE_UPGRADE_FILE), Optional.of(PRETEND_HASH));
 
 		assertFailsWith(() -> subject.doStateTransition(), FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
 	}
 
 	@Test
 	void unarchivesDataWithMatchingHash() {
-		final var hashBytes = PRETEND_HASH.toByteArray();
-
-		givenTypicalTxnInCtx(false, PREPARE_UPGRADE, Optional.of(CANONICAL_FILE), Optional.of(PRETEND_HASH));
-		given(specialFiles.hashMatches(eq(CANONICAL_FILE), eq(hashBytes))).willReturn(true);
-		given(specialFiles.get(CANONICAL_FILE)).willReturn(PRETEND_ARCHIVE);
+		givenTypicalTxnInCtx(false, PREPARE_UPGRADE, Optional.of(SOFTWARE_UPGRADE_FILE), Optional.of(PRETEND_HASH));
+		given(specialFiles.hashMatches(eq(SOFTWARE_UPGRADE_FILE), eq(hashBytes))).willReturn(true);
+		given(specialFiles.get(SOFTWARE_UPGRADE_FILE)).willReturn(PRETEND_ARCHIVE);
 
 		subject.doStateTransition();
 
-		verify(upgradeActions).extractNow(PRETEND_ARCHIVE);
+		verify(upgradeActions).extractSoftwareUpgrade(PRETEND_ARCHIVE);
 		verify(networkCtx).recordPreparedUpgrade(freezeTxn.getFreeze());
 	}
 
@@ -321,16 +354,16 @@ class FreezeTransitionLogicTest {
 
 	@Test
 	void prepPrecheckRejectsImpossibleHash() {
-		given(specialFiles.contains(CANONICAL_FILE)).willReturn(true);
-		givenTypicalTxn(false, PREPARE_UPGRADE, Optional.of(CANONICAL_FILE), Optional.empty());
+		given(specialFiles.contains(SOFTWARE_UPGRADE_FILE)).willReturn(true);
+		givenTypicalTxn(false, PREPARE_UPGRADE, Optional.of(SOFTWARE_UPGRADE_FILE), Optional.empty());
 
 		assertEquals(FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH, subject.semanticCheck().apply(freezeTxn));
 	}
 
 	@Test
 	void prepPrecheckAcceptsViableValues() {
-		given(specialFiles.contains(CANONICAL_FILE)).willReturn(true);
-		givenTypicalTxn(false, PREPARE_UPGRADE, Optional.of(CANONICAL_FILE), Optional.of(PRETEND_HASH));
+		given(specialFiles.contains(SOFTWARE_UPGRADE_FILE)).willReturn(true);
+		givenTypicalTxn(false, PREPARE_UPGRADE, Optional.of(SOFTWARE_UPGRADE_FILE), Optional.of(PRETEND_HASH));
 
 		assertEquals(OK, subject.semanticCheck().apply(freezeTxn));
 	}
