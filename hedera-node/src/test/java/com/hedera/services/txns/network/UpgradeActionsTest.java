@@ -120,6 +120,7 @@ class UpgradeActionsTest {
 	void catchUpIsNoopWithNothingToDo() {
 		rmIfPresent(FREEZE_SCHEDULED_MARKER);
 		rmIfPresent(EXEC_IMMEDIATE_MARKER);
+		given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
 
 		subject.catchUpOnMissedSideEffects();
 

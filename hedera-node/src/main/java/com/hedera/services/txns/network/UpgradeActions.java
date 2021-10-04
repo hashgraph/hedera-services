@@ -187,8 +187,9 @@ public class UpgradeActions {
 	private void writeMarker(final String file, @Nullable final Instant now) {
 		final var path = Paths.get(dynamicProperties.upgradeArtifactsLoc(), file);
 		try {
-			if (!path.toFile().exists()) {
-				Files.createDirectories(path);
+			final var artifactsDirPath = Paths.get(dynamicProperties.upgradeArtifactsLoc());
+			if (artifactsDirPath.toFile().exists()) {
+				Files.createDirectories(artifactsDirPath);
 			}
 			final var contents = (now == null) ? MARK : ("" + now.getEpochSecond());
 			Files.writeString(path, contents);
