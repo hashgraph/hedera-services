@@ -32,6 +32,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Objects;
@@ -63,6 +65,8 @@ public class UpgradeActions {
 	public interface UnzipAction {
 		void unzip(byte[] archiveData, String artifactsLoc) throws IOException;
 	}
+
+	private FileStringWriter fileStringWriter = Files::writeString;
 
 	private final UnzipAction unzipAction;
 	private final GlobalDynamicProperties dynamicProperties;
@@ -212,11 +216,21 @@ public class UpgradeActions {
 				Files.createDirectories(artifactsDirPath);
 			}
 			final var contents = (now == null) ? MARK : ("" + now.getEpochSecond());
-			Files.writeString(path, contents);
+			fileStringWriter.writeString(path, contents);
 			log.info("Wrote marker {}", path);
 		} catch (IOException e) {
 			log.error("Failed to write NMT marker {}", path, e);
 			log.error(MANUAL_REMEDIATION_ALERT);
 		}
+	}
+
+	@FunctionalInterface
+	interface FileStringWriter {
+		Path writeString(Path path, CharSequence csq, OpenOption... options) throws IOException;
+	}
+
+	/* --- Only used by unit tests --- */
+	void setFileStringWriter(FileStringWriter fileStringWriter) {
+		this.fileStringWriter = fileStringWriter;
 	}
 }

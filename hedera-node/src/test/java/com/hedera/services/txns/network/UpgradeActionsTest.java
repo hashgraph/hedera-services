@@ -49,6 +49,7 @@ import static com.hedera.services.txns.network.UpgradeActions.EXEC_IMMEDIATE_MAR
 import static com.hedera.services.txns.network.UpgradeActions.EXEC_TELEMETRY_MARKER;
 import static com.hedera.services.txns.network.UpgradeActions.FREEZE_ABORTED_MARKER;
 import static com.hedera.services.txns.network.UpgradeActions.FREEZE_SCHEDULED_MARKER;
+import static com.hedera.services.txns.network.UpgradeActions.MARK;
 import static com.hedera.services.txns.network.UpgradeActions.NOW_FROZEN_MARKER;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -57,13 +58,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class UpgradeActionsTest {
 	private static final Instant then = Instant.ofEpochSecond(1_234_567L, 890);
 	private static final String markerFilesLoc = "src/test/resources/upgrade";
-	private static final String nonexistentMarkerFilesLoc = "src/test/resources/edargpu";
+	private static final String otherMarkerFilesLoc = "src/test/resources/upgrade/edargpu";
 	private static final byte[] PRETEND_ARCHIVE =
 			"This is missing something. Hard to put a finger on what...".getBytes(StandardCharsets.UTF_8);
 
@@ -302,9 +304,35 @@ class UpgradeActionsTest {
 	}
 
 	@Test
-	void complainsLoudlyWhenUnableToWriteMarker() {
-		given(dynamicProperties.upgradeArtifactsLoc()).willReturn(nonexistentMarkerFilesLoc);
-		final var p = Paths.get(nonexistentMarkerFilesLoc, FREEZE_ABORTED_MARKER);
+	void canStillWriteMarkersEvenIfDirDoesntExist() throws IOException {
+		rmIfPresent(otherMarkerFilesLoc, FREEZE_ABORTED_MARKER);
+		final var d = Paths.get(otherMarkerFilesLoc).toFile();
+		if (d.exists()) {
+			d.delete();
+		}
+
+		given(dynamicProperties.upgradeArtifactsLoc()).willReturn(otherMarkerFilesLoc);
+
+		subject.abortScheduledFreeze();
+
+		verify(dualState).setFreezeTime(null);
+
+		assertMarkerCreated(FREEZE_ABORTED_MARKER, null, otherMarkerFilesLoc);
+
+		rmIfPresent(otherMarkerFilesLoc, FREEZE_ABORTED_MARKER);
+		if (d.exists()) {
+			d.delete();
+		}
+	}
+
+	@Test
+	void complainsLoudlyWhenUnableToWriteMarker() throws IOException {
+		final var p = Paths.get(markerFilesLoc, FREEZE_ABORTED_MARKER);
+		final var throwingWriter = mock(UpgradeActions.FileStringWriter.class);
+
+		given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
+		given(throwingWriter.writeString(p, MARK)).willThrow(IOException.class);
+		subject.setFileStringWriter(throwingWriter);
 
 		subject.abortScheduledFreeze();
 
@@ -327,15 +355,30 @@ class UpgradeActionsTest {
 	}
 
 	private static void rmIfPresent(String file) {
-		final var p = Paths.get(markerFilesLoc, file);
+		rmIfPresent(markerFilesLoc, file);
+	}
+
+	private static void rmIfPresent(final String baseDir, final String file) {
+		final var p = Paths.get(baseDir, file);
 		final var f = p.toFile();
 		if (f.exists()) {
 			f.delete();
 		}
 	}
 
-	private void assertMarkerCreated(final String file, final @Nullable Instant when) throws IOException {
-		final var p = Paths.get(markerFilesLoc, file);
+	private void assertMarkerCreated(
+			final String file,
+			final @Nullable Instant when
+	) throws IOException {
+		assertMarkerCreated(file, when, markerFilesLoc);
+	}
+
+	private void assertMarkerCreated(
+			final String file,
+			final @Nullable Instant when,
+			final String baseDir
+	) throws IOException {
+		final var p = Paths.get(baseDir, file);
 		final var f = p.toFile();
 		assertTrue(f.exists(), file + " should have been created, but wasn't");
 		final var contents = Files.readString(p);
@@ -345,18 +388,18 @@ class UpgradeActionsTest {
 					logCaptor.infoLogs(),
 					contains(
 							Matchers.equalTo(
-									"About to unzip 58 bytes for software update into " + markerFilesLoc),
+									"About to unzip 58 bytes for software update into " + baseDir),
 							Matchers.equalTo(
-									"Finished unzipping 58 bytes for software update into " + markerFilesLoc),
+									"Finished unzipping 58 bytes for software update into " + baseDir),
 							Matchers.equalTo("Wrote marker " + p)));
 		} else if (file.equals(EXEC_TELEMETRY_MARKER)) {
 			assertThat(
 					logCaptor.infoLogs(),
 					contains(
 							Matchers.equalTo(
-									"About to unzip 58 bytes for telemetry update into " + markerFilesLoc),
+									"About to unzip 58 bytes for telemetry update into " + baseDir),
 							Matchers.equalTo(
-									"Finished unzipping 58 bytes for telemetry update into " + markerFilesLoc),
+									"Finished unzipping 58 bytes for telemetry update into " + baseDir),
 							Matchers.equalTo("Wrote marker " + p)));
 		} else {
 			assertThat(
