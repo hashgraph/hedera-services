@@ -16,8 +16,9 @@ appear below.
 4. [Updating system files](#updating-system-files)
 5. [Validating network services](#validating-network-services)
 6. [Preparing for an NMT upgrade](#preparing-an-nmt-software-upgrade)
-7. [Scheduling a network freeze](#scheduling-a-network-freeze)
-8. [Re-keying an account](#updating-account-keys)
+7. [Launching an NMT telemetry upgrade](#launching-an-nmt-telemetry-upgrade)
+8. [Scheduling a network freeze](#scheduling-a-network-freeze)
+9. [Re-keying an account](#updating-account-keys)
 
 # Setting up the working directory
 
@@ -222,6 +223,30 @@ java.lang.IllegalStateException: Deprecated memo field cannot be set to 'This no
 ...
 ```
 
+## Uploading special files
+
+System files in the range `0.0.150-159` are _special files_ that do not have the normal 1MB size limit. 
+These are used to stage ZIP artifacts for an NMT software or telemetry upgrade. By default, file `0.0.150`
+is used for a software update ZIP, and file `0.0.159` for a telemetry upgrade ZIP. 
+
+:warning:&nbsp;Only three accounts have permission to update the special files: `0.0.2`, `0.0.50`, and `0.0.58`.
+
+To upload such artifacts, use the special files names as below,
+```
+$ tree localhost/sysfiles/
+localhost/sysfiles/
+├── softwareUpgrade.zip
+└── telemetryUpgrade.zip
+```
+
+Then proceed as with any other `sysfiles upload` command, 
+```
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 58 sysfiles upload software-zip
+...
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 58 sysfiles upload telemetry-zip
+...
+```
+
 # Validating network services
 
 :building_construction:&nbsp;**TODO** the _ValidationScenarios.jar_ functionality to be migrated here.
@@ -235,13 +260,26 @@ $ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localh
 # Preparing an NMT software upgrade
 
 To prepare for an automatic software upgrade, there must exist a system file in the range `0.0.150-159` 
-that is a ZIP archive with artifacts listed in the [NMT requirements document](https://github.com/swirlds/swirlds-docker/blob/main/docs/docker-infrastructure-design.md#toc-phase-1-feat-hedera-node-protobuf-defs-current). The SHA-384 hash of this ZIP must be known so 
-the nodes can validate the integrity of the upgrade file before staging its artifacts for NMT to use.
-This looks like,
+(by default, `0.0.150`) that is a ZIP archive with artifacts listed in the [NMT requirements document](https://github.com/swirlds/swirlds-docker/blob/main/docs/docker-infrastructure-design.md#toc-phase-1-feat-hedera-node-protobuf-defs-current). The SHA-384 
+hash of this ZIP must be known so the nodes can validate the integrity of the upgrade file before 
+staging its artifacts for NMT to use.  This looks like,
 
 ```
 $ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 2 \
-> stage --upgrade-file-num 150 --upgrade-zip-hash 5d3b0e619d8513dfbf606ef00a2e83ba97d736f5f5ba61561d895ea83a6d4c34fce05d6cd74c83ec171f710e37e12aab
+> stage-upgrade --upgrade-zip-hash 5d3b0e619d8513dfbf606ef00a2e83ba97d736f5f5ba61561d895ea83a6d4c34fce05d6cd74c83ec171f710e37e12aab
+```
+
+# Launching an NMT telemetry upgrade
+
+To perform an automatic telemetry upgrade, there must exist a system file in the range `0.0.150-159` 
+(by default, `0.0.159`) that is a ZIP archive with artifacts listed in the [NMT requirements document](https://github.com/swirlds/swirlds-docker/blob/main/docs/docker-infrastructure-design.md#toc-phase-1-feat-hedera-node-protobuf-defs-current). The SHA-384 
+hash of this ZIP must be known so the nodes can validate the integrity of the upgrade file before 
+staging its artifacts for NMT to use.  This looks like,
+
+```
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 2 upgrade-telemetry \
+> --upgrade-zip-hash 8ec75ab44b6c8ccac4a6e7f7d77b5a66280cad8d8a86ed961975a3bea597613f83af9075f65786bf9101d50047ca768f \
+> --start-time 2022-01-01.00:00:00
 ```
 
 # Scheduling a network freeze
@@ -250,19 +288,19 @@ Freeze start times are (consensus) UTC times formatted as `yyyy-MM-dd.HH:mm:ss`.
 both scheduled and aborted; and a scheduled freeze may also be flagged as the trigger for an NMT
 software upgrade.
 
-A vanilla freeze with no NMT upgrade looks like, 
+A vanilla freeze with no NMT upgrade only includes the start time thusly, 
 ```
 $ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 2 \
-> freeze --start-time 2021-09-09.20:11:13
+> freeze --start-time 2022-01-01.00:00:00
 ```
 
-While a freeze triggering a staged NMT upgrade includes the `--trigger-staged-upgrade` flag,
+And a freeze that should trigger a staged NMT upgrade **must** add the `--trigger-staged-upgrade` flag,
 ```
 $ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 2 \
 > freeze --start-time 2021-09-09.20:11:13 --trigger-staged-upgrade
 ```
 
-To abort a scheduled freeze, omit the `--start-time` option and use the `--abort` flag. 
+To abort a scheduled freeze, just use the `--abort` flag like, 
 ```
 $ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 2 \
 > freeze --abort 

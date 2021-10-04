@@ -47,8 +47,9 @@ public class SysFileDownloadCommand implements Callable<Integer> {
 			arity = "1..*",
 			paramLabel = "<sysfiles>",
 			description = "one or more from " +
-					"{ address-book, node-details, fees, rates, props, permissions, throttles } (or " +
-					"{ 101, 102, 111, 112, 121, 122, 123 })---or 'all'")
+					"{ address-book, node-details, fees, rates, props, " +
+					"permissions, throttles, software-zip, telemetry-zip } (or " +
+					"{ 101, 102, 111, 112, 121, 122, 123, 150, 159 })---or 'all'")
 	private String[] sysFiles;
 
 	@Override

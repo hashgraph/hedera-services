@@ -60,12 +60,14 @@ public class UpgradeSuite extends HapiApiSuite {
 
 	private final String pragmatism = "Think of the children!";
 	private final String poeticUpgradeLoc = "testfiles/poeticUpgrade.zip";
+	private final String heavyPoeticUpgradeLoc = "testfiles/heavyPoeticUpgrade.zip";
 
 	public static void main(String... args) {
 		new UpgradeSuite().runSuiteSync();
 	}
 
 	private final byte[] poeticUpgradeHash;
+	private final byte[] heavyPoeticUpgradeHash;
 	private final byte[] notEvenASha384Hash = "abcdefgh".getBytes(StandardCharsets.UTF_8);
 
 	private final String standardUpdateFile = "0.0.150";
@@ -75,7 +77,9 @@ public class UpgradeSuite extends HapiApiSuite {
 		try {
 			final var sha384 = MessageDigest.getInstance("SHA-384");
 			poeticUpgradeHash = sha384.digest(Files.readAllBytes(Paths.get(poeticUpgradeLoc)));
+			heavyPoeticUpgradeHash = sha384.digest(Files.readAllBytes(Paths.get(heavyPoeticUpgradeLoc)));
 			log.info("Poetic upgrade hash: " + CommonUtils.hex(poeticUpgradeHash));
+			log.info("Heavy poetic upgrade hash: " + CommonUtils.hex(heavyPoeticUpgradeHash));
 		} catch (NoSuchAlgorithmException | IOException e) {
 			throw new IllegalStateException("UpgradeSuite environment is unsuitable", e);
 		}
@@ -93,11 +97,11 @@ public class UpgradeSuite extends HapiApiSuite {
 //						freezeOnlyPrecheckRejectsInvalid(),
 //						freezeUpgradeValidationRejectsInvalid(),
 //						freezeAbortValidationRejectsInvalid(),
-						prepareUpgradeValidationRejectsInvalid(),
+//						prepareUpgradeValidationRejectsInvalid(),
 //						telemetryUpgradeValidationRejectsInvalid(),
 
-						/* Happy paths */
-//						canFreezeUpgradeWithPreparedUpgrade(),
+						canFreezeUpgradeWithPreparedUpgrade(),
+						canTelemetryUpgradeWithValid(),
 				}
 		);
 	}
@@ -206,11 +210,19 @@ public class UpgradeSuite extends HapiApiSuite {
 		return defaultHapiSpec("TelemetryUpgradeValidationRejectsInvalid")
 				.given(
 						cryptoTransfer(tinyBarsFromTo(GENESIS, FREEZE_ADMIN, ONE_HUNDRED_HBARS)),
-						telemetryUpgrade().startingIn(-60).minutes()
+						telemetryUpgrade()
+								.withUpdateFile(standardTelemetryFile)
+								.havingHash(poeticUpgradeHash)
+								.startingIn(-60).minutes()
 								.hasPrecheck(FREEZE_START_TIME_MUST_BE_FUTURE),
-						telemetryUpgrade().startingIn(3).minutes().withUpdateFile("0.0.149")
+						telemetryUpgrade()
+								.withUpdateFile("0.0.149")
+								.havingHash(poeticUpgradeHash)
+								.startingIn(3).minutes()
 								.hasPrecheck(FREEZE_UPDATE_FILE_DOES_NOT_EXIST),
-						telemetryUpgrade().startingIn(3).minutes().withUpdateFile(standardTelemetryFile)
+						telemetryUpgrade().startingIn(3).minutes()
+								.withUpdateFile(standardTelemetryFile)
+								.havingHash(notEvenASha384Hash)
 								.hasPrecheck(FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH)
 				).when(
 						fileUpdate(standardTelemetryFile)
@@ -240,6 +252,23 @@ public class UpgradeSuite extends HapiApiSuite {
 				).then(
 						freezeUpgrade().startingIn(60).minutes(),
 						freezeAbort()
+				);
+	}
+
+	private HapiApiSpec canTelemetryUpgradeWithValid() {
+		return defaultHapiSpec("CanTelemetryUpgradeWithValid")
+				.given(
+						cryptoTransfer(tinyBarsFromTo(GENESIS, FREEZE_ADMIN, ONE_HUNDRED_HBARS))
+				).when(
+						fileUpdate(standardUpdateFile)
+								.signedBy(FREEZE_ADMIN)
+								.path(heavyPoeticUpgradeLoc)
+								.payingWith(FREEZE_ADMIN)
+				).then(
+						telemetryUpgrade()
+								.startingIn(60).minutes()
+								.withUpdateFile(standardUpdateFile)
+								.havingHash(heavyPoeticUpgradeHash)
 				);
 	}
 }

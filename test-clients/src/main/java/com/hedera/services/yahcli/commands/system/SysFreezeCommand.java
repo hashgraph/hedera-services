@@ -22,11 +22,10 @@ package com.hedera.services.yahcli.commands.system;
 
 import com.hedera.services.yahcli.Yahcli;
 import com.hedera.services.yahcli.suites.FreezeSuite;
+import com.hedera.services.yahcli.suites.Utils;
 import picocli.CommandLine;
 
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.concurrent.Callable;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.SpecStatus.PASSED;
@@ -42,8 +41,8 @@ public class SysFreezeCommand implements Callable<Integer> {
 	private Yahcli yahcli;
 
 	@CommandLine.Option(names = { "-s", "--start-time" },
-			paramLabel = "Freeze start time in UTC, use format 'yyyy-MM-dd.HH:mm:ss'")
-	private String freezeStartTimeStr;
+			paramLabel = "Freeze start time in UTC (yyyy-MM-dd.HH:mm:ss)")
+	private String startTime;
 
 	@CommandLine.Option(names = { "-u", "--trigger-staged-upgrade" },
 			description = "Freeze should trigger a staged NMT upgrade",
@@ -51,7 +50,7 @@ public class SysFreezeCommand implements Callable<Integer> {
 	private boolean triggerNmtUpgrade;
 
 	@CommandLine.Option(names = { "-a", "--abort" },
-			description = "Abort the scheduled freeze",
+			description = "Abort the scheduled freeze and/or staged NMT upgrade",
 			defaultValue = "false")
 	private boolean abortFreeze;
 
@@ -61,7 +60,7 @@ public class SysFreezeCommand implements Callable<Integer> {
 
 		final var config = configFrom(yahcli);
 
-		final var freezeStartTime = abortFreeze ? Instant.EPOCH : getFreezeStartTime(freezeStartTimeStr);
+		final var freezeStartTime = abortFreeze ? Instant.EPOCH : Utils.parseFormattedInstant(startTime);
 		final var delegate = new FreezeSuite(config.asSpecConfig(), freezeStartTime, abortFreeze, triggerNmtUpgrade);
 
 		delegate.runSuiteSync();
@@ -77,28 +76,22 @@ public class SysFreezeCommand implements Callable<Integer> {
 		if (abortFreeze) {
 			return "freeze aborted";
 		} else {
-			return "freeze scheduled for " + freezeStartTimeStr
+			return "freeze scheduled for " + startTime
 					+ (triggerNmtUpgrade ? " w/ prepared NMT upgrade" : "");
 		}
 	}
 
 	private void assertSensibleArgLine() {
-		if (freezeStartTimeStr == null && !abortFreeze) {
+		if (startTime == null && !abortFreeze) {
 			throw new CommandLine.ParameterException(
 					yahcli.getSpec().commandLine(),
 					"Freeze start time can only be omitted with an explicit abort flag");
 		}
-		if (freezeStartTimeStr != null && abortFreeze) {
+		if (startTime != null && abortFreeze) {
 			throw new CommandLine.ParameterException(
 					yahcli.getSpec().commandLine(),
 					"Freeze start time cannot be given with an explicit abort flag");
 		}
 	}
 
-	private Instant getFreezeStartTime(final String timeStampInStr) {
-		final var dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd.HH:mm:ss")
-				.withZone(ZoneId.of("Etc/UTC"));
-
-		return Instant.from(dtf.parse(timeStampInStr));
-	}
 }
