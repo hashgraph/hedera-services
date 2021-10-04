@@ -596,7 +596,7 @@ commands:
               ${JRS_OPTIONS} \
               -Dlog4j.configurationFile=log4j2-jrs.xml \
               -Dspring.output.ansi.enabled=ALWAYS \
-              -jar regression.jar "${CONFIG_PATH}" "<< parameters.hedera_services_path >>" ${CI_PARAMETERS}
+              -jar regression.jar "${CONFIG_PATH}" -r "<< parameters.hedera_services_path >>" -w DOCKER_REMOTE ${CI_PARAMETERS}
             popd > /dev/null 2>&1
           no_output_timeout: 30m
 
@@ -1351,7 +1351,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression; git checkout run-services-regression
+            cd regression; git checkout develop-for-services
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
