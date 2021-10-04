@@ -39,14 +39,17 @@ public class ConsensusPublisher {
 
     RingBuffer<TransactionEvent> ringBuffer;
     ExpandHandleSpan expandHandleSpan;
+    Latch latch;
 
     @AssistedInject
     public ConsensusPublisher(
             @Assisted RingBuffer<TransactionEvent> ringBuffer,
-            ExpandHandleSpan expandHandleSpan
+            ExpandHandleSpan expandHandleSpan,
+            Latch latch
     ) {
         this.ringBuffer = ringBuffer;
         this.expandHandleSpan = expandHandleSpan;
+        this.latch = latch;
     }
 
     /**
@@ -90,6 +93,20 @@ public class ConsensusPublisher {
             logger.warn("Consensus platform txn was not gRPC!", e);
         } finally {
             ringBuffer.publish(sequence);
+        }
+    }
+
+    public void await() throws InterruptedException {
+        long sequence = ringBuffer.next();
+        TransactionEvent event = ringBuffer.get(sequence);
+        try
+        {
+            event.setLast(true);
+        }
+        finally
+        {
+            ringBuffer.publish(sequence);
+            latch.await();
         }
     }
 

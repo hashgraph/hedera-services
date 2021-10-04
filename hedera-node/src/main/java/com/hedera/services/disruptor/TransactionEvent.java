@@ -38,6 +38,7 @@ public class TransactionEvent {
     PlatformTxnAccessor accessor;
     SwirldDualState dualState;
     boolean errored = false;
+    boolean last = false;
 
     public long getSubmittingMember() {
         return submittingMember;
@@ -71,6 +72,10 @@ public class TransactionEvent {
 
     public void setErrored(boolean errored) { this.errored = errored; }
 
+    public boolean isLast() { return last; }
+
+    public void setLast(boolean last) { this.last = last; }
+
     public void clear() {
         submittingMember = -1;
         isConsensus = false;
@@ -79,5 +84,6 @@ public class TransactionEvent {
         accessor = null;
         dualState = null;
         errored = false;
+        last = false;
     }
 }

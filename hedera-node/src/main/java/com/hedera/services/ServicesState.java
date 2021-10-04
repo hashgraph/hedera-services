@@ -291,7 +291,12 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public void noMoreTransactions() {
-		/* No-op. */
+		try {
+			metadata.app().consensusProcessor().getPublisher().await();
+		} catch (InterruptedException e) {
+			log.info("Thread interrupted while waiting for transaction processing to finish");
+			Thread.currentThread().interrupt();		// sonar requires us to propagate interrupt
+		}
 	}
 
 	/* --- FastCopyable --- */

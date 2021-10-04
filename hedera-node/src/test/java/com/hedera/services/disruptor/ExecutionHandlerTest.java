@@ -44,12 +44,13 @@ class ExecutionHandlerTest {
     @Mock PlatformTxnAccessor accessor;
     @Mock DualStateAccessor dualStateAccessor;
     @Mock SwirldDualState dualState;
+    @Mock Latch latch;
 
     private ExecutionHandler handler;
 
     @BeforeEach
     void setUp() {
-        handler = new ExecutionHandler(true, processLogic, dualStateAccessor);
+        handler = new ExecutionHandler(true, processLogic, dualStateAccessor, latch);
     }
 
     @Test
@@ -68,6 +69,7 @@ class ExecutionHandlerTest {
         // then:
         verify(dualStateAccessor).setDualState(dualState);
         verify(processLogic).incorporateConsensusTxn(accessor, now, 123);
+        verifyNoInteractions(latch);
         assertNull(event.getAccessor());
     }
 
@@ -81,7 +83,7 @@ class ExecutionHandlerTest {
         event.setConsensusTime(now);
         event.setErrored(false);
 
-        handler = new ExecutionHandler(false, processLogic, dualStateAccessor);
+        handler = new ExecutionHandler(false, processLogic, dualStateAccessor, latch);
 
         // when:
         handler.onEvent(event, 4, false);
@@ -89,6 +91,7 @@ class ExecutionHandlerTest {
         // then:
         verify(dualStateAccessor).setDualState(dualState);
         verify(processLogic).incorporateConsensusTxn(accessor, now, 123);
+        verifyNoInteractions(latch);
         assertNotNull(event.getAccessor());
     }
 
@@ -104,6 +107,7 @@ class ExecutionHandlerTest {
         // then:
         verifyNoInteractions(dualStateAccessor);
         verifyNoInteractions(processLogic);
+        verifyNoInteractions(latch);
         assertNull(event.getAccessor());
     }
 
@@ -123,6 +127,20 @@ class ExecutionHandlerTest {
         handler.onEvent(event, 4, false);
 
         // then:
+        verifyNoInteractions(latch);
+        assertNull(event.getAccessor());
+    }
+
+    @Test
+    void handleLastEvent() {
+        final var event = new TransactionEvent();
+        event.setLast(true);
+
+        // when:
+        handler.onEvent(event, 4, false);
+
+        // then:
+        verify(latch).countdown();
         assertNull(event.getAccessor());
     }
 }

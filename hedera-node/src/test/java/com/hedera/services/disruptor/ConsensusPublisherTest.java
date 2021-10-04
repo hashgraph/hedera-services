@@ -47,12 +47,13 @@ class ConsensusPublisherTest {
     @Mock PlatformTxnAccessor txnAccessor;
     @Mock SwirldTransaction transaction;
     @Mock SwirldDualState dualState;
+    @Mock Latch latch;
 
     ConsensusPublisher publisher;
 
     @BeforeEach
     void setUp() {
-        publisher = new ConsensusPublisher(ringBuffer, expandHandleSpan);
+        publisher = new ConsensusPublisher(ringBuffer, expandHandleSpan, latch);
     }
 
     @Test
@@ -90,5 +91,20 @@ class ConsensusPublisherTest {
         // then:
         verify(ringBuffer).publish(1L);
         assertTrue(event.isErrored());
+    }
+
+    @Test
+    void sendLastEvent() throws InterruptedException {
+        TransactionEvent event = new TransactionEvent();
+
+        given(ringBuffer.next()).willReturn(1L);
+        given(ringBuffer.get(1L)).willReturn(event);
+
+        // when:
+        publisher.await();
+
+        // then:
+        verify(ringBuffer).publish(1L);
+        verify(latch).await();
     }
 }

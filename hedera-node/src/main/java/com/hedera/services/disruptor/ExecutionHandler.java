@@ -35,20 +35,27 @@ public class ExecutionHandler implements EventHandler<TransactionEvent> {
     boolean isLastHandler;
     StandardProcessLogic processLogic;
     DualStateAccessor dualStateAccessor;
+    Latch latch;
 
     @AssistedInject
     public ExecutionHandler(
             @Assisted boolean isLastHandler,
             StandardProcessLogic processLogic,
-            DualStateAccessor dualStateAccessor
+            DualStateAccessor dualStateAccessor,
+            Latch latch
     ) {
         this.isLastHandler = isLastHandler;
         this.processLogic = processLogic;
         this.dualStateAccessor = dualStateAccessor;
+        this.latch = latch;
     }
 
     public void onEvent(TransactionEvent event, long sequence, boolean endOfBatch) {
         try {
+            // The final event is purely a signal, there is no transaction associated with it.
+            if (event.isLast())
+                return;
+
             // Don't process if we encountered a parsing error from the event publisher
             if (!event.isErrored()) {
                 dualStateAccessor.setDualState(event.getDualState());
@@ -59,11 +66,16 @@ public class ExecutionHandler implements EventHandler<TransactionEvent> {
                 );
             }
         } catch(Exception e) {
-            logger.warn("Unhandled exception while execution consensus logic", e);
+            logger.warn("Unhandled exception while executing consensus logic", e);
 
             // Do we need to have a top-level catch block? What transaction status do we set?
 //            event.getAccessor().setValidationStatus(INVALID_TRANSACTION);
         } finally {
+            // If this is the last event in a round, platform will be waiting on noMoreTransactions().
+            // We need to send a signal that all previously submitted transactions have been handled.
+            if (event.isLast())
+                latch.countdown();
+
             // This is the last event handler so clear the references in the event slot. If we don't do this
             // the accessor object will have a hard link and not be GC'ed until this slot is overwritten by
             // another event.

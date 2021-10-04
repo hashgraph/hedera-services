@@ -48,6 +48,8 @@ class ConsensusProcessorTest {
     ExecutionHandler.Factory executionHandlerFactory;
     @Mock
     ConsensusPublisher.Factory publisherFactory;
+    @Mock
+    Latch latch;
 
     ConsensusProcessor processor;
     @Captor
@@ -68,7 +70,7 @@ class ConsensusProcessorTest {
         given(publisherFactory.create(captor.capture())).willReturn(Mockito.mock(ConsensusPublisher.class));
 
         // when:
-        processor = new ConsensusProcessor(properties, validationHandlerFactory, executionHandlerFactory, publisherFactory);
+        processor = new ConsensusProcessor(properties, validationHandlerFactory, executionHandlerFactory, publisherFactory, latch);
 
         // then:
         verify(validationHandlerFactory).createForConsensus(0, 2, false);
@@ -88,7 +90,7 @@ class ConsensusProcessorTest {
         given(publisherFactory.create(captor.capture())).willReturn(Mockito.mock(ConsensusPublisher.class));
 
         // when:
-        processor = new ConsensusProcessor(properties, validationHandlerFactory, executionHandlerFactory, publisherFactory);
+        processor = new ConsensusProcessor(properties, validationHandlerFactory, executionHandlerFactory, publisherFactory, latch);
 
         // then:
         verify(validationHandlerFactory).createForConsensus(0, 2, false);

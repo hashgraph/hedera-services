@@ -107,4 +107,18 @@ class ValidationHandlerTest {
         verifyNoInteractions(action2);
         assertNull(event.getAccessor());
     }
+
+    @Test
+    void skipEventWhenLast() {
+        final var event = new TransactionEvent();
+        event.setLast(true);
+
+        // when:
+        handler.onEvent(event, 4, false);
+
+        // then:
+        verifyNoInteractions(action1);
+        verifyNoInteractions(action2);
+        assertNull(event.getAccessor());
+    }
 }

@@ -49,6 +49,10 @@ public class ValidationHandler implements EventHandler<TransactionEvent> {
             return;
 
         try {
+            // The final event is purely a signal, there is no transaction associated with it.
+            if (event.isLast())
+                return;
+
             // Don't process if we encountered a parsing error from the event publisher
             if (!event.isErrored()) {
                 final var accessor = event.getAccessor();

@@ -104,6 +104,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willCallRealMethod;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -244,9 +245,34 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void noMoreTransactionsIsNoop() {
-		// expect:
-		assertDoesNotThrow(subject::noMoreTransactions);
+	void noMoreTransactionsSuccessful() throws InterruptedException {
+		// setup:
+		subject.setMetadata(metadata);
+		given(metadata.app()).willReturn(app);
+		given(app.consensusProcessor()).willReturn(consensusProcessor);
+		given(consensusProcessor.getPublisher()).willReturn(consensusPublisher);
+
+		// when:
+		subject.noMoreTransactions();
+
+		// then:
+		verify(consensusPublisher).await();
+	}
+
+	@Test
+	void noMoreTransactionsInterrupted() throws InterruptedException {
+		// setup:
+		subject.setMetadata(metadata);
+		given(metadata.app()).willReturn(app);
+		given(app.consensusProcessor()).willReturn(consensusProcessor);
+		given(consensusProcessor.getPublisher()).willReturn(consensusPublisher);
+		doThrow(new InterruptedException()).when(consensusPublisher).await();
+
+		// when:
+		subject.noMoreTransactions();
+
+		// then:
+		verify(consensusPublisher).await();
 	}
 
 	@Test
@@ -265,43 +291,6 @@ class ServicesStateTest {
 		verify(preConsensusProcessor).getPublisher();
 		verify(preConsensusPublisher).submit(transaction);
 	}
-//
-//	@Test
-//	void warnsOfIpbe() throws InvalidProtocolBufferException {
-//		// setup:
-//		subject.setMetadata(metadata);
-//
-//		given(metadata.app()).willReturn(app);
-//		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
-//		given(expandHandleSpan.track(transaction)).willThrow(InvalidProtocolBufferException.class);
-//
-//		// when:
-//		subject.expandSignatures(transaction);
-//
-//		// then:
-//		assertThat(
-//				logCaptor.warnLogs(),
-//				contains(Matchers.startsWith("Method expandSignatures called with non-gRPC txn")));
-//		;
-//	}
-//
-//	@Test
-//	void warnsOfRace() throws InvalidProtocolBufferException {
-//		// setup:
-//		subject.setMetadata(metadata);
-//
-//		given(metadata.app()).willReturn(app);
-//		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
-//		given(expandHandleSpan.track(transaction)).willThrow(ConcurrentModificationException.class);
-//
-//		// when:
-//		subject.expandSignatures(transaction);
-//
-//		// then:
-//		assertThat(
-//				logCaptor.warnLogs(),
-//				contains(Matchers.startsWith("Unable to expand signatures, will be verified synchronously")));
-//	}
 
 	@Test
 	void handleNonConsensusTransactionAsExpected() {

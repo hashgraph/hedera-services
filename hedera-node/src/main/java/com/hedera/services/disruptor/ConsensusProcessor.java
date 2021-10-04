@@ -53,7 +53,8 @@ public class ConsensusProcessor extends AbstractProcessor {
             NodeLocalProperties properties,
             ValidationHandlerFactory validationHandlerFactory,
             ExecutionHandler.Factory executionHandlerFactory,
-            ConsensusPublisher.Factory publisherFactory
+            ConsensusPublisher.Factory publisherFactory,
+            Latch latch
     ) {
         super(properties.consensusRingBufferPower(), "consensus-handler", disruptor -> {
             int numHandlers = Math.max(properties.consensusValidationHandlerCount(), DEFAULT_VALIDATION_HANDLERS);
