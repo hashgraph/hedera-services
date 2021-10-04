@@ -623,6 +623,22 @@ class TieredHederaFsTest {
 	}
 
 	@Test
+	void catGetsExpectedFromSpecialFiles() {
+		given(metadata.containsKey(fid)).willReturn(true);
+		given(metadata.get(fid)).willReturn(livingAttr);
+		given(specialFiles.contains(fid)).willReturn(true);
+		given(specialFiles.get(fid)).willReturn(origContents);
+
+		// when:
+		var contents = subject.cat(fid);
+
+		// then:
+		assertEquals(
+				new String(origContents),
+				new String(contents));
+	}
+
+	@Test
 	void usesMetadataToCheckExistence() {
 		given(metadata.containsKey(fid)).willReturn(true);
 
