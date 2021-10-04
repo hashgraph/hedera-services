@@ -864,13 +864,13 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Crypto-Restart-4N-1C:
-    triggers:
-      - schedule:
-          cron: "15 6 * * *"
-          filters:
-            branches:
-              only:
-                - master
+#    triggers:
+#      - schedule:
+#          cron: "15 6 * * *"
+#          filters:
+#            branches:
+#              only:
+#                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1173,7 +1173,7 @@ workflows:
             filters:
               branches:
                 ignore:
-                  - NONE
+                  - docker-regression
             workflow-name: "Continuous-integration"
         - sonar-check:
             context: SonarCloud
