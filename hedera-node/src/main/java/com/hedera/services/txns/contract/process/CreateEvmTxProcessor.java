@@ -30,6 +30,7 @@ import com.hedera.services.store.models.Account;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
@@ -70,12 +71,13 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 
 	@Override
 	protected MessageFrame buildInitialFrame(MessageFrame.Builder commonInitialFrame, HederaWorldState.Updater updater, Address to, Bytes payload) {
+		Bytes code = updater.get(to).getCode();
 		return commonInitialFrame
 				.type(MessageFrame.Type.CONTRACT_CREATION)
 				.address(to)
 				.contract(to)
-				.inputData(Bytes.EMPTY)
-				.code(new Code(payload))
+				.inputData(payload)
+				.code(new Code(code, Hash.hash(code)))
 				.build();
 	}
 }

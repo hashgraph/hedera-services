@@ -55,6 +55,7 @@ import org.hyperledger.besu.evm.contractvalidation.MaxCodeSizeRule;
 import org.hyperledger.besu.evm.contractvalidation.PrefixCodeRule;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.internal.EvmConfiguration;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogsBloomFilter;
 import org.hyperledger.besu.evm.operation.InvalidOperation;
@@ -120,7 +121,7 @@ abstract class EvmTxProcessor {
 		/* Deregister CREATE2 Opcode */
 		operationRegistry.put(new InvalidOperation(0xF5, gasCalculator));
 
-		var evm = new EVM(operationRegistry, gasCalculator);
+		var evm = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
 
 		final PrecompileContractRegistry precompileContractRegistry = new PrecompileContractRegistry();
 		MainnetPrecompiledContracts.populateForIstanbul(precompileContractRegistry, this.gasCalculator);
