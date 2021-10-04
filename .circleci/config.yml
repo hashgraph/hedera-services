@@ -596,7 +596,7 @@ commands:
               ${JRS_OPTIONS} \
               -Dlog4j.configurationFile=log4j2-jrs.xml \
               -Dspring.output.ansi.enabled=ALWAYS \
-              -jar regression.jar "${CONFIG_PATH}" -r "<< parameters.hedera_services_path >>" -w DOCKER_REMOTE ${CI_PARAMETERS}
+              -jar regression.jar "${CONFIG_PATH}" -r "<< parameters.hedera_services_path >>" -w DOCKER_REMOTE
             popd > /dev/null 2>&1
           no_output_timeout: 30m
 
