@@ -34,6 +34,7 @@ import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -53,6 +54,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_FREEZE_IS_S
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_UPGRADE_HAS_BEEN_PREPARED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UPDATE_FILE_HASH_CHANGED_SINCE_PREPARE_UPGRADE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UPDATE_FILE_HASH_DOES_NOT_MATCH_PREPARED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UPDATE_FILE_ID_DOES_NOT_MATCH_PREPARED;
 
 @Singleton
 public class FreezeTransitionLogic implements TransitionLogic {
@@ -128,10 +131,10 @@ public class FreezeTransitionLogic implements TransitionLogic {
 			case FREEZE_ABORT:
 				return OK;
 			case FREEZE_ONLY:
-			case FREEZE_UPGRADE:
 				return validate(op, effectiveNow, false);
 			case PREPARE_UPGRADE:
 				return validate(op, null, true);
+			case FREEZE_UPGRADE:
 			case TELEMETRY_UPGRADE:
 				return validate(op, effectiveNow, true);
 			default:
@@ -224,6 +227,11 @@ public class FreezeTransitionLogic implements TransitionLogic {
 
 		final var curNetworkCtx = networkCtx.get();
 		validateTrue(curNetworkCtx.hasPreparedUpgrade(), NO_UPGRADE_HAS_BEEN_PREPARED);
+
+		final var fileMatches = op.getUpdateFile().getFileNum() == curNetworkCtx.getPreparedUpdateFileNum();
+		validateTrue(fileMatches, UPDATE_FILE_ID_DOES_NOT_MATCH_PREPARED);
+		final var hashMatches = Arrays.equals(op.getFileHash().toByteArray(), curNetworkCtx.getPreparedUpdateFileHash());
+		validateTrue(hashMatches, UPDATE_FILE_HASH_DOES_NOT_MATCH_PREPARED);
 
 		final var isHashUnchanged = curNetworkCtx.isPreparedFileHashValidGiven(specialFiles.get());
 		validateTrue(isHashUnchanged, UPDATE_FILE_HASH_CHANGED_SINCE_PREPARE_UPGRADE);

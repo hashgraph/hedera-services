@@ -21,11 +21,10 @@ package com.hedera.services.yahcli.commands.system;
  */
 
 import com.hedera.services.yahcli.Yahcli;
-import com.hedera.services.yahcli.suites.FreezeSuite;
+import com.hedera.services.yahcli.suites.FreezeHelperSuite;
 import com.hedera.services.yahcli.suites.Utils;
 import picocli.CommandLine;
 
-import java.time.Instant;
 import java.util.concurrent.Callable;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.SpecStatus.PASSED;
@@ -35,8 +34,8 @@ import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 @CommandLine.Command(
 		name = "freeze",
 		subcommands = { picocli.CommandLine.HelpCommand.class },
-		description = "Manages the network's maintenance freezes")
-public class SysFreezeCommand implements Callable<Integer> {
+		description = "Schedules a freeze for network maintenance (no NMT upgrade)")
+public class FreezeOnlyCommand implements Callable<Integer> {
 	@CommandLine.ParentCommand
 	private Yahcli yahcli;
 
@@ -44,54 +43,20 @@ public class SysFreezeCommand implements Callable<Integer> {
 			paramLabel = "Freeze start time in UTC (yyyy-MM-dd.HH:mm:ss)")
 	private String startTime;
 
-	@CommandLine.Option(names = { "-u", "--trigger-staged-upgrade" },
-			description = "Freeze should trigger a staged NMT upgrade",
-			defaultValue = "false")
-	private boolean triggerNmtUpgrade;
-
-	@CommandLine.Option(names = { "-a", "--abort" },
-			description = "Abort the scheduled freeze and/or staged NMT upgrade",
-			defaultValue = "false")
-	private boolean abortFreeze;
-
 	@Override
 	public Integer call() throws Exception {
-		assertSensibleArgLine();
 
 		final var config = configFrom(yahcli);
 
-		final var freezeStartTime = abortFreeze ? Instant.EPOCH : Utils.parseFormattedInstant(startTime);
-		final var delegate = new FreezeSuite(config.asSpecConfig(), freezeStartTime, abortFreeze, triggerNmtUpgrade);
+		final var freezeStartTime = Utils.parseFormattedInstant(startTime);
+		final var delegate = new FreezeHelperSuite(config.asSpecConfig(), freezeStartTime, false);
 
 		delegate.runSuiteSync();
 
 		if (delegate.getFinalSpecs().get(0).getStatus() == PASSED) {
-			COMMON_MESSAGES.info("SUCCESS - " + desc());
+			COMMON_MESSAGES.info("SUCCESS - " + "freeze scheduled for " + startTime);
 		}
 
 		return 0;
 	}
-
-	private String desc() {
-		if (abortFreeze) {
-			return "freeze aborted";
-		} else {
-			return "freeze scheduled for " + startTime
-					+ (triggerNmtUpgrade ? " w/ prepared NMT upgrade" : "");
-		}
-	}
-
-	private void assertSensibleArgLine() {
-		if (startTime == null && !abortFreeze) {
-			throw new CommandLine.ParameterException(
-					yahcli.getSpec().commandLine(),
-					"Freeze start time can only be omitted with an explicit abort flag");
-		}
-		if (startTime != null && abortFreeze) {
-			throw new CommandLine.ParameterException(
-					yahcli.getSpec().commandLine(),
-					"Freeze start time cannot be given with an explicit abort flag");
-		}
-	}
-
 }

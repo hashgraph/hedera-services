@@ -32,36 +32,49 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeUpgrade;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.prepareUpgrade;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.telemetryUpgrade;
 
-public class UpgradeStagingSuite extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(UpgradeStagingSuite.class);
+public class UpgradeHelperSuite extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(UpgradeHelperSuite.class);
 
 	private final byte[] upgradeFileHash;
 	private final String upgradeFile;
-	/* Only non-null for a TELEMETRY_UPGRADE */
+	/* Null for a PREPARE_UPGRADE, non-null for a TELEMETRY_UPGRADE or FREEZE_UPGRADE */
 	private final Instant startTime;
 	private final Map<String, String> specConfig;
+	private final boolean isTelemetryUpgrade;
 
-	public UpgradeStagingSuite(
+	public UpgradeHelperSuite(
 			final Map<String, String> specConfig,
 			final byte[] upgradeFileHash,
 			final String upgradeFile
 	) {
-		this(specConfig, upgradeFileHash, upgradeFile, null);
+		this(specConfig, upgradeFileHash, upgradeFile, null, false);
 	}
 
-	public UpgradeStagingSuite(
+	public UpgradeHelperSuite(
 			final Map<String, String> specConfig,
 			final byte[] upgradeFileHash,
 			final String upgradeFile,
-			@Nullable Instant startTime
+			@Nullable final Instant startTime
+	) {
+		this(specConfig, upgradeFileHash, upgradeFile, startTime, false);
+	}
+
+	public UpgradeHelperSuite(
+			final Map<String, String> specConfig,
+			final byte[] upgradeFileHash,
+			final String upgradeFile,
+			@Nullable final Instant startTime,
+			final boolean isTelemetryUpgrade
 	) {
 		this.specConfig = specConfig;
 		this.upgradeFile = upgradeFile;
 		this.upgradeFileHash = upgradeFileHash;
 		this.startTime = startTime;
+		this.isTelemetryUpgrade = isTelemetryUpgrade;
 	}
 
 	@Override
@@ -76,10 +89,18 @@ public class UpgradeStagingSuite extends HapiApiSuite {
 
 		if (startTime == null) {
 			op = prepareUpgrade()
+					.noLogging()
+					.withUpdateFile(upgradeFile)
+					.havingHash(upgradeFileHash);
+		} else if (isTelemetryUpgrade) {
+			op = telemetryUpgrade()
+					.noLogging()
+					.startingAt(startTime)
 					.withUpdateFile(upgradeFile)
 					.havingHash(upgradeFileHash);
 		} else {
-			op = telemetryUpgrade()
+			op = freezeUpgrade()
+					.noLogging()
 					.startingAt(startTime)
 					.withUpdateFile(upgradeFile)
 					.havingHash(upgradeFileHash);

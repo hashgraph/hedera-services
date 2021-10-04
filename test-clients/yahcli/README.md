@@ -260,24 +260,24 @@ $ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localh
 # Preparing an NMT software upgrade
 
 To prepare for an automatic software upgrade, there must exist a system file in the range `0.0.150-159` 
-(by default, `0.0.150`) that is a ZIP archive with artifacts listed in the [NMT requirements document](https://github.com/swirlds/swirlds-docker/blob/main/docs/docker-infrastructure-design.md#toc-phase-1-feat-hedera-node-protobuf-defs-current). The SHA-384 
-hash of this ZIP must be known so the nodes can validate the integrity of the upgrade file before 
-staging its artifacts for NMT to use.  This looks like,
+(by default, `0.0.150`) that is a ZIP archive with artifacts listed in the [NMT requirements document](https://github.com/swirlds/swirlds-docker/blob/main/docs/docker-infrastructure-design.md#toc-phase-1-feat-hedera-node-protobuf-defs-current). The expected 
+SHA-384 hash of this ZIP must be given so the nodes can validate the integrity of the upgrade file before 
+staging its artifacts for NMT to use. This looks like,
 
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 2 \
-> stage-upgrade --upgrade-zip-hash 5d3b0e619d8513dfbf606ef00a2e83ba97d736f5f5ba61561d895ea83a6d4c34fce05d6cd74c83ec171f710e37e12aab
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 58 prepare-upgrade \
+> --upgrade-zip-hash 5d3b0e619d8513dfbf606ef00a2e83ba97d736f5f5ba61561d895ea83a6d4c34fce05d6cd74c83ec171f710e37e12aab
 ```
 
 # Launching an NMT telemetry upgrade
 
 To perform an automatic telemetry upgrade, there must exist a system file in the range `0.0.150-159` 
-(by default, `0.0.159`) that is a ZIP archive with artifacts listed in the [NMT requirements document](https://github.com/swirlds/swirlds-docker/blob/main/docs/docker-infrastructure-design.md#toc-phase-1-feat-hedera-node-protobuf-defs-current). The SHA-384 
-hash of this ZIP must be known so the nodes can validate the integrity of the upgrade file before 
+(by default, `0.0.159`) that is a ZIP archive with artifacts listed in the [NMT requirements document](https://github.com/swirlds/swirlds-docker/blob/main/docs/docker-infrastructure-design.md#toc-phase-1-feat-hedera-node-protobuf-defs-current). The expected 
+SHA-384 hash of this ZIP must be known so the nodes can validate the integrity of the upgrade file before 
 staging its artifacts for NMT to use.  This looks like,
 
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 2 upgrade-telemetry \
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 58 upgrade-telemetry \
 > --upgrade-zip-hash 8ec75ab44b6c8ccac4a6e7f7d77b5a66280cad8d8a86ed961975a3bea597613f83af9075f65786bf9101d50047ca768f \
 > --start-time 2022-01-01.00:00:00
 ```
@@ -288,22 +288,23 @@ Freeze start times are (consensus) UTC times formatted as `yyyy-MM-dd.HH:mm:ss`.
 both scheduled and aborted; and a scheduled freeze may also be flagged as the trigger for an NMT
 software upgrade.
 
-A vanilla freeze with no NMT upgrade only includes the start time thusly, 
+A vanilla freeze with no NMT upgrade only includes the start time, 
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 2 \
-> freeze --start-time 2022-01-01.00:00:00
-```
-
-And a freeze that should trigger a staged NMT upgrade **must** add the `--trigger-staged-upgrade` flag,
-```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 2 \
-> freeze --start-time 2021-09-09.20:11:13 --trigger-staged-upgrade
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 58 freeze \
+> --start-time 2022-01-01.00:00:00
 ```
 
-To abort a scheduled freeze, just use the `--abort` flag like, 
+While a freeze that should trigger a staged NMT upgrade uses the `freeze-upgrade` variant,
+which **must** repeat the hash of the intended update, 
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 2 \
-> freeze --abort 
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 58 freeze-upgrade \
+> --upgrade-zip-hash 5d3b0e619d8513dfbf606ef00a2e83ba97d736f5f5ba61561d895ea83a6d4c34fce05d6cd74c83ec171f710e37e12aab
+> --start-time 2021-09-09.20:11:13 
+```
+
+To abort a scheduled freeze, simply use the `freeze-abort` command,
+```
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 58 freeze-abort 
 ```
 
 # Updating account keys

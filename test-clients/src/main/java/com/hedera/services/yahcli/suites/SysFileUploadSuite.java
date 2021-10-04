@@ -89,9 +89,9 @@ public class SysFileUploadSuite extends HapiApiSuite {
 						updateOp -> updateOp
 								.alertingPre(COMMON_MESSAGES::uploadBeginning)
 								.alertingPost(COMMON_MESSAGES::uploadEnding),
-						appendOp -> appendOp
+						(appendOp, appendsLeft) -> appendOp
 								.alertingPre(COMMON_MESSAGES::appendBeginning)
-								.alertingPost(COMMON_MESSAGES::appendEnding)
+								.alertingPost(code -> COMMON_MESSAGES.appendEnding(code, appendsLeft))
 				)
 		);
 	}

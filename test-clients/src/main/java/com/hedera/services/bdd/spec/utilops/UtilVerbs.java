@@ -86,6 +86,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.ObjIntConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -538,7 +539,7 @@ public class UtilVerbs {
 			OptionalLong tinyBarsToOffer
 	) {
 		return updateLargeFile(payer, fileName, byteString, signOnlyWithPayer, tinyBarsToOffer,
-				op -> {}, op -> {});
+				op -> {}, (op, i) -> {});
 	}
 
 	public static HapiSpecOperation updateLargeFile(
@@ -548,7 +549,7 @@ public class UtilVerbs {
 			boolean signOnlyWithPayer,
 			OptionalLong tinyBarsToOffer,
 			Consumer<HapiFileUpdate> updateCustomizer,
-			Consumer<HapiFileAppend> appendCustomizer
+			ObjIntConsumer<HapiFileAppend> appendCustomizer
 	) {
 		return withOpContext((spec, ctxLog) -> {
 			List<HapiSpecOperation> opsList = new ArrayList<>();
@@ -570,6 +571,9 @@ public class UtilVerbs {
 			}
 			opsList.add(updateSubOp);
 
+			final int bytesLeft = fileSize - position;
+			final int totalAppendsRequired = bytesLeft / BYTES_4K + Math.min(1, bytesLeft % BYTES_4K);
+			int numAppends = 0;
 			while (position < fileSize) {
 				int newPosition = Math.min(fileSize, position + BYTES_4K);
 				var appendSubOp = fileAppend(fileName)
@@ -577,7 +581,7 @@ public class UtilVerbs {
 						.hasKnownStatusFrom(SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED)
 						.noLogging()
 						.payingWith(payer);
-				appendCustomizer.accept(appendSubOp);
+				appendCustomizer.accept(appendSubOp, totalAppendsRequired - numAppends);
 				if (tinyBarsToOffer.isPresent()) {
 					appendSubOp = appendSubOp.fee(tinyBarsToOffer.getAsLong());
 				}
@@ -586,6 +590,7 @@ public class UtilVerbs {
 				}
 				opsList.add(appendSubOp);
 				position = newPosition;
+				numAppends++;
 			}
 
 			CustomSpecAssert.allRunFor(spec, opsList);

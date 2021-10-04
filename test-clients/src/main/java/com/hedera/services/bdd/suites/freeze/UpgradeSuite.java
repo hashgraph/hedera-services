@@ -54,6 +54,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_FREEZE_IS_SCHEDULED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_UPGRADE_HAS_BEEN_PREPARED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PREPARED_UPDATE_FILE_IS_IMMUTABLE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UPDATE_FILE_HASH_DOES_NOT_MATCH_PREPARED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UPDATE_FILE_ID_DOES_NOT_MATCH_PREPARED;
 
 public class UpgradeSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(UpgradeSuite.class);
@@ -93,13 +95,12 @@ public class UpgradeSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						precheckRejectsUnknownFreezeType(),
-//						freezeOnlyPrecheckRejectsInvalid(),
-//						freezeUpgradeValidationRejectsInvalid(),
-//						freezeAbortValidationRejectsInvalid(),
-//						prepareUpgradeValidationRejectsInvalid(),
-//						telemetryUpgradeValidationRejectsInvalid(),
-
+						precheckRejectsUnknownFreezeType(),
+						freezeOnlyPrecheckRejectsInvalid(),
+						freezeUpgradeValidationRejectsInvalid(),
+						freezeAbortValidationRejectsInvalid(),
+						prepareUpgradeValidationRejectsInvalid(),
+						telemetryUpgradeValidationRejectsInvalid(),
 						canFreezeUpgradeWithPreparedUpgrade(),
 						canTelemetryUpgradeWithValid(),
 				}
@@ -132,7 +133,16 @@ public class UpgradeSuite extends HapiApiSuite {
 						freezeUpgrade().withRejectedEndHr().hasPrecheck(INVALID_FREEZE_TRANSACTION_BODY),
 						freezeUpgrade().withRejectedEndMin().hasPrecheck(INVALID_FREEZE_TRANSACTION_BODY),
 						freezeUpgrade().startingIn(-60).minutes().hasPrecheck(FREEZE_START_TIME_MUST_BE_FUTURE),
-						freezeUpgrade().startingIn(2).minutes().hasKnownStatus(NO_UPGRADE_HAS_BEEN_PREPARED)
+						freezeUpgrade().startingIn(2).minutes()
+								.withUpdateFile(standardUpdateFile)
+								.havingHash(poeticUpgradeHash)
+								.hasKnownStatus(NO_UPGRADE_HAS_BEEN_PREPARED),
+						freezeUpgrade().startingIn(2).minutes()
+								.havingHash(poeticUpgradeHash)
+								.hasPrecheck(INVALID_FREEZE_TRANSACTION_BODY),
+						freezeUpgrade().startingIn(2).minutes()
+								.withUpdateFile(standardUpdateFile)
+								.hasPrecheck(INVALID_FREEZE_TRANSACTION_BODY)
 				);
 	}
 
@@ -250,7 +260,20 @@ public class UpgradeSuite extends HapiApiSuite {
 								.withUpdateFile(standardUpdateFile)
 								.havingHash(poeticUpgradeHash)
 				).then(
-						freezeUpgrade().startingIn(60).minutes(),
+						freezeUpgrade()
+								.startingIn(60).minutes()
+								.withUpdateFile(standardTelemetryFile)
+								.havingHash(poeticUpgradeHash)
+								.hasKnownStatus(UPDATE_FILE_ID_DOES_NOT_MATCH_PREPARED),
+						freezeUpgrade()
+								.startingIn(60).minutes()
+								.withUpdateFile(standardUpdateFile)
+								.havingHash(heavyPoeticUpgradeHash)
+								.hasKnownStatus(UPDATE_FILE_HASH_DOES_NOT_MATCH_PREPARED),
+						freezeUpgrade()
+								.startingIn(60).minutes()
+								.withUpdateFile(standardUpdateFile)
+								.havingHash(poeticUpgradeHash),
 						freezeAbort()
 				);
 	}

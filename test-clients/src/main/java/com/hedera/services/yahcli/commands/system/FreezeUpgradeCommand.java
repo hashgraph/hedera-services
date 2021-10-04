@@ -1,5 +1,6 @@
 package com.hedera.services.yahcli.commands.system;
 
+
 /*-
  * ‌
  * Hedera Services Test Clients
@@ -9,9 +10,9 @@ package com.hedera.services.yahcli.commands.system;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,24 +35,24 @@ import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
 @CommandLine.Command(
-		name = "upgrade-telemetry",
+		name = "freeze-upgrade",
 		subcommands = { picocli.CommandLine.HelpCommand.class },
-		description = "Upgrades telemetry via NMT")
-public class TelemetryUpgradeCommand implements Callable<Integer> {
+		description = "Schedules a staged NMT software upgrade")
+public class FreezeUpgradeCommand implements Callable<Integer> {
 	@CommandLine.ParentCommand
 	private Yahcli yahcli;
 
 	@CommandLine.Option(names = { "-f", "--upgrade-file-num" },
-			paramLabel = "Number of the telemetry upgrade ZIP file",
-			defaultValue = "159")
+			paramLabel = "Number of the upgrade ZIP file",
+			defaultValue = "150")
 	private String upgradeFileNum;
 
 	@CommandLine.Option(names = { "-h", "--upgrade-zip-hash" },
-			paramLabel = "Hex-encoded SHA-384 hash of the telemetry upgrade ZIP")
+			paramLabel = "Hex-encoded SHA-384 hash of the upgrade ZIP")
 	private String upgradeFileHash;
 
 	@CommandLine.Option(names = { "-s", "--start-time" },
-			paramLabel = "Telemetry upgrade start time in UTC (yyyy-MM-dd.HH:mm:ss)")
+			paramLabel = "Upgrade start time in UTC (yyyy-MM-dd.HH:mm:ss)")
 	private String startTime;
 
 	@Override
@@ -61,14 +62,12 @@ public class TelemetryUpgradeCommand implements Callable<Integer> {
 		final var upgradeFile = "0.0." + upgradeFileNum;
 		final var unhexedHash = CommonUtils.unhex(upgradeFileHash);
 		final var startInstant = Utils.parseFormattedInstant(startTime);
-		final var delegate = new UpgradeHelperSuite(
-				config.asSpecConfig(), unhexedHash, upgradeFile, startInstant, true);
+		final var delegate = new UpgradeHelperSuite(config.asSpecConfig(), unhexedHash, upgradeFile, startInstant);
 
 		delegate.runSuiteSync();
 
 		if (delegate.getFinalSpecs().get(0).getStatus() == PASSED) {
-			COMMON_MESSAGES.info(
-					"SUCCESS - NMT telemetry upgrade in motion from " + upgradeFile + " artifacts ZIP");
+			COMMON_MESSAGES.info("SUCCESS - NMT software upgrade in motion from " + upgradeFile + " artifacts ZIP");
 		}
 
 		return 0;

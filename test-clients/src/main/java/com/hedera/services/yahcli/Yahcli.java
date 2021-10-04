@@ -29,17 +29,19 @@ import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
 import com.hedera.services.yahcli.commands.accounts.AccountsCommand;
 import com.hedera.services.yahcli.commands.fees.FeesCommand;
 import com.hedera.services.yahcli.commands.files.SysFilesCommand;
-import com.hedera.services.yahcli.commands.system.SysFreezeCommand;
-import com.hedera.services.yahcli.commands.system.PrepUpgradeCommand;
+import com.hedera.services.yahcli.commands.system.FreezeAbortCommand;
+import com.hedera.services.yahcli.commands.system.FreezeOnlyCommand;
+import com.hedera.services.yahcli.commands.system.FreezeUpgradeCommand;
+import com.hedera.services.yahcli.commands.system.StageUpgradeCommand;
 import com.hedera.services.yahcli.commands.system.TelemetryUpgradeCommand;
 import com.hedera.services.yahcli.commands.validation.ValidationCommand;
 import com.hedera.services.yahcli.suites.BalanceSuite;
-import com.hedera.services.yahcli.suites.FreezeSuite;
+import com.hedera.services.yahcli.suites.FreezeHelperSuite;
 import com.hedera.services.yahcli.suites.RekeySuite;
 import com.hedera.services.yahcli.suites.SchedulesValidationSuite;
 import com.hedera.services.yahcli.suites.SysFileDownloadSuite;
 import com.hedera.services.yahcli.suites.SysFileUploadSuite;
-import com.hedera.services.yahcli.suites.UpgradeStagingSuite;
+import com.hedera.services.yahcli.suites.UpgradeHelperSuite;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import picocli.CommandLine;
@@ -61,8 +63,10 @@ import java.util.concurrent.Callable;
 				SysFilesCommand.class,
 				ValidationCommand.class,
 				FeesCommand.class,
-				SysFreezeCommand.class,
-				PrepUpgradeCommand.class,
+				FreezeAbortCommand.class,
+				FreezeOnlyCommand.class,
+				StageUpgradeCommand.class,
+				FreezeUpgradeCommand.class,
 				TelemetryUpgradeCommand.class
 		},
 		description = "Performs DevOps-type actions against a Hedera Services network")
@@ -128,8 +132,8 @@ public class Yahcli implements Callable<Integer> {
 				SysFileUploadSuite.class,
 				SysFileDownloadSuite.class,
 				SchedulesValidationSuite.class,
-				FreezeSuite.class,
-				UpgradeStagingSuite.class,
+				FreezeHelperSuite.class,
+				UpgradeHelperSuite.class,
 				MapPropertySource.class,
 				HapiApiClients.class,
 				FeesAndRatesProvider.class,

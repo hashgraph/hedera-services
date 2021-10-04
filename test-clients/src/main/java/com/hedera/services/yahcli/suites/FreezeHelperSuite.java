@@ -32,25 +32,21 @@ import java.util.Map;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeAbort;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeUpgrade;
 
-public class FreezeSuite extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(FreezeSuite.class);
+public class FreezeHelperSuite extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(FreezeHelperSuite.class);
 
 	private final Instant freezeStartTime;
 	private final boolean isAbort;
-	private final boolean isNmtUpgrade;
 
 	private final Map<String, String> specConfig;
 
-	public FreezeSuite(
+	public FreezeHelperSuite(
 			final Map<String, String> specConfig,
 			final Instant freezeStartTime,
-			final boolean isAbort,
-			final boolean isNmtUpgrade
+			final boolean isAbort
 	) {
 		this.isAbort = isAbort;
-		this.isNmtUpgrade = isNmtUpgrade;
 		this.specConfig = specConfig;
 		this.freezeStartTime = freezeStartTime;
 	}
@@ -71,13 +67,9 @@ public class FreezeSuite extends HapiApiSuite {
 	}
 
 	private HapiSpecOperation requestedFreezeOp() {
-		if (isAbort) {
-			return freezeAbort().noLogging().yahcliLogging();
-		} else {
-			return isNmtUpgrade
-					? freezeUpgrade().startingAt(freezeStartTime).noLogging()
-					: freezeOnly().startingAt(freezeStartTime).noLogging();
-		}
+		return isAbort
+				? freezeAbort().noLogging().yahcliLogging()
+				: freezeOnly().startingAt(freezeStartTime).noLogging();
 	}
 
 	@Override

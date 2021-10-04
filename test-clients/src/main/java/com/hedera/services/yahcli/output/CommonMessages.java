@@ -56,8 +56,12 @@ public enum CommonMessages {
 		System.out.flush();
 	}
 
-	public void appendEnding(ResponseCodeEnum resolvedStatus) {
-		System.out.println(resolvedStatus.toString());
+	public void appendEnding(final ResponseCodeEnum resolvedStatus, final int appendsRemaining) {
+		if (resolvedStatus == ResponseCodeEnum.SUCCESS) {
+			System.out.println(resolvedStatus + " (" + (appendsRemaining - 1) + " appends left)");
+		} else {
+			System.out.println(resolvedStatus);
+		}
 	}
 
 	public void uploadBeginning(FileID target) {
