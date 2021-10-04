@@ -102,8 +102,19 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 		@Nullable final var existingScheduleId = idSchedulePair.getLeft();
 		final var schedule = idSchedulePair.getRight();
 		if (null != existingScheduleId) {
+			/* TODO : if the flag merge_with_identical_schedule is false */
 			completeContextWith(existingScheduleId, schedule, IDENTICAL_SCHEDULE_ALREADY_CREATED);
 			return;
+			/* TODO : if the flag merge_with_identical_schedule is true
+			if (txnCtx.accessor().getTxn().getScheduleCreate().hasPayerAccountID() &&
+					schedule.payer().toGrpcAccountId() ==
+							txnCtx.accessor().getTxn().getScheduleCreate().getPayerAccountID()) {
+				perform a schedule sign with any signatures from this txn and return with success.
+			} else {
+				completeContextWith(existingScheduleId, schedule, IDENTICAL_SCHEDULE_ALREADY_EXISTS_WITH_DIFFERENT_PAYER);
+				return;
+			}
+			*/
 		}
 
 		final var result = store.createProvisionally(schedule, fromJava(txnCtx.consensusTime()));
