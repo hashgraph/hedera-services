@@ -759,13 +759,13 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Comp-NetError-4N-1C:
-#    triggers:
-#      - schedule:
-#          cron: "30 5 * * *"
-#          filters:
-#            branches:
-#              only:
-#                - master
+    triggers:
+      - schedule:
+          cron: "30 5 * * *"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -864,13 +864,13 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Crypto-Restart-4N-1C:
-#    triggers:
-#      - schedule:
-#          cron: "15 6 * * *"
-#          filters:
-#            branches:
-#              only:
-#                - master
+    triggers:
+      - schedule:
+          cron: "15 6 * * *"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -981,13 +981,13 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Recovery-4N-1C:
-    triggers:
-      - schedule:
-          cron: "55 6 * * *"
-          filters:
-            branches:
-              only:
-                - master
+#    triggers:
+#      - schedule:
+#          cron: "55 6 * * *"
+#          filters:
+#            branches:
+#              only:
+#                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
