@@ -27,8 +27,8 @@ import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -53,8 +53,9 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 	static final int RELEASE_0120_VERSION = 2;
 	static final int RELEASE_0160_VERSION = 3;
 	static final int RELEASE_0180_VERSION = 4;
+	static final int RELEASE_0190_VERSION = 5;
 
-	static final int CURRENT_VERSION = RELEASE_0180_VERSION;
+	static final int CURRENT_VERSION = RELEASE_0190_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xd23ce8814b35fc2fL;
 
 	static DomainSerdes serdes = new DomainSerdes();
@@ -80,12 +81,14 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 	private JKey supplyKey = UNUSED_KEY;
 	private JKey freezeKey = UNUSED_KEY;
 	private JKey feeScheduleKey = UNUSED_KEY;
+	private JKey pauseKey = UNUSED_KEY;
 	private String symbol;
 	private String name;
 	private String memo = DEFAULT_MEMO;
 	private boolean deleted;
 	private boolean accountsFrozenByDefault;
 	private boolean accountsKycGrantedByDefault;
+	private boolean paused;
 	private EntityId treasury;
 	private EntityId autoRenewAccount = null;
 	private List<FcCustomFee> feeSchedule = Collections.emptyList();
@@ -160,6 +163,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 				this.accountsFrozenByDefault == that.accountsFrozenByDefault &&
 				this.accountsKycGrantedByDefault == that.accountsKycGrantedByDefault &&
 				this.number == that.number &&
+				this.paused == that.paused &&
 				Objects.equals(this.symbol, that.symbol) &&
 				Objects.equals(this.name, that.name) &&
 				Objects.equals(this.memo, that.memo) &&
@@ -171,6 +175,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 				equalUpToDecodability(this.freezeKey, that.freezeKey) &&
 				equalUpToDecodability(this.kycKey, that.kycKey) &&
 				equalUpToDecodability(this.feeScheduleKey, that.feeScheduleKey) &&
+				equalUpToDecodability(this.pauseKey, that.pauseKey) &&
 				Objects.equals(this.feeSchedule, that.feeSchedule);
 	}
 
@@ -191,11 +196,13 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 				kycKey,
 				wipeKey,
 				supplyKey,
+				pauseKey,
 				symbol,
 				name,
 				memo,
 				accountsFrozenByDefault,
 				accountsKycGrantedByDefault,
+				paused,
 				treasury,
 				autoRenewAccount,
 				autoRenewPeriod,
@@ -228,8 +235,10 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 				.add("wipeKey", describe(wipeKey))
 				.add("supplyKey", describe(supplyKey))
 				.add("freezeKey", describe(freezeKey))
+				.add("pauseKey", describe(pauseKey))
 				.add("accountsKycGrantedByDefault", accountsKycGrantedByDefault)
 				.add("accountsFrozenByDefault", accountsFrozenByDefault)
+				.add("pauseStatus", paused)
 				.add("feeSchedules", feeSchedule)
 				.add("feeScheduleKey", feeScheduleKey)
 				.toString();
@@ -281,6 +290,10 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 		if (version >= RELEASE_0180_VERSION) {
 			number = in.readInt();
 		}
+		if (version >= RELEASE_0190_VERSION) {
+			pauseKey = serdes.readNullable(in, serdes::deserializeKey);
+			paused = in.readBoolean();
+		}
 		if (tokenType == null) {
 			tokenType = TokenType.FUNGIBLE_COMMON;
 		}
@@ -315,6 +328,8 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 		out.writeSerializableList(feeSchedule, true, true);
 		serdes.writeNullable(feeScheduleKey, out, serdes::serializeKey);
 		out.writeInt(number);
+		serdes.writeNullable(pauseKey, out, serdes::serializeKey);
+		out.writeBoolean(paused);
 	}
 
 	/* --- FastCopyable --- */
@@ -340,6 +355,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 		fc.setTokenType(tokenType);
 		fc.setSupplyType(supplyType);
 		fc.setMaxSupply(maxSupply);
+		fc.setPaused(paused);
 		if (adminKey != UNUSED_KEY) {
 			fc.setAdminKey(adminKey);
 		}
@@ -357,6 +373,9 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 		}
 		if (feeScheduleKey != UNUSED_KEY) {
 			fc.setFeeScheduleKey(feeScheduleKey);
+		}
+		if (pauseKey != UNUSED_KEY) {
+			fc.setPauseKey(pauseKey);
 		}
 		return fc;
 	}
@@ -392,6 +411,19 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 
 	public boolean hasKycKey() {
 		return kycKey != UNUSED_KEY;
+	}
+
+	public Optional<JKey> pauseKey() {
+		return Optional.ofNullable(pauseKey);
+	}
+
+	public boolean hasPauseKey() {
+		return pauseKey != UNUSED_KEY;
+	}
+
+	public void setPauseKey(JKey pauseKey) {
+		throwIfImmutable("Cannot change this token's pause key if it's immutable.");
+		this.pauseKey = pauseKey;
 	}
 
 	public void setFreezeKey(JKey freezeKey) {
@@ -441,6 +473,15 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 	public void setDeleted(boolean deleted) {
 		throwIfImmutable("Cannot change this token's to be deleted if it's immutable.");
 		this.deleted = deleted;
+	}
+
+	public boolean isPaused() {
+		return paused;
+	}
+
+	public void setPaused(boolean paused) {
+		throwIfImmutable("Cannot change this token's freeze key if it's immutable.");
+		this.paused = paused;
 	}
 
 	public String symbol() {
@@ -548,6 +589,10 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 
 	public JKey getFreezeKey() {
 		return freezeKey;
+	}
+
+	public JKey getPauseKey() {
+		return pauseKey;
 	}
 
 	public void setTotalSupply(long totalSupply) {

@@ -9,9 +9,9 @@ package com.hedera.services.fees.calculation.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -45,14 +45,14 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractDel
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractUpdate;
 
 @Module
-public abstract class ContractFeesModule {
+public final class ContractFeesModule {
 	@Provides
 	@ElementsIntoSet
 	public static Set<QueryResourceUsageEstimator> provideContractQueryEstimators(
-			GetBytecodeResourceUsage getBytecodeResourceUsage,
-			GetContractInfoResourceUsage getContractInfoResourceUsage,
-			GetContractRecordsResourceUsage getContractRecordsResourceUsage,
-			ContractCallLocalResourceUsage contractCallLocalResourceUsage
+			final GetBytecodeResourceUsage getBytecodeResourceUsage,
+			final GetContractInfoResourceUsage getContractInfoResourceUsage,
+			final GetContractRecordsResourceUsage getContractRecordsResourceUsage,
+			final ContractCallLocalResourceUsage contractCallLocalResourceUsage
 	) {
 		return Set.of(
 				getBytecodeResourceUsage,
@@ -65,7 +65,7 @@ public abstract class ContractFeesModule {
 	@IntoMap
 	@FunctionKey(ContractCreate)
 	public static List<TxnResourceUsageEstimator> provideContractCreateEstimator(
-			ContractCreateResourceUsage contractCreateResourceUsage
+			final ContractCreateResourceUsage contractCreateResourceUsage
 	) {
 		return List.of(contractCreateResourceUsage);
 	}
@@ -74,7 +74,7 @@ public abstract class ContractFeesModule {
 	@IntoMap
 	@FunctionKey(ContractDelete)
 	public static List<TxnResourceUsageEstimator> provideContractDeleteEstimator(
-			ContractDeleteResourceUsage contractDeleteResourceUsage
+			final ContractDeleteResourceUsage contractDeleteResourceUsage
 	) {
 		return List.of(contractDeleteResourceUsage);
 	}
@@ -83,7 +83,7 @@ public abstract class ContractFeesModule {
 	@IntoMap
 	@FunctionKey(ContractUpdate)
 	public static List<TxnResourceUsageEstimator> provideContractUpdateEstimator(
-			ContractUpdateResourceUsage contractUpdateResourceUsage
+			final ContractUpdateResourceUsage contractUpdateResourceUsage
 	) {
 		return List.of(contractUpdateResourceUsage);
 	}
@@ -92,8 +92,12 @@ public abstract class ContractFeesModule {
 	@IntoMap
 	@FunctionKey(ContractCall)
 	public static List<TxnResourceUsageEstimator> provideContractCallEstimator(
-			ContractCallResourceUsage contractCallResourceUsage
+			final ContractCallResourceUsage contractCallResourceUsage
 	) {
 		return List.of(contractCallResourceUsage);
+	}
+
+	private ContractFeesModule() {
+		throw new UnsupportedOperationException("Dagger2 module");
 	}
 }

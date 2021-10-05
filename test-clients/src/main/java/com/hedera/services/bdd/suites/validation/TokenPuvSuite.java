@@ -171,6 +171,7 @@ public class TokenPuvSuite extends HapiApiSuite {
 		token.setAdminKey(SpecKey.prefixedAt(Names.TACO_TOKEN_ADMIN));
 		token.setSupplyKey(SpecKey.prefixedAt(Names.TACO_TOKEN_SUPPLY));
 		token.setFreezeKey(SpecKey.prefixedAt(Names.TACO_TOKEN_FREEZE));
+		token.setPauseKey(SpecKey.prefixedAt(Names.TACO_TOKEN_PAUSE));
 		token.setTokenName("PostUpdateValidation Taco Token");
 		token.setSymbol("TACO");
 		token.setTreasury(Names.TREASURY);
@@ -204,6 +205,7 @@ public class TokenPuvSuite extends HapiApiSuite {
 		static final String TACO_TOKEN_ADMIN = "puvTacoTokenAdmin";
 		static final String TACO_TOKEN_SUPPLY = "puvTacoTokenSupply";
 		static final String TACO_TOKEN_FREEZE = "puvTacoTokenFreeze";
+		static final String TACO_TOKEN_PAUSE = "puvTacoTokenPause";
 		static final String TREASURY = "puvTreasury";
 		static final String CAT_BENEFICIARY = "puvCatBeneficiary";
 		static final String TACO_BENEFICIARY = "puvTacoBeneficiary";

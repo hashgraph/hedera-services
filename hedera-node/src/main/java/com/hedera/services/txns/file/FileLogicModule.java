@@ -9,9 +9,9 @@ package com.hedera.services.txns.file;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,32 +34,44 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
 
 @Module
-public abstract class FileLogicModule {
+public final class FileLogicModule {
 	@Provides
 	@IntoMap
 	@FunctionKey(FileUpdate)
-	public static List<TransitionLogic> provideFileUpdateLogic(FileUpdateTransitionLogic fileUpdateTransitionLogic) {
+	public static List<TransitionLogic> provideFileUpdateLogic(
+			final FileUpdateTransitionLogic fileUpdateTransitionLogic
+	) {
 		return List.of(fileUpdateTransitionLogic);
 	}
 
 	@Provides
 	@IntoMap
 	@FunctionKey(FileCreate)
-	public static List<TransitionLogic> provideFileCreateLogic(FileCreateTransitionLogic fileCreateTransitionLogic) {
+	public static List<TransitionLogic> provideFileCreateLogic(
+			final FileCreateTransitionLogic fileCreateTransitionLogic
+	) {
 		return List.of(fileCreateTransitionLogic);
 	}
 
 	@Provides
 	@IntoMap
 	@FunctionKey(FileDelete)
-	public static List<TransitionLogic> provideFileDeleteLogic(FileDeleteTransitionLogic fileDeleteTransitionLogic) {
+	public static List<TransitionLogic> provideFileDeleteLogic(
+			final FileDeleteTransitionLogic fileDeleteTransitionLogic
+	) {
 		return List.of(fileDeleteTransitionLogic);
 	}
 
 	@Provides
 	@IntoMap
 	@FunctionKey(FileAppend)
-	public static List<TransitionLogic> provideFileAppendLogic(FileAppendTransitionLogic fileAppendTransitionLogic) {
+	public static List<TransitionLogic> provideFileAppendLogic(
+			final FileAppendTransitionLogic fileAppendTransitionLogic
+	) {
 		return List.of(fileAppendTransitionLogic);
+	}
+
+	private FileLogicModule() {
+		throw new UnsupportedOperationException("Dagger2 module");
 	}
 }

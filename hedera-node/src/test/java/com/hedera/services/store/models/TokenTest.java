@@ -51,6 +51,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_METADATA;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIAL_NUMBER_LIMIT_REACHED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
@@ -110,6 +111,33 @@ class TokenTest {
 	}
 
 	@Test
+	void recognizesPauseKey() {
+		assertFalse(subject.hasPauseKey());
+
+		subject.setPauseKey(TxnHandlingScenario.TOKEN_PAUSE_KT.asJKeyUnchecked());
+
+		assertTrue(subject.hasPauseKey());
+	}
+
+	@Test
+	void changingPauseStatusFailsIfNoPauseKey() {
+		assertFalse(subject.hasPauseKey());
+		assertFailsWith(() -> subject.changePauseStatus(true), TOKEN_HAS_NO_PAUSE_KEY);
+	}
+
+	@Test
+	void changingPauseStatusWorksIfTokenHasPauseKey() {
+		subject.setPauseKey(TxnHandlingScenario.TOKEN_PAUSE_KT.asJKeyUnchecked());
+		assertTrue(subject.hasPauseKey());
+
+		subject.changePauseStatus(true);
+		assertTrue(subject.isPaused());
+
+		subject.changePauseStatus(false);
+		assertFalse(subject.isPaused());
+	}
+
+	@Test
 	void deleteFailsAsExpected() {
 		subject.setAdminKey(null);
 		assertFailsWith(() -> subject.delete(), TOKEN_IS_IMMUTABLE);
@@ -118,6 +146,7 @@ class TokenTest {
 	@Test
 	void constructsOkToken() {
 		final var feeScheduleKey = TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT.asKey();
+		final var pauseKey = TxnHandlingScenario.TOKEN_PAUSE_KT.asKey();
 		final var op = TransactionBody.newBuilder()
 				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
 						.setTokenType(com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON)
@@ -130,6 +159,7 @@ class TokenTest {
 						.setName("bitcoin")
 						.setSymbol("BTC")
 						.setFeeScheduleKey(feeScheduleKey)
+						.setPauseKey(pauseKey)
 						.addAllCustomFees(List.of(CustomFee.newBuilder().setFixedFee(
 								FixedFee.newBuilder().setAmount(10).build())
 								.setFeeCollectorAccountId(IdUtils.asAccount("1.2.3")).build()))
@@ -144,6 +174,8 @@ class TokenTest {
 		assertEquals(123L, subject.getExpiry());
 		assertEquals(TokenSupplyType.FINITE, subject.getSupplyType());
 		assertNotNull(subject.getFeeScheduleKey());
+		assertNotNull(subject.getPauseKey());
+		assertFalse(subject.isPaused());
 	}
 
 	@Test
@@ -566,7 +598,8 @@ class TokenTest {
 		final var desired = "Token{id=Id{shard=1, realm=2, num=3}, type=null, deleted=false, autoRemoved=false, " +
 				"treasury=Account{id=Id{shard=0, realm=0, num=0}, expiry=0, balance=0, deleted=false, tokens=<N/A>, " +
 				"ownedNfts=0, alreadyUsedAutoAssociations=0, maxAutoAssociations=0}, autoRenewAccount=null, " +
-				"kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, currentSerialNumber=0}";
+				"kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, currentSerialNumber=0, " +
+				"pauseKey=<N/A>, paused=false}";
 
 		assertEquals(desired, subject.toString());
 	}

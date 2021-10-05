@@ -27,7 +27,9 @@ import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hedera.services.usage.token.meta.TokenBurnMeta;
 import com.hedera.services.usage.token.meta.TokenCreateMeta;
 import com.hedera.services.usage.token.meta.TokenFreezeMeta;
+import com.hedera.services.usage.token.meta.TokenPauseMeta;
 import com.hedera.services.usage.token.meta.TokenUnfreezeMeta;
+import com.hedera.services.usage.token.meta.TokenUnpauseMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
 import com.hedera.services.utils.TxnAccessor;
 
@@ -46,6 +48,8 @@ public class ExpandHandleSpanMapAccessor {
 	private static final String TOKEN_WIPE_META_KEY = "tokenWipeMeta";
 	private static final String TOKEN_FREEZE_META_KEY = "tokenFreezeMeta";
 	private static final String TOKEN_UNFREEZE_META_KEY = "tokenUnfreezeMeta";
+	private static final String TOKEN_PAUSE_META_KEY = "tokenPauseMeta";
+	private static final String TOKEN_UNPAUSE_META_KEY = "tokenUnpauseMeta";
 	private static final String CRYPTO_CREATE_META_KEY = "cryptoCreateMeta";
 	private static final String CRYPTO_UPDATE_META_KEY = "cryptoUpdateMeta";
 
@@ -107,6 +111,22 @@ public class ExpandHandleSpanMapAccessor {
 
 	public TokenUnfreezeMeta getTokenUnfreezeMeta(TxnAccessor accessor) {
 		return (TokenUnfreezeMeta) accessor.getSpanMap().get(TOKEN_UNFREEZE_META_KEY);
+	}
+
+	public void setTokenPauseMeta(TxnAccessor accessor, TokenPauseMeta tokenPauseMeta) {
+		accessor.getSpanMap().put(TOKEN_PAUSE_META_KEY, tokenPauseMeta);
+	}
+
+	public TokenPauseMeta getTokenPauseMeta(TxnAccessor accessor) {
+		return (TokenPauseMeta) accessor.getSpanMap().get(TOKEN_PAUSE_META_KEY);
+	}
+
+	public void setTokenUnpauseMeta(TxnAccessor accessor, TokenUnpauseMeta tokenUnpauseMeta) {
+		accessor.getSpanMap().put(TOKEN_UNPAUSE_META_KEY, tokenUnpauseMeta);
+	}
+
+	public TokenUnpauseMeta getTokenUnpauseMeta(TxnAccessor accessor) {
+		return (TokenUnpauseMeta) accessor.getSpanMap().get(TOKEN_UNPAUSE_META_KEY);
 	}
 
 	public void setCryptoCreateMeta(TxnAccessor accessor, CryptoCreateMeta cryptoCreateMeta) {
