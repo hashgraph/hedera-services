@@ -23,7 +23,6 @@ package com.hedera.services.txns.contract.process;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.contracts.execution.SoliditySigsVerifier;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.store.contracts.HederaWorldState;
@@ -34,22 +33,26 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.operation.Operation;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.Set;
 
 @Singleton
 public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 	@Inject
 	public CallLocalEvmTxProcessor(
-			SoliditySigsVerifier sigsVerifier,
 			HederaWorldState worldState,
 			HbarCentExchange exchange,
 			UsagePricesProvider usagePrices,
-			GlobalDynamicProperties dynamicProperties) {
-		super(sigsVerifier, worldState, exchange, usagePrices, dynamicProperties);
+			GlobalDynamicProperties dynamicProperties,
+			GasCalculator gasCalculator,
+			Set<Operation> hederaOperations) {
+		super(worldState, exchange, usagePrices, dynamicProperties, gasCalculator, hederaOperations);
 	}
 
 	@Override

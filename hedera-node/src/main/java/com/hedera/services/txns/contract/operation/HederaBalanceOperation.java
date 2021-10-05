@@ -31,9 +31,12 @@ import org.hyperledger.besu.evm.internal.FixedStack;
 import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.BalanceOperation;
 
+import javax.inject.Inject;
 import java.util.Optional;
 
 public class HederaBalanceOperation extends BalanceOperation {
+
+	@Inject
 	public HederaBalanceOperation(GasCalculator gasCalculator) {
 		super(gasCalculator);
 	}

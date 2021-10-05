@@ -27,9 +27,12 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.DelegateCallOperation;
 
+import javax.inject.Inject;
 import java.util.Optional;
 
 public class HederaDelegateCallOperation extends DelegateCallOperation {
+
+	@Inject
 	public HederaDelegateCallOperation(GasCalculator gasCalculator) {
 		super(gasCalculator);
 	}

@@ -36,6 +36,8 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.PetersburgGasCalculator;
 
+import javax.inject.Inject;
+
 public class GasCalculatorHedera_0_18_0 extends PetersburgGasCalculator {
 
 	private static final int LOG_CONTRACT_ID_SIZE = 24;
@@ -46,6 +48,7 @@ public class GasCalculatorHedera_0_18_0 extends PetersburgGasCalculator {
 	private final UsagePricesProvider usagePrices;
 	private final HbarCentExchange exchange;
 
+	@Inject
 	public GasCalculatorHedera_0_18_0(
 			final GlobalDynamicProperties dynamicProperties,
 			final UsagePricesProvider usagePrices,

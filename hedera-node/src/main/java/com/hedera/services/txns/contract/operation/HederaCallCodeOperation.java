@@ -29,14 +29,16 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.CallCodeOperation;
 
+import javax.inject.Inject;
 import java.util.Optional;
 import java.util.Set;
 
 public class HederaCallCodeOperation extends CallCodeOperation {
 	private final SoliditySigsVerifier sigsVerifier;
 
+	@Inject
 	public HederaCallCodeOperation(SoliditySigsVerifier sigsVerifier,
-								   GasCalculator gasCalculator) {
+			GasCalculator gasCalculator) {
 		super(gasCalculator);
 		this.sigsVerifier = sigsVerifier;
 	}

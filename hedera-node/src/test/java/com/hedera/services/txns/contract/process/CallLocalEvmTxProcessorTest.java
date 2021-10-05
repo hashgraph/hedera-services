@@ -24,7 +24,6 @@ package com.hedera.services.txns.contract.process;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.contracts.execution.SoliditySigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
@@ -44,6 +43,8 @@ import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.hyperledger.besu.plugin.data.Transaction;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,6 +56,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.Deque;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -70,8 +72,6 @@ class CallLocalEvmTxProcessorTest {
 	private static final int MAX_STACK_SIZE = 1024;
 
 	@Mock
-	private SoliditySigsVerifier sigsVerifier;
-	@Mock
 	private HederaWorldState worldState;
 	@Mock
 	private HbarCentExchange hbarCentExchange;
@@ -79,6 +79,11 @@ class CallLocalEvmTxProcessorTest {
 	private UsagePricesProvider usagePricesProvider;
 	@Mock
 	private GlobalDynamicProperties globalDynamicProperties;
+	@Mock
+	private GasCalculator gasCalculator;
+	@Mock
+	private Set<Operation> operations;
+
 	@Mock
 	private Transaction transaction;
 	@Mock
@@ -97,7 +102,8 @@ class CallLocalEvmTxProcessorTest {
 
 	@BeforeEach
 	private void setup() {
-		callLocalEvmTxProcessor = new CallLocalEvmTxProcessor(sigsVerifier, worldState, hbarCentExchange, usagePricesProvider, globalDynamicProperties);
+		callLocalEvmTxProcessor = new CallLocalEvmTxProcessor(worldState, hbarCentExchange, usagePricesProvider,
+				globalDynamicProperties, gasCalculator, operations);
 	}
 
 	@Test
@@ -107,7 +113,8 @@ class CallLocalEvmTxProcessorTest {
 
 		//expect:
 		assertThrows(InvalidTransactionException.class, () ->
-				callLocalEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), 1234L, 1_000_000, 15, Bytes.EMPTY, false, transactionContext.consensusTime(), false, Optional.empty()));
+				callLocalEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), 1234L, 1_000_000, 15,
+						Bytes.EMPTY, false, transactionContext.consensusTime(), false, Optional.empty()));
 	}
 
 	@Test

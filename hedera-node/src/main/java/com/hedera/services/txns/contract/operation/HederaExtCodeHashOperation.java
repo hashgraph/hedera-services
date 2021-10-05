@@ -33,10 +33,12 @@ import org.hyperledger.besu.evm.internal.FixedStack;
 import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.ExtCodeHashOperation;
 
+import javax.inject.Inject;
 import java.util.Optional;
 
 public class HederaExtCodeHashOperation extends ExtCodeHashOperation {
 
+	@Inject
 	public HederaExtCodeHashOperation(GasCalculator gasCalculator) {
 		super(gasCalculator);
 	}

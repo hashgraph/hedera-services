@@ -33,10 +33,12 @@ import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.SelfDestructOperation;
 import org.jetbrains.annotations.NotNull;
 
+import javax.inject.Inject;
 import java.util.Optional;
 
 public class HederaSelfDestructOperation extends SelfDestructOperation {
 
+	@Inject
 	public HederaSelfDestructOperation(final GasCalculator gasCalculator) {
 		super(gasCalculator);
 	}

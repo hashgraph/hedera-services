@@ -27,9 +27,12 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.StaticCallOperation;
 
+import javax.inject.Inject;
 import java.util.Optional;
 
 public class HederaStaticCallOperation extends StaticCallOperation {
+
+	@Inject
 	public HederaStaticCallOperation(GasCalculator gasCalculator) {
 		super(gasCalculator);
 	}

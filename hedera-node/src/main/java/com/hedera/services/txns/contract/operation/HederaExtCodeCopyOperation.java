@@ -29,11 +29,14 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.ExtCodeCopyOperation;
 
+import javax.inject.Inject;
 import java.util.Optional;
 
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
 public class HederaExtCodeCopyOperation extends ExtCodeCopyOperation {
+
+	@Inject
 	public HederaExtCodeCopyOperation(GasCalculator gasCalculator) {
 		super(gasCalculator);
 	}

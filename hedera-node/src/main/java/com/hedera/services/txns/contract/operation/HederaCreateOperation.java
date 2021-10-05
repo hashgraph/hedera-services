@@ -22,7 +22,6 @@ package com.hedera.services.txns.contract.operation;
  *
  */
 
-import com.hedera.services.store.contracts.HederaWorldState.WorldStateAccount;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.txns.contract.gascalculator.GasCalculatorHedera_0_18_0;
 import org.hyperledger.besu.datatypes.Address;
@@ -31,15 +30,14 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.AbstractCreateOperation;
 
-import java.util.Iterator;
-import java.util.Optional;
+import javax.inject.Inject;
 
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
 public class HederaCreateOperation extends AbstractCreateOperation {
-
 	boolean checkSuperCost;
 
+	@Inject
 	public HederaCreateOperation(final GasCalculator gasCalculator) {
 		super(0xF0, "ħCREATE", 3, 1, false, 1, gasCalculator);
 		checkSuperCost = !(gasCalculator instanceof GasCalculatorHedera_0_18_0);

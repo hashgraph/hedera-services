@@ -38,6 +38,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.AbstractOperation;
 import org.hyperledger.besu.evm.operation.Operation;
 
+import javax.inject.Inject;
 import java.util.Optional;
 
 public class HederaSStoreOperation extends AbstractOperation {
@@ -48,6 +49,7 @@ public class HederaSStoreOperation extends AbstractOperation {
 
 	private final boolean checkSuperCost;
 
+	@Inject
 	public HederaSStoreOperation(final GasCalculator gasCalculator) {
 		super(0x55, "SSTORE", 2, 0, false, 1, gasCalculator);
 		checkSuperCost = !(gasCalculator instanceof GasCalculatorHedera_0_18_0);
@@ -103,6 +105,6 @@ public class HederaSStoreOperation extends AbstractOperation {
 			long gasPrice
 	) {
 		long storageCostTinyBars = (durationInSeconds * byteHourCostIntinybars) / 3600;
-		return  Math.round((double) storageCostTinyBars / (double) gasPrice);
+		return Math.round((double) storageCostTinyBars / (double) gasPrice);
 	}
 }
