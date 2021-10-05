@@ -27,6 +27,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
@@ -71,6 +73,15 @@ class FileNumbersTest {
 		assertEquals(123, subject.throttleDefinitions());
 		assertEquals(150L, subject.firstSoftwareUpdateFile());
 		assertEquals(159L, subject.lastSoftwareUpdateFile());
+	}
+
+	@Test
+	void knowsSpecialFiles() {
+		assertFalse(subject.isSoftwareUpdateFile(149L));
+		for (long sp = 150L; sp <= 159L; sp++) {
+			assertTrue(subject.isSoftwareUpdateFile(sp));
+		}
+		assertFalse(subject.isSoftwareUpdateFile(160L));
 	}
 
 	@Test

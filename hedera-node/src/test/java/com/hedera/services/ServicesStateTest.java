@@ -106,6 +106,7 @@ import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 @ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class ServicesStateTest {
@@ -223,7 +224,7 @@ class ServicesStateTest {
 
 	@Test
 	void onReleaseAndArchiveNoopIfMetadataNull() {
-		// when:
+		setAllMmsTo(mock(MerkleMap.class));
 		Assertions.assertDoesNotThrow(subject::archive);
 		Assertions.assertDoesNotThrow(subject::onRelease);
 	}
@@ -241,15 +242,18 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void archiveForwardsToMetadata() {
-		// setup:
+	void archiveForwardsToMetadataAndMerkleMaps() {
+		final MerkleMap<?, ?> mockMm = mock(MerkleMap.class);
+
 		subject.setMetadata(metadata);
+		setAllMmsTo(mockMm);
 
 		// when:
 		subject.archive();
 
 		// then:
 		verify(metadata).archive();
+		verify(mockMm, times(7)).archive();
 	}
 
 	@Test
@@ -767,5 +771,15 @@ class ServicesStateTest {
 			legacyChildren.add(nfts);
 		}
 		return legacyChildren;
+	}
+
+	private void setAllMmsTo(final MerkleMap<?, ?> mockMm) {
+		subject.setChild(StateChildIndices.ACCOUNTS, mockMm);
+		subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, mockMm);
+		subject.setChild(StateChildIndices.TOKENS, mockMm);
+		subject.setChild(StateChildIndices.UNIQUE_TOKENS, mockMm);
+		subject.setChild(StateChildIndices.STORAGE, mockMm);
+		subject.setChild(StateChildIndices.TOPICS, mockMm);
+		subject.setChild(StateChildIndices.SCHEDULE_TXS, mockMm);
 	}
 }

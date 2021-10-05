@@ -20,6 +20,8 @@ package com.hedera.services.sigs.metadata.lookups;
  * ‍
  */
 
+import com.hedera.services.config.FileNumbers;
+import com.hedera.services.config.MockFileNumbers;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
@@ -32,18 +34,23 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 class HfsSigMetaLookupTest {
-	HederaFs hfs;
+	private final FileNumbers fileNumbers = new MockFileNumbers();
 
-	FileID target = IdUtils.asFile("0.0.12345");
-	JKey wacl;
-	HFileMeta info;
-	HFileMeta immutableInfo;
-	HfsSigMetaLookup subject;
+	private final FileID target = IdUtils.asFile("0.0.12345");
+	private final FileID specialTarget = IdUtils.asFile("0.0.150");
+
+	private JKey wacl;
+	private HFileMeta info;
+	private HederaFs hfs;
+	private HFileMeta immutableInfo;
+
+	private HfsSigMetaLookup subject;
 
 	@BeforeEach
 	private void setup() throws Exception {
@@ -53,11 +60,11 @@ class HfsSigMetaLookupTest {
 
 		hfs = mock(HederaFs.class);
 
-		subject = new HfsSigMetaLookup(hfs);
+		subject = new HfsSigMetaLookup(hfs, fileNumbers);
 	}
 
 	@Test
-	void getsExpectedSigMeta() throws Exception {
+	void getsExpectedSigMetaForNormal() {
 		given(hfs.exists(target)).willReturn(true);
 		given(hfs.getattr(target)).willReturn(info);
 
@@ -67,6 +74,18 @@ class HfsSigMetaLookupTest {
 		// then:
 		assertTrue(safeSigMeta.succeeded());
 		assertEquals(wacl.toString(), safeSigMeta.metadata().getWacl().toString());
+	}
+
+	@Test
+	void getsExpectedSigMetaForSpecial() {
+		given(hfs.exists(specialTarget)).willReturn(true);
+
+		// when:
+		var safeSigMeta = subject.safeLookup(specialTarget);
+
+		// then:
+		assertTrue(safeSigMeta.succeeded());
+		assertSame(StateView.EMPTY_WACL, safeSigMeta.metadata().getWacl());
 	}
 
 	@Test

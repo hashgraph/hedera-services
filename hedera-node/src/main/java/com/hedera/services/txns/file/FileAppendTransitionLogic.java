@@ -20,6 +20,7 @@ package com.hedera.services.txns.file;
  * ‍
  */
 
+import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
@@ -52,17 +53,21 @@ public class FileAppendTransitionLogic implements TransitionLogic {
 	private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP = ignore -> OK;
 
 	private final HederaFs hfs;
+	private final FileNumbers fileNumbers;
 	private final TransactionContext txnCtx;
 	private final Supplier<MerkleNetworkContext> networkCtx;
 
 	@Inject
 	public FileAppendTransitionLogic(
 			final HederaFs hfs,
+			final FileNumbers fileNumbers,
 			final TransactionContext txnCtx,
-			final Supplier<MerkleNetworkContext> networkCtx) {
+			final Supplier<MerkleNetworkContext> networkCtx
+	) {
 		this.hfs = hfs;
 		this.txnCtx = txnCtx;
 		this.networkCtx = networkCtx;
+		this.fileNumbers = fileNumbers;
 	}
 
 	@Override
@@ -73,8 +78,14 @@ public class FileAppendTransitionLogic implements TransitionLogic {
 			var target = op.getFileID();
 			var data = op.getContents().toByteArray();
 
-			Optional<HFileMeta> attr = hfs.exists(target) ? Optional.of(hfs.getattr(target)) : Optional.empty();
-			var validity = classify(attr);
+			ResponseCodeEnum validity;
+			if (fileNumbers.isSoftwareUpdateFile(target.getFileNum())) {
+				validity = hfs.exists(target) ? OK : INVALID_FILE_ID;
+			} else {
+				Optional<HFileMeta> attr = hfs.exists(target) ? Optional.of(hfs.getattr(target)) : Optional.empty();
+				validity = classify(attr);
+			}
+
 			if (validity != OK) {
 				txnCtx.setStatus(validity);
 				return;

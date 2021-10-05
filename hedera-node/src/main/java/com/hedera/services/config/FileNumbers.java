@@ -106,6 +106,10 @@ public class FileNumbers {
 		return lastUpdateFile;
 	}
 
+	public boolean isSoftwareUpdateFile(final long num) {
+		return firstSoftwareUpdateFile() <= num && num <= lastSoftwareUpdateFile();
+	}
+
 	public long throttleDefinitions() {
 		if (throttleDefinitions == UNKNOWN_NUMBER) {
 			throttleDefinitions = properties.getLongProperty("files.throttleDefinitions");

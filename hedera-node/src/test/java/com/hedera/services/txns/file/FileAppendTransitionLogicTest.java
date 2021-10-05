@@ -9,9 +9,9 @@ package com.hedera.services.txns.file;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,8 @@ package com.hedera.services.txns.file;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.config.FileNumbers;
+import com.hedera.services.config.MockFileNumbers;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.files.HFileMeta;
@@ -65,13 +67,14 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willThrow;
 
 class FileAppendTransitionLogicTest {
-	enum TargetType { VALID, MISSING, DELETED, IMMUTABLE }
+	enum TargetType {VALID, MISSING, DELETED, IMMUTABLE, SPECIAL}
 
 	byte[] moreContents = "MORE".getBytes();
 	FileID target = IdUtils.asFile("0.0.13257");
 	FileID missing = IdUtils.asFile("0.0.75231");
 	FileID deleted = IdUtils.asFile("0.0.666");
 	FileID immutable = IdUtils.asFile("0.0.667");
+	FileID special = IdUtils.asFile("0.0.150");
 
 	HederaFs.UpdateResult success = new TieredHederaFs.SimpleUpdateResult(
 			false,
@@ -94,6 +97,7 @@ class FileAppendTransitionLogicTest {
 	MerkleNetworkContext networkCtx;
 
 	FileAppendTransitionLogic subject;
+	FileNumbers numbers = new MockFileNumbers();
 
 	@BeforeEach
 	private void setup() throws Throwable {
@@ -109,13 +113,14 @@ class FileAppendTransitionLogicTest {
 		hfs = mock(HederaFs.class);
 		given(hfs.exists(target)).willReturn(true);
 		given(hfs.exists(deleted)).willReturn(true);
+		given(hfs.exists(special)).willReturn(true);
 		given(hfs.exists(immutable)).willReturn(true);
 		given(hfs.exists(missing)).willReturn(false);
 		given(hfs.getattr(target)).willReturn(attr);
 		given(hfs.getattr(deleted)).willReturn(deletedAttr);
 		given(hfs.getattr(immutable)).willReturn(immutableAttr);
 
-		subject = new FileAppendTransitionLogic(hfs, txnCtx, () -> networkCtx);
+		subject = new FileAppendTransitionLogic(hfs, numbers, txnCtx, () -> networkCtx);
 	}
 
 	@Test
@@ -147,7 +152,8 @@ class FileAppendTransitionLogicTest {
 	void catchesOversize() {
 		givenTxnCtxAppending(TargetType.VALID);
 		given(hfs.append(any(), any()))
-				.willThrow(new IllegalArgumentException(TieredHederaFs.IllegalArgumentType.OVERSIZE_CONTENTS.toString()));
+				.willThrow(
+						new IllegalArgumentException(TieredHederaFs.IllegalArgumentType.OVERSIZE_CONTENTS.toString()));
 
 		// when:
 		subject.doStateTransition();
@@ -202,7 +208,7 @@ class FileAppendTransitionLogicTest {
 	}
 
 	@Test
-	void happyPathFlows() {
+	void happyPathFlowsForNonSpecialFile() {
 		// setup:
 		InOrder inOrder = inOrder(hfs, txnCtx);
 
@@ -215,6 +221,23 @@ class FileAppendTransitionLogicTest {
 
 		// then:
 		inOrder.verify(hfs).append(argThat(target::equals), argThat(bytes -> Arrays.equals(moreContents, bytes)));
+		inOrder.verify(txnCtx).setStatus(SUCCESS);
+	}
+
+	@Test
+	void happyPathFlowsForSpecialFile() {
+		// setup:
+		InOrder inOrder = inOrder(hfs, txnCtx);
+
+		givenTxnCtxAppending(TargetType.SPECIAL);
+		// and:
+		given(hfs.append(any(), any())).willReturn(success);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		inOrder.verify(hfs).append(argThat(special::equals), argThat(bytes -> Arrays.equals(moreContents, bytes)));
 		inOrder.verify(txnCtx).setStatus(SUCCESS);
 	}
 
@@ -251,6 +274,9 @@ class FileAppendTransitionLogicTest {
 				break;
 			case DELETED:
 				op.setFileID(deleted);
+				break;
+			case SPECIAL:
+				op.setFileID(special);
 				break;
 		}
 		op.setContents(ByteString.copyFrom(moreContents));

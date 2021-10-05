@@ -326,11 +326,17 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	/* --- Archivable --- */
 	@Override
 	public void archive() {
-		/* NOTE: in the near future, likely SDK 0.19.0, it will be necessary
-		 * to also propagate this .archive() call to the MerkleMaps as well. */
 		if (metadata != null) {
 			metadata.archive();
 		}
+
+		topics().archive();
+		tokens().archive();
+		accounts().archive();
+		storage().archive();
+		scheduleTxs().archive();
+		uniqueTokens().archive();
+		tokenAssociations().archive();
 	}
 
 	/* --- MerkleNode --- */

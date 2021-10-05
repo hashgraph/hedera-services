@@ -21,7 +21,9 @@ package com.hedera.services.sigs.order;
  */
 
 import com.hedera.services.config.EntityNumbers;
+import com.hedera.services.config.FileNumbers;
 import com.hedera.services.config.MockEntityNumbers;
+import com.hedera.services.config.MockFileNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -33,6 +35,7 @@ import com.hedera.services.sigs.metadata.TopicSigningMetadata;
 import com.hedera.services.sigs.metadata.lookups.AccountSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.ContractSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.FileSigMetaLookup;
+import com.hedera.services.sigs.metadata.lookups.HfsSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.SafeLookupResult;
 import com.hedera.services.sigs.metadata.lookups.TopicSigMetaLookup;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -313,6 +316,7 @@ class SigRequirementsTest {
 
 	private HederaFs hfs;
 	private TokenStore tokenStore;
+	private FileNumbers fileNumbers = new MockFileNumbers();
 	private ScheduleStore scheduleStore;
 	private TransactionBody txn;
 	private SigRequirements subject;
@@ -2429,11 +2433,12 @@ class SigRequirementsTest {
 		topics = scenario.topics();
 		tokenStore = scenario.tokenStore();
 		scheduleStore = scenario.scheduleStore();
+		final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
 
 		subject = new SigRequirements(
 				sigMetaLookup.orElse(
 						defaultLookupsFor(
-								hfs,
+								hfsSigMetaLookup,
 								() -> accounts,
 								() -> topics,
 								SigMetadataLookup.REF_LOOKUP_FACTORY.apply(tokenStore),

@@ -144,10 +144,10 @@ public class TieredHederaFs implements HederaFs {
 
 	@Override
 	public byte[] cat(FileID id) {
-		assertUsable(id);
 		if (isSpecialFile(id)) {
 			return specialFiles.get().get(id);
 		} else {
+			assertUsable(id);
 			return data.get(id);
 		}
 	}
@@ -177,26 +177,24 @@ public class TieredHederaFs implements HederaFs {
 
 	@Override
 	public UpdateResult overwrite(FileID id, byte[] newContents) {
-		assertUsable(id);
-
-		if (!isSpecialFile(id)) {
-			assertWithinSizeLimits(newContents);
-			return uncheckedUpdate(id, newContents);
-		} else {
+		if (isSpecialFile(id)) {
 			final var curSpecialFiles = specialFiles.get();
 			curSpecialFiles.update(id, newContents);
 			return new SimpleUpdateResult(false, true, SUCCESS);
+		} else {
+			assertUsable(id);
+			assertWithinSizeLimits(newContents);
+			return uncheckedUpdate(id, newContents);
 		}
 	}
 
 	@Override
 	public UpdateResult append(FileID id, byte[] moreContents) {
-		assertUsable(id);
-
 		if (isSpecialFile(id)) {
 			specialFiles.get().append(id, moreContents);
 			return new SimpleUpdateResult(false, true, SUCCESS);
 		} else {
+			assertUsable(id);
 			final var contents = data.get(id);
 			var newContents = ArrayUtils.addAll(contents, moreContents);
 			log.debug(
