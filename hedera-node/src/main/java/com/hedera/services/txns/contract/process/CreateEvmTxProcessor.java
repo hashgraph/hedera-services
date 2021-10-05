@@ -38,6 +38,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
+import java.util.Optional;
 
 @Singleton
 public class CreateEvmTxProcessor extends EvmTxProcessor {
@@ -59,10 +60,11 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 			final long providedGasLimit,
 			final long value,
 			final Bytes code,
-			final Instant consensusTime) {
+			final Instant consensusTime,
+			final long expiry) {
 		final long gasPrice = gasPriceTinyBarsGiven(consensusTime);
 
-		return super.execute(sender, receiver, gasPrice, providedGasLimit, value, code, true, consensusTime, false);
+		return super.execute(sender, receiver, gasPrice, providedGasLimit, value, code, true, consensusTime, false, Optional.of(expiry));
 	}
 
 

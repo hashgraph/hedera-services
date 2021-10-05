@@ -38,6 +38,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
+import java.util.Optional;
 
 @Singleton
 public class CallLocalEvmTxProcessor extends EvmTxProcessor {
@@ -74,7 +75,8 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 				callData,
 				false,
 				consensusTime,
-				true);
+				true,
+				Optional.empty());
 	}
 
 	@Override

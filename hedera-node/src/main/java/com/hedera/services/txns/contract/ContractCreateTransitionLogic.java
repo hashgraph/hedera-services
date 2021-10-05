@@ -110,6 +110,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		/* --- Load the model objects --- */
 		final var sender = accountStore.loadAccount(senderId);
 		final var codeWithConstructorArgs = prepareCodeWithConstructorArguments(op);
+		long expiry = RequestBuilder.getExpirationTime(txnCtx.consensusTime(), op.getAutoRenewPeriod()).getSeconds();
 
 		/* --- Do the business logic --- */
 		final var newContractAddress = worldState.newContractAddress(sender.getId().asEvmAddress());
@@ -119,7 +120,8 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 				op.getGas(),
 				op.getInitialBalance(),
 				codeWithConstructorArgs,
-				txnCtx.consensusTime()
+				txnCtx.consensusTime(),
+				expiry
 		);
 
 		/* --- Persist changes into state --- */
@@ -128,7 +130,6 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 
 		if (result.isSuccessful()) {
 			/* --- Create customizer for the newly created contract --- */
-			long expiry = RequestBuilder.getExpirationTime(txnCtx.consensusTime(), op.getAutoRenewPeriod()).getSeconds();
 			final var customizer = new HederaAccountCustomizer()
 					.key(key)
 					.memo(op.getMemo())

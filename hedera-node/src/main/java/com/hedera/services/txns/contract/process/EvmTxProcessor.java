@@ -72,7 +72,6 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -141,7 +140,7 @@ abstract class EvmTxProcessor {
 
 	protected TransactionProcessingResult execute(Account sender, Address receiver, long gasPrice,
 												  long providedGasLimit, long value, Bytes payload, boolean contractCreation,
-												  Instant consensusTime, boolean isStatic) {
+												  Instant consensusTime, boolean isStatic, Optional<Long> expiry) {
 		try {
 			final long gasLimit = providedGasLimit > dynamicProperties.maxGas() ? dynamicProperties.maxGas() : providedGasLimit;
 			final Wei gasCost = Wei.of(Math.multiplyExact(gasLimit, gasPrice));
@@ -171,8 +170,6 @@ abstract class EvmTxProcessor {
 			final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
 
 			final var stackedUpdater = updater.updater();
-			HashMap<Address, Long> expiries = new HashMap<>();
-			expiries.put(senderEvmAddress, sender.getExpiry());
 			Wei valueAsWei = Wei.of(value);
 			final MessageFrame.Builder commonInitialFrame =
 					MessageFrame.builder()
@@ -195,7 +192,7 @@ abstract class EvmTxProcessor {
 							.contextVariables(Map.of(
 									"rbh", storageByteHoursTinyBarsGiven(consensusTime),
 									"HederaFunctionality", getFunctionType(),
-									"expiries", new HashMap<Address, Long>()));
+									"expiry", expiry));
 
 			final MessageFrame initialFrame = buildInitialFrame(commonInitialFrame,
 					updater,

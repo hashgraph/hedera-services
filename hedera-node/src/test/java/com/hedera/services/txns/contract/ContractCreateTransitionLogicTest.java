@@ -46,6 +46,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.builder.RequestBuilder;
 import com.swirlds.common.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
@@ -197,7 +198,8 @@ class ContractCreateTransitionLogicTest {
 				.setInitialBalance(balance)
 				.setGas(gas)
 				.setConstructorParameters(ByteString.copyFromUtf8("test"))
-				.setProxyAccountID(proxy);
+				.setProxyAccountID(proxy)
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod).build());
 
 		var txn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
@@ -207,7 +209,8 @@ class ContractCreateTransitionLogicTest {
 		var contractByteCodeString = new String(bytecode);
 		var constructorParamsHexString = CommonUtils.hex(op.getConstructorParameters().toByteArray());
 		contractByteCodeString += constructorParamsHexString;
-
+		var expiry = RequestBuilder.getExpirationTime(consensusTime,
+				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
 		given(hfs.exists(bytecodeSrc)).willReturn(true);
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
@@ -229,7 +232,8 @@ class ContractCreateTransitionLogicTest {
 				gas,
 				balance,
 				Bytes.fromHexString(contractByteCodeString),
-				txnCtx.consensusTime()))
+				txnCtx.consensusTime(),
+				expiry))
 				.willReturn(result);
 
 		// when:
@@ -241,7 +245,8 @@ class ContractCreateTransitionLogicTest {
 				gas,
 				balance,
 				Bytes.fromHexString(contractByteCodeString),
-				txnCtx.consensusTime());
+				txnCtx.consensusTime(),
+				expiry);
 	}
 
 	@Test
@@ -260,7 +265,8 @@ class ContractCreateTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
-
+		var expiry = RequestBuilder.getExpirationTime(consensusTime,
+				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();
 		var result = TransactionProcessingResult.failed(1234L, 124L, Optional.empty(), Optional.empty());
 		given(evmTxProcessor.execute(
 				senderAccount,
@@ -268,7 +274,8 @@ class ContractCreateTransitionLogicTest {
 				gas,
 				balance,
 				Bytes.fromHexString(new String(bytecode)),
-				txnCtx.consensusTime()))
+				txnCtx.consensusTime(),
+				expiry))
 				.willReturn(result);
 
 		// when:
@@ -301,6 +308,8 @@ class ContractCreateTransitionLogicTest {
 						Bytes.EMPTY,
 						contractAccount.getId().asEvmAddress());
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
+		var expiry = RequestBuilder.getExpirationTime(consensusTime,
+				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();
 		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress())).willReturn(contractAccount.getId().asEvmAddress());
 		given(evmTxProcessor.execute(
 				senderAccount,
@@ -308,7 +317,8 @@ class ContractCreateTransitionLogicTest {
 				gas,
 				balance,
 				Bytes.fromHexString(new String(bytecode)),
-				txnCtx.consensusTime()))
+				txnCtx.consensusTime(),
+				expiry))
 				.willReturn(result);
 
 		// when:

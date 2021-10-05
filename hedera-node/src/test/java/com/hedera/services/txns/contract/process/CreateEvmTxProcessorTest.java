@@ -91,6 +91,7 @@ class CreateEvmTxProcessorTest {
 	private final Account sender = new Account(new Id(0, 0, 1002));
 	private final Account receiver = new Account(new Id(0, 0, 1006));
 	private final Instant consensusTime = Instant.now();
+	private final long expiry = 123456L;
 
 	@BeforeEach
 	private void setup() {
@@ -101,7 +102,7 @@ class CreateEvmTxProcessorTest {
 	void assertSuccessExecutе() {
 		givenValidMock();
 		sender.initBalance(350_000L);
-		var result = createEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), 33_333L, 1234L, Bytes.EMPTY, consensusTime);
+		var result = createEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), 33_333L, 1234L, Bytes.EMPTY, consensusTime, expiry);
 		assertTrue(result.isSuccessful());
 		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
 	}
@@ -113,7 +114,7 @@ class CreateEvmTxProcessorTest {
 
 		//expect:
 		assertThrows(InvalidTransactionException.class, () ->
-				createEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), 1234, 1_000_000, 15, Bytes.EMPTY, false, transactionContext.consensusTime(), false));
+				createEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), 1234, 1_000_000, 15, Bytes.EMPTY, false, transactionContext.consensusTime(), false, Optional.of(expiry)));
 	}
 
 	@Test

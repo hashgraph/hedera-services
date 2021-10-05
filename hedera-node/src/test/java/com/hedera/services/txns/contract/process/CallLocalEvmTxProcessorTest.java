@@ -107,7 +107,7 @@ class CallLocalEvmTxProcessorTest {
 
 		//expect:
 		assertThrows(InvalidTransactionException.class, () ->
-				callLocalEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), 1234L, 1_000_000, 15, Bytes.EMPTY, false, transactionContext.consensusTime(), false));
+				callLocalEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), 1234L, 1_000_000, 15, Bytes.EMPTY, false, transactionContext.consensusTime(), false, Optional.empty()));
 	}
 
 	@Test
