@@ -71,13 +71,12 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 
 	@Override
 	protected MessageFrame buildInitialFrame(MessageFrame.Builder commonInitialFrame, HederaWorldState.Updater updater, Address to, Bytes payload) {
-		Bytes code = updater.get(to).getCode();
 		return commonInitialFrame
 				.type(MessageFrame.Type.CONTRACT_CREATION)
 				.address(to)
 				.contract(to)
-				.inputData(payload)
-				.code(new Code(code, Hash.hash(code)))
+				.inputData(Bytes.EMPTY)
+				.code(new Code(payload, Hash.hash(payload)))
 				.build();
 	}
 }
