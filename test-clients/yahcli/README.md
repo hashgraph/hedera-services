@@ -1,4 +1,4 @@
-# Yahcli v0.1.4
+# Yahcli v0.1.5
 Yahcli (_Yet Another Hedera Command Line Interface_) supports DevOps
 actions against the Hedera networks listed in a _config.yml_ file.
 
@@ -64,7 +64,7 @@ use with that network. :guard: &nbsp; If there is no corresponding
 `account{num}.pass` for a PEM file, please be ready to enter 
 the passphrase interactively in the console. For example,
 ```
-$ docker run -it -v $(pwd):/launch yahcli:0.1.4 -p 2 sysfiles download all 
+$ docker run -it -v $(pwd):/launch yahcli:0.1.5 -p 2 sysfiles download all 
 Targeting localhost, paying with 0.0.2
 Please enter the passphrase for key file localhost/keys/account2.pem: 
 ```
@@ -82,7 +82,7 @@ Note that yahcli does not support multi-sig accounts.
 
 To list all available commands,
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 help
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.5 help
 ``` 
 
 :information_desk_person: &nbsp; Since the only key we have for previewnet
@@ -91,7 +91,7 @@ when running against this network.
 
 To download the fee schedules from previewnet given the config above, we run,
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -p 2 -n previewnet sysfiles download fees
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.5 -p 2 -n previewnet sysfiles download fees
 Targeting previewnet, paying with 0.0.2
 Downloading the fees...OK
 $ ls previewnet/sysfiles/
@@ -102,14 +102,14 @@ The fee schedules were downloaded in JSON form to _previewnet/sysfiles/feeSchedu
 To see more options for the `download` subcommand (including a custom download directory), 
 we run,
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 sysfiles download help
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.5 sysfiles download help
 ```
 
 The remaining sections of this document focus on specific use cases.
 
 # Getting account balances
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n previewnet -p 2 accounts balance 56 50
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.5 -n previewnet -p 2 accounts balance 56 50
 ```
 
 # Updating system files
@@ -134,7 +134,7 @@ localhost
 
 We first download the existing address book,
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 2 sysfiles download address-book
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.5 -n localhost -p 2 sysfiles download address-book
 Targeting localhost, paying with 0.0.2
 Downloading the address-book...OK
 ```
@@ -167,12 +167,12 @@ files, respectively.
 
 And now we upload the new address book, this time using the address book admin `0.0.55` as the payer:
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 55 sysfiles upload address-book
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.5 -n localhost -p 55 sysfiles upload address-book
 ```
 
 Finally we re-download the book to see that the hex-encoded cert hash and RSA public key were uploaded as expected:
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 2 sysfiles download address-book
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.5 -n localhost -p 2 sysfiles download address-book
 Targeting localhost, paying with 0.0.2
 Downloading the address-book...OK
 $ tail -17 localhost/sysfiles/addressBook.json 
@@ -212,7 +212,7 @@ values. Suppose we try to update the address book again, changing the
 We then get a messy error and the update aborts before sending
 any `FileUpdate` transaction to the network:
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 55 sysfiles upload address-book
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.5 -n localhost -p 55 sysfiles upload address-book
 Targeting localhost, paying with 0.0.55
 java.lang.IllegalStateException: Deprecated memo field cannot be set to 'This node is the best!'
 	at com.hedera.services.bdd.suites.utils.sysfiles.serdes.AddrBkJsonToGrpcBytes.toValidatedRawFile(AddrBkJsonToGrpcBytes.java:70)
@@ -241,9 +241,9 @@ localhost/sysfiles/
 
 Then proceed as with any other `sysfiles upload` command, 
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 58 sysfiles upload software-zip
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.5 -n localhost -p 58 sysfiles upload software-zip
 ...
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 58 sysfiles upload telemetry-zip
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.5 -n localhost -p 58 sysfiles upload telemetry-zip
 ...
 ```
 
@@ -254,7 +254,7 @@ $ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localh
 Services will be validated by type; to see all supported options, run,
 
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 2 validate help
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.5 -n localhost -p 2 validate help
 ```
 
 # Preparing an NMT software upgrade
@@ -265,7 +265,7 @@ SHA-384 hash of this ZIP must be given so the nodes can validate the integrity o
 staging its artifacts for NMT to use. This looks like,
 
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 58 prepare-upgrade \
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.5 -n localhost -p 58 prepare-upgrade \
 > --upgrade-zip-hash 5d3b0e619d8513dfbf606ef00a2e83ba97d736f5f5ba61561d895ea83a6d4c34fce05d6cd74c83ec171f710e37e12aab
 ```
 
@@ -277,7 +277,7 @@ SHA-384 hash of this ZIP must be known so the nodes can validate the integrity o
 staging its artifacts for NMT to use.  This looks like,
 
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 58 upgrade-telemetry \
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.5 -n localhost -p 58 upgrade-telemetry \
 > --upgrade-zip-hash 8ec75ab44b6c8ccac4a6e7f7d77b5a66280cad8d8a86ed961975a3bea597613f83af9075f65786bf9101d50047ca768f \
 > --start-time 2022-01-01.00:00:00
 ```
@@ -290,21 +290,21 @@ software upgrade.
 
 A vanilla freeze with no NMT upgrade only includes the start time, 
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 58 freeze \
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.5 -n localhost -p 58 freeze \
 > --start-time 2022-01-01.00:00:00
 ```
 
 While a freeze that should trigger a staged NMT upgrade uses the `freeze-upgrade` variant,
 which **must** repeat the hash of the intended update, 
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 58 freeze-upgrade \
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.5 -n localhost -p 58 freeze-upgrade \
 > --upgrade-zip-hash 5d3b0e619d8513dfbf606ef00a2e83ba97d736f5f5ba61561d895ea83a6d4c34fce05d6cd74c83ec171f710e37e12aab
 > --start-time 2021-09-09.20:11:13 
 ```
 
 To abort a scheduled freeze, simply use the `freeze-abort` command,
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 58 freeze-abort 
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.5 -n localhost -p 58 freeze-abort 
 ```
 
 # Updating account keys
@@ -314,7 +314,7 @@ can be either PEM files or BIP-39 mnemonics.)
 
 Our first example uses a randomly generated new key,
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -p 2 -n localhost \
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.5 -p 2 -n localhost \
 > accounts rekey --gen-new-key 57
 Targeting localhost, paying with 0.0.2
 .i. Exported a newly generated key in PEM format to localhost/keys/account57.pem
@@ -336,7 +336,7 @@ localhost/keys
 
 For the next example, we specify an existing PEM file, and enter its passphrase when prompted,
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -p 57 -n localhost \
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.5 -p 57 -n localhost \
 > accounts rekey -k new-account57.pem 57
 Targeting localhost, paying with 0.0.2
 Please enter the passphrase for key file new-account55.pem: 
@@ -348,7 +348,7 @@ In our final example, we replace the `0.0.57` key from a mnemonic,
 ```
 $ cat new-account57.words
 goddess maze eternal small normal october ... author
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -p 57 -n localhost \
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.5 -p 57 -n localhost \
 > accounts rekey -k new-account57.words 57
 Targeting localhost, paying with 0.0.2
 .i. Exported key from new-account55 to localhost/keys/account57.pem
