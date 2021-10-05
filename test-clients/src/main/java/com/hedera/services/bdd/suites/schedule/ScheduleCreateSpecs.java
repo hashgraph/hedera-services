@@ -109,6 +109,8 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				preservesRevocationServiceSemanticsForFileDelete(),
 				worksAsExpectedWithDefaultScheduleId(),
 				infoIncludesTxnIdFromCreationReceipt(),
+				rejectsIdenticalScheduleEvenWithDifferentDesignatedPayer(),
+				addsSignatureToTheExistingIdenticalSchedule(),
 				suiteCleanup(),
 		});
 	}
@@ -362,6 +364,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 								.payingWith("secondPayer")
 								.designatingPayer("secondPayer")
 								.via("copycat")
+								.mergeWithIdenticalSchedule()
 								.hasKnownStatus(IDENTICAL_SCHEDULE_ALREADY_EXISTS_WITH_DIFFERENT_PAYER),
 						getTxnRecord("copycat").logged(),
 						getReceipt("copycat")
@@ -392,12 +395,15 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 						)
 								.payingWith("secondPayer")
 								.designatingPayer("firstPayer")
+								.mergeWithIdenticalSchedule()
 								.via("copycat")
 								.hasKnownStatus(SUCCESS),
 						getTxnRecord("copycat").logged(),
 						getReceipt("copycat")
 								.hasSchedule("original")
-								.hasScheduledTxnId("original")
+								.hasScheduledTxnId("original"),
+						getScheduleInfo("original")
+								.hasSignatories("firstPayer", "secondPayer")
 				);
 	}
 
