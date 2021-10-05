@@ -28,10 +28,12 @@ public class HederaExceptionalHaltReason {
 
 	public static ExceptionalHaltReason INVALID_SOLIDITY_ADDRESS = HederaExceptionalHalt.INVALID_SOLIDITY_ADDRESS;
 	public static ExceptionalHaltReason SELF_DESTRUCT_TO_SELF = HederaExceptionalHalt.SELF_DESTRUCT_TO_SELF;
+	public static ExceptionalHaltReason INVALID_SIGNATURE = HederaExceptionalHalt.INVALID_SIGNATURE;
 
 	enum HederaExceptionalHalt implements ExceptionalHaltReason {
 		INVALID_SOLIDITY_ADDRESS("Invalid account reference"),
-		SELF_DESTRUCT_TO_SELF("Self destruct to the same address");
+		SELF_DESTRUCT_TO_SELF("Self destruct to the same address"),
+		INVALID_SIGNATURE("Invalid signature");
 
 		String description;
 

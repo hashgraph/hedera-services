@@ -23,6 +23,7 @@ package com.hedera.services.txns.contract.process;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.contracts.execution.SoliditySigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
@@ -95,6 +96,7 @@ abstract class EvmTxProcessor {
 	private final AbstractMessageProcessor contractCreationProcessor;
 
 	public EvmTxProcessor(
+			final SoliditySigsVerifier sigsVerifier,
 			final HederaWorldState worldState,
 			final HbarCentExchange exchange,
 			final UsagePricesProvider usagePrices,
@@ -110,8 +112,8 @@ abstract class EvmTxProcessor {
 		registerLondonOperations(operationRegistry, gasCalculator, BigInteger.valueOf(dynamicProperties.getChainId()));
 		/* Register customized Hedera Opcodes */
 		operationRegistry.put(new HederaBalanceOperation(gasCalculator));
-		operationRegistry.put(new HederaCallCodeOperation(gasCalculator));
-		operationRegistry.put(new HederaCallOperation(gasCalculator));
+		operationRegistry.put(new HederaCallCodeOperation(sigsVerifier, gasCalculator));
+		operationRegistry.put(new HederaCallOperation(sigsVerifier, gasCalculator));
 		operationRegistry.put(new HederaCreateOperation(gasCalculator));
 		operationRegistry.put(new HederaDelegateCallOperation(gasCalculator));
 		operationRegistry.put(new HederaExtCodeCopyOperation(gasCalculator));

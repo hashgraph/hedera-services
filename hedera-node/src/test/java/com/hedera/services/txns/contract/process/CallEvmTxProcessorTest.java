@@ -24,6 +24,7 @@ package com.hedera.services.txns.contract.process;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.contracts.execution.SoliditySigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
@@ -44,7 +45,6 @@ import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
-import org.hyperledger.besu.plugin.data.BlockHeader;
 import org.hyperledger.besu.plugin.data.Transaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -57,8 +57,6 @@ import java.util.Deque;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -71,6 +69,8 @@ class CallEvmTxProcessorTest {
 
 	private static final int MAX_STACK_SIZE = 1024;
 
+	@Mock
+	private SoliditySigsVerifier sigsVerifier;
 	@Mock
 	private HederaWorldState worldState;
 	@Mock
@@ -97,7 +97,7 @@ class CallEvmTxProcessorTest {
 
 	@BeforeEach
 	private void setup() {
-		callEvmTxProcessor = new CallEvmTxProcessor(worldState, hbarCentExchange, usagePricesProvider, globalDynamicProperties);
+		callEvmTxProcessor = new CallEvmTxProcessor(sigsVerifier, worldState, hbarCentExchange, usagePricesProvider, globalDynamicProperties);
 	}
 
 	@Test

@@ -23,6 +23,7 @@ package com.hedera.services.txns.contract.process;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.contracts.execution.SoliditySigsVerifier;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.store.contracts.HederaWorldState;
@@ -43,11 +44,12 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 
 	@Inject
 	public CallEvmTxProcessor(
+			SoliditySigsVerifier sigsVerifier,
 			HederaWorldState worldState,
 			HbarCentExchange exchange,
 			UsagePricesProvider usagePrices,
 			GlobalDynamicProperties dynamicProperties) {
-		super(worldState, exchange, usagePrices, dynamicProperties);
+		super(sigsVerifier, worldState, exchange, usagePrices, dynamicProperties);
 	}
 
 	public TransactionProcessingResult execute(

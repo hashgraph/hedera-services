@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -192,6 +193,8 @@ public class TransactionRecordService {
 				return OBTAINER_SAME_CONTRACT_ID;
 			} else if (HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS == haltReason) {
 				return INVALID_SOLIDITY_ADDRESS;
+			} else if (HederaExceptionalHaltReason.INVALID_SIGNATURE == haltReason) {
+				return INVALID_SIGNATURE;
 			}
 		}
 

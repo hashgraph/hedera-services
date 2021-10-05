@@ -22,16 +22,23 @@ package com.hedera.services.txns.contract.operation;
  *
  */
 
+import com.hedera.services.contracts.execution.SoliditySigsVerifier;
+import com.hedera.services.utils.EntityIdUtils;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.CallCodeOperation;
 
 import java.util.Optional;
+import java.util.Set;
 
 public class HederaCallCodeOperation extends CallCodeOperation {
-	public HederaCallCodeOperation(GasCalculator gasCalculator) {
+	private final SoliditySigsVerifier sigsVerifier;
+
+	public HederaCallCodeOperation(SoliditySigsVerifier sigsVerifier,
+								   GasCalculator gasCalculator) {
 		super(gasCalculator);
+		this.sigsVerifier = sigsVerifier;
 	}
 
 	@Override
@@ -40,6 +47,12 @@ public class HederaCallCodeOperation extends CallCodeOperation {
 		if (account == null) {
 			return new OperationResult(
 					Optional.of(cost(frame)), Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
+		}
+		final var accountId = EntityIdUtils.accountParsedFromSolidityAddress(account.getAddress().toArray());
+		if (!sigsVerifier.allRequiredKeysAreActive(Set.of(accountId))) {
+			return new OperationResult(
+					Optional.of(cost(frame)), Optional.of(HederaExceptionalHaltReason.INVALID_SIGNATURE)
+			);
 		}
 
 		return super.execute(frame, evm);

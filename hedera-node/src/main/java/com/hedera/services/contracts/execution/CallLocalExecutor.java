@@ -42,6 +42,7 @@ import javax.inject.Singleton;
 import java.time.Instant;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -95,6 +96,8 @@ public class CallLocalExecutor {
 						status = LOCAL_CALL_MODIFICATION_EXCEPTION;
 					} else if (haltReason.equals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS)) {
 						status = INVALID_SOLIDITY_ADDRESS;
+					} else if (haltReason.equals(HederaExceptionalHaltReason.INVALID_SIGNATURE)) {
+						status = INVALID_SIGNATURE;
 					}
 				}
 			}

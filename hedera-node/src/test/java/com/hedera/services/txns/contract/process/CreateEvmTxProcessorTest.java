@@ -24,6 +24,7 @@ package com.hedera.services.txns.contract.process;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.contracts.execution.SoliditySigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
@@ -68,6 +69,8 @@ class CreateEvmTxProcessorTest {
 	private static final int MAX_STACK_SIZE = 1024;
 
 	@Mock
+	private SoliditySigsVerifier sigsVerifier;
+	@Mock
 	private HederaWorldState worldState;
 	@Mock
 	private HbarCentExchange hbarCentExchange;
@@ -91,7 +94,7 @@ class CreateEvmTxProcessorTest {
 
 	@BeforeEach
 	private void setup() {
-		createEvmTxProcessor = new CreateEvmTxProcessor(worldState, hbarCentExchange, usagePricesProvider, globalDynamicProperties);
+		createEvmTxProcessor = new CreateEvmTxProcessor(sigsVerifier, worldState, hbarCentExchange, usagePricesProvider, globalDynamicProperties);
 	}
 
 	@Test
