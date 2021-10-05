@@ -24,6 +24,7 @@ package com.hedera.services.txns.contract.operation;
 
 import com.hedera.services.store.contracts.HederaWorldState.WorldStateAccount;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
+import com.hedera.services.txns.contract.gascalculator.GasCalculatorHedera_0_18_0;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -37,8 +38,11 @@ import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
 public class HederaCreateOperation extends AbstractCreateOperation {
 
+	boolean checkSuperCost;
+
 	public HederaCreateOperation(final GasCalculator gasCalculator) {
 		super(0xF0, "ħCREATE", 3, 1, false, 1, gasCalculator);
+		checkSuperCost = !(gasCalculator instanceof GasCalculatorHedera_0_18_0);
 	}
 
 	@Override
@@ -46,41 +50,21 @@ public class HederaCreateOperation extends AbstractCreateOperation {
 		final long initCodeOffset = clampedToLong(frame.getStackItem(1));
 		final long initCodeLength = clampedToLong(frame.getStackItem(2));
 
-		//TODO charge for memory expansion cost?
-		//final Gas memoryGasCost = gasCalculator().memoryExpansionGasCost(frame, initCodeOffset, initCodeLength);
+		final Gas memoryGasCost = gasCalculator().memoryExpansionGasCost(frame, initCodeOffset, initCodeLength);
 
-		long expiry = 0;
-		WorldStateAccount hederaAccount;
-		Iterator<MessageFrame> framesIterator = frame.getMessageFrameStack().iterator();
-		MessageFrame messageFrame;
-		while (framesIterator.hasNext()) {
-			messageFrame = framesIterator.next();
-			/* if this is the initial frame from the deque, check context vars first */
-			if (!framesIterator.hasNext()) {
-				Optional<Long> expiryOptional = messageFrame.getContextVariable("expiry");
-				if (expiryOptional.isPresent()) {
-					expiry = expiryOptional.get();
-					break;
-				}
-			}
-			/* check if this messageFrame's sender account can be retrieved from state */
-			hederaAccount = ((HederaWorldUpdater) messageFrame.getWorldUpdater()).getHederaAccount(frame.getSenderAddress());
-			if (hederaAccount != null) {
-				expiry = hederaAccount.getExpiry();
-				break;
-			}
-		}
-
-		long numberOfBytes = initCodeLength - initCodeOffset;
-		long byteHourCostInTinybars = frame.getMessageFrameStack().getLast().getContextVariable("rbh");
-		long durationInSeconds = Math.max(0, expiry - frame.getBlockValues().getTimestamp());
+		long byteHourCostInTinybars = frame.getMessageFrameStack().getLast().getContextVariable("sbh");
+		long durationInSeconds = Math.max(0, HederaOperationUtil.getExpiry(frame) - frame.getBlockValues().getTimestamp());
 		long gasPrice = frame.getGasPrice().toLong();
 
-		long storageCost = 0;
-		long bps = durationInSeconds * numberOfBytes;
 		long storageCostTinyBars = (durationInSeconds * byteHourCostInTinybars) / 3600;
-		storageCost = Math.round((double) storageCostTinyBars / (double) gasPrice);
-		return Gas.of(storageCost); //.plus(memoryGasCost)
+		long storageCost = Math.round((double) storageCostTinyBars / (double) gasPrice);
+
+		Gas gasCost = gasCalculator().createOperationGasCost(frame).plus(Gas.of(storageCost).plus(memoryGasCost));
+		if (checkSuperCost) {
+			return gasCost.max(this.gasCalculator().createOperationGasCost(frame));
+		} else {
+			return gasCost;
+		}
 	}
 
 	@Override

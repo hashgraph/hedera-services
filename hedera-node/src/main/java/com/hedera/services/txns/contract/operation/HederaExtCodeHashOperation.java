@@ -22,8 +22,10 @@ package com.hedera.services.txns.contract.operation;
  *
  */
 
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
+import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -42,14 +44,26 @@ public class HederaExtCodeHashOperation extends ExtCodeHashOperation {
 	@Override
 	public OperationResult execute(MessageFrame frame, EVM evm) {
 		try {
-			final Address address = Words.toAddress(frame.getStackItem(0));
+			final Address address = Words.toAddress(frame.popStackItem());
 			final var account = frame.getWorldUpdater().get(address);
 			if (account == null) {
 				return new OperationResult(
 						Optional.of(cost(true)), Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
 			}
 
-			return super.execute(frame, evm);
+			boolean accountIsWarm = frame.warmUpAddress(address) || this.gasCalculator().isPrecompile(address);
+			Optional<Gas> optionalCost = Optional.of(this.cost(accountIsWarm));
+			if (frame.getRemainingGas().compareTo(optionalCost.get()) < 0) {
+				return new OperationResult(optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
+			} else {
+				if (!account.isEmpty()) {
+					frame.pushStackItem(UInt256.fromBytes(account.getCodeHash()));
+				} else {
+					frame.pushStackItem(UInt256.ZERO);
+				}
+
+				return new OperationResult(optionalCost, Optional.empty());
+			}
 		} catch (final FixedStack.UnderflowException ufe) {
 			return new OperationResult(
 					Optional.of(cost(true)), Optional.of(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS));

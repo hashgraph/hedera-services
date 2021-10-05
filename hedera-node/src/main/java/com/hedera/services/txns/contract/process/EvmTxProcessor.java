@@ -30,17 +30,18 @@ import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.txns.contract.gascalculator.GasCalculatorHedera_0_19_0;
 import com.hedera.services.txns.contract.operation.HederaBalanceOperation;
 import com.hedera.services.txns.contract.operation.HederaCallCodeOperation;
 import com.hedera.services.txns.contract.operation.HederaCallOperation;
+import com.hedera.services.txns.contract.operation.HederaCreateOperation;
 import com.hedera.services.txns.contract.operation.HederaDelegateCallOperation;
 import com.hedera.services.txns.contract.operation.HederaExtCodeCopyOperation;
 import com.hedera.services.txns.contract.operation.HederaExtCodeHashOperation;
 import com.hedera.services.txns.contract.operation.HederaExtCodeSizeOperation;
-import com.hedera.services.txns.contract.operation.HederaStaticCallOperation;
-import com.hedera.services.txns.contract.gascalculator.GasCalculatorHedera_0_19_0;
-import com.hedera.services.txns.contract.operation.HederaCreateOperation;
+import com.hedera.services.txns.contract.operation.HederaSStoreOperation;
 import com.hedera.services.txns.contract.operation.HederaSelfDestructOperation;
+import com.hedera.services.txns.contract.operation.HederaStaticCallOperation;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -86,7 +87,7 @@ abstract class EvmTxProcessor {
 
 	private static final int MAX_STACK_SIZE = 1024;
 
-	private HederaWorldState worldState;
+	private final HederaWorldState worldState;
 	private final HbarCentExchange exchange;
 	private final GasCalculator gasCalculator;
 	private final UsagePricesProvider usagePrices;
@@ -119,6 +120,7 @@ abstract class EvmTxProcessor {
 		operationRegistry.put(new HederaExtCodeHashOperation(gasCalculator));
 		operationRegistry.put(new HederaExtCodeSizeOperation(gasCalculator));
 		operationRegistry.put(new HederaSelfDestructOperation(gasCalculator));
+		operationRegistry.put(new HederaSStoreOperation(gasCalculator));
 		operationRegistry.put(new HederaStaticCallOperation(gasCalculator));
 		/* Deregister CREATE2 Opcode */
 		operationRegistry.put(new InvalidOperation(0xF5, gasCalculator));
@@ -142,7 +144,9 @@ abstract class EvmTxProcessor {
 												  long providedGasLimit, long value, Bytes payload, boolean contractCreation,
 												  Instant consensusTime, boolean isStatic, Optional<Long> expiry) {
 		try {
-			final long gasLimit = providedGasLimit > dynamicProperties.maxGas() ? dynamicProperties.maxGas() : providedGasLimit;
+			final long gasLimit = providedGasLimit > dynamicProperties.maxGas()
+					? dynamicProperties.maxGas()
+					: providedGasLimit;
 			final Wei gasCost = Wei.of(Math.multiplyExact(gasLimit, gasPrice));
 			final Wei upfrontCost = gasCost.add(value);
 			final Gas intrinsicGas =
@@ -153,7 +157,10 @@ abstract class EvmTxProcessor {
 				validateFalse(upfrontCost.compareTo(Wei.of(sender.getBalance())) > 0,
 						ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
 				if (intrinsicGas.toLong() > gasLimit) {
-					throw new InvalidTransactionException(gasLimit < dynamicProperties.maxGas() ? INSUFFICIENT_GAS : MAX_GAS_LIMIT_EXCEEDED);
+					throw new InvalidTransactionException(
+							gasLimit < dynamicProperties.maxGas()
+									? INSUFFICIENT_GAS
+									: MAX_GAS_LIMIT_EXCEEDED);
 				}
 			}
 
@@ -190,7 +197,7 @@ abstract class EvmTxProcessor {
 							.miningBeneficiary(coinbase)
 							.blockHashLookup(h -> null)
 							.contextVariables(Map.of(
-									"rbh", storageByteHoursTinyBarsGiven(consensusTime),
+									"sbh", storageByteHoursTinyBarsGiven(consensusTime),
 									"HederaFunctionality", getFunctionType(),
 									"expiry", expiry));
 
@@ -207,15 +214,16 @@ abstract class EvmTxProcessor {
 				stackedUpdater.commit();
 			}
 
-			final Gas gasUsedByTransaction =
-					Gas.of(gasLimit).minus(initialFrame.getRemainingGas());
+			Gas gasUsedByTransaction = Gas.of(gasLimit).minus(initialFrame.getRemainingGas());
+			/* Return leftover gas */
+			final Gas selfDestructRefund =
+					gasCalculator.getSelfDestructRefundAmount().times(initialFrame.getSelfDestructs().size()).min(
+							gasUsedByTransaction.dividedBy(gasCalculator.getMaxRefundQuotient()));
+			gasUsedByTransaction = gasUsedByTransaction.minus(selfDestructRefund);
 
 			if (!isStatic) {
-				/* Return leftover gas */
-				final Gas selfDestructRefund =
-						gasCalculator.getSelfDestructRefundAmount().times(initialFrame.getSelfDestructs().size());
-				final Gas refundGas = initialFrame.getGasRefund().plus(selfDestructRefund);
-				final Gas refunded = refunded(gasLimit, initialFrame.getRemainingGas(), refundGas);
+				// return gas price to accounts
+				final Gas refunded = Gas.of(gasLimit).minus(gasUsedByTransaction).plus(initialFrame.getGasRefund());
 				final Wei refundedWei = refunded.priceFor(Wei.of(gasPrice));
 
 				mutableSender.incrementBalance(refundedWei);
@@ -274,7 +282,8 @@ abstract class EvmTxProcessor {
 
 	protected abstract HederaFunctionality getFunctionType();
 
-	protected abstract MessageFrame buildInitialFrame(MessageFrame.Builder baseInitialFrame, HederaWorldState.Updater updater, Address to, Bytes payload);
+	protected abstract MessageFrame buildInitialFrame(MessageFrame.Builder baseInitialFrame,
+			HederaWorldState.Updater updater, Address to, Bytes payload);
 
 	protected void process(final MessageFrame frame, final OperationTracer operationTracer) {
 		final AbstractMessageProcessor executor = getMessageProcessor(frame.getType());
@@ -291,16 +300,6 @@ abstract class EvmTxProcessor {
 			default:
 				throw new IllegalStateException("Request for unsupported message processor type " + type);
 		}
-	}
-
-	private Gas refunded(final long gasLimit, final Gas gasRemaining, final Gas gasRefund) {
-		// Integer truncation takes care of the floor calculation needed after the divide.
-		final Gas maxRefundAllowance =
-				Gas.of(gasLimit)
-						.minus(gasRemaining)
-						.dividedBy(gasCalculator.getMaxRefundQuotient());
-		final Gas refundAllowance = maxRefundAllowance.min(gasRefund);
-		return gasRemaining.plus(refundAllowance);
 	}
 }
 

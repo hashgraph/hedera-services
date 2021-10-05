@@ -22,6 +22,8 @@ package com.hedera.services.txns.contract.process;
  *
  */
 
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.evm.frame.BlockValues;
 
 import java.util.Optional;
@@ -49,5 +51,15 @@ public class HederaBlockValues implements BlockValues {
 	@Override
 	public Optional<Long> getBaseFee() {
 		return Optional.of(0L);
+	}
+
+	@Override
+	public Bytes getDifficultyBytes() {
+		return UInt256.ZERO;
+	}
+
+	@Override
+	public long getNumber() {
+		return timestamp;
 	}
 }

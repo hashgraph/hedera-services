@@ -143,7 +143,7 @@ public class CreateSuite extends HapiApiSuite {
 						contractCreate("factoryContract").bytecode("factory")
 				).when(
 						contractCall("factoryContract", ContractResources.FACTORY_CONTRACT_STACKED_DEPLOYMENT_SUCCESS)
-								.via("stackedDeploymentSuccessTxn")
+								.via("stackedDeploymentSuccessTxn").gas(300_000)
 				).then(
 						withOpContext((spec, opLog) -> {
 							final var successTxn = getTxnRecord("stackedDeploymentSuccessTxn");

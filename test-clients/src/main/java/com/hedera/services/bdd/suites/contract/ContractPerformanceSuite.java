@@ -42,8 +42,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getExecTime;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
@@ -101,7 +104,7 @@ public class ContractPerformanceSuite extends HapiApiSuite {
 		try {
 			perfTests =
 					Files.readLines(
-									new File(PERF_RESOURCES + "performanceContracts.txt"), Charset.defaultCharset())
+									new File(PERF_RESOURCES + "performanceContracts.csv"), Charset.defaultCharset())
 							.stream()
 							.filter(s -> !s.isEmpty() && !s.startsWith("#"))
 							.collect(Collectors.toList());
@@ -109,7 +112,10 @@ public class ContractPerformanceSuite extends HapiApiSuite {
 			return List.of();
 		}
 		List<HapiApiSpec> hapiSpecs = new ArrayList<>();
-		for (String test : perfTests) {
+		for (String line : perfTests) {
+			String[] values = line.split(",", 2);
+			String test = values[0];
+			long gasCost = Long.parseLong(values[1]);
 			String path = PERF_RESOURCES + test;
 			String via = test.substring(0, test.length() - 4);
 			String contractCode;
@@ -153,8 +159,10 @@ public class ContractPerformanceSuite extends HapiApiSuite {
 											.payingWith(GENESIS)
 											.logged()
 											// this is very high because of EthereumJ
-											.assertingNoneLongerThan(10, ChronoUnit.SECONDS),
-									getReceipt(via).hasPriorityStatus(ResponseCodeEnum.SUCCESS)));
+											.assertingNoneLongerThan(20, ChronoUnit.SECONDS),
+									getReceipt(via).hasPriorityStatus(ResponseCodeEnum.SUCCESS),
+									getTxnRecord(via).hasPriority(
+											recordWith().contractCallResult(resultWith().gasUsed(gasCost)))));
 		}
 		return hapiSpecs;
 	}

@@ -30,11 +30,13 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Gas;
+import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
+import org.hyperledger.besu.evm.gascalculator.PetersburgGasCalculator;
 
-public class GasCalculatorHedera_0_19_0 extends LondonGasCalculator {
+public class GasCalculatorHedera_0_18_0 extends PetersburgGasCalculator {
 
 	private static final int LOG_CONTRACT_ID_SIZE = 24;
 	private static final int LOG_TOPIC_SIZE = 32;
@@ -44,7 +46,7 @@ public class GasCalculatorHedera_0_19_0 extends LondonGasCalculator {
 	private final UsagePricesProvider usagePrices;
 	private final HbarCentExchange exchange;
 
-	public GasCalculatorHedera_0_19_0(
+	public GasCalculatorHedera_0_18_0(
 			final GlobalDynamicProperties dynamicProperties,
 			final UsagePricesProvider usagePrices,
 			final HbarCentExchange exchange) {
@@ -78,7 +80,7 @@ public class GasCalculatorHedera_0_19_0 extends LondonGasCalculator {
 				getLogStorageDuration(),
 				ramByteHoursTinyBarsGiven(timestamp, functionType),
 				gasPrice);
-		return super.logOperationGasCost(frame, dataOffset, dataLength, numTopics).max(Gas.of(gasCost));
+		return Gas.of(gasCost);
 	}
 
 	protected long ramByteHoursTinyBarsGiven(long consensusTime, HederaFunctionality functionType) {
@@ -111,4 +113,53 @@ public class GasCalculatorHedera_0_19_0 extends LondonGasCalculator {
 	long getLogStorageDuration() {
 		return dynamicProperties.cacheRecordsTtl();
 	}
+
+	@Override
+	public Gas getBalanceOperationGasCost() {
+		// Frontier gas cost
+		return Gas.of(20L);
+	}
+
+	@Override
+	protected Gas expOperationByteGasCost() {
+		// Frontier gas cost
+		return Gas.of(10L);
+	}
+
+	@Override
+	protected Gas extCodeBaseGasCost() {
+		// Frontier gas cost
+		return Gas.of(20L);
+	}
+
+	@Override
+	public Gas getSloadOperationGasCost() {
+		// Frontier gas cost
+		return Gas.of(50L);
+	}
+
+	@Override
+	public Gas callOperationBaseGasCost() {
+		// Frontier gas cost
+		return Gas.of(40L);
+	}
+
+	@Override
+	public Gas getExtCodeSizeOperationGasCost() {
+		// Frontier gas cost
+		return Gas.of(20L);
+	}
+
+	@Override
+	public Gas extCodeHashOperationGasCost() {
+		// Constantinople gas cost
+		return Gas.of(400L);
+	}
+
+	@Override
+	public Gas selfDestructOperationGasCost(final Account recipient, final Wei inheritance) {
+		// Frontier gas cost
+		return Gas.of(0);
+	}
+
 }
