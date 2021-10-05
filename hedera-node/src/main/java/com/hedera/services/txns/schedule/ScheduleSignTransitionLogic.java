@@ -57,9 +57,6 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
 	private final ScheduleStore store;
 	private final TransactionContext txnCtx;
 
-	SigMapScheduleClassifier classifier = new SigMapScheduleClassifier();
-	SignatoryUtils.ScheduledSigningsWitness replSigningsWitness = SignatoryUtils::witnessScoped;
-
 	@Inject
 	public ScheduleSignTransitionLogic(
 			ScheduleStore store,
@@ -99,12 +96,12 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
 			return;
 		}
 
-		var validScheduleKeys = classifier.validScheduleKeys(
+		var signingOutcome = ScheduleSignHelper.signingOutcome(
 				List.of(txnCtx.activePayerKey()),
 				sigMap,
-				activationHelper.currentSigsFn(),
-				activationHelper::visitScheduledCryptoSigs);
-		var signingOutcome = replSigningsWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper);
+				scheduleId,
+				store,
+				activationHelper);
 
 		var outcome = signingOutcome.getLeft();
 		if (outcome == OK) {

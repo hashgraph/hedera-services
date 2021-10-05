@@ -37,8 +37,10 @@ import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 
 import java.util.List;
 import java.util.Optional;
@@ -51,13 +53,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -71,7 +73,6 @@ class ScheduleSignTransitionLogicTest {
             .setScheduled(true)
             .build();
     private JKey payerKey = new JEd25519Key(pretendKeyStartingWith("payer"));
-    private SigMapScheduleClassifier classifier;
     private Optional<List<JKey>> validScheduleKeys = Optional.of(
             List.of(new JEd25519Key(pretendKeyStartingWith("scheduled"))));
 
@@ -79,8 +80,8 @@ class ScheduleSignTransitionLogicTest {
 
     InHandleActivationHelper activationHelper;
     private SignatureMap sigMap;
-    private SignatoryUtils.ScheduledSigningsWitness replSigningWitness;
     private ScheduleExecutor executor;
+    private MockedStatic<ScheduleSignHelper> scheduleSignHelper;
 
     private ScheduleSignTransitionLogic subject;
     private ScheduleID scheduleId = IdUtils.asSchedule("1.2.3");
@@ -93,19 +94,20 @@ class ScheduleSignTransitionLogicTest {
         executor = mock(ScheduleExecutor.class);
         activationHelper = mock(InHandleActivationHelper.class);
         txnCtx = mock(TransactionContext.class);
-        replSigningWitness = mock(SignatoryUtils.ScheduledSigningsWitness.class);
-        classifier = mock(SigMapScheduleClassifier.class);
         schedule = mock(MerkleSchedule.class);
         given(txnCtx.activePayerKey()).willReturn(payerKey);
-
-        given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper))
-                .willReturn(Pair.of(OK, true));
+        scheduleSignHelper = mockStatic(ScheduleSignHelper.class);
+        scheduleSignHelper.when(() -> ScheduleSignHelper.signingOutcome(
+                any(), any(), any(), any(), any())).thenReturn(Pair.of(OK, true));
         given(executor.processExecution(scheduleId, store, txnCtx)).willReturn(OK);
 
         subject = new ScheduleSignTransitionLogic(store, txnCtx, activationHelper, executor);
 
-        subject.replSigningsWitness = replSigningWitness;
-        subject.classifier = classifier;
+    }
+
+    @AfterEach
+    void tearDown() {
+        scheduleSignHelper.close();
     }
 
     @Test
@@ -120,8 +122,9 @@ class ScheduleSignTransitionLogicTest {
     void setsFailInvalidIfUnhandledException() {
         givenValidTxnCtx();
         // and:
-        given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper))
-                .willThrow(IllegalArgumentException.class);
+
+        scheduleSignHelper.when(() -> ScheduleSignHelper.signingOutcome(
+                any(), any(), any(), any(), any())).thenThrow(IllegalArgumentException.class);
 
         // when:
         subject.doStateTransition();
@@ -155,7 +158,6 @@ class ScheduleSignTransitionLogicTest {
         subject.doStateTransition();
 
         // and:
-		verifyNoInteractions(classifier);
         verify(txnCtx, never()).setScheduledTxnId(scheduledTxnId);
         verify(executor, never()).processExecution(scheduleId, store, txnCtx);
         verify(txnCtx).setStatus(SCHEDULE_ALREADY_EXECUTED);
@@ -171,7 +173,6 @@ class ScheduleSignTransitionLogicTest {
         subject.doStateTransition();
 
         // and:
-        verifyNoInteractions(classifier);
         verify(txnCtx, never()).setScheduledTxnId(scheduledTxnId);
         verify(executor, never()).processExecution(scheduleId, store, txnCtx);
         verify(txnCtx).setStatus(SCHEDULE_ALREADY_DELETED);
@@ -197,8 +198,8 @@ class ScheduleSignTransitionLogicTest {
         givenValidTxnCtx();
         given(store.get(scheduleId)).willReturn(schedule);
         given(schedule.scheduledTransactionId()).willReturn(scheduledTxnId);
-        given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper))
-                .willReturn(Pair.of(OK, false));
+        scheduleSignHelper.when(() -> ScheduleSignHelper.signingOutcome(
+                any(), any(), any(), any(), any())).thenReturn(Pair.of(OK, false));
 
         // when:
         subject.doStateTransition();
@@ -213,8 +214,9 @@ class ScheduleSignTransitionLogicTest {
     void shortCircuitsOnNonOkSigningOutcome() throws InvalidProtocolBufferException {
         givenValidTxnCtx();
         given(store.get(scheduleId)).willReturn(schedule);
-        given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper))
-                .willReturn(Pair.of(SOME_SIGNATURES_WERE_INVALID, true));
+
+        scheduleSignHelper.when(() -> ScheduleSignHelper.signingOutcome(
+                any(), any(), any(), any(), any())).thenReturn(Pair.of(SOME_SIGNATURES_WERE_INVALID, true));
 
         // when:
         subject.doStateTransition();
@@ -242,11 +244,6 @@ class ScheduleSignTransitionLogicTest {
                         .build())
                 .build();
         given(accessor.getSigMap()).willReturn(sigMap);
-        given(classifier.validScheduleKeys(
-                eq(List.of(payerKey)),
-                eq(sigMap),
-                any(),
-                any())).willReturn(validScheduleKeys);
 
         var builder = TransactionBody.newBuilder();
         var scheduleSign = ScheduleSignTransactionBody.newBuilder()

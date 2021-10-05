@@ -59,6 +59,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_EXISTS_WITH_DIFFERENT_PAYER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
@@ -331,6 +332,68 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 								.designatingPayer("secondPayer")
 								.via("copycat")
 								.hasKnownStatus(IDENTICAL_SCHEDULE_ALREADY_CREATED),
+						getTxnRecord("copycat").logged(),
+						getReceipt("copycat")
+								.hasSchedule("original")
+								.hasScheduledTxnId("original")
+				);
+	}
+
+	private HapiApiSpec rejectsIdenticalScheduleEvenWithDifferentDesignatedPayer() {
+		return defaultHapiSpec("rejectsIdenticalScheduleEvenWithDifferentDesignatedPayer")
+				.given(
+						cryptoCreate("sender").balance(1L),
+						cryptoCreate("firstPayer"),
+						scheduleCreate("original",
+								cryptoTransfer(tinyBarsFromTo("sender", FUNDING, 1))
+										.fee(ONE_HBAR)
+						)
+								.designatingPayer("firstPayer")
+								.payingWith("firstPayer")
+								.mergeWithIdenticalSchedule()
+								.savingExpectedScheduledTxnId()
+				).when(
+						cryptoCreate("secondPayer")
+				).then(
+						scheduleCreate("duplicate",
+								cryptoTransfer(tinyBarsFromTo("sender", FUNDING, 1))
+										.fee(ONE_HBAR)
+						)
+								.payingWith("secondPayer")
+								.designatingPayer("secondPayer")
+								.via("copycat")
+								.hasKnownStatus(IDENTICAL_SCHEDULE_ALREADY_EXISTS_WITH_DIFFERENT_PAYER),
+						getTxnRecord("copycat").logged(),
+						getReceipt("copycat")
+								.hasSchedule("original")
+								.hasScheduledTxnId("original")
+				);
+	}
+
+	private HapiApiSpec addsSignatureToTheExistingIdenticalSchedule() {
+		return defaultHapiSpec("addsSignatureToTheExistingIdenticalSchedule")
+				.given(
+						cryptoCreate("sender").balance(1L),
+						cryptoCreate("firstPayer"),
+						scheduleCreate("original",
+								cryptoTransfer(tinyBarsFromTo("sender", FUNDING, 1))
+										.fee(ONE_HBAR)
+						)
+								.designatingPayer("firstPayer")
+								.payingWith("firstPayer")
+								.mergeWithIdenticalSchedule()
+								.savingExpectedScheduledTxnId()
+				).when(
+						cryptoCreate("secondPayer")
+				).then(
+						scheduleCreate("duplicate",
+								cryptoTransfer(tinyBarsFromTo("sender", FUNDING, 1))
+										.fee(ONE_HBAR)
+						)
+								.payingWith("secondPayer")
+								.designatingPayer("firstPayer")
+								.via("copycat")
+								.hasKnownStatus(SUCCESS),
 						getTxnRecord("copycat").logged(),
 						getReceipt("copycat")
 								.hasSchedule("original")

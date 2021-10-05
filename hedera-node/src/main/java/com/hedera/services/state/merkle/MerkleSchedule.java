@@ -60,6 +60,7 @@ import static java.util.stream.Collectors.toList;
 public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNum> {
 	static final int PRE_RELEASE_0180_VERSION = 1;
 	static final int RELEASE_0180_VERSION = 2;
+//	static final int RELEASE_020_VERSION = 3;
 
 	static final int CURRENT_VERSION = RELEASE_0180_VERSION;
 
@@ -79,6 +80,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 	private boolean deleted = false;
 	private boolean executed = false;
 	private EntityId payer = UNUSED_PAYER;
+	private boolean mergeWithIdenticalSchedule = false;
 	private EntityId schedulingAccount;
 	private RichInstant schedulingTXValidStart;
 	private long expiry;
@@ -169,12 +171,13 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 		var that = (MerkleSchedule) o;
 		return Objects.equals(this.memo, that.memo) &&
 				Objects.equals(this.scheduledTxn, that.scheduledTxn) &&
-				Objects.equals(this.grpcAdminKey, that.grpcAdminKey);
+				Objects.equals(this.grpcAdminKey, that.grpcAdminKey) &&
+				this.mergeWithIdenticalSchedule == that.mergeWithIdenticalSchedule;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(memo, grpcAdminKey, scheduledTxn);
+		return Objects.hash(memo, grpcAdminKey, scheduledTxn, mergeWithIdenticalSchedule);
 	}
 
 	@Override
@@ -186,6 +189,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 				.add("executed", executed)
 				.add("deleted", deleted)
 				.add("memo", memo)
+				.add("mergeWithIdenticalSchedule", mergeWithIdenticalSchedule)
 				.add("payer", readablePayer())
 				.add("schedulingAccount", schedulingAccount)
 				.add("schedulingTXValidStart", schedulingTXValidStart)
@@ -255,6 +259,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 		fc.deleted = deleted;
 		fc.executed = executed;
 		fc.payer = payer;
+		fc.mergeWithIdenticalSchedule = mergeWithIdenticalSchedule;
 		fc.schedulingAccount = schedulingAccount;
 		fc.schedulingTXValidStart = schedulingTXValidStart;
 		fc.expiry = expiry;
@@ -288,6 +293,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 		cav.memo = memo;
 		cav.grpcAdminKey = grpcAdminKey;
 		cav.scheduledTxn = scheduledTxn;
+		cav.mergeWithIdenticalSchedule = mergeWithIdenticalSchedule;
 
 		return cav;
 	}
@@ -299,6 +305,11 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 	public void setMemo(String memo) {
 		throwIfImmutable("Cannot change this schedule's memo if it's immutable.");
 		this.memo = memo;
+	}
+
+	public void setMergeWithIdenticalSchedule(boolean flag) {
+		throwIfImmutable("Cannot change this schedule's mergeWithIdenticalSchedule if it's immutable.");
+		this.mergeWithIdenticalSchedule = flag;
 	}
 
 	public boolean hasAdminKey() {
@@ -321,6 +332,10 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 
 	public EntityId payer() {
 		return payer;
+	}
+
+	public boolean isMergeWithIdenticalSchedule() {
+		return mergeWithIdenticalSchedule;
 	}
 
 	public EntityId effectivePayer() {
@@ -419,6 +434,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 					grpcAdminKey = creationOp.getAdminKey();
 				}
 			}
+			mergeWithIdenticalSchedule = creationOp.getMergeWithIdenticalSchedule();
 			scheduledTxn = parentTxn.getScheduleCreate().getScheduledTransactionBody();
 			schedulingAccount = EntityId.fromGrpcAccountId(parentTxn.getTransactionID().getAccountID());
 			ordinaryScheduledTxn = MiscUtils.asOrdinary(scheduledTxn);

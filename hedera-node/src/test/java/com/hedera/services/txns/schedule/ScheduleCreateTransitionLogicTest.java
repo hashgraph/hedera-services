@@ -27,6 +27,7 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.schedule.ScheduleStore;
@@ -44,8 +45,10 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 
 import java.time.Instant;
 import java.util.List;
@@ -55,6 +58,7 @@ import static com.hedera.services.txns.schedule.SigMapScheduleClassifierTest.pre
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_EXISTS_WITH_DIFFERENT_PAYER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
@@ -65,9 +69,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -87,6 +91,8 @@ class ScheduleCreateTransitionLogicTest {
 	private static final Key invalidKey = Key.getDefaultInstance();
 
 	private static final AccountID payer = IdUtils.asAccount("1.2.3");
+	private static final EntityId payerId = EntityId.fromGrpcAccountId(payer);
+	private static final EntityId anotherPayerId = new EntityId(1,2,4);
 	private static final ScheduleID schedule = IdUtils.asSchedule("2.4.6");
 	private static final String entityMemo = "some cool memo?";
 	private static final String innerMemo = "Strictly business now";
@@ -112,12 +118,11 @@ class ScheduleCreateTransitionLogicTest {
 	private MerkleSchedule merkleSchedule;
 	private PlatformTxnAccessor accessor;
 	private TransactionContext txnCtx;
-	private SignatoryUtils.ScheduledSigningsWitness replSigningWitness;
 	private ScheduleExecutor executor;
 
 	private TransactionBody scheduleCreateTxn;
 	private InHandleActivationHelper activationHelper;
-	private SigMapScheduleClassifier classifier;
+	private MockedStatic<ScheduleSignHelper> scheduleSignHelper;
 
 	private ScheduleCreateTransitionLogic subject;
 
@@ -127,17 +132,13 @@ class ScheduleCreateTransitionLogicTest {
 		store = mock(ScheduleStore.class);
 		accessor = mock(PlatformTxnAccessor.class);
 		activationHelper = mock(InHandleActivationHelper.class);
-		replSigningWitness = mock(SignatoryUtils.ScheduledSigningsWitness.class);
 		executor = mock(ScheduleExecutor.class);
 		merkleSchedule = mock(MerkleSchedule.class);
+		scheduleSignHelper = mockStatic(ScheduleSignHelper.class);
+		scheduleSignHelper.when(() -> ScheduleSignHelper.signingOutcome(
+				any(), any(), any(), any(), any())).thenReturn(Pair.of(OK, true));
 
 		given(accessor.getTxnBytes()).willReturn(bodyBytes);
-
-		classifier = mock(SigMapScheduleClassifier.class);
-
-		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper))
-				.willReturn(Pair.of(OK, true));
-
 		given(executor.processExecution(any(), any(), any())).willReturn(OK);
 
 		txnCtx = mock(TransactionContext.class);
@@ -145,9 +146,11 @@ class ScheduleCreateTransitionLogicTest {
 		given(txnCtx.activePayerKey()).willReturn(payerKey);
 
 		subject = new ScheduleCreateTransitionLogic(store, txnCtx, activationHelper, validator, executor);
+	}
 
-		subject.signingsWitness = replSigningWitness;
-		subject.classifier = classifier;
+	@AfterEach
+	void tearDown() {
+		scheduleSignHelper.close();
 	}
 
 	@Test
@@ -169,7 +172,6 @@ class ScheduleCreateTransitionLogicTest {
 
 		verify(store).lookupSchedule(bodyBytes);
 		verify(store).createProvisionally(merkleSchedule, RichInstant.fromJava(now));
-		verify(replSigningWitness).observeInScope(schedule, store, validScheduleKeys, activationHelper);
 		verify(store).commitCreation();
 		verify(txnCtx).addExpiringEntities(any());
 		verify(txnCtx).setStatus(SUCCESS);
@@ -182,8 +184,8 @@ class ScheduleCreateTransitionLogicTest {
 		given(merkleSchedule.expiry()).willReturn(now.getEpochSecond());
 		givenValidTxnCtx();
 		given(merkleSchedule.adminKey()).willReturn(jAdminKey);
-		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper))
-				.willReturn(Pair.of(NO_NEW_VALID_SIGNATURES, false));
+		scheduleSignHelper.when(() -> ScheduleSignHelper.signingOutcome(
+				any(), any(), any(), any(), any())).thenReturn(Pair.of(NO_NEW_VALID_SIGNATURES, false));
 
 		subject.doStateTransition();
 
@@ -194,9 +196,10 @@ class ScheduleCreateTransitionLogicTest {
 	}
 
 	@Test
-	void rejectsRecreationOfExistingSchedule() {
+	void rejectsRecreationOfExistingScheduleIfMergeWithIdenticalScheduleSetFalse() {
 		givenValidTxnCtx();
 		given(merkleSchedule.scheduledTransactionId()).willReturn(scheduledTxnId);
+		given(merkleSchedule.isMergeWithIdenticalSchedule()).willReturn(false);
 		given(store.lookupSchedule(bodyBytes)).willReturn(Pair.of(schedule, merkleSchedule));
 
 		subject.doStateTransition();
@@ -210,11 +213,47 @@ class ScheduleCreateTransitionLogicTest {
 	}
 
 	@Test
+	void addsSignatureToExistingScheduleIfMergeWithIdenticalScheduleSetTrue() {
+		givenValidTxnCtx();
+		given(merkleSchedule.scheduledTransactionId()).willReturn(scheduledTxnId);
+		given(merkleSchedule.isMergeWithIdenticalSchedule()).willReturn(true);
+		given(merkleSchedule.payer()).willReturn(payerId);
+		given(store.lookupSchedule(bodyBytes)).willReturn(Pair.of(schedule, merkleSchedule));
+
+		subject.doStateTransition();
+
+		verify(store, never()).createProvisionally(any(), any());
+		verify(store, never()).commitCreation();
+		verify(txnCtx, never()).addExpiringEntities(any());
+		verify(txnCtx).setStatus(SUCCESS);
+		verify(txnCtx).setCreated(schedule);
+		verify(txnCtx).setScheduledTxnId(scheduledTxnId);
+	}
+
+	@Test
+	void rejectsRecreationIfPayersNotSame() {
+		givenValidTxnCtx();
+		given(merkleSchedule.scheduledTransactionId()).willReturn(scheduledTxnId);
+		given(merkleSchedule.isMergeWithIdenticalSchedule()).willReturn(true);
+		given(merkleSchedule.payer()).willReturn(anotherPayerId);
+		given(store.lookupSchedule(bodyBytes)).willReturn(Pair.of(schedule, merkleSchedule));
+
+		subject.doStateTransition();
+
+		verify(store, never()).createProvisionally(any(), any());
+		verify(store, never()).commitCreation();
+		verify(txnCtx, never()).addExpiringEntities(any());
+		verify(txnCtx).setStatus(IDENTICAL_SCHEDULE_ALREADY_EXISTS_WITH_DIFFERENT_PAYER);
+		verify(txnCtx).setCreated(schedule);
+		verify(txnCtx).setScheduledTxnId(scheduledTxnId);
+	}
+
+	@Test
 	void rollsBackForAnyNonOkSigning() throws InvalidProtocolBufferException {
 		givenValidTxnCtx();
 		given(merkleSchedule.adminKey()).willReturn(jAdminKey);
-		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper))
-				.willReturn(Pair.of(SOME_SIGNATURES_WERE_INVALID, true));
+		scheduleSignHelper.when(() -> ScheduleSignHelper.signingOutcome(
+				any(), any(), any(), any(), any())).thenReturn(Pair.of(SOME_SIGNATURES_WERE_INVALID, true));
 
 		subject.doStateTransition();
 
@@ -301,11 +340,6 @@ class ScheduleCreateTransitionLogicTest {
 			final boolean invalidInnerMemo
 	) {
 		given(accessor.getSigMap()).willReturn(sigMap);
-		given(classifier.validScheduleKeys(
-				eq(List.of(payerKey, jAdminKey.get())),
-				eq(sigMap),
-				any(),
-				any())).willReturn(validScheduleKeys);
 
 		final var builder = TransactionBody.newBuilder();
 		final var scheduleCreate = ScheduleCreateTransactionBody.newBuilder()

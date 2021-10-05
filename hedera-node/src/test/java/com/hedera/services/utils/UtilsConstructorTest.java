@@ -64,6 +64,7 @@ import com.hedera.services.txns.crypto.CryptoLogicModule;
 import com.hedera.services.txns.file.FileLogicModule;
 import com.hedera.services.txns.network.NetworkLogicModule;
 import com.hedera.services.txns.schedule.ScheduleLogicModule;
+import com.hedera.services.txns.schedule.ScheduleSignHelper;
 import com.hedera.services.txns.submission.PresolvencyFlaws;
 import com.hedera.services.txns.submission.SubmissionModule;
 import com.hedera.services.txns.token.TokenLogicModule;
@@ -140,7 +141,8 @@ class UtilsConstructorTest {
 			FileLogicModule.class,
 			NetworkLogicModule.class,
 			ScheduleLogicModule.class,
-			TokenLogicModule.class
+			TokenLogicModule.class,
+			ScheduleSignHelper.class
 	));
 
 	@Test

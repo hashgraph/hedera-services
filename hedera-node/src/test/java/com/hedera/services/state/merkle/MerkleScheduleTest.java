@@ -86,6 +86,8 @@ public class MerkleScheduleTest {
 	private static final JKey adminKey = TxnHandlingScenario.TOKEN_ADMIN_KT.asJKeyUnchecked();
 	private static final JKey otherAdminKey = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKeyUnchecked();
 	private static final int number = 123_456;
+	private static final boolean mergeWithIdenticalSchedule = false;
+	private static final boolean otherMergeWithIdenticalSchedule = true;
 
 	private List<byte[]> signatories;
 	private MerkleSchedule subject;
@@ -239,6 +241,7 @@ public class MerkleScheduleTest {
 		assertTrue(read.signatories().contains(spk));
 		assertTrue(read.isExecuted());
 		assertFalse(read.isDeleted());
+		assertFalse(read.isMergeWithIdenticalSchedule());
 		assertEquals(grpcResolutionTime, read.executionTime());
 		assertEquals(subject.ordinaryViewOfScheduledTxn(), read.ordinaryViewOfScheduledTxn());
 		assertNotEquals(EntityNum.fromInt(number), read.getKey());
@@ -269,6 +272,7 @@ public class MerkleScheduleTest {
 		assertTrue(read.signatories().contains(spk));
 		assertTrue(read.isExecuted());
 		assertFalse(read.isDeleted());
+		assertFalse(read.isMergeWithIdenticalSchedule());
 		assertEquals(grpcResolutionTime, read.executionTime());
 		assertEquals(subject.ordinaryViewOfScheduledTxn(), read.ordinaryViewOfScheduledTxn());
 		assertEquals(EntityNum.fromInt(number), read.getKey());
@@ -317,6 +321,18 @@ public class MerkleScheduleTest {
 	}
 
 	@Test
+	void differentMergeWithIdenticalSchedulesNotIdentical() {
+		final var bodyBytesDiffMergeWithIdenticalSchedules = parentTxn.toBuilder()
+				.setScheduleCreate(parentTxn.getScheduleCreate().toBuilder()
+						.setMergeWithIdenticalSchedule(otherMergeWithIdenticalSchedule))
+				.build().toByteArray();
+		final var other = MerkleSchedule.from(bodyBytesDiffMergeWithIdenticalSchedules, expiry);
+
+		assertNotEquals(subject, other);
+		assertNotEquals(subject.hashCode(), other.hashCode());
+	}
+
+	@Test
 	void differentScheduledTxnNotIdentical() {
 		final var bodyBytesDiffScheduledTxn = parentTxn.toBuilder()
 				.setScheduleCreate(parentTxn.getScheduleCreate().toBuilder()
@@ -342,6 +358,7 @@ public class MerkleScheduleTest {
 				+ "executed=" + false + ", "
 				+ "deleted=" + true + ", "
 				+ "memo=" + entityMemo + ", "
+				+ "mergeWithIdenticalSchedule=" + mergeWithIdenticalSchedule + ", "
 				+ "payer=" + payer.toAbbrevString() + ", "
 				+ "schedulingAccount=" + schedulingAccount + ", "
 				+ "schedulingTXValidStart=" + schedulingTXValidStart
@@ -446,6 +463,7 @@ public class MerkleScheduleTest {
 			.setPayerAccountID(payer.toGrpcAccountId())
 			.setMemo(entityMemo)
 			.setScheduledTransactionBody(scheduledTxn)
+			.setMergeWithIdenticalSchedule(mergeWithIdenticalSchedule)
 			.build();
 	private static final TransactionBody parentTxn = TransactionBody.newBuilder()
 			.setTransactionID(TransactionID.newBuilder()

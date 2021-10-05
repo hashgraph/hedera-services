@@ -73,6 +73,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 	private Optional<String> payerAccountID = Optional.empty();
 	private Optional<String> entityMemo = Optional.empty();
 	private Optional<BiConsumer<String, byte[]>> successCb = Optional.empty();
+	protected boolean mergeWithIdenticalSchedule = false;
 	private AtomicReference<SchedulableTransactionBody> scheduledTxn = new AtomicReference<>();
 
 	private final String scheduleEntity;
@@ -132,6 +133,11 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 		return this;
 	}
 
+	public HapiScheduleCreate<T> mergeWithIdenticalSchedule() {
+		mergeWithIdenticalSchedule = true;
+		return this;
+	}
+
 	public HapiScheduleCreate<T> alsoSigningWith(String... s) {
 		initialSigners = List.of(s);
 		return this;
@@ -176,6 +182,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 							} else {
 								adminKey.ifPresent(k -> b.setAdminKey(spec.registry().getKey(k)));
 							}
+							b.setMergeWithIdenticalSchedule(mergeWithIdenticalSchedule);
 							entityMemo.ifPresent(b::setMemo);
 							payerAccountID.ifPresent(a -> {
 								var payer = TxnUtils.asId(a, spec);

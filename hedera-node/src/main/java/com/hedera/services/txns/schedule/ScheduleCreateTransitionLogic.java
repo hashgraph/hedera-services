@@ -34,6 +34,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -49,6 +50,7 @@ import java.util.function.Predicate;
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_EXISTS_WITH_DIFFERENT_PAYER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -67,9 +69,6 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 	private final ScheduleExecutor executor;
 	private final ScheduleStore store;
 	private final TransactionContext txnCtx;
-
-	SigMapScheduleClassifier classifier = new SigMapScheduleClassifier();
-	SignatoryUtils.ScheduledSigningsWitness signingsWitness = SignatoryUtils::witnessScoped;
 
 	@Inject
 	public ScheduleCreateTransitionLogic(
@@ -102,19 +101,28 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 		@Nullable final var existingScheduleId = idSchedulePair.getLeft();
 		final var schedule = idSchedulePair.getRight();
 		if (null != existingScheduleId) {
-			/* TODO : if the flag merge_with_identical_schedule is false */
-			completeContextWith(existingScheduleId, schedule, IDENTICAL_SCHEDULE_ALREADY_CREATED);
-			return;
-			/* TODO : if the flag merge_with_identical_schedule is true
-			if (txnCtx.accessor().getTxn().getScheduleCreate().hasPayerAccountID() &&
-					schedule.payer().toGrpcAccountId() ==
-							txnCtx.accessor().getTxn().getScheduleCreate().getPayerAccountID()) {
-				perform a schedule sign with any signatures from this txn and return with success.
-			} else {
-				completeContextWith(existingScheduleId, schedule, IDENTICAL_SCHEDULE_ALREADY_EXISTS_WITH_DIFFERENT_PAYER);
+			if(schedule.isMergeWithIdenticalSchedule()) {
+				if (arePayersSame(schedule)) {
+					var signingOutcome = ScheduleSignHelper.signingOutcome(
+							List.of(txnCtx.activePayerKey()),
+							sigMap,
+							existingScheduleId,
+							store,
+							activationHelper);
+					if (!ACCEPTABLE_SIGNING_OUTCOMES.contains(signingOutcome.getLeft())) {
+						abortWith(signingOutcome.getLeft());
+						return;
+					}
+					doProcessExecution(schedule, existingScheduleId, signingOutcome);
+					return;
+				} else {
+					completeContextWith(existingScheduleId, schedule, IDENTICAL_SCHEDULE_ALREADY_EXISTS_WITH_DIFFERENT_PAYER);
+					return;
+				}
+			} else  {
+				completeContextWith(existingScheduleId, schedule, IDENTICAL_SCHEDULE_ALREADY_CREATED);
 				return;
 			}
-			*/
 		}
 
 		final var result = store.createProvisionally(schedule, fromJava(txnCtx.consensusTime()));
@@ -126,13 +134,13 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 
 		final var payerKey = txnCtx.activePayerKey();
 		final var topLevelKeys = schedule.adminKey().map(ak -> List.of(payerKey, ak)).orElse(List.of(payerKey));
-		final var validScheduleKeys = classifier.validScheduleKeys(
+		final var signingOutcome = ScheduleSignHelper.signingOutcome(
 				topLevelKeys,
 				sigMap,
-				activationHelper.currentSigsFn(),
-				activationHelper::visitScheduledCryptoSigs);
-		final var signingOutcome =
-				signingsWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper);
+				scheduleId,
+				store,
+				activationHelper);
+
 		if (!ACCEPTABLE_SIGNING_OUTCOMES.contains(signingOutcome.getLeft())) {
 			abortWith(signingOutcome.getLeft());
 			return;
@@ -147,11 +155,27 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 			txnCtx.addExpiringEntities(Collections.singletonList(expiringEntity));
 		}
 
+		doProcessExecution(schedule, scheduleId, signingOutcome);
+	}
+
+	private void doProcessExecution(
+			final MerkleSchedule schedule,
+			final ScheduleID scheduleId,
+			final Pair<ResponseCodeEnum, Boolean> signingOutcome) throws InvalidProtocolBufferException {
 		var finalOutcome = OK;
 		if (signingOutcome.getRight()) {
 			finalOutcome = executor.processExecution(scheduleId, store, txnCtx);
 		}
 		completeContextWith(scheduleId, schedule, finalOutcome == OK ? SUCCESS : finalOutcome);
+	}
+
+	private boolean arePayersSame(MerkleSchedule schedule) {
+		if (txnCtx.accessor().getTxn().getScheduleCreate().hasPayerAccountID()) {
+			return schedule.payer().toGrpcAccountId().equals(
+					txnCtx.accessor().getTxn().getScheduleCreate().getPayerAccountID());
+		} else {
+			return schedule.payer().toGrpcAccountId() == txnCtx.accessor().getPayer();
+		}
 	}
 
 	private void completeContextWith(ScheduleID scheduleID, MerkleSchedule schedule, ResponseCodeEnum finalOutcome) {
