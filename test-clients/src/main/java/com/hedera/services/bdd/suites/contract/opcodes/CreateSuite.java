@@ -32,14 +32,16 @@ import org.junit.jupiter.api.Assertions;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 
 public class CreateSuite extends HapiApiSuite {
 
@@ -49,8 +51,6 @@ public class CreateSuite extends HapiApiSuite {
 		new CreateSuite().runSuiteSync();
 	}
 
-	// TODO Verify that the contract properties are inherited from the parent
-	// TODO add Test that Creates and self destructs in the same TX
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
@@ -58,8 +58,55 @@ public class CreateSuite extends HapiApiSuite {
 				stackedFactoryWorks(),
 				resetOnFactoryFailureWorks(),
 				resetOnFactoryFailureAfterDeploymentWorks(),
-				resetOnStackedFactoryFailureWorks()
+				resetOnStackedFactoryFailureWorks(),
+				inheritanceOfNestedCreatedContracts(),
+				factoryAndSelfDestructInConstructorContract()
 		);
+	}
+
+	private HapiApiSpec factoryAndSelfDestructInConstructorContract() {
+		final var CONTRACT = "contract";
+
+		return defaultHapiSpec("FactoryAndSelfDestructInConstructorContract")
+				.given(
+						fileCreate("bytecode")
+								.path(ContractResources.FACTORY_SELF_DESTRUCT_CONSTRUCTOR_CONTRACT),
+						contractCreate(CONTRACT)
+								.bytecode("bytecode")
+								.balance(10)
+				)
+				.when(
+						contractCall(CONTRACT)
+								.hasKnownStatus(CONTRACT_DELETED)
+				)
+				.then(
+						getContractBytecode(CONTRACT)
+								.hasCostAnswerPrecheck(CONTRACT_DELETED)
+				);
+	}
+
+	private HapiApiSpec inheritanceOfNestedCreatedContracts() {
+		final var CONTRACT = "inheritanceOfNestedCreatedContracts";
+		return defaultHapiSpec("InheritanceOfNestedCreatedContracts")
+				.given(
+						fileCreate("bytecode").path(ContractResources.NESTED_CHILDREN_CONTRACT),
+						contractCreate(CONTRACT).bytecode("bytecode")
+								.logged()
+								.via("createRecord"),
+						getContractInfo(CONTRACT).logged().saveToRegistry("parentInfo")
+				)
+				.when(
+						contractCall(CONTRACT, ContractResources.NESTED_CHILDREN_CALL_CREATE_ABI)
+								.via("callRecord")
+				)
+				.then(
+						getTxnRecord("createRecord")
+								.saveCreatedContractListToRegistry("ctorChild"),
+						getTxnRecord("callRecord")
+								.saveCreatedContractListToRegistry("callChild"),
+						contractListWithPropertiesInheritedFrom("callChildCallResult", 2, "parentInfo"),
+						contractListWithPropertiesInheritedFrom("ctorChildCreateResult", 3, "parentInfo")
+				);
 	}
 
 	HapiApiSpec simpleFactoryWorks() {

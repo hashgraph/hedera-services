@@ -22,6 +22,8 @@ package com.hedera.services.txns.contract;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.files.HederaFs;
+import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.records.TransactionRecordService;
@@ -35,6 +37,7 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.builder.RequestBuilder;
 import com.swirlds.common.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
 
@@ -44,6 +47,7 @@ import java.util.function.Predicate;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asContract;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
@@ -63,6 +67,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 	private final HederaWorldState worldState;
 	private final TransactionRecordService recordService;
 	private final CreateEvmTxProcessor evmTxProcessor;
+	private final HederaLedger hederaLedger;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
@@ -75,7 +80,8 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 			OptionValidator validator,
 			HederaWorldState worldState,
 			TransactionRecordService recordService,
-			CreateEvmTxProcessor evmTxProcessor
+			CreateEvmTxProcessor evmTxProcessor,
+			HederaLedger hederaLedger
 	) {
 		this.ids = ids;
 		this.hfs = hfs;
@@ -85,6 +91,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		this.accountStore = accountStore;
 		this.recordService = recordService;
 		this.evmTxProcessor = evmTxProcessor;
+		this.hederaLedger = hederaLedger;
 	}
 
 	@Override
@@ -114,16 +121,28 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 				codeWithConstructorArgs,
 				txnCtx.consensusTime()
 		);
-		if (result.isSuccessful()) {
-			worldState.addPropertiesFor(newContractAddress,
-					op.getMemo(), key, proxyAccount);
-		} else {
-			worldState.reclaimContractId();
-		}
 
 		/* --- Persist changes into state --- */
 		final var createdContracts = worldState.persist();
 		result.setCreatedContracts(createdContracts);
+
+		if (result.isSuccessful()) {
+			/* --- Create customizer for the newly created contract --- */
+			long expiry = RequestBuilder.getExpirationTime(txnCtx.consensusTime(), op.getAutoRenewPeriod()).getSeconds();
+			final var customizer = new HederaAccountCustomizer()
+					.key(key)
+					.memo(op.getMemo())
+					.proxy(proxyAccount.asEntityId())
+					.expiry(expiry)
+					.autoRenewPeriod(op.getAutoRenewPeriod().getSeconds())
+					.isSmartContract(true);
+			final var account = accountParsedFromSolidityAddress(newContractAddress.toArray());
+			hederaLedger.customizePotentiallyDeleted(account, customizer);
+		} else {
+			worldState.reclaimContractId();
+		}
+		/* --- Customize sponsored Accounts */
+		worldState.customizeSponsoredAccounts();
 
 		/* --- Externalise changes --- */
 		if (result.isSuccessful()) {

@@ -21,28 +21,30 @@ package com.hedera.services.bdd.suites.contract;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PAYABLE_CONSTRUCTOR;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemContractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemContractUndelete;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class ContractDeleteSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractDeleteSuite.class);
-
-	final String PATH_TO_VALID_BYTECODE = HapiSpecSetup.getDefaultInstance().defaultContractPath();
 
 	public static void main(String... args) {
 		new ContractDeleteSuite().runSuiteAsync();
@@ -57,9 +59,11 @@ public class ContractDeleteSuite extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						rejectsWithoutProperSig(),
-						systemDelThenUndelContractSanityChecks(),
+						systemCanUndelete(),
 						deleteWorksWithMutableContract(),
 						deleteFailsWithImmutableContract(),
+						deleteTransfersToAccount(),
+						deleteTransfersToContract()
 				}
 		);
 	}
@@ -75,6 +79,30 @@ public class ContractDeleteSuite extends HapiApiSuite {
 				);
 	}
 
+	private HapiApiSpec systemCanUndelete() {
+		return defaultHapiSpec("SystemCanUndelete")
+				.given(
+						contractCreate("test-contract")
+				).when(
+						systemContractDelete("test-contract").payingWith(SYSTEM_DELETE_ADMIN)
+				).then(
+						systemContractUndelete("test-contract").payingWith(SYSTEM_UNDELETE_ADMIN).fee(0L),
+						getContractInfo("test-contract").hasAnswerOnlyPrecheck(OK)
+				);
+	}
+
+	private HapiApiSpec deleteWorksWithMutableContract() {
+		return defaultHapiSpec("DeleteWorksWithMutableContract")
+				.given(
+						contractCreate("toBeDeleted")
+				).when().then(
+						contractDelete("toBeDeleted"),
+						getContractInfo("toBeDeleted").hasCostAnswerPrecheck(CONTRACT_DELETED),
+						getContractInfo("toBeDeleted").nodePayment(27_159_182L)
+								.hasAnswerOnlyPrecheck(ResponseCodeEnum.CONTRACT_DELETED)
+				);
+	}
+
 	private HapiApiSpec deleteFailsWithImmutableContract() {
 		return defaultHapiSpec("DeleteFailsWithImmutableContract")
 				.given(
@@ -84,36 +112,31 @@ public class ContractDeleteSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec deleteWorksWithMutableContract() {
-		return defaultHapiSpec("DeleteWorksWithMutableContract")
+	private HapiApiSpec deleteTransfersToAccount() {
+		return defaultHapiSpec("DeleteTransfersToAccount")
 				.given(
-						contractCreate("toBeDeleted")
-				).when().then(
-						contractDelete("toBeDeleted")
-				);
-	}
-
-	private HapiApiSpec systemDelThenUndelContractSanityChecks() {
-		return defaultHapiSpec("SystemDelThenUndelContractSanityChecks")
-				.given(
-						fileCreate("conFile")
-								.path(PATH_TO_VALID_BYTECODE),
-						contractCreate("test-contract")
-								.bytecode("conFile")
+						fileCreate("contractBytecode").path(PAYABLE_CONSTRUCTOR),
+						cryptoCreate("receiver").balance(0L),
+						contractCreate("toBeDeleted").bytecode("contractBytecode").balance(1L)
 				).when(
-						systemContractDelete("test-contract")
-								.payingWith(SYSTEM_DELETE_ADMIN)
+						contractDelete("toBeDeleted").transferAccount("receiver")
 				).then(
-						systemContractUndelete("test-contract")
-								.payingWith(SYSTEM_UNDELETE_ADMIN)
-								.fee(0L),
-						getContractInfo("test-contract")
-								.nodePayment(1_234L)
-								.hasAnswerOnlyPrecheck(OK)
-								.logged()
+						getAccountBalance("receiver").hasTinyBars(1L)
 				);
 	}
 
+	private HapiApiSpec deleteTransfersToContract() {
+		return defaultHapiSpec("DeleteTransfersToContract")
+				.given(
+						fileCreate("contractBytecode").path(PAYABLE_CONSTRUCTOR),
+						contractCreate("receiver").balance(0L),
+						contractCreate("toBeDeleted").bytecode("contractBytecode").balance(1L)
+				).when(
+						contractDelete("toBeDeleted").transferContract("receiver")
+				).then(
+						getAccountBalance("receiver").hasTinyBars(1L)
+				);
+	}
 
 	@Override
 	protected Logger getResultsLogger() {

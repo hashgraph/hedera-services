@@ -34,6 +34,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.apache.logging.log4j.LogManager;
@@ -119,8 +120,8 @@ public class ContractCallSuite extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
 				positiveSpecs(),
-				negativeSpecs(),
-				Arrays.asList(fridayThe13thSpec())
+				negativeSpecs()
+//				Arrays.asList(fridayThe13thSpec())
 		);
 	}
 
@@ -129,6 +130,7 @@ public class ContractCallSuite extends HapiApiSuite {
 //				insufficientGas(), //pass
 //				invalidContract(), //pass
 //				smartContractFailFirst()
+				contractTransferToSigReqAccountWithoutKeyFails()
 		);
 	}
 
@@ -136,7 +138,7 @@ public class ContractCallSuite extends HapiApiSuite {
 		return Arrays.asList(
 //				resultSizeAffectsFees(), //pass
 //				payableSuccess(), //pass
-				benchmarkSingleSetter()
+//				benchmarkSingleSetter()
 //				depositSuccess(), //pass
 //				depositDeleteSuccess(),
 //				multipleDepositSuccess(),
@@ -145,6 +147,7 @@ public class ContractCallSuite extends HapiApiSuite {
 //				smartContractInlineAssemblyCheck(), //pass
 //				ocToken(),
 //				callingContract() //pass
+				contractTransferToSigReqAccountWithKeySucceeds()
 		);
 	}
 
@@ -715,7 +718,6 @@ public class ContractCallSuite extends HapiApiSuite {
 	HapiApiSpec simpleUpdate() {
 		return defaultHapiSpec("SimpleUpdate")
 				.given(
-						cryptoCreate("payer").balance(1_000_000_000_000L).logged(),
 						fileCreate("simpleUpdateBytecode").path(ContractResources.SIMPLE_UPDATE)
 				).when(
 						contractCreate("simpleUpdateContract").bytecode("simpleUpdateBytecode").gas(1_000_000),
@@ -731,7 +733,7 @@ public class ContractCallSuite extends HapiApiSuite {
 				.given(
 						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
 						contractCreate("parentDelegate").bytecode("parentDelegateBytecode").adminKey(THRESHOLD),
-						getContractInfo("parentDelegate").saveToRegistry("parentInfo")
+						getContractInfo("parentDelegate").logged().saveToRegistry("parentInfo")
 				).when(
 						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI).via("createChildTxn"),
 						contractCall("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI).via("getChildResultTxn"),
@@ -1032,6 +1034,65 @@ public class ContractCallSuite extends HapiApiSuite {
 												isLiteralResult(new Object[]{BigInteger.valueOf(1_000L)})))),
 						getAccountBalance("receiver")
 								.hasTinyBars(2_000L)
+				);
+	}
+
+	private HapiApiSpec contractTransferToSigReqAccountWithKeySucceeds() {
+		return defaultHapiSpec("ContractTransferToSigReqAccountWithKeySucceeds")
+				.given(
+						cryptoCreate("contractCaller").balance(1_000_000_000_000L),
+						cryptoCreate("receivableSigReqAccount")
+								.balance(1_000_000_000_000L).receiverSigRequired(true),
+						getAccountInfo("contractCaller").saveToRegistry("contractCallerInfo"),
+						getAccountInfo("receivableSigReqAccount").saveToRegistry("receivableSigReqAccountInfo"),
+						fileCreate("transferringContractBytecode").path(ContractResources.TRANSFERRING_CONTRACT)
+				).when(
+						contractCreate("transferringContract").bytecode("transferringContractBytecode")
+								.gas(1_000_000L).balance(5000L)
+				).then(
+						withOpContext((spec, opLog) -> {
+							String accountAddress = spec.registry()
+									.getAccountInfo("receivableSigReqAccountInfo").getContractAccountID();
+							Key receivableAccountKey = spec.registry()
+									.getAccountInfo("receivableSigReqAccountInfo").getKey();
+							Key contractCallerKey = spec.registry()
+									.getAccountInfo("contractCallerInfo").getKey();
+							spec.registry().saveKey("receivableKey", receivableAccountKey);
+							spec.registry().saveKey("contractCallerKey", contractCallerKey);
+							/* if any of the keys are missing, INVALID_SIGNATURE is returned */
+							var call = contractCall("transferringContract",
+									ContractResources.TRANSFERRING_CONTRACT_TRANSFERTOADDRESS,
+									accountAddress, 1).payingWith("contractCaller").gas(300_000)
+									.signedBy("receivableKey", "contractCallerKey").hasKnownStatus(SUCCESS);
+							/* calling with the receivableSigReqAccount should pass without adding keys */
+							var callWithReceivable = contractCall("transferringContract",
+									ContractResources.TRANSFERRING_CONTRACT_TRANSFERTOADDRESS,
+									accountAddress, 1).payingWith("receivableSigReqAccount")
+									.gas(300_000).hasKnownStatus(SUCCESS);
+							CustomSpecAssert.allRunFor(spec, call, callWithReceivable);
+						})
+				);
+	}
+
+	private HapiApiSpec contractTransferToSigReqAccountWithoutKeyFails() {
+		return defaultHapiSpec("ContractTransferToSigReqAccountWithoutKeyFails")
+				.given(
+						cryptoCreate("receivableSigReqAccount")
+								.balance(1_000_000_000_000L).receiverSigRequired(true),
+						getAccountInfo("receivableSigReqAccount").saveToRegistry("receivableSigReqAccountInfo"),
+						fileCreate("transferringContractBytecode").path(ContractResources.TRANSFERRING_CONTRACT)
+				).when(
+						contractCreate("transferringContract").bytecode("transferringContractBytecode")
+								.gas(1_000_000L).balance(5000L)
+				).then(
+						withOpContext((spec, opLog) -> {
+							String accountAddress = spec.registry()
+									.getAccountInfo("receivableSigReqAccountInfo").getContractAccountID();
+							var call = contractCall("transferringContract",
+									ContractResources.TRANSFERRING_CONTRACT_TRANSFERTOADDRESS,
+									accountAddress, 1).gas(300_000).hasKnownStatus(INVALID_SIGNATURE);
+							CustomSpecAssert.allRunFor(spec, call);
+						})
 				);
 	}
 

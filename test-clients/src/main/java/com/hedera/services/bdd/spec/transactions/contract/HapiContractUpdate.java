@@ -28,6 +28,7 @@ import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -56,6 +57,7 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 	private OptionalLong newExpiryTime = OptionalLong.empty();
 	private Optional<String> newKey = Optional.empty();
 	private Optional<String> newMemo = Optional.empty();
+	private Optional<Long> newAutoRenew = Optional.empty();
 	private boolean wipeToThresholdKey = false;
 	private boolean useEmptyAdminKeyList = false;
 	private boolean useDeprecatedMemoField = false;
@@ -83,6 +85,10 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 	}
 	public HapiContractUpdate newMemo(String s) {
 		newMemo = Optional.of(s);
+		return this;
+	}
+	public HapiContractUpdate newAutoRenew(long autoRenewSecs) {
+		newAutoRenew = Optional.of(autoRenewSecs);
 		return this;
 	}
 	public HapiContractUpdate useDeprecatedAdminKey() {
@@ -130,11 +136,9 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 							} else if (useEmptyAdminKeyList) {
 								b.setAdminKey(TxnUtils.EMPTY_KEY_LIST);
 							} else {
-								key.ifPresent(k -> b.setAdminKey(k));
+								key.ifPresent(b::setAdminKey);
 							}
-							newExpiryTime.ifPresent(s ->
-									b.setExpirationTime(Timestamp.newBuilder().setSeconds(s).build()));
-							newExpirySecs.ifPresent(s -> b.setExpirationTime(TxnFactory.expiryGiven(s)));
+							newExpirySecs.ifPresent(t -> b.setExpirationTime(Timestamp.newBuilder().setSeconds(t).build()));
 							newMemo.ifPresent(s -> {
 								if (useDeprecatedMemoField)	 {
 									b.setMemo(s);
@@ -142,6 +146,7 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 									b.setMemoWrapper(StringValue.newBuilder().setValue(s).build());
 								}
 							});
+							newAutoRenew.ifPresent(autoRenew -> b.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenew).build()));
 						}
 				);
 		return builder -> builder.setContractUpdateInstance(opBody);

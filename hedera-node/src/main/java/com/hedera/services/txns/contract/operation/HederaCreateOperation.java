@@ -30,6 +30,8 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.AbstractCreateOperation;
 
+import java.util.HashMap;
+
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
 public class HederaCreateOperation extends AbstractCreateOperation {
@@ -45,17 +47,24 @@ public class HederaCreateOperation extends AbstractCreateOperation {
 
 		//TODO charge for memory expansion cost?
 		//final Gas memoryGasCost = gasCalculator().memoryExpansionGasCost(frame, initCodeOffset, initCodeLength);
-
-		WorldStateAccount hederaAccount =
-				((HederaWorldUpdater) frame.getWorldUpdater()).getHederaAccount(frame.getRecipientAddress());
-		if (hederaAccount == null) {
-			hederaAccount = ((HederaWorldUpdater) frame.getWorldUpdater()).getHederaAccount(frame.getSenderAddress());
+		HashMap<Address, Long> map = frame.getMessageFrameStack().getLast().getContextVariable("expiries");
+		long expiry = 0;
+		if (!map.containsKey(frame.getSenderAddress())) {
+			WorldStateAccount hederaAccount =
+					((HederaWorldUpdater) frame.getWorldUpdater()).getHederaAccount(frame.getRecipientAddress());
+			if (hederaAccount == null) {
+				hederaAccount = ((HederaWorldUpdater) frame.getWorldUpdater()).getHederaAccount(frame.getSenderAddress());
+				expiry = hederaAccount.getExpiry();
+			}
+		} else {
+			expiry = map.get(frame.getSenderAddress());
 		}
 
 		long numberOfBytes = initCodeLength - initCodeOffset;
 		long byteHourCostInTinybars = frame.getMessageFrameStack().getLast().getContextVariable("rbh");
-		long durationInSeconds = Math.max(0, hederaAccount.getExpiry() - frame.getBlockValues().getTimestamp());
+		long durationInSeconds = Math.max(0, expiry - frame.getBlockValues().getTimestamp());
 		long gasPrice = frame.getGasPrice().toLong();
+		map.put(frame.getRecipientAddress(), expiry);
 
 		long storageCost = 0;
 		long bps = durationInSeconds * numberOfBytes;

@@ -608,7 +608,7 @@ public class SmartContractRequestHandler {
 				var entity = EntityId.fromGrpcContractId(cid);
 				entityExpiries.put(entity, oldExpiry);
 				HederaAccountCustomizer customizer = new HederaAccountCustomizer().expiry(newExpiry);
-				ledger.customizeDeleted(id, customizer);
+				ledger.customizePotentiallyDeleted(id, customizer);
 			}
 		} catch (Exception e) {
 			log.warn("Unhandled exception in SystemDelete", e);
@@ -648,7 +648,7 @@ public class SmartContractRequestHandler {
 			}
 			if (oldExpiry > 0) {
 				HederaAccountCustomizer customizer = new HederaAccountCustomizer().expiry(oldExpiry);
-				ledger.customizeDeleted(asAccount(cid), customizer);
+				ledger.customizePotentiallyDeleted(asAccount(cid), customizer);
 			}
 			if (receipt.getStatus() == SUCCESS) {
 				try {
@@ -675,7 +675,7 @@ public class SmartContractRequestHandler {
 	private TransactionReceipt updateDeleteFlag(ContractID cid, boolean deleted) {
 		var id = asAccount(cid);
 		if (ledger.isDeleted(id)) {
-			ledger.customizeDeleted(asAccount(cid), new HederaAccountCustomizer().isDeleted(deleted));
+			ledger.customizePotentiallyDeleted(asAccount(cid), new HederaAccountCustomizer().isDeleted(deleted));
 		} else {
 			ledger.customize(asAccount(cid), new HederaAccountCustomizer().isDeleted(deleted));
 		}

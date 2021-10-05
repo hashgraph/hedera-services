@@ -77,15 +77,12 @@ public class HapiGetContractBytecode extends HapiQueryOp<HapiGetContractBytecode
 	@Override
 	protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
 		if (hasExpectations) {
-			Assertions.assertTrue(!response.getContractGetBytecodeResponse().getBytecode().isEmpty(),
-					"Empty bytecode!");
+			Assertions.assertFalse(response.getContractGetBytecodeResponse().getBytecode().isEmpty(), "Empty bytecode!");
 		}
-		if (expected.isPresent()) {
-			Assertions.assertArrayEquals(
-					expected.get(),
-					response.getContractGetBytecodeResponse().getBytecode().toByteArray(),
-					"Wrong bytecode!");
-		}
+		expected.ifPresent(bytes -> Assertions.assertArrayEquals(
+				bytes,
+				response.getContractGetBytecodeResponse().getBytecode().toByteArray(),
+				"Wrong bytecode!"));
 	}
 
 	@Override

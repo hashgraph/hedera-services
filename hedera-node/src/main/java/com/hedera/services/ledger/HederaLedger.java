@@ -469,10 +469,7 @@ public class HederaLedger {
 		customizer.customize(id, accountsLedger);
 	}
 
-	public void customizeDeleted(AccountID id, HederaAccountCustomizer customizer) {
-		if (!(boolean) accountsLedger.get(id, IS_DELETED)) {
-			throw new DeletedAccountException(id);
-		}
+	public void customizePotentiallyDeleted(AccountID id, HederaAccountCustomizer customizer) {
 		customizer.customize(id, accountsLedger);
 	}
 

@@ -71,6 +71,7 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -168,6 +169,8 @@ abstract class EvmTxProcessor {
 			final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
 
 			final var stackedUpdater = updater.updater();
+			HashMap<Address, Long> expiries = new HashMap<>();
+			expiries.put(senderEvmAddress, sender.getExpiry());
 			Wei valueAsWei = Wei.of(value);
 			final MessageFrame.Builder commonInitialFrame =
 					MessageFrame.builder()
@@ -189,7 +192,8 @@ abstract class EvmTxProcessor {
 							.blockHashLookup(h -> null)
 							.contextVariables(Map.of(
 									"rbh", storageByteHoursTinyBarsGiven(consensusTime),
-									"HederaFunctionality", getFunctionType()));
+									"HederaFunctionality", getFunctionType(),
+									"expiries", new HashMap<Address, Long>()));
 
 			final MessageFrame initialFrame = buildInitialFrame(commonInitialFrame,
 					updater,

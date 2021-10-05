@@ -20,7 +20,6 @@ package com.hedera.services.ledger.ids;
  * ‍
  */
 
-import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;

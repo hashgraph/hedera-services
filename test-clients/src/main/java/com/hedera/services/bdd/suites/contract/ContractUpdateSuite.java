@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.contract;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -35,7 +34,6 @@ import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contra
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -47,6 +45,8 @@ public class ContractUpdateSuite extends HapiApiSuite {
 
 	private static final long defaultMaxLifetime =
 			Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
+	private static final long ONE_DAY = 60 * 60 * 24;
+	private static final long ONE_MONTH = 30 * ONE_DAY;
 
 	public static void main(String... args) {
 		new ContractUpdateSuite().runSuiteAsync();
@@ -59,19 +59,61 @@ public class ContractUpdateSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[]{
-				updateWithPendingNewKeySucceeds(),
-				canSetImmutableWithEmptyKeyList(),
+		return List.of(
 				updateWithBothMemoSettersWorks(),
-				updateCannotSetUnreasonableLifetime(),
-		});
+				updatingExpiryWorks(),
+				rejectsExpiryTooFarInTheFuture(),
+				updateAutoRenewWorks(),
+				updateAdminKeyWorks(),
+				canMakeContractImmutableWithEmptyKeyList()
+		);
 	}
 
-	private HapiApiSpec updateCannotSetUnreasonableLifetime() {
+	private HapiApiSpec updateWithBothMemoSettersWorks() {
+		String firstMemo = "First";
+		String secondMemo = "Second";
+		String thirdMemo = "Third";
+		return defaultHapiSpec("UpdateWithBothMemoSettersWorks")
+				.given(
+						newKeyNamed("adminKey"),
+						contractCreate("contract")
+								.adminKey("adminKey")
+								.entityMemo(firstMemo)
+				).when(
+						contractUpdate("contract")
+								.newMemo(secondMemo),
+						contractUpdate("contract")
+								.newMemo(ZERO_BYTE_MEMO)
+								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+						getContractInfo("contract").has(contractWith().memo(secondMemo))
+				).then(
+						contractUpdate("contract")
+								.useDeprecatedMemoField()
+								.newMemo(thirdMemo),
+						getContractInfo("contract").has(contractWith().memo(thirdMemo))
+				);
+	}
+
+	private HapiApiSpec updatingExpiryWorks() {
+		final var newExpiry = Instant.now().getEpochSecond() + 5 * ONE_MONTH;
+		return defaultHapiSpec("UpdatingExpiryWorks")
+				.given(
+						contractCreate("contract")
+				)
+				.when(
+						contractUpdate("contract")
+							.newExpirySecs(newExpiry)
+				)
+				.then(
+						getContractInfo("contract").has(contractWith().expiry(newExpiry))
+				);
+	}
+
+	private HapiApiSpec rejectsExpiryTooFarInTheFuture() {
 		final var smallBuffer = 12_345L;
 		final var excessiveExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() + smallBuffer;
 
-		return defaultHapiSpec("UpdateCannotSetUnreasonableLifetime")
+		return defaultHapiSpec("RejectsExpiryTooFarInTheFuture")
 				.given(
 						contractCreate("target")
 				).when( ).then(
@@ -81,59 +123,61 @@ public class ContractUpdateSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec updateWithBothMemoSettersWorks() {
-		String firstMemo = "First";
-		String secondMemo = "Second";
-		String thirdMemo = "Third";
-		return defaultHapiSpec("UpdateWithBothMemoSettersWorks")
+	private HapiApiSpec updateAutoRenewWorks() {
+		return defaultHapiSpec("UpdateAutoRenewWorks")
 				.given(
-						newKeyNamed("newKey"),
-						fileCreate("bytecode").path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH),
-						contractCreate("target")
-								.entityMemo(firstMemo)
-								.bytecode("bytecode")
-				).when(
-						contractUpdate("target")
-								.newMemo(secondMemo),
-						contractUpdate("target")
-								.newMemo(ZERO_BYTE_MEMO)
-								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
-						getContractInfo("target").has(contractWith().memo(secondMemo))
-				).then(
-						contractUpdate("target")
-								.useDeprecatedMemoField()
-								.newMemo(thirdMemo),
-						getContractInfo("target").has(contractWith().memo(thirdMemo))
+						newKeyNamed("admin"),
+						contractCreate("contract")
+							.adminKey("admin")
+							.autoRenewSecs(ONE_MONTH)
+				)
+				.when(
+						contractUpdate("contract")
+							.newAutoRenew(ONE_MONTH + ONE_DAY)
+				)
+				.then(
+						getContractInfo("contract")
+							.has(contractWith()
+								.autoRenew(ONE_MONTH + ONE_DAY))
 				);
 	}
 
-	private HapiApiSpec updateWithPendingNewKeySucceeds() {
-		return defaultHapiSpec("UpdateWithPendingNewKeySucceeds")
+	private HapiApiSpec updateAdminKeyWorks() {
+		return defaultHapiSpec("UpdateAdminKeyWorks")
 				.given(
-						newKeyNamed("newKey"),
-						fileCreate("bytecode").path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH),
-						contractCreate("target").bytecode("bytecode")
+						newKeyNamed("oldAdminKey"),
+						newKeyNamed("newAdminKey"),
+						contractCreate("contract")
+							.adminKey("oldAdminKey")
 				).when(
-						contractUpdate("target").newKey("newKey").deferStatusResolution()
+						contractUpdate("contract")
+							.newKey("newAdminKey")
 				).then(
-						contractUpdate("target")
-								.via("txnRequiringSyncVerify")
-								.signedBy(GENESIS, "newKey")
-								.newMemo("So we outdanced thought...")
+						contractUpdate("contract")
+								.newMemo("some new memo"),
+						getContractInfo("contract")
+								.has(contractWith()
+										.adminKey("newAdminKey")
+										.memo("some new memo"))
 				);
 	}
 
-	private HapiApiSpec canSetImmutableWithEmptyKeyList() {
-		return defaultHapiSpec("CanSetImmutableWithEmptyKeyList")
+	private HapiApiSpec canMakeContractImmutableWithEmptyKeyList() {
+		return defaultHapiSpec("CanMakeContractImmutableWithEmptyKeyList")
 				.given(
-						newKeyNamed("pristine"),
+						newKeyNamed("adminKey"),
+						newKeyNamed("newAdminKey"),
 						contractCreate("toBeImmutable")
+								.adminKey("adminKey")
 				).when(
-						contractUpdate("toBeImmutable").improperlyEmptyingAdminKey()
+						contractUpdate("toBeImmutable")
+								.improperlyEmptyingAdminKey()
 								.hasKnownStatus(INVALID_ADMIN_KEY),
-						contractUpdate("toBeImmutable").properlyEmptyingAdminKey()
+						contractUpdate("toBeImmutable")
+								.properlyEmptyingAdminKey()
 				).then(
-						contractUpdate("toBeImmutable").newKey("pristine")
+						contractUpdate("toBeImmutable")
+								.newKey("newAdminKey")
 								.hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT)
 				);
 	}

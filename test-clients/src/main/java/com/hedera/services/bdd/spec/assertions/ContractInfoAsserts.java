@@ -43,12 +43,14 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
 			Assertions.assertEquals(TxnUtils.equivAccount(spec.registry().getContractId(contract)),
 					actual.getAccountID(),
 					"Bad account id!");
-			Assertions.assertEquals(spec.registry().getKey(contract), actual.getAdminKey(),
-					"Bad admin key!");
 			ContractInfo otherExpectedInfo = spec.registry().getContractInfo(contract);
 			Assertions.assertEquals(
 					otherExpectedInfo.getContractAccountID(), actual.getContractAccountID(),
 					"Bad Solidity id!");
+			Assertions.assertEquals(spec.registry().getKey(contract), actual.getAdminKey(),
+					"Bad admin key!");
+			Assertions.assertTrue(object2ContractInfo(o).getExpirationTime().getSeconds() != 0,
+					"Expiry must not be null!");
 			Assertions.assertEquals(otherExpectedInfo.getAutoRenewPeriod(), actual.getAutoRenewPeriod(),
 					"Bad auto renew period!");
 			Assertions.assertEquals(otherExpectedInfo.getMemo(), actual.getMemo(),
@@ -116,6 +118,14 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
 		registerProvider((spec, o) -> {
 			Key expectedKey = spec.registry().getKey(expectedKeyName);
 			Assertions.assertEquals(expectedKey, object2ContractInfo(o).getAdminKey(), "Bad admin key!");
+		});
+		return this;
+	}
+
+	public ContractInfoAsserts autoRenew(long expectedAutoRenew) {
+		registerProvider((spec, o) -> {
+			Assertions.assertEquals(expectedAutoRenew, object2ContractInfo(o).getAutoRenewPeriod().getSeconds(), "Bad" +
+					" autoRenew!");
 		});
 		return this;
 	}

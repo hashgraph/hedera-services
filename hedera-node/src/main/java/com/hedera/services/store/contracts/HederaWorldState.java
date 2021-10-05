@@ -26,15 +26,14 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
+import org.ethereum.core.AccountState;
 import org.ethereum.db.ContractDetails;
 import org.ethereum.db.ServicesRepositoryRoot;
 import org.ethereum.vm.DataWord;
@@ -51,16 +50,18 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeSet;
 import java.util.stream.Stream;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
+import static com.hedera.services.utils.EntityIdUtils.contractParsedFromSolidityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 @Singleton
@@ -69,11 +70,8 @@ public class HederaWorldState implements HederaMutableWorldState {
 	private final EntityIdSource ids;
 	private final HederaLedger ledger;
 	private final ServicesRepositoryRoot repositoryRoot;
-
-	private final List<Address> provisionalAccountDeletes = new ArrayList<>();
-	private final Map<Address, Bytes> provisionalCodeUpdates = new HashMap<>();
-	private final Map<Address, WorldStateAccount> provisionalAccountUpdates = new HashMap<>();
 	private final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
+	private final List<ContractID> provisionalContractCreations = new LinkedList<>();
 
 	@Inject
 	public HederaWorldState(
@@ -82,97 +80,47 @@ public class HederaWorldState implements HederaMutableWorldState {
 			final ServicesRepositoryRoot repositoryRoot
 	) {
 		this.ids = ids;
-		this.ledger = ledger;
 		this.repositoryRoot = repositoryRoot;
+		this.ledger = ledger;
 	}
-
 
 	@Override
 	public List<ContractID> persist() {
-		provisionalAccountDeletes.forEach(address -> {
-			final var accountId = accountParsedFromSolidityAddress(address.toArray());
-			// account may have been created and deleted within the same transaction.
-			if (ledger.exists(accountId)) {
-				var merkleAccount = ledger.get(accountId);
-				// selfdestruct adjusts balances to zero
-				ledger.adjustBalance(accountId, -merkleAccount.getBalance());
-
-				validateTrue(!ledger.isDeleted(accountId), FAIL_INVALID);
-				HederaAccountCustomizer customizer = new HederaAccountCustomizer().isDeleted(true);
-				ledger.customize(accountId, customizer);
-			}
-		});
-
-		final var createdContracts = new ArrayList<ContractID>();
-
-		// copy over sponsor account info for CREATE operations
-		sponsorMap.forEach((contract, sponsorAddress) -> {
-			if (!provisionalAccountUpdates.containsKey(contract)) return;
-
-			AccountID sponsorAccount = EntityIdUtils.accountParsedFromSolidityAddress(sponsorAddress.toArrayUnsafe());
-
-			WorldStateAccount provisionalAccount = provisionalAccountUpdates.get(contract);
-			if (ledger.exists(sponsorAccount)) {
-				MerkleAccount sponsorMerkleAccount = ledger.get(sponsorAccount);
-				provisionalAccount.setProxyAccount(sponsorMerkleAccount.getProxy());
-				provisionalAccount.setKey(sponsorMerkleAccount.getAccountKey());
-				provisionalAccount.setMemo(sponsorMerkleAccount.getMemo());
-				provisionalAccount.setAutoRenew(sponsorMerkleAccount.getAutoRenewSecs());
-				provisionalAccount.setExpiry(sponsorMerkleAccount.getExpiry());
-			} else if (provisionalAccountUpdates.containsKey(sponsorAddress)) {
-				WorldStateAccount sponsorProvisionalAccount = provisionalAccountUpdates.get(sponsorAddress);
-				provisionalAccount.setProxyAccount(sponsorProvisionalAccount.getProxyAccount());
-				provisionalAccount.setKey(sponsorProvisionalAccount.getKey());
-				provisionalAccount.setMemo(sponsorProvisionalAccount.getMemo());
-				provisionalAccount.setAutoRenew(sponsorProvisionalAccount.getAutoRenew());
-				provisionalAccount.setExpiry(sponsorProvisionalAccount.getExpiry());
-			}
-		});
-
-		provisionalAccountUpdates.forEach((address, worldStateAccount) -> {
-			final var accountId = accountParsedFromSolidityAddress(address.toArray());
-			if (ledger.exists(accountId)) {
-				long oldBalance = ledger.getBalance(accountId);
-				long newBalance = worldStateAccount.getBalance().toLong();
-				long adjustment = newBalance - oldBalance;
-				ledger.adjustBalance(accountId, adjustment);
-			} else {
-//				var key = new JContractIDKey(worldStateAccount.getProxyAccount().toGrpcContractId()); // TODO: might be used for factory contracts
-				HederaAccountCustomizer customizer = new HederaAccountCustomizer()
-						.key(worldStateAccount.getKey())
-						.memo("")
-						.proxy(worldStateAccount.getProxyAccount())
-						.expiry(worldStateAccount.getExpiry())
-						.autoRenewPeriod(worldStateAccount.getAutoRenew())
-						.isSmartContract(true);
-				if (provisionalAccountDeletes.contains(address)) {
-					customizer.isDeleted(true);
-				}
-
-				long balance = worldStateAccount.getBalance().toLong();
-				ledger.spawn(accountId, balance, customizer);
-				createdContracts.add(EntityIdUtils.asContract(accountId));
-			}
-		});
-
-		/* Commit code updates for each updated address */
-		provisionalCodeUpdates.forEach((address, code) -> repositoryRoot.saveCode(address.toArray(), code.toArray()));
-
 		repositoryRoot.flush();
 
-		/* Clear any provisional changes */
-		provisionalCodeUpdates.clear();
-		provisionalAccountUpdates.clear();
-		provisionalAccountDeletes.clear();
-		sponsorMap.clear();
+		final var copy = new LinkedList<>(provisionalContractCreations);
+		provisionalContractCreations.clear();
 
-		return createdContracts;
+		return copy;
+	}
+
+	@Override
+	public void customizeSponsoredAccounts() {
+		// copy over sponsor account info for CREATE operations
+		sponsorMap.forEach((contract, sponsorAddress) -> {
+			AccountID newlyCreated = accountParsedFromSolidityAddress(contract.toArray());
+			AccountID sponsorAccount = accountParsedFromSolidityAddress(sponsorAddress.toArrayUnsafe());
+			validateTrue(ledger.exists(newlyCreated), FAIL_INVALID);
+			validateTrue(ledger.exists(sponsorAccount), FAIL_INVALID);
+
+			final var sponsor = ledger.get(sponsorAccount);
+			var customizer = new HederaAccountCustomizer()
+					.key(sponsor.getAccountKey())
+					.memo(sponsor.getMemo())
+					.proxy(sponsor.getProxy())
+					.autoRenewPeriod(sponsor.getAutoRenewSecs())
+					.expiry(sponsor.getExpiry())
+					.isSmartContract(true);
+
+			ledger.customize(newlyCreated, customizer);
+		});
+		sponsorMap.clear();
 	}
 
 	@Override
 	public Address newContractAddress(Address sponsor) {
 		final var newContractId =
-				ids.newContractId(EntityIdUtils.accountParsedFromSolidityAddress(sponsor.toArrayUnsafe()));
+				ids.newContractId(accountParsedFromSolidityAddress(sponsor.toArrayUnsafe()));
 		return Address.wrap(Bytes.wrap(EntityIdUtils.asSolidityAddress(newContractId)));
 	}
 
@@ -203,25 +151,17 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 	@Override
 	public WorldStateAccount get(Address address) {
-		AccountID id = accountParsedFromSolidityAddress(address.toArray());
-		if (!ledger.exists(id) || ledger.isDetached(id) || ledger.isDeleted(id)) {
+		if (!repositoryRoot.isExist(address.toArray()) || repositoryRoot.isDeleted(address.toArray())) {
 			return null;
 		}
 
-		final long expiry = ledger.expiry(id);
-		final EntityId proxy = ledger.proxy(id);
-		final long balance = ledger.getBalance(id);
-		final long autoRenewPeriod = ledger.autoRenewPeriod(id);
+		AccountState accountState = repositoryRoot.getAccountState(address.toArray());
+		final long expiry = accountState.getExpirationTime();
+		final EntityId proxy = new EntityId(accountState.getProxyAccountShard(),
+				accountState.getProxyAccountRealm(), accountState.getProxyAccountNum());
+		final long balance = accountState.getBalance().longValue();
+		final long autoRenewPeriod = accountState.getAutoRenewPeriod();
 		return new WorldStateAccount(address, Wei.of(balance), expiry, autoRenewPeriod, proxy);
-	}
-
-	public void addPropertiesFor(Address address, String memo, JKey key, Id proxyAccount) {
-		WorldStateAccount account = this.provisionalAccountUpdates.get(address);
-		account.setMemo(memo);
-		account.setKey(key);
-		account.setProxyAccount(proxyAccount.asEntityId());
-
-		this.provisionalAccountUpdates.put(address, account);
 	}
 
 	public class WorldStateAccount implements Account {
@@ -241,7 +181,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 		}
 
 		public WorldStateAccount(final Address address, final Wei balance, long expiry, long autoRenew,
-				EntityId proxyAccount) {
+								 EntityId proxyAccount) {
 			this.expiry = expiry;
 			this.address = address;
 			this.balance = balance;
@@ -275,12 +215,16 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		@Override
 		public Bytes getCode() {
-			final Bytes updatedCode = provisionalCodeUpdates.get(getAddress());
-			if (updatedCode != null) {
-				return updatedCode;
-			}
 			var codeBytes = repositoryRoot.getCode(getAddress().toArray());
 			return codeBytes == null ? Bytes.EMPTY : Bytes.of(codeBytes);
+		}
+
+		public EntityId getProxyAccount() {
+			return proxyAccount;
+		}
+
+		public void setProxyAccount(EntityId proxyAccount) {
+			this.proxyAccount = proxyAccount;
 		}
 
 		@Override
@@ -336,14 +280,6 @@ public class HederaWorldState implements HederaMutableWorldState {
 			this.key = key;
 		}
 
-		public EntityId getProxyAccount() {
-			return proxyAccount;
-		}
-
-		public void setProxyAccount(EntityId proxyAccount) {
-			this.proxyAccount = proxyAccount;
-		}
-
 		public long getAutoRenew() {
 			return autoRenew;
 		}
@@ -367,7 +303,9 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
 
-		protected Updater(final HederaWorldState world) { super(world); }
+		protected Updater(final HederaWorldState world) {
+			super(world);
+		}
 
 		@Override
 		protected WorldStateAccount getForMutation(final Address address) {
@@ -407,22 +345,33 @@ public class HederaWorldState implements HederaMutableWorldState {
 		@Override
 		public void commit() {
 			final HederaWorldState wrapped = wrappedWorldView();
-			wrapped.provisionalAccountDeletes.addAll(getDeletedAccountAddresses());
 			wrapped.sponsorMap.putAll(sponsorMap);
+			var repository = wrapped.repositoryRoot;
+
+			getDeletedAccountAddresses().forEach(address -> {
+				final var bytesAddress = address.toArray();
+				// account may have been created and deleted within the same transaction.
+				validateFalse(repository.isDeleted(bytesAddress), FAIL_INVALID);
+				repository.addBalance(bytesAddress, repository.getBalance(bytesAddress).negate());
+				repository.setDeleted(bytesAddress, true);
+			});
 
 			for (final UpdateTrackingAccount<WorldStateAccount> updated : getUpdatedAccounts()) {
-				final WorldStateAccount origin = updated.getWrappedAccount();
+				final byte[] address = updated.getAddress().toArray();
 
-				// Save the code in storage ...
-				if (updated.codeWasUpdated()) {
-					wrapped.provisionalCodeUpdates.put(updated.getAddress(), updated.getCode());
+				if (!repository.isExist(address)) {
+					repository.delete(address);
+					repository.createAccount(address);
+					wrapped.provisionalContractCreations.add(contractParsedFromSolidityAddress(address));
 				}
+
+				final var oldBalance = repository.getBalance(address);
+				final var adjustment = updated.getBalance().toBigInteger().subtract(oldBalance);
+				repository.addBalance(address, adjustment);
+
+				final WorldStateAccount origin = updated.getWrappedAccount();
 				// ...and storage in the account trie first.
 				final boolean freshState = origin == null || updated.getStorageWasCleared();
-				if (freshState) {
-					wrapped.repositoryRoot.delete(updated.getAddress().toArray());
-				}
-
 				final Map<UInt256, UInt256> updatedStorage = updated.getUpdatedStorage();
 				if (!updatedStorage.isEmpty()) {
 					// Apply any storage updates
@@ -442,11 +391,10 @@ public class HederaWorldState implements HederaMutableWorldState {
 						}
 					}
 				}
-
-				// TODO once UpdateTrackingAccount is extended - expiry, proxyAccount and autoRenew will be
-				//  populated
-				wrapped.provisionalAccountUpdates.put(updated.getAddress(),
-						wrapped.new WorldStateAccount(updated.getAddress(), updated.getBalance()));
+				// Save the code in storage ...
+				if (updated.codeWasUpdated()) {
+					repository.saveCode(address, updated.getCode().toArray());
+				}
 			}
 		}
 
@@ -458,8 +406,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 		@Override
 		public WorldStateAccount getHederaAccount(final Address address) {
 			final HederaWorldState wrapped = wrappedWorldView();
-			var result = wrapped.provisionalAccountUpdates.get(address);
-			return result != null ? result : wrapped.get(address);
+			return wrapped.get(address);
 		}
 	}
 }

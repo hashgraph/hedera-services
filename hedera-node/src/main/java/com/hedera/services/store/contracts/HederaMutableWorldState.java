@@ -58,4 +58,9 @@ public interface HederaMutableWorldState extends WorldState, WorldView {
 	 * Persists accumulated changes to the underlying storage
 	 */
 	List<ContractID> persist();
+
+	/**
+	 * Customizes sponsored accounts
+	 */
+	void customizeSponsoredAccounts();
 }

@@ -24,9 +24,9 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaWorldState;
@@ -70,8 +70,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -105,6 +103,8 @@ class ContractCreateTransitionLogicTest {
 	private TransactionRecordService recordServices;
 	@Mock
 	private CreateEvmTxProcessor evmTxProcessor;
+	@Mock
+	private HederaLedger hederaLedger;
 	private ContractCreateTransitionLogic subject;
 
 	private final Instant consensusTime = Instant.now();
@@ -116,7 +116,7 @@ class ContractCreateTransitionLogicTest {
 	private void setup() {
 
 		subject = new ContractCreateTransitionLogic(hfs, entityIdSource, txnCtx, accountStore, validator, worldState,
-				recordServices, evmTxProcessor);
+				recordServices, evmTxProcessor, hederaLedger);
 
 	}
 
@@ -275,7 +275,6 @@ class ContractCreateTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		verify(worldState, never()).addPropertiesFor(any(), any(), any(), any());
 		verify(worldState).reclaimContractId();
 		verify(worldState).persist();
 		verify(txnCtx, never()).setCreated(contractAccount.getId().asGrpcContract());
@@ -317,11 +316,6 @@ class ContractCreateTransitionLogicTest {
 
 		// then:
 		verify(worldState).newContractAddress(senderAccount.getId().asEvmAddress());
-		verify(worldState).addPropertiesFor(
-				eq(contractAccount.getId().asEvmAddress()),
-				eq(""),
-				argThat((JKey k) -> JKey.equalUpToDecodability(k, expectedKey)),
-				eq(new Id(proxy.getShardNum(), proxy.getRealmNum(), proxy.getAccountNum())));
 		verify(worldState).persist();
 		verify(recordServices).externaliseEvmCreateTransaction(result);
 		verify(worldState, never()).reclaimContractId();
