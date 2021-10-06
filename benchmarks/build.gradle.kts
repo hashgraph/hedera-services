@@ -32,6 +32,7 @@ dependencies {
     jmhRuntimeOnly("org.apache.logging.log4j:log4j-1.2-api:2.13.2")
     jmhRuntimeOnly("org.apache.logging.log4j:log4j-core:2.13.2")
     jmhRuntimeOnly("org.fusesource.jansi:jansi:2.3.4")
+    jmhImplementation("org.agrona:agrona:1.12.0")
     /*
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
