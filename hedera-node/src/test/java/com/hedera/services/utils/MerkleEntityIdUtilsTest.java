@@ -23,6 +23,7 @@ package com.hedera.services.utils;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -178,6 +179,26 @@ class MerkleEntityIdUtilsTest {
 		final var cid = EntityIdUtils.asContract(id);
 
 		assertEquals(expected, cid);
+	}
+
+	@Test
+	void asAccountFromContractWorks() {
+		final var expected = AccountID.newBuilder().setShardNum(1).setRealmNum(2).setAccountNum(3).build();
+		final var id = ContractID.newBuilder().setShardNum(1).setRealmNum(2).setContractNum(3).build();
+
+		final var aid = EntityIdUtils.asAccount(id);
+
+		assertEquals(expected, aid);
+	}
+
+	@Test
+	void asAccountFromEntityWorks() {
+		final var expected = AccountID.newBuilder().setShardNum(1).setRealmNum(2).setAccountNum(3).build();
+		final var id = EntityId.fromGrpcAccountId(AccountID.newBuilder().setShardNum(1).setRealmNum(2).setAccountNum(3).build());
+
+		final var aid = EntityIdUtils.asAccount(id);
+
+		assertEquals(expected, aid);
 	}
 
 	@Test

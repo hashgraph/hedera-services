@@ -130,6 +130,8 @@ class SeqNoEntityIdSourceTest {
 				() -> NOOP_ID_SOURCE.newTokenId(AccountID.getDefaultInstance()));
 		assertThrows(UnsupportedOperationException.class,
 				() -> NOOP_ID_SOURCE.newScheduleId(AccountID.getDefaultInstance()));
+		assertThrows(UnsupportedOperationException.class,
+				() -> NOOP_ID_SOURCE.newContractId(AccountID.getDefaultInstance()));
 		assertThrows(UnsupportedOperationException.class, NOOP_ID_SOURCE::reclaimLastId);
 		assertThrows(UnsupportedOperationException.class, NOOP_ID_SOURCE::reclaimProvisionalIds);
 		assertThrows(UnsupportedOperationException.class, NOOP_ID_SOURCE::resetProvisionalIds);
@@ -147,5 +149,19 @@ class SeqNoEntityIdSourceTest {
 		assertEquals(3, scheduleId.getScheduleNum());
 		assertEquals(1, scheduleId.getRealmNum());
 		assertEquals(2, scheduleId.getShardNum());
+	}
+
+	@Test
+	void newContractId() {
+		given(seqNo.getAndIncrement()).willReturn(3L);
+		var contractId = subject.newContractId(AccountID.newBuilder()
+				.setRealmNum(1)
+				.setShardNum(2)
+				.setAccountNum(3)
+				.build());
+		assertNotNull(contractId);
+		assertEquals(3, contractId.getContractNum());
+		assertEquals(1, contractId.getRealmNum());
+		assertEquals(2, contractId.getShardNum());
 	}
 }

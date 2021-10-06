@@ -188,6 +188,11 @@ class BootstrapPropertiesTest {
 			entry("tokens.nfts.mintThrottleScaleFactor", ThrottleReqOpsScaleFactor.from("5:2"))
 	);
 
+	@Test
+	void containsProperty() {
+		assertTrue(subject.containsProperty("tokens.nfts.maxQueryRange"));
+	}
+
 	@BeforeEach
 	void setUp() {
 		subject.bootstrapOverridePropsLoc = EMPTY_OVERRIDE_PROPS_LOC;
