@@ -102,6 +102,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public class HederaLedger {
 	private static final int MAX_CONCEIVABLE_TOKENS_PER_TXN = 1_000;
 	private static final long[] NO_NEW_BALANCES = new long[0];
+	private static final List<AccountProperty> TOKEN_TRANSFER_SIDE_EFFECTS = List.of(TOKENS, NUM_NFTS_OWNED);
 
 	static final String NO_ACTIVE_TXN_CHANGE_SET = "{*NO ACTIVE TXN*}";
 	public static final Comparator<AccountID> ACCOUNT_ID_COMPARATOR = Comparator
@@ -395,7 +396,7 @@ public class HederaLedger {
 		if (tokenViewsManager.isInTransaction()) {
 			tokenViewsManager.rollback();
 		}
-		accountsLedger.undoChangesOfType(NUM_NFTS_OWNED);
+		accountsLedger.undoChangesOfType(TOKEN_TRANSFER_SIDE_EFFECTS);
 		clearNetTokenTransfers();
 	}
 

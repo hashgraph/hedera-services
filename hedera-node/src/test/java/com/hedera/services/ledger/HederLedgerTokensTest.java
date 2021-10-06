@@ -31,6 +31,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.test.utils.IdUtils.tokenWith;
@@ -184,7 +186,7 @@ class HederLedgerTokensTest extends BaseHederaLedgerTestHelper {
 		verify(tokenRelsLedger).rollback();
 		verify(nftsLedger).rollback();
 		verify(manager).rollback();
-		verify(accountsLedger).undoChangesOfType(NUM_NFTS_OWNED);
+		verify(accountsLedger).undoChangesOfType(List.of(TOKENS, NUM_NFTS_OWNED));
 
 		assertEquals(0, subject.numTouches);
 		assertEquals(0, subject.netTokenTransfers.get(tokenWith(111)).getAccountAmountsCount());
