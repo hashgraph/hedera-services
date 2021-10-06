@@ -887,13 +887,13 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Account-Balances-client-validation-6N-1C:
-#    triggers:
-#      - schedule:
-#          cron: "30 6 * * *"
-#          filters:
-#            branches:
-#              only:
-#                - master
+    triggers:
+      - schedule:
+          cron: "30 6 * * *"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1120,13 +1120,13 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Comp-Reconnect-Correctness-6N-1C:
-    triggers:
-      - schedule:
-          cron: "25 7 * * *"
-          filters:
-            branches:
-              only:
-                - master
+#    triggers:
+#      - schedule:
+#          cron: "25 7 * * *"
+#          filters:
+#            branches:
+#              only:
+#                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
