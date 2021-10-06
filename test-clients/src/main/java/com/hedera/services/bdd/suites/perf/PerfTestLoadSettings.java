@@ -202,6 +202,12 @@ public class PerfTestLoadSettings {
 
 	public int getTestTopicId() { return testTopicId; }
 
+	public String getProperty(String property, String defaultValue) {
+		if (null != ciProps && ciProps.has(property)) {
+			return ciProps.get(property);
+		}
+		return defaultValue;
+	}
 
 	public int getIntProperty(String property, int defaultValue) {
 		if (null != ciProps && ciProps.has(property)) {
