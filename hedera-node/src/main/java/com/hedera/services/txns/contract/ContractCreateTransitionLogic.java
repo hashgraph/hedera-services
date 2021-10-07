@@ -21,6 +21,7 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
@@ -192,7 +193,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		return validator.memoCheck(op.getMemo());
 	}
 
-	private Bytes prepareCodeWithConstructorArguments(ContractCreateTransactionBody op) {
+	Bytes prepareCodeWithConstructorArguments(ContractCreateTransactionBody op) {
 		var bytecodeSrc = op.getFileID();
 		validateTrue(hfs.exists(bytecodeSrc), INVALID_FILE_ID);
 		byte[] bytecode = hfs.cat(bytecodeSrc);
@@ -204,6 +205,10 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 					op.getConstructorParameters().toByteArray());
 			contractByteCodeString += constructorParamsHexString;
 		}
-		return Bytes.fromHexString(contractByteCodeString);
+		try {
+			return Bytes.fromHexString(contractByteCodeString);
+		} catch (IllegalArgumentException e) {
+			throw new InvalidTransactionException(ResponseCodeEnum.ERROR_DECODING_BYTESTRING);
+		}
 	}
 }

@@ -53,6 +53,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
@@ -73,6 +74,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -106,6 +108,9 @@ class ContractCreateTransitionLogicTest {
 	private CreateEvmTxProcessor evmTxProcessor;
 	@Mock
 	private HederaLedger hederaLedger;
+	@Mock
+	private ContractCreateTransactionBody transactionBody;
+
 	private ContractCreateTransitionLogic subject;
 
 	private final Instant consensusTime = Instant.now();
@@ -414,6 +419,19 @@ class ContractCreateTransitionLogicTest {
 	void resetMethodDelegates() {
 		subject.resetCreatedIds();
 		verify(entityIdSource).resetProvisionalIds();
+	}
+
+	@Test
+	void throwsErrorOnInvalidBytecode() {
+		given(hfs.exists(any())).willReturn(true);
+		given(hfs.cat(any())).willReturn(new byte[]{1,2,3,'\n'});
+		given(transactionBody.getConstructorParameters()).willReturn(ByteString.EMPTY);
+		// when:
+		Exception exception = assertThrows(InvalidTransactionException.class, () -> {
+			subject.prepareCodeWithConstructorArguments(transactionBody);
+		});
+		// then:
+		assertTrue("ERROR_DECODING_BYTESTRING".equals(exception.getMessage()));
 	}
 
 	private void givenValidTxnCtx() {
