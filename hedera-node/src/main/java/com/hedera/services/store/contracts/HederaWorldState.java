@@ -175,11 +175,6 @@ public class HederaWorldState implements HederaMutableWorldState {
 		private long expiry;
 		private long autoRenew;
 
-		public WorldStateAccount(final Address address, final Wei balance) {
-			this.address = address;
-			this.balance = balance;
-		}
-
 		public WorldStateAccount(final Address address, final Wei balance, long expiry, long autoRenew,
 								 EntityId proxyAccount) {
 			this.expiry = expiry;

@@ -26,7 +26,7 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
-import com.hedera.services.txns.contract.process.CallEvmTxProcessor;
+import com.hedera.services.contracts.execution.CallEvmTxProcessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.CommonUtils;

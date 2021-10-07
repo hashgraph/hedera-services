@@ -31,7 +31,7 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
-import com.hedera.services.txns.contract.process.CreateEvmTxProcessor;
+import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;

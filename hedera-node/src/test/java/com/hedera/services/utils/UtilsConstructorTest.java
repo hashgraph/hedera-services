@@ -22,7 +22,6 @@ package com.hedera.services.utils;
 
 import com.hedera.services.context.domain.security.PermissionFileUtils;
 import com.hedera.services.context.properties.PropUtils;
-import com.hedera.services.contracts.execution.DomainUtils;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
 import com.hedera.services.exceptions.ValidationUtils;
 import com.hedera.services.fees.calculation.FeeCalcUtils;
@@ -85,7 +84,6 @@ class UtilsConstructorTest {
 			NewRels.class,
 			PermissionFileUtils.class,
 			PropUtils.class,
-			DomainUtils.class,
 			AddressKeyedMapFactory.class,
 			ValidationUtils.class,
 			FeeCalcUtils.class,

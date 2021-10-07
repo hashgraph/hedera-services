@@ -28,7 +28,7 @@ import com.hedera.services.contracts.execution.CallLocalExecutor;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.queries.contract.ContractCallLocalAnswer;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.txns.contract.process.TransactionProcessingResult;
+import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;

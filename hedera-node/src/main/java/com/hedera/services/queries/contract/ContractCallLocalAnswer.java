@@ -47,12 +47,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 	public static final String CONTRACT_CALL_LOCAL_CTX_KEY =
 			ContractCallLocalAnswer.class.getSimpleName() + "_localCallResponse";
 
-	@FunctionalInterface
-	public interface LegacyLocalCaller {
-		ContractCallLocalResponse perform(ContractCallLocalQuery query, long now) throws Exception;
-	}
-
-	private CallLocalExecutor callLocalExecutor;
+	private final CallLocalExecutor callLocalExecutor;
 
 	@Inject
 	public ContractCallLocalAnswer(
