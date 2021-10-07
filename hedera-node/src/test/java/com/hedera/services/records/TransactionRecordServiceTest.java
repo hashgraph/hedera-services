@@ -29,13 +29,17 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.txns.contract.operation.HederaExceptionalHaltReason;
+import com.hedera.services.txns.contract.process.TransactionProcessingResult;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,7 +48,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
@@ -184,4 +190,23 @@ class TransactionRecordServiceTest {
 		verify(txnCtx).setCreated(Id.DEFAULT.asGrpcToken());
 	}
 
+	@Test
+	void getStatusTest() {
+		var processingResult = mock(TransactionProcessingResult.class);
+		given(processingResult.isSuccessful()).willReturn(true);
+		assertEquals(subject.getStatus(processingResult), ResponseCodeEnum.SUCCESS);
+		given(processingResult.isSuccessful()).willReturn(false);
+		given(processingResult.getHaltReason())
+				.willReturn(Optional.of(HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF));
+		assertEquals(subject.getStatus(processingResult), ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID);
+		given(processingResult.getHaltReason())
+				.willReturn(Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
+		assertEquals(subject.getStatus(processingResult), ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS);
+		given(processingResult.getHaltReason())
+				.willReturn(Optional.of(HederaExceptionalHaltReason.INVALID_SIGNATURE));
+		assertEquals(subject.getStatus(processingResult), ResponseCodeEnum.INVALID_SIGNATURE);
+		given(processingResult.getHaltReason())
+				.willReturn(Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
+		assertEquals(subject.getStatus(processingResult), ResponseCodeEnum.INSUFFICIENT_GAS);
+	}
 }

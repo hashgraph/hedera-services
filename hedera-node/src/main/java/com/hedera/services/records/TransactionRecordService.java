@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
@@ -43,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
@@ -184,7 +186,7 @@ public class TransactionRecordService {
 	}
 
 	@NotNull
-	private ResponseCodeEnum getStatus(final TransactionProcessingResult result) {
+	ResponseCodeEnum getStatus(final TransactionProcessingResult result) {
 		if (result.isSuccessful()) {
 			return SUCCESS;
 		} else if (result.getHaltReason().isPresent()) {
@@ -195,6 +197,8 @@ public class TransactionRecordService {
 				return INVALID_SOLIDITY_ADDRESS;
 			} else if (HederaExceptionalHaltReason.INVALID_SIGNATURE == haltReason) {
 				return INVALID_SIGNATURE;
+			} else if (ExceptionalHaltReason.INSUFFICIENT_GAS == haltReason) {
+				return INSUFFICIENT_GAS;
 			}
 		}
 
