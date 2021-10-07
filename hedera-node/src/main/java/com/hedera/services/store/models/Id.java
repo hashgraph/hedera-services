@@ -9,9 +9,9 @@ package com.hedera.services.store.models;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,8 +22,10 @@ package com.hedera.services.store.models;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TopicID;
 
 import java.util.Comparator;
 
@@ -36,17 +38,31 @@ public class Id {
 			.comparingLong(Id::getNum)
 			.thenComparingLong(Id::getShard)
 			.thenComparingLong(Id::getRealm);
-
+	public static final Id MISSING_ID = new Id(0, 0, 0);
 	private final long shard;
 	private final long realm;
 	private final long num;
-
-	public static final Id MISSING_ID = new Id(0, 0, 0);
 
 	public Id(long shard, long realm, long num) {
 		this.shard = shard;
 		this.realm = realm;
 		this.num = num;
+	}
+
+	public static Id fromGrpcAccount(final AccountID id) {
+		return new Id(id.getShardNum(), id.getRealmNum(), id.getAccountNum());
+	}
+
+	public static Id fromGrpcToken(final TokenID id) {
+		return new Id(id.getShardNum(), id.getRealmNum(), id.getTokenNum());
+	}
+
+	public static Id fromGrpcTopic(final TopicID id) {
+		return new Id(id.getShardNum(), id.getRealmNum(), id.getTopicNum());
+	}
+
+	public EntityNum asEntityNum() {
+		return EntityNum.fromLong(num);
 	}
 
 	public AccountID asGrpcAccount() {
@@ -65,12 +81,12 @@ public class Id {
 				.build();
 	}
 
-	public static Id fromGrpcAccount(final AccountID id) {
-		return new Id(id.getShardNum(), id.getRealmNum(), id.getAccountNum());
-	}
-
-	public static Id fromGrpcToken(final TokenID id) {
-		return new Id(id.getShardNum(), id.getRealmNum(), id.getTokenNum());
+	public TopicID asGrpcTopic() {
+		return TopicID.newBuilder()
+				.setShardNum(shard)
+				.setRealmNum(realm)
+				.setTopicNum(num)
+				.build();
 	}
 
 	public long getShard() {
