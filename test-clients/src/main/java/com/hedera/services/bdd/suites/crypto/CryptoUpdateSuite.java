@@ -70,7 +70,7 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 			Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
 
 	public static void main(String... args) {
-		new CryptoUpdateSuite().runSuiteAsync();
+		new CryptoUpdateSuite().runSuiteSync();
 	}
 
 	private final SigControl TWO_LEVEL_THRESH = KeyShape.threshSigs(2,
@@ -178,7 +178,7 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 
 	private HapiApiSpec updateFailsWithInvalidMaxAutoAssociations() {
 		final int tokenAssociations_restrictedNetwork = 10;
-		final int tokenAssociations_adventurousNetwork = 1_000;
+		final int tokenAssociations_adventurousNetwork = 1000;
 		final int originalMax = 2;
 		final int newBadMax = originalMax - 1;
 		final int newGoodMax = originalMax + 1;

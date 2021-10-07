@@ -22,7 +22,13 @@ import com.hedera.services.state.merkle.MerkleAccount;
  * A utility class used to convert between {@link Account} and {@link com.hedera.services.state.merkle.MerkleAccount}
  */
 public class AccountConversion {
-	
+
+	/**
+	 * Maps properties between a merkle {@link MerkleAccount} and a {@link Account}
+	 *
+	 * @param merkle - the MerkleAccount, which will be used to map into an Account model
+	 * @param model - the account model
+	 */
 	public static void mapMerkleToModel(MerkleAccount merkle, Account model) {
 		model.setExpiry(merkle.getExpiry());
 		model.setBalance(merkle.getBalance());
@@ -39,12 +45,19 @@ public class AccountConversion {
 		model.setAutoRenewSecs(merkle.getAutoRenewSecs());
 		model.setDeleted(merkle.isDeleted());
 		model.setSmartContract(merkle.isSmartContract());
-	} 
-	
+	}
+
+	/**
+	 * Maps properties between a model {@link Account} and a {@link MerkleAccount}
+	 *
+	 * @param model - the Account model, which will be used to map into a MerkleAccount
+	 * @param merkle - the merkle account
+	 */
 	public static void mapModelToMerkle(Account model, MerkleAccount merkle) {
 		if (model.getProxy() != null) {
 			merkle.setProxy(model.getProxy().asEntityId());
 		}
+		merkle.setMemo(model.getMemo());
 		merkle.setExpiry(model.getExpiry());
 		merkle.setBalanceUnchecked(model.getBalance());
 		merkle.setNftsOwned(model.getOwnedNfts());

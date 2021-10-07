@@ -49,6 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -79,7 +80,7 @@ class AccountStoreTest {
 	@Test
 	void persistsNewWorks() {
 		final var acc = new Account(Id.DEFAULT);
-		
+
 		subject.persistNew(acc);
 		verify(accounts).put(any(), any());
 	}
@@ -111,6 +112,23 @@ class AccountStoreTest {
 		miscMerkleAccount.setBalance(0L);
 
 		assertMiscAccountLoadFailsWith(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+	}
+
+	@Test
+	void loadsActuallyDetachedAccountAsExpected() throws NegativeAccountBalanceException {
+		setupWithAccount(miscMerkleId, miscMerkleAccount);
+		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
+		given(validator.isAfterConsensusSecond(miscMerkleAccount.getExpiry())).willReturn(false);
+		miscMerkleAccount.setSmartContract(false);
+		miscMerkleAccount.setBalance(0L);
+
+		final var actualAccount = subject.loadPossiblyDetachedAccount(miscId);
+
+		assertTrue(actualAccount.isDetached());
+
+		final var actualAccount2 = subject.loadPossiblyDetachedOrFailWith(miscId, FAIL_INVALID);
+
+		assertTrue(actualAccount2.isDetached());
 	}
 
 	@Test

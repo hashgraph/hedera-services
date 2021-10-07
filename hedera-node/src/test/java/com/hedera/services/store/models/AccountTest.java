@@ -37,8 +37,10 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.buildAutomaticAssociationMetaData;
+import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
@@ -78,8 +80,7 @@ class AccountTest {
 
 		validator = mock(ContextOptionValidator.class);
 	}
-	
-	
+
 	@Test
 	void objectContractWorks() {
 		subject.setNew(true);
@@ -304,7 +305,36 @@ class AccountTest {
 		assertEquals(created.getAutoRenewSecs(), customAutoRenewPeriod);
 		assertEquals(created.getMaxAutomaticAssociations(), maxAutoAssociations);
 	}
-	
+
+	@Test
+	public void updateAccountFromGrpcTransaction() {
+		final long expirationTime = 1_000_000L;
+		final boolean isReceiverSigRequired = true;
+
+		subject.updateFromGrpc(
+				Optional.of(key),
+				Optional.of(memo),
+				Optional.of(customAutoRenewPeriod),
+				Optional.of(expirationTime),
+				Optional.of(proxy),
+				Optional.of(isReceiverSigRequired),
+				Optional.of(maxAutoAssociations)
+		);
+
+		assertEquals(asFcKeyUnchecked(key).getEd25519(), subject.getKey().getEd25519());
+		assertEquals(asFcKeyUnchecked(key).getECDSA384(), subject.getKey().getECDSA384());
+		assertEquals(asFcKeyUnchecked(key).getRSA3072(), subject.getKey().getRSA3072());
+		assertEquals(asFcKeyUnchecked(key).getThresholdKey(), subject.getKey().getThresholdKey());
+		assertEquals(asFcKeyUnchecked(key).getContractIDKey(), subject.getKey().getContractIDKey());
+
+		assertEquals(memo, subject.getMemo());
+		assertEquals(customAutoRenewPeriod, subject.getAutoRenewSecs());
+		assertEquals(expirationTime, subject.getExpiry());
+		assertEquals(Id.fromGrpcAccount(proxy), subject.getProxy());
+		assertEquals(isReceiverSigRequired, subject.isReceiverSigRequired());
+		assertEquals(maxAutoAssociations, subject.getMaxAutomaticAssociations());
+	}
+
 	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
 		var ex = assertThrows(InvalidTransactionException.class, something::run);
 		assertEquals(status, ex.getResponseCode());

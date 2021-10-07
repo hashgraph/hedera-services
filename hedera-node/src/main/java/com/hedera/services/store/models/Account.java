@@ -25,7 +25,9 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
 import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.Key;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -51,10 +53,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_
  * <p>
  * Operations are validated, and throw a {@link com.hedera.services.exceptions.InvalidTransactionException}
  * with response code capturing the failure when one occurs.
- *
- * <b>NOTE:</b> This implementation is incomplete, and includes
- * only the API needed to support the Hedera Token Service. The
- * memo field, for example, is not yet present.
  */
 public class Account {
 	private final Id id;
@@ -63,6 +61,7 @@ public class Account {
 	private long balance;
 	private boolean deleted = false;
 	private boolean isSmartContract = false;
+	private boolean detached = false;
 	private boolean isReceiverSigRequired = false;
 	private CopyOnWriteIds associatedTokens;
 	private long ownedNfts;
@@ -107,6 +106,43 @@ public class Account {
 		created.setNew(true);
 
 		return created;
+	}
+
+	/**
+	 * Updates an existing {@link Account} instance from the given gRPC transaction body.
+	 * Note: The created model is not added to state, and must be explicitly persisted via {@link com.hedera.services.store.AccountStore#persistAccount(Account)}
+	 *
+	 * @param newKey
+	 * 		account key
+	 * @param newMemo
+	 * 		account memo
+	 * @param newAutoRenewPeriod
+	 * 		account auto renew period
+	 * @param newExpirationTime
+	 * 		account expiry
+	 * @param newProxyAccountID
+	 * 		account proxy ID
+	 * @param newReceiverSigRequired
+	 * 		wrapped boolean condition receiver signature required
+	 * @return the updated account model
+	 */
+	public Account updateFromGrpc(Optional<Key> newKey,
+								  Optional<String> newMemo,
+								  Optional<Long> newAutoRenewPeriod,
+								  Optional<Long> newExpirationTime,
+								  Optional<AccountID> newProxyAccountID,
+								  Optional<Boolean> newReceiverSigRequired,
+								  Optional<Integer> newMaxAutomaticTokenAssociations) {
+
+		newKey.ifPresent(key -> this.setKey(asFcKeyUnchecked(key)));
+		newMemo.ifPresent(memo -> this.setMemo(memo));
+		newAutoRenewPeriod.ifPresent(autoRenewPeriod -> this.setAutoRenewSecs(autoRenewPeriod));
+		newExpirationTime.ifPresent(expiry -> this.setExpiry(expiry));
+		newProxyAccountID.ifPresent(proxy -> this.setProxy(Id.fromGrpcAccount(proxy)));
+		newReceiverSigRequired.ifPresent(receiverSigRequired -> this.setReceiverSigRequired(receiverSigRequired));
+		newMaxAutomaticTokenAssociations.ifPresent(tokenAssociations -> this.setMaxAutomaticAssociations(tokenAssociations));
+
+		return this;
 	}
 
 	public void incrementOwnedNfts() {
@@ -256,6 +292,14 @@ public class Account {
 
 	public boolean isSmartContract() {
 		return isSmartContract;
+	}
+
+	public void setDetached(boolean detached) {
+		this.detached = detached;
+	}
+
+	public boolean isDetached() {
+		return detached;
 	}
 
 	public void setSmartContract(boolean val) {

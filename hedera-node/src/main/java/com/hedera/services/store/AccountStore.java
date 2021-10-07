@@ -81,6 +81,25 @@ public class AccountStore {
 	}
 
 	/**
+	 * Returns a model of the requested account, with operations that can be used to
+	 * implement business logic in a transaction.
+	 *
+	 * <b>IMPORTANT:</b> Changes to the returned model are not automatically persisted
+	 * to state! The altered model must be passed to {@link AccountStore#persistAccount(Account)}
+	 * in order for its changes to be applied to the Swirlds state, and included in the
+	 * {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} for the active transaction.
+	 *
+	 * The method uses the {@link AccountStore#loadPossiblyDetachedOrFailWith(Id, ResponseCodeEnum)} by passing a `null` explicit response code
+	 *
+	 * @param id the account to load
+	 * @return a usable model of the account
+	 * @throws InvalidTransactionException if the requested account is missing, deleted, or a smart contract.
+	 */
+	public Account loadPossiblyDetachedAccount(Id id) {
+		return this.loadPossiblyDetachedOrFailWith(id, null);
+	}
+
+	/**
 	 * Attempts to load an account from state
 	 * and throws the given code if an exception occurs due to an invalid account.
 	 *
@@ -102,6 +121,41 @@ public class AccountStore {
 		validateUsable(merkleAccount, code);
 
 		account = new Account(id);
+		mapMerkleToModel(merkleAccount, account);
+
+		return account;
+	}
+
+	/**
+	 * Attempts to load an account for update from state and throws the given code if an exception occurs due to
+	 * an invalid or deleted account. Returns a usable model of the requested account which may be marked as detached.
+	 *
+	 * <b>IMPORTANT:</b> Changes to the returned model are not automatically persisted
+	 * to state! The altered model must be passed to {@link AccountStore#persistAccount(Account)}
+	 * in order for its changes to be applied to the Swirlds state, and included in the
+	 * {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} for the active transaction.
+	 *
+	 * @param id the account to load
+	 * @param explicitResponse the {@link ResponseCodeEnum} to fail with if the account is deleted/missing
+	 * @return a usable model of the account
+	 */
+	public Account loadPossiblyDetachedOrFailWith(Id id, @Nullable ResponseCodeEnum explicitResponse) {
+		final var key = EntityNum.fromLong(id.getNum());
+		final var merkleAccount = accounts.get().get(key);
+
+		validateTrue(merkleAccount != null, explicitResponse != null ? explicitResponse : INVALID_ACCOUNT_ID);
+		validateFalse(merkleAccount.isSmartContract(), INVALID_ACCOUNT_ID);
+		validateFalse(merkleAccount.isDeleted(), explicitResponse != null ? explicitResponse : ACCOUNT_DELETED);
+		final var accountIsDetached = dynamicProperties.autoRenewEnabled()
+				&& !merkleAccount.isSmartContract()
+				&& merkleAccount.getBalance() == 0L
+				&& !validator.isAfterConsensusSecond(merkleAccount.getExpiry());
+
+		final var account = new Account(id);
+		if (accountIsDetached) {
+			account.setDetached(true);
+		}
+
 		mapMerkleToModel(merkleAccount, account);
 
 		return account;
