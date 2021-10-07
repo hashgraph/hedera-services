@@ -47,6 +47,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.hedera.services.bdd.spec.queries.contract.HapiContractCallLocal.fromDetails;
+import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
 
 public class QueryVerbs {
 	public static HapiGetReceipt getReceipt(String txn) {
@@ -132,7 +133,7 @@ public class QueryVerbs {
 	}
 
 	public static HapiGetExecTime getExecTime(String... txnIds) {
-		return new HapiGetExecTime(List.of(txnIds));
+		return new HapiGetExecTime(List.of(txnIds)).payingWith(GENESIS);
 	}
 
 	public static HapiGetTokenInfo getTokenInfo(String token) {
