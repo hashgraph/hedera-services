@@ -69,6 +69,7 @@ public class HederaSStoreOperation extends AbstractOperation {
 		UInt256 currentValue = account.getStorageValue(key);
 		boolean currentZero = currentValue.isZero();
 		boolean newZero = value.isZero();
+		boolean checkCalculator = checkSuperCost;
 		Gas gasCost = Gas.ZERO;
 		if (currentZero && !newZero) {
 			HederaWorldState.WorldStateAccount hederaAccount =
@@ -82,11 +83,11 @@ public class HederaSStoreOperation extends AbstractOperation {
 			gasCost = Gas.of(calculateStorageGasNeeded(
 					64 /*two 256-bit words*/, durationInSeconds, sbh, gasPrice.toLong()));
 			frame.incrementGasRefund(gasCost);
-		} else if (!currentZero && !newZero) {
-			gasCost = FrontierGasCalculator.STORAGE_RESET_GAS_COST;
+		} else {
+			checkCalculator = true;
 		}
 
-		if (checkSuperCost) {
+		if (checkCalculator) {
 			Address address = account.getAddress();
 			boolean slotIsWarm = frame.warmUpStorage(address, key);
 			gasCost = gasCost.max(gasCalculator().calculateStorageCost(account, key, value)

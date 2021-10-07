@@ -179,7 +179,7 @@ log3.bin,273528
 log4.bin,275971
 sload.bin,131335
 sload_gas.bin,159987
-sstore.bin,167363
+sstore.bin,25263
 sstore_gas.bin,265331
 call.bin,17340
 callcode.bin,17346
