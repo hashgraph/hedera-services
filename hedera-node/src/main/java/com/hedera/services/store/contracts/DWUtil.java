@@ -25,7 +25,8 @@ import org.apache.tuweni.units.bigints.UInt256;
 import org.ethereum.vm.DataWord;
 
 /**
- * Util class for converting {@link UInt256} variables to {@link DataWord} and vice-versa. Temporary solution while the Legacy Smart Contract State is used
+ * Util class for converting {@link UInt256} variables to {@link DataWord} and vice-versa. Temporary solution while the
+ * Legacy Smart Contract State is used
  */
 public class DWUtil {
 

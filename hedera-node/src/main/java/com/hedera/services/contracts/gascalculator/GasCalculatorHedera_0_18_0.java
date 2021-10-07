@@ -38,6 +38,10 @@ import org.hyperledger.besu.evm.gascalculator.PetersburgGasCalculator;
 
 import javax.inject.Inject;
 
+/**
+ * Provides Hedera adapted gas cost lookups and calculations used during transaction processing.
+ * Maps to the gas costs of the Smart Contract Service up until 0.18.0 release
+ */
 public class GasCalculatorHedera_0_18_0 extends PetersburgGasCalculator {
 
 	private static final int LOG_CONTRACT_ID_SIZE = 24;

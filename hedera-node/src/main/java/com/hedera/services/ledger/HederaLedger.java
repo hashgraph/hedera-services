@@ -469,6 +469,12 @@ public class HederaLedger {
 		customizer.customize(id, accountsLedger);
 	}
 
+	/**
+	 * Updates the provided {@link AccountID} with the {@link HederaAccountCustomizer}. All properties from the
+	 * customizer are applied to the {@link MerkleAccount} provisionally
+	 * @param id target account
+	 * @param customizer properties to update
+	 */
 	public void customizePotentiallyDeleted(AccountID id, HederaAccountCustomizer customizer) {
 		customizer.customize(id, accountsLedger);
 	}

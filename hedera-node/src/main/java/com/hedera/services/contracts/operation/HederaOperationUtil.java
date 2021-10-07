@@ -29,9 +29,19 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import java.util.Iterator;
 import java.util.Optional;
 
+/**
+ * Utility methods used by Hedera adapted {@link org.hyperledger.besu.evm.operation.Operation}
+ */
 public class HederaOperationUtil {
 
-	public static long getExpiry(MessageFrame frame) {
+	/**
+	 * Returns the expiry to be used for a new contract. Climbs the {@link MessageFrame} and searches for the parent
+	 * {@link com.hedera.services.store.contracts.HederaWorldState.WorldStateAccount}. The expiry to be used is
+	 * the expiry of the first account found in the stack
+	 * @param frame Current message frame
+	 * @return Expiry to be used for new contracts
+	 */
+	public static long computeExpiryForNewContract(MessageFrame frame) {
 		long expiry = 0;
 		HederaWorldState.WorldStateAccount hederaAccount;
 		Iterator<MessageFrame> framesIterator = frame.getMessageFrameStack().iterator();

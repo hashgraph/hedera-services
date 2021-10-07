@@ -42,6 +42,10 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.Set;
 
+/**
+ * Extension of the base {@link EvmTxProcessor} that provides interface for executing
+ * {@link com.hederahashgraph.api.proto.java.ContractCreateTransactionBody} transactions
+ */
 @Singleton
 public class CreateEvmTxProcessor extends EvmTxProcessor {
 

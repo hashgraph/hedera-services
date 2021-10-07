@@ -47,6 +47,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LOCAL_CALL_MOD
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 
+/**
+ * Endpoint for executing static EVM calls. The singleton wraps {@link CallLocalEvmTxProcessor} providing interface
+ * to {@link com.hedera.services.queries.contract.ContractCallLocalAnswer} and
+ * {@link com.hedera.services.fees.calculation.contract.queries.ContractCallLocalResourceUsage}
+ */
 @Singleton
 public class CallLocalExecutor {
 	private static final Logger log = LogManager.getLogger(CallLocalExecutor.class);
@@ -63,6 +68,12 @@ public class CallLocalExecutor {
 		this.evmTxProcessor = evmTxProcessor;
 	}
 
+	/**
+	 * Executes the specified {@link ContractCallLocalQuery} through a static call. Parses the result from the
+	 * {@link CallLocalEvmTxProcessor} and sets the appropriate {@link com.hederahashgraph.api.proto.java.ResponseCode}
+	 * @param op the query to asnwer
+	 * @return {@link ContractCallLocalResponse} result of the execution
+	 */
 	public ContractCallLocalResponse execute(ContractCallLocalQuery op) {
 
 		try {

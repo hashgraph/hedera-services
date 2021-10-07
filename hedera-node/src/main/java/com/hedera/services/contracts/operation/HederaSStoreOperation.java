@@ -22,9 +22,9 @@ package com.hedera.services.contracts.operation;
  *
  */
 
+import com.hedera.services.contracts.gascalculator.GasCalculatorHedera_0_18_0;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
-import com.hedera.services.contracts.gascalculator.GasCalculatorHedera_0_18_0;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -41,6 +41,10 @@ import org.hyperledger.besu.evm.operation.Operation;
 import javax.inject.Inject;
 import java.util.Optional;
 
+/**
+ * Hedera adapted version of the {@link org.hyperledger.besu.evm.operation.SStoreOperation}.
+ * Gas costs are based on the expiry of the current or parent account and the provided storage bytes per hour variable
+ */
 public class HederaSStoreOperation extends AbstractOperation {
 
 	protected static final Operation.OperationResult ILLEGAL_STATE_CHANGE =
@@ -75,7 +79,7 @@ public class HederaSStoreOperation extends AbstractOperation {
 			HederaWorldState.WorldStateAccount hederaAccount =
 					((HederaWorldUpdater) frame.getWorldUpdater()).getHederaAccount(frame.getRecipientAddress());
 			long durationInSeconds = Math.max(0,
-					(hederaAccount != null ? hederaAccount.getExpiry() : HederaOperationUtil.getExpiry(frame))
+					(hederaAccount != null ? hederaAccount.getExpiry() : HederaOperationUtil.computeExpiryForNewContract(frame))
 							- frame.getBlockValues().getTimestamp());
 			long sbh = frame.getMessageFrameStack().getLast().getContextVariable("sbh");
 

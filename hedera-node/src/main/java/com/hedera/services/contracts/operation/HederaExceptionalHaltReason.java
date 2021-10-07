@@ -22,12 +22,28 @@ package com.hedera.services.contracts.operation;
  *
  */
 
+import com.hedera.services.state.merkle.MerkleAccount;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 
+/**
+ * Hedera adapted {@link ExceptionalHaltReason}
+ */
 public class HederaExceptionalHaltReason {
 
+	/**
+	 * Used when the EVM transaction accesses address that does not map to any existing (non-deleted)
+	 * account
+	 */
 	public static ExceptionalHaltReason INVALID_SOLIDITY_ADDRESS = HederaExceptionalHalt.INVALID_SOLIDITY_ADDRESS;
+	/**
+	 * Used when {@link HederaSelfDestructOperation} is used and the beneficiary is specified to be the same as the
+	 * destructed account
+	 */
 	public static ExceptionalHaltReason SELF_DESTRUCT_TO_SELF = HederaExceptionalHalt.SELF_DESTRUCT_TO_SELF;
+	/**
+	 * Used when there is no active signature for a given {@link com.hedera.services.state.merkle.MerkleAccount} that
+	 * has {@link MerkleAccount#isReceiverSigRequired()} enabled and the account receives HBars
+	 */
 	public static ExceptionalHaltReason INVALID_SIGNATURE = HederaExceptionalHalt.INVALID_SIGNATURE;
 
 	enum HederaExceptionalHalt implements ExceptionalHaltReason {

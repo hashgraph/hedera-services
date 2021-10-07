@@ -34,6 +34,11 @@ import org.hyperledger.besu.evm.operation.BalanceOperation;
 import javax.inject.Inject;
 import java.util.Optional;
 
+/**
+ * Hedera adapted version of the {@link BalanceOperation}. Performs an existence check on the requested {@link Address}
+ * Halts the execution of the EVM transaction with {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if
+ * the account does not exist or it is deleted.
+ */
 public class HederaBalanceOperation extends BalanceOperation {
 
 	@Inject

@@ -22,8 +22,8 @@ package com.hedera.services.contracts.operation;
  *
  */
 
-import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHedera_0_18_0;
+import com.hedera.services.store.contracts.HederaWorldUpdater;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -34,6 +34,13 @@ import javax.inject.Inject;
 
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
+/**
+ * Hedera adapted version of the {@link org.hyperledger.besu.evm.operation.CreateOperation}.
+ *
+ * Addresses are allocated through {@link HederaWorldUpdater#allocateNewContractAddress(Address)}
+ *
+ * Gas costs are based on the expiry of the parent and the provided storage bytes per hour variable
+ */
 public class HederaCreateOperation extends AbstractCreateOperation {
 	boolean checkSuperCost;
 
@@ -51,7 +58,7 @@ public class HederaCreateOperation extends AbstractCreateOperation {
 		final Gas memoryGasCost = gasCalculator().memoryExpansionGasCost(frame, initCodeOffset, initCodeLength);
 
 		long byteHourCostInTinybars = frame.getMessageFrameStack().getLast().getContextVariable("sbh");
-		long durationInSeconds = Math.max(0, HederaOperationUtil.getExpiry(frame) - frame.getBlockValues().getTimestamp());
+		long durationInSeconds = Math.max(0, HederaOperationUtil.computeExpiryForNewContract(frame) - frame.getBlockValues().getTimestamp());
 		long gasPrice = frame.getGasPrice().toLong();
 
 		long storageCostTinyBars = (durationInSeconds * byteHourCostInTinybars) / 3600;

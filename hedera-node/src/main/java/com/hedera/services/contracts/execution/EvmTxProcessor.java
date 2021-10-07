@@ -70,6 +70,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_G
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 
+/**
+ * Abstract processor of EVM transactions that prepares the {@link EVM} and all of the peripherals upon
+ * instantiation
+ * Provides
+ * a base{@link EvmTxProcessor#execute(Account, Address, long, long, long, Bytes, boolean, Instant, boolean, Optional)}
+ * method that handles the end-to-end execution of a EVM transaction
+ */
 abstract class EvmTxProcessor {
 
 	private static final int MAX_STACK_SIZE = 1024;
@@ -115,6 +122,20 @@ abstract class EvmTxProcessor {
 				1);
 	}
 
+	/**
+	 * Executes the {@link MessageFrame} of the EVM transaction. Returns the result as {@link TransactionProcessingResult}
+	 * @param sender The origin {@link Account} that initiates the transaction
+	 * @param receiver Receiving {@link Address}. For Create transactions, the newly created Contract address
+	 * @param gasPrice GasPrice to use for gas calculations
+	 * @param providedGasLimit Externally provided gas limit
+	 * @param value Evm transaction value (HBars)
+	 * @param payload Transaction payload. For Create transactions, the bytecode + constructor arguments
+	 * @param contractCreation Whether or not this is a contract creation transaction
+	 * @param consensusTime Current consensus time
+	 * @param isStatic Whether or not the execution is static
+	 * @param expiry In the case of Create transactions, the expiry of the top-level contract being created
+	 * @return the result of the EVM execution returned as {@link TransactionProcessingResult}
+	 */
 	protected TransactionProcessingResult execute(Account sender, Address receiver, long gasPrice,
 												  long providedGasLimit, long value, Bytes payload, boolean contractCreation,
 												  Instant consensusTime, boolean isStatic, Optional<Long> expiry) {

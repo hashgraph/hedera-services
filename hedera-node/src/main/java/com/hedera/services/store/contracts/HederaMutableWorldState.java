@@ -30,6 +30,9 @@ import org.hyperledger.besu.evm.worldstate.WorldView;
 
 import java.util.List;
 
+/**
+ * Hedera adapted interface for a view over the accounts of the world state and methods for persisting state changes
+ */
 public interface HederaMutableWorldState extends WorldState, WorldView {
 
 	/**

@@ -28,6 +28,9 @@ import org.hyperledger.besu.evm.frame.BlockValues;
 
 import java.util.Optional;
 
+/**
+ * Hedera adapted {@link BlockValues}
+ */
 public class HederaBlockValues implements BlockValues {
 
 	protected final long gasLimit;

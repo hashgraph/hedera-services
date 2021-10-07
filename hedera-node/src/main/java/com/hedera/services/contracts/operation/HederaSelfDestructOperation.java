@@ -36,6 +36,16 @@ import org.jetbrains.annotations.NotNull;
 import javax.inject.Inject;
 import java.util.Optional;
 
+/**
+ * Hedera adapted version of the {@link SelfDestructOperation}.
+ *
+ * Performs an existence check on the beneficiary {@link Address}
+ * Halts the execution of the EVM transaction with {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if
+ * the account does not exist or it is deleted.
+ *
+ * Halts the execution of the EVM transaction with {@link HederaExceptionalHaltReason#SELF_DESTRUCT_TO_SELF} if the
+ * beneficiary address is the same as the address being destructed
+ */
 public class HederaSelfDestructOperation extends SelfDestructOperation {
 
 	@Inject

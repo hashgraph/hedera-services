@@ -100,7 +100,7 @@ class HederaCreateOperationTest {
 		
 		var hederaOPUtilMock = mockStatic(HederaOperationUtil.class);
 		hederaOPUtilMock.when( () -> {
-			HederaOperationUtil.getExpiry(any());
+			HederaOperationUtil.computeExpiryForNewContract(any());
 		}).thenReturn(100L);
 		given(gasCalculator.createOperationGasCost(any())).willReturn(gas);
 		given(gasCalculator.memoryExpansionGasCost(any(), anyLong(), anyLong())).willReturn(gas);

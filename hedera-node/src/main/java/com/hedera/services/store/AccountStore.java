@@ -111,6 +111,18 @@ public class AccountStore {
 		return account;
 	}
 
+	/**
+	 * Returns a model of the requested entity. The method is to be used for loading both Accounts and Contracts as
+	 * it does not validate the type of the entity. Additional validation is to be performed if the consumer must
+	 * validate the type of the entity.
+	 *
+	 * @param id Id of the requested entity
+	 * @param explicitResponseCode The explicit {@link ResponseCodeEnum} to be returned in the case of the entity not
+	 *                               being found or deleted
+	 * @param nonExistingCode The {@link ResponseCodeEnum} to be used in the case of the entity being non-existing
+	 * @param deletedCode The {@link ResponseCodeEnum} to be used in the case of the entity being deleted
+	 * @return usable model of the entity if available
+	 */
 	private Account loadEntityOrFailWith(Id id, @Nullable ResponseCodeEnum explicitResponseCode, ResponseCodeEnum nonExistingCode, ResponseCodeEnum deletedCode) {
 		final var key = EntityNum.fromModel(id);
 		final var merkleAccount = accounts.get().get(key);

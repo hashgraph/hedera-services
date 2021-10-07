@@ -36,6 +36,10 @@ import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
 
 import javax.inject.Inject;
 
+/**
+ * Provides Hedera adapted gas cost lookups and calculations used during transaction processing.
+ * Maps the gas costs of the Smart Contract Service including and after 0.19.0 release
+ */
 public class GasCalculatorHedera_0_19_0 extends LondonGasCalculator {
 
 	private static final int LOG_CONTRACT_ID_SIZE = 24;

@@ -23,7 +23,9 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.contracts.sources.SoliditySigsVerifier;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityIdUtils;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -33,6 +35,17 @@ import javax.inject.Inject;
 import java.util.Optional;
 import java.util.Set;
 
+/**
+ * Hedera adapted version of the {@link CallCodeOperation}.
+ *
+ * Performs an existence check on the {@link Address} to be called
+ * Halts the execution of the EVM transaction with {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if
+ * the account does not exist or it is deleted.
+ *
+ * If the target {@link Address} has {@link MerkleAccount#isReceiverSigRequired()} set to true, verification of the
+ * provided signature is performed. If the signature is not
+ * active, the execution is halted with {@link HederaExceptionalHaltReason#INVALID_SIGNATURE}.
+ */
 public class HederaCallCodeOperation extends CallCodeOperation {
 	private final SoliditySigsVerifier sigsVerifier;
 

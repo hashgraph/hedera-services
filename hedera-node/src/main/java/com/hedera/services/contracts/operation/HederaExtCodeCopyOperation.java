@@ -34,6 +34,14 @@ import java.util.Optional;
 
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
+/**
+ * Hedera adapted version of the {@link ExtCodeCopyOperation}.
+ *
+ * Performs an existence check on the requested {@link Address}
+ * Halts the execution of the EVM transaction with {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if
+ * the account does not exist or it is deleted.
+ *
+ */
 public class HederaExtCodeCopyOperation extends ExtCodeCopyOperation {
 
 	@Inject
