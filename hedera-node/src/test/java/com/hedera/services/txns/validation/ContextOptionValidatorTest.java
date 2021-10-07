@@ -58,8 +58,10 @@ import java.util.Optional;
 
 import static com.hedera.services.utils.EntityNum.fromContractId;
 import static com.hedera.test.utils.IdUtils.asFile;
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -654,5 +656,16 @@ class ContextOptionValidatorTest {
 	void rejectsInvalidMetadata() {
 		given(dynamicProperties.maxNftMetadataBytes()).willReturn(2);
 		assertEquals(METADATA_TOO_LONG, subject.nftMetadataCheck(new byte[]{1, 2, 3, 4}));
+	}
+
+	@Test
+	void acceptsValidQueryRange() {
+		given(dynamicProperties.maxNftQueryRange()).willReturn(10L);
+		assertEquals(OK, subject.nftMaxQueryRangeCheck(0, 9));
+	}
+
+	@Test
+	void rejectsDecodeEmptyKey() {
+		assertFailsWith(() -> subject.attemptToDecodeOrThrow(Key.getDefaultInstance(), BAD_ENCODING), BAD_ENCODING);
 	}
 }
