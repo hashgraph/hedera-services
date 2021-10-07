@@ -106,7 +106,7 @@ public class AccountStore {
 		account.setOwnedNfts(merkleAccount.getNftsOwned());
 		account.setMaxAutomaticAssociations(merkleAccount.getMaxAutomaticAssociations());
 		account.setAlreadyUsedAutomaticAssociations(merkleAccount.getAlreadyUsedAutoAssociations());
-
+		account.setSmartContract(merkleAccount.isSmartContract());
 		return account;
 	}
 
@@ -127,6 +127,7 @@ public class AccountStore {
 		mutableAccount.setNftsOwned(account.getOwnedNfts());
 		mutableAccount.setMaxAutomaticAssociations(account.getMaxAutomaticAssociations());
 		mutableAccount.setAlreadyUsedAutomaticAssociations(account.getAlreadyUsedAutomaticAssociations());
+		mutableAccount.setSmartContract(account.isSmartContract());
 	}
 
 	private void validateUsable(MerkleAccount merkleAccount, @Nullable ResponseCodeEnum explicitResponse) {
