@@ -1,20 +1,24 @@
-/*
- * -
+package com.hedera.services.store.models;
+
+/*-
  * ‌
  * Hedera Services Node
+ * ​
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-
-package com.hedera.services.store.models;
 
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -26,9 +30,9 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class TopicConversionTest {
-	final JKey SUBMIT_KEY = TxnHandlingScenario.MISC_TOPIC_SUBMIT_KT.asJKeyUnchecked();
-	final JKey ADMIN_KEY = TxnHandlingScenario.MISC_TOPIC_ADMIN_KT.asJKeyUnchecked();
-	
+	private static final JKey SUBMIT_KEY = TxnHandlingScenario.MISC_TOPIC_SUBMIT_KT.asJKeyUnchecked();
+	private static final JKey ADMIN_KEY = TxnHandlingScenario.MISC_TOPIC_ADMIN_KT.asJKeyUnchecked();
+
 	@Test
 	void fromMerkle() {
 		final var merkle = new MerkleTopic();
@@ -40,7 +44,7 @@ class TopicConversionTest {
 		merkle.setAutoRenewDurationSeconds(100);
 		merkle.setExpirationTimestamp(RichInstant.MISSING_INSTANT);
 		merkle.setAutoRenewAccountId(EntityId.MISSING_ENTITY_ID);
-		
+
 		final var mappedModel = TopicConversion.fromMerkle(merkle, Id.DEFAULT);
 		assertEquals(Id.DEFAULT, mappedModel.getId());
 		assertEquals(10, mappedModel.getSequenceNumber());
@@ -63,7 +67,7 @@ class TopicConversionTest {
 		model.setAutoRenewDurationSeconds(100);
 		model.setExpirationTimestamp(RichInstant.MISSING_INSTANT);
 		model.setAutoRenewAccountId(EntityId.MISSING_ENTITY_ID.asId());
-		
+
 		final var mappedMerkle = TopicConversion.fromModel(model);
 		assertEquals(Id.DEFAULT.getNum(), mappedMerkle.getKey().longValue());
 		assertEquals(10, mappedMerkle.getSequenceNumber());
@@ -74,5 +78,4 @@ class TopicConversionTest {
 		assertEquals(RichInstant.MISSING_INSTANT, mappedMerkle.getExpirationTimestamp());
 		assertEquals(EntityId.MISSING_ENTITY_ID, mappedMerkle.getAutoRenewAccountId());
 	}
-	
 }

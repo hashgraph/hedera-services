@@ -1,19 +1,23 @@
 package com.hedera.services.store.models;
 
-/*
- * -
+/*-
  * ‌
  * Hedera Services Node
+ * ​
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
 
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -27,13 +31,12 @@ import java.time.Instant;
  *
  * @author Yoan Sredkov
  */
-public class Topic {
-
+public final class Topic {
 	private final Id id;
 	private String memo;
-	private JKey adminKey;
-	private JKey submitKey;
-	private Id autoRenewAccountId;
+	@Nullable private JKey adminKey;
+	@Nullable private JKey submitKey;
+	@Nullable private Id autoRenewAccountId;
 	private long autoRenewDurationSeconds;
 	private boolean deleted;
 	private boolean isNew;
@@ -47,7 +50,8 @@ public class Topic {
 
 	/**
 	 * Creates a new {@link Topic} from the given body.
-	 * Note: The created model is not added to state, and must be explicitly persisted via {@link com.hedera.services.store.TopicStore#persistNew(Topic)}
+	 * Note: The created model is not added to state, and must be explicitly persisted via {@link
+	 * com.hedera.services.store.TopicStore#persistNew(Topic)}
 	 *
 	 * @param id
 	 * 		- the id generated in the transition logic
@@ -67,13 +71,13 @@ public class Topic {
 	 * @return - the new topic
 	 */
 	public static Topic fromGrpcTopicCreate(
-			Id id,
-			@Nullable JKey submitKey,
-			@Nullable JKey adminKey,
-			@Nullable Account autoRenewAccount,
-			String memo,
-			long autoRenewPeriod,
-			Instant expirationTime) {
+			final Id id,
+			@Nullable final JKey submitKey,
+			@Nullable final JKey adminKey,
+			@Nullable final Account autoRenewAccount,
+			final String memo,
+			final long autoRenewPeriod,
+			final Instant expirationTime) {
 		final var topic = new Topic(id);
 
 		topic.setMemo(memo);
@@ -87,7 +91,6 @@ public class Topic {
 		return topic;
 	}
 
-
 	public Id getId() {
 		return id;
 	}
@@ -100,27 +103,27 @@ public class Topic {
 		this.memo = memo;
 	}
 
-	public JKey getAdminKey() {
+	@Nullable public JKey getAdminKey() {
 		return adminKey;
 	}
 
-	public void setAdminKey(final JKey adminKey) {
+	public void setAdminKey(@Nullable final JKey adminKey) {
 		this.adminKey = adminKey;
 	}
 
-	public JKey getSubmitKey() {
+	@Nullable public JKey getSubmitKey() {
 		return submitKey;
 	}
 
-	public void setSubmitKey(final JKey submitKey) {
+	public void setSubmitKey(@Nullable final JKey submitKey) {
 		this.submitKey = submitKey;
 	}
 
-	public Id getAutoRenewAccountId() {
+	@Nullable public Id getAutoRenewAccountId() {
 		return autoRenewAccountId;
 	}
 
-	public void setAutoRenewAccountId(final Id autoRenewAccountId) {
+	public void setAutoRenewAccountId(@Nullable final Id autoRenewAccountId) {
 		this.autoRenewAccountId = autoRenewAccountId;
 	}
 

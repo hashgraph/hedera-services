@@ -51,9 +51,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * doStateTransition().
  */
 @Singleton
-public class TopicCreateTransitionLogic implements TransitionLogic {
-	private final Function<TransactionBody, ResponseCodeEnum> semanticCheck = this::validate;
-
+public final class TopicCreateTransitionLogic implements TransitionLogic {
 	private final AccountStore accountStore;
 	private final TopicStore topicStore;
 	private final EntityIdSource entityIdSource;
@@ -132,7 +130,7 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return semanticCheck;
+		return this::validate;
 	}
 
 	/**
@@ -143,12 +141,11 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 	 * 		- the gRPC body
 	 * @return the validity
 	 */
-	private ResponseCodeEnum validate(TransactionBody transactionBody) {
-		var op = transactionBody.getConsensusCreateTopic();
+	private ResponseCodeEnum validate(final TransactionBody transactionBody) {
+		final var op = transactionBody.getConsensusCreateTopic();
 		if (op.hasAdminKey() && !validator.hasGoodEncoding(op.getAdminKey())) {
 			return BAD_ENCODING;
 		}
 		return OK;
 	}
-
 }
