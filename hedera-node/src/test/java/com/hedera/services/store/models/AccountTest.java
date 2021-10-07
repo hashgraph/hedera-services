@@ -166,12 +166,14 @@ class AccountTest {
 		account.incrementOwnedNfts();
 		account.setMaxAutomaticAssociations(123);
 		account.setAlreadyUsedAutomaticAssociations(12);
+		account.setSmartContract(false);
 
 		subject.setExpiry(1000L);
 		subject.initBalance(100L);
 		subject.setOwnedNfts(1L);
 		subject.incrementOwnedNfts();
 		subject.setAutoAssociationMetadata(account.getAutoAssociationMetadata());
+		subject.setSmartContract(false);
 
 		// when:
 		var actualResult = subject.equals(account);
@@ -185,6 +187,7 @@ class AccountTest {
 		// and:
 		assertEquals(account.getMaxAutomaticAssociations(), subject.getMaxAutomaticAssociations());
 		assertEquals(account.getAlreadyUsedAutomaticAssociations(), subject.getAlreadyUsedAutomaticAssociations());
+		assertEquals(subject.isSmartContract(), account.isSmartContract());
 		assertTrue(actualResult);
 	}
 

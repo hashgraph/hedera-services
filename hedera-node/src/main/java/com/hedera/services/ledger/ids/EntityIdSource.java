@@ -24,6 +24,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.SwirldDualState;
 import com.swirlds.common.SwirldTransaction;
 
@@ -33,6 +34,15 @@ import java.time.Instant;
  * Defines a type able to create ids of various entities under various conditions.
  */
 public interface EntityIdSource {
+
+	/**
+	 * Returns the {@link TopicID} to use for a new topic with the given sponsor.
+	 * 
+	 * @param sponsor the sponsor of the new topic
+	 * @return an appropriate id to use
+	 */
+	TopicID newTopicId(AccountID sponsor);
+	
 	/**
 	 * Returns the {@link AccountID} to use for a new account with the given sponsor.
 	 *
