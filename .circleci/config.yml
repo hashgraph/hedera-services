@@ -1004,13 +1004,13 @@ workflows:
                 at: /
 
   GCP-Weekly-Services-Query-Restart-Performance-6N-6C:
-    triggers:
-      - schedule:
-          cron: "0 6 * * 2"
-          filters:
-            branches:
-              only:
-                - master
+#    triggers:
+#      - schedule:
+#          cron: "0 6 * * 2"
+#          filters:
+#            branches:
+#              only:
+#                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1050,13 +1050,13 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Comp-Restart-Performance-Random-6N-6C:
-#    triggers:
-#      - schedule:
-#          cron: "40 4 * * *"
-#          filters:
-#            branches:
-#              only:
-#                - master
+    triggers:
+      - schedule:
+          cron: "40 4 * * *"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
