@@ -66,7 +66,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
@@ -117,124 +116,120 @@ abstract class EvmTxProcessor {
 	}
 
 	protected TransactionProcessingResult execute(Account sender, Address receiver, long gasPrice,
-			long providedGasLimit, long value, Bytes payload, boolean contractCreation,
-			Instant consensusTime, boolean isStatic, Optional<Long> expiry) {
-		try {
-			final long gasLimit = providedGasLimit > dynamicProperties.maxGas()
-					? dynamicProperties.maxGas()
-					: providedGasLimit;
-			final Wei gasCost = Wei.of(Math.multiplyExact(gasLimit, gasPrice));
-			final Wei upfrontCost = gasCost.add(value);
-			final Gas intrinsicGas =
-					gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
-			final var updater = worldState.updater();
+												  long providedGasLimit, long value, Bytes payload, boolean contractCreation,
+												  Instant consensusTime, boolean isStatic, Optional<Long> expiry) {
+		final long gasLimit = providedGasLimit > dynamicProperties.maxGas()
+				? dynamicProperties.maxGas()
+				: providedGasLimit;
+		final Wei gasCost = Wei.of(Math.multiplyExact(gasLimit, gasPrice));
+		final Wei upfrontCost = gasCost.add(value);
+		final Gas intrinsicGas =
+				gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
+		final var updater = worldState.updater();
 
-			if (!isStatic) {
-				validateFalse(upfrontCost.compareTo(Wei.of(sender.getBalance())) > 0,
-						ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
-				if (intrinsicGas.toLong() > gasLimit) {
-					throw new InvalidTransactionException(
-							gasLimit < dynamicProperties.maxGas()
-									? INSUFFICIENT_GAS
-									: MAX_GAS_LIMIT_EXCEEDED);
-				}
+		if (!isStatic) {
+			validateFalse(upfrontCost.compareTo(Wei.of(sender.getBalance())) > 0,
+					ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
+			if (intrinsicGas.toLong() > gasLimit) {
+				throw new InvalidTransactionException(
+						gasLimit < dynamicProperties.maxGas()
+								? INSUFFICIENT_GAS
+								: MAX_GAS_LIMIT_EXCEEDED);
 			}
+		}
 
-			final Address coinbase = Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress();
-			final HederaBlockValues blockValues = new HederaBlockValues(gasLimit,
-					consensusTime.getEpochSecond());
-			Address senderEvmAddress = sender.getId().asEvmAddress();
-			final MutableAccount mutableSender = updater.getOrCreateSenderAccount(senderEvmAddress).getMutable();
-			if (!isStatic) {
-				mutableSender.decrementBalance(gasCost);
-			}
+		final Address coinbase = Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress();
+		final HederaBlockValues blockValues = new HederaBlockValues(gasLimit,
+				consensusTime.getEpochSecond());
+		Address senderEvmAddress = sender.getId().asEvmAddress();
+		final MutableAccount mutableSender = updater.getOrCreateSenderAccount(senderEvmAddress).getMutable();
+		if (!isStatic) {
+			mutableSender.decrementBalance(gasCost);
+		}
 
-			final Gas gasAvailable = Gas.of(gasLimit).minus(intrinsicGas);
-			final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
+		final Gas gasAvailable = Gas.of(gasLimit).minus(intrinsicGas);
+		final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
 
-			final var stackedUpdater = updater.updater();
-			Wei valueAsWei = Wei.of(value);
-			final MessageFrame.Builder commonInitialFrame =
-					MessageFrame.builder()
-							.messageFrameStack(messageFrameStack)
-							.maxStackSize(MAX_STACK_SIZE)
-							.worldUpdater(stackedUpdater)
-							.initialGas(gasAvailable)
-							.originator(senderEvmAddress)
-							.gasPrice(Wei.of(gasPrice))
-							.sender(senderEvmAddress)
-							.value(valueAsWei)
-							.apparentValue(valueAsWei)
-							.blockValues(blockValues)
-							.depth(0)
-							.completer(__ -> {
-							})
-							.isStatic(isStatic)
-							.miningBeneficiary(coinbase)
-							.blockHashLookup(h -> null)
-							.contextVariables(Map.of(
-									"sbh", storageByteHoursTinyBarsGiven(consensusTime),
-									"HederaFunctionality", getFunctionType(),
-									"expiry", expiry));
+		final var stackedUpdater = updater.updater();
+		Wei valueAsWei = Wei.of(value);
+		final MessageFrame.Builder commonInitialFrame =
+				MessageFrame.builder()
+						.messageFrameStack(messageFrameStack)
+						.maxStackSize(MAX_STACK_SIZE)
+						.worldUpdater(stackedUpdater)
+						.initialGas(gasAvailable)
+						.originator(senderEvmAddress)
+						.gasPrice(Wei.of(gasPrice))
+						.sender(senderEvmAddress)
+						.value(valueAsWei)
+						.apparentValue(valueAsWei)
+						.blockValues(blockValues)
+						.depth(0)
+						.completer(__ -> {
+						})
+						.isStatic(isStatic)
+						.miningBeneficiary(coinbase)
+						.blockHashLookup(h -> null)
+						.contextVariables(Map.of(
+								"sbh", storageByteHoursTinyBarsGiven(consensusTime),
+								"HederaFunctionality", getFunctionType(),
+								"expiry", expiry));
 
-			final MessageFrame initialFrame = buildInitialFrame(commonInitialFrame,
-					updater,
-					receiver, payload);
-			messageFrameStack.addFirst(initialFrame);
+		final MessageFrame initialFrame = buildInitialFrame(commonInitialFrame,
+				updater,
+				receiver, payload);
+		messageFrameStack.addFirst(initialFrame);
 
-			while (!messageFrameStack.isEmpty()) {
-				process(messageFrameStack.peekFirst(), new HederaTracer());
-			}
+		while (!messageFrameStack.isEmpty()) {
+			process(messageFrameStack.peekFirst(), new HederaTracer());
+		}
 
-			if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS && !isStatic) {
-				stackedUpdater.commit();
-			}
+		if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS && !isStatic) {
+			stackedUpdater.commit();
+		}
 
-			Gas gasUsedByTransaction = Gas.of(gasLimit).minus(initialFrame.getRemainingGas());
-			/* Return leftover gas */
-			final Gas selfDestructRefund =
-					gasCalculator.getSelfDestructRefundAmount().times(initialFrame.getSelfDestructs().size()).min(
-							gasUsedByTransaction.dividedBy(gasCalculator.getMaxRefundQuotient()));
-			gasUsedByTransaction = gasUsedByTransaction.minus(selfDestructRefund);
+		Gas gasUsedByTransaction = Gas.of(gasLimit).minus(initialFrame.getRemainingGas());
+		/* Return leftover gas */
+		final Gas selfDestructRefund =
+				gasCalculator.getSelfDestructRefundAmount().times(initialFrame.getSelfDestructs().size()).min(
+						gasUsedByTransaction.dividedBy(gasCalculator.getMaxRefundQuotient()));
+		gasUsedByTransaction = gasUsedByTransaction.minus(selfDestructRefund);
 
-			if (!isStatic) {
-				// return gas price to accounts
-				final Gas refunded = Gas.of(gasLimit).minus(gasUsedByTransaction).plus(initialFrame.getGasRefund());
-				final Wei refundedWei = refunded.priceFor(Wei.of(gasPrice));
+		if (!isStatic) {
+			// return gas price to accounts
+			final Gas refunded = Gas.of(gasLimit).minus(gasUsedByTransaction).plus(initialFrame.getGasRefund());
+			final Wei refundedWei = refunded.priceFor(Wei.of(gasPrice));
 
-				mutableSender.incrementBalance(refundedWei);
+			mutableSender.incrementBalance(refundedWei);
 
-				/* Send TX fees to coinbase */
-				final var mutableCoinbase = updater.getOrCreate(coinbase).getMutable();
-				final Gas coinbaseFee = Gas.of(gasLimit).minus(refunded);
+			/* Send TX fees to coinbase */
+			final var mutableCoinbase = updater.getOrCreate(coinbase).getMutable();
+			final Gas coinbaseFee = Gas.of(gasLimit).minus(refunded);
 
-				mutableCoinbase.incrementBalance(coinbaseFee.priceFor(Wei.of(gasPrice)));
-				initialFrame.getSelfDestructs().forEach(updater::deleteAccount);
+			mutableCoinbase.incrementBalance(coinbaseFee.priceFor(Wei.of(gasPrice)));
+			initialFrame.getSelfDestructs().forEach(updater::deleteAccount);
 
-				/* Commit top level Updater */
-				updater.commit();
-			}
+			/* Commit top level Updater */
+			updater.commit();
+		}
 
-			/* Externalise Result */
-			if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
-				final List<Log> logs = initialFrame.getLogs();
-				final var bloom = LogsBloomFilter.builder().insertLogs(logs).build();
-				return TransactionProcessingResult.successful(
-						logs,
-						Optional.of(bloom),
-						gasUsedByTransaction.toLong(),
-						gasPrice,
-						initialFrame.getOutputData(),
-						initialFrame.getRecipientAddress());
-			} else {
-				return TransactionProcessingResult.failed(
-						gasUsedByTransaction.toLong(),
-						gasPrice,
-						initialFrame.getRevertReason(),
-						initialFrame.getExceptionalHaltReason());
-			}
-		} catch (RuntimeException re) {
-			throw new InvalidTransactionException("Internal Error in Besu - " + re, FAIL_INVALID);
+		/* Externalise Result */
+		if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
+			final List<Log> logs = initialFrame.getLogs();
+			final var bloom = LogsBloomFilter.builder().insertLogs(logs).build();
+			return TransactionProcessingResult.successful(
+					logs,
+					Optional.of(bloom),
+					gasUsedByTransaction.toLong(),
+					gasPrice,
+					initialFrame.getOutputData(),
+					initialFrame.getRecipientAddress());
+		} else {
+			return TransactionProcessingResult.failed(
+					gasUsedByTransaction.toLong(),
+					gasPrice,
+					initialFrame.getRevertReason(),
+					initialFrame.getExceptionalHaltReason());
 		}
 	}
 
@@ -259,7 +254,7 @@ abstract class EvmTxProcessor {
 	protected abstract HederaFunctionality getFunctionType();
 
 	protected abstract MessageFrame buildInitialFrame(MessageFrame.Builder baseInitialFrame,
-			HederaWorldState.Updater updater, Address to, Bytes payload);
+													  HederaWorldState.Updater updater, Address to, Bytes payload);
 
 	protected void process(final MessageFrame frame, final OperationTracer operationTracer) {
 		final AbstractMessageProcessor executor = getMessageProcessor(frame.getType());

@@ -102,6 +102,8 @@ class CallLocalEvmTxProcessorTest {
 
 	@BeforeEach
 	private void setup() {
+		CommonProcessorSetup.setup(gasCalculator);
+
 		callLocalEvmTxProcessor = new CallLocalEvmTxProcessor(worldState, hbarCentExchange, usagePricesProvider,
 				globalDynamicProperties, gasCalculator, operations);
 	}
@@ -174,6 +176,8 @@ class CallLocalEvmTxProcessorTest {
 
 		var evmAccount = mock(EvmAccount.class);
 
+		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(Gas.ZERO);
+
 		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(evmAccount);
 		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()).getMutable()).willReturn(mock(MutableAccount.class));
 		given(worldState.updater().get(any())).willReturn(mock(org.hyperledger.besu.evm.account.Account.class));
@@ -184,6 +188,9 @@ class CallLocalEvmTxProcessorTest {
 		var senderMutableAccount = mock(MutableAccount.class);
 		given(senderMutableAccount.decrementBalance(any())).willReturn(Wei.of(1234L));
 		given(senderMutableAccount.incrementBalance(any())).willReturn(Wei.of(1500L));
+
+		given(gasCalculator.getSelfDestructRefundAmount()).willReturn(Gas.ZERO);
+		given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
 
 		given(updater.getSenderAccount(any())).willReturn(evmAccount);
 		given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);

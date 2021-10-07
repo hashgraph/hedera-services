@@ -21,6 +21,7 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaWorldState;
@@ -47,6 +48,7 @@ import static org.apache.commons.lang3.ArrayUtils.isNotEmpty;
 public class ContractCallTransitionLogic implements TransitionLogic {
 
 	private final AccountStore accountStore;
+	private final EntityIdSource ids;
 	private final TransactionContext txnCtx;
 	private final HederaWorldState worldState;
 	private final TransactionRecordService recordService;
@@ -58,6 +60,7 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 	@Inject
 	public ContractCallTransitionLogic(
 			TransactionContext txnCtx,
+			EntityIdSource ids,
 			AccountStore accountStore,
 			HederaWorldState worldState,
 			TransactionRecordService recordService,
@@ -65,6 +68,7 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 			ServicesRepositoryRoot repositoryRoot
 	) {
 		this.txnCtx = txnCtx;
+		this.ids = ids;
 		this.worldState = worldState;
 		this.accountStore = accountStore;
 		this.recordService = recordService;
@@ -106,6 +110,16 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 
 		/* --- Externalise result --- */
 		recordService.externaliseEvmCallTransaction(result);
+	}
+
+	@Override
+	public void reclaimCreatedIds() {
+		ids.reclaimProvisionalIds();
+	}
+
+	@Override
+	public void resetCreatedIds() {
+		ids.resetProvisionalIds();
 	}
 
 	@Override

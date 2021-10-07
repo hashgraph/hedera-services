@@ -33,6 +33,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.EMPTY_CONSTRUCTOR;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
@@ -46,6 +47,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ERROR_DECODING_BYTESTRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
@@ -77,6 +79,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 
 	private List<HapiApiSpec> negativeTests() {
 		return Arrays.asList(
+				insufficientPayerBalanceUponCreation(),
 				rejectsInvalidMemo(),
 				rejectsInsufficientFee(),
 				rejectsInvalidBytecode(),
@@ -84,6 +87,23 @@ public class ContractCreateSuite extends HapiApiSuite {
 				createFailsIfMissingSigs(),
 				rejectsInsufficientGas()
 		);
+	}
+
+	private HapiApiSpec insufficientPayerBalanceUponCreation() {
+		return defaultHapiSpec("InsufficientPayerBalanceUponCreation")
+				.given(
+						cryptoCreate("bankrupt")
+								.balance(0L),
+						fileCreate("contractCode")
+								.path(EMPTY_CONSTRUCTOR)
+				)
+				.when()
+				.then(
+						contractCreate("defaultContract")
+								.bytecode("contractCode")
+								.payingWith("bankrupt")
+								.hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)
+				);
 	}
 
 	private HapiApiSpec createsVanillaContract() {

@@ -34,6 +34,7 @@ import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -96,9 +97,12 @@ class CreateEvmTxProcessorTest {
 	private final Account receiver = new Account(new Id(0, 0, 1006));
 	private final Instant consensusTime = Instant.now();
 	private final long expiry = 123456L;
+	private final int MAX_GAS_LIMIT = 10_000_000;
 
 	@BeforeEach
 	private void setup() {
+		CommonProcessorSetup.setup(gasCalculator);
+
 		createEvmTxProcessor = new CreateEvmTxProcessor(worldState, hbarCentExchange, usagePricesProvider,
 				globalDynamicProperties, gasCalculator, operations);
 	}
@@ -158,10 +162,75 @@ class CreateEvmTxProcessorTest {
 		assertEquals(transaction.getValue(), buildMessageFrame.getApparentValue());
 	}
 
+	@Test
+	void throwsWhenSenderCannotCoverUpfrontCost() {
+		// given:
+		givenInvalidMock();
+
+		// when:
+		final var result = assertThrows(
+				InvalidTransactionException.class,
+				() -> createEvmTxProcessor
+						.execute(sender, receiver.getId().asEvmAddress(), 33_333L, 1234L, Bytes.EMPTY, consensusTime, expiry));
+
+		// then:
+		assertEquals(ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE, result.getResponseCode());
+	}
+
+	@Test
+	void throwsWhenIntrinsicGasCostExceedsGasLimit() {
+		// given:
+		givenInvalidMock();
+		// and:
+		sender.initBalance(200_000);
+
+		// when:
+		final var result = assertThrows(
+				InvalidTransactionException.class,
+				() -> createEvmTxProcessor
+						.execute(sender, receiver.getId().asEvmAddress(), 33_333L, 1234L, Bytes.EMPTY, consensusTime, expiry));
+
+		// then:
+		assertEquals(ResponseCodeEnum.INSUFFICIENT_GAS, result.getResponseCode());
+	}
+
+	@Test
+	void throwsWhenIntrinsicGasCostExceedsGasLimitAndGasLimitIsEqualToMaxGasLimit() {
+		// given:
+		givenInvalidMock();
+		// and:
+		sender.initBalance(100_000_000);
+		// and:
+		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(Gas.of(MAX_GAS_LIMIT + 1));
+
+		// when:
+		final var result = assertThrows(
+				InvalidTransactionException.class,
+				() -> createEvmTxProcessor
+						.execute(sender, receiver.getId().asEvmAddress(), MAX_GAS_LIMIT, 1234L, Bytes.EMPTY, consensusTime, expiry));
+
+		// then:
+		assertEquals(ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED, result.getResponseCode());
+	}
+
+	private void givenInvalidMock() {
+		// given:
+		var feeData = mock(FeeData.class);
+		given(feeData.getServicedata()).willReturn(mock(FeeComponents.class));
+		given(usagePricesProvider.defaultPricesGiven(HederaFunctionality.ContractCreate, Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build())).willReturn(feeData);
+		given(hbarCentExchange.rate(Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build())).willReturn(exchangeRate);
+		given(exchangeRate.getHbarEquiv()).willReturn(1);
+		given(exchangeRate.getCentEquiv()).willReturn(1);
+		// and:
+		given(worldState.updater()).willReturn(updater);
+		given(globalDynamicProperties.maxGas()).willReturn(MAX_GAS_LIMIT);
+		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(Gas.of(100_000L));
+	}
+
 	private void givenValidMock() {
 		given(worldState.updater()).willReturn(updater);
 		given(worldState.updater().updater()).willReturn(updater);
-		given(globalDynamicProperties.maxGas()).willReturn(10000000);
+		given(globalDynamicProperties.maxGas()).willReturn(MAX_GAS_LIMIT);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 
 		var evmAccount = mock(EvmAccount.class);
@@ -170,12 +239,17 @@ class CreateEvmTxProcessorTest {
 		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()).getMutable()).willReturn(mock(MutableAccount.class));
 		given(worldState.updater()).willReturn(updater);
 
+		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(Gas.ZERO);
 
 		var senderMutableAccount = mock(MutableAccount.class);
 		given(senderMutableAccount.decrementBalance(any())).willReturn(Wei.of(1234L));
 		given(senderMutableAccount.incrementBalance(any())).willReturn(Wei.of(1500L));
 		given(senderMutableAccount.getNonce()).willReturn(0L);
 		given(senderMutableAccount.getCode()).willReturn(Bytes.EMPTY);
+
+		given(gasCalculator.codeDepositGasCost(0)).willReturn(Gas.ZERO);
+		given(gasCalculator.getSelfDestructRefundAmount()).willReturn(Gas.ZERO);
+		given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
 
 		given(updater.getSenderAccount(any())).willReturn(evmAccount);
 		given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
