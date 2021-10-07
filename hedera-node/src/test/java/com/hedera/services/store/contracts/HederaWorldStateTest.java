@@ -90,7 +90,7 @@ class HederaWorldStateTest {
 		/* happy path with 0 existing accounts */
 		given(ledger.exists(any())).willReturn(true);
 		subject.customizeSponsoredAccounts();
-		verify(ledger, never()).customize(any(), any()); // will do 0 iterations
+		verify(ledger, never()).customizePotentiallyDeleted(any(), any()); // will do 0 iterations
 
 		/* happy path with 1 existing account */
 		final var merkleAcc = mock(MerkleAccount.class);
@@ -102,7 +102,7 @@ class HederaWorldStateTest {
 		updater.getSponsorMap().put(Address.RIPEMD160, Address.RIPEMD160);
 		updater.commit();
 		subject.customizeSponsoredAccounts();
-		verify(ledger).customize(any(), any());
+		verify(ledger).customizePotentiallyDeleted(any(), any());
 
 		/* sad path with existing but not accessible account */
 		updater.getSponsorMap().put(Address.RIPEMD160, Address.RIPEMD160);
