@@ -14,7 +14,7 @@
                         "FileGetContents", "FileGetInfo",
                         "ContractUpdate", "ContractDelete", "ContractGetInfo", "ContractGetBytecode", "ContractGetRecords", "ContractCallLocal", 
                         "TransactionGetRecord",
-                        "GetVersionInfo", "NetworkGetExecutionTime"
+                        "GetVersionInfo"
                     ]
                 },
                 {
@@ -25,7 +25,7 @@
                     "opsPerSec": 6000,
                     "operations": [
                         "ScheduleSign", 
-                        "TokenCreate", "TokenDelete", "TokenMint", "TokenBurn", 
+                        "TokenCreate", "TokenDelete", "TokenMint", "TokenBurn", "TokenPause", "TokenUnpause",
                         "TokenUpdate", "TokenFeeScheduleUpdate", "TokenAssociateToAccount", "TokenAccountWipe",
                         "TokenDissociateFromAccount", "TokenFreezeAccount", "TokenUnfreezeAccount", "TokenGrantKycToAccount", "TokenRevokeKycFromAccount"
                     ]

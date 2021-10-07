@@ -92,6 +92,24 @@ class ExpandHandleSpanMapAccessorTest {
 	}
 
 	@Test
+	void testsForTokenPauseMetaAsExpected() {
+		final var tokenPauseMeta = TOKEN_OPS_USAGE_UTILS.tokenPauseUsageFrom();
+
+		subject.setTokenPauseMeta(accessor, tokenPauseMeta);
+
+		assertEquals(24,  subject.getTokenPauseMeta(accessor).getBpt());
+	}
+
+	@Test
+	void testsForTokenUnpauseMetaAsExpected() {
+		final var tokenUnpauseMeta = TOKEN_OPS_USAGE_UTILS.tokenUnpauseUsageFrom();
+
+		subject.setTokenUnpauseMeta(accessor, tokenUnpauseMeta);
+
+		assertEquals(24,  subject.getTokenUnpauseMeta(accessor).getBpt());
+	}
+
+	@Test
 	void testsForCryptoCreateMetaAsExpected() {
 		var opMeta = new CryptoCreateMeta.Builder()
 				.baseSize(1_234)

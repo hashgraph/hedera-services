@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
+import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -64,9 +65,11 @@ class GetTokenInfoResourceUsageTest {
 			.setWipeKey(TxnHandlingScenario.TOKEN_WIPE_KT.asKey())
 			.setSupplyKey(TxnHandlingScenario.TOKEN_SUPPLY_KT.asKey())
 			.setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asKey())
+			.setPauseKey(TxnHandlingScenario.TOKEN_PAUSE_KT.asKey())
 			.setSymbol(symbol)
 			.setName(name)
 			.setMemo(memo)
+			.setPauseStatus(TokenPauseStatus.Paused)
 			.setAutoRenewAccount(IdUtils.asAccount("1.2.3"))
 			.build();
 	private static final Query satisfiableAnswerOnly = tokenInfoQuery(target, ANSWER_ONLY);
@@ -94,6 +97,7 @@ class GetTokenInfoResourceUsageTest {
 		given(estimator.givenCurrentSymbol(any())).willReturn(estimator);
 		given(estimator.givenCurrentName(any())).willReturn(estimator);
 		given(estimator.givenCurrentMemo(any())).willReturn(estimator);
+		given(estimator.givenCurrentPauseKey(any())).willReturn(estimator);
 		given(estimator.givenCurrentlyUsingAutoRenewAccount()).willReturn(estimator);
 		given(estimator.get()).willReturn(expected);
 
@@ -126,6 +130,7 @@ class GetTokenInfoResourceUsageTest {
 		assertSame(expected, usage);
 		verifyCommonCalls();
 		verify(estimator).givenCurrentAdminKey(Optional.of(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey()));
+		verify(estimator).givenCurrentPauseKey(Optional.of(TxnHandlingScenario.TOKEN_PAUSE_KT.asKey()));
 		verify(estimator).givenCurrentlyUsingAutoRenewAccount();
 	}
 
