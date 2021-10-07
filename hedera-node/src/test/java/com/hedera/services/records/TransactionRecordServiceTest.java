@@ -22,6 +22,8 @@ package com.hedera.services.records;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.contracts.execution.TransactionProcessingResult;
+import com.hedera.services.contracts.operation.HederaExceptionalHaltReason;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.models.Account;
@@ -29,8 +31,6 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
-import com.hedera.services.txns.contract.operation.HederaExceptionalHaltReason;
-import com.hedera.services.txns.contract.process.TransactionProcessingResult;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;

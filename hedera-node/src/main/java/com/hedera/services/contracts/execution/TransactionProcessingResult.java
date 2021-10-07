@@ -160,6 +160,10 @@ public class TransactionProcessingResult {
 		return haltReason;
 	}
 
+	public Optional<Bytes> getRevertReason() {
+		return revertReason;
+	}
+
 	/**
 	 * Converts the {@link TransactionProcessingResult} into {@link ContractFunctionResult} GRPC model
 	 * @return the {@link ContractFunctionResult} model to externalise

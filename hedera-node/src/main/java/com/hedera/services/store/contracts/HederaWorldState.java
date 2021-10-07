@@ -112,7 +112,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 					.expiry(sponsor.getExpiry())
 					.isSmartContract(true);
 
-			ledger.customize(newlyCreated, customizer);
+			ledger.customizePotentiallyDeleted(newlyCreated, customizer);
 		});
 		sponsorMap.clear();
 	}

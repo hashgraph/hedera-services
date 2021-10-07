@@ -169,7 +169,7 @@ xor.bin,299828
 
 ## 0.19.0 costed tests
 balance.bin,78270
-create.bin,288236
+#create.bin,186545
 exp_small.bin,285275
 extcodehash.bin,8358
 log0.bin,256247
@@ -190,4 +190,4 @@ staticcall.bin,17863
 returndatacopy.bin,100586
 returndatasize.bin,100815
 revert.bin,40531
-selfdestruct.bin,74542
+#selfdestruct.bin,103726

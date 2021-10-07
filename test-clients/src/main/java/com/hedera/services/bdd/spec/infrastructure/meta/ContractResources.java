@@ -65,6 +65,7 @@ public class ContractResources {
 	public static final String TRANSFERRING_CONTRACT = bytecodePath("TransferringContract");
 	public static final String NESTED_CHILDREN_CONTRACT = bytecodePath("NestedChildren");
 	public static final String FACTORY_SELF_DESTRUCT_CONSTRUCTOR_CONTRACT = bytecodePath("FactorySelfDestructConstructor");
+	public static final String FACTORY_QUICK_SELF_DESTRUCT_CONTRACT = bytecodePath("FactoryQuickSelfDestruct");
 
 	public static final String TWO_SSTORES = "{ \"inputs\": [ { \"internalType\": \"bytes32\", \"name\": \"_singleProp\", \"type\": \"bytes32\" } ], \"name\": \"twoSSTOREs\", \"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
@@ -431,6 +432,10 @@ public class ContractResources {
 
 	public static final String NESTED_CHILDREN_CALL_CREATE_ABI = "{ \"inputs\": [], \"name\": \"callCreate\", " +
 			"\"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
+    public static final String FACTORY_QUICK_SELF_DESTRUCT_CREATE_AND_DELETE_ABI = "{" +
+			"\"inputs\":[],\"name\":\"createAndDeleteChild\"," +
+			"\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"}";
 
 	/* ABI for FactoryContract.sol */
 	public static final String FACTORY_CONTRACT_SUCCESS = "{ \"constant\": false, \"inputs\": [], \"name\": \"deploymentSuccess\", \"outputs\": [], \"payable\": false, \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";

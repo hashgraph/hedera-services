@@ -43,10 +43,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -199,10 +201,14 @@ public class TransactionRecordService {
 				return INVALID_SIGNATURE;
 			} else if (ExceptionalHaltReason.INSUFFICIENT_GAS == haltReason) {
 				return INSUFFICIENT_GAS;
+			} else if (ExceptionalHaltReason.ILLEGAL_STATE_CHANGE == haltReason) {
+				return LOCAL_CALL_MODIFICATION_EXCEPTION;
+			} else if (result.getRevertReason().isPresent()) {
+				return CONTRACT_REVERT_EXECUTED;
 			}
 		}
 
-		return CONTRACT_REVERT_EXECUTED;
+		return CONTRACT_EXECUTION_EXCEPTION;
 	}
 
 

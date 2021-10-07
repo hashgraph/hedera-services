@@ -32,6 +32,10 @@ import org.junit.jupiter.api.Assertions;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
+import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -41,6 +45,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 
 public class CreateOperationSuite extends HapiApiSuite {
@@ -60,7 +65,8 @@ public class CreateOperationSuite extends HapiApiSuite {
 				resetOnFactoryFailureAfterDeploymentWorks(),
 				resetOnStackedFactoryFailureWorks(),
 				inheritanceOfNestedCreatedContracts(),
-				factoryAndSelfDestructInConstructorContract()
+				factoryAndSelfDestructInConstructorContract(),
+				factoryQuickSelfDestructContract()
 		);
 	}
 
@@ -83,6 +89,28 @@ public class CreateOperationSuite extends HapiApiSuite {
 						getContractBytecode(CONTRACT)
 								.hasCostAnswerPrecheck(CONTRACT_DELETED)
 				);
+	}
+
+	private HapiApiSpec factoryQuickSelfDestructContract() {
+		final var CONTRACT = "contract";
+
+		return defaultHapiSpec("FactoryQuickSelfDestructContract")
+				.given(
+						fileCreate("bytecode")
+								.path(ContractResources.FACTORY_QUICK_SELF_DESTRUCT_CONTRACT),
+						contractCreate(CONTRACT)
+								.bytecode("bytecode"))
+				.when(
+						contractCall(CONTRACT, ContractResources.FACTORY_QUICK_SELF_DESTRUCT_CREATE_AND_DELETE_ABI)
+								.via("callRecord"))
+				.then(
+						getTxnRecord("callRecord").hasPriority(
+								recordWith().contractCallResult(
+										resultWith().logs(
+												inOrder(logWith().withTopicsInOrder(
+																List.of(eventSignatureOf("ChildCreated(address)"))),
+														logWith().withTopicsInOrder(List.of(
+																eventSignatureOf("ChildDeleted()"))))))));
 	}
 
 	private HapiApiSpec inheritanceOfNestedCreatedContracts() {
@@ -172,7 +200,7 @@ public class CreateOperationSuite extends HapiApiSuite {
 						contractCreate("factoryContract").bytecode("factory")
 				).when(
 						contractCall("factoryContract", ContractResources.FACTORY_CONTRACT_FAILURE)
-								.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
+								.hasKnownStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION)
 								.via("deploymentFailureTxn"),
 						contractCall("factoryContract", ContractResources.FACTORY_CONTRACT_SUCCESS)
 								.via("deploymentSuccessTxn")
@@ -205,7 +233,7 @@ public class CreateOperationSuite extends HapiApiSuite {
 						contractCreate("factoryContract").bytecode("factory")
 				).when(
 						contractCall("factoryContract", ContractResources.FACTORY_CONTRACT_FAILURE_AFTER_DEPLOY)
-								.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
+								.hasKnownStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION)
 								.via("failureAfterDeploymentTxn"),
 						contractCall("factoryContract", ContractResources.FACTORY_CONTRACT_SUCCESS)
 								.via("deploymentSuccessTxn")
@@ -238,7 +266,7 @@ public class CreateOperationSuite extends HapiApiSuite {
 						contractCreate("factoryContract").bytecode("factory")
 				).when(
 						contractCall("factoryContract", ContractResources.FACTORY_CONTRACT_STACKED_DEPLOYMENT_FAILURE)
-								.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
+								.hasKnownStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION)
 								.via("stackedDeploymentFailureTxn"),
 						contractCall("factoryContract", ContractResources.FACTORY_CONTRACT_SUCCESS)
 								.via("deploymentSuccessTxn")
