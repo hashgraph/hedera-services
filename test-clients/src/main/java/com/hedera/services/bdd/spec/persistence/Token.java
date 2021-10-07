@@ -34,11 +34,13 @@ import static com.hedera.services.bdd.spec.persistence.Entity.UNUSED_KEY;
 import static com.hedera.services.bdd.spec.persistence.SpecKey.RegistryForms.asAdminKeyFor;
 import static com.hedera.services.bdd.spec.persistence.SpecKey.RegistryForms.asFreezeKeyFor;
 import static com.hedera.services.bdd.spec.persistence.SpecKey.RegistryForms.asKycKeyFor;
+import static com.hedera.services.bdd.spec.persistence.SpecKey.RegistryForms.asPauseKeyFor;
 import static com.hedera.services.bdd.spec.persistence.SpecKey.RegistryForms.asSupplyKeyFor;
 import static com.hedera.services.bdd.spec.persistence.SpecKey.RegistryForms.asWipeKeyFor;
 import static com.hedera.services.bdd.spec.persistence.SpecKey.adminKeyFor;
 import static com.hedera.services.bdd.spec.persistence.SpecKey.freezeKeyFor;
 import static com.hedera.services.bdd.spec.persistence.SpecKey.kycKeyFor;
+import static com.hedera.services.bdd.spec.persistence.SpecKey.pauseKeyFor;
 import static com.hedera.services.bdd.spec.persistence.SpecKey.supplyKeyFor;
 import static com.hedera.services.bdd.spec.persistence.SpecKey.wipeKeyFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
@@ -58,6 +60,7 @@ public class Token {
 	private SpecKey adminKey = UNUSED_KEY;
 	private SpecKey supplyKey = UNUSED_KEY;
 	private SpecKey freezeKey = UNUSED_KEY;
+	private SpecKey pauseKey = UNUSED_KEY;
 
 	private String tokenName = DEFAULT_HEDERA_NAME;
 	private String memo = UNSPECIFIED_MEMO;
@@ -79,6 +82,9 @@ public class Token {
 		}
 		if (freezeKey != UNUSED_KEY) {
 			freezeKey.registerWith(spec, asFreezeKeyFor(name));
+		}
+		if (pauseKey != UNUSED_KEY) {
+			pauseKey.registerWith(spec, asPauseKeyFor(name));
 		}
 		entityId.ifPresent(id -> {
 			spec.registry().saveName(name, this.tokenName);
@@ -124,6 +130,9 @@ public class Token {
 		}
 		if (supplyKey != UNUSED_KEY) {
 			op.supplyKey(supplyKeyFor(name));
+		}
+		if (pauseKey != UNUSED_KEY) {
+			op.pauseKey(pauseKeyFor(name));
 		}
 
 		return op;
@@ -175,6 +184,14 @@ public class Token {
 
 	public void setFreezeKey(SpecKey freezeKey) {
 		this.freezeKey = freezeKey;
+	}
+
+	public SpecKey getPauseKey() {
+		return pauseKey;
+	}
+
+	public void setPauseKey(SpecKey pauseKey) {
+		this.pauseKey = pauseKey;
 	}
 
 	public String getTokenName() {

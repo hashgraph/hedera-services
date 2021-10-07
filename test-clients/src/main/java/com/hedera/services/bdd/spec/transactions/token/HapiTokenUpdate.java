@@ -64,6 +64,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 	private Optional<String> newSupplyKey = Optional.empty();
 	private Optional<String> newFreezeKey = Optional.empty();
 	private Optional<String> newFeeScheduleKey = Optional.empty();
+	private Optional<String> newPauseKey = Optional.empty();
 	private Optional<String> newSymbol = Optional.empty();
 	private Optional<String> newName = Optional.empty();
 	private Optional<String> newTreasury = Optional.empty();
@@ -105,6 +106,11 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 
 	public HapiTokenUpdate feeScheduleKey(String name) {
 		newFeeScheduleKey = Optional.of(name);
+		return this;
+	}
+
+	public HapiTokenUpdate pauseKey(String name) {
+		newPauseKey = Optional.of(name);
 		return this;
 	}
 
@@ -202,6 +208,9 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 				if (info.hasFeeScheduleKey()) {
 					estimate.givenCurrentFeeScheduleKey(Optional.of(info.getFeeScheduleKey()));
 				}
+				if (info.hasPauseKey()) {
+					estimate.givenCurrentPauseKey(Optional.of(info.getPauseKey()));
+				}
 				estimate.givenCurrentExpiry(info.getExpiry().getSeconds())
 						.givenCurrentMemo(info.getMemo())
 						.givenCurrentName(info.getName())
@@ -251,6 +260,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 								newFeeScheduleKey.ifPresent(k -> b.setFeeScheduleKey(spec.registry().getKey(k)));
 							}
 							newFreezeKey.ifPresent(k -> b.setFreezeKey(spec.registry().getKey(k)));
+							newPauseKey.ifPresent(k -> b.setPauseKey(spec.registry().getKey(k)));
 							if (autoRenewAccount.isPresent()) {
 								var autoRenewId = TxnUtils.asId(autoRenewAccount.get(), spec);
 								b.setAutoRenewAccount(autoRenewId);
@@ -302,6 +312,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 		newWipeKey.ifPresent(n -> registry.saveWipeKey(token, registry.getKey(n)));
 		newKycKey.ifPresent(n -> registry.saveKycKey(token, registry.getKey(n)));
 		newFeeScheduleKey.ifPresent(n -> registry.saveFeeScheduleKey(token, registry.getKey(n)));
+		newPauseKey.ifPresent(n -> registry.savePauseKey(token, registry.getKey(n)));
 	}
 
 	@Override

@@ -50,7 +50,9 @@ import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenPauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -418,6 +420,44 @@ class SignedTxnAccessorTest {
 		assertEquals(1, expandedMeta.getNumTokens());
 		assertEquals(1070, expandedMeta.getBaseSize());
 		assertEquals(TOKEN_FUNGIBLE_COMMON, accessor.getSubType());
+	}
+
+	@Test
+	void setTokenPauseUsageMetaWorks() {
+		final var op = TokenPauseTransactionBody.newBuilder()
+				.setToken(TokenID.newBuilder().setTokenNum(123).build());
+		final var txnBody = TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder()
+								.setSeconds(now)))
+				.setTokenPause(op)
+				.build();
+		final var txn = buildTransactionFrom(txnBody);
+		final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
+		final var spanMapAccessor = accessor.getSpanMapAccessor();
+
+		final var expandedMeta = spanMapAccessor.getTokenPauseMeta(accessor);
+
+		assertEquals(24, expandedMeta.getBpt());
+	}
+
+	@Test
+	void setTokenUnpauseUsageMetaWorks() {
+		final var op = TokenUnpauseTransactionBody.newBuilder()
+				.setToken(TokenID.newBuilder().setTokenNum(123).build());
+		final var txnBody = TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder()
+								.setSeconds(now)))
+				.setTokenUnpause(op)
+				.build();
+		final var txn = buildTransactionFrom(txnBody);
+		final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
+		final var spanMapAccessor = accessor.getSpanMapAccessor();
+
+		final var expandedMeta = spanMapAccessor.getTokenUnpauseMeta(accessor);
+
+		assertEquals(24, expandedMeta.getBpt());
 	}
 
 	@Test

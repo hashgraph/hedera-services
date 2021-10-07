@@ -36,6 +36,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KYC_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAUSE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_DECIMALS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_INITIAL_SUPPLY;
@@ -107,7 +108,8 @@ public final class TokenListChecks {
 			final boolean hasWipeKey, final Key wipeKey,
 			final boolean hasSupplyKey, final Key supplyKey,
 			final boolean hasFreezeKey, final Key freezeKey,
-			final boolean hasFeeScheduleKey, final Key feeScheduleKey
+			final boolean hasFeeScheduleKey, final Key feeScheduleKey,
+			final boolean hasPauseKey, final Key pauseKey
 	) {
 		ResponseCodeEnum validity = checkAdminKey(hasAdminKey, adminKey);
 		if (validity != OK) {
@@ -135,6 +137,11 @@ public final class TokenListChecks {
 		}
 
 		validity = checkKeyOfType(hasFeeScheduleKey, feeScheduleKey, INVALID_CUSTOM_FEE_SCHEDULE_KEY);
+		if (validity != OK) {
+			return validity;
+		}
+
+		validity = checkKeyOfType(hasPauseKey, pauseKey, INVALID_PAUSE_KEY);
 		return validity;
 	}
 

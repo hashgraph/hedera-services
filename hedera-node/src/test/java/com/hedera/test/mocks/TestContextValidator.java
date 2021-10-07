@@ -20,9 +20,10 @@ package com.hedera.test.mocks;
  * ‍
  */
 
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
@@ -82,6 +83,11 @@ public enum TestContextValidator implements OptionValidator {
 
 	@Override
 	public boolean isAcceptableTransfersLength(TransferList accountAmounts) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public JKey attemptDecodeOrThrow(final Key k) {
 		throw new UnsupportedOperationException();
 	}
 

@@ -239,12 +239,14 @@ class TokenUpdateUsageTest {
 				.givenCurrentKycKey(Optional.of(oldKey))
 				.givenCurrentSupplyKey(Optional.of(oldKey))
 				.givenCurrentWipeKey(Optional.of(oldKey))
-				.givenCurrentFreezeKey(Optional.of(oldKey));
+				.givenCurrentFreezeKey(Optional.of(oldKey))
+				.givenCurrentPauseKey(Optional.of(oldKey))
+				.givenCurrentFeeScheduleKey(Optional.of(oldKey));
 	}
 
 	private long curSize(Key oldKey) {
 		return oldSymbol.length() + oldName.length() + oldMemo.length()
-				+ 5 * FeeBuilder.getAccountKeyStorageSize(oldKey);
+				+ 7 * FeeBuilder.getAccountKeyStorageSize(oldKey);
 	}
 
 	private long newRb() {

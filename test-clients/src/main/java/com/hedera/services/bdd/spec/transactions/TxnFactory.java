@@ -56,8 +56,10 @@ import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenPauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -207,6 +209,14 @@ public class TxnFactory {
 	}
 
 	public Consumer<TokenUpdateTransactionBody.Builder> defaultDef_TokenUpdateTransactionBody() {
+		return builder -> {};
+	}
+
+	public Consumer<TokenPauseTransactionBody.Builder> defaultDef_TokenPauseTransactionBody() {
+		return builder -> {};
+	}
+
+	public Consumer<TokenUnpauseTransactionBody.Builder> defaultDef_TokenUnpauseTransactionBody() {
 		return builder -> {};
 	}
 

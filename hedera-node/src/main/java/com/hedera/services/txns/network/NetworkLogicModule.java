@@ -9,9 +9,9 @@ package com.hedera.services.txns.network;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,30 +37,36 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 
 @Module
-public abstract class NetworkLogicModule {
+public final class NetworkLogicModule {
 	@Provides
 	@Singleton
-	public static Supplier<SwirldDualState> provideDualState(DualStateAccessor dualStateAccessor) {
+	public static Supplier<SwirldDualState> provideDualState(final DualStateAccessor dualStateAccessor) {
 		return dualStateAccessor::getDualState;
 	}
 
 	@Provides
 	@Singleton
-	public static FreezeTransitionLogic.LegacyFreezer provideLegacyFreezer(FreezeHandler freezeHandler) {
+	public static FreezeTransitionLogic.LegacyFreezer provideLegacyFreezer(final FreezeHandler freezeHandler) {
 		return freezeHandler::freeze;
 	}
 
 	@Provides
 	@IntoMap
 	@FunctionKey(Freeze)
-	public static List<TransitionLogic> provideFreezeLogic(FreezeTransitionLogic freezeLogic) {
+	public static List<TransitionLogic> provideFreezeLogic(final FreezeTransitionLogic freezeLogic) {
 		return List.of(freezeLogic);
 	}
 
 	@Provides
 	@IntoMap
 	@FunctionKey(UncheckedSubmit)
-	public static List<TransitionLogic> provideUncheckedSubLogic(UncheckedSubmitTransitionLogic uncheckedSubLogic) {
+	public static List<TransitionLogic> provideUncheckedSubLogic(
+			final UncheckedSubmitTransitionLogic uncheckedSubLogic
+	) {
 		return List.of(uncheckedSubLogic);
+	}
+
+	private NetworkLogicModule() {
+		throw new UnsupportedOperationException("Dagger2 module");
 	}
 }

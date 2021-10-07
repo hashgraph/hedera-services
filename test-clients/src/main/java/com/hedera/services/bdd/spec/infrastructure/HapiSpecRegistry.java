@@ -296,6 +296,22 @@ public class HapiSpecRegistry {
 		return get(name + "FeeSchedule", Key.class);
 	}
 
+	public void savePauseKey(String name, Key key) {
+		put(name + "Pause", key, Key.class);
+	}
+
+	public boolean hasPauseKey(String name) {
+		return has(name + "Pause", Key.class);
+	}
+
+	public Key getPauseKey(String name) {
+		return get(name + "Pause", Key.class);
+	}
+
+	public void forgetPauseKey(String name) {
+		remove(name + "Pause", Key.class);
+	}
+
 	public boolean hasFreezeKey(String name) {
 		return has(name + "Freeze", Key.class);
 	}

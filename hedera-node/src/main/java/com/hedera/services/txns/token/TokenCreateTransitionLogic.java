@@ -175,7 +175,8 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 				op.hasWipeKey(), op.getWipeKey(),
 				op.hasSupplyKey(), op.getSupplyKey(),
 				op.hasFreezeKey(), op.getFreezeKey(),
-				op.hasFeeScheduleKey(), op.getFeeScheduleKey());
+				op.hasFeeScheduleKey(), op.getFeeScheduleKey(),
+				op.hasPauseKey(), op.getPauseKey());
 		if (validity != OK) {
 			return validity;
 		}

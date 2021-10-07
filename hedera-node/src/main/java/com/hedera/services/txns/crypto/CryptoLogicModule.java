@@ -9,9 +9,9 @@ package com.hedera.services.txns.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,12 +34,12 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTrans
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 
 @Module
-public abstract class CryptoLogicModule {
+public final class CryptoLogicModule {
 	@Provides
 	@IntoMap
 	@FunctionKey(CryptoCreate)
 	public static List<TransitionLogic> provideCryptoCreateLogic(
-			CryptoCreateTransitionLogic cryptoCreateTransitionLogic
+			final CryptoCreateTransitionLogic cryptoCreateTransitionLogic
 	) {
 		return List.of(cryptoCreateTransitionLogic);
 	}
@@ -48,7 +48,7 @@ public abstract class CryptoLogicModule {
 	@IntoMap
 	@FunctionKey(CryptoUpdate)
 	public static List<TransitionLogic> provideCryptoUpdateLogic(
-			CryptoUpdateTransitionLogic cryptoUpdateTransitionLogic
+			final CryptoUpdateTransitionLogic cryptoUpdateTransitionLogic
 	) {
 		return List.of(cryptoUpdateTransitionLogic);
 	}
@@ -57,7 +57,7 @@ public abstract class CryptoLogicModule {
 	@IntoMap
 	@FunctionKey(CryptoDelete)
 	public static List<TransitionLogic> provideCryptoDeleteLogic(
-			CryptoDeleteTransitionLogic cryptoDeleteTransitionLogic
+			final CryptoDeleteTransitionLogic cryptoDeleteTransitionLogic
 	) {
 		return List.of(cryptoDeleteTransitionLogic);
 	}
@@ -66,8 +66,12 @@ public abstract class CryptoLogicModule {
 	@IntoMap
 	@FunctionKey(CryptoTransfer)
 	public static List<TransitionLogic> provideCryptoTransferLogic(
-			CryptoTransferTransitionLogic cryptoTransferTransitionLogic
+			final CryptoTransferTransitionLogic cryptoTransferTransitionLogic
 	) {
 		return List.of(cryptoTransferTransitionLogic);
+	}
+
+	private CryptoLogicModule() {
+		throw new UnsupportedOperationException("Dagger2 module");
 	}
 }
