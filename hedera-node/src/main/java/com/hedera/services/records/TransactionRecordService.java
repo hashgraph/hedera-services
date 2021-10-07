@@ -21,20 +21,16 @@ package com.hedera.services.records;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
-import com.hedera.services.contracts.operation.HederaExceptionalHaltReason;
-import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.NftTransfer;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
-import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -43,13 +39,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
+import static com.hedera.services.utils.ResponseCodeUtil.getStatus;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 @Singleton
@@ -170,7 +160,7 @@ public class TransactionRecordService {
 	 * @param result the processing result of the EVM transaction
 	 */
 	public void externaliseEvmCreateTransaction(TransactionProcessingResult result) {
-		txnCtx.setStatus(getStatus(result));
+		txnCtx.setStatus(getStatus(result, SUCCESS));
 		txnCtx.setCreateResult(result.toGrpc());
 		txnCtx.addNonThresholdFeeChargedToPayer(result.getGasPrice() * result.getGasUsed());
 	}
@@ -182,34 +172,8 @@ public class TransactionRecordService {
 	 * 		the processing result of the EVM transaction
 	 */
 	public void externaliseEvmCallTransaction(TransactionProcessingResult result) {
-		txnCtx.setStatus(getStatus(result));
+		txnCtx.setStatus(getStatus(result, SUCCESS));
 		txnCtx.setCallResult(result.toGrpc());
 		txnCtx.addNonThresholdFeeChargedToPayer(result.getGasPrice() * result.getGasUsed());
 	}
-
-	@NotNull
-	ResponseCodeEnum getStatus(final TransactionProcessingResult result) {
-		if (result.isSuccessful()) {
-			return SUCCESS;
-		} else if (result.getHaltReason().isPresent()) {
-			var haltReason = result.getHaltReason().get();
-			if (HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF == haltReason) {
-				return OBTAINER_SAME_CONTRACT_ID;
-			} else if (HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS == haltReason) {
-				return INVALID_SOLIDITY_ADDRESS;
-			} else if (HederaExceptionalHaltReason.INVALID_SIGNATURE == haltReason) {
-				return INVALID_SIGNATURE;
-			} else if (ExceptionalHaltReason.INSUFFICIENT_GAS == haltReason) {
-				return INSUFFICIENT_GAS;
-			} else if (ExceptionalHaltReason.ILLEGAL_STATE_CHANGE == haltReason) {
-				return LOCAL_CALL_MODIFICATION_EXCEPTION;
-			} else if (result.getRevertReason().isPresent()) {
-				return CONTRACT_REVERT_EXECUTED;
-			}
-		}
-
-		return CONTRACT_EXECUTION_EXCEPTION;
-	}
-
-
 }

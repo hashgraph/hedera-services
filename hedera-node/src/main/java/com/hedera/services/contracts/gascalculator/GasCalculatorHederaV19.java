@@ -40,7 +40,7 @@ import javax.inject.Inject;
  * Provides Hedera adapted gas cost lookups and calculations used during transaction processing.
  * Maps the gas costs of the Smart Contract Service including and after 0.19.0 release
  */
-public class GasCalculatorHedera_0_19_0 extends LondonGasCalculator {
+public class GasCalculatorHederaV19 extends LondonGasCalculator {
 
 	private static final int LOG_CONTRACT_ID_SIZE = 24;
 	private static final int LOG_TOPIC_SIZE = 32;
@@ -51,7 +51,7 @@ public class GasCalculatorHedera_0_19_0 extends LondonGasCalculator {
 	private final HbarCentExchange exchange;
 
 	@Inject
-	public GasCalculatorHedera_0_19_0(
+	public GasCalculatorHederaV19(
 			final GlobalDynamicProperties dynamicProperties,
 			final UsagePricesProvider usagePrices,
 			final HbarCentExchange exchange) {
@@ -106,12 +106,12 @@ public class GasCalculatorHedera_0_19_0 extends LondonGasCalculator {
 	}
 
 	public static long calculateStorageGasNeeded(
-			@SuppressWarnings("unused") long numberOfBytes,
+			long numberOfBytes,
 			long durationInSeconds,
 			long byteHourCostIntinybars,
 			long gasPrice
 	) {
-		long storageCostTinyBars = (durationInSeconds * byteHourCostIntinybars) / 3600;
+		long storageCostTinyBars = (durationInSeconds * byteHourCostIntinybars * numberOfBytes) / 3600;
 		return Math.round((double) storageCostTinyBars / (double) gasPrice);
 	}
 

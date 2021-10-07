@@ -125,10 +125,11 @@ class CallEvmTxProcessorTest {
 		givenInvalidMock();
 
 		// when:
+		Address receiver = this.receiver.getId().asEvmAddress();
 		final var result = assertThrows(
 				InvalidTransactionException.class,
 				() -> callEvmTxProcessor
-						.execute(sender, receiver.getId().asEvmAddress(), 33_333L, 1234L, Bytes.EMPTY, consensusTime));
+						.execute(sender, receiver, 33_333L, 1234L, Bytes.EMPTY, consensusTime));
 
 		// then:
 		assertEquals(ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE, result.getResponseCode());
@@ -142,10 +143,11 @@ class CallEvmTxProcessorTest {
 		sender.initBalance(200_000);
 
 		// when:
+		Address receiver = this.receiver.getId().asEvmAddress();
 		final var result = assertThrows(
 				InvalidTransactionException.class,
 				() -> callEvmTxProcessor
-						.execute(sender, receiver.getId().asEvmAddress(), 33_333L, 1234L, Bytes.EMPTY, consensusTime));
+						.execute(sender, receiver, 33_333L, 1234L, Bytes.EMPTY, consensusTime));
 
 		// then:
 		assertEquals(ResponseCodeEnum.INSUFFICIENT_GAS, result.getResponseCode());
@@ -161,10 +163,11 @@ class CallEvmTxProcessorTest {
 		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(Gas.of(MAX_GAS_LIMIT + 1));
 
 		// when:
+		Address receiver = this.receiver.getId().asEvmAddress();
 		final var result = assertThrows(
 				InvalidTransactionException.class,
 				() -> callEvmTxProcessor
-						.execute(sender, receiver.getId().asEvmAddress(), MAX_GAS_LIMIT, 1234L, Bytes.EMPTY, consensusTime));
+						.execute(sender, receiver, MAX_GAS_LIMIT, 1234L, Bytes.EMPTY, consensusTime));
 
 		// then:
 		assertEquals(ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED, result.getResponseCode());
@@ -173,11 +176,13 @@ class CallEvmTxProcessorTest {
 	@Test
 	void assertThatExecuteMethodThrowsInvalidTransactionException() {
 		var consensusTime = Instant.ofEpochSecond(1631778674L);
-		given(transactionContext.consensusTime()).willReturn(consensusTime);
+		Instant consensusTime1 = transactionContext.consensusTime();
+		given(consensusTime1).willReturn(consensusTime);
 
 		//expect:
+		Address receiver = this.receiver.getId().asEvmAddress();
 		assertThrows(InvalidTransactionException.class, () ->
-				callEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), 1234, 1_000_000, 15, Bytes.EMPTY, false, transactionContext.consensusTime(), false, Optional.empty()));
+				callEvmTxProcessor.execute(sender, receiver, 1234, 1_000_000, 15, Bytes.EMPTY, false, consensusTime1, false, Optional.empty()));
 	}
 
 	@Test

@@ -32,7 +32,11 @@ import java.util.Optional;
 /**
  * Utility methods used by Hedera adapted {@link org.hyperledger.besu.evm.operation.Operation}
  */
-public class HederaOperationUtil {
+public final class HederaOperationUtil {
+
+	private HederaOperationUtil() {
+		throw new UnsupportedOperationException("Utility Class");
+	}
 
 	/**
 	 * Returns the expiry to be used for a new contract. Climbs the {@link MessageFrame} and searches for the parent

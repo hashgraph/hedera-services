@@ -22,6 +22,8 @@ package com.hedera.services.txns.contract;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
+import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.HederaLedger;
@@ -32,8 +34,6 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
-import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
@@ -53,7 +53,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
@@ -74,7 +73,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -356,12 +354,10 @@ class ContractCreateTransitionLogicTest {
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
 		given(hfs.exists(bytecodeSrc)).willReturn(false);
 		// when:
-		Exception exception = assertThrows(InvalidTransactionException.class, () -> {
-			subject.doStateTransition();
-		});
+		Exception exception = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
 
 		// then:
-		assertTrue("INVALID_FILE_ID".equals(exception.getMessage()));
+		assertEquals("INVALID_FILE_ID", exception.getMessage());
 	}
 
 	@Test
@@ -374,12 +370,10 @@ class ContractCreateTransitionLogicTest {
 		given(hfs.cat(bytecodeSrc)).willReturn(new byte[0]);
 
 		// when:
-		Exception exception = assertThrows(InvalidTransactionException.class, () -> {
-			subject.doStateTransition();
-		});
+		Exception exception = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
 
 		// then:
-		assertTrue("CONTRACT_FILE_EMPTY".equals(exception.getMessage()));
+		assertEquals("CONTRACT_FILE_EMPTY", exception.getMessage());
 	}
 
 	@Test
@@ -400,12 +394,10 @@ class ContractCreateTransitionLogicTest {
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(validator.attemptToDecodeOrThrow(key, SERIALIZATION_FAILED)).willThrow(new InvalidTransactionException(SERIALIZATION_FAILED));
 		// when:
-		Exception exception = assertThrows(InvalidTransactionException.class, () -> {
-			subject.doStateTransition();
-		});
+		Exception exception = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
 
 		// then:
-		assertTrue("SERIALIZATION_FAILED".equals(exception.getMessage()));
+		assertEquals("SERIALIZATION_FAILED", exception.getMessage());
 	}
 
 
@@ -427,11 +419,9 @@ class ContractCreateTransitionLogicTest {
 		given(hfs.cat(any())).willReturn(new byte[]{1,2,3,'\n'});
 		given(transactionBody.getConstructorParameters()).willReturn(ByteString.EMPTY);
 		// when:
-		Exception exception = assertThrows(InvalidTransactionException.class, () -> {
-			subject.prepareCodeWithConstructorArguments(transactionBody);
-		});
+		Exception exception = assertThrows(InvalidTransactionException.class, () -> subject.prepareCodeWithConstructorArguments(transactionBody));
 		// then:
-		assertTrue("ERROR_DECODING_BYTESTRING".equals(exception.getMessage()));
+		assertEquals("ERROR_DECODING_BYTESTRING", exception.getMessage());
 	}
 
 	private void givenValidTxnCtx() {

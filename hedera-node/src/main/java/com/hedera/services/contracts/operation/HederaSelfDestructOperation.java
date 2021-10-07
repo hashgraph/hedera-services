@@ -73,7 +73,6 @@ public class HederaSelfDestructOperation extends SelfDestructOperation {
 	@NotNull
 	private Optional<Gas> errorGasCost(final Account account) {
 		final Gas cost = gasCalculator().selfDestructOperationGasCost(account, Wei.ONE);
-		final Optional<Gas> optionalCost = Optional.of(cost);
-		return optionalCost;
+		return Optional.of(cost);
 	}
 }

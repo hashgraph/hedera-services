@@ -32,7 +32,6 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.CommonUtils;
-import org.hyperledger.besu.datatypes.Address;
 
 import java.util.Arrays;
 import java.util.Optional;

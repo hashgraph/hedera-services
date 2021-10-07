@@ -80,6 +80,7 @@ import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 abstract class EvmTxProcessor {
 
 	private static final int MAX_STACK_SIZE = 1024;
+	private static final int MAX_CODE_SIZE = 0x6000;
 
 	private final HederaWorldState worldState;
 	private final HbarCentExchange exchange;
@@ -89,7 +90,7 @@ abstract class EvmTxProcessor {
 	private final AbstractMessageProcessor messageCallProcessor;
 	private final AbstractMessageProcessor contractCreationProcessor;
 
-	public EvmTxProcessor(
+	protected EvmTxProcessor(
 			final HederaWorldState worldState,
 			final HbarCentExchange exchange,
 			final UsagePricesProvider usagePrices,
@@ -117,28 +118,40 @@ abstract class EvmTxProcessor {
 				gasCalculator,
 				evm,
 				true,
-				List.of(MaxCodeSizeRule.of(0x6000), //FIXME magic constant
+				List.of(MaxCodeSizeRule.of(MAX_CODE_SIZE),
 						PrefixCodeRule.of()),
 				1);
 	}
 
 	/**
-	 * Executes the {@link MessageFrame} of the EVM transaction. Returns the result as {@link TransactionProcessingResult}
-	 * @param sender The origin {@link Account} that initiates the transaction
-	 * @param receiver Receiving {@link Address}. For Create transactions, the newly created Contract address
-	 * @param gasPrice GasPrice to use for gas calculations
-	 * @param providedGasLimit Externally provided gas limit
-	 * @param value Evm transaction value (HBars)
-	 * @param payload Transaction payload. For Create transactions, the bytecode + constructor arguments
-	 * @param contractCreation Whether or not this is a contract creation transaction
-	 * @param consensusTime Current consensus time
-	 * @param isStatic Whether or not the execution is static
-	 * @param expiry In the case of Create transactions, the expiry of the top-level contract being created
+	 * Executes the {@link MessageFrame} of the EVM transaction. Returns the result as {@link
+	 * TransactionProcessingResult}
+	 *
+	 * @param sender
+	 * 		The origin {@link Account} that initiates the transaction
+	 * @param receiver
+	 * 		Receiving {@link Address}. For Create transactions, the newly created Contract address
+	 * @param gasPrice
+	 * 		GasPrice to use for gas calculations
+	 * @param providedGasLimit
+	 * 		Externally provided gas limit
+	 * @param value
+	 * 		Evm transaction value (HBars)
+	 * @param payload
+	 * 		Transaction payload. For Create transactions, the bytecode + constructor arguments
+	 * @param contractCreation
+	 * 		Whether or not this is a contract creation transaction
+	 * @param consensusTime
+	 * 		Current consensus time
+	 * @param isStatic
+	 * 		Whether or not the execution is static
+	 * @param expiry
+	 * 		In the case of Create transactions, the expiry of the top-level contract being created
 	 * @return the result of the EVM execution returned as {@link TransactionProcessingResult}
 	 */
 	protected TransactionProcessingResult execute(Account sender, Address receiver, long gasPrice,
-												  long providedGasLimit, long value, Bytes payload, boolean contractCreation,
-												  Instant consensusTime, boolean isStatic, Optional<Long> expiry) {
+			long providedGasLimit, long value, Bytes payload, boolean contractCreation,
+			Instant consensusTime, boolean isStatic, Optional<Long> expiry) {
 		final long gasLimit = providedGasLimit > dynamicProperties.maxGas()
 				? dynamicProperties.maxGas()
 				: providedGasLimit;
@@ -186,7 +199,7 @@ abstract class EvmTxProcessor {
 						.apparentValue(valueAsWei)
 						.blockValues(blockValues)
 						.depth(0)
-						.completer(__ -> {
+						.completer(unused -> {
 						})
 						.isStatic(isStatic)
 						.miningBeneficiary(coinbase)
@@ -275,7 +288,7 @@ abstract class EvmTxProcessor {
 	protected abstract HederaFunctionality getFunctionType();
 
 	protected abstract MessageFrame buildInitialFrame(MessageFrame.Builder baseInitialFrame,
-													  HederaWorldState.Updater updater, Address to, Bytes payload);
+			HederaWorldState.Updater updater, Address to, Bytes payload);
 
 	protected void process(final MessageFrame frame, final OperationTracer operationTracer) {
 		final AbstractMessageProcessor executor = getMessageProcessor(frame.getType());

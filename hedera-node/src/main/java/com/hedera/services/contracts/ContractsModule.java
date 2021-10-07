@@ -38,7 +38,7 @@ import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.contracts.gascalculator.GasCalculatorHedera_0_19_0;
+import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV19;
 import com.hedera.services.contracts.operation.HederaBalanceOperation;
 import com.hedera.services.contracts.operation.HederaCallCodeOperation;
 import com.hedera.services.contracts.operation.HederaCallOperation;
@@ -177,7 +177,7 @@ public abstract class ContractsModule {
 
 	@Binds
 	@Singleton
-	public abstract GasCalculator bindHederaGasCalculator_0_19_0(GasCalculatorHedera_0_19_0 gasCalculator);
+	public abstract GasCalculator bindHederaGasCalculatorV19(GasCalculatorHederaV19 gasCalculator);
 
 	@Binds
 	@Singleton

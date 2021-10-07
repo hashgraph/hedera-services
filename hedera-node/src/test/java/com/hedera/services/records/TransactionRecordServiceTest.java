@@ -31,6 +31,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.utils.ResponseCodeUtil;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -194,19 +195,19 @@ class TransactionRecordServiceTest {
 	void getStatusTest() {
 		var processingResult = mock(TransactionProcessingResult.class);
 		given(processingResult.isSuccessful()).willReturn(true);
-		assertEquals(subject.getStatus(processingResult), ResponseCodeEnum.SUCCESS);
+		assertEquals(ResponseCodeEnum.SUCCESS, ResponseCodeUtil.getStatus(processingResult, ResponseCodeEnum.SUCCESS));
 		given(processingResult.isSuccessful()).willReturn(false);
 		given(processingResult.getHaltReason())
 				.willReturn(Optional.of(HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF));
-		assertEquals(subject.getStatus(processingResult), ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID);
+		assertEquals( ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID, ResponseCodeUtil.getStatus(processingResult, ResponseCodeEnum.SUCCESS));
 		given(processingResult.getHaltReason())
 				.willReturn(Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
-		assertEquals(subject.getStatus(processingResult), ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS);
+		assertEquals(ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS, ResponseCodeUtil.getStatus(processingResult, ResponseCodeEnum.SUCCESS));
 		given(processingResult.getHaltReason())
 				.willReturn(Optional.of(HederaExceptionalHaltReason.INVALID_SIGNATURE));
-		assertEquals(subject.getStatus(processingResult), ResponseCodeEnum.INVALID_SIGNATURE);
+		assertEquals(ResponseCodeEnum.INVALID_SIGNATURE, ResponseCodeUtil.getStatus(processingResult, ResponseCodeEnum.SUCCESS));
 		given(processingResult.getHaltReason())
 				.willReturn(Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
-		assertEquals(subject.getStatus(processingResult), ResponseCodeEnum.INSUFFICIENT_GAS);
+		assertEquals( ResponseCodeEnum.INSUFFICIENT_GAS, ResponseCodeUtil.getStatus(processingResult, ResponseCodeEnum.SUCCESS));
 	}
 }

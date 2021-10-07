@@ -48,8 +48,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-public class GasCalculatorHedera_0_19_0Test {
-    GasCalculatorHedera_0_19_0 subject;
+public class GasCalculatorHederaV19Test {
+    GasCalculatorHederaV19 subject;
 
     @Mock
     GlobalDynamicProperties globalDynamicProperties;
@@ -65,7 +65,7 @@ public class GasCalculatorHedera_0_19_0Test {
 
     @BeforeEach
     void setUp() {
-        subject = new GasCalculatorHedera_0_19_0(globalDynamicProperties, usagePricesProvider, hbarCentExchange);
+        subject = new GasCalculatorHederaV19(globalDynamicProperties, usagePricesProvider, hbarCentExchange);
     }
 
     @Test

@@ -28,7 +28,11 @@ import org.ethereum.vm.DataWord;
  * Util class for converting {@link UInt256} variables to {@link DataWord} and vice-versa. Temporary solution while the
  * Legacy Smart Contract State is used
  */
-public class DWUtil {
+public final class DWUtil {
+
+	private DWUtil() {
+		throw new UnsupportedOperationException("Utility Class");
+	}
 
 	/**
 	 * Converts {@link UInt256} value to {@link DataWord}

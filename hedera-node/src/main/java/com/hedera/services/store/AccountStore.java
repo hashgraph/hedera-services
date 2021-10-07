@@ -70,11 +70,14 @@ public class AccountStore {
 	 * in order for its changes to be applied to the Swirlds state, and included in the
 	 * {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} for the active transaction.
 	 *
-	 * The method uses the {@link AccountStore#loadAccountOrFailWith(Id, ResponseCodeEnum)} by passing a `null` explicit response code
+	 * The method uses the {@link AccountStore#loadAccountOrFailWith(Id, ResponseCodeEnum)} by passing a `null` explicit
+	 * response code
 	 *
-	 * @param id the account to load
+	 * @param id
+	 * 		the account to load
 	 * @return a usable model of the account
-	 * @throws InvalidTransactionException if the requested account is missing, deleted, or expired and pending removal
+	 * @throws InvalidTransactionException
+	 * 		if the requested account is missing, deleted, or expired and pending removal
 	 */
 	public Account loadAccount(Id id) {
 		return this.loadAccountOrFailWith(id, null);
@@ -89,8 +92,10 @@ public class AccountStore {
 	 * in order for its changes to be applied to the Swirlds state, and included in the
 	 * {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} for the active transaction.
 	 *
-	 * @param id   the account to load
-	 * @param code the {@link ResponseCodeEnum} to fail with if the account is deleted/missing
+	 * @param id
+	 * 		the account to load
+	 * @param code
+	 * 		the {@link ResponseCodeEnum} to fail with if the account is deleted/missing
 	 * @return a usable model of the account if available
 	 */
 	public Account loadAccountOrFailWith(Id id, @Nullable ResponseCodeEnum code) {
@@ -101,9 +106,11 @@ public class AccountStore {
 	 * Returns a model of the requested account, with operations that can be used to
 	 * implement business logic in a transaction.
 	 *
-	 * @param id the account to load
+	 * @param id
+	 * 		the account to load
 	 * @return a usable model of the account
-	 * @throws InvalidTransactionException if the requested contract is missing, deleted or is not smart contract
+	 * @throws InvalidTransactionException
+	 * 		if the requested contract is missing, deleted or is not smart contract
 	 */
 	public Account loadContract(Id id) {
 		final var account = loadEntityOrFailWith(id, null, INVALID_CONTRACT_ID, CONTRACT_DELETED);
@@ -116,14 +123,19 @@ public class AccountStore {
 	 * it does not validate the type of the entity. Additional validation is to be performed if the consumer must
 	 * validate the type of the entity.
 	 *
-	 * @param id Id of the requested entity
-	 * @param explicitResponseCode The explicit {@link ResponseCodeEnum} to be returned in the case of the entity not
-	 *                               being found or deleted
-	 * @param nonExistingCode The {@link ResponseCodeEnum} to be used in the case of the entity being non-existing
-	 * @param deletedCode The {@link ResponseCodeEnum} to be used in the case of the entity being deleted
+	 * @param id
+	 * 		Id of the requested entity
+	 * @param explicitResponseCode
+	 * 		The explicit {@link ResponseCodeEnum} to be returned in the case of the entity not
+	 * 		being found or deleted
+	 * @param nonExistingCode
+	 * 		The {@link ResponseCodeEnum} to be used in the case of the entity being non-existing
+	 * @param deletedCode
+	 * 		The {@link ResponseCodeEnum} to be used in the case of the entity being deleted
 	 * @return usable model of the entity if available
 	 */
-	private Account loadEntityOrFailWith(Id id, @Nullable ResponseCodeEnum explicitResponseCode, ResponseCodeEnum nonExistingCode, ResponseCodeEnum deletedCode) {
+	private Account loadEntityOrFailWith(Id id, @Nullable ResponseCodeEnum explicitResponseCode,
+			ResponseCodeEnum nonExistingCode, ResponseCodeEnum deletedCode) {
 		final var key = EntityNum.fromModel(id);
 		final var merkleAccount = accounts.get().get(key);
 
@@ -154,7 +166,8 @@ public class AccountStore {
 	 * to update the {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} of the active transaction
 	 * with these changes.
 	 *
-	 * @param account the account to save
+	 * @param account
+	 * 		the account to save
 	 */
 	public void persistAccount(Account account) {
 		final var id = account.getId();
@@ -180,19 +193,20 @@ public class AccountStore {
 		mutableAccount.setAutoRenewSecs(model.getAutoRenewSecs());
 	}
 
-	private void validateUsable(MerkleAccount merkleAccount, @Nullable ResponseCodeEnum explicitResponse, ResponseCodeEnum nonExistingCode, ResponseCodeEnum deletedCode) {
+	private void validateUsable(MerkleAccount merkleAccount, @Nullable ResponseCodeEnum explicitResponse,
+			ResponseCodeEnum nonExistingCode, ResponseCodeEnum deletedCode) {
 		validateTrue(merkleAccount != null, explicitResponse != null ? explicitResponse : nonExistingCode);
 		validateFalse(merkleAccount.isDeleted(), explicitResponse != null ? explicitResponse : deletedCode);
-		validateFalse(isExpired(merkleAccount.getBalance(), merkleAccount.getExpiry()), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+		validateFalse(isExpired(merkleAccount.getBalance(), merkleAccount.getExpiry()),
+				ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 	}
 
 	private boolean isExpired(long balance, long expiry) {
-		if (dynamicProperties.autoRenewEnabled()) {
-			if (balance == 0) {
-				return !validator.isAfterConsensusSecond(expiry);
-			}
+		if (dynamicProperties.autoRenewEnabled() && balance == 0) {
+			return !validator.isAfterConsensusSecond(expiry);
+		} else {
+			return false;
 		}
-		return false;
 	}
 
 	public OptionValidator getValidator() {

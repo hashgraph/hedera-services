@@ -22,7 +22,7 @@ package com.hedera.services.contracts.operation;
  *
  */
 
-import com.hedera.services.contracts.gascalculator.GasCalculatorHedera_0_18_0;
+import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV18;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
@@ -47,7 +47,7 @@ public class HederaCreateOperation extends AbstractCreateOperation {
 	@Inject
 	public HederaCreateOperation(final GasCalculator gasCalculator) {
 		super(0xF0, "ħCREATE", 3, 1, false, 1, gasCalculator);
-		checkSuperCost = !(gasCalculator instanceof GasCalculatorHedera_0_18_0);
+		checkSuperCost = !(gasCalculator instanceof GasCalculatorHederaV18);
 	}
 
 	@Override

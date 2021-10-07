@@ -400,8 +400,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		@Override
 		public WorldStateAccount getHederaAccount(final Address address) {
-			final HederaWorldState wrapped = wrappedWorldView();
-			return wrapped.get(address);
+			return getForMutation(address);
 		}
 	}
 }

@@ -51,7 +51,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class GasCalculatorHedera_0_18_0Test {
+class GasCalculatorHederaV18Test {
 
 	@Mock
 	private GlobalDynamicProperties properties;
@@ -60,11 +60,11 @@ class GasCalculatorHedera_0_18_0Test {
 	@Mock
 	private UsagePricesProvider usagePricesProvider;
 
-	private GasCalculatorHedera_0_18_0 gasCalculatorHedera;
+	private GasCalculatorHederaV18 gasCalculatorHedera;
 
 	@BeforeEach
 	private void setup() {
-		gasCalculatorHedera = new GasCalculatorHedera_0_18_0(properties, usagePricesProvider, hbarCentExchange);
+		gasCalculatorHedera = new GasCalculatorHederaV18(properties, usagePricesProvider, hbarCentExchange);
 	}
 
 	@Test
@@ -127,14 +127,14 @@ class GasCalculatorHedera_0_18_0Test {
 		var gasPrice = 1234L;
 		var storageCostTinyBars = (durationInSeconds * byteHourCostIntinybars) / 3600;
 		var expectedResult = Math.round((double) storageCostTinyBars / (double) gasPrice);
-		assertEquals(expectedResult, GasCalculatorHedera_0_18_0.calculateStorageGasNeeded(0, durationInSeconds, byteHourCostIntinybars, gasPrice));
+		assertEquals(expectedResult, GasCalculatorHederaV18.calculateStorageGasNeeded(0, durationInSeconds, byteHourCostIntinybars, gasPrice));
 	}
 
 	@Test
 	void assertCalculateLogSize() {
 		var numberOfTopics = 3;
 		var dataSize = 10L;
-		assertEquals(386, GasCalculatorHedera_0_18_0.calculateLogSize(numberOfTopics, dataSize));
+		assertEquals(386, GasCalculatorHederaV18.calculateLogSize(numberOfTopics, dataSize));
 	}
 
 	@Test

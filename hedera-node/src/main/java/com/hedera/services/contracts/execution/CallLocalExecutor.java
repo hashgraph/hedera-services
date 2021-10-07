@@ -24,26 +24,19 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.contracts.operation.HederaExceptionalHaltReason;
+import com.hedera.services.utils.ResponseCodeUtil;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.swirlds.common.CommonUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 
@@ -54,7 +47,6 @@ import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
  */
 @Singleton
 public class CallLocalExecutor {
-	private static final Logger log = LogManager.getLogger(CallLocalExecutor.class);
 
 	private final AccountStore accountStore;
 	private final CallLocalEvmTxProcessor evmTxProcessor;
@@ -97,20 +89,7 @@ public class CallLocalExecutor {
 					callData,
 					Instant.now());
 
-			var status = OK;
-			if (!result.isSuccessful()) {
-				status = CONTRACT_REVERT_EXECUTED;
-				if (result.getHaltReason().isPresent()) {
-					final var haltReason = result.getHaltReason().get();
-					if (haltReason.equals(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE)) {
-						status = LOCAL_CALL_MODIFICATION_EXCEPTION;
-					} else if (haltReason.equals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS)) {
-						status = INVALID_SOLIDITY_ADDRESS;
-					} else if (haltReason.equals(HederaExceptionalHaltReason.INVALID_SIGNATURE)) {
-						status = INVALID_SIGNATURE;
-					}
-				}
-			}
+			var status = ResponseCodeUtil.getStatus(result, OK);
 
 			final var responseHeader = RequestBuilder.getResponseHeader(status, 0L,
 					ANSWER_ONLY, ByteString.EMPTY);

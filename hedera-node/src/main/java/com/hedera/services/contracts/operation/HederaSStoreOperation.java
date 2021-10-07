@@ -22,7 +22,7 @@ package com.hedera.services.contracts.operation;
  *
  */
 
-import com.hedera.services.contracts.gascalculator.GasCalculatorHedera_0_18_0;
+import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV18;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -33,7 +33,6 @@ import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.gascalculator.FrontierGasCalculator;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.AbstractOperation;
 import org.hyperledger.besu.evm.operation.Operation;
@@ -56,7 +55,7 @@ public class HederaSStoreOperation extends AbstractOperation {
 	@Inject
 	public HederaSStoreOperation(final GasCalculator gasCalculator) {
 		super(0x55, "SSTORE", 2, 0, false, 1, gasCalculator);
-		checkSuperCost = !(gasCalculator instanceof GasCalculatorHedera_0_18_0);
+		checkSuperCost = !(gasCalculator instanceof GasCalculatorHederaV18);
 	}
 
 	@Override
@@ -104,12 +103,12 @@ public class HederaSStoreOperation extends AbstractOperation {
 	}
 
 	public static long calculateStorageGasNeeded(
-			@SuppressWarnings("unused") long numberOfBytes,
+			long numberOfBytes,
 			long durationInSeconds,
 			long byteHourCostIntinybars,
 			long gasPrice
 	) {
-		long storageCostTinyBars = (durationInSeconds * byteHourCostIntinybars) / 3600;
+		long storageCostTinyBars = (durationInSeconds * byteHourCostIntinybars * numberOfBytes) / 3600;
 		return Math.round((double) storageCostTinyBars / (double) gasPrice);
 	}
 }
