@@ -105,8 +105,8 @@ public class TokenTransferBasicLoadTest extends LoadTest {
 				}
 				var payingTreasury = String.format("0.0.%d", settings.getTestTreasureStartAccount() + next);
 				var op = tokenCreate(tokenRegistryName(next))
-						.payingWith(GENESIS)
-						.signedBy(GENESIS)
+						.payingWith(DEFAULT_PAYER)
+						.signedBy(DEFAULT_PAYER)
 						.fee(ONE_HUNDRED_HBARS)
 						.initialSupply(100_000_000_000L)
 						.treasury(payingTreasury)
@@ -159,8 +159,8 @@ public class TokenTransferBasicLoadTest extends LoadTest {
 				long curAccount = nextAssocId % numActiveTokenAccounts;
 				var accountId = "0.0." + (startAccountId + curAccount);
 				var op = tokenAssociate(accountId, tokenRegistryName(curToken))
-						.payingWith(GENESIS)
-						.signedBy(GENESIS)
+						.payingWith(DEFAULT_PAYER)
+						.signedBy(DEFAULT_PAYER)
 						.hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED, DUPLICATE_TRANSACTION,INSUFFICIENT_PAYER_BALANCE)
 						.hasPrecheckFrom(DUPLICATE_TRANSACTION, OK)
 						.hasKnownStatusFrom(SUCCESS, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT,INVALID_TOKEN_ID,
