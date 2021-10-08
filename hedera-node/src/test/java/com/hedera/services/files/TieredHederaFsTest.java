@@ -115,6 +115,13 @@ class TieredHederaFsTest {
 	}
 
 	@Test
+	void gettersWork() {
+		assertEquals(data, subject.getData());
+		assertEquals(metadata, subject.getMetadata());
+		assertEquals(diskFs, subject.diskFs());
+	}
+
+	@Test
 	void interceptorsAreRegistered() {
 		subject.register(lowInterceptor);
 		subject.register(highInterceptor);
@@ -451,11 +458,26 @@ class TieredHederaFsTest {
 	void catGetsExpected() {
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(livingAttr);
+		given(diskFs.contains(fid)).willReturn(false);
 		given(data.get(fid)).willReturn(origContents);
 
 		final var contents = subject.cat(fid);
 
 		assertArrayEquals(origContents, contents);
+		verify(diskFs, never()).contentsOf(any());
+	}
+
+	@Test
+	void catGetsExpectedFromDisk() {
+		given(metadata.containsKey(fid)).willReturn(true);
+		given(metadata.get(fid)).willReturn(livingAttr);
+		given(diskFs.contains(fid)).willReturn(true);
+		given(diskFs.contentsOf(fid)).willReturn(origContents);
+
+		final var contents = subject.cat(fid);
+
+		assertArrayEquals(origContents, contents);
+		verify(data, never()).get(any());
 	}
 
 	@Test
