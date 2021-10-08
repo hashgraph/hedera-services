@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-public class HederaExtCodeCopyOperationTest {
+class HederaExtCodeCopyOperationTest {
 
     @Mock
     private WorldUpdater worldUpdater;

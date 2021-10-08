@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-public class HederaExtCodeSizeOperationTest {
+class HederaExtCodeSizeOperationTest {
     final private String ethAddress = "0xc257274276a4e539741ca11b590b9447b26a8051";
     final private Address ethAddressInstance = Address.fromHexString(ethAddress);
 

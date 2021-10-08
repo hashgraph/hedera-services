@@ -41,7 +41,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-public class HederaSelfDestructOperationTest {
+class HederaSelfDestructOperationTest {
     final private String ethAddress = "0xc257274276a4e539741ca11b590b9447b26a8051";
     final private String ethRecipientAddress = "0xc257274276a4e539741ca11b590b9447b26a8052";
 
