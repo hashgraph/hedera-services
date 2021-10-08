@@ -60,6 +60,7 @@ import java.util.stream.Stream;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.ledger.HederaLedger.CONTRACT_ID_COMPARATOR;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.contractParsedFromSolidityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -88,8 +89,9 @@ public class HederaWorldState implements HederaMutableWorldState {
 	public List<ContractID> persist() {
 		repositoryRoot.flush();
 
-		final var copy = new LinkedList<>(provisionalContractCreations);
+		final var copy = new ArrayList<>(provisionalContractCreations);
 		provisionalContractCreations.clear();
+		copy.sort(CONTRACT_ID_COMPARATOR);
 
 		return copy;
 	}
@@ -176,7 +178,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 		private long autoRenew;
 
 		public WorldStateAccount(final Address address, final Wei balance, long expiry, long autoRenew,
-								 EntityId proxyAccount) {
+				EntityId proxyAccount) {
 			this.expiry = expiry;
 			this.address = address;
 			this.balance = balance;

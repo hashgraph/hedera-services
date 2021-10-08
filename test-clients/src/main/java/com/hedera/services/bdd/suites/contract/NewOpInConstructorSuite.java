@@ -45,8 +45,8 @@ public class NewOpInConstructorSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				contractCreateWithNewOpInConstructor("ChildStorage", ContractResources.CHILD_STORAGE_BYTECODE_PATH, 2),
-				contractCreateWithNewOpInConstructor("AbandoningParent", ContractResources.ABANDONING_PARENT_BYTECODE_PATH, 5)
+				contractCreateWithNewOpInConstructor("ChildStorage", ContractResources.CHILD_STORAGE_BYTECODE_PATH, 3),
+				contractCreateWithNewOpInConstructor("AbandoningParent", ContractResources.ABANDONING_PARENT_BYTECODE_PATH, 6)
 		});
 	}
 

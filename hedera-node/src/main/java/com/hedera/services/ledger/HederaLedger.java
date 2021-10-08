@@ -46,6 +46,7 @@ import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -116,6 +117,10 @@ public class HederaLedger {
 			.comparingLong(FileID::getFileNum)
 			.thenComparingLong(FileID::getShardNum)
 			.thenComparingLong(FileID::getRealmNum);
+	public static final Comparator<ContractID> CONTRACT_ID_COMPARATOR = Comparator
+			.comparingLong(ContractID::getContractNum)
+			.thenComparingLong(ContractID::getShardNum)
+			.thenComparingLong(ContractID::getRealmNum);
 
 	private final TokenStore tokenStore;
 	private final EntityIdSource ids;
