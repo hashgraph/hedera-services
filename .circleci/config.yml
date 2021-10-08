@@ -664,13 +664,13 @@ executors:
 
 workflows:
   GCP-Weekly-Services-Crypto-Restart-Performance-15N-15C:
-#    triggers:
-#      - schedule:
-#          cron: "5 5 * * 6"
-#          filters:
-#            branches:
-#              only:
-#                - master
+    triggers:
+      - schedule:
+          cron: "5 5 * * 6"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -711,13 +711,13 @@ workflows:
                 at: /
 
   GCP-Weekly-Services-HCS-Restart-Performance-15N-15C:
-    triggers:
-      - schedule:
-          cron: "5 10 * * 6"
-          filters:
-            branches:
-              only:
-                - master
+#    triggers:
+#      - schedule:
+#          cron: "5 10 * * 6"
+#          filters:
+#            branches:
+#              only:
+#                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
