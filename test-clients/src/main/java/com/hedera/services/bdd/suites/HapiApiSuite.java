@@ -156,13 +156,15 @@ public abstract class HapiApiSuite {
 	}
 
 	private FinalOutcome runSuite(Consumer<List<HapiApiSpec>> runner) {
+		final var thisSuite = name();
 		if (!getDeferResultsSummary()) {
-			getResultsLogger().info("-------------- STARTING " + name() + " SUITE --------------");
+			getResultsLogger().info("-------------- STARTING " + thisSuite + " SUITE --------------");
 		}
 		List<HapiApiSpec> specs = getSpecsInSuite();
-		specs.forEach(spec -> spec.setSuitePrefix(name()));
+		specs.forEach(spec -> spec.setSuitePrefix(thisSuite));
 
 		if (setupSpec != null) {
+			setupSpec.setSuitePrefix(thisSuite);
 			setupSpec.run();
 			if (setupSpec.getStatus() != HapiApiSpec.SpecStatus.PASSED) {
 				return SUITE_FAILED;
@@ -171,10 +173,14 @@ public abstract class HapiApiSuite {
 
 		runner.accept(specs);
 
+		boolean tearDownFailed = false;
 		if (teardownSpec != null) {
+			teardownSpec.setSuitePrefix(thisSuite);
 			teardownSpec.run();
 			if (teardownSpec.getStatus() != HapiApiSpec.SpecStatus.PASSED) {
-				return SUITE_FAILED;
+				getResultsLogger().error(
+						"Could not tear down suite {}, downstream suites may be affected", thisSuite);
+				tearDownFailed = true;
 			}
 		}
 
@@ -183,7 +189,7 @@ public abstract class HapiApiSuite {
 		if (tearDownClientsAfter) {
 			HapiApiClients.tearDown();
 		}
-		return finalOutcomeFor(finalSpecs);
+		return tearDownFailed ? SUITE_FAILED : finalOutcomeFor(finalSpecs);
 	}
 
 	public static HapiSpecOperation[] flattened(Object... ops) {
