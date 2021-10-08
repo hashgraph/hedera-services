@@ -90,6 +90,8 @@ public abstract class HapiApiSuite {
 
 	private boolean deferResultsSummary = false;
 	private boolean tearDownClientsAfter = true;
+	private HapiApiSpec setupSpec = null;
+	private HapiApiSpec teardownSpec = null;
 	private List<HapiApiSpec> finalSpecs = Collections.emptyList();
 
 	public String name() {
@@ -125,6 +127,20 @@ public abstract class HapiApiSuite {
 			deferResultsSummary = false;
 			summarizeResults(getResultsLogger());
 		}
+	}
+
+	public HapiApiSuite setup(HapiSpecOperation... setupOps) {
+		if (setupOps != null && setupOps.length > 0) {
+			setupSpec = HapiApiSpec.defaultHapiSpec("setup").given(setupOps).when().then();
+		}
+		return this;
+	}
+
+	public HapiApiSuite teardown(HapiSpecOperation... teardownOps) {
+		if (teardownOps != null && teardownOps.length > 0) {
+			teardownSpec = HapiApiSpec.defaultHapiSpec("teardown").given(teardownOps).when().then();
+		}
+		return this;
 	}
 
 	public FinalOutcome runSuiteAsync() {
