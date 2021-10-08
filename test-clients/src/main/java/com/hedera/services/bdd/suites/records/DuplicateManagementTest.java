@@ -88,29 +88,30 @@ public class DuplicateManagementTest extends HapiApiSuite {
 						sleepFor(1_000L)
 				).then(
 						getReceipt("txnId").andAnyDuplicates()
+								.payingWith("civilian")
 								.hasPriorityStatus(SUCCESS)
 								.hasDuplicateStatuses(
 										DUPLICATE_TRANSACTION,
 										DUPLICATE_TRANSACTION),
 						getTxnRecord("txnId")
+								.payingWith("civilian")
 								.via("cheapTxn")
 								.assertingNothingAboutHashes()
 								.hasPriority(recordWith().status(SUCCESS)),
 						getTxnRecord("txnId").andAnyDuplicates()
+								.payingWith("civilian")
 								.via("costlyTxn")
 								.assertingNothingAboutHashes()
 								.hasPriority(recordWith().status(SUCCESS))
 								.hasDuplicates(inOrder(
 										recordWith().status(DUPLICATE_TRANSACTION),
-										recordWith().status(DUPLICATE_TRANSACTION))),
+										recordWith().status(DUPLICATE_TRANSACTION))).logged(),
 						sleepFor(1_000L),
 						withOpContext((spec, opLog) -> {
 							var cheapGet = getTxnRecord("cheapTxn")
-									.assertingNothingAboutHashes()
-									.logged();
+									.assertingNothingAboutHashes();
 							var costlyGet = getTxnRecord("costlyTxn")
-									.assertingNothingAboutHashes()
-									.logged();
+									.assertingNothingAboutHashes();
 							allRunFor(spec, cheapGet, costlyGet);
 							var payer = spec.registry().getAccountID("civilian");
 							var cheapRecord = cheapGet.getResponseRecord();
@@ -118,9 +119,9 @@ public class DuplicateManagementTest extends HapiApiSuite {
 							var cheapPrice = getDeduction(cheapRecord.getTransferList(), payer).orElse(0);
 							var costlyPrice = getDeduction(costlyRecord.getTransferList(), payer).orElse(0);
 							assertEquals(
-									costlyPrice, 3 * cheapPrice,
+									3 * cheapPrice, costlyPrice,
 									String.format("Costly (%d) should be 3x more expensive than cheap (%d)!",
-											cheapPrice, costlyPrice));
+											costlyPrice, cheapPrice));
 						})
 				);
 	}
