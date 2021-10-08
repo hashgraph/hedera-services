@@ -161,7 +161,23 @@ public abstract class HapiApiSuite {
 		}
 		List<HapiApiSpec> specs = getSpecsInSuite();
 		specs.forEach(spec -> spec.setSuitePrefix(name()));
+
+		if (setupSpec != null) {
+			setupSpec.run();
+			if (setupSpec.getStatus() != HapiApiSpec.SpecStatus.PASSED) {
+				return SUITE_FAILED;
+			}
+		}
+
 		runner.accept(specs);
+
+		if (teardownSpec != null) {
+			teardownSpec.run();
+			if (teardownSpec.getStatus() != HapiApiSpec.SpecStatus.PASSED) {
+				return SUITE_FAILED;
+			}
+		}
+
 		finalSpecs = specs;
 		summarizeResults(getResultsLogger());
 		if (tearDownClientsAfter) {

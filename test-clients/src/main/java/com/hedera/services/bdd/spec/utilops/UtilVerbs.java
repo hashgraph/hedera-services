@@ -270,6 +270,18 @@ public class UtilVerbs {
 				.overridingProps(Map.of(property, "" + value));
 	}
 
+	public static HapiSpecOperation overriding(
+			String firstProperty, String firstValue,
+			String secondProperty, String secondValue
+	) {
+		return fileUpdate(APP_PROPERTIES)
+				.payingWith(ADDRESS_BOOK_CONTROL)
+				.overridingProps(Map.of(
+						firstProperty, firstValue,
+						secondProperty, secondValue
+				));
+	}
+
 	public static CustomSpecAssert exportAccountBalances(Supplier<String> acctBalanceFile) {
 		return new CustomSpecAssert((spec, log) -> {
 			spec.exportAccountBalances(acctBalanceFile);
@@ -513,7 +525,9 @@ public class UtilVerbs {
 			OptionalLong tinyBarsToOffer
 	) {
 		return updateLargeFile(payer, fileName, byteString, signOnlyWithPayer, tinyBarsToOffer,
-				op -> {}, op -> {});
+				op -> {
+				}, op -> {
+				});
 	}
 
 	public static HapiSpecOperation updateLargeFile(

@@ -78,13 +78,19 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 			HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist");
 
 	public static void main(String... args) {
-		new ScheduleSignSpecs().runSuiteSync();
+		new ScheduleSignSpecs()
+				.setup(
+						overriding("scheduling.whitelist", suiteWhitelist)
+				).teardown(
+						overriding(
+						"ledger.schedule.txExpiryTimeSecs", defaultTxExpiry,
+						"scheduling.whitelist", defaultWhitelist)
+				).runSuiteSync();
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						suiteSetup(),
 						signFailsDueToDeletedExpiration(),
 						triggersUponAdditionalNeededSig(),
 						sharedKeyWorksAsExpected(),
@@ -105,7 +111,6 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						nestedSigningReqsWorkAsExpected(),
 						changeInNestedSigningReqsRespected(),
 						signingDeletedSchedulesHasNoEffect(),
-						suiteCleanup(),
 				}
 		);
 	}
