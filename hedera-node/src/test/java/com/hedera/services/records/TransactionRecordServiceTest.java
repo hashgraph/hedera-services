@@ -31,6 +31,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.store.models.Topic;
 import com.hedera.services.utils.ResponseCodeUtil;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
@@ -189,6 +190,14 @@ class TransactionRecordServiceTest {
 		
 		subject.includeChangesToToken(token);
 		verify(txnCtx).setCreated(Id.DEFAULT.asGrpcToken());
+	}
+
+	@Test
+	void updatesReceiptForNewTopic() {
+		final var topic = new Topic(Id.DEFAULT);
+		topic.setNew(true);
+		subject.includeChangesToTopic(topic);
+		verify(txnCtx).setCreated(Id.DEFAULT.asGrpcTopic());
 	}
 
 	@Test

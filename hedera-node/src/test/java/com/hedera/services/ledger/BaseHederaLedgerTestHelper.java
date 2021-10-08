@@ -36,7 +36,6 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
@@ -48,6 +47,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TopicID;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.Collections;
@@ -110,6 +110,11 @@ public class BaseHederaLedgerTestHelper {
 
 		ids = new EntityIdSource() {
 			long nextId = NEXT_ID;
+
+			@Override
+			public TopicID newTopicId(final AccountID sponsor) {
+				return TopicID.newBuilder().setTopicNum(nextId++).build();
+			}
 
 			@Override
 			public AccountID newAccountId(AccountID newAccountSponsor) {

@@ -283,5 +283,4 @@ public class Account {
 	public void setProxy(final Id proxy) {
 		this.proxy = proxy;
 	}
-
 }

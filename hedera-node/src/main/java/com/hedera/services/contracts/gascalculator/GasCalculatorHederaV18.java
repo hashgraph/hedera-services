@@ -107,13 +107,14 @@ public class GasCalculatorHederaV18 extends PetersburgGasCalculator {
 		return LOG_CONTRACT_ID_SIZE + LOG_BLOOM_SIZE + LOG_TOPIC_SIZE * (long) numberOfTopics + dataSize;
 	}
 
+	@SuppressWarnings("unused")
 	public static long calculateStorageGasNeeded(
 			long numberOfBytes,
 			long durationInSeconds,
 			long byteHourCostIntinybars,
 			long gasPrice
 	) {
-		long storageCostTinyBars = (durationInSeconds * byteHourCostIntinybars * numberOfBytes) / 3600;
+		long storageCostTinyBars = (durationInSeconds * byteHourCostIntinybars) / 3600;
 		return Math.round((double) storageCostTinyBars / (double) gasPrice);
 	}
 

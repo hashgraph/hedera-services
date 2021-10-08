@@ -52,6 +52,7 @@ public interface OptionValidator {
 	boolean isAfterConsensusSecond(long now);
 	boolean isValidAutoRenewPeriod(Duration autoRenewPeriod);
 	boolean isAcceptableTransfersLength(TransferList accountAmounts);
+	JKey attemptDecodeOrThrow(Key k);
 
 	ResponseCodeEnum memoCheck(String cand);
 	ResponseCodeEnum rawMemoCheck(byte[] cand);

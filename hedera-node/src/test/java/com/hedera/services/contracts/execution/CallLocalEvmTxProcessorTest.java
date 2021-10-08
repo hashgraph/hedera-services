@@ -111,14 +111,12 @@ class CallLocalEvmTxProcessorTest {
 	@Test
 	void assertThatExecuteMethodThrowsInvalidTransactionException() {
 		var consensusTime = Instant.ofEpochSecond(1631778674L);
-		Instant txTime = transactionContext.consensusTime();
-		given(txTime).willReturn(consensusTime);
 
 		//expect:
 		Address receiver = this.receiver.getId().asEvmAddress();
 		assertThrows(InvalidTransactionException.class, () ->
 				callLocalEvmTxProcessor.execute(sender, receiver, 1234L, 1_000_000, 15,
-						Bytes.EMPTY, false, txTime, false, Optional.empty()));
+						Bytes.EMPTY, false, consensusTime, false, Optional.empty()));
 	}
 
 	@Test

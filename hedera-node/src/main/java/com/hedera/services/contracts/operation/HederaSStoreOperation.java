@@ -102,13 +102,14 @@ public class HederaSStoreOperation extends AbstractOperation {
 		return new Operation.OperationResult(Optional.of(gasCost), Optional.empty());
 	}
 
+	@SuppressWarnings("unused")
 	public static long calculateStorageGasNeeded(
 			long numberOfBytes,
 			long durationInSeconds,
 			long byteHourCostIntinybars,
 			long gasPrice
 	) {
-		long storageCostTinyBars = (durationInSeconds * byteHourCostIntinybars * numberOfBytes) / 3600;
+		long storageCostTinyBars = (durationInSeconds * byteHourCostIntinybars) / 3600;
 		return Math.round((double) storageCostTinyBars / (double) gasPrice);
 	}
 }

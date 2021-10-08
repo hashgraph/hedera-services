@@ -50,10 +50,12 @@ public final class ResponseCodeUtil {
 				return ResponseCodeEnum.INSUFFICIENT_GAS;
 			} else if (ExceptionalHaltReason.ILLEGAL_STATE_CHANGE == haltReason) {
 				return ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
-			} else if (result.getRevertReason().isPresent()) {
-				return ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 			}
 		}
-		return ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
+		if (result.getRevertReason().isPresent()) {
+			return ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+		} else {
+			return ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
+		}
 	}
 }

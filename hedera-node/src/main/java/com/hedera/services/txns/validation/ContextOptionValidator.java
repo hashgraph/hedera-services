@@ -126,6 +126,16 @@ public class ContextOptionValidator implements OptionValidator {
 	}
 
 	@Override
+	public JKey attemptDecodeOrThrow(final Key k) {
+		try {
+			return JKey.mapKey(k);
+		} catch (DecoderException e) {
+			throw new InvalidTransactionException(ResponseCodeEnum.BAD_ENCODING);
+		}
+	}
+	
+
+	@Override
 	public ResponseCodeEnum nftMetadataCheck(byte[] metadata) {
 		return lengthCheck(
 				metadata.length,
