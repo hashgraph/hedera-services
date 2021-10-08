@@ -97,9 +97,18 @@ public class HederaSStoreOperation extends AbstractOperation {
 					.plus(slotIsWarm ? Gas.ZERO : this.gasCalculator().getColdSloadCost()));
 		}
 
+		Optional<Gas> optionalCost = Optional.of(gasCost);
+		final Gas remainingGas = frame.getRemainingGas();
+		if (frame.isStatic()) {
+			return new OperationResult(
+					optionalCost, Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE));
+		} else if (remainingGas.compareTo(gasCost) < 0) {
+			return new OperationResult(optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
+		}
+
 		account.setStorageValue(key, value);
 		frame.storageWasUpdated(key, value);
-		return new Operation.OperationResult(Optional.of(gasCost), Optional.empty());
+		return new Operation.OperationResult(optionalCost, Optional.empty());
 	}
 
 	@SuppressWarnings("unused")
