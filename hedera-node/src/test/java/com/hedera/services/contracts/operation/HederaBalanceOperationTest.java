@@ -72,13 +72,13 @@ class HederaBalanceOperationTest {
 	}
 
 	@Test
-	public void haltsWithInsufficientStackItemsOperationResultWhenGetsStackItem() {
+	void haltsWithInsufficientStackItemsOperationResultWhenGetsStackItem() {
 		given(frame.getStackItem(anyInt())).willThrow(new FixedStack.UnderflowException());
 		thenOperationWillFailWithReason(INSUFFICIENT_STACK_ITEMS);
 	}
 
 	@Test
-	public void haltsWithInsufficientStackItemsWhenPopsStackItem() {
+	void haltsWithInsufficientStackItemsWhenPopsStackItem() {
 		given(frame.popStackItem()).willThrow(new FixedStack.UnderflowException());
 		given(worldUpdater.get(any())).willReturn(account);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
@@ -86,7 +86,7 @@ class HederaBalanceOperationTest {
 	}
 
 	@Test
-	public void haltsWithTooManyStackItemsWhenPopsStackItem() {
+	void haltsWithTooManyStackItemsWhenPopsStackItem() {
 		given(frame.popStackItem()).willThrow(new FixedStack.OverflowException());
 		given(worldUpdater.get(any())).willReturn(account);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
@@ -94,14 +94,14 @@ class HederaBalanceOperationTest {
 	}
 
 	@Test
-	public void haltsWithInvalidSolidityAddressOperationResult() {
+	void haltsWithInvalidSolidityAddressOperationResult() {
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		given(worldUpdater.get(any())).willReturn(null);
 		thenOperationWillFailWithReason(INVALID_SOLIDITY_ADDRESS);
 	}
 
 	@Test
-	public void haltsWithInsufficientGasOperationResult() {
+	void haltsWithInsufficientGasOperationResult() {
 		given(worldUpdater.get(any())).willReturn(account);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		given(frame.popStackItem()).willReturn(bytes);
@@ -113,7 +113,7 @@ class HederaBalanceOperationTest {
 	}
 
 	@Test
-	public void returnsOperationResultWithoutException() {
+	void returnsOperationResultWithoutException() {
 		given(worldUpdater.get(any())).willReturn(account);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		given(frame.popStackItem()).willReturn(bytes);
