@@ -32,7 +32,6 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
 
 import java.time.Instant;
 import java.util.AbstractMap;
@@ -46,8 +45,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
@@ -58,35 +59,35 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
 class TieredHederaFsTest {
-	final Instant now = Instant.now();
+	private static final Instant now = Instant.now();
 
-	int lifetimeSecs = 1_234_567;
-	JKey validKey;
-	byte[] origContents = "Where, like a pillow on a bed /".getBytes();
-	byte[] newContents = "Where, like a pillow on a bed / A pregnant bank swelled up to rest /".getBytes();
-	byte[] moreContents = "The violet's reclining head".getBytes();
-	HFileMeta deadAttr;
-	HFileMeta livingAttr;
-	HFileMeta deletedAttr;
-	FileID fid = IdUtils.asFile("0.0.7575");
-	FileID missing = IdUtils.asFile("0.0.666");
-	AccountID sponsor = IdUtils.asAccount("0.0.2");
+	private static final int lifetimeSecs = 1_234_567;
+	private static final JKey validKey = TxnHandlingScenario.MISC_FILE_WACL_KT.asJKeyUnchecked();
+	private static final byte[] origContents = "Where, like a pillow on a bed /".getBytes();
+	private static final byte[] newContents =
+			"Where, like a pillow on a bed / A pregnant bank swelled up to rest /".getBytes();
+	private static final byte[] moreContents = "The violet's reclining head".getBytes();
+	private HFileMeta deadAttr;
+	private HFileMeta livingAttr;
+	private HFileMeta deletedAttr;
+	private static final FileID fid = IdUtils.asFile("0.0.7575");
+	private static final FileID missing = IdUtils.asFile("0.0.666");
+	private static final AccountID sponsor = IdUtils.asAccount("0.0.2");
 
-	FileUpdateInterceptor noInterceptor;
-	FileUpdateInterceptor lowInterceptor;
-	FileUpdateInterceptor highInterceptor;
+	private FileUpdateInterceptor noInterceptor;
+	private FileUpdateInterceptor lowInterceptor;
+	private FileUpdateInterceptor highInterceptor;
 
-	EntityIdSource ids;
-	GlobalDynamicProperties properties;
-	Supplier<Instant> clock;
-	Map<FileID, byte[]> data;
-	Map<FileID, HFileMeta> metadata;
-	MerkleDiskFs diskFs;
-	TieredHederaFs subject;
+	private EntityIdSource ids;
+	private GlobalDynamicProperties properties;
+	private Supplier<Instant> clock;
+	private Map<FileID, byte[]> data;
+	private Map<FileID, HFileMeta> metadata;
+	private MerkleDiskFs diskFs;
+	private TieredHederaFs subject;
 
 	@BeforeEach
-	private void setup() throws Throwable {
-		validKey = TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey();
+	private void setup() {
 		deadAttr = new HFileMeta(false, validKey, now.getEpochSecond() - 1);
 		livingAttr = new HFileMeta(false, validKey, now.getEpochSecond() + lifetimeSecs);
 		deletedAttr = new HFileMeta(true, validKey, now.getEpochSecond() + lifetimeSecs);
@@ -115,14 +116,11 @@ class TieredHederaFsTest {
 
 	@Test
 	void interceptorsAreRegistered() {
-		// given:
 		subject.register(lowInterceptor);
 		subject.register(highInterceptor);
 
-		// expect:
 		assertEquals(lowInterceptor, subject.updateInterceptors.get(0));
 		assertEquals(highInterceptor, subject.updateInterceptors.get(1));
-		// and:
 		assertEquals(2, subject.numRegisteredInterceptors());
 	}
 
@@ -130,16 +128,12 @@ class TieredHederaFsTest {
 	void appendsWithExpectedResultSansInterception() {
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(livingAttr);
-		// and:
 		given(data.get(fid)).willReturn(origContents);
 
-		// when:
-		var result = subject.append(fid, moreContents);
+		final var result = subject.append(fid, moreContents);
 
-		// then:
 		assertEquals(SUCCESS, result.outcome());
 		assertTrue(result.fileReplaced());
-		// and:
 		verify(data).put(
 				argThat(fid::equals),
 				argThat(bytes -> new String(bytes).equals(
@@ -152,13 +146,10 @@ class TieredHederaFsTest {
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(livingAttr);
 
-		// when:
-		var result = subject.overwrite(fid, newContents);
+		final var result = subject.overwrite(fid, newContents);
 
-		// then:
 		assertEquals(SUCCESS, result.outcome());
 		assertTrue(result.fileReplaced());
-		// and:
 		verify(data).put(fid, newContents);
 	}
 
@@ -169,48 +160,36 @@ class TieredHederaFsTest {
 						new AbstractMap.SimpleEntry<>(ResponseCodeEnum.FAIL_FEE, true));
 		given(lowInterceptor.preUpdate(fid, newContents)).willReturn(
 				new AbstractMap.SimpleEntry<>(ResponseCodeEnum.FAIL_INVALID, false));
-		// and:
 		subject.register(lowInterceptor);
 		subject.register(highInterceptor);
-		// and:
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(livingAttr);
 
-		// when:
-		var result = subject.overwrite(fid, newContents);
+		final var result = subject.overwrite(fid, newContents);
 
-		// then:
 		assertEquals(ResponseCodeEnum.FAIL_FEE, result.outcome());
 		assertFalse(result.fileReplaced());
-		// and:
 		verify(data, never()).put(fid, newContents);
 	}
 
 	@Test
 	void relevantInterceptorsGetPostCb() {
-		InOrder inOrder = inOrder(highInterceptor, lowInterceptor);
-
+		final var inOrder = inOrder(highInterceptor, lowInterceptor);
 		given(highInterceptor.preUpdate(fid, newContents))
 				.willReturn(
 						new AbstractMap.SimpleEntry<>(ResponseCodeEnum.OK, true));
 		given(lowInterceptor.preUpdate(fid, newContents)).willReturn(
 				new AbstractMap.SimpleEntry<>(ResponseCodeEnum.OK, true));
-		// and:
 		subject.register(lowInterceptor);
 		subject.register(highInterceptor);
-		// and:
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(livingAttr);
 
-		// when:
-		var result = subject.overwrite(fid, newContents);
+		final var result = subject.overwrite(fid, newContents);
 
-		// then:
 		assertEquals(ResponseCodeEnum.OK, result.outcome());
 		assertTrue(result.fileReplaced());
-		// and:
 		verify(data).put(fid, newContents);
-		// and:
 		inOrder.verify(highInterceptor).postUpdate(fid, newContents);
 		inOrder.verify(lowInterceptor).postUpdate(fid, newContents);
 	}
@@ -222,44 +201,29 @@ class TieredHederaFsTest {
 						new AbstractMap.SimpleEntry<>(ResponseCodeEnum.AUTHORIZATION_FAILED, false));
 		given(lowInterceptor.preUpdate(fid, newContents)).willReturn(
 				new AbstractMap.SimpleEntry<>(ResponseCodeEnum.OK, true));
-		// and:
 		subject.register(lowInterceptor);
 		subject.register(highInterceptor);
-		// and:
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(livingAttr);
 
-		// when:
-		var result = subject.overwrite(fid, newContents);
+		final var result = subject.overwrite(fid, newContents);
 
-		// then:
 		assertEquals(ResponseCodeEnum.AUTHORIZATION_FAILED, result.outcome());
 		assertFalse(result.fileReplaced());
-		// and:
 		verify(data, never()).put(fid, newContents);
 	}
 
 	@Test
 	void appendRejectsOversizeContents() {
-		// setup:
-		IllegalArgumentException iae = null;
-		var stretchContents = new byte[BYTES_PER_KB - 1];
-		var burstContents = new byte[2];
-
+		final var stretchContents = new byte[BYTES_PER_KB - 1];
+		final var burstContents = new byte[2];
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(livingAttr);
 		given(data.get(fid)).willReturn(stretchContents);
-		// and:
 		given(properties.maxFileSizeKb()).willReturn(1);
 
-		// when:
-		try {
-			subject.append(fid, burstContents);
-		} catch (IllegalArgumentException thrown) {
-			iae = thrown;
-		}
+		final var iae = assertThrows(IllegalArgumentException.class, () -> subject.append(fid, burstContents));
 
-		// then:
 		assertEquals(
 				IllegalArgumentType.OVERSIZE_CONTENTS,
 				IllegalArgumentType.valueOf(iae.getMessage()));
@@ -267,24 +231,18 @@ class TieredHederaFsTest {
 
 	@Test
 	void appendAllowsOversizeContentsForDiskFs() {
-		// setup:
-		var stretchContents = new byte[BYTES_PER_KB - 1];
-		var burstContents = new byte[2];
-
+		final var stretchContents = new byte[BYTES_PER_KB - 1];
+		final var burstContents = new byte[2];
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(livingAttr);
 		given(diskFs.contains(fid)).willReturn(true);
 		given(diskFs.contentsOf(fid)).willReturn(stretchContents);
-		// and:
 		given(properties.maxFileSizeKb()).willReturn(1);
 
-		// when:
-		var result = subject.append(fid, burstContents);
+		final var result = subject.append(fid, burstContents);
 
-		// then:
 		assertEquals(SUCCESS, result.outcome());
 		assertTrue(result.fileReplaced());
-		// and:
 		verify(diskFs).put(
 				argThat(fid::equals),
 				argThat(bytes -> new String(bytes).equals(
@@ -294,22 +252,16 @@ class TieredHederaFsTest {
 
 	@Test
 	void overwritePermitsOversizeContentsForDiskFs() {
-		// setup:
-		var oversizeContents = new byte[BYTES_PER_KB + 1];
-
+		final var oversizeContents = new byte[BYTES_PER_KB + 1];
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(livingAttr);
 		given(diskFs.contains(fid)).willReturn(true);
-		// and:
 		given(properties.maxFileSizeKb()).willReturn(1);
 
-		// when:
-		var result = subject.overwrite(fid, oversizeContents);
+		final var result = subject.overwrite(fid, oversizeContents);
 
-		// then:
 		assertEquals(SUCCESS, result.outcome());
 		assertTrue(result.fileReplaced());
-		// and:
 		verify(diskFs).put(
 				argThat(fid::equals),
 				argThat(bytes -> new String(bytes).equals(
@@ -319,23 +271,13 @@ class TieredHederaFsTest {
 
 	@Test
 	void overwriteRejectsOversizeContents() {
-		// setup:
-		IllegalArgumentException iae = null;
-		var oversizeContents = new byte[BYTES_PER_KB + 1];
-
+		final var oversizeContents = new byte[BYTES_PER_KB + 1];
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(livingAttr);
-		// and:
 		given(properties.maxFileSizeKb()).willReturn(1);
 
-		// when:
-		try {
-			subject.overwrite(fid, oversizeContents);
-		} catch (IllegalArgumentException thrown) {
-			iae = thrown;
-		}
+		final var iae = assertThrows(IllegalArgumentException.class, () -> subject.overwrite(fid, oversizeContents));
 
-		// then:
 		assertEquals(
 				IllegalArgumentType.OVERSIZE_CONTENTS,
 				IllegalArgumentType.valueOf(iae.getMessage()));
@@ -343,19 +285,10 @@ class TieredHederaFsTest {
 
 	@Test
 	void rmThrowsOnMissing() {
-		// setup:
-		IllegalArgumentException iae = null;
-
 		given(metadata.containsKey(missing)).willReturn(false);
 
-		// when:
-		try {
-			subject.rm(missing);
-		} catch (IllegalArgumentException thrown) {
-			iae = thrown;
-		}
+		final var iae = assertThrows(IllegalArgumentException.class, () -> subject.rm(missing));
 
-		// then:
 		assertEquals(
 				IllegalArgumentType.UNKNOWN_FILE,
 				IllegalArgumentType.valueOf(iae.getMessage()));
@@ -365,25 +298,18 @@ class TieredHederaFsTest {
 	void rmPurgesAsExpected() {
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(deletedAttr);
-		// and:
 		given(data.containsKey(fid)).willReturn(true);
 
-		// when:
 		subject.rm(fid);
 
-		// then:
 		verify(metadata).remove(fid);
 		verify(data).remove(fid);
 	}
 
 	@Test
 	void deleteThrowsOnMissing() {
-		// setup:
-		IllegalArgumentException iae = null;
-
 		given(metadata.containsKey(missing)).willReturn(false);
 
-		// when:
 		assertFailsWith(
 				() -> subject.delete(missing),
 				INVALID_FILE_ID
@@ -392,13 +318,9 @@ class TieredHederaFsTest {
 
 	@Test
 	void deleteThrowsOnDeleted() {
-		// setup:
-		IllegalArgumentException iae = null;
-
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(deletedAttr);
 
-		// when:
 		assertFailsWith(
 				() -> subject.delete(fid),
 				FILE_DELETED
@@ -407,19 +329,15 @@ class TieredHederaFsTest {
 
 	@Test
 	void deleteRespectsInterceptors() {
-		// setup:
-		FileUpdateInterceptor authPolicy = mock(FileUpdateInterceptor.class);
+		final var authPolicy = mock(FileUpdateInterceptor.class);
 		given(authPolicy.priorityForCandidate(fid)).willReturn(OptionalInt.of(Integer.MIN_VALUE));
 		given(authPolicy.preDelete(fid)).willReturn(new AbstractMap.SimpleEntry<>(AUTHORIZATION_FAILED, false));
-
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(livingAttr);
 
-		// when:
 		subject.register(authPolicy);
-		assertFailsWith(() -> subject.delete(fid), AUTHORIZATION_FAILED);
 
-		// then:
+		assertFailsWith(() -> subject.delete(fid), AUTHORIZATION_FAILED);
 		verify(metadata, never()).put(argThat(fid::equals), any());
 		verify(data, never()).remove(fid);
 	}
@@ -429,34 +347,22 @@ class TieredHederaFsTest {
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(livingAttr);
 
-		// when:
 		subject.delete(fid);
 
-		// then:
 		verify(metadata).put(argThat(fid::equals), argThat(attr ->
-			attr.isDeleted() &&
-					attr.getExpiry()	== livingAttr.getExpiry() &&
-					attr.getWacl().equals(livingAttr.getWacl())));
+				attr.isDeleted() &&
+						attr.getExpiry() == livingAttr.getExpiry() &&
+						attr.getWacl().equals(livingAttr.getWacl())));
 		verify(data).remove(fid);
-		// and:
-		assertEquals(subject.getattr(fid).isDeleted(), true);
+		assertTrue(subject.getattr(fid).isDeleted());
 	}
 
 	@Test
 	void appendThrowsOnMissing() {
-		// setup:
-		IllegalArgumentException iae = null;
-
 		given(metadata.containsKey(missing)).willReturn(false);
 
-		// when:
-		try {
-			subject.append(missing, moreContents);
-		} catch (IllegalArgumentException thrown) {
-			iae = thrown;
-		}
+		final var iae = assertThrows(IllegalArgumentException.class, () -> subject.append(missing, moreContents));
 
-		// then:
 		assertEquals(
 				IllegalArgumentType.UNKNOWN_FILE,
 				IllegalArgumentType.valueOf(iae.getMessage()));
@@ -464,19 +370,10 @@ class TieredHederaFsTest {
 
 	@Test
 	void overwriteThrowsOnMissing() {
-		// setup:
-		IllegalArgumentException iae = null;
-
 		given(metadata.containsKey(missing)).willReturn(false);
 
-		// when:
-		try {
-			subject.overwrite(missing, newContents);
-		} catch (IllegalArgumentException thrown) {
-			iae = thrown;
-		}
+		final var iae = assertThrows(IllegalArgumentException.class, () -> subject.overwrite(missing, newContents));
 
-		// then:
 		assertEquals(
 				IllegalArgumentType.UNKNOWN_FILE,
 				IllegalArgumentType.valueOf(iae.getMessage()));
@@ -484,20 +381,11 @@ class TieredHederaFsTest {
 
 	@Test
 	void appendThrowsOnDeleted() {
-		// setup:
-		IllegalArgumentException iae = null;
-
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(deletedAttr);
 
-		// when:
-		try {
-			subject.append(fid, moreContents);
-		} catch (IllegalArgumentException thrown) {
-			iae = thrown;
-		}
+		final var iae = assertThrows(IllegalArgumentException.class, () -> subject.append(fid, moreContents));
 
-		// then:
 		assertEquals(
 				IllegalArgumentType.DELETED_FILE,
 				IllegalArgumentType.valueOf(iae.getMessage()));
@@ -505,20 +393,11 @@ class TieredHederaFsTest {
 
 	@Test
 	void overwriteThrowsOnDeleted() {
-		// setup:
-		IllegalArgumentException iae = null;
-
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(deletedAttr);
 
-		// when:
-		try {
-			subject.overwrite(fid, newContents);
-		} catch (IllegalArgumentException thrown) {
-			iae = thrown;
-		}
+		final var iae = assertThrows(IllegalArgumentException.class, () -> subject.overwrite(fid, newContents));
 
-		// then:
 		assertEquals(
 				IllegalArgumentType.DELETED_FILE,
 				IllegalArgumentType.valueOf(iae.getMessage()));
@@ -526,19 +405,10 @@ class TieredHederaFsTest {
 
 	@Test
 	void lsThrowsOnMissing() {
-		// setup:
-		IllegalArgumentException iae = null;
-
 		given(metadata.containsKey(missing)).willReturn(false);
 
-		// when:
-		try {
-			subject.getattr(missing);
-		} catch (IllegalArgumentException thrown) {
-			iae = thrown;
-		}
+		final var iae = assertThrows(IllegalArgumentException.class, () -> subject.getattr(missing));
 
-		// then:
 		assertEquals(
 				IllegalArgumentType.UNKNOWN_FILE,
 				IllegalArgumentType.valueOf(iae.getMessage()));
@@ -549,28 +419,17 @@ class TieredHederaFsTest {
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(deletedAttr);
 
-		// when:
-		var meta = subject.getattr(fid);
+		final var meta = subject.getattr(fid);
 
-		// then:
 		assertEquals(deletedAttr, meta);
 	}
 
 	@Test
 	void catThrowsOnMissing() {
-		// setup:
-		IllegalArgumentException iae = null;
-
 		given(metadata.containsKey(missing)).willReturn(false);
 
-		// when:
-		try {
-			subject.cat(missing);
-		} catch (IllegalArgumentException thrown) {
-			iae = thrown;
-		}
+		final var iae = assertThrows(IllegalArgumentException.class, () -> subject.cat(missing));
 
-		// then:
 		assertEquals(
 				IllegalArgumentType.UNKNOWN_FILE,
 				IllegalArgumentType.valueOf(iae.getMessage()));
@@ -578,20 +437,11 @@ class TieredHederaFsTest {
 
 	@Test
 	void catThrowsOnDeleted() {
-		// setup:
-		IllegalArgumentException iae = null;
-
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(deletedAttr);
 
-		// when:
-		try {
-			subject.cat(fid);
-		} catch (IllegalArgumentException thrown) {
-			iae = thrown;
-		}
+		final var iae = assertThrows(IllegalArgumentException.class, () -> subject.cat(fid));
 
-		// then:
 		assertEquals(
 				IllegalArgumentType.DELETED_FILE,
 				IllegalArgumentType.valueOf(iae.getMessage()));
@@ -603,28 +453,20 @@ class TieredHederaFsTest {
 		given(metadata.get(fid)).willReturn(livingAttr);
 		given(data.get(fid)).willReturn(origContents);
 
-		// when:
-		var contents = subject.cat(fid);
+		final var contents = subject.cat(fid);
 
-		// then:
-		assertEquals(
-				new String(origContents),
-				new String(contents));
+		assertArrayEquals(origContents, contents);
 	}
 
 	@Test
 	void usesMetadataToCheckExistence() {
 		given(metadata.containsKey(fid)).willReturn(true);
 
-		// when:
-		boolean yesFlag = subject.exists(fid);
-		// and:
-		boolean noFlag = subject.exists(missing);
+		final var yesFlag = subject.exists(fid);
+		final var noFlag = subject.exists(missing);
 
-		// then:
 		assertTrue(yesFlag);
 		assertFalse(noFlag);
-		// and:
 		verify(metadata).containsKey(fid);
 		verify(metadata).containsKey(missing);
 	}
@@ -634,10 +476,8 @@ class TieredHederaFsTest {
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(deletedAttr);
 
-		// when:
-		var result = subject.sudoSetattr(fid, livingAttr);
+		final var result = subject.sudoSetattr(fid, livingAttr);
 
-		// then:
 		verify(metadata).put(fid, livingAttr);
 		assertTrue(result.attrChanged());
 		assertFalse(result.fileReplaced());
@@ -646,20 +486,11 @@ class TieredHederaFsTest {
 
 	@Test
 	void setattrRejectsDeletedFile() {
-		// setup:
-		IllegalArgumentException iae = null;
-
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(deletedAttr);
 
-		// when:
-		try {
-			subject.setattr(fid, livingAttr);
-		} catch (IllegalArgumentException thrown) {
-			iae = thrown;
-		}
+		final var iae = assertThrows(IllegalArgumentException.class, () -> subject.setattr(fid, livingAttr));
 
-		// then:
 		assertEquals(
 				IllegalArgumentType.DELETED_FILE,
 				IllegalArgumentType.valueOf(iae.getMessage()));
@@ -667,19 +498,10 @@ class TieredHederaFsTest {
 
 	@Test
 	void sudoSetattrRejectsMissingFile() {
-		// setup:
-		IllegalArgumentException iae = null;
-
 		given(metadata.containsKey(missing)).willReturn(false);
 
-		// when:
-		try {
-			subject.sudoSetattr(missing, livingAttr);
-		} catch (IllegalArgumentException thrown) {
-			iae = thrown;
-		}
+		final var iae = assertThrows(IllegalArgumentException.class, () -> subject.sudoSetattr(missing, livingAttr));
 
-		// then:
 		assertEquals(
 				IllegalArgumentType.UNKNOWN_FILE,
 				IllegalArgumentType.valueOf(iae.getMessage()));
@@ -688,19 +510,10 @@ class TieredHederaFsTest {
 
 	@Test
 	void setattrRejectsMissingFile() {
-		// setup:
-		IllegalArgumentException iae = null;
-
 		given(metadata.containsKey(missing)).willReturn(false);
 
-		// when:
-		try {
-			subject.setattr(missing, livingAttr);
-		} catch (IllegalArgumentException thrown) {
-			iae = thrown;
-		}
+		final var iae = assertThrows(IllegalArgumentException.class, () -> subject.setattr(missing, livingAttr));
 
-		// then:
 		assertEquals(
 				IllegalArgumentType.UNKNOWN_FILE,
 				IllegalArgumentType.valueOf(iae.getMessage()));
@@ -711,10 +524,8 @@ class TieredHederaFsTest {
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(livingAttr);
 
-		// when:
-		var result = subject.setattr(fid, livingAttr);
+		final var result = subject.setattr(fid, livingAttr);
 
-		// then:
 		verify(metadata).put(fid, livingAttr);
 		assertTrue(result.attrChanged());
 		assertFalse(result.fileReplaced());
@@ -723,20 +534,16 @@ class TieredHederaFsTest {
 
 	@Test
 	void setattrRespectsInterceptors() {
-		// setup:
-		FileUpdateInterceptor authPolicy = mock(FileUpdateInterceptor.class);
+		final var authPolicy = mock(FileUpdateInterceptor.class);
 		given(authPolicy.priorityForCandidate(fid)).willReturn(OptionalInt.of(Integer.MIN_VALUE));
 		given(authPolicy.preAttrChange(argThat(fid::equals), any()))
 				.willReturn(new AbstractMap.SimpleEntry<>(AUTHORIZATION_FAILED, false));
-
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(livingAttr);
 
-		// when:
 		subject.register(authPolicy);
-		var result = subject.setattr(fid, livingAttr);
+		final var result = subject.setattr(fid, livingAttr);
 
-		// then:
 		verify(metadata, never()).put(fid, livingAttr);
 		assertFalse(result.attrChanged());
 		assertFalse(result.fileReplaced());
@@ -745,20 +552,11 @@ class TieredHederaFsTest {
 
 	@Test
 	void setattrRejectsExpiredFile() {
-		// setup:
-		IllegalArgumentException iae = null;
-
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(livingAttr);
 
-		// when:
-		try {
-			subject.setattr(fid, deadAttr);
-		} catch (IllegalArgumentException thrown) {
-			iae = thrown;
-		}
+		final var iae = assertThrows(IllegalArgumentException.class, () -> subject.setattr(fid, deadAttr));
 
-		// then:
 		assertEquals(
 				IllegalArgumentType.FILE_WOULD_BE_EXPIRED,
 				IllegalArgumentType.valueOf(iae.getMessage()));
@@ -766,17 +564,9 @@ class TieredHederaFsTest {
 
 	@Test
 	void createRejectsExpiredFile() {
-		// given:
-		IllegalArgumentException iae = null;
+		final var iae = assertThrows(IllegalArgumentException.class,
+				() -> subject.create(origContents, deadAttr, sponsor));
 
-		// when:
-		try {
-			subject.create(origContents, deadAttr, sponsor);
-		} catch (IllegalArgumentException thrown) {
-			iae = thrown;
-		}
-
-		// then:
 		assertEquals(
 				IllegalArgumentType.FILE_WOULD_BE_EXPIRED,
 				IllegalArgumentType.valueOf(iae.getMessage()));
@@ -784,21 +574,12 @@ class TieredHederaFsTest {
 
 	@Test
 	void createRejectsOversizeContents() {
-		// setup:
-		IllegalArgumentException iae = null;
-
 		given(properties.maxFileSizeKb()).willReturn(1);
-		// and:
-		var oversizeContents = new byte[BYTES_PER_KB + 1];
+		final var oversizeContents = new byte[BYTES_PER_KB + 1];
 
-		// when:
-		try {
-			subject.create(oversizeContents, livingAttr, sponsor);
-		} catch (IllegalArgumentException thrown) {
-			iae = thrown;
-		}
+		final var iae = assertThrows(IllegalArgumentException.class,
+				() -> subject.create(oversizeContents, livingAttr, sponsor));
 
-		// then:
 		assertEquals(
 				IllegalArgumentType.OVERSIZE_CONTENTS,
 				IllegalArgumentType.valueOf(iae.getMessage()));
@@ -808,10 +589,8 @@ class TieredHederaFsTest {
 	void createUsesNextEntityId() {
 		given(ids.newFileId(sponsor)).willReturn(fid);
 
-		// when:
-		var newFile = subject.create(origContents, livingAttr, sponsor);
+		final var newFile = subject.create(origContents, livingAttr, sponsor);
 
-		// then:
 		assertEquals(fid, newFile);
 		verify(data).put(fid, origContents);
 		verify(metadata).put(fid, livingAttr);
@@ -819,24 +598,20 @@ class TieredHederaFsTest {
 
 	@Test
 	void createNewFile150ThenReadAndAppend() {
-		FileID fileID = FileID.newBuilder().setFileNum(150L).build();
+		final var fileID = FileID.newBuilder().setFileNum(150L).build();
 		given(metadata.containsKey(fileID)).willReturn(true);
 		given(metadata.get(fileID)).willReturn(livingAttr);
 		given(diskFs.contains(fileID)).willReturn(true);
 		given(diskFs.contentsOf(fileID)).willReturn(newContents);
-		// when:
-		var result = subject.overwrite(fileID, newContents);
 
-		// then:
+		final var result = subject.overwrite(fileID, newContents);
+
 		assertEquals(SUCCESS, result.outcome());
 		assertTrue(result.fileReplaced());
-		// and:
 		verify(diskFs).put(fileID, newContents);
 
-		// and when:
 		subject.append(fileID, moreContents);
 
-		// then:
 		verify(diskFs).put(fileID, (new String(newContents) + new String(moreContents)).getBytes());
 	}
 }
