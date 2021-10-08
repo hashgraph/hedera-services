@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.contract;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,6 +35,7 @@ import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contra
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -65,7 +67,8 @@ public class ContractUpdateSuite extends HapiApiSuite {
 				rejectsExpiryTooFarInTheFuture(),
 				updateAutoRenewWorks(),
 				updateAdminKeyWorks(),
-				canMakeContractImmutableWithEmptyKeyList()
+				canMakeContractImmutableWithEmptyKeyList(),
+				givenAdminKeyMustBeValid()
 		);
 	}
 
@@ -179,6 +182,21 @@ public class ContractUpdateSuite extends HapiApiSuite {
 						contractUpdate("toBeImmutable")
 								.newKey("newAdminKey")
 								.hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT)
+				);
+	}
+
+	private HapiApiSpec givenAdminKeyMustBeValid() {
+		return defaultHapiSpec("GivenAdminKeyMustBeValid")
+				.given(
+						fileCreate("bytecode").path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH),
+						contractCreate("target").bytecode("bytecode")
+				).when(
+						getContractInfo("target").logged()
+				).then(
+						contractUpdate("target")
+								.useDeprecatedAdminKey()
+								.signedBy(GENESIS, "target")
+								.hasKnownStatus(INVALID_ADMIN_KEY)
 				);
 	}
 

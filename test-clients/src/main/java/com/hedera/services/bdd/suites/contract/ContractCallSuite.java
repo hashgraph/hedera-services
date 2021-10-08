@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.contract;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
@@ -39,7 +38,6 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.tuweni.bytes.Bytes;
 import org.ethereum.core.CallTransaction;
 import org.junit.jupiter.api.Assertions;
 
@@ -88,6 +86,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPro
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -105,9 +104,6 @@ public class ContractCallSuite extends HapiApiSuite {
 	private static final long depositAmount = 1000;
 
 	public static void main(String... args) {
-		/* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
-		new org.ethereum.crypto.HashUtil();
-
 		new ContractCallSuite().runSuiteAsync();
 	}
 
@@ -121,73 +117,32 @@ public class ContractCallSuite extends HapiApiSuite {
 		return allOf(
 				positiveSpecs(),
 				negativeSpecs()
-//				Arrays.asList(fridayThe13thSpec())
+//				Arrays.asList(fridayThe13thSpec()) //Fails with Bad expiry time! ==> expected: <1647546531> but was: <1641322534>
 		);
 	}
 
 	List<HapiApiSpec> negativeSpecs() {
 		return Arrays.asList(
-//				insufficientGas(), //pass
-//				invalidContract(), //pass
-//				smartContractFailFirst()
+				insufficientGas(),
+				invalidContract(),
+//				smartContractFailFirst(), //Fails with inconsistency btw tx fee returned in tx record and actual acount balance difference
 				contractTransferToSigReqAccountWithoutKeyFails()
 		);
 	}
 
 	List<HapiApiSpec> positiveSpecs() {
 		return Arrays.asList(
-//				resultSizeAffectsFees(), //pass
-//				payableSuccess(), //pass
-//				benchmarkSingleSetter()
-//				depositSuccess(), //pass
-//				depositDeleteSuccess(),
-//				multipleDepositSuccess(),
-//				payTestSelfDestructCall(),
-//				multipleSelfDestructsAreSafe(),
-//				smartContractInlineAssemblyCheck(), //pass
-//				ocToken(),
-//				callingContract() //pass
+				resultSizeAffectsFees(),
+				payableSuccess(),
+				depositSuccess(),
+				depositDeleteSuccess(),
+				multipleDepositSuccess(),
+				payTestSelfDestructCall(),
+				multipleSelfDestructsAreSafe(),
+				smartContractInlineAssemblyCheck(),
+				ocToken(),
 				contractTransferToSigReqAccountWithKeySucceeds()
 		);
-	}
-
-	private HapiApiSpec benchmarkSingleSetter() {
-		final long GAS_LIMIT = 1_000_000;
-		return defaultHapiSpec("SimpleStorage")
-				.given(
-						cryptoCreate("payer")
-								.balance(10 * ONE_HUNDRED_HBARS),
-						fileCreate("bytecode")
-								.path(ContractResources.BENCHMARK_CONTRACT)
-								.memo("test-memo-contract")
-								.payingWith("payer")
-				)
-				.when(
-						contractCreate("immutableContract")
-								.payingWith("payer")
-								.bytecode("bytecode")
-								.via("creationTx")
-								.gas(GAS_LIMIT),
-						contractCall(
-								"immutableContract",
-								ContractResources.TWO_SSTORES,
-								Bytes.fromHexString("0x05").toArray()
-						)
-								.gas(GAS_LIMIT)
-								.via("storageTx")
-				).then(
-						contractCallLocal("immutableContract", ContractResources.BENCHMARK_GET_COUNTER)
-								.nodePayment(1_234_567)
-								.has(
-										ContractFnResultAsserts.resultWith()
-												.resultThruAbi(
-														ContractResources.BENCHMARK_GET_COUNTER,
-														ContractFnResultAsserts.isLiteralResult(
-																new Object[]{BigInteger.valueOf(1L)}
-														)
-												)
-								)
-				);
 	}
 
 	HapiApiSpec ocToken() {
@@ -811,7 +766,7 @@ public class ContractCallSuite extends HapiApiSuite {
 		return defaultHapiSpec("InvalidContract")
 				.given().when().then(
 						contractCall(invalidContract, ContractResources.CREATE_CHILD_ABI)
-								.hasPrecheck(INVALID_CONTRACT_ID));
+								.hasKnownStatus(INVALID_CONTRACT_ID));
 	}
 
 	private HapiApiSpec resultSizeAffectsFees() {
@@ -881,17 +836,17 @@ public class ContractCallSuite extends HapiApiSuite {
 											.via("failInsufficientGas");
 
 							var subop3 = getTxnRecord("failInsufficientGas");
-							CustomSpecAssert.allRunFor(spec, subop1, subop2, subop3);
+							allRunFor(spec, subop1, subop2, subop3);
 							long delta = subop3.getResponseRecord().getTransactionFee();
 
 							var subop4 = getAccountBalance("payer").hasTinyBars(
 									changeFromSnapshot("balanceBefore0", -delta));
-							CustomSpecAssert.allRunFor(spec, subop4);
+							allRunFor(spec, subop4);
 
 						}),
 
-
 						withOpContext((spec, ignore) -> {
+
 							var subop1 = balanceSnapshot("balanceBefore1", "payer");
 
 							var subop2 = contractCreate("failInvalidInitialBalance")
@@ -900,20 +855,20 @@ public class ContractCallSuite extends HapiApiSuite {
 									.gas(250_000L)
 									.bytecode("bytecode")
 									.via("failInvalidInitialBalance")
-									.hasKnownStatus(CONTRACT_REVERT_EXECUTED);
+									.hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION);
 
 							var subop3 = getTxnRecord("failInvalidInitialBalance");
-							CustomSpecAssert.allRunFor(spec, subop1, subop2, subop3);
+							allRunFor(spec, subop1, subop2, subop3);
 							long delta = subop3.getResponseRecord().getTransactionFee();
 
 							var subop4 = getAccountBalance("payer").hasTinyBars(
 									changeFromSnapshot("balanceBefore1", -delta));
-							CustomSpecAssert.allRunFor(spec, subop4);
+							allRunFor(spec, subop4);
 
 						}),
 
-
 						withOpContext((spec, ignore) -> {
+
 							var subop1 = balanceSnapshot("balanceBefore2", "payer");
 
 							var subop2 = contractCreate("successWithZeroInitialBalance")
@@ -925,16 +880,17 @@ public class ContractCallSuite extends HapiApiSuite {
 									.via("successWithZeroInitialBalance");
 
 							var subop3 = getTxnRecord("successWithZeroInitialBalance");
-							CustomSpecAssert.allRunFor(spec, subop1, subop2, subop3);
+							allRunFor(spec, subop1, subop2, subop3);
 							long delta = subop3.getResponseRecord().getTransactionFee();
 
 							var subop4 = getAccountBalance("payer").hasTinyBars(
 									changeFromSnapshot("balanceBefore2", -delta));
-							CustomSpecAssert.allRunFor(spec, subop4);
+							allRunFor(spec, subop4);
 
 						}),
 
 						withOpContext((spec, ignore) -> {
+
 							var subop1 = balanceSnapshot("balanceBefore3", "payer");
 
 							var subop2 = contractCall("successWithZeroInitialBalance",
@@ -942,20 +898,20 @@ public class ContractCallSuite extends HapiApiSuite {
 									.payingWith("payer")
 									.gas(300_000L)
 									.hasKnownStatus(SUCCESS)
-									.via("setValue");
+									.via("setValue").logged();
 
-							var subop3 = getTxnRecord("setValue");
-							CustomSpecAssert.allRunFor(spec, subop1, subop2, subop3);
+							var subop3 = getTxnRecord("setValue").logged();
+							allRunFor(spec, subop1, subop2, subop3);
 							long delta = subop3.getResponseRecord().getTransactionFee();
 
 							var subop4 = getAccountBalance("payer").hasTinyBars(
 									changeFromSnapshot("balanceBefore3", -delta));
-							CustomSpecAssert.allRunFor(spec, subop4);
+							allRunFor(spec, subop4);
 
 						}),
 
-
 						withOpContext((spec, ignore) -> {
+
 							var subop1 = balanceSnapshot("balanceBefore4", "payer");
 
 							var subop2 = contractCall("successWithZeroInitialBalance",
@@ -966,12 +922,12 @@ public class ContractCallSuite extends HapiApiSuite {
 									.via("getValue");
 
 							var subop3 = getTxnRecord("getValue");
-							CustomSpecAssert.allRunFor(spec, subop1, subop2, subop3);
+							allRunFor(spec, subop1, subop2, subop3);
 							long delta = subop3.getResponseRecord().getTransactionFee();
 
 							var subop4 = getAccountBalance("payer").hasTinyBars(
 									changeFromSnapshot("balanceBefore4", -delta));
-							CustomSpecAssert.allRunFor(spec, subop4);
+							allRunFor(spec, subop4);
 
 						})
 				).then(

@@ -50,6 +50,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
@@ -64,17 +65,22 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.roy
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHbarFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHtsFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fractionalFeeInSchedule;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordSystemProperty;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -96,6 +102,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_F
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 public class TokenCreateSpecs extends HapiApiSuite {
@@ -103,6 +111,10 @@ public class TokenCreateSpecs extends HapiApiSuite {
 
 	private static String TOKEN_TREASURY = "treasury";
 	private static final long A_HUNDRED_SECONDS = 100;
+
+	private static final String A_TOKEN = "TokenA";
+	private static final String B_TOKEN = "TokenB";
+	private static final String FIRST_USER = "Client1";
 
 	private static final long defaultMaxLifetime =
 			Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
@@ -146,6 +158,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						feeCollectorSigningReqsWorkForTokenCreate(),
 						createsFungibleInfiniteByDefault(),
 						baseCreationsHaveExpectedPrices(),
+						prechecksWork()
 				}
 		);
 	}
@@ -973,6 +986,64 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						getAccountBalance(TOKEN_TREASURY)
 								.hasTinyBars(1L)
 								.hasTokenBalance(token, initialSupply)
+				);
+	}
+
+	private HapiApiSpec prechecksWork() {
+		return defaultHapiSpec("PrechecksWork")
+				.given(
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						cryptoCreate(FIRST_USER).balance(0L)
+				).when(
+						tokenCreate(A_TOKEN)
+								.initialSupply(100)
+								.treasury(TOKEN_TREASURY),
+						tokenCreate(B_TOKEN)
+								.initialSupply(100)
+								.treasury(TOKEN_TREASURY)
+				).then(
+						cryptoTransfer(
+								moving(1, A_TOKEN)
+										.between(TOKEN_TREASURY, FIRST_USER),
+								moving(1, A_TOKEN)
+										.between(TOKEN_TREASURY, FIRST_USER)
+						).hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
+						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
+								"ledger.tokenTransfers.maxLen", "" + 2
+						)).payingWith(ADDRESS_BOOK_CONTROL),
+						cryptoTransfer(
+								moving(1, A_TOKEN)
+										.between(TOKEN_TREASURY, FIRST_USER),
+								moving(1, B_TOKEN)
+										.between(TOKEN_TREASURY, FIRST_USER)
+						).hasPrecheck(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED),
+						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
+								"ledger.tokenTransfers.maxLen", "" + 10
+						)).payingWith(ADDRESS_BOOK_CONTROL),
+						cryptoTransfer(
+								movingHbar(1)
+										.between(TOKEN_TREASURY, FIRST_USER),
+								movingHbar(1)
+										.between(TOKEN_TREASURY, FIRST_USER)
+						).hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
+						cryptoTransfer(
+								moving(1, A_TOKEN)
+										.between(TOKEN_TREASURY, FIRST_USER),
+								moving(1, A_TOKEN)
+										.between(TOKEN_TREASURY, FIRST_USER)
+						).hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
+						cryptoTransfer(
+								moving(0, A_TOKEN)
+										.between(TOKEN_TREASURY, FIRST_USER)
+						).hasPrecheck(INVALID_ACCOUNT_AMOUNTS),
+						cryptoTransfer(
+								moving(10, A_TOKEN)
+										.from(TOKEN_TREASURY)
+						).hasPrecheck(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN),
+						cryptoTransfer(
+								moving(10, A_TOKEN)
+										.empty()
+						).hasPrecheck(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS)
 				);
 	}
 

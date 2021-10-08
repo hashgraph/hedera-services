@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.suites.contract;
+package com.hedera.services.bdd.suites.perf.contract;
 
 /*-
  * ‌
@@ -128,7 +128,7 @@ public class ContractPerformanceSuite extends HapiApiSuite {
 			HapiSpecOperation[] givenBlock;
 			if (contractCode.contains(EXTERNAL_CONTRACT_MARKER)) {
 				givenBlock =
-						new HapiSpecOperation[] {
+						new HapiSpecOperation[]{
 								createProgramFile(RETURN_CONTRACT + "bytecode", RETURN_PROGRAM),
 								contractCreate(RETURN_CONTRACT).bytecode(RETURN_CONTRACT + "bytecode"),
 								createProgramFile(REVERT_CONTRACT + "bytecode", REVERT_PROGRAM),
@@ -145,7 +145,7 @@ public class ContractPerformanceSuite extends HapiApiSuite {
 						};
 			} else {
 				givenBlock =
-						new HapiSpecOperation[] {
+						new HapiSpecOperation[]{
 								fileCreate("bytecode").path(PERF_RESOURCES + test),
 								contractCreate(test).bytecode("bytecode")
 						};

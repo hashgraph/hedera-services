@@ -74,16 +74,16 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 		return Arrays.asList(
 				deletedContract(),
 				invalidContractID(),
-				impureCallFails()
-//				insufficientFeeFails() // TODO: fails due to factory contract creation
-//				undersizedMaxResultFails(), // TODO: fails due to factory contract creation
-//				lowBalanceFails() // TODO: fails due to factory contract creation
+				impureCallFails(),
+//				insufficientFeeFails(), //Bad answerOnlyPrecheck! expected INSUFFICIENT_TX_FEE, actual OK <- Fails in master the same way
+//				undersizedMaxResultFails(), //Bad answerOnlyPrecheck! expected RESULT_SIZE_LIMIT_EXCEEDED, actual OK!
+				lowBalanceFails()
 		);
 	}
 
 	private List<HapiApiSpec> positiveSpecs() {
 		return Arrays.asList(
-//				vanillaSuccess() // TODO: fails due to factory contract creation
+				vanillaSuccess()
 		);
 	}
 

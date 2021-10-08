@@ -130,18 +130,24 @@ public class ContractResources {
 			"{\"internalType\":\"string\",\"name\":\"memo\",\"type\":\"string\"}],\"name\":\"deposit\"," +
 			"\"outputs\":[]," +
 			"\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}";
-	public static final String BIG_ARRAY_CHANGE_ARRAY_ABI = "{\"constant\":false," +
-			"\"inputs\":[{\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"changeArray\"," +
-			"\"outputs\":[]," +
-			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String BIG_ARRAY_CHANGE_ARRAY_ABI = "{ \"constant\": false," +
+			" \"inputs\": [ { \"internalType\": \"uint256\", \"name\": \"_value\", \"type\": \"uint256\" } ], " +
+			"\"name\": \"changeArray\", \"outputs\": [], \"payable\": false, \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 	public static final String BIG_ARRAY_GROW_TO_ABI = "{\"constant\":false," +
 			"\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_limit\",\"type\":\"uint256\"}],\"name\":\"growTo\"," +
 			"\"outputs\":[]," +
 			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String BIG_ARRAY_SET_SIZE_IN_KB_ABI = "{\"constant\":false," +
-			"\"inputs\":[{\"name\":\"_howManyKB\",\"type\":\"uint256\"}],\"name\":\"setSizeInKB\"," +
-			"\"outputs\":[]," +
-			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String BIG_ARRAY_SET_SIZE_ABI = "{ \"constant\": false," +
+			" \"inputs\": [ { \"internalType\": \"uint256\", \"name\": \"_size\", \"type\": \"uint256\" } ], \"name\": \"setSize\"," +
+			" \"outputs\": [], \"payable\": false, \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+	public static final String GROW_ARRAY_GROW_TO = "{\"constant\": false," +
+			"\"inputs\": [{\"internalType\": \"uint256\",\"name\": \"_targetSize\",\"type\": \"uint256\"}]," +
+			"\"name\": \"growTo\",\"outputs\": [],\"payable\": false,\"stateMutability\": \"nonpayable\"," +
+			"\"type\": \"function\"}";
+	public static final String GROW_ARRAY_CHANGE_ARRAY = "{\"constant\": false," +
+			"\"inputs\": [{\"internalType\": \"uint256\",\"name\": \"_value\",\"type\": \"uint256\"}]," +
+			"\"name\": \"changeArray\",\"outputs\": [],\"payable\": false,\"stateMutability\": \"nonpayable\"," +
+			"\"type\": \"function\"}";
 	public static final String PICK_A_BIG_RESULT_ABI = "{\"constant\":true," +
 			"\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"how\",\"type\":\"uint32\"}],\"name\":\"pick\"," +
 			"\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}]," +
@@ -180,20 +186,21 @@ public class ContractResources {
 			"\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_childId\",\"type\":\"uint256\"}],\"name\":\"getChildValue\"," +
 			"\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"_get\",\"type\":\"uint256\"}]," +
 			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-	public static final String SET_ZERO_READ_ONE_ABI = "{\"constant\":false," +
-			"\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"setZeroReadOne\"," +
-			"\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"_getOne\",\"type\":\"uint256\"}]," +
-			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String SET_BOTH_ABI = "{\"constant\":false," +
-			"\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"setBoth\"," +
-			"\"outputs\":[],\"" +
-			"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String GROW_CHILD_ABI = "{\"constant\":false," +
-			"\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_childId\",\"type\":\"uint256\"}," +
-			"{\"internalType\":\"uint256\",\"name\":\"_howManyKB\",\"type\":\"uint256\"}," +
-			"{\"internalType\":\"uint256\",\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"growChild\"," +
-			"\"outputs\":[]," +
-			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String SET_ZERO_READ_ONE_ABI = "{\"constant\": false," +
+			"\"inputs\": [{\"internalType\": \"uint256\",\"name\": \"_value\",\"type\": \"uint256\"}]," +
+			"\"name\": \"setZeroReadOne\",\"outputs\": " +
+			"[{\"internalType\": \"uint256\",\"name\": \"_getOne\",\"type\": \"uint256\"}]," +
+			"\"payable\": false,\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String SET_BOTH_ABI = "{\"constant\": false,\"inputs\": " +
+			"[{\"internalType\": \"uint256\",\"name\": \"_value\",\"type\": \"uint256\"}]," +
+			"\"name\": \"setBoth\",\"outputs\": [],\"payable\": false," +
+			"\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String GROW_CHILD_ABI = "{\"constant\": false,\"inputs\": " +
+			"[{\"internalType\": \"uint256\",\"name\": \"_childId\",\"type\": \"uint256\"}" +
+			",{\"internalType\": \"uint256\",\"name\": \"_howManyKB\",\"type\": \"uint256\"}," +
+			"{\"internalType\": \"uint256\",\"name\": \"_value\",\"type\": \"uint256\"}]," +
+			"\"name\": \"growChild\",\"outputs\": [],\"payable\": false,\"stateMutability\": \"nonpayable\"," +
+			"\"type\": \"function\"}";
 	public static final String GET_BALANCE_ABI = "{\"constant\":true," +
 			"\"inputs\":[],\"name\":\"getBalance\"," +
 			"\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}]," +

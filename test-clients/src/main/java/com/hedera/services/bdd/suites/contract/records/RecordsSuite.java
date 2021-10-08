@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.suites.contract;
+package com.hedera.services.bdd.suites.contract.records;
 
 /*-
  * ‌
@@ -21,7 +21,9 @@ package com.hedera.services.bdd.suites.contract;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -45,24 +47,46 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 
-public class SmartContractPaySpec extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(SmartContractPaySpec.class);
+public class RecordsSuite extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(RecordsSuite.class);
 
 	public static void main(String... args) {
-		new org.ethereum.crypto.HashUtil();
-		new SmartContractPaySpec().runSuiteSync();
+		new RecordsSuite().runSuiteSync();
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				smartContractPaySpec()
+				bigCall(),
+				txRecordsContainValidTransfers(),
+				invalidContract()
 		});
 	}
 
-	HapiApiSpec smartContractPaySpec() {
-		return defaultHapiSpec("smartContractPaySpec")
+	HapiApiSpec bigCall() {
+		int byteArraySize = (int)(87.5 * 1_024);
+
+		return defaultHapiSpec("BigRecord")
+				.given(
+						cryptoCreate("payer").balance( 10 * ONE_HUNDRED_HBARS),
+						fileCreate("bytecode")
+								.path(ContractResources.BIG_BIG_BYTECODE_PATH),
+						contractCreate("bigBig")
+								.bytecode("bytecode")
+				).when(
+						contractCall("bigBig", ContractResources.PICK_A_BIG_RESULT_ABI, byteArraySize)
+								.payingWith("payer")
+								.gas(300_000L)
+								.via("bigCall")
+				).then(
+						getTxnRecord("bigCall").logged()
+				);
+	}
+	
+	HapiApiSpec txRecordsContainValidTransfers() {
+		return defaultHapiSpec("TXRecordsContainValidTransfers")
 				.given(
 						cryptoCreate("payer")
 								.balance(10_000_000_000_000L),
@@ -88,7 +112,7 @@ public class SmartContractPaySpec extends HapiApiSuite {
 
 							ContractGetInfoResponse.ContractInfo payReceivableContratInfo =
 									spec.registry().getContractInfo(
-									"payReceivableKey");
+											"payReceivableKey");
 							CryptoGetInfoResponse.AccountInfo receiverAccountInfo = spec.registry().getAccountInfo(
 									"receiverAccountInfoKey");
 							String receiverAcctAddress = receiverAccountInfo.getContractAccountID();
@@ -152,6 +176,15 @@ public class SmartContractPaySpec extends HapiApiSuite {
 			sumToReturn += currAccAmount.getAmount();
 		}
 		return sumToReturn;
+	}
+
+	HapiApiSpec invalidContract() {
+		String invalidContract = HapiSpecSetup.getDefaultInstance().invalidContractName();
+
+		return defaultHapiSpec("InvalidContract")
+				.given().when().then(
+						QueryVerbs.getContractRecords(invalidContract)
+								.hasCostAnswerPrecheck(INVALID_CONTRACT_ID));
 	}
 
 	@Override

@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.suites.contract;
+package com.hedera.services.bdd.suites.schedule;
 
 /*-
  * ‌
@@ -59,8 +59,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 
-public class SmartContractInlineAssemblySpec extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(SmartContractFailFirstSpec.class);
+public class ScheduleExecutionSpecStateful extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(ScheduleExecutionSpecStateful.class);
 
 	private static final int TMP_MAX_TRANSFER_LENGTH = 2;
 	private static final int TMP_MAX_TOKEN_TRANSFER_LENGTH = 2;
@@ -78,7 +78,7 @@ public class SmartContractInlineAssemblySpec extends HapiApiSuite {
 	String failingTxn = "failingTxn";
 
 	public static void main(String... args) {
-		new SmartContractInlineAssemblySpec().runSuiteSync();
+		new ScheduleExecutionSpecStateful().runSuiteSync();
 	}
 
 	@Override

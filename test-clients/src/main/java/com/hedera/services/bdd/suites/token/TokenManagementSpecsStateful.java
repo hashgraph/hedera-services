@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.suites.contract;
+package com.hedera.services.bdd.suites.token;
 
 /*-
  * ‌
@@ -47,14 +47,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_F
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
-public class SmartContractSelfDestructSpec extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(SmartContractSelfDestructSpec.class);
+public class TokenManagementSpecsStateful extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(TokenManagementSpecsStateful.class);
 
 	private static final String defaultMaxNftMints =
 			HapiSpecSetup.getDefaultNodeProps().get("tokens.nfts.maxAllowedMints");
 
 	public static void main(String... args) {
-		new SmartContractSelfDestructSpec().runSuiteSync();
+		new TokenManagementSpecsStateful().runSuiteSync();
 	}
 
 	@Override

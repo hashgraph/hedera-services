@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.perf.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -67,18 +67,18 @@ public class ContractCallLocalPerfSuite extends HapiApiSuite {
 						contractCallLocal(
 								"contract",
 								ContractResources.BALANCE_LOOKUP_ABI,
-								spec -> new Object[] {
+								spec -> new Object[]{
 										spec.registry().getContractId("contract").getContractNum()
 								}).recordNodePaymentAs("cost"),
 						UtilVerbs.startThroughputObs("contractCallLocal")
 				).then(
 						UtilVerbs.inParallel(asOpArray(NUM_CALLS, ignore ->
-										contractCallLocal(
-												"contract",
-												ContractResources.BALANCE_LOOKUP_ABI,
-												spec -> new Object[] {
-														spec.registry().getContractId("contract").getContractNum()
-												}).nodePayment(spec -> spec.registry().getAmount("cost")))),
+								contractCallLocal(
+										"contract",
+										ContractResources.BALANCE_LOOKUP_ABI,
+										spec -> new Object[]{
+												spec.registry().getContractId("contract").getContractNum()
+										}).nodePayment(spec -> spec.registry().getAmount("cost")))),
 						UtilVerbs.finishThroughputObs("contractCallLocal")
 				);
 	}

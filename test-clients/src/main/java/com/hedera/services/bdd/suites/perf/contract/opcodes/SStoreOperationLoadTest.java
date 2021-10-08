@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.suites.perf.contract;
+package com.hedera.services.bdd.suites.perf.contract.opcodes;
 
 /*-
  * ‌
@@ -46,23 +46,23 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANS
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
-public class ContractBigArrayLoadTest extends LoadTest {
-	private static final Logger log = LogManager.getLogger(ContractBigArrayLoadTest.class);
-	private static int sizeInKb = 4;
+public class SStoreOperationLoadTest extends LoadTest {
+	private static final Logger log = LogManager.getLogger(SStoreOperationLoadTest.class);
+	private static int size = 4;
 
 	public static void main(String... args) {
 		int usedArgs = parseArgs(args);
 
 		// parsing local argument specific to this test
 		if (args.length > usedArgs) {
-			sizeInKb = Integer.parseInt(args[usedArgs]);
-			log.info("Set sizeInKb as " + sizeInKb);
+			size = Integer.parseInt(args[usedArgs]);
+			log.info("Set sizeInKb as " + size);
 		}
 
 		/* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
 		new org.ethereum.crypto.HashUtil();
 
-		ContractBigArrayLoadTest suite = new ContractBigArrayLoadTest();
+		SStoreOperationLoadTest suite = new SStoreOperationLoadTest();
 		suite.runSuiteSync();
 	}
 
@@ -101,10 +101,9 @@ public class ContractBigArrayLoadTest extends LoadTest {
 						getContractInfo("perf").hasExpectedInfo().logged(),
 
 						// Initialize storage size
-						contractCall("perf", ContractResources.BIG_ARRAY_SET_SIZE_IN_KB_ABI, sizeInKb)
+						contractCall("perf", ContractResources.BIG_ARRAY_SET_SIZE_ABI, size)
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
-								.gas(600000)
-
+								.gas(300_000)
 				).then(
 						defaultLoadTest(callBurst, settings)
 				);

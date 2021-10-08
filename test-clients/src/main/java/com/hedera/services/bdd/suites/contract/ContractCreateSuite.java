@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -44,6 +44,7 @@ import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ERROR_DECODING_BYTESTRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -64,16 +65,15 @@ public class ContractCreateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-
-				positiveTests()
-//				negativeTests()
+				positiveTests(),
+				negativeTests()
 		);
 	}
 
 	private List<HapiApiSpec> positiveTests() {
 		return Arrays.asList(
-			createsVanillaContract()
-//				createEmptyConstructor()
+				createsVanillaContract(),
+				createEmptyConstructor()
 		);
 	}
 
@@ -102,7 +102,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 						contractCreate("defaultContract")
 								.bytecode("contractCode")
 								.payingWith("bankrupt")
-								.hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)
+								.hasPrecheck(INSUFFICIENT_PAYER_BALANCE)
 				);
 	}
 
@@ -169,7 +169,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 
 	private HapiApiSpec rejectsInvalidMemo() {
 		return defaultHapiSpec("RejectsInvalidMemo")
-				.given( ).when().then(
+				.given().when().then(
 						contractCreate("testContract")
 								.entityMemo(TxnUtils.nAscii(101))
 								.hasPrecheck(MEMO_TOO_LONG),
@@ -215,7 +215,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 						contractCreate("testContract")
 								.balance(1L)
 								.bytecode("contractFile")
-								.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+								.hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION)
 				);
 	}
 

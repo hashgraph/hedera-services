@@ -4,9 +4,8 @@ contract Child {
     uint256 totalEntries = 0;
 
     // Grow the child's storage size by appending to the array
-    function growInKB(uint256 _howManyKB, uint256 _value) public {
-        uint256 newEntries = 16 * _howManyKB;
-        totalEntries = totalEntries + newEntries;
+    function growArray(uint256 _newEntries, uint256 _value) public {
+        totalEntries = totalEntries + _newEntries;
         uint256 startSize = sizedArray.length;
         sizedArray.length = totalEntries;
         for (uint i = startSize; i < totalEntries; i++) {
@@ -35,7 +34,7 @@ contract ChildStorage {
 
     // Set the child's storage size and values, plus my own value
     function growChild (uint256 _childId,uint256 _howManyKB, uint256 _value) public {
-        myChildren[_childId].growInKB(_howManyKB, _value);
+        myChildren[_childId].growArray(_howManyKB, _value);
         myValue = _value;
     }
 
