@@ -20,9 +20,12 @@ package com.hedera.services.store.models;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.ContractID;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -67,17 +70,21 @@ class IdTest {
 	void conversionsWork() {
 		final var id = new Id(1, 2, 3);
 		final var entityId = new EntityId(1, 2, 3);
-		final var merkleEntityId = new MerkleEntityId(1, 2, 3);
 		final var grpcAccount = IdUtils.asAccount("1.2.3");
 		final var grpcToken = IdUtils.asToken("1.2.3");
+		final var contractId = ContractID.newBuilder().setShardNum(1).setRealmNum(2).setContractNum(3).build();
+		final var address = Address.wrap(Bytes.wrap(EntityIdUtils.asSolidityAddress(contractId)));
 		final var grpcTopic = IdUtils.asTopic("1.2.3");
 
 		assertEquals(entityId, id.asEntityId());
 		assertEquals(grpcAccount, id.asGrpcAccount());
 		assertEquals(grpcToken, id.asGrpcToken());
+		assertEquals(contractId, id.asGrpcContract());
+		assertEquals(address, id.asEvmAddress());
 		assertEquals(id, Id.fromGrpcAccount(grpcAccount));
 		assertEquals(id, Id.fromGrpcToken(grpcToken));
 		assertEquals(id, Id.fromGrpcTopic(grpcTopic));
+		assertEquals(id, Id.fromGrpcContract(contractId));
 		assertEquals(grpcTopic, id.asGrpcTopic());
 	}
 
