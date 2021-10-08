@@ -935,13 +935,13 @@ workflows:
 
 
   GCP-Daily-Services-Global-3NReconnect-15N-4C:
-    triggers:
-      - schedule:
-          cron: "40 7 * * *"
-          filters:
-            branches:
-              only:
-                - master
+#    triggers:
+#      - schedule:
+#          cron: "40 7 * * *"
+#          filters:
+#            branches:
+#              only:
+#                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1004,13 +1004,13 @@ workflows:
                 at: /
 
   GCP-Weekly-Services-Query-Restart-Performance-6N-6C:
-#    triggers:
-#      - schedule:
-#          cron: "0 6 * * 2"
-#          filters:
-#            branches:
-#              only:
-#                - master
+    triggers:
+      - schedule:
+          cron: "0 6 * * 2"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
