@@ -812,13 +812,13 @@ workflows:
   # This workflow will be running normally in master branch on a daily basis
 
   GCP-Daily-Services-Crypto-Migration-7N-1C:
-#    triggers:
-#      - schedule:
-#          cron: "45 5 * * *"
-#          filters:
-#            branches:
-#              only:
-#                - master
+    triggers:
+      - schedule:
+          cron: "45 5 * * *"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -958,13 +958,13 @@ workflows:
                 at: /
 
   GCP-Weekly-Services-NetDelay-15N-1C:
-    triggers:
-      - schedule:
-          cron: "0 5 * * *"
-          filters:
-            branches:
-              only:
-                - master
+#    triggers:
+#      - schedule:
+#          cron: "0 5 * * *"
+#          filters:
+#            branches:
+#              only:
+#                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
