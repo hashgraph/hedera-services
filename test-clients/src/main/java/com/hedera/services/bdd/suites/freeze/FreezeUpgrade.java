@@ -62,6 +62,7 @@ public final class FreezeUpgrade extends HapiApiSuite {
 						UtilVerbs.freezeUpgrade()
 								.startingIn(upgradeDelay()).minutes()
 								.withUpdateFile(upgradeFileId())
+								.payingWith(GENESIS)
 								.havingHash(upgradeFileHash()))
 				.then();
 	}

@@ -52,7 +52,10 @@ public final class FreezeAbort extends HapiApiSuite {
 	private HapiApiSpec freezeAbort() {
 		return defaultHapiSpec("FreezeAbort")
 				.given()
-				.when(UtilVerbs.freezeAbort())
+				.when(
+						UtilVerbs.freezeAbort()
+								.payingWith(GENESIS)
+				)
 				.then();
 	}
 }

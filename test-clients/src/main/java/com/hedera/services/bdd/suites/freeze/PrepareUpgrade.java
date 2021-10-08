@@ -59,6 +59,8 @@ public final class PrepareUpgrade extends HapiApiSuite {
 				).when(
 						UtilVerbs.prepareUpgrade()
 								.withUpdateFile(upgradeFileId())
+								.signedBy(GENESIS)
+								.payingWith(GENESIS)
 								.havingHash(upgradeFileHash())
 				).then();
 	}
