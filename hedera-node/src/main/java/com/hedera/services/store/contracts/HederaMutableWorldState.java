@@ -59,6 +59,8 @@ public interface HederaMutableWorldState extends WorldState, WorldView {
 
 	/**
 	 * Persists accumulated changes to the underlying storage
+	 *
+	 * @return the list of ContractIDs created by this transaction.
 	 */
 	List<ContractID> persist();
 

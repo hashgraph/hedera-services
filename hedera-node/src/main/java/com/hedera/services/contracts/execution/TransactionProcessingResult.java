@@ -130,7 +130,7 @@ public class TransactionProcessingResult {
 
 	/**
 	 * Adds a list of created contracts to be externalised as part of the {@link com.hedera.services.state.submerkle.ExpirableTxnRecord}
-	 * @param createdContracts
+	 * @param createdContracts the list of contractIDs created
 	 */
 	public void setCreatedContracts(List<ContractID> createdContracts) {
 		this.createdContracts = createdContracts;
