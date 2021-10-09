@@ -96,7 +96,7 @@ EET framework:
 ###:sparkle:&nbsp;State validation
 EET framework:
   - [x] `GetAccountInfo` asserts for max and in-use automatic association fields.
-  - [ ] Account snapshot and change-vs-snapshot asserts.
+  - [x] Account snapshot and change-vs-snapshot asserts.
 
 ###:cactus:&nbsp;Migration tests
 Unit tests:
@@ -106,17 +106,19 @@ Unit tests:
 
 ###:white_check_mark:&nbsp;Positive functional
 EETs (all with post-transaction record and state validation):
-  - [ ] A `TokenCreate` record includes the treasury auto-association.
-  - [ ] A `TokenCreate` record includes all fractional fee collector auto-associations.
-  - [ ] A `TokenCreate` record includes all self-denominated fee collector auto-associations.
-  - [ ] An account created with 1 auto-association slot can receive units of an unassociated fungible token.
-  - [ ] An account created with 1 auto-association slot can receive an NFT of an unassociated unique token.
-  - [ ] An account created with 3 auto-association slots can receive units and NFTs from three unassociated tokens.
+  - [x] A `TokenCreate` record includes the treasury auto-association.
+  - [x] A `TokenCreate` record includes all fractional fee collector auto-associations.
+  - [x] A `TokenCreate` record includes all self-denominated fee collector auto-associations.
+  - [x] An account with open auto-association slots can receive units of an unassociated fungible token.
+  - [x] An account with open auto-association slot can receive an NFT of an unassociated unique token.
   - [ ] An account updated to have 3 more auto-association slots can receive 3 more units and NFTs from unassociated tokens.
 
 ###:x:&nbsp;Negative functional
 EETs (all with post-transaction record and state validation):
-  - [ ] A failed `TokenCreate` performs and records no auto-associations.
+  - [x] A failed `TokenCreate` performs and records no auto-associations.
+  - [ ] A `CryptoCreate` cannot allocate more auto-association slots than the max-per-account limit.
+  - [ ] A `CryptoUpdate` cannot allocate more auto-association slots than the max-per-account limit.
+  - [ ] A `CryptoUpdate` cannot renounce more auto-association slots than it has already used.
   - [ ] A two-party `CryptoTransfer` rolls back all side-effects if an auto-association fails.
   - [ ] A multi-party `CryptoTransfer` rolls back all auto-association side-effects if it fails.
 
