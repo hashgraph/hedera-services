@@ -142,8 +142,8 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 		ownedNfts.ifPresent(nftsOwned -> Assertions.assertEquals((long) nftsOwned, actualOwnedNfts));
 
 		var actualMaxAutoAssociations = actualInfo.getMaxAutomaticTokenAssociations();
-		maxAutomaticAssociations.ifPresent(maxAutoAssiations ->
-				Assertions.assertEquals((int) maxAutoAssiations , actualMaxAutoAssociations));
+		maxAutomaticAssociations.ifPresent(maxAutoAssociations ->
+				Assertions.assertEquals((int) maxAutoAssociations, actualMaxAutoAssociations));
 		alreadyUsedAutomaticAssociations.ifPresent(usedCount -> {
 			int actualCount = 0;
 			for (var rel : actualTokenRels) {

@@ -197,11 +197,13 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.autoAssociated(accountTokenPairs(List.of()))),
 						getAccountInfo(beneficiary)
 								.hasAlreadyUsedAutomaticAssociations(0)
-								.has(accountWith().newAssociationsFromSnapshot(
-										beneficiary, List.of(
-												relationshipWith(fungibleToken).balance(500),
-												relationshipWith(uniqueToken).balance(1)
-										)))
+								.has(accountWith().noChangesFromSnapshot(beneficiary)),
+						/* The beneficiary should still have two open auto-association slots */
+						cryptoTransfer(
+								movingUnique(uniqueToken, 1L)
+										.between(treasury, beneficiary),
+								moving(500, fungibleToken).between(treasury, beneficiary)
+						)
 				);
 	}
 
@@ -476,7 +478,6 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						).payingWith("payer").via("successfulTransfer")
 				).then(
 						getAccountBalance("randomBeneficiary")
-								.logged()
 								.hasTokenBalance(B_TOKEN, 100),
 						getTxnRecord("successfulTransfer").logged()
 				);
@@ -565,7 +566,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						getAccountBalance("beneficiary")
 								.hasTinyBars(changeFromSnapshot("beneBefore", -1 * ONE_HBAR))
 								.hasTokenBalance(A_TOKEN, 100),
-						getTxnRecord("transactTxn").logged()
+						getTxnRecord("transactTxn")
 				);
 	}
 
