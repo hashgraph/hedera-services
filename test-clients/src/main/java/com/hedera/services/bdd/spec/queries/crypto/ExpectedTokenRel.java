@@ -27,12 +27,14 @@ import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Assertions;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ExpectedTokenRel {
 	private static final Logger log = LogManager.getLogger(ExpectedTokenRel.class);
@@ -56,7 +58,7 @@ public class ExpectedTokenRel {
 			List<String> expectedAbsent,
 			List<TokenRelationship> actualRels,
 			HapiApiSpec spec
-	) throws Throwable {
+	) {
 		for (String unexpectedToken : expectedAbsent) {
 			for (TokenRelationship actualRel : actualRels) {
 				var unexpectedId = spec.registry().getTokenID(unexpectedToken);
@@ -75,17 +77,17 @@ public class ExpectedTokenRel {
 			List<ExpectedTokenRel> expectedRels,
 			List<TokenRelationship> actualRels,
 			HapiApiSpec spec
-	) throws Throwable {
+	) {
 		for (ExpectedTokenRel rel : expectedRels) {
 			boolean found = false;
 			var expectedId = spec.registry().getTokenID(rel.getToken());
 			for (TokenRelationship actualRel : actualRels) {
 				if (actualRel.getTokenId().equals(expectedId)) {
 					found = true;
-					rel.getDecimals().ifPresent(d -> Assertions.assertEquals(d, actualRel.getDecimals()));
-					rel.getBalance().ifPresent(a -> Assertions.assertEquals(a, actualRel.getBalance()));
-					rel.getKycStatus().ifPresent(s -> Assertions.assertEquals(s, actualRel.getKycStatus()));
-					rel.getFreezeStatus().ifPresent(s -> Assertions.assertEquals(s, actualRel.getFreezeStatus()));
+					rel.getDecimals().ifPresent(d -> assertEquals(d, actualRel.getDecimals()));
+					rel.getBalance().ifPresent(a -> assertEquals(a, actualRel.getBalance()));
+					rel.getKycStatus().ifPresent(s -> assertEquals(s, actualRel.getKycStatus()));
+					rel.getFreezeStatus().ifPresent(s -> assertEquals(s, actualRel.getFreezeStatus()));
 				}
 			}
 			if (!found) {
@@ -117,6 +119,36 @@ public class ExpectedTokenRel {
 		return this;
 	}
 
+	public boolean matches(final HapiApiSpec spec, final TokenRelationship rel) {
+		final var registry = spec.registry();
+		final var tokenId = registry.getTokenID(token);
+		if (!tokenId.equals(rel.getTokenId())) {
+			return false;
+		}
+		final AtomicBoolean allDetailsMatch = new AtomicBoolean(true);
+		balance.ifPresent(l -> {
+			if (l != rel.getBalance()) {
+				allDetailsMatch.set(false);
+			}
+		});
+		kycStatus.ifPresent(status -> {
+			if (status != rel.getKycStatus()) {
+				allDetailsMatch.set(false);
+			}
+		});
+		freezeStatus.ifPresent(status -> {
+			if (status != rel.getFreezeStatus()) {
+				allDetailsMatch.set(false);
+			}
+		});
+		decimals.ifPresent(d -> {
+			if (d != rel.getDecimals()) {
+				allDetailsMatch.set(false);
+			}
+		});
+		return allDetailsMatch.get();
+	}
+
 	public String getToken() {
 		return token;
 	}
@@ -135,5 +167,16 @@ public class ExpectedTokenRel {
 
 	public Optional<TokenFreezeStatus> getFreezeStatus() {
 		return freezeStatus;
+	}
+
+	@Override
+	public String toString() {
+		return "ExpectedTokenRel{" +
+				"token='" + token + '\'' +
+				", decimals=" + decimals +
+				", balance=" + balance +
+				", kycStatus=" + kycStatus +
+				", freezeStatus=" + freezeStatus +
+				'}';
 	}
 }

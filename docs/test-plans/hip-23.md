@@ -14,12 +14,12 @@ field.)
 
 :warning:&nbsp; Notice that right now, _only_ a `CryptoTransfer` or `TokenCreate` 
 can have auto-associations as a side-effect. But after deployment of HTS precompiled 
-contracts, any `ContractCreate` or `ContractCall` could also have auto-associations 
+contracts, a `ContractCreate` or `ContractCall` could also have auto-associations 
 as side-effects.
 
 ## Scope
 
-This feature has the following top-level impacts:
+This feature affects,
   - **State**: `MerkleAccountState`
   - **User-facing HAPI**: `CryptoCreate`, `CryptoUpdate`, `CryptoGetInfo`
   - **Transaction Records**: `CryptoTransfer`s that transfer tokens, `TokenCreate`
@@ -29,8 +29,8 @@ This feature has the following top-level impacts:
 consider possible intersections with custom fees, and ensure that our tests give 
 equal attention to transfers of both fungible token units _and_ NFTs.
 
-:currency_exchange:&nbsp;Since this feature adds side-effects to parties in a 
-`CryptoTransfer`, and multi-party `CryptoTransfer`s must commit or rollback 
+:currency_exchange:&nbsp;Since this feature adds side-effects to balance changes
+in a `CryptoTransfer`, and multi-party `CryptoTransfer`s must commit or rollback 
 atomically, we should validate that HIP-23 side-effects respect these semantics
 across a variety of failure modes.
 
@@ -49,7 +49,7 @@ So the high-level scope for this plan includes,
 
 ## Methodology
 
-We can now sketch what type of tests will be needed to meet the above scope.
+We can identify what type of tests will be needed to cover the above scope.
 
 :cactus:&nbsp;Careful unit testing should suffice for **migration** tests, as
 the change to state is very small---a single field added to the 
@@ -58,13 +58,16 @@ the change to state is very small---a single field added to the
 :white_check_mark:&nbsp;**Positive functional** testing will require EET specs 
 that perform all variants of `TokenCreate`s with implied auto-associations, and 
 all variants of `CryptoTransfer`s that trigger one or more auto-associations for
-one or more accounts.
+one or more accounts.  We should also verify that `CryptoUpdate`s that increase 
+auto-associations have the expected effect.
 
 :x:&nbsp;**Negative functional** testing will require EET specs that perform all
 variants of `CryptoTransfer`s in which auto-associations are attempted, but do 
 not succeed; and all variants of multi-party `CryptoTransfer`s in which 
 auto-associations succeed, but must be rolled back due to a later failure in the
-`CryptoTransfer` flow.
+`CryptoTransfer` flow. We should also verify that `CryptoUpdate`s that decrease 
+auto-association slots have the expected effect. It should not be possible to 
+decrease the number of auto-association slots below the number currently used.
 
 :fountain_pen:&nbsp;**Record validation** will require new EET assertions as
 qualifiers on the [`TransactionRecordAsserts` class](https://github.com/hashgraph/hedera-services/blob/master/test-clients/src/main/java/com/hedera/services/bdd/spec/assertions/TransactionRecordAsserts.java#L43). Given these assertions, 
@@ -82,4 +85,44 @@ the custom fee payment should go through (by using a slot).
 
 ## Deliverables
 
-We 
+Some deliverables above depend on others (e.g., a complete positive functional
+EET needs helpers to validate record and state changes). Here we list the 
+deliverables in the order they should be implemented.
+
+###:fountain_pen:&nbsp;Record validation
+EET framework:
+  - [x] `TransactionRecordAsserts` for the `automatic_token_associations` field.
+
+###:sparkle:&nbsp;State validation
+EET framework:
+  - [x] `GetAccountInfo` asserts for max and in-use automatic association fields.
+  - [ ] Account snapshot and change-vs-snapshot asserts.
+
+###:cactus:&nbsp;Migration tests
+Unit tests:
+  - [x] A `MerkleAccountState` now serializes its account field.
+  - [x] A `MerkleAccountState` can be deserialized from a prior-version state.
+  - [x] A `MerkleAccountState` can be deserialized from a current-version state.
+
+###:white_check_mark:&nbsp;Positive functional
+EETs (all with post-transaction record and state validation):
+  - [ ] A `TokenCreate` record includes the treasury auto-association.
+  - [ ] A `TokenCreate` record includes all fractional fee collector auto-associations.
+  - [ ] A `TokenCreate` record includes all self-denominated fee collector auto-associations.
+  - [ ] An account created with 1 auto-association slot can receive units of an unassociated fungible token.
+  - [ ] An account created with 1 auto-association slot can receive an NFT of an unassociated unique token.
+  - [ ] An account created with 3 auto-association slots can receive units and NFTs from three unassociated tokens.
+  - [ ] An account updated to have 3 more auto-association slots can receive 3 more units and NFTs from unassociated tokens.
+
+###:x:&nbsp;Negative functional
+EETs (all with post-transaction record and state validation):
+  - [ ] A failed `TokenCreate` performs and records no auto-associations.
+  - [ ] A two-party `CryptoTransfer` rolls back all side-effects if an auto-association fails.
+  - [ ] A multi-party `CryptoTransfer` rolls back all auto-association side-effects if it fails.
+
+###:receipt:&nbsp;Custom fee interplays
+EETs (all with post-transaction record and state validation):
+  - [ ] A royalty fee collector with free auto-association slots can capture exchanged value from unassociated tokens.
+  - [ ] A royalty fee collector with no auto-association slots cannnot capture exchanged value from unassociated tokens.
+  - [ ] A manually dissociated fixed fee collector with auto-association slots can use auto-association to still receive fees.
+  - [ ] A manually dissociated fractional fee collector with auto-association slots can use auto-association to still receive fees.

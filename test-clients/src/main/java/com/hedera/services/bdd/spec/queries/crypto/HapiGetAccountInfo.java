@@ -91,7 +91,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 		return this;
 	}
 
-	public HapiGetAccountInfo saveToRegistry(String registryEntry) {
+	public HapiGetAccountInfo savingSnapshot(String registryEntry) {
 		this.registryEntry = Optional.of(registryEntry);
 		return this;
 	}
