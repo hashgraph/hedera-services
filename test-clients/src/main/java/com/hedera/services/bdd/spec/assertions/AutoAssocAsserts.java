@@ -20,17 +20,38 @@ package com.hedera.services.bdd.spec.assertions;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenAssociation;
+import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class AutoAssocAsserts {
+	private static final Comparator<Pair<AccountID, TokenID>> ASSOC_CMP = Comparator
+			.comparing(Pair<AccountID, TokenID>::getLeft, Comparator.comparingLong(AccountID::getAccountNum))
+			.thenComparing(Pair::getRight, Comparator.comparingLong(TokenID::getTokenNum));
+
+	public static ErroringAssertsProvider<List<TokenAssociation>> accountTokenPairsInAnyOrder(
+			final List<Pair<String, String>> expectedAssociations
+	) {
+		return internalAccountTokenPairs(expectedAssociations, true);
+	}
+
 	public static ErroringAssertsProvider<List<TokenAssociation>> accountTokenPairs(
 			final List<Pair<String, String>> expectedAssociations
+	) {
+		return internalAccountTokenPairs(expectedAssociations, false);
+	}
+
+	private static ErroringAssertsProvider<List<TokenAssociation>> internalAccountTokenPairs(
+			final List<Pair<String, String>> expectedAssociations,
+			final boolean sortBeforeCmp
 	) {
 		return spec -> actual -> {
 			try {
@@ -41,6 +62,9 @@ public class AutoAssocAsserts {
 						actualNum, "Expected " + expectedNum
 								+ " auto-associations, got " + actualNum
 								+ " (" + actual + ")");
+				final List<Pair<AccountID, TokenID>> actualPairs = new ArrayList<>();
+				final List<Pair<AccountID, TokenID>> expectedPairs = new ArrayList<>();
+
 				int nextActual = 0;
 				final var registry = spec.registry();
 				for (final var expectedAssoc : expectedAssociations) {
@@ -48,12 +72,20 @@ public class AutoAssocAsserts {
 					final var actualPair = Pair.of(
 							actualAssoc.getAccountId(),
 							actualAssoc.getTokenId());
+					actualPairs.add(actualPair);
+
 					final var expectedPair = Pair.of(
 							registry.getAccountID(expectedAssoc.getLeft()),
 							registry.getTokenID(expectedAssoc.getRight()));
-					assertEquals(expectedPair, actualPair,
-							"Wrong auto-association at index " + (nextActual - 1));
+					expectedPairs.add(expectedPair);
 				}
+
+				if (sortBeforeCmp) {
+					actualPairs.sort(ASSOC_CMP);
+					expectedPairs.sort(ASSOC_CMP);
+				}
+
+				assertEquals(expectedPairs, actualPairs, "Wrong auto-associations");
 
 				return Collections.emptyList();
 			} catch (Throwable t) {

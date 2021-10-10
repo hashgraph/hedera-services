@@ -13,17 +13,16 @@ collectors for fractional or self-denominated fixed fees, this feature also
 field.)
 
 :warning:&nbsp; Notice that right now, _only_ a `CryptoTransfer` or `TokenCreate` 
-can have auto-associations as a side-effect. But after deployment of HTS precompiled 
-contracts, a `ContractCreate` or `ContractCall` could also have auto-associations 
-as side-effects.
+can have auto-associations as a side-effect. But after deployment of HTS precompiles, 
+a `ContractCreate` or `ContractCall` could also have auto-associations as side-effects.
 
 ## Scope
 
 This feature affects,
+  - **HAPI**: `CryptoCreate`, `CryptoUpdate`, `CryptoGetInfo`
   - **State**: `MerkleAccountState`
-  - **User-facing HAPI**: `CryptoCreate`, `CryptoUpdate`, `CryptoGetInfo`
-  - **Transaction Records**: `CryptoTransfer`s that transfer tokens, `TokenCreate`
-  - **`handleTransaction` Flow**: `CryptoCreate`, `CryptoUpdate`, `CryptoTransfer`
+  - **Records**: `CryptoTransfer`, `TokenCreate`
+  - **`handleTransaction`**: `CryptoCreate`, `CryptoUpdate`, `CryptoTransfer`
 
 :small_blue_diamond:&nbsp;Since this feature affects token transfers, we should 
 consider possible intersections with custom fees, and ensure that our tests give 
@@ -37,7 +36,7 @@ across a variety of failure modes.
 :paperclips:&nbsp;Since this feature has no rebuilt data structures, it has 
 no special reconnect testing requirements.
 
-So the high-level scope for this plan includes,
+So the high-level scope includes:
   1. Migration tests.
   2. Positive functional tests, especially with multiple accounts being 
   auto-associated, and accounts receiving multiple auto-associations.
@@ -49,7 +48,8 @@ So the high-level scope for this plan includes,
 
 ## Methodology
 
-We can identify what type of tests will be needed to cover the above scope.
+We now identify what type of tests (and test framework enhancements) will 
+be needed to cover the above scope.
 
 :cactus:&nbsp;Careful unit testing should suffice for **migration** tests, as
 the change to state is very small---a single field added to the 
@@ -93,14 +93,14 @@ Note the prepatory EET framework items, which make it easier for the functional
 tests to validate both records and state changes via queries.
 
 ###:fountain_pen:&nbsp;Record validation
-  - [x] _(EET framework)_ `TransactionRecordAsserts` for the `automatic_token_associations` field.
+  - [x] _(EET framework)_ Support for the `automatic_token_associations` field in `TransactionRecordAsserts`.
 
-###:sparkle:&nbsp;State validation
-  - [x] _(EET framework)_`GetAccountInfo` asserts for max and in-use automatic association fields.
-  - [x] _(EET framework)_ Account snapshot and change-vs-snapshot asserts.
+###:ice_cube:&nbsp;State validation
+  - [x] _(EET framework)_ `GetAccountInfo` asserts for max and in-use automatic association fields.
+  - [x] _(EET framework)_ Add account snapshot and change-vs-snapshot asserts for token associations.
 
-###:cactus:&nbsp;Migration tests
-  - [x] _(Unit)_ A `MerkleAccountState` now serializes its account field.
+###:cactus:&nbsp;Migration
+  - [x] _(Unit)_ A `MerkleAccountState` now serializes its auto-associations metadata.
   - [x] _(Unit)_ A `MerkleAccountState` can be deserialized from a prior-version state.
   - [x] _(Unit)_ A `MerkleAccountState` can be deserialized from a current-version state.
 
@@ -118,10 +118,11 @@ tests to validate both records and state changes via queries.
   - [x] _(EET)_ A `CryptoCreate` cannot allocate more auto-association slots than the max-per-account limit.
   - [x] _(EET)_ A `CryptoUpdate` cannot allocate more auto-association slots than the max-per-account limit.
   - [x] _(EET)_ A `CryptoUpdate` cannot renounce more auto-association slots than it has already used.
+  - [x] _(EET)_ A `CryptoTransfer` cannot create auto-associations without open slots.
   - [x] _(EET)_ A multi-party `CryptoTransfer` rolls back all auto-association side-effects if it fails (and records no auto-associations).
 
 ###:receipt:&nbsp;Custom fee interplays
-  - [ ] _(EET)_ A royalty fee collector with free auto-association slots can capture exchanged value from unassociated tokens.
-  - [ ] _(EET)_ A royalty fee collector with no auto-association slots cannnot capture exchanged value from unassociated tokens.
-  - [ ] _(EET)_ A manually dissociated fixed fee collector with auto-association slots can use auto-association to still receive fees.
-  - [ ] _(EET)_ A manually dissociated fractional fee collector with auto-association slots can use auto-association to still receive fees.
+  - [x] _(EET)_ A royalty fee collector with free auto-association slots can capture exchanged value from unassociated tokens.
+  - [x] _(EET)_ A royalty fee collector with no auto-association slots cannnot capture exchanged value from unassociated tokens.
+  - [x] _(EET)_ A manually dissociated fixed fee collector with auto-association slots can use auto-association to still receive fees.
+  - [x] _(EET)_ A manually dissociated fractional fee collector with auto-association slots can use auto-association to still receive fees.
