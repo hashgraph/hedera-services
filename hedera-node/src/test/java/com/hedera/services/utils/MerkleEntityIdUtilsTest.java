@@ -129,6 +129,24 @@ class MerkleEntityIdUtilsTest {
 	}
 
 	@Test
+	void asSolidityAddressHexWorksProperly() {
+		final var id = new Id(1, 2, 3);
+
+		assertEquals("0000000100000000000000020000000000000003", EntityIdUtils.asSolidityAddressHex(id));
+	}
+
+	@Test
+	void asSolidityAddressBytesWorksProperly() {
+		final var id = AccountID.newBuilder().setShardNum(1).setRealmNum(2).setAccountNum(3).build();
+
+		final var result = EntityIdUtils.asSolidityAddress(id);
+
+		final var expectedBytes = new byte[]{0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 3};
+
+		assertArrayEquals(expectedBytes, result);
+	}
+
+	@Test
 	void prettyPrintsTokenIds() {
 		final var id = TokenID.newBuilder().setShardNum(1).setRealmNum(2).setTokenNum(3).build();
 

@@ -118,9 +118,34 @@ class HederaCallCodeOperationTest {
 		given(acc.getAddress()).willReturn(accountAddr);
 		given(accountAddr.toArray()).willReturn(new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22});
 		given(sigsVerifier.allRequiredKeysAreActive(anySet())).willReturn(true);
-		
+
 		var opRes = subject.execute(evmMsgFrame, evm);
 		assertEquals(Optional.empty(), opRes.getHaltReason());
+		assertEquals(opRes.getGasCost().get(), cost);
+	}
+
+	@Test
+	void executeHaltsWithInvalidSignature() {
+		given(calc.callOperationGasCost(
+				any(), any(), anyLong(),
+				anyLong(), anyLong(), anyLong(),
+				any(), any(), any())
+		).willReturn(cost);
+		given(calc.callOperationGasCost(
+				any(), any(), anyLong(),
+				anyLong(), anyLong(), anyLong(),
+				any(), any(), any())
+		).willReturn(cost);
+		for (int i = 0; i < 10; i++) {
+			lenient().when(evmMsgFrame.getStackItem(i)).thenReturn(Bytes.ofUnsignedInt(10));
+		}
+		given(worldUpdater.get(any())).willReturn(acc);
+		given(acc.getAddress()).willReturn(accountAddr);
+		given(accountAddr.toArray()).willReturn(new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22});
+		given(sigsVerifier.allRequiredKeysAreActive(anySet())).willReturn(false);
+
+		var opRes = subject.execute(evmMsgFrame, evm);
+		assertEquals(Optional.of(HederaExceptionalHaltReason.INVALID_SIGNATURE), opRes.getHaltReason());
 		assertEquals(opRes.getGasCost().get(), cost);
 	}
 }
