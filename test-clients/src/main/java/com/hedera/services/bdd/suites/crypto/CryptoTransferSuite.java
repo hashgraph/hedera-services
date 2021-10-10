@@ -152,7 +152,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 				).then(
 						cryptoTransfer(
 								moving(1000, commonWithCustomFees).between(party, counterparty)
-						).via(miscXfer),
+						).fee(ONE_HBAR).via(miscXfer),
 						getTxnRecord(miscXfer)
 								.hasPriority(recordWith()
 										.autoAssociated(
@@ -234,7 +234,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								movingUnique(uniqueWithRoyalty, 1L).between(party, counterparty),
 								moving(12 * 15, firstFungible).between(counterparty, party),
 								moving(12 * 15, secondFungible).between(counterparty, party)
-						).via(hodlXfer),
+						).fee(ONE_HBAR).via(hodlXfer),
 						getTxnRecord(hodlXfer)
 								.hasPriority(recordWith()
 										.autoAssociated(
@@ -321,7 +321,10 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						cryptoTransfer(
 								movingUnique(uniqueWithRoyalty, 1L).between(party, counterparty),
 								moving(123, someFungible).between(counterparty, party)
-						).via(hodlXfer).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+						)
+								.fee(ONE_HBAR)
+								.via(hodlXfer)
+								.hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
 						getTxnRecord(hodlXfer)
 								.hasPriority(recordWith().autoAssociated(accountTokenPairsInAnyOrder(List.of()))),
 						getAccountInfo(party).has(accountWith().newAssociationsFromSnapshot(
