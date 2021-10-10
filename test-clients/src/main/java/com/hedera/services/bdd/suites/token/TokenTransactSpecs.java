@@ -53,6 +53,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
@@ -83,6 +84,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -112,46 +114,48 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						balancesChangeOnTokenTransfer(),
-//						accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
-//						senderSigsAreValid(),
-//						balancesAreChecked(),
-//						duplicateAccountsInTokenTransferRejected(),
-//						tokenOnlyTxnsAreAtomic(),
-//						tokenPlusHbarTxnsAreAtomic(),
-//						nonZeroTransfersRejected(),
-//						missingEntitiesRejected(),
-//						allRequiredSigsAreChecked(),
-//						uniqueTokenTxnAccountBalance(),
-//						uniqueTokenTxnAccountBalancesForTreasury(),
-//						uniqueTokenTxnWithNoAssociation(),
-//						uniqueTokenTxnWithFrozenAccount(),
-//						uniqueTokenTxnWithSenderNotSigned(),
-//						uniqueTokenTxnWithReceiverNotSigned(),
-//						uniqueTokenTxnsAreAtomic(),
-//						uniqueTokenDeletedTxn(),
-//						cannotSendFungibleToDissociatedContractsOrAccounts(),
-//						cannotGiveNftsToDissociatedContractsOrAccounts(),
-//						recordsIncludeBothFungibleTokenChangesAndOwnershipChange(),
-//						transferListsEnforceTokenTypeRestrictions(),
-//						/* HIP-18 charging case studies */
-//						fixedHbarCaseStudy(),
-//						fractionalCaseStudy(),
-//						simpleHtsFeeCaseStudy(),
-//						nestedHbarCaseStudy(),
-//						nestedFractionalCaseStudy(),
-//						nestedHtsCaseStudy(),
-//						treasuriesAreExemptFromAllCustomFees(),
-//						collectorsAreExemptFromTheirOwnFeesButNotOthers(),
-//						multipleRoyaltyFallbackCaseStudy(),
-//						normalRoyaltyCaseStudy(),
-//						canTransactInTokenWithSelfDenominatedFixedFee(),
-//						nftOwnersChangeAtomically(),
-//						fractionalNetOfTransfersCaseStudy(),
-//						royaltyAndFractionalTogetherCaseStudy(),
+						balancesChangeOnTokenTransfer(),
+						accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
+						senderSigsAreValid(),
+						balancesAreChecked(),
+						duplicateAccountsInTokenTransferRejected(),
+						tokenOnlyTxnsAreAtomic(),
+						tokenPlusHbarTxnsAreAtomic(),
+						nonZeroTransfersRejected(),
+						missingEntitiesRejected(),
+						allRequiredSigsAreChecked(),
+						uniqueTokenTxnAccountBalance(),
+						uniqueTokenTxnAccountBalancesForTreasury(),
+						uniqueTokenTxnWithNoAssociation(),
+						uniqueTokenTxnWithFrozenAccount(),
+						uniqueTokenTxnWithSenderNotSigned(),
+						uniqueTokenTxnWithReceiverNotSigned(),
+						uniqueTokenTxnsAreAtomic(),
+						uniqueTokenDeletedTxn(),
+						cannotSendFungibleToDissociatedContractsOrAccounts(),
+						cannotGiveNftsToDissociatedContractsOrAccounts(),
+						recordsIncludeBothFungibleTokenChangesAndOwnershipChange(),
+						transferListsEnforceTokenTypeRestrictions(),
+						/* HIP-18 charging case studies */
+						fixedHbarCaseStudy(),
+						fractionalCaseStudy(),
+						simpleHtsFeeCaseStudy(),
+						nestedHbarCaseStudy(),
+						nestedFractionalCaseStudy(),
+						nestedHtsCaseStudy(),
+						treasuriesAreExemptFromAllCustomFees(),
+						collectorsAreExemptFromTheirOwnFeesButNotOthers(),
+						multipleRoyaltyFallbackCaseStudy(),
+						normalRoyaltyCaseStudy(),
+						canTransactInTokenWithSelfDenominatedFixedFee(),
+						nftOwnersChangeAtomically(),
+						fractionalNetOfTransfersCaseStudy(),
+						royaltyAndFractionalTogetherCaseStudy(),
 						/* HIP-23 */
-//						happyPathAutoAssociationsWorkForBothTokenTypes(),
+						happyPathAutoAssociationsWorkForBothTokenTypes(),
 						failedAutoAssociationHasNoSideEffectsOrHistory(),
+						newSlotsCanBeOpenedViaUpdate(),
+						newSlotsCanBeOpenedViaDissociate(),
 				}
 		);
 	}
@@ -204,6 +208,133 @@ public class TokenTransactSpecs extends HapiApiSuite {
 										.between(treasury, beneficiary),
 								moving(500, fungibleToken).between(treasury, beneficiary)
 						)
+				);
+	}
+
+	public HapiApiSpec newSlotsCanBeOpenedViaUpdate() {
+		final var treasury = "treasury";
+		final var beneficiary = "beneficiary";
+		final var uniqueToken = "unique";
+		final var firstFungibleToken = "firstFungibleToken";
+		final var secondFungibleToken = "secondFungibleToken";
+		final var thirdFungibleToken = "thirdFungibleToken";
+		final var multiPurpose = "multiPurpose";
+		final var firstXfer = "firstXfer";
+		final var secondXfer = "secondXfer";
+
+		return defaultHapiSpec("NewSlotsCanBeOpenedViaUpdate")
+				.given(
+						newKeyNamed(multiPurpose),
+						cryptoCreate(treasury),
+						tokenCreate(firstFungibleToken)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(1_000L)
+								.treasury(treasury),
+						tokenCreate(secondFungibleToken)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(1_000L)
+								.treasury(treasury),
+						tokenCreate(thirdFungibleToken)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(1_000L)
+								.treasury(treasury),
+						tokenCreate(uniqueToken)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.supplyKey(multiPurpose)
+								.initialSupply(0L)
+								.treasury(treasury),
+						mintToken(uniqueToken, List.of(copyFromUtf8("ONE"), copyFromUtf8("TWO"))),
+						cryptoCreate(beneficiary).maxAutomaticTokenAssociations(1),
+						getAccountInfo(beneficiary).savingSnapshot(beneficiary),
+						tokenAssociate(beneficiary, secondFungibleToken)
+				).when(
+						cryptoTransfer(
+								movingUnique(uniqueToken, 1L)
+										.between(treasury, beneficiary)
+						).via(firstXfer),
+						cryptoTransfer(
+								moving(500, firstFungibleToken).between(treasury, beneficiary)
+						).hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS),
+						/* Dissociating from a token that didn't use a slot doesn't free one up */
+						tokenDissociate(beneficiary, secondFungibleToken),
+						cryptoTransfer(
+								moving(500, firstFungibleToken).between(treasury, beneficiary)
+						).hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS),
+						cryptoUpdate(beneficiary).maxAutomaticAssociations(2),
+						cryptoTransfer(
+								moving(500, firstFungibleToken).between(treasury, beneficiary)
+						).via(secondXfer)
+				).then(
+						getTxnRecord(firstXfer).hasPriority(recordWith()
+								.autoAssociated(accountTokenPairs(List.of(
+										Pair.of(beneficiary, uniqueToken))))),
+						getTxnRecord(secondXfer).hasPriority(recordWith()
+								.autoAssociated(accountTokenPairs(List.of(
+										Pair.of(beneficiary, firstFungibleToken))))),
+						getAccountInfo(beneficiary)
+								.hasAlreadyUsedAutomaticAssociations(2)
+								.has(accountWith().newAssociationsFromSnapshot(
+										beneficiary, List.of(
+												relationshipWith(firstFungibleToken).balance(500),
+												relationshipWith(uniqueToken).balance(1)
+										)))
+				);
+	}
+
+	public HapiApiSpec newSlotsCanBeOpenedViaDissociate() {
+		final var treasury = "treasury";
+		final var beneficiary = "beneficiary";
+		final var uniqueToken = "unique";
+		final var firstFungibleToken = "firstFungibleToken";
+		final var multiPurpose = "multiPurpose";
+		final var firstXfer = "firstXfer";
+		final var secondXfer = "secondXfer";
+
+		return defaultHapiSpec("NewSlotsCanBeOpenedViaDissociate")
+				.given(
+						newKeyNamed(multiPurpose),
+						cryptoCreate(treasury),
+						tokenCreate(firstFungibleToken)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(1_000L)
+								.treasury(treasury),
+						tokenCreate(uniqueToken)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.supplyKey(multiPurpose)
+								.initialSupply(0L)
+								.treasury(treasury),
+						mintToken(uniqueToken, List.of(copyFromUtf8("ONE"), copyFromUtf8("TWO"))),
+						cryptoCreate(beneficiary).maxAutomaticTokenAssociations(1),
+						getAccountInfo(beneficiary).savingSnapshot(beneficiary)
+				).when(
+						cryptoTransfer(
+								movingUnique(uniqueToken, 1L)
+										.between(treasury, beneficiary)
+						).via(firstXfer),
+						cryptoTransfer(
+								moving(500, firstFungibleToken).between(treasury, beneficiary)
+						).hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS),
+						cryptoTransfer(
+								movingUnique(uniqueToken, 1L)
+										.between(beneficiary, treasury)
+						),
+						tokenDissociate(beneficiary, uniqueToken),
+						cryptoTransfer(
+								moving(500, firstFungibleToken).between(treasury, beneficiary)
+						).via(secondXfer)
+				).then(
+						getTxnRecord(firstXfer).hasPriority(recordWith()
+								.autoAssociated(accountTokenPairs(List.of(
+										Pair.of(beneficiary, uniqueToken))))),
+						getTxnRecord(secondXfer).hasPriority(recordWith()
+								.autoAssociated(accountTokenPairs(List.of(
+										Pair.of(beneficiary, firstFungibleToken))))),
+						getAccountInfo(beneficiary)
+								.hasAlreadyUsedAutomaticAssociations(1)
+								.has(accountWith().newAssociationsFromSnapshot(
+										beneficiary, List.of(
+												relationshipWith(firstFungibleToken).balance(500)
+										)))
 				);
 	}
 

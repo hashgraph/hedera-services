@@ -86,45 +86,42 @@ the custom fee payment should go through (by using a slot).
 ## Deliverables
 
 Some deliverables above depend on others (e.g., a complete positive functional
-EET needs helpers to validate record and state changes). Here we list the 
-deliverables in the order they should be implemented.
+EET needs helpers to validate record and state changes). Next we list the 
+deliverables in the order they should be implemented. 
+
+Note the prepatory EET framework items, which make it easier for the functional
+tests to validate both records and state changes via queries.
 
 ###:fountain_pen:&nbsp;Record validation
-EET framework:
-  - [x] `TransactionRecordAsserts` for the `automatic_token_associations` field.
+  - [x] _(EET framework)_ `TransactionRecordAsserts` for the `automatic_token_associations` field.
 
 ###:sparkle:&nbsp;State validation
-EET framework:
-  - [x] `GetAccountInfo` asserts for max and in-use automatic association fields.
-  - [x] Account snapshot and change-vs-snapshot asserts.
+  - [x] _(EET framework)_`GetAccountInfo` asserts for max and in-use automatic association fields.
+  - [x] _(EET framework)_ Account snapshot and change-vs-snapshot asserts.
 
 ###:cactus:&nbsp;Migration tests
-Unit tests:
-  - [x] A `MerkleAccountState` now serializes its account field.
-  - [x] A `MerkleAccountState` can be deserialized from a prior-version state.
-  - [x] A `MerkleAccountState` can be deserialized from a current-version state.
+  - [x] _(Unit)_ A `MerkleAccountState` now serializes its account field.
+  - [x] _(Unit)_ A `MerkleAccountState` can be deserialized from a prior-version state.
+  - [x] _(Unit)_ A `MerkleAccountState` can be deserialized from a current-version state.
 
 ###:white_check_mark:&nbsp;Positive functional
-EETs (all with post-transaction record and state validation):
-  - [x] A `TokenCreate` record includes the treasury auto-association.
-  - [x] A `TokenCreate` record includes all fractional fee collector auto-associations.
-  - [x] A `TokenCreate` record includes all self-denominated fee collector auto-associations.
-  - [x] An account with open auto-association slots can receive units of an unassociated fungible token.
-  - [x] An account with open auto-association slot can receive an NFT of an unassociated unique token.
-  - [ ] An account updated to have 3 more auto-association slots can receive 3 more units and NFTs from unassociated tokens.
+  - [x] _(EET)_ A `TokenCreate` record includes the treasury auto-association.
+  - [x] _(EET)_ A `TokenCreate` record includes all fractional fee collector auto-associations.
+  - [x] _(EET)_ A `TokenCreate` record includes all self-denominated fee collector auto-associations.
+  - [x] _(EET)_ An account with open auto-association slots can receive units of an unassociated fungible token.
+  - [x] _(EET)_ An account with open auto-association slot can receive an NFT of an unassociated unique token.
+  - [x] _(EET)_ An account with no open slots can be updated with more auto-association slots to receve more units/NFTs of unassociated tokens.
+  - [x] _(EET)_ An account with no open slots can manually dissociate from existing auto-associated tokens to free up more slots.
 
 ###:x:&nbsp;Negative functional
-EETs (all with post-transaction record and state validation):
-  - [x] A failed `TokenCreate` performs and records no auto-associations.
-  - [ ] A `CryptoCreate` cannot allocate more auto-association slots than the max-per-account limit.
-  - [ ] A `CryptoUpdate` cannot allocate more auto-association slots than the max-per-account limit.
-  - [ ] A `CryptoUpdate` cannot renounce more auto-association slots than it has already used.
-  - [ ] A two-party `CryptoTransfer` rolls back all side-effects if an auto-association fails.
-  - [ ] A multi-party `CryptoTransfer` rolls back all auto-association side-effects if it fails.
+  - [x] _(EET)_ A failed `TokenCreate` performs and records no auto-associations.
+  - [x] _(EET)_ A `CryptoCreate` cannot allocate more auto-association slots than the max-per-account limit.
+  - [x] _(EET)_ A `CryptoUpdate` cannot allocate more auto-association slots than the max-per-account limit.
+  - [x] _(EET)_ A `CryptoUpdate` cannot renounce more auto-association slots than it has already used.
+  - [x] _(EET)_ A multi-party `CryptoTransfer` rolls back all auto-association side-effects if it fails (and records no auto-associations).
 
 ###:receipt:&nbsp;Custom fee interplays
-EETs (all with post-transaction record and state validation):
-  - [ ] A royalty fee collector with free auto-association slots can capture exchanged value from unassociated tokens.
-  - [ ] A royalty fee collector with no auto-association slots cannnot capture exchanged value from unassociated tokens.
-  - [ ] A manually dissociated fixed fee collector with auto-association slots can use auto-association to still receive fees.
-  - [ ] A manually dissociated fractional fee collector with auto-association slots can use auto-association to still receive fees.
+  - [ ] _(EET)_ A royalty fee collector with free auto-association slots can capture exchanged value from unassociated tokens.
+  - [ ] _(EET)_ A royalty fee collector with no auto-association slots cannnot capture exchanged value from unassociated tokens.
+  - [ ] _(EET)_ A manually dissociated fixed fee collector with auto-association slots can use auto-association to still receive fees.
+  - [ ] _(EET)_ A manually dissociated fractional fee collector with auto-association slots can use auto-association to still receive fees.
