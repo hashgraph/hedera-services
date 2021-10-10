@@ -27,6 +27,7 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.models.Id;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -70,6 +71,13 @@ class HederaWorldStateTest {
 	private HederaLedger ledger;
 	@Mock
 	private ServicesRepositoryRoot repositoryRoot;
+	@Mock
+	private ContractDetails contractDetails;
+
+	final long balance = 1_234L;
+	final Id sponsor = new Id(0, 0, 1);
+	final Id contract = new Id(0, 0, 2);
+	final Bytes code = Bytes.of("0x60606060".getBytes());
 
 	private HederaWorldState subject;
 
@@ -156,7 +164,7 @@ class HederaWorldStateTest {
 		given(accState.getProxyAccountRealm()).willReturn(0L);
 		given(accState.getProxyAccountShard()).willReturn(0L);
 		given(accState.getProxyAccountNum()).willReturn(1L);
-		given(accState.getBalance()).willReturn(BigInteger.TEN);
+		given(accState.getBalance()).willReturn(BigInteger.valueOf(balance));
 		given(accState.getAutoRenewPeriod()).willReturn(100L);
 		given(repositoryRoot.isExist(any())).willReturn(true);
 		given(repositoryRoot.isDeleted(any())).willReturn(false);
@@ -164,7 +172,7 @@ class HederaWorldStateTest {
 
 		final var acc = subject.get(Address.RIPEMD160);
 		assertNotNull(acc);
-		assertEquals(Wei.of(10), acc.getBalance());
+		assertEquals(Wei.of(balance), acc.getBalance());
 		assertEquals(1, acc.getProxyAccount().num());
 		assertEquals(100L, acc.getAutoRenew());
 
@@ -202,7 +210,7 @@ class HederaWorldStateTest {
 		final var stringified = "AccountState" + "{" +
 				"address=" + Address.RIPEMD160 + ", " +
 				"nonce=" + 0 + ", " +
-				"balance=" + Wei.of(10) + ", " +
+				"balance=" + Wei.of(balance) + ", " +
 				"codeHash=" + Hash.EMPTY + ", " +
 				"}";
 		assertEquals(stringified, acc.toString());
@@ -237,5 +245,104 @@ class HederaWorldStateTest {
 		actualSubject.sponsorMap.put(Address.ZERO, mockedZeroAcc);
 		actualSubject.revert();
 		assertEquals(0, actualSubject.sponsorMap.size());
+	}
+
+	@Test
+	void updaterGetsHederaAccount() {
+		// given:
+		final var zeroAddressBytes = Address.ZERO.toArray();
+		final var accountState = new AccountState(BigInteger.ZERO, BigInteger.valueOf(balance));
+		final var updater = subject.updater();
+		// and:
+		given(repositoryRoot.isExist(zeroAddressBytes)).willReturn(true);
+		given(repositoryRoot.getAccountState(zeroAddressBytes)).willReturn(accountState);
+		// and:
+		final var expected = subject.new WorldStateAccount(Address.ZERO, Wei.of(balance), 0, 0, new EntityId());
+
+		// when:
+		final var result = updater.getHederaAccount(Address.ZERO);
+
+		// then:
+		assertEquals(expected.getAddress(), result.getAddress());
+		assertEquals(expected.getBalance(), result.getBalance());
+		assertEquals(expected.getProxyAccount(), result.getProxyAccount());
+		assertEquals(expected.getExpiry(), result.getExpiry());
+		// and:
+		verify(repositoryRoot).isExist(zeroAddressBytes);
+		verify(repositoryRoot).getAccountState(zeroAddressBytes);
+	}
+
+	@Test
+	void updaterAllocatesNewAddress() {
+		// given:
+		given(ids.newContractId(sponsor.asGrpcAccount())).willReturn(contract.asGrpcContract());
+
+		// when:
+		final var result = subject.updater().allocateNewContractAddress(sponsor.asEvmAddress());
+
+		// then:
+		assertEquals(contract.asEvmAddress(), result);
+		// and:
+		verify(ids).newContractId(sponsor.asGrpcAccount());
+	}
+
+	@Test
+	void updaterCommitsSuccessfully() {
+		// given:
+		final var actualSubject = subject.updater();
+		final var evmAccount = actualSubject.createAccount(contract.asEvmAddress(), 0, Wei.of(balance));
+		final var storageKey = UInt256.ONE;
+		final var storageValue = UInt256.valueOf(9_876);
+		final var secondStorageKey = UInt256.valueOf(2);
+		final var secondStorageValue = UInt256.ZERO;
+		evmAccount.getMutable().setStorageValue(storageKey, storageValue);
+		evmAccount.getMutable().setStorageValue(secondStorageKey, secondStorageValue);
+		evmAccount.getMutable().setCode(code);
+		// and:
+		final var contractBytes = contract.asEvmAddress().toArray();
+		given(repositoryRoot.isExist(contractBytes)).willReturn(false);
+		given(repositoryRoot.getBalance(contractBytes)).willReturn(BigInteger.ZERO);
+		given(repositoryRoot.getContractDetails(contractBytes)).willReturn(contractDetails);
+
+		// when:
+		actualSubject.commit();
+
+		// then:
+		verify(repositoryRoot).isExist(contractBytes);
+		verify(repositoryRoot).delete(contractBytes);
+		verify(repositoryRoot).createAccount(contractBytes);
+		verify(repositoryRoot).getBalance(contractBytes);
+		verify(repositoryRoot).getContractDetails(contractBytes);
+		// and:
+		verify(contractDetails).put(DWUtil.fromUInt256(storageKey), DWUtil.fromUInt256(storageValue));
+		verify(contractDetails).put(DWUtil.fromUInt256(secondStorageKey), DWUtil.fromUInt256(secondStorageValue));
+		// and:
+		verify(repositoryRoot).saveCode(contractBytes, code.toArray());
+	}
+
+	@Test
+	void persistNewlyCreatedContracts() {
+		// given:
+		final var actualSubject = subject.updater();
+		final var evmAccount = actualSubject.createAccount(contract.asEvmAddress(), 0, Wei.of(balance));
+
+		final var contractBytes = contract.asEvmAddress().toArray();
+		given(repositoryRoot.isExist(contractBytes)).willReturn(false);
+		given(repositoryRoot.getBalance(contractBytes)).willReturn(BigInteger.ZERO);
+
+		// when:
+		actualSubject.commit();
+		// and:
+		final var result = subject.persist();
+
+		// then:
+		verify(repositoryRoot).isExist(contractBytes);
+		verify(repositoryRoot).delete(contractBytes);
+		verify(repositoryRoot).createAccount(contractBytes);
+		verify(repositoryRoot).getBalance(contractBytes);
+		verify(repositoryRoot).flush();
+		// and:
+		assertEquals(1, result.size());
+		assertEquals(contract.asGrpcContract(), result.get(0));
 	}
 }

@@ -93,13 +93,13 @@ class HederaCreateOperationTest {
 		given(evmMsgFrame.getMessageFrameStack()).willReturn(messageFrameStack);
 		given(evmMsgFrame.getBlockValues()).willReturn(initialFrameBlockValues);
 		given(evmMsgFrame.getGasPrice()).willReturn(gasPrice);
-			given(messageFrameStack.getLast()).willReturn(lastStackedMsgFrame);
+		given(messageFrameStack.getLast()).willReturn(lastStackedMsgFrame);
 		given(lastStackedMsgFrame.getContextVariable("sbh")).willReturn(10L);
 		given(initialFrameBlockValues.getTimestamp()).willReturn(Instant.MAX.getEpochSecond());
 		given(gasPrice.toLong()).willReturn(10000000000L);
-		
+
 		var hederaOPUtilMock = mockStatic(HederaOperationUtil.class);
-		hederaOPUtilMock.when( () -> {
+		hederaOPUtilMock.when(() -> {
 			HederaOperationUtil.computeExpiryForNewContract(any());
 		}).thenReturn(100L);
 		given(gasCalculator.createOperationGasCost(any())).willReturn(gas);
@@ -110,9 +110,9 @@ class HederaCreateOperationTest {
 		var gas = subject.cost(evmMsgFrame);
 
 		assertEquals(0, gas.toLong());
-		
+
 		subject.checkSuperCost = false;
-		
+
 		gas = subject.cost(evmMsgFrame);
 		assertEquals(0, gas.toLong());
 	}

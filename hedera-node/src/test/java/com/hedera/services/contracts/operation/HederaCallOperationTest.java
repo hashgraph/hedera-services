@@ -48,7 +48,6 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 class HederaCallOperationTest {
@@ -107,9 +106,15 @@ class HederaCallOperationTest {
 				anyLong(), anyLong(), anyLong(),
 				any(), any(), any())
 		).willReturn(cost);
-		for (int i = 0; i < 10; i++) {
-			lenient().when(evmMsgFrame.getStackItem(i)).thenReturn(Bytes.ofUnsignedInt(10));
-		}
+		// and:
+		given(evmMsgFrame.getStackItem(0)).willReturn(Bytes.EMPTY);
+		given(evmMsgFrame.getStackItem(1)).willReturn(Bytes.EMPTY);
+		given(evmMsgFrame.getStackItem(2)).willReturn(Bytes.EMPTY);
+		given(evmMsgFrame.getStackItem(3)).willReturn(Bytes.EMPTY);
+		given(evmMsgFrame.getStackItem(4)).willReturn(Bytes.EMPTY);
+		given(evmMsgFrame.getStackItem(5)).willReturn(Bytes.EMPTY);
+		given(evmMsgFrame.getStackItem(6)).willReturn(Bytes.EMPTY);
+		// and:
 		given(evmMsgFrame.stackSize()).willReturn(20);
 		given(evmMsgFrame.getRemainingGas()).willReturn(cost);
 		given(evmMsgFrame.getMessageStackDepth()).willReturn(1025);

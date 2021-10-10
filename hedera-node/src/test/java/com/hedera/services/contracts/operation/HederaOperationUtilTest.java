@@ -20,55 +20,55 @@ import static org.mockito.BDDMockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 public class HederaOperationUtilTest {
-    @Mock
-    private MessageFrame messageFrame;
+	@Mock
+	private MessageFrame messageFrame;
 
-    @Mock
-    private HederaWorldUpdater hederaWorldUpdater;
+	@Mock
+	private HederaWorldUpdater hederaWorldUpdater;
 
-    @Mock
-    private HederaWorldState.WorldStateAccount worldStateAccount;
+	@Mock
+	private HederaWorldState.WorldStateAccount worldStateAccount;
 
-    @Test
-    void computeExpiryForNewContractHappyPath() {
-        final var expectedExpiry = 20L;
+	@Test
+	void computeExpiryForNewContractHappyPath() {
+		final var expectedExpiry = 20L;
 
-        Deque<MessageFrame> frameDeque = new ArrayDeque<>();
-        frameDeque.add(messageFrame);
+		Deque<MessageFrame> frameDeque = new ArrayDeque<>();
+		frameDeque.add(messageFrame);
 
-        given(messageFrame.getMessageFrameStack()).willReturn(frameDeque);
-        given(messageFrame.getContextVariable("expiry")).willReturn(Optional.of(expectedExpiry));
+		given(messageFrame.getMessageFrameStack()).willReturn(frameDeque);
+		given(messageFrame.getContextVariable("expiry")).willReturn(Optional.of(expectedExpiry));
 
-        var actualExpiry = HederaOperationUtil.computeExpiryForNewContract(messageFrame);
+		var actualExpiry = HederaOperationUtil.computeExpiryForNewContract(messageFrame);
 
-        assertEquals(expectedExpiry, actualExpiry);
-        verify(messageFrame).getMessageFrameStack();
-        verify(messageFrame).getContextVariable("expiry");
-    }
+		assertEquals(expectedExpiry, actualExpiry);
+		verify(messageFrame).getMessageFrameStack();
+		verify(messageFrame).getContextVariable("expiry");
+	}
 
-    @Test
-    void computeExpiryForNewContractMultipleFrames() {
-        final var expectedExpiry = 21L;
+	@Test
+	void computeExpiryForNewContractMultipleFrames() {
+		final var expectedExpiry = 21L;
 
-        Deque<MessageFrame> frameDeque = new ArrayDeque<>();
-        frameDeque.add(messageFrame);
-        frameDeque.add(messageFrame);
+		Deque<MessageFrame> frameDeque = new ArrayDeque<>();
+		frameDeque.add(messageFrame);
+		frameDeque.add(messageFrame);
 
-        final var customAddress = Address.fromHexString("0x0000000000001");
+		final var customAddress = Address.fromHexString("0x0000000000001");
 
-        given(messageFrame.getMessageFrameStack()).willReturn(frameDeque);
-        given(messageFrame.getSenderAddress()).willReturn(customAddress);
-        given(messageFrame.getWorldUpdater()).willReturn(hederaWorldUpdater);
-        given(hederaWorldUpdater.getHederaAccount(customAddress)).willReturn(worldStateAccount);
-        given(worldStateAccount.getExpiry()).willReturn(expectedExpiry);
+		given(messageFrame.getMessageFrameStack()).willReturn(frameDeque);
+		given(messageFrame.getSenderAddress()).willReturn(customAddress);
+		given(messageFrame.getWorldUpdater()).willReturn(hederaWorldUpdater);
+		given(hederaWorldUpdater.getHederaAccount(customAddress)).willReturn(worldStateAccount);
+		given(worldStateAccount.getExpiry()).willReturn(expectedExpiry);
 
-        var actualExpiry = HederaOperationUtil.computeExpiryForNewContract(messageFrame);
+		var actualExpiry = HederaOperationUtil.computeExpiryForNewContract(messageFrame);
 
-        assertEquals(expectedExpiry, actualExpiry);
-        verify(messageFrame).getMessageFrameStack();
-        verify(messageFrame).getSenderAddress();
-        verify(hederaWorldUpdater).getHederaAccount(customAddress);
-        verify(worldStateAccount).getExpiry();
-        verify(messageFrame, never()).getContextVariable("expiry");
-    }
+		assertEquals(expectedExpiry, actualExpiry);
+		verify(messageFrame).getMessageFrameStack();
+		verify(messageFrame).getSenderAddress();
+		verify(hederaWorldUpdater).getHederaAccount(customAddress);
+		verify(worldStateAccount).getExpiry();
+		verify(messageFrame, never()).getContextVariable("expiry");
+	}
 }

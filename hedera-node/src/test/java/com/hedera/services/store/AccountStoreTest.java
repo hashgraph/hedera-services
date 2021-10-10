@@ -146,6 +146,7 @@ class AccountStoreTest {
 				.expirationTime(expiry)
 				.maxAutomaticAssociations(maxAutoAssociations)
 				.alreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations)
+				.proxy(proxy.asGrpcAccount())
 				.get();
 
 		// given:
@@ -195,6 +196,7 @@ class AccountStoreTest {
 				.expirationTime(expiry)
 				.maxAutomaticAssociations(newMax)
 				.alreadyUsedAutomaticAssociations(newUsedCount)
+				.proxy(proxy.asGrpcAccount())
 				.get();
 
 		// given:
@@ -236,6 +238,7 @@ class AccountStoreTest {
 				.expirationTime(expiry)
 				.maxAutomaticAssociations(maxAutoAssociations)
 				.alreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations)
+				.proxy(proxy.asGrpcAccount())
 				.get();
 
 		miscAccount.setExpiry(expiry);
@@ -243,6 +246,7 @@ class AccountStoreTest {
 		miscAccount.setAssociatedTokens(miscMerkleAccount.tokens().getIds());
 		miscAccount.setMaxAutomaticAssociations(maxAutoAssociations);
 		miscAccount.setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations);
+		miscAccount.setProxy(proxy);
 		autoRenewAccount.setExpiry(expiry);
 		autoRenewAccount.initBalance(balance);
 	}
@@ -253,12 +257,14 @@ class AccountStoreTest {
 	private final long autoRenewAccountNum = 3_234L;
 	private final long firstAssocTokenNum = 666L;
 	private final long secondAssocTokenNum = 777L;
+	private final long miscProxyAccount = 9_876L;
 	private final int alreadyUsedAutoAssociations = 12;
 	private final int maxAutoAssociations = 123;
 	private final Id miscId = new Id(0, 0, miscAccountNum);
 	private final Id autoRenewId = new Id(0, 0, autoRenewAccountNum);
 	private final Id firstAssocTokenId = new Id(0, 0, firstAssocTokenNum);
 	private final Id secondAssocTokenId = new Id(0, 0, secondAssocTokenNum);
+	private final Id proxy = new Id(0,0, miscProxyAccount);
 	private final EntityNum miscMerkleId = EntityNum.fromLong(miscAccountNum);
 	private final Account miscAccount = new Account(miscId);
 	private final Account autoRenewAccount = new Account(autoRenewId);

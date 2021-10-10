@@ -42,51 +42,51 @@ import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class HederaSelfDestructOperationTest {
-    final private String ethAddress = "0xc257274276a4e539741ca11b590b9447b26a8051";
-    final private String ethRecipientAddress = "0xc257274276a4e539741ca11b590b9447b26a8052";
+	final private String ethAddress = "0xc257274276a4e539741ca11b590b9447b26a8051";
+	final private String ethRecipientAddress = "0xc257274276a4e539741ca11b590b9447b26a8052";
 
-    private Address ethAddressInstance = Address.fromHexString(ethAddress);
-    private Address receiverEthAddressInstance = Address.fromHexString(ethRecipientAddress);
+	private Address ethAddressInstance = Address.fromHexString(ethAddress);
+	private Address receiverEthAddressInstance = Address.fromHexString(ethRecipientAddress);
 
-    @Mock
-    WorldUpdater worldUpdater;
+	@Mock
+	WorldUpdater worldUpdater;
 
-    @Mock
-    GasCalculator gasCalculator;
+	@Mock
+	GasCalculator gasCalculator;
 
-    @Mock
-    MessageFrame mf;
+	@Mock
+	MessageFrame mf;
 
-    @Mock
-    EVM evm;
+	@Mock
+	EVM evm;
 
-    HederaSelfDestructOperation subject;
+	HederaSelfDestructOperation subject;
 
-    @BeforeEach
-    void setUp() {
-        subject = new HederaSelfDestructOperation(gasCalculator);
-        given(mf.getWorldUpdater()).willReturn(worldUpdater);
-        given(mf.getStackItem(0)).willReturn(ethAddressInstance);
-        given(gasCalculator.selfDestructOperationGasCost(any(), eq(Wei.ONE))).willReturn(Gas.of(2L));
-    }
+	@BeforeEach
+	void setUp() {
+		subject = new HederaSelfDestructOperation(gasCalculator);
+		given(mf.getWorldUpdater()).willReturn(worldUpdater);
+		given(mf.getStackItem(0)).willReturn(ethAddressInstance);
+		given(gasCalculator.selfDestructOperationGasCost(any(), eq(Wei.ONE))).willReturn(Gas.of(2L));
+	}
 
-    @Test
-    void executeSelfDestructToSelf() {
-        given(mf.getRecipientAddress()).willReturn(ethAddressInstance);
+	@Test
+	void executeSelfDestructToSelf() {
+		given(mf.getRecipientAddress()).willReturn(ethAddressInstance);
 
-        var opResult = subject.execute(mf, evm);
+		var opResult = subject.execute(mf, evm);
 
-        assertEquals(Optional.of(HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF), opResult.getHaltReason());
-        assertEquals(Optional.of(Gas.of(2L)), opResult.getGasCost());
-    }
+		assertEquals(Optional.of(HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF), opResult.getHaltReason());
+		assertEquals(Optional.of(Gas.of(2L)), opResult.getGasCost());
+	}
 
-    @Test
-    void executeInvalidSolidityAddress() {
-        given(mf.getRecipientAddress()).willReturn(receiverEthAddressInstance);
+	@Test
+	void executeInvalidSolidityAddress() {
+		given(mf.getRecipientAddress()).willReturn(receiverEthAddressInstance);
 
-        var opResult = subject.execute(mf, evm);
+		var opResult = subject.execute(mf, evm);
 
-        assertEquals(Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS), opResult.getHaltReason());
-        assertEquals(Optional.of(Gas.of(2L)), opResult.getGasCost());
-    }
+		assertEquals(Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS), opResult.getHaltReason());
+		assertEquals(Optional.of(Gas.of(2L)), opResult.getGasCost());
+	}
 }

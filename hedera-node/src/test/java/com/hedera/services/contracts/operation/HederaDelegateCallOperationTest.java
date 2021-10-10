@@ -72,7 +72,7 @@ class HederaDelegateCallOperationTest {
 		subject = new HederaDelegateCallOperation(calc);
 		commonSetup(evmMsgFrame, worldUpdater, acc, accountAddr);
 	}
-	
+
 	@Test
 	void haltWithInvalidAddr() {
 		given(worldUpdater.get(any())).willReturn(null);

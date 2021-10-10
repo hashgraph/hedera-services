@@ -32,167 +32,167 @@ import static org.mockito.BDDMockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 public class HederaSStoreOperationTest {
-    HederaSStoreOperation subject;
+	HederaSStoreOperation subject;
 
-    @Mock
-    GasCalculator gasCalculator;
+	@Mock
+	GasCalculator gasCalculator;
 
-    @Mock
-    MessageFrame messageFrame;
+	@Mock
+	MessageFrame messageFrame;
 
-    @Mock
-    EVM evm;
+	@Mock
+	EVM evm;
 
-    @Mock
-    HederaWorldUpdater worldUpdater;
+	@Mock
+	HederaWorldUpdater worldUpdater;
 
-    @Mock
-    MutableAccount mutableAccount;
+	@Mock
+	MutableAccount mutableAccount;
 
-    @Mock
-    EvmAccount evmAccount;
+	@Mock
+	EvmAccount evmAccount;
 
-    @Mock
-    Bytes keyBytesMock;
+	@Mock
+	Bytes keyBytesMock;
 
-    @Mock
-    Bytes valueBytesMock;
+	@Mock
+	Bytes valueBytesMock;
 
-    @Mock
-    BlockValues hederaBlockValues;
+	@Mock
+	BlockValues hederaBlockValues;
 
-    @BeforeEach
-    void setUp() {
-        subject = new HederaSStoreOperation(gasCalculator);
-    }
+	@BeforeEach
+	void setUp() {
+		subject = new HederaSStoreOperation(gasCalculator);
+	}
 
-    @Test
-    void executesCorrectly() {
-        givenValidContext(keyBytesMock, valueBytesMock);
+	@Test
+	void executesCorrectly() {
+		givenValidContext(keyBytesMock, valueBytesMock);
 
-        final var result = subject.execute(messageFrame, evm);
+		final var result = subject.execute(messageFrame, evm);
 
-        final var expected = new Operation.OperationResult(Optional.of(Gas.of(10)), Optional.empty());
+		final var expected = new Operation.OperationResult(Optional.of(Gas.of(10)), Optional.empty());
 
-        assertEquals(expected.getGasCost(), result.getGasCost());
-        assertEquals(expected.getHaltReason(), result.getHaltReason());
+		assertEquals(expected.getGasCost(), result.getGasCost());
+		assertEquals(expected.getHaltReason(), result.getHaltReason());
 
-        verify(mutableAccount).setStorageValue(any(), any());
-        verify(messageFrame).storageWasUpdated(any(), any());
-    }
+		verify(mutableAccount).setStorageValue(any(), any());
+		verify(messageFrame).storageWasUpdated(any(), any());
+	}
 
-    @Test
-    void haltsWithIllegalStateChange() {
-        givenValidContext(keyBytesMock, valueBytesMock);
+	@Test
+	void haltsWithIllegalStateChange() {
+		givenValidContext(keyBytesMock, valueBytesMock);
 
-        given(messageFrame.isStatic()).willReturn(true);
+		given(messageFrame.isStatic()).willReturn(true);
 
-        final var result = subject.execute(messageFrame, evm);
+		final var result = subject.execute(messageFrame, evm);
 
-        final var expected = new Operation.OperationResult(Optional.of(Gas.of(10)), Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE));
+		final var expected = new Operation.OperationResult(Optional.of(Gas.of(10)), Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE));
 
-        assertEquals(expected.getGasCost(), result.getGasCost());
-        assertEquals(expected.getHaltReason(), result.getHaltReason());
+		assertEquals(expected.getGasCost(), result.getGasCost());
+		assertEquals(expected.getHaltReason(), result.getHaltReason());
 
-        verify(mutableAccount, never()).setStorageValue(any(), any());
-        verify(messageFrame, never()).storageWasUpdated(any(), any());
-    }
+		verify(mutableAccount, never()).setStorageValue(any(), any());
+		verify(messageFrame, never()).storageWasUpdated(any(), any());
+	}
 
-    @Test
-    void haltsWithInsufficientGas() {
-        final UInt256 keyBytes = UInt256.fromBytes(keyBytesMock);
-        final UInt256 valueBytes = UInt256.fromBytes(valueBytesMock);
-        final var recipientAccount = Address.fromHexString("0x0001");
+	@Test
+	void haltsWithInsufficientGas() {
+		final UInt256 keyBytes = UInt256.fromBytes(keyBytesMock);
+		final UInt256 valueBytes = UInt256.fromBytes(valueBytesMock);
+		final var recipientAccount = Address.fromHexString("0x0001");
 
-        given(messageFrame.popStackItem()).willReturn(keyBytes).willReturn(valueBytes);
-        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
-        given(messageFrame.getRecipientAddress()).willReturn(recipientAccount);
-        given(worldUpdater.getAccount(recipientAccount)).willReturn(evmAccount);
-        given(evmAccount.getMutable()).willReturn(mutableAccount);
-        given(mutableAccount.getStorageValue(any())).willReturn(keyBytes);
-        given(gasCalculator.calculateStorageCost(any(), any(), any())).willReturn(Gas.of(10));
-        given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
-        given(messageFrame.isStatic()).willReturn(false);
-        given(messageFrame.getRemainingGas()).willReturn(Gas.of(0));
+		given(messageFrame.popStackItem()).willReturn(keyBytes).willReturn(valueBytes);
+		given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+		given(messageFrame.getRecipientAddress()).willReturn(recipientAccount);
+		given(worldUpdater.getAccount(recipientAccount)).willReturn(evmAccount);
+		given(evmAccount.getMutable()).willReturn(mutableAccount);
+		given(mutableAccount.getStorageValue(any())).willReturn(keyBytes);
+		given(gasCalculator.calculateStorageCost(any(), any(), any())).willReturn(Gas.of(10));
+		given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
+		given(messageFrame.isStatic()).willReturn(false);
+		given(messageFrame.getRemainingGas()).willReturn(Gas.of(0));
 
-        final var result = subject.execute(messageFrame, evm);
+		final var result = subject.execute(messageFrame, evm);
 
-        final var expected = new Operation.OperationResult(Optional.of(Gas.of(10)), Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
+		final var expected = new Operation.OperationResult(Optional.of(Gas.of(10)), Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
 
-        assertEquals(expected.getGasCost(), result.getGasCost());
-        assertEquals(expected.getHaltReason(), result.getHaltReason());
+		assertEquals(expected.getGasCost(), result.getGasCost());
+		assertEquals(expected.getHaltReason(), result.getHaltReason());
 
-        verify(mutableAccount, never()).setStorageValue(any(), any());
-        verify(messageFrame, never()).storageWasUpdated(any(), any());
-    }
+		verify(mutableAccount, never()).setStorageValue(any(), any());
+		verify(messageFrame, never()).storageWasUpdated(any(), any());
+	}
 
-    @Test
-    void haltsWhenMutableAccountIsUnavailable() {
-        final UInt256 keyBytes = UInt256.fromBytes(keyBytesMock);
-        final UInt256 valueBytes = UInt256.fromBytes(valueBytesMock);
-        final var recipientAccount = Address.fromHexString("0x0001");
+	@Test
+	void haltsWhenMutableAccountIsUnavailable() {
+		final UInt256 keyBytes = UInt256.fromBytes(keyBytesMock);
+		final UInt256 valueBytes = UInt256.fromBytes(valueBytesMock);
+		final var recipientAccount = Address.fromHexString("0x0001");
 
-        given(messageFrame.popStackItem()).willReturn(keyBytes).willReturn(valueBytes);
-        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
-        given(messageFrame.getRecipientAddress()).willReturn(recipientAccount);
-        given(worldUpdater.getAccount(recipientAccount)).willReturn(evmAccount);
+		given(messageFrame.popStackItem()).willReturn(keyBytes).willReturn(valueBytes);
+		given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+		given(messageFrame.getRecipientAddress()).willReturn(recipientAccount);
+		given(worldUpdater.getAccount(recipientAccount)).willReturn(evmAccount);
 
-        final var result = subject.execute(messageFrame, evm);
+		final var result = subject.execute(messageFrame, evm);
 
-        final var expected = new Operation.OperationResult(
-                Optional.empty(), Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE));
+		final var expected = new Operation.OperationResult(
+				Optional.empty(), Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE));
 
-        assertEquals(expected.getGasCost(), result.getGasCost());
-        assertEquals(expected.getHaltReason(), result.getHaltReason());
+		assertEquals(expected.getGasCost(), result.getGasCost());
+		assertEquals(expected.getHaltReason(), result.getHaltReason());
 
-        verify(mutableAccount, never()).setStorageValue(any(), any());
-        verify(messageFrame, never()).storageWasUpdated(any(), any());
-    }
+		verify(mutableAccount, never()).setStorageValue(any(), any());
+		verify(messageFrame, never()).storageWasUpdated(any(), any());
+	}
 
-    @Test
-    void executesWithZero() {
-        final UInt256 keyBytes = UInt256.fromBytes(keyBytesMock);
-        final UInt256 valueBytes = UInt256.fromBytes(Bytes.fromHexString("0x12345678"));
+	@Test
+	void executesWithZero() {
+		final UInt256 keyBytes = UInt256.fromBytes(keyBytesMock);
+		final UInt256 valueBytes = UInt256.fromBytes(Bytes.fromHexString("0x12345678"));
 
-        givenValidContext(keyBytes, valueBytes);
-        given(mutableAccount.getStorageValue(any())).willReturn(UInt256.ZERO);
+		givenValidContext(keyBytes, valueBytes);
+		given(mutableAccount.getStorageValue(any())).willReturn(UInt256.ZERO);
 
-        final var expectedExpiry = 20L;
-        Deque<MessageFrame> frameDeque = new ArrayDeque<>();
-        frameDeque.add(messageFrame);
-        given(messageFrame.getMessageFrameStack()).willReturn(frameDeque);
-        given(messageFrame.getContextVariable("expiry")).willReturn(Optional.of(expectedExpiry));
-        given(messageFrame.getContextVariable("sbh")).willReturn(5L);
-        given(messageFrame.getBlockValues()).willReturn(hederaBlockValues);
-        given(messageFrame.getGasPrice()).willReturn(Wei.of(50000L));
-        given(hederaBlockValues.getTimestamp()).willReturn(10L);
+		final var expectedExpiry = 20L;
+		Deque<MessageFrame> frameDeque = new ArrayDeque<>();
+		frameDeque.add(messageFrame);
+		given(messageFrame.getMessageFrameStack()).willReturn(frameDeque);
+		given(messageFrame.getContextVariable("expiry")).willReturn(Optional.of(expectedExpiry));
+		given(messageFrame.getContextVariable("sbh")).willReturn(5L);
+		given(messageFrame.getBlockValues()).willReturn(hederaBlockValues);
+		given(messageFrame.getGasPrice()).willReturn(Wei.of(50000L));
+		given(hederaBlockValues.getTimestamp()).willReturn(10L);
 
-        final var result = subject.execute(messageFrame, evm);
+		final var result = subject.execute(messageFrame, evm);
 
-        final var expected = new Operation.OperationResult(Optional.of(Gas.of(10)), Optional.empty());
+		final var expected = new Operation.OperationResult(Optional.of(Gas.of(10)), Optional.empty());
 
-        assertEquals(expected.getGasCost(), result.getGasCost());
-        assertEquals(expected.getHaltReason(), result.getHaltReason());
+		assertEquals(expected.getGasCost(), result.getGasCost());
+		assertEquals(expected.getHaltReason(), result.getHaltReason());
 
-        verify(mutableAccount).setStorageValue(any(), any());
-        verify(messageFrame).storageWasUpdated(any(), any());
-    }
+		verify(mutableAccount).setStorageValue(any(), any());
+		verify(messageFrame).storageWasUpdated(any(), any());
+	}
 
-    private void givenValidContext(Bytes key, Bytes value) {
-        final UInt256 keyBytes = UInt256.fromBytes(key);
-        final UInt256 valueBytes = UInt256.fromBytes(value);
-        final var recipientAccount = Address.fromHexString("0x0001");
+	private void givenValidContext(Bytes key, Bytes value) {
+		final UInt256 keyBytes = UInt256.fromBytes(key);
+		final UInt256 valueBytes = UInt256.fromBytes(value);
+		final var recipientAccount = Address.fromHexString("0x0001");
 
-        given(messageFrame.popStackItem()).willReturn(keyBytes).willReturn(valueBytes);
-        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
-        given(messageFrame.getRecipientAddress()).willReturn(recipientAccount);
-        given(worldUpdater.getAccount(recipientAccount)).willReturn(evmAccount);
-        given(evmAccount.getMutable()).willReturn(mutableAccount);
-        given(gasCalculator.calculateStorageCost(any(), any(), any())).willReturn(Gas.of(10));
-        given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
-        given(messageFrame.isStatic()).willReturn(false);
-        given(messageFrame.getRemainingGas()).willReturn(Gas.of(300));
+		given(messageFrame.popStackItem()).willReturn(keyBytes).willReturn(valueBytes);
+		given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+		given(messageFrame.getRecipientAddress()).willReturn(recipientAccount);
+		given(worldUpdater.getAccount(recipientAccount)).willReturn(evmAccount);
+		given(evmAccount.getMutable()).willReturn(mutableAccount);
+		given(gasCalculator.calculateStorageCost(any(), any(), any())).willReturn(Gas.of(10));
+		given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
+		given(messageFrame.isStatic()).willReturn(false);
+		given(messageFrame.getRemainingGas()).willReturn(Gas.of(300));
 
-        given(mutableAccount.getStorageValue(any())).willReturn(keyBytes);
-    }
+		given(mutableAccount.getStorageValue(any())).willReturn(keyBytes);
+	}
 }

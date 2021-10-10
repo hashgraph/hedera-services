@@ -24,7 +24,6 @@ package com.hedera.services.contracts.execution;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.contracts.execution.CallEvmTxProcessor;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
@@ -110,7 +109,7 @@ class CallEvmTxProcessorTest {
 	}
 
 	@Test
-	void assertSuccessExecutе() {
+	void assertSuccessExecution() {
 		givenValidMock();
 		sender.initBalance(350_000L);
 		var result = callEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), 33_333L, 1234L, Bytes.EMPTY,

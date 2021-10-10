@@ -52,14 +52,22 @@ import static org.mockito.Mockito.mockStatic;
 @ExtendWith(MockitoExtension.class)
 class HederaBalanceOperationTest {
 
-	@Mock private GasCalculator gasCalculator;
-	@Mock private MessageFrame frame;
-	@Mock private EVM evm;
-	@Mock private Address address;
-	@Mock private Bytes bytes;
-	@Mock private WorldUpdater worldUpdater;
-	@Mock private Account account;
-	@Mock private Gas gas;
+	@Mock
+	private GasCalculator gasCalculator;
+	@Mock
+	private MessageFrame frame;
+	@Mock
+	private EVM evm;
+	@Mock
+	private Address address;
+	@Mock
+	private Bytes bytes;
+	@Mock
+	private WorldUpdater worldUpdater;
+	@Mock
+	private Account account;
+	@Mock
+	private Gas gas;
 
 	private HederaBalanceOperation subject;
 
