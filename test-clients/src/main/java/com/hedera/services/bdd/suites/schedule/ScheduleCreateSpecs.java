@@ -374,27 +374,33 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec addsSignatureToTheExistingIdenticalSchedule() {
+		final var keyA = "firstPayerKey";
+		final var keyB = "secondPayerKey";
+		final var firstPayer = "firstPayer";
+		final var secondPayer = "secondPayer";
 		return defaultHapiSpec("addsSignatureToTheExistingIdenticalSchedule")
 				.given(
 						cryptoCreate("sender").balance(1L),
-						cryptoCreate("firstPayer"),
+						newKeyNamed(keyA),
+						cryptoCreate(firstPayer).key(keyA),
 						scheduleCreate("original",
 								cryptoTransfer(tinyBarsFromTo("sender", FUNDING, 1))
 										.fee(ONE_HBAR)
 						)
-								.designatingPayer("firstPayer")
-								.payingWith("firstPayer")
+								.designatingPayer(firstPayer)
+								.payingWith(firstPayer)
 								.mergeWithIdenticalSchedule()
 								.savingExpectedScheduledTxnId()
 				).when(
-						cryptoCreate("secondPayer")
+						newKeyNamed(keyB),
+						cryptoCreate(secondPayer).key(keyB)
 				).then(
 						scheduleCreate("duplicate",
 								cryptoTransfer(tinyBarsFromTo("sender", FUNDING, 1))
 										.fee(ONE_HBAR)
 						)
-								.payingWith("secondPayer")
-								.designatingPayer("firstPayer")
+								.payingWith(secondPayer)
+								.designatingPayer(firstPayer)
 								.mergeWithIdenticalSchedule()
 								.via("copycat")
 								.hasKnownStatus(SUCCESS),
