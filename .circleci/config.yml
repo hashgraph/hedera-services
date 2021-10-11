@@ -711,13 +711,13 @@ workflows:
                 at: /
 
   GCP-Weekly-Services-HCS-Restart-Performance-15N-15C:
-#    triggers:
-#      - schedule:
-#          cron: "5 10 * * 6"
-#          filters:
-#            branches:
-#              only:
-#                - master
+    triggers:
+      - schedule:
+          cron: "5 10 * * 6"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -735,13 +735,13 @@ workflows:
                 at: /
 
   GCP-Weekly-Services-HTS-Restart-Performance-15N-15C:
-    triggers:
-      - schedule:
-          cron: "5 15 * * 6"
-          filters:
-            branches:
-              only:
-                - master
+#    triggers:
+#      - schedule:
+#          cron: "5 15 * * 6"
+#          filters:
+#            branches:
+#              only:
+#                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
