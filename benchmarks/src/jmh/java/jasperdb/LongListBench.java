@@ -5,9 +5,11 @@ import com.swirlds.jasperdb.collections.LongListHeap;
 import com.swirlds.jasperdb.collections.LongListOffHeap;
 import org.openjdk.jmh.annotations.*;
 
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryPoolMXBean;
 import java.lang.management.MemoryType;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -28,7 +30,7 @@ public class LongListBench {
     private LongList list;
     private int nextIndex = INITIAL_DATA_SIZE;
 
-    @Param({"LongListHeap","LongListOffHeap","SynchronizedArrayList"})
+    @Param({"LongListHeap","LongListOffHeap"/*,"SynchronizedArrayList"*/})
     public String listImpl;
 
     @Setup(Level.Trial)
@@ -37,7 +39,7 @@ public class LongListBench {
         list = switch (listImpl) {
             default -> new LongListHeap();
             case "LongListOffHeap" -> new LongListOffHeap();
-            case "SynchronizedArrayList" -> new SynchronizedArrayList();
+//            case "SynchronizedArrayList" -> new SynchronizedArrayList();
         };
         // fill with some data
         for (int i = 0; i < INITIAL_DATA_SIZE; i++) {
@@ -104,43 +106,53 @@ public class LongListBench {
         System.out.println("    Runtime.getRuntime().totalMemory() = " + Runtime.getRuntime().totalMemory());
     }
 
-    public static class SynchronizedArrayList implements LongList {
-        private final List<Long> data = new ArrayList<>();
-
-        @Override
-        public synchronized long get(long index, long notFoundValue) {
-            Long value =  data.get((int)index);
-            return value == null ? notFoundValue : value;
-        }
-
-        @Override
-        public synchronized void put(long index, long value) {
-            int iIndex = (int) index;
-            while (data.size() <= iIndex) {
-                data.add(0L);
-            }
-            data.set(iIndex,value);
-        }
-
-        @Override
-        public synchronized boolean putIfEqual(long index, long oldValue, long newValue) {
-            Long value =  data.get((int)index);
-            if (value != null && value == oldValue) {
-                data.set((int) index,newValue);
-                return true;
-            } else {
-                return false;
-            }
-        }
-
-        @Override
-        public synchronized long capacity() {
-            return data.size();
-        }
-
-        @Override
-        public synchronized long size() {
-            return data.size();
-        }
-    }
+//    public static class SynchronizedArrayList implements LongList {
+//        private final List<Long> data = new ArrayList<>();
+//
+//        @Override
+//        public synchronized long get(long index, long notFoundValue) {
+//            Long value =  data.get((int)index);
+//            return value == null ? notFoundValue : value;
+//        }
+//
+//        @Override
+//        public synchronized void put(long index, long value) {
+//            int iIndex = (int) index;
+//            while (data.size() <= iIndex) {
+//                data.add(0L);
+//            }
+//            data.set(iIndex,value);
+//        }
+//
+//        @Override
+//        public synchronized boolean putIfEqual(long index, long oldValue, long newValue) {
+//            Long value =  data.get((int)index);
+//            if (value != null && value == oldValue) {
+//                data.set((int) index,newValue);
+//                return true;
+//            } else {
+//                return false;
+//            }
+//        }
+//
+//        @Override
+//        public synchronized long capacity() {
+//            return data.size();
+//        }
+//
+//        @Override
+//        public synchronized long size() {
+//            return data.size();
+//        }
+//
+//        @Override
+//        public int getNumLongsPerChunk() {
+//            return 0;
+//        }
+//
+//        @Override
+//        public void writeToFile(Path path) throws IOException {
+//
+//        }
+//    }
 }

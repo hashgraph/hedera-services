@@ -48,7 +48,8 @@ public class VFCMapBenchBase {
                         Path.of("jasperdb_ih_ram_"+extraPath),
                         numEntities,
                         true,
-                        Long.MAX_VALUE));
+                        Long.MAX_VALUE,
+                        false));
                 break;
             case jasperdbIhDisk:
             default:
@@ -59,7 +60,8 @@ public class VFCMapBenchBase {
                         Path.of("jasperdb_ih_disk_"+extraPath),
                         numEntities,
                         true,
-                        0));
+                        0,
+                        false));
                 break;
             case jasperdbIhHalf:
                 map = new VirtualMap<>(new VirtualDataSourceJasperDB<>(
@@ -69,7 +71,8 @@ public class VFCMapBenchBase {
                         Path.of("jasperdb_ih_half_"+extraPath),
                         numEntities,
                         true,
-                        numEntities/2));
+                        numEntities/2,
+                        false));
                 break;
         }
         return map;

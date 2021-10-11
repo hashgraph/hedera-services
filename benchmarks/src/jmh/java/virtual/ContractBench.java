@@ -3,6 +3,7 @@ package virtual;
 import com.hedera.services.state.merkle.virtual.ContractKey;
 import com.hedera.services.state.merkle.virtual.ContractKeySerializer;
 import com.hedera.services.state.merkle.virtual.ContractValue;
+import com.swirlds.common.Units;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
 import com.swirlds.jasperdb.files.DataFileCommon;
@@ -10,10 +11,26 @@ import com.swirlds.virtualmap.VirtualMap;
 import disruptor.Transaction;
 import disruptor.TransactionProcessor;
 import disruptor.TransactionPublisher;
-import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Measurement;
+import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.OutputTimeUnit;
+import org.openjdk.jmh.annotations.Param;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
+import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.TearDown;
 import virtual.VFCMapBenchBase.DataSourceType;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Random;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static virtual.VFCMapBenchBase.createMap;
@@ -23,6 +40,7 @@ import static virtual.VFCMapBenchBase.printDataStoreSize;
  */
 @SuppressWarnings({"jol", "BusyWait"})
 @State(Scope.Thread)
+@Measurement(iterations = 60, time = 1, timeUnit = TimeUnit.MINUTES)
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
 public class ContractBench {
@@ -109,13 +127,14 @@ public class ContractBench {
                 preFetchEventHandlers,
                 (Transaction<Data> tx) -> {   // preFetch logic
                     VirtualMap<ContractKey, ContractValue> map = getVirtualMap();
-
                     final Data data = tx.getData();
-                    data.setValue(map.getForModify(data.getKey()));
+                    data.value1 = map.getForModify(data.key1);
+                    data.value2 = map.getForModify(data.key2);
                 },
                 (Transaction<Data> tx) -> {   // handleTransaction logic
                     final Data data = tx.getData();
-                    @SuppressWarnings("unused") final ContractValue value = data.getValue();
+                    data.value1.setValue(data.value1.asLong() - data.transferAmount);
+                    data.value2.setValue(data.value2.asLong() + data.transferAmount);
                 }
         );
 
@@ -175,6 +194,23 @@ public class ContractBench {
         }
 
         printDataStoreSize();
+
+        // create a snapshot every 15min
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd--HH-mm");
+        ScheduledExecutorService snapshotting = Executors.newScheduledThreadPool(1, runnable -> new Thread(runnable, "Snapshot"));
+        snapshotting.scheduleWithFixedDelay(() -> {
+            final Path snapshotDir = Path.of("jasperdb_snapshot_"+df.format(new Date()));
+            System.out.println("************ STARTING SNAPSHOT ["+snapshotDir.toAbsolutePath()+"] ***********");
+            long START = System.currentTimeMillis();
+            try {
+                virtualMap.getDataSource().snapshot(snapshotDir);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            double tookSeconds = (System.currentTimeMillis() - START) * Units.MILLISECONDS_TO_SECONDS;
+            System.out.printf("************ SNAPSHOT FINISHED took %,3f seconds [%s] ***********\n", tookSeconds, snapshotDir.toAbsolutePath());
+        },0,5,TimeUnit.MINUTES);
+
     }
 
     @TearDown
@@ -198,9 +234,13 @@ public class ContractBench {
             final var keyIndex = rand.nextInt(numContracts);
             final var kvPairCount = keyValuePairsPerContract[keyIndex];
             final var kvIndex = rand.nextInt(kvPairCount);
-            final var key = asContractKey(keyIndex, kvIndex);
-
-            publisher.publish(new Data(key, rand.nextInt(kvPairCount)));
+            final var key1 = asContractKey(keyIndex, kvIndex);
+            final var keyIndex2 = rand.nextInt(numContracts);
+            final var kvPairCount2 = keyValuePairsPerContract[keyIndex2];
+            final var kvIndex2 = rand.nextInt(kvPairCount2);
+            final var key2 = asContractKey(keyIndex2, kvIndex2);
+            // transfer a random amount up to 10k between accounts
+            publisher.publish(new Data(key1,key2, rand.nextInt(10_000)));
         }
 //        // Read the two accounts involved in the token transfer
 //        // Debit and Credit them for hbar balances
@@ -220,17 +260,16 @@ public class ContractBench {
     }
 
     public static class Data {
-        ContractKey key;
-        ContractValue value;
+        ContractKey key1;
+        ContractValue value1;
+        ContractKey key2;
+        ContractValue value2;
+        int transferAmount;
 
-        public Data(ContractKey key, int value) {
-            this.key = key;
-            this.value = new ContractValue(value);
+        public Data(ContractKey key1, ContractKey key2, int transferAmount) {
+            this.key1 = key1;
+            this.key2 = key2;
+            this.transferAmount = transferAmount;
         }
-
-        public ContractKey getKey() { return this.key; }
-        public ContractValue getValue() { return this.value; }
-
-        public void setValue(ContractValue value) { this.value = value; }
     }
 }

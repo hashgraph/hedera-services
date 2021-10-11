@@ -86,7 +86,8 @@ public class VirtualDataSourceNewAPIBench {
                             storePath,
                             numEntities+10_000_000,  // TODO see if 10 millionls extra is enough for add method
                             true,
-                            Long.MAX_VALUE);
+                            Long.MAX_VALUE,
+                            false);
                     break;
                 default:
                     throw new IllegalStateException("Unexpected value: " + impl);
