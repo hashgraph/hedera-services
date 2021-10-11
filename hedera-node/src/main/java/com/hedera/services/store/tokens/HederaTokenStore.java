@@ -845,8 +845,9 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	private ResponseCodeEnum validateAndAutoAssociate(AccountID aId, TokenID tId) {
-		// Issue-2286: Prevent automatic associations.
-		// When automatic associations is ready, check here whether to auto-associate
+		if (hederaLedger.maxAutomaticAssociations(aId) > 0) {
+			return associate(aId, List.of(tId), true);
+		}
 		return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 	}
 

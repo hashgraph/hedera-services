@@ -54,7 +54,6 @@ import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -1336,7 +1335,6 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	@Disabled
 	void adjustmentFailsOnAutomaticAssociationLimitReached() {
 		final var tokens = mock(MerkleAccountTokens.class);
 		given(tokenRelsLedger.exists(anotherFeeCollectorMisc)).willReturn(false);
@@ -1356,7 +1354,6 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	@Disabled
 	void adjustmentWorksAndIncrementsAlreadyUsedAutoAssociationCountForNewAssociation() {
 		final var tokens = mock(MerkleAccountTokens.class);
 		given(tokenRelsLedger.exists(anotherFeeCollectorMisc)).willReturn(false);
