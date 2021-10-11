@@ -79,7 +79,7 @@ public class CreateOperationSuite extends HapiApiSuite {
 				factoryAndSelfDestructInConstructorContract(),
 				factoryQuickSelfDestructContract(),
 				contractCreateWithNewOpInConstructor(),
-				contractCreateContractSpec()
+				childContractStorageWorks()
 		);
 	}
 
@@ -319,32 +319,25 @@ public class CreateOperationSuite extends HapiApiSuite {
 				);
 	}
 
-	HapiApiSpec contractCreateContractSpec() {
+	HapiApiSpec childContractStorageWorks() {
+		final var CREATED_TRIVIAL_CONTRACT_RETURNS = 7;
 
-		return defaultHapiSpec("contractCreateContractSpec")
+		return defaultHapiSpec("childContractStorageWorks")
 				.given(
-						cryptoCreate("payer")
-								.balance(10_000_000_000L),
 						fileCreate("createTrivialBytecode")
 								.path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH)
 				).when(
 						contractCreate("firstContract")
-								.payingWith("payer")
-								.gas(300_000L)
 								.bytecode("createTrivialBytecode")
 								.via("firstContractTxn")
-
 				).then(
 						assertionsHold((spec, ctxLog) -> {
 							var subop1 = contractCall("firstContract", ContractResources.CREATE_CHILD_ABI)
-									.payingWith("payer")
-									.gas(300_000L)
 									.via("createContractTxn");
 
 							// First contract calls created contract and get an integer return value
 							var subop2 = contractCallLocal("firstContract", ContractResources.GET_CHILD_RESULT_ABI)
-									.saveResultTo("contractCallContractResultBytes")
-									.gas(300_000L);
+									.saveResultTo("contractCallContractResultBytes");
 							CustomSpecAssert.allRunFor(spec, subop1, subop2);
 
 							byte[] resultBytes = spec.registry().getBytes("contractCallContractResultBytes");
@@ -361,15 +354,13 @@ public class CreateOperationSuite extends HapiApiSuite {
 							}
 
 							ctxLog.info("This contract call contract return value {}", contractCallReturnVal);
-							Assertions.assertEquals(
-									ContractResources.CREATED_TRIVIAL_CONTRACT_RETURNS, contractCallReturnVal,
+							Assertions.assertEquals(CREATED_TRIVIAL_CONTRACT_RETURNS, contractCallReturnVal,
 									"This contract call contract return value should be 7");
 
 
 							// Get created contract's info with call to first contract
 							var subop3 = contractCallLocal("firstContract", ContractResources.GET_CHILD_ADDRESS_ABI)
-									.saveResultTo("getCreatedContractInfoResultBytes")
-									.gas(300_000L);
+									.saveResultTo("getCreatedContractInfoResultBytes");
 							CustomSpecAssert.allRunFor(spec, subop3);
 
 							resultBytes = spec.registry().getBytes("getCreatedContractInfoResultBytes");

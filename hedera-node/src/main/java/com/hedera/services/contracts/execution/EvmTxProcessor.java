@@ -225,11 +225,11 @@ abstract class EvmTxProcessor {
 		final Gas selfDestructRefund =
 				gasCalculator.getSelfDestructRefundAmount().times(initialFrame.getSelfDestructs().size()).min(
 						gasUsedByTransaction.dividedBy(gasCalculator.getMaxRefundQuotient()));
-		gasUsedByTransaction = gasUsedByTransaction.minus(selfDestructRefund);
+		gasUsedByTransaction = gasUsedByTransaction.minus(selfDestructRefund).minus(initialFrame.getGasRefund());
 
 		if (!isStatic) {
 			// return gas price to accounts
-			final Gas refunded = Gas.of(gasLimit).minus(gasUsedByTransaction).plus(initialFrame.getGasRefund());
+			final Gas refunded = Gas.of(gasLimit).minus(gasUsedByTransaction);
 			final Wei refundedWei = refunded.priceFor(Wei.of(gasPrice));
 
 			mutableSender.incrementBalance(refundedWei);

@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.contract;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,15 +33,21 @@ import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
+import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ContractUpdateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractUpdateSuite.class);
@@ -68,7 +75,8 @@ public class ContractUpdateSuite extends HapiApiSuite {
 				updateAutoRenewWorks(),
 				updateAdminKeyWorks(),
 				canMakeContractImmutableWithEmptyKeyList(),
-				givenAdminKeyMustBeValid()
+				givenAdminKeyMustBeValid(),
+				fridayThe13thSpec()
 		);
 	}
 
@@ -197,6 +205,121 @@ public class ContractUpdateSuite extends HapiApiSuite {
 								.useDeprecatedAdminKey()
 								.signedBy(GENESIS, "target")
 								.hasKnownStatus(INVALID_ADMIN_KEY)
+				);
+	}
+
+	HapiApiSpec fridayThe13thSpec() {
+		long newExpiry = Instant.now().getEpochSecond() + DEFAULT_PROPS.defaultExpirationSecs() * 2;
+		long betterExpiry = Instant.now().getEpochSecond() + DEFAULT_PROPS.defaultExpirationSecs() * 3;
+		final String INITIAL_MEMO = "This is a memo string with only Ascii characters";
+		final String NEW_MEMO = "Turning and turning in the widening gyre, the falcon cannot hear the falconer...";
+		final String BETTER_MEMO = "This was Mr. Bleaney's room...";
+		KeyShape initialKeyShape = KeyShape.SIMPLE;
+		KeyShape newKeyShape = listOf(3);
+
+		return defaultHapiSpec("FridayThe13thSpec")
+				.given(
+						newKeyNamed("initialAdminKey").shape(initialKeyShape),
+						newKeyNamed("newAdminKey").shape(newKeyShape),
+						cryptoCreate("payer")
+								.balance(10 * ONE_HUNDRED_HBARS),
+						fileCreate("bytecode")
+								.path(ContractResources.SIMPLE_STORAGE_BYTECODE_PATH)
+								.payingWith("payer")
+				).when(
+						contractCreate("immutableContract")
+								.payingWith("payer")
+								.omitAdminKey()
+								.bytecode("bytecode"),
+						contractCreate("contract")
+								.payingWith("payer")
+								.adminKey("initialAdminKey")
+								.entityMemo(INITIAL_MEMO)
+								.bytecode("bytecode"),
+						getContractInfo("contract")
+								.payingWith("payer")
+								.logged()
+								.has(contractWith()
+										.memo(INITIAL_MEMO)
+										.adminKey("initialAdminKey"))
+				).then(
+						contractUpdate("contract")
+								.payingWith("payer")
+								.newKey("newAdminKey")
+								.signedBy("payer", "initialAdminKey")
+								.hasKnownStatus(INVALID_SIGNATURE),
+						contractUpdate("contract")
+								.payingWith("payer")
+								.newKey("newAdminKey")
+								.signedBy("payer", "newAdminKey")
+								.hasKnownStatus(INVALID_SIGNATURE),
+						contractUpdate("contract")
+								.payingWith("payer")
+								.newKey("newAdminKey"),
+						contractUpdate("contract")
+								.payingWith("payer")
+								.newExpirySecs(newExpiry)
+								.newMemo(NEW_MEMO),
+						getContractInfo("contract")
+								.payingWith("payer")
+								.logged()
+								.has(contractWith()
+										.solidityAddress("contract")
+										.memo(NEW_MEMO)
+										.expiry(newExpiry)),
+						contractUpdate("contract")
+								.payingWith("payer")
+								.newMemo(BETTER_MEMO),
+						getContractInfo("contract")
+								.payingWith("payer")
+								.logged()
+								.has(contractWith()
+										.memo(BETTER_MEMO)
+										.expiry(newExpiry)),
+						contractUpdate("contract")
+								.payingWith("payer")
+								.newExpirySecs(betterExpiry),
+						getContractInfo("contract")
+								.payingWith("payer")
+								.logged()
+								.has(contractWith()
+										.memo(BETTER_MEMO)
+										.expiry(betterExpiry)),
+						contractUpdate("contract")
+								.payingWith("payer")
+								.signedBy("payer")
+								.newExpirySecs(newExpiry)
+								.hasKnownStatus(EXPIRATION_REDUCTION_NOT_ALLOWED),
+						contractUpdate("contract")
+								.payingWith("payer")
+								.signedBy("payer")
+								.newMemo(NEW_MEMO)
+								.hasKnownStatus(INVALID_SIGNATURE),
+						contractUpdate("contract")
+								.payingWith("payer")
+								.signedBy("payer", "initialAdminKey")
+								.hasKnownStatus(INVALID_SIGNATURE),
+						contractUpdate("immutableContract")
+								.payingWith("payer")
+								.newMemo(BETTER_MEMO)
+								.hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
+						contractDelete("immutableContract")
+								.payingWith("payer")
+								.hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
+						contractUpdate("immutableContract")
+								.payingWith("payer")
+								.newExpirySecs(betterExpiry),
+						contractDelete("contract")
+								.payingWith("payer")
+								.signedBy("payer", "initialAdminKey")
+								.hasKnownStatus(INVALID_SIGNATURE),
+						contractDelete("contract")
+								.payingWith("payer")
+								.signedBy("payer")
+								.hasKnownStatus(INVALID_SIGNATURE),
+						contractDelete("contract")
+								.payingWith("payer")
+								.hasKnownStatus(SUCCESS)
 				);
 	}
 

@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.contract;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
-import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
@@ -42,7 +41,6 @@ import org.ethereum.core.CallTransaction;
 import org.junit.jupiter.api.Assertions;
 
 import java.math.BigInteger;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -65,7 +63,6 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_FROM_ABI;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
-import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -76,25 +73,21 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -117,7 +110,6 @@ public class ContractCallSuite extends HapiApiSuite {
 		return allOf(
 				positiveSpecs(),
 				negativeSpecs()
-//				Arrays.asList(fridayThe13thSpec()) //Fails with Bad expiry time! ==> expected: <1647546531> but was: <1641322534>
 		);
 	}
 
@@ -125,7 +117,7 @@ public class ContractCallSuite extends HapiApiSuite {
 		return Arrays.asList(
 				insufficientGas(),
 				invalidContract(),
-//				smartContractFailFirst(), //Fails with inconsistency btw tx fee returned in tx record and actual acount balance difference
+				smartContractFailFirst(),
 				contractTransferToSigReqAccountWithoutKeyFails()
 		);
 	}
@@ -484,122 +476,6 @@ public class ContractCallSuite extends HapiApiSuite {
 				);
 	}
 
-	HapiApiSpec fridayThe13thSpec() {
-		long newExpiry = Instant.now().getEpochSecond() + DEFAULT_PROPS.defaultExpirationSecs() * 2;
-		long betterExpiry = Instant.now().getEpochSecond() + DEFAULT_PROPS.defaultExpirationSecs() * 3;
-		final String INITIAL_MEMO = "This is a memo string with only Ascii characters";
-		final String NEW_MEMO = "Turning and turning in the widening gyre, the falcon cannot hear the falconer...";
-		final String BETTER_MEMO = "This was Mr. Bleaney's room...";
-		KeyShape initialKeyShape = KeyShape.SIMPLE;
-		KeyShape newKeyShape = listOf(3);
-
-		return defaultHapiSpec("FridayThe13thSpec")
-				.given(
-						newKeyNamed("initialAdminKey").shape(initialKeyShape),
-						newKeyNamed("newAdminKey").shape(newKeyShape),
-						cryptoCreate("payer")
-								.balance(10 * ONE_HUNDRED_HBARS),
-						fileCreate("bytecode")
-								.path(ContractResources.SIMPLE_STORAGE_BYTECODE_PATH)
-								.payingWith("payer")
-				).when(
-						contractCreate("immutableContract")
-								.payingWith("payer")
-								.omitAdminKey()
-								.bytecode("bytecode"),
-						contractCreate("contract")
-								.payingWith("payer")
-								.adminKey("initialAdminKey")
-								.entityMemo(INITIAL_MEMO)
-								.bytecode("bytecode"),
-						getContractInfo("contract")
-								.payingWith("payer")
-								.logged()
-								.has(contractWith()
-										.memo(INITIAL_MEMO)
-										.adminKey("initialAdminKey"))
-				).then(
-						contractUpdate("contract")
-								.payingWith("payer")
-								.newKey("newAdminKey")
-								.signedBy("payer", "initialAdminKey")
-								.hasKnownStatus(INVALID_SIGNATURE),
-						contractUpdate("contract")
-								.payingWith("payer")
-								.newKey("newAdminKey")
-								.signedBy("payer", "newAdminKey")
-								.hasKnownStatus(INVALID_SIGNATURE),
-						contractUpdate("contract")
-								.payingWith("payer")
-								.newKey("newAdminKey"),
-						contractUpdate("contract")
-								.payingWith("payer")
-								.newExpiryTime(newExpiry)
-								.newMemo(NEW_MEMO),
-						getContractInfo("contract")
-								.payingWith("payer")
-								.logged()
-								.has(contractWith()
-										.solidityAddress("contract")
-										.memo(NEW_MEMO)
-										.expiry(newExpiry)),
-						contractUpdate("contract")
-								.payingWith("payer")
-								.newMemo(BETTER_MEMO),
-						getContractInfo("contract")
-								.payingWith("payer")
-								.logged()
-								.has(contractWith()
-										.memo(BETTER_MEMO)
-										.expiry(newExpiry)),
-						contractUpdate("contract")
-								.payingWith("payer")
-								.signedBy("payer")
-								.newExpiryTime(betterExpiry),
-						getContractInfo("contract")
-								.payingWith("payer")
-								.logged()
-								.has(contractWith()
-										.memo(BETTER_MEMO)
-										.expiry(betterExpiry)),
-						contractUpdate("contract")
-								.payingWith("payer")
-								.signedBy("payer")
-								.newExpiryTime(newExpiry)
-								.hasKnownStatus(EXPIRATION_REDUCTION_NOT_ALLOWED),
-						contractUpdate("contract")
-								.payingWith("payer")
-								.signedBy("payer")
-								.newMemo(NEW_MEMO)
-								.hasKnownStatus(INVALID_SIGNATURE),
-						contractUpdate("contract")
-								.payingWith("payer")
-								.signedBy("payer", "initialAdminKey")
-								.hasKnownStatus(INVALID_SIGNATURE),
-						contractUpdate("immutableContract")
-								.payingWith("payer")
-								.newMemo(BETTER_MEMO)
-								.hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
-						contractDelete("immutableContract")
-								.payingWith("payer")
-								.hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
-						contractUpdate("immutableContract")
-								.payingWith("payer")
-								.newExpiryTime(betterExpiry),
-						contractDelete("contract")
-								.payingWith("payer")
-								.signedBy("payer", "initialAdminKey")
-								.hasKnownStatus(INVALID_SIGNATURE),
-						contractDelete("contract")
-								.payingWith("payer")
-								.signedBy("payer")
-								.hasKnownStatus(INVALID_SIGNATURE),
-						contractDelete("contract")
-								.payingWith("payer")
-								.hasKnownStatus(SUCCESS)
-				);
-	}
-
 	HapiApiSpec depositSuccess() {
 		return defaultHapiSpec("DepositSuccess")
 				.given(
@@ -855,7 +731,7 @@ public class ContractCallSuite extends HapiApiSuite {
 									.gas(250_000L)
 									.bytecode("bytecode")
 									.via("failInvalidInitialBalance")
-									.hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION);
+									.hasKnownStatus(CONTRACT_REVERT_EXECUTED);
 
 							var subop3 = getTxnRecord("failInvalidInitialBalance");
 							allRunFor(spec, subop1, subop2, subop3);
