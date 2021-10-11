@@ -56,6 +56,7 @@ import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stats.ServicesStatsConfig;
 import com.hedera.services.stats.StatsModule;
+import com.hedera.services.store.models.TopicConversion;
 import com.hedera.services.store.tokens.views.utils.GrpcUtils;
 import com.hedera.services.throttling.ThrottlingModule;
 import com.hedera.services.txns.contract.ConsensusLogicModule;
@@ -142,7 +143,8 @@ class UtilsConstructorTest {
 			NetworkLogicModule.class,
 			ScheduleLogicModule.class,
 			TokenLogicModule.class,
-			ScheduleSignHelper.class
+			ScheduleSignHelper.class,
+			TopicConversion.class
 	));
 
 	@Test

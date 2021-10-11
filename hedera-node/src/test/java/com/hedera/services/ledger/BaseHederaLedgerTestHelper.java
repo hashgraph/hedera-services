@@ -46,6 +46,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TopicID;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.Collections;
@@ -108,6 +109,11 @@ public class BaseHederaLedgerTestHelper {
 
 		ids = new EntityIdSource() {
 			long nextId = NEXT_ID;
+
+			@Override
+			public TopicID newTopicId(final AccountID sponsor) {
+				return TopicID.newBuilder().setTopicNum(nextId++).build();
+			}
 
 			@Override
 			public AccountID newAccountId(AccountID newAccountSponsor) {
