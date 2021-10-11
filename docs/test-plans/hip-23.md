@@ -119,7 +119,9 @@ tests to validate both records and state changes via queries.
   - [x] _(EET)_ A `CryptoUpdate` cannot allocate more auto-association slots than the max-per-account limit.
   - [x] _(EET)_ A `CryptoUpdate` cannot renounce more auto-association slots than it has already used.
   - [x] _(EET)_ A `CryptoTransfer` cannot create auto-associations without open slots.
-  - [x] _(EET)_ A multi-party `CryptoTransfer` rolls back all auto-association side-effects if it fails (and records no auto-associations).
+  - [x] _(EET)_ A multi-party `CryptoTransfer` rolls back all side-effects if it fails after auto-associating a with frozen-by-default token.
+  - [x] _(EET)_ A multi-party `CryptoTransfer` rolls back all side-effects if it fails after auto-associating a with KYC token.
+  - [x] _(EET)_ A multi-party `CryptoTransfer` rolls back all side-effects if it fails due to a problem unrelated to auto-association.
 
 ###:receipt:&nbsp;Custom fee interplays
   - [x] _(EET)_ A royalty fee collector with free auto-association slots can capture exchanged value from unassociated tokens.

@@ -75,6 +75,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
@@ -90,6 +91,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 public class TokenTransactSpecs extends HapiApiSuite {
@@ -153,14 +155,121 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						royaltyAndFractionalTogetherCaseStudy(),
 						/* HIP-23 */
 						happyPathAutoAssociationsWorkForBothTokenTypes(),
-						failedAutoAssociationHasNoSideEffectsOrHistory(),
+						failedAutoAssociationHasNoSideEffectsOrHistoryForUnrelatedProblem(),
 						newSlotsCanBeOpenedViaUpdate(),
 						newSlotsCanBeOpenedViaDissociate(),
+						autoAssociationWithKycTokenHasNoSideEffectsOrHistory(),
+						autoAssociationWithFrozenByDefaultTokenHasNoSideEffectsOrHistory(),
 				}
 		);
 	}
 
-	public HapiApiSpec failedAutoAssociationHasNoSideEffectsOrHistory() {
+	public HapiApiSpec autoAssociationWithFrozenByDefaultTokenHasNoSideEffectsOrHistory() {
+		final var treasury = "treasury";
+		final var beneficiary = "beneficiary";
+		final var uniqueToken = "unique";
+		final var fungibleToken = "fungible";
+		final var otherFungibleToken = "otherFungibleToken";
+		final var multiPurpose = "multiPurpose";
+		final var transferTxn = "transferTxn";
+
+		return defaultHapiSpec("AutoAssociationWithFrozenByDefaultTokenHasNoSideEffectsOrHistory")
+				.given(
+						newKeyNamed(multiPurpose),
+						cryptoCreate(treasury).maxAutomaticTokenAssociations(1),
+						cryptoCreate(beneficiary).maxAutomaticTokenAssociations(2),
+						tokenCreate(fungibleToken)
+								.freezeDefault(true)
+								.freezeKey(multiPurpose)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(1_000L)
+								.treasury(beneficiary),
+						tokenCreate(otherFungibleToken)
+								.tokenType(FUNGIBLE_COMMON)
+								.treasury(beneficiary),
+						tokenCreate(uniqueToken)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.supplyKey(multiPurpose)
+								.initialSupply(0L)
+								.treasury(treasury),
+						mintToken(uniqueToken, List.of(copyFromUtf8("ONE"), copyFromUtf8("TWO"))),
+						getAccountInfo(beneficiary).savingSnapshot(beneficiary),
+						getAccountInfo(treasury).savingSnapshot(treasury)
+				).when(
+						cryptoTransfer(
+								movingUnique(uniqueToken, 1L)
+										.between(treasury, beneficiary),
+								moving(500, fungibleToken).between(beneficiary, treasury)
+						).via(transferTxn).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN)
+				).then(
+						getTxnRecord(transferTxn).hasPriority(recordWith()
+								.autoAssociated(accountTokenPairs(List.of()))),
+						getAccountInfo(beneficiary)
+								.hasAlreadyUsedAutomaticAssociations(0)
+								.has(accountWith().noChangesFromSnapshot(beneficiary)),
+						getAccountInfo(treasury)
+								.hasAlreadyUsedAutomaticAssociations(0)
+								.has(accountWith().noChangesFromSnapshot(treasury)),
+						/* The treasury should still have an open auto-association slots */
+						cryptoTransfer(
+								moving(500, otherFungibleToken).between(beneficiary, treasury)
+						)
+				);
+	}
+
+	public HapiApiSpec autoAssociationWithKycTokenHasNoSideEffectsOrHistory() {
+		final var treasury = "treasury";
+		final var beneficiary = "beneficiary";
+		final var uniqueToken = "unique";
+		final var fungibleToken = "fungible";
+		final var otherFungibleToken = "otherFungibleToken";
+		final var multiPurpose = "multiPurpose";
+		final var transferTxn = "transferTxn";
+
+		return defaultHapiSpec("autoAssociationWithKycTokenHasNoSideEffectsOrHistory")
+				.given(
+						newKeyNamed(multiPurpose),
+						cryptoCreate(treasury).maxAutomaticTokenAssociations(1),
+						cryptoCreate(beneficiary).maxAutomaticTokenAssociations(2),
+						tokenCreate(fungibleToken)
+								.kycKey(multiPurpose)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(1_000L)
+								.treasury(beneficiary),
+						tokenCreate(otherFungibleToken)
+								.tokenType(FUNGIBLE_COMMON)
+								.treasury(beneficiary),
+						tokenCreate(uniqueToken)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.supplyKey(multiPurpose)
+								.initialSupply(0L)
+								.treasury(treasury),
+						mintToken(uniqueToken, List.of(copyFromUtf8("ONE"), copyFromUtf8("TWO"))),
+						getAccountInfo(beneficiary).savingSnapshot(beneficiary),
+						getAccountInfo(treasury).savingSnapshot(treasury)
+				).when(
+						cryptoTransfer(
+								movingUnique(uniqueToken, 1L)
+										.between(treasury, beneficiary),
+								moving(500, fungibleToken).between(beneficiary, treasury)
+						).via(transferTxn).hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN)
+				).then(
+						getTxnRecord(transferTxn).hasPriority(recordWith()
+								.autoAssociated(accountTokenPairs(List.of()))),
+						getAccountInfo(beneficiary)
+								.hasAlreadyUsedAutomaticAssociations(0)
+								.has(accountWith().noChangesFromSnapshot(beneficiary)),
+						getAccountInfo(treasury)
+								.hasAlreadyUsedAutomaticAssociations(0)
+								.has(accountWith().noChangesFromSnapshot(treasury)),
+						/* The treasury should still have an open auto-association slots */
+						cryptoTransfer(
+								moving(500, otherFungibleToken).between(beneficiary, treasury)
+						)
+				);
+	}
+
+	public HapiApiSpec failedAutoAssociationHasNoSideEffectsOrHistoryForUnrelatedProblem() {
 		final var treasury = "treasury";
 		final var beneficiary = "beneficiary";
 		final var unluckyBeneficiary = "unluckyBeneficiary";
