@@ -74,8 +74,9 @@ import java.util.function.Supplier;
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
 import static com.hedera.services.state.migration.Release0170Migration.moveLargeFcmsToBinaryRoutePositions;
-import static com.hedera.services.utils.EntityNumPair.fromLongs;
+import static com.hedera.services.state.migration.Release0180Migration.cleanInconsistentTokenLists;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
+import static com.hedera.services.utils.EntityNumPair.fromLongs;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
 /**
@@ -152,6 +153,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				setChild(LegacyStateChildIndices.UNIQUE_TOKENS, new MerkleMap<>());
 			}
 			moveLargeFcmsToBinaryRoutePositions(this, deserializedVersion);
+		}
+		if (deserializedVersion == StateVersions.RELEASE_0180_VERSION) {
+			cleanInconsistentTokenLists(tokens(), accounts(), tokenAssociations());
 		}
 	}
 
