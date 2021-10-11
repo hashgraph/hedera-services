@@ -125,6 +125,6 @@ tests to validate both records and state changes via queries.
 
 ###:receipt:&nbsp;Custom fee interplays
   - [x] _(EET)_ A royalty fee collector with free auto-association slots can capture exchanged value from unassociated tokens.
-  - [x] _(EET)_ A royalty fee collector with no auto-association slots cannnot capture exchanged value from unassociated tokens.
+  - [x] _(EET)_ A royalty fee collector with no auto-association slots cannot capture exchanged value from unassociated tokens.
   - [x] _(EET)_ A manually dissociated fixed fee collector with auto-association slots can use auto-association to still receive fees.
   - [x] _(EET)_ A manually dissociated fractional fee collector with auto-association slots can use auto-association to still receive fees.
