@@ -21,11 +21,11 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.contracts.operation.HederaExceptionalHaltReason;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.contracts.operation.HederaExceptionalHaltReason;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -42,7 +42,6 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.Optional;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
@@ -83,7 +82,7 @@ class CallLocalExecutorTest {
 	void processingSuccessful() {
 		// setup:
 		final var transactionProcessingResult = TransactionProcessingResult
-				.successful(new ArrayList<>(), Optional.empty(), 0, 1, Bytes.EMPTY, callerID.asEvmAddress());
+				.successful(new ArrayList<>(), 0, 1, Bytes.EMPTY, callerID.asEvmAddress());
 		final var expected = response(OK, transactionProcessingResult);
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));

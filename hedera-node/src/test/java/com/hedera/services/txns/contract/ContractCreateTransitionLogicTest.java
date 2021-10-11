@@ -222,7 +222,6 @@ class ContractCreateTransitionLogicTest {
 		final var result = TransactionProcessingResult
 				.successful(
 						null,
-						Optional.empty(),
 						1234L,
 						124L,
 						Bytes.EMPTY,
@@ -305,7 +304,6 @@ class ContractCreateTransitionLogicTest {
 		final var result = TransactionProcessingResult
 				.successful(
 						null,
-						Optional.empty(),
 						1234L,
 						124L,
 						Bytes.EMPTY,

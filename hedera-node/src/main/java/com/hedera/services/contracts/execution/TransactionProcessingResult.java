@@ -66,7 +66,6 @@ public class TransactionProcessingResult {
 	private final List<Log> logs;
 	private final Optional<Address> recipient;
 	private final Optional<Bytes> revertReason;
-	private final Optional<LogsBloomFilter> bloomFilter;
 	private final Optional<ExceptionalHaltReason> haltReason;
 
 	private List<ContractID> createdContracts = new ArrayList<>();
@@ -79,7 +78,6 @@ public class TransactionProcessingResult {
 		return new TransactionProcessingResult(
 				Status.FAILED,
 				new ArrayList<>(),
-				Optional.empty(),
 				gasUsed,
 				gasPrice,
 				Bytes.EMPTY,
@@ -90,7 +88,6 @@ public class TransactionProcessingResult {
 
 	public static TransactionProcessingResult successful(
 			final List<Log> logs,
-			final Optional<LogsBloomFilter> bloom,
 			final long gasUsed,
 			final long gasPrice,
 			final Bytes output,
@@ -98,7 +95,6 @@ public class TransactionProcessingResult {
 		return new TransactionProcessingResult(
 				Status.SUCCESSFUL,
 				logs,
-				bloom,
 				gasUsed,
 				gasPrice,
 				output,
@@ -110,7 +106,6 @@ public class TransactionProcessingResult {
 	public TransactionProcessingResult(
 			final Status status,
 			final List<Log> logs,
-			final Optional<LogsBloomFilter> bloom,
 			final long gasUsed,
 			final long gasPrice,
 			final Bytes output,
@@ -122,7 +117,6 @@ public class TransactionProcessingResult {
 		this.status = status;
 		this.gasUsed = gasUsed;
 		this.gasPrice = gasPrice;
-		this.bloomFilter = bloom;
 		this.recipient = recipient;
 		this.haltReason = haltReason;
 		this.revertReason = revertReason;
@@ -173,13 +167,16 @@ public class TransactionProcessingResult {
 				.setGasUsed(gasUsed);
 		contractResultBuilder.setContractCallResult(ByteString.copyFrom(output.toArray()));
 		recipient.ifPresent(address -> contractResultBuilder.setContractID(EntityIdUtils.contractParsedFromSolidityAddress(address.toArray())));
-		bloomFilter.ifPresent(filter -> contractResultBuilder.setBloom(ByteString.copyFrom(filter.toArray())));
 		// Set Revert reason as error message if present, otherwise set halt reason (if present)
 		if (revertReason.isPresent()) {
 			contractResultBuilder.setErrorMessage(revertReason.toString());
 		} else {
 			haltReason.ifPresent(reason -> contractResultBuilder.setErrorMessage(reason.toString()));
 		}
+
+		/* Calculate and populate bloom */
+		final var bloom = LogsBloomFilter.builder().insertLogs(logs).build();
+		contractResultBuilder.setBloom(ByteString.copyFrom(bloom.toArray()));
 
 		/* Populate Logs */
 		final ArrayList<ContractLoginfo> logInfo = buildLogInfo();
@@ -193,13 +190,12 @@ public class TransactionProcessingResult {
 
 	@NotNull
 	private ArrayList<ContractLoginfo> buildLogInfo() {
-		// TODO GRPC object has bloom property per Log. How can we populate that?
 		final var logInfo = new ArrayList<ContractLoginfo>();
 		logs.forEach(log -> {
 			var logBuilder = ContractLoginfo.newBuilder()
 					.setContractID(EntityIdUtils.contractParsedFromSolidityAddress(log.getLogger().toArray()))
-					.setData(ByteString.copyFrom(log.getData().toArray()));
-
+					.setData(ByteString.copyFrom(log.getData().toArray()))
+					.setBloom(ByteString.copyFrom(LogsBloomFilter.builder().insertLog(log).build().toArray()));
 			final var topics = new ArrayList<ByteString>();
 			log.getTopics().forEach(topic -> topics.add(ByteString.copyFrom(topic.toArray())));
 			logBuilder.addAllTopic(topics);

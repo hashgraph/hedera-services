@@ -53,14 +53,12 @@ class TransactionProcessingResultTest {
 
 	private final LogTopic logTopic = LogTopic.create(logTopicBytes);
 
-	private Log log = new Log(logger.getId().asEvmAddress(), Bytes.fromHexString("0x0102"), List.of(
+	private final Log log = new Log(logger.getId().asEvmAddress(), Bytes.fromHexString("0x0102"), List.of(
 			logTopic,
 			logTopic,
 			logTopic,
 			logTopic
 	));
-
-	private LogsBloomFilter logsBloomFilter = new LogsBloomFilter();
 
 	private final Account recipient = new Account(new Id(0, 0, 1002));
 
@@ -81,18 +79,18 @@ class TransactionProcessingResultTest {
 				logTopic,
 				logTopic
 		));
+		final var logList = List.of(log);
 
 		final var expect = ContractFunctionResult.newBuilder()
 				.setGasUsed(GAS_USAGE)
-				.setBloom(ByteString.copyFrom(new byte[256]));
+				.setBloom(ByteString.copyFrom(LogsBloomFilter.builder().insertLogs(logList).build().toArray()));
 
 		expect.setContractCallResult(ByteString.copyFrom(Bytes.EMPTY.toArray()));
 		expect.setContractID(EntityIdUtils.contractParsedFromSolidityAddress(recipient.getId().asEvmAddress().toArray()));
 		expect.addAllCreatedContractIDs(listOfCreatedContracts);
 
 		var result = TransactionProcessingResult.successful(
-				List.of(log),
-				Optional.of(logsBloomFilter),
+				logList,
 				GAS_USAGE,
 				1234L,
 				Bytes.EMPTY,
@@ -143,7 +141,6 @@ class TransactionProcessingResultTest {
 	void assertGasPrise() {
 		var result = TransactionProcessingResult.successful(
 				List.of(log),
-				Optional.of(logsBloomFilter),
 				GAS_USAGE,
 				GAS_PRICE,
 				Bytes.EMPTY,
@@ -156,7 +153,6 @@ class TransactionProcessingResultTest {
 	void assertGasUsage() {
 		var result = TransactionProcessingResult.successful(
 				List.of(log),
-				Optional.of(logsBloomFilter),
 				GAS_USAGE,
 				GAS_PRICE,
 				Bytes.EMPTY,
@@ -169,7 +165,6 @@ class TransactionProcessingResultTest {
 	void assertSuccessfulStatus() {
 		var result = TransactionProcessingResult.successful(
 				List.of(log),
-				Optional.of(logsBloomFilter),
 				GAS_USAGE,
 				GAS_PRICE,
 				Bytes.EMPTY,

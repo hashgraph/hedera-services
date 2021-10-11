@@ -25,10 +25,10 @@ import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallLocalExecutor;
+import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.queries.contract.ContractCallLocalAnswer;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -53,7 +53,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
@@ -111,8 +110,8 @@ class ContractCallLocalResourceUsageTest {
 	@Test
 	void setsResultInQueryCxtIfPresent() {
 		final var queryCtx = new HashMap<String, Object>();
-		final var transactionProcessingResult = TransactionProcessingResult.successful(new ArrayList<>(),
-				Optional.empty(), 0, 1, Bytes.EMPTY, callerID.asEvmAddress());
+		final var transactionProcessingResult = TransactionProcessingResult.successful(
+				new ArrayList<>(), 0, 1, Bytes.EMPTY, callerID.asEvmAddress());
 		final var response = okResponse(transactionProcessingResult);
 		final var estimateResponse = subject.dummyResponse(target);
 		final var expected = expectedUsage();
@@ -200,17 +199,17 @@ class ContractCallLocalResourceUsageTest {
 
 	private static final FeeData nonGasUsage = FeeData.newBuilder()
 			.setNodedata(FeeComponents.newBuilder()
-							.setMin(1)
-							.setMax(1_000_000)
-							.setConstant(1)
-							.setBpt(1)
-							.setVpt(1)
-							.setRbh(1)
-							.setSbh(1)
-							.setGas(0)
-							.setTv(1)
-							.setBpr(1)
-							.setSbpr(1))
+					.setMin(1)
+					.setMax(1_000_000)
+					.setConstant(1)
+					.setBpt(1)
+					.setVpt(1)
+					.setRbh(1)
+					.setSbh(1)
+					.setGas(0)
+					.setTv(1)
+					.setBpr(1)
+					.setSbpr(1))
 			.build();
 
 	private static final FeeData expectedUsage() {

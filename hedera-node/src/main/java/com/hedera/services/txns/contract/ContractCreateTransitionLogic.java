@@ -97,8 +97,6 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public void doStateTransition() {
-		// TODO handle MAX_CONTRACT_STORAGE_EXCEEDED
-
 		/* --- Translate from gRPC types --- */
 		var contractCreateTxn = txnCtx.accessor().getTxn();
 		var op = contractCreateTxn.getContractCreateInstance();

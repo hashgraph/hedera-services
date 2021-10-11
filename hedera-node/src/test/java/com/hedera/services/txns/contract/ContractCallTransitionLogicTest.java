@@ -22,6 +22,8 @@ package com.hedera.services.txns.contract;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.contracts.execution.CallEvmTxProcessor;
+import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.records.TransactionRecordService;
@@ -29,8 +31,6 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.contracts.execution.CallEvmTxProcessor;
-import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -48,7 +48,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_BYTECODE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
@@ -120,7 +119,8 @@ class ContractCallTransitionLogicTest {
 				.willReturn(contractAccount);
 		// and:
 		given(repositoryRoot.getCode(contractAccount.getId().asEvmAddress().toArray())).willReturn(bytecode);
-		var results = TransactionProcessingResult.successful(null, Optional.empty(), 1234L, 124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress());
+		var results = TransactionProcessingResult.successful(
+				null, 1234L, 124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress());
 		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.EMPTY, txnCtx.consensusTime()))
 				.willReturn(results);
 		given(worldState.persist()).willReturn(List.of(target));
@@ -154,7 +154,8 @@ class ContractCallTransitionLogicTest {
 				.willReturn(contractAccount);
 		// and:
 		given(repositoryRoot.getCode(contractAccount.getId().asEvmAddress().toArray())).willReturn(bytecode);
-		var results = TransactionProcessingResult.successful(null, Optional.empty(), 1234L, 124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress());
+		var results = TransactionProcessingResult.successful(
+				null, 1234L, 124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress());
 		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())), txnCtx.consensusTime()))
 				.willReturn(results);
 		given(worldState.persist()).willReturn(List.of(target));
