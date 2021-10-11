@@ -524,6 +524,8 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 				var rates = spec.ratesProvider();
 				var priceInUsd = sdec(rates.toUsdWithActiveRates(fee), 5);
 				log.info(spec.logPrefix() + "Record (charged ${}): {}", priceInUsd, record);
+				log.info("Duplicates: {}",
+						response.getTransactionGetRecord().getDuplicateTransactionRecordsList());
 			}
 		}
 		if (response.getTransactionGetRecord().getHeader().getNodeTransactionPrecheckCode() == OK) {

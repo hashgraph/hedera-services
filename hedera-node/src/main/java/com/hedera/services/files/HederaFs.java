@@ -147,11 +147,10 @@ public interface HederaFs {
 	 * Marks the given file as deleted and removes its data from the system.
 	 *
 	 * @param id the file to delete
-	 * @return an {@link UpdateResult} summarizing the result of the delete attempt
 	 * @throws IllegalArgumentException with {@link IllegalArgumentType#UNKNOWN_FILE} if the file is missing
 	 * @throws IllegalArgumentException with {@link IllegalArgumentType#DELETED_FILE} if the file is deleted
 	 */
-	UpdateResult delete(FileID id);
+	void delete(FileID id);
 
 	/**
 	 * Removes the given file from the system (both metadata and data).
