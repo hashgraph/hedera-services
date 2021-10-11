@@ -92,19 +92,19 @@ deliverables in the order they should be implemented.
 Note the prepatory EET framework items, which make it easier for the functional
 tests to validate both records and state changes via queries.
 
-###:fountain_pen:&nbsp;Record validation
+### :fountain_pen:&nbsp;Record validation
   - [x] _(EET framework)_ Support for the `automatic_token_associations` field in `TransactionRecordAsserts`.
 
-###:ice_cube:&nbsp;State validation
+### :ice_cube:&nbsp;State validation
   - [x] _(EET framework)_ `GetAccountInfo` asserts for max and in-use automatic association fields.
   - [x] _(EET framework)_ Add account snapshot and change-vs-snapshot asserts for token associations.
 
-###:cactus:&nbsp;Migration
+### :cactus:&nbsp;Migration
   - [x] _(Unit)_ A `MerkleAccountState` now serializes its auto-associations metadata.
   - [x] _(Unit)_ A `MerkleAccountState` can be deserialized from a prior-version state.
   - [x] _(Unit)_ A `MerkleAccountState` can be deserialized from a current-version state.
 
-###:white_check_mark:&nbsp;Positive functional
+### :white_check_mark:&nbsp;Positive functional
   - [x] _(EET)_ A `TokenCreate` record includes the treasury auto-association.
   - [x] _(EET)_ A `TokenCreate` record includes all fractional fee collector auto-associations.
   - [x] _(EET)_ A `TokenCreate` record includes all self-denominated fee collector auto-associations.
@@ -113,7 +113,7 @@ tests to validate both records and state changes via queries.
   - [x] _(EET)_ An account with no open slots can be updated with more auto-association slots to receve more units/NFTs of unassociated tokens.
   - [x] _(EET)_ An account with no open slots can manually dissociate from existing auto-associated tokens to free up more slots.
 
-###:x:&nbsp;Negative functional
+### :x:&nbsp;Negative functional
   - [x] _(EET)_ A failed `TokenCreate` performs and records no auto-associations.
   - [x] _(EET)_ A `CryptoCreate` cannot allocate more auto-association slots than the max-per-account limit.
   - [x] _(EET)_ A `CryptoUpdate` cannot allocate more auto-association slots than the max-per-account limit.
@@ -123,7 +123,7 @@ tests to validate both records and state changes via queries.
   - [x] _(EET)_ A multi-party `CryptoTransfer` rolls back all side-effects if it fails after auto-associating a with KYC token.
   - [x] _(EET)_ A multi-party `CryptoTransfer` rolls back all side-effects if it fails due to a problem unrelated to auto-association.
 
-###:receipt:&nbsp;Custom fee interplays
+### :receipt:&nbsp;Custom fee interplays
   - [x] _(EET)_ A royalty fee collector with free auto-association slots can capture exchanged value from unassociated tokens.
   - [x] _(EET)_ A royalty fee collector with no auto-association slots cannot capture exchanged value from unassociated tokens.
   - [x] _(EET)_ A manually dissociated fixed fee collector with auto-association slots can use auto-association to still receive fees.
