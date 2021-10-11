@@ -397,7 +397,10 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 
 	private List<TokenTransferList> transfersForNft(HapiApiSpec spec) {
 		var uniqueCount = tokenAwareProviders.stream()
-				.filter(Predicate.not(TokenMovement::isFungibleToken)).count();
+				.filter(Predicate.not(TokenMovement::isFungibleToken))
+				.map(TokenMovement::getToken)
+				.distinct()
+				.count();
 		Map<TokenID, List<NftTransfer>> aggregated = tokenAwareProviders.stream()
 				.filter(Predicate.not(TokenMovement::isFungibleToken))
 				.map(p -> p.specializedForNft(spec))
@@ -406,8 +409,10 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 						TokenTransferList::getNftTransfersList,
 						(left, right) -> Stream.of(left, right).flatMap(Collection::stream).collect(toList()),
 						LinkedHashMap::new));
+		System.out.println(aggregated);
 		if (aggregated.size() != 0 && uniqueCount != aggregated.size()) {
-			throw new RuntimeException("Duplicated Token Id set in unique token movement!");
+			throw new RuntimeException("Aggregation seems to have failed (expected " + uniqueCount
+					+ " distinct unique token types, got " + aggregated.size() + ")");
 		}
 		return aggregated.entrySet().stream()
 				.map(entry -> TokenTransferList.newBuilder()
