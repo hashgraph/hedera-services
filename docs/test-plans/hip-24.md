@@ -76,9 +76,9 @@ Tests should validate both fungible and non-fungible-unique token types.
    - [x] _(Unit)_ A `MerkleToken` can be deserialized from a current-version state.
 
 ### :white_check_mark:&nbsp;Positive functional
-   - [] _(EET)_ A `TokenCreate` with a `pauseKey` and `TokenPause` transaction signed by the this `pausekey` will set the token pause status as `Paused`. `tokenGetInfo` asserts this pause status.
-   - [] _(EET)_ To the `paused` token above we peform a `TokenUnpause` transaction signed by the same `pauseKey` which will set the token pause status as `Unpasued`. `tokenGetInfo` asserts this pause status.
-   - [] _(EET)_ A newly created Token is asserted for a `Unpaused` token status.
+   - [x] _(EET)_ A `TokenCreate` with a `pauseKey` and `TokenPause` transaction signed by the this `pausekey` will set the token pause status as `Paused`. `tokenGetInfo` asserts this pause status.
+   - [x] _(EET)_ To the `paused` token above we perform a `TokenUnpause` transaction signed by the same `pauseKey` which will set the token pause status as `Unpasued`. `tokenGetInfo` asserts this pause status.
+   - [x] _(EET)_ A newly created Token is asserted for a `Unpaused` token status.
 
 ### :x:&nbsp;Negative functional
    - [] _(EET)_ Setup with a A `TokenCreate` with a `pauseKey` and `TokenPause` transaction signed by the this `pausekey` will set the token pause status as `Paused`. `tokenGetInfo` asserts this pause status.
