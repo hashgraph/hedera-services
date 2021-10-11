@@ -5,15 +5,16 @@ pragma solidity ^0.5.0;
 contract GrowArray {
     uint256[] public bigArray;
 
-    // Grow from current size to _limit
-    function growTo (uint256 _targetSize) public {
+    // Grow from current size to _limit, in KiB
+    function growTo (uint256 _limit) public {
         uint currSize = bigArray.length;
-        if (_targetSize <= currSize) {
+        uint targetSize = _limit * 16; // 16 entries per KiB
+        if (targetSize <= currSize) {
             revert();
         }
-        bigArray.length = _targetSize;
+        bigArray.length = targetSize;
         // Initialize all new locations because zeros are not actually persisted
-        for (uint i=currSize; i < _targetSize; i++) {
+        for (uint i=currSize; i < targetSize; i++) {
             bigArray[i] = 1;
         }
     }

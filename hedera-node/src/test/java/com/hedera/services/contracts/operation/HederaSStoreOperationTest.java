@@ -31,7 +31,7 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-public class HederaSStoreOperationTest {
+class HederaSStoreOperationTest {
 	HederaSStoreOperation subject;
 
 	@Mock

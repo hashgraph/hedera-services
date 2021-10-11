@@ -76,7 +76,6 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 				invalidContractID(),
 				impureCallFails(),
 //				insufficientFeeFails(), //Bad answerOnlyPrecheck! expected INSUFFICIENT_TX_FEE, actual OK <- Fails in master the same way
-//				undersizedMaxResultFails(), //Bad answerOnlyPrecheck! expected RESULT_SIZE_LIMIT_EXCEEDED, actual OK!
 				lowBalanceFails()
 		);
 	}
@@ -184,21 +183,6 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 						sleepFor(1_000L),
 						getAccountBalance("payer").logged()
 				);
-	}
-
-	private HapiApiSpec undersizedMaxResultFails() {
-		return defaultHapiSpec("UndersizedMaxResult")
-				.given(
-						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
-						contractCreate("parentDelegate").bytecode("parentDelegateBytecode")
-				).when(
-						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI)
-				).then(
-						sleepFor(3_000L),
-						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI)
-								.maxResultSize(1L)
-								.nodePayment(1_234_567)
-								.hasAnswerOnlyPrecheck(RESULT_SIZE_LIMIT_EXCEEDED));
 	}
 
 	@Override

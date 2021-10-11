@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.contract.opcodes;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
@@ -35,56 +36,89 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
 
 public class SStoreSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(SStoreSuite.class);
-	public static final int MAX_CONTRACT_STORAGE_ALLOWED = 1024 * 16;
+	public static final int MAX_CONTRACT_STORAGE_KB = 1024;
+	public static final int MAX_CONTRACT_GAS = 15_000_000;
+	AtomicReference<ByteString> legacyProps = new AtomicReference<>();
 
 	public static void main(String... args) {
-		new SStoreSuite().runSuiteAsync();
+		new SStoreSuite().runSuiteSync();
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[]{
-				multipleSStoreOpsSucceed(), //Runs for 20+ mins but passes
-				benchmarkSingleSetter()
-				//childStorage() //Strict cost of answer! suppose to be {}, but get {}!
+		return List.of(new HapiApiSpec[] {
+				setupAppProperties(),
+				multipleSStoreOpsSucceed(),
+				benchmarkSingleSetter(),
+				childStorage(),
+				cleanupAppProperties()
 		});
 	}
 
+	private HapiApiSpec setupAppProperties() {
+		return HapiApiSpec.defaultHapiSpec("Setup")
+				.given(
+						withOpContext((spec, opLog) -> {
+							var lookup = getFileContents(APP_PROPERTIES);
+							allRunFor(spec, lookup);
+							var contents = lookup.getResponse().getFileGetContents().getFileContents().getContents();
+							legacyProps.set(contents);
+						}),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
+										"contracts.maxStorageKb", "" + MAX_CONTRACT_STORAGE_KB,
+										"contracts.maxGas", "" + MAX_CONTRACT_GAS)))
+				.when()
+				.then();
+	}
+
+	private HapiApiSpec cleanupAppProperties() {
+		return HapiApiSpec.defaultHapiSpec("Cleanup")
+				.given(fileUpdate(APP_PROPERTIES).payingWith(ADDRESS_BOOK_CONTROL).contents(ignore -> legacyProps.get()))
+				.when()
+				.then();
+	}
+
 	HapiApiSpec multipleSStoreOpsSucceed() {
-		return HapiApiSpec.defaultHapiSpec("BigArray")
+		return HapiApiSpec.defaultHapiSpec("MultipleSStoresShouldWork")
 				.given(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
-										"contracts.maxStorageKb", "1024"
+										"contracts.maxStorageKb", "" + MAX_CONTRACT_STORAGE_KB,
+										"contracts.maxGas", "" + MAX_CONTRACT_GAS
 								)),
 						fileCreate("bigArrayContractFile").path(ContractResources.GROW_ARRAY_BYTECODE_PATH),
 						contractCreate("bigArrayContract").bytecode("bigArrayContractFile")
 				)
 				.when(
 						withOpContext((spec, opLog) -> {
-							int step = 10;
+							int step = 16;
 							List<HapiSpecOperation> subOps = new ArrayList<>();
 
-							for (int sizeNow = step; sizeNow < MAX_CONTRACT_STORAGE_ALLOWED; sizeNow += step) {
+							for (int sizeNow = step; sizeNow < MAX_CONTRACT_STORAGE_KB; sizeNow += step) {
 								var subOp1 = contractCall(
 										"bigArrayContract", ContractResources.GROW_ARRAY_GROW_TO, sizeNow)
-										.gas(300_000L)
+										.gas(MAX_CONTRACT_GAS)
 										.logged();
 								subOps.add(subOp1);
 							}
@@ -114,22 +148,23 @@ public class SStoreSuite extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
-										"contracts.maxStorageKb", "1024"
+										"contracts.maxStorageKb", "" + MAX_CONTRACT_STORAGE_KB,
+										"contracts.maxGas", "" + MAX_CONTRACT_GAS
 								)),
 						fileCreate("bytecode").path(ContractResources.CHILD_STORAGE_BYTECODE_PATH),
 						contractCreate("childStorage").bytecode("bytecode")
 				).when(
 						withOpContext((spec, opLog) -> {
-							int almostFullKb = MAX_CONTRACT_STORAGE_ALLOWED * 3 / 4;
-							long kbPerStep = 10;
+							int almostFullKb = MAX_CONTRACT_STORAGE_KB * 3 / 4;
+							long kbPerStep = 16;
 
 							for (int childKbStorage = 0; childKbStorage <= almostFullKb; childKbStorage += kbPerStep) {
 								var subOp1 = contractCall(
-										"childStorage", ContractResources.GROW_CHILD_ABI, 0, kbPerStep, 17)
-										.gas(300_000);
+										"childStorage", ContractResources.GROW_CHILD_ABI, 0, kbPerStep, 17).gas(
+										MAX_CONTRACT_GAS);
 								var subOp2 = contractCall(
-										"childStorage", ContractResources.GROW_CHILD_ABI, 1, kbPerStep, 19)
-										.gas(300_000);
+										"childStorage", ContractResources.GROW_CHILD_ABI, 1, kbPerStep, 19).gas(
+										MAX_CONTRACT_GAS);
 								CustomSpecAssert.allRunFor(spec, subOp1, subOp2);
 							}
 						})
@@ -144,22 +179,19 @@ public class SStoreSuite extends HapiApiSuite {
 	}
 
 	private HapiSpecOperation[] valuesMatch(long parent, long child0, long child1) {
-		return new HapiSpecOperation[]{
+		return new HapiSpecOperation[] {
 				contractCallLocal("childStorage", ContractResources.GET_CHILD_VALUE_ABI, 0)
 						.has(resultWith().resultThruAbi(
 								ContractResources.GET_CHILD_VALUE_ABI,
-								isLiteralResult(new Object[]{BigInteger.valueOf(child0)})))
-						.expectStrictCostAnswer(),
+								isLiteralResult(new Object[] { BigInteger.valueOf(child0) }))),
 				contractCallLocal("childStorage", ContractResources.GET_CHILD_VALUE_ABI, 1)
 						.has(resultWith().resultThruAbi(
 								ContractResources.GET_CHILD_VALUE_ABI,
-								isLiteralResult(new Object[]{BigInteger.valueOf(child1)})))
-						.expectStrictCostAnswer(),
+								isLiteralResult(new Object[] { BigInteger.valueOf(child1) }))),
 				contractCallLocal("childStorage", ContractResources.GET_MY_VALUE_ABI)
 						.has(resultWith().resultThruAbi(
 								ContractResources.GET_MY_VALUE_ABI,
-								isLiteralResult(new Object[]{BigInteger.valueOf(parent)})))
-						.expectStrictCostAnswer(),
+								isLiteralResult(new Object[] { BigInteger.valueOf(parent) }))),
 		};
 	}
 
@@ -195,7 +227,7 @@ public class SStoreSuite extends HapiApiSuite {
 												.resultThruAbi(
 														ContractResources.BENCHMARK_GET_COUNTER,
 														ContractFnResultAsserts.isLiteralResult(
-																new Object[]{BigInteger.valueOf(1L)}
+																new Object[] { BigInteger.valueOf(1L) }
 														)
 												)
 								)

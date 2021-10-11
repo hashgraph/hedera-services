@@ -213,7 +213,7 @@ public class CreateOperationSuite extends HapiApiSuite {
 						contractCreate("factoryContract").bytecode("factory")
 				).when(
 						contractCall("factoryContract", ContractResources.FACTORY_CONTRACT_FAILURE)
-								.hasKnownStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION)
+								.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
 								.via("deploymentFailureTxn"),
 						contractCall("factoryContract", ContractResources.FACTORY_CONTRACT_SUCCESS)
 								.via("deploymentSuccessTxn")
@@ -246,7 +246,7 @@ public class CreateOperationSuite extends HapiApiSuite {
 						contractCreate("factoryContract").bytecode("factory")
 				).when(
 						contractCall("factoryContract", ContractResources.FACTORY_CONTRACT_FAILURE_AFTER_DEPLOY)
-								.hasKnownStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION)
+								.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
 								.via("failureAfterDeploymentTxn"),
 						contractCall("factoryContract", ContractResources.FACTORY_CONTRACT_SUCCESS)
 								.via("deploymentSuccessTxn")
@@ -279,7 +279,7 @@ public class CreateOperationSuite extends HapiApiSuite {
 						contractCreate("factoryContract").bytecode("factory")
 				).when(
 						contractCall("factoryContract", ContractResources.FACTORY_CONTRACT_STACKED_DEPLOYMENT_FAILURE)
-								.hasKnownStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION)
+								.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
 								.via("stackedDeploymentFailureTxn"),
 						contractCall("factoryContract", ContractResources.FACTORY_CONTRACT_SUCCESS)
 								.via("deploymentSuccessTxn")

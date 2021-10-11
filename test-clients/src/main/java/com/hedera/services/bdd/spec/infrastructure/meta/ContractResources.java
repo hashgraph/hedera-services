@@ -141,7 +141,7 @@ public class ContractResources {
 			" \"inputs\": [ { \"internalType\": \"uint256\", \"name\": \"_size\", \"type\": \"uint256\" } ], \"name\": \"setSize\"," +
 			" \"outputs\": [], \"payable\": false, \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 	public static final String GROW_ARRAY_GROW_TO = "{\"constant\": false," +
-			"\"inputs\": [{\"internalType\": \"uint256\",\"name\": \"_targetSize\",\"type\": \"uint256\"}]," +
+			"\"inputs\": [{\"internalType\": \"uint256\",\"name\": \"_limit\",\"type\": \"uint256\"}]," +
 			"\"name\": \"growTo\",\"outputs\": [],\"payable\": false,\"stateMutability\": \"nonpayable\"," +
 			"\"type\": \"function\"}";
 	public static final String GROW_ARRAY_CHANGE_ARRAY = "{\"constant\": false," +

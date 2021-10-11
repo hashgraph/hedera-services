@@ -248,18 +248,32 @@ public class SuiteRunner {
 //				PermissionSemanticsSpec::new,
 //				SysDelSysUndelSpec::new));
 //		put("CiSmartContractJob", aof(
-//				NewOpInConstructorSuite::new,
-//				ContractCallSuite::new,
+//				ContractQueriesStressTests::new,
 //				ContractCallLocalSuite::new,
-//				ChildStorageSpec::new,
-//				BigArraySpec::new,
-//				SmartContractFailFirstSpec::new,
-//				SmartContractSelfDestructSpec::new,
-//				DeprecatedContractKeySuite::new,
+//				ContractCreateSuite::new,
+//				SStoreSuite::new,
+//				ContractDeleteSuite::new,
+//				ContractGetBytecodeSuite::new,
+//				ContractGetInfoSuite::new,
+//				ContractUpdateSuite::new,
 //				ContractRecordsSanityCheckSuite::new,
-//				SmartContractInlineAssemblySpec::new,
-//				OCTokenSpec::new,
-//				RecordCreationSuite::new));
+//				ContractCallSuite::new,
+//				BalanceOperationSuite::new,
+//				CallCodeOperationSuite::new,
+//				CallOperationSuite::new,
+//				CreateOperationSuite::new,
+//				DelegateCallOperationSuite::new,
+//				ExtCodeCopyOperationSuite::new,
+//				ExtCodeHashOperationSuite::new,
+//				ExtCodeSizeOperationSuite::new,
+//				GlobalPropertiesSuite::new,
+//				StaticCallOperationSuite::new,
+//				SStoreOperationLoadTest::new,
+//				ContractCallLoadTest::new,
+//				ContractCallLocalPerfSuite::new,
+//				ContractCallPerfSuite::new,
+//				ContractPerformanceSuite::new,
+//				MixedSmartContractOpsLoadTest::new));
 		/* Adjust fee schedules */
 		put("AdjustFeeSchedule", aof(AdjustFeeScheduleSuite::new));
 		/* Umbrella Redux */
@@ -338,6 +352,7 @@ public class SuiteRunner {
 		put("ScheduleRecordSpecs", aof(ScheduleRecordSpecs::new));
 		put("ScheduleDeleteSpecs", aof(ScheduleDeleteSpecs::new));
 		put("ScheduleExecutionSpecs", aof(ScheduleExecutionSpecs::new));
+		put("ScheduleExecutionSpecStateful", aof(ScheduleExecutionSpecStateful::new));
 		/* Functional tests - TOKEN */
 		put("TokenCreateSpecs", aof(TokenCreateSpecs::new));
 		put("TokenUpdateSpecs", aof(TokenUpdateSpecs::new));
@@ -347,6 +362,7 @@ public class SuiteRunner {
 		put("TokenAssociationSpecs", aof(TokenAssociationSpecs::new));
 		put("TokenPauseSpecs", aof(TokenPauseSpecs::new));
 		put("Hip17UnhappyTokensSuite", aof(Hip17UnhappyTokensSuite::new));
+		put("TokenManagementSpecsStateful", aof(TokenManagementSpecsStateful::new));
 		/* Functional tests - CRYPTO */
 		put("CryptoTransferSuite", aof(CryptoTransferSuite::new));
 		put("CryptoDeleteSuite", aof(CryptoDeleteSuite::new));
@@ -360,8 +376,6 @@ public class SuiteRunner {
 		put("ContractCallLocalSuite", aof(ContractCallLocalSuite::new));
 		put("ContractCreateSuite", aof(ContractCreateSuite::new));
 		put("SStoreSuite", aof(SStoreSuite::new));
-		put("SmartContractInlineAssemblyCheck", aof(ScheduleExecutionSpecStateful::new));
-		put("SmartContractSelfDestructSpec", aof(TokenManagementSpecsStateful::new));
 		put("ContractDeleteSuite", aof(ContractDeleteSuite::new));
 		put("ContractGetBytecodeSuite", aof(ContractGetBytecodeSuite::new));
 		put("ContractGetInfoSuite", aof(ContractGetInfoSuite::new));

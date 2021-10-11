@@ -22,6 +22,7 @@ package com.hedera.services.store.contracts;
  *
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -64,6 +65,8 @@ import static com.hedera.services.ledger.HederaLedger.CONTRACT_ID_COMPARATOR;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.contractParsedFromSolidityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 @Singleton
 public class HederaWorldState implements HederaMutableWorldState {
@@ -73,22 +76,35 @@ public class HederaWorldState implements HederaMutableWorldState {
 	private final ServicesRepositoryRoot repositoryRoot;
 	private final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
 	private final List<ContractID> provisionalContractCreations = new LinkedList<>();
+	private final GlobalDynamicProperties globalDynamicProperties;
 
 	@Inject
 	public HederaWorldState(
 			final EntityIdSource ids,
 			final HederaLedger ledger,
-			final ServicesRepositoryRoot repositoryRoot
+			final ServicesRepositoryRoot repositoryRoot,
+			final GlobalDynamicProperties globalDynamicProperties
 	) {
 		this.ids = ids;
 		this.repositoryRoot = repositoryRoot;
 		this.ledger = ledger;
+		this.globalDynamicProperties = globalDynamicProperties;
 	}
 
 	@Override
 	public List<ContractID> persist() {
+		var status = SUCCESS;
+		if (!repositoryRoot.flushStorageCacheIfTotalSizeLessThan(globalDynamicProperties.maxContractStorageKb())) {
+			status = MAX_CONTRACT_STORAGE_EXCEEDED;
+		}
+		if (status != SUCCESS) {
+			repositoryRoot.emptyStorageCache();
+			provisionalContractCreations.clear();
+		}
+
 		repositoryRoot.flush();
 
+		validateTrue(status == SUCCESS, status);
 		final var copy = new ArrayList<>(provisionalContractCreations);
 		provisionalContractCreations.clear();
 		copy.sort(CONTRACT_ID_COMPARATOR);

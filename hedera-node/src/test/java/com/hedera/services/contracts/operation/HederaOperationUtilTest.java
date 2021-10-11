@@ -19,7 +19,7 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-public class HederaOperationUtilTest {
+class HederaOperationUtilTest {
 	@Mock
 	private MessageFrame messageFrame;
 
