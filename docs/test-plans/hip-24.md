@@ -67,12 +67,13 @@ tests to validate state changes via queries.
 Tests should validate both fungible and non-fungible-unique token types.
 
 ### :ice_cube:&nbsp;State validation
-   - [] _(EET framework)_ `GetTokenInfo` assert for pause status of the Token.
+   - [x] _(EET framework)_ `GetTokenInfo` assert for pause status of the Token.
+   - [x] _(EET framework)_ `GetTokenInfo` assert for pause key of the Token.
 
 ### :cactus:&nbsp;Migration
-   - [] _(Unit)_ A `MerkleToken` now serializes its pause Key and pause status.
-   - [] _(Unit)_ A `MerkleToken` can be deserialized from a prior-version state.
-   - [] _(Unit)_ A `MerkleToken` can be deserialized from a current-version state.
+   - [x] _(Unit)_ A `MerkleToken` now serializes its pause Key and pause status.
+   - [x] _(Unit)_ A `MerkleToken` can be deserialized from a prior-version state.
+   - [x] _(Unit)_ A `MerkleToken` can be deserialized from a current-version state.
 
 ### :white_check_mark:&nbsp;Positive functional
    - [] _(EET)_ A `TokenCreate` with a `pauseKey` and `TokenPause` transaction signed by the this `pausekey` will set the token pause status as `Paused`. `tokenGetInfo` asserts this pause status.
