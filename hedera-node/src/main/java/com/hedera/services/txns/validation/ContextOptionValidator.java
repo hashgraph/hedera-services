@@ -210,6 +210,15 @@ public class ContextOptionValidator implements OptionValidator {
 	}
 
 	@Override
+	public JKey attemptToDecodeOrThrow(Key key, ResponseCodeEnum code) {
+		try {
+			return JKey.mapKey(key);
+		} catch (DecoderException e) {
+			throw new InvalidTransactionException(code);
+		}
+	}
+
+	@Override
 	public ResponseCodeEnum tokenSymbolCheck(String symbol) {
 		return tokenStringCheck(
 				symbol,

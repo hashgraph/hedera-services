@@ -22,7 +22,7 @@ package com.hedera.services.txns;
 
 import com.hedera.services.fees.annotations.FunctionKey;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
-import com.hedera.services.txns.contract.ConsensusLogicModule;
+import com.hedera.services.txns.consensus.ConsensusLogicModule;
 import com.hedera.services.txns.contract.ContractLogicModule;
 import com.hedera.services.txns.contract.ContractSysDelTransitionLogic;
 import com.hedera.services.txns.contract.ContractSysUndelTransitionLogic;

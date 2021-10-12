@@ -669,4 +669,15 @@ class ContextOptionValidatorTest {
 		given(dynamicProperties.maxNftMetadataBytes()).willReturn(2);
 		assertEquals(METADATA_TOO_LONG, subject.nftMetadataCheck(new byte[]{1, 2, 3, 4}));
 	}
+
+	@Test
+	void acceptsValidQueryRange() {
+		given(dynamicProperties.maxNftQueryRange()).willReturn(10L);
+		assertEquals(OK, subject.nftMaxQueryRangeCheck(0, 9));
+	}
+
+	@Test
+	void rejectsDecodeEmptyKey() {
+		assertFailsWith(() -> subject.attemptToDecodeOrThrow(Key.getDefaultInstance(), BAD_ENCODING), BAD_ENCODING);
+	}
 }

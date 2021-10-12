@@ -20,71 +20,81 @@ package com.hedera.services.txns.contract;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.SequenceNumber;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.contracts.execution.CallEvmTxProcessor;
+import com.hedera.services.contracts.execution.TransactionProcessingResult;
+import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.records.TransactionRecordService;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.common.CommonUtils;
+import org.apache.tuweni.bytes.Bytes;
+import org.ethereum.db.ServicesRepositoryRoot;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.util.List;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_BYTECODE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.verify;
 
+@ExtendWith(MockitoExtension.class)
 class ContractCallTransitionLogicTest {
-	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
 	private long gas = 1_234L;
 	private long sent = 1_234L;
 
-	private Instant consensusTime;
-	private OptionValidator validator;
-	private SequenceNumber seqNo;
-	private ContractCallTransitionLogic.LegacyCaller delegate;
-	private TransactionBody contractCallTxn;
+
+	@Mock
 	private TransactionContext txnCtx;
+	@Mock
+	private EntityIdSource entityIdSource;
+	@Mock
 	private PlatformTxnAccessor accessor;
-	MerkleMap<EntityNum, MerkleAccount> contracts;
+	@Mock
+	private AccountStore accountStore;
+	@Mock
+	private HederaWorldState worldState;
+	@Mock
+	private TransactionRecordService recordService;
+	@Mock
+	private CallEvmTxProcessor evmTxProcessor;
+	@Mock
+	private ServicesRepositoryRoot repositoryRoot;
+
+	private TransactionBody contractCallTxn;
+	private final Instant consensusTime = Instant.now();
+	private final Account senderAccount = new Account(new Id(0, 0, 1002));
+	private final Account contractAccount = new Account(new Id(0, 0, 1006));
+	private final byte[] bytecode = "not-a-real-bytecode".getBytes();
 	ContractCallTransitionLogic subject;
 
 	@BeforeEach
 	private void setup() {
-		consensusTime = Instant.now();
-
-		seqNo = mock(SequenceNumber.class);
-		delegate = mock(ContractCallTransitionLogic.LegacyCaller.class);
-		txnCtx = mock(TransactionContext.class);
-		given(txnCtx.consensusTime()).willReturn(consensusTime);
-		accessor = mock(PlatformTxnAccessor.class);
-		validator = mock(OptionValidator.class);
-		withRubberstampingValidator();
-
-		subject = new ContractCallTransitionLogic(delegate, validator, txnCtx, () -> seqNo, () -> contracts);
+		subject = new ContractCallTransitionLogic(txnCtx, entityIdSource, accountStore, worldState, recordService, evmTxProcessor, repositoryRoot);
 	}
 
 	@Test
@@ -97,53 +107,68 @@ class ContractCallTransitionLogicTest {
 	}
 
 	@Test
-	void capturesBadCall() {
+	void verifyExternaliseContractResultCall() {
 		// setup:
-		TransactionRecord callRec = TransactionRecord.newBuilder()
-				.setReceipt(TransactionReceipt.newBuilder()
-						.setStatus(INVALID_CONTRACT_ID)
-						.build())
-				.setContractCallResult(ContractFunctionResult.newBuilder().setGasUsed(555))
-				.build();
-
 		givenValidTxnCtx();
 		// and:
-		given(delegate.perform(contractCallTxn, consensusTime, seqNo)).willReturn(callRec);
-
+		given(accessor.getTxn()).willReturn(contractCallTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		// and:
+		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+		given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
+				.willReturn(contractAccount);
+		// and:
+		given(repositoryRoot.getCode(contractAccount.getId().asEvmAddress().toArray())).willReturn(bytecode);
+		var results = TransactionProcessingResult.successful(
+				null, 1234L, 0L,124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress());
+		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.EMPTY, txnCtx.consensusTime()))
+				.willReturn(results);
+		given(worldState.persist()).willReturn(List.of(target));
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(txnCtx).setStatus(INVALID_CONTRACT_ID);
-		verify(txnCtx).setCallResult(callRec.getContractCallResult());
+		verify(recordService).externaliseEvmCallTransaction(any());
+		verify(worldState).persist();
 	}
 
 	@Test
-	void followsHappyPathWithOverrides() {
+	void verifyProcessorCallingWithCorrectCallData() {
 		// setup:
-		TransactionRecord callRec = TransactionRecord.newBuilder()
-				.setReceipt(TransactionReceipt.newBuilder()
-						.setStatus(SUCCESS)
-						.build())
-				.setContractCallResult(ContractFunctionResult.newBuilder().setGasUsed(555))
-				.build();
-
-		givenValidTxnCtx();
+		ByteString functionParams = ByteString.copyFromUtf8("0x00120");
+		var op = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setContractCall(
+						ContractCallTransactionBody.newBuilder()
+								.setGas(gas)
+								.setAmount(sent)
+								.setFunctionParameters(functionParams)
+								.setContractID(target));
+		contractCallTxn = op.build();
 		// and:
-		given(delegate.perform(contractCallTxn, consensusTime, seqNo)).willReturn(callRec);
-
+		given(accessor.getTxn()).willReturn(contractCallTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		// and:
+		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+		given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
+				.willReturn(contractAccount);
+		// and:
+		given(repositoryRoot.getCode(contractAccount.getId().asEvmAddress().toArray())).willReturn(bytecode);
+		var results = TransactionProcessingResult.successful(
+				null, 1234L, 0L,124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress());
+		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())), txnCtx.consensusTime()))
+				.willReturn(results);
+		given(worldState.persist()).willReturn(List.of(target));
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(txnCtx).setStatus(SUCCESS);
-		verify(txnCtx).setCallResult(callRec.getContractCallResult());
+		verify(evmTxProcessor).execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())), txnCtx.consensusTime());
 	}
 
 	@Test
 	void acceptsOkSyntax() {
 		givenValidTxnCtx();
-
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(contractCallTxn));
 	}
@@ -154,7 +179,6 @@ class ContractCallTransitionLogicTest {
 		sent = -1;
 
 		givenValidTxnCtx();
-
 		// expect:
 		assertEquals(CONTRACT_NEGATIVE_VALUE, subject.semanticCheck().apply(contractCallTxn));
 	}
@@ -171,26 +195,36 @@ class ContractCallTransitionLogicTest {
 	}
 
 	@Test
-	void rejectsInvalidCid() {
-		givenValidTxnCtx();
-		// and:
-		given(validator.queryableContractStatus(target, contracts)).willReturn(CONTRACT_DELETED);
-
-		// expect:
-		assertEquals(CONTRACT_DELETED, subject.semanticCheck().apply(contractCallTxn));
+	void reclaimMethodDelegates() {
+		subject.reclaimCreatedIds();
+		verify(entityIdSource).reclaimProvisionalIds();
 	}
 
 	@Test
-	void translatesUnknownException() {
-		givenValidTxnCtx();
+	void resetMethodDelegates() {
+		subject.resetCreatedIds();
+		verify(entityIdSource).resetProvisionalIds();
+	}
 
-		given(delegate.perform(any(), any(), any())).willThrow(IllegalStateException.class);
+	@Test
+	void throwsWhenBytecodeIsEmpty() {
+		// setup:
+		givenValidTxnCtx();
+		// and:
+		given(accessor.getTxn()).willReturn(contractCallTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		// and:
+		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+		given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
+				.willReturn(contractAccount);
+		// and:
+		given(repositoryRoot.getCode(contractAccount.getId().asEvmAddress().toArray())).willReturn(Bytes.EMPTY.toArray());
 
 		// when:
-		subject.doStateTransition();
+		final var exception = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
 
 		// then:
-		verify(txnCtx).setStatus(FAIL_INVALID);
+		assertEquals(CONTRACT_BYTECODE_EMPTY, exception.getResponseCode());
 	}
 
 	private void givenValidTxnCtx() {
@@ -202,19 +236,13 @@ class ContractCallTransitionLogicTest {
 								.setAmount(sent)
 								.setContractID(target));
 		contractCallTxn = op.build();
-		given(accessor.getTxn()).willReturn(contractCallTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
 	}
 
 	private TransactionID ourTxnId() {
 		return TransactionID.newBuilder()
-				.setAccountID(payer)
+				.setAccountID(senderAccount.getId().asGrpcAccount())
 				.setTransactionValidStart(
 						Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
 				.build();
-	}
-
-	private void withRubberstampingValidator() {
-		given(validator.queryableContractStatus(target, contracts)).willReturn(OK);
 	}
 }

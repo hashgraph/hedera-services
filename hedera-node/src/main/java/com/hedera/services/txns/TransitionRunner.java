@@ -57,7 +57,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 public class TransitionRunner {
 	private static final Logger log = LogManager.getLogger(TransitionRunner.class);
 
-	private static final EnumSet<HederaFunctionality> refactoredOps = EnumSet.of(
+	/**
+	 * List of operations that have been either refactored or have a default {@link com.hederahashgraph.api.proto.java.ResponseCodeEnum} OK status
+	 * {@link com.hedera.services.txns.contract.ContractCreateTransitionLogic} and {@link com.hedera.services.txns.contract.ContractCallTransitionLogic} must not have a default OK status!
+	 */
+	private static final EnumSet<HederaFunctionality> opsWithDefaultSuccessStatus = EnumSet.of(
 			TokenMint, TokenBurn,
 			TokenFreezeAccount, TokenUnfreezeAccount,
 			TokenGrantKycToAccount, TokenRevokeKycFromAccount,
@@ -103,7 +107,7 @@ public class TransitionRunner {
 			try {
 				transition.doStateTransition();
 				/* Only certain functions are refactored */
-				if (refactoredOps.contains(function)) {
+				if (opsWithDefaultSuccessStatus.contains(function)) {
 					txnCtx.setStatus(SUCCESS);
 				}
 				transition.resetCreatedIds();
@@ -114,6 +118,10 @@ public class TransitionRunner {
 					log.warn("Avoidable failure in transition logic for {}", accessor.getSignedTxnWrapper(), ite);
 				}
 				logic.get().reclaimCreatedIds();
+			} catch (Exception e) {
+				logic.get().reclaimCreatedIds();
+
+				throw e;
 			}
 			return true;
 		}

@@ -9,9 +9,9 @@ package com.hedera.services.store;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,9 +27,10 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
+import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,6 +45,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -76,6 +78,23 @@ class AccountStoreTest {
 	}
 
 	/* --- Account loading --- */
+
+	@Test
+	void loadsContractAsExpected() {
+		miscMerkleAccount.setSmartContract(true);
+		setupWithAccount(miscMerkleId, miscMerkleAccount);
+		Account account = subject.loadContract(miscId);
+
+		assertEquals(Id.fromGrpcAccount(miscMerkleId.toGrpcAccountId()), account.getId());
+	}
+
+	@Test
+	void failsLoadingContractWithInvalidId() {
+		miscMerkleAccount.setSmartContract(false);
+		setupWithAccount(miscMerkleId, miscMerkleAccount);
+		TxnUtils.assertFailsWith(() -> subject.loadContract(miscId), INVALID_CONTRACT_ID);
+	}
+
 	@Test
 	void failsLoadingMissingAccount() {
 		assertMiscAccountLoadFailsWith(INVALID_ACCOUNT_ID);
@@ -127,6 +146,7 @@ class AccountStoreTest {
 				.expirationTime(expiry)
 				.maxAutomaticAssociations(maxAutoAssociations)
 				.alreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations)
+				.proxy(proxy.asGrpcAccount())
 				.get();
 
 		// given:
@@ -176,6 +196,7 @@ class AccountStoreTest {
 				.expirationTime(expiry)
 				.maxAutomaticAssociations(newMax)
 				.alreadyUsedAutomaticAssociations(newUsedCount)
+				.proxy(proxy.asGrpcAccount())
 				.get();
 
 		// given:
@@ -184,7 +205,7 @@ class AccountStoreTest {
 		// when:
 		model.setMaxAutomaticAssociations(newMax);
 		// decrease the already Used automatic associations by 10
-		for (int i=0; i<11; i++){
+		for (int i = 0; i < 11; i++) {
 			model.decrementUsedAutomaticAssocitions();
 		}
 		model.incrementUsedAutomaticAssocitions();
@@ -217,6 +238,7 @@ class AccountStoreTest {
 				.expirationTime(expiry)
 				.maxAutomaticAssociations(maxAutoAssociations)
 				.alreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations)
+				.proxy(proxy.asGrpcAccount())
 				.get();
 
 		miscAccount.setExpiry(expiry);
@@ -224,6 +246,7 @@ class AccountStoreTest {
 		miscAccount.setAssociatedTokens(miscMerkleAccount.tokens().getIds());
 		miscAccount.setMaxAutomaticAssociations(maxAutoAssociations);
 		miscAccount.setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations);
+		miscAccount.setProxy(proxy);
 		autoRenewAccount.setExpiry(expiry);
 		autoRenewAccount.initBalance(balance);
 	}
@@ -234,12 +257,14 @@ class AccountStoreTest {
 	private final long autoRenewAccountNum = 3_234L;
 	private final long firstAssocTokenNum = 666L;
 	private final long secondAssocTokenNum = 777L;
+	private final long miscProxyAccount = 9_876L;
 	private final int alreadyUsedAutoAssociations = 12;
 	private final int maxAutoAssociations = 123;
 	private final Id miscId = new Id(0, 0, miscAccountNum);
 	private final Id autoRenewId = new Id(0, 0, autoRenewAccountNum);
 	private final Id firstAssocTokenId = new Id(0, 0, firstAssocTokenNum);
 	private final Id secondAssocTokenId = new Id(0, 0, secondAssocTokenNum);
+	private final Id proxy = new Id(0,0, miscProxyAccount);
 	private final EntityNum miscMerkleId = EntityNum.fromLong(miscAccountNum);
 	private final Account miscAccount = new Account(miscId);
 	private final Account autoRenewAccount = new Account(autoRenewId);

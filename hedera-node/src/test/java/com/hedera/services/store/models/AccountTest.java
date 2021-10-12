@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.buildAutomaticAssociationMetaData;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
@@ -63,6 +64,40 @@ class AccountTest {
 		subject.setOwnedNfts(ownedNfts);
 
 		validator = mock(ContextOptionValidator.class);
+	}
+
+	@Test
+	void objectContractWorks() {
+		final var TEST_KEY = TOKEN_ADMIN_KT.asJKeyUnchecked();
+		final var TEST_LONG_VALUE = 1L;
+		final var TEST_BOOLEAN_VALUE = true;
+
+		subject.setExpiry(TEST_LONG_VALUE);
+		assertEquals(TEST_LONG_VALUE, subject.getExpiry());
+
+		subject.setDeleted(TEST_BOOLEAN_VALUE);
+		assertTrue(subject.isDeleted());
+
+		subject.setSmartContract(TEST_BOOLEAN_VALUE);
+		assertTrue(subject.isSmartContract());
+
+		subject.setReceiverSigRequired(TEST_BOOLEAN_VALUE);
+		assertTrue(subject.isReceiverSigRequired());
+
+		subject.initBalance(TEST_LONG_VALUE);
+		assertEquals(TEST_LONG_VALUE, subject.getBalance());
+
+		subject.setAutoRenewSecs(TEST_LONG_VALUE);
+		assertEquals(TEST_LONG_VALUE, subject.getAutoRenewSecs());
+
+		subject.setKey(TEST_KEY);
+		assertEquals(TEST_KEY, subject.getKey());
+
+		subject.setMemo("Test memo");
+		assertEquals("Test memo", subject.getMemo());
+
+		subject.setProxy(Id.DEFAULT);
+		assertEquals(Id.DEFAULT, subject.getProxy());
 	}
 
 	@Test
