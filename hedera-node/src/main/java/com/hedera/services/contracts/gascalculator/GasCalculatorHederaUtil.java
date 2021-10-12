@@ -60,13 +60,14 @@ final class GasCalculatorHederaUtil {
 		return LOG_CONTRACT_ID_SIZE + LOG_BLOOM_SIZE + LOG_TOPIC_SIZE * (long) numberOfTopics + dataSize;
 	}
 
+	@SuppressWarnings("unused")
 	public static long calculateStorageGasNeeded(
 			long numberOfBytes,
 			long durationInSeconds,
-			long byteHourCostIntinybars,
+			long byteHourCostInTinyBars,
 			long gasPrice
 	) {
-		long storageCostTinyBars = (durationInSeconds * byteHourCostIntinybars) / 3600;
+		long storageCostTinyBars = (durationInSeconds * byteHourCostInTinyBars) / 3600;
 		return Math.round((double) storageCostTinyBars / (double) gasPrice);
 	}
 
@@ -75,6 +76,7 @@ final class GasCalculatorHederaUtil {
 		return rootFrame.getContextVariable("HederaFunctionality");
 	}
 
+	@SuppressWarnings("unused")
 	public static Gas logOperationGasCost(
 			final UsagePricesProvider usagePrices,
 			final HbarCentExchange exchange,

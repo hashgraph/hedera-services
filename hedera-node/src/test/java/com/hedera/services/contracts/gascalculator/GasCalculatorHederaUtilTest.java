@@ -22,6 +22,7 @@ package com.hedera.services.contracts.gascalculator;
  *
  */
 
+import com.hedera.services.contracts.execution.HederaBlockValues;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -29,12 +30,16 @@ import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.Gas;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.util.ArrayDeque;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
@@ -84,5 +89,36 @@ class GasCalculatorHederaUtilTest {
 		var storageCostTinyBars = (durationInSeconds * byteHourCostIntinybars) / 3600;
 		var expectedResult = Math.round((double) storageCostTinyBars / (double) gasPrice);
 		assertEquals(expectedResult, GasCalculatorHederaUtil.calculateStorageGasNeeded(0, durationInSeconds, byteHourCostIntinybars, gasPrice));
+	}
+
+	@Test
+	void assertAndVerifyLogOperationGasCost() {
+		final var messageFrame = mock(MessageFrame.class);
+		final var consensusTime = 123L;
+		final var functionality = HederaFunctionality.ContractCreate;
+		final var timestamp = Timestamp.newBuilder().setSeconds(consensusTime).build();
+		final var returningDeque = new ArrayDeque<MessageFrame>() {
+		};
+		returningDeque.add(messageFrame);
+
+		final var rbh = 20000L;
+		final var feeComponents = FeeComponents.newBuilder().setRbh(rbh);
+		final var feeData = FeeData.newBuilder().setServicedata(feeComponents).build();
+
+		given(messageFrame.getGasPrice()).willReturn(Wei.of(2000L));
+		given(messageFrame.getBlockValues()).willReturn(new HederaBlockValues(10L, consensusTime));
+		given(messageFrame.getContextVariable("HederaFunctionality")).willReturn(functionality);
+		given(messageFrame.getMessageFrameStack()).willReturn(returningDeque);
+
+		given(usagePricesProvider.defaultPricesGiven(functionality, timestamp)).willReturn(feeData);
+		given(hbarCentExchange.rate(timestamp)).willReturn(ExchangeRate.newBuilder().setHbarEquiv(2000).setCentEquiv(200).build());
+
+		assertEquals(Gas.of(28), GasCalculatorHederaUtil.logOperationGasCost(usagePricesProvider, hbarCentExchange, messageFrame, 1000000, 1L, 2L, 3));
+		verify(messageFrame).getGasPrice();
+		verify(messageFrame).getBlockValues();
+		verify(messageFrame).getContextVariable("HederaFunctionality");
+		verify(messageFrame).getMessageFrameStack();
+		verify(usagePricesProvider).defaultPricesGiven(functionality, timestamp);
+		verify(hbarCentExchange).rate(timestamp);
 	}
 }
