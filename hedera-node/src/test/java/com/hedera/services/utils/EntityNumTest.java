@@ -25,6 +25,7 @@ import com.hedera.test.utils.IdUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -52,9 +53,10 @@ class EntityNumTest {
 	}
 
 	@Test
-	void throwsOnUnusableNum() {
+	void doesntThrowOnUnusableNum() {
 		// expect:
-		Assertions.assertThrows(IllegalArgumentException.class, () -> EntityNum.fromLong(Long.MAX_VALUE));
+		Assertions.assertDoesNotThrow(() -> EntityNum.fromLong(Long.MAX_VALUE));
+		assertEquals(MISSING_NUM, EntityNum.fromLong(Long.MAX_VALUE));
 	}
 
 	@Test
@@ -75,7 +77,7 @@ class EntityNumTest {
 	@Test
 	void factoriesWorkForInvalidShard() {
 		// setup:
-		final var expectedVal = EntityNum.MISSING_NUM;
+		final var expectedVal = MISSING_NUM;
 
 		// expect:
 		assertEquals(expectedVal, EntityNum.fromAccountId(IdUtils.asAccount("1.0.123")));
@@ -89,7 +91,7 @@ class EntityNumTest {
 	@Test
 	void factoriesWorkForInvalidRealm() {
 		// setup:
-		final var expectedVal = EntityNum.MISSING_NUM;
+		final var expectedVal = MISSING_NUM;
 
 		// expect:
 		assertEquals(expectedVal, EntityNum.fromAccountId(IdUtils.asAccount("0.1.123")));
