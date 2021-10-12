@@ -24,7 +24,6 @@ package com.hedera.services.contracts.operation;
 
 import com.hedera.services.contracts.sources.SoliditySigsVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityIdUtils;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -32,8 +31,6 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.CallOperation;
 
 import javax.inject.Inject;
-import java.util.Optional;
-import java.util.Set;
 
 /**
  * Hedera adapted version of the {@link CallOperation}.
@@ -59,19 +56,12 @@ public class HederaCallOperation extends CallOperation {
 
 	@Override
 	public OperationResult execute(MessageFrame frame, EVM evm) {
-		final var account = frame.getWorldUpdater().get(to(frame));
-		if (account == null) {
-			return new OperationResult(
-					Optional.of(cost(frame)), Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
-		}
-
-		final var accountId = EntityIdUtils.accountParsedFromSolidityAddress(account.getAddress().toArray());
-		if (!sigsVerifier.allRequiredKeysAreActive(Set.of(accountId))) {
-			return new OperationResult(
-					Optional.of(cost(frame)), Optional.of(HederaExceptionalHaltReason.INVALID_SIGNATURE)
-			);
-		}
-
-		return super.execute(frame, evm);
+		return HederaOperationUtil.addressSignatureCheckExecution(
+				sigsVerifier,
+				frame,
+				to(frame),
+				() -> cost(frame),
+				() -> super.execute(frame, evm)
+		);
 	}
 }

@@ -81,7 +81,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -875,8 +874,8 @@ public class ContractCallSuite extends HapiApiSuite {
 						cryptoCreate("contractCaller").balance(1_000_000_000_000L),
 						cryptoCreate("receivableSigReqAccount")
 								.balance(1_000_000_000_000L).receiverSigRequired(true),
-						getAccountInfo("contractCaller").saveToRegistry("contractCallerInfo"),
-						getAccountInfo("receivableSigReqAccount").saveToRegistry("receivableSigReqAccountInfo"),
+						getAccountInfo("contractCaller").savingSnapshot("contractCallerInfo"),
+						getAccountInfo("receivableSigReqAccount").savingSnapshot("receivableSigReqAccountInfo"),
 						fileCreate("transferringContractBytecode").path(ContractResources.TRANSFERRING_CONTRACT)
 				).when(
 						contractCreate("transferringContract").bytecode("transferringContractBytecode")
@@ -911,7 +910,7 @@ public class ContractCallSuite extends HapiApiSuite {
 				.given(
 						cryptoCreate("receivableSigReqAccount")
 								.balance(1_000_000_000_000L).receiverSigRequired(true),
-						getAccountInfo("receivableSigReqAccount").saveToRegistry("receivableSigReqAccountInfo"),
+						getAccountInfo("receivableSigReqAccount").savingSnapshot("receivableSigReqAccountInfo"),
 						fileCreate("transferringContractBytecode").path(ContractResources.TRANSFERRING_CONTRACT)
 				).when(
 						contractCreate("transferringContract").bytecode("transferringContractBytecode")

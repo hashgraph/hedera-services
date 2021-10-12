@@ -26,11 +26,9 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.ExtCodeCopyOperation;
 
 import javax.inject.Inject;
-import java.util.Optional;
 
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
@@ -51,16 +49,14 @@ public class HederaExtCodeCopyOperation extends ExtCodeCopyOperation {
 
 	@Override
 	public OperationResult execute(MessageFrame frame, EVM evm) {
-		final Address address = Words.toAddress(frame.getStackItem(0));
 		final long memOffset = clampedToLong(frame.getStackItem(1));
 		final long numBytes = clampedToLong(frame.getStackItem(3));
 
-		final var account = frame.getWorldUpdater().get(address);
-		if (account == null) {
-			return new OperationResult(
-					Optional.of(cost(frame, memOffset, numBytes, true)), Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
-		}
-
-		return super.execute(frame, evm);
+		return HederaOperationUtil.addressCheckExecution(
+				frame,
+				() -> frame.getStackItem(0),
+				() -> cost(frame, memOffset, numBytes, true),
+				() -> super.execute(frame, evm)
+		);
 	}
 }

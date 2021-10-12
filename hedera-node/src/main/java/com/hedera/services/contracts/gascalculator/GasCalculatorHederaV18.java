@@ -25,10 +25,7 @@ package com.hedera.services.contracts.gascalculator;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.fee.FeeBuilder;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Gas;
@@ -91,11 +88,7 @@ public class GasCalculatorHederaV18 extends PetersburgGasCalculator {
 	}
 
 	protected long ramByteHoursTinyBarsGiven(long consensusTime, HederaFunctionality functionType) {
-		final var timestamp = Timestamp.newBuilder().setSeconds(consensusTime).build();
-		FeeData prices = usagePrices.defaultPricesGiven(functionType, timestamp);
-		long feeInTinyCents = prices.getServicedata().getRbh() / 1000;
-		long feeInTinyBars = FeeBuilder.getTinybarsFromTinyCents(exchange.rate(timestamp), feeInTinyCents);
-		return Math.max(1L, feeInTinyBars);
+		return GasCalculatorHederaUtil.ramByteHoursTinyBarsGiven(usagePrices, exchange, consensusTime, functionType);
 	}
 
 	private HederaFunctionality getFunctionType(MessageFrame frame) {

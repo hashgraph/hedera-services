@@ -29,7 +29,6 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.DelegateCallOperation;
 
 import javax.inject.Inject;
-import java.util.Optional;
 
 /**
  * Hedera adapted version of the {@link DelegateCallOperation}.
@@ -37,7 +36,6 @@ import java.util.Optional;
  * Performs an existence check on the {@link Address} to be called
  * Halts the execution of the EVM transaction with {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if
  * the account does not exist or it is deleted.
- *
  */
 public class HederaDelegateCallOperation extends DelegateCallOperation {
 
@@ -48,12 +46,10 @@ public class HederaDelegateCallOperation extends DelegateCallOperation {
 
 	@Override
 	public OperationResult execute(MessageFrame frame, EVM evm) {
-		final var account = frame.getWorldUpdater().get(to(frame));
-		if (account == null) {
-			return new OperationResult(
-					Optional.of(cost(frame)), Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
-		}
-
-		return super.execute(frame, evm);
+		return HederaOperationUtil.addressCheckExecution(
+				frame,
+				() -> to(frame),
+				() -> cost(frame),
+				() -> super.execute(frame, evm));
 	}
 }

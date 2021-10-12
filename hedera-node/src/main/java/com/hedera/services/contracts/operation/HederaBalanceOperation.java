@@ -24,15 +24,11 @@ package com.hedera.services.contracts.operation;
 
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.internal.FixedStack;
-import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.BalanceOperation;
 
 import javax.inject.Inject;
-import java.util.Optional;
 
 /**
  * Hedera adapted version of the {@link BalanceOperation}. Performs an existence check on the requested {@link Address}
@@ -48,18 +44,10 @@ public class HederaBalanceOperation extends BalanceOperation {
 
 	@Override
 	public OperationResult execute(MessageFrame frame, EVM evm) {
-		try {
-			final Address address = Words.toAddress(frame.getStackItem(0));
-			final var account = frame.getWorldUpdater().get(address);
-			if (account == null) {
-				return new OperationResult(
-						Optional.of(cost(true)), Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
-			}
-
-			return super.execute(frame, evm);
-		} catch (final FixedStack.UnderflowException ufe) {
-			return new OperationResult(
-					Optional.of(cost(true)), Optional.of(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS));
-		}
+		return HederaOperationUtil.addressCheckExecution(
+				frame,
+				() -> frame.getStackItem(0),
+				() -> cost(true),
+				() -> super.execute(frame, evm));
 	}
 }
