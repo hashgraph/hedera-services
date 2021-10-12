@@ -9,6 +9,7 @@ import com.hedera.services.store.models.TokenRelationship;
 import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.utils.EntityNumPair.MISSING_NUM_PAIR;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -55,6 +56,15 @@ class EntityNumPairTest {
 
 		// expect:
 		assertEquals(expected, actual);
+	}
+
+	@Test
+	void returnsMissingNumPairIfInvalidLong() {
+		// given:
+		assertDoesNotThrow(() -> EntityNumPair.fromLongs(Long.MAX_VALUE, 2));
+
+		// expect:
+		assertEquals(MISSING_NUM_PAIR, EntityNumPair.fromLongs(Long.MAX_VALUE, 2));
 	}
 
 	@Test

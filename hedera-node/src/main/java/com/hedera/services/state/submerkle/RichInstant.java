@@ -30,6 +30,8 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 
+import static com.hedera.services.state.merkle.internals.BitPackUtils.isValidLong;
+
 public class RichInstant {
 	public static final RichInstant MISSING_INSTANT = new RichInstant(0L, 0);
 
@@ -94,9 +96,11 @@ public class RichInstant {
 	/* --- Helpers --- */
 
 	public static RichInstant fromGrpc(Timestamp grpc) {
-		return grpc.equals(Timestamp.getDefaultInstance())
-				? MISSING_INSTANT
-				: new RichInstant(grpc.getSeconds(), grpc.getNanos());
+		if (!isValidLong(grpc.getSeconds()) || !isValidLong(grpc.getNanos()) ||
+				grpc.equals(Timestamp.getDefaultInstance())) {
+			return MISSING_INSTANT;
+		}
+		return new RichInstant(grpc.getSeconds(), grpc.getNanos());
 	}
 
 	public Timestamp toGrpc() {
