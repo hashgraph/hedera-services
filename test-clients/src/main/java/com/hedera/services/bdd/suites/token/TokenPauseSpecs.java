@@ -81,11 +81,11 @@ public class TokenPauseSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				cannotChangePauseStatusIfMissingPauseKey(),
-				pausedFungibleTokenCannotBeUsed(),
-				pausedNonFungibleUniqueCannotBeUsed(),
-				unpauseWorks(),
-				basePauseAndUnpauseHaveExpectedPrices(),
+//				cannotChangePauseStatusIfMissingPauseKey(),
+//				pausedFungibleTokenCannotBeUsed(),
+//				pausedNonFungibleUniqueCannotBeUsed(),
+//				unpauseWorks(),
+//				basePauseAndUnpauseHaveExpectedPrices(),
 				pausedTokenInCustomFeeCaseStudy()
 		});
 	}
@@ -102,7 +102,7 @@ public class TokenPauseSpecs extends HapiApiSuite {
 				.given(
 						cryptoCreate(TOKEN_TREASURY),
 						cryptoCreate(firstUser).balance(ONE_HUNDRED_HBARS),
-						cryptoCreate(secondUser),
+						cryptoCreate(secondUser).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(thirdUser),
 						newKeyNamed(pauseKey),
 						newKeyNamed(kycKey)
@@ -139,6 +139,8 @@ public class TokenPauseSpecs extends HapiApiSuite {
 				)
 				.then(
 						cryptoTransfer(moving(10, otherToken).between(secondUser, thirdUser))
+								.fee(ONE_HBAR)
+								.payingWith(secondUser)
 								.hasKnownStatus(TOKEN_IS_PAUSED)
 				);
 	}
