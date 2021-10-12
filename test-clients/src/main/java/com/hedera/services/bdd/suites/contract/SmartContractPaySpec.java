@@ -83,7 +83,7 @@ public class SmartContractPaySpec extends HapiApiSuite {
 									.saveToRegistry("payReceivableKey");
 
 							var subop2 = getAccountInfo("receiver")
-									.saveToRegistry("receiverAccountInfoKey");
+									.savingSnapshot("receiverAccountInfoKey");
 							CustomSpecAssert.allRunFor(spec, subop1, subop2);
 
 							ContractGetInfoResponse.ContractInfo payReceivableContratInfo =
@@ -134,7 +134,7 @@ public class SmartContractPaySpec extends HapiApiSuite {
 
 							// check final receiver balance
 							var subop6 = getAccountInfo("receiver")
-									.saveToRegistry("receiverAccountInfoKey");
+									.savingSnapshot("receiverAccountInfoKey");
 							CustomSpecAssert.allRunFor(spec, subop6);
 
 							receiverAccountInfo = spec.registry().getAccountInfo("receiverAccountInfoKey");

@@ -102,6 +102,10 @@ public class TokenMovement {
 		receiverFn = Optional.empty();
 	}
 
+	public String getToken() {
+		return token;
+	}
+
 	public boolean isTrulyToken() {
 		return token != HapiApiSuite.HBAR_TOKEN_SENTINEL;
 	}

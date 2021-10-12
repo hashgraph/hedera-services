@@ -70,12 +70,15 @@ class IdTest {
 		final var merkleEntityId = new MerkleEntityId(1, 2, 3);
 		final var grpcAccount = IdUtils.asAccount("1.2.3");
 		final var grpcToken = IdUtils.asToken("1.2.3");
+		final var grpcTopic = IdUtils.asTopic("1.2.3");
 
 		assertEquals(entityId, id.asEntityId());
 		assertEquals(grpcAccount, id.asGrpcAccount());
 		assertEquals(grpcToken, id.asGrpcToken());
 		assertEquals(id, Id.fromGrpcAccount(grpcAccount));
 		assertEquals(id, Id.fromGrpcToken(grpcToken));
+		assertEquals(id, Id.fromGrpcTopic(grpcTopic));
+		assertEquals(grpcTopic, id.asGrpcTopic());
 	}
 
 	@Test

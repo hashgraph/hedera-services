@@ -9,9 +9,9 @@ package com.hedera.services.txns.file;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,8 +25,6 @@ import com.hedera.services.files.HederaFs;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -41,16 +39,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
 @Singleton
-public class FileDeleteTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(FileDeleteTransitionLogic.class);
-
-	private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP = ignore -> OK;
-
+public final class FileDeleteTransitionLogic implements TransitionLogic {
 	private final HederaFs hfs;
 	private final TransactionContext txnCtx;
 
 	@Inject
-	public FileDeleteTransitionLogic(HederaFs hfs, TransactionContext txnCtx) {
+	public FileDeleteTransitionLogic(final HederaFs hfs, final TransactionContext txnCtx) {
 		this.hfs = hfs;
 		this.txnCtx = txnCtx;
 	}
@@ -78,6 +72,6 @@ public class FileDeleteTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_RUBBER_STAMP;
+		return (ignore -> OK);
 	}
 }

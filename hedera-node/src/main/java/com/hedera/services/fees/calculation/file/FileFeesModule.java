@@ -9,9 +9,9 @@ package com.hedera.services.fees.calculation.file;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -41,12 +41,12 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
 
 @Module
-public abstract class FileFeesModule {
+public final class FileFeesModule {
 	@Provides
 	@ElementsIntoSet
 	public static Set<QueryResourceUsageEstimator> provideFileQueryEstimators(
-			GetFileInfoResourceUsage getFileInfoResourceUsage,
-			GetFileContentsResourceUsage getFileContentsResourceUsage
+			final GetFileInfoResourceUsage getFileInfoResourceUsage,
+			final GetFileContentsResourceUsage getFileContentsResourceUsage
 	) {
 		return Set.of(getFileInfoResourceUsage, getFileContentsResourceUsage);
 	}
@@ -55,7 +55,7 @@ public abstract class FileFeesModule {
 	@IntoMap
 	@FunctionKey(FileCreate)
 	public static List<TxnResourceUsageEstimator> provideFileCreateEstimator(
-			FileCreateResourceUsage fileCreateResourceUsage
+			final FileCreateResourceUsage fileCreateResourceUsage
 	) {
 		return List.of(fileCreateResourceUsage);
 	}
@@ -64,7 +64,7 @@ public abstract class FileFeesModule {
 	@IntoMap
 	@FunctionKey(FileDelete)
 	public static List<TxnResourceUsageEstimator> provideFileDeleteEstimator(
-			FileDeleteResourceUsage fileDeleteResourceUsage
+			final FileDeleteResourceUsage fileDeleteResourceUsage
 	) {
 		return List.of(fileDeleteResourceUsage);
 	}
@@ -73,8 +73,12 @@ public abstract class FileFeesModule {
 	@IntoMap
 	@FunctionKey(FileUpdate)
 	public static List<TxnResourceUsageEstimator> provideFileUpdateEstimator(
-			FileUpdateResourceUsage fileUpdateResourceUsage
+			final FileUpdateResourceUsage fileUpdateResourceUsage
 	) {
 		return List.of(fileUpdateResourceUsage);
+	}
+
+	private FileFeesModule() {
+		throw new UnsupportedOperationException("Dagger2 module");
 	}
 }

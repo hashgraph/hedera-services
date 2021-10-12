@@ -25,6 +25,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TopicID;
 
 import java.util.function.Supplier;
 
@@ -39,6 +40,16 @@ public class SeqNoEntityIdSource implements EntityIdSource {
 
 	public SeqNoEntityIdSource(Supplier<SequenceNumber> seqNo) {
 		this.seqNo = seqNo;
+	}
+
+	@Override
+	public TopicID newTopicId(final AccountID sponsor) {
+		provisionalIds++;
+		return TopicID.newBuilder()
+				.setRealmNum(sponsor.getRealmNum())
+				.setShardNum(sponsor.getShardNum())
+				.setTopicNum(seqNo.get().getAndIncrement())
+				.build();
 	}
 
 	@Override

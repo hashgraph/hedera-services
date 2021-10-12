@@ -158,7 +158,7 @@ public class HapiSpecRegistry {
 		return Key.getDefaultInstance();
 	}
 
-	private Key asPublicKey(String pubKeyHex) throws Exception {
+	private Key asPublicKey(String pubKeyHex) {
 		return Key.newBuilder()
 				.setEd25519(ByteString.copyFrom(CommonUtils.unhex(pubKeyHex)))
 				.build();
@@ -294,6 +294,22 @@ public class HapiSpecRegistry {
 
 	public Key getFeeScheduleKey(String name) {
 		return get(name + "FeeSchedule", Key.class);
+	}
+
+	public void savePauseKey(String name, Key key) {
+		put(name + "Pause", key, Key.class);
+	}
+
+	public boolean hasPauseKey(String name) {
+		return has(name + "Pause", Key.class);
+	}
+
+	public Key getPauseKey(String name) {
+		return get(name + "Pause", Key.class);
+	}
+
+	public void forgetPauseKey(String name) {
+		remove(name + "Pause", Key.class);
 	}
 
 	public boolean hasFreezeKey(String name) {

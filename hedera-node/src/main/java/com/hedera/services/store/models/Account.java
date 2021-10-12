@@ -62,6 +62,7 @@ public class Account {
 	private CopyOnWriteIds associatedTokens;
 	private long ownedNfts;
 	private int autoAssociationMetadata;
+	private boolean isSmartContract = false;
 
 	public Account(Id id) {
 		this.id = id;
@@ -208,5 +209,13 @@ public class Account {
 				.add("alreadyUsedAutoAssociations", getAlreadyUsedAutomaticAssociations())
 				.add("maxAutoAssociations", getMaxAutomaticAssociations())
 				.toString();
+	}
+
+	public boolean isSmartContract() {
+		return isSmartContract;
+	}
+
+	public void setSmartContract(final boolean smartContract) {
+		isSmartContract = smartContract;
 	}
 }

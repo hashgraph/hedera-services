@@ -33,6 +33,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(LogCaptureExtension.class)
@@ -112,13 +113,18 @@ class SemanticVersionsTest {
 	}
 
 	@Test
-	void recognizesAvailableResource() {
+	void recognizesAvailableResourceAndDoesItOnlyOnce() {
 		subject.setVersionInfoResource("frozen-semantic-version.properties");
 
-		final var versions = subject.getDeployed().get();
+		final var versions = subject.getDeployed();
 
 		assertEquals(FROZEN_PROTO_SEMVER, versions.protoSemVer());
 		assertEquals(FROZEN_SERVICES_SEMVER, versions.hederaSemVer());
+
+		subject.setVersionInfoResource("willNotBeLoadedAsActiveVersionsAreAlreadyAvailable.properties");
+		final var sameVersions = subject.getDeployed();
+
+		assertSame(versions, sameVersions);
 	}
 
 	@Test

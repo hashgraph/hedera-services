@@ -46,7 +46,9 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenPause;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
@@ -156,6 +158,8 @@ public class ScheduleGenerator {
 			Pair.of(TokenFeeScheduleUpdate, List.of(DEFAULT)),
 			Pair.of(TokenFreezeAccount, List.of(DEFAULT)),
 			Pair.of(TokenUnfreezeAccount, List.of(DEFAULT)),
+			Pair.of(TokenPause, List.of(DEFAULT)),
+			Pair.of(TokenUnpause, List.of(DEFAULT)),
 			/* Consensus */
 			Pair.of(ConsensusSubmitMessage, List.of(DEFAULT))
 	);

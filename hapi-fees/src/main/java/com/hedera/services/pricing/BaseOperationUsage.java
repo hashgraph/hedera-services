@@ -209,6 +209,10 @@ class BaseOperationUsage {
 				return tokenUnfreezeAccount();
 			case TokenFeeScheduleUpdate:
 				return feeScheduleUpdate();
+			case TokenPause:
+				return tokenPause();
+			case TokenUnpause:
+				return tokenUnpause();
 			case ConsensusSubmitMessage:
 				return submitMessage();
 			default:
@@ -275,6 +279,20 @@ class BaseOperationUsage {
 		final var tokenUnfreezeMeta = TOKEN_OPS_USAGE_UTILS.tokenUnfreezeUsageFrom();
 		final var into = new UsageAccumulator();
 		TOKEN_OPS_USAGE.tokenFreezeUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenUnfreezeMeta, into);
+		return into;
+	}
+
+	UsageAccumulator tokenPause() {
+		final var tokenPauseMeta = TOKEN_OPS_USAGE_UTILS.tokenPauseUsageFrom();
+		final var into = new UsageAccumulator();
+		TOKEN_OPS_USAGE.tokenPauseUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenPauseMeta, into);
+		return into;
+	}
+
+	UsageAccumulator tokenUnpause() {
+		final var tokenUnpauseMeta = TOKEN_OPS_USAGE_UTILS.tokenUnpauseUsageFrom();
+		final var into = new UsageAccumulator();
+		TOKEN_OPS_USAGE.tokenUnpauseUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenUnpauseMeta, into);
 		return into;
 	}
 
