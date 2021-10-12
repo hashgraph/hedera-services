@@ -204,7 +204,7 @@ public class BitPackUtils {
 	 * @return true if valid, else returns false
 	 */
 	public static boolean isValidLong(long num) {
-		return num >= 0 || num <= MAX_NUM_ALLOWED;
+		return num >= 0 && num <= MAX_NUM_ALLOWED;
 	}
 
 	BitPackUtils() {
