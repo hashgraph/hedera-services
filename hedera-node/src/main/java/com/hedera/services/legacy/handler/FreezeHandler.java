@@ -20,6 +20,7 @@ package com.hedera.services.legacy.handler;
  * ‍
  */
 
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.utils.UnzipUtility;
@@ -67,18 +68,16 @@ import static java.util.Calendar.MINUTE;
 @Singleton
 public class FreezeHandler {
 	private static final Logger log = LogManager.getLogger(FreezeHandler.class);
-
-	private final Platform platform;
-	private final HederaFs hfs;
-	private final HbarCentExchange exchange;
-	private final Supplier<SwirldDualState> dualState;
-
 	private static final String TARGET_DIR = "./";
 	private static final String TEMP_DIR = "./temp";
 	private static final String DELETE_FILE = TEMP_DIR + File.separator + "delete.txt";
 	private static final String CMD_SCRIPT = "exec.sh";
 	private static final String FULL_SCRIPT_PATH = TEMP_DIR + File.separator + CMD_SCRIPT;
 	private static final String ABORT_UDPATE_MESSAGE = "ABORT UPDATE PROCRESS";
+	private final Platform platform;
+	private final HederaFs hfs;
+	private final HbarCentExchange exchange;
+	private final Supplier<SwirldDualState> dualState;
 	private String LOG_PREFIX;
 
 	private FileID updateFeatureFile;
@@ -110,14 +109,14 @@ public class FreezeHandler {
 			log.info("Dual state freeze time set to {} (now is {})", naturalFreezeStart, consensusTime);
 		} catch (Exception e) {
 			log.warn("Could not set dual state freeze time to {} (now is {})", naturalFreezeStart, consensusTime, e);
-			receipt = getTransactionReceipt(INVALID_FREEZE_TRANSACTION_BODY, exchange.activeRates());
+			throw new InvalidTransactionException(INVALID_FREEZE_TRANSACTION_BODY);
 		}
-
 		final var builder = RequestBuilder.getTransactionRecord(
 				transactionBody.getTransactionFee(),
 				transactionBody.getMemo(),
 				transactionBody.getTransactionID(),
-				RequestBuilder.getTimestamp(consensusTime), receipt);
+				RequestBuilder.getTimestamp(consensusTime),
+				receipt);
 		return builder.build();
 	}
 

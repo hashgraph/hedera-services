@@ -51,6 +51,7 @@ import java.util.Calendar;
 import java.util.TimeZone;
 
 import static com.hedera.services.legacy.unit.FreezeTestHelper.createFreezeTransaction;
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.lang.Thread.sleep;
@@ -184,9 +185,10 @@ class FreezeHandlerTest {
 		final var transaction = createFreezeTransaction(true, false, null);
 		final var txBody = CommonUtils.extractTransactionBody(transaction);
 
-		final var record = subject.freeze(txBody, consensusTime);
-
-		assertEquals(INVALID_FREEZE_TRANSACTION_BODY, record.getReceipt().getStatus());
+		assertFailsWith(
+				() -> subject.freeze(txBody, consensusTime),
+				INVALID_FREEZE_TRANSACTION_BODY
+		);
 	}
 
 	@Test

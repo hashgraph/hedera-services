@@ -20,10 +20,13 @@ package com.hedera.services.txns.network;
  * ‍
  */
 
+import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.annotations.FunctionKey;
+import com.hedera.services.files.HederaFs;
 import com.hedera.services.legacy.handler.FreezeHandler;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.txns.TransitionLogic;
+import com.swirlds.common.Platform;
 import com.swirlds.common.SwirldDualState;
 import dagger.Module;
 import dagger.Provides;
@@ -43,13 +46,16 @@ public final class NetworkLogicModule {
 	public static Supplier<SwirldDualState> provideDualState(final DualStateAccessor dualStateAccessor) {
 		return dualStateAccessor::getDualState;
 	}
-
+	
 	@Provides
-	@Singleton
-	public static FreezeTransitionLogic.LegacyFreezer provideLegacyFreezer(final FreezeHandler freezeHandler) {
-		return freezeHandler::freeze;
+	public static FreezeHandler provideFreezeHandler(final HederaFs hfs,
+													 final Platform platform,
+													 final HbarCentExchange exchange,
+													 final Supplier<SwirldDualState> dualState) {
+		return new FreezeHandler(hfs, platform, exchange, dualState);
 	}
-
+	
+	
 	@Provides
 	@IntoMap
 	@FunctionKey(Freeze)

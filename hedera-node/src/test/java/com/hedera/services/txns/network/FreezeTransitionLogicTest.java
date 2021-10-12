@@ -23,7 +23,9 @@ package com.hedera.services.txns.network;
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.interceptors.MockFileNumbers;
+import com.hedera.services.legacy.handler.FreezeHandler;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -31,23 +33,20 @@ import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.Optional;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
@@ -56,10 +55,11 @@ class FreezeTransitionLogicTest {
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 
 	private Instant consensusTime;
-	private FreezeTransitionLogic.LegacyFreezer delegate;
 	private TransactionBody freezeTxn;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
+	private final FreezeHandler freezeHandler = mock(FreezeHandler.class);
+	
 	FreezeTransitionLogic subject;
 	FileNumbers fileNums = new MockFileNumbers();
 
@@ -67,12 +67,11 @@ class FreezeTransitionLogicTest {
 	private void setup() {
 		consensusTime = Instant.now();
 
-		delegate = mock(FreezeTransitionLogic.LegacyFreezer.class);
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		accessor = mock(PlatformTxnAccessor.class);
 
-		subject = new FreezeTransitionLogic(fileNums, delegate, txnCtx);
+		subject = new FreezeTransitionLogic(fileNums, txnCtx, freezeHandler);
 	}
 
 	@Test
@@ -85,32 +84,18 @@ class FreezeTransitionLogicTest {
 
 	@Test
 	void capturesBadFreeze() {
-		TransactionRecord freezeRec = TransactionRecord.newBuilder()
-				.setReceipt(TransactionReceipt.newBuilder()
-						.setStatus(INVALID_FREEZE_TRANSACTION_BODY)
-						.build())
-				.build();
 		givenTxnCtx();
-		given(delegate.perform(freezeTxn, consensusTime)).willReturn(freezeRec);
-
-		subject.doStateTransition();
-
-		verify(txnCtx).setStatus(INVALID_FREEZE_TRANSACTION_BODY);
+		given(freezeHandler.freeze(any(), any())).willThrow(new InvalidTransactionException(INVALID_FREEZE_TRANSACTION_BODY));
+		assertFailsWith(() -> subject.doStateTransition(), INVALID_FREEZE_TRANSACTION_BODY);
 	}
 
 	@Test
 	void followsHappyPathWithOverrides() {
-		TransactionRecord freezeRec = TransactionRecord.newBuilder()
-				.setReceipt(TransactionReceipt.newBuilder()
-						.setStatus(SUCCESS)
-						.build())
-				.build();
 		givenTxnCtx();
-		given(delegate.perform(freezeTxn, consensusTime)).willReturn(freezeRec);
 
 		subject.doStateTransition();
-
-		verify(txnCtx).setStatus(SUCCESS);
+		
+		verify(freezeHandler).freeze(any(), any());
 	}
 
 	@Test
@@ -154,16 +139,6 @@ class FreezeTransitionLogicTest {
 		givenTxnCtx(true, Optional.of(fileNums.toFid(fileNums.softwareUpdateZip())), Optional.empty(), false);
 
 		assertEquals(INVALID_FREEZE_TRANSACTION_BODY, subject.semanticCheck().apply(freezeTxn));
-	}
-
-	@Test
-	void translatesUnknownException() {
-		givenTxnCtx();
-		given(delegate.perform(any(), any())).willThrow(IllegalStateException.class);
-
-		subject.doStateTransition();
-
-		verify(txnCtx).setStatus(FAIL_INVALID);
 	}
 
 	private void givenTxnCtx() {
