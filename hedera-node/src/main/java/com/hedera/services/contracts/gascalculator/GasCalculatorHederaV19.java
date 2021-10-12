@@ -38,10 +38,6 @@ import javax.inject.Inject;
  */
 public class GasCalculatorHederaV19 extends LondonGasCalculator {
 
-	private static final int LOG_CONTRACT_ID_SIZE = 24;
-	private static final int LOG_TOPIC_SIZE = 32;
-	private static final int LOG_BLOOM_SIZE = 256;
-
 	private final GlobalDynamicProperties dynamicProperties;
 	private final UsagePricesProvider usagePrices;
 	private final HbarCentExchange exchange;
