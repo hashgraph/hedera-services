@@ -98,7 +98,7 @@ public class CryptoHbarBench {
                 virtualLeafRecordSerializer,
                 new Id.IdKeySerializer(),
                 numEntities,
-                Integer.toString(roundsBeforeFlush));
+                Integer.toString(roundsBeforeFlush), false);
 
         final var rand = new Random();
         txProcessor = new TransactionProcessor<>(

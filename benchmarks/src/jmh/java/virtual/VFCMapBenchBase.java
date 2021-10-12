@@ -17,10 +17,10 @@ public class VFCMapBenchBase {
 
     protected static <K extends VirtualKey, V extends VirtualValue> VirtualMap<K,V> createMap(
             DataSourceType type,
-            VirtualLeafRecordSerializer<K,V> virtualLeafRecordSerializer,
+            VirtualLeafRecordSerializer<K, V> virtualLeafRecordSerializer,
             KeySerializer<K> keySerializer,
             long numEntities,
-            String extraPath) throws IOException {
+            String extraPath, boolean preferDiskBasedIndexes) throws IOException {
 
         VirtualMap<K,V> map;
         //noinspection CommentedOutCode
@@ -49,7 +49,7 @@ public class VFCMapBenchBase {
                         numEntities,
                         true,
                         Long.MAX_VALUE,
-                        false));
+                        preferDiskBasedIndexes));
                 break;
             case jasperdbIhDisk:
             default:
@@ -61,7 +61,7 @@ public class VFCMapBenchBase {
                         numEntities,
                         true,
                         0,
-                        false));
+                        preferDiskBasedIndexes));
                 break;
             case jasperdbIhHalf:
                 map = new VirtualMap<>(new VirtualDataSourceJasperDB<>(
@@ -72,7 +72,7 @@ public class VFCMapBenchBase {
                         numEntities,
                         true,
                         numEntities/2,
-                        false));
+                        preferDiskBasedIndexes));
                 break;
         }
         return map;

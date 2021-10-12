@@ -78,6 +78,9 @@ public class ContractBench {
     @Param("true") // TODO Remove and replace with a benchmark that measures additions?
     public boolean preFill;
 
+    @Param("false")
+    public boolean preferDiskBasedIndexes;
+
     @Param({/*"lmdb",*/ "jasperdbIhRam","jasperdbIhDisk","jasperdbIhHalf"})
     public DataSourceType dsType;
 
@@ -121,7 +124,7 @@ public class ContractBench {
                 virtualLeafRecordSerializer,
                 new ContractKeySerializer(),
                 estimatedNumKeyValuePairs,
-                Integer.toString(roundsBeforeFlush));
+                Integer.toString(roundsBeforeFlush), preferDiskBasedIndexes);
 
         txProcessor = new TransactionProcessor<>(
                 preFetchEventHandlers,
