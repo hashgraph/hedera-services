@@ -82,7 +82,7 @@ class CallLocalExecutorTest {
 	void processingSuccessful() {
 		// setup:
 		final var transactionProcessingResult = TransactionProcessingResult
-				.successful(new ArrayList<>(), 0, 1, Bytes.EMPTY, callerID.asEvmAddress());
+				.successful(new ArrayList<>(), 0, 0,1, Bytes.EMPTY, callerID.asEvmAddress());
 		final var expected = response(OK, transactionProcessingResult);
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
@@ -101,7 +101,7 @@ class CallLocalExecutorTest {
 	void processingReturnsModificationHaltReason() {
 		// setup:
 		final var transactionProcessingResult = TransactionProcessingResult
-				.failed(0, 1, Optional.empty(), Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE));
+				.failed(0, 0, 1, Optional.empty(), Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE));
 		final var expected = response(LOCAL_CALL_MODIFICATION_EXCEPTION, transactionProcessingResult);
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
@@ -120,7 +120,7 @@ class CallLocalExecutorTest {
 	void processingReturnsInvalidSolidityAddressHaltReason() {
 		// setup:
 		final var transactionProcessingResult = TransactionProcessingResult
-				.failed(0, 1, Optional.empty(), Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
+				.failed(0, 0, 1, Optional.empty(), Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
 		final var expected = response(INVALID_SOLIDITY_ADDRESS, transactionProcessingResult);
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
@@ -139,7 +139,7 @@ class CallLocalExecutorTest {
 	void processingReturnsRevertReason() {
 		// setup:
 		final var transactionProcessingResult = TransactionProcessingResult
-				.failed(0, 1, Optional.of(Bytes.of("out of gas".getBytes())), Optional.empty());
+				.failed(0, 0, 1, Optional.of(Bytes.of("out of gas".getBytes())), Optional.empty());
 		final var expected = response(CONTRACT_REVERT_EXECUTED, transactionProcessingResult);
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));

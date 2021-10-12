@@ -78,7 +78,7 @@ public class RecordsSuite extends HapiApiSuite {
 								.gas(300_000L)
 								.via("bigCall")
 				).then(
-						getTxnRecord("bigCall").logged()
+						getTxnRecord("bigCall")
 				);
 	}
 

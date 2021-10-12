@@ -176,7 +176,7 @@ public class TransactionRecordService {
 	public void externaliseEvmCreateTransaction(TransactionProcessingResult result) {
 		txnCtx.setStatus(getStatus(result, SUCCESS));
 		txnCtx.setCreateResult(result.toGrpc());
-		txnCtx.addNonThresholdFeeChargedToPayer(result.getGasPrice() * result.getGasUsed());
+		txnCtx.addNonThresholdFeeChargedToPayer(result.getGasPrice() * (result.getGasUsed() - result.getSbhRefund()));
 	}
 
 	/**
@@ -188,6 +188,6 @@ public class TransactionRecordService {
 	public void externaliseEvmCallTransaction(TransactionProcessingResult result) {
 		txnCtx.setStatus(getStatus(result, SUCCESS));
 		txnCtx.setCallResult(result.toGrpc());
-		txnCtx.addNonThresholdFeeChargedToPayer(result.getGasPrice() * result.getGasUsed());
+		txnCtx.addNonThresholdFeeChargedToPayer(result.getGasPrice() * (result.getGasUsed() - result.getSbhRefund()));
 	}
 }

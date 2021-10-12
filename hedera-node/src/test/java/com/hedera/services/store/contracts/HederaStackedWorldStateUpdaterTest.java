@@ -28,6 +28,7 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.worldstate.AbstractWorldUpdater;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -89,9 +90,12 @@ class HederaStackedWorldStateUpdaterTest {
 	@Test
 	void revert() {
 		subject.getSponsorMap().put(Address.ECREC, Address.RIPEMD160);
+		subject.addSbhRefund(Gas.of(123L));
 		assertEquals(1, subject.getSponsorMap().size());
+		assertEquals(123L, subject.getSbhRefund().toLong());
 		subject.revert();
 		assertEquals(0, subject.getSponsorMap().size());
+		assertEquals(0, subject.getSbhRefund().toLong());
 	}
 
 	@Test

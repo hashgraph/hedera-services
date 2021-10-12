@@ -72,6 +72,10 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class TransactionRecordServiceTest {
 
+	private static final Long GAS_USED = 1234L;
+	private static final Long SBH_REFUND = 234L;
+	private static final Long NON_THRESHOLD_FEE = GAS_USED - SBH_REFUND;
+
 	@Mock private TransactionContext txnCtx;
 	@Mock private TransactionProcessingResult processingResult;
 	@Mock private ContractFunctionResult functionResult;
@@ -92,7 +96,7 @@ class TransactionRecordServiceTest {
 		// then:
 		verify(txnCtx).setStatus(SUCCESS);
 		verify(txnCtx).setCreateResult(processingResult.toGrpc());
-		verify(txnCtx).addNonThresholdFeeChargedToPayer(2L);
+		verify(txnCtx).addNonThresholdFeeChargedToPayer(NON_THRESHOLD_FEE);
 	}
 
 	@Test
@@ -104,7 +108,7 @@ class TransactionRecordServiceTest {
 		// then:
 		verify(txnCtx).setStatus(SUCCESS);
 		verify(txnCtx).setCallResult(processingResult.toGrpc());
-		verify(txnCtx).addNonThresholdFeeChargedToPayer(2L);
+		verify(txnCtx).addNonThresholdFeeChargedToPayer(NON_THRESHOLD_FEE);
 	}
 
 	@Test
@@ -116,7 +120,7 @@ class TransactionRecordServiceTest {
 		// then:
 		verify(txnCtx).setStatus(CONTRACT_EXECUTION_EXCEPTION);
 		verify(txnCtx).setCreateResult(processingResult.toGrpc());
-		verify(txnCtx).addNonThresholdFeeChargedToPayer(2L);
+		verify(txnCtx).addNonThresholdFeeChargedToPayer(NON_THRESHOLD_FEE);
 	}
 
 	@Test
@@ -128,7 +132,7 @@ class TransactionRecordServiceTest {
 		// then:
 		verify(txnCtx).setStatus(OBTAINER_SAME_CONTRACT_ID);
 		verify(txnCtx).setCreateResult(processingResult.toGrpc());
-		verify(txnCtx).addNonThresholdFeeChargedToPayer(2L);
+		verify(txnCtx).addNonThresholdFeeChargedToPayer(NON_THRESHOLD_FEE);
 	}
 
 	@Test
@@ -140,7 +144,7 @@ class TransactionRecordServiceTest {
 		// then:
 		verify(txnCtx).setStatus(ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS);
 		verify(txnCtx).setCreateResult(processingResult.toGrpc());
-		verify(txnCtx).addNonThresholdFeeChargedToPayer(2L);
+		verify(txnCtx).addNonThresholdFeeChargedToPayer(NON_THRESHOLD_FEE);
 	}
 
 	@Test
@@ -152,7 +156,7 @@ class TransactionRecordServiceTest {
 		// then:
 		verify(txnCtx).setStatus(ResponseCodeEnum.INVALID_SIGNATURE);
 		verify(txnCtx).setCreateResult(processingResult.toGrpc());
-		verify(txnCtx).addNonThresholdFeeChargedToPayer(2L);
+		verify(txnCtx).addNonThresholdFeeChargedToPayer(NON_THRESHOLD_FEE);
 	}
 
 	@Test
@@ -307,7 +311,8 @@ class TransactionRecordServiceTest {
 		given(processingResult.isSuccessful()).willReturn(isSuccessful);
 		given(processingResult.toGrpc()).willReturn(functionResult);
 		given(processingResult.getGasPrice()).willReturn(1L);
-		given(processingResult.getGasUsed()).willReturn(2L);
+		given(processingResult.getSbhRefund()).willReturn(SBH_REFUND);
+		given(processingResult.getGasUsed()).willReturn(GAS_USED);
 		if (haltReason != null) {
 			given(processingResult.getHaltReason()).willReturn(Optional.of(haltReason));
 		}

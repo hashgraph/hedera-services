@@ -23,6 +23,7 @@ package com.hedera.services.store.contracts;
  */
 
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.worldstate.AbstractWorldUpdater;
 import org.hyperledger.besu.evm.worldstate.StackedUpdater;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -36,6 +37,7 @@ public class HederaStackedWorldStateUpdater
 
 	final HederaMutableWorldState worldState;
 	final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
+	private Gas sbhRefund = Gas.ZERO;
 
 	public HederaStackedWorldStateUpdater(
 			final AbstractWorldUpdater<HederaWorldState, HederaWorldState.WorldStateAccount> updater,
@@ -56,17 +58,30 @@ public class HederaStackedWorldStateUpdater
 	}
 
 	@Override
+	public Gas getSbhRefund() {
+		return sbhRefund;
+	}
+
+	@Override
+	public void addSbhRefund(Gas refund) {
+		sbhRefund = sbhRefund.plus(refund);
+	}
+
+	@Override
 	public void revert() {
 		for (int i = 0; i < sponsorMap.size(); i++) {
 			worldState.reclaimContractId();
 		}
 		sponsorMap.clear();
+		sbhRefund = Gas.ZERO;
 		super.revert();
 	}
 
 	@Override
 	public void commit() {
 		((HederaWorldUpdater) wrappedWorldView()).getSponsorMap().putAll(sponsorMap);
+		((HederaWorldUpdater) wrappedWorldView()).addSbhRefund(sbhRefund);
+		sbhRefund = Gas.ZERO;
 		super.commit();
 	}
 

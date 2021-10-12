@@ -215,7 +215,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 						contractCreate("testContract")
 								.balance(1L)
 								.bytecode("contractFile")
-								.hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION)
+								.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 				);
 	}
 

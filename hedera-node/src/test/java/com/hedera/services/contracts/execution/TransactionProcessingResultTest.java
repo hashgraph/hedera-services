@@ -46,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class TransactionProcessingResultTest {
 
 	private static final long GAS_USAGE = 1234L;
+	private static final long GAS_REFUND = 345L;
 	private static final long GAS_PRICE = 1234L;
 	private final Account logger = new Account(new Id(0, 0, 1002));
 
@@ -92,6 +93,7 @@ class TransactionProcessingResultTest {
 		var result = TransactionProcessingResult.successful(
 				logList,
 				GAS_USAGE,
+				GAS_REFUND,
 				1234L,
 				Bytes.EMPTY,
 				recipient.getId().asEvmAddress());
@@ -99,6 +101,7 @@ class TransactionProcessingResultTest {
 
 		assertEquals(expect.getGasUsed(), result.getGasUsed());
 
+		assertEquals(GAS_REFUND, result.getSbhRefund());
 		assertEquals(Optional.empty(), result.getHaltReason());
 		assertEquals(expect.getBloom(), result.toGrpc().getBloom());
 		assertEquals(expect.getContractID(), result.toGrpc().getContractID());
@@ -129,19 +132,21 @@ class TransactionProcessingResultTest {
 		expect.setContractID(EntityIdUtils.contractParsedFromSolidityAddress(recipient.getId().asEvmAddress().toArray()));
 		expect.setErrorMessageBytes(ByteString.copyFrom(revertReason.get().toArray()));
 
-		var result = TransactionProcessingResult.failed(GAS_USAGE, GAS_PRICE, revertReason, Optional.of(exception));
+		var result = TransactionProcessingResult.failed(GAS_USAGE, GAS_REFUND, GAS_PRICE, revertReason, Optional.of(exception));
 
 		assertEquals(expect.getGasUsed(), result.getGasUsed());
 		assertEquals(GAS_PRICE, result.getGasPrice());
+		assertEquals(GAS_REFUND, result.getSbhRefund());
 		assertEquals(Optional.of(exception), result.getHaltReason());
 		assertEquals(revertReason.toString(), result.toGrpc().getErrorMessage());
 	}
 
 	@Test
-	void assertGasPrise() {
+	void assertGasPrice() {
 		var result = TransactionProcessingResult.successful(
 				List.of(log),
 				GAS_USAGE,
+				GAS_REFUND,
 				GAS_PRICE,
 				Bytes.EMPTY,
 				recipient.getId().asEvmAddress());
@@ -150,10 +155,24 @@ class TransactionProcessingResultTest {
 	}
 
 	@Test
+	void assertSbhRefund() {
+		var result = TransactionProcessingResult.successful(
+				List.of(log),
+				GAS_USAGE,
+				GAS_REFUND,
+				GAS_PRICE,
+				Bytes.EMPTY,
+				recipient.getId().asEvmAddress());
+
+		assertEquals(GAS_REFUND, result.getSbhRefund());
+	}
+
+	@Test
 	void assertGasUsage() {
 		var result = TransactionProcessingResult.successful(
 				List.of(log),
 				GAS_USAGE,
+				GAS_REFUND,
 				GAS_PRICE,
 				Bytes.EMPTY,
 				recipient.getId().asEvmAddress());
@@ -166,6 +185,7 @@ class TransactionProcessingResultTest {
 		var result = TransactionProcessingResult.successful(
 				List.of(log),
 				GAS_USAGE,
+				GAS_REFUND,
 				GAS_PRICE,
 				Bytes.EMPTY,
 				recipient.getId().asEvmAddress());

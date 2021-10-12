@@ -41,6 +41,7 @@ import org.ethereum.vm.DataWord;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.AccountStorageEntry;
 import org.hyperledger.besu.evm.worldstate.AbstractWorldUpdater;
@@ -315,6 +316,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 			implements HederaWorldUpdater {
 
 		final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
+		Gas sbhRefund = Gas.ZERO;
 
 		protected Updater(final HederaWorldState world) {
 			super(world);
@@ -346,6 +348,16 @@ public class HederaWorldState implements HederaMutableWorldState {
 		}
 
 		@Override
+		public Gas getSbhRefund() {
+			return sbhRefund;
+		}
+
+		@Override
+		public void addSbhRefund(Gas refund) {
+			sbhRefund = sbhRefund.plus(refund);
+		}
+
+		@Override
 		public void revert() {
 			getDeletedAccounts().clear();
 			getUpdatedAccounts().clear();
@@ -353,6 +365,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 				wrappedWorldView().reclaimContractId();
 			}
 			sponsorMap.clear();
+			sbhRefund = Gas.ZERO;
 		}
 
 		@Override

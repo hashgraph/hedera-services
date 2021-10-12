@@ -61,6 +61,7 @@ public class TransactionProcessingResult {
 
 	private final Bytes output;
 	private final long gasUsed;
+	private final long sbhRefund;
 	private final long gasPrice;
 	private final Status status;
 	private final List<Log> logs;
@@ -72,6 +73,7 @@ public class TransactionProcessingResult {
 
 	public static TransactionProcessingResult failed(
 			final long gasUsed,
+			final long sbhRefund,
 			final long gasPrice,
 			final Optional<Bytes> revertReason,
 			final Optional<ExceptionalHaltReason> haltReason) {
@@ -79,6 +81,7 @@ public class TransactionProcessingResult {
 				Status.FAILED,
 				new ArrayList<>(),
 				gasUsed,
+				sbhRefund,
 				gasPrice,
 				Bytes.EMPTY,
 				Optional.empty(),
@@ -89,6 +92,7 @@ public class TransactionProcessingResult {
 	public static TransactionProcessingResult successful(
 			final List<Log> logs,
 			final long gasUsed,
+			final long sbhRefund,
 			final long gasPrice,
 			final Bytes output,
 			final Address recipient) {
@@ -96,6 +100,7 @@ public class TransactionProcessingResult {
 				Status.SUCCESSFUL,
 				logs,
 				gasUsed,
+				sbhRefund,
 				gasPrice,
 				output,
 				Optional.of(recipient),
@@ -107,6 +112,7 @@ public class TransactionProcessingResult {
 			final Status status,
 			final List<Log> logs,
 			final long gasUsed,
+			final long sbhRefund,
 			final long gasPrice,
 			final Bytes output,
 			final Optional<Address> recipient,
@@ -116,6 +122,7 @@ public class TransactionProcessingResult {
 		this.output = output;
 		this.status = status;
 		this.gasUsed = gasUsed;
+		this.sbhRefund = sbhRefund;
 		this.gasPrice = gasPrice;
 		this.recipient = recipient;
 		this.haltReason = haltReason;
@@ -144,6 +151,10 @@ public class TransactionProcessingResult {
 	}
 
 	public long getGasUsed() { return gasUsed; }
+
+	public long getSbhRefund() {
+		return sbhRefund;
+	}
 
 	/**
 	 * Returns the exceptional halt reason

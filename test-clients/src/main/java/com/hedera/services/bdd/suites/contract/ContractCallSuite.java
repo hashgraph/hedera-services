@@ -774,9 +774,9 @@ public class ContractCallSuite extends HapiApiSuite {
 									.payingWith("payer")
 									.gas(300_000L)
 									.hasKnownStatus(SUCCESS)
-									.via("setValue").logged();
+									.via("setValue");
 
-							var subop3 = getTxnRecord("setValue").logged();
+							var subop3 = getTxnRecord("setValue");
 							allRunFor(spec, subop1, subop2, subop3);
 							long delta = subop3.getResponseRecord().getTransactionFee();
 

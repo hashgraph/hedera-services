@@ -85,7 +85,7 @@ public class HederaSStoreOperation extends AbstractOperation {
 			Wei gasPrice = frame.getGasPrice();
 			gasCost = Gas.of(calculateStorageGasNeeded(
 					64 /*two 256-bit words*/, durationInSeconds, sbh, gasPrice.toLong()));
-			frame.incrementGasRefund(gasCost);
+			((HederaWorldUpdater)frame.getWorldUpdater()).addSbhRefund(gasCost);
 		} else {
 			checkCalculator = true;
 		}

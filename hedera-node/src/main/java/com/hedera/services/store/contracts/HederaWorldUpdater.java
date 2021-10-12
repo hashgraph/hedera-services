@@ -23,6 +23,7 @@ package com.hedera.services.store.contracts;
  */
 
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 import java.util.Map;
@@ -61,4 +62,21 @@ public interface HederaWorldUpdater extends WorldUpdater {
 	 * @return the hedera world state account
 	 */
 	HederaWorldState.WorldStateAccount getHederaAccount(Address address);
+
+	/**
+	 * Tracks how much Gas should be refunded to the sender account for the TX. SBH price is refunded for the first
+	 * allocation of new contract storage in order to prevent double charging the client.
+	 *
+	 * @return the amount of Gas to refund;
+	 */
+	Gas getSbhRefund();
+
+	/**
+	 * Used to keep track of SBH gas refunds between all instances of HederaWorldUpdater. Lower level updaters should
+	 * add the value of Gas to refund to their respective parent Updater on commit.
+	 *
+	 * @param refund
+	 * 	the amount of Gas to refund;
+	 */
+	void addSbhRefund(Gas refund);
 }

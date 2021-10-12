@@ -41,6 +41,7 @@ import org.ethereum.db.ServicesRepositoryRoot;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.Gas;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -254,6 +255,11 @@ class HederaWorldStateTest {
 		actualSubject.sponsorMap.put(Address.ZERO, mockedZeroAcc);
 		actualSubject.revert();
 		assertEquals(0, actualSubject.sponsorMap.size());
+
+		actualSubject.addSbhRefund(Gas.of(234L));
+		assertEquals(234L, actualSubject.getSbhRefund().toLong());
+		actualSubject.revert();
+		assertEquals(0, actualSubject.getSbhRefund().toLong());
 	}
 
 	@Test

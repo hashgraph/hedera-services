@@ -223,6 +223,7 @@ class ContractCreateTransitionLogicTest {
 				.successful(
 						null,
 						1234L,
+						0L,
 						124L,
 						Bytes.EMPTY,
 						contractAccount.getId().asEvmAddress());
@@ -269,7 +270,7 @@ class ContractCreateTransitionLogicTest {
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		var expiry = RequestBuilder.getExpirationTime(consensusTime,
 				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();
-		var result = TransactionProcessingResult.failed(1234L, 124L, Optional.empty(), Optional.empty());
+		var result = TransactionProcessingResult.failed(1234L, 0L, 124L, Optional.empty(), Optional.empty());
 		given(evmTxProcessor.execute(
 				senderAccount,
 				contractAccount.getId().asEvmAddress(),
@@ -305,6 +306,7 @@ class ContractCreateTransitionLogicTest {
 				.successful(
 						null,
 						1234L,
+						0L,
 						124L,
 						Bytes.EMPTY,
 						contractAccount.getId().asEvmAddress());
