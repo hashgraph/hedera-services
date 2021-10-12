@@ -16,11 +16,14 @@
 
 package com.hedera.services.store.models;
 
+import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.state.merkle.MerkleTopic;
+
+import java.util.ArrayList;
 
 /**
  * A utility class responsible for the mapping between a {@link Topic} and {@link MerkleTopic} ( and vice-versa ).
- * 
+ *
  * @author Yoan Sredkov
  */
 public class TopicConversion {
@@ -35,13 +38,29 @@ public class TopicConversion {
 		return modelTopic;
 	}
 
+	/**
+	 * Maps the model topic's fields with the fields of the Merkle topic
+	 *
+	 * @param model       The source model topic
+	 * @param merkleTopic The targeted Merkle topic
+	 */
+	public static void mapModelChangesToMerkle(final Topic model, final MerkleTopic merkleTopic) {
+		modelToMerkle(model, merkleTopic);
+	}
+
 	private static void merkleToModel(final MerkleTopic merkle, final Topic model) {
-		model.setAdminKey(merkle.getAdminKey());
-		model.setSubmitKey(merkle.getSubmitKey());
-		model.setMemo(merkle.getMemo());
-		if (merkle.getAutoRenewAccountId() != null) {
+		if (JKeyList.equalUpToDecodability(merkle.getAdminKey(), new JKeyList(new ArrayList<>()))) {
+			model.setAdminKey(null);
+		} else {
+			model.setAdminKey(merkle.getAdminKey());
+		}
+		if (merkle.hasSubmitKey()) {
+			model.setSubmitKey(merkle.getSubmitKey());
+		}
+		if (merkle.hasAutoRenewAccountId()) {
 			model.setAutoRenewAccountId(merkle.getAutoRenewAccountId().asId());
 		}
+		model.setMemo(merkle.getMemo());
 		model.setAutoRenewDurationSeconds(merkle.getAutoRenewDurationSeconds());
 		model.setExpirationTimestamp(merkle.getExpirationTimestamp());
 		model.setDeleted(merkle.isDeleted());
@@ -53,12 +72,12 @@ public class TopicConversion {
 		modelToMerkle(model, merkle);
 		return merkle;
 	}
-	
+
 	/**
 	 * Maps properties between a model {@link Topic} and a {@link MerkleTopic}
 	 *
-	 * @param model - the Topic model which will be used to map into a MerkleTopic
-	 * @param merkle - the merkle topic
+	 * @param model  the Topic model which will be used to map into a MerkleTopic
+	 * @param merkle the merkle topic
 	 */
 	private static void modelToMerkle(final Topic model, final MerkleTopic merkle) {
 		merkle.setAdminKey(model.getAdminKey());

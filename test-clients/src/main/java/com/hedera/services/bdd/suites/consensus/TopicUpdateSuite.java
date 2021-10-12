@@ -37,6 +37,8 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.deleteTopic;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
@@ -77,7 +79,8 @@ public class TopicUpdateSuite extends HapiApiSuite {
 						clearingAdminKeyWhenAutoRenewAccountPresent(),
 						feeAsExpected(),
 						updateExpiryOnTopicWithNoAdminKey(),
-						updateToMissingTopicFails()
+						updateToMissingTopicFails(),
+						topicIsUsableAfterUpdate()
 				}
 		);
 	}
@@ -85,6 +88,34 @@ public class TopicUpdateSuite extends HapiApiSuite {
 	@Override
 	public boolean canRunAsync() {
 		return true;
+	}
+	
+	private HapiApiSpec topicIsUsableAfterUpdate() {
+		return defaultHapiSpec("topicIsUsableAfterUpdate")
+				.given(
+						newKeyNamed("adminKey"),
+						newKeyNamed("submitKey"),
+						createTopic("topic")
+								.adminKeyName("adminKey")
+								.submitKeyName("submitKey")
+				).when(
+						submitMessageTo("topic")
+								.message("someRandomMessage")
+								.hasKnownStatus(SUCCESS),
+						updateTopic("topic")
+								.topicMemo("memo")
+								.hasKnownStatus(SUCCESS)
+				).then(
+						submitMessageTo("topic")
+								.message("someRandomMessage")
+								.hasKnownStatus(SUCCESS),
+						getTopicInfo("topic")
+								.hasMemo("memo")
+								.hasAdminKey("adminKey")
+								.hasSubmitKey("submitKey")
+								.hasSeqNo(2),
+						deleteTopic("topic").hasKnownStatus(SUCCESS)
+				);
 	}
 
 	private HapiApiSpec updateToMissingTopicFails() {

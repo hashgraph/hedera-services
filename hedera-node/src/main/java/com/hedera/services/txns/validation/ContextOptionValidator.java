@@ -133,7 +133,6 @@ public class ContextOptionValidator implements OptionValidator {
 			throw new InvalidTransactionException(ResponseCodeEnum.BAD_ENCODING);
 		}
 	}
-	
 
 	@Override
 	public ResponseCodeEnum nftMetadataCheck(byte[] metadata) {

@@ -26,8 +26,8 @@ import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.merkle.map.MerkleMap;
 
@@ -132,12 +132,13 @@ public class AccountStore {
 	private void validateUsable(MerkleAccount merkleAccount, @Nullable ResponseCodeEnum explicitResponse) {
 		validateTrue(merkleAccount != null, explicitResponse != null ? explicitResponse : INVALID_ACCOUNT_ID);
 		validateFalse(merkleAccount.isDeleted(), explicitResponse != null ? explicitResponse : ACCOUNT_DELETED);
-		if (dynamicProperties.autoRenewEnabled()) {
-			if (merkleAccount.getBalance() == 0) {
-				final boolean isExpired = !validator.isAfterConsensusSecond(merkleAccount.getExpiry());
-				validateFalse(isExpired, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-			}
-		}
+
+		final var accountIsDetached = dynamicProperties.autoRenewEnabled()
+				&& !merkleAccount.isSmartContract()
+				&& merkleAccount.getBalance() == 0L
+				&& !validator.isAfterConsensusSecond(merkleAccount.getExpiry());
+
+		validateFalse(accountIsDetached, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 	}
 
 	public OptionValidator getValidator() {

@@ -16,13 +16,19 @@ package com.hedera.services.store.models;
  * limitations under the License.
  */
 
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.Optional;
 
+import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -77,6 +83,37 @@ class TopicTest {
 
 		topic.setAutoRenewDurationSeconds(10L);
 		assertEquals(10L, topic.getAutoRenewDurationSeconds());
+
+		topic.setNew(true);
+		assertTrue(topic.isNew());
 	}
 
+	@Test
+	void updatesAsExpected() {
+		final var oldAdminKey = TxnHandlingScenario.MISC_TOPIC_ADMIN_KT.asJKeyUnchecked();
+		final var newAdminKey = TxnHandlingScenario.TOKEN_ADMIN_KT.asKey();
+		final var submitKey = TxnHandlingScenario.MISC_TOPIC_SUBMIT_KT.asKey();
+
+		final var subject = new Topic(Id.DEFAULT);
+		subject.setExpirationTimestamp(RichInstant.fromJava(Instant.MIN));
+		subject.setAutoRenewDurationSeconds(Instant.MIN.getEpochSecond());
+		subject.setSubmitKey(null);
+		subject.setAdminKey(oldAdminKey);
+		subject.setAutoRenewAccountId(new Id(1, 2, 3));
+		subject.update(
+				Optional.of(Timestamp.newBuilder().setSeconds(Instant.MAX.getEpochSecond()).setNanos(0).build()),
+				Optional.of(newAdminKey),
+				Optional.of(submitKey),
+				Optional.of("memo"),
+				Optional.of(Duration.newBuilder().setSeconds(Instant.MAX.getEpochSecond()).build()),// auto-renew-period
+				Optional.of(new Account(Id.DEFAULT)), // ar - account
+				false,
+				false
+		);
+
+		assertEquals("memo", subject.getMemo());
+		assertNotEquals(asFcKeyUnchecked(newAdminKey), oldAdminKey);
+		assertEquals(Id.DEFAULT, subject.getAutoRenewAccountId());
+		assertEquals(Instant.MAX.getEpochSecond(), subject.getAutoRenewDurationSeconds());
+	}
 }

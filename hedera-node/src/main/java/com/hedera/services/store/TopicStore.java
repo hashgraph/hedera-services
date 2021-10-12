@@ -18,6 +18,7 @@ package com.hedera.services.store;
 
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Topic;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
@@ -26,16 +27,20 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.function.Supplier;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.services.store.models.TopicConversion.fromMerkle;
 import static com.hedera.services.store.models.TopicConversion.fromModel;
+import static com.hedera.services.store.models.TopicConversion.mapModelChangesToMerkle;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 
 /**
  * A store which interacts with the state topics, represented in a {@link MerkleMap}.
- * 
+ *
  * @author Yoan Sredkov
  */
 @Singleton
 public class TopicStore {
-	
+
 	private final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics;
 	private final TransactionRecordService transactionRecordService;
 
@@ -61,5 +66,39 @@ public class TopicStore {
 		merkleTopic.setSequenceNumber(0);
 		currentTopics.put(id, merkleTopic);
 		transactionRecordService.includeChangesToTopic(model);
+	}
+
+	/**
+	 * Performs loading of a given merkle topic from state. The merkle topic is mapped to a model.
+	 * Please note that the model should be explicitly persisted with {@link TopicStore#persistTopic}
+	 * in order to apply the changes made.
+	 *
+	 * @param id
+	 * 		- model ID of the topic to be loaded.
+	 * @return {@link Topic} - the loaded topic
+	 */
+	public Topic loadTopic(Id id) {
+		final var entityNum = id.asEntityNum();
+		final var currentTopics = topics.get();
+		final var merkleTopic = currentTopics.get(entityNum);
+
+		validateUsable(merkleTopic);
+		return fromMerkle(merkleTopic, id);
+	}
+
+	/**
+	 * Persists an updated {@link Topic} into the state, as well as exporting its {@link Id} to the transaction receipt.
+	 * @param source
+	 * 		the model to be mapped onto an updated {@link MerkleTopic} and persisted.
+	 */
+	public void persistTopic(Topic source) {
+		final var target = topics.get().getForModify(source.getId().asEntityNum());
+		mapModelChangesToMerkle(source, target);
+		transactionRecordService.includeChangesToTopic(source);
+	}
+
+	private void validateUsable(MerkleTopic topic) {
+		validateFalse(topic == null, INVALID_TOPIC_ID);
+		validateFalse(topic.isDeleted(), INVALID_TOPIC_ID);
 	}
 }
