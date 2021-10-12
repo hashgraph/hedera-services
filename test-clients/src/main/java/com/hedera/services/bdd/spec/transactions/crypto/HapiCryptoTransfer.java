@@ -72,7 +72,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.HBAR_SENTINEL_TOKEN_ID;
 import static java.util.stream.Collectors.collectingAndThen;
-import static java.util.stream.Collectors.flatMapping;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.reducing;
@@ -384,9 +383,19 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 		Map<TokenID, List<AccountAmount>> aggregated = tokenAwareProviders.stream()
 				.filter(TokenMovement::isFungibleToken)
 				.map(p -> p.specializedFor(spec))
-				.collect(groupingBy(
+				.collect(Collectors.toMap(
 						TokenTransferList::getToken,
-						flatMapping(xfers -> xfers.getTransfersList().stream(), toList())));
+						TokenTransferList::getTransfersList,
+						(left, right) -> Stream.of(left, right).flatMap(Collection::stream).collect(toList())
+								.stream().collect(groupingBy(
+										AccountAmount::getAccountID,
+										summingLong(AccountAmount::getAmount))).entrySet().stream().map(
+												entry ->  AccountAmount.newBuilder()
+														.setAccountID(entry.getKey())
+														.setAmount(entry.getValue())
+														.build()
+								).collect(toList()),
+						LinkedHashMap::new));
 		return aggregated.entrySet().stream()
 				.map(entry -> TokenTransferList.newBuilder()
 						.setToken(entry.getKey())
