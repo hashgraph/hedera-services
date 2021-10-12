@@ -81,22 +81,22 @@ Tests should validate both fungible and non-fungible-unique token types.
    - [x] _(EET)_ A newly created Token is asserted for a `Unpaused` token status.
 
 ### :x:&nbsp;Negative functional
-   - [] _(EET)_ Setup with a A `TokenCreate` with a `pauseKey` and `TokenPause` transaction signed by the this `pausekey` will set the token pause status as `Paused`. `tokenGetInfo` asserts this pause status.
-   - [] _(EET)_ A `TokenCreate` fails with this paused token as denominating token for custom fee.
-   - [] _(EET)_ A `TokenUpdate` fails on this paused token.
-   - [] _(EET)_ A `TokenAssociate` fails on this paused token.
-   - [] _(EET)_ A `TokenDissociate` fails on this paused token.
-   - [] _(EET)_ A `TokenDelete` fails on this paused token.
-   - [] _(EET)_ A `TokenMint` fails on this paused token.
-   - [] _(EET)_ A `TokenWipe` fails on this paused token.
-   - [] _(EET)_ A `TokenBurn` fails on this paused token.
-   - [] _(EET)_ A `TokenFeeze` fails on this paused token.
-   - [] _(EET)_ A `TokenUnfreeze` fails on this paused token.
-   - [] _(EET)_ A `TokenGrantKyc` fails on this paused token.
-   - [] _(EET)_ A `TokenRevokeKyc` fails on this paused token.
-   - [] _(EET)_ A `TokenFeeScheduleUpdate` fails on this paused token.
-   - [] _(EET)_ A `CryptoTransfer` involving this paused token will fail.
-   - [] _(EET)_ A multi-party `CryptoTransfer` rolls back all side-effects if it fails due to a paused Token.
+   - [x] _(EET)_ Setup with a A `TokenCreate` with a `pauseKey` and `TokenPause` transaction signed by the this `pausekey` will set the token pause status as `Paused`. `tokenGetInfo` asserts this pause status.
+   - [x] _(EET)_ A `TokenCreate` fails with this paused token as denominating token for custom fee.
+   - [x] _(EET)_ A `TokenUpdate` fails on this paused token.
+   - [x] _(EET)_ A `TokenAssociate` fails on this paused token.
+   - [x] _(EET)_ A `TokenDissociate` fails on this paused token.
+   - [x] _(EET)_ A `TokenDelete` fails on this paused token.
+   - [x] _(EET)_ A `TokenMint` fails on this paused token.
+   - [x] _(EET)_ A `TokenWipe` fails on this paused token.
+   - [x] _(EET)_ A `TokenBurn` fails on this paused token.
+   - [x] _(EET)_ A `TokenFeeze` fails on this paused token.
+   - [x] _(EET)_ A `TokenUnfreeze` fails on this paused token.
+   - [x] _(EET)_ A `TokenGrantKyc` fails on this paused token.
+   - [x] _(EET)_ A `TokenRevokeKyc` fails on this paused token.
+   - [x] _(EET)_ A `TokenFeeScheduleUpdate` fails on this paused token.
+   - [x] _(EET)_ A `CryptoTransfer` involving this paused token will fail.
+   - [x] _(EET)_ A multi-party `CryptoTransfer` rolls back all side-effects if it fails due to a paused Token.
 
 ### :receipt:&nbsp;Custom fee interplays
    - [] _(EET)_ A `paused` token as denominating token of a custom fee will result in a failure to any transaction that triggers this custom fee.
