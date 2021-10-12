@@ -295,6 +295,7 @@ class CreateEvmTxProcessorTest {
 		given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
 		given(updater.getOrCreate(any())).willReturn(evmAccount);
 		given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
+		given(updater.getSbhRefund()).willReturn(Gas.ZERO);
 
 		var feeData = mock(FeeData.class);
 		given(feeData.getServicedata()).willReturn(mock(FeeComponents.class));

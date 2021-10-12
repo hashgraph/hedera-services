@@ -40,12 +40,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.Deque;
+import java.util.Iterator;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mockStatic;
 
 @ExtendWith(MockitoExtension.class)
 class HederaCreateOperationTest {
@@ -77,6 +77,9 @@ class HederaCreateOperationTest {
 	@Mock
 	private Deque<MessageFrame> messageFrameStack;
 
+	@Mock
+	private Iterator<MessageFrame> iterator;
+
 	private HederaCreateOperation subject;
 
 	@BeforeEach
@@ -97,11 +100,9 @@ class HederaCreateOperationTest {
 		given(lastStackedMsgFrame.getContextVariable("sbh")).willReturn(10L);
 		given(initialFrameBlockValues.getTimestamp()).willReturn(Instant.MAX.getEpochSecond());
 		given(gasPrice.toLong()).willReturn(10000000000L);
+		given(messageFrameStack.iterator()).willReturn(iterator);
+		given(iterator.hasNext()).willReturn(false);
 
-		var hederaOPUtilMock = mockStatic(HederaOperationUtil.class);
-		hederaOPUtilMock.when(() -> {
-			HederaOperationUtil.computeExpiryForNewContract(any());
-		}).thenReturn(100L);
 		given(gasCalculator.createOperationGasCost(any())).willReturn(gas);
 		given(gasCalculator.memoryExpansionGasCost(any(), anyLong(), anyLong())).willReturn(gas);
 		given(gas.plus(any())).willReturn(gas);
