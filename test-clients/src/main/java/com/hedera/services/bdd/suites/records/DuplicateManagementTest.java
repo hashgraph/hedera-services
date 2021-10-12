@@ -33,7 +33,7 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.includingDeduction;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.getDeduction;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.getNonFeeDeduction;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
@@ -88,15 +88,18 @@ public class DuplicateManagementTest extends HapiApiSuite {
 						sleepFor(1_000L)
 				).then(
 						getReceipt("txnId").andAnyDuplicates()
+								.payingWith("civilian")
 								.hasPriorityStatus(SUCCESS)
 								.hasDuplicateStatuses(
 										DUPLICATE_TRANSACTION,
 										DUPLICATE_TRANSACTION),
 						getTxnRecord("txnId")
+								.payingWith("civilian")
 								.via("cheapTxn")
 								.assertingNothingAboutHashes()
 								.hasPriority(recordWith().status(SUCCESS)),
 						getTxnRecord("txnId").andAnyDuplicates()
+								.payingWith("civilian")
 								.via("costlyTxn")
 								.assertingNothingAboutHashes()
 								.hasPriority(recordWith().status(SUCCESS))
@@ -106,21 +109,21 @@ public class DuplicateManagementTest extends HapiApiSuite {
 						sleepFor(1_000L),
 						withOpContext((spec, opLog) -> {
 							var cheapGet = getTxnRecord("cheapTxn")
-									.assertingNothingAboutHashes()
-									.logged();
+									.assertingNothingAboutHashes();
 							var costlyGet = getTxnRecord("costlyTxn")
-									.assertingNothingAboutHashes()
-									.logged();
+									.assertingNothingAboutHashes();
 							allRunFor(spec, cheapGet, costlyGet);
 							var payer = spec.registry().getAccountID("civilian");
 							var cheapRecord = cheapGet.getResponseRecord();
 							var costlyRecord = costlyGet.getResponseRecord();
-							var cheapPrice = getDeduction(cheapRecord.getTransferList(), payer).orElse(0);
-							var costlyPrice = getDeduction(costlyRecord.getTransferList(), payer).orElse(0);
+							opLog.info("cheapRecord: {}", cheapRecord);
+							opLog.info("costlyRecord: {}", costlyRecord);
+							var cheapPrice = getNonFeeDeduction(cheapRecord).orElse(0);
+							var costlyPrice = getNonFeeDeduction(costlyRecord).orElse(0);
 							assertEquals(
-									costlyPrice, 3 * cheapPrice,
+									3 * cheapPrice, costlyPrice,
 									String.format("Costly (%d) should be 3x more expensive than cheap (%d)!",
-											cheapPrice, costlyPrice));
+											costlyPrice, cheapPrice));
 						})
 				);
 	}

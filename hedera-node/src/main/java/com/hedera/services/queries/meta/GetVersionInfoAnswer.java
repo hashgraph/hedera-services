@@ -27,37 +27,40 @@ import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoResponse;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.ResponseType;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
 @Singleton
-public class GetVersionInfoAnswer extends AbstractAnswer {
+public final class GetVersionInfoAnswer extends AbstractAnswer {
 	private final SemanticVersions semanticVersions;
 
 	@Inject
-	public GetVersionInfoAnswer(SemanticVersions semanticVersions) {
+	public GetVersionInfoAnswer(final SemanticVersions semanticVersions) {
 		super(
 				GetVersionInfo,
 				query -> query.getNetworkGetVersionInfo().getHeader().getPayment(),
 				query -> query.getNetworkGetVersionInfo().getHeader().getResponseType(),
 				response -> response.getNetworkGetVersionInfo().getHeader().getNodeTransactionPrecheckCode(),
-				(query, view) -> semanticVersions.getDeployed().isPresent() ? OK : FAIL_INVALID);
+				(query, view) -> OK);
 		this.semanticVersions = semanticVersions;
 	}
 
 	@Override
-	public Response responseGiven(Query query, StateView view, ResponseCodeEnum validity, long cost) {
-		var op = query.getNetworkGetVersionInfo();
-		var response = NetworkGetVersionInfoResponse.newBuilder();
+	public Response responseGiven(
+			final Query query,
+			final StateView view,
+			final ResponseCodeEnum validity,
+			final long cost
+	) {
+		final var op = query.getNetworkGetVersionInfo();
+		final var response = NetworkGetVersionInfoResponse.newBuilder();
 
-		ResponseType type = op.getHeader().getResponseType();
+		final var type = op.getHeader().getResponseType();
 		if (validity != OK) {
 			response.setHeader(header(validity, type, cost));
 		} else {
@@ -65,7 +68,7 @@ public class GetVersionInfoAnswer extends AbstractAnswer {
 				response.setHeader(costAnswerHeader(OK, cost));
 			} else {
 				response.setHeader(answerOnlyHeader(OK));
-				var answer = semanticVersions.getDeployed().get();
+				final var answer = semanticVersions.getDeployed();
 				response.setHapiProtoVersion(answer.protoSemVer());
 				response.setHederaServicesVersion(answer.hederaSemVer());
 			}

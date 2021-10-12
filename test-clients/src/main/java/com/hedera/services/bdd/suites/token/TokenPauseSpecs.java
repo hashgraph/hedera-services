@@ -1,5 +1,25 @@
 package com.hedera.services.bdd.suites.token;
 
+/*-
+ * ‌
+ * Hedera Services Test Clients
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -34,6 +54,7 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fix
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
@@ -59,7 +80,8 @@ public class TokenPauseSpecs extends HapiApiSuite {
 				cannotChangePauseStatusIfMissingPauseKey(),
 				pausedFungibleTokenCannotBeUsed(),
 				pausedNonFungibleUniqueCannotBeUsed(),
-				unpauseWorks()
+				unpauseWorks(),
+				basePauseAndUnpauseHaveExpectedPrices()
 		});
 	}
 
@@ -272,6 +294,44 @@ public class TokenPauseSpecs extends HapiApiSuite {
 						tokenUnpause("non-fungible-unique-primary")
 								.signedBy(GENESIS)
 								.hasKnownStatus(ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY)
+				);
+	}
+
+	private HapiApiSpec basePauseAndUnpauseHaveExpectedPrices() {
+		final var expectedBaseFee = 0.001;
+		final var pauseKey = "pauseKey";
+		final var token = "token";
+		final var tokenPauseTransaction = "tokenPauseTxn";
+		final var tokenUnpauseTransaction = "tokenUnpauseTxn";
+		final var civilian = "NonExemptPayer";
+
+		return defaultHapiSpec("BasePauseAndUnpauseHaveExpectedPrices")
+				.given(
+						cryptoCreate(TOKEN_TREASURY),
+						newKeyNamed(pauseKey),
+						cryptoCreate(civilian).key(pauseKey)
+				)
+				.when(
+						tokenCreate(token)
+								.pauseKey(pauseKey)
+								.treasury(TOKEN_TREASURY)
+								.payingWith(civilian),
+						tokenPause(token)
+								.blankMemo()
+								.payingWith(civilian)
+								.via(tokenPauseTransaction),
+						getTokenInfo(token)
+								.hasPauseStatus(TokenPauseStatus.Paused),
+						tokenUnpause(token)
+								.blankMemo()
+								.payingWith(civilian)
+								.via(tokenUnpauseTransaction),
+						getTokenInfo(token)
+								.hasPauseStatus(TokenPauseStatus.Unpaused)
+						)
+				.then(
+						validateChargedUsd(tokenPauseTransaction, expectedBaseFee),
+						validateChargedUsd(tokenUnpauseTransaction, expectedBaseFee)
 				);
 	}
 }
