@@ -68,4 +68,21 @@ class GasCalculatorHederaUtilTest {
 		verify(hbarCentExchange).rate(timestamp);
 		verify(usagePricesProvider).defaultPricesGiven(HederaFunctionality.ContractCall, timestamp);
 	}
+
+	@Test
+	void assertCalculateLogSize() {
+		var numberOfTopics = 3;
+		var dataSize = 10L;
+		assertEquals(386, GasCalculatorHederaUtil.calculateLogSize(numberOfTopics, dataSize));
+	}
+
+	@Test
+	void assertCalculateStorageGasNeeded() {
+		var durationInSeconds = 10L;
+		var byteHourCostIntinybars = 1000L;
+		var gasPrice = 1234L;
+		var storageCostTinyBars = (durationInSeconds * byteHourCostIntinybars) / 3600;
+		var expectedResult = Math.round((double) storageCostTinyBars / (double) gasPrice);
+		assertEquals(expectedResult, GasCalculatorHederaUtil.calculateStorageGasNeeded(0, durationInSeconds, byteHourCostIntinybars, gasPrice));
+	}
 }

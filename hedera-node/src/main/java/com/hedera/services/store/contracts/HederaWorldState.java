@@ -195,7 +195,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 		private long autoRenew;
 
 		public WorldStateAccount(final Address address, final Wei balance, long expiry, long autoRenew,
-				EntityId proxyAccount) {
+								 EntityId proxyAccount) {
 			this.expiry = expiry;
 			this.address = address;
 			this.balance = balance;
@@ -322,6 +322,10 @@ public class HederaWorldState implements HederaMutableWorldState {
 			super(world);
 		}
 
+		public Map<Address, Address> getSponsorMap() {
+			return sponsorMap;
+		}
+
 		@Override
 		protected WorldStateAccount getForMutation(final Address address) {
 			final HederaWorldState wrapped = wrappedWorldView();
@@ -341,10 +345,6 @@ public class HederaWorldState implements HederaMutableWorldState {
 		@Override
 		public Address allocateNewContractAddress(final Address sponsor) {
 			return wrappedWorldView().newContractAddress(sponsor);
-		}
-
-		public Map<Address, Address> getSponsorMap() {
-			return sponsorMap;
 		}
 
 		@Override

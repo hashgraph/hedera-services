@@ -25,7 +25,6 @@ package com.hedera.services.contracts.gascalculator;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -58,12 +57,12 @@ public class GasCalculatorHederaV19 extends LondonGasCalculator {
 	}
 
 	@Override
-	public Gas codeDepositGasCost(final int codeSize) {
+	public Gas transactionIntrinsicGasCost(final Bytes payload, final boolean isContractCreate) {
 		return Gas.ZERO;
 	}
 
 	@Override
-	public Gas transactionIntrinsicGasCost(final Bytes payload, final boolean isContractCreate) {
+	public Gas codeDepositGasCost(final int codeSize) {
 		return Gas.ZERO;
 	}
 
@@ -73,40 +72,9 @@ public class GasCalculatorHederaV19 extends LondonGasCalculator {
 			final long dataOffset,
 			final long dataLength,
 			final int numTopics) {
-		long logStorageTotalSize = calculateLogSize(numTopics, dataLength);
-		long gasPrice = frame.getGasPrice().toLong();
-		long timestamp = frame.getBlockValues().getTimestamp();
-		HederaFunctionality functionType = getFunctionType(frame);
-		long gasCost = calculateStorageGasNeeded(
-				logStorageTotalSize,
-				getLogStorageDuration(),
-				ramByteHoursTinyBarsGiven(timestamp, functionType),
-				gasPrice);
-		return super.logOperationGasCost(frame, dataOffset, dataLength, numTopics).max(Gas.of(gasCost));
-	}
-
-	protected long ramByteHoursTinyBarsGiven(long consensusTime, HederaFunctionality functionType) {
-		return GasCalculatorHederaUtil.ramByteHoursTinyBarsGiven(usagePrices, exchange, consensusTime, functionType);
-	}
-
-	private HederaFunctionality getFunctionType(MessageFrame frame) {
-		MessageFrame rootFrame = frame.getMessageFrameStack().getLast();
-		return rootFrame.getContextVariable("HederaFunctionality");
-	}
-
-	public static long calculateLogSize(int numberOfTopics, long dataSize) {
-		return LOG_CONTRACT_ID_SIZE + LOG_BLOOM_SIZE + LOG_TOPIC_SIZE * (long) numberOfTopics + dataSize;
-	}
-
-	@SuppressWarnings("unused")
-	public static long calculateStorageGasNeeded(
-			long numberOfBytes,
-			long durationInSeconds,
-			long byteHourCostIntinybars,
-			long gasPrice
-	) {
-		long storageCostTinyBars = (durationInSeconds * byteHourCostIntinybars) / 3600;
-		return Math.round((double) storageCostTinyBars / (double) gasPrice);
+		final var gasCost = GasCalculatorHederaUtil.
+				logOperationGasCost(usagePrices, exchange, frame, getLogStorageDuration(), dataOffset, dataLength, numTopics);
+		return super.logOperationGasCost(frame, dataOffset, dataLength, numTopics).max(gasCost);
 	}
 
 	long getLogStorageDuration() {

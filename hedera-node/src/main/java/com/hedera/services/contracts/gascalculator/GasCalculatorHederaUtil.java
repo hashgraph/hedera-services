@@ -29,11 +29,16 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.fee.FeeBuilder;
+import org.hyperledger.besu.evm.Gas;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * Utility methods used by Hedera adapted {@link org.hyperledger.besu.evm.gascalculator.GasCalculator}
  */
 final class GasCalculatorHederaUtil {
+	private static final int LOG_CONTRACT_ID_SIZE = 24;
+	private static final int LOG_TOPIC_SIZE = 32;
+	private static final int LOG_BLOOM_SIZE = 256;
 
 	private GasCalculatorHederaUtil() {
 		throw new UnsupportedOperationException("Utility Class");
@@ -49,5 +54,46 @@ final class GasCalculatorHederaUtil {
 		long feeInTinyCents = prices.getServicedata().getRbh() / 1000;
 		long feeInTinyBars = FeeBuilder.getTinybarsFromTinyCents(exchange.rate(timestamp), feeInTinyCents);
 		return Math.max(1L, feeInTinyBars);
+	}
+
+	public static long calculateLogSize(int numberOfTopics, long dataSize) {
+		return LOG_CONTRACT_ID_SIZE + LOG_BLOOM_SIZE + LOG_TOPIC_SIZE * (long) numberOfTopics + dataSize;
+	}
+
+	public static long calculateStorageGasNeeded(
+			long numberOfBytes,
+			long durationInSeconds,
+			long byteHourCostIntinybars,
+			long gasPrice
+	) {
+		long storageCostTinyBars = (durationInSeconds * byteHourCostIntinybars) / 3600;
+		return Math.round((double) storageCostTinyBars / (double) gasPrice);
+	}
+
+	public static HederaFunctionality getFunctionType(MessageFrame frame) {
+		MessageFrame rootFrame = frame.getMessageFrameStack().getLast();
+		return rootFrame.getContextVariable("HederaFunctionality");
+	}
+
+	public static Gas logOperationGasCost(
+			final UsagePricesProvider usagePrices,
+			final HbarCentExchange exchange,
+			final MessageFrame frame,
+			final long storageDuration,
+			final long dataOffset,
+			final long dataLength,
+			final int numTopics
+	) {
+		long gasPrice = frame.getGasPrice().toLong();
+		long timestamp = frame.getBlockValues().getTimestamp();
+		long logStorageTotalSize = GasCalculatorHederaUtil.calculateLogSize(numTopics, dataLength);
+		HederaFunctionality functionType = GasCalculatorHederaUtil.getFunctionType(frame);
+		long gasCost = GasCalculatorHederaUtil.calculateStorageGasNeeded(
+				logStorageTotalSize,
+				storageDuration,
+				GasCalculatorHederaUtil.ramByteHoursTinyBarsGiven(usagePrices, exchange, timestamp, functionType),
+				gasPrice);
+
+		return Gas.of(gasCost);
 	}
 }

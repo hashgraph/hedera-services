@@ -42,7 +42,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
 import java.util.ArrayDeque;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -99,45 +98,6 @@ class GasCalculatorHederaV18Test {
 	}
 
 	@Test
-	void assertRamByteHoursTinyBarsGiven() {
-
-		var hbarEquiv = 1000;
-		var centEquiv = 100;
-		var expectedRamResult = hbarEquiv / centEquiv;
-		var consensusTime = Instant.now().getEpochSecond();
-		final var timestamp = Timestamp.newBuilder().setSeconds(consensusTime).build();
-		var feeData = mock(FeeData.class);
-		var exchangeRate = mock(ExchangeRate.class);
-		given(feeData.getServicedata()).willReturn(mock(FeeComponents.class));
-		given(feeData.getServicedata().getRbh()).willReturn(1000L);
-		given(usagePricesProvider.defaultPricesGiven(HederaFunctionality.ContractCall, timestamp)).willReturn(feeData);
-		given(hbarCentExchange.rate(timestamp)).willReturn(exchangeRate);
-		given(exchangeRate.getHbarEquiv()).willReturn(hbarEquiv);
-		given(exchangeRate.getCentEquiv()).willReturn(centEquiv);
-
-		assertEquals(expectedRamResult, gasCalculatorHedera.ramByteHoursTinyBarsGiven(consensusTime, HederaFunctionality.ContractCall));
-		verify(hbarCentExchange).rate(timestamp);
-		verify(usagePricesProvider).defaultPricesGiven(HederaFunctionality.ContractCall, timestamp);
-	}
-
-	@Test
-	void assertCalculateStorageGasNeeded() {
-		var durationInSeconds = 10L;
-		var byteHourCostIntinybars = 1000L;
-		var gasPrice = 1234L;
-		var storageCostTinyBars = (durationInSeconds * byteHourCostIntinybars) / 3600;
-		var expectedResult = Math.round((double) storageCostTinyBars / (double) gasPrice);
-		assertEquals(expectedResult, GasCalculatorHederaV18.calculateStorageGasNeeded(0, durationInSeconds, byteHourCostIntinybars, gasPrice));
-	}
-
-	@Test
-	void assertCalculateLogSize() {
-		var numberOfTopics = 3;
-		var dataSize = 10L;
-		assertEquals(386, GasCalculatorHederaV18.calculateLogSize(numberOfTopics, dataSize));
-	}
-
-	@Test
 	void assertCodeDepositGasCostIsZero() {
 		assertEquals(Gas.ZERO, gasCalculatorHedera.codeDepositGasCost(10));
 	}
@@ -145,13 +105,6 @@ class GasCalculatorHederaV18Test {
 	@Test
 	void assertTransactionIntrinsicGasCost() {
 		assertEquals(Gas.ZERO, gasCalculatorHedera.transactionIntrinsicGasCost(Bytes.EMPTY, true));
-	}
-
-	@Test
-	void assertGetLogStorageDuration() {
-		var expectedCacheRecordsTtl = 10;
-		given(properties.cacheRecordsTtl()).willReturn(expectedCacheRecordsTtl);
-		assertEquals(expectedCacheRecordsTtl, gasCalculatorHedera.getLogStorageDuration());
 	}
 
 	@Test
