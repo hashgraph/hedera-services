@@ -99,4 +99,4 @@ Tests should validate both fungible and non-fungible-unique token types.
    - [x] _(EET)_ A multi-party `CryptoTransfer` rolls back all side-effects if it fails due to a paused Token.
 
 ### :receipt:&nbsp;Custom fee interplays
-   - [] _(EET)_ A `paused` token as denominating token of a custom fee will result in a failure to any transaction that triggers this custom fee.
+   - [x] _(EET)_ A `paused` token as denominating token of a custom fee will result in a failure to any transaction that triggers this custom fee.

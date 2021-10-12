@@ -65,8 +65,62 @@ public class TokenPauseSpecs extends HapiApiSuite {
 				pausedFungibleTokenCannotBeUsed(),
 				pausedNonFungibleUniqueCannotBeUsed(),
 				unpauseWorks(),
-				basePauseAndUnpauseHaveExpectedPrices()
+				basePauseAndUnpauseHaveExpectedPrices(),
+				pausedTokenInCustomFeeCaseStudy()
 		});
+	}
+
+	private HapiApiSpec pausedTokenInCustomFeeCaseStudy() {
+		String pauseKey = "pauseKey";
+		String kycKey = "kycKey";
+		String token = "primary";
+		String otherToken = "secondary";
+		String firstUser = "firstUser";
+		String secondUser = "secondUser";
+		String thirdUser = "thirdUser";
+		return defaultHapiSpec("PausedTokenInCustomFeeCaseStudy")
+				.given(
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(firstUser).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(secondUser),
+						cryptoCreate(thirdUser),
+						newKeyNamed(pauseKey),
+						newKeyNamed(kycKey)
+				)
+				.when(
+						tokenCreate(token)
+								.tokenType(FUNGIBLE_COMMON)
+								.supplyType(TokenSupplyType.FINITE)
+								.maxSupply(1000)
+								.initialSupply(500)
+								.decimals(1)
+								.treasury(TOKEN_TREASURY)
+								.pauseKey(pauseKey)
+								.kycKey(kycKey),
+						tokenAssociate(firstUser, token),
+						grantTokenKyc(token, firstUser),
+						tokenCreate(otherToken)
+								.tokenType(FUNGIBLE_COMMON)
+								.supplyType(TokenSupplyType.FINITE)
+								.maxSupply(1000)
+								.initialSupply(500)
+								.decimals(1)
+								.kycKey(kycKey)
+								.treasury(TOKEN_TREASURY)
+								.withCustom(fixedHtsFee(1, token, firstUser)),
+						tokenAssociate(secondUser, token, otherToken),
+						grantTokenKyc(otherToken, secondUser),
+						grantTokenKyc(token, secondUser),
+						tokenAssociate(thirdUser, otherToken),
+						grantTokenKyc(otherToken, thirdUser),
+						cryptoTransfer(moving(10, token).between(TOKEN_TREASURY, secondUser)),
+						cryptoTransfer(moving(100, otherToken).between(TOKEN_TREASURY, secondUser)),
+						tokenPause(token)
+				)
+				.then(
+						cryptoTransfer(moving(10, otherToken).between(secondUser, thirdUser))
+								.hasKnownStatus(TOKEN_IS_PAUSED)
+				);
 	}
 
 	private HapiApiSpec unpauseWorks() {
