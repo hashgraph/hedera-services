@@ -146,11 +146,11 @@ public class ContractCallSuite extends HapiApiSuite {
 						cryptoCreate("Carol").balance(10_000_000_000L).payingWith("tokenIssuer"),
 						cryptoCreate("Dave").balance(10_000_000_000L).payingWith("tokenIssuer"),
 
-						getAccountInfo("tokenIssuer").saveToRegistry("tokenIssuerAcctInfo"),
-						getAccountInfo("Alice").saveToRegistry("AliceAcctInfo"),
-						getAccountInfo("Bob").saveToRegistry("BobAcctInfo"),
-						getAccountInfo("Carol").saveToRegistry("CarolAcctInfo"),
-						getAccountInfo("Dave").saveToRegistry("DaveAcctInfo"),
+						getAccountInfo("tokenIssuer").savingSnapshot("tokenIssuerAcctInfo"),
+						getAccountInfo("Alice").savingSnapshot("AliceAcctInfo"),
+						getAccountInfo("Bob").savingSnapshot("BobAcctInfo"),
+						getAccountInfo("Carol").savingSnapshot("CarolAcctInfo"),
+						getAccountInfo("Dave").savingSnapshot("DaveAcctInfo"),
 
 						fileCreate("bytecode")
 								.path(OC_TOKEN_BYTECODE_PATH),
@@ -402,7 +402,7 @@ public class ContractCallSuite extends HapiApiSuite {
 									.saveToRegistry("simpleStorageKey");
 
 							var subop2 = getAccountInfo("payer")
-									.saveToRegistry("payerAccountInfo");
+									.savingSnapshot("payerAccountInfo");
 							CustomSpecAssert.allRunFor(spec, subop1, subop2);
 
 							ContractGetInfoResponse.ContractInfo simpleStorageContractInfo = spec.registry().getContractInfo(

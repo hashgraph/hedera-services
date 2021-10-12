@@ -102,7 +102,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		isInTransaction = true;
 	}
 
-	void undoChangesOfType(P property) {
+	void undoChangesOfType(List<P> properties) {
 		if (!isInTransaction) {
 			throw new IllegalStateException("Cannot undo changes, no transaction is active");
 		}
@@ -110,7 +110,9 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 			for (var key : changedKeys) {
 				final var delta = changes.get(key);
 				if (delta != null) {
-					delta.remove(property);
+					for (final var property : properties) {
+						delta.remove(property);
+					}
 				}
 			}
 		}
