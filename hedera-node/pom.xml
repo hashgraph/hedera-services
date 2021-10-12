@@ -27,6 +27,8 @@
     <ant-nodeps.version>1.8.1</ant-nodeps.version>
     <jackson.version>2.11.2</jackson.version>
     <besu.version>21.10.0-RC1</besu.version>
+    <tuweni.version>2.0.0</tuweni.version>
+    <besu-native.version>0.3.0</besu-native.version>
   </properties>
 
   <build>
@@ -296,12 +298,12 @@
     <dependency>
       <groupId>org.apache.tuweni</groupId>
       <artifactId>tuweni-units</artifactId>
-      <version>2.0.0</version>
+      <version>${tuweni.version}</version>
     </dependency>
     <dependency>
       <groupId>org.hyperledger.besu</groupId>
       <artifactId>bls12-381</artifactId>
-      <version>0.3.0</version>
+      <version>${besu-native.version}</version>
 	</dependency>
     <dependency>
       <groupId>org.hyperledger.besu</groupId>
