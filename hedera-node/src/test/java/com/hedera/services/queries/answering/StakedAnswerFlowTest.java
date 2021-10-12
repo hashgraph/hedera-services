@@ -57,6 +57,7 @@ import java.util.Collections;
 import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGetTopicInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -133,6 +134,20 @@ class StakedAnswerFlowTest {
 	void immediatelyRejectsQueryHeaderProblem() {
 		setupServiceResponse(NOT_SUPPORTED);
 		given(queryHeaderValidity.checkHeader(query)).willReturn(NOT_SUPPORTED);
+
+		final var actual = subject.satisfyUsing(service, query);
+
+		assertEquals(response, actual);
+	}
+
+	@Test
+	void rejectsNonPrivilegedCostAnswerQueries() {
+		setupServiceResponse(NOT_SUPPORTED);
+		givenValidHeader();
+		givenExtractablePayment();
+		given(service.needsAnswerOnlyCost(query)).willReturn(true);
+		given(service.canonicalFunction()).willReturn(NetworkGetExecutionTime);
+
 
 		final var actual = subject.satisfyUsing(service, query);
 
