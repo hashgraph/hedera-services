@@ -48,7 +48,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELET
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED;
 
 public class ContractCallLocalSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCallLocalSuite.class);
@@ -75,7 +74,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 				deletedContract(),
 				invalidContractID(),
 				impureCallFails(),
-//				insufficientFeeFails(), //Bad answerOnlyPrecheck! expected INSUFFICIENT_TX_FEE, actual OK <- Fails in master the same way
+				insufficientFeeFails(),
 				lowBalanceFails()
 		);
 	}
@@ -149,8 +148,11 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("InsufficientFee")
 				.given(
-						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
-						contractCreate("parentDelegate").bytecode("parentDelegateBytecode")
+						cryptoCreate("payer"),
+						fileCreate("parentDelegateBytecode")
+								.path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
+						contractCreate("parentDelegate")
+								.bytecode("parentDelegateBytecode")
 				).when(
 						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI)
 				).then(
@@ -158,6 +160,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI)
 								.nodePayment(ADEQUATE_QUERY_PAYMENT)
 								.fee(0L)
+								.payingWith("payer")
 								.hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE));
 	}
 
