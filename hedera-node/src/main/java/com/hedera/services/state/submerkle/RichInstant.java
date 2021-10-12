@@ -30,8 +30,6 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 
-import static com.hedera.services.state.merkle.internals.BitPackUtils.isValidLong;
-
 public class RichInstant {
 	public static final RichInstant MISSING_INSTANT = new RichInstant(0L, 0);
 
