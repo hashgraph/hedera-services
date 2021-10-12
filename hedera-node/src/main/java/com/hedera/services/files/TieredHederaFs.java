@@ -34,7 +34,6 @@ import org.apache.logging.log4j.Logger;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -146,33 +145,33 @@ public class TieredHederaFs implements HederaFs {
 	}
 
 	@Override
-	public UpdateResult sudoSetattr(FileID id, HFileMeta attr) {
+	public void sudoSetattr(FileID id, HFileMeta attr) {
 		assertExtant(id);
 		assertValid(attr);
 
-		return uncheckedSetattr(id, attr);
+		uncheckedSetattr(id, attr);
 	}
 
 	@Override
-	public UpdateResult setattr(FileID id, HFileMeta attr) {
+	public void setattr(FileID id, HFileMeta attr) {
 		assertUsable(id);
 		assertValid(attr);
 
-		return uncheckedSetattr(id, attr);
+		uncheckedSetattr(id, attr);
 	}
 
 	@Override
-	public UpdateResult overwrite(FileID id, byte[] newContents) {
+	public void overwrite(FileID id, byte[] newContents) {
 		assertUsable(id);
 		if (!isOnDisk(id)) {
 			assertWithinSizeLimits(newContents);
 		}
 
-		return uncheckedUpdate(id, newContents);
+		uncheckedUpdate(id, newContents);
 	}
 
 	@Override
-	public UpdateResult append(FileID id, byte[] moreContents) {
+	public void append(FileID id, byte[] moreContents) {
 		assertUsable(id);
 
 		byte[] contents;
@@ -195,21 +194,20 @@ public class TieredHederaFs implements HederaFs {
 			assertWithinSizeLimits(newContents);
 		}
 
-		return uncheckedUpdate(id, newContents);
+		uncheckedUpdate(id, newContents);
 	}
 
 	@Override
-	public UpdateResult delete(FileID id) {
+	public void delete(FileID id) {
 		assertUsable(id);
 
-		var verdict = judge(id, FileUpdateInterceptor::preDelete);
-		if (verdict.getValue()) {
+		var deleted = judge(id, FileUpdateInterceptor::preDelete);
+		if (deleted) {
 			var attr = metadata.get(id);
 			attr.setDeleted(true);
 			metadata.put(id, attr);
 			data.remove(id);
 		}
-		return new SimpleUpdateResult(verdict.getValue(), verdict.getValue(), verdict.getKey());
 	}
 
 	@Override
@@ -220,55 +218,23 @@ public class TieredHederaFs implements HederaFs {
 		data.remove(id);
 	}
 
-	public static class SimpleUpdateResult implements UpdateResult {
-		private final boolean attrChanged;
-		private final boolean fileReplaced;
-		private final ResponseCodeEnum outcome;
-
-		public SimpleUpdateResult(
-				boolean attrChanged,
-				boolean fileReplaced,
-				ResponseCodeEnum outcome
-		) {
-			this.attrChanged = attrChanged;
-			this.fileReplaced = fileReplaced;
-			this.outcome = outcome;
-		}
-
-		@Override
-		public boolean fileReplaced() {
-			return fileReplaced;
-		}
-
-		@Override
-		public ResponseCodeEnum outcome() {
-			return outcome;
-		}
-
-		@Override
-		public boolean attrChanged() {
-			return attrChanged;
-		}
-	}
-
 	private boolean isOnDisk(FileID fid) {
 		return diskFs.get().contains(fid);
 	}
 
-	private UpdateResult uncheckedSetattr(FileID id, HFileMeta attr) {
-		var verdict = judge(id, (interceptor, ignore) -> interceptor.preAttrChange(id, attr));
+	private boolean uncheckedSetattr(FileID id, HFileMeta attr) {
+		var changed = judge(id, (interceptor, ignore) -> interceptor.preAttrChange(id, attr));
 
-		if (verdict.getValue()) {
+		if (changed) {
 			metadata.put(id, attr);
 		}
-
-		return new SimpleUpdateResult(verdict.getValue(), false, verdict.getKey());
+		return changed;
 	}
 
-	private UpdateResult uncheckedUpdate(FileID id, byte[] newContents) {
-		var verdict = judge(id, (interceptor, ignore) -> interceptor.preUpdate(id, newContents));
+	private boolean uncheckedUpdate(FileID id, byte[] newContents) {
+		var updated = judge(id, (interceptor, ignore) -> interceptor.preUpdate(id, newContents));
 
-		if (verdict.getValue()) {
+		if (updated) {
 			if (diskFs.get().contains(id)) {
 				diskFs.get().put(id, newContents);
 			} else {
@@ -276,27 +242,23 @@ public class TieredHederaFs implements HederaFs {
 			}
 			interceptorsFor(id).forEach(interceptor -> interceptor.postUpdate(id, newContents));
 		}
-		return new SimpleUpdateResult(false, verdict.getValue(), verdict.getKey());
+		return updated;
 	}
 
-	private Map.Entry<ResponseCodeEnum, Boolean> judge(
+	private boolean judge(
 			FileID id,
 			BiFunction<FileUpdateInterceptor, FileID, Map.Entry<ResponseCodeEnum, Boolean>> judgment
 	) {
-		var outcome = SUCCESS;
-		var should = true;
-
 		var orderedInterceptors = interceptorsFor(id);
 		for (var interceptor : orderedInterceptors) {
 			var vote = judgment.apply(interceptor, id);
-			outcome = firstUnsuccessful(outcome, vote.getKey());
+			var outcome = firstUnsuccessful(SUCCESS, vote.getKey());
+			validateTrue(outcome == SUCCESS, outcome);
 			if (!vote.getValue()) {
-				should = false;
-				break;
+				return false;
 			}
 		}
-
-		return new AbstractMap.SimpleEntry<>(outcome, should);
+		return true;
 	}
 
 	private List<FileUpdateInterceptor> interceptorsFor(FileID id) {

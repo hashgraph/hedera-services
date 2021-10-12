@@ -9,9 +9,9 @@ package com.hedera.services.txns.file;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,7 +23,6 @@ package com.hedera.services.txns.file;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
-import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.MiscUtils;
@@ -44,20 +43,18 @@ import org.mockito.InOrder;
 import java.time.Instant;
 import java.util.Map;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.BDDMockito.willThrow;
 
 class FileSysDelTransitionLogicTest {
 	enum TargetType { VALID, MISSING, DELETED }
@@ -71,11 +68,6 @@ class FileSysDelTransitionLogicTest {
 	FileID tbd = IdUtils.asFile("0.0.13257");
 	FileID missing = IdUtils.asFile("0.0.75231");
 	FileID deleted = IdUtils.asFile("0.0.666");
-
-	HederaFs.UpdateResult success = new TieredHederaFs.SimpleUpdateResult(
-			true,
-			false,
-			SUCCESS);
 
 	JKey wacl;
 	HFileMeta attr, deletedAttr;
@@ -128,8 +120,6 @@ class FileSysDelTransitionLogicTest {
 		InOrder inOrder = inOrder(hfs, txnCtx, oldExpiries);
 
 		givenTxnCtxSysDeleting(TargetType.VALID, NewExpiryType.NONE);
-		// and:
-		given(hfs.setattr(any(), any())).willReturn(success);
 
 		// when:
 		subject.doStateTransition();
@@ -139,19 +129,6 @@ class FileSysDelTransitionLogicTest {
 		assertEquals(oldExpiry, attr.getExpiry());
 		inOrder.verify(hfs).setattr(tbd, attr);
 		inOrder.verify(oldExpiries).put(EntityId.fromGrpcFileId(tbd), Long.valueOf(oldExpiry));
-		inOrder.verify(txnCtx).setStatus(SUCCESS);
-	}
-
-	@Test
-	void setsFailInvalidOnException() {
-		givenTxnCtxSysDeleting(TargetType.VALID, NewExpiryType.PAST);
-		willThrow(new IllegalStateException("Hmm...")).given(hfs).rm(any());
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx).setStatus(FAIL_INVALID);
 	}
 
 	@Test
@@ -160,8 +137,6 @@ class FileSysDelTransitionLogicTest {
 		InOrder inOrder = inOrder(hfs, txnCtx, oldExpiries);
 
 		givenTxnCtxSysDeleting(TargetType.VALID, NewExpiryType.FUTURE);
-		// and:
-		given(hfs.setattr(any(), any())).willReturn(success);
 
 		// when:
 		subject.doStateTransition();
@@ -171,29 +146,25 @@ class FileSysDelTransitionLogicTest {
 		assertEquals(newExpiry, attr.getExpiry());
 		inOrder.verify(hfs).setattr(tbd, attr);
 		inOrder.verify(oldExpiries).put(EntityId.fromGrpcFileId(tbd), Long.valueOf(oldExpiry));
-		inOrder.verify(txnCtx).setStatus(SUCCESS);
 	}
 
 	@Test
 	void detectsDeleted() {
 		givenTxnCtxSysDeleting(TargetType.DELETED, NewExpiryType.FUTURE);
 
-		// when:
-		subject.doStateTransition();
-
 		// then:
-		verify(txnCtx).setStatus(FILE_DELETED);
+		assertFailsWith(() -> subject.doStateTransition(), FILE_DELETED);
+		assertTrue(hfs.getattr(deleted).isDeleted());
 	}
 
 	@Test
 	void detectsMissing() {
 		givenTxnCtxSysDeleting(TargetType.MISSING, NewExpiryType.FUTURE);
 
-		// when:
-		subject.doStateTransition();
-
 		// then:
-		verify(txnCtx).setStatus(INVALID_FILE_ID);
+		assertFailsWith(() -> subject.doStateTransition(), INVALID_FILE_ID);
+		verify(hfs, never()).setattr(any(), any());
+		verify(oldExpiries, never()).put(any(), any());
 	}
 
 	@Test

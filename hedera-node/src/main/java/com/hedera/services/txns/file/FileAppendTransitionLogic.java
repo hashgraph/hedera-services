@@ -35,7 +35,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -58,43 +58,21 @@ public class FileAppendTransitionLogic implements TransitionLogic {
 
 	@Override
 	public void doStateTransition() {
-		var op = txnCtx.accessor().getTxn().getFileAppend();
+		/* --- Extract from gRPC --- */
+		final var op = txnCtx.accessor().getTxn().getFileAppend();
+		final var target = op.getFileID();
+		final var data = op.getContents().toByteArray();
 
-		try {
-			var target = op.getFileID();
-			var data = op.getContents().toByteArray();
+		/* --- Perform validations --- */
+		final Optional<HFileMeta> attr = hfs.exists(target) ? Optional.of(hfs.getattr(target)) : Optional.empty();
 
-			Optional<HFileMeta> attr = hfs.exists(target) ? Optional.of(hfs.getattr(target)) : Optional.empty();
-			var validity = classify(attr);
-			if (validity != OK) {
-				txnCtx.setStatus(validity);
-				return;
-			}
+		validateFalse(attr.isEmpty(), INVALID_FILE_ID);
+		var info = attr.get();
+		validateFalse(info.isDeleted(), FILE_DELETED);
+		validateFalse(info.getWacl().isEmpty(), UNAUTHORIZED);
 
-			var result = hfs.append(target, data);
-			txnCtx.setStatus(result.outcome());
-		} catch (IllegalArgumentException iae) {
-			// TODO: revise
-//			mapToStatus(iae, txnCtx);
-		} catch (Exception unknown) {
-			log.warn("Unrecognized failure handling {}!", txnCtx.accessor().getSignedTxnWrapper(), unknown);
-			txnCtx.setStatus(FAIL_INVALID);
-		}
-	}
-
-	private ResponseCodeEnum classify(Optional<HFileMeta> attr) {
-		if (attr.isEmpty()) {
-			return INVALID_FILE_ID;
-		} else {
-			var info = attr.get();
-			if (info.isDeleted()) {
-				return FILE_DELETED;
-			} else if (info.getWacl().isEmpty()) {
-				return UNAUTHORIZED;
-			} else {
-				return OK;
-			}
-		}
+		/* --- Do the business logic --- */
+		hfs.append(target, data);
 	}
 
 	@Override

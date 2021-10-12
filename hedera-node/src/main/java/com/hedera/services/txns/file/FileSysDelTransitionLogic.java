@@ -21,11 +21,9 @@ package com.hedera.services.txns.file;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.TransitionLogic;
-import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
@@ -34,16 +32,15 @@ import org.apache.logging.log4j.Logger;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcFileId;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 @Singleton
 public class FileSysDelTransitionLogic implements TransitionLogic {
@@ -68,50 +65,29 @@ public class FileSysDelTransitionLogic implements TransitionLogic {
 
 	@Override
 	public void doStateTransition() {
-		var op = txnCtx.accessor().getTxn().getSystemDelete();
+		/* --- Extract from gRPC --- */
+		final var op = txnCtx.accessor().getTxn().getSystemDelete();
+		final var tbd = op.getFileID();
 
-		try {
-			var tbd = op.getFileID();
-			var attr = new AtomicReference<HFileMeta>();
-			var validity = tryLookupAgainst(hfs, tbd, attr);
+		/* --- Perform validations --- */
+		validateTrue(hfs.exists(tbd), INVALID_FILE_ID);
+		final var info = hfs.getattr(tbd);
+		validateFalse(info.isDeleted(), FILE_DELETED);
 
-			if (validity != OK) {
-				txnCtx.setStatus(validity);
-				return;
-			}
-
-			var info = attr.get();
-			var newExpiry = op.hasExpirationTime()
-					? op.getExpirationTime().getSeconds()
-					: info.getExpiry();
-			if (newExpiry <= txnCtx.consensusTime().getEpochSecond()) {
-				hfs.rm(tbd);
-			} else {
-				var oldExpiry = info.getExpiry();
-				info.setDeleted(true);
-				info.setExpiry(newExpiry);
-				hfs.setattr(tbd, info);
-				expiries.put(fromGrpcFileId(tbd), oldExpiry);
-			}
-			txnCtx.setStatus(SUCCESS);
-		} catch (Exception unknown) {
-			log.warn("Unrecognized failure handling {}!", txnCtx.accessor().getSignedTxnWrapper(), unknown);
-			txnCtx.setStatus(FAIL_INVALID);
+		/* --- Do the business logic --- */
+		final var newExpiry = op.hasExpirationTime()
+				? op.getExpirationTime().getSeconds()
+				: info.getExpiry();
+		if (newExpiry <= txnCtx.consensusTime().getEpochSecond()) {
+			hfs.rm(tbd);
+			return;
 		}
-	}
 
-	static ResponseCodeEnum tryLookupAgainst(HederaFs hfs, FileID tbd, AtomicReference<HFileMeta> attr) {
-		if (hfs.exists(tbd)) {
-			var info = hfs.getattr(tbd);
-			if (info.isDeleted()) {
-				return FILE_DELETED;
-			} else {
-				attr.set(info);
-				return OK;
-			}
-		} else {
-			return INVALID_FILE_ID;
-		}
+		final var oldExpiry = info.getExpiry();
+		info.setDeleted(true);
+		info.setExpiry(newExpiry);
+		hfs.setattr(tbd, info);
+		expiries.put(fromGrpcFileId(tbd), oldExpiry);
 	}
 
 	@Override

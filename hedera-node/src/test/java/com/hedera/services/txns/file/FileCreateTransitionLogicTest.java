@@ -26,6 +26,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
+import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.MiscUtils;
@@ -33,7 +34,6 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
-import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
@@ -95,6 +95,7 @@ class FileCreateTransitionLogicTest {
 	HederaFs hfs;
 	OptionValidator validator;
 	TransactionContext txnCtx;
+	EntityIdSource ids;
 
 	FileCreateTransitionLogic subject;
 
@@ -106,13 +107,14 @@ class FileCreateTransitionLogicTest {
 		accessor = mock(PlatformTxnAccessor.class);
 		txnCtx = mock(TransactionContext.class);
 		hfs = mock(HederaFs.class);
+		ids = mock(EntityIdSource.class);
 
 		validator = mock(OptionValidator.class);
 		given(validator.isValidAutoRenewPeriod(expectedDuration)).willReturn(true);
 		given(validator.hasGoodEncoding(wacl)).willReturn(true);
 		given(validator.memoCheck(any())).willReturn(OK);
 
-		subject = new FileCreateTransitionLogic(hfs, validator, txnCtx);
+		subject = new FileCreateTransitionLogic(hfs, validator, txnCtx, ids);
 	}
 
 	@Test
@@ -122,6 +124,22 @@ class FileCreateTransitionLogicTest {
 		// expect:
 		assertTrue(subject.applicability().test(fileCreateTxn));
 		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
+	}
+
+	@Test
+	void resetIds() {
+		givenTxnCtxCreating(EnumSet.allOf(ValidProperty.class));
+
+		subject.resetCreatedIds();
+		verify(ids).resetProvisionalIds();
+	}
+
+	@Test
+	void reclaimIds() {
+		givenTxnCtxCreating(EnumSet.allOf(ValidProperty.class));
+
+		subject.reclaimCreatedIds();
+		verify(ids).reclaimProvisionalIds();
 	}
 
 	@Test

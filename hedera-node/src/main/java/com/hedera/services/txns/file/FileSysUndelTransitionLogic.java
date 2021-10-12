@@ -21,24 +21,22 @@ package com.hedera.services.txns.file;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.TransitionLogic;
-import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 @Singleton
 public class FileSysUndelTransitionLogic implements TransitionLogic {
@@ -61,19 +59,18 @@ public class FileSysUndelTransitionLogic implements TransitionLogic {
 
 	@Override
 	public void doStateTransition() {
-		var op = txnCtx.accessor().getTxn().getSystemUndelete();
-		var tbu = op.getFileID();
-		var entity = EntityId.fromGrpcFileId(tbu);
-		var attr = new AtomicReference<HFileMeta>();
+		/* --- Extract from gRPC --- */
+		final var op = txnCtx.accessor().getTxn().getSystemUndelete();
+		final var tbu = op.getFileID();
+		final var entity = EntityId.fromGrpcFileId(tbu);
 
-		var validity = tryLookup(tbu, entity, attr);
-		if (validity != OK)	 {
-			txnCtx.setStatus(validity);
-			return;
-		}
+		/* --- Perform validations --- */
+		validateFalse(!expiries.containsKey(entity) || !hfs.exists(tbu), INVALID_FILE_ID);
+		final var info = hfs.getattr(tbu);
+		validateTrue(info.isDeleted(), INVALID_FILE_ID);
 
-		var info = attr.get();
-		var oldExpiry = expiries.get(entity);
+		/* --- Do the business logic --- */
+		final var oldExpiry = expiries.get(entity);
 		if (oldExpiry <= txnCtx.consensusTime().getEpochSecond()) {
 			hfs.rm(tbu);
 		} else {
@@ -82,25 +79,6 @@ public class FileSysUndelTransitionLogic implements TransitionLogic {
 			hfs.sudoSetattr(tbu, info);
 		}
 		expiries.remove(entity);
-		txnCtx.setStatus(SUCCESS);
-	}
-
-	private ResponseCodeEnum tryLookup(
-			FileID tbu,
-			EntityId entity,
-			AtomicReference<HFileMeta> attr
-	) {
-		if (!expiries.containsKey(entity) || !hfs.exists(tbu)) {
-			return INVALID_FILE_ID;
-		}
-
-		var info = hfs.getattr(tbu);
-		if (info.isDeleted()) {
-			attr.set(info);
-			return OK;
-		} else {
-			return INVALID_FILE_ID;
-		}
 	}
 
 	@Override

@@ -24,6 +24,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
+import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -54,6 +55,7 @@ public class FileCreateTransitionLogic implements TransitionLogic {
 	private final HederaFs hfs;
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
+	private final EntityIdSource ids;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
@@ -61,23 +63,39 @@ public class FileCreateTransitionLogic implements TransitionLogic {
 	public FileCreateTransitionLogic(
 			HederaFs hfs,
 			OptionValidator validator,
-			TransactionContext txnCtx
+			TransactionContext txnCtx,
+			EntityIdSource ids
 	) {
 		this.hfs = hfs;
 		this.validator = validator;
 		this.txnCtx = txnCtx;
+		this.ids = ids;
+	}
+
+	@Override
+	public void reclaimCreatedIds() {
+		this.ids.reclaimProvisionalIds();
+	}
+
+	@Override
+	public void resetCreatedIds() {
+		this.ids.resetProvisionalIds();
 	}
 
 	@Override
 	public void doStateTransition() {
+		/* --- Extract from gRPC --- */
 		var op = txnCtx.accessor().getTxn().getFileCreate();
 
+		/* --- Perform validations --- */
 		validateFalse(op.hasKeys() && !validator.hasGoodEncoding(wrapped(op.getKeys())), INVALID_FILE_WACL);
 
+		/* --- Extract variables --- */
 		var attr = asAttr(op);
 		var sponsor = txnCtx.activePayer();
-		var created = hfs.create(op.getContents().toByteArray(), attr, sponsor);
 
+		/* --- Do the business logic --- */
+		var created = hfs.create(op.getContents().toByteArray(), attr, sponsor);
 		txnCtx.setCreated(created);
 	}
 

@@ -24,7 +24,6 @@ import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
-import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -34,27 +33,23 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.files.TieredHederaFs.firstUnsuccessful;
+import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
-import static java.lang.Boolean.TRUE;
 import static java.lang.Math.max;
 
 @Singleton
@@ -83,87 +78,41 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public void doStateTransition() {
-		var op = txnCtx.accessor().getTxn().getFileUpdate();
+		/* --- Extract from gRPC --- */
+		final var op = txnCtx.accessor().getTxn().getFileUpdate();
+		final var target = op.getFileID();
 
-		try {
-			var validity = assessedValidity(op);
-			if (validity != OK) {
-				txnCtx.setStatus(validity);
-				return;
-			}
+		/* --- Perform validations --- */
+		validateFalse(!op.hasFileID() || !hfs.exists(op.getFileID()), INVALID_FILE_ID);
+		validateFalse(op.hasKeys() && !validator.hasGoodEncoding(wrapped(op.getKeys())), BAD_ENCODING);
 
-			var target = op.getFileID();
-			var attr = hfs.getattr(target);
-			if (attr.isDeleted()) {
-				txnCtx.setStatus(FILE_DELETED);
-				return;
-			}
+		final var attr = hfs.getattr(target);
+		validateFalse(attr.isDeleted(), FILE_DELETED);
 
-			if(!isAuthorizedToProcessFile(op, attr, target)) {
-				return;
-			}
-
-			Optional<HederaFs.UpdateResult> replaceResult = Optional.empty();
-			if (!op.getContents().isEmpty()) {
-				replaceResult = Optional.of(hfs.overwrite(target, op.getContents().toByteArray()));
-			}
-			attr.setExpiry(max(op.getExpirationTime().getSeconds(), attr.getExpiry()));
-
-			Optional<HederaFs.UpdateResult> changeResult = Optional.empty();
-			if (replaceResult.map(HederaFs.UpdateResult::fileReplaced).orElse(TRUE)) {
-				updateAttrBased(attr, op);
-				changeResult = Optional.of(hfs.setattr(target, attr));
-			}
-
-			txnCtx.setStatus(firstUnsuccessful(
-					replaceResult.map(HederaFs.UpdateResult::outcome)
-							.orElse(SUCCESS),
-					changeResult.map(HederaFs.UpdateResult::outcome)
-							.orElse(SUCCESS)));
-		} catch (IllegalArgumentException iae) {
-			// TODO: Revise this one
-//			mapToStatus(iae, txnCtx);
-		} catch (Exception unknown) {
-			log.warn("Unrecognized failure handling {}!", txnCtx.accessor().getSignedTxnWrapper(), unknown);
-			txnCtx.setStatus(FAIL_INVALID);
+		/* --- Authorize to process file --- */
+		if (attr.getWacl().isEmpty() && (op.hasKeys() || !op.getContents().isEmpty())) {
+				/* The transaction is trying to update an immutable file; in general, not a legal operation,
+				but the semantics change for a superuser (i.e., sysadmin or treasury) updating a system file. */
+			var isSysFile = entityNums.isSystemFile(target);
+			var isSysAdmin = entityNums.accounts().isSuperuser(txnCtx.activePayer().getAccountNum());
+			validateTrue(isSysAdmin && isSysFile, UNAUTHORIZED);
 		}
-	}
 
-	private void updateAttrBased(final HFileMeta attr, final FileUpdateTransactionBody op ) {
+		/* --- Do the business logic --- */
+		if(!op.getContents().isEmpty()) {
+			hfs.overwrite(target, op.getContents().toByteArray());
+		}
+
+		attr.setExpiry(max(op.getExpirationTime().getSeconds(), attr.getExpiry()));
+
 		if (op.hasKeys()) {
 			attr.setWacl(asFcKeyUnchecked(wrapped(op.getKeys())));
 		}
 		if (op.hasMemo()) {
 			attr.setMemo(op.getMemo().getValue());
 		}
-	}
 
-	private boolean isAuthorizedToProcessFile(final FileUpdateTransactionBody op,
-			final HFileMeta attr,
-			final FileID target) {
-		if (attr.getWacl().isEmpty() && (op.hasKeys() || !op.getContents().isEmpty())) {
-				/* The transaction is trying to update an immutable file; in general, not a legal operation,
-				but the semantics change for a superuser (i.e., sysadmin or treasury) updating a system file. */
-			var isSysFile = entityNums.isSystemFile(target);
-			var isSysAdmin = entityNums.accounts().isSuperuser(txnCtx.activePayer().getAccountNum());
-			if (!(isSysAdmin && isSysFile)) {
-				txnCtx.setStatus(UNAUTHORIZED);
-				return false;
-			}
-		}
-		return true;
-	}
-
-	private ResponseCodeEnum assessedValidity(FileUpdateTransactionBody op) {
-		if (!op.hasFileID() || !hfs.exists(op.getFileID())) {
-			return INVALID_FILE_ID;
-		}
-
-		if (op.hasKeys() && !validator.hasGoodEncoding(wrapped(op.getKeys()))) {
-			return BAD_ENCODING;
-		}
-
-		return OK;
+		hfs.setattr(target, attr);
 	}
 
 	@Override

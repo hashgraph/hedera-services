@@ -26,7 +26,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
-import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -41,13 +40,13 @@ import java.util.OptionalInt;
 import java.util.function.Supplier;
 
 import static com.hedera.services.files.TieredHederaFs.BYTES_PER_KB;
-import static com.hedera.test.utils.TxnUtils.*;
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -136,11 +135,8 @@ class TieredHederaFsTest {
 		given(data.get(fid)).willReturn(origContents);
 
 		// when:
-		var result = subject.append(fid, moreContents);
+		subject.append(fid, moreContents);
 
-		// then:
-		assertEquals(SUCCESS, result.outcome());
-		assertTrue(result.fileReplaced());
 		// and:
 		verify(data).put(
 				argThat(fid::equals),
@@ -155,12 +151,9 @@ class TieredHederaFsTest {
 		given(metadata.get(fid)).willReturn(livingAttr);
 
 		// when:
-		var result = subject.overwrite(fid, newContents);
+		subject.overwrite(fid, newContents);
 
 		// then:
-		assertEquals(SUCCESS, result.outcome());
-		assertTrue(result.fileReplaced());
-		// and:
 		verify(data).put(fid, newContents);
 	}
 
@@ -168,7 +161,7 @@ class TieredHederaFsTest {
 	void highPriorityInterceptorSetsOutcome() {
 		given(highInterceptor.preUpdate(fid, newContents))
 				.willReturn(
-						new AbstractMap.SimpleEntry<>(ResponseCodeEnum.FAIL_FEE, true));
+						new AbstractMap.SimpleEntry<>(FAIL_FEE, true));
 		given(lowInterceptor.preUpdate(fid, newContents)).willReturn(
 				new AbstractMap.SimpleEntry<>(ResponseCodeEnum.FAIL_INVALID, false));
 		// and:
@@ -179,12 +172,9 @@ class TieredHederaFsTest {
 		given(metadata.get(fid)).willReturn(livingAttr);
 
 		// when:
-		var result = subject.overwrite(fid, newContents);
+		assertFailsWith(() -> subject.overwrite(fid, newContents), FAIL_FEE);
 
 		// then:
-		assertEquals(ResponseCodeEnum.FAIL_FEE, result.outcome());
-		assertFalse(result.fileReplaced());
-		// and:
 		verify(data, never()).put(fid, newContents);
 	}
 
@@ -194,9 +184,9 @@ class TieredHederaFsTest {
 
 		given(highInterceptor.preUpdate(fid, newContents))
 				.willReturn(
-						new AbstractMap.SimpleEntry<>(ResponseCodeEnum.OK, true));
+						new AbstractMap.SimpleEntry<>(ResponseCodeEnum.SUCCESS, true));
 		given(lowInterceptor.preUpdate(fid, newContents)).willReturn(
-				new AbstractMap.SimpleEntry<>(ResponseCodeEnum.OK, true));
+				new AbstractMap.SimpleEntry<>(ResponseCodeEnum.SUCCESS, true));
 		// and:
 		subject.register(lowInterceptor);
 		subject.register(highInterceptor);
@@ -205,12 +195,9 @@ class TieredHederaFsTest {
 		given(metadata.get(fid)).willReturn(livingAttr);
 
 		// when:
-		var result = subject.overwrite(fid, newContents);
+		subject.overwrite(fid, newContents);
 
 		// then:
-		assertEquals(ResponseCodeEnum.OK, result.outcome());
-		assertTrue(result.fileReplaced());
-		// and:
 		verify(data).put(fid, newContents);
 		// and:
 		inOrder.verify(highInterceptor).postUpdate(fid, newContents);
@@ -221,7 +208,7 @@ class TieredHederaFsTest {
 	void shortCircuitsIfInterceptorRejects() {
 		given(highInterceptor.preUpdate(fid, newContents))
 				.willReturn(
-						new AbstractMap.SimpleEntry<>(ResponseCodeEnum.AUTHORIZATION_FAILED, false));
+						new AbstractMap.SimpleEntry<>(AUTHORIZATION_FAILED, false));
 		given(lowInterceptor.preUpdate(fid, newContents)).willReturn(
 				new AbstractMap.SimpleEntry<>(ResponseCodeEnum.OK, true));
 		// and:
@@ -232,12 +219,9 @@ class TieredHederaFsTest {
 		given(metadata.get(fid)).willReturn(livingAttr);
 
 		// when:
-		var result = subject.overwrite(fid, newContents);
+		assertFailsWith(() -> subject.overwrite(fid, newContents), AUTHORIZATION_FAILED);
 
 		// then:
-		assertEquals(ResponseCodeEnum.AUTHORIZATION_FAILED, result.outcome());
-		assertFalse(result.fileReplaced());
-		// and:
 		verify(data, never()).put(fid, newContents);
 	}
 
@@ -271,12 +255,9 @@ class TieredHederaFsTest {
 		given(properties.maxFileSizeKb()).willReturn(1);
 
 		// when:
-		var result = subject.append(fid, burstContents);
+		subject.append(fid, burstContents);
 
 		// then:
-		assertEquals(SUCCESS, result.outcome());
-		assertTrue(result.fileReplaced());
-		// and:
 		verify(diskFs).put(
 				argThat(fid::equals),
 				argThat(bytes -> new String(bytes).equals(
@@ -296,12 +277,9 @@ class TieredHederaFsTest {
 		given(properties.maxFileSizeKb()).willReturn(1);
 
 		// when:
-		var result = subject.overwrite(fid, oversizeContents);
+		subject.overwrite(fid, oversizeContents);
 
 		// then:
-		assertEquals(SUCCESS, result.outcome());
-		assertTrue(result.fileReplaced());
-		// and:
 		verify(diskFs).put(
 				argThat(fid::equals),
 				argThat(bytes -> new String(bytes).equals(
@@ -378,15 +356,11 @@ class TieredHederaFsTest {
 
 		// when:
 		subject.register(authPolicy);
-		var result = subject.delete(fid);
+		assertFailsWith(() -> subject.delete(fid), AUTHORIZATION_FAILED);
 
 		// then:
 		verify(metadata, never()).put(argThat(fid::equals), any());
 		verify(data, never()).remove(fid);
-		// and:
-		assertFalse(result.attrChanged());
-		assertFalse(result.fileReplaced());
-		assertEquals(AUTHORIZATION_FAILED, result.outcome());
 	}
 
 	@Test
@@ -395,7 +369,7 @@ class TieredHederaFsTest {
 		given(metadata.get(fid)).willReturn(livingAttr);
 
 		// when:
-		var result = subject.delete(fid);
+		subject.delete(fid);
 
 		// then:
 		verify(metadata).put(argThat(fid::equals), argThat(attr ->
@@ -403,10 +377,6 @@ class TieredHederaFsTest {
 					attr.getExpiry()	== livingAttr.getExpiry() &&
 					attr.getWacl().equals(livingAttr.getWacl())));
 		verify(data).remove(fid);
-		// and:
-		assertTrue(result.attrChanged());
-		assertTrue(result.fileReplaced());
-		assertEquals(SUCCESS, result.outcome());
 	}
 
 	@Test
@@ -525,13 +495,10 @@ class TieredHederaFsTest {
 		given(metadata.get(fid)).willReturn(deletedAttr);
 
 		// when:
-		var result = subject.sudoSetattr(fid, livingAttr);
+		subject.sudoSetattr(fid, livingAttr);
 
 		// then:
 		verify(metadata).put(fid, livingAttr);
-		assertTrue(result.attrChanged());
-		assertFalse(result.fileReplaced());
-		assertEquals(SUCCESS, result.outcome());
 	}
 
 	@Test
@@ -568,13 +535,10 @@ class TieredHederaFsTest {
 		given(metadata.get(fid)).willReturn(livingAttr);
 
 		// when:
-		var result = subject.setattr(fid, livingAttr);
+		subject.setattr(fid, livingAttr);
 
 		// then:
 		verify(metadata).put(fid, livingAttr);
-		assertTrue(result.attrChanged());
-		assertFalse(result.fileReplaced());
-		assertEquals(SUCCESS, result.outcome());
 	}
 
 	@Test
@@ -590,13 +554,10 @@ class TieredHederaFsTest {
 
 		// when:
 		subject.register(authPolicy);
-		var result = subject.setattr(fid, livingAttr);
+		assertFailsWith(() -> subject.setattr(fid, livingAttr), AUTHORIZATION_FAILED);
 
 		// then:
 		verify(metadata, never()).put(fid, livingAttr);
-		assertFalse(result.attrChanged());
-		assertFalse(result.fileReplaced());
-		assertEquals(AUTHORIZATION_FAILED, result.outcome());
 	}
 
 	@Test
@@ -648,12 +609,9 @@ class TieredHederaFsTest {
 		given(diskFs.contains(fileID)).willReturn(true);
 		given(diskFs.contentsOf(fileID)).willReturn(newContents);
 		// when:
-		var result = subject.overwrite(fileID, newContents);
+		subject.overwrite(fileID, newContents);
 
 		// then:
-		assertEquals(SUCCESS, result.outcome());
-		assertTrue(result.fileReplaced());
-		// and:
 		verify(diskFs).put(fileID, newContents);
 
 		// and when:

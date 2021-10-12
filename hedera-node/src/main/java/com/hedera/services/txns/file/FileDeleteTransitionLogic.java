@@ -33,7 +33,8 @@ import javax.inject.Singleton;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -56,31 +57,18 @@ public class FileDeleteTransitionLogic implements TransitionLogic {
 
 	@Override
 	public void doStateTransition() {
-		var op = txnCtx.accessor().getTxn().getFileDelete();
+		/* --- Extract from gRPC --- */
+		final var op = txnCtx.accessor().getTxn().getFileDelete();
+		final var tbd = op.getFileID();
 
-		try {
-			var tbd = op.getFileID();
-			if (!hfs.exists(tbd)) {
-				txnCtx.setStatus(INVALID_FILE_ID);
-				return;
-			}
+		/* --- Perform validations --- */
+		validateTrue(hfs.exists(tbd), INVALID_FILE_ID);
+		final var attr = hfs.getattr(tbd);
+		validateFalse(attr.getWacl().isEmpty(), UNAUTHORIZED);
+		validateFalse(attr.isDeleted(), FILE_DELETED);
 
-			var attr = hfs.getattr(tbd);
-			if (attr.getWacl().isEmpty()) {
-				txnCtx.setStatus(UNAUTHORIZED);
-				return;
-			}
-			if (attr.isDeleted()) {
-				txnCtx.setStatus(FILE_DELETED);
-				return;
-			}
-
-			var result = hfs.delete(tbd);
-			txnCtx.setStatus(result.outcome());
-		} catch (Exception unknown) {
-			log.warn("Unrecognized failure handling {}!", txnCtx.accessor().getSignedTxnWrapper(), unknown);
-			txnCtx.setStatus(FAIL_INVALID);
-		}
+		/* --- Do the business logic --- */
+		hfs.delete(tbd);
 	}
 
 	@Override

@@ -22,7 +22,6 @@ package com.hedera.services.files;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 /**
  * A non-hierarchical collection of files managed by {@link FileID} using create/read/update/delete semantics.
@@ -34,12 +33,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
  * The system's behavior can be extended by registering {@link FileUpdateInterceptor} instances.
  */
 public interface HederaFs {
-	interface UpdateResult {
-		boolean fileReplaced();
-		boolean attrChanged();
-		ResponseCodeEnum outcome();
-	}
-
 	/**
 	 * Gives the number of registered interceptors.
 	 *
@@ -65,6 +58,45 @@ public interface HederaFs {
 	FileID create(byte[] contents, HFileMeta attr, AccountID sponsor);
 
 	/**
+	 * Sets a file meta attribute of a targeted file, with less validations, contrary to the setAttr method.
+	 *
+	 * @param id the file to look for
+	 * @param attr the meta attribute set in the file
+	 */
+	void sudoSetattr(FileID id, HFileMeta attr);
+
+	/**
+	 * Sets a file meta attribute of a targeted file.
+	 *
+	 * @param id the file to look for
+	 * @param attr the meta attribute set in the file
+	 */
+	void setattr(FileID id, HFileMeta attr);
+
+	/**
+	 * Replaces current content in a targeted file with a new one.
+	 *
+	 * @param id the file to look for
+	 * @param newContents the content to replace the old one
+	 */
+	void overwrite(FileID id, byte[] newContents);
+
+	/**
+	 * Adds additional content to a targeted file.
+	 *
+	 * @param id the file to look for
+	 * @param moreContents the content to be added to what there already is
+	 */
+	void append(FileID id, byte[] moreContents);
+
+	/**
+	 * Deletes a targeted file.
+	 *
+	 * @param id the file to look for
+	 */
+	void delete(FileID id);
+
+	/**
 	 * Checks for existence of a the given file; this succeeds even after deletion.
 	 *
 	 * @param id the file to look for
@@ -88,55 +120,5 @@ public interface HederaFs {
 	 */
 	HFileMeta getattr(FileID id);
 
-	/**
-	 * Updates the metadata for the given file. Although it is possible to delete a file with this
-	 * mechanism, prefer {@link HederaFs#delete(FileID)}.
-	 *
-	 * @param id the file to update
-	 * @param attr the new metadata
-	 * @return an {@link UpdateResult} summarizing the result of the update metadata attempt
-	 */
-	UpdateResult setattr(FileID id, HFileMeta attr);
-
-	/**
-	 * Updates the metadata for the given file, even if it is deleted.
-	 *
-	 * @param id the file to update
-	 * @param attr the new metadata
-	 * @return an {@link UpdateResult} summarizing the result of the update metadata attempt
-	 */
-	UpdateResult sudoSetattr(FileID id, HFileMeta attr);
-
-	/**
-	 * Replaces the contents of the given file.
-	 *
-	 * @param id the file to replace
-	 * @param newContents its proposed contents
-	 * @return an {@link UpdateResult} summarizing the result of the update attempt
-	 */
-	UpdateResult overwrite(FileID id, byte[] newContents);
-
-	/**
-	 * Extends the contents of the given file.
-	 *
-	 * @param id the file to extend
-	 * @param moreContents its proposed extension
-	 * @return an {@link UpdateResult} summarizing the result of the append attempt
-	 */
-	UpdateResult append(FileID id, byte[] moreContents);
-
-	/**
-	 * Marks the given file as deleted and removes its data from the system.
-	 *
-	 * @param id the file to delete
-	 * @return an {@link UpdateResult} summarizing the result of the delete attempt
-	 */
-	UpdateResult delete(FileID id);
-
-	/**
-	 * Removes the given file from the system (both metadata and data).
-	 *
-	 * @param id the file to purge
-	 */
 	void rm(FileID id);
 }

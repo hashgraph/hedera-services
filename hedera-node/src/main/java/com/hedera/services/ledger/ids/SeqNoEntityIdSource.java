@@ -52,6 +52,7 @@ public class SeqNoEntityIdSource implements EntityIdSource {
 
 	@Override
 	public FileID newFileId(AccountID sponsor) {
+		provisionalIds++;
 		return FileID.newBuilder()
 				.setRealmNum(sponsor.getRealmNum())
 				.setShardNum(sponsor.getShardNum())

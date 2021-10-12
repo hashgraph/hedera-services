@@ -9,9 +9,9 @@ package com.hedera.services.txns.file;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,13 +23,13 @@ package com.hedera.services.txns.file;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
-import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
+import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -43,11 +43,11 @@ import org.mockito.InOrder;
 import java.time.Instant;
 import java.util.Map;
 
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
@@ -68,11 +68,6 @@ class FileSysUndelTransitionLogicTest {
 	FileID undeleted = IdUtils.asFile("0.0.13257");
 	FileID missing = IdUtils.asFile("0.0.75231");
 	FileID deleted = IdUtils.asFile("0.0.666");
-
-	HederaFs.UpdateResult success = new TieredHederaFs.SimpleUpdateResult(
-			true,
-			false,
-			SUCCESS);
 
 	JKey wacl;
 	HFileMeta attr, deletedAttr;
@@ -113,8 +108,6 @@ class FileSysUndelTransitionLogicTest {
 		InOrder inOrder = inOrder(hfs, txnCtx, oldExpiries);
 
 		givenTxnCtxSysUndeleting(TargetType.DELETED, OldExpiryType.FUTURE);
-		// and:
-		given(hfs.sudoSetattr(any(), any())).willReturn(success);
 
 		// when:
 		subject.doStateTransition();
@@ -124,7 +117,6 @@ class FileSysUndelTransitionLogicTest {
 		assertEquals(oldFutureExpiry, deletedAttr.getExpiry());
 		inOrder.verify(hfs).sudoSetattr(deleted, deletedAttr);
 		inOrder.verify(oldExpiries).remove(EntityId.fromGrpcFileId(deleted));
-		inOrder.verify(txnCtx).setStatus(SUCCESS);
 	}
 
 	@Test
@@ -144,33 +136,24 @@ class FileSysUndelTransitionLogicTest {
 	void detectsUndeleted() {
 		givenTxnCtxSysUndeleting(TargetType.VALID, OldExpiryType.FUTURE);
 
-		// when:
-		subject.doStateTransition();
-
 		// then:
-		verify(txnCtx).setStatus(INVALID_FILE_ID);
+		assertFailsWith(() -> subject.doStateTransition(), INVALID_FILE_ID);
 	}
 
 	@Test
 	void detectsMissing() {
 		givenTxnCtxSysUndeleting(TargetType.MISSING, OldExpiryType.FUTURE);
 
-		// when:
-		subject.doStateTransition();
-
 		// then:
-		verify(txnCtx).setStatus(INVALID_FILE_ID);
+		assertFailsWith(() -> subject.doStateTransition(), INVALID_FILE_ID);
 	}
 
 	@Test
 	void detectsUserDeleted() {
 		givenTxnCtxSysUndeleting(TargetType.DELETED, OldExpiryType.NONE);
 
-		// when:
-		subject.doStateTransition();
-
 		// then:
-		verify(txnCtx).setStatus(INVALID_FILE_ID);
+		assertFailsWith(() -> subject.doStateTransition(), INVALID_FILE_ID);
 	}
 
 	@Test
