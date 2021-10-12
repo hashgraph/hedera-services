@@ -96,11 +96,9 @@ public class RichInstant {
 	/* --- Helpers --- */
 
 	public static RichInstant fromGrpc(Timestamp grpc) {
-		if (!isValidLong(grpc.getSeconds()) || !isValidLong(grpc.getNanos()) ||
-				grpc.equals(Timestamp.getDefaultInstance())) {
-			return MISSING_INSTANT;
-		}
-		return new RichInstant(grpc.getSeconds(), grpc.getNanos());
+		return grpc.equals(Timestamp.getDefaultInstance())
+				? MISSING_INSTANT
+				: new RichInstant(grpc.getSeconds(), grpc.getNanos());
 	}
 
 	public Timestamp toGrpc() {
