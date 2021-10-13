@@ -30,11 +30,10 @@ import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.utils.EntityNumPair.MISSING_NUM_PAIR;
 import static com.hedera.services.utils.EntityNumPair.fromLongs;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static com.hedera.services.utils.EntityNumPair.fromNftId;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EntityNumPairTest {
 	@Test
@@ -60,32 +59,27 @@ class EntityNumPairTest {
 
 	@Test
 	void usesExpectedBitPacking() {
-		// given:
 		final var expected = new EntityNumPair(BitPackUtils.packedNums(1, 2));
 
-		// expect:
-		assertEquals(expected, EntityNumPair.fromLongs(1, 2));
+		assertEquals(expected, fromLongs(1, 2));
 	}
 
 	@Test
 	void factoryFromNftIdWorks() {
-		// setup:
-		final var expected = EntityNumPair.fromLongs(1, 2);
+		final var expected = fromLongs(1, 2);
 		final var nftId = new NftId(0, 0, 1, 2);
 
-		// given:
-		final var actual = EntityNumPair.fromNftId(nftId);
+		final var actual = fromNftId(nftId);
 
-		// expect:
 		assertEquals(expected, actual);
 	}
 
 	@Test
 	void returnsMissingNumPairIfInvalidLong() {
-		assertEquals(MISSING_NUM_PAIR, EntityNumPair.fromLongs(Long.MAX_VALUE, 2));
-		assertEquals(MISSING_NUM_PAIR, EntityNumPair.fromLongs(Long.MAX_VALUE, Long.MAX_VALUE));
-		assertEquals(MISSING_NUM_PAIR, EntityNumPair.fromLongs(-1L, 2));
-		assertEquals(MISSING_NUM_PAIR, EntityNumPair.fromLongs(-1L, Long.MAX_VALUE));
+		assertEquals(MISSING_NUM_PAIR, fromLongs(Long.MAX_VALUE, 2));
+		assertEquals(MISSING_NUM_PAIR, fromLongs(Long.MAX_VALUE, Long.MAX_VALUE));
+		assertEquals(MISSING_NUM_PAIR, fromLongs(-1L, 2));
+		assertEquals(MISSING_NUM_PAIR, fromLongs(-1L, Long.MAX_VALUE));
 	}
 
 	@Test
@@ -93,65 +87,47 @@ class EntityNumPairTest {
 		final var invalidShard = new NftId(1, 0, 1, 2);
 		final var invalidRealm = new NftId(0, 1, 1, 2);
 
-		assertSame(MISSING_NUM_PAIR, EntityNumPair.fromNftId(invalidShard));
-		assertSame(MISSING_NUM_PAIR, EntityNumPair.fromNftId(invalidRealm));
+		assertSame(MISSING_NUM_PAIR, fromNftId(invalidShard));
+		assertSame(MISSING_NUM_PAIR, fromNftId(invalidRealm));
 	}
 
 	@Test
 	void factoryFromModelRelWorks() {
-		// setup:
-		final var expected = EntityNumPair.fromLongs(1, 2);
+		final var expected = fromLongs(1, 2);
 		final var modelRel = new TokenRelationship(
-				new Token(new Id(0 , 0, 2)),
-				new Account(new Id(0 , 0, 1)));
+				new Token(new Id(0, 0, 2)),
+				new Account(new Id(0, 0, 1)));
 
-		// given:
 		final var actual = EntityNumPair.fromModelRel(modelRel);
 
-		// expect:
 		assertEquals(expected, actual);
 	}
 
 	@Test
 	void hiPhiAccessorWorks() {
-		// setup:
-		final long bigNum = (long)Integer.MAX_VALUE + 123;
+		final long bigNum = (long) Integer.MAX_VALUE + 123;
 		final var expected = EntityNum.fromLong(bigNum);
+		final var subject = fromLongs(bigNum, 1);
 
-		// given:
-		final var subject = EntityNumPair.fromLongs(bigNum, 1);
-
-		// when:
 		final var hi = subject.getHiPhi();
 
-		// then:
 		assertEquals(expected, hi);
 	}
 
 	@Test
 	void accountTokenReprWorks() {
-		// given:
-		final var subject = EntityNumPair.fromLongs(1, 2);
+		final var subject = fromLongs(1, 2);
 
-		// when:
 		final var pairRepr = subject.asAccountTokenRel();
 
-		// then:
 		assertEquals(1, pairRepr.getLeft().getAccountNum());
 		assertEquals(2, pairRepr.getRight().getTokenNum());
 	}
 
 	@Test
 	void toStringWorks() {
-		// given:
-		final var subject = EntityNumPair.fromLongs(1, 2);
+		final var subject = fromLongs(1, 2);
 
-		// expect:
 		assertEquals("PermHashLong(1, 2)", subject.toString());
-	}
-
-	@Test
-	void validateLongNumsInRange(){
-		assertEquals(MISSING_NUM_PAIR, EntityNumPair.fromLongs(Long.MAX_VALUE, 2));
 	}
 }
