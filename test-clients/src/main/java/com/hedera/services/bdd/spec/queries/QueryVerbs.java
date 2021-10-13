@@ -135,6 +135,10 @@ public class QueryVerbs {
 		return new HapiGetExecTime(List.of(txnIds)).nodePayment(1234L);
 	}
 
+	public static HapiGetExecTime getExecTimeNoPayment(String... txnIds) {
+		return new HapiGetExecTime(List.of(txnIds));
+	}
+
 	public static HapiGetTokenInfo getTokenInfo(String token) {
 		return new HapiGetTokenInfo(token);
 	}
