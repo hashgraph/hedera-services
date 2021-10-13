@@ -115,13 +115,6 @@ public final class StakedAnswerFlow implements AnswerFlow {
 			}
 		}
 
-		// if its a COST_ANSWER query for a restricted function just return NOT_SUPPORTED
-		if (service.needsAnswerOnlyCost(query)
-				&& RESTRICTED_FUNCTIONALITY.contains(service.canonicalFunction())
-				&& allegedPayment.isPresent() && !IS_THROTTLE_EXEMPT.test(allegedPayment.get().getPayer().getAccountNum())) {
-			return service.responseGiven(query, view, NOT_SUPPORTED);
-		}
-
 		final var hygieneStatus = hygieneCheck(query, view, service, optionalPayment);
 		if (hygieneStatus != OK) {
 			return service.responseGiven(query, view, hygieneStatus);
@@ -170,6 +163,12 @@ public final class StakedAnswerFlow implements AnswerFlow {
 		final var isPaymentRequired = service.requiresNodePayment(query);
 		if (isPaymentRequired && null == optionalPayment) {
 			return INSUFFICIENT_TX_FEE;
+		}
+
+		if (service.needsAnswerOnlyCost(query)
+				&& RESTRICTED_FUNCTIONALITY.contains(service.canonicalFunction())
+				&& optionalPayment != null && !IS_THROTTLE_EXEMPT.test(optionalPayment.getPayer().getAccountNum())) {
+			return NOT_SUPPORTED;
 		}
 
 		final var screenStatus = systemScreen(service.canonicalFunction(), optionalPayment);

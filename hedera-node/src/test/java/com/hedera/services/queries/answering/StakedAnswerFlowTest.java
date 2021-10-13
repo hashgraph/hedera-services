@@ -155,6 +155,29 @@ class StakedAnswerFlowTest {
 	}
 
 	@Test
+	void allowsPrivilegedCostAnswerQueries() {
+		setupCostAwareSuccessServiceResponse();
+		givenValidHeader();
+		givenExtractableSuperuserPayment();
+		givenValidSuperuserExtraction();
+		givenPaymentIsRequired();
+		given(service.needsAnswerOnlyCost(query)).willReturn(true);
+		given(service.canonicalFunction()).willReturn(NetworkGetExecutionTime);
+		given(transactionPrecheck.performForQueryPayment(superuserPaymentAccessor.getSignedTxnWrapper()))
+				.willReturn(Pair.of(new TxnValidityAndFeeReq(OK), superuserPaymentAccessor));
+		given(hapiOpPermissions.permissibilityOf(NetworkGetExecutionTime, superuser)).willReturn(OK);
+		givenHappyService();
+		given(resourceCosts.defaultPricesGiven(NetworkGetExecutionTime, now)).willReturn(usagePrices);
+		givenComputableCost();
+		givenEstimableCost();
+
+		final var actual = subject.satisfyUsing(service, query);
+
+		assertEquals(response, actual);
+		verify(submissionManager, never()).trySubmission(superuserPaymentAccessor);
+	}
+
+	@Test
 	void immediatelyRejectsMissingPayment() {
 		setupServiceResponse(INSUFFICIENT_TX_FEE);
 		givenValidHeader();
