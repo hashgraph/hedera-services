@@ -46,7 +46,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 @Singleton
 public class SystemPrecheck {
 	public static final LongPredicate IS_THROTTLE_EXEMPT = num -> num >= 1 && num <= 100L;
-	public static final List<HederaFunctionality> RESTRICTED_FUNCTIONALITY = List.of(NetworkGetExecutionTime);
+	public static final List<HederaFunctionality> RESTRICTED_FUNCTIONALITIES = List.of(NetworkGetExecutionTime);
 
 	private final SystemOpPolicies systemOpPolicies;
 	private final HapiOpPermissions hapiOpPermissions;
