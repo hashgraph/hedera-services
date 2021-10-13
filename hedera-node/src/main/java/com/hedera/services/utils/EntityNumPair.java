@@ -28,7 +28,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.isValidLong;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.isValidNum;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedNums;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedLowOrder32From;
@@ -44,7 +44,7 @@ public class EntityNumPair {
 	}
 
 	public static EntityNumPair fromLongs(long hi, long lo) {
-		if (!isValidLong(hi) || !isValidLong(lo)) {
+		if (!isValidNum(hi) || !isValidNum(lo)) {
 			return MISSING_NUM_PAIR;
 		}
 		final var value = packedNums(hi, lo);
