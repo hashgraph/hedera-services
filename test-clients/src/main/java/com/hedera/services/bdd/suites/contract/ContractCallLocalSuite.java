@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.contract;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -39,12 +40,14 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 
 public class ContractCallLocalSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCallLocalSuite.class);
@@ -68,9 +71,10 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 
 	private List<HapiApiSpec> negativeSpecs() {
 		return Arrays.asList(
+				deletedContract(),
+				invalidContractID(),
 				impureCallFails(),
 				insufficientFeeFails(),
-				undersizedMaxResultFails(),
 				lowBalanceFails()
 		);
 	}
@@ -110,13 +114,45 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 				);
 	}
 
+	private HapiApiSpec deletedContract() {
+		return defaultHapiSpec("InvalidDeletedContract")
+				.given(
+						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
+						contractCreate("parentDelegate").bytecode("parentDelegateBytecode")
+				).when(
+						contractDelete("parentDelegate")
+				).then(
+						contractCallLocal("parentDelegate", ContractResources.CREATE_CHILD_ABI)
+								.nodePayment(1_234_567)
+								.hasAnswerOnlyPrecheck(CONTRACT_DELETED)
+				);
+	}
+
+	private HapiApiSpec invalidContractID() {
+		String invalidContract = HapiSpecSetup.getDefaultInstance().invalidContractName();
+		return defaultHapiSpec("InvalidContractID")
+				.given(
+				).when()
+				.then(
+						contractCallLocal(invalidContract, ContractResources.CREATE_CHILD_ABI)
+								.nodePayment(1_234_567)
+								.hasAnswerOnlyPrecheck(INVALID_CONTRACT_ID),
+						contractCallLocal("0.0.0", ContractResources.CREATE_CHILD_ABI)
+								.nodePayment(1_234_567)
+								.hasAnswerOnlyPrecheck(INVALID_CONTRACT_ID)
+				);
+	}
+
 	private HapiApiSpec insufficientFeeFails() {
 		final long ADEQUATE_QUERY_PAYMENT = 500_000L;
 
 		return defaultHapiSpec("InsufficientFee")
 				.given(
-						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
-						contractCreate("parentDelegate").bytecode("parentDelegateBytecode")
+						cryptoCreate("payer"),
+						fileCreate("parentDelegateBytecode")
+								.path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
+						contractCreate("parentDelegate")
+								.bytecode("parentDelegateBytecode")
 				).when(
 						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI)
 				).then(
@@ -124,6 +160,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI)
 								.nodePayment(ADEQUATE_QUERY_PAYMENT)
 								.fee(0L)
+								.payingWith("payer")
 								.hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE));
 	}
 
@@ -149,21 +186,6 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 						sleepFor(1_000L),
 						getAccountBalance("payer").logged()
 				);
-	}
-
-	private HapiApiSpec undersizedMaxResultFails() {
-		return defaultHapiSpec("UndersizedMaxResult")
-				.given(
-						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
-						contractCreate("parentDelegate").bytecode("parentDelegateBytecode")
-				).when(
-						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI)
-				).then(
-						sleepFor(3_000L),
-						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI)
-								.maxResultSize(1L)
-								.nodePayment(1_234_567)
-								.hasAnswerOnlyPrecheck(RESULT_SIZE_LIMIT_EXCEEDED));
 	}
 
 	@Override

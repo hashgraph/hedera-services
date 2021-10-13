@@ -23,6 +23,7 @@ package com.hedera.services.utils;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -128,6 +129,24 @@ class MerkleEntityIdUtilsTest {
 	}
 
 	@Test
+	void asSolidityAddressHexWorksProperly() {
+		final var id = new Id(1, 2, 3);
+
+		assertEquals("0000000100000000000000020000000000000003", EntityIdUtils.asSolidityAddressHex(id));
+	}
+
+	@Test
+	void asSolidityAddressBytesWorksProperly() {
+		final var id = AccountID.newBuilder().setShardNum(1).setRealmNum(2).setAccountNum(3).build();
+
+		final var result = EntityIdUtils.asSolidityAddress(id);
+
+		final var expectedBytes = new byte[]{0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 3};
+
+		assertArrayEquals(expectedBytes, result);
+	}
+
+	@Test
 	void prettyPrintsTokenIds() {
 		final var id = TokenID.newBuilder().setShardNum(1).setRealmNum(2).setTokenNum(3).build();
 
@@ -178,6 +197,26 @@ class MerkleEntityIdUtilsTest {
 		final var cid = EntityIdUtils.asContract(id);
 
 		assertEquals(expected, cid);
+	}
+
+	@Test
+	void asAccountFromContractWorks() {
+		final var expected = AccountID.newBuilder().setShardNum(1).setRealmNum(2).setAccountNum(3).build();
+		final var id = ContractID.newBuilder().setShardNum(1).setRealmNum(2).setContractNum(3).build();
+
+		final var aid = EntityIdUtils.asAccount(id);
+
+		assertEquals(expected, aid);
+	}
+
+	@Test
+	void asAccountFromEntityWorks() {
+		final var expected = AccountID.newBuilder().setShardNum(1).setRealmNum(2).setAccountNum(3).build();
+		final var id = EntityId.fromGrpcAccountId(AccountID.newBuilder().setShardNum(1).setRealmNum(2).setAccountNum(3).build());
+
+		final var aid = EntityIdUtils.asAccount(id);
+
+		assertEquals(expected, aid);
 	}
 
 	@Test
