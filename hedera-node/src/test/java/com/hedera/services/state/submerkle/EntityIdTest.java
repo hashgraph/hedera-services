@@ -147,13 +147,6 @@ class EntityIdTest {
 
 	@Test
 	void factoriesWork() {
-		assertDoesNotThrow(() -> EntityId.fromGrpcAccountId(null));
-		assertDoesNotThrow(() -> EntityId.fromGrpcFileId(null));
-		assertDoesNotThrow(() -> EntityId.fromGrpcTopicId(null));
-		assertDoesNotThrow(() -> EntityId.fromGrpcTokenId(null));
-		assertDoesNotThrow(() -> EntityId.fromGrpcScheduleId(null));
-		assertDoesNotThrow(() -> EntityId.fromGrpcContractId(null));
-
 		assertEquals(MISSING_ENTITY_ID, EntityId.fromGrpcAccountId(null));
 		assertEquals(MISSING_ENTITY_ID, EntityId.fromGrpcContractId(null));
 		assertEquals(MISSING_ENTITY_ID, EntityId.fromGrpcTopicId(null));

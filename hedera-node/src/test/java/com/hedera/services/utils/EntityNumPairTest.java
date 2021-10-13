@@ -82,7 +82,6 @@ class EntityNumPairTest {
 
 	@Test
 	void returnsMissingNumPairIfInvalidLong() {
-		assertDoesNotThrow(() -> EntityNumPair.fromLongs(Long.MAX_VALUE, 2));
 		assertEquals(MISSING_NUM_PAIR, EntityNumPair.fromLongs(Long.MAX_VALUE, 2));
 		assertEquals(MISSING_NUM_PAIR, EntityNumPair.fromLongs(Long.MAX_VALUE, Long.MAX_VALUE));
 		assertEquals(MISSING_NUM_PAIR, EntityNumPair.fromLongs(-1L, 2));
@@ -153,7 +152,6 @@ class EntityNumPairTest {
 
 	@Test
 	void validateLongNumsInRange(){
-		assertDoesNotThrow(() -> EntityNumPair.fromLongs(Long.MAX_VALUE, 2));
 		assertEquals(MISSING_NUM_PAIR, EntityNumPair.fromLongs(Long.MAX_VALUE, 2));
 	}
 }
