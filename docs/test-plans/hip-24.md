@@ -1,10 +1,10 @@
 # HIP-24 (Pause feature on Hedera Token Service)
 
-This feature adds two new transactions `TokenPause` and `TokenUnpause` which toggle the new `paused` field 
+This feature adds two new transactions `TokenPause` and `TokenUnpause` which toggle the new `Paused` field 
 of the token entity. Also added is a new `pauseKey` field to the token entity which will be needed to sign the 
 Pause and Unpause transactions.
 
-A `paused` token type cannot be part of transactions other than the above mentioned Pause and Unpause transactions.
+A `Paused` token type cannot be part of transactions other than the above mentioned Pause and Unpause transactions.
 
 By default a token when created will be `unpaused` and can be used as expected. This will ensure that the existing
 tokens comply with this feature.
@@ -19,12 +19,12 @@ This feature effects,
    `TokenUnfreeze`, `TokenGrantKyc`, `TokenRevokeKyc`
    
 As `CryptoTransfers` are involved, we need need to validate that custom-fee semantics follow the restrictions 
-put in place by a `paused` token.
+put in place by a `Paused` token.
 
 So the high-level scope includes:
    1. Migration tests.
    2. Positive functional tests, which test if a token's pause status can be toggled using the
-   the new tokenPause and tokenUnpause transactions.
+   the new TokenPause and TokenUnpause transactions.
    3. Negative functional tests, which test failure scenarios of transactions involving a paused token.
    4. State validation for all these positive and negative tests.
    5. Testing any possible interplay with custom fees.
@@ -39,7 +39,7 @@ the change to state is very small---two fields added to the
 
 :white_check_mark:&nbsp;**Positive functional** testing will require EET specs 
  that perform all variants of `TokenCreate`s with a `pauseKey` and test if the token's pause status is toggled 
- appropriately using the new `tokenPause` and `tokenUpause` transactions.
+ appropriately using the new `TokenPause` and `TokenUnpause` transactions.
  
 :x:&nbsp;**Negative functional** testing will require EET specs that perform all
  variants of `TokenCreate`s with a `pauseKey` and pause the token so that all transactions involving this token 
@@ -77,11 +77,11 @@ Tests should validate both fungible and non-fungible-unique token types.
 
 ### :white_check_mark:&nbsp;Positive functional
    - [x] _(EET)_ A `TokenCreate` with a `pauseKey` and `TokenPause` transaction signed by the this `pausekey` will set the token pause status as `Paused`. `tokenGetInfo` asserts this pause status.
-   - [x] _(EET)_ To the `paused` token above we perform a `TokenUnpause` transaction signed by the same `pauseKey` which will set the token pause status as `Unpasued`. `tokenGetInfo` asserts this pause status.
+   - [x] _(EET)_ To the `Paused` token above we perform a `TokenUnpause` transaction signed by the same `pauseKey` which will set the token pause status as `Unpasued`. `tokenGetInfo` asserts this pause status.
    - [x] _(EET)_ A newly created Token is asserted for a `Unpaused` token status.
 
 ### :x:&nbsp;Negative functional
-   - [x] _(EET)_ Setup with a A `TokenCreate` with a `pauseKey` and `TokenPause` transaction signed by the this `pausekey` will set the token pause status as `Paused`. `tokenGetInfo` asserts this pause status.
+   - [x] _(EET)_ Setup a `Paused` token using `TokenCreate` with a `pauseKey` and perform a `TokenPause` transaction signed by the this `pausekey` which will set the token's pause status as `Paused`. `tokenGetInfo` asserts this pause status.
    - [x] _(EET)_ A `TokenCreate` fails with this paused token as denominating token for custom fee.
    - [x] _(EET)_ A `TokenUpdate` fails on this paused token.
    - [x] _(EET)_ A `TokenAssociate` fails on this paused token.
@@ -99,4 +99,4 @@ Tests should validate both fungible and non-fungible-unique token types.
    - [x] _(EET)_ A multi-party `CryptoTransfer` rolls back all side-effects if it fails due to a paused Token.
 
 ### :receipt:&nbsp;Custom fee interplays
-   - [x] _(EET)_ A `paused` token as denominating token of a custom fee will result in a failure to any transaction that triggers this custom fee.
+   - [x] _(EET)_ A `Paused` token as denominating token of a custom fee will result in a failure to any transaction that triggers this custom fee.
