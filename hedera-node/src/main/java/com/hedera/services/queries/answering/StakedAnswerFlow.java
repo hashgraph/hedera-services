@@ -43,13 +43,12 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.time.Instant;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
 import static com.hedera.services.txns.submission.SystemPrecheck.IS_THROTTLE_EXEMPT;
+import static com.hedera.services.txns.submission.SystemPrecheck.RESTRICTED_FUNCTIONALITY;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -57,7 +56,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 
 public final class StakedAnswerFlow implements AnswerFlow {
-	private static final List<HederaFunctionality> RESTRICTED_FUNCTIONALITY = List.of(NetworkGetExecutionTime);
 	private final FeeCalculator fees;
 	private final QueryFeeCheck queryFeeCheck;
 	private final AccountNumbers accountNums;
@@ -165,12 +163,6 @@ public final class StakedAnswerFlow implements AnswerFlow {
 			return INSUFFICIENT_TX_FEE;
 		}
 
-		if (service.needsAnswerOnlyCost(query)
-				&& RESTRICTED_FUNCTIONALITY.contains(service.canonicalFunction())
-				&& optionalPayment != null && !IS_THROTTLE_EXEMPT.test(optionalPayment.getPayer().getAccountNum())) {
-			return NOT_SUPPORTED;
-		}
-
 		final var screenStatus = systemScreen(service.canonicalFunction(), optionalPayment);
 		if (screenStatus != OK) {
 			return screenStatus;
@@ -192,7 +184,9 @@ public final class StakedAnswerFlow implements AnswerFlow {
 			}
 		}
 
-		if (payer == null || !IS_THROTTLE_EXEMPT.test(payer.getAccountNum())) {
+		if (payer == null && RESTRICTED_FUNCTIONALITY.contains(function)) {
+			return NOT_SUPPORTED;
+		} else if (payer == null || !IS_THROTTLE_EXEMPT.test(payer.getAccountNum())) {
 			return throttles.shouldThrottleQuery(function) ? BUSY : OK;
 		} else {
 			return OK;

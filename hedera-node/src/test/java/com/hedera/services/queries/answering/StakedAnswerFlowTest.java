@@ -141,11 +141,9 @@ class StakedAnswerFlowTest {
 	}
 
 	@Test
-	void rejectsNonPrivilegedCostAnswerQueries() {
+	void rejectsNetworkGetExecutionTimeQueriesWithNoPayment() {
 		setupServiceResponse(NOT_SUPPORTED);
 		givenValidHeader();
-		givenExtractablePayment();
-		given(service.needsAnswerOnlyCost(query)).willReturn(true);
 		given(service.canonicalFunction()).willReturn(NetworkGetExecutionTime);
 
 
@@ -155,13 +153,28 @@ class StakedAnswerFlowTest {
 	}
 
 	@Test
-	void allowsPrivilegedCostAnswerQueries() {
+	void rejectsUnprivilegedNetworkGetExecutionTimeQueriesWithPayment() {
+		setupServiceResponse(NOT_SUPPORTED);
+		givenValidHeader();
+		givenPaymentIsRequired();
+		givenExtractablePayment();
+		givenValidExtraction();
+		given(hapiOpPermissions.permissibilityOf(NetworkGetExecutionTime, payer)).willReturn(NOT_SUPPORTED);
+		given(service.canonicalFunction()).willReturn(NetworkGetExecutionTime);
+
+
+		final var actual = subject.satisfyUsing(service, query);
+
+		assertEquals(response, actual);
+	}
+
+	@Test
+	void allowsPrivilegedNetworkGetExecutionTimeQueriesWithPayment() {
 		setupCostAwareSuccessServiceResponse();
 		givenValidHeader();
 		givenExtractableSuperuserPayment();
 		givenValidSuperuserExtraction();
 		givenPaymentIsRequired();
-		given(service.needsAnswerOnlyCost(query)).willReturn(true);
 		given(service.canonicalFunction()).willReturn(NetworkGetExecutionTime);
 		given(transactionPrecheck.performForQueryPayment(superuserPaymentAccessor.getSignedTxnWrapper()))
 				.willReturn(Pair.of(new TxnValidityAndFeeReq(OK), superuserPaymentAccessor));
@@ -169,7 +182,6 @@ class StakedAnswerFlowTest {
 		givenHappyService();
 		given(resourceCosts.defaultPricesGiven(NetworkGetExecutionTime, now)).willReturn(usagePrices);
 		givenComputableCost();
-		givenEstimableCost();
 
 		final var actual = subject.satisfyUsing(service, query);
 

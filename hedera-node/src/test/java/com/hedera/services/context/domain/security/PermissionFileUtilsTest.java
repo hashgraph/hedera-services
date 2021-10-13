@@ -51,6 +51,7 @@ import com.hederahashgraph.api.proto.java.FileGetInfoQuery;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.GetBySolidityIDQuery;
+import com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeQuery;
 import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoQuery;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
@@ -315,6 +316,15 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
+	void worksForNetworkGetExecutionTime() {
+		var op = NetworkGetExecutionTimeQuery.getDefaultInstance();
+		var query = Query.newBuilder()
+				.setNetworkGetExecutionTime(op)
+				.build();
+		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
+	}
+
+	@Test
 	void worksForGetVersionInfo() {
 		var op = NetworkGetVersionInfoQuery.getDefaultInstance();
 		var query = Query.newBuilder()
@@ -452,6 +462,9 @@ class PermissionFileUtilsTest {
 	private String legacyKeyForQuery(Query request) {
 		String queryBody = null;
 		switch (request.getQueryCase()) {
+			case NETWORKGETEXECUTIONTIME:
+				queryBody = "networkGetExecutionTime";
+				break;
 			case NETWORKGETVERSIONINFO:
 				queryBody = "getVersionInfo";
 				break;
