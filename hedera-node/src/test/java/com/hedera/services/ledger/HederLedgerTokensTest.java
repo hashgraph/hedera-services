@@ -23,6 +23,7 @@ package com.hedera.services.ledger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
+import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -31,6 +32,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
+import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.test.utils.IdUtils.tokenWith;
@@ -158,6 +162,8 @@ class HederLedgerTokensTest extends BaseHederaLedgerTestHelper {
 		final var manager = mock(UniqTokenViewsManager.class);
 		subject.setTokenViewsManager(manager);
 
+		subject.addNewAssociationToList(new FcTokenAssociation(1L, 2L));
+
 		subject.numTouches = 2;
 		subject.tokensTouched[0] = tokenWith(111);
 		subject.tokensTouched[1] = tokenWith(222);
@@ -184,11 +190,14 @@ class HederLedgerTokensTest extends BaseHederaLedgerTestHelper {
 		verify(tokenRelsLedger).rollback();
 		verify(nftsLedger).rollback();
 		verify(manager).rollback();
-		verify(accountsLedger).undoChangesOfType(NUM_NFTS_OWNED);
+		verify(accountsLedger).undoChangesOfType(List.of(TOKENS, NUM_NFTS_OWNED, ALREADY_USED_AUTOMATIC_ASSOCIATIONS));
 
 		assertEquals(0, subject.numTouches);
 		assertEquals(0, subject.netTokenTransfers.get(tokenWith(111)).getAccountAmountsCount());
 		assertEquals(0, subject.netTokenTransfers.get(tokenWith(222)).getAccountAmountsCount());
+
+		assertTrue(subject.getNewTokenAssociations().isEmpty(),
+				"Dropping token changes should also clear new token associations");
 	}
 
 	@Test

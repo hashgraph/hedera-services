@@ -48,10 +48,12 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
@@ -172,6 +174,24 @@ class TransitionRunnerTest {
 		
 		var res = subject.tryTransition(accessor);
 		verify(txnCtx).setStatus(FAIL_INVALID);
+		verify(logic).reclaimCreatedIds();
+	}
+
+	@Test
+	void rethrowsException() {
+		// given:
+		given(accessor.getFunction()).willReturn(TokenCreate);
+		given(accessor.getTxn()).willReturn(mockBody);
+		given(lookup.lookupFor(TokenCreate, mockBody)).willReturn(Optional.of(logic));
+		given(logic.validateSemantics(accessor)).willReturn(OK);
+		// and:
+		doThrow(new RuntimeException()).when(logic).doStateTransition();
+
+		// when:
+		assertThrows(RuntimeException.class, () -> subject.tryTransition(accessor));
+
+		// then:
+		verify(txnCtx, never()).setStatus(FAIL_INVALID);
 		verify(logic).reclaimCreatedIds();
 	}
 }

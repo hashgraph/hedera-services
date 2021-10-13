@@ -24,8 +24,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -37,16 +35,11 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
-import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
-import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
-import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -61,7 +54,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
@@ -220,33 +212,6 @@ public class CryptoCreateSuite extends HapiApiSuite {
 						cryptoCreate("alsoBroken")
 								.entityMemo(ZERO_BYTE_MEMO)
 								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING)
-				);
-	}
-
-	private HapiApiSpec vanillaCreateSucceeds() {
-		return defaultHapiSpec("VanillaCreateSucceeds")
-				.given(
-						cryptoCreate("testAccount").via("txn"),
-						UtilVerbs.sleepFor(2000)
-				).when().then(
-						getTxnRecord("txn").logged()
-				);
-	}
-
-	private HapiApiSpec requiresNewKeyToSign() {
-		KeyShape shape = listOf(SIMPLE, listOf(2), threshOf(1, 3));
-		SigControl validSig = shape.signedWith(sigs(ON, sigs(ON, ON), sigs(OFF, OFF, ON)));
-		SigControl invalidSig = shape.signedWith(sigs(OFF, sigs(ON, ON), sigs(OFF, OFF, ON)));
-
-		return defaultHapiSpec("RequiresNewKeyToSign")
-				.given().when().then(
-						cryptoCreate("test")
-								.keyShape(shape)
-								.sigControl(forKey("test", invalidSig))
-								.hasKnownStatus(INVALID_SIGNATURE),
-						cryptoCreate("test")
-								.keyShape(shape)
-								.sigControl(forKey("test", validSig))
 				);
 	}
 

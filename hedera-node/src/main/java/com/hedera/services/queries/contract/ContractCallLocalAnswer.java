@@ -21,6 +21,7 @@ package com.hedera.services.queries.contract;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.contracts.execution.CallLocalExecutor;
 import com.hedera.services.queries.AbstractAnswer;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
@@ -32,7 +33,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 
@@ -47,15 +47,12 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 	public static final String CONTRACT_CALL_LOCAL_CTX_KEY =
 			ContractCallLocalAnswer.class.getSimpleName() + "_localCallResponse";
 
-	@FunctionalInterface
-	public interface LegacyLocalCaller {
-		ContractCallLocalResponse perform(ContractCallLocalQuery query, long now) throws Exception;
-	}
-
-	private final LegacyLocalCaller delegate;
+	private final CallLocalExecutor callLocalExecutor;
 
 	@Inject
-	public ContractCallLocalAnswer(LegacyLocalCaller delegate, OptionValidator validator) {
+	public ContractCallLocalAnswer(
+			CallLocalExecutor callLocalExecutor,
+			OptionValidator validator) {
 		super(
 				ContractCallLocal,
 				query -> query.getContractCallLocal().getHeader().getPayment(),
@@ -69,7 +66,8 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 						return validator.queryableContractStatus(op.getContractID(), view.contracts());
 					}
 				});
-		this.delegate = delegate;
+
+		this.callLocalExecutor = callLocalExecutor;
 	}
 
 	@Override
@@ -134,8 +132,8 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 			/* If answering from a zero-stake node, there are no node payments, and the
 			usage estimator won't have cached the result it got from the local call. */
 			try {
-				var delegateResponse = delegate.perform(op, Instant.now().getEpochSecond());
-				response.mergeFrom(withCid(delegateResponse, op.getContractID()));
+				var callLocalResponse = callLocalExecutor.execute(op);
+				response.mergeFrom(withCid(callLocalResponse, op.getContractID()));
 			} catch (Exception e) {
 				response.setHeader(answerOnlyHeader(FAIL_INVALID, cost));
 			}
