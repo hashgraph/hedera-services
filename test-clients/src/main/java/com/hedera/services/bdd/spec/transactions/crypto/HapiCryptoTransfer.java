@@ -72,6 +72,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.HBAR_SENTINEL_TOKEN_ID;
 import static java.util.stream.Collectors.collectingAndThen;
+import static java.util.stream.Collectors.flatMapping;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.reducing;
@@ -92,6 +93,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 	private Optional<String> tokenWithEmptyTransferAmounts = Optional.empty();
 	private Optional<Pair<String[], Long>> appendedFromTo = Optional.empty();
 	private Optional<AtomicReference<FeeObject>> feesObserver = Optional.empty();
+	private boolean fullyAggregateTokenTransfers = false;
 
 	@Override
 	public HederaFunctionality type() {
@@ -152,6 +154,10 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 		this.tokenAwareProviders = List.of(sources);
 	}
 
+	public HapiCryptoTransfer fullyAggregateTokenTransfers() {
+		this.fullyAggregateTokenTransfers = true;
+		return this;
+	}
 
 	public HapiCryptoTransfer withEmptyTokenTransfers(String token) {
 		tokenWithEmptyTransferAmounts = Optional.of(token);
@@ -380,7 +386,32 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 	}
 
 	private List<TokenTransferList> transfersFor(HapiApiSpec spec) {
-		Map<TokenID, List<AccountAmount>> aggregated = tokenAwareProviders.stream()
+		Map<TokenID, List<AccountAmount>> aggregated;
+		if (fullyAggregateTokenTransfers) {
+			aggregated = fullyAggregateTokenTransfersList(spec);
+		} else {
+			aggregated = AggregateOnTokenIds(spec);
+		}
+
+		return aggregated.entrySet().stream()
+				.map(entry -> TokenTransferList.newBuilder()
+						.setToken(entry.getKey())
+						.addAllTransfers(entry.getValue())
+						.build())
+				.collect(toList());
+	}
+
+	private Map<TokenID, List<AccountAmount>> AggregateOnTokenIds(HapiApiSpec spec) {
+		return tokenAwareProviders.stream()
+				.filter(TokenMovement::isFungibleToken)
+				.map(p -> p.specializedFor(spec))
+				.collect(groupingBy(
+						TokenTransferList::getToken,
+						flatMapping(xfers -> xfers.getTransfersList().stream(), toList())));
+	}
+
+	private Map<TokenID, List<AccountAmount>> fullyAggregateTokenTransfersList(HapiApiSpec spec) {
+		return tokenAwareProviders.stream()
 				.filter(TokenMovement::isFungibleToken)
 				.map(p -> p.specializedFor(spec))
 				.collect(Collectors.toMap(
@@ -390,19 +421,15 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 								.stream().collect(groupingBy(
 										AccountAmount::getAccountID,
 										summingLong(AccountAmount::getAmount))).entrySet().stream().map(
-												entry ->  AccountAmount.newBuilder()
-														.setAccountID(entry.getKey())
-														.setAmount(entry.getValue())
-														.build()
+										entry ->  AccountAmount.newBuilder()
+												.setAccountID(entry.getKey())
+												.setAmount(entry.getValue())
+												.build()
 								).collect(toList()),
 						LinkedHashMap::new));
-		return aggregated.entrySet().stream()
-				.map(entry -> TokenTransferList.newBuilder()
-						.setToken(entry.getKey())
-						.addAllTransfers(entry.getValue())
-						.build())
-				.collect(toList());
 	}
+
+
 
 	private List<TokenTransferList> transfersForNft(HapiApiSpec spec) {
 		var uniqueCount = tokenAwareProviders.stream()
