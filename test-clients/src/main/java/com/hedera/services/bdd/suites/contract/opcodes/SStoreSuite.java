@@ -30,6 +30,7 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.Assertions;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -43,6 +44,7 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.is
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -69,7 +71,8 @@ public class SStoreSuite extends HapiApiSuite {
 				multipleSStoreOpsSucceed(),
 				benchmarkSingleSetter(),
 				childStorage(),
-				cleanupAppProperties()
+				cleanupAppProperties(),
+				temporarySStoreRefundTest()
 		});
 	}
 
@@ -232,6 +235,37 @@ public class SStoreSuite extends HapiApiSuite {
 												)
 								)
 				);
+	}
+
+	HapiApiSpec temporarySStoreRefundTest() {
+		return defaultHapiSpec("TemporarySStoreRefundTest")
+				.given(
+						fileCreate("bytecode").path(ContractResources.TEMPORARY_SSTORE_REFUND_CONTRACT),
+						contractCreate("sStoreRefundContract").bytecode("bytecode")
+				).when(
+						contractCall(
+								"sStoreRefundContract",
+								ContractResources.TEMPORARY_SSTORE_HOLD_TEMPORARY_ABI, 10).via("tempHoldTx"),
+						contractCall(
+								"sStoreRefundContract",
+								ContractResources.TEMPORARY_SSTORE_HOLD_PERMANENTLY_ABI, 10).via("permHoldTx")
+				).then(
+						withOpContext((spec, opLog) -> {
+							var subop01 = getTxnRecord("tempHoldTx")
+									.saveTxnRecordToRegistry("tempHoldTxRec").logged();
+							var subop02 = getTxnRecord("permHoldTx")
+									.saveTxnRecordToRegistry("permHoldTxRec").logged();
+							CustomSpecAssert.allRunFor(spec, subop01, subop02);
+
+							var gasUsedForTemporaryHoldTx = spec.registry()
+									.getTransactionRecord("tempHoldTxRec").getContractCallResult().getGasUsed();
+							var gasUsedForPermanentHoldTx = spec.registry()
+									.getTransactionRecord("permHoldTxRec").getContractCallResult().getGasUsed();
+
+							Assertions.assertTrue(gasUsedForTemporaryHoldTx < 3000L);
+							Assertions.assertTrue(gasUsedForPermanentHoldTx > 20000L);
+						}
+				));
 	}
 
 	@Override
