@@ -9,10 +9,12 @@ import com.hedera.services.store.models.TokenRelationship;
 import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.utils.EntityNumPair.MISSING_NUM_PAIR;
+import static com.hedera.services.utils.EntityNumPair.fromLongs;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EntityNumPairTest {
 	@Test
@@ -60,11 +62,11 @@ class EntityNumPairTest {
 
 	@Test
 	void returnsMissingNumPairIfInvalidLong() {
-		// given:
 		assertDoesNotThrow(() -> EntityNumPair.fromLongs(Long.MAX_VALUE, 2));
-
-		// expect:
 		assertEquals(MISSING_NUM_PAIR, EntityNumPair.fromLongs(Long.MAX_VALUE, 2));
+		assertEquals(MISSING_NUM_PAIR, EntityNumPair.fromLongs(Long.MAX_VALUE, Long.MAX_VALUE));
+		assertEquals(MISSING_NUM_PAIR, EntityNumPair.fromLongs(-1L, 2));
+		assertEquals(MISSING_NUM_PAIR, EntityNumPair.fromLongs(-1L, Long.MAX_VALUE));
 	}
 
 	@Test
@@ -127,5 +129,11 @@ class EntityNumPairTest {
 
 		// expect:
 		assertEquals("PermHashLong(1, 2)", subject.toString());
+	}
+
+	@Test
+	void validateLongNumsInRange(){
+		assertDoesNotThrow(() -> EntityNumPair.fromLongs(Long.MAX_VALUE, 2));
+		assertEquals(MISSING_NUM_PAIR, EntityNumPair.fromLongs(Long.MAX_VALUE, 2));
 	}
 }

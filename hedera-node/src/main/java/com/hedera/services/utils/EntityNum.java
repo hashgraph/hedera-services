@@ -29,7 +29,7 @@ import com.hederahashgraph.api.proto.java.TopicID;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.isValidLong;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.isValidNum;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
 
 /**
@@ -51,7 +51,7 @@ public class EntityNum {
 	}
 
 	public static EntityNum fromLong(long l) {
-		if (!isValidLong(l)) {
+		if (!isValidNum(l)) {
 			return MISSING_NUM;
 		}
 		final var value = codeFromNum(l);
