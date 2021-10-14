@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.perf.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -41,6 +41,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 
 public class ContractCallLoadTest extends LoadTest {
 	private static final Logger log = LogManager.getLogger(ContractCallLoadTest.class);
@@ -65,13 +66,14 @@ public class ContractCallLoadTest extends LoadTest {
 		final AtomicInteger submittedSoFar = new AtomicInteger(0);
 		final String DEPOSIT_MEMO = "So we out-danced thought, body perfection brought...";
 
-		Supplier<HapiSpecOperation[]> callBurst = () -> new HapiSpecOperation[] {
+		Supplier<HapiSpecOperation[]> callBurst = () -> new HapiSpecOperation[]{
 				inParallel(IntStream.range(0, settings.getBurstSize())
 						.mapToObj(i ->
 								contractCall("perf", ContractResources.VERBOSE_DEPOSIT_ABI, i + 1, 0, DEPOSIT_MEMO)
 										.sending(i + 1)
 										.noLogging()
 										.suppressStats(true)
+										.hasRetryPrecheckFrom(PLATFORM_TRANSACTION_NOT_CREATED)
 										.deferStatusResolution())
 						.toArray(n -> new HapiSpecOperation[n])),
 				logIt(ignore ->

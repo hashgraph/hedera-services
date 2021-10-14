@@ -44,6 +44,7 @@ import java.time.Instant;
  */
 
 public interface OptionValidator {
+
 	boolean hasGoodEncoding(Key key);
 	boolean isValidExpiry(Timestamp expiry);
 	boolean isThisNodeAccount(AccountID id);
@@ -68,6 +69,8 @@ public interface OptionValidator {
 	ResponseCodeEnum nftMaxQueryRangeCheck(long start, long end);
 
 	ResponseCodeEnum queryableTopicStatus(TopicID id, MerkleMap<EntityNum, MerkleTopic> topics);
+
+	JKey attemptToDecodeOrThrow(Key key, ResponseCodeEnum code);
 
 	default ResponseCodeEnum queryableAccountStatus(AccountID id, MerkleMap<EntityNum, MerkleAccount> accounts) {
 		return PureValidation.queryableAccountStatus(id, accounts);

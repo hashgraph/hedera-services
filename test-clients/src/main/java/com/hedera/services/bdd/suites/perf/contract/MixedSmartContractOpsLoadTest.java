@@ -79,7 +79,7 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
 		final String CIVILIAN_ACCOUNT = "civilian";
 		final int depositAmount = 1;
 
-		Supplier<HapiSpecOperation[]> mixedOpsBurst = () -> new HapiSpecOperation[] {
+		Supplier<HapiSpecOperation[]> mixedOpsBurst = () -> new HapiSpecOperation[]{
 				/* create a contract */
 				contractCreate(CONTRACT_NAME_PREFIX + createdSoFar.getAndIncrement())
 						.bytecode(SOME_BYTE_CODE)
@@ -95,7 +95,7 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
 				/* call balance lookup contract and contract to deposit funds*/
 				contractCallLocal(LOOKUP_CONTRACT,
 						BALANCE_LOOKUP_ABI,
-						spec -> new Object[] { spec.registry().getAccountID(CIVILIAN_ACCOUNT).getAccountNum() }
+						spec -> new Object[]{spec.registry().getAccountID(CIVILIAN_ACCOUNT).getAccountNum()}
 				).payingWith(GENESIS),
 
 				contractCall(PAYABLE_CONTRACT, ContractResources.DEPOSIT_ABI, depositAmount)
