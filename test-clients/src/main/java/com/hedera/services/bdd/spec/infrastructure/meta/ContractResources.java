@@ -51,6 +51,7 @@ public class ContractResources {
 	public static final String DOUBLE_SEND_BYTECODE_PATH = bytecodePath("DoubleSend");
 	public static final String EMPTY_CONSTRUCTOR = bytecodePath("EmptyConstructor");
 	public static final String PAYABLE_CONSTRUCTOR = bytecodePath("PayableConstructor");
+	public static final String ERC20_BYTECODE_PATH = bytecodePath("ERC20");
 
 	public static final String BENCHMARK_CONTRACT = bytecodePath("Benchmark");
 	public static final String SIMPLE_UPDATE = bytecodePath("SimpleUpdate");
@@ -443,6 +444,15 @@ public class ContractResources {
     public static final String FACTORY_QUICK_SELF_DESTRUCT_CREATE_AND_DELETE_ABI = "{" +
 			"\"inputs\":[],\"name\":\"createAndDeleteChild\"," +
 			"\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"}";
+
+	public static final String ERC20_ABI = "{ \"inputs\": [ { \"internalType\": \"uint256\", \"name\": \"initialSupply\", \"type\": \"uint256\" } ], \"stateMutability\": \"nonpayable\", \"type\": \"constructor\" }";
+	public static final String ERC20_APPROVE_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"spender\", \"type\": \"address\" }, { \"internalType\": \"uint256\", \"name\": \"amount\", \"type\": \"uint256\" } ]," +
+			" \"name\": \"approve\", \"outputs\": [ { \"internalType\": \"bool\", \"name\": \"\", \"type\": \"bool\" } ], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+	public static final String ERC20_TRANSFER_FROM_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", \"name\": \"recipient\", \"type\": \"address\" }," +
+			" { \"internalType\": \"uint256\", \"name\": \"amount\", \"type\": \"uint256\" } ], \"name\": \"transferFrom\", \"outputs\": [ { \"internalType\": \"bool\", \"name\": \"\", \"type\": \"bool\" } ], \"stateMutability\": \"nonpayable\"," +
+			" \"type\": \"function\" }";
+	public static final String ERC20_TRANSFER_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"recipient\", \"type\": \"address\" }, { \"internalType\": \"uint256\", \"name\": \"amount\", \"type\": \"uint256\" } ]," +
+			" \"name\": \"transfer\", \"outputs\": [ { \"internalType\": \"bool\", \"name\": \"\", \"type\": \"bool\" } ], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
 	/* ABI for FactoryContract.sol */
 	public static final String FACTORY_CONTRACT_SUCCESS = "{ \"constant\": false, \"inputs\": [], \"name\": \"deploymentSuccess\", \"outputs\": [], \"payable\": false, \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
