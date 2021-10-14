@@ -28,6 +28,7 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.MAX_NUM_AL
 import static com.hedera.services.state.merkle.internals.BitPackUtils.buildAutomaticAssociationMetaData;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getMaxAutomaticAssociationsFrom;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.isValidNum;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setMaxAutomaticAssociationsTo;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.signedLowOrder32From;
@@ -35,7 +36,9 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime
 import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class BitPackUtilsTest {
 	private final int maxAutoAssociations = 123;
@@ -139,5 +142,13 @@ class BitPackUtilsTest {
 
 		assertEquals(newMax, getMaxAutomaticAssociationsFrom(metadata));
 		assertEquals(newAlreadyAutoAssociations, getAlreadyUsedAutomaticAssociationsFrom(metadata));
+	}
+
+	@Test
+	void validateLong() {
+		assertFalse(isValidNum(MAX_NUM_ALLOWED + 10));
+		assertTrue(isValidNum(MAX_NUM_ALLOWED));
+		assertTrue(isValidNum(0L));
+		assertFalse(isValidNum(-1L));
 	}
 }

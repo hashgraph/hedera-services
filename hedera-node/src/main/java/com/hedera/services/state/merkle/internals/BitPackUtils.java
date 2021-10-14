@@ -196,6 +196,17 @@ public class BitPackUtils {
 		return (alreadyUsedAutoAssociations << 16) | getMaxAutomaticAssociationsFrom(autoAssociationMetadata);
 	}
 
+	/**
+	 * Checks if the given long is not a number in the allowed range
+	 *
+	 * @param num
+	 * 		given long number to check
+	 * @return true if valid, else returns false
+	 */
+	public static boolean isValidNum(long num) {
+		return num >= 0 && num <= MAX_NUM_ALLOWED;
+	}
+
 	BitPackUtils() {
 		throw new UnsupportedOperationException("Utility Class");
 	}
