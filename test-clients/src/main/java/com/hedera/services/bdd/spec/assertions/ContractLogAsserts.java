@@ -20,12 +20,14 @@ package com.hedera.services.bdd.spec.assertions;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import org.ethereum.util.ByteUtil;
 import org.junit.jupiter.api.Assertions;
 
 import java.nio.charset.Charset;
+import java.util.List;
 
 import static java.util.Arrays.copyOfRange;
 
@@ -62,6 +64,40 @@ public class ContractLogAsserts extends BaseErroringAssertsProvider<ContractLogi
 		return this;
 	}
 
+	public ContractLogAsserts longValue(long expected) {
+		registerProvider((spec, o) -> {
+			byte[] data = dataFrom(o);
+			long actual = ByteUtil.byteArrayToLong(data);
+			Assertions.assertEquals(expected, actual, "Bad long value in log data: " + actual);
+		});
+		return this;
+	}
+
+	public ContractLogAsserts noTopics() {
+		registerProvider((spec, o) -> {
+			Assertions.assertTrue(((ContractLoginfo) o).getTopicList().isEmpty(), "Bad topics value in Topics array. " +
+					"No topics expected");
+		});
+		return this;
+	}
+
+	public ContractLogAsserts noData() {
+		registerProvider((spec, o) -> {
+			Assertions.assertTrue(((ContractLoginfo) o).getData().isEmpty(), "Bad data value. " +
+					"No data expected");
+		});
+		return this;
+	}
+
+	public ContractLogAsserts withTopicsInOrder(List<ByteString> expectedTopics) {
+		registerProvider((spec, o) -> {
+			List<ByteString> actualTopics = topicsFrom(o);
+			Assertions.assertEquals(expectedTopics, actualTopics,
+					"Topics mismatch! Expected:" + expectedTopics.toString() + ", actual: " + actualTopics);
+		});
+		return this;
+	}
+
 	static AccountID accountFromBytes(byte[] data, int start) {
 		long shard = ByteUtil.byteArrayToLong(copyOfRange(data, start, start + 4));
 		long realm = ByteUtil.byteArrayToLong(copyOfRange(data, start + 4, start + 12));
@@ -72,5 +108,9 @@ public class ContractLogAsserts extends BaseErroringAssertsProvider<ContractLogi
 	static byte[] dataFrom(Object o) {
 		ContractLoginfo entry = (ContractLoginfo) o;
 		return entry.getData().toByteArray();
+	}
+
+	static List<ByteString> topicsFrom(Object o) {
+		return ((ContractLoginfo) o).getTopicList();
 	}
 }

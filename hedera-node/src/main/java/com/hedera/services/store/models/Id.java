@@ -22,10 +22,13 @@ package com.hedera.services.store.models;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
+import org.hyperledger.besu.datatypes.Address;
 
 import java.util.Comparator;
 
@@ -39,6 +42,7 @@ public class Id {
 			.thenComparingLong(Id::getShard)
 			.thenComparingLong(Id::getRealm);
 	public static final Id MISSING_ID = new Id(0, 0, 0);
+
 	private final long shard;
 	private final long realm;
 	private final long num;
@@ -51,6 +55,10 @@ public class Id {
 
 	public static Id fromGrpcAccount(final AccountID id) {
 		return new Id(id.getShardNum(), id.getRealmNum(), id.getAccountNum());
+	}
+
+	public static Id fromGrpcContract(final ContractID id) {
+		return new Id(id.getShardNum(), id.getRealmNum(), id.getContractNum());
 	}
 
 	public static Id fromGrpcToken(final TokenID id) {
@@ -86,6 +94,14 @@ public class Id {
 				.setShardNum(shard)
 				.setRealmNum(realm)
 				.setTopicNum(num)
+				.build();
+	}
+
+	public ContractID asGrpcContract() {
+		return ContractID.newBuilder()
+				.setShardNum(shard)
+				.setRealmNum(realm)
+				.setContractNum(num)
 				.build();
 	}
 
@@ -132,5 +148,13 @@ public class Id {
 
 	public EntityId asEntityId() {
 		return new EntityId(shard, realm, num);
+	}
+
+	/**
+	 * Returns the EVM representation of the Account
+	 * @return {@link Address} evm representation
+	 */
+	public Address asEvmAddress() {
+		return Address.fromHexString(EntityIdUtils.asSolidityAddressHex(this));
 	}
 }

@@ -20,7 +20,6 @@ package com.hedera.services.bdd.suites.crypto;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -29,17 +28,22 @@ import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
 import java.util.List;
+import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
+import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTopicString;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairsInAnyOrder;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
@@ -47,6 +51,7 @@ import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -56,6 +61,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeNoFallback;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -74,7 +82,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoTransferSuite.class);
 
 	public static void main(String... args) {
-		new CryptoTransferSuite().runSuiteSync();
+		new CryptoTransferSuite().runSuiteAsync();
 	}
 
 	@Override
@@ -89,8 +97,10 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						tokenTransferFeesScaleAsExpected(),
 						okToSetInvalidPaymentHeaderForCostAnswer(),
 						baseCryptoTransferFeeChargedAsExpected(),
-						autoAssociationSuite(),
-						autoAssociationsRollbackConsistentlyOnLaterMistake(),
+						autoAssociationRequiresOpenSlots(),
+						royaltyCollectorsCanUseAutoAssociation(),
+						royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
+						dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
 				}
 		);
 	}
@@ -100,36 +110,232 @@ public class CryptoTransferSuite extends HapiApiSuite {
 		return true;
 	}
 
-	private HapiApiSpec autoAssociationsRollbackConsistentlyOnLaterMistake() {
-		final String tokenA = "tokenA";
-		final String treasury = "treasury";
-		final String toBeNonCompliant = "toBeNonCompliant";
-		final String toBeAutoAssociated = "toBeAutoAssociated";
+	private HapiApiSpec dissociatedRoyaltyCollectorsCanUseAutoAssociation() {
+		final var commonWithCustomFees = "commonWithCustomFees";
+		final var fractionalCollector = "fractionalCollector";
+		final var selfDenominatedCollector = "selfDenominatedCollector";
+		final var party = "party";
+		final var counterparty = "counterparty";
+		final var multipurpose = "multi";
+		final var miscXfer = "hodlXfer";
+		final var plentyOfSlots = 10;
 
-		return defaultHapiSpec("AutoAssociationSuite")
+		return defaultHapiSpec("RoyaltyCollectorsCanUseAutoAssociation")
 				.given(
-						cryptoCreate(treasury)
-								.balance(ONE_HUNDRED_HBARS),
-						cryptoCreate(toBeAutoAssociated)
-								.balance(ONE_HBAR)
-								.maxAutomaticTokenAssociations(1),
-						cryptoCreate(toBeNonCompliant)
-								.balance(ONE_HBAR)
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(fractionalCollector).maxAutomaticTokenAssociations(plentyOfSlots),
+						cryptoCreate(selfDenominatedCollector).maxAutomaticTokenAssociations(plentyOfSlots),
+						cryptoCreate(party).maxAutomaticTokenAssociations(plentyOfSlots),
+						cryptoCreate(counterparty).maxAutomaticTokenAssociations(plentyOfSlots),
+						newKeyNamed(multipurpose),
+						getAccountInfo(party).savingSnapshot(party),
+						getAccountInfo(counterparty).savingSnapshot(counterparty),
+						getAccountInfo(fractionalCollector).savingSnapshot(fractionalCollector),
+						getAccountInfo(selfDenominatedCollector).savingSnapshot(selfDenominatedCollector)
 				).when(
-						tokenCreate(tokenA)
-								.tokenType(TokenType.FUNGIBLE_COMMON)
+						tokenCreate(commonWithCustomFees)
+								.tokenType(FUNGIBLE_COMMON)
+								.treasury(TOKEN_TREASURY)
+								.withCustom(fractionalFee(
+										1, 10, 0, OptionalLong.empty(),
+										fractionalCollector))
+								.withCustom(fixedHtsFee(
+										5, "0.0.0",
+										selfDenominatedCollector))
 								.initialSupply(Long.MAX_VALUE)
-								.treasury(treasury),
+								.signedBy(DEFAULT_PAYER, TOKEN_TREASURY, fractionalCollector, selfDenominatedCollector),
 						cryptoTransfer(
-								moving(2, tokenA)
-										.distributing(treasury, toBeAutoAssociated, toBeNonCompliant)
-						).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
+								moving(1_000_000, commonWithCustomFees).between(TOKEN_TREASURY, party)
+						),
+						tokenDissociate(fractionalCollector, commonWithCustomFees),
+						tokenDissociate(selfDenominatedCollector, commonWithCustomFees)
 				).then(
-						getAccountInfo(toBeAutoAssociated).logged()
+						cryptoTransfer(
+								moving(1000, commonWithCustomFees).between(party, counterparty)
+						).fee(ONE_HBAR).via(miscXfer),
+						getTxnRecord(miscXfer)
+								.hasPriority(recordWith()
+										.autoAssociated(
+												accountTokenPairsInAnyOrder(List.of(
+														/* The counterparty auto-associates to the fungible type */
+														Pair.of(counterparty, commonWithCustomFees),
+														/* Both royalty collectors re-auto-associate */
+														Pair.of(fractionalCollector, commonWithCustomFees),
+														Pair.of(selfDenominatedCollector, commonWithCustomFees)
+												))
+										)),
+						getAccountInfo(fractionalCollector).has(accountWith().newAssociationsFromSnapshot(
+								party, List.of(
+										relationshipWith(commonWithCustomFees).balance(100)
+								)
+						)),
+						getAccountInfo(selfDenominatedCollector).has(accountWith().newAssociationsFromSnapshot(
+								party, List.of(
+										relationshipWith(commonWithCustomFees).balance(5)
+								)
+						))
 				);
 	}
 
-	private HapiApiSpec autoAssociationSuite() {
+	private HapiApiSpec royaltyCollectorsCanUseAutoAssociation() {
+		final var uniqueWithRoyalty = "uniqueWithRoyalty";
+		final var firstFungible = "firstFungible";
+		final var secondFungible = "secondFungible";
+		final var firstRoyaltyCollector = "firstRoyaltyCollector";
+		final var secondRoyaltyCollector = "secondRoyaltyCollector";
+		final var party = "party";
+		final var counterparty = "counterparty";
+		final var multipurpose = "multi";
+		final var hodlXfer = "hodlXfer";
+		final var plentyOfSlots = 10;
+		final var exchangeAmount = 12 * 15;
+		final var firstRoyaltyAmount = exchangeAmount / 12;
+		final var secondRoyaltyAmount = exchangeAmount / 15;
+		final var netExchangeAmount = exchangeAmount - firstRoyaltyAmount - secondRoyaltyAmount;
+
+		return defaultHapiSpec("RoyaltyCollectorsCanUseAutoAssociation")
+				.given(
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(firstRoyaltyCollector).maxAutomaticTokenAssociations(plentyOfSlots),
+						cryptoCreate(secondRoyaltyCollector).maxAutomaticTokenAssociations(plentyOfSlots),
+						cryptoCreate(party).maxAutomaticTokenAssociations(plentyOfSlots),
+						cryptoCreate(counterparty).maxAutomaticTokenAssociations(plentyOfSlots),
+						newKeyNamed(multipurpose),
+						getAccountInfo(party).savingSnapshot(party),
+						getAccountInfo(counterparty).savingSnapshot(counterparty),
+						getAccountInfo(firstRoyaltyCollector).savingSnapshot(firstRoyaltyCollector),
+						getAccountInfo(secondRoyaltyCollector).savingSnapshot(secondRoyaltyCollector)
+				).when(
+						tokenCreate(firstFungible)
+								.treasury(TOKEN_TREASURY)
+								.tokenType(FUNGIBLE_COMMON)
+								.initialSupply(123456789),
+						tokenCreate(secondFungible)
+								.treasury(TOKEN_TREASURY)
+								.tokenType(FUNGIBLE_COMMON)
+								.initialSupply(123456789),
+						cryptoTransfer(
+								moving(1000, firstFungible).between(TOKEN_TREASURY, counterparty),
+								moving(1000, secondFungible).between(TOKEN_TREASURY, counterparty)
+						),
+						tokenCreate(uniqueWithRoyalty)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.treasury(TOKEN_TREASURY)
+								.supplyKey(multipurpose)
+								.withCustom(royaltyFeeNoFallback(1, 12, firstRoyaltyCollector))
+								.withCustom(royaltyFeeNoFallback(1, 15, secondRoyaltyCollector))
+								.initialSupply(0L),
+						mintToken(uniqueWithRoyalty, List.of(copyFromUtf8("HODL"))),
+						cryptoTransfer(
+								movingUnique(uniqueWithRoyalty, 1L).between(TOKEN_TREASURY, party)
+						)
+				).then(
+						cryptoTransfer(
+								movingUnique(uniqueWithRoyalty, 1L).between(party, counterparty),
+								moving(12 * 15, firstFungible).between(counterparty, party),
+								moving(12 * 15, secondFungible).between(counterparty, party)
+						).fee(ONE_HBAR).via(hodlXfer),
+						getTxnRecord(hodlXfer)
+								.hasPriority(recordWith()
+										.autoAssociated(
+												accountTokenPairsInAnyOrder(List.of(
+														/* The counterparty auto-associates to the non-fungible type */
+														Pair.of(counterparty, uniqueWithRoyalty),
+														/* The sending party auto-associates to both fungibles */
+														Pair.of(party, firstFungible),
+														Pair.of(party, secondFungible),
+														/* Both royalty collectors auto-associate to both fungibles */
+														Pair.of(firstRoyaltyCollector, firstFungible),
+														Pair.of(secondRoyaltyCollector, firstFungible),
+														Pair.of(firstRoyaltyCollector, secondFungible),
+														Pair.of(secondRoyaltyCollector, secondFungible)
+												))
+										)),
+						getAccountInfo(party).has(accountWith().newAssociationsFromSnapshot(
+								party, List.of(
+										relationshipWith(uniqueWithRoyalty).balance(0),
+										relationshipWith(firstFungible).balance(netExchangeAmount),
+										relationshipWith(secondFungible).balance(netExchangeAmount)
+								)
+						)),
+						getAccountInfo(counterparty).has(accountWith().newAssociationsFromSnapshot(
+								party, List.of(
+										relationshipWith(uniqueWithRoyalty).balance(1),
+										relationshipWith(firstFungible).balance(1000 - exchangeAmount),
+										relationshipWith(secondFungible).balance(1000 - exchangeAmount)
+								)
+						)),
+						getAccountInfo(firstRoyaltyCollector).has(accountWith().newAssociationsFromSnapshot(
+								party, List.of(
+										relationshipWith(firstFungible).balance(exchangeAmount / 12),
+										relationshipWith(secondFungible).balance(exchangeAmount / 12)
+								)
+						)),
+						getAccountInfo(secondRoyaltyCollector).has(accountWith().newAssociationsFromSnapshot(
+								party, List.of(
+										relationshipWith(firstFungible).balance(exchangeAmount / 15),
+										relationshipWith(secondFungible).balance(exchangeAmount / 15)
+								)
+						))
+				);
+	}
+
+	private HapiApiSpec royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots() {
+		final var uniqueWithRoyalty = "uniqueWithRoyalty";
+		final var someFungible = "firstFungible";
+		final var royaltyCollectorNoSlots = "royaltyCollectorNoSlots";
+		final var party = "party";
+		final var counterparty = "counterparty";
+		final var multipurpose = "multi";
+		final var hodlXfer = "hodlXfer";
+
+		return defaultHapiSpec("RoyaltyCollectorsCanUseAutoAssociation")
+				.given(
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(royaltyCollectorNoSlots),
+						cryptoCreate(party).maxAutomaticTokenAssociations(123),
+						cryptoCreate(counterparty).maxAutomaticTokenAssociations(123),
+						newKeyNamed(multipurpose),
+						getAccountInfo(party).savingSnapshot(party),
+						getAccountInfo(counterparty).savingSnapshot(counterparty),
+						getAccountInfo(royaltyCollectorNoSlots).savingSnapshot(royaltyCollectorNoSlots)
+				).when(
+						tokenCreate(someFungible)
+								.treasury(TOKEN_TREASURY)
+								.tokenType(FUNGIBLE_COMMON)
+								.initialSupply(123456789),
+						cryptoTransfer(
+								moving(1000, someFungible).between(TOKEN_TREASURY, counterparty)
+						),
+						tokenCreate(uniqueWithRoyalty)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.treasury(TOKEN_TREASURY)
+								.supplyKey(multipurpose)
+								.withCustom(royaltyFeeNoFallback(1, 12, royaltyCollectorNoSlots))
+								.initialSupply(0L),
+						mintToken(uniqueWithRoyalty, List.of(copyFromUtf8("HODL"))),
+						cryptoTransfer(
+								movingUnique(uniqueWithRoyalty, 1L).between(TOKEN_TREASURY, party)
+						)
+				).then(
+						cryptoTransfer(
+								movingUnique(uniqueWithRoyalty, 1L).between(party, counterparty),
+								moving(123, someFungible).between(counterparty, party)
+						)
+								.fee(ONE_HBAR)
+								.via(hodlXfer)
+								.hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+						getTxnRecord(hodlXfer)
+								.hasPriority(recordWith().autoAssociated(accountTokenPairsInAnyOrder(List.of()))),
+						getAccountInfo(party).has(accountWith().newAssociationsFromSnapshot(
+								party, List.of(
+										relationshipWith(uniqueWithRoyalty).balance(1)
+								)
+						))
+				);
+	}
+
+	private HapiApiSpec autoAssociationRequiresOpenSlots() {
 		final String tokenA = "tokenA";
 		final String tokenB = "tokenB";
 		final String firstUser = "firstUser";
@@ -140,7 +346,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 		final String transferToFU = "transferToFU";
 		final String transferToSU = "transferToSU";
 
-		return defaultHapiSpec("AutoAssociationSuite")
+		return defaultHapiSpec("AutoAssociationRequiresOpenSlots")
 				.given(
 						cryptoCreate(treasury)
 								.balance(ONE_HUNDRED_HBARS),
@@ -150,8 +356,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						cryptoCreate(secondUser)
 								.balance(ONE_HBAR)
 								.maxAutomaticTokenAssociations(2)
-				)
-				.when(
+				).when(
 						tokenCreate(tokenA)
 								.tokenType(TokenType.FUNGIBLE_COMMON)
 								.initialSupply(Long.MAX_VALUE)
@@ -178,8 +383,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						getTxnRecord(transferToSU)
 								.hasNewTokenAssociation(tokenB, secondUser)
 								.logged()
-				)
-				.then(
+				).then(
 						cryptoTransfer(moving(1, tokenB).between(treasury, firstUser))
 								.hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS)
 								.via("failedTransfer"),
@@ -254,8 +458,8 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.treasury(sender),
 						tokenAssociate(nonTreasurySender,
 								List.of(fungibleTokenWithCustomFee, nonFungibleTokenWithCustomFee)),
-						mintToken(nonFungibleToken, List.of(ByteString.copyFromUtf8("memo1"))),
-						mintToken(nonFungibleTokenWithCustomFee, List.of(ByteString.copyFromUtf8("memo2"))),
+						mintToken(nonFungibleToken, List.of(copyFromUtf8("memo1"))),
+						mintToken(nonFungibleTokenWithCustomFee, List.of(copyFromUtf8("memo2"))),
 						tokenAssociate(receiver, nonFungibleToken, nonFungibleTokenWithCustomFee),
 						cryptoTransfer(movingUnique(nonFungibleTokenWithCustomFee, 1)
 								.between(sender, nonTreasurySender))

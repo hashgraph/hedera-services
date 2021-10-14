@@ -23,8 +23,8 @@ package com.hedera.services.fees.calculation.contract.queries;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.contracts.execution.CallLocalExecutor;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
-import com.hedera.services.queries.contract.ContractCallLocalAnswer;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -39,7 +39,6 @@ import org.apache.logging.log4j.Logger;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.time.Instant;
 import java.util.Map;
 
 import static com.hedera.services.queries.contract.ContractCallLocalAnswer.CONTRACT_CALL_LOCAL_CTX_KEY;
@@ -49,17 +48,19 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public final class ContractCallLocalResourceUsage implements QueryResourceUsageEstimator {
 	private static final Logger log = LogManager.getLogger(ContractCallLocalResourceUsage.class);
 
-	private final ContractCallLocalAnswer.LegacyLocalCaller delegate;
 	private final SmartContractFeeBuilder usageEstimator;
 	private final GlobalDynamicProperties properties;
 
+	private final CallLocalExecutor executor;
+
 	@Inject
 	public ContractCallLocalResourceUsage(
-			final ContractCallLocalAnswer.LegacyLocalCaller delegate,
 			final SmartContractFeeBuilder usageEstimator,
-			final GlobalDynamicProperties properties
+			final GlobalDynamicProperties properties,
+			final CallLocalExecutor executor
 	) {
-		this.delegate = delegate;
+		this.executor = executor;
+
 		this.properties = properties;
 		this.usageEstimator = usageEstimator;
 	}
@@ -86,7 +87,7 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
 			if (null == queryCtx) {
 				response = dummyResponse(op.getContractID());
 			} else {
-				response = delegate.perform(op, Instant.now().getEpochSecond());
+				response = executor.execute(op);
 				queryCtx.put(CONTRACT_CALL_LOCAL_CTX_KEY, response);
 			}
 			final var nonGasUsage = usageEstimator.getContractCallLocalFeeMatrices(

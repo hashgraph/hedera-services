@@ -266,11 +266,6 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
-	void throwsOnDeleteCustomizingUndeletedAccount() {
-		assertThrows(DeletedAccountException.class, () -> subject.customizeDeleted(rand, noopCustomizer));
-	}
-
-	@Test
 	void customizesGivenAccount() {
 		final var customizer = mock(HederaAccountCustomizer.class);
 
@@ -280,10 +275,10 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
-	void customizesDeletedAccount() {
+	void customizesPotentiallyDeletedAccount() {
 		final var customizer = mock(HederaAccountCustomizer.class);
 
-		subject.customizeDeleted(deleted, customizer);
+		subject.customizePotentiallyDeleted(deleted, customizer);
 
 		verify(customizer).customize(deleted, accountsLedger);
 	}

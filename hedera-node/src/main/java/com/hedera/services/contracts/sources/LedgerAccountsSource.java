@@ -138,7 +138,8 @@ public class LedgerAccountsSource implements Source<byte[], AccountState> {
 				.proxy(proxy)
 				.expiry(evmState.getExpirationTime())
 				.autoRenewPeriod(evmState.getAutoRenewPeriod())
-				.isSmartContract(true);
+				.isSmartContract(true)
+				.isDeleted(evmState.isDeleted());
 
 		long balance = evmState.getBalance().longValue();
 		ledger.spawn(id, balance, customizer);

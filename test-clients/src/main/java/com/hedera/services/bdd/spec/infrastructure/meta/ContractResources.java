@@ -42,13 +42,35 @@ public class ContractResources {
 	public static final String CHILD_STORAGE_BYTECODE_PATH = bytecodePath("ChildStorage");
 	public static final String ABANDONING_PARENT_BYTECODE_PATH = bytecodePath("AbandoningParent");
 	public static final String PAY_TEST_SELF_DESTRUCT_BYTECODE_PATH = bytecodePath("PayTestSelfDestruct");
-	public static final String PAY_RECEIVABLE_AMOUNT_BYTECODE_PATH = bytecodePath("PayReceivableAmount");
+	public static final String PARENT_CHILD_TRANSFER_BYTECODE_PATH = bytecodePath("ParentChildTransfer");
 	public static final String OC_TOKEN_BYTECODE_PATH = bytecodePath("octoken");
 	public static final String ADDRESS_BOOK_BYTECODE_PATH = bytecodePath("AddressBook");
 	public static final String JURISDICTIONS_BYTECODE_PATH = bytecodePath("Jurisdictions");
 	public static final String MINTERS_BYTECODE_PATH = bytecodePath("Minters");
 	public static final String PAY_TEST_BYTECODE_PATH = bytecodePath("PayTest");
 	public static final String DOUBLE_SEND_BYTECODE_PATH = bytecodePath("DoubleSend");
+	public static final String EMPTY_CONSTRUCTOR = bytecodePath("EmptyConstructor");
+	public static final String PAYABLE_CONSTRUCTOR = bytecodePath("PayableConstructor");
+
+	public static final String BENCHMARK_CONTRACT = bytecodePath("Benchmark");
+	public static final String SIMPLE_UPDATE = bytecodePath("SimpleUpdate");
+	public static final String LOGS = bytecodePath("Logs");
+
+	public static final String CALLING_CONTRACT = bytecodePath("CallingContract");
+	public static final String GLOBAL_PROPERTIES = bytecodePath("GlobalProperties");
+	public static final String BALANCE_CHECKER_CONTRACT = bytecodePath("BalanceChecker");
+	public static final String EXT_CODE_OPERATIONS_CHECKER_CONTRACT = bytecodePath("ExtCodeOperationsChecker");
+	public static final String CALL_OPERATIONS_CHECKER = bytecodePath("CallOperationsChecker");
+	public static final String FACTORY_CONTRACT = bytecodePath("FactoryContract");
+	public static final String TRANSFERRING_CONTRACT = bytecodePath("TransferringContract");
+	public static final String NESTED_CHILDREN_CONTRACT = bytecodePath("NestedChildren");
+	public static final String FACTORY_SELF_DESTRUCT_CONSTRUCTOR_CONTRACT = bytecodePath("FactorySelfDestructConstructor");
+	public static final String FACTORY_QUICK_SELF_DESTRUCT_CONTRACT = bytecodePath("FactoryQuickSelfDestruct");
+	public static final String TEMPORARY_SSTORE_REFUND_CONTRACT = bytecodePath("TemporarySStoreRefund");
+
+	public static final String TWO_SSTORES = "{ \"inputs\": [ { \"internalType\": \"bytes32\", \"name\": \"_singleProp\", \"type\": \"bytes32\" } ], \"name\": \"twoSSTOREs\", \"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
+	public static final String BENCHMARK_GET_COUNTER = "{ \"inputs\": [], \"name\": \"counter\", \"outputs\": [ { \"internalType\": \"uint256\", \"name\": \"\", \"type\": \"uint256\" } ], \"stateMutability\": \"view\", \"type\": \"function\" }";
 
 	public static final String CREATE_CHILD_ABI = "{\"constant\":false," +
 			"\"inputs\":[],\"name\":\"create\"," +
@@ -109,18 +131,24 @@ public class ContractResources {
 			"{\"internalType\":\"string\",\"name\":\"memo\",\"type\":\"string\"}],\"name\":\"deposit\"," +
 			"\"outputs\":[]," +
 			"\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}";
-	public static final String BIG_ARRAY_CHANGE_ARRAY_ABI = "{\"constant\":false," +
-			"\"inputs\":[{\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"changeArray\"," +
-			"\"outputs\":[]," +
-			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String BIG_ARRAY_CHANGE_ARRAY_ABI = "{ \"constant\": false," +
+			" \"inputs\": [ { \"internalType\": \"uint256\", \"name\": \"_value\", \"type\": \"uint256\" } ], " +
+			"\"name\": \"changeArray\", \"outputs\": [], \"payable\": false, \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 	public static final String BIG_ARRAY_GROW_TO_ABI = "{\"constant\":false," +
 			"\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_limit\",\"type\":\"uint256\"}],\"name\":\"growTo\"," +
 			"\"outputs\":[]," +
 			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String BIG_ARRAY_SET_SIZE_IN_KB_ABI = "{\"constant\":false," +
-			"\"inputs\":[{\"name\":\"_howManyKB\",\"type\":\"uint256\"}],\"name\":\"setSizeInKB\"," +
-			"\"outputs\":[]," +
-			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String BIG_ARRAY_SET_SIZE_ABI = "{ \"constant\": false," +
+			" \"inputs\": [ { \"internalType\": \"uint256\", \"name\": \"_size\", \"type\": \"uint256\" } ], \"name\": \"setSize\"," +
+			" \"outputs\": [], \"payable\": false, \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+	public static final String GROW_ARRAY_GROW_TO = "{\"constant\": false," +
+			"\"inputs\": [{\"internalType\": \"uint256\",\"name\": \"_limit\",\"type\": \"uint256\"}]," +
+			"\"name\": \"growTo\",\"outputs\": [],\"payable\": false,\"stateMutability\": \"nonpayable\"," +
+			"\"type\": \"function\"}";
+	public static final String GROW_ARRAY_CHANGE_ARRAY = "{\"constant\": false," +
+			"\"inputs\": [{\"internalType\": \"uint256\",\"name\": \"_value\",\"type\": \"uint256\"}]," +
+			"\"name\": \"changeArray\",\"outputs\": [],\"payable\": false,\"stateMutability\": \"nonpayable\"," +
+			"\"type\": \"function\"}";
 	public static final String PICK_A_BIG_RESULT_ABI = "{\"constant\":true," +
 			"\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"how\",\"type\":\"uint32\"}],\"name\":\"pick\"," +
 			"\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}]," +
@@ -159,20 +187,21 @@ public class ContractResources {
 			"\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_childId\",\"type\":\"uint256\"}],\"name\":\"getChildValue\"," +
 			"\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"_get\",\"type\":\"uint256\"}]," +
 			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-	public static final String SET_ZERO_READ_ONE_ABI = "{\"constant\":false," +
-			"\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"setZeroReadOne\"," +
-			"\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"_getOne\",\"type\":\"uint256\"}]," +
-			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String SET_BOTH_ABI = "{\"constant\":false," +
-			"\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"setBoth\"," +
-			"\"outputs\":[],\"" +
-			"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String GROW_CHILD_ABI = "{\"constant\":false," +
-			"\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_childId\",\"type\":\"uint256\"}," +
-			"{\"internalType\":\"uint256\",\"name\":\"_howManyKB\",\"type\":\"uint256\"}," +
-			"{\"internalType\":\"uint256\",\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"growChild\"," +
-			"\"outputs\":[]," +
-			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String SET_ZERO_READ_ONE_ABI = "{\"constant\": false," +
+			"\"inputs\": [{\"internalType\": \"uint256\",\"name\": \"_value\",\"type\": \"uint256\"}]," +
+			"\"name\": \"setZeroReadOne\",\"outputs\": " +
+			"[{\"internalType\": \"uint256\",\"name\": \"_getOne\",\"type\": \"uint256\"}]," +
+			"\"payable\": false,\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String SET_BOTH_ABI = "{\"constant\": false,\"inputs\": " +
+			"[{\"internalType\": \"uint256\",\"name\": \"_value\",\"type\": \"uint256\"}]," +
+			"\"name\": \"setBoth\",\"outputs\": [],\"payable\": false," +
+			"\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String GROW_CHILD_ABI = "{\"constant\": false,\"inputs\": " +
+			"[{\"internalType\": \"uint256\",\"name\": \"_childId\",\"type\": \"uint256\"}" +
+			",{\"internalType\": \"uint256\",\"name\": \"_howManyKB\",\"type\": \"uint256\"}," +
+			"{\"internalType\": \"uint256\",\"name\": \"_value\",\"type\": \"uint256\"}]," +
+			"\"name\": \"growChild\",\"outputs\": [],\"payable\": false,\"stateMutability\": \"nonpayable\"," +
+			"\"type\": \"function\"}";
 	public static final String GET_BALANCE_ABI = "{\"constant\":true," +
 			"\"inputs\":[],\"name\":\"getBalance\"," +
 			"\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}]," +
@@ -323,7 +352,7 @@ public class ContractResources {
 			"\"inputs\":[],\"name\":\"seven\"," +
 			"\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}]," +
 			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-	public static final String MINT_OWNER_ABI ="{\"constant\":true," +
+	public static final String MINT_OWNER_ABI = "{\"constant\":true," +
 			"\"inputs\":[],\"name\":\"owner\"," +
 			"\"outputs\":[{\"name\":\"\",\"type\":\"address\"}]," +
 			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
@@ -335,11 +364,113 @@ public class ContractResources {
 			"\"name\":\"toFirst\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"toSecond\"," +
 			"\"type\":\"uint32\"}],\"name\":\"donate\",\"outputs\":[],\"payable\":true," +
 			"\"stateMutability\":\"payable\",\"type\":\"function\"}";
+	public static final String SIMPLE_UPDATE_ABI = "{\"inputs\": [" +
+			"{\"internalType\": \"uint256\",\"name\": \"n\",\"type\": \"uint256\"}," +
+			"{\"internalType\": \"uint256\",\"name\": \"m\",\"type\": \"uint256\"}]," +
+			"\"name\": \"set\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String SIMPLE_SELFDESTRUCT_UPDATE_ABI = "{\"inputs\": [" +
+			"{\"internalType\": \"address payable\",\"name\": \"beneficiary\"," +
+			"\"type\": \"address\"}],\"name\": \"del\",\"outputs\": [],\"stateMutability\": \"nonpayable\"," +
+			"\"type\": \"function\"}";
+	public static final String CALLING_CONTRACT_SET_VALUE = "{ \"constant\": false, \"inputs\": [ { \"name\": \"_var1\", \"type\": \"uint256\" } ], \"name\": \"setVar1\", \"outputs\": [], \"payable\": false, \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+	public static final String CALLING_CONTRACT_CALL_CONTRACT = "{ \"constant\": false, \"inputs\": [ { \"name\": \"_addr\", \"type\": \"address\" }, { \"name\": \"_var1\", \"type\": \"uint256\" } ], \"name\": \"callContract\", \"outputs\": [], \"payable\": false, \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+	public static final String CALLING_CONTRACT_VIEW_VAR = "{ \"constant\": true, \"inputs\": [], \"name\": \"getVar1\", \"outputs\": [ { \"name\": \"\", \"type\": \"uint256\" } ], \"payable\": false, \"stateMutability\": \"view\", \"type\": \"function\" }";
 
+	/* ABI for Logs.sol */
+	public static final String LOGS_LOG0_ABI = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"n\"," +
+			"\"type\":\"uint256\"}],\"name\":\"log0\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String LOGS_LOG1_ABI = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"n\"," +
+			"\"type\":\"uint256\"}],\"name\":\"log1\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String LOGS_LOG2_ABI = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"n0\"," +
+			"\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"n1\",\"type\":\"uint256\"}],\"name\":\"log2\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String LOGS_LOG3_ABI = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"n0\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"n1\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"n2\",\"type\":\"uint256\"}],\"name\":\"log3\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String LOGS_LOG4_ABI = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"n0\"," +
+			"\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"n1\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"n2\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"n3\",\"type\":\"uint256\"}],\"name\":\"log4\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
-	public static final String bytecodePath(String bytecode) {
+	/* ABI for GlobalProperties.sol */
+	public static final String GLOBAL_PROPERTIES_CHAIN_ID_ABI = "{\"inputs\":[],\"name\":\"getChainID\"," +
+			"\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}]," +
+			"\"stateMutability\":\"view\",\"type\":\"function\"}";
+	public static final String GLOBAL_PROPERTIES_BASE_FEE_ABI = "{\"inputs\":[],\"name\":\"getBaseFee\"," +
+			"\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}]," +
+			"\"stateMutability\":\"view\",\"type\":\"function\"}";
+	public static final String GLOBAL_PROPERTIES_COINBASE_ABI = "{\"inputs\":[],\"name\":\"getCoinbase\"," +
+			"\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}]," +
+			"\"stateMutability\":\"view\",\"type\":\"function\"}";
+	public static final String GLOBAL_PROPERTIES_GASLIMIT_ABI = "{\"inputs\":[],\"name\":\"getGasLimit\"," +
+			"\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}]," +
+			"\"stateMutability\":\"view\",\"type\":\"function\"}";
+
+	public static final String BALANCE_CHECKER_BALANCE_OF = "{ \"constant\": true, " +
+			"\"inputs\": [ { \"name\": \"_address\", \"type\": \"address\" } ], \"name\": \"balanceOf\", " +
+			"\"outputs\": [ { \"name\": \"\", \"type\": \"uint256\" } ], " +
+			"\"payable\": false, \"stateMutability\": \"view\", \"type\": \"function\" }";
+
+	public static final String EXT_CODE_OP_CHECKER_SIZE_OF = "{ \"constant\": true, " +
+			"\"inputs\": [ { \"internalType\": \"address\", \"name\": \"_address\", \"type\": \"address\" } ], " +
+			"\"name\": \"sizeOf\", \"outputs\": [ { \"internalType\": \"uint256\", \"name\": \"size\", \"type\": " +
+			"\"uint256\" } ], \"payable\": false, \"stateMutability\": \"view\", \"type\": \"function\" }";
+
+	public static final String EXT_CODE_OP_CHECKER_HASH_OF = "{ \"constant\": true, " +
+			"\"inputs\": [ { \"internalType\": \"address\", \"name\": \"_address\", \"type\": \"address\" } ], " +
+			"\"name\": \"hashOf\", \"outputs\": [ { \"internalType\": \"bytes32\", \"name\": \"hash\", \"type\": " +
+			"\"bytes32\" } ], \"payable\": false, \"stateMutability\": \"view\", \"type\": \"function\" }";
+
+	public static final String EXT_CODE_OP_CHECKER_CODE_COPY_OF = "{ \"constant\": true, " +
+			"\"inputs\": [ { \"internalType\": \"address\", \"name\": \"_address\", \"type\": " +
+			"\"address\" } ], \"name\": \"codeCopyOf\", \"outputs\": [ { \"internalType\": \"bytes\", " +
+			"\"name\": \"code\", \"type\": \"bytes\" } ], \"payable\": false, \"stateMutability\": \"view\", " +
+			"\"type\": \"function\" }";
+
+	public static final String CALL_CODE_OP_CHECKER_ABI = "{ \"constant\": false, " +
+			"\"inputs\": [ { \"name\": \"_address\", \"type\": \"address\" } ], \"name\": \"callCode\", " +
+			"\"outputs\": [], \"payable\": true, \"stateMutability\": \"payable\", \"type\": \"function\" }";
+
+	public static final String CALL_OP_CHECKER_ABI = "{ \"constant\": false, " +
+			"\"inputs\": [ { \"name\": \"_address\", \"type\": \"address\" } ], \"name\": \"call\", " +
+			"\"outputs\": [], \"payable\": true, \"stateMutability\": \"payable\", \"type\": \"function\" }";
+
+	public static final String DELEGATE_CALL_OP_CHECKER_ABI = "{ \"constant\": false, " +
+			"\"inputs\": [ { \"name\": \"_address\", \"type\": \"address\" } ], \"name\": \"delegateCall\", " +
+			"\"outputs\": [], \"payable\": true, \"stateMutability\": \"payable\", \"type\": \"function\" }";
+
+	public static final String STATIC_CALL_OP_CHECKER_ABI = "{ \"constant\": false, " +
+			"\"inputs\": [ { \"name\": \"_address\", \"type\": \"address\" } ], \"name\": \"staticcall\", " +
+			"\"outputs\": [], \"payable\": true, \"stateMutability\": \"payable\", \"type\": \"function\" }";
+
+	public static final String NESTED_CHILDREN_CALL_CREATE_ABI = "{ \"inputs\": [], \"name\": \"callCreate\", " +
+			"\"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
+    public static final String FACTORY_QUICK_SELF_DESTRUCT_CREATE_AND_DELETE_ABI = "{" +
+			"\"inputs\":[],\"name\":\"createAndDeleteChild\"," +
+			"\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"}";
+
+	/* ABI for FactoryContract.sol */
+	public static final String FACTORY_CONTRACT_SUCCESS = "{ \"constant\": false, \"inputs\": [], \"name\": \"deploymentSuccess\", \"outputs\": [], \"payable\": false, \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+	public static final String FACTORY_CONTRACT_FAILURE_AFTER_DEPLOY = "{ \"constant\": false, \"inputs\": [], \"name\": \"failureAfterDeploy\", \"outputs\": [], \"payable\": false, \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+	public static final String FACTORY_CONTRACT_FAILURE = "{ \"constant\": false, \"inputs\": [], \"name\": \"deploymentFailure\", \"outputs\": [], \"payable\": false, \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+	public static final String FACTORY_CONTRACT_STACKED_DEPLOYMENT_SUCCESS = "{ \"constant\": false, \"inputs\": [], " +
+			"\"name\": \"stackedDeploymentSuccess\", \"outputs\": [], \"payable\": false, \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+	public static final String FACTORY_CONTRACT_STACKED_DEPLOYMENT_FAILURE = "{ \"constant\": false, \"inputs\": [], " +
+			"\"name\": \"stackedDeploymentFailure\", \"outputs\": [], \"payable\": false, \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
+	public static final String TRANSFERRING_CONTRACT_TRANSFERTOADDRESS = "{\"constant\": false,\"inputs\": " +
+			"[{\"internalType\": \"address payable\",\"name\": \"_address\",\"type\": \"address\"}," +
+			"{\"internalType\": \"uint256\",\"name\": \"_amount\",\"type\": \"uint256\"}]," +
+			"\"name\": \"transferToAddress\",\"outputs\": [],\"payable\": false," +
+			"\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String PARENT_CHILD_TRANSFER_TRANSFER_TO_CHILD_ABI = "{\"constant\": false,\"inputs\": " +
+			"[{\"internalType\": \"uint256\",\"name\": \"_amount\",\"type\": \"uint256\"}]," +
+			"\"name\": \"transferToChild\",\"outputs\": [],\"payable\": false,\"stateMutability\": \"nonpayable\"," +
+			"\"type\": \"function\"}";
+	public static final String TEMPORARY_SSTORE_HOLD_TEMPORARY_ABI = "{\"constant\": false,\"inputs\": " +
+			"[{\"internalType\": \"uint256\",\"name\": \"_tempValue\",\"type\": \"uint256\"}],\"name\": \"holdTemporary\"," +
+			"\"outputs\": [],\"payable\": false,\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String TEMPORARY_SSTORE_HOLD_PERMANENTLY_ABI = "{\"constant\": false,\"inputs\": " +
+			"[{\"internalType\": \"uint256\",\"name\": \"_permanentValue\",\"type\": \"uint256\"}],\"name\": \"holdPermanently\"," +
+			"\"outputs\": [],\"payable\": false,\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+
+	public static String bytecodePath(String bytecode) {
 		return String.format("src/main/resource/contract/bytecodes/%s.bin", bytecode);
 	}
-
-	public static final int CREATED_TRIVIAL_CONTRACT_RETURNS = 7;
 }

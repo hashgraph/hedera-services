@@ -343,9 +343,10 @@ class TransactionalLedgerTest {
 	void canUndoSpecificChange() {
 		// setup:
 		ArgumentCaptor<TestAccount> captor = ArgumentCaptor.forClass(TestAccount.class);
+		final var changesToUndo = List.of(FLAG);
 
 		// expect:
-		assertThrows(IllegalStateException.class, () -> subject.undoChangesOfType(List.of(FLAG)));
+		assertThrows(IllegalStateException.class, () -> subject.undoChangesOfType(changesToUndo));
 		// given:
 		subject.begin();
 

@@ -42,6 +42,7 @@ public class HapiGetContractBytecode extends HapiQueryOp<HapiGetContractBytecode
 	static final Logger log = LogManager.getLogger(HapiGetContractBytecode.class);
 	private final String contract;
 	private Optional<byte[]> expected = Optional.empty();
+	private Optional<String> saveResultToEntry = Optional.empty();
 	private boolean hasExpectations = false;
 
 	public HapiGetContractBytecode(String contract) {
@@ -58,6 +59,11 @@ public class HapiGetContractBytecode extends HapiQueryOp<HapiGetContractBytecode
 		return this;
 	}
 
+	public HapiGetContractBytecode saveResultTo(String key) {
+		saveResultToEntry = Optional.of(key);
+		return this;
+	}
+
 	@Override
 	public HederaFunctionality type() {
 		return HederaFunctionality.ContractGetBytecode;
@@ -71,21 +77,22 @@ public class HapiGetContractBytecode extends HapiQueryOp<HapiGetContractBytecode
 	@Override
 	protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
 		if (hasExpectations) {
-			Assertions.assertTrue(!response.getContractGetBytecodeResponse().getBytecode().isEmpty(),
-					"Empty bytecode!");
+			Assertions.assertFalse(response.getContractGetBytecodeResponse().getBytecode().isEmpty(), "Empty bytecode!");
 		}
-		if (expected.isPresent()) {
-			Assertions.assertArrayEquals(
-					expected.get(),
-					response.getContractGetBytecodeResponse().getBytecode().toByteArray(),
-					"Wrong bytecode!");
-		}
+		expected.ifPresent(bytes -> Assertions.assertArrayEquals(
+				bytes,
+				response.getContractGetBytecodeResponse().getBytecode().toByteArray(),
+				"Wrong bytecode!"));
 	}
 
 	@Override
 	protected void submitWith(HapiApiSpec spec, Transaction payment) throws Throwable {
 		Query query = getContractBytecodeQuery(spec, payment, false);
 		response = spec.clients().getScSvcStub(targetNodeFor(spec), useTls).contractGetBytecode(query);
+
+		if(saveResultToEntry.isPresent()) {
+			spec.registry().saveBytes(saveResultToEntry.get(), response.getContractGetBytecodeResponse().getBytecode());
+		}
 	}
 
 	@Override
