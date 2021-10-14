@@ -57,6 +57,7 @@ import java.util.Collections;
 import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGetTopicInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -137,6 +138,55 @@ class StakedAnswerFlowTest {
 		final var actual = subject.satisfyUsing(service, query);
 
 		assertEquals(response, actual);
+	}
+
+	@Test
+	void rejectsNetworkGetExecutionTimeQueriesWithNoPayment() {
+		setupServiceResponse(NOT_SUPPORTED);
+		givenValidHeader();
+		given(service.canonicalFunction()).willReturn(NetworkGetExecutionTime);
+
+
+		final var actual = subject.satisfyUsing(service, query);
+
+		assertEquals(response, actual);
+	}
+
+	@Test
+	void rejectsUnprivilegedNetworkGetExecutionTimeQueriesWithPayment() {
+		setupServiceResponse(NOT_SUPPORTED);
+		givenValidHeader();
+		givenPaymentIsRequired();
+		givenExtractablePayment();
+		givenValidExtraction();
+		given(hapiOpPermissions.permissibilityOf(NetworkGetExecutionTime, payer)).willReturn(NOT_SUPPORTED);
+		given(service.canonicalFunction()).willReturn(NetworkGetExecutionTime);
+
+
+		final var actual = subject.satisfyUsing(service, query);
+
+		assertEquals(response, actual);
+	}
+
+	@Test
+	void allowsPrivilegedNetworkGetExecutionTimeQueriesWithPayment() {
+		setupCostAwareSuccessServiceResponse();
+		givenValidHeader();
+		givenExtractableSuperuserPayment();
+		givenValidSuperuserExtraction();
+		givenPaymentIsRequired();
+		given(service.canonicalFunction()).willReturn(NetworkGetExecutionTime);
+		given(transactionPrecheck.performForQueryPayment(superuserPaymentAccessor.getSignedTxnWrapper()))
+				.willReturn(Pair.of(new TxnValidityAndFeeReq(OK), superuserPaymentAccessor));
+		given(hapiOpPermissions.permissibilityOf(NetworkGetExecutionTime, superuser)).willReturn(OK);
+		givenHappyService();
+		given(resourceCosts.defaultPricesGiven(NetworkGetExecutionTime, now)).willReturn(usagePrices);
+		givenComputableCost();
+
+		final var actual = subject.satisfyUsing(service, query);
+
+		assertEquals(response, actual);
+		verify(submissionManager, never()).trySubmission(superuserPaymentAccessor);
 	}
 
 	@Test

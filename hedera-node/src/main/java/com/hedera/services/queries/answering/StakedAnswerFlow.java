@@ -47,9 +47,11 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import static com.hedera.services.txns.submission.SystemPrecheck.IS_THROTTLE_EXEMPT;
+import static com.hedera.services.txns.submission.SystemPrecheck.RESTRICTED_FUNCTIONALITIES;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 
@@ -182,7 +184,9 @@ public final class StakedAnswerFlow implements AnswerFlow {
 			}
 		}
 
-		if (payer == null || !IS_THROTTLE_EXEMPT.test(payer.getAccountNum())) {
+		if (payer == null && RESTRICTED_FUNCTIONALITIES.contains(function)) {
+			return NOT_SUPPORTED;
+		} else if (payer == null || !IS_THROTTLE_EXEMPT.test(payer.getAccountNum())) {
 			return throttles.shouldThrottleQuery(function) ? BUSY : OK;
 		} else {
 			return OK;
