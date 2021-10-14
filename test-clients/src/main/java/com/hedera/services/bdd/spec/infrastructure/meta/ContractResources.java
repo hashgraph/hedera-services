@@ -31,6 +31,7 @@ public class ContractResources {
 	public static final String INLINE_TEST_BYTECODE_PATH = bytecodePath("InlineTest");
 	public static final String INVALID_BYTECODE_PATH = bytecodePath("CorruptOne");
 	public static final String VALID_BYTECODE_PATH = HapiSpecSetup.getDefaultInstance().defaultContractPath();
+	public static final String ERC721_BYTECODE_PATH = bytecodePath("ERC721");
 	public static final String VERBOSE_DEPOSIT_BYTECODE_PATH = bytecodePath("VerboseDeposit");
 	public static final String GROW_ARRAY_BYTECODE_PATH = bytecodePath("GrowArray");
 	public static final String BIG_ARRAY_BYTECODE_PATH = bytecodePath("BigArray");
@@ -71,6 +72,18 @@ public class ContractResources {
 
 	public static final String BENCHMARK_GET_COUNTER = "{ \"inputs\": [], \"name\": \"counter\", \"outputs\": [ { \"internalType\": \"uint256\", \"name\": \"\", \"type\": \"uint256\" } ], \"stateMutability\": \"view\", \"type\": \"function\" }";
 
+	public static final String ERC721_MINT_ABI = "{ \"inputs\": [ { \"internalType\": \"address\"," +
+			" \"name\": \"player\", \"type\": \"address\" }, { \"internalType\": \"uint256\", \"name\": \"tokenid\", \"type\": \"uint256\" } ]," +
+			" \"name\": \"mint\", \"outputs\": [ { \"internalType\": \"uint256\", " +
+			"\"name\": \"\", \"type\": \"uint256\" } ], " +
+			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+	public static final String ERC721_APPROVE_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"to\", \"type\": \"address\" }, " +
+			"{ \"internalType\": \"uint256\", \"name\": \"tokenId\", \"type\": \"uint256\" } ], \"name\": \"approve\", \"outputs\": [], " +
+			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+	public static final String ERC721_TRANSFER_FROM_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"from\", \"type\": \"address\" }, " +
+			"{ \"internalType\": \"address\", \"name\": \"to\", \"type\": \"address\" }, " +
+			"{ \"internalType\": \"uint256\", \"name\": \"tokenId\", \"type\": \"uint256\" } ], " +
+			"\"name\": \"transferFrom\", \"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 	public static final String CREATE_CHILD_ABI = "{\"constant\":false," +
 			"\"inputs\":[],\"name\":\"create\"," +
 			"\"outputs\":[]," +
