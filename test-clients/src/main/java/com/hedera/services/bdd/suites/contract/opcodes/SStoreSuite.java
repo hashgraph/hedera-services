@@ -251,15 +251,15 @@ public class SStoreSuite extends HapiApiSuite {
 								ContractResources.TEMPORARY_SSTORE_HOLD_PERMANENTLY_ABI, 10).via("permHoldTx")
 				).then(
 						withOpContext((spec, opLog) -> {
-							var subop01 = getTxnRecord("tempHoldTx")
+							final var subop01 = getTxnRecord("tempHoldTx")
 									.saveTxnRecordToRegistry("tempHoldTxRec").logged();
-							var subop02 = getTxnRecord("permHoldTx")
+							final var subop02 = getTxnRecord("permHoldTx")
 									.saveTxnRecordToRegistry("permHoldTxRec").logged();
 							CustomSpecAssert.allRunFor(spec, subop01, subop02);
 
-							var gasUsedForTemporaryHoldTx = spec.registry()
+							final var gasUsedForTemporaryHoldTx = spec.registry()
 									.getTransactionRecord("tempHoldTxRec").getContractCallResult().getGasUsed();
-							var gasUsedForPermanentHoldTx = spec.registry()
+							final var gasUsedForPermanentHoldTx = spec.registry()
 									.getTransactionRecord("permHoldTxRec").getContractCallResult().getGasUsed();
 
 							Assertions.assertTrue(gasUsedForTemporaryHoldTx < 3000L);
