@@ -83,6 +83,12 @@ class EntityNumPairTest {
 	}
 
 	@Test
+	void returnsCorrectNumPairIfValidLong() {
+		final var expectedVal = BitPackUtils.packedNums(2, 2);
+		assertEquals(expectedVal, fromLongs(2, 2).getValue());
+	}
+
+	@Test
 	void factoryFromInvalidNftIdWorks() {
 		final var invalidShard = new NftId(1, 0, 1, 2);
 		final var invalidRealm = new NftId(0, 1, 1, 2);
