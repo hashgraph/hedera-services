@@ -19,10 +19,13 @@ import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
 import virtual.VFCMapBenchBase.DataSourceType;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import static virtual.VFCMapBenchBase.createMap;
+import static virtual.VFCMapBenchBase.getDataSourcePath;
 import static virtual.VFCMapBenchBase.printDataStoreSize;
 
 /**
@@ -94,11 +97,14 @@ public class CryptoHbarBench {
                 1,Account.SERIALIZED_SIZE,Account::new,
                 false
         );
+
+        Path dataSourcePath = getDataSourcePath(dsType, Integer.toString(roundsBeforeFlush));
+        boolean dataSourceDirExisted = Files.exists(dataSourcePath);
         virtualMap = createMap(dsType,
                 virtualLeafRecordSerializer,
                 new Id.IdKeySerializer(),
                 numEntities,
-                Integer.toString(roundsBeforeFlush), false);
+                dataSourcePath, false);
 
         final var rand = new Random();
         txProcessor = new TransactionProcessor<>(
@@ -131,7 +137,7 @@ public class CryptoHbarBench {
         );
 
         long START = System.currentTimeMillis();
-        if (preFill) {
+        if (!dataSourceDirExisted && preFill) {
             for (int i = 0; i < numEntities; i++) {
                 if (i % 100000 == 0 && i > 0) {
                     final long END = System.currentTimeMillis();

@@ -15,12 +15,31 @@ public class VFCMapBenchBase {
         /*lmdb,*/ jasperdbIhRam, jasperdbIhDisk, jasperdbIhHalf
     }
 
+    public static Path getDataSourcePath(DataSourceType type, String extraPath) {
+        //noinspection CommentedOutCode
+        switch (type) {
+//            case lmdb:
+//                    return Path.of("lmdb");
+/*            case rocksdb:
+                    return Path.of("rocksdb");
+ */
+            case jasperdbIhRam:
+                return Path.of("jasperdb_ih_ram_"+extraPath);
+            case jasperdbIhDisk:
+                return Path.of("jasperdb_ih_disk_"+extraPath);
+            case jasperdbIhHalf:
+                return Path.of("jasperdb_ih_half_"+extraPath);
+            default:
+                return Path.of("jasperdb");
+        }
+    }
+
     protected static <K extends VirtualKey, V extends VirtualValue> VirtualMap<K,V> createMap(
             DataSourceType type,
             VirtualLeafRecordSerializer<K, V> virtualLeafRecordSerializer,
             KeySerializer<K> keySerializer,
             long numEntities,
-            String extraPath, boolean preferDiskBasedIndexes) throws IOException {
+            Path dataSourcePath, boolean preferDiskBasedIndexes) throws IOException {
 
         VirtualMap<K,V> map;
         //noinspection CommentedOutCode
@@ -45,7 +64,7 @@ public class VFCMapBenchBase {
                         virtualLeafRecordSerializer,
                         new VirtualInternalRecordSerializer(),
                         keySerializer,
-                        Path.of("jasperdb_ih_ram_"+extraPath),
+                        dataSourcePath,
                         numEntities,
                         true,
                         Long.MAX_VALUE,
@@ -57,7 +76,7 @@ public class VFCMapBenchBase {
                         virtualLeafRecordSerializer,
                         new VirtualInternalRecordSerializer(),
                         keySerializer,
-                        Path.of("jasperdb_ih_disk_"+extraPath),
+                        dataSourcePath,
                         numEntities,
                         true,
                         0,
@@ -68,7 +87,7 @@ public class VFCMapBenchBase {
                         virtualLeafRecordSerializer,
                         new VirtualInternalRecordSerializer(),
                         keySerializer,
-                        Path.of("jasperdb_ih_half_"+extraPath),
+                        dataSourcePath,
                         numEntities,
                         true,
                         numEntities/2,

@@ -45,7 +45,7 @@ public class CommonTestUtils {
                 System.err.println("Failed to delete test directory ["+dir.toFile().getAbsolutePath()+"]");
                 e.printStackTrace();
             }
-            System.out.println("Deleted data files");
+//            System.out.println("Deleted data files");
         }
     }
 

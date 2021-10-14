@@ -24,6 +24,7 @@ import org.openjdk.jmh.annotations.TearDown;
 import virtual.VFCMapBenchBase.DataSourceType;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -34,6 +35,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static virtual.VFCMapBenchBase.createMap;
+import static virtual.VFCMapBenchBase.getDataSourcePath;
 import static virtual.VFCMapBenchBase.printDataStoreSize;
 
 /**
@@ -120,11 +122,15 @@ public class ContractBench {
                         1, DataFileCommon.VARIABLE_DATA_SIZE,ContractKey::new,
                         1,ContractValue.SERIALIZED_SIZE,ContractValue::new,
                         true);
+
+
+        Path dataSourcePath = getDataSourcePath(dsType, Integer.toString(roundsBeforeFlush));
+        boolean dataSourceDirExisted = Files.exists(dataSourcePath);
         virtualMap = createMap(dsType,
                 virtualLeafRecordSerializer,
                 new ContractKeySerializer(),
                 estimatedNumKeyValuePairs,
-                Integer.toString(roundsBeforeFlush), preferDiskBasedIndexes);
+                dataSourcePath, preferDiskBasedIndexes);
 
         txProcessor = new TransactionProcessor<>(
                 preFetchEventHandlers,
@@ -141,14 +147,31 @@ public class ContractBench {
                 }
         );
 
-        if (preFill) {
-            keyValuePairsPerContract = new int[numContracts];
+        // We generate a different number of key/value pairs depending on whether it is
+        // a huge contract, big contract, or normal contract
+        int numBigContracts = (int)(numContracts*bigPercent);
+        System.out.println("numBigContracts = " + numBigContracts);
+        int numHugeContracts = (int)(numContracts*hugePercent);
+        System.out.println("numHugeContracts = " + numHugeContracts);
+        keyValuePairsPerContract = new int[numContracts];
+        for (int i = 0; i < numContracts; i++) {
+            final int kb;
+            if (i > 0 && (i % 100) == 0 && numHugeContracts > 0) {
+                kb = kbPerHugeContract;
+                numHugeContracts--;
+            } else if (i > 0 && (i % 10) == 0 && numBigContracts > 0) {
+                kb = kbPerBigContract;
+                numBigContracts--;
+            } else {
+                kb = kbPerContract;
+            }
+            final var numKeyValuePairs = (kb * 1024L) / ESTIMATED_KEY_VALUE_SIZE;
+            keyValuePairsPerContract[i] = (int) numKeyValuePairs;
+        }
+
+        if (!dataSourceDirExisted && preFill) {
             long countOfKeyValuePairs = 0;
             long lastCountOfKeyValuePairs = 0;
-            int numBigContracts = (int)(numContracts*bigPercent);
-            System.out.println("numBigContracts = " + numBigContracts);
-            int numHugeContracts = (int)(numContracts*hugePercent);
-            System.out.println("numHugeContracts = " + numHugeContracts);
             for (int i = 0; i < numContracts; i++) {
                 if ((countOfKeyValuePairs-lastCountOfKeyValuePairs) > 100_000) {
                     lastCountOfKeyValuePairs = countOfKeyValuePairs;
@@ -160,22 +183,7 @@ public class ContractBench {
                     // loading is really intense so give GC a chance to catch up
                     System.gc(); Thread.sleep(1000);
                 }
-
-                // We generate a different number of key/value pairs depending on whether it is
-                // a huge contract, big contract, or normal contract
-                final int kb;
-                if (i>0 && (i%100) == 0 && numHugeContracts > 0) {
-                    kb = kbPerHugeContract;
-                    numHugeContracts --;
-                } else if (i>0 && (i%10) == 0 && numBigContracts > 0) {
-                    kb = kbPerBigContract;
-                    numBigContracts --;
-                } else {
-                    kb = kbPerContract;
-                }
-                final var numKeyValuePairs = (kb * 1024L) / ESTIMATED_KEY_VALUE_SIZE;
-                countOfKeyValuePairs += numKeyValuePairs;
-                keyValuePairsPerContract[i] = (int)numKeyValuePairs;
+                final int numKeyValuePairs = keyValuePairsPerContract[i];
 
                 for (int j=0; j<numKeyValuePairs; j++) {
                     final var key = asContractKey(i, j);
@@ -188,12 +196,15 @@ public class ContractBench {
                         throw e;
                     }
                 }
+                countOfKeyValuePairs += numKeyValuePairs;
             }
 
             // During setup, we perform the full hashing and release the old copy. This way,
             // during the tests, we don't have an initial slow hash.
             System.out.printf("Completed: %,d contracts and %,d key/value pairs\n",numContracts,countOfKeyValuePairs);
             virtualMap = pipeline.endRound(virtualMap);
+        } else {
+            System.out.println("NOT PRE_FILLING AS LOADED FROM FILES OR TURNED OFF WITH FLAG!");
         }
 
         printDataStoreSize();
@@ -219,7 +230,11 @@ public class ContractBench {
     @TearDown
     public void destroy() {
         printDataStoreSize();
-        /*store.close();*/
+        try {
+            virtualMap.getDataSource().close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
