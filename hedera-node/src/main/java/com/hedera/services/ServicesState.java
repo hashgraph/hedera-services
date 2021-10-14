@@ -134,7 +134,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		if (version < StateVersions.RELEASE_0160_VERSION) {
 			return StateChildIndices.NUM_PRE_0160_CHILDREN;
 		} else if (version <= StateVersions.RELEASE_0180_VERSION) {
-			return StateChildIndices.NUM_POST_0160_CHILDREN;
+			return StateChildIndices.NUM_PRE_TWENTY_CHILDREN;
 		} else {
 			throw new IllegalArgumentException("Argument 'version='" + version + "' is invalid!");
 		}
@@ -227,6 +227,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			).join();
 			blobMigrationFlag.accept(false);
 			log.info("Finished with FCMap -> MerkleMap migrations, completing the deferred init");
+
+			/* TODO - migrate all blobs from the storage map into new MerkleMap<BlobKey, MerkleBlob> */
 
 			init(getPlatformForDeferredInit(), getAddressBookForDeferredInit());
 		}

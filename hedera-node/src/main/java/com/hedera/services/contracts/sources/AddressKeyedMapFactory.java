@@ -33,7 +33,7 @@ import static java.lang.Long.parseLong;
 
 public final class AddressKeyedMapFactory {
 	static final String LEGACY_BYTECODE_PATH_TEMPLATE = "/%d/s%d";
-	static final Pattern LEGACY_BYTECODE_PATH_PATTERN = Pattern.compile("/(\\d+)/s(\\d+)");
+	public static final Pattern LEGACY_BYTECODE_PATH_PATTERN = Pattern.compile("/(\\d+)/s(\\d+)");
 	private static final String LEGACY_STORAGE_PATH_TEMPLATE = "/%d/d%d";
 	private static final Pattern LEGACY_STORAGE_PATH_PATTERN = Pattern.compile("/(\\d+)/d(\\d+)");
 

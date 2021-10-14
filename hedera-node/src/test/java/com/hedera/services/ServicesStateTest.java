@@ -354,10 +354,10 @@ class ServicesStateTest {
 				LegacyStateChildIndices.NUM_0160_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_0160_VERSION));
 		assertEquals(
-				StateChildIndices.NUM_POST_0160_CHILDREN,
+				StateChildIndices.NUM_PRE_TWENTY_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_0170_VERSION));
 		assertEquals(
-				StateChildIndices.NUM_POST_0160_CHILDREN,
+				StateChildIndices.NUM_PRE_TWENTY_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_0180_VERSION));
 		assertEquals(
 				StateChildIndices.NUM_PRE_0160_CHILDREN,

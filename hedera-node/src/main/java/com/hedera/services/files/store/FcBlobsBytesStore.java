@@ -38,6 +38,7 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 
 	private final Function<byte[], MerkleOptionalBlob> blobFactory;
 	private final Supplier<MerkleMap<String, MerkleOptionalBlob>> pathedBlobs;
+	/* TODO - instead inject a Supplier<MerkleMap<BlobKey, MerkleBlob>>, extract the data after path -> BlobKey conversion */
 
 	public FcBlobsBytesStore(
 			Function<byte[], MerkleOptionalBlob> blobFactory,
