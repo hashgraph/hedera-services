@@ -53,6 +53,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -385,12 +386,12 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 		return Stream.concat(transfersFor(spec).stream(), transfersForNft(spec).stream()).collect(toList());
 	}
 
-	private List<TokenTransferList> transfersFor(HapiApiSpec spec) {
+	private List<TokenTransferList> transfersFor(final HapiApiSpec spec) {
 		Map<TokenID, List<AccountAmount>> aggregated;
 		if (fullyAggregateTokenTransfers) {
 			aggregated = fullyAggregateTokenTransfersList(spec);
 		} else {
-			aggregated = AggregateOnTokenIds(spec);
+			aggregated = aggregateOnTokenIds(spec);
 		}
 
 		return aggregated.entrySet().stream()
@@ -401,7 +402,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 				.collect(toList());
 	}
 
-	private Map<TokenID, List<AccountAmount>> AggregateOnTokenIds(HapiApiSpec spec) {
+	private Map<TokenID, List<AccountAmount>> aggregateOnTokenIds(final HapiApiSpec spec) {
 		return tokenAwareProviders.stream()
 				.filter(TokenMovement::isFungibleToken)
 				.map(p -> p.specializedFor(spec))
@@ -410,7 +411,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 						flatMapping(xfers -> xfers.getTransfersList().stream(), toList())));
 	}
 
-	private Map<TokenID, List<AccountAmount>> fullyAggregateTokenTransfersList(HapiApiSpec spec) {
+	private Map<TokenID, List<AccountAmount>> fullyAggregateTokenTransfersList(final HapiApiSpec spec) {
 		return tokenAwareProviders.stream()
 				.filter(TokenMovement::isFungibleToken)
 				.map(p -> p.specializedFor(spec))
@@ -426,7 +427,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 												.setAmount(entry.getValue())
 												.build()
 								).collect(toList()),
-						LinkedHashMap::new));
+						HashMap::new));
 	}
 
 
