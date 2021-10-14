@@ -64,6 +64,7 @@ public class GlobalDynamicProperties {
 	private long minTxnDuration;
 	private int minValidityBuffer;
 	private int maxGas;
+	private int chainId;
 	private long defaultContractLifetime;
 	private int feesTokenTransferUsageMultiplier;
 	private boolean autoRenewEnabled;
@@ -129,6 +130,7 @@ public class GlobalDynamicProperties {
 		minTxnDuration = properties.getLongProperty("hedera.transaction.minValidDuration");
 		minValidityBuffer = properties.getIntProperty("hedera.transaction.minValidityBufferSecs");
 		maxGas = properties.getIntProperty("contracts.maxGas");
+		chainId = properties.getIntProperty("contracts.chainId");
 		defaultContractLifetime = properties.getLongProperty("contracts.defaultLifetime");
 		feesTokenTransferUsageMultiplier = properties.getIntProperty("fees.tokenTransferUsageMultiplier");
 		autoRenewEnabled = properties.getBooleanProperty("autorenew.isEnabled");
@@ -252,6 +254,10 @@ public class GlobalDynamicProperties {
 
 	public int maxGas() {
 		return maxGas;
+	}
+
+	public int getChainId() {
+		return chainId;
 	}
 
 	public long defaultContractLifetime() {

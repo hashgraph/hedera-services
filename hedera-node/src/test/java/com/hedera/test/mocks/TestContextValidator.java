@@ -20,9 +20,10 @@ package com.hedera.test.mocks;
  * ‍
  */
 
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
@@ -86,6 +87,11 @@ public enum TestContextValidator implements OptionValidator {
 	}
 
 	@Override
+	public JKey attemptDecodeOrThrow(final Key k) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public ResponseCodeEnum nftMetadataCheck(byte[] metadata) {
 		throw new UnsupportedOperationException();
 	}
@@ -119,6 +125,9 @@ public enum TestContextValidator implements OptionValidator {
 	public ResponseCodeEnum queryableTopicStatus(TopicID id, MerkleMap<EntityNum, MerkleTopic> topics) {
 		throw new UnsupportedOperationException();
 	}
+
+	@Override
+	public JKey attemptToDecodeOrThrow(Key key, ResponseCodeEnum code) { throw new UnsupportedOperationException(); }
 
 	@Override
 	public ResponseCodeEnum tokenSymbolCheck(String symbol) {

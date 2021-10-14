@@ -24,6 +24,7 @@ import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TopicID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -31,6 +32,7 @@ import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_S
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asFile;
 import static com.hedera.test.utils.IdUtils.asToken;
+import static com.hedera.test.utils.IdUtils.asTopic;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -111,6 +113,13 @@ class SeqNoEntityIdSourceTest {
 	}
 
 	@Test
+	void returnsExpectedTopicId() {
+		given(seqNo.getAndIncrement()).willReturn(222L);
+		TopicID id = subject.newTopicId(sponsor);
+		assertEquals(asTopic("1.2.222"), id);
+	}
+
+	@Test
 	void reclaimDecrementsId() {
 		// when:
 		subject.reclaimLastId();
@@ -121,15 +130,20 @@ class SeqNoEntityIdSourceTest {
 
 	@Test
 	void exceptionalSourceAlwaysThrows() {
+		var defaultAccountId = AccountID.getDefaultInstance();
 		// expect:
 		assertThrows(UnsupportedOperationException.class,
-				() -> NOOP_ID_SOURCE.newAccountId(AccountID.getDefaultInstance()));
+				() -> NOOP_ID_SOURCE.newAccountId(defaultAccountId));
 		assertThrows(UnsupportedOperationException.class,
-				() -> NOOP_ID_SOURCE.newFileId(AccountID.getDefaultInstance()));
+				() -> NOOP_ID_SOURCE.newFileId(defaultAccountId));
 		assertThrows(UnsupportedOperationException.class,
-				() -> NOOP_ID_SOURCE.newTokenId(AccountID.getDefaultInstance()));
+				() -> NOOP_ID_SOURCE.newTokenId(defaultAccountId));
 		assertThrows(UnsupportedOperationException.class,
-				() -> NOOP_ID_SOURCE.newScheduleId(AccountID.getDefaultInstance()));
+				() -> NOOP_ID_SOURCE.newScheduleId(defaultAccountId));
+		assertThrows(UnsupportedOperationException.class,
+				() -> NOOP_ID_SOURCE.newTopicId(defaultAccountId));
+		assertThrows(UnsupportedOperationException.class,
+				() -> NOOP_ID_SOURCE.newContractId(defaultAccountId));
 		assertThrows(UnsupportedOperationException.class, NOOP_ID_SOURCE::reclaimLastId);
 		assertThrows(UnsupportedOperationException.class, NOOP_ID_SOURCE::reclaimProvisionalIds);
 		assertThrows(UnsupportedOperationException.class, NOOP_ID_SOURCE::resetProvisionalIds);
@@ -147,5 +161,19 @@ class SeqNoEntityIdSourceTest {
 		assertEquals(3, scheduleId.getScheduleNum());
 		assertEquals(1, scheduleId.getRealmNum());
 		assertEquals(2, scheduleId.getShardNum());
+	}
+
+	@Test
+	void newContractId() {
+		given(seqNo.getAndIncrement()).willReturn(3L);
+		var contractId = subject.newContractId(AccountID.newBuilder()
+				.setRealmNum(1)
+				.setShardNum(2)
+				.setAccountNum(3)
+				.build());
+		assertNotNull(contractId);
+		assertEquals(3, contractId.getContractNum());
+		assertEquals(1, contractId.getRealmNum());
+		assertEquals(2, contractId.getShardNum());
 	}
 }

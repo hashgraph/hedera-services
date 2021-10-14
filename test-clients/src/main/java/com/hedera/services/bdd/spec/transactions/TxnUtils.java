@@ -49,6 +49,7 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hederahashgraph.fee.SigValueObj;
 import com.swirlds.common.CommonUtils;
@@ -431,6 +432,13 @@ public class TxnUtils {
 				))
 				.collect(toList())
 				.toString();
+	}
+
+	public static OptionalLong getNonFeeDeduction(final TransactionRecord record) {
+		final var payer = record.getTransactionID().getAccountID();
+		final var txnFee = record.getTransactionFee();
+		final var totalDeduction = getDeduction(record.getTransferList(), payer);
+		return totalDeduction.isPresent() ? OptionalLong.of(totalDeduction.getAsLong() + txnFee) : totalDeduction;
 	}
 
 	public static OptionalLong getDeduction(TransferList accountAmounts, AccountID payer) {

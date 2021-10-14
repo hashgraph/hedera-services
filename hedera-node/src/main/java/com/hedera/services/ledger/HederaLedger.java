@@ -46,6 +46,7 @@ import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -102,6 +103,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public class HederaLedger {
 	private static final int MAX_CONCEIVABLE_TOKENS_PER_TXN = 1_000;
 	private static final long[] NO_NEW_BALANCES = new long[0];
+	private static final List<AccountProperty> TOKEN_TRANSFER_SIDE_EFFECTS =
+			List.of(TOKENS, NUM_NFTS_OWNED, ALREADY_USED_AUTOMATIC_ASSOCIATIONS);
 
 	static final String NO_ACTIVE_TXN_CHANGE_SET = "{*NO ACTIVE TXN*}";
 	public static final Comparator<AccountID> ACCOUNT_ID_COMPARATOR = Comparator
@@ -116,6 +119,10 @@ public class HederaLedger {
 			.comparingLong(FileID::getFileNum)
 			.thenComparingLong(FileID::getShardNum)
 			.thenComparingLong(FileID::getRealmNum);
+	public static final Comparator<ContractID> CONTRACT_ID_COMPARATOR = Comparator
+			.comparingLong(ContractID::getContractNum)
+			.thenComparingLong(ContractID::getShardNum)
+			.thenComparingLong(ContractID::getRealmNum);
 
 	private final TokenStore tokenStore;
 	private final EntityIdSource ids;
@@ -395,7 +402,8 @@ public class HederaLedger {
 		if (tokenViewsManager.isInTransaction()) {
 			tokenViewsManager.rollback();
 		}
-		accountsLedger.undoChangesOfType(NUM_NFTS_OWNED);
+		accountsLedger.undoChangesOfType(TOKEN_TRANSFER_SIDE_EFFECTS);
+		newTokenAssociations.clear();
 		clearNetTokenTransfers();
 	}
 
@@ -469,10 +477,13 @@ public class HederaLedger {
 		customizer.customize(id, accountsLedger);
 	}
 
-	public void customizeDeleted(AccountID id, HederaAccountCustomizer customizer) {
-		if (!(boolean) accountsLedger.get(id, IS_DELETED)) {
-			throw new DeletedAccountException(id);
-		}
+	/**
+	 * Updates the provided {@link AccountID} with the {@link HederaAccountCustomizer}. All properties from the
+	 * customizer are applied to the {@link MerkleAccount} provisionally
+	 * @param id target account
+	 * @param customizer properties to update
+	 */
+	public void customizePotentiallyDeleted(AccountID id, HederaAccountCustomizer customizer) {
 		customizer.customize(id, accountsLedger);
 	}
 

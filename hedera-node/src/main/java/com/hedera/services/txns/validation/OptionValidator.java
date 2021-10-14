@@ -21,6 +21,7 @@ package com.hedera.services.txns.validation;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.utils.EntityNum;
@@ -43,6 +44,7 @@ import java.time.Instant;
  */
 
 public interface OptionValidator {
+
 	boolean hasGoodEncoding(Key key);
 	boolean isValidExpiry(Timestamp expiry);
 	boolean isThisNodeAccount(AccountID id);
@@ -50,6 +52,7 @@ public interface OptionValidator {
 	boolean isAfterConsensusSecond(long now);
 	boolean isValidAutoRenewPeriod(Duration autoRenewPeriod);
 	boolean isAcceptableTransfersLength(TransferList accountAmounts);
+	JKey attemptDecodeOrThrow(Key k);
 
 	ResponseCodeEnum memoCheck(String cand);
 	ResponseCodeEnum rawMemoCheck(byte[] cand);
@@ -66,6 +69,8 @@ public interface OptionValidator {
 	ResponseCodeEnum nftMaxQueryRangeCheck(long start, long end);
 
 	ResponseCodeEnum queryableTopicStatus(TopicID id, MerkleMap<EntityNum, MerkleTopic> topics);
+
+	JKey attemptToDecodeOrThrow(Key key, ResponseCodeEnum code);
 
 	default ResponseCodeEnum queryableAccountStatus(AccountID id, MerkleMap<EntityNum, MerkleAccount> accounts) {
 		return PureValidation.queryableAccountStatus(id, accounts);

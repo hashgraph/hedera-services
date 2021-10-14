@@ -166,7 +166,7 @@
     <commons-codec.version>1.15</commons-codec.version>
     <commons-io.version>2.11.0</commons-io.version>
     <commons-lang3.version>3.12.0</commons-lang3.version>
-    <dagger.version>2.37</dagger.version>
+    <dagger.version>2.39.1</dagger.version>
     <eddsa.version>0.3.0</eddsa.version>
     <ethereum-core.version>1.12.0-v0.5.0</ethereum-core.version>
     <grpc.version>1.39.0</grpc.version>
@@ -176,8 +176,8 @@
     <javax-inject.version>1</javax-inject.version>
     <log4j.version>2.14.1</log4j.version>
     <netty.version>4.1.66.Final</netty.version>
-    <protobuf-java.version>3.18.0</protobuf-java.version>
-    <swirlds.version>0.19.0-alpha.1</swirlds.version>
+    <protobuf-java.version>3.18.1</protobuf-java.version>
+    <swirlds.version>0.19.0</swirlds.version>
     <!-- Test dependency properties in alphabetical order -->
     <hamcrest.version>2.2</hamcrest.version>
     <junit5.version>5.8.1</junit5.version>
@@ -375,6 +375,7 @@ ${git.signoff}
             <forkCount>3</forkCount>
             <reuseForks>true</reuseForks>
             <argLine>@{argLine} -Xmx5120m</argLine>
+            <useSystemClassLoader>false</useSystemClassLoader>
           </configuration>
         </plugin>
         <plugin>
@@ -582,6 +583,16 @@ ${git.signoff}
       <artifactId>mockito-junit-jupiter</artifactId>
       <version>${mockito.version}</version>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.cedarsoftware</groupId>
+      <artifactId>java-util</artifactId>
+      <version>1.65.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tuweni</groupId>
+      <artifactId>tuweni-bytes</artifactId>
+      <version>2.0.0</version>
     </dependency>
   </dependencies>
 

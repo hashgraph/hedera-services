@@ -22,7 +22,6 @@ package com.hedera.services.utils;
 
 import com.hedera.services.context.domain.security.PermissionFileUtils;
 import com.hedera.services.context.properties.PropUtils;
-import com.hedera.services.contracts.execution.DomainUtils;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
 import com.hedera.services.exceptions.ValidationUtils;
 import com.hedera.services.fees.calculation.FeeCalcUtils;
@@ -56,9 +55,10 @@ import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stats.ServicesStatsConfig;
 import com.hedera.services.stats.StatsModule;
+import com.hedera.services.store.models.TopicConversion;
 import com.hedera.services.store.tokens.views.utils.GrpcUtils;
 import com.hedera.services.throttling.ThrottlingModule;
-import com.hedera.services.txns.contract.ConsensusLogicModule;
+import com.hedera.services.txns.consensus.ConsensusLogicModule;
 import com.hedera.services.txns.contract.ContractLogicModule;
 import com.hedera.services.txns.crypto.CryptoLogicModule;
 import com.hedera.services.txns.file.FileLogicModule;
@@ -85,7 +85,6 @@ class UtilsConstructorTest {
 			NewRels.class,
 			PermissionFileUtils.class,
 			PropUtils.class,
-			DomainUtils.class,
 			AddressKeyedMapFactory.class,
 			ValidationUtils.class,
 			FeeCalcUtils.class,
@@ -140,7 +139,8 @@ class UtilsConstructorTest {
 			FileLogicModule.class,
 			NetworkLogicModule.class,
 			ScheduleLogicModule.class,
-			TokenLogicModule.class
+			TokenLogicModule.class,
+			TopicConversion.class
 	));
 
 	@Test

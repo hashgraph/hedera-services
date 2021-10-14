@@ -114,7 +114,7 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 								.autoRenewSecs(briefAutoRenew)
 								.balance(initialBalance),
 						getAccountInfo(autoRenewedAccount)
-								.saveToRegistry(autoRenewedAccount)
+								.savingSnapshot(autoRenewedAccount)
 								.logged()
 				).when(
 						sleepFor(briefAutoRenew * 1_000L + 500L),

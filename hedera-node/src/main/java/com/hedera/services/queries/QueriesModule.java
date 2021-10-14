@@ -26,11 +26,9 @@ import com.hedera.services.context.domain.security.HapiOpPermissions;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.queries.answering.QueryHeaderValidity;
 import com.hedera.services.queries.answering.StakedAnswerFlow;
 import com.hedera.services.queries.answering.ZeroStakeAnswerFlow;
-import com.hedera.services.queries.contract.ContractCallLocalAnswer;
 import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.annotations.HapiThrottle;
@@ -46,13 +44,6 @@ import static com.hedera.services.context.ServicesNodeType.STAKED_NODE;
 
 @Module
 public final class QueriesModule {
-	@Provides
-	@Singleton
-	public static ContractCallLocalAnswer.LegacyLocalCaller provideLocalCall(
-			final SmartContractRequestHandler contracts
-	) {
-		return contracts::contractCallLocal;
-	}
 
 	@Provides
 	@Singleton

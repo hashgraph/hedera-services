@@ -158,7 +158,7 @@ public class HapiSpecRegistry {
 		return Key.getDefaultInstance();
 	}
 
-	private Key asPublicKey(String pubKeyHex) throws Exception {
+	private Key asPublicKey(String pubKeyHex) {
 		return Key.newBuilder()
 				.setEd25519(ByteString.copyFrom(CommonUtils.unhex(pubKeyHex)))
 				.build();

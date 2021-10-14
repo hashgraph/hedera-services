@@ -24,6 +24,8 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -124,6 +126,16 @@ public class ContextOptionValidator implements OptionValidator {
 	}
 
 	@Override
+	public JKey attemptDecodeOrThrow(final Key k) {
+		try {
+			return JKey.mapKey(k);
+		} catch (DecoderException e) {
+			throw new InvalidTransactionException(ResponseCodeEnum.BAD_ENCODING);
+		}
+	}
+	
+
+	@Override
 	public ResponseCodeEnum nftMetadataCheck(byte[] metadata) {
 		return lengthCheck(
 				metadata.length,
@@ -195,6 +207,15 @@ public class ContextOptionValidator implements OptionValidator {
 		return Optional.ofNullable(merkleTopic)
 				.map(t -> t.isDeleted() ? INVALID_TOPIC_ID : OK)
 				.orElse(INVALID_TOPIC_ID);
+	}
+
+	@Override
+	public JKey attemptToDecodeOrThrow(Key key, ResponseCodeEnum code) {
+		try {
+			return JKey.mapKey(key);
+		} catch (DecoderException e) {
+			throw new InvalidTransactionException(code);
+		}
 	}
 
 	@Override

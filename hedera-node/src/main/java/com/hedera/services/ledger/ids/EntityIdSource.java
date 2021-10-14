@@ -21,9 +21,11 @@ package com.hedera.services.ledger.ids;
  */
 
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.SwirldDualState;
 import com.swirlds.common.SwirldTransaction;
 
@@ -33,6 +35,15 @@ import java.time.Instant;
  * Defines a type able to create ids of various entities under various conditions.
  */
 public interface EntityIdSource {
+
+	/**
+	 * Returns the {@link TopicID} to use for a new topic with the given sponsor.
+	 * 
+	 * @param sponsor the sponsor of the new topic
+	 * @return an appropriate id to use
+	 */
+	TopicID newTopicId(AccountID sponsor);
+	
 	/**
 	 * Returns the {@link AccountID} to use for a new account with the given sponsor.
 	 *
@@ -40,6 +51,14 @@ public interface EntityIdSource {
 	 * @return an appropriate id to use
 	 */
 	AccountID newAccountId(AccountID newAccountSponsor);
+
+	/**
+	 * Returns the {@link ContractID} to use for a new contract with the given account.
+	 *
+	 * @param newContractSponsor the account of the new contract
+	 * @return an appropriate id to use
+	 */
+	ContractID newContractId(AccountID newContractSponsor);
 
 	/**
 	 * Returns the {@link FileID} to use for a new account with the given sponsor.
