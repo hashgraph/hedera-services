@@ -29,6 +29,7 @@ import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.initializeSettings;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeFileId;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeFilePath;
@@ -57,10 +58,10 @@ public final class UpdateFileForUpgrade extends HapiApiSuite {
 				.given(
 						initializeSettings()
 				).when(
-						fileUpdate(upgradeFileId())
+						sourcing(() -> fileUpdate(upgradeFileId())
 								.path(upgradeFilePath())
 								.signedBy(GENESIS)
-								.payingWith(GENESIS)
+								.payingWith(GENESIS))
 				).then();
 	}
 }
