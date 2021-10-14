@@ -33,9 +33,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 
 public final class CommonUpgradeResources {
-	private static final String DEFAULT_UPGRADE_FILE_ID = "0.0.150";
-	private static final String DEFAULT_UPGRADE_FILE_PATH = "upgrade.zip";
-	private static final int DEFAULT_UPGRADE_DELAY = 2;
+	public static final String DEFAULT_UPGRADE_FILE_ID = "0.0.150";
+	public static final String DEFAULT_UPGRADE_FILE_PATH = "upgrade.zip";
+	public static final int DEFAULT_UPGRADE_DELAY = 2;
 
 	private static final PerfTestLoadSettings settings = new PerfTestLoadSettings();
 
