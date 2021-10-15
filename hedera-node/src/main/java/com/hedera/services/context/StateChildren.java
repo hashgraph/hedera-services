@@ -21,17 +21,18 @@ package com.hedera.services.context;
  */
 
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleBlob;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.merkle.internals.BlobKey;
+import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
@@ -49,7 +50,7 @@ public class StateChildren {
 	private MerkleMap<EntityNum, MerkleToken> tokens;
 	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
 	private MerkleMap<EntityNum, MerkleSchedule> schedules;
-	private MerkleMap<String, MerkleOptionalBlob> storage;
+	private MerkleMap<BlobKey, MerkleBlob> storage;
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
 	private FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations;
 	private FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations;
@@ -95,12 +96,12 @@ public class StateChildren {
 		this.schedules = schedules;
 	}
 
-	public MerkleMap<String, MerkleOptionalBlob> getStorage() {
+	public MerkleMap<BlobKey, MerkleBlob> getStorage() {
 		Objects.requireNonNull(storage);
 		return storage;
 	}
 
-	public void setStorage(MerkleMap<String, MerkleOptionalBlob> storage) {
+	public void setStorage(MerkleMap<BlobKey, MerkleBlob> storage) {
 		this.storage = storage;
 	}
 

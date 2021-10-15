@@ -65,4 +65,12 @@ public class MerkleBlob extends AbstractMerkleLeaf implements Keyed<BlobKey> {
 	public void setKey(BlobKey blobKey) {
 		this.blobKey = blobKey;
 	}
+
+	public byte[] getData() {
+		return data;
+	}
+
+	public void setData(byte[] data) {
+		this.data = data;
+	}
 }

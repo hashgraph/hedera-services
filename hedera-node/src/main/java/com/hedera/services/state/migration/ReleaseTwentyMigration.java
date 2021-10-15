@@ -25,8 +25,8 @@ import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
 import com.hedera.services.files.DataMapFactory;
 import com.hedera.services.files.EntityExpiryMapFactory;
 import com.hedera.services.files.MetadataMapFactory;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlob;
+import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.internals.BlobKey;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
@@ -82,7 +82,7 @@ public class ReleaseTwentyMigration {
 			final int deserializedVersion) {
 		log.info("Migrating state from version {} to {}", deserializedVersion, StateVersions.RELEASE_TWENTY_VERSION);
 
-		final var binaryObjectStorage = initializingState.storage();
+		final MerkleMap<String, MerkleOptionalBlob> binaryObjectStorage = initializingState.getChild(StateChildIndices.STORAGE);
 
 		forEach(binaryObjectStorage, (key, value) -> {
 			var data = value.getData();

@@ -33,10 +33,11 @@ import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleOptionalBlob;
+import com.hedera.services.state.merkle.MerkleBlob;
+import com.hedera.services.state.merkle.internals.BlobKey;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.mocks.StorageSourceFactory;
 import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.utils.IdUtils;
@@ -61,7 +62,7 @@ class RepoNewCacheTest {
 	@Disabled
 	public void test() {
 		MerkleMap<EntityNum, MerkleAccount> accountMap = new MerkleMap<>();
-		MerkleMap<String, MerkleOptionalBlob> storageMap = new MerkleMap<>();
+		MerkleMap<BlobKey, MerkleBlob> storageMap = new MerkleMap<>();
 		DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
 
 		TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
@@ -141,7 +142,7 @@ class RepoNewCacheTest {
 	@Test
 	void rollbackTest() {
 		MerkleMap<EntityNum, MerkleAccount> accountMap = new MerkleMap<>();
-		MerkleMap<String, MerkleOptionalBlob> storageMap = new MerkleMap<>();
+		MerkleMap<BlobKey, MerkleBlob> storageMap = new MerkleMap<>();
 		DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
 
 		BackingAccounts backingAccounts = new BackingAccounts(() -> accountMap);

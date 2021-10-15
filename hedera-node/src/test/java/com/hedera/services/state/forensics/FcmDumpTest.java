@@ -22,11 +22,12 @@ package com.hedera.services.state.forensics;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleOptionalBlob;
+import com.hedera.services.state.merkle.MerkleBlob;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.merkle.internals.BlobKey;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.extensions.LogCaptor;
@@ -68,7 +69,7 @@ class FcmDumpTest {
 	@Mock
 	MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
-	MerkleMap<String, MerkleOptionalBlob> storage;
+	MerkleMap<BlobKey, MerkleBlob> storage;
 	@Mock
 	MerkleMap<EntityNum, MerkleTopic> topics;
 	@Mock

@@ -20,7 +20,8 @@ package com.hedera.services.files.store;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleOptionalBlob;
+import com.hedera.services.state.merkle.MerkleBlob;
+import com.hedera.services.state.merkle.internals.BlobKey;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -28,33 +29,31 @@ import org.apache.logging.log4j.Logger;
 import java.util.AbstractMap;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static java.util.stream.Collectors.toSet;
+import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.BYTECODE;
+import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.FILE_DATA;
+import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.FILE_METADATA;
+import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.SYSTEM_DELETION_TIME;
 
 public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 	private static final Logger log = LogManager.getLogger(FcBlobsBytesStore.class);
+	private final Supplier<MerkleMap<BlobKey, MerkleBlob>> blobSupplier;
 
-	private final Function<byte[], MerkleOptionalBlob> blobFactory;
-	private final Supplier<MerkleMap<String, MerkleOptionalBlob>> pathedBlobs;
-	/* TODO - instead inject a Supplier<MerkleMap<BlobKey, MerkleBlob>>, extract the data after path -> BlobKey conversion */
-
-	public FcBlobsBytesStore(
-			Function<byte[], MerkleOptionalBlob> blobFactory,
-			Supplier<MerkleMap<String, MerkleOptionalBlob>> pathedBlobs
-	) {
-		this.blobFactory = blobFactory;
-		this.pathedBlobs = pathedBlobs;
+	public FcBlobsBytesStore(Supplier<MerkleMap<BlobKey, MerkleBlob>> pathedBlobs) {
+		this.blobSupplier = pathedBlobs;
 	}
 
-	private String at(Object key) {
-		return (String) key;
+	private BlobKey at(Object key) {
+		final String path =  (String) key;
+		final BlobKey.BlobType type = getType(path.charAt(3));
+		final long entityNum = Long.parseLong(String.valueOf(path.charAt(5)));
+		return new BlobKey(type, entityNum);
 	}
 
 	@Override
 	public void clear() {
-		pathedBlobs.get().clear();
+		blobSupplier.get().clear();
 	}
 
 	/**
@@ -69,7 +68,7 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 	 */
 	@Override
 	public byte[] remove(Object path) {
-		pathedBlobs.get().remove(at(path));
+		blobSupplier.get().remove(at(path));
 		return null;
 	}
 
@@ -88,49 +87,62 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 	@Override
 	public byte[] put(String path, byte[] value) {
 		var meta = at(path);
-		if (pathedBlobs.get().containsKey(meta)) {
-			var blob = pathedBlobs.get().getForModify(meta);
-			blob.modify(value);
+		if (blobSupplier.get().containsKey(meta)) {
+			final var blob = blobSupplier.get().getForModify(meta);
+			blob.setData(value);
 			if (log.isDebugEnabled()) {
 				log.debug("Modifying to {} new bytes (hash = {}) @ '{}'", value.length, blob.getHash(), path);
 			}
 		} else {
-			var blob = blobFactory.apply(value);
+			final MerkleBlob blob = new MerkleBlob(value);
 			if (log.isDebugEnabled()) {
 				log.debug("Putting {} new bytes (hash = {}) @ '{}'", value.length, blob.getHash(), path);
 			}
-			pathedBlobs.get().put(at(path), blob);
+			blobSupplier.get().put(at(path), blob);
 		}
 		return null;
 	}
 
 	@Override
 	public byte[] get(Object path) {
-		return Optional.ofNullable(pathedBlobs.get().get(at(path)))
-				.map(MerkleOptionalBlob::getData)
+		return Optional.ofNullable(blobSupplier.get().get(at(path)))
+				.map(MerkleBlob::getData)
 				.orElse(null);
 	}
 
 	@Override
 	public boolean containsKey(Object path) {
-		return pathedBlobs.get().containsKey(at(path));
+		return blobSupplier.get().containsKey(at(path));
 	}
 
 	@Override
 	public boolean isEmpty() {
-		return pathedBlobs.get().isEmpty();
+		return blobSupplier.get().isEmpty();
 	}
 
 	@Override
 	public int size() {
-		return pathedBlobs.get().size();
+		return blobSupplier.get().size();
 	}
 
 	@Override
 	public Set<Entry<String, byte[]>> entrySet() {
-		return pathedBlobs.get().entrySet()
-				.stream()
-				.map(entry -> new SimpleEntry<>(entry.getKey(), entry.getValue().getData()))
-				.collect(toSet());
+		throw new UnsupportedOperationException();
 	}
+
+	private BlobKey.BlobType getType(char index) {
+		switch (index) {
+			case 'f':
+				return FILE_DATA;
+			case 'k':
+				return FILE_METADATA;
+			case 's':
+				return BYTECODE;
+			case 'e':
+				return SYSTEM_DELETION_TIME;
+			default:
+				throw new IllegalArgumentException("Unidentified type of blob");
+		}
+	}
+
 }
