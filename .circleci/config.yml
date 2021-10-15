@@ -666,11 +666,11 @@ workflows:
   GCP-Weekly-Services-Crypto-Restart-Performance-15N-15C:
     triggers:
       - schedule:
-          cron: "0 12,22 * * *"
+          cron: "5 5 * * 6"
           filters:
             branches:
               only:
-                - docker-regression
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -689,11 +689,11 @@ workflows:
   GCP-Weekly-Services-MixedOps-Restart-Performance-21N-21C:
     triggers:
       - schedule:
-          cron: "5 12,22 * * *"
+          cron: "0 2 * * 3"
           filters:
             branches:
               only:
-                - docker-regression
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -713,11 +713,11 @@ workflows:
   GCP-Weekly-Services-HCS-Restart-Performance-15N-15C:
     triggers:
       - schedule:
-          cron: "10 12,22 * * *"
+          cron: "5 10 * * 6"
           filters:
             branches:
               only:
-                - docker-regression
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -737,11 +737,11 @@ workflows:
   GCP-Weekly-Services-HTS-Restart-Performance-15N-15C:
     triggers:
       - schedule:
-          cron: "15 12,22 * * *"
+          cron: "5 15 * * 6"
           filters:
             branches:
               only:
-                - docker-regression
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -761,11 +761,11 @@ workflows:
   GCP-Daily-Services-Comp-NetError-4N-1C:
     triggers:
       - schedule:
-          cron: "20 12,22 * * *"
+          cron: "30 5 * * *"
           filters:
             branches:
               only:
-                - docker-regression
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -814,11 +814,11 @@ workflows:
   GCP-Daily-Services-Crypto-Migration-7N-1C:
     triggers:
       - schedule:
-          cron: "25 12,22 * * *"
+          cron: "45 5 * * *"
           filters:
             branches:
               only:
-                - docker-regression
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -864,13 +864,13 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Crypto-Restart-4N-1C:
-#    triggers:
-#      - schedule:
-#          cron: "30 12,22 * * *"
-#          filters:
-#            branches:
-#              only:
-#                - docker-regression
+    triggers:
+      - schedule:
+          cron: "15 6 * * *"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -887,13 +887,13 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Account-Balances-client-validation-6N-1C:
-#    triggers:
-#      - schedule:
-#          cron: "35 12,22 * * *"
-#          filters:
-#            branches:
-#              only:
-#                - docker-regression
+    triggers:
+      - schedule:
+          cron: "30 6 * * *"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -913,11 +913,11 @@ workflows:
   GCP-Daily-Services-Reconnect-6N-4C:
     triggers:
       - schedule:
-          cron: "40 12,22 * * *"
+          cron: "40 5 * * *"
           filters:
             branches:
               only:
-                - docker-regression
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -937,11 +937,11 @@ workflows:
   GCP-Daily-Services-Global-3NReconnect-15N-4C:
     triggers:
       - schedule:
-          cron: "45 12,22 * * *"
+          cron: "40 7 * * *"
           filters:
             branches:
               only:
-                - docker-regression
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -960,11 +960,11 @@ workflows:
   GCP-Weekly-Services-NetDelay-15N-1C:
     triggers:
       - schedule:
-          cron: "50 12,22 * * *"
+          cron: "0 5 * * *"
           filters:
             branches:
               only:
-                - docker-regression
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -981,13 +981,13 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Recovery-4N-1C:
-#    triggers:
-#      - schedule:
-#          cron: "55 12,22 * * *"
-#          filters:
-#            branches:
-#              only:
-#                - docker-regression
+    triggers:
+      - schedule:
+          cron: "55 6 * * *"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1006,11 +1006,11 @@ workflows:
   GCP-Weekly-Services-Query-Restart-Performance-6N-6C:
     triggers:
       - schedule:
-          cron: "0 13,23 * * *"
+          cron: "0 6 * * 2"
           filters:
             branches:
               only:
-                - docker-regression
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1029,11 +1029,11 @@ workflows:
   GCP-Daily-Services-Comp-Restart-Performance-Hotspot-6N-6C:
     triggers:
       - schedule:
-          cron: "5 13,23 * * *"
+          cron: "35 7 * * *"
           filters:
             branches:
               only:
-                - docker-regression
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1050,13 +1050,13 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Comp-Restart-Performance-Random-6N-6C:
-#    triggers:
-#      - schedule:
-#          cron: "10 13,23 * * *"
-#          filters:
-#            branches:
-#              only:
-#                - docker-regression
+    triggers:
+      - schedule:
+          cron: "40 4 * * *"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1076,11 +1076,11 @@ workflows:
   GCP-Daily-Services-HTS-Restart-Performance-6N-6C:
     triggers:
       - schedule:
-          cron: "15 13,23 * * *"
+          cron: "30 4 * * *"
           filters:
             branches:
               only:
-                - docker-regression
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1097,13 +1097,13 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Comp-Reconnect-6N-1C:
-#    triggers:
-#      - schedule:
-#          cron: "20 13,23 * * *"
-#          filters:
-#            branches:
-#              only:
-#                - docker-regression
+    triggers:
+      - schedule:
+          cron: "15 7 * * *"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1122,11 +1122,11 @@ workflows:
   GCP-Daily-Services-Comp-Reconnect-Correctness-6N-1C:
     triggers:
       - schedule:
-          cron: "25 13,23 * * *"
+          cron: "25 7 * * *"
           filters:
             branches:
               only:
-                - docker-regression
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1143,13 +1143,13 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Comp-3NReconnect-15N-4C:
-#    triggers:
-#      - schedule:
-#          cron: "30 13,23 * * *"
-#          filters:
-#            branches:
-#              only:
-#                - docker-regression
+    triggers:
+      - schedule:
+          cron: "25 8 * * *"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1351,8 +1351,6 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression; git checkout 01616-D-docker-jrs-for-services
-            cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
