@@ -44,8 +44,16 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 		this.blobSupplier = pathedBlobs;
 	}
 
+	/**
+	 * As the string we are parsing matches /0/f{num} for file data, /0/k{num} for file metadata, /0/s{num} for contract
+	 * bytecode, and /0/e{num} for system deleted files, character at fifth position is used to recognize the type of
+	 * blob and entity number
+	 *
+	 * @param key
+	 * @return
+	 */
 	private BlobKey at(Object key) {
-		final String path =  (String) key;
+		final String path = (String) key;
 		final BlobKey.BlobType type = getType(path.charAt(3));
 		final long entityNum = Long.parseLong(String.valueOf(path.charAt(5)));
 		return new BlobKey(type, entityNum);

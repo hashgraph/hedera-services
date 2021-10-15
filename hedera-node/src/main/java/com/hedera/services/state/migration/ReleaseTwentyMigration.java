@@ -39,6 +39,7 @@ import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.BYTECO
 import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.FILE_DATA;
 import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.FILE_METADATA;
 import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.SYSTEM_DELETION_TIME;
+import static com.hedera.services.state.migration.StateChildIndices.STORAGE;
 import static com.hedera.services.utils.MiscUtils.forEach;
 import static java.lang.Long.parseLong;
 
@@ -82,30 +83,33 @@ public class ReleaseTwentyMigration {
 			final int deserializedVersion) {
 		log.info("Migrating state from version {} to {}", deserializedVersion, StateVersions.RELEASE_TWENTY_VERSION);
 
-		final MerkleMap<String, MerkleOptionalBlob> binaryObjectStorage = initializingState.getChild(StateChildIndices.STORAGE);
+		final MerkleMap<String, MerkleOptionalBlob> binaryObjectStorage = initializingState.getChild(
+				STORAGE);
 
 		forEach(binaryObjectStorage, (key, value) -> {
 			var data = value.getData();
-			if (isFileData(key)) {
-				BlobKey.BlobType blobType = FILE_DATA;
-				insertEntityToMerkleMap(key, blobType, data);
-			} else if (isFileMetaData(key)) {
-				BlobKey.BlobType blobType = FILE_METADATA;
-				insertEntityToMerkleMap(key, blobType, data);
-			} else if (isContractByteCode(key)) {
-				BlobKey.BlobType blobType = BYTECODE;
-				insertEntityToMerkleMap(key, blobType, data);
-			} else if (isSystemDeletedFileData(key)) {
-				BlobKey.BlobType blobType = SYSTEM_DELETION_TIME;
-				insertEntityToMerkleMap(key, blobType, data);
-			}
+			var blobType = getBlobType(key);
+			insertEntityToMerkleMap(key, blobType, data);
 		});
 
-		initializingState.setChild(StateChildIndices.STORAGE, virtualMap);
+		initializingState.setChild(STORAGE, virtualMap);
+	}
+
+	private static BlobKey.BlobType getBlobType(String key) {
+		if (isFileData(key)) {
+			return FILE_DATA;
+		} else if (isFileMetaData(key)) {
+			return FILE_METADATA;
+		} else if (isContractByteCode(key)) {
+			return BYTECODE;
+		} else if (isSystemDeletedFileData(key)) {
+			return SYSTEM_DELETION_TIME;
+		}
+		return null;
 	}
 
 	private static void insertEntityToMerkleMap(final String key, final BlobKey.BlobType blobType, final byte[] data) {
-		BlobKey virtualMapKey = new BlobKey(blobType, parseLong(getEntityNum(key, blobType)));
+		BlobKey virtualMapKey = new BlobKey(blobType, getEntityNum(key));
 		MerkleBlob virtualMapVal = new MerkleBlob(data);
 		virtualMap.put(virtualMapKey, virtualMapVal);
 	}
@@ -126,18 +130,15 @@ public class ReleaseTwentyMigration {
 		return systemDeleteMatcher.matcher(key).matches();
 	}
 
-	private static String getEntityNum(final String key, final BlobKey.BlobType type) {
-		switch (type) {
-			case FILE_DATA:
-				return fileMatcher.matcher(key).group(2);
-			case FILE_METADATA:
-				return fileMetaDataMatcher.matcher(key).group(2);
-			case BYTECODE:
-				return byteCodeMatcher.matcher(key).group(2);
-			case SYSTEM_DELETION_TIME:
-				return systemDeleteMatcher.matcher(key).group(2);
-			default:
-				throw new IllegalArgumentException("Invalid Blob type");
-		}
+	/**
+	 * As the string we are parsing matches /0/f{num} for file data, /0/k{num} for file metadata, /0/s{num} for contract
+	 * bytecode, and /0/e{num} for system deleted files, character at fifth position is used to recognize the type of
+	 * blob.
+	 *
+	 * @param key
+	 * @return
+	 */
+	private static long getEntityNum(final String key) {
+		return parseLong(String.valueOf(key.charAt(5)));
 	}
 }
