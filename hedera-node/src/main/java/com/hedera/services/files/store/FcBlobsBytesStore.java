@@ -138,7 +138,7 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 		throw new UnsupportedOperationException();
 	}
 
-	private BlobKey.BlobType getType(char index) {
+	public static BlobKey.BlobType getType(char index) {
 		switch (index) {
 			case 'f':
 				return FILE_DATA;
