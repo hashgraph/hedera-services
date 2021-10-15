@@ -22,6 +22,8 @@ package com.hedera.services.utils;
 
 import com.hedera.services.context.domain.security.PermissionFileUtils;
 import com.hedera.services.context.properties.PropUtils;
+import com.hedera.services.contracts.gascalculator.GasCalculatorHederaUtil;
+import com.hedera.services.contracts.operation.HederaOperationUtil;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
 import com.hedera.services.exceptions.ValidationUtils;
 import com.hedera.services.fees.calculation.FeeCalcUtils;
@@ -55,6 +57,7 @@ import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stats.ServicesStatsConfig;
 import com.hedera.services.stats.StatsModule;
+import com.hedera.services.store.contracts.DWUtil;
 import com.hedera.services.store.models.TopicConversion;
 import com.hedera.services.store.tokens.views.utils.GrpcUtils;
 import com.hedera.services.throttling.ThrottlingModule;
@@ -140,7 +143,11 @@ class UtilsConstructorTest {
 			NetworkLogicModule.class,
 			ScheduleLogicModule.class,
 			TokenLogicModule.class,
-			TopicConversion.class
+			TopicConversion.class,
+			GasCalculatorHederaUtil.class,
+			HederaOperationUtil.class,
+			DWUtil.class,
+			ResponseCodeUtil.class
 	));
 
 	@Test

@@ -124,6 +124,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		);
 
 		/* --- Persist changes into state --- */
+		// TODO shouldn't we persist the changes after the result.isSuccessful() check ?
 		final var createdContracts = worldState.persist();
 		result.setCreatedContracts(createdContracts);
 

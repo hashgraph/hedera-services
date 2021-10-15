@@ -81,6 +81,7 @@ public class HederaStackedWorldStateUpdater
 	public void commit() {
 		((HederaWorldUpdater) wrappedWorldView()).getSponsorMap().putAll(sponsorMap);
 		((HederaWorldUpdater) wrappedWorldView()).addSbhRefund(sbhRefund);
+		// TODO clear sponsorMap ?
 		sbhRefund = Gas.ZERO;
 		super.commit();
 	}

@@ -80,6 +80,7 @@ public class AccountStore {
 	 * 		if the requested account is missing, deleted, or expired and pending removal
 	 */
 	public Account loadAccount(Id id) {
+		// TODO check if the account is a smartContract. Fail if so.
 		return this.loadAccountOrFailWith(id, null);
 	}
 

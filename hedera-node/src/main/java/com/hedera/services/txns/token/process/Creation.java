@@ -105,10 +105,12 @@ public class Creation {
 
 		final var treasuryId = Id.fromGrpcAccount(op.getTreasury());
 		treasury = accountStore.loadAccountOrFailWith(treasuryId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+		// TODO : can a treasury be a smartContract ?
 		autoRenew = null;
 		if (op.hasAutoRenewAccount()) {
 			final var autoRenewId = Id.fromGrpcAccount(op.getAutoRenewAccount());
 			autoRenew = accountStore.loadAccountOrFailWith(autoRenewId, INVALID_AUTORENEW_ACCOUNT);
+			// TODO : check if its a smartContract
 		}
 
 		provisionalId = Id.fromGrpcToken(ids.newTokenId(sponsor));

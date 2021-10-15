@@ -97,8 +97,6 @@ public class HederaWorldState implements HederaMutableWorldState {
 		var status = SUCCESS;
 		if (!repositoryRoot.flushStorageCacheIfTotalSizeLessThan(globalDynamicProperties.maxContractStorageKb())) {
 			status = MAX_CONTRACT_STORAGE_EXCEEDED;
-		}
-		if (status != SUCCESS) {
 			repositoryRoot.emptyStorageCache();
 			provisionalContractCreations.clear();
 		}
@@ -116,8 +114,8 @@ public class HederaWorldState implements HederaMutableWorldState {
 	@Override
 	public void customizeSponsoredAccounts() {
 		// copy over sponsor account info for CREATE operations
-		sponsorMap.forEach((contract, sponsorAddress) -> {
-			AccountID newlyCreated = accountParsedFromSolidityAddress(contract.toArray());
+		sponsorMap.forEach((contractAddress, sponsorAddress) -> {
+			AccountID newlyCreated = accountParsedFromSolidityAddress(contractAddress.toArray());
 			AccountID sponsorAccount = accountParsedFromSolidityAddress(sponsorAddress.toArrayUnsafe());
 			validateTrue(ledger.exists(newlyCreated), FAIL_INVALID);
 			validateTrue(ledger.exists(sponsorAccount), FAIL_INVALID);

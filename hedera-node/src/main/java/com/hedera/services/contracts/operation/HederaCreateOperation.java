@@ -66,6 +66,7 @@ public class HederaCreateOperation extends AbstractCreateOperation {
 
 		Gas gasCost = gasCalculator().createOperationGasCost(frame).plus(Gas.of(storageCost).plus(memoryGasCost));
 		if (checkSuperCost) {
+			// TODO validate with the correct mas gas cost.
 			return gasCost.max(this.gasCalculator().createOperationGasCost(frame));
 		} else {
 			return gasCost;

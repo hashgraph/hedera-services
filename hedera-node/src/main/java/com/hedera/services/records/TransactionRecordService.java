@@ -170,8 +170,10 @@ public class TransactionRecordService {
 	}
 
 	/**
-	 * Updates the record of the active transaction with the {@link TransactionProcessingResult} of the EVM transaction
-	 * @param result the processing result of the EVM transaction
+	 * Updates the record of the active transaction with the {@link TransactionProcessingResult} of the EVM ContractCreate
+	 * transaction
+	 * @param result
+	 * 		the processing result of the EVM transaction
 	 */
 	public void externaliseEvmCreateTransaction(TransactionProcessingResult result) {
 		txnCtx.setStatus(getStatus(result, SUCCESS));
@@ -179,9 +181,10 @@ public class TransactionRecordService {
 		txnCtx.addNonThresholdFeeChargedToPayer(result.getGasPrice() * (result.getGasUsed() - result.getSbhRefund()));
 	}
 
+	// TODO : can reUse the above method `externaliseEvmCreateTransaction` for `externaliseEvmCallTransaction`
 	/**
-	 * Updates the record of the active transaction with the {@link TransactionProcessingResult} of the EVM transaction
-	 *
+	 * Updates the record of the active transaction with the {@link TransactionProcessingResult} of the EVM ContractCall
+	 * transaction
 	 * @param result
 	 * 		the processing result of the EVM transaction
 	 */

@@ -83,6 +83,7 @@ public class ContractDeleteTransitionLogic implements TransitionLogic {
 
 			if (op.hasTransferAccountID()) {
 				final var receiver = op.getTransferAccountID();
+				// TODO should use accountStore to check these instead of using the ledger
 				if (ledger.exists(receiver) && ledger.isDetached(receiver)) {
 					txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 					return;
