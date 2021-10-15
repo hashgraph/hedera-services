@@ -1,22 +1,37 @@
 package com.hedera.services.state.migration;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.hedera.services.ServicesState;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
 import com.hedera.services.files.DataMapFactory;
 import com.hedera.services.files.EntityExpiryMapFactory;
 import com.hedera.services.files.MetadataMapFactory;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlob;
 import com.hedera.services.state.merkle.internals.BlobKey;
-import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.Key;
-import com.swirlds.common.merkle.MerkleInternal;
-import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.copy.MerkleCopy;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.regex.Pattern;
 
@@ -51,17 +66,19 @@ public class ReleaseTwentyMigration {
 	 */
 
 	private static final Logger log = LogManager.getLogger(ReleaseTwentyMigration.class);
-	private static MerkleMap<BlobKey, MerkleBlob> virtualMap = new MerkleMap<>();
+
 	private static Pattern fileMatcher = DataMapFactory.LEGACY_PATH_PATTERN;
 	private static Pattern fileMetaDataMatcher = MetadataMapFactory.LEGACY_PATH_PATTERN;
 	private static Pattern byteCodeMatcher = AddressKeyedMapFactory.LEGACY_BYTECODE_PATH_PATTERN;
 	private static Pattern systemDeleteMatcher = EntityExpiryMapFactory.LEGACY_PATH_PATTERN;
 
+	private static MerkleMap<BlobKey, MerkleBlob> virtualMap = new MerkleMap<>();
+
 	public ReleaseTwentyMigration() {
 		throw new UnsupportedOperationException("Utility class");
 	}
 
-	public static void moveNonContractStorageToMerkleMap(final ServicesState initializingState) {
+	public static void replaceStorageMapWithVirtualMap(final ServicesState initializingState) {
 		log.info("Migrating to 0.20.0 state ");
 
 		final var binaryObjectStorage = initializingState.storage();
@@ -82,6 +99,8 @@ public class ReleaseTwentyMigration {
 				insertEntityToMerkleMap(key, blobType, data);
 			}
 		});
+
+		initializingState.setChild(StateChildIndices.STORAGE, virtualMap);
 	}
 
 	private static void insertEntityToMerkleMap(final String key, final BlobKey.BlobType blobType, final byte[] data) {
