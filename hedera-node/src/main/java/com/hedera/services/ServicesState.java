@@ -74,6 +74,10 @@ import java.util.function.Supplier;
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
 import static com.hedera.services.state.migration.Release0170Migration.moveLargeFcmsToBinaryRoutePositions;
+import static com.hedera.services.state.migration.ReleaseTwentyMigration.replaceStorageMapWithVirtualMap;
+import static com.hedera.services.state.migration.StateVersions.RELEASE_0160_VERSION;
+import static com.hedera.services.state.migration.StateVersions.RELEASE_0170_VERSION;
+import static com.hedera.services.state.migration.StateVersions.RELEASE_TWENTY_VERSION;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static com.hedera.services.utils.EntityNumPair.fromLongs;
 import static java.util.concurrent.CompletableFuture.runAsync;
@@ -131,7 +135,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public int getMinimumChildCount(int version) {
-		if (version < StateVersions.RELEASE_0160_VERSION) {
+		if (version < RELEASE_0160_VERSION) {
 			return StateChildIndices.NUM_PRE_0160_CHILDREN;
 		} else if (version <= StateVersions.RELEASE_0180_VERSION) {
 			return StateChildIndices.NUM_PRE_TWENTY_CHILDREN;
@@ -147,8 +151,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public void initialize() {
-		if (deserializedVersion < StateVersions.RELEASE_0170_VERSION) {
-			if (deserializedVersion < StateVersions.RELEASE_0160_VERSION) {
+		if (deserializedVersion < RELEASE_0170_VERSION) {
+			if (deserializedVersion < RELEASE_0160_VERSION) {
 				setChild(LegacyStateChildIndices.UNIQUE_TOKENS, new MerkleMap<>());
 			}
 			moveLargeFcmsToBinaryRoutePositions(this, deserializedVersion);
@@ -228,7 +232,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			blobMigrationFlag.accept(false);
 			log.info("Finished with FCMap -> MerkleMap migrations, completing the deferred init");
 
-			/* TODO - migrate all blobs from the storage map into new MerkleMap<BlobKey, MerkleBlob> */
+			if (getDeserializedVersion() < RELEASE_TWENTY_VERSION) {
+				replaceStorageMapWithVirtualMap(this, deserializedVersion);
+				log.info("  ↪ Migrated {} blobs from storage map to virtual map", storage().size());
+			}
 
 			init(getPlatformForDeferredInit(), getAddressBookForDeferredInit());
 		}

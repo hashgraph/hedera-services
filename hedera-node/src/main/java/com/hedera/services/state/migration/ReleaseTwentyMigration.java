@@ -78,8 +78,9 @@ public class ReleaseTwentyMigration {
 		throw new UnsupportedOperationException("Utility class");
 	}
 
-	public static void replaceStorageMapWithVirtualMap(final ServicesState initializingState) {
-		log.info("Migrating to 0.20.0 state ");
+	public static void replaceStorageMapWithVirtualMap(final ServicesState initializingState,
+			final int deserializedVersion) {
+		log.info("Migrating state from version {} to {}", deserializedVersion, StateVersions.RELEASE_TWENTY_VERSION);
 
 		final var binaryObjectStorage = initializingState.storage();
 
