@@ -23,8 +23,8 @@ package com.hedera.services.bdd.spec.assertions;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toList;
 
 public class BaseErroringAsserts<T> implements ErroringAsserts<T> {
 	private final List<Function<T, Optional<Throwable>>> tests;
@@ -37,7 +37,7 @@ public class BaseErroringAsserts<T> implements ErroringAsserts<T> {
 	public List<Throwable> errorsIn(T instance) {
 		return tests
 				.stream()
-				.flatMap(t -> t.apply(instance).map(Stream::of).orElse(Stream.empty()))
-				.collect(Collectors.toList());
+				.flatMap(t -> t.apply(instance).stream())
+				.collect(toList());
 	}
 }

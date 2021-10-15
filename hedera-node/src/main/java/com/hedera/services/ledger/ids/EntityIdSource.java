@@ -21,6 +21,7 @@ package com.hedera.services.ledger.ids;
  */
 
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -50,6 +51,14 @@ public interface EntityIdSource {
 	 * @return an appropriate id to use
 	 */
 	AccountID newAccountId(AccountID newAccountSponsor);
+
+	/**
+	 * Returns the {@link ContractID} to use for a new contract with the given account.
+	 *
+	 * @param newContractSponsor the account of the new contract
+	 * @return an appropriate id to use
+	 */
+	ContractID newContractId(AccountID newContractSponsor);
 
 	/**
 	 * Returns the {@link FileID} to use for a new account with the given sponsor.

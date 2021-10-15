@@ -283,7 +283,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 				Transaction insufficientPayment = finalizedTxn(spec, opDef(spec, realNodePayment - 1));
 				submitWith(spec, insufficientPayment);
 				if (INSUFFICIENT_TX_FEE != reflectForPrecheck(response)) {
-					String errMsg = String.format("Strict cost of answer! suppose to be {}, but get {}",
+					String errMsg = String.format("Strict cost of answer! suppose to be %s, but get %s",
 							INSUFFICIENT_TX_FEE, reflectForPrecheck(response));
 					log.error(errMsg);
 					throw new HapiQueryPrecheckStateException(errMsg);

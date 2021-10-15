@@ -21,6 +21,7 @@ package com.hedera.services.records;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
@@ -38,6 +39,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static com.hedera.services.utils.ResponseCodeUtil.getStatus;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 @Singleton
 public class TransactionRecordService {
@@ -156,12 +160,34 @@ public class TransactionRecordService {
 	 * Updates the record of the current transaction with the changes in the given {@link Topic}.
 	 * Currently, the only operation refactored is the TopicCreate.
 	 * This function should be updated correspondingly while refactoring the other Topic operations.
-	 * 
+	 *
 	 * @param topic - the Topic, whose changes have to be included in the receipt
 	 */
 	public void includeChangesToTopic(Topic topic) {
 		if (topic.isNew()) {
 			txnCtx.setCreated(topic.getId().asGrpcTopic());
 		}
+	}
+
+	/**
+	 * Updates the record of the active transaction with the {@link TransactionProcessingResult} of the EVM transaction
+	 * @param result the processing result of the EVM transaction
+	 */
+	public void externaliseEvmCreateTransaction(TransactionProcessingResult result) {
+		txnCtx.setStatus(getStatus(result, SUCCESS));
+		txnCtx.setCreateResult(result.toGrpc());
+		txnCtx.addNonThresholdFeeChargedToPayer(result.getGasPrice() * (result.getGasUsed() - result.getSbhRefund()));
+	}
+
+	/**
+	 * Updates the record of the active transaction with the {@link TransactionProcessingResult} of the EVM transaction
+	 *
+	 * @param result
+	 * 		the processing result of the EVM transaction
+	 */
+	public void externaliseEvmCallTransaction(TransactionProcessingResult result) {
+		txnCtx.setStatus(getStatus(result, SUCCESS));
+		txnCtx.setCallResult(result.toGrpc());
+		txnCtx.addNonThresholdFeeChargedToPayer(result.getGasPrice() * (result.getGasUsed() - result.getSbhRefund()));
 	}
 }

@@ -24,6 +24,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.QueryUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenAssociation;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
@@ -133,6 +134,11 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
 
 	public TransactionRecordAsserts tokenTransfers(ErroringAssertsProvider<List<TokenTransferList>> provider) {
 		registerTypedProvider("tokenTransferListsList", provider);
+		return this;
+	}
+
+	public TransactionRecordAsserts autoAssociated(ErroringAssertsProvider<List<TokenAssociation>> provider) {
+		registerTypedProvider("automaticTokenAssociationsList", provider);
 		return this;
 	}
 

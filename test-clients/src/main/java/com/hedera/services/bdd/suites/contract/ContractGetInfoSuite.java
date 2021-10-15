@@ -22,22 +22,23 @@ package com.hedera.services.bdd.suites.contract;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Arrays;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 
 public class ContractGetInfoSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractGetInfoSuite.class);
+
+	private static final String NON_EXISTING_CONTRACT = HapiSpecSetup.getDefaultInstance().invalidContractName();
 
 	public static void main(String... args) {
 		new ContractGetInfoSuite().runSuiteSync();
@@ -45,40 +46,46 @@ public class ContractGetInfoSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return allOf(
-			negativeSpecs(),
-			positiveSpecs()
+		return List.of(
+			getInfoWorks(),
+			invalidContractFromCostAnswer(),
+			invalidContractFromAnswerOnly()
 		);
 	}
 
-	private List<HapiApiSpec> negativeSpecs() {
-		return Arrays.asList(
-			invalidContractFails()
-		);
-	}
-
-	private List<HapiApiSpec> positiveSpecs() {
-		return Arrays.asList(
-			vanillaSucceeds()
-		);
-	}
-
-	private HapiApiSpec vanillaSucceeds() {
-		return defaultHapiSpec("VanillaSuceeds")
+	private HapiApiSpec getInfoWorks() {
+		final var MEMO = "This is a test.";
+		return defaultHapiSpec("GetInfoWorks")
 				.given(
-						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
-						contractCreate("parentDelegate")
-								.bytecode("parentDelegateBytecode").entityMemo("This is a test.").autoRenewSecs(555L)
+						newKeyNamed("adminKey"),
+						contractCreate("defaultContract")
+								.adminKey("adminKey")
+								.entityMemo(MEMO)
+								.autoRenewSecs(555L)
 				).when().then(
-						QueryVerbs.getContractInfo("parentDelegate").hasExpectedInfo());
+						getContractInfo("defaultContract")
+								.hasExpectedInfo()
+								.has(
+										contractWith()
+											.memo(MEMO)
+											.adminKey("adminKey")
+								)
+				);
 	}
 
-	private HapiApiSpec invalidContractFails() {
-		return defaultHapiSpec("InvalidContractFails")
+	private HapiApiSpec invalidContractFromCostAnswer() {
+		return defaultHapiSpec("InvalidContractFromCostAnswer")
 				.given().when().then(
-						QueryVerbs.getContractInfo(HapiSpecSetup.getDefaultInstance().invalidContractName())
-								.nodePayment(10L)
-								.hasAnswerOnlyPrecheck(INVALID_CONTRACT_ID));
+						getContractInfo(NON_EXISTING_CONTRACT)
+								.hasCostAnswerPrecheck(ResponseCodeEnum.INVALID_CONTRACT_ID));
+	}
+
+	private HapiApiSpec invalidContractFromAnswerOnly() {
+		return defaultHapiSpec("InvalidContractFromAnswerOnly")
+				.given().when().then(
+						getContractInfo(NON_EXISTING_CONTRACT)
+								.nodePayment(27_159_182L)
+								.hasAnswerOnlyPrecheck(ResponseCodeEnum.INVALID_CONTRACT_ID));
 	}
 
 	@Override

@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,6 +33,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.EMPTY_CONSTRUCTOR;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
@@ -43,9 +44,11 @@ import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ERROR_DECODING_BYTESTRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
@@ -62,19 +65,21 @@ public class ContractCreateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-//				positiveTests(),
+				positiveTests(),
 				negativeTests()
 		);
 	}
 
 	private List<HapiApiSpec> positiveTests() {
 		return Arrays.asList(
-			createsVanillaContract()
+				createsVanillaContract(),
+				createEmptyConstructor()
 		);
 	}
 
 	private List<HapiApiSpec> negativeTests() {
 		return Arrays.asList(
+				insufficientPayerBalanceUponCreation(),
 				rejectsInvalidMemo(),
 				rejectsInsufficientFee(),
 				rejectsInvalidBytecode(),
@@ -84,6 +89,23 @@ public class ContractCreateSuite extends HapiApiSuite {
 		);
 	}
 
+	private HapiApiSpec insufficientPayerBalanceUponCreation() {
+		return defaultHapiSpec("InsufficientPayerBalanceUponCreation")
+				.given(
+						cryptoCreate("bankrupt")
+								.balance(0L),
+						fileCreate("contractCode")
+								.path(EMPTY_CONSTRUCTOR)
+				)
+				.when()
+				.then(
+						contractCreate("defaultContract")
+								.bytecode("contractCode")
+								.payingWith("bankrupt")
+								.hasPrecheck(INSUFFICIENT_PAYER_BALANCE)
+				);
+	}
+
 	private HapiApiSpec createsVanillaContract() {
 		return defaultHapiSpec("CreatesVanillaContract")
 				.given(
@@ -91,6 +113,20 @@ public class ContractCreateSuite extends HapiApiSuite {
 								.path(ContractResources.VALID_BYTECODE_PATH)
 				).when().then(
 						contractCreate("testContract")
+								.bytecode("contractFile")
+								.hasKnownStatus(SUCCESS)
+				);
+	}
+
+	private HapiApiSpec createEmptyConstructor() {
+		return defaultHapiSpec("EmptyConstructor")
+				.given(
+						fileCreate("contractFile")
+								.path(ContractResources.EMPTY_CONSTRUCTOR)
+				).when(
+
+				).then(
+						contractCreate("emptyConstructorTest")
 								.bytecode("contractFile")
 								.hasKnownStatus(SUCCESS)
 				);
@@ -133,7 +169,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 
 	private HapiApiSpec rejectsInvalidMemo() {
 		return defaultHapiSpec("RejectsInvalidMemo")
-				.given( ).when().then(
+				.given().when().then(
 						contractCreate("testContract")
 								.entityMemo(TxnUtils.nAscii(101))
 								.hasPrecheck(MEMO_TOO_LONG),

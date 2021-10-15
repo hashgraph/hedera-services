@@ -108,8 +108,8 @@ public class MigrationValidationPreSteps extends HapiApiSuite {
                 .then(
                         QueryVerbs.getFileInfo(MIGRATION_FILE).logged().saveToRegistry("migrationFile"),
                         QueryVerbs.getFileContents(MIGRATION_FILE).logged(),
-                        QueryVerbs.getAccountInfo(MIGRATION_ACCOUNT_A).logged().saveToRegistry("migrationAccountA"),
-                        QueryVerbs.getAccountInfo(MIGRATION_ACCOUNT_B).logged().saveToRegistry("migrationAccountB"),
+                        QueryVerbs.getAccountInfo(MIGRATION_ACCOUNT_A).logged().savingSnapshot("migrationAccountA"),
+                        QueryVerbs.getAccountInfo(MIGRATION_ACCOUNT_B).logged().savingSnapshot("migrationAccountB"),
                         QueryVerbs.getContractInfo(MIGRATION_SMART_CONTRACT).logged().saveToRegistry("migrationContract"),
                         UtilVerbs.withOpContext((spec, ctxLog ) -> {
                             FileWriter fw = null;

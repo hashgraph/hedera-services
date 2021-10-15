@@ -21,6 +21,7 @@ package com.hedera.services.store.models;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
 import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -59,10 +60,15 @@ public class Account {
 	private long expiry;
 	private long balance;
 	private boolean deleted = false;
+	private boolean isSmartContract = false;
+	private boolean isReceiverSigRequired = false;
 	private CopyOnWriteIds associatedTokens;
 	private long ownedNfts;
+	private long autoRenewSecs;
+	private JKey key;
+	private String memo = "";
+	private Id proxy;
 	private int autoAssociationMetadata;
-	private boolean isSmartContract = false;
 
 	public Account(Id id) {
 		this.id = id;
@@ -149,8 +155,10 @@ public class Account {
 	 * Applies the given list of {@link Dissociation}s, validating that this account is
 	 * indeed associated to each involved token.
 	 *
-	 * @param dissociations the dissociations to perform.
-	 * @param validator the validator to use for each dissociation
+	 * @param dissociations
+	 * 		the dissociations to perform.
+	 * @param validator
+	 * 		the validator to use for each dissociation
 	 */
 	public void dissociateUsing(List<Dissociation> dissociations, OptionValidator validator) {
 		final Set<Id> dissociatedTokenIds = new HashSet<>();
@@ -184,6 +192,7 @@ public class Account {
 	/* NOTE: The object methods below are only overridden to improve
 	readability of unit tests; this model object is not used in hash-based
 	collections, so the performance of these methods doesn't matter. */
+
 	@Override
 	public boolean equals(Object obj) {
 		return EqualsBuilder.reflectionEquals(this, obj);
@@ -211,11 +220,67 @@ public class Account {
 				.toString();
 	}
 
+	public long getExpiry() {
+		return expiry;
+	}
+
+	public boolean isDeleted() {
+		return deleted;
+	}
+
+	public void setDeleted(final boolean deleted) {
+		this.deleted = deleted;
+	}
+
 	public boolean isSmartContract() {
 		return isSmartContract;
 	}
 
-	public void setSmartContract(final boolean smartContract) {
-		isSmartContract = smartContract;
+	public void setSmartContract(boolean val) {
+		this.isSmartContract = val;
+	}
+
+	public boolean isReceiverSigRequired() {
+		return this.isReceiverSigRequired;
+	}
+
+	public void setReceiverSigRequired(boolean isReceiverSigRequired) {
+		this.isReceiverSigRequired = isReceiverSigRequired;
+	}
+
+	public long getBalance() {
+		return balance;
+	}
+
+	public long getAutoRenewSecs() {
+		return autoRenewSecs;
+	}
+
+	public void setAutoRenewSecs(final long autoRenewSecs) {
+		this.autoRenewSecs = autoRenewSecs;
+	}
+
+	public JKey getKey() {
+		return key;
+	}
+
+	public void setKey(final JKey key) {
+		this.key = key;
+	}
+
+	public String getMemo() {
+		return memo;
+	}
+
+	public void setMemo(final String memo) {
+		this.memo = memo;
+	}
+
+	public Id getProxy() {
+		return proxy;
+	}
+
+	public void setProxy(final Id proxy) {
+		this.proxy = proxy;
 	}
 }

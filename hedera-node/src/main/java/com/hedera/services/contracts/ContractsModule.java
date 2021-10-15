@@ -9,9 +9,9 @@ package com.hedera.services.contracts;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,8 +24,8 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.annotations.BytecodeSource;
 import com.hedera.services.contracts.annotations.StorageSource;
-import com.hedera.services.contracts.execution.SoliditySigsVerifier;
-import com.hedera.services.contracts.execution.TxnAwareSoliditySigsVerifier;
+import com.hedera.services.contracts.sources.SoliditySigsVerifier;
+import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.contracts.persistence.BlobStoragePersistence;
 import com.hedera.services.contracts.sources.BlobStorageSource;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
@@ -38,17 +38,33 @@ import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV19;
+import com.hedera.services.contracts.operation.HederaBalanceOperation;
+import com.hedera.services.contracts.operation.HederaCallCodeOperation;
+import com.hedera.services.contracts.operation.HederaCallOperation;
+import com.hedera.services.contracts.operation.HederaCreateOperation;
+import com.hedera.services.contracts.operation.HederaDelegateCallOperation;
+import com.hedera.services.contracts.operation.HederaExtCodeCopyOperation;
+import com.hedera.services.contracts.operation.HederaExtCodeHashOperation;
+import com.hedera.services.contracts.operation.HederaExtCodeSizeOperation;
+import com.hedera.services.contracts.operation.HederaSStoreOperation;
+import com.hedera.services.contracts.operation.HederaSelfDestructOperation;
+import com.hedera.services.contracts.operation.HederaStaticCallOperation;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
+import dagger.multibindings.IntoSet;
 import org.ethereum.core.AccountState;
 import org.ethereum.datasource.Source;
 import org.ethereum.datasource.StoragePersistence;
 import org.ethereum.db.ServicesRepositoryRoot;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.operation.InvalidOperation;
+import org.hyperledger.besu.evm.operation.Operation;
 
 import javax.inject.Singleton;
 import java.util.Map;
@@ -151,4 +167,70 @@ public abstract class ContractsModule {
 	public static Map<EntityId, Long> provideEntityExpiries(Map<String, byte[]> blobStore) {
 		return entityExpiryMapFrom(blobStore);
 	}
+
+	@Provides
+	@Singleton
+	@IntoSet
+	public static Operation provideCreate2Operation(GasCalculator gasCalculator) {
+		return new InvalidOperation(0xF5, gasCalculator);
+	}
+
+	@Binds
+	@Singleton
+	public abstract GasCalculator bindHederaGasCalculatorV19(GasCalculatorHederaV19 gasCalculator);
+
+	@Binds
+	@Singleton
+	@IntoSet
+	public abstract Operation bindBalanceOperation(HederaBalanceOperation balance);
+
+	@Binds
+	@Singleton
+	@IntoSet
+	public abstract Operation bindCallCodeOperation(HederaCallCodeOperation callCode);
+
+	@Binds
+	@Singleton
+	@IntoSet
+	public abstract Operation bindCallOperation(HederaCallOperation call);
+
+	@Binds
+	@Singleton
+	@IntoSet
+	public abstract Operation bindCreateOperation(HederaCreateOperation create);
+
+	@Binds
+	@Singleton
+	@IntoSet
+	public abstract Operation bindDelegateCallOperation(HederaDelegateCallOperation delegateCall);
+
+	@Binds
+	@Singleton
+	@IntoSet
+	public abstract Operation bindExtCodeCopyOperation(HederaExtCodeCopyOperation extCodeCopy);
+
+	@Binds
+	@Singleton
+	@IntoSet
+	public abstract Operation bindExtCodeHashOperation(HederaExtCodeHashOperation extCodeHash);
+
+	@Binds
+	@Singleton
+	@IntoSet
+	public abstract Operation bindExtCodeSizeOperation(HederaExtCodeSizeOperation extCodeSize);
+
+	@Binds
+	@Singleton
+	@IntoSet
+	public abstract Operation bindSelfDestructOperation(HederaSelfDestructOperation selfDestruct);
+
+	@Binds
+	@Singleton
+	@IntoSet
+	public abstract Operation bindSStoreOperation(HederaSStoreOperation sstore);
+
+	@Binds
+	@Singleton
+	@IntoSet
+	public abstract Operation bindStaticCallOperation(HederaStaticCallOperation staticCall);
 }
