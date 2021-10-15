@@ -39,6 +39,7 @@ import static virtual.VFCMapBenchBase.printDataStoreSize;
 @OutputTimeUnit(TimeUnit.SECONDS)
 public class CryptoHbarBench {
 
+    // TODO This is now ignored. Need to set settings directly through code to make it work...
     @Param({"1", "10", "20"})
     public int roundsBeforeFlush;
 
@@ -90,7 +91,7 @@ public class CryptoHbarBench {
 
     @Setup
     public void prepare() throws Exception {
-        pipeline = new Pipeline<>(roundsBeforeFlush);
+        pipeline = new Pipeline<>();
         VirtualLeafRecordSerializer<Id,Account> virtualLeafRecordSerializer = new VirtualLeafRecordSerializer<>(
                 1, DigestType.SHA_384,
                 1, Id.SERIALIZED_SIZE,Id::new,
