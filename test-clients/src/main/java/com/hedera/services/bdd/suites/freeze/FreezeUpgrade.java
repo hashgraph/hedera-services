@@ -29,6 +29,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.initializeSettings;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeDelay;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeFileHash;
@@ -59,11 +60,12 @@ public final class FreezeUpgrade extends HapiApiSuite {
 						initializeSettings()
 				)
 				.when(
-						UtilVerbs.freezeUpgrade()
-								.startingIn(upgradeDelay()).minutes()
-								.withUpdateFile(upgradeFileId())
-								.payingWith(GENESIS)
-								.havingHash(upgradeFileHash()))
+						sourcing(
+								() -> UtilVerbs.freezeUpgrade()
+										.startingIn(upgradeDelay()).minutes()
+										.withUpdateFile(upgradeFileId())
+										.payingWith(GENESIS)
+										.havingHash(upgradeFileHash())))
 				.then();
 	}
 }

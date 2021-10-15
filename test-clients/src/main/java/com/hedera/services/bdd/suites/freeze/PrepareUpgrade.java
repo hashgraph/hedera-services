@@ -29,6 +29,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.initializeSettings;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeFileHash;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeFileId;
@@ -57,11 +58,13 @@ public final class PrepareUpgrade extends HapiApiSuite {
 				.given(
 						initializeSettings()
 				).when(
-						UtilVerbs.prepareUpgrade()
-								.withUpdateFile(upgradeFileId())
-								.signedBy(GENESIS)
-								.payingWith(GENESIS)
-								.havingHash(upgradeFileHash())
+						sourcing(
+								() -> UtilVerbs.prepareUpgrade()
+										.withUpdateFile(upgradeFileId())
+										.signedBy(GENESIS)
+										.payingWith(GENESIS)
+										.havingHash(upgradeFileHash()))
+
 				).then();
 	}
 }

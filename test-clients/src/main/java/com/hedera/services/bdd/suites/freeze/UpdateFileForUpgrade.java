@@ -20,15 +20,19 @@ package com.hedera.services.bdd.suites.freeze;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.initializeSettings;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeFileId;
@@ -58,10 +62,16 @@ public final class UpdateFileForUpgrade extends HapiApiSuite {
 				.given(
 						initializeSettings()
 				).when(
-						sourcing(() -> fileUpdate(upgradeFileId())
-								.path(upgradeFilePath())
-								.signedBy(GENESIS)
-								.payingWith(GENESIS))
+						sourcing(
+								() -> {
+									try {
+										return UtilVerbs.updateLargeFile(GENESIS, upgradeFileId(),
+												ByteString.copyFrom(Files.readAllBytes(Paths.get(upgradeFilePath()))));
+									} catch (IOException e) {
+										e.printStackTrace();
+										return null;
+									}
+								})
 				).then();
 	}
 }
