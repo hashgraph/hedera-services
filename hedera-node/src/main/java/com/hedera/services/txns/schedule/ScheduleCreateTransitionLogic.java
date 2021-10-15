@@ -100,19 +100,24 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 		final var idSchedulePair = store.lookupSchedule(bodyBytes);
 		@Nullable final var existingScheduleId = idSchedulePair.getLeft();
 		final var schedule = idSchedulePair.getRight();
+		final var payerKey = txnCtx.activePayerKey();
+		final var topLevelKeys = schedule.adminKey().map(ak -> List.of(payerKey, ak)).orElse(List.of(payerKey));
+
 		if (null != existingScheduleId) {
 			if(schedule.isMergeWithIdenticalSchedule()) {
 				if (arePayersSame(schedule)) {
 					var signingOutcome = ScheduleSignHelper.signingOutcome(
-							List.of(txnCtx.activePayerKey()),
+							topLevelKeys,
 							sigMap,
 							existingScheduleId,
 							store,
 							activationHelper);
+
 					if (!ACCEPTABLE_SIGNING_OUTCOMES.contains(signingOutcome.getLeft())) {
 						abortWith(signingOutcome.getLeft());
 						return;
 					}
+
 					doProcessExecution(schedule, existingScheduleId, signingOutcome);
 					return;
 				} else {
@@ -132,8 +137,6 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 			return;
 		}
 
-		final var payerKey = txnCtx.activePayerKey();
-		final var topLevelKeys = schedule.adminKey().map(ak -> List.of(payerKey, ak)).orElse(List.of(payerKey));
 		final var signingOutcome = ScheduleSignHelper.signingOutcome(
 				topLevelKeys,
 				sigMap,

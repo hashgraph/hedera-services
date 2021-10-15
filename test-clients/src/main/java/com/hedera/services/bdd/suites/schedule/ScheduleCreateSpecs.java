@@ -385,8 +385,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 						cryptoCreate(firstPayer).key(keyA),
 						scheduleCreate("original",
 								cryptoTransfer(tinyBarsFromTo("sender", FUNDING, 1))
-										.fee(ONE_HBAR)
-						)
+										.fee(ONE_HBAR))
 								.designatingPayer(firstPayer)
 								.payingWith(firstPayer)
 								.mergeWithIdenticalSchedule()
@@ -397,8 +396,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				).then(
 						scheduleCreate("duplicate",
 								cryptoTransfer(tinyBarsFromTo("sender", FUNDING, 1))
-										.fee(ONE_HBAR)
-						)
+										.fee(ONE_HBAR))
 								.payingWith(secondPayer)
 								.designatingPayer(firstPayer)
 								.mergeWithIdenticalSchedule()

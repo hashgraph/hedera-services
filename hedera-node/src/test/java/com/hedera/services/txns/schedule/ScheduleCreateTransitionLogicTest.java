@@ -249,6 +249,24 @@ class ScheduleCreateTransitionLogicTest {
 	}
 
 	@Test
+	void rejectsRecreationForNonOkSigning() {
+		givenValidTxnCtx();
+		given(merkleSchedule.scheduledTransactionId()).willReturn(scheduledTxnId);
+		given(merkleSchedule.isMergeWithIdenticalSchedule()).willReturn(true);
+		given(merkleSchedule.payer()).willReturn(payerId);
+		given(store.lookupSchedule(bodyBytes)).willReturn(Pair.of(schedule, merkleSchedule));
+		scheduleSignHelper.when(() -> ScheduleSignHelper.signingOutcome(
+				any(), any(), any(), any(), any())).thenReturn(Pair.of(SOME_SIGNATURES_WERE_INVALID, true));
+
+		subject.doStateTransition();
+
+		verify(store, never()).createProvisionally(any(), any());
+		verify(store, never()).commitCreation();
+		verify(txnCtx, never()).addExpiringEntities(any());
+		verify(txnCtx).setStatus(SOME_SIGNATURES_WERE_INVALID);
+	}
+
+	@Test
 	void rollsBackForAnyNonOkSigning() throws InvalidProtocolBufferException {
 		givenValidTxnCtx();
 		given(merkleSchedule.adminKey()).willReturn(jAdminKey);
