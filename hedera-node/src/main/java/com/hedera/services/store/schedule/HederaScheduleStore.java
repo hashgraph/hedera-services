@@ -44,6 +44,7 @@ import java.util.function.Supplier;
 import static com.hedera.services.store.CreationResult.failure;
 import static com.hedera.services.store.CreationResult.success;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
+import static com.hedera.services.utils.EntityNum.fromLong;
 import static com.hedera.services.utils.EntityNum.fromScheduleId;
 import static com.hedera.services.utils.MiscUtils.forEach;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ACCOUNT_ID;
@@ -216,7 +217,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 					readableId(id)));
 		}
 		var schedule = get(id);
-		schedules.get().remove(EntityNum.fromLong(entityId.num()));
+		schedules.get().remove(fromLong(entityId.num()));
 		extantSchedules.remove(schedule);
 	}
 

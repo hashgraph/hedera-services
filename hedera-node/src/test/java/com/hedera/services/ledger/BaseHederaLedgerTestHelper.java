@@ -43,6 +43,7 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -118,6 +119,11 @@ public class BaseHederaLedgerTestHelper {
 			@Override
 			public AccountID newAccountId(AccountID newAccountSponsor) {
 				return AccountID.newBuilder().setAccountNum(nextId++).build();
+			}
+
+			@Override
+			public ContractID newContractId(AccountID newContractSponsor) {
+				return ContractID.newBuilder().setContractNum(nextId++).build();
 			}
 
 			@Override

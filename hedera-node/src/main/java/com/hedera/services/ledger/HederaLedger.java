@@ -46,6 +46,7 @@ import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -118,6 +119,10 @@ public class HederaLedger {
 			.comparingLong(FileID::getFileNum)
 			.thenComparingLong(FileID::getShardNum)
 			.thenComparingLong(FileID::getRealmNum);
+	public static final Comparator<ContractID> CONTRACT_ID_COMPARATOR = Comparator
+			.comparingLong(ContractID::getContractNum)
+			.thenComparingLong(ContractID::getShardNum)
+			.thenComparingLong(ContractID::getRealmNum);
 
 	private final TokenStore tokenStore;
 	private final EntityIdSource ids;
@@ -472,10 +477,13 @@ public class HederaLedger {
 		customizer.customize(id, accountsLedger);
 	}
 
-	public void customizeDeleted(AccountID id, HederaAccountCustomizer customizer) {
-		if (!(boolean) accountsLedger.get(id, IS_DELETED)) {
-			throw new DeletedAccountException(id);
-		}
+	/**
+	 * Updates the provided {@link AccountID} with the {@link HederaAccountCustomizer}. All properties from the
+	 * customizer are applied to the {@link MerkleAccount} provisionally
+	 * @param id target account
+	 * @param customizer properties to update
+	 */
+	public void customizePotentiallyDeleted(AccountID id, HederaAccountCustomizer customizer) {
 		customizer.customize(id, accountsLedger);
 	}
 

@@ -20,29 +20,31 @@ package com.hedera.services.bdd.suites.contract;
  * ‍
  */
 
+import com.google.common.io.Files;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.bouncycastle.util.encoders.Hex;
+import org.junit.jupiter.api.Assertions;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
-import static com.hedera.services.bdd.spec.keys.KeyGenerator.Nature.WITH_OVERLAPPING_PREFIXES;
-import static com.hedera.services.bdd.spec.keys.SigControl.ON;
-import static com.hedera.services.bdd.spec.keys.SigControl.listSigs;
-import static com.hedera.services.bdd.spec.keys.SigControl.threshSigs;
-import static com.hedera.services.bdd.spec.keys.SigMapGenerator.Nature.UNIQUE;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.EMPTY_CONSTRUCTOR;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
 public class ContractGetBytecodeSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractGetBytecodeSuite.class);
+	private static final String NON_EXISTING_CONTRACT = HapiSpecSetup.getDefaultInstance().invalidContractName();
 
 	public static void main(String... args) {
 		new ContractGetBytecodeSuite().runSuiteSync();
@@ -55,9 +57,10 @@ public class ContractGetBytecodeSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return allOf(
-			negativeSpecs(),
-			positiveSpecs()
+		return List.of(
+				getByteCodeWorks(),
+				invalidContractFromCostAnswer(),
+				invalidContractFromAnswerOnly()
 		);
 	}
 
@@ -66,48 +69,40 @@ public class ContractGetBytecodeSuite extends HapiApiSuite {
 		return true;
 	}
 
-	private List<HapiApiSpec> negativeSpecs() {
-		return Arrays.asList(
-			invalidContractFromCostAnswer(),
-			invalidContractFromAnswerOnly()
-		);
-	}
-
-	private List<HapiApiSpec> positiveSpecs() {
-		return Arrays.asList(
-			vanillaSuccess()
-		);
-	}
-
-	private HapiApiSpec vanillaSuccess() {
-		SigControl controller = threshSigs(2, ON, ON, listSigs(ON, ON, ON));
-
-		return HapiApiSpec.defaultHapiSpec("VanillaSuccess")
+	private HapiApiSpec getByteCodeWorks() {
+		return HapiApiSpec.defaultHapiSpec("GetByteCodeWorks")
 				.given(
-						TxnVerbs.contractCreate("defaultContract")
-								.adminKeyShape(controller)
-								.ed25519Keys(WITH_OVERLAPPING_PREFIXES)
-								.sigControl(forKey("defaultContract", controller))
-								.sigMapPrefixes(UNIQUE)
-				).when().then(
-						QueryVerbs.getContractBytecode("defaultContract").isNonEmpty());
+						fileCreate("contractCode").path(EMPTY_CONSTRUCTOR),
+						contractCreate("defaultContract").bytecode("contractCode")
+				).when(
+				).then(
+						withOpContext((spec, opLog) -> {
+							final var getBytecode = getContractBytecode("defaultContract").saveResultTo(
+									"contractByteCode");
+							allRunFor(spec, getBytecode);
+
+							@SuppressWarnings("UnstableApiUsage")
+							final var originalBytecode = Hex.decode(Files.toByteArray(new File(EMPTY_CONSTRUCTOR)));
+							final var actualBytecode = spec.registry().getBytes("contractByteCode");
+							// The original bytecode is modified on deployment
+							final var expectedBytecode = Arrays.copyOfRange(originalBytecode, 29,
+									originalBytecode.length);
+							Assertions.assertArrayEquals(expectedBytecode, actualBytecode);
+						})
+				);
 	}
 
 	private HapiApiSpec invalidContractFromCostAnswer() {
-		String invalidContract = HapiSpecSetup.getDefaultInstance().invalidContractName();
-
-		return defaultHapiSpec("InvalidContract")
+		return defaultHapiSpec("InvalidContractFromCostAnswer")
 				.given().when().then(
-						QueryVerbs.getContractBytecode(invalidContract)
+						getContractBytecode(NON_EXISTING_CONTRACT)
 							.hasCostAnswerPrecheck(ResponseCodeEnum.INVALID_CONTRACT_ID));
 	}
 
 	private HapiApiSpec invalidContractFromAnswerOnly() {
-		String invalidContract = HapiSpecSetup.getDefaultInstance().invalidContractName();
-
-		return defaultHapiSpec("InvalidContract")
+		return defaultHapiSpec("InvalidContractFromAnswerOnly")
 				.given().when().then(
-						QueryVerbs.getContractBytecode(invalidContract)
+						getContractBytecode(NON_EXISTING_CONTRACT)
 								.nodePayment(27_159_182L)
 								.hasAnswerOnlyPrecheck(ResponseCodeEnum.INVALID_CONTRACT_ID));
 	}
