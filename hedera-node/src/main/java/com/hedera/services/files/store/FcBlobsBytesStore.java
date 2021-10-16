@@ -35,10 +35,14 @@ import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.BYTECO
 import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.FILE_DATA;
 import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.FILE_METADATA;
 import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.SYSTEM_DELETION_TIME;
+import static java.lang.Long.parseLong;
 
 public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 	private static final Logger log = LogManager.getLogger(FcBlobsBytesStore.class);
 	private final Supplier<MerkleMap<BlobKey, MerkleBlob>> blobSupplier;
+
+	private static final int ENTITY_NUM_IN_PATH = 4;
+	private static final int BLOB_TYPE_IN_PATH = 3;
 
 	public FcBlobsBytesStore(Supplier<MerkleMap<BlobKey, MerkleBlob>> pathedBlobs) {
 		this.blobSupplier = pathedBlobs;
@@ -52,10 +56,10 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 	 * @param key
 	 * @return
 	 */
-	private BlobKey at(Object key) {
+	BlobKey at(Object key) {
 		final String path = (String) key;
-		final BlobKey.BlobType type = getType(path.charAt(3));
-		final long entityNum = Long.parseLong(String.valueOf(path.charAt(5)));
+		final BlobKey.BlobType type = getType(path.charAt(BLOB_TYPE_IN_PATH));
+		final long entityNum = getEntityNum(path);
 		return new BlobKey(type, entityNum);
 	}
 
@@ -153,4 +157,15 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 		}
 	}
 
+	/**
+	 * As the string we are parsing matches /0/f{num} for file data, /0/k{num} for file metadata, /0/s{num} for contract
+	 * bytecode, and /0/e{num} for system deleted files, character at fifth position is used to recognize the type of
+	 * blob.
+	 *
+	 * @param key
+	 * @return
+	 */
+	public static long getEntityNum(final String key) {
+		return parseLong(String.valueOf(key.charAt(ENTITY_NUM_IN_PATH)));
+	}
 }

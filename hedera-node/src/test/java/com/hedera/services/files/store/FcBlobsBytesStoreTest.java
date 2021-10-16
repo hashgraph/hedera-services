@@ -50,15 +50,12 @@ class FcBlobsBytesStoreTest {
 	private static final byte[] bData = "BlobB".getBytes();
 	private static final byte[] cData = "BlobC".getBytes();
 	private static final byte[] dData = "BlobD".getBytes();
-	private static final String pathA = "/0/f{2}";
-	private static final String pathB = "/0/k{3}";
-	private static final String pathC = "/0/s{4}";
-	private static final String pathD = "/0/e{5}";
+	private static final String pathA = "/0/f2";
+	private static final String pathB = "/0/k3";
+	private static final String pathC = "/0/s4";
+	private static final String pathD = "/0/e5";
+	private BlobKey pathAKey, pathBKey, pathCKey, pathDKey;
 	private static final MerkleBlobMeta aMeta = new MerkleBlobMeta(pathA);
-	private static final BlobKey pathAKey = keyed(pathA);
-	private static final BlobKey pathBKey = keyed(pathB);
-	private static final BlobKey pathCKey = keyed(pathC);
-	private static final BlobKey pathDKey = keyed(pathD);
 
 	private MerkleBlob blobA, blobB, blobC, blobD;
 	private MerkleMap<BlobKey, MerkleBlob> pathedBlobs;
@@ -71,6 +68,11 @@ class FcBlobsBytesStoreTest {
 
 		givenMockBlobs();
 		subject = new FcBlobsBytesStore(() -> pathedBlobs);
+
+		pathAKey = subject.at(pathA);
+		pathBKey = subject.at(pathB);
+		pathCKey = subject.at(pathC);
+		pathDKey = subject.at(pathD);
 	}
 
 	@Test
@@ -106,12 +108,6 @@ class FcBlobsBytesStoreTest {
 		//verify(blobA).modify(aData);
 
 		assertNull(oldBytes);
-	}
-
-	private static BlobKey keyed(String path) {
-		final BlobKey.BlobType type = getType(path.charAt(3));
-		final long entityNum = Long.parseLong(String.valueOf(path.charAt(5)));
-		return new BlobKey(type, entityNum);
 	}
 
 	@Test
@@ -202,16 +198,10 @@ class FcBlobsBytesStoreTest {
 
 	@Test
 	void validateBlobTypeBasedOnPath() {
-		assertEquals(FILE_DATA, at(pathA).getType());
-		assertEquals(FILE_METADATA, at(pathB).getType());
-		assertEquals(BYTECODE, at(pathC).getType());
-		assertEquals(SYSTEM_DELETION_TIME, at(pathD).getType());
-		assertThrows(IllegalArgumentException.class, () -> at("wrongpath").getType());
-	}
-
-	private BlobKey at(String key) {
-		final BlobKey.BlobType type = getType(key.charAt(3));
-		final long entityNum = Long.parseLong(String.valueOf(key.charAt(5)));
-		return new BlobKey(type, entityNum);
+		assertEquals(FILE_DATA, subject.at(pathA).getType());
+		assertEquals(FILE_METADATA, subject.at(pathB).getType());
+		assertEquals(BYTECODE, subject.at(pathC).getType());
+		assertEquals(SYSTEM_DELETION_TIME, subject.at(pathD).getType());
+		assertThrows(IllegalArgumentException.class, () -> subject.at("wrongpath").getType());
 	}
 }

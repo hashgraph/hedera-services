@@ -33,15 +33,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.function.BiConsumer;
-import java.util.regex.Pattern;
 
+import static com.hedera.services.files.store.FcBlobsBytesStore.getEntityNum;
 import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.BYTECODE;
 import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.FILE_DATA;
 import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.FILE_METADATA;
 import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.SYSTEM_DELETION_TIME;
 import static com.hedera.services.state.migration.StateChildIndices.STORAGE;
 import static com.hedera.services.utils.MiscUtils.forEach;
-import static java.lang.Long.parseLong;
 
 public class ReleaseTwentyMigration {
 	/**
@@ -123,17 +122,5 @@ public class ReleaseTwentyMigration {
 
 	private static boolean isSystemDeletedFileData(final String key) {
 		return EntityExpiryMapFactory.LEGACY_PATH_PATTERN.matcher(key).matches();
-	}
-
-	/**
-	 * As the string we are parsing matches /0/f{num} for file data, /0/k{num} for file metadata, /0/s{num} for contract
-	 * bytecode, and /0/e{num} for system deleted files, character at fifth position is used to recognize the type of
-	 * blob.
-	 *
-	 * @param key
-	 * @return
-	 */
-	private static long getEntityNum(final String key) {
-		return parseLong(String.valueOf(key.charAt(5)));
 	}
 }
