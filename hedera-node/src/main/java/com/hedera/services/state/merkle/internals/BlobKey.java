@@ -38,4 +38,12 @@ public class BlobKey {
 	public int hashCode() {
 		return Objects.hash(type, entityNum);
 	}
+
+	@Override
+	public String toString() {
+		return "BlobKey{" +
+				"type=" + type +
+				", entityNum=" + entityNum +
+				'}';
+	}
 }

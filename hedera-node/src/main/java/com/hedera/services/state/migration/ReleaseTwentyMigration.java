@@ -68,14 +68,9 @@ public class ReleaseTwentyMigration {
 
 	private static final Logger log = LogManager.getLogger(ReleaseTwentyMigration.class);
 
-	private static Pattern fileMatcher = DataMapFactory.LEGACY_PATH_PATTERN;
-	private static Pattern fileMetaDataMatcher = MetadataMapFactory.LEGACY_PATH_PATTERN;
-	private static Pattern byteCodeMatcher = AddressKeyedMapFactory.LEGACY_BYTECODE_PATH_PATTERN;
-	private static Pattern systemDeleteMatcher = EntityExpiryMapFactory.LEGACY_PATH_PATTERN;
-
 	private static MerkleMap<BlobKey, MerkleBlob> virtualMap = new MerkleMap<>();
 
-	public ReleaseTwentyMigration() {
+	private ReleaseTwentyMigration() {
 		throw new UnsupportedOperationException("Utility class");
 	}
 
@@ -115,19 +110,19 @@ public class ReleaseTwentyMigration {
 	}
 
 	private static boolean isFileData(final String key) {
-		return fileMatcher.matcher(key).matches();
+		return DataMapFactory.LEGACY_PATH_PATTERN.matcher(key).matches();
 	}
 
 	private static boolean isFileMetaData(final String key) {
-		return fileMetaDataMatcher.matcher(key).matches();
+		return MetadataMapFactory.LEGACY_PATH_PATTERN.matcher(key).matches();
 	}
 
 	private static boolean isContractByteCode(final String key) {
-		return byteCodeMatcher.matcher(key).matches();
+		return AddressKeyedMapFactory.LEGACY_BYTECODE_PATH_PATTERN.matcher(key).matches();
 	}
 
 	private static boolean isSystemDeletedFileData(final String key) {
-		return systemDeleteMatcher.matcher(key).matches();
+		return EntityExpiryMapFactory.LEGACY_PATH_PATTERN.matcher(key).matches();
 	}
 
 	/**

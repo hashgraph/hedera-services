@@ -171,8 +171,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public void migrate() {
-		int deserializedVersion = getDeserializedVersion();
-		if (deserializedVersion < StateVersions.RELEASE_0180_VERSION) {
+		int deserializedVersionFromState = getDeserializedVersion();
+		if (deserializedVersionFromState < StateVersions.RELEASE_0180_VERSION) {
 			log.info("Beginning FCMap -> MerkleMap migrations");
 			blobMigrationFlag.accept(true);
 			CompletableFuture.allOf(
@@ -240,8 +240,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			init(getPlatformForDeferredInit(), getAddressBookForDeferredInit());
 		}
 
-		if (deserializedVersion < RELEASE_TWENTY_VERSION) {
-			replaceStorageMapWithVirtualMap(this, deserializedVersion);
+		if (deserializedVersionFromState < RELEASE_TWENTY_VERSION) {
+			replaceStorageMapWithVirtualMap(this, deserializedVersionFromState);
 			log.info("  ↪ Migrated {} blobs from storage map to virtual map", storage().size());
 		}
 	}
