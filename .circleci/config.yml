@@ -460,7 +460,7 @@ commands:
               JRS_BRANCH="${CIRCLE_BRANCH}"
             fi
 
-            gsutil -m rsync -r "<< parameters.result_path >>" "gs://<< parameters.bucket_name >>/${JRS_USER}/${JRS_BRANCH}/"
+            gsutil -m rsync -r "<< parameters.result_path >>" "gs://<< parameters.bucket_name >>/${JRS_USER}/${JRS_BRANCH}/<< parameters.result_path >>/"
 
             tar -czvf /results.tar.gz  /swirlds-platform/regression/<< parameters.result_path >>
           when: always
@@ -596,7 +596,7 @@ commands:
               ${JRS_OPTIONS} \
               -Dlog4j.configurationFile=log4j2-jrs.xml \
               -Dspring.output.ansi.enabled=ALWAYS \
-              -jar regression.jar "${CONFIG_PATH}" "<< parameters.hedera_services_path >>" ${CI_PARAMETERS}
+              -jar regression.jar "${CONFIG_PATH}" -r "<< parameters.hedera_services_path >>" -w DOCKER_REMOTE
             popd > /dev/null 2>&1
           no_output_timeout: 30m
 
@@ -686,7 +686,7 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-  GCP-Weekly-Services-MixedOps-Restart-Performance-20N-20C:
+  GCP-Weekly-Services-MixedOps-Restart-Performance-21N-21C:
     triggers:
       - schedule:
           cron: "0 2 * * 3"
@@ -702,7 +702,7 @@ workflows:
           regression_path: /swirlds-platform/regression
           result_path: results/20N_20C/
           config_type: "weekly"
-          workflow-name: "GCP-Weekly-Services-MixedOps-Restart-Performance-20N-20C"
+          workflow-name: "GCP-Weekly-Services-MixedOps-Restart-Performance-21N-21C"
           requires:
             - build-platform-and-services
           pre-steps:
@@ -1351,8 +1351,6 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression; git checkout run-services-regression
-            cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
