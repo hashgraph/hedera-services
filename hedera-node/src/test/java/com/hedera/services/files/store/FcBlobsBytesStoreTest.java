@@ -30,6 +30,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import static com.hedera.services.files.store.FcBlobsBytesStore.getType;
+import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.BYTECODE;
+import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.FILE_DATA;
+import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.FILE_METADATA;
+import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.SYSTEM_DELETION_TIME;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -196,7 +200,18 @@ class FcBlobsBytesStoreTest {
 		assertFalse(replaced.getDelegate().isReleased());
 	}
 
-	private MerkleBlobMeta at(final String key) {
-		return new MerkleBlobMeta(key);
+	@Test
+	void validateBlobTypeBasedOnPath() {
+		assertEquals(FILE_DATA, at(pathA).getType());
+		assertEquals(FILE_METADATA, at(pathB).getType());
+		assertEquals(BYTECODE, at(pathC).getType());
+		assertEquals(SYSTEM_DELETION_TIME, at(pathD).getType());
+		assertThrows(IllegalArgumentException.class, () -> at("wrongpath").getType());
+	}
+
+	private BlobKey at(String key) {
+		final BlobKey.BlobType type = getType(key.charAt(3));
+		final long entityNum = Long.parseLong(String.valueOf(key.charAt(5)));
+		return new BlobKey(type, entityNum);
 	}
 }
