@@ -364,6 +364,9 @@ class ServicesStateTest {
 		assertEquals(
 				StateChildIndices.NUM_PRE_0160_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_0120_VERSION));
+		assertEquals(
+				StateChildIndices.NUM_POST_TWENTY_CHILDREN,
+				subject.getMinimumChildCount(StateVersions.RELEASE_TWENTY_VERSION));
 		assertThrows(IllegalArgumentException.class,
 				() -> subject.getMinimumChildCount(StateVersions.CURRENT_VERSION + 1));
 	}
@@ -395,9 +398,9 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void doesntMigrateWhenInitializingFromRelease0180() {
+	void doesntMigrateWhenInitializingFromRelease0200() {
 		// given:
-		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0180_VERSION);
+		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_TWENTY_VERSION);
 
 		// expect:
 		assertDoesNotThrow(subject::migrate);
@@ -422,6 +425,7 @@ class ServicesStateTest {
 		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0170_VERSION);
 		given(subject.getPlatformForDeferredInit()).willReturn(platform);
 		given(subject.getAddressBookForDeferredInit()).willReturn(addressBook);
+		given(subject.getChild(StateChildIndices.STORAGE)).willReturn((MerkleMap<String, MerkleOptionalBlob>) pretend);
 
 		subject.migrate();
 
@@ -433,6 +437,7 @@ class ServicesStateTest {
 		verify(fcmMigrator).toMerkleMap(eq(subject), eq(StateChildIndices.TOKENS), any(), any());
 		verify(fcmMigrator).toMerkleMap(eq(subject), eq(StateChildIndices.SCHEDULE_TXS), any(), any());
 		verify(subject).init(platform, addressBook);
+		System.out.println(logCaptor.infoLogs());
 		assertThat(
 				logCaptor.infoLogs(),
 				contains(
@@ -444,12 +449,33 @@ class ServicesStateTest {
 						Matchers.startsWith("↪ Migrated 0 "),
 						Matchers.startsWith("↪ Migrated 0 "),
 						Matchers.startsWith("↪ Migrated 0 "),
-						equalTo("Finished with FCMap -> MerkleMap migrations, completing the deferred init")));
+						equalTo("Finished with FCMap -> MerkleMap migrations, completing the deferred init"),
+						Matchers.startsWith("↪ Migrated 0 blobs ")));
 		verify(blobMigrationFlag).accept(true);
 		verify(blobMigrationFlag).accept(false);
 
 		ServicesState.setFcmMigrator(FCMapMigration::FCMapToMerkleMap);
 		ServicesState.setBlobMigrationFlag(MerkleOptionalBlob::setInMigration);
+	}
+
+	@Test
+	void migratesWhenInitializingFromRelease0190() {
+		final MerkleMap<?, ?> pretend = new MerkleMap<>();
+		final MerkleMap<String, MerkleOptionalBlob> legacyStorageMap = new MerkleMap<>();
+
+		subject = mock(ServicesState.class);
+		given(subject.storage()).willReturn((MerkleMap<BlobKey, MerkleBlob>) pretend);
+
+		willCallRealMethod().given(subject).migrate();
+		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0190_VERSION);
+		given(subject.getChild(StateChildIndices.STORAGE)).willReturn(legacyStorageMap);
+
+		subject.migrate();
+		System.out.println(logCaptor.infoLogs());
+		assertThat(
+				logCaptor.infoLogs(),
+				contains(
+						Matchers.startsWith("↪ Migrated 0 blobs ")));
 	}
 
 	@Test
@@ -575,7 +601,7 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void migratesFromPreRelease0160AsExpected() throws ConstructableRegistryException {
+	void migratesFromPreRelease0160AsExpected() {
 		// and:
 		final var addressBook = new AddressBook();
 		final var networkContext = new MerkleNetworkContext();

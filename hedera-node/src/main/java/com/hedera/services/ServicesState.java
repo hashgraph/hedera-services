@@ -141,6 +141,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			return StateChildIndices.NUM_PRE_0160_CHILDREN;
 		} else if (version <= StateVersions.RELEASE_0180_VERSION) {
 			return StateChildIndices.NUM_PRE_TWENTY_CHILDREN;
+		} else if (version <= RELEASE_TWENTY_VERSION) {
+			return StateChildIndices.NUM_POST_TWENTY_CHILDREN;
 		} else {
 			throw new IllegalArgumentException("Argument 'version='" + version + "' is invalid!");
 		}
@@ -169,7 +171,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public void migrate() {
-		if (getDeserializedVersion() < StateVersions.RELEASE_0180_VERSION) {
+		int deserializedVersion = getDeserializedVersion();
+		if (deserializedVersion < StateVersions.RELEASE_0180_VERSION) {
 			log.info("Beginning FCMap -> MerkleMap migrations");
 			blobMigrationFlag.accept(true);
 			CompletableFuture.allOf(
@@ -234,12 +237,12 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			blobMigrationFlag.accept(false);
 			log.info("Finished with FCMap -> MerkleMap migrations, completing the deferred init");
 
-			if (getDeserializedVersion() < RELEASE_TWENTY_VERSION) {
-				replaceStorageMapWithVirtualMap(this, deserializedVersion);
-				log.info("  ↪ Migrated {} blobs from storage map to virtual map", storage().size());
-			}
-
 			init(getPlatformForDeferredInit(), getAddressBookForDeferredInit());
+		}
+
+		if (deserializedVersion < RELEASE_TWENTY_VERSION) {
+			replaceStorageMapWithVirtualMap(this, deserializedVersion);
+			log.info("  ↪ Migrated {} blobs from storage map to virtual map", storage().size());
 		}
 	}
 

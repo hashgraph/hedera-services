@@ -29,21 +29,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.util.AbstractMap;
-import java.util.Comparator;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
 import static com.hedera.services.files.store.FcBlobsBytesStore.getType;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
@@ -51,14 +44,19 @@ import static org.mockito.BDDMockito.verify;
 class FcBlobsBytesStoreTest {
 	private static final byte[] aData = "BlobA".getBytes();
 	private static final byte[] bData = "BlobB".getBytes();
-	private static final String pathA = "pathA";
-	private static final String pathB = "pathB";
+	private static final byte[] cData = "BlobC".getBytes();
+	private static final byte[] dData = "BlobD".getBytes();
+	private static final String pathA = "/0/f{2}";
+	private static final String pathB = "/0/k{3}";
+	private static final String pathC = "/0/s{4}";
+	private static final String pathD = "/0/e{5}";
 	private static final MerkleBlobMeta aMeta = new MerkleBlobMeta(pathA);
 	private static final BlobKey pathAKey = keyed(pathA);
 	private static final BlobKey pathBKey = keyed(pathB);
+	private static final BlobKey pathCKey = keyed(pathC);
+	private static final BlobKey pathDKey = keyed(pathD);
 
-	private MerkleBlob blobA, blobB;
-	private Function<byte[], MerkleBlob> blobFactory;
+	private MerkleBlob blobA, blobB, blobC, blobD;
 	private MerkleMap<BlobKey, MerkleBlob> pathedBlobs;
 
 	private FcBlobsBytesStore subject;
@@ -66,13 +64,8 @@ class FcBlobsBytesStoreTest {
 	@BeforeEach
 	private void setup() {
 		pathedBlobs = mock(MerkleMap.class);
-		blobFactory = mock(Function.class);
 
 		givenMockBlobs();
-		given(blobFactory.apply(any()))
-				.willReturn(blobA)
-				.willReturn(blobB);
-
 		subject = new FcBlobsBytesStore(() -> pathedBlobs);
 	}
 
@@ -121,15 +114,15 @@ class FcBlobsBytesStoreTest {
 	void delegatesPutUsingGetAndFactoryIfNewBlob() {
 		final var keyCaptor = ArgumentCaptor.forClass(BlobKey.class);
 		final var valueCaptor = ArgumentCaptor.forClass(MerkleBlob.class);
-		given(pathedBlobs.containsKey(pathA)).willReturn(false);
+		given(pathedBlobs.containsKey(pathAKey)).willReturn(false);
 
 		final var oldBytes = subject.put(pathA, aData);
 
-		verify(pathedBlobs).containsKey(pathA);
+		verify(pathedBlobs).containsKey(pathAKey);
 		verify(pathedBlobs).put(keyCaptor.capture(), valueCaptor.capture());
 
-		assertEquals(pathA, keyCaptor.getValue());
-		assertSame(blobA, valueCaptor.getValue());
+		assertEquals(pathAKey, keyCaptor.getValue());
+		assertSame(blobA.getData(), valueCaptor.getValue().getData());
 		assertNull(oldBytes);
 	}
 
@@ -142,14 +135,14 @@ class FcBlobsBytesStoreTest {
 
 	@Test
 	void delegatesGet() {
-		given(pathedBlobs.get(pathA)).willReturn(blobA);
+		given(pathedBlobs.get(pathAKey)).willReturn(blobA);
 
 		assertArrayEquals(aData, subject.get(pathA));
 	}
 
 	@Test
 	void delegatesContainsKey() {
-		given(pathedBlobs.containsKey(pathA)).willReturn(true);
+		given(pathedBlobs.containsKey(pathAKey)).willReturn(true);
 
 		assertTrue(subject.containsKey(pathA));
 	}
@@ -170,22 +163,8 @@ class FcBlobsBytesStoreTest {
 	}
 
 	@Test
-	void delegatesEntrySet() {
-		final Set<Entry<BlobKey, MerkleBlob>> blobEntries = Set.of(
-				new AbstractMap.SimpleEntry<>(pathAKey, blobA),
-				new AbstractMap.SimpleEntry<>(pathBKey, blobB));
-		given(pathedBlobs.entrySet()).willReturn(blobEntries);
-
-		final var entries = subject.entrySet();
-
-		assertEquals(
-				"pathA->BlobA, pathB->BlobB",
-				entries
-						.stream()
-						.sorted(Comparator.comparing(Entry::getKey))
-						.map(entry -> String.format("%s->%s", entry.getKey(), new String(entry.getValue())))
-						.collect(Collectors.joining(", "))
-		);
+	void entrySetThrows() {
+		assertThrows(UnsupportedOperationException.class, () -> subject.entrySet());
 	}
 
 	private void givenMockBlobs() {
