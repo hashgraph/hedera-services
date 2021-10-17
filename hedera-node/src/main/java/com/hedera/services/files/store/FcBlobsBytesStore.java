@@ -50,8 +50,8 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 
 	/**
 	 * As the string we are parsing matches /0/f{num} for file data, /0/k{num} for file metadata, /0/s{num} for contract
-	 * bytecode, and /0/e{num} for system deleted files, character at fifth position is used to recognize the type of
-	 * blob and entity number
+	 * bytecode, and /0/e{num} for system deleted files, character at third position is used to recognize the type of
+	 * blob and fourth position for entity number
 	 *
 	 * @param key
 	 * @return
@@ -159,8 +159,8 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 
 	/**
 	 * As the string we are parsing matches /0/f{num} for file data, /0/k{num} for file metadata, /0/s{num} for contract
-	 * bytecode, and /0/e{num} for system deleted files, character at fifth position is used to recognize the type of
-	 * blob.
+	 * bytecode, and /0/e{num} for system deleted files, character at third position is used to recognize the type of
+	 * blob and fourth position for entity number
 	 *
 	 * @param key
 	 * @return

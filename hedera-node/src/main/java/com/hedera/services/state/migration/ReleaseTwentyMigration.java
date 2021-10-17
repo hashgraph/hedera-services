@@ -28,6 +28,7 @@ import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.state.merkle.MerkleBlob;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.internals.BlobKey;
+import com.swirlds.common.merkle.copy.MerkleCopy;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -73,6 +74,8 @@ public class ReleaseTwentyMigration {
 		throw new UnsupportedOperationException("Utility class");
 	}
 
+	private static Release0170Migration.TreeCopier treeCopier = MerkleCopy::copyTreeToLocation;
+
 	public static void replaceStorageMapWithVirtualMap(final ServicesState initializingState,
 			final int deserializedVersion) {
 		log.info("Migrating state from version {} to {}", deserializedVersion, StateVersions.RELEASE_TWENTY_VERSION);
@@ -87,6 +90,8 @@ public class ReleaseTwentyMigration {
 		});
 
 		initializingState.setChild(STORAGE, virtualMap);
+
+		log.info("Replaced virtualMap in storage map child index");
 	}
 
 	private static BlobKey.BlobType getBlobType(String key) {

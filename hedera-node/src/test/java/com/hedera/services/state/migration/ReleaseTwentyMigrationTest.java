@@ -22,26 +22,17 @@ package com.hedera.services.state.migration;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleBlob;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.internals.BlobKey;
-import com.hedera.services.utils.EntityNumPair;
-import com.swirlds.common.AddressBook;
-import com.swirlds.common.merkle.copy.MerkleCopy;
 import com.swirlds.merkle.map.MerkleMap;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.nio.charset.StandardCharsets;
-
-import static com.hedera.services.state.migration.Release0170Migration.moveLargeFcmsToBinaryRoutePositions;
 import static com.hedera.services.state.migration.ReleaseTwentyMigration.replaceStorageMapWithVirtualMap;
+import static com.hedera.services.state.migration.StateChildIndices.STORAGE;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -50,28 +41,51 @@ class ReleaseTwentyMigrationTest {
 	@Mock
 	private ServicesState state;
 
+	@Mock
+	private MerkleMap<BlobKey, MerkleBlob> storage;
+
 	private MerkleMap<String, MerkleOptionalBlob> legacyMap = new MerkleMap<>();
 	private MerkleMap<BlobKey, MerkleBlob> virtualMap = new MerkleMap<>();
 
+	private final String pathA = "/0/f2";
+	private final String pathB = "/0/k3";
+	private final String pathC = "/0/s4";
+	private final String pathD = "/0/e5";
+	private final byte[] dataA = "blobA".getBytes();
+	private final byte[] dataB = "blobB".getBytes();
+	private final byte[] dataC = "blobC".getBytes();
+	private final byte[] dataD = "blobD".getBytes();
+
 	@BeforeEach
 	void setUp(){
-		final String pathA = "/0/f2";
-		final String pathB = "/0/k3";
-		final String pathC = "/0/s4";
-		final String pathD = "/0/e5";
-		legacyMap.put(pathA, new MerkleOptionalBlob("blobA".getBytes()));
-		legacyMap.put(pathB, new MerkleOptionalBlob("blobB".getBytes()));
-		legacyMap.put(pathC, new MerkleOptionalBlob("blobC".getBytes()));
-		legacyMap.put(pathD, new MerkleOptionalBlob("blobD".getBytes()));
+		legacyMap.put(pathA, new MerkleOptionalBlob(dataA));
+		legacyMap.put(pathB, new MerkleOptionalBlob(dataB));
+		legacyMap.put(pathC, new MerkleOptionalBlob(dataC));
+		legacyMap.put(pathD, new MerkleOptionalBlob(dataD));
+
+		BlobKey expectedKeyA = new BlobKey(BlobKey.BlobType.FILE_DATA, 2);
+		BlobKey expectedKeyB = new BlobKey(BlobKey.BlobType.FILE_METADATA, 3);
+		BlobKey expectedKeyC = new BlobKey(BlobKey.BlobType.BYTECODE, 4);
+		BlobKey expectedKeyD = new BlobKey(BlobKey.BlobType.SYSTEM_DELETION_TIME, 5);
+
+		MerkleBlob expectedBlobA = new MerkleBlob(dataA);
+		MerkleBlob expectedBlobB = new MerkleBlob(dataB);
+		MerkleBlob expectedBlobC = new MerkleBlob(dataC);
+		MerkleBlob expectedBlobD = new MerkleBlob(dataD);
+
+		virtualMap.put(expectedKeyA, expectedBlobA);
+		virtualMap.put(expectedKeyB, expectedBlobB);
+		virtualMap.put(expectedKeyC, expectedBlobC);
+		virtualMap.put(expectedKeyD, expectedBlobD);
 	}
 
 	@Test
 	void replaceBlobStorageMapAsExpected() {
-		given(state.getChild(StateChildIndices.STORAGE)).willReturn(legacyMap);
+		given(state.getChild(STORAGE)).willReturn(legacyMap);
 
 		replaceStorageMapWithVirtualMap(state, StateVersions.RELEASE_0190_VERSION);
 
-		virtualMap = state.getChild(StateChildIndices.STORAGE);
 
+		//verify(state).setChild(STORAGE, storage);
 	}
 }
