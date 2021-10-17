@@ -28,14 +28,13 @@ import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.state.merkle.MerkleBlob;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.internals.BlobKey;
-import com.swirlds.common.merkle.copy.MerkleCopy;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.function.BiConsumer;
 
-import static com.hedera.services.files.store.FcBlobsBytesStore.getEntityNum;
+import static com.hedera.services.files.store.FcBlobsBytesStore.getEntityNumFromPath;
 import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.BYTECODE;
 import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.FILE_DATA;
 import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.FILE_METADATA;
@@ -106,7 +105,7 @@ public class ReleaseTwentyMigration {
 	}
 
 	private static void insertEntityToMerkleMap(final String key, final BlobKey.BlobType blobType, final byte[] data) {
-		BlobKey virtualMapKey = new BlobKey(blobType, getEntityNum(key));
+		BlobKey virtualMapKey = new BlobKey(blobType, getEntityNumFromPath(key));
 		MerkleBlob virtualMapVal = new MerkleBlob(data);
 		virtualMap.put(virtualMapKey, virtualMapVal);
 	}

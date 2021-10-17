@@ -43,8 +43,8 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 
 	private static final int BLOB_TYPE_IN_PATH = 3;
 
-	public FcBlobsBytesStore(Supplier<MerkleMap<BlobKey, MerkleBlob>> pathedBlobs) {
-		this.blobSupplier = pathedBlobs;
+	public FcBlobsBytesStore(Supplier<MerkleMap<BlobKey, MerkleBlob>> blobSupplier) {
+		this.blobSupplier = blobSupplier;
 	}
 
 	/**
@@ -58,7 +58,7 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 	BlobKey at(Object key) {
 		final String path = (String) key;
 		final BlobKey.BlobType type = getType(path.charAt(BLOB_TYPE_IN_PATH));
-		final long entityNum = getEntityNum(path);
+		final long entityNum = getEntityNumFromPath(path);
 		return new BlobKey(type, entityNum);
 	}
 
@@ -141,6 +141,12 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 		throw new UnsupportedOperationException();
 	}
 
+	/**
+	 * Returns type of blob based on 3rd index in the blob path
+	 *
+	 * @param index
+	 * @return
+	 */
 	public static BlobKey.BlobType getType(char index) {
 		switch (index) {
 			case 'f':
@@ -162,9 +168,10 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 	 * blob
 	 *
 	 * @param key
+	 * 		given blob key
 	 * @return
 	 */
-	public static long getEntityNum(final String key) {
+	public static long getEntityNumFromPath(final String key) {
 		return parseLong(key.substring(BLOB_TYPE_IN_PATH + 1));
 	}
 }

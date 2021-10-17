@@ -29,6 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import static com.hedera.services.files.store.FcBlobsBytesStore.getEntityNumFromPath;
 import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.BYTECODE;
 import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.FILE_DATA;
 import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.FILE_METADATA;
@@ -49,7 +50,7 @@ class FcBlobsBytesStoreTest {
 	private static final byte[] bData = "BlobB".getBytes();
 	private static final byte[] cData = "BlobC".getBytes();
 	private static final byte[] dData = "BlobD".getBytes();
-	private static final String pathA = "/0/f2";
+	private static final String pathA = "/0/f112";
 	private static final String pathB = "/0/k3";
 	private static final String pathC = "/0/s4";
 	private static final String pathD = "/0/e5";
@@ -201,6 +202,26 @@ class FcBlobsBytesStoreTest {
 		assertEquals(FILE_METADATA, subject.at(pathB).getType());
 		assertEquals(BYTECODE, subject.at(pathC).getType());
 		assertEquals(SYSTEM_DELETION_TIME, subject.at(pathD).getType());
-		assertThrows(IllegalArgumentException.class, () -> subject.at("wrongpath").getType());
+		try {
+			subject.at("wrongpath").getType();
+		} catch (IllegalArgumentException ex) {
+			assertEquals("Unidentified type of blob", ex.getMessage());
+		}
+	}
+
+	@Test
+	void validateBlobKeyBasedOnPath() {
+		assertEquals(new BlobKey(FILE_DATA, 112), subject.at(pathA));
+		assertEquals(new BlobKey(FILE_METADATA, 3), subject.at(pathB));
+		assertEquals(new BlobKey(BYTECODE, 4), subject.at(pathC));
+		assertEquals(new BlobKey(SYSTEM_DELETION_TIME, 5), subject.at(pathD));
+	}
+
+	@Test
+	void validateEntityNumBasedOnPath() {
+		assertEquals(112, getEntityNumFromPath(pathA));
+		assertEquals(3, getEntityNumFromPath(pathB));
+		assertEquals(4, getEntityNumFromPath(pathC));
+		assertEquals(5, getEntityNumFromPath(pathD));
 	}
 }
