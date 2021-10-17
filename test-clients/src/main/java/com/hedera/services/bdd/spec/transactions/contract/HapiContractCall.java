@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.transactions.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,6 +27,7 @@ import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
@@ -36,6 +37,14 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.LongConsumer;
+import java.util.function.ObjLongConsumer;
+
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 	private static final String FALLBACK_ABI = "<empty>";
@@ -47,6 +56,7 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 	private Optional<Long> sentTinyHbars = Optional.of(0L);
 	private Optional<String> details = Optional.empty();
 	private Optional<Function<HapiApiSpec, Object[]>> paramsFn = Optional.empty();
+	private Optional<ObjLongConsumer<ResponseCodeEnum>> gasObserver = Optional.empty();
 
 	@Override
 	public HederaFunctionality type() {
@@ -63,7 +73,9 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 		call.details = Optional.of(actionable);
 		return call;
 	}
-	private HapiContractCall() { }
+
+	private HapiContractCall() {
+	}
 
 	public HapiContractCall(String contract) {
 		this.abi = FALLBACK_ABI;
@@ -80,6 +92,11 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 	public HapiContractCall(String abi, String contract, Function<HapiApiSpec, Object[]> fn) {
 		this(abi, contract);
 		paramsFn = Optional.of(fn);
+	}
+
+	public HapiContractCall exposingGasTo(ObjLongConsumer<ResponseCodeEnum> gasObserver) {
+		this.gasObserver = Optional.of(gasObserver);
+		return this;
 	}
 
 	public HapiContractCall gas(long amount) {
@@ -115,7 +132,7 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 		}
 
 		byte[] callData = (abi != FALLBACK_ABI)
-				? CallTransaction.Function.fromJsonInterface(abi).encode(params) : new byte[] {};
+				? CallTransaction.Function.fromJsonInterface(abi).encode(params) : new byte[] { };
 
 		ContractCallTransactionBody opBody = spec
 				.txns()
@@ -128,6 +145,37 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 						}
 				);
 		return b -> b.setContractCall(opBody);
+	}
+
+	@Override
+	protected void updateStateOf(HapiApiSpec spec) throws Throwable {
+		if (gasObserver.isPresent()) {
+			doGasLookup(gas -> gasObserver.get().accept(actualStatus, gas), spec, txnSubmitted, false);
+		}
+		if (actualStatus != SUCCESS) {
+			return;
+		}
+	}
+
+	static void doGasLookup(
+			final LongConsumer gasObserver,
+			final HapiApiSpec spec,
+			final Transaction txn,
+			final boolean isCreate
+	) throws Throwable {
+		final var txnId = extractTxnId(txn);
+		final var gasLookup = getTxnRecord(txnId)
+				.assertingNothing()
+				.noLogging()
+				.payingWith(GENESIS)
+				.nodePayment(1)
+				.exposingTo(record -> {
+					final var gasUsed = isCreate
+							? record.getContractCreateResult().getGasUsed()
+							: record.getContractCallResult().getGasUsed();
+					gasObserver.accept(gasUsed);
+				});
+		allRunFor(spec, gasLookup);
 	}
 
 	@Override
