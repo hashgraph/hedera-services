@@ -74,8 +74,6 @@ public class ReleaseTwentyMigration {
 		throw new UnsupportedOperationException("Utility class");
 	}
 
-	private static Release0170Migration.TreeCopier treeCopier = MerkleCopy::copyTreeToLocation;
-
 	public static void replaceStorageMapWithVirtualMap(final ServicesState initializingState,
 			final int deserializedVersion) {
 		log.info("Migrating state from version {} to {}", deserializedVersion, StateVersions.RELEASE_TWENTY_VERSION);
@@ -91,7 +89,7 @@ public class ReleaseTwentyMigration {
 
 		initializingState.setChild(STORAGE, virtualMap);
 
-		log.info("Replaced virtualMap in storage map child index");
+		log.info("Replaced storageMap with virtualMap");
 	}
 
 	private static BlobKey.BlobType getBlobType(String key) {

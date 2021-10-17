@@ -29,7 +29,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import static com.hedera.services.files.store.FcBlobsBytesStore.getType;
 import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.BYTECODE;
 import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.FILE_DATA;
 import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.FILE_METADATA;

@@ -86,6 +86,6 @@ class ReleaseTwentyMigrationTest {
 		replaceStorageMapWithVirtualMap(state, StateVersions.RELEASE_0190_VERSION);
 
 
-		//verify(state).setChild(STORAGE, storage);
+		verify(state).setChild(STORAGE, virtualMap);
 	}
 }

@@ -41,7 +41,6 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 	private static final Logger log = LogManager.getLogger(FcBlobsBytesStore.class);
 	private final Supplier<MerkleMap<BlobKey, MerkleBlob>> blobSupplier;
 
-	private static final int ENTITY_NUM_IN_PATH = 4;
 	private static final int BLOB_TYPE_IN_PATH = 3;
 
 	public FcBlobsBytesStore(Supplier<MerkleMap<BlobKey, MerkleBlob>> pathedBlobs) {
@@ -51,7 +50,7 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 	/**
 	 * As the string we are parsing matches /0/f{num} for file data, /0/k{num} for file metadata, /0/s{num} for contract
 	 * bytecode, and /0/e{num} for system deleted files, character at third position is used to recognize the type of
-	 * blob and fourth position for entity number
+	 * blob
 	 *
 	 * @param key
 	 * @return
@@ -160,12 +159,12 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 	/**
 	 * As the string we are parsing matches /0/f{num} for file data, /0/k{num} for file metadata, /0/s{num} for contract
 	 * bytecode, and /0/e{num} for system deleted files, character at third position is used to recognize the type of
-	 * blob and fourth position for entity number
+	 * blob
 	 *
 	 * @param key
 	 * @return
 	 */
 	public static long getEntityNum(final String key) {
-		return parseLong(String.valueOf(key.charAt(ENTITY_NUM_IN_PATH)));
+		return parseLong(key.substring(BLOB_TYPE_IN_PATH + 1));
 	}
 }
