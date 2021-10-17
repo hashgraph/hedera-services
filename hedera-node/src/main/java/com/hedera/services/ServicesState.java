@@ -38,6 +38,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.merkle.internals.BlobKey;
 import com.hedera.services.state.migration.LegacyStateChildIndices;
+import com.hedera.services.state.migration.ReleaseTwentyMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.org.StateMetadata;
@@ -76,7 +77,6 @@ import java.util.function.Supplier;
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
 import static com.hedera.services.state.migration.Release0170Migration.moveLargeFcmsToBinaryRoutePositions;
-import static com.hedera.services.state.migration.ReleaseTwentyMigration.replaceStorageMapWithVirtualMap;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0160_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0170_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_TWENTY_VERSION;
@@ -142,7 +142,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		} else if (version <= StateVersions.RELEASE_0180_VERSION) {
 			return StateChildIndices.NUM_PRE_TWENTY_CHILDREN;
 		} else if (version <= RELEASE_TWENTY_VERSION) {
-			return StateChildIndices.NUM_POST_TWENTY_CHILDREN;
+			return StateChildIndices.NUM_TWENTY_CHILDREN;
 		} else {
 			throw new IllegalArgumentException("Argument 'version='" + version + "' is invalid!");
 		}
@@ -241,8 +241,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		}
 
 		if (deserializedVersionFromState < RELEASE_TWENTY_VERSION) {
-			replaceStorageMapWithVirtualMap(this, deserializedVersionFromState);
-			log.info("  ↪ Migrated {} blobs from storage map to virtual map", storage().size());
+			blobMigrator.migrateFromBinaryObjectStore(this, deserializedVersionFromState);
 		}
 	}
 
@@ -493,8 +492,14 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				Function<V1, V2> valueConverter);
 	}
 
+	@FunctionalInterface
+	interface BinaryObjectStoreMigrator {
+		void migrateFromBinaryObjectStore(ServicesState initializingState, int deserializedVersion);
+	}
+
 	private static FcmMigrator fcmMigrator = FCMapMigration::FCMapToMerkleMap;
 	private static Consumer<Boolean> blobMigrationFlag = MerkleOptionalBlob::setInMigration;
+	private static BinaryObjectStoreMigrator blobMigrator = ReleaseTwentyMigration::migrateFromBinaryObjectStore;
 	private static Supplier<ServicesApp.Builder> appBuilder = DaggerServicesApp::builder;
 
 	/* --- Only used by unit tests --- */
@@ -516,6 +521,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	static void setFcmMigrator(FcmMigrator fcmMigrator) {
 		ServicesState.fcmMigrator = fcmMigrator;
+	}
+
+	static void setBlobMigrator(BinaryObjectStoreMigrator blobMigrator) {
+		ServicesState.blobMigrator = blobMigrator;
 	}
 
 	static void setBlobMigrationFlag(Consumer<Boolean> blobMigrationFlag) {

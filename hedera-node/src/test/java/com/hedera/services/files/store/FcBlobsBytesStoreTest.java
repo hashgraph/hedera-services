@@ -30,10 +30,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import static com.hedera.services.files.store.FcBlobsBytesStore.getEntityNumFromPath;
-import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.BYTECODE;
+import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.CONTRACT_BYTECODE;
+import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.CONTRACT_STORAGE;
 import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.FILE_DATA;
 import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.FILE_METADATA;
-import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.SYSTEM_DELETION_TIME;
+import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.SYSTEM_DELETED_ENTITY_EXPIRY;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -48,16 +49,15 @@ import static org.mockito.BDDMockito.verify;
 class FcBlobsBytesStoreTest {
 	private static final byte[] aData = "BlobA".getBytes();
 	private static final byte[] bData = "BlobB".getBytes();
-	private static final byte[] cData = "BlobC".getBytes();
-	private static final byte[] dData = "BlobD".getBytes();
-	private static final String pathA = "/0/f112";
-	private static final String pathB = "/0/k3";
-	private static final String pathC = "/0/s4";
-	private static final String pathD = "/0/e5";
-	private BlobKey pathAKey, pathBKey, pathCKey, pathDKey;
-	private static final MerkleBlobMeta aMeta = new MerkleBlobMeta(pathA);
+	private static final String dataPath = "/0/f112";
+	private static final String metadataPath = "/0/k3";
+	private static final String bytecodePath = "/0/s4";
+	private static final String storagePath = "/0/d123";
+	private static final String expiryTimePath = "/0/e5";
+	private BlobKey pathAKey;
+	private static final MerkleBlobMeta aMeta = new MerkleBlobMeta(dataPath);
 
-	private MerkleBlob blobA, blobB, blobC, blobD;
+	private MerkleBlob blobA;
 	private MerkleMap<BlobKey, MerkleBlob> pathedBlobs;
 
 	private FcBlobsBytesStore subject;
@@ -69,10 +69,7 @@ class FcBlobsBytesStoreTest {
 		givenMockBlobs();
 		subject = new FcBlobsBytesStore(() -> pathedBlobs);
 
-		pathAKey = subject.at(pathA);
-		pathBKey = subject.at(pathB);
-		pathCKey = subject.at(pathC);
-		pathDKey = subject.at(pathD);
+		pathAKey = subject.at(dataPath);
 	}
 
 	@Test
@@ -86,14 +83,14 @@ class FcBlobsBytesStoreTest {
 	void delegatesRemoveOfMissing() {
 		given(pathedBlobs.remove(aMeta)).willReturn(null);
 
-		assertNull(subject.remove(pathA));
+		assertNull(subject.remove(dataPath));
 	}
 
 	@Test
 	void delegatesRemoveAndReturnsNull() {
 		given(pathedBlobs.remove(aMeta)).willReturn(blobA);
 
-		assertNull(subject.remove(pathA));
+		assertNull(subject.remove(dataPath));
 	}
 
 	@Test
@@ -101,7 +98,7 @@ class FcBlobsBytesStoreTest {
 		given(pathedBlobs.containsKey(pathAKey)).willReturn(true);
 		given(pathedBlobs.getForModify(pathAKey)).willReturn(blobA);
 
-		final var oldBytes = subject.put(pathA, aData);
+		final var oldBytes = subject.put(dataPath, aData);
 
 		verify(pathedBlobs).containsKey(pathAKey);
 		verify(pathedBlobs).getForModify(pathAKey);
@@ -116,7 +113,7 @@ class FcBlobsBytesStoreTest {
 		final var valueCaptor = ArgumentCaptor.forClass(MerkleBlob.class);
 		given(pathedBlobs.containsKey(pathAKey)).willReturn(false);
 
-		final var oldBytes = subject.put(pathA, aData);
+		final var oldBytes = subject.put(dataPath, aData);
 
 		verify(pathedBlobs).containsKey(pathAKey);
 		verify(pathedBlobs).put(keyCaptor.capture(), valueCaptor.capture());
@@ -128,23 +125,23 @@ class FcBlobsBytesStoreTest {
 
 	@Test
 	void propagatesNullFromGet() {
-		given(pathedBlobs.get(pathA)).willReturn(null);
+		given(pathedBlobs.get(dataPath)).willReturn(null);
 
-		assertNull(subject.get(pathA));
+		assertNull(subject.get(dataPath));
 	}
 
 	@Test
 	void delegatesGet() {
 		given(pathedBlobs.get(pathAKey)).willReturn(blobA);
 
-		assertArrayEquals(aData, subject.get(pathA));
+		assertArrayEquals(aData, subject.get(dataPath));
 	}
 
 	@Test
 	void delegatesContainsKey() {
 		given(pathedBlobs.containsKey(pathAKey)).willReturn(true);
 
-		assertTrue(subject.containsKey(pathA));
+		assertTrue(subject.containsKey(dataPath));
 	}
 
 	@Test
@@ -169,10 +166,8 @@ class FcBlobsBytesStoreTest {
 
 	private void givenMockBlobs() {
 		blobA = mock(MerkleBlob.class);
-		blobB = mock(MerkleBlob.class);
 
 		given(blobA.getData()).willReturn(aData);
-		given(blobB.getData()).willReturn(bData);
 	}
 
 	@Test
@@ -198,30 +193,33 @@ class FcBlobsBytesStoreTest {
 
 	@Test
 	void validateBlobTypeBasedOnPath() {
-		assertEquals(FILE_DATA, subject.at(pathA).getType());
-		assertEquals(FILE_METADATA, subject.at(pathB).getType());
-		assertEquals(BYTECODE, subject.at(pathC).getType());
-		assertEquals(SYSTEM_DELETION_TIME, subject.at(pathD).getType());
+		assertEquals(FILE_DATA, subject.at(dataPath).getType());
+		assertEquals(FILE_METADATA, subject.at(metadataPath).getType());
+		assertEquals(CONTRACT_BYTECODE, subject.at(bytecodePath).getType());
+		assertEquals(SYSTEM_DELETED_ENTITY_EXPIRY, subject.at(expiryTimePath).getType());
+		assertEquals(CONTRACT_STORAGE, subject.at(storagePath).getType());
 		try {
 			subject.at("wrongpath").getType();
 		} catch (IllegalArgumentException ex) {
-			assertEquals("Unidentified type of blob", ex.getMessage());
+			assertEquals("Invalid legacy code 'n'", ex.getMessage());
 		}
 	}
 
 	@Test
 	void validateBlobKeyBasedOnPath() {
-		assertEquals(new BlobKey(FILE_DATA, 112), subject.at(pathA));
-		assertEquals(new BlobKey(FILE_METADATA, 3), subject.at(pathB));
-		assertEquals(new BlobKey(BYTECODE, 4), subject.at(pathC));
-		assertEquals(new BlobKey(SYSTEM_DELETION_TIME, 5), subject.at(pathD));
+		assertEquals(new BlobKey(FILE_DATA, 112), subject.at(dataPath));
+		assertEquals(new BlobKey(FILE_METADATA, 3), subject.at(metadataPath));
+		assertEquals(new BlobKey(CONTRACT_STORAGE, 123), subject.at(storagePath));
+		assertEquals(new BlobKey(CONTRACT_BYTECODE, 4), subject.at(bytecodePath));
+		assertEquals(new BlobKey(SYSTEM_DELETED_ENTITY_EXPIRY, 5), subject.at(expiryTimePath));
 	}
 
 	@Test
 	void validateEntityNumBasedOnPath() {
-		assertEquals(112, getEntityNumFromPath(pathA));
-		assertEquals(3, getEntityNumFromPath(pathB));
-		assertEquals(4, getEntityNumFromPath(pathC));
-		assertEquals(5, getEntityNumFromPath(pathD));
+		assertEquals(112, getEntityNumFromPath(dataPath));
+		assertEquals(3, getEntityNumFromPath(metadataPath));
+		assertEquals(4, getEntityNumFromPath(bytecodePath));
+		assertEquals(5, getEntityNumFromPath(expiryTimePath));
+		assertEquals(123, getEntityNumFromPath(storagePath));
 	}
 }

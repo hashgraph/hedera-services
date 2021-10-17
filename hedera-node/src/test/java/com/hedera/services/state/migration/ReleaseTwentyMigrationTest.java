@@ -28,11 +28,15 @@ import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static com.hedera.services.state.migration.ReleaseTwentyMigration.replaceStorageMapWithVirtualMap;
+import static com.hedera.services.state.migration.ReleaseTwentyMigration.migrateFromBinaryObjectStore;
 import static com.hedera.services.state.migration.StateChildIndices.STORAGE;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.mockito.ArgumentCaptor.forClass;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -41,51 +45,51 @@ class ReleaseTwentyMigrationTest {
 	@Mock
 	private ServicesState state;
 
-	@Mock
-	private MerkleMap<BlobKey, MerkleBlob> storage;
+	private final MerkleMap<String, MerkleOptionalBlob> legacyBlobs = new MerkleMap<>();
 
-	private MerkleMap<String, MerkleOptionalBlob> legacyMap = new MerkleMap<>();
-	private MerkleMap<BlobKey, MerkleBlob> virtualMap = new MerkleMap<>();
+	private final byte[] dataBlob = "data".getBytes();
+	private final byte[] metadataBlob = "metadata".getBytes();
+	private final byte[] bytecodeBlob = "bytecode".getBytes();
+	private final byte[] storageBlob = "storage".getBytes();
+	private final byte[] expiryTimeBlob = "expiryTime".getBytes();
 
-	private final String pathA = "/0/f2";
-	private final String pathB = "/0/k3";
-	private final String pathC = "/0/s4";
-	private final String pathD = "/0/e5";
-	private final byte[] dataA = "blobA".getBytes();
-	private final byte[] dataB = "blobB".getBytes();
-	private final byte[] dataC = "blobC".getBytes();
-	private final byte[] dataD = "blobD".getBytes();
+	private final BlobKey dataKey = new BlobKey(BlobKey.BlobType.FILE_DATA, 2);
+	private final BlobKey metadataKey = new BlobKey(BlobKey.BlobType.FILE_METADATA, 3);
+	private final BlobKey bytecodeKey = new BlobKey(BlobKey.BlobType.CONTRACT_BYTECODE, 4);
+	private final BlobKey storageKey = new BlobKey(BlobKey.BlobType.CONTRACT_STORAGE, 5);
+	private final BlobKey expiryTimeKey = new BlobKey(BlobKey.BlobType.SYSTEM_DELETED_ENTITY_EXPIRY, 6);
 
 	@BeforeEach
-	void setUp(){
-		legacyMap.put(pathA, new MerkleOptionalBlob(dataA));
-		legacyMap.put(pathB, new MerkleOptionalBlob(dataB));
-		legacyMap.put(pathC, new MerkleOptionalBlob(dataC));
-		legacyMap.put(pathD, new MerkleOptionalBlob(dataD));
-
-		BlobKey expectedKeyA = new BlobKey(BlobKey.BlobType.FILE_DATA, 2);
-		BlobKey expectedKeyB = new BlobKey(BlobKey.BlobType.FILE_METADATA, 3);
-		BlobKey expectedKeyC = new BlobKey(BlobKey.BlobType.BYTECODE, 4);
-		BlobKey expectedKeyD = new BlobKey(BlobKey.BlobType.SYSTEM_DELETION_TIME, 5);
-
-		MerkleBlob expectedBlobA = new MerkleBlob(dataA);
-		MerkleBlob expectedBlobB = new MerkleBlob(dataB);
-		MerkleBlob expectedBlobC = new MerkleBlob(dataC);
-		MerkleBlob expectedBlobD = new MerkleBlob(dataD);
-
-		virtualMap.put(expectedKeyA, expectedBlobA);
-		virtualMap.put(expectedKeyB, expectedBlobB);
-		virtualMap.put(expectedKeyC, expectedBlobC);
-		virtualMap.put(expectedKeyD, expectedBlobD);
+	void setUp() {
+		final String dataPath = "/0/f2";
+		legacyBlobs.put(dataPath, new MerkleOptionalBlob(dataBlob));
+		final String metadataPath = "/0/k3";
+		legacyBlobs.put(metadataPath, new MerkleOptionalBlob(metadataBlob));
+		final String bytecodePath = "/0/s4";
+		legacyBlobs.put(bytecodePath, new MerkleOptionalBlob(bytecodeBlob));
+		final String storagePath = "/0/d5";
+		legacyBlobs.put(storagePath, new MerkleOptionalBlob(storageBlob));
+		final String expiryTimePath = "/0/e6";
+		legacyBlobs.put(expiryTimePath, new MerkleOptionalBlob(expiryTimeBlob));
 	}
 
 	@Test
 	void replaceBlobStorageMapAsExpected() {
-		given(state.getChild(STORAGE)).willReturn(legacyMap);
+		@SuppressWarnings("unchecked")
+		final ArgumentCaptor<MerkleMap<BlobKey, MerkleBlob>> captor = forClass(MerkleMap.class);
 
-		replaceStorageMapWithVirtualMap(state, StateVersions.RELEASE_0190_VERSION);
+		given(state.getChild(STORAGE)).willReturn(legacyBlobs);
 
+		migrateFromBinaryObjectStore(state, StateVersions.RELEASE_0190_VERSION);
 
-		//verify(state).setChild(STORAGE, virtualMap);
+		verify(state).setChild(eq(STORAGE), captor.capture());
+
+		final var vmBlobsStandin = captor.getValue();
+
+		assertArrayEquals(dataBlob, vmBlobsStandin.get(dataKey).getData());
+		assertArrayEquals(metadataBlob, vmBlobsStandin.get(metadataKey).getData());
+		assertArrayEquals(bytecodeBlob, vmBlobsStandin.get(bytecodeKey).getData());
+		assertArrayEquals(storageBlob, vmBlobsStandin.get(storageKey).getData());
+		assertArrayEquals(expiryTimeBlob, vmBlobsStandin.get(expiryTimeKey).getData());
 	}
 }

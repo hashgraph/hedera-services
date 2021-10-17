@@ -107,7 +107,6 @@ public class MerkleBlob extends AbstractMerkleLeaf implements Keyed<BlobKey> {
 				'}';
 	}
 
-
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;

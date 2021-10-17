@@ -40,6 +40,7 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.internals.BlobKey;
 import com.hedera.services.state.migration.LegacyStateChildIndices;
+import com.hedera.services.state.migration.ReleaseTwentyMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.org.StateMetadata;
@@ -155,6 +156,8 @@ class ServicesStateTest {
 	private ServicesApp.Builder appBuilder;
 	@Mock
 	private ServicesState.FcmMigrator fcmMigrator;
+	@Mock
+	private ServicesState.BinaryObjectStoreMigrator blobMigrator;
 	@Mock
 	private Consumer<Boolean> blobMigrationFlag;
 
@@ -365,7 +368,7 @@ class ServicesStateTest {
 				StateChildIndices.NUM_PRE_0160_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_0120_VERSION));
 		assertEquals(
-				StateChildIndices.NUM_POST_TWENTY_CHILDREN,
+				StateChildIndices.NUM_TWENTY_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_TWENTY_VERSION));
 		assertThrows(IllegalArgumentException.class,
 				() -> subject.getMinimumChildCount(StateVersions.CURRENT_VERSION + 1));
@@ -407,9 +410,10 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void migratesWhenInitializingFromRelease0180() {
+	void migratesWhenInitializingFromRelease0170() {
 		ServicesState.setFcmMigrator(fcmMigrator);
 		ServicesState.setBlobMigrationFlag(blobMigrationFlag);
+		ServicesState.setBlobMigrator(blobMigrator);
 		final MerkleMap<?, ?> pretend = new MerkleMap<>();
 
 		subject = mock(ServicesState.class);
@@ -425,7 +429,6 @@ class ServicesStateTest {
 		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0170_VERSION);
 		given(subject.getPlatformForDeferredInit()).willReturn(platform);
 		given(subject.getAddressBookForDeferredInit()).willReturn(addressBook);
-		given(subject.getChild(StateChildIndices.STORAGE)).willReturn((MerkleMap<String, MerkleOptionalBlob>) pretend);
 
 		subject.migrate();
 
@@ -437,7 +440,6 @@ class ServicesStateTest {
 		verify(fcmMigrator).toMerkleMap(eq(subject), eq(StateChildIndices.TOKENS), any(), any());
 		verify(fcmMigrator).toMerkleMap(eq(subject), eq(StateChildIndices.SCHEDULE_TXS), any(), any());
 		verify(subject).init(platform, addressBook);
-		System.out.println(logCaptor.infoLogs());
 		assertThat(
 				logCaptor.infoLogs(),
 				contains(
@@ -449,33 +451,29 @@ class ServicesStateTest {
 						Matchers.startsWith("↪ Migrated 0 "),
 						Matchers.startsWith("↪ Migrated 0 "),
 						Matchers.startsWith("↪ Migrated 0 "),
-						equalTo("Finished with FCMap -> MerkleMap migrations, completing the deferred init"),
-						Matchers.startsWith("↪ Migrated 0 blobs ")));
+						equalTo("Finished with FCMap -> MerkleMap migrations, completing the deferred init")));
 		verify(blobMigrationFlag).accept(true);
 		verify(blobMigrationFlag).accept(false);
+		verify(blobMigrator).migrateFromBinaryObjectStore(subject, StateVersions.RELEASE_0170_VERSION);
 
 		ServicesState.setFcmMigrator(FCMapMigration::FCMapToMerkleMap);
 		ServicesState.setBlobMigrationFlag(MerkleOptionalBlob::setInMigration);
+		ServicesState.setBlobMigrator(ReleaseTwentyMigration::migrateFromBinaryObjectStore);
 	}
 
 	@Test
 	void migratesWhenInitializingFromRelease0190() {
-		final MerkleMap<?, ?> pretend = new MerkleMap<>();
-		final MerkleMap<String, MerkleOptionalBlob> legacyStorageMap = new MerkleMap<>();
+		ServicesState.setBlobMigrator(blobMigrator);
 
 		subject = mock(ServicesState.class);
-		given(subject.storage()).willReturn((MerkleMap<BlobKey, MerkleBlob>) pretend);
-
 		willCallRealMethod().given(subject).migrate();
 		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0190_VERSION);
-		given(subject.getChild(StateChildIndices.STORAGE)).willReturn(legacyStorageMap);
 
 		subject.migrate();
-		System.out.println(logCaptor.infoLogs());
-		assertThat(
-				logCaptor.infoLogs(),
-				contains(
-						Matchers.startsWith("↪ Migrated 0 blobs ")));
+
+		verify(blobMigrator).migrateFromBinaryObjectStore(subject, StateVersions.RELEASE_0190_VERSION);
+
+		ServicesState.setBlobMigrator(ReleaseTwentyMigration::migrateFromBinaryObjectStore);
 	}
 
 	@Test

@@ -22,10 +22,17 @@ package com.hedera.services.state.merkle.internals;
 
 import java.util.Objects;
 
+import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.CONTRACT_BYTECODE;
+import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.CONTRACT_STORAGE;
+import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.FILE_DATA;
+import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.FILE_METADATA;
+import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.SYSTEM_DELETED_ENTITY_EXPIRY;
+
 public class BlobKey {
 	public enum BlobType {
-		FILE_DATA, FILE_METADATA, BYTECODE, SYSTEM_DELETION_TIME
+		FILE_DATA, FILE_METADATA, CONTRACT_STORAGE, CONTRACT_BYTECODE, SYSTEM_DELETED_ENTITY_EXPIRY
 	}
+
 	private final BlobType type;
 	private final long entityNum;
 
@@ -65,5 +72,28 @@ public class BlobKey {
 				"type=" + type +
 				", entityNum=" + entityNum +
 				'}';
+	}
+
+	/**
+	 * Returns the type corresponding to a legacy character code.
+	 *
+	 * @param code the legacy blob code
+	 * @return the blob type
+	 */
+	public static BlobType typeFromCharCode(final char code) {
+		switch (code) {
+			case 'f':
+				return FILE_DATA;
+			case 'k':
+				return FILE_METADATA;
+			case 's':
+				return CONTRACT_BYTECODE;
+			case 'd':
+				return CONTRACT_STORAGE;
+			case 'e':
+				return SYSTEM_DELETED_ENTITY_EXPIRY;
+			default:
+				throw new IllegalArgumentException("Invalid legacy code '" + code + "'");
+		}
 	}
 }

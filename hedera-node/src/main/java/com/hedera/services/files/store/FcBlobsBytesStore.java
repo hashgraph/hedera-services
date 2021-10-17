@@ -31,34 +31,38 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.BYTECODE;
-import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.FILE_DATA;
-import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.FILE_METADATA;
-import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.SYSTEM_DELETION_TIME;
+import static com.hedera.services.state.merkle.internals.BlobKey.typeFromCharCode;
 import static java.lang.Long.parseLong;
 
 public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 	private static final Logger log = LogManager.getLogger(FcBlobsBytesStore.class);
 	private final Supplier<MerkleMap<BlobKey, MerkleBlob>> blobSupplier;
 
-	private static final int BLOB_TYPE_IN_PATH = 3;
+	public static final int LEGACY_BLOB_CODE_INDEX = 3;
 
 	public FcBlobsBytesStore(Supplier<MerkleMap<BlobKey, MerkleBlob>> blobSupplier) {
 		this.blobSupplier = blobSupplier;
 	}
 
 	/**
-	 * As the string we are parsing matches /0/f{num} for file data, /0/k{num} for file metadata, /0/s{num} for contract
-	 * bytecode, and /0/e{num} for system deleted files, character at third position is used to recognize the type of
-	 * blob
+	 * The string we are parsing has one of five special forms:
+	 * <ul>
+	 *    <li>{@literal /0/f{num}} for file data; or,</li>
+	 *    <li>{@literal /0/k{num}} for file metadata; or,</li>
+	 *    <li>{@literal /0/s{num}} for contract bytecode; or,</li>
+	 *    <li>{@literal /0/d{num}} for contract storage; or,</li>
+	 *    <li>{@literal /0/e{num}} for prior expiration time of a system-deleted entity.</li>
+	 * </ul>
+	 * So we get the type from the character code at index 3, and parse the entity number
+	 * starting at index 4, to get the appropriate {@link BlobKey}.
 	 *
-	 * @param key
-	 * @return
+	 * @param path a string with one of the five forms above
+	 * @return a fixed-size map key with equivalent meaning
 	 */
-	BlobKey at(Object key) {
-		final String path = (String) key;
-		final BlobKey.BlobType type = getType(path.charAt(BLOB_TYPE_IN_PATH));
-		final long entityNum = getEntityNumFromPath(path);
+	BlobKey at(Object path) {
+		final String s = (String) path;
+		final BlobKey.BlobType type = typeFromCharCode(s.charAt(LEGACY_BLOB_CODE_INDEX));
+		final long entityNum = getEntityNumFromPath(s);
 		return new BlobKey(type, entityNum);
 	}
 
@@ -142,27 +146,6 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 	}
 
 	/**
-	 * Returns type of blob based on 3rd index in the blob path
-	 *
-	 * @param index
-	 * @return
-	 */
-	public static BlobKey.BlobType getType(char index) {
-		switch (index) {
-			case 'f':
-				return FILE_DATA;
-			case 'k':
-				return FILE_METADATA;
-			case 's':
-				return BYTECODE;
-			case 'e':
-				return SYSTEM_DELETION_TIME;
-			default:
-				throw new IllegalArgumentException("Unidentified type of blob");
-		}
-	}
-
-	/**
 	 * As the string we are parsing matches /0/f{num} for file data, /0/k{num} for file metadata, /0/s{num} for contract
 	 * bytecode, and /0/e{num} for system deleted files, character at third position is used to recognize the type of
 	 * blob
@@ -172,6 +155,6 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 	 * @return
 	 */
 	public static long getEntityNumFromPath(final String key) {
-		return parseLong(key.substring(BLOB_TYPE_IN_PATH + 1));
+		return parseLong(key.substring(LEGACY_BLOB_CODE_INDEX + 1));
 	}
 }
