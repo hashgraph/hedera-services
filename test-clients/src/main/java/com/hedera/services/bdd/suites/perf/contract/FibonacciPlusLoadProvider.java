@@ -8,6 +8,7 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.math.BigInteger;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -20,6 +21,7 @@ import java.util.Set;
 import java.util.SplittableRandom;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -42,6 +44,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.perf.PerfUtilOps.mgmtOfBooleanProp;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.mgmtOfIntProp;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.stdMgmtOf;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -75,6 +78,8 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 	private final AtomicInteger slotsPerCall = new AtomicInteger(SLOTS_PER_CALL);
 	private final AtomicInteger numContracts = new AtomicInteger(APPROX_NUM_CONTRACTS);
 	private final AtomicInteger fibN = new AtomicInteger(FIBONACCI_NUM_TO_USE);
+	private final AtomicReference<BigInteger> fibNValue = new AtomicReference<>(null);
+	private final AtomicBoolean validateStorage = new AtomicBoolean(false);
 
 	private final AtomicLong gasUsed = new AtomicLong(0);
 	private final AtomicInteger submittedOps = new AtomicInteger(0);
@@ -85,6 +90,7 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 	private final AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
 
 	private final Map<String, Integer> contractSlots = new HashMap<>();
+	private final Map<String, BigInteger[]> contractStorage = new HashMap<>();
 	private final Set<String> createdSoFar = ConcurrentHashMap.newKeySet();
 
 	public static void main(String... args) {
@@ -123,7 +129,9 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 						mgmtOfIntProp(smallestNumSlots, SUITE_PROPS_PREFIX + "smallestNumSlots"),
 						mgmtOfIntProp(slotsPerCall, SUITE_PROPS_PREFIX + "slotsPerCall"),
 						mgmtOfIntProp(numContracts, SUITE_PROPS_PREFIX + "numContracts"),
+						mgmtOfBooleanProp(validateStorage, SUITE_PROPS_PREFIX + "validateStorage"),
 						withOpContext((spec, opLog) -> {
+							fibNValue.set(BigInteger.valueOf(fib(fibN.get())));
 							opLog.info("Resolved configuration:\n  " +
 											SUITE_PROPS_PREFIX + "duration={}\n  " +
 											SUITE_PROPS_PREFIX + "maxOpsPerSec={}\n  " +
@@ -132,21 +140,24 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 											SUITE_PROPS_PREFIX + "powerLawScale={}\n  " +
 											SUITE_PROPS_PREFIX + "powerLawBaseReciprocal={}\n  " +
 											SUITE_PROPS_PREFIX + "minCallProb={}\n  " +
-											SUITE_PROPS_PREFIX + "fibN={}\n  " +
+											SUITE_PROPS_PREFIX + "fibN={} ({})\n  " +
 											SUITE_PROPS_PREFIX + "slotsPerCall={}",
 									duration.get(), maxOpsPerSec.get(), numContracts.get(),
 									smallestNumSlots.get(), powerLawScale.get(),
 									powerLawBaseReciprocal.get(), minCallProb.get(),
-									fibN.get(), slotsPerCall.get());
+									fibN.get(), fibNValue.get(), slotsPerCall.get());
 						})
 				).when().then(
 						runWithProvider(contractOpsFactory())
 								.lasting(duration::get, unit::get)
 								.maxOpsPerSec(maxOpsPerSec::get),
 						sleepFor(30_000L),
-						withOpContext((spec, opLog) -> logResults())
+						withOpContext((spec, opLog) -> logResults()),
+						sourcing(() -> validateStorage.get() ? noOp() : noOp())
 				);
 	}
+
+	private HapiSpecOperation
 
 	private Function<HapiApiSpec, OpProvider> contractOpsFactory() {
 		final String civilian = "civilian";
@@ -165,7 +176,14 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 		for (int i = 0; i < numDiscreteSizes; i++) {
 			log.info("Will use {} contracts with {} slots", numContractsWithThisManySlots, numSlots);
 			for (int j = 0; j < numContractsWithThisManySlots; j++) {
-				contractSlots.put(contractNameFn.apply(nextContractNum++), numSlots);
+				final var thisContractNum = nextContractNum++;
+				final var thisContract = contractNameFn.apply(thisContractNum);
+				contractSlots.put(thisContract, numSlots);
+				if (validateStorage.get()) {
+					final var slots = new BigInteger[numSlots];
+					Arrays.fill(slots, BigInteger.ZERO);
+					contractStorage.put(thisContract, slots);
+				}
 			}
 			numSlots /= scale;
 			numContractsWithThisManySlots *= r;
@@ -229,6 +247,15 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 								log.info("(Tried to) call {} (targets = {}, fibN = {}) with {} gas --> {}",
 										choice, targetsDesc, fibN.get(), gas, code);
 								that.observeExposedGas(gas);
+								if (code == SUCCESS && validateStorage.get()) {
+									final var curSlots = contractStorage.get(choice);
+									final var newSlots = Arrays.copyOf(curSlots, m);
+									for (int i = 0; i < n; i++) {
+										final var j = targets[i];
+										newSlots[j] = newSlots[j].add(fibNValue.get());
+									}
+									contractStorage.put(choice, newSlots);
+								}
 							})
 							.hasKnownStatusFrom(SUCCESS, CONTRACT_REVERT_EXECUTED, INSUFFICIENT_GAS)
 							.deferStatusResolution();
@@ -328,5 +355,18 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 	@Override
 	protected Logger getResultsLogger() {
 		return log;
+	}
+
+	private static long fib(int n) {
+		long ans = 0;
+		long next = 1;
+
+		while (n-- > 0) {
+			final long prior = next;
+			next += ans;
+			ans = prior;
+		}
+
+		return ans;
 	}
 }

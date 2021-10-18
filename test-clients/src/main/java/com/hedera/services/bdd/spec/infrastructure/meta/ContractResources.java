@@ -82,6 +82,9 @@ public class ContractResources {
 			",\"name\":\"at\",\"type\":\"uint32[]\"},{\"internalType\":\"uint32\",\"name\":\"n\",\"type\"" +
 			":\"uint32\"}],\"name\":\"addNthFib\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\"," +
 			"\"type\":\"function\"}";
+	public static final String CURRENT_FIB_SLOTS_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"currentSlots\"," +
+			"\"outputs\":[{\"internalType\":\"uint256[]\",\"name\":\"\",\"type\":\"uint256[]\"}],\"payable\":false," +
+			"\"stateMutability\":\"view\",\"type\":\"function\"}";
 	public static final String COMPUTE_NTH_FIB_ABI = "{\"constant\":true,\"inputs\":[{\"internalType\":\"uint32\"," +
 			"\"name\":\"n\",\"type\":\"uint32\"}],\"name\":\"fib\",\"outputs\":[{\"internalType\":\"uint256\"," +
 			"\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"pure\",\"type\":\"function\"}";

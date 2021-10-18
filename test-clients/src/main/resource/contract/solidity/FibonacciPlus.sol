@@ -22,4 +22,8 @@ contract FibonacciPlus {
       return fib(n - 1) + fib(n - 2);
     }
   }
+
+  function currentSlots() external view returns (uint256[] memory) {
+    return slots;
+  }
 }
