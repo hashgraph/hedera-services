@@ -22,9 +22,12 @@ import java.util.List;
 import java.util.function.Function;
 
 import static com.hedera.services.txns.schedule.ScheduleSignHelper.signingOutcome;
+import static com.hedera.services.txns.schedule.SigMapScheduleClassifierTest.VALID_SIG;
 import static com.hedera.services.txns.schedule.SigMapScheduleClassifierTest.pretendKeyStartingWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -55,6 +58,8 @@ class ScheduleSignHelperTest {
 	void shouldSignAsExpected() throws DecoderException {
 		final ScheduleID schedule = IdUtils.asSchedule("1.2.3");
 		given(activationHelper.currentSigsFn()).willReturn(sigsFn);
+		given(activationHelper.areScheduledPartiesActive(any(), any())).willReturn(true);
+		given(sigsFn.apply(eq(a.getEd25519()))).willReturn(VALID_SIG);
 
 		var result = signingOutcome(List.of(a), sigMap, schedule, store, activationHelper);
 
