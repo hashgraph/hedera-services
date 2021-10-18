@@ -66,6 +66,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
@@ -85,33 +86,33 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				notIdenticalScheduleIfScheduledTxnChanges(),
-				notIdenticalScheduleIfAdminKeyChanges(),
-				notIdenticalScheduleIfMemoChanges(),
-				recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer(),
-				rejectsSentinelKeyListAsAdminKey(),
-				rejectsMalformedScheduledTxnMemo(),
-				bodyOnlyCreation(),
-				onlyBodyAndAdminCreation(),
-				onlyBodyAndMemoCreation(),
-				bodyAndSignatoriesCreation(),
-				bodyAndPayerCreation(),
-				rejectsUnresolvableReqSigners(),
-				triggersImmediatelyWithBothReqSimpleSigs(),
-				onlySchedulesWithMissingReqSimpleSigs(),
-				failsWithNonExistingPayerAccountId(),
-				failsWithTooLongMemo(),
-				detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
-				doesntTriggerUntilPayerSigns(),
-				requiresExtantPayer(),
-				rejectsFunctionlessTxn(),
-				whitelistWorks(),
-				preservesRevocationServiceSemanticsForFileDelete(),
-				worksAsExpectedWithDefaultScheduleId(),
-				infoIncludesTxnIdFromCreationReceipt(),
-				rejectsIdenticalScheduleEvenWithDifferentDesignatedPayer(),
+//				notIdenticalScheduleIfScheduledTxnChanges(),
+//				notIdenticalScheduleIfAdminKeyChanges(),
+//				notIdenticalScheduleIfMemoChanges(),
+//				recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer(),
+//				rejectsSentinelKeyListAsAdminKey(),
+//				rejectsMalformedScheduledTxnMemo(),
+//				bodyOnlyCreation(),
+//				onlyBodyAndAdminCreation(),
+//				onlyBodyAndMemoCreation(),
+//				bodyAndSignatoriesCreation(),
+//				bodyAndPayerCreation(),
+//				rejectsUnresolvableReqSigners(),
+//				triggersImmediatelyWithBothReqSimpleSigs(),
+//				onlySchedulesWithMissingReqSimpleSigs(),
+//				failsWithNonExistingPayerAccountId(),
+//				failsWithTooLongMemo(),
+//				detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
+//				doesntTriggerUntilPayerSigns(),
+//				requiresExtantPayer(),
+//				rejectsFunctionlessTxn(),
+//				whitelistWorks(),
+//				preservesRevocationServiceSemanticsForFileDelete(),
+//				worksAsExpectedWithDefaultScheduleId(),
+//				infoIncludesTxnIdFromCreationReceipt(),
+//				rejectsIdenticalScheduleEvenWithDifferentDesignatedPayer(),
 				addsSignatureToTheExistingIdenticalSchedule(),
-				suiteCleanup(),
+//				suiteCleanup(),
 		});
 	}
 
@@ -374,22 +375,25 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec addsSignatureToTheExistingIdenticalSchedule() {
+		final var scheduledTxn = cryptoTransfer(tinyBarsFromTo("sender", "receiver", 25 * ONE_HBAR))
+										.fee(ONE_HBAR);
 		return defaultHapiSpec("addsSignatureToTheExistingIdenticalSchedule")
 				.given(
 						cryptoCreate("sender").balance(ONE_HUNDRED_HBARS),
-						cryptoCreate("receiver").balance(ONE_HUNDRED_HBARS).receiverSigRequired(true)
+						cryptoCreate("receiver").balance(ONE_HUNDRED_HBARS).receiverSigRequired(true),
+						cryptoCreate("thirdParty").balance(ONE_HUNDRED_HBARS)
 				).when(
-						scheduleCreate("original",
-								cryptoTransfer(tinyBarsFromTo("sender", "receiver", 25 * ONE_HBAR))
-										.fee(ONE_HBAR))
+						scheduleCreate("original", scheduledTxn)
 								.mergeWithIdenticalSchedule()
 								.designatingPayer("sender")
 								.payingWith("sender")
 								.savingExpectedScheduledTxnId()
 				).then(
-						scheduleCreate("duplicate",
-								cryptoTransfer(tinyBarsFromTo("sender", "receiver", 25 * ONE_HBAR))
-										.fee(ONE_HBAR))
+						scheduleCreate("dummyDuplicate", scheduledTxn)
+								.mergeWithIdenticalSchedule()
+								.payingWith("thirdParty")
+								.designatingPayer("sender"),
+						scheduleCreate("duplicate", scheduledTxn)
 								.mergeWithIdenticalSchedule()
 								.payingWith("receiver")
 								.designatingPayer("sender")
@@ -400,7 +404,12 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 								.hasSchedule("original")
 								.hasScheduledTxnId("original"),
 						getScheduleInfo("original")
-								.hasSignatories("sender", "receiver")
+								.hasSignatories("sender", "receiver"),
+						scheduleCreate("anotherDuplicate", scheduledTxn)
+								.mergeWithIdenticalSchedule()
+								.payingWith("thirdParty")
+								.designatingPayer("sender")
+								.hasKnownStatus(SCHEDULE_ALREADY_EXECUTED)
 				);
 	}
 
