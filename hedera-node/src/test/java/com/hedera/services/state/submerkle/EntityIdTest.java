@@ -31,11 +31,14 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -103,7 +106,7 @@ class EntityIdTest {
 	@Test
 	void objectContractWorks() {
 		final var one = subject;
-		final var two = EntityId.MISSING_ENTITY_ID;
+		final var two = MISSING_ENTITY_ID;
 		final var three = subject.copy();
 
 		assertNotEquals(null, one);
@@ -144,12 +147,12 @@ class EntityIdTest {
 
 	@Test
 	void factoriesWork() {
-		assertThrows(IllegalArgumentException.class, () -> EntityId.fromGrpcAccountId(null));
-		assertThrows(IllegalArgumentException.class, () -> EntityId.fromGrpcFileId(null));
-		assertThrows(IllegalArgumentException.class, () -> EntityId.fromGrpcTopicId(null));
-		assertThrows(IllegalArgumentException.class, () -> EntityId.fromGrpcTokenId(null));
-		assertThrows(IllegalArgumentException.class, () -> EntityId.fromGrpcScheduleId(null));
-		assertThrows(IllegalArgumentException.class, () -> EntityId.fromGrpcContractId(null));
+		assertEquals(MISSING_ENTITY_ID, EntityId.fromGrpcAccountId(null));
+		assertEquals(MISSING_ENTITY_ID, EntityId.fromGrpcContractId(null));
+		assertEquals(MISSING_ENTITY_ID, EntityId.fromGrpcTopicId(null));
+		assertEquals(MISSING_ENTITY_ID, EntityId.fromGrpcFileId(null));
+		assertEquals(MISSING_ENTITY_ID, EntityId.fromGrpcTokenId(null));
+		assertEquals(MISSING_ENTITY_ID, EntityId.fromGrpcScheduleId(null));
 
 		assertEquals(subject, EntityId.fromGrpcAccountId(accountId));
 		assertEquals(subject, EntityId.fromGrpcContractId(contractId));

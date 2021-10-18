@@ -176,7 +176,7 @@
     <javax-inject.version>1</javax-inject.version>
     <log4j.version>2.14.1</log4j.version>
     <netty.version>4.1.66.Final</netty.version>
-    <protobuf-java.version>3.18.0</protobuf-java.version>
+    <protobuf-java.version>3.18.1</protobuf-java.version>
     <swirlds.version>0.18.1</swirlds.version>
     <!-- Test dependency properties in alphabetical order -->
     <hamcrest.version>2.2</hamcrest.version>
