@@ -22,6 +22,8 @@ package com.hedera.services.state;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.StateChildren;
+import com.hedera.services.contracts.virtual.ContractKey;
+import com.hedera.services.contracts.virtual.ContractValue;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
@@ -31,12 +33,13 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 
 public class StateAccessor {
 	private final StateChildren children = new StateChildren();
@@ -59,6 +62,7 @@ public class StateAccessor {
 		children.setUniqueTokenAssociations(state.uniqueTokenAssociations());
 		children.setUniqueOwnershipAssociations(state.uniqueOwnershipAssociations());
 		children.setUniqueOwnershipTreasuryAssociations(state.uniqueTreasuryOwnershipAssociations());
+		children.setContractStorage(state.contractStorage());
 		children.setRunningHashLeaf(state.runningHashLeaf());
 	}
 
@@ -112,6 +116,10 @@ public class StateAccessor {
 
 	public AddressBook addressBook() {
 		return children.getAddressBook();
+	}
+
+	public VirtualMap<ContractKey, ContractValue> contractStorage() {
+		return children.getContractStorage();
 	}
 
 	public RecordsRunningHashLeaf runningHashLeaf() {

@@ -26,6 +26,8 @@ import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.contracts.virtual.ContractKey;
+import com.hedera.services.contracts.virtual.ContractValue;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
@@ -79,6 +81,7 @@ import com.swirlds.common.notification.NotificationFactory;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -317,6 +320,14 @@ public abstract class StateModule {
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::diskFs;
+	}
+
+	@Provides
+	@Singleton
+	public static Supplier<VirtualMap<ContractKey, ContractValue>> provideWorkingContractStorage(
+			@WorkingState StateAccessor accessor
+	) {
+		return accessor::contractStorage;
 	}
 
 	@Provides

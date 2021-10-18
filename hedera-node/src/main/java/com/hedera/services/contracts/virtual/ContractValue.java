@@ -51,6 +51,10 @@ public class ContractValue implements VirtualValue {
 		this.value = value;
 	}
 
+	public byte[] getValue() {
+		return this.value;
+	}
+
 	@Override
 	public ContractValue copy() {
 		return new ContractValue(this.value);

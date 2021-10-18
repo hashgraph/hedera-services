@@ -61,7 +61,7 @@ public class ContractKey implements VirtualKey {
 
 	private void setKey(byte[] key) {
 		Objects.requireNonNull(key);
-		if (key.length != SIZE) {
+		if (key.length != KEY_SIZE) {
 			throw new IllegalArgumentException("invalid key length");
 		}
 		this.key = key;

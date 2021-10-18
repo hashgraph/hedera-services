@@ -24,6 +24,8 @@ package com.hedera.services.store.contracts;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.contracts.virtual.ContractKey;
+import com.hedera.services.contracts.virtual.ContractValue;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -33,6 +35,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.swirlds.virtualmap.VirtualMap;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.ethereum.core.AccountState;
@@ -49,6 +52,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigInteger;
+import java.util.function.Supplier;
 
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
@@ -78,6 +82,8 @@ class HederaWorldStateTest {
 	private GlobalDynamicProperties globalDynamicProperties;
 	@Mock
 	private ContractDetails contractDetails;
+	@Mock
+	private Supplier<VirtualMap<ContractKey, ContractValue>> contractStorage;
 
 	final long balance = 1_234L;
 	final Id sponsor = new Id(0, 0, 1);
@@ -88,7 +94,7 @@ class HederaWorldStateTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new HederaWorldState(ids, ledger, repositoryRoot, globalDynamicProperties);
+		subject = new HederaWorldState(ids, ledger, repositoryRoot, contractStorage, globalDynamicProperties);
 	}
 
 	@Test
