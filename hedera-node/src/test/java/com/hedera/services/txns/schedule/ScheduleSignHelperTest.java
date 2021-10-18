@@ -4,15 +4,16 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
 import org.apache.commons.codec.DecoderException;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -33,37 +34,37 @@ import static org.mockito.BDDMockito.given;
 @ExtendWith(MockitoExtension.class)
 class ScheduleSignHelperTest {
 
-	static String aPrefix = "a", abPrefix = "ab", cPrefix = "c";
+	static String aPrefix = "a";
 	static SignaturePair aPair = SignaturePair.newBuilder()
 			.setPubKeyPrefix(ByteString.copyFromUtf8(aPrefix))
 			.build();
 	static SignatureMap sigMap = SignatureMap.newBuilder().addSigPair(aPair).build();
+	private TransactionBody scheduledTxn = TransactionBody.getDefaultInstance();
 
 	static JKey a = new JEd25519Key(pretendKeyStartingWith(aPrefix));
-	static JKey both = new JEd25519Key(pretendKeyStartingWith(abPrefix));
-	static JKey neither = new JEd25519Key(pretendKeyStartingWith(cPrefix));
 
 	@Mock
 	Function<byte[], TransactionSignature> sigsFn;
-
 	@Mock
 	ScheduleStore store;
-
 	@Mock
 	InHandleActivationHelper activationHelper;
+	@Mock
+	MerkleSchedule schedule;
 
 	@Test
-	@Disabled
-	// WIP
 	void shouldSignAsExpected() throws DecoderException {
-		final ScheduleID schedule = IdUtils.asSchedule("1.2.3");
+		final ScheduleID id = IdUtils.asSchedule("1.2.3");
 		given(activationHelper.currentSigsFn()).willReturn(sigsFn);
 		given(activationHelper.areScheduledPartiesActive(any(), any())).willReturn(true);
 		given(sigsFn.apply(eq(a.getEd25519()))).willReturn(VALID_SIG);
+		given(store.get(id)).willReturn(schedule);
+		given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
 
-		var result = signingOutcome(List.of(a), sigMap, schedule, store, activationHelper);
 
-		assertEquals(ResponseCodeEnum.SUCCESS, result.getLeft());
+		var result = signingOutcome(List.of(a), sigMap, id, store, activationHelper);
+
+		assertEquals(ResponseCodeEnum.OK, result.getLeft());
 		assertTrue(result.getRight());
 
 	}
