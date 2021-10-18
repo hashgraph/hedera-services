@@ -23,7 +23,6 @@ package com.hedera.services.store.contracts;
  *
  */
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -74,8 +73,6 @@ class HederaWorldStateTest {
 	@Mock
 	private ServicesRepositoryRoot repositoryRoot;
 	@Mock
-	private GlobalDynamicProperties globalDynamicProperties;
-	@Mock
 	private ContractDetails contractDetails;
 
 	final long balance = 1_234L;
@@ -87,7 +84,7 @@ class HederaWorldStateTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new HederaWorldState(ids, ledger, repositoryRoot, globalDynamicProperties);
+		subject = new HederaWorldState(ids, ledger, repositoryRoot);
 	}
 
 	@Test

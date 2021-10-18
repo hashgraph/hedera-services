@@ -23,7 +23,10 @@ package com.hedera.services.contracts.persistence;
 import com.hedera.services.contracts.annotations.StorageSource;
 import com.hedera.services.state.merkle.MerkleContractStorageValue;
 import com.hedera.services.state.merkle.internals.ContractStorageKey;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.merkle.map.MerkleMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ethereum.datasource.Source;
 import org.ethereum.datasource.StoragePersistence;
 import org.ethereum.vm.DataWord;
@@ -37,6 +40,8 @@ import static com.hedera.services.utils.EntityIdUtils.contractParsedFromSolidity
 
 @Singleton
 public class BlobStoragePersistence implements StoragePersistence {
+	private static final Logger log = LogManager.getLogger(BlobStoragePersistence.class);
+
 	private final Map<byte[], byte[]> storage;
 	private final Supplier<MerkleMap<ContractStorageKey, MerkleContractStorageValue>> contractStorage;
 
@@ -84,8 +89,18 @@ public class BlobStoragePersistence implements StoragePersistence {
 			if (curContractStorage.containsKey(storageKey)) {
 				final var mutableLeaf = curContractStorage.getForModify(storageKey);
 				mutableLeaf.setValue(value.getData());
+				log.info(
+						"Updated slot {} for contract #{} to {}",
+						CommonUtils.hex(key.getData()),
+						contractNum,
+						CommonUtils.hex(value.getData()));
 			} else {
 				curContractStorage.put(storageKey, leafWith(value));
+				log.info(
+						"Created slot {} for contract #{} as {}",
+						CommonUtils.hex(key.getData()),
+						contractNum,
+						CommonUtils.hex(value.getData()));
 			}
 		}
 
