@@ -31,14 +31,19 @@ import java.util.function.IntFunction;
 import java.util.function.Supplier;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralArrayResult;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ADD_NTH_FIB_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CURRENT_FIB_SLOTS_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FIBONACCI_PLUS_CONSTRUCTOR_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FIBONACCI_PLUS_PATH;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getExecTime;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
@@ -61,7 +66,9 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 	private static final int SLOTS_PER_CALL = 12;
 	private static final int APPROX_NUM_CONTRACTS = 1000;
 	private static final int FIBONACCI_NUM_TO_USE = 12;
-	private static final long SECS_TO_RUN = 600;
+	private static final long SECS_TO_RUN = 10;
+	private static final long MS_TO_DRAIN_QUEUE = 1_000L;
+	private static final long GAS_TO_OFFER = 300_000L;
 
 	private static final String SUITE_PROPS_PREFIX = "fibplus_";
 
@@ -79,7 +86,7 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 	private final AtomicInteger numContracts = new AtomicInteger(APPROX_NUM_CONTRACTS);
 	private final AtomicInteger fibN = new AtomicInteger(FIBONACCI_NUM_TO_USE);
 	private final AtomicReference<BigInteger> fibNValue = new AtomicReference<>(null);
-	private final AtomicBoolean validateStorage = new AtomicBoolean(false);
+	private final AtomicBoolean validateStorage = new AtomicBoolean(true);
 
 	private final AtomicLong gasUsed = new AtomicLong(0);
 	private final AtomicInteger submittedOps = new AtomicInteger(0);
@@ -151,13 +158,30 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 						runWithProvider(contractOpsFactory())
 								.lasting(duration::get, unit::get)
 								.maxOpsPerSec(maxOpsPerSec::get),
-						sleepFor(30_000L),
+						sleepFor(MS_TO_DRAIN_QUEUE),
 						withOpContext((spec, opLog) -> logResults()),
-						sourcing(() -> validateStorage.get() ? noOp() : noOp())
+						sourcing(() -> validateStorage.get() ? doStorageValidation() : noOp())
 				);
 	}
 
-	private HapiSpecOperation
+	private HapiSpecOperation doStorageValidation() {
+		return withOpContext((spec, opLog) -> {
+			for (var contract : createdSoFar) {
+				final var expectedStorage = contractStorage.get(contract);
+				opLog.info(
+						"Expecting {} to have storage slots {}",
+						contract,
+						Arrays.toString(expectedStorage));
+				final var lookup = contractCallLocal(contract, CURRENT_FIB_SLOTS_ABI)
+						.payingWith(GENESIS)
+						.nodePayment(ONE_HBAR)
+						.gas(GAS_TO_OFFER)
+						.has(resultWith().resultThruAbi(CURRENT_FIB_SLOTS_ABI,
+								isLiteralArrayResult(expectedStorage)));
+				allRunFor(spec, lookup);
+			}
+		});
+	}
 
 	private Function<HapiApiSpec, OpProvider> contractOpsFactory() {
 		final String civilian = "civilian";
@@ -242,7 +266,7 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 					op = contractCall(choice, ADD_NTH_FIB_ABI, targets, fibN.get())
 							.noLogging()
 							.payingWith(civilian)
-							.gas(300_000L)
+							.gas(GAS_TO_OFFER)
 							.exposingGasTo((code, gas) -> {
 								log.info("(Tried to) call {} (targets = {}, fibN = {}) with {} gas --> {}",
 										choice, targetsDesc, fibN.get(), gas, code);
@@ -265,7 +289,7 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 							.bytecode(bytecode)
 							.payingWith(civilian)
 							.balance(0L)
-							.gas(300_000L)
+							.gas(GAS_TO_OFFER)
 							.exposingGasTo((code, gas) -> {
 								if (code == SUCCESS) {
 									createdSoFar.add(choice);

@@ -131,6 +131,10 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 		return ignore -> actualObjs -> matchErrors(objs, actualObjs);
 	}
 
+	public static Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> isLiteralArrayResult(Object[] objs) {
+		return ignore -> actualObjs -> matchErrors(objs, (Object[]) actualObjs[0]);
+	}
+
 	private static Optional<Throwable> matchErrors(Object[] expected, Object[] actual) {
 		try {
 			for (int i = 0; i < Math.max(expected.length, actual.length); i++) {

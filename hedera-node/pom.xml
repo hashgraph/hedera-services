@@ -322,9 +322,9 @@
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
-      <id>proto-staging</id>
-      <name>Staging repo for protobufs</name>
-      <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1363</url>
+      <id>ethj-staging</id>
+      <name>Staging repo for ethereumj</name>
+      <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1372</url>
     </repository>
     <repository>
       <snapshots>
