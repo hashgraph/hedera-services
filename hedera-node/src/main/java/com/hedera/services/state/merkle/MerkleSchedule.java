@@ -60,7 +60,6 @@ import static java.util.stream.Collectors.toList;
 public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNum> {
 	static final int PRE_RELEASE_0180_VERSION = 1;
 	static final int RELEASE_0180_VERSION = 2;
-//	static final int RELEASE_020_VERSION = 3;
 
 	static final int CURRENT_VERSION = RELEASE_0180_VERSION;
 
@@ -435,7 +434,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 				}
 			}
 			mergeWithIdenticalSchedule = creationOp.getMergeWithIdenticalSchedule();
-			scheduledTxn = parentTxn.getScheduleCreate().getScheduledTransactionBody();
+			scheduledTxn = creationOp.getScheduledTransactionBody();
 			schedulingAccount = EntityId.fromGrpcAccountId(parentTxn.getTransactionID().getAccountID());
 			ordinaryScheduledTxn = MiscUtils.asOrdinary(scheduledTxn);
 			schedulingTXValidStart = RichInstant.fromGrpc(parentTxn.getTransactionID().getTransactionValidStart());

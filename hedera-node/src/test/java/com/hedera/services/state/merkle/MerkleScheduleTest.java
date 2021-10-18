@@ -253,6 +253,7 @@ public class MerkleScheduleTest {
 		subject.witnessValidEd25519Signature(fpk);
 		subject.witnessValidEd25519Signature(spk);
 		subject.markExecuted(resolutionTime);
+		subject.setMergeWithIdenticalSchedule(mergeWithIdenticalSchedule);
 		given(fin.readLong()).willReturn(subject.expiry());
 		given(fin.readInt()).willReturn(2).willReturn(number);
 		given(fin.readByteArray(Integer.MAX_VALUE)).willReturn(bodyBytes);
@@ -272,7 +273,7 @@ public class MerkleScheduleTest {
 		assertTrue(read.signatories().contains(spk));
 		assertTrue(read.isExecuted());
 		assertFalse(read.isDeleted());
-		assertFalse(read.isMergeWithIdenticalSchedule());
+		assertEquals(subject.isMergeWithIdenticalSchedule(), read.isMergeWithIdenticalSchedule());
 		assertEquals(grpcResolutionTime, read.executionTime());
 		assertEquals(subject.ordinaryViewOfScheduledTxn(), read.ordinaryViewOfScheduledTxn());
 		assertEquals(EntityNum.fromInt(number), read.getKey());

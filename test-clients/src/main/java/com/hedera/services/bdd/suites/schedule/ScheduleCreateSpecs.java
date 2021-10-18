@@ -374,32 +374,25 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec addsSignatureToTheExistingIdenticalSchedule() {
-		final var keyA = "firstPayerKey";
-		final var keyB = "secondPayerKey";
-		final var firstPayer = "firstPayer";
-		final var secondPayer = "secondPayer";
 		return defaultHapiSpec("addsSignatureToTheExistingIdenticalSchedule")
 				.given(
-						cryptoCreate("sender").balance(1L),
-						newKeyNamed(keyA),
-						cryptoCreate(firstPayer).key(keyA),
-						scheduleCreate("original",
-								cryptoTransfer(tinyBarsFromTo("sender", FUNDING, 1))
-										.fee(ONE_HBAR))
-								.designatingPayer(firstPayer)
-								.payingWith(firstPayer)
-								.mergeWithIdenticalSchedule()
-								.savingExpectedScheduledTxnId()
+						cryptoCreate("sender").balance(ONE_HUNDRED_HBARS),
+						cryptoCreate("receiver").balance(ONE_HUNDRED_HBARS).receiverSigRequired(true)
 				).when(
-						newKeyNamed(keyB),
-						cryptoCreate(secondPayer).key(keyB)
+						scheduleCreate("original",
+								cryptoTransfer(tinyBarsFromTo("sender", "receiver", 25 * ONE_HBAR))
+										.fee(ONE_HBAR))
+								.mergeWithIdenticalSchedule()
+								.designatingPayer("sender")
+								.payingWith("sender")
+								.savingExpectedScheduledTxnId()
 				).then(
 						scheduleCreate("duplicate",
-								cryptoTransfer(tinyBarsFromTo("sender", FUNDING, 1))
+								cryptoTransfer(tinyBarsFromTo("sender", "receiver", 25 * ONE_HBAR))
 										.fee(ONE_HBAR))
-								.payingWith(secondPayer)
-								.designatingPayer(firstPayer)
 								.mergeWithIdenticalSchedule()
+								.payingWith("receiver")
+								.designatingPayer("sender")
 								.via("copycat")
 								.hasKnownStatus(SUCCESS),
 						getTxnRecord("copycat").logged(),
@@ -407,7 +400,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 								.hasSchedule("original")
 								.hasScheduledTxnId("original"),
 						getScheduleInfo("original")
-								.hasSignatories("firstPayer", "secondPayer")
+								.hasSignatories("sender", "receiver")
 				);
 	}
 
