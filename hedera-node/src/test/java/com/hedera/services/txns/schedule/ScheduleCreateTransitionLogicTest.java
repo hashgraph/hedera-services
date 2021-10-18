@@ -231,8 +231,71 @@ class ScheduleCreateTransitionLogicTest {
 	}
 
 	@Test
+	void addsSignatureToExistingScheduleIfMergeWithIdenticalScheduleSetTrueWIthMissingPayer() {
+		givenValidTxnCtx();
+		final var scheduleCreate = ScheduleCreateTransactionBody.newBuilder()
+				.setAdminKey(key)
+				.setMemo(entityMemo)
+				.setScheduledTransactionBody(
+						SchedulableTransactionBody.newBuilder().setMemo(innerMemo));
+		scheduleCreate.setAdminKey(ImmutableKeyUtils.IMMUTABILITY_SENTINEL_KEY);
+
+		final var builder = TransactionBody.newBuilder();
+		builder.setTransactionID(txnId);
+		builder.setScheduleCreate(scheduleCreate);
+		scheduleCreateTxn = builder.build();
+		given(accessor.getTxn()).willReturn(scheduleCreateTxn);
+		given(accessor.getPayer()).willReturn(payer);
+
+		given(merkleSchedule.scheduledTransactionId()).willReturn(scheduledTxnId);
+		given(merkleSchedule.isMergeWithIdenticalSchedule()).willReturn(true);
+		given(merkleSchedule.payer()).willReturn(payerId);
+		given(store.lookupSchedule(bodyBytes)).willReturn(Pair.of(schedule, merkleSchedule));
+
+		subject.doStateTransition();
+
+		verify(store, never()).createProvisionally(any(), any());
+		verify(store, never()).commitCreation();
+		verify(txnCtx, never()).addExpiringEntities(any());
+		verify(txnCtx).setStatus(SUCCESS);
+		verify(txnCtx).setCreated(schedule);
+		verify(txnCtx).setScheduledTxnId(scheduledTxnId);
+	}
+
+	@Test
 	void rejectsRecreationIfPayersNotSame() {
 		givenValidTxnCtx();
+		given(merkleSchedule.scheduledTransactionId()).willReturn(scheduledTxnId);
+		given(merkleSchedule.isMergeWithIdenticalSchedule()).willReturn(true);
+		given(merkleSchedule.payer()).willReturn(anotherPayerId);
+		given(store.lookupSchedule(bodyBytes)).willReturn(Pair.of(schedule, merkleSchedule));
+
+		subject.doStateTransition();
+
+		verify(store, never()).createProvisionally(any(), any());
+		verify(store, never()).commitCreation();
+		verify(txnCtx, never()).addExpiringEntities(any());
+		verify(txnCtx).setStatus(IDENTICAL_SCHEDULE_ALREADY_EXISTS_WITH_DIFFERENT_PAYER);
+		verify(txnCtx).setCreated(schedule);
+		verify(txnCtx).setScheduledTxnId(scheduledTxnId);
+	}
+
+	@Test
+	void rejectsRecreationIfPayersNotSameWithMissingPayer() {
+		givenValidTxnCtx();
+		final var scheduleCreate = ScheduleCreateTransactionBody.newBuilder()
+				.setAdminKey(key)
+				.setMemo(entityMemo)
+				.setScheduledTransactionBody(
+						SchedulableTransactionBody.newBuilder().setMemo(innerMemo));
+		scheduleCreate.setAdminKey(ImmutableKeyUtils.IMMUTABILITY_SENTINEL_KEY);
+
+		final var builder = TransactionBody.newBuilder();
+		builder.setTransactionID(txnId);
+		builder.setScheduleCreate(scheduleCreate);
+		scheduleCreateTxn = builder.build();
+		given(accessor.getTxn()).willReturn(scheduleCreateTxn);
+
 		given(merkleSchedule.scheduledTransactionId()).willReturn(scheduledTxnId);
 		given(merkleSchedule.isMergeWithIdenticalSchedule()).willReturn(true);
 		given(merkleSchedule.payer()).willReturn(anotherPayerId);

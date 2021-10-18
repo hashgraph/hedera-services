@@ -177,7 +177,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 			return schedule.payer().toGrpcAccountId().equals(
 					txnCtx.accessor().getTxn().getScheduleCreate().getPayerAccountID());
 		} else {
-			return schedule.payer().toGrpcAccountId() == txnCtx.accessor().getPayer();
+			return schedule.payer().toGrpcAccountId().equals(txnCtx.accessor().getPayer());
 		}
 	}
 
