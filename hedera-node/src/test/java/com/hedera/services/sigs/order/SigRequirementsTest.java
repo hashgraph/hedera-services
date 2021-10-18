@@ -87,6 +87,7 @@ import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenario
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.TOKEN_SUPPLY_KT;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.TOKEN_TREASURY_KT;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.TOKEN_WIPE_KT;
+import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.TOKEN_PAUSE_KT;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.UPDATE_TOPIC_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.ConsensusUpdateTopicScenarios.CONSENSUS_UPDATE_TOPIC_EXPIRY_ONLY_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusUpdateTopicScenarios.CONSENSUS_UPDATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO;
@@ -207,7 +208,9 @@ import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.REVOKE
 import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.REVOKE_WITH_MISSING_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.VALID_REVOKE_WITH_EXTANT_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenMintScenarios.MINT_WITH_SUPPLY_KEYED_TOKEN;
+import static com.hedera.test.factories.scenarios.TokenPauseScenarios.VALID_PAUSE_WITH_EXTANT_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenUnfreezeScenarios.VALID_UNFREEZE_WITH_EXTANT_TOKEN;
+import static com.hedera.test.factories.scenarios.TokenUnpauseScenarios.VALID_UNPAUSE_WITH_EXTANT_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.TOKEN_UPDATE_WITH_MISSING_AUTO_RENEW_ACCOUNT;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.TOKEN_UPDATE_WITH_NEW_AUTO_RENEW_ACCOUNT;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_REPLACING_ADMIN_KEY;
@@ -1782,6 +1785,28 @@ class SigRequirementsTest {
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
+	}
+
+	@Test
+	void getsTokenPauseWithExtantPausable() throws Throwable {
+		setupFor(VALID_PAUSE_WITH_EXTANT_TOKEN);
+
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_PAUSE_KT.asKey()));
+	}
+
+	@Test
+	void getsTokenUnpauseWithExtantPausable() throws Throwable {
+		setupFor(VALID_UNPAUSE_WITH_EXTANT_TOKEN);
+
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_PAUSE_KT.asKey()));
 	}
 
 	@Test

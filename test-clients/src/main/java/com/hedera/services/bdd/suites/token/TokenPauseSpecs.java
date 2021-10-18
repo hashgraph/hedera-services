@@ -57,6 +57,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hederahashgraph.api.proto.java.TokenPauseStatus.Paused;
@@ -81,6 +82,7 @@ public class TokenPauseSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
+				cannotPauseWithInvlaidPauseKey(),
 				cannotChangePauseStatusIfMissingPauseKey(),
 				pausedFungibleTokenCannotBeUsed(),
 				pausedNonFungibleUniqueCannotBeUsed(),
@@ -88,6 +90,26 @@ public class TokenPauseSpecs extends HapiApiSuite {
 				basePauseAndUnpauseHaveExpectedPrices(),
 				pausedTokenInCustomFeeCaseStudy()
 		});
+	}
+
+	private HapiApiSpec cannotPauseWithInvlaidPauseKey() {
+		String pauseKey = "pauseKey";
+		String otherKey = "otherKey";
+		String token = "primary";
+		return defaultHapiSpec("CannotPauseWithInvlaidPauseKey")
+				.given(
+						newKeyNamed(pauseKey),
+						newKeyNamed(otherKey)
+				)
+				.when(
+						tokenCreate(token)
+								.pauseKey(pauseKey)
+				)
+				.then(
+						tokenPause(token)
+								.signedBy(otherKey)
+								.hasPrecheck(INVALID_SIGNATURE)
+				);
 	}
 
 	private HapiApiSpec pausedTokenInCustomFeeCaseStudy() {
