@@ -82,7 +82,7 @@ public class TokenPauseSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				cannotPauseWithInvlaidPauseKey(),
+				cannotPauseWithInvalidPauseKey(),
 				cannotChangePauseStatusIfMissingPauseKey(),
 				pausedFungibleTokenCannotBeUsed(),
 				pausedNonFungibleUniqueCannotBeUsed(),
@@ -92,7 +92,7 @@ public class TokenPauseSpecs extends HapiApiSuite {
 		});
 	}
 
-	private HapiApiSpec cannotPauseWithInvlaidPauseKey() {
+	private HapiApiSpec cannotPauseWithInvalidPauseKey() {
 		String pauseKey = "pauseKey";
 		String otherKey = "otherKey";
 		String token = "primary";
