@@ -28,7 +28,6 @@ import static com.hedera.services.txns.schedule.SigMapScheduleClassifierTest.pre
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -57,7 +56,7 @@ class ScheduleSignHelperTest {
 		final ScheduleID id = IdUtils.asSchedule("1.2.3");
 		given(activationHelper.currentSigsFn()).willReturn(sigsFn);
 		given(activationHelper.areScheduledPartiesActive(any(), any())).willReturn(true);
-		given(sigsFn.apply(eq(a.getEd25519()))).willReturn(VALID_SIG);
+		given(sigsFn.apply(a.getEd25519())).willReturn(VALID_SIG);
 		given(store.get(id)).willReturn(schedule);
 		given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
 
