@@ -466,7 +466,7 @@ class ServicesStateTest {
 		given(platform.getSelfId()).willReturn(selfId);
 
 		// when:
-		subject.genesisInit(platform, addressBook);
+		subject.genesisInit(platform, addressBook, dualState);
 
 		// then:
 		assertFalse(subject.isImmutable());

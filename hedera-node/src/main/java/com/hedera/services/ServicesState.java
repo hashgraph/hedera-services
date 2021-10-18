@@ -22,6 +22,9 @@ package com.hedera.services;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.BootstrapProperties;
+import com.hedera.services.contracts.virtual.ContractKey;
+import com.hedera.services.contracts.virtual.ContractKeySerializer;
+import com.hedera.services.contracts.virtual.ContractValue;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
@@ -59,11 +62,19 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.fchashmap.FCOneToManyRelation;
+import com.swirlds.jasperdb.VirtualDataSourceJasperDB;
+import com.swirlds.jasperdb.VirtualInternalRecordSerializer;
+import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
 import com.swirlds.merkle.map.FCMapMigration;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -74,8 +85,8 @@ import java.util.function.Supplier;
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
 import static com.hedera.services.state.migration.Release0170Migration.moveLargeFcmsToBinaryRoutePositions;
-import static com.hedera.services.utils.EntityNumPair.fromLongs;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
+import static com.hedera.services.utils.EntityNumPair.fromLongs;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
 /**
@@ -135,6 +146,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			return StateChildIndices.NUM_PRE_0160_CHILDREN;
 		} else if (version <= StateVersions.RELEASE_0180_VERSION) {
 			return StateChildIndices.NUM_POST_0160_CHILDREN;
+		} else if (version <= StateVersions.RELEASE_0200_VERSION) {
+			return StateChildIndices.NUM_POST_0200_CHILDREN;
 		} else {
 			throw new IllegalArgumentException("Argument 'version='" + version + "' is invalid!");
 		}
@@ -233,7 +246,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	/* --- SwirldState --- */
-	@Override
+//	@Override
 	public void init(Platform platform, AddressBook addressBook) {
 		if (deserializedVersion < StateVersions.RELEASE_0180_VERSION && platform != platformForDeferredInit) {
 			/* Due to design issues with the BinaryObjectStore, which will not be finished
@@ -252,8 +265,12 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		internalInit(platform, new BootstrapProperties());
 	}
 
+	public void init(Platform platform, AddressBook addressBook, SwirldDualState dualState) {
+		init(platform, addressBook);
+	}
+
 	@Override
-	public void genesisInit(Platform platform, AddressBook addressBook) {
+	public void genesisInit(Platform platform, AddressBook addressBook, SwirldDualState dualState) {
 		log.info("Init called on Services node {} WITHOUT Merkle saved state", platform.getSelfId());
 
 		/* Create the top-level children in the Merkle tree */
@@ -404,6 +421,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return metadata.getUniqueTreasuryOwnershipAssociations();
 	}
 
+	public VirtualMap<ContractKey, ContractValue> contractStorage() {
+		return getChild(StateChildIndices.CONTRACT_STORAGE);
+	}
+
 	private void internalInit(Platform platform, BootstrapProperties bootstrapProps) {
 		networkCtx().setStateVersion(StateVersions.CURRENT_VERSION);
 		diskFs().checkHashesAgainstDiskContents();
@@ -454,6 +475,35 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		setChild(StateChildIndices.SCHEDULE_TXS, new MerkleMap<>());
 		setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, genesisRunningHashLeaf());
 		setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
+
+		final ContractKeySerializer keySerializer = new ContractKeySerializer();
+		try {
+
+			final var leafRecordSerializer = new VirtualLeafRecordSerializer<>(
+					1,
+					DigestType.SHA_384,
+					1,
+					keySerializer.getSerializedSize(),
+					ContractKey::new,
+					1,
+					32,
+					ContractValue::new,
+					true);
+			final VirtualDataSource<ContractKey, ContractValue> ds =
+					new VirtualDataSourceJasperDB<>(
+							leafRecordSerializer,
+							new VirtualInternalRecordSerializer(),
+							keySerializer,
+							Path.of("data/jasperdb"),
+							50_000_000,
+							true,
+							0,
+							false
+					);
+			setChild(StateChildIndices.CONTRACT_STORAGE, new VirtualMap<>(ds));
+		} catch (IOException ioe) {
+			throw new UncheckedIOException(ioe);
+		}
 	}
 
 	private RecordsRunningHashLeaf genesisRunningHashLeaf() {
