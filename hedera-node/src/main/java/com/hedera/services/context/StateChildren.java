@@ -22,6 +22,7 @@ package com.hedera.services.context;
 
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlob;
+import com.hedera.services.state.merkle.MerkleContractStorageValue;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -30,6 +31,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.internals.BlobKey;
+import com.hedera.services.state.merkle.internals.ContractStorageKey;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
@@ -52,6 +54,7 @@ public class StateChildren {
 	private MerkleMap<EntityNum, MerkleSchedule> schedules;
 	private MerkleMap<BlobKey, MerkleBlob> storage;
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
+	private MerkleMap<ContractStorageKey, MerkleContractStorageValue> contractStorage;
 	private FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations;
 	private FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations;
 	private FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations;
@@ -59,6 +62,14 @@ public class StateChildren {
 	private AddressBook addressBook;
 	private MerkleDiskFs diskFs;
 	private RecordsRunningHashLeaf runningHashLeaf;
+
+	public MerkleMap<ContractStorageKey, MerkleContractStorageValue> getContractStorage() {
+		return contractStorage;
+	}
+
+	public void setContractStorage(MerkleMap<ContractStorageKey, MerkleContractStorageValue> contractStorage) {
+		this.contractStorage = contractStorage;
+	}
 
 	public MerkleMap<EntityNum, MerkleAccount> getAccounts() {
 		Objects.requireNonNull(accounts);

@@ -48,6 +48,7 @@ import com.hedera.services.state.logic.HandleLogicModule;
 import com.hedera.services.state.logic.ReconnectListener;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlob;
+import com.hedera.services.state.merkle.MerkleContractStorageValue;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -56,6 +57,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.internals.BlobKey;
+import com.hedera.services.state.merkle.internals.ContractStorageKey;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.validation.BasedLedgerValidator;
@@ -334,6 +336,14 @@ public abstract class StateModule {
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::addressBook;
+	}
+
+	@Provides
+	@Singleton
+	public static Supplier<MerkleMap<ContractStorageKey, MerkleContractStorageValue>> provideContractStorage(
+			@WorkingState StateAccessor accessor
+	) {
+		return accessor::contractStorage;
 	}
 
 	@Provides

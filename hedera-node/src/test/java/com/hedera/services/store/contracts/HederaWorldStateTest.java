@@ -24,7 +24,6 @@ package com.hedera.services.store.contracts;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -93,13 +92,9 @@ class HederaWorldStateTest {
 
 	@Test
 	void persist() {
-		given(globalDynamicProperties.maxContractStorageKb()).willReturn(1);
-		given(repositoryRoot.flushStorageCacheIfTotalSizeLessThan(1)).willReturn(true);
-
 		/* default empty persist */
 		var persistResult = subject.persist();
 		assertEquals(0, persistResult.size());
-		verify(repositoryRoot).flushStorageCacheIfTotalSizeLessThan(1);
 		verify(repositoryRoot).flush();
 	}
 
@@ -344,8 +339,6 @@ class HederaWorldStateTest {
 		final var contractBytes = contract.asEvmAddress().toArray();
 		given(repositoryRoot.isExist(contractBytes)).willReturn(false);
 		given(repositoryRoot.getBalance(contractBytes)).willReturn(BigInteger.ZERO);
-		given(repositoryRoot.flushStorageCacheIfTotalSizeLessThan(1)).willReturn(true);
-		given(globalDynamicProperties.maxContractStorageKb()).willReturn(1);
 
 		// when:
 		actualSubject.commit();
@@ -361,19 +354,5 @@ class HederaWorldStateTest {
 		// and:
 		assertEquals(1, result.size());
 		assertEquals(contract.asGrpcContract(), result.get(0));
-	}
-
-	@Test
-	void persistFailsOnMaxStorageSize() {
-		given(globalDynamicProperties.maxContractStorageKb()).willReturn(1);
-		given(repositoryRoot.flushStorageCacheIfTotalSizeLessThan(1)).willReturn(false);
-
-		assertThrows(
-				InvalidTransactionException.class,
-				() -> subject.persist()
-		);
-		verify(repositoryRoot).flushStorageCacheIfTotalSizeLessThan(1);
-		verify(repositoryRoot).emptyStorageCache();
-		verify(repositoryRoot).flush();
 	}
 }

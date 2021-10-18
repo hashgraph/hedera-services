@@ -35,6 +35,7 @@ public final class StateChildIndices {
 	public static final int SCHEDULE_TXS = 8;
 	public static final int RECORD_STREAM_RUNNING_HASH = 9;
 	public static final int ADDRESS_BOOK = 10;
+	public static final int CONTRACT_STORAGE = 11;
 
 	public static final int NUM_PRE_0160_CHILDREN = 10;
 	public static final int NUM_PRE_TWENTY_CHILDREN = 11;

@@ -23,6 +23,7 @@ package com.hedera.services.state;
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlob;
+import com.hedera.services.state.merkle.MerkleContractStorageValue;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -31,6 +32,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.internals.BlobKey;
+import com.hedera.services.state.merkle.internals.ContractStorageKey;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
@@ -63,6 +65,8 @@ class StateAccessorTest {
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
 	@Mock
 	private MerkleMap<EntityNum, MerkleSchedule> scheduleTxs;
+	@Mock
+	private MerkleMap<ContractStorageKey, MerkleContractStorageValue> contractStorage;
 	@Mock
 	private MerkleNetworkContext networkCtx;
 	@Mock
@@ -103,6 +107,7 @@ class StateAccessorTest {
 		given(state.uniqueOwnershipAssociations()).willReturn(uniqueOwnershipAssociations);
 		given(state.uniqueTreasuryOwnershipAssociations()).willReturn(uniqueTreasuryOwnershipAssociations);
 		given(state.runningHashLeaf()).willReturn(runningHashLeaf);
+		given(state.contractStorage()).willReturn(contractStorage);
 
 		// when:
 		subject.updateFrom(state);
@@ -122,6 +127,7 @@ class StateAccessorTest {
 		assertSame(uniqueOwnershipAssociations, subject.uniqueOwnershipAssociations());
 		assertSame(uniqueTreasuryOwnershipAssociations, subject.uniqueOwnershipTreasuryAssociations());
 		assertSame(runningHashLeaf, subject.runningHashLeaf());
+		assertSame(contractStorage, subject.contractStorage());
 	}
 
 	@Test

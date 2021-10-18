@@ -25,6 +25,7 @@ import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlob;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
+import com.hedera.services.state.merkle.MerkleContractStorageValue;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -37,6 +38,7 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.merkle.internals.BlobKey;
+import com.hedera.services.state.merkle.internals.ContractStorageKey;
 import com.hedera.services.state.migration.LegacyStateChildIndices;
 import com.hedera.services.state.migration.ReleaseTwentyMigration;
 import com.hedera.services.state.migration.StateChildIndices;
@@ -405,6 +407,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return getChild(StateChildIndices.UNIQUE_TOKENS);
 	}
 
+	public MerkleMap<ContractStorageKey, MerkleContractStorageValue> contractStorage() {
+		return getChild(StateChildIndices.CONTRACT_STORAGE);
+	}
+
 	public FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations() {
 		return metadata.getUniqueTokenAssociations();
 	}
@@ -467,6 +473,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		setChild(StateChildIndices.SCHEDULE_TXS, new MerkleMap<>());
 		setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, genesisRunningHashLeaf());
 		setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
+		setChild(StateChildIndices.CONTRACT_STORAGE, new MerkleMap<>());
 	}
 
 	private RecordsRunningHashLeaf genesisRunningHashLeaf() {

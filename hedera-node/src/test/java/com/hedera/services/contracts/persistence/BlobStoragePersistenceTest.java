@@ -20,33 +20,51 @@ package com.hedera.services.contracts.persistence;
  * ‍
  */
 
+import com.hedera.services.state.merkle.MerkleContractStorageValue;
+import com.hedera.services.state.merkle.internals.ContractStorageKey;
 import com.hedera.services.utils.EntityIdUtils;
+import com.swirlds.merkle.map.MerkleMap;
+import org.ethereum.vm.DataWord;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.mock;
 
+@ExtendWith(MockitoExtension.class)
 class BlobStoragePersistenceTest {
-	byte[] address = EntityIdUtils.asSolidityAddress(0, 0, 13257);
-	byte[] addressStorage = "STUFF".getBytes();
+	final long contractNum = 75231L;
+	final byte[] key = "01234567890123456789012345678901".getBytes(StandardCharsets.UTF_8);
+	final byte[] expectedValue = "012c45f789012c45f789012c45f78901".getBytes(StandardCharsets.UTF_8);
 
-	Map<byte[], byte[]> storage;
+	private final byte[] address = EntityIdUtils.asSolidityAddress(0, 0, 75231L);
+	private final byte[] addressStorage = "STUFF".getBytes();
+
+	@Mock
+	private Map<byte[], byte[]> storage;
+	@Mock
+	private MerkleMap<ContractStorageKey, MerkleContractStorageValue> contractStorage;
 
 	BlobStoragePersistence subject;
 
 	@BeforeEach
 	private void setup() {
-		storage = mock(Map.class);
-
-		subject = new BlobStoragePersistence(storage);
+		subject = new BlobStoragePersistence(storage, () -> contractStorage);
 	}
 
 	@Test
@@ -77,5 +95,61 @@ class BlobStoragePersistenceTest {
 
 		// then:
 		assertArrayEquals(addressStorage, actual);
+	}
+
+	@Test
+	void sourceDelegatesGetAsExpected() {
+		final var mapKey = new ContractStorageKey(contractNum, key);
+		final var mapValue = new MerkleContractStorageValue(expectedValue);
+
+		given(contractStorage.get(mapKey)).willReturn(mapValue);
+		final var source = subject.scopedStorageFor(address);
+		final var actualValue = source.get(DataWord.of(key));
+		assertArrayEquals(expectedValue, actualValue.getData());
+
+		Assertions.assertNull(source.get(DataWord.ZERO));
+	}
+
+	@Test
+	void sourceDelegatesPutAsExpectedWithNoExtantMapping() {
+		final var source = subject.scopedStorageFor(address);
+
+		/* Without an existing leaf, creates a new one */
+		final var captor = ArgumentCaptor.forClass(MerkleContractStorageValue.class);
+		final var oneMapKey = new ContractStorageKey(contractNum, DataWord.ONE.getData());
+		source.put(DataWord.ONE, DataWord.ONE);
+		verify(contractStorage).put(eq(oneMapKey), captor.capture());
+		assertArrayEquals(DataWord.ONE.getData(), captor.getValue().getValue());
+	}
+
+	@Test
+	void sourceDelegatesPutToG4mWithExtantMapping() {
+		final var mapKey = new ContractStorageKey(contractNum, key);
+		final var mapValue = mock(MerkleContractStorageValue.class);
+		given(contractStorage.containsKey(mapKey)).willReturn(true);
+		given(contractStorage.getForModify(mapKey)).willReturn(mapValue);
+
+		final var source = subject.scopedStorageFor(address);
+
+		/* Without an existing leaf, creates a new one */
+		source.put(DataWord.of(key), DataWord.of(expectedValue));
+		verify(mapValue).setValue(expectedValue);
+	}
+
+	@Test
+	void sourceDelegatesDeleteToRemove() {
+		final var mapKey = new ContractStorageKey(contractNum, key);
+
+		final var source = subject.scopedStorageFor(address);
+
+		source.delete(DataWord.of(key));
+		verify(contractStorage).remove(mapKey);
+	}
+
+	@Test
+	void sourceDoesntFlush() {
+		final var source = subject.scopedStorageFor(address);
+
+		assertFalse(source.flush());
 	}
 }

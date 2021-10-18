@@ -506,6 +506,7 @@ class ServicesStateTest {
 		assertNotNull(subject.scheduleTxs());
 		assertNotNull(subject.networkCtx());
 		assertNotNull(subject.runningHashLeaf());
+		assertNotNull(subject.contractStorage());
 		assertNull(subject.networkCtx().consensusTimeOfLastHandledTxn());
 		assertEquals(StateVersions.CURRENT_VERSION, subject.networkCtx().getStateVersion());
 		assertEquals(1001L, subject.networkCtx().seqNo().current());
