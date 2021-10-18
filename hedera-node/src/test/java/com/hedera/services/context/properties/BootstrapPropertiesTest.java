@@ -189,7 +189,7 @@ class BootstrapPropertiesTest {
 			entry("tokens.nfts.maxMetadataBytes", 100),
 			entry("tokens.nfts.maxAllowedMints", 5000000L),
 			entry("tokens.nfts.mintThrottleScaleFactor", ThrottleReqOpsScaleFactor.from("5:2")),
-			entry("upgrade.artifacts.path", "/opt/hgcapp/HapiApp2.0/data/upgrade/current")
+			entry("upgrade.artifacts.path", "/opt/hgcapp/services-hedera/HapiApp2.0/data/upgrade/current")
 	);
 
 	@Test
