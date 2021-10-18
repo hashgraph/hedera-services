@@ -56,7 +56,8 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 	 * So we get the type from the character code at index 3, and parse the entity number
 	 * starting at index 4, to get the appropriate {@link BlobKey}.
 	 *
-	 * @param path a string with one of the five forms above
+	 * @param path
+	 * 		a string with one of the five forms above
 	 * @return a fixed-size map key with equivalent meaning
 	 */
 	BlobKey at(Object path) {
@@ -97,7 +98,7 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 	 * 		the path of the blob
 	 * @param value
 	 * 		the contents to be set
-	 * @return {@code null}
+	 * @return null, no matter if the path already had an associated value
 	 */
 	@Override
 	public byte[] put(String path, byte[] value) {
@@ -152,7 +153,7 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 	 *
 	 * @param key
 	 * 		given blob key
-	 * @return
+	 * @return the entity number from the path
 	 */
 	public static long getEntityNumFromPath(final String key) {
 		return parseLong(key.substring(LEGACY_BLOB_CODE_INDEX + 1));
