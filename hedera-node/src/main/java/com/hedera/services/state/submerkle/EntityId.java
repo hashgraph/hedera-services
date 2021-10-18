@@ -173,42 +173,42 @@ public class EntityId implements SelfSerializable {
 	/* --- Helpers --- */
 	public static EntityId fromGrpcAccountId(AccountID id) {
 		if (id == null) {
-			throw new IllegalArgumentException("Given account id was null!");
+			return MISSING_ENTITY_ID;
 		}
 		return new EntityId(id.getShardNum(), id.getRealmNum(), id.getAccountNum());
 	}
 
 	public static EntityId fromGrpcFileId(FileID id) {
 		if (id == null) {
-			throw new IllegalArgumentException("Given file id was null!");
+			return MISSING_ENTITY_ID;
 		}
 		return new EntityId(id.getShardNum(), id.getRealmNum(), id.getFileNum());
 	}
 
 	public static EntityId fromGrpcTopicId(TopicID id) {
 		if (id == null) {
-			throw new IllegalArgumentException("Given topic id was null!");
+			return MISSING_ENTITY_ID;
 		}
 		return new EntityId(id.getShardNum(), id.getRealmNum(), id.getTopicNum());
 	}
 
 	public static EntityId fromGrpcTokenId(TokenID id) {
 		if (id == null) {
-			throw new IllegalArgumentException("Given token id was null!");
+			return MISSING_ENTITY_ID;
 		}
 		return new EntityId(id.getShardNum(), id.getRealmNum(), id.getTokenNum());
 	}
 
 	public static EntityId fromGrpcScheduleId(ScheduleID id) {
 		if (id == null) {
-			throw new IllegalArgumentException("Given schedule id was null!");
+			return MISSING_ENTITY_ID;
 		}
 		return new EntityId(id.getShardNum(), id.getRealmNum(), id.getScheduleNum());
 	}
 
 	public static EntityId fromGrpcContractId(ContractID id) {
 		if (id == null) {
-			throw new IllegalArgumentException("Given contract id was null!");
+			return MISSING_ENTITY_ID;
 		}
 		return new EntityId(id.getShardNum(), id.getRealmNum(), id.getContractNum());
 	}

@@ -22,9 +22,9 @@ package com.hedera.services.utils;
 
 import com.hedera.services.store.models.Id;
 import com.hedera.test.utils.IdUtils;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -52,17 +52,14 @@ class EntityNumTest {
 	}
 
 	@Test
-	void throwsOnUnusableNum() {
-		// expect:
-		Assertions.assertThrows(IllegalArgumentException.class, () -> EntityNum.fromLong(Long.MAX_VALUE));
+	void returnsMissingNumForUnusableNum() {
+		assertEquals(MISSING_NUM, EntityNum.fromLong(Long.MAX_VALUE));
 	}
 
 	@Test
 	void factoriesWorkForValidShardRealm() {
-		// setup:
 		final var expected = EntityNum.fromInt(123);
 
-		// expect:
 		assertEquals(expected, EntityNum.fromLong(123L));
 		assertEquals(expected, EntityNum.fromAccountId(IdUtils.asAccount("0.0.123")));
 		assertEquals(expected, EntityNum.fromTokenId(IdUtils.asToken("0.0.123")));
@@ -74,10 +71,8 @@ class EntityNumTest {
 
 	@Test
 	void factoriesWorkForInvalidShard() {
-		// setup:
-		final var expectedVal = EntityNum.MISSING_NUM;
+		final var expectedVal = MISSING_NUM;
 
-		// expect:
 		assertEquals(expectedVal, EntityNum.fromAccountId(IdUtils.asAccount("1.0.123")));
 		assertEquals(expectedVal, EntityNum.fromTokenId(IdUtils.asToken("1.0.123")));
 		assertEquals(expectedVal, EntityNum.fromScheduleId(IdUtils.asSchedule("1.0.123")));
@@ -88,10 +83,8 @@ class EntityNumTest {
 
 	@Test
 	void factoriesWorkForInvalidRealm() {
-		// setup:
-		final var expectedVal = EntityNum.MISSING_NUM;
+		final var expectedVal = MISSING_NUM;
 
-		// expect:
 		assertEquals(expectedVal, EntityNum.fromAccountId(IdUtils.asAccount("0.1.123")));
 		assertEquals(expectedVal, EntityNum.fromTokenId(IdUtils.asToken("0.1.123")));
 		assertEquals(expectedVal, EntityNum.fromScheduleId(IdUtils.asSchedule("0.1.123")));
@@ -102,10 +95,8 @@ class EntityNumTest {
 
 	@Test
 	void viewsWork() {
-		// given:
 		final var subject = EntityNum.fromInt(123);
 
-		// expect:
 		assertEquals(123, subject.toGrpcAccountId().getAccountNum());
 		assertEquals(123, subject.toGrpcTokenId().getTokenNum());
 		assertEquals(123, subject.toGrpcScheduleId().getScheduleNum());
@@ -114,13 +105,10 @@ class EntityNumTest {
 
 	@Test
 	void viewsWorkEvenForNegativeNumCodes() {
-		// setup:
-		final long realNum = (long)Integer.MAX_VALUE + 10;
+		final long realNum = (long) Integer.MAX_VALUE + 10;
 
-		// given:
 		final var subject = EntityNum.fromLong(realNum);
 
-		// expect:
 		assertEquals(realNum, subject.toGrpcAccountId().getAccountNum());
 		assertEquals(realNum, subject.toGrpcTokenId().getTokenNum());
 		assertEquals(realNum, subject.toGrpcScheduleId().getScheduleNum());
@@ -129,13 +117,10 @@ class EntityNumTest {
 
 	@Test
 	void canGetLongValue() {
-		// setup:
-		final long realNum = (long)Integer.MAX_VALUE + 10;
+		final long realNum = (long) Integer.MAX_VALUE + 10;
 
-		// given:
 		final var subject = EntityNum.fromLong(realNum);
 
-		// expect:
 		assertEquals(realNum, subject.longValue());
 	}
 }

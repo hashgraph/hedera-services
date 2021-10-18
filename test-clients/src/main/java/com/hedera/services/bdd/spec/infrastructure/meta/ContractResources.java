@@ -66,6 +66,7 @@ public class ContractResources {
 	public static final String NESTED_CHILDREN_CONTRACT = bytecodePath("NestedChildren");
 	public static final String FACTORY_SELF_DESTRUCT_CONSTRUCTOR_CONTRACT = bytecodePath("FactorySelfDestructConstructor");
 	public static final String FACTORY_QUICK_SELF_DESTRUCT_CONTRACT = bytecodePath("FactoryQuickSelfDestruct");
+	public static final String TEMPORARY_SSTORE_REFUND_CONTRACT = bytecodePath("TemporarySStoreRefund");
 
 	public static final String TWO_SSTORES = "{ \"inputs\": [ { \"internalType\": \"bytes32\", \"name\": \"_singleProp\", \"type\": \"bytes32\" } ], \"name\": \"twoSSTOREs\", \"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
@@ -462,6 +463,12 @@ public class ContractResources {
 			"[{\"internalType\": \"uint256\",\"name\": \"_amount\",\"type\": \"uint256\"}]," +
 			"\"name\": \"transferToChild\",\"outputs\": [],\"payable\": false,\"stateMutability\": \"nonpayable\"," +
 			"\"type\": \"function\"}";
+	public static final String TEMPORARY_SSTORE_HOLD_TEMPORARY_ABI = "{\"constant\": false,\"inputs\": " +
+			"[{\"internalType\": \"uint256\",\"name\": \"_tempValue\",\"type\": \"uint256\"}],\"name\": \"holdTemporary\"," +
+			"\"outputs\": [],\"payable\": false,\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String TEMPORARY_SSTORE_HOLD_PERMANENTLY_ABI = "{\"constant\": false,\"inputs\": " +
+			"[{\"internalType\": \"uint256\",\"name\": \"_permanentValue\",\"type\": \"uint256\"}],\"name\": \"holdPermanently\"," +
+			"\"outputs\": [],\"payable\": false,\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
 	
 	public static final String ERC_1155_ABI_SAFE_TRANSFER_FROM = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"}," +
 			"{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"}," +
