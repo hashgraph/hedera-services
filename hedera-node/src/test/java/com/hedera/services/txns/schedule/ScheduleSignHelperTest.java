@@ -13,7 +13,6 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
-import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -52,7 +51,7 @@ class ScheduleSignHelperTest {
 	MerkleSchedule schedule;
 
 	@Test
-	void shouldSignAsExpected() throws DecoderException {
+	void shouldSignAsExpected() {
 		final ScheduleID id = IdUtils.asSchedule("1.2.3");
 		given(activationHelper.currentSigsFn()).willReturn(sigsFn);
 		given(activationHelper.areScheduledPartiesActive(any(), any())).willReturn(true);
