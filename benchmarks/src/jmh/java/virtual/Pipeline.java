@@ -13,6 +13,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The Pipeline progresses a virtual map from the handleTransaction phase to the
@@ -44,10 +45,15 @@ public class Pipeline<K extends VirtualKey, V extends VirtualValue> {
      */
     private Future<Hash> hashingFuture = null;
 
+    private final AtomicInteger roundsSinceLastFlush = new AtomicInteger(0);
+
+    private final int roundsBeforeFlush;
+
     /**
      * Create a new pipeline. Spawns all the threads.
      */
-    public Pipeline() {
+    public Pipeline(int roundsBeforeFlush) {
+        this.roundsBeforeFlush = roundsBeforeFlush;
         hashingService.submit(new Task(() -> {
             final var cf = new CompletableFuture<Hash>();
             final var map = hashingExchanger.exchange(new HashingData(cf)).map;
@@ -75,6 +81,12 @@ public class Pipeline<K extends VirtualKey, V extends VirtualValue> {
 
             // Make our fast copy
             final var newMap = virtualMap.copy();
+
+            // mark it for flushing if we need to, TODO Is this the right place for this?
+            if (roundsSinceLastFlush.incrementAndGet() >= roundsBeforeFlush) {
+                newMap.enableFlush();
+                roundsSinceLastFlush.set(0);
+            }
 
             // Exchange our fast copy for a new hashing future
             hashingFuture = hashingExchanger.exchange(new HashingData(virtualMap)).hashingFuture;

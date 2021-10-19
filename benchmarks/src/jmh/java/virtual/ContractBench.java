@@ -110,7 +110,7 @@ public class ContractBench {
 
     @Setup
     public void prepare() throws Exception {
-        pipeline = new Pipeline<>();
+        pipeline = new Pipeline<>(roundsBeforeFlush);
         final long estimatedNumKeyValuePairs =
                 (long)(numContracts * (1-bigPercent-hugePercent) * ((kbPerContract * 1024L) / ESTIMATED_KEY_VALUE_SIZE)) +
                 (long)(numContracts * bigPercent * ((kbPerBigContract * 1024L) / ESTIMATED_KEY_VALUE_SIZE)) +
