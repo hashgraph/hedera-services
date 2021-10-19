@@ -217,7 +217,7 @@ class ScheduleCreateTransitionLogicTest {
 		givenValidTxnCtx();
 		given(merkleSchedule.scheduledTransactionId()).willReturn(scheduledTxnId);
 		given(merkleSchedule.isMergeWithIdenticalSchedule()).willReturn(true);
-		given(merkleSchedule.payer()).willReturn(payerId);
+		given(merkleSchedule.effectivePayer()).willReturn(payerId);
 		given(store.lookupSchedule(bodyBytes)).willReturn(Pair.of(schedule, merkleSchedule));
 
 		subject.doStateTransition();
@@ -249,7 +249,7 @@ class ScheduleCreateTransitionLogicTest {
 
 		given(merkleSchedule.scheduledTransactionId()).willReturn(scheduledTxnId);
 		given(merkleSchedule.isMergeWithIdenticalSchedule()).willReturn(true);
-		given(merkleSchedule.payer()).willReturn(payerId);
+		given(merkleSchedule.effectivePayer()).willReturn(payerId);
 		given(store.lookupSchedule(bodyBytes)).willReturn(Pair.of(schedule, merkleSchedule));
 
 		subject.doStateTransition();
@@ -267,7 +267,7 @@ class ScheduleCreateTransitionLogicTest {
 		givenValidTxnCtx();
 		given(merkleSchedule.scheduledTransactionId()).willReturn(scheduledTxnId);
 		given(merkleSchedule.isMergeWithIdenticalSchedule()).willReturn(true);
-		given(merkleSchedule.payer()).willReturn(anotherPayerId);
+		given(merkleSchedule.effectivePayer()).willReturn(anotherPayerId);
 		given(store.lookupSchedule(bodyBytes)).willReturn(Pair.of(schedule, merkleSchedule));
 
 		subject.doStateTransition();
@@ -298,7 +298,7 @@ class ScheduleCreateTransitionLogicTest {
 
 		given(merkleSchedule.scheduledTransactionId()).willReturn(scheduledTxnId);
 		given(merkleSchedule.isMergeWithIdenticalSchedule()).willReturn(true);
-		given(merkleSchedule.payer()).willReturn(anotherPayerId);
+		given(merkleSchedule.effectivePayer()).willReturn(anotherPayerId);
 		given(store.lookupSchedule(bodyBytes)).willReturn(Pair.of(schedule, merkleSchedule));
 
 		subject.doStateTransition();
@@ -316,7 +316,7 @@ class ScheduleCreateTransitionLogicTest {
 		givenValidTxnCtx();
 		given(merkleSchedule.scheduledTransactionId()).willReturn(scheduledTxnId);
 		given(merkleSchedule.isMergeWithIdenticalSchedule()).willReturn(true);
-		given(merkleSchedule.payer()).willReturn(payerId);
+		given(merkleSchedule.effectivePayer()).willReturn(payerId);
 		given(store.lookupSchedule(bodyBytes)).willReturn(Pair.of(schedule, merkleSchedule));
 		scheduleSignHelper.when(() -> ScheduleSignHelper.signingOutcome(
 				any(), any(), any(), any(), any())).thenReturn(Pair.of(SOME_SIGNATURES_WERE_INVALID, true));

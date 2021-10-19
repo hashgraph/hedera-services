@@ -86,33 +86,33 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//				notIdenticalScheduleIfScheduledTxnChanges(),
-//				notIdenticalScheduleIfAdminKeyChanges(),
-//				notIdenticalScheduleIfMemoChanges(),
-//				recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer(),
-//				rejectsSentinelKeyListAsAdminKey(),
-//				rejectsMalformedScheduledTxnMemo(),
-//				bodyOnlyCreation(),
-//				onlyBodyAndAdminCreation(),
-//				onlyBodyAndMemoCreation(),
-//				bodyAndSignatoriesCreation(),
-//				bodyAndPayerCreation(),
-//				rejectsUnresolvableReqSigners(),
-//				triggersImmediatelyWithBothReqSimpleSigs(),
-//				onlySchedulesWithMissingReqSimpleSigs(),
-//				failsWithNonExistingPayerAccountId(),
-//				failsWithTooLongMemo(),
-//				detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
-//				doesntTriggerUntilPayerSigns(),
-//				requiresExtantPayer(),
-//				rejectsFunctionlessTxn(),
-//				whitelistWorks(),
-//				preservesRevocationServiceSemanticsForFileDelete(),
-//				worksAsExpectedWithDefaultScheduleId(),
-//				infoIncludesTxnIdFromCreationReceipt(),
-//				rejectsIdenticalScheduleEvenWithDifferentDesignatedPayer(),
+				notIdenticalScheduleIfScheduledTxnChanges(),
+				notIdenticalScheduleIfAdminKeyChanges(),
+				notIdenticalScheduleIfMemoChanges(),
+				recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer(),
+				rejectsSentinelKeyListAsAdminKey(),
+				rejectsMalformedScheduledTxnMemo(),
+				bodyOnlyCreation(),
+				onlyBodyAndAdminCreation(),
+				onlyBodyAndMemoCreation(),
+				bodyAndSignatoriesCreation(),
+				bodyAndPayerCreation(),
+				rejectsUnresolvableReqSigners(),
+				triggersImmediatelyWithBothReqSimpleSigs(),
+				onlySchedulesWithMissingReqSimpleSigs(),
+				failsWithNonExistingPayerAccountId(),
+				failsWithTooLongMemo(),
+				detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
+				doesntTriggerUntilPayerSigns(),
+				requiresExtantPayer(),
+				rejectsFunctionlessTxn(),
+				whitelistWorks(),
+				preservesRevocationServiceSemanticsForFileDelete(),
+				worksAsExpectedWithDefaultScheduleId(),
+				infoIncludesTxnIdFromCreationReceipt(),
+				rejectsIdenticalScheduleEvenWithDifferentDesignatedPayer(),
 				addsSignatureToTheExistingIdenticalSchedule(),
-//				suiteCleanup(),
+				suiteCleanup(),
 		});
 	}
 
@@ -343,34 +343,60 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec rejectsIdenticalScheduleEvenWithDifferentDesignatedPayer() {
+		var scheduledTxn1 = cryptoTransfer(tinyBarsFromTo("sender", FUNDING, 10)).fee(ONE_HBAR);
+		var scheduledTxn2 = cryptoTransfer(tinyBarsFromTo("sender", GENESIS, 100)).fee(ONE_HBAR);
+		var firstSchedule = "firstSchedule";
+		var secondSchedule = "secondSchedule";
 		return defaultHapiSpec("rejectsIdenticalScheduleEvenWithDifferentDesignatedPayer")
 				.given(
-						cryptoCreate("sender").balance(1L),
+						cryptoCreate("sender").balance(ONE_HUNDRED_HBARS),
 						cryptoCreate("firstPayer"),
-						scheduleCreate("original",
-								cryptoTransfer(tinyBarsFromTo("sender", FUNDING, 1))
-										.fee(ONE_HBAR)
-						)
+						scheduleCreate(firstSchedule, scheduledTxn1)
 								.designatingPayer("firstPayer")
+								.payingWith("firstPayer")
+								.mergeWithIdenticalSchedule()
+								.savingExpectedScheduledTxnId(),
+						scheduleCreate(secondSchedule, scheduledTxn2)
 								.payingWith("firstPayer")
 								.mergeWithIdenticalSchedule()
 								.savingExpectedScheduledTxnId()
 				).when(
 						cryptoCreate("secondPayer")
 				).then(
-						scheduleCreate("duplicate",
-								cryptoTransfer(tinyBarsFromTo("sender", FUNDING, 1))
-										.fee(ONE_HBAR)
-						)
+						scheduleCreate("duplicate"+firstSchedule, scheduledTxn1)
 								.payingWith("secondPayer")
 								.designatingPayer("secondPayer")
 								.via("copycat")
 								.mergeWithIdenticalSchedule()
 								.hasKnownStatus(IDENTICAL_SCHEDULE_ALREADY_EXISTS_WITH_DIFFERENT_PAYER),
-						getTxnRecord("copycat").logged(),
 						getReceipt("copycat")
-								.hasSchedule("original")
-								.hasScheduledTxnId("original")
+								.hasSchedule(firstSchedule)
+								.hasScheduledTxnId(firstSchedule),
+						scheduleCreate("duplicate"+firstSchedule, scheduledTxn1)
+								.payingWith("secondPayer")
+								.via("copycat")
+								.mergeWithIdenticalSchedule()
+								.hasKnownStatus(IDENTICAL_SCHEDULE_ALREADY_EXISTS_WITH_DIFFERENT_PAYER),
+						getReceipt("copycat")
+								.hasSchedule(firstSchedule)
+								.hasScheduledTxnId(firstSchedule),
+						scheduleCreate("duplicate"+secondSchedule, scheduledTxn2)
+								.payingWith("secondPayer")
+								.designatingPayer("secondPayer")
+								.via("copycat")
+								.mergeWithIdenticalSchedule()
+								.hasKnownStatus(IDENTICAL_SCHEDULE_ALREADY_EXISTS_WITH_DIFFERENT_PAYER),
+						getReceipt("copycat")
+								.hasSchedule(secondSchedule)
+								.hasScheduledTxnId(secondSchedule),
+						scheduleCreate("duplicate"+secondSchedule, scheduledTxn2)
+								.payingWith("secondPayer")
+								.via("copycat")
+								.mergeWithIdenticalSchedule()
+								.hasKnownStatus(IDENTICAL_SCHEDULE_ALREADY_EXISTS_WITH_DIFFERENT_PAYER),
+						getReceipt("copycat")
+								.hasSchedule(secondSchedule)
+								.hasScheduledTxnId(secondSchedule)
 				);
 	}
 

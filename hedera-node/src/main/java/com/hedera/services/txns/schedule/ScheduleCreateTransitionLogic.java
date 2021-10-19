@@ -106,7 +106,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 		if (null != existingScheduleId) {
 			if(schedule.isMergeWithIdenticalSchedule()) {
 				if (arePayersSame(schedule)) {
-					var signingOutcome = ScheduleSignHelper.signingOutcome(
+					final var signingOutcome = ScheduleSignHelper.signingOutcome(
 							topLevelKeys,
 							sigMap,
 							existingScheduleId,
@@ -172,22 +172,26 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 		completeContextWith(scheduleId, schedule, finalOutcome == OK ? SUCCESS : finalOutcome);
 	}
 
-	private boolean arePayersSame(MerkleSchedule schedule) {
+	private boolean arePayersSame(final MerkleSchedule schedule) {
+		final var effectivePayer = schedule.effectivePayer().toGrpcAccountId();
 		if (txnCtx.accessor().getTxn().getScheduleCreate().hasPayerAccountID()) {
-			return schedule.payer().toGrpcAccountId().equals(
-					txnCtx.accessor().getTxn().getScheduleCreate().getPayerAccountID());
+			final var explicitPayerFromTxn = txnCtx.accessor().getTxn().getScheduleCreate().getPayerAccountID();
+			return effectivePayer.equals(explicitPayerFromTxn);
 		} else {
-			return schedule.payer().toGrpcAccountId().equals(txnCtx.accessor().getPayer());
+			return effectivePayer.equals(txnCtx.accessor().getPayer());
 		}
 	}
 
-	private void completeContextWith(ScheduleID scheduleID, MerkleSchedule schedule, ResponseCodeEnum finalOutcome) {
+	private void completeContextWith(
+			final ScheduleID scheduleID,
+			final MerkleSchedule schedule,
+			final ResponseCodeEnum finalOutcome) {
 		txnCtx.setCreated(scheduleID);
 		txnCtx.setScheduledTxnId(schedule.scheduledTransactionId());
 		txnCtx.setStatus(finalOutcome);
 	}
 
-	private void abortWith(ResponseCodeEnum cause) {
+	private void abortWith(final ResponseCodeEnum cause) {
 		if (store.isCreationPending()) {
 			store.rollbackCreation();
 		}
