@@ -75,7 +75,7 @@ public class ContractKeySerializer implements KeySerializer<ContractKey> {
 	public int serialize(ContractKey data, SerializableDataOutputStream outputStream) throws IOException {
 		Objects.requireNonNull(data);
 		Objects.requireNonNull(outputStream);
-		return  data.serializeReturningByteWritten(outputStream);
+		return data.serializeReturningByteWritten(outputStream);
 	}
 
 	/**

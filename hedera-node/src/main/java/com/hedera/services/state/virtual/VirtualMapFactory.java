@@ -1,7 +1,9 @@
 package com.hedera.services.state.virtual;
 
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.jasperdb.VirtualInternalRecordSerializer;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
+import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.jasperdb.files.hashmap.KeySerializer;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
@@ -43,11 +45,21 @@ public class VirtualMapFactory {
 		this.jdbFactory = jdbFactory;
 	}
 
-	public <K extends VirtualKey, V extends VirtualValue> VirtualMap<K, V> newVirtualizedBlobs(
-			final KeySerializer<K> blobKeySerializer,
-			final VirtualLeafRecordSerializer<K, V> blobLeafRecordSerializer
-	) {
-		final VirtualDataSource<K, V> ds;
+	public VirtualMap<VirtualBlobKey, VirtualBlobValue> newVirtualizedBlobs() {
+		final var blobKeySerializer = new VirtualBlobKeySerializer();
+		final VirtualLeafRecordSerializer<VirtualBlobKey, VirtualBlobValue> blobLeafRecordSerializer =
+				new VirtualLeafRecordSerializer<>(
+						1,
+						DigestType.SHA_384,
+						1,
+						VirtualBlobKey.sizeInBytes(),
+						VirtualBlobKey::new,
+						1,
+						VirtualBlobValue.sizeInBytes(),
+						VirtualBlobValue::new,
+						false);
+
+		final VirtualDataSource<VirtualBlobKey, VirtualBlobValue> ds;
 		try {
 			ds = jdbFactory.newJdb(
 					blobLeafRecordSerializer,
@@ -64,11 +76,22 @@ public class VirtualMapFactory {
 		return new VirtualMap<>(ds);
 	}
 
-	public <K extends VirtualKey, V extends VirtualValue> VirtualMap<K, V> newVirtualizedContractStorage(
-			final KeySerializer<K> storageKeySerializer,
-			final VirtualLeafRecordSerializer<K, V> storageLeafRecordSerializer
-	) {
-		final VirtualDataSource<K, V> ds;
+	public VirtualMap<ContractKey, ContractValue> newVirtualizedContractStorage() {
+		final var storageKeySerializer = new ContractKeySerializer();
+		final VirtualLeafRecordSerializer<ContractKey, ContractValue> storageLeafRecordSerializer =
+				new VirtualLeafRecordSerializer<>(
+						1,
+						DigestType.SHA_384,
+						1,
+						DataFileCommon.VARIABLE_DATA_SIZE,
+						ContractKey::new,
+						1,
+						ContractValue.SERIALIZED_SIZE,
+						ContractValue::new,
+						true);
+		;
+
+		final VirtualDataSource<ContractKey, ContractValue> ds;
 		try {
 			ds = jdbFactory.newJdb(
 					storageLeafRecordSerializer,
