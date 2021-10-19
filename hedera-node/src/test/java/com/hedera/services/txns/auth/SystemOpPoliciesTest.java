@@ -66,7 +66,9 @@ class SystemOpPoliciesTest {
 		assertTrue(subject.canPerformNonCryptoUpdate(2, 121));
 		assertTrue(subject.canPerformNonCryptoUpdate(2, 122));
 		assertTrue(subject.canPerformNonCryptoUpdate(2, 123));
-		assertTrue(subject.canPerformNonCryptoUpdate(2, 150));
+		for (var num = 150; num <= 159; num++) {
+			assertTrue(subject.canPerformNonCryptoUpdate(2, num));
+		}
 	}
 
 	@Test
@@ -79,7 +81,9 @@ class SystemOpPoliciesTest {
 		assertTrue(subject.canPerformNonCryptoUpdate(50, 121));
 		assertTrue(subject.canPerformNonCryptoUpdate(50, 122));
 		assertTrue(subject.canPerformNonCryptoUpdate(50, 123));
-		assertTrue(subject.canPerformNonCryptoUpdate(50, 150));
+		for (var num = 150; num <= 159; num++) {
+			assertTrue(subject.canPerformNonCryptoUpdate(50, num));
+		}
 	}
 
 	@Test
@@ -92,7 +96,9 @@ class SystemOpPoliciesTest {
 		assertTrue(subject.canPerformNonCryptoUpdate(55, 123));
 		assertFalse(subject.canPerformNonCryptoUpdate(55, 111));
 		assertFalse(subject.canPerformNonCryptoUpdate(55, 112));
-		assertFalse(subject.canPerformNonCryptoUpdate(55, 150));
+		for (var num = 150; num <= 159; num++) {
+			assertFalse(subject.canPerformNonCryptoUpdate(55, num));
+		}
 	}
 
 	@Test
@@ -105,7 +111,9 @@ class SystemOpPoliciesTest {
 		assertFalse(subject.canPerformNonCryptoUpdate(56, 122));
 		assertFalse(subject.canPerformNonCryptoUpdate(56, 123));
 		assertFalse(subject.canPerformNonCryptoUpdate(56, 112));
-		assertFalse(subject.canPerformNonCryptoUpdate(56, 150));
+		for (var num = 150; num <= 159; num++) {
+			assertFalse(subject.canPerformNonCryptoUpdate(56, num));
+		}
 	}
 
 	@Test
@@ -119,6 +127,24 @@ class SystemOpPoliciesTest {
 		assertFalse(subject.canPerformNonCryptoUpdate(57, 101));
 		assertFalse(subject.canPerformNonCryptoUpdate(57, 102));
 		assertFalse(subject.canPerformNonCryptoUpdate(57, 150));
+		for (var num = 150; num <= 159; num++) {
+			assertFalse(subject.canPerformNonCryptoUpdate(57, num));
+		}
+	}
+
+	@Test
+	void freezeAdminCanUpdateExpected() {
+		// expect:
+		assertFalse(subject.canPerformNonCryptoUpdate(58, 121));
+		assertFalse(subject.canPerformNonCryptoUpdate(58, 122));
+		assertFalse(subject.canPerformNonCryptoUpdate(58, 123));
+		assertFalse(subject.canPerformNonCryptoUpdate(58, 112));
+		assertFalse(subject.canPerformNonCryptoUpdate(58, 111));
+		assertFalse(subject.canPerformNonCryptoUpdate(58, 101));
+		assertFalse(subject.canPerformNonCryptoUpdate(58, 102));
+		for (var num = 150; num <= 159; num++) {
+			assertTrue(subject.canPerformNonCryptoUpdate(58, num));
+		}
 	}
 
 	@Test

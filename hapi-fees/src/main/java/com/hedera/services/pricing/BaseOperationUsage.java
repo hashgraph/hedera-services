@@ -77,7 +77,6 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQ
  * adds a single custom HTS fee to a token, etc.)
  */
 class BaseOperationUsage {
-
 	static final Logger log = LogManager.getLogger(BaseOperationUsage.class);
 	private static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 	private static final ByteString CANONICAL_SIG = ByteString.copyFromUtf8(

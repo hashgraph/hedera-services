@@ -31,7 +31,7 @@ public final class StateChildIndices {
 	public static final int ACCOUNTS = 4;
 	public static final int TOKENS = 5;
 	public static final int NETWORK_CTX = 6;
-	public static final int DISK_FS = 7;
+	public static final int SPECIAL_FILES = 7;
 	public static final int SCHEDULE_TXS = 8;
 	public static final int RECORD_STREAM_RUNNING_HASH = 9;
 	public static final int ADDRESS_BOOK = 10;

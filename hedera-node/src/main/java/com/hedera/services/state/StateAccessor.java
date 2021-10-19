@@ -28,6 +28,7 @@ import com.hedera.services.state.merkle.MerkleContractStorageValue;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -57,7 +58,7 @@ public class StateAccessor {
 		children.setSchedules(state.scheduleTxs());
 		children.setNetworkCtx(state.networkCtx());
 		children.setAddressBook(state.addressBook());
-		children.setDiskFs(state.diskFs());
+		children.setSpecialFiles(state.specialFiles());
 		children.setUniqueTokens(state.uniqueTokens());
 		children.setUniqueTokenAssociations(state.uniqueTokenAssociations());
 		children.setUniqueOwnershipAssociations(state.uniqueOwnershipAssociations());
@@ -110,8 +111,8 @@ public class StateAccessor {
 		return children.getUniqueOwnershipTreasuryAssociations();
 	}
 
-	public MerkleDiskFs diskFs() {
-		return children.getDiskFs();
+	public MerkleSpecialFiles specialFiles() {
+		return children.getSpecialFiles();
 	}
 
 	public MerkleNetworkContext networkCtx() {

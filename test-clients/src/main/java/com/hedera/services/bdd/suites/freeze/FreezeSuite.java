@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.freeze;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.legacy.regression.Utilities;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,7 +35,7 @@ import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.suites.utils.ZipUtil.createZip;
 
 public class FreezeSuite extends HapiApiSuite {
@@ -100,17 +101,17 @@ public class FreezeSuite extends HapiApiSuite {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		final byte[] hash = UpdateFile150.sha384Digest(bytes);
+		final byte[] hash = CommonUtils.noThrowSha384HashOf(bytes);
 
 		return defaultHapiSpec("uploadFileAndUpdate")
 				.given(
 						fileUpdate(fileIDString).path(uploadFile)
 						.payingWith(GENESIS)
 				).when(
-						freeze().setFileID(fileIDString)
-								.setFileHash(hash)
+						freezeOnly().withUpdateFile(fileIDString)
+								.havingHash(hash)
 								.payingWith(GENESIS)
-								.startingIn(60).seconds().andLasting(1).minutes()
+								.startingIn(60).seconds()
 				).then(
 				);
 	}

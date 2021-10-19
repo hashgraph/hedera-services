@@ -27,7 +27,7 @@ import com.hedera.services.files.SysFileCallbacks;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.files.interceptors.MockFileNumbers;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleDiskFs;
+import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.extensions.LogCaptor;
@@ -80,7 +80,7 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.times;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 @ExtendWith(LogCaptureExtension.class)
 class HfsSystemFilesManagerTest {
@@ -129,7 +129,7 @@ class HfsSystemFilesManagerTest {
 	private AddressBook currentBook;
 	private HFileMeta expectedInfo;
 	private TieredHederaFs hfs;
-	private MerkleDiskFs diskFs;
+	private MerkleSpecialFiles specialFiles;
 	private MockFileNumbers fileNumbers;
 	private Consumer<ServicesConfigurationList> propertiesCb;
 	private Consumer<ServicesConfigurationList> permissionsCb;
@@ -184,14 +184,14 @@ class HfsSystemFilesManagerTest {
 		data = mock(Map.class);
 		metadata = mock(Map.class);
 		hfs = mock(TieredHederaFs.class);
-		diskFs = mock(MerkleDiskFs.class);
+		specialFiles = mock(MerkleSpecialFiles.class);
 		given(hfs.getData()).willReturn(data);
 		given(hfs.getMetadata()).willReturn(metadata);
-		given(hfs.diskFs()).willReturn(diskFs);
+		given(hfs.specialFiles()).willReturn(specialFiles);
 		fileNumbers = new MockFileNumbers();
 		fileNumbers.setShard(1L);
 		fileNumbers.setRealm(22L);
-		given(diskFs.contains(fileNumbers.toFid(111))).willReturn(false);
+		given(specialFiles.contains(fileNumbers.toFid(111))).willReturn(false);
 
 		properties = mock(PropertySource.class);
 		given(properties.getStringProperty("bootstrap.hapiPermissions.path")).willReturn(bootstrapJutilPermsLoc);
@@ -295,28 +295,27 @@ class HfsSystemFilesManagerTest {
 	}
 
 	@Test
-	void createsEmptyUpdateFeatureFile() {
-		final var file150 = fileNumbers.toFid(fileNumbers.softwareUpdateZip());
-		given(hfs.exists(file150)).willReturn(false);
-		given(diskFs.contains(file150)).willReturn(true);
+	void createsEmptyUpdateFiles() {
+		// setup:
+		given(hfs.specialFiles()).willReturn(specialFiles);
 
-		subject.createUpdateZipFileIfMissing();
+		// when:
+		subject.createUpdateFilesIfMissing();
 
-		verify(metadata).put(
-				argThat(file150::equals),
-				argThat(info -> expectedInfo.toString().equals(info.toString())));
-		verify(diskFs).put(file150, new byte[0]);
+		// then:
+		for (var i = fileNumbers.firstSoftwareUpdateFile(); i <= fileNumbers.lastSoftwareUpdateFile(); i++) {
+			verify(specialFiles).update(fileNumbers.toFid(i), new byte[0]);
+		}
 	}
 
 	@Test
 	void noOpsOnExistingUpdateFeatureFile() {
-		final var file150 = fileNumbers.toFid(fileNumbers.softwareUpdateZip());
-		given(hfs.exists(file150)).willReturn(true);
+		given(hfs.exists(any())).willReturn(true);
 
-		subject.createUpdateZipFileIfMissing();
+		subject.createUpdateFilesIfMissing();
 
 		verify(hfs, never()).getMetadata();
-		verify(hfs, never()).diskFs();
+		verify(hfs, never()).specialFiles();
 		verify(hfs, never()).getData();
 	}
 
@@ -587,20 +586,21 @@ class HfsSystemFilesManagerTest {
 
 	@Test
 	void getsMasterKeyOnlyOnce() {
-		final var file150 = fileNumbers.toFid(fileNumbers.softwareUpdateZip());
+		final var file150 = fileNumbers.toFid(150L);
+		given(hfs.exists(any())).willReturn(true);
 		given(hfs.exists(file150)).willReturn(false);
-		given(diskFs.contains(file150)).willReturn(true);
+		given(specialFiles.contains(any())).willReturn(true);
 		final var keySupplier = mock(Supplier.class);
 		given(keySupplier.get()).willReturn(masterKey);
 		subject = new HfsSystemFilesManager(() -> currentBook, fileNumbers, properties, hfs, keySupplier, callbacks);
 
-		subject.createUpdateZipFileIfMissing();
-		subject.createUpdateZipFileIfMissing();
+		subject.createUpdateFilesIfMissing();
+		subject.createUpdateFilesIfMissing();
 
 		verify(metadata, times(2)).put(
 				argThat(file150::equals),
 				argThat(info -> expectedInfo.toString().equals(info.toString())));
-		verify(diskFs, times(2)).put(file150, new byte[0]);
+		verify(specialFiles, times(2)).update(file150, new byte[0]);
 		verify(keySupplier).get();
 	}
 

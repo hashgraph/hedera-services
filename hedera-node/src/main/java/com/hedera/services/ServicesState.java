@@ -32,6 +32,7 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -82,6 +83,7 @@ import static com.hedera.services.state.migration.Release0170Migration.moveLarge
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0160_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0170_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_TWENTY_VERSION;
+import static com.hedera.services.state.migration.StateChildIndices.SPECIAL_FILES;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static com.hedera.services.utils.EntityNumPair.fromLongs;
 import static java.util.concurrent.CompletableFuture.runAsync;
@@ -100,9 +102,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	/* All of the state that is not itself hashed or serialized, but only derived from such state */
 	private StateMetadata metadata;
 
-	/* Only needed for 0.18.0 to support migration from a 0.17.x state */
+	/* Only needed for to support migration from a 0.17.x state */
 	private Platform platformForDeferredInit;
 	private AddressBook addressBookForDeferredInit;
+	private SwirldDualState dualStateForDeferredInit;
 
 	public ServicesState() {
 		/* RuntimeConstructable */
@@ -162,6 +165,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				setChild(LegacyStateChildIndices.UNIQUE_TOKENS, new MerkleMap<>());
 			}
 			moveLargeFcmsToBinaryRoutePositions(this, deserializedVersion);
+		}
+		if (deserializedVersion < StateVersions.RELEASE_0190_VERSION) {
+			final var specialFiles = new MerkleSpecialFiles();
+			setChild(SPECIAL_FILES, specialFiles);
 		}
 	}
 
@@ -239,7 +246,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			blobMigrationFlag.accept(false);
 			log.info("Finished with FCMap -> MerkleMap migrations, completing the deferred init");
 
-			init(getPlatformForDeferredInit(), getAddressBookForDeferredInit());
+			init(getPlatformForDeferredInit(), getAddressBookForDeferredInit(), getDualStateForDeferredInit());
 		}
 
 		if (deserializedVersionFromState < RELEASE_TWENTY_VERSION) {
@@ -249,11 +256,12 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	/* --- SwirldState --- */
 	@Override
-	public void init(Platform platform, AddressBook addressBook) {
+	public void init(final Platform platform, final AddressBook addressBook, final SwirldDualState dualState) {
 		if (deserializedVersion < StateVersions.RELEASE_0180_VERSION && platform != platformForDeferredInit) {
 			/* Due to design issues with the BinaryObjectStore, which will not be finished
 			initializing here, we need to defer initialization until post-FCM migration. */
 			platformForDeferredInit = platform;
+			dualStateForDeferredInit = dualState;
 			addressBookForDeferredInit = addressBook;
 			log.info("Deferring init for 0.17.x -> 0.18.x upgrade on Services node {}", platform.getSelfId());
 			return;
@@ -264,11 +272,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		/* Immediately override the address book from the saved state */
 		setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
 
-		internalInit(platform, new BootstrapProperties());
+		internalInit(platform, new BootstrapProperties(), dualState);
 	}
 
 	@Override
-	public void genesisInit(Platform platform, AddressBook addressBook) {
+	public void genesisInit(Platform platform, AddressBook addressBook, final SwirldDualState dualState) {
 		log.info("Init called on Services node {} WITHOUT Merkle saved state", platform.getSelfId());
 
 		/* Create the top-level children in the Merkle tree */
@@ -276,7 +284,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		final var seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
 		createGenesisChildren(addressBook, seqStart);
 
-		internalInit(platform, bootstrapProps);
+		internalInit(platform, bootstrapProps, dualState);
 	}
 
 	@Override
@@ -334,11 +342,17 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	/* --- Archivable --- */
 	@Override
 	public void archive() {
-		/* NOTE: in the near future, likely SDK 0.19.0, it will be necessary
-		 * to also propagate this .archive() call to the MerkleMaps as well. */
 		if (metadata != null) {
 			metadata.archive();
 		}
+
+		topics().archive();
+		tokens().archive();
+		accounts().archive();
+		storage().archive();
+		scheduleTxs().archive();
+		uniqueTokens().archive();
+		tokenAssociations().archive();
 	}
 
 	/* --- MerkleNode --- */
@@ -357,10 +371,15 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	public void logSummary() {
+		String ctxSummary;
 		if (metadata != null) {
-			metadata.app().hashLogger().logHashesFor(this);
+			final var app = metadata.app();
+			app.hashLogger().logHashesFor(this);
+			ctxSummary = networkCtx().summarizedWith(app.dualStateAccessor());
+		} else {
+			ctxSummary = networkCtx().summarized();
 		}
-		log.info(networkCtx());
+		log.info(ctxSummary);
 	}
 
 	public MerkleMap<EntityNum, MerkleAccount> accounts() {
@@ -395,8 +414,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return getChild(StateChildIndices.ADDRESS_BOOK);
 	}
 
-	public MerkleDiskFs diskFs() {
-		return getChild((StateChildIndices.DISK_FS));
+	public MerkleSpecialFiles specialFiles() {
+		return getChild(StateChildIndices.SPECIAL_FILES);
 	}
 
 	public RecordsRunningHashLeaf runningHashLeaf() {
@@ -423,10 +442,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return metadata.getUniqueTreasuryOwnershipAssociations();
 	}
 
-	private void internalInit(Platform platform, BootstrapProperties bootstrapProps) {
-		networkCtx().setStateVersion(StateVersions.CURRENT_VERSION);
-		diskFs().checkHashesAgainstDiskContents();
-
+	private void internalInit(
+			final Platform platform,
+			final BootstrapProperties bootstrapProps,
+			final SwirldDualState dualState
+	) {
 		final var selfId = platform.getSelfId().getId();
 
 		ServicesApp app;
@@ -441,12 +461,30 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 					.build();
 			APPS.save(selfId, app);
 		}
+		app.dualStateAccessor().setDualState(dualState);
+		log.info("Dual state includes freeze time={} and last frozen={}",
+				dualState.getFreezeTime(),
+				dualState.getLastFrozenTime());
 
-		metadata = new StateMetadata(app);
-		app.initializationFlow().runWith(this);
+		final var stateVersion = networkCtx().getStateVersion();
+		if (stateVersion > StateVersions.CURRENT_VERSION) {
+			log.error("Fatal error, network state version {} > node software version {}",
+					networkCtx().getStateVersion(),
+					StateVersions.CURRENT_VERSION);
+			app.systemExits().fail(1);
+		} else {
+			if (stateVersion < StateVersions.CURRENT_VERSION) {
+				/* This was an upgrade, discard now-obsolete preparation history */
+				networkCtx().discardPreparedUpgradeMeta();
+			}
+			networkCtx().setStateVersion(StateVersions.CURRENT_VERSION);
 
-		logSummary();
-		log.info("  --> Context initialized accordingly on Services node {}", selfId);
+			metadata = new StateMetadata(app);
+			app.initializationFlow().runWith(this);
+
+			logSummary();
+			log.info("  --> Context initialized accordingly on Services node {}", selfId);
+		}
 	}
 
 	int getDeserializedVersion() {
@@ -461,6 +499,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return addressBookForDeferredInit;
 	}
 
+	SwirldDualState getDualStateForDeferredInit() {
+		return dualStateForDeferredInit;
+	}
+
 	void createGenesisChildren(AddressBook addressBook, long seqStart) {
 		setChild(StateChildIndices.UNIQUE_TOKENS, new MerkleMap<>());
 		setChild(StateChildIndices.TOKEN_ASSOCIATIONS, new MerkleMap<>());
@@ -469,7 +511,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		setChild(StateChildIndices.ACCOUNTS, new MerkleMap<>());
 		setChild(StateChildIndices.TOKENS, new MerkleMap<>());
 		setChild(StateChildIndices.NETWORK_CTX, genesisNetworkCtxWith(seqStart));
-		setChild(StateChildIndices.DISK_FS, new MerkleDiskFs());
+		setChild(StateChildIndices.SPECIAL_FILES, new MerkleSpecialFiles());
 		setChild(StateChildIndices.SCHEDULE_TXS, new MerkleMap<>());
 		setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, genesisRunningHashLeaf());
 		setChild(StateChildIndices.ADDRESS_BOOK, addressBook);

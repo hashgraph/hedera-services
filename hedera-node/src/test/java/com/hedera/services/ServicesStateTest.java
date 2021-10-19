@@ -34,6 +34,7 @@ import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -51,6 +52,7 @@ import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.SystemExits;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -107,6 +109,7 @@ import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 @ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class ServicesStateTest {
@@ -126,6 +129,8 @@ class ServicesStateTest {
 	private ServicesApp app;
 	@Mock
 	private MerkleDiskFs diskFs;
+	@Mock
+	private MerkleSpecialFiles specialFiles;
 	@Mock
 	private MerkleNetworkContext networkContext;
 	@Mock
@@ -175,7 +180,7 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void logsSummaryAsExpected() {
+	void logsSummaryAsExpectedWithAppAvailable() {
 		// setup:
 		subject.setMetadata(metadata);
 
@@ -183,13 +188,27 @@ class ServicesStateTest {
 
 		given(metadata.app()).willReturn(app);
 		given(app.hashLogger()).willReturn(hashLogger);
-		given(networkContext.toString()).willReturn("IMAGINE");
+		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+		given(networkContext.summarizedWith(dualStateAccessor)).willReturn("IMAGINE");
 
 		// when:
 		subject.logSummary();
 
 		// then:
 		verify(hashLogger).logHashesFor(subject);
+		assertEquals("IMAGINE", logCaptor.infoLogs().get(0));
+	}
+
+	@Test
+	void logsSummaryAsExpectedWithNoAppAvailable() {
+		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+
+		given(networkContext.summarized()).willReturn("IMAGINE");
+
+		// when:
+		subject.logSummary();
+
+		// then:
 		assertEquals("IMAGINE", logCaptor.infoLogs().get(0));
 	}
 
@@ -210,7 +229,7 @@ class ServicesStateTest {
 
 	@Test
 	void onReleaseAndArchiveNoopIfMetadataNull() {
-		// when:
+		setAllMmsTo(mock(MerkleMap.class));
 		Assertions.assertDoesNotThrow(subject::archive);
 		Assertions.assertDoesNotThrow(subject::onRelease);
 	}
@@ -228,15 +247,18 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void archiveForwardsToMetadata() {
-		// setup:
+	void archiveForwardsToMetadataAndMerkleMaps() {
+		final MerkleMap<?, ?> mockMm = mock(MerkleMap.class);
+
 		subject.setMetadata(metadata);
+		setAllMmsTo(mockMm);
 
 		// when:
 		subject.archive();
 
 		// then:
 		verify(metadata).archive();
+		verify(mockMm, times(7)).archive();
 	}
 
 	@Test
@@ -280,7 +302,6 @@ class ServicesStateTest {
 		assertThat(
 				logCaptor.warnLogs(),
 				contains(Matchers.startsWith("Method expandSignatures called with non-gRPC txn")));
-		;
 	}
 
 	@Test
@@ -383,21 +404,21 @@ class ServicesStateTest {
 
 	@Test
 	void doesntMigrateWhenInitializingFromRelease0170() {
-		// given:
 		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0170_VERSION);
 
-		// expect:
 		assertDoesNotThrow(subject::initialize);
+		assertNotNull(subject.specialFiles());
 	}
 
 	@Test
 	void defersInitWhenInitializingFromRelease0170() {
 		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0170_VERSION);
 
-		subject.init(platform, addressBook);
+		subject.init(platform, addressBook, dualState);
 
 		assertSame(platform, subject.getPlatformForDeferredInit());
 		assertSame(addressBook, subject.getAddressBookForDeferredInit());
+		assertSame(dualState, subject.getDualStateForDeferredInit());
 	}
 
 	@Test
@@ -410,6 +431,7 @@ class ServicesStateTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	void migratesWhenInitializingFromRelease0170() {
 		ServicesState.setFcmMigrator(fcmMigrator);
 		ServicesState.setBlobMigrationFlag(blobMigrationFlag);
@@ -429,6 +451,7 @@ class ServicesStateTest {
 		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0170_VERSION);
 		given(subject.getPlatformForDeferredInit()).willReturn(platform);
 		given(subject.getAddressBookForDeferredInit()).willReturn(addressBook);
+		given(subject.getDualStateForDeferredInit()).willReturn(dualState);
 
 		subject.migrate();
 
@@ -439,7 +462,7 @@ class ServicesStateTest {
 		verify(fcmMigrator).toMerkleMap(eq(subject), eq(StateChildIndices.ACCOUNTS), any(), any());
 		verify(fcmMigrator).toMerkleMap(eq(subject), eq(StateChildIndices.TOKENS), any(), any());
 		verify(fcmMigrator).toMerkleMap(eq(subject), eq(StateChildIndices.SCHEDULE_TXS), any(), any());
-		verify(subject).init(platform, addressBook);
+		verify(subject).init(platform, addressBook, dualState);
 		assertThat(
 				logCaptor.infoLogs(),
 				contains(
@@ -489,10 +512,11 @@ class ServicesStateTest {
 		// and:
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
+		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
 
 		// when:
-		subject.genesisInit(platform, addressBook);
+		subject.genesisInit(platform, addressBook, dualState);
 
 		// then:
 		assertFalse(subject.isImmutable());
@@ -510,8 +534,9 @@ class ServicesStateTest {
 		assertNull(subject.networkCtx().consensusTimeOfLastHandledTxn());
 		assertEquals(StateVersions.CURRENT_VERSION, subject.networkCtx().getStateVersion());
 		assertEquals(1001L, subject.networkCtx().seqNo().current());
-		assertNotNull(subject.diskFs());
+		assertNotNull(subject.specialFiles());
 		// and:
+		verify(dualStateAccessor).setDualState(dualState);
 		verify(initFlow).runWith(subject);
 		verify(appBuilder).bootstrapProps(any());
 		verify(appBuilder).initialState(subject);
@@ -526,25 +551,66 @@ class ServicesStateTest {
 
 	@Test
 	void nonGenesisInitReusesContextIfPresent() {
-		subject.setChild(StateChildIndices.DISK_FS, diskFs);
+		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
 
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
+		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
 		// and:
 		APPS.save(selfId.getId(), app);
 
 		// when:
-		subject.init(platform, addressBook);
+		subject.init(platform, addressBook, dualState);
 
 		// then:
 		assertSame(addressBook, subject.addressBook());
 		assertSame(app, subject.getMetadata().app());
 		// and:
 		verify(initFlow).runWith(subject);
-		verify(diskFs).checkHashesAgainstDiskContents();
 		verify(hashLogger).logHashesFor(subject);
+		verify(networkContext).setStateVersion(StateVersions.CURRENT_VERSION);
+	}
+
+	@Test
+	void nonGenesisInitExitsIfStateVersionLaterThanCurrentSoftware() {
+		final var mockExit = mock(SystemExits.class);
+
+		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
+		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		given(networkContext.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION + 1);
+
+		given(platform.getSelfId()).willReturn(selfId);
+		given(app.systemExits()).willReturn(mockExit);
+		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+		// and:
+		APPS.save(selfId.getId(), app);
+
+		// when:
+		subject.init(platform, addressBook, dualState);
+
+		verify(mockExit).fail(1);
+	}
+
+	@Test
+	void nonGenesisInitClearsPreparedUpgradeIfStateVersionLessThanCurrentSoftware() {
+		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
+		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+
+		given(networkContext.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION - 1);
+
+		given(app.hashLogger()).willReturn(hashLogger);
+		given(app.initializationFlow()).willReturn(initFlow);
+		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+		given(platform.getSelfId()).willReturn(selfId);
+		// and:
+		APPS.save(selfId.getId(), app);
+
+		// when:
+		subject.init(platform, addressBook, dualState);
+
+		verify(networkContext).discardPreparedUpgradeMeta();
 	}
 
 	@Test
@@ -685,14 +751,14 @@ class ServicesStateTest {
 		// setup:
 		subject.setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
-		subject.setChild(StateChildIndices.DISK_FS, diskFs);
+		subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
 		// and:
 		subject.setMetadata(metadata);
 		subject.setDeserializedVersion(10);
 
 		given(addressBook.copy()).willReturn(addressBook);
 		given(networkContext.copy()).willReturn(networkContext);
-		given(diskFs.copy()).willReturn(diskFs);
+		given(specialFiles.copy()).willReturn(specialFiles);
 		given(metadata.copy()).willReturn(metadata);
 		given(metadata.app()).willReturn(app);
 		given(app.workingState()).willReturn(workingState);
@@ -707,7 +773,7 @@ class ServicesStateTest {
 		// and:
 		assertSame(addressBook, copy.addressBook());
 		assertSame(networkContext, copy.networkCtx());
-		assertSame(diskFs, copy.diskFs());
+		assertSame(specialFiles, copy.specialFiles());
 	}
 
 	private List<MerkleNode> legacyChildrenWith(
@@ -732,5 +798,15 @@ class ServicesStateTest {
 			legacyChildren.add(nfts);
 		}
 		return legacyChildren;
+	}
+
+	private void setAllMmsTo(final MerkleMap<?, ?> mockMm) {
+		subject.setChild(StateChildIndices.ACCOUNTS, mockMm);
+		subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, mockMm);
+		subject.setChild(StateChildIndices.TOKENS, mockMm);
+		subject.setChild(StateChildIndices.UNIQUE_TOKENS, mockMm);
+		subject.setChild(StateChildIndices.STORAGE, mockMm);
+		subject.setChild(StateChildIndices.TOPICS, mockMm);
+		subject.setChild(StateChildIndices.SCHEDULE_TXS, mockMm);
 	}
 }

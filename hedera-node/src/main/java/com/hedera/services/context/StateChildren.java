@@ -26,6 +26,7 @@ import com.hedera.services.state.merkle.MerkleContractStorageValue;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -60,7 +61,7 @@ public class StateChildren {
 	private FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations;
 	private MerkleNetworkContext networkCtx;
 	private AddressBook addressBook;
-	private MerkleDiskFs diskFs;
+	private MerkleSpecialFiles specialFiles;
 	private RecordsRunningHashLeaf runningHashLeaf;
 
 	public MerkleMap<ContractStorageKey, MerkleContractStorageValue> getContractStorage() {
@@ -143,13 +144,13 @@ public class StateChildren {
 		this.addressBook = addressBook;
 	}
 
-	public MerkleDiskFs getDiskFs() {
-		Objects.requireNonNull(diskFs);
-		return diskFs;
+	public MerkleSpecialFiles getSpecialFiles() {
+		Objects.requireNonNull(specialFiles);
+		return specialFiles;
 	}
 
-	public void setDiskFs(MerkleDiskFs diskFs) {
-		this.diskFs = diskFs;
+	public void setSpecialFiles(MerkleSpecialFiles specialFiles) {
+		this.specialFiles = specialFiles;
 	}
 
 	public MerkleMap<EntityNumPair, MerkleUniqueToken> getUniqueTokens() {
