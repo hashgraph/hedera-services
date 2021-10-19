@@ -230,6 +230,10 @@ public class SigRequirements {
 			return tokenUpdates(txn.getTokenUpdate(), factory);
 		} else if (txn.hasTokenFeeScheduleUpdate()) {
 			return tokenFeeScheduleUpdates(txn.getTokenFeeScheduleUpdate(), factory);
+		} else if (txn.hasTokenPause()) {
+			return tokenPausing(txn.getTokenPause().getToken(), factory);
+		} else if (txn.hasTokenUnpause()) {
+			return tokenPausing(txn.getTokenUnpause().getToken(), factory);
 		} else {
 			return null;
 		}
@@ -645,6 +649,10 @@ public class SigRequirements {
 
 	private <T> SigningOrderResult<T> tokenWiping(TokenID id, SigningOrderResultFactory<T> factory) {
 		return tokenAdjusts(id, factory, TokenSigningMetadata::optionalWipeKey);
+	}
+
+	private <T> SigningOrderResult<T> tokenPausing(TokenID id, SigningOrderResultFactory<T> factory) {
+		return tokenAdjusts(id, factory, TokenSigningMetadata::optionalPauseKey);
 	}
 
 	private <T> SigningOrderResult<T> tokenFeeScheduleUpdates(
