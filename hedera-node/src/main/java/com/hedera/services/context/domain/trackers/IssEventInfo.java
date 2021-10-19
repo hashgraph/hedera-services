@@ -20,25 +20,27 @@ package com.hedera.services.context.domain.trackers;
  * ‍
  */
 
-import com.hedera.services.context.annotations.CompositeProps;
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.context.properties.NodeLocalProperties;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.Optional;
 
+import static com.hedera.services.context.domain.trackers.IssEventStatus.NO_KNOWN_ISS;
+import static com.hedera.services.context.domain.trackers.IssEventStatus.ONGOING_ISS;
+
 @Singleton
 public class IssEventInfo {
-	private final PropertySource properties;
+	private final NodeLocalProperties nodeLocalProperties;
 
 	int remainingRoundsToDump = 0;
-	private IssEventStatus status = IssEventStatus.NO_KNOWN_ISS;
+	private IssEventStatus status = NO_KNOWN_ISS;
 	private Optional<Instant> consensusTimeOfRecentAlert = Optional.empty();
 
 	@Inject
-	public IssEventInfo(@CompositeProps PropertySource properties) {
-		this.properties = properties;
+	public IssEventInfo(NodeLocalProperties nodeLocalProperties) {
+		this.nodeLocalProperties = nodeLocalProperties;
 	}
 
 	public IssEventStatus status() {
@@ -59,14 +61,14 @@ public class IssEventInfo {
 
 	public synchronized void alert(Instant roundConsensusTime) {
 		consensusTimeOfRecentAlert = Optional.of(roundConsensusTime);
-		if (status == IssEventStatus.NO_KNOWN_ISS) {
-			remainingRoundsToDump = properties.getIntProperty("iss.roundsToDump");
+		if (status == NO_KNOWN_ISS) {
+			remainingRoundsToDump = nodeLocalProperties.issRoundsToDump();
 		}
-		status = IssEventStatus.ONGOING_ISS;
+		status = ONGOING_ISS;
 	}
 
 	public synchronized void relax() {
-		status = IssEventStatus.NO_KNOWN_ISS;
+		status = NO_KNOWN_ISS;
 		consensusTimeOfRecentAlert = Optional.empty();
 		remainingRoundsToDump = 0;
 	}

@@ -56,7 +56,7 @@ public class SystemOpPolicies {
 	private final EnumMap<HederaFunctionality, Function<TransactionBody, SystemOpAuthorization>> functionPolicies;
 
 	@Inject
-	public SystemOpPolicies(EntityNumbers entityNums) {
+	public SystemOpPolicies(final EntityNumbers entityNums) {
 		this.entityNums = entityNums;
 
 		functionPolicies = new EnumMap<>(HederaFunctionality.class);
@@ -77,23 +77,23 @@ public class SystemOpPolicies {
 		functionPolicies.put(UncheckedSubmit, this::checkUncheckedSubmit);
 	}
 
-	public SystemOpAuthorization checkAccessor(TxnAccessor accessor) {
+	public SystemOpAuthorization checkAccessor(final TxnAccessor accessor) {
 		return checkKnownTxn(accessor.getTxn(), accessor.getFunction());
 	}
 
-	public SystemOpAuthorization checkKnownTxn(TransactionBody txn, HederaFunctionality function) {
+	public SystemOpAuthorization checkKnownTxn(final TransactionBody txn, final HederaFunctionality function) {
 		return Optional.ofNullable(functionPolicies.get(function))
 				.map(opCheck -> opCheck.apply(txn))
 				.orElse(UNNECESSARY);
 	}
 
-	private SystemOpAuthorization checkUncheckedSubmit(TransactionBody txn) {
+	private SystemOpAuthorization checkUncheckedSubmit(final TransactionBody txn) {
 		return entityNums.accounts().isSuperuser(payerFor(txn)) ? AUTHORIZED : UNAUTHORIZED;
 	}
 
-	private SystemOpAuthorization checkSystemUndelete(TransactionBody txn) {
-		var op = txn.getSystemUndelete();
-		long payer = payerFor(txn);
+	private SystemOpAuthorization checkSystemUndelete(final TransactionBody txn) {
+		final var op = txn.getSystemUndelete();
+		final long payer = payerFor(txn);
 		if (op.hasFileID()) {
 			return checkSystemUndeleteFile(payer, op.getFileID());
 		} else {
@@ -101,9 +101,9 @@ public class SystemOpPolicies {
 		}
 	}
 
-	private SystemOpAuthorization checkSystemDelete(TransactionBody txn) {
-		var op = txn.getSystemDelete();
-		long payer = payerFor(txn);
+	private SystemOpAuthorization checkSystemDelete(final TransactionBody txn) {
+		final var op = txn.getSystemDelete();
+		final long payer = payerFor(txn);
 		if (op.hasFileID()) {
 			return checkSystemDeleteFile(payer, op.getFileID());
 		} else {
@@ -111,75 +111,75 @@ public class SystemOpPolicies {
 		}
 	}
 
-	private SystemOpAuthorization checkSystemUndeleteFile(long payerAccount, FileID id) {
+	private SystemOpAuthorization checkSystemUndeleteFile(final long payerAccount, final FileID id) {
 		return entityNums.isSystemFile(id)
 				? IMPERMISSIBLE
 				: (hasSysUndelPrivileges(payerAccount) ? AUTHORIZED : UNAUTHORIZED);
 	}
 
-	private SystemOpAuthorization checkSystemUndeleteContract(long payerAccount, ContractID id) {
+	private SystemOpAuthorization checkSystemUndeleteContract(final long payerAccount, final ContractID id) {
 		return entityNums.isSystemContract(id)
 				? IMPERMISSIBLE
 				: (hasSysUndelPrivileges(payerAccount) ? AUTHORIZED : UNAUTHORIZED);
 	}
 
-	private SystemOpAuthorization checkSystemDeleteFile(long payerAccount, FileID id) {
+	private SystemOpAuthorization checkSystemDeleteFile(final long payerAccount, final FileID id) {
 		return entityNums.isSystemFile(id)
 				? IMPERMISSIBLE
 				: (hasSysDelPrivileges(payerAccount) ? AUTHORIZED : UNAUTHORIZED);
 	}
 
-	private SystemOpAuthorization checkSystemDeleteContract(long payerAccount, ContractID id) {
+	private SystemOpAuthorization checkSystemDeleteContract(final long payerAccount, final ContractID id) {
 		return entityNums.isSystemContract(id)
 				? IMPERMISSIBLE
 				: (hasSysDelPrivileges(payerAccount) ? AUTHORIZED : UNAUTHORIZED);
 	}
 
-	private boolean hasSysDelPrivileges(long payerAccount) {
+	private boolean hasSysDelPrivileges(final long payerAccount) {
 		return entityNums.accounts().isSuperuser(payerAccount) ||
 				payerAccount == entityNums.accounts().systemDeleteAdmin();
 	}
 
-	private boolean hasSysUndelPrivileges(long payerAccount) {
+	private boolean hasSysUndelPrivileges(final long payerAccount) {
 		return entityNums.accounts().isSuperuser(payerAccount) ||
 				payerAccount == entityNums.accounts().systemUndeleteAdmin();
 	}
 
-	private SystemOpAuthorization checkFreeze(TransactionBody txn) {
-		var payer = payerFor(txn);
-		boolean isAuthorized = payer == entityNums.accounts().treasury() ||
+	private SystemOpAuthorization checkFreeze(final TransactionBody txn) {
+		final var payer = payerFor(txn);
+		final boolean isAuthorized = payer == entityNums.accounts().treasury() ||
 				payer == entityNums.accounts().systemAdmin() ||
 				payer == entityNums.accounts().freezeAdmin();
 		return isAuthorized ? AUTHORIZED : UNAUTHORIZED;
 	}
 
-	private SystemOpAuthorization checkContractUpdate(TransactionBody txn) {
-		var target = txn.getContractUpdateInstance().getContractID();
+	private SystemOpAuthorization checkContractUpdate(final TransactionBody txn) {
+		final var target = txn.getContractUpdateInstance().getContractID();
 		return entityNums.isSystemContract(target)
 				? (canPerformNonCryptoUpdate(payerFor(txn), target.getContractNum()) ? AUTHORIZED : UNAUTHORIZED)
 				: UNNECESSARY;
 	}
 
-	private SystemOpAuthorization checkFileUpdate(TransactionBody txn) {
-		var target = txn.getFileUpdate().getFileID();
+	private SystemOpAuthorization checkFileUpdate(final TransactionBody txn) {
+		final var target = txn.getFileUpdate().getFileID();
 		return entityNums.isSystemFile(target)
 				? (canPerformNonCryptoUpdate(payerFor(txn), target.getFileNum()) ? AUTHORIZED : UNAUTHORIZED)
 				: UNNECESSARY;
 	}
 
-	private SystemOpAuthorization checkFileAppend(TransactionBody txn) {
-		var target = txn.getFileAppend().getFileID();
+	private SystemOpAuthorization checkFileAppend(final TransactionBody txn) {
+		final var target = txn.getFileAppend().getFileID();
 		return entityNums.isSystemFile(target)
 				? (canPerformNonCryptoUpdate(payerFor(txn), target.getFileNum()) ? AUTHORIZED : UNAUTHORIZED)
 				: UNNECESSARY;
 	}
 
-	private SystemOpAuthorization checkCryptoUpdate(TransactionBody txn) {
-		var target = txn.getCryptoUpdateAccount().getAccountIDToUpdate();
+	private SystemOpAuthorization checkCryptoUpdate(final TransactionBody txn) {
+		final var target = txn.getCryptoUpdateAccount().getAccountIDToUpdate();
 		if (!entityNums.isSystemAccount(target)) {
 			return UNNECESSARY;
 		} else {
-			var payer = payerFor(txn);
+			final var payer = payerFor(txn);
 			if (payer == entityNums.accounts().treasury()) {
 				return AUTHORIZED;
 			} else if (payer == entityNums.accounts().systemAdmin()) {
@@ -190,26 +190,26 @@ public class SystemOpPolicies {
 		}
 	}
 
-	private SystemOpAuthorization checkContractDelete(TransactionBody txn) {
+	private SystemOpAuthorization checkContractDelete(final TransactionBody txn) {
 		return entityNums.isSystemContract(txn.getContractDeleteInstance().getContractID())
 				? IMPERMISSIBLE : UNNECESSARY;
 	}
 
-	private SystemOpAuthorization checkCryptoDelete(TransactionBody txn) {
+	private SystemOpAuthorization checkCryptoDelete(final TransactionBody txn) {
 		return entityNums.isSystemAccount(txn.getCryptoDelete().getDeleteAccountID())
 				? IMPERMISSIBLE : UNNECESSARY;
 	}
 
-	private SystemOpAuthorization checkFileDelete(TransactionBody txn) {
+	private SystemOpAuthorization checkFileDelete(final TransactionBody txn) {
 		return entityNums.isSystemFile(txn.getFileDelete().getFileID())
 				? IMPERMISSIBLE : UNNECESSARY;
 	}
 
-	private long payerFor(TransactionBody txn) {
+	private long payerFor(final TransactionBody txn) {
 		return txn.getTransactionID().getAccountID().getAccountNum();
 	}
 
-	boolean canPerformNonCryptoUpdate(long payer, long nonAccountSystemEntity) {
+	boolean canPerformNonCryptoUpdate(final long payer, final long nonAccountSystemEntity) {
 		if (payer == entityNums.accounts().treasury() || payer == entityNums.accounts().systemAdmin()) {
 			return true;
 		} else if (payer == entityNums.accounts().addressBookAdmin()) {
@@ -219,26 +219,31 @@ public class SystemOpPolicies {
 		} else if (payer == entityNums.accounts().feeSchedulesAdmin()) {
 			return nonAccountSystemEntity == entityNums.files().feeSchedules();
 		} else if (payer == entityNums.accounts().freezeAdmin()) {
-			return nonAccountSystemEntity == entityNums.files().softwareUpdateZip();
+			return canFreezeAdminUpdate(nonAccountSystemEntity);
 		} else {
 			return false;
 		}
 	}
 
-	private boolean canExchangeRatesAdminUpdate(long entity) {
+	private boolean canFreezeAdminUpdate(final long entity) {
+		return entityNums.files().firstSoftwareUpdateFile() <= entity &&
+				entity <= entityNums.files().lastSoftwareUpdateFile();
+	}
+
+	private boolean canExchangeRatesAdminUpdate(final long entity) {
 		return entity == entityNums.files().exchangeRates() ||
 				entity == entityNums.files().throttleDefinitions() ||
 				isPropertiesOrPermissions(entity);
 	}
 
-	private boolean canAddressBookAdminUpdate(long entity) {
+	private boolean canAddressBookAdminUpdate(final long entity) {
 		return entity == entityNums.files().addressBook() ||
 				entity == entityNums.files().nodeDetails() ||
 				entity == entityNums.files().throttleDefinitions() ||
 				isPropertiesOrPermissions(entity);
 	}
 
-	private boolean isPropertiesOrPermissions(long entity) {
+	private boolean isPropertiesOrPermissions(final long entity) {
 		return entity == entityNums.files().applicationProperties() ||
 				entity == entityNums.files().apiPermissions();
 	}

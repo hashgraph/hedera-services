@@ -34,6 +34,7 @@ import java.util.EnumSet;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
@@ -58,17 +59,21 @@ public class TransitionRunner {
 	private static final Logger log = LogManager.getLogger(TransitionRunner.class);
 
 	/**
-	 * List of operations that have been either refactored or have a default {@link com.hederahashgraph.api.proto.java.ResponseCodeEnum} OK status
-	 * {@link com.hedera.services.txns.contract.ContractCreateTransitionLogic} and {@link com.hedera.services.txns.contract.ContractCallTransitionLogic} must not have a default OK status!
+	 * Some operation's transition logic still explicitly set SUCCESS instead of letting the runner handle this.
 	 */
 	private static final EnumSet<HederaFunctionality> opsWithDefaultSuccessStatus = EnumSet.of(
 			TokenMint, TokenBurn,
 			TokenFreezeAccount, TokenUnfreezeAccount,
 			TokenGrantKycToAccount, TokenRevokeKycFromAccount,
 			TokenAssociateToAccount, TokenDissociateFromAccount,
-			TokenCreate, TokenDelete, TokenAccountWipe,
-			TokenPause, TokenUnpause, TokenFeeScheduleUpdate,
-			CryptoTransfer, ConsensusCreateTopic,
+			TokenAccountWipe,
+			TokenCreate,
+			TokenPause, TokenUnpause,
+			TokenFeeScheduleUpdate,
+			CryptoTransfer,
+			ConsensusCreateTopic,
+			TokenDelete,
+			Freeze,
 			FileDelete
 	);
 
@@ -106,7 +111,6 @@ public class TransitionRunner {
 			}
 			try {
 				transition.doStateTransition();
-				/* Only certain functions are refactored */
 				if (opsWithDefaultSuccessStatus.contains(function)) {
 					txnCtx.setStatus(SUCCESS);
 				}

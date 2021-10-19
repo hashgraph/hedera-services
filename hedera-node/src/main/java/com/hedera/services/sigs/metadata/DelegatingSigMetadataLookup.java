@@ -21,7 +21,6 @@ package com.hedera.services.sigs.metadata;
  */
 
 import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.sigs.metadata.lookups.AccountSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.BackedAccountLookup;
@@ -66,7 +65,7 @@ public final class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	private final Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleSigMetaLookup;
 
 	public static DelegatingSigMetadataLookup backedLookupsFor(
-			final HederaFs hfs,
+			final HfsSigMetaLookup hfsSigMetaLookup,
 			final BackingStore<AccountID, MerkleAccount> backingAccounts,
 			final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
@@ -74,7 +73,7 @@ public final class DelegatingSigMetadataLookup implements SigMetadataLookup {
 			final Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleSigMetaLookup
 	) {
 		return new DelegatingSigMetadataLookup(
-				new HfsSigMetaLookup(hfs),
+				hfsSigMetaLookup,
 				new BackedAccountLookup(backingAccounts),
 				new DefaultContractLookup(accounts),
 				new DefaultTopicLookup(topics),
@@ -83,14 +82,14 @@ public final class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	}
 
 	public static DelegatingSigMetadataLookup defaultLookupsFor(
-			final HederaFs hfs,
+			final HfsSigMetaLookup hfsSigMetaLookup,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
 			final Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup,
 			final Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleLookup
 	) {
 		return new DelegatingSigMetadataLookup(
-				new HfsSigMetaLookup(hfs),
+				hfsSigMetaLookup,
 				new DefaultAccountLookup(accounts),
 				new DefaultContractLookup(accounts),
 				new DefaultTopicLookup(topics),
@@ -99,7 +98,7 @@ public final class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	}
 
 	public static DelegatingSigMetadataLookup defaultLookupsPlusAccountRetriesFor(
-			final HederaFs hfs,
+			final HfsSigMetaLookup hfsSigMetaLookup,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
 			final Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup,
@@ -117,7 +116,7 @@ public final class DelegatingSigMetadataLookup implements SigMetadataLookup {
 				runningAvgs,
 				speedometers);
 		return new DelegatingSigMetadataLookup(
-				new HfsSigMetaLookup(hfs),
+				hfsSigMetaLookup,
 				accountLookup,
 				new DefaultContractLookup(accounts),
 				new DefaultTopicLookup(topics),
@@ -126,7 +125,7 @@ public final class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	}
 
 	public static DelegatingSigMetadataLookup defaultAccountRetryingLookupsFor(
-			final HederaFs hfs,
+			final HfsSigMetaLookup hfsSigMetaLookup,
 			final NodeLocalProperties properties,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
@@ -138,7 +137,7 @@ public final class DelegatingSigMetadataLookup implements SigMetadataLookup {
 		final var accountLookup =
 				new RetryingAccountLookup(SLEEPING_PAUSE, properties, accounts, runningAvgs, speedometers);
 		return new DelegatingSigMetadataLookup(
-				new HfsSigMetaLookup(hfs),
+				hfsSigMetaLookup,
 				accountLookup,
 				new DefaultContractLookup(accounts),
 				new DefaultTopicLookup(topics),

@@ -23,7 +23,7 @@ package com.hedera.services.state.initialization;
 public interface SystemFilesManager {
 	void createAddressBookIfMissing();
 	void createNodeDetailsIfMissing();
-	void createUpdateZipFileIfMissing();
+	void createUpdateFilesIfMissing();
 
 	/* Ensure files 0.0.111 and 0.0.112 exist in state, creating them
 	 * from the FeeSchedules.json and bootstrap.properties resources/files

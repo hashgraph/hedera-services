@@ -23,8 +23,10 @@ package com.hedera.services.context.properties;
 import com.hedera.services.exceptions.UnparseablePropertyException;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -53,6 +55,7 @@ public interface PropertySource {
 			.collect(toSet());
 	Function<String, Object> AS_CONGESTION_MULTIPLIERS = CongestionMultipliers::from;
 	Function<String, Object> AS_THROTTLE_SCALE_FACTOR = ThrottleReqOpsScaleFactor::from;
+	Function<String, Object> AS_ENTITY_NUM_RANGE = EntityIdUtils::parseEntityNumRange;
 
 	boolean containsProperty(String name);
 	Object getProperty(String name);
@@ -76,6 +79,10 @@ public interface PropertySource {
 	}
 	default ThrottleReqOpsScaleFactor getThrottleScaleFactor(String name) {
 		return getTypedProperty(ThrottleReqOpsScaleFactor.class, name);
+	}
+	@SuppressWarnings("unchecked")
+	default Pair<Long, Long> getEntityNumRange(String name) {
+		return getTypedProperty(Pair.class, name);
 	}
 	default int getIntProperty(String name) {
 		return getTypedProperty(Integer.class, name);

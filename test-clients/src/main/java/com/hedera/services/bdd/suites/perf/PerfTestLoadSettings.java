@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.perf;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,6 +24,9 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 
 import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.DEFAULT_UPGRADE_DELAY;
+import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.DEFAULT_UPGRADE_FILE_ID;
+import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.DEFAULT_UPGRADE_FILE_PATH;
 
 public class PerfTestLoadSettings {
 	public static final int DEFAULT_TPS = 500;
@@ -119,6 +122,12 @@ public class PerfTestLoadSettings {
 	// tell EET client whether to dump account balances or not
 	private boolean clientToExportBalances = DEFAULT_EXPORT_BALANCES_ON_CLIENT_SIDE;
 
+	/**
+	 * upgrade test properties
+	 */
+	private int upgradeDelay = DEFAULT_UPGRADE_DELAY;
+	private String upgradeFilePath = DEFAULT_UPGRADE_FILE_PATH;
+	private String upgradeFileId = DEFAULT_UPGRADE_FILE_ID;
 	private HapiPropertySource ciProps = null;
 
 	public PerfTestLoadSettings() {
@@ -202,6 +211,12 @@ public class PerfTestLoadSettings {
 
 	public int getTestTopicId() { return testTopicId; }
 
+	public String getProperty(String property, String defaultValue) {
+		if (null != ciProps && ciProps.has(property)) {
+			return ciProps.get(property);
+		}
+		return defaultValue;
+	}
 
 	public int getIntProperty(String property, int defaultValue) {
 		if (null != ciProps && ciProps.has(property)) {
@@ -288,6 +303,15 @@ public class PerfTestLoadSettings {
 		if (ciProps.has("clientToExportBalances")) {
 			clientToExportBalances = ciProps.getBoolean("clientToExportBalances");
 		}
+		if (ciProps.has("upgradeDelay")) {
+			upgradeDelay = ciProps.getInteger("upgradeDelay");
+		}
+		if (ciProps.has("upgradeFilePath")) {
+			upgradeFilePath = ciProps.get("upgradeFilePath");
+		}
+		if (ciProps.has("upgradeFileId")) {
+			upgradeFileId = ciProps.get("upgradeFileId");
+		}
 	}
 
 	@Override
@@ -316,6 +340,9 @@ public class PerfTestLoadSettings {
 				.add("testTopicId", testTopicId)
 				.add("balancesExportPeriodSecs", balancesExportPeriodSecs)
 				.add("clientToExportBalances", clientToExportBalances)
+				.add("upgradeDelay", upgradeDelay)
+				.add("upgradeFilePath", upgradeFilePath)
+				.add("upgradeFileId", upgradeFileId)
 				.toString();
 	}
 }

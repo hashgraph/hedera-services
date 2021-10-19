@@ -20,26 +20,45 @@ package com.hedera.services.sigs.metadata.lookups;
  * ‍
  */
 
+import com.hedera.services.config.FileNumbers;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.sigs.metadata.FileSigningMetadata;
 import com.hederahashgraph.api.proto.java.FileID;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+import static com.hedera.services.context.primitives.StateView.EMPTY_WACL;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_FILE;
 
 /**
- * Trivial file metadata lookup.
+ * Trivial file metadata lookup. Treats special files (numbers 150-159) as immutable
+ * to avoid an expensive metadata lookup; this is fine, since the privileged payer
+ * requirement makes them effectively so.
  */
+@Singleton
 public class HfsSigMetaLookup implements FileSigMetaLookup {
-	private final HederaFs hfs;
+	private static final FileSigningMetadata SPECIAL_FILE_META =
+			new FileSigningMetadata(EMPTY_WACL);
+	private static final SafeLookupResult<FileSigningMetadata> SPECIAL_FILE_RESULT =
+			new SafeLookupResult<>(SPECIAL_FILE_META);
 
-	public HfsSigMetaLookup(HederaFs hfs) {
+	private final HederaFs hfs;
+	private final FileNumbers fileNumbers;
+
+	@Inject
+	public HfsSigMetaLookup(final HederaFs hfs, final FileNumbers fileNumbers) {
 		this.hfs = hfs;
+		this.fileNumbers = fileNumbers;
 	}
 
 	@Override
-	public SafeLookupResult<FileSigningMetadata> safeLookup(FileID id) {
+	public SafeLookupResult<FileSigningMetadata> safeLookup(final FileID id) {
 		if (!hfs.exists(id)) {
 			return SafeLookupResult.failure(MISSING_FILE);
+		}
+		if (fileNumbers.isSoftwareUpdateFile(id.getFileNum())) {
+			return SPECIAL_FILE_RESULT;
 		}
 		return new SafeLookupResult<>(new FileSigningMetadata(hfs.getattr(id).getWacl()));
 	}

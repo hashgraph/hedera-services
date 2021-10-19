@@ -64,7 +64,7 @@ import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.throttling.ThrottlingModule;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.TransactionsModule;
-import com.hedera.services.txns.network.UpdateHelper;
+import com.hedera.services.txns.network.UpgradeActions;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.submission.SubmissionModule;
 import com.hedera.services.utils.NamedDigestFactory;
@@ -131,7 +131,7 @@ public interface ServicesApp {
 	NodeInfo nodeInfo();
 	SystemExits systemExits();
 	GrpcStarter grpcStarter();
-	UpdateHelper updateHelper();
+	UpgradeActions upgradeActions();
 	LedgerValidator ledgerValidator();
 	ServicesNodeType nodeType();
 	AccountsExporter accountsExporter();

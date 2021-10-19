@@ -77,8 +77,7 @@ public class ServicesMain implements SwirldMain {
 			app.recordStreamManager().setInFreeze(false);
 		} else if (status == MAINTENANCE) {
 			app.recordStreamManager().setInFreeze(true);
-			final var os = System.getProperty("os.name").toLowerCase();
-			app.updateHelper().runIfAppropriateOn(os);
+			app.upgradeActions().externalizeFreeze();
 		} else {
 			log.info("Platform {} status set to : {}", nodeId, status);
 		}
@@ -156,7 +155,7 @@ public class ServicesMain implements SwirldMain {
 		final var sysFilesManager = app.sysFilesManager();
 		sysFilesManager.createAddressBookIfMissing();
 		sysFilesManager.createNodeDetailsIfMissing();
-		sysFilesManager.createUpdateZipFileIfMissing();
+		sysFilesManager.createUpdateFilesIfMissing();
 		app.networkCtxManager().loadObservableSysFilesIfNeeded();
 	}
 

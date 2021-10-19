@@ -33,6 +33,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -93,8 +94,7 @@ class ExecutionTimeTrackerTest {
 		subject.stop();
 
 		assertNull(subject.getExecNanosIfPresentFor(aTxnId));
-		final var bNanos = subject.getExecNanosIfPresentFor(bTxnId);
-		assertTrue(Math.abs(bNanos - busyNanos) < epsilonNanos);
+		assertNotNull(subject.getExecNanosIfPresentFor(bTxnId));
 	}
 
 	private void stayBusyFor(long nanos) {
