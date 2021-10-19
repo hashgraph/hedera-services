@@ -68,11 +68,12 @@ public class ReleaseTwentyMigration {
 	 */
 	public static void migrateFromBinaryObjectStore(
 			final ServicesState initializingState,
+			final String jdbDataLoc,
 			final int deserializedVersion
 	) {
 		log.info("Migrating state from version {} to {}", deserializedVersion, RELEASE_TWENTY_VERSION);
 
-		final var virtualMapFactory = new VirtualMapFactory("data/jdb", VirtualDataSourceJasperDB::new);
+		final var virtualMapFactory = new VirtualMapFactory(jdbDataLoc, VirtualDataSourceJasperDB::new);
 		final MerkleMap<String, MerkleOptionalBlob> legacyBlobs = initializingState.getChild(StateChildIndices.STORAGE);
 
 		final VirtualMap<VirtualBlobKey, VirtualBlobValue> vmBlobs = virtualMapFactory.newVirtualizedBlobs();

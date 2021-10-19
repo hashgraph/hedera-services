@@ -409,9 +409,8 @@ public class HederaWorldState implements HederaMutableWorldState {
 					entries.addAll(updatedStorage.entrySet());
 
 					for (final Map.Entry<UInt256, UInt256> entry : entries) {
+						final var key = new ContractKey(contractId.getContractNum(), entry.getKey().toArray());
 						final UInt256 value = entry.getValue();
-						final var packedUint256 = DWUtil.asPackedInts(entry.getKey().toArray());
-						final var key = new ContractKey(contractId.getContractNum(), packedUint256);
 						if (value.isZero()) {
 							storageTrie.put(key, new ContractValue());
 						} else {
@@ -419,6 +418,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 						}
 					}
 				}
+
 				// Save the code in storage ...
 				if (updated.codeWasUpdated()) {
 					repository.saveCode(address, updated.getCode().toArray());

@@ -23,12 +23,12 @@ package com.hedera.services.store.contracts;
  *
  */
 
-import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.store.models.Id;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -37,7 +37,6 @@ import com.swirlds.virtualmap.VirtualMap;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.ethereum.core.AccountState;
-import org.ethereum.db.ContractDetails;
 import org.ethereum.db.ServicesRepositoryRoot;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
@@ -50,7 +49,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigInteger;
-import java.util.function.Supplier;
 
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
@@ -76,8 +74,6 @@ class HederaWorldStateTest {
 	private HederaLedger ledger;
 	@Mock
 	private ServicesRepositoryRoot repositoryRoot;
-	@Mock
-	private ContractDetails contractDetails;
 	@Mock
 	private VirtualMap<ContractKey, ContractValue> contractStorage;
 
@@ -223,9 +219,6 @@ class HederaWorldStateTest {
 				"}";
 		assertEquals(stringified, acc.toString());
 
-		var contractDetails = mock(ContractDetails.class);
-		given(contractDetails.get(any())).willReturn(null);
-		given(repositoryRoot.getContractDetails(any())).willReturn(contractDetails);
 		assertEquals(
 				Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000000"),
 				acc.getOriginalStorageValue(UInt256.ONE)
@@ -315,7 +308,6 @@ class HederaWorldStateTest {
 		final var contractBytes = contract.asEvmAddress().toArray();
 		given(repositoryRoot.isExist(contractBytes)).willReturn(false);
 		given(repositoryRoot.getBalance(contractBytes)).willReturn(BigInteger.ZERO);
-		given(repositoryRoot.getContractDetails(contractBytes)).willReturn(contractDetails);
 
 		// when:
 		actualSubject.commit();
@@ -325,10 +317,6 @@ class HederaWorldStateTest {
 		verify(repositoryRoot).delete(contractBytes);
 		verify(repositoryRoot).createAccount(contractBytes);
 		verify(repositoryRoot).getBalance(contractBytes);
-		verify(repositoryRoot).getContractDetails(contractBytes);
-		// and:
-		verify(contractDetails).put(DWUtil.fromUInt256(storageKey), DWUtil.fromUInt256(storageValue));
-		verify(contractDetails).put(DWUtil.fromUInt256(secondStorageKey), DWUtil.fromUInt256(secondStorageValue));
 		// and:
 		verify(repositoryRoot).saveCode(contractBytes, code.toArray());
 	}

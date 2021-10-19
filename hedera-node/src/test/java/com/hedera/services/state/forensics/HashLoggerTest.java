@@ -95,7 +95,7 @@ class HashLoggerTest {
 				"  Accounts               :: " +
 				"313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131\n" +
 				"  Storage                :: " +
-				"363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636\n" +
+				"<N/A>\n" +
 				"  Topics                 :: " +
 				"323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232\n" +
 				"  Tokens                 :: " +
@@ -115,7 +115,9 @@ class HashLoggerTest {
 				"    ↪ Running hash       :: " +
 				"595959595959595959595959595959595959595959595959595959595959595959595959595959595959595959595959\n" +
 				"  UniqueTokens           :: " +
-				"343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434";
+				"343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434\n" +
+				"  ContractStorage        :: " +
+				"<N/A>";
 
 		given(state.getHash()).willReturn(hashOf('0'));
 		given(state.accounts()).willReturn(accounts);
@@ -128,8 +130,6 @@ class HashLoggerTest {
 		given(uniqueTokens.getHash()).willReturn(hashOf('4'));
 		given(state.scheduleTxs()).willReturn(schedules);
 		given(schedules.getHash()).willReturn(hashOf('5'));
-		given(state.storage()).willReturn(storage);
-		given(storage.getHash()).willReturn(hashOf('6'));
 		given(state.tokenAssociations()).willReturn(tokenAssociations);
 		given(tokenAssociations.getHash()).willReturn(hashOf('7'));
 		given(state.networkCtx()).willReturn(networkCtx);

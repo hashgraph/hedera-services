@@ -30,6 +30,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+import static com.hedera.services.store.contracts.DWUtil.asPackedInts;
 import static com.swirlds.jasperdb.utilities.NonCryptographicHashing.perm64;
 
 /**
@@ -62,6 +63,10 @@ public final class ContractKey implements VirtualKey {
 	public ContractKey(long contractId, long key) {
 		setContractId(contractId);
 		setKey(key);
+	}
+
+	public ContractKey(long contractId, byte[] data) {
+		this(contractId, asPackedInts(data));
 	}
 
 	public ContractKey(long contractId, int[] key) {

@@ -23,7 +23,6 @@ package com.hedera.services.contracts.persistence;
 import com.hedera.services.contracts.annotations.StorageSource;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
-import com.hedera.services.store.contracts.DWUtil;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -35,8 +34,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Map;
 import java.util.function.Supplier;
-
-import static com.hedera.services.utils.EntityIdUtils.contractParsedFromSolidityAddress;
 
 @Singleton
 public class BlobStoragePersistence implements StoragePersistence {
@@ -56,66 +53,21 @@ public class BlobStoragePersistence implements StoragePersistence {
 
 	@Override
 	public boolean storageExist(byte[] address) {
-		return storage.containsKey(address);
+		throw new AssertionError("Dead code (to be removed once all ethereumj dependency is gone)");
 	}
 
 	@Override
 	public void persist(byte[] address, byte[] cache, long ignoredExpiry, long ignoredNow) {
-		storage.put(address, cache);
+		throw new AssertionError("Dead code (to be removed once all ethereumj dependency is gone)");
 	}
 
 	@Override
 	public byte[] get(byte[] address) {
-		return storage.get(address);
+		throw new AssertionError("Dead code (to be removed once all ethereumj dependency is gone)");
 	}
 
 	@Override
 	public Source<DataWord, DataWord> scopedStorageFor(byte[] address) {
-		final var contractNum = contractParsedFromSolidityAddress(address).getContractNum();
-		return new ScopedSource(contractNum);
-	}
-
-	private final class ScopedSource implements Source<DataWord, DataWord> {
-		private final long contractNum;
-
-		private ScopedSource(long contractNum) {
-			this.contractNum = contractNum;
-		}
-
-		@Override
-		public void put(DataWord key, DataWord value) {
-			final var curContractStorage = contractStorage.get();
-			final var storageKey = at(key);
-			if (curContractStorage.containsKey(storageKey)) {
-				final var mutableLeaf = curContractStorage.getForModify(storageKey);
-				mutableLeaf.setValue(value.getData());
-			} else {
-				curContractStorage.put(storageKey, leafWith(value));
-			}
-		}
-
-		@Override
-		public DataWord get(DataWord key) {
-			final var leaf = contractStorage.get().get(at(key));
-			return leaf == null ? null : DataWord.of(leaf.getValue());
-		}
-
-		@Override
-		public void delete(DataWord key) {
-			contractStorage.get().remove(at(key));
-		}
-
-		@Override
-		public boolean flush() {
-			return false;
-		}
-
-		private ContractKey at(DataWord word) {
-			return new ContractKey(contractNum, DWUtil.asPackedInts(word.getData()));
-		}
-
-		private ContractValue leafWith(DataWord word) {
-			return new ContractValue(word.getData());
-		}
+		throw new AssertionError("Dead code (to be removed once all ethereumj dependency is gone)");
 	}
 }
