@@ -45,15 +45,10 @@ public class Pipeline<K extends VirtualKey, V extends VirtualValue> {
      */
     private Future<Hash> hashingFuture = null;
 
-    private final AtomicInteger roundsSinceLastFlush = new AtomicInteger(0);
-
-    private final int roundsBeforeFlush;
-
     /**
      * Create a new pipeline. Spawns all the threads.
      */
-    public Pipeline(int roundsBeforeFlush) {
-        this.roundsBeforeFlush = roundsBeforeFlush;
+    public Pipeline() {
         hashingService.submit(new Task(() -> {
             final var cf = new CompletableFuture<Hash>();
             final var map = hashingExchanger.exchange(new HashingData(cf)).map;
@@ -81,12 +76,6 @@ public class Pipeline<K extends VirtualKey, V extends VirtualValue> {
 
             // Make our fast copy
             final var newMap = virtualMap.copy();
-
-            // mark it for flushing if we need to, TODO Is this the right place for this?
-            if (roundsSinceLastFlush.incrementAndGet() >= roundsBeforeFlush) {
-                newMap.enableFlush();
-                roundsSinceLastFlush.set(0);
-            }
 
             // Exchange our fast copy for a new hashing future
             hashingFuture = hashingExchanger.exchange(new HashingData(virtualMap)).hashingFuture;

@@ -50,9 +50,6 @@ public class ContractBench {
     private static final int ESTIMATED_CONTRACT_KEY_SERIALIZED_SIZE = 10;
     private static final int ESTIMATED_KEY_VALUE_SIZE = ESTIMATED_CONTRACT_KEY_SERIALIZED_SIZE + ContractValue.SERIALIZED_SIZE;
 
-    @Param({"1", "10", "20"})
-    public int roundsBeforeFlush;
-
     @Param({"5", "15", "25"})
     public int numUpdatesPerOperation;
 
@@ -110,7 +107,7 @@ public class ContractBench {
 
     @Setup
     public void prepare() throws Exception {
-        pipeline = new Pipeline<>(roundsBeforeFlush);
+        pipeline = new Pipeline<>();
         final long estimatedNumKeyValuePairs =
                 (long)(numContracts * (1-bigPercent-hugePercent) * ((kbPerContract * 1024L) / ESTIMATED_KEY_VALUE_SIZE)) +
                 (long)(numContracts * bigPercent * ((kbPerBigContract * 1024L) / ESTIMATED_KEY_VALUE_SIZE)) +
@@ -124,7 +121,7 @@ public class ContractBench {
                         true);
 
 
-        Path dataSourcePath = getDataSourcePath(dsType, Integer.toString(roundsBeforeFlush));
+        Path dataSourcePath = getDataSourcePath(dsType);
         boolean dataSourceDirExisted = Files.exists(dataSourcePath);
         virtualMap = createMap(dsType,
                 virtualLeafRecordSerializer,

@@ -15,7 +15,7 @@ public class VFCMapBenchBase {
         /*lmdb,*/ jasperdbIhRam, jasperdbIhDisk, jasperdbIhHalf
     }
 
-    public static Path getDataSourcePath(DataSourceType type, String extraPath) {
+    public static Path getDataSourcePath(DataSourceType type) {
         //noinspection CommentedOutCode
         switch (type) {
 //            case lmdb:
@@ -24,11 +24,11 @@ public class VFCMapBenchBase {
                     return Path.of("rocksdb");
  */
             case jasperdbIhRam:
-                return Path.of("jasperdb_ih_ram_"+extraPath);
+                return Path.of("jasperdb_ih_ram");
             case jasperdbIhDisk:
-                return Path.of("jasperdb_ih_disk_"+extraPath);
+                return Path.of("jasperdb_ih_disk");
             case jasperdbIhHalf:
-                return Path.of("jasperdb_ih_half_"+extraPath);
+                return Path.of("jasperdb_ih_half");
             default:
                 return Path.of("jasperdb");
         }
