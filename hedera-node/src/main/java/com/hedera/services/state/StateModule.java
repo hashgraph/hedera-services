@@ -26,6 +26,8 @@ import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.contracts.virtual.SimpContractKey;
+import com.hedera.services.contracts.virtual.SimpContractValue;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
@@ -58,8 +60,6 @@ import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.validation.BasedLedgerValidator;
 import com.hedera.services.state.validation.LedgerValidator;
-import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.state.virtual.VirtualMapFactory;
@@ -333,7 +333,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<VirtualMap<ContractKey, ContractValue>> provideWorkingContractStorage(
+	public static Supplier<VirtualMap<SimpContractKey, SimpContractValue>> provideWorkingContractStorage(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::contractStorage;

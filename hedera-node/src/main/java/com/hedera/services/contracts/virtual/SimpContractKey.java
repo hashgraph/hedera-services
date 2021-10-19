@@ -30,7 +30,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class ContractKey implements VirtualKey {
+public class SimpContractKey implements VirtualKey {
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xbd02f789da2d61a5L;
 	static final int RELEASE_0200_VERSION = 1;
 
@@ -41,12 +41,12 @@ public class ContractKey implements VirtualKey {
 
 	private byte[] key;
 
-	public ContractKey() {
+	public SimpContractKey() {
 		this.contract = new byte[Address.SIZE];
 		this.key = new byte[KEY_SIZE];
 	}
 
-	public ContractKey(byte[] contract, byte[] key) {
+	public SimpContractKey(byte[] contract, byte[] key) {
 		this.setContract(contract);
 		this.setKey(key);
 	}
@@ -120,7 +120,7 @@ public class ContractKey implements VirtualKey {
 	public boolean equals(Object o) {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
-		ContractKey that = (ContractKey) o;
+		SimpContractKey that = (SimpContractKey) o;
 		return Arrays.equals(this.contract, that.contract) && Arrays.equals(this.key, that.key);
 	}
 

@@ -21,13 +21,12 @@ package com.hedera.services.state.migration;
  */
 
 import com.hedera.services.ServicesState;
+import com.hedera.services.contracts.virtual.SimpContractKey;
+import com.hedera.services.contracts.virtual.SimpContractValue;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.state.virtual.VirtualMapFactory;
-import com.hedera.services.store.contracts.DWUtil;
 import com.swirlds.jasperdb.VirtualDataSourceJasperDB;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
@@ -42,6 +41,7 @@ import java.util.function.BiConsumer;
 import static com.hedera.services.files.store.FcBlobsBytesStore.LEGACY_BLOB_CODE_INDEX;
 import static com.hedera.services.state.merkle.internals.ContractStorageKey.BYTES_PER_UINT256;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_TWENTY_VERSION;
+import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hedera.services.utils.MiscUtils.forEach;
 import static java.lang.Long.parseLong;
 
@@ -76,7 +76,7 @@ public class ReleaseTwentyMigration {
 		final MerkleMap<String, MerkleOptionalBlob> legacyBlobs = initializingState.getChild(StateChildIndices.STORAGE);
 
 		final VirtualMap<VirtualBlobKey, VirtualBlobValue> vmBlobs = virtualMapFactory.newVirtualizedBlobs();
-		final VirtualMap<ContractKey, ContractValue> vmStorage = virtualMapFactory.newVirtualizedStorage();
+		final VirtualMap<SimpContractKey, SimpContractValue> vmStorage = virtualMapFactory.newVirtualizedStorage();
 
 		final Map<Character, AtomicInteger> counts = new HashMap<>();
 		forEach(legacyBlobs, (path, blob) -> {
@@ -111,7 +111,7 @@ public class ReleaseTwentyMigration {
 	static void insertPairsFrom(
 			final long contractNum,
 			final byte[] orderedKeyValueStorage,
-			final VirtualMap<ContractKey, ContractValue> vmStorage
+			final VirtualMap<SimpContractKey, SimpContractValue> vmStorage
 	) {
 		int offset = 0;
 
@@ -124,8 +124,8 @@ public class ReleaseTwentyMigration {
 			System.arraycopy(orderedKeyValueStorage, offset, rawValue, 0, BYTES_PER_UINT256);
 			offset += BYTES_PER_UINT256;
 
-			final var key = new ContractKey(contractNum, DWUtil.asPackedInts(rawKey));
-			final var value = new ContractValue(rawValue);
+			final var key = new SimpContractKey(asSolidityAddress(0, 0, contractNum), rawKey);
+			final var value = new SimpContractValue(rawValue);
 			vmStorage.put(key, value);
 		}
 	}

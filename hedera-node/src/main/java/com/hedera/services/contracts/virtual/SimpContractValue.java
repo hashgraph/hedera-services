@@ -29,7 +29,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class ContractValue implements VirtualValue {
+public class SimpContractValue implements VirtualValue {
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x34beec0816955bcbL;
 	static final int RELEASE_0200_VERSION = 1;
 
@@ -39,11 +39,11 @@ public class ContractValue implements VirtualValue {
 
 	private boolean immutable = false;
 
-	public ContractValue() {
+	public SimpContractValue() {
 		this.value = new byte[SIZE];
 	}
 
-	public ContractValue(byte[] value) {
+	public SimpContractValue(byte[] value) {
 		Objects.requireNonNull(value);
 		if (value.length != 32) {
 			throw new IllegalArgumentException("invalid bytes length");
@@ -55,14 +55,18 @@ public class ContractValue implements VirtualValue {
 		return this.value;
 	}
 
+	public void setValue(byte[] value) {
+		this.value = value;
+	}
+
 	@Override
-	public ContractValue copy() {
-		return new ContractValue(this.value);
+	public SimpContractValue copy() {
+		return new SimpContractValue(this.value);
 	}
 
 	@Override
 	public VirtualValue asReadOnly() {
-		ContractValue copy = copy();
+		SimpContractValue copy = copy();
 		copy.immutable = true;
 		return copy;
 	}
@@ -111,8 +115,8 @@ public class ContractValue implements VirtualValue {
 	public boolean equals(Object o) {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
-		ContractValue contractValue = (ContractValue) o;
-		return Arrays.equals(value, contractValue.value);
+		SimpContractValue simpContractValue = (SimpContractValue) o;
+		return Arrays.equals(value, simpContractValue.value);
 	}
 
 	@Override

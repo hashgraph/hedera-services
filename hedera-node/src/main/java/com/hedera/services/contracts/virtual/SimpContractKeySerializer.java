@@ -26,7 +26,7 @@ import com.swirlds.jasperdb.files.hashmap.KeySerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class ContractKeySerializer implements KeySerializer<ContractKey> {
+public class SimpContractKeySerializer implements KeySerializer<SimpContractKey> {
 	@Override
 	public int deserializeKeySize(ByteBuffer byteBuffer) {
 		return 52; // TODO:
@@ -43,15 +43,15 @@ public class ContractKeySerializer implements KeySerializer<ContractKey> {
 	}
 
 	@Override
-	public ContractKey deserialize(ByteBuffer byteBuffer, long dataVersion) throws IOException {
-		final ContractKey key = new ContractKey();
+	public SimpContractKey deserialize(ByteBuffer byteBuffer, long dataVersion) throws IOException {
+		final SimpContractKey key = new SimpContractKey();
 		key.deserialize(byteBuffer, (int) dataVersion);
 		return key;
 	}
 
 	@Override
-	public int serialize(ContractKey contractKey, SerializableDataOutputStream serializableDataOutputStream) throws IOException {
-		contractKey.serialize(serializableDataOutputStream);
+	public int serialize(SimpContractKey simpContractKey, SerializableDataOutputStream serializableDataOutputStream) throws IOException {
+		simpContractKey.serialize(serializableDataOutputStream);
 		return 52; // TODO:
 	}
 }

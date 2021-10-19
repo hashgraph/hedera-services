@@ -21,9 +21,8 @@ package com.hedera.services.contracts.persistence;
  */
 
 import com.hedera.services.contracts.annotations.StorageSource;
-import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractValue;
-import com.hedera.services.store.contracts.DWUtil;
+import com.hedera.services.contracts.virtual.SimpContractKey;
+import com.hedera.services.contracts.virtual.SimpContractValue;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -36,6 +35,7 @@ import javax.inject.Singleton;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.contractParsedFromSolidityAddress;
 
 @Singleton
@@ -43,12 +43,12 @@ public class BlobStoragePersistence implements StoragePersistence {
 	private static final Logger log = LogManager.getLogger(BlobStoragePersistence.class);
 
 	private final Map<byte[], byte[]> storage;
-	private final Supplier<VirtualMap<ContractKey, ContractValue>> contractStorage;
+	private final Supplier<VirtualMap<SimpContractKey, SimpContractValue>> contractStorage;
 
 	@Inject
 	public BlobStoragePersistence(
 			@StorageSource Map<byte[], byte[]> storage,
-			Supplier<VirtualMap<ContractKey, ContractValue>> contractStorage
+			Supplier<VirtualMap<SimpContractKey, SimpContractValue>> contractStorage
 	) {
 		this.storage = storage;
 		this.contractStorage = contractStorage;
@@ -110,12 +110,12 @@ public class BlobStoragePersistence implements StoragePersistence {
 			return false;
 		}
 
-		private ContractKey at(DataWord word) {
-			return new ContractKey(contractNum, DWUtil.asPackedInts(word.getData()));
+		private SimpContractKey at(DataWord word) {
+			return new SimpContractKey(asSolidityAddress(0, 0, contractNum), word.getData());
 		}
 
-		private ContractValue leafWith(DataWord word) {
-			return new ContractValue(word.getData());
+		private SimpContractValue leafWith(DataWord word) {
+			return new SimpContractValue(word.getData());
 		}
 	}
 }
