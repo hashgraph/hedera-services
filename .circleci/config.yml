@@ -810,15 +810,22 @@ workflows:
 
 
   # This workflow will be running normally in master branch on a daily basis
-
+  Update-Reconnect:
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_1C/Update
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Comp-Update-Reconnect-4N-1C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
   GCP-Daily-Services-Crypto-Migration-7N-1C:
-    triggers:
-      - schedule:
-          cron: "45 5 * * *"
-          filters:
-            branches:
-              only:
-                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1351,6 +1358,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
+            cd regression/; git checkout -b 01632-D-update-reconnect-runner-3 origin/01632-D-update-reconnect-runner-3; git pull; cd -
             mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
