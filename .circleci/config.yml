@@ -813,7 +813,7 @@ workflows:
   Update-Reconnect:
     jobs:
       - build-platform-and-services
-      - update-reconnect:
+      - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/4N_1C/Update
