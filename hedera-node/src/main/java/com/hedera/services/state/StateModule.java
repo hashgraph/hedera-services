@@ -49,7 +49,6 @@ import com.hedera.services.state.logic.ReconnectListener;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlob;
 import com.hedera.services.state.merkle.MerkleContractStorageValue;
-import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
@@ -63,6 +62,7 @@ import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.validation.BasedLedgerValidator;
 import com.hedera.services.state.validation.LedgerValidator;
+import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewFactory;
@@ -82,6 +82,7 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.NotificationFactory;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.fchashmap.FCOneToManyRelation;
+import com.swirlds.jasperdb.VirtualDataSourceJasperDB;
 import com.swirlds.merkle.map.MerkleMap;
 import dagger.Binds;
 import dagger.Module;
@@ -136,6 +137,12 @@ public abstract class StateModule {
 	@Binds
 	@Singleton
 	public abstract InvalidSignedStateListener bindIssListener(IssListener issListener);
+
+	@Provides
+	@Singleton
+	public static VirtualMapFactory provideVirtualMapFactory() {
+		return new VirtualMapFactory("data/jdb", VirtualDataSourceJasperDB::new);
+	}
 
 	@Provides
 	@Singleton

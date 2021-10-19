@@ -46,6 +46,7 @@ import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.logic.ReconnectListener;
 import com.hedera.services.state.logic.StandardProcessLogic;
 import com.hedera.services.state.validation.BasedLedgerValidator;
+import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
@@ -162,6 +163,7 @@ class ServicesAppTest {
 		assertThat(subject.reconnectListener(), instanceOf(ReconnectListener.class));
 		assertThat(subject.grpcStarter(), instanceOf(GrpcStarter.class));
 		assertThat(subject.upgradeActions(), instanceOf(UpgradeActions.class));
+		assertThat(subject.virtualMapFactory(), instanceOf(VirtualMapFactory.class));
 		assertSame(subject.nodeId(), selfNodeId);
 		assertSame(subject.pause(), SLEEPING_PAUSE);
 		assertTrue(subject.consoleOut().isEmpty());

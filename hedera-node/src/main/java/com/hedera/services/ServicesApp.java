@@ -57,6 +57,7 @@ import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.validation.LedgerValidator;
+import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stats.StatsModule;
 import com.hedera.services.store.StoresModule;
@@ -117,6 +118,7 @@ public interface ServicesApp {
 	ExpandHandleSpan expandHandleSpan();
 	ServicesInitFlow initializationFlow();
 	DualStateAccessor dualStateAccessor();
+	VirtualMapFactory virtualMapFactory();
 	RecordStreamManager recordStreamManager();
 	NodeLocalProperties nodeLocalProperties();
 	GlobalDynamicProperties globalDynamicProperties();
