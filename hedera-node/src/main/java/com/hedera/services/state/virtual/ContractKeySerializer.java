@@ -9,9 +9,9 @@ package com.hedera.services.state.virtual;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -73,23 +73,27 @@ public class ContractKeySerializer implements KeySerializer<ContractKey> {
 	/**
 	 * Deserialize a data item from a byte buffer, that was written with given data version
 	 *
-	 * @param buffer      The buffer to read from containing the data item including its header
-	 * @param dataVersion The serialization version the data item was written with
+	 * @param buffer
+	 * 		The buffer to read from containing the data item including its header
+	 * @param dataVersion
+	 * 		The serialization version the data item was written with
 	 * @return Deserialized data item
 	 */
 	@Override
 	public ContractKey deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
 		Objects.requireNonNull(buffer);
 		ContractKey contractKey = new ContractKey();
-		contractKey.deserialize(buffer,(int)dataVersion);
+		contractKey.deserialize(buffer, (int) dataVersion);
 		return contractKey;
 	}
 
 	/**
 	 * Serialize a data item including header to the output stream returning the size of the data written
 	 *
-	 * @param data         The data item to serialize
-	 * @param outputStream Output stream to write to
+	 * @param data
+	 * 		The data item to serialize
+	 * @param outputStream
+	 * 		Output stream to write to
 	 */
 	@Override
 	public int serialize(ContractKey data, SerializableDataOutputStream outputStream) throws IOException {
@@ -101,7 +105,8 @@ public class ContractKeySerializer implements KeySerializer<ContractKey> {
 	/**
 	 * Deserialize key size from the given byte buffer
 	 *
-	 * @param buffer Buffer to read from
+	 * @param buffer
+	 * 		Buffer to read from
 	 * @return The number of bytes used to store the key, including for storing the key size if needed.
 	 */
 	@Override

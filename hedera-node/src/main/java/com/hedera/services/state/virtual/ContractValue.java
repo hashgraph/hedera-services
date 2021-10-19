@@ -9,9 +9,9 @@ package com.hedera.services.state.virtual;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,7 +33,7 @@ import java.util.Objects;
 /**
  * Representation of a 256bit unsigned int, stored internally as a big-endian byte array.
  */
-@SuppressWarnings({"PointlessBitwiseExpression", "unused"})
+@SuppressWarnings({ "PointlessBitwiseExpression", "unused" })
 public class ContractValue implements VirtualValue {
 	public static final int SERIALIZED_SIZE = 32;
 	/** this is the raw big-endian data for the unit256 */
@@ -86,28 +86,29 @@ public class ContractValue implements VirtualValue {
 	 * Gets the value of this ContractValue as a BigInteger
 	 */
 	public BigInteger asBigInteger() {
-		return new BigInteger(this.uint256Value,0,32);
+		return new BigInteger(this.uint256Value, 0, 32);
 	}
 
 	/**
 	 * Gets the lower 8 bytes of the value of this ContractValue as a long
 	 */
 	public long asLong() {
-		return (((long)uint256Value[24] << 56) +
-				((long)(uint256Value[25] & 255) << 48) +
-				((long)(uint256Value[26] & 255) << 40) +
-				((long)(uint256Value[27] & 255) << 32) +
-				((long)(uint256Value[28] & 255) << 24) +
+		return (((long) uint256Value[24] << 56) +
+				((long) (uint256Value[25] & 255) << 48) +
+				((long) (uint256Value[26] & 255) << 40) +
+				((long) (uint256Value[27] & 255) << 32) +
+				((long) (uint256Value[28] & 255) << 24) +
 				((uint256Value[29] & 255) << 16) +
-				((uint256Value[30] & 255) <<  8) +
-				((uint256Value[31] & 255) <<  0));
+				((uint256Value[30] & 255) << 8) +
+				((uint256Value[31] & 255) << 0));
 	}
 
 	/**
 	 * Directly sets the value of this ContractValue to the given byte array by reference. A copy is not made! It is
 	 * assumed you will not mutate the byte[] after you call this method.
 	 *
-	 * @param bigEndianUint256Value a big endian uint256 as byte[32]
+	 * @param bigEndianUint256Value
+	 * 		a big endian uint256 as byte[32]
 	 */
 	public void setValue(byte[] bigEndianUint256Value) {
 		Objects.requireNonNull(bigEndianUint256Value);
@@ -122,7 +123,8 @@ public class ContractValue implements VirtualValue {
 	 * Set the value with a BigInteger. If the BigInteger is signed then the sign is dropped. If the BigInteger is
 	 * longer than 32 byte then just the 32 least significant bytes are taken.
 	 *
-	 * @param value BigInteger, should really be unsigned and less than or equal to 32 bytes
+	 * @param value
+	 * 		BigInteger, should really be unsigned and less than or equal to 32 bytes
 	 */
 	public void setValue(BigInteger value) {
 		Objects.requireNonNull(value);
@@ -133,30 +135,31 @@ public class ContractValue implements VirtualValue {
 			this.uint256Value = bigIntegerBytes;
 		} else if (bigIntegerBytes.length > 32) {
 			this.uint256Value = new byte[32];
-			System.arraycopy(bigIntegerBytes,bigIntegerBytes.length - 32, this.uint256Value,0,32);
+			System.arraycopy(bigIntegerBytes, bigIntegerBytes.length - 32, this.uint256Value, 0, 32);
 		} else {
 			this.uint256Value = new byte[32];
-			System.arraycopy(bigIntegerBytes,0,
-					this.uint256Value,32-bigIntegerBytes.length,bigIntegerBytes.length);
+			System.arraycopy(bigIntegerBytes, 0,
+					this.uint256Value, 32 - bigIntegerBytes.length, bigIntegerBytes.length);
 		}
 	}
 
 	/**
 	 * Set the value with a long, this will set the 8 least significant bytes to the long and the rest to zeros.
 	 *
-	 * @param value long value
+	 * @param value
+	 * 		long value
 	 */
 	public void setValue(long value) {
 		if (isImmutable) throw new IllegalStateException("Tried to set value on immutable ContractValue");
 		this.uint256Value = new byte[32];
-		this.uint256Value[24] = (byte)(value >>> 56);
-		this.uint256Value[25] = (byte)(value >>> 48);
-		this.uint256Value[26] = (byte)(value >>> 40);
-		this.uint256Value[27] = (byte)(value >>> 32);
-		this.uint256Value[28] = (byte)(value >>> 24);
-		this.uint256Value[29] = (byte)(value >>> 16);
-		this.uint256Value[30] = (byte)(value >>>  8);
-		this.uint256Value[31] = (byte)(value >>>  0);
+		this.uint256Value[24] = (byte) (value >>> 56);
+		this.uint256Value[25] = (byte) (value >>> 48);
+		this.uint256Value[26] = (byte) (value >>> 40);
+		this.uint256Value[27] = (byte) (value >>> 32);
+		this.uint256Value[28] = (byte) (value >>> 24);
+		this.uint256Value[29] = (byte) (value >>> 16);
+		this.uint256Value[30] = (byte) (value >>> 8);
+		this.uint256Value[31] = (byte) (value >>> 0);
 	}
 
 	@Override
@@ -164,7 +167,7 @@ public class ContractValue implements VirtualValue {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		ContractValue contractValue = (ContractValue) o;
-		return Arrays.equals(uint256Value,contractValue.uint256Value);
+		return Arrays.equals(uint256Value, contractValue.uint256Value);
 	}
 
 	@Override
