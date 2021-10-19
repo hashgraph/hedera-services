@@ -118,6 +118,14 @@
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
+      <id>swirlds-staging</id>
+      <name>Staging repo for swirlds</name>
+      <url>https://oss.sonatype.org/content/repositories/comswirlds-1158</url>
+    </repository>
+    <repository>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
       <id>central</id>
       <name>Central Repository</name>
       <url>https://repo.maven.apache.org/maven2</url>
@@ -433,7 +441,17 @@ ${git.signoff}
       </dependency>
       <dependency>
         <groupId>com.swirlds</groupId>
+        <artifactId>swirlds-jasperdb</artifactId>
+        <version>${swirlds.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.swirlds</groupId>
         <artifactId>swirlds-merkle</artifactId>
+        <version>${swirlds.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.swirlds</groupId>
+        <artifactId>swirlds-virtualmap</artifactId>
         <version>${swirlds.version}</version>
       </dependency>
       <dependency>

@@ -259,11 +259,19 @@
     </dependency>
     <dependency>
       <groupId>com.swirlds</groupId>
+      <artifactId>swirlds-jasperdb</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.swirlds</groupId>
       <artifactId>swirlds-merkle</artifactId>
     </dependency>
     <dependency>
       <groupId>com.swirlds</groupId>
       <artifactId>swirlds-fcqueue</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.swirlds</groupId>
+      <artifactId>swirlds-virtualmap</artifactId>
     </dependency>
     <dependency>
       <groupId>com.hedera.hashgraph</groupId>

@@ -333,6 +333,14 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
+	public static Supplier<VirtualMap<ContractKey, ContractValue>> provideWorkingContractStorage(
+			@WorkingState StateAccessor accessor
+	) {
+		return accessor::contractStorage;
+	}
+
+	@Provides
+	@Singleton
 	public static Supplier<MerkleNetworkContext> provideWorkingNetworkCtx(
 			@WorkingState StateAccessor accessor
 	) {
@@ -345,14 +353,6 @@ public abstract class StateModule {
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::addressBook;
-	}
-
-	@Provides
-	@Singleton
-	public static Supplier<VirtualMap<ContractKey, ContractValue>> provideContractStorage(
-			@WorkingState StateAccessor accessor
-	) {
-		return accessor::contractStorage;
 	}
 
 	@Provides

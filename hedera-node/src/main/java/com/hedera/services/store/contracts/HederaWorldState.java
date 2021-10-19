@@ -27,16 +27,17 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.swirlds.virtualmap.VirtualMap;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.ethereum.core.AccountState;
-import org.ethereum.db.ContractDetails;
 import org.ethereum.db.ServicesRepositoryRoot;
-import org.ethereum.vm.DataWord;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
@@ -57,6 +58,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeSet;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
@@ -71,6 +73,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 	private final EntityIdSource ids;
 	private final HederaLedger ledger;
 	private final ServicesRepositoryRoot repositoryRoot;
+	private final Supplier<VirtualMap<ContractKey, ContractValue>> contractStorage;
 	private final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
 	private final List<ContractID> provisionalContractCreations = new LinkedList<>();
 
@@ -78,10 +81,12 @@ public class HederaWorldState implements HederaMutableWorldState {
 	public HederaWorldState(
 			final EntityIdSource ids,
 			final HederaLedger ledger,
-			final ServicesRepositoryRoot repositoryRoot
+			final ServicesRepositoryRoot repositoryRoot,
+			final Supplier<VirtualMap<ContractKey, ContractValue>> contractStorage
 	) {
 		this.ids = ids;
 		this.repositoryRoot = repositoryRoot;
+		this.contractStorage = contractStorage;
 		this.ledger = ledger;
 	}
 
@@ -169,7 +174,9 @@ public class HederaWorldState implements HederaMutableWorldState {
 	public class WorldStateAccount implements Account {
 
 		private final Wei balance;
+		private final long contractNum;
 		private final Address address;
+		private final byte[] bytesAddress;
 
 		private JKey key;
 		private String memo;
@@ -177,17 +184,24 @@ public class HederaWorldState implements HederaMutableWorldState {
 		private long expiry;
 		private long autoRenew;
 
-		public WorldStateAccount(final Address address, final Wei balance, long expiry, long autoRenew,
-								 EntityId proxyAccount) {
+		public WorldStateAccount(
+				final Address address,
+				final Wei balance,
+				final long expiry,
+				final long autoRenew,
+				final EntityId proxyAccount
+		) {
 			this.expiry = expiry;
 			this.address = address;
+			this.bytesAddress = address.toArray();
 			this.balance = balance;
 			this.autoRenew = autoRenew;
 			this.proxyAccount = proxyAccount;
+			this.contractNum = contractParsedFromSolidityAddress(bytesAddress).getContractNum();
 		}
 
-		private ContractDetails storageTrie() {
-			return repositoryRoot.getContractDetails(getAddress().toArray());
+		private VirtualMap<ContractKey, ContractValue> storageTrie() {
+			return contractStorage.get();
 		}
 
 		@Override
@@ -236,8 +250,9 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		@Override
 		public UInt256 getStorageValue(final UInt256 key) {
-			DataWord dwValue = storageTrie().get(DWUtil.fromUInt256(key));
-			return dwValue == null ? UInt256.ZERO : DWUtil.fromDataWord(dwValue);
+			final var contractKey = new ContractKey(contractNum, DWUtil.asPackedInts(key.toArray()));
+			ContractValue value = storageTrie().get(contractKey);
+			return value == null ? UInt256.ZERO : UInt256.fromBytes(Bytes32.wrap(value.getValue()));
 		}
 
 		@Override
@@ -247,7 +262,9 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		@Override
 		public NavigableMap<Bytes32, AccountStorageEntry> storageEntriesFrom(
-				final Bytes32 startKeyHash, final int limit) {
+				final Bytes32 startKeyHash,
+				final int limit
+		) {
 			throw new UnsupportedOperationException("Stream storage entries not supported");
 		}
 
@@ -368,10 +385,11 @@ public class HederaWorldState implements HederaMutableWorldState {
 			for (final UpdateTrackingAccount<WorldStateAccount> updated : getUpdatedAccounts()) {
 				final byte[] address = updated.getAddress().toArray();
 
+				final var contractId = contractParsedFromSolidityAddress(address);
 				if (!repository.isExist(address)) {
 					repository.delete(address);
 					repository.createAccount(address);
-					wrapped.provisionalContractCreations.add(contractParsedFromSolidityAddress(address));
+					wrapped.provisionalContractCreations.add(contractId);
 				}
 
 				final var oldBalance = repository.getBalance(address);
@@ -384,19 +402,20 @@ public class HederaWorldState implements HederaMutableWorldState {
 				final Map<UInt256, UInt256> updatedStorage = updated.getUpdatedStorage();
 				if (!updatedStorage.isEmpty()) {
 					// Apply any storage updates
-					final ContractDetails storageTrie =
-							freshState ? wrapped.repositoryRoot.getContractDetails(
-									updated.getAddress().toArray()) : origin.storageTrie();
+					final VirtualMap<ContractKey, ContractValue> storageTrie =
+							freshState ? wrapped.contractStorage.get() : origin.storageTrie();
 					final TreeSet<Map.Entry<UInt256, UInt256>> entries =
 							new TreeSet<>(Map.Entry.comparingByKey());
 					entries.addAll(updatedStorage.entrySet());
 
 					for (final Map.Entry<UInt256, UInt256> entry : entries) {
 						final UInt256 value = entry.getValue();
+						final var packedUint256 = DWUtil.asPackedInts(entry.getKey().toArray());
+						final var key = new ContractKey(contractId.getContractNum(), packedUint256);
 						if (value.isZero()) {
-							storageTrie.put(DWUtil.fromUInt256(entry.getKey()), DataWord.ZERO);
+							storageTrie.put(key, new ContractValue());
 						} else {
-							storageTrie.put(DWUtil.fromUInt256(entry.getKey()), DWUtil.fromUInt256(value));
+							storageTrie.put(key, new ContractValue(value.toArray()));
 						}
 					}
 				}

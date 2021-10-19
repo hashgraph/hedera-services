@@ -54,8 +54,8 @@ public class StateChildren {
 	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
 	private MerkleMap<EntityNum, MerkleSchedule> schedules;
 	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
-	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
 	private VirtualMap<ContractKey, ContractValue> contractStorage;
+	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
 	private FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations;
 	private FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations;
 	private FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations;
@@ -63,14 +63,6 @@ public class StateChildren {
 	private AddressBook addressBook;
 	private MerkleSpecialFiles specialFiles;
 	private RecordsRunningHashLeaf runningHashLeaf;
-
-	public VirtualMap<ContractKey, ContractValue> getContractStorage() {
-		return contractStorage;
-	}
-
-	public void setContractStorage(VirtualMap<ContractKey, ContractValue> contractStorage) {
-		this.contractStorage = contractStorage;
-	}
 
 	public MerkleMap<EntityNum, MerkleAccount> getAccounts() {
 		Objects.requireNonNull(accounts);
@@ -115,6 +107,15 @@ public class StateChildren {
 
 	public void setStorage(VirtualMap<VirtualBlobKey, VirtualBlobValue> storage) {
 		this.storage = storage;
+	}
+
+	public void setContractStorage(VirtualMap<ContractKey, ContractValue> contractStorage) {
+		this.contractStorage = contractStorage;
+	}
+
+	public VirtualMap<ContractKey, ContractValue> getContractStorage() {
+		Objects.requireNonNull(contractStorage);
+		return contractStorage;
 	}
 
 	public MerkleMap<EntityNumPair, MerkleTokenRelStatus> getTokenAssociations() {
