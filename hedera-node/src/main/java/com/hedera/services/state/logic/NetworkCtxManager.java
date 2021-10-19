@@ -20,10 +20,9 @@ package com.hedera.services.state.logic;
  * ‍
  */
 
-import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.state.initialization.SystemFilesManager;
@@ -69,7 +68,7 @@ public class NetworkCtxManager {
 	@Inject
 	public NetworkCtxManager(
 			IssEventInfo issInfo,
-			@CompositeProps PropertySource properties,
+			NodeLocalProperties nodeLocalProperties,
 			HapiOpCounters opCounters,
 			HbarCentExchange exchange,
 			SystemFilesManager systemFilesManager,
@@ -78,7 +77,7 @@ public class NetworkCtxManager {
 			@HandleThrottle FunctionalityThrottling handleThrottling,
 			Supplier<MerkleNetworkContext> networkCtx
 	) {
-		issResetPeriod = properties.getIntProperty("iss.resetPeriod");
+		issResetPeriod = nodeLocalProperties.issResetPeriod();
 
 		this.issInfo = issInfo;
 		this.opCounters = opCounters;

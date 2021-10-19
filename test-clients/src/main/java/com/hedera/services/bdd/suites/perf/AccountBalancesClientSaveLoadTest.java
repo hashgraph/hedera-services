@@ -55,7 +55,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.exportAccountBalances;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
@@ -209,10 +209,8 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 						sleepFor(10 * SECOND),
 						exportAccountBalances(() -> ACCOUNT_FILE_EXPORT_DIR ),
 
-						freeze().payingWith(GENESIS)
+						freezeOnly().payingWith(GENESIS)
 								.startingIn(10).seconds()
-								.andLasting(2).minutes()
-
 						);
 	}
 

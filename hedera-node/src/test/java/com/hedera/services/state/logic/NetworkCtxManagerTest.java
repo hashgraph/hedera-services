@@ -24,7 +24,7 @@ import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.context.domain.trackers.IssEventStatus;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.state.initialization.SystemFilesManager;
@@ -64,7 +64,7 @@ class NetworkCtxManagerTest {
 	@Mock
 	private IssEventInfo issInfo;
 	@Mock
-	private PropertySource properties;
+	private NodeLocalProperties nodeLocalProperties;
 	@Mock
 	private HapiOpCounters opCounters;
 	@Mock
@@ -84,11 +84,11 @@ class NetworkCtxManagerTest {
 
 	@BeforeEach
 	void setUp() {
-		given(properties.getIntProperty("iss.resetPeriod")).willReturn(issResetPeriod);
+		given(nodeLocalProperties.issResetPeriod()).willReturn(issResetPeriod);
 
 		subject = new NetworkCtxManager(
 				issInfo,
-				properties,
+				nodeLocalProperties,
 				opCounters,
 				exchange,
 				systemFilesManager,

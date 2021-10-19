@@ -60,6 +60,8 @@ class NodeLocalPropertiesTest {
 		assertEquals(20, subject.nettyFlowControlWindow());
 		assertEquals(23, subject.nettyStartRetries());
 		assertEquals(25, subject.numExecutionTimesToTrack());
+		assertEquals(26, subject.issResetPeriod());
+		assertEquals(27, subject.issRoundsToDump());
 	}
 
 	@Test
@@ -110,6 +112,8 @@ class NodeLocalPropertiesTest {
 		assertEquals(21, subject.nettyFlowControlWindow());
 		assertEquals(24, subject.nettyStartRetries());
 		assertEquals(26, subject.numExecutionTimesToTrack());
+		assertEquals(27, subject.issResetPeriod());
+		assertEquals(28, subject.issRoundsToDump());
 	}
 
 	@Test
@@ -176,6 +180,8 @@ class NodeLocalPropertiesTest {
 		given(properties.getLongProperty("netty.startRetryIntervalMs")).willReturn(i + 23L);
 		given(properties.getBooleanProperty("iss.dumpFcms")).willReturn(i % 2 == 1);
 		given(properties.getIntProperty("stats.executionTimesToTrack")).willReturn(i + 24);
+		given(properties.getIntProperty("iss.resetPeriod")).willReturn(i + 25);
+		given(properties.getIntProperty("iss.roundsToDump")).willReturn(i + 26);
 	}
 
 	static String logDir(int num) {
