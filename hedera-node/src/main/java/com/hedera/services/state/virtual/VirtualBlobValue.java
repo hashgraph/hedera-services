@@ -38,6 +38,14 @@ public class VirtualBlobValue implements VirtualValue {
 		/* Required by deserialization facility */
 	}
 
+	public byte[] getData() {
+		return data;
+	}
+
+	public void setData(byte[] data) {
+		this.data = data;
+	}
+
 	public VirtualBlobValue(byte[] data) {
 		this.data = data;
 	}

@@ -29,7 +29,6 @@ import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.forensics.HashLogger;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleBlob;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
@@ -39,7 +38,6 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.internals.BlobKey;
 import com.hedera.services.state.migration.LegacyStateChildIndices;
 import com.hedera.services.state.migration.ReleaseTwentyMigration;
 import com.hedera.services.state.migration.StateChildIndices;
@@ -47,6 +45,8 @@ import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.EntityNum;
@@ -73,6 +73,7 @@ import com.swirlds.merkle.map.FCMapMigration;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkle.tree.MerkleBinaryTree;
 import com.swirlds.merkle.tree.MerkleTreeInternalNode;
+import com.swirlds.virtualmap.VirtualMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -258,7 +259,7 @@ class ServicesStateTest {
 
 		// then:
 		verify(metadata).archive();
-		verify(mockMm, times(7)).archive();
+		verify(mockMm, times(6)).archive();
 	}
 
 	@Test
@@ -436,16 +437,17 @@ class ServicesStateTest {
 		ServicesState.setFcmMigrator(fcmMigrator);
 		ServicesState.setBlobMigrationFlag(blobMigrationFlag);
 		ServicesState.setBlobMigrator(blobMigrator);
-		final MerkleMap<?, ?> pretend = new MerkleMap<>();
+		final MerkleMap<?, ?> pretendMm = new MerkleMap<>();
+		final VirtualMap<?, ?> pretendVm = new VirtualMap<>();
 
 		subject = mock(ServicesState.class);
-		given(subject.uniqueTokens()).willReturn((MerkleMap<EntityNumPair, MerkleUniqueToken>) pretend);
-		given(subject.tokenAssociations()).willReturn((MerkleMap<EntityNumPair, MerkleTokenRelStatus>) pretend);
-		given(subject.topics()).willReturn((MerkleMap<EntityNum, MerkleTopic>) pretend);
-		given(subject.storage()).willReturn((MerkleMap<BlobKey, MerkleBlob>) pretend);
-		given(subject.accounts()).willReturn((MerkleMap<EntityNum, MerkleAccount>) pretend);
-		given(subject.tokens()).willReturn((MerkleMap<EntityNum, MerkleToken>) pretend);
-		given(subject.scheduleTxs()).willReturn((MerkleMap<EntityNum, MerkleSchedule>) pretend);
+		given(subject.uniqueTokens()).willReturn((MerkleMap<EntityNumPair, MerkleUniqueToken>) pretendMm);
+		given(subject.tokenAssociations()).willReturn((MerkleMap<EntityNumPair, MerkleTokenRelStatus>) pretendMm);
+		given(subject.topics()).willReturn((MerkleMap<EntityNum, MerkleTopic>) pretendMm);
+		given(subject.storage()).willReturn((VirtualMap<VirtualBlobKey, VirtualBlobValue>) pretendVm);
+		given(subject.accounts()).willReturn((MerkleMap<EntityNum, MerkleAccount>) pretendMm);
+		given(subject.tokens()).willReturn((MerkleMap<EntityNum, MerkleToken>) pretendMm);
+		given(subject.scheduleTxs()).willReturn((MerkleMap<EntityNum, MerkleSchedule>) pretendMm);
 
 		willCallRealMethod().given(subject).migrate();
 		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0170_VERSION);

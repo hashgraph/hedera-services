@@ -56,9 +56,7 @@ public final class DWUtil {
 		return UInt256.fromBytes(Bytes32.wrap(dataWord.getData()));
 	}
 
-	public static int[] asPackedInts(DataWord dataWord) {
-		final var data = dataWord.getData();
-
+	public static int[] asPackedInts(final byte[] data) {
 		return new int[] {
 				data[0] << 3 | data[1] << 2 | data[2] << 1 | data[3],
 				data[4] << 3 | data[5] << 2 | data[6] << 1 | data[7],

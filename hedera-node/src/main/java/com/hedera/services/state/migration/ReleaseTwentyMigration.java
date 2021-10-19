@@ -21,27 +21,29 @@ package com.hedera.services.state.migration;
  */
 
 import com.hedera.services.ServicesState;
-import com.hedera.services.state.merkle.MerkleBlob;
-import com.hedera.services.state.merkle.MerkleContractStorageValue;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.hedera.services.state.merkle.internals.BlobKey;
-import com.hedera.services.state.merkle.internals.ContractStorageKey;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.state.virtual.VirtualMapFactory;
+import com.hedera.services.store.contracts.DWUtil;
+import com.swirlds.jasperdb.VirtualDataSourceJasperDB;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
 import static com.hedera.services.files.store.FcBlobsBytesStore.LEGACY_BLOB_CODE_INDEX;
-import static com.hedera.services.files.store.FcBlobsBytesStore.getEntityNumFromPath;
-import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.CONTRACT_STORAGE;
-import static com.hedera.services.state.merkle.internals.BlobKey.typeFromCharCode;
 import static com.hedera.services.state.merkle.internals.ContractStorageKey.BYTES_PER_UINT256;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_TWENTY_VERSION;
 import static com.hedera.services.utils.MiscUtils.forEach;
+import static java.lang.Long.parseLong;
 
 public class ReleaseTwentyMigration {
 	private static final Logger log = LogManager.getLogger(ReleaseTwentyMigration.class);
@@ -70,27 +72,28 @@ public class ReleaseTwentyMigration {
 	) {
 		log.info("Migrating state from version {} to {}", deserializedVersion, RELEASE_TWENTY_VERSION);
 
+		final var virtualMapFactory = new VirtualMapFactory("data/jdb", VirtualDataSourceJasperDB::new);
 		final MerkleMap<String, MerkleOptionalBlob> legacyBlobs = initializingState.getChild(StateChildIndices.STORAGE);
 
-		final MerkleMap<BlobKey, MerkleBlob> vmBlobsStandIn = new MerkleMap<>();
-		final MerkleMap<ContractStorageKey, MerkleContractStorageValue> vmStorageStandIn = new MerkleMap<>();
+		final VirtualMap<VirtualBlobKey, VirtualBlobValue> vmBlobs = virtualMapFactory.newVirtualizedBlobs();
+		final VirtualMap<ContractKey, ContractValue> vmStorage = virtualMapFactory.newVirtualizedStorage();
 
-		final Map<BlobKey.BlobType, AtomicInteger> counts = new EnumMap<>(BlobKey.BlobType.class);
+		final Map<Character, AtomicInteger> counts = new HashMap<>();
 		forEach(legacyBlobs, (path, blob) -> {
-			final var blobType = typeFromCharCode(path.charAt(LEGACY_BLOB_CODE_INDEX));
-			final var blobEntityNum = getEntityNumFromPath(path);
-			if (blobType == CONTRACT_STORAGE) {
-				insertPairsFrom(blobEntityNum, blob.getData(), vmStorageStandIn);
+			final var pathCode = path.charAt(LEGACY_BLOB_CODE_INDEX);
+			if (pathCode == 'd') {
+				final var contractNum = parseLong(path.substring(LEGACY_BLOB_CODE_INDEX + 1));
+				insertPairsFrom(contractNum, blob.getData(), vmStorage);
 			} else {
-				final var vKey = new BlobKey(blobType, blobEntityNum);
-				final var vBlob = new MerkleBlob(blob.getData());
-				vmBlobsStandIn.put(vKey, vBlob);
+				final var vKey = VirtualBlobKey.fromPath(path);
+				final var vBlob = new VirtualBlobValue(blob.getData());
+				vmBlobs.put(vKey, vBlob);
 			}
-			counts.computeIfAbsent(blobType, ignore -> new AtomicInteger()).getAndIncrement();
+			counts.computeIfAbsent(pathCode, ignore -> new AtomicInteger()).getAndIncrement();
 		});
 
-		initializingState.setChild(StateChildIndices.STORAGE, vmBlobsStandIn);
-		initializingState.setChild(StateChildIndices.CONTRACT_STORAGE, vmStorageStandIn);
+		initializingState.setChild(StateChildIndices.STORAGE, vmBlobs);
+		initializingState.setChild(StateChildIndices.CONTRACT_STORAGE, vmStorage);
 
 		log.info("Migration complete for:"
 						+ "\n  ↪ {} file metadata blobs"
@@ -98,17 +101,17 @@ public class ReleaseTwentyMigration {
 						+ "\n  ↪ {} contract bytecode blobs"
 						+ "\n  ↪ {} contract storage blobs"
 						+ "\n  ↪ {} system-deleted entity expiry blobs",
-				counts.get(BlobKey.BlobType.FILE_METADATA).get(),
-				counts.get(BlobKey.BlobType.FILE_DATA).get(),
-				counts.get(BlobKey.BlobType.CONTRACT_BYTECODE).get(),
-				counts.get(CONTRACT_STORAGE).get(),
-				counts.get(BlobKey.BlobType.SYSTEM_DELETED_ENTITY_EXPIRY).get());
+				counts.get('k').get(),
+				counts.get('f').get(),
+				counts.get('s').get(),
+				counts.get('d').get(),
+				counts.get('e').get());
 	}
 
 	static void insertPairsFrom(
 			final long contractNum,
 			final byte[] orderedKeyValueStorage,
-			final MerkleMap<ContractStorageKey, MerkleContractStorageValue> vmStorageStandIn
+			final VirtualMap<ContractKey, ContractValue> vmStorage
 	) {
 		int offset = 0;
 
@@ -121,10 +124,9 @@ public class ReleaseTwentyMigration {
 			System.arraycopy(orderedKeyValueStorage, offset, rawValue, 0, BYTES_PER_UINT256);
 			offset += BYTES_PER_UINT256;
 
-			final var storageKey = new ContractStorageKey(contractNum, rawKey);
-			final var storageValue = new MerkleContractStorageValue();
-			storageValue.setValue(rawValue);
-			vmStorageStandIn.put(storageKey, storageValue);
+			final var key = new ContractKey(contractNum, DWUtil.asPackedInts(rawKey));
+			final var value = new ContractValue(rawValue);
+			vmStorage.put(key, value);
 		}
 	}
 

@@ -20,11 +20,12 @@ package com.hedera.services.files.store;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleBlob;
-import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.internals.BlobKey;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -54,17 +55,16 @@ class FcBlobsBytesStoreTest {
 	private static final String bytecodePath = "/0/s4";
 	private static final String storagePath = "/0/d123";
 	private static final String expiryTimePath = "/0/e5";
-	private BlobKey pathAKey;
-	private static final MerkleBlobMeta aMeta = new MerkleBlobMeta(dataPath);
+	private VirtualBlobKey pathAKey;
 
-	private MerkleBlob blobA;
-	private MerkleMap<BlobKey, MerkleBlob> pathedBlobs;
+	private VirtualBlobValue blobA;
+	private VirtualMap<VirtualBlobKey, VirtualBlobValue> pathedBlobs;
 
 	private FcBlobsBytesStore subject;
 
 	@BeforeEach
 	private void setup() {
-		pathedBlobs = mock(MerkleMap.class);
+		pathedBlobs = mock(VirtualMap.class);
 
 		givenMockBlobs();
 		subject = new FcBlobsBytesStore(() -> pathedBlobs);
@@ -74,21 +74,19 @@ class FcBlobsBytesStoreTest {
 
 	@Test
 	void delegatesClear() {
-		subject.clear();
-
-		verify(pathedBlobs).clear();
+		assertThrows(UnsupportedOperationException.class, subject::clear);
 	}
 
 	@Test
 	void delegatesRemoveOfMissing() {
-		given(pathedBlobs.remove(aMeta)).willReturn(null);
+		given(pathedBlobs.remove(subject.at(dataPath))).willReturn(null);
 
 		assertNull(subject.remove(dataPath));
 	}
 
 	@Test
 	void delegatesRemoveAndReturnsNull() {
-		given(pathedBlobs.remove(aMeta)).willReturn(blobA);
+		given(pathedBlobs.remove(subject.at(dataPath))).willReturn(blobA);
 
 		assertNull(subject.remove(dataPath));
 	}
@@ -102,15 +100,14 @@ class FcBlobsBytesStoreTest {
 
 		verify(pathedBlobs).containsKey(pathAKey);
 		verify(pathedBlobs).getForModify(pathAKey);
-		//verify(blobA).modify(aData);
 
 		assertNull(oldBytes);
 	}
 
 	@Test
 	void delegatesPutUsingGetAndFactoryIfNewBlob() {
-		final var keyCaptor = ArgumentCaptor.forClass(BlobKey.class);
-		final var valueCaptor = ArgumentCaptor.forClass(MerkleBlob.class);
+		final var keyCaptor = ArgumentCaptor.forClass(VirtualBlobKey.class);
+		final var valueCaptor = ArgumentCaptor.forClass(VirtualBlobValue.class);
 		given(pathedBlobs.containsKey(pathAKey)).willReturn(false);
 
 		final var oldBytes = subject.put(dataPath, aData);
@@ -125,7 +122,7 @@ class FcBlobsBytesStoreTest {
 
 	@Test
 	void propagatesNullFromGet() {
-		given(pathedBlobs.get(dataPath)).willReturn(null);
+		given(pathedBlobs.get(subject.at(dataPath))).willReturn(null);
 
 		assertNull(subject.get(dataPath));
 	}
@@ -153,19 +150,17 @@ class FcBlobsBytesStoreTest {
 	}
 
 	@Test
-	void delegatesSize() {
-		given(pathedBlobs.size()).willReturn(123);
-
-		assertEquals(123, subject.size());
+	void doesNotSupportSize() {
+		assertThrows(UnsupportedOperationException.class, subject::size);
 	}
 
 	@Test
 	void entrySetThrows() {
-		assertThrows(UnsupportedOperationException.class, () -> subject.entrySet());
+		assertThrows(UnsupportedOperationException.class, subject::entrySet);
 	}
 
 	private void givenMockBlobs() {
-		blobA = mock(MerkleBlob.class);
+		blobA = mock(VirtualBlobValue.class);
 
 		given(blobA.getData()).willReturn(aData);
 	}
@@ -189,20 +184,6 @@ class FcBlobsBytesStoreTest {
 		final var replaced = copy.put("path", new MerkleOptionalBlob("SECOND".getBytes()));
 
 		assertFalse(replaced.getDelegate().isReleased());
-	}
-
-	@Test
-	void validateBlobTypeBasedOnPath() {
-		assertEquals(FILE_DATA, subject.at(dataPath).getType());
-		assertEquals(FILE_METADATA, subject.at(metadataPath).getType());
-		assertEquals(CONTRACT_BYTECODE, subject.at(bytecodePath).getType());
-		assertEquals(SYSTEM_DELETED_ENTITY_EXPIRY, subject.at(expiryTimePath).getType());
-		assertEquals(CONTRACT_STORAGE, subject.at(storagePath).getType());
-		try {
-			subject.at("wrongpath").getType();
-		} catch (IllegalArgumentException ex) {
-			assertEquals("Invalid legacy code 'n'", ex.getMessage());
-		}
 	}
 
 	@Test

@@ -24,8 +24,6 @@ import com.hedera.services.ServicesState;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlob;
-import com.hedera.services.state.merkle.MerkleContractStorageValue;
-import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
@@ -34,13 +32,17 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.internals.BlobKey;
-import com.hedera.services.state.merkle.internals.ContractStorageKey;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 
 public class StateAccessor {
 	private final StateChildren children = new StateChildren();
@@ -67,7 +69,7 @@ public class StateAccessor {
 		children.setContractStorage(state.contractStorage());
 	}
 
-	public MerkleMap<ContractStorageKey, MerkleContractStorageValue> contractStorage() {
+	public VirtualMap<ContractKey, ContractValue> contractStorage() {
 		return children.getContractStorage();
 	}
 
@@ -79,7 +81,7 @@ public class StateAccessor {
 		return children.getTopics();
 	}
 
-	public MerkleMap<BlobKey, MerkleBlob> storage() {
+	public VirtualMap<VirtualBlobKey, VirtualBlobValue> storage() {
 		return children.getStorage();
 	}
 

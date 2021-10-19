@@ -21,9 +21,10 @@ package com.hedera.services.contracts.persistence;
  */
 
 import com.hedera.services.contracts.annotations.StorageSource;
-import com.hedera.services.state.merkle.MerkleContractStorageValue;
-import com.hedera.services.state.merkle.internals.ContractStorageKey;
-import com.swirlds.merkle.map.MerkleMap;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.store.contracts.DWUtil;
+import com.swirlds.virtualmap.VirtualMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.datasource.Source;
@@ -42,12 +43,12 @@ public class BlobStoragePersistence implements StoragePersistence {
 	private static final Logger log = LogManager.getLogger(BlobStoragePersistence.class);
 
 	private final Map<byte[], byte[]> storage;
-	private final Supplier<MerkleMap<ContractStorageKey, MerkleContractStorageValue>> contractStorage;
+	private final Supplier<VirtualMap<ContractKey, ContractValue>> contractStorage;
 
 	@Inject
 	public BlobStoragePersistence(
 			@StorageSource Map<byte[], byte[]> storage,
-			Supplier<MerkleMap<ContractStorageKey, MerkleContractStorageValue>> contractStorage
+			Supplier<VirtualMap<ContractKey, ContractValue>> contractStorage
 	) {
 		this.storage = storage;
 		this.contractStorage = contractStorage;
@@ -109,12 +110,12 @@ public class BlobStoragePersistence implements StoragePersistence {
 			return false;
 		}
 
-		private ContractStorageKey at(DataWord word) {
-			return new ContractStorageKey(contractNum, word.getData());
+		private ContractKey at(DataWord word) {
+			return new ContractKey(contractNum, DWUtil.asPackedInts(word.getData()));
 		}
 
-		private MerkleContractStorageValue leafWith(DataWord word) {
-			return new MerkleContractStorageValue(word.getData());
+		private ContractValue leafWith(DataWord word) {
+			return new ContractValue(word.getData());
 		}
 	}
 }

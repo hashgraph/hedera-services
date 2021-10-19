@@ -20,10 +20,11 @@ package com.hedera.services.contracts.persistence;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleContractStorageValue;
-import com.hedera.services.state.merkle.internals.ContractStorageKey;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.store.contracts.DWUtil;
 import com.hedera.services.utils.EntityIdUtils;
-import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.ethereum.vm.DataWord;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,7 +59,7 @@ class BlobStoragePersistenceTest {
 	@Mock
 	private Map<byte[], byte[]> storage;
 	@Mock
-	private MerkleMap<ContractStorageKey, MerkleContractStorageValue> contractStorage;
+	private VirtualMap<ContractKey, ContractValue> contractStorage;
 
 	BlobStoragePersistence subject;
 
@@ -78,7 +79,7 @@ class BlobStoragePersistenceTest {
 	@Test
 	void delegatesPersistence() {
 		// when:
-		subject.persist(address, addressStorage, 0, 0);
+
 
 		// expect:
 		verify(storage).put(
@@ -99,8 +100,8 @@ class BlobStoragePersistenceTest {
 
 	@Test
 	void sourceDelegatesGetAsExpected() {
-		final var mapKey = new ContractStorageKey(contractNum, key);
-		final var mapValue = new MerkleContractStorageValue(expectedValue);
+		final var mapKey = new ContractKey(contractNum, DWUtil.asPackedInts(key));
+		final var mapValue = new ContractValue(expectedValue);
 
 		given(contractStorage.get(mapKey)).willReturn(mapValue);
 		final var source = subject.scopedStorageFor(address);
@@ -115,8 +116,8 @@ class BlobStoragePersistenceTest {
 		final var source = subject.scopedStorageFor(address);
 
 		/* Without an existing leaf, creates a new one */
-		final var captor = ArgumentCaptor.forClass(MerkleContractStorageValue.class);
-		final var oneMapKey = new ContractStorageKey(contractNum, DataWord.ONE.getData());
+		final var captor = ArgumentCaptor.forClass(ContractValue.class);
+		final var oneMapKey = new ContractKey(contractNum, DWUtil.asPackedInts(DataWord.ONE.getData()));
 		source.put(DataWord.ONE, DataWord.ONE);
 		verify(contractStorage).put(eq(oneMapKey), captor.capture());
 		assertArrayEquals(DataWord.ONE.getData(), captor.getValue().getValue());
@@ -124,8 +125,8 @@ class BlobStoragePersistenceTest {
 
 	@Test
 	void sourceDelegatesPutToG4mWithExtantMapping() {
-		final var mapKey = new ContractStorageKey(contractNum, key);
-		final var mapValue = mock(MerkleContractStorageValue.class);
+		final var mapKey = new ContractKey(contractNum, DWUtil.asPackedInts(key));
+		final var mapValue = mock(ContractValue.class);
 		given(contractStorage.containsKey(mapKey)).willReturn(true);
 		given(contractStorage.getForModify(mapKey)).willReturn(mapValue);
 
@@ -138,7 +139,7 @@ class BlobStoragePersistenceTest {
 
 	@Test
 	void sourceDelegatesDeleteToRemove() {
-		final var mapKey = new ContractStorageKey(contractNum, key);
+		final var mapKey = new ContractKey(contractNum, DWUtil.asPackedInts(key));
 
 		final var source = subject.scopedStorageFor(address);
 

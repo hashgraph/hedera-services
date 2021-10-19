@@ -52,7 +52,7 @@ public class HashLogger {
 						"  UniqueTokens           :: {}\n",
 				state.getHash(),
 				state.accounts().getHash(),
-				state.storage().getHash(),
+				"<N/A>",
 				state.topics().getHash(),
 				state.tokens().getHash(),
 				state.tokenAssociations().getHash(),

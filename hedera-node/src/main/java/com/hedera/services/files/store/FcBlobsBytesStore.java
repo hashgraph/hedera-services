@@ -20,9 +20,10 @@ package com.hedera.services.files.store;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleBlob;
 import com.hedera.services.state.merkle.internals.BlobKey;
-import com.swirlds.merkle.map.MerkleMap;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.swirlds.virtualmap.VirtualMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -31,16 +32,15 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import static com.hedera.services.state.merkle.internals.BlobKey.typeFromCharCode;
 import static java.lang.Long.parseLong;
 
 public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 	private static final Logger log = LogManager.getLogger(FcBlobsBytesStore.class);
-	private final Supplier<MerkleMap<BlobKey, MerkleBlob>> blobSupplier;
+	private final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> blobSupplier;
 
 	public static final int LEGACY_BLOB_CODE_INDEX = 3;
 
-	public FcBlobsBytesStore(Supplier<MerkleMap<BlobKey, MerkleBlob>> blobSupplier) {
+	public FcBlobsBytesStore(Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> blobSupplier) {
 		this.blobSupplier = blobSupplier;
 	}
 
@@ -60,16 +60,13 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 	 * 		a string with one of the five forms above
 	 * @return a fixed-size map key with equivalent meaning
 	 */
-	BlobKey at(Object path) {
-		final String s = (String) path;
-		final BlobKey.BlobType type = typeFromCharCode(s.charAt(LEGACY_BLOB_CODE_INDEX));
-		final long entityNum = getEntityNumFromPath(s);
-		return new BlobKey(type, entityNum);
+	VirtualBlobKey at(Object path) {
+		return VirtualBlobKey.fromPath((String) path);
 	}
 
 	@Override
 	public void clear() {
-		blobSupplier.get().clear();
+		throw new UnsupportedOperationException();
 	}
 
 	/**
@@ -106,14 +103,8 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 		if (blobSupplier.get().containsKey(meta)) {
 			final var blob = blobSupplier.get().getForModify(meta);
 			blob.setData(value);
-			if (log.isDebugEnabled()) {
-				log.debug("Modifying to {} new bytes (hash = {}) @ '{}'", value.length, blob.getHash(), path);
-			}
 		} else {
-			final MerkleBlob blob = new MerkleBlob(value);
-			if (log.isDebugEnabled()) {
-				log.debug("Putting {} new bytes (hash = {}) @ '{}'", value.length, blob.getHash(), path);
-			}
+			final VirtualBlobValue blob = new VirtualBlobValue(value);
 			blobSupplier.get().put(at(path), blob);
 		}
 		return null;
@@ -122,7 +113,7 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 	@Override
 	public byte[] get(Object path) {
 		return Optional.ofNullable(blobSupplier.get().get(at(path)))
-				.map(MerkleBlob::getData)
+				.map(VirtualBlobValue::getData)
 				.orElse(null);
 	}
 
@@ -138,7 +129,7 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 
 	@Override
 	public int size() {
-		return blobSupplier.get().size();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override

@@ -96,7 +96,7 @@ public class VirtualMapFactory {
 		return new VirtualMap<>(ds);
 	}
 
-	public VirtualMap<ContractKey, ContractValue> newVirtualizedContractStorage() {
+	public VirtualMap<ContractKey, ContractValue> newVirtualizedStorage() {
 		final var storageKeySerializer = new ContractKeySerializer();
 		final VirtualLeafRecordSerializer<ContractKey, ContractValue> storageLeafRecordSerializer =
 				new VirtualLeafRecordSerializer<>(
