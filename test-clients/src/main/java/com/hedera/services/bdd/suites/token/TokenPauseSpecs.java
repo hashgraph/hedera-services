@@ -107,8 +107,8 @@ public class TokenPauseSpecs extends HapiApiSuite {
 				)
 				.then(
 						tokenPause(token)
-								.signedBy(otherKey)
-								.hasPrecheck(INVALID_SIGNATURE)
+								.signedBy(DEFAULT_PAYER, otherKey)
+								.hasKnownStatus(INVALID_SIGNATURE)
 				);
 	}
 
