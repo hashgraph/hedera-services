@@ -37,8 +37,7 @@ public final class DWUtil {
 	/**
 	 * Converts {@link UInt256} value to {@link DataWord}
 	 *
-	 * @param uInt256
-	 * 		the value to convert
+	 * @param uInt256 the value to convert
 	 * @return the converted {@link DataWord} value
 	 */
 	public static DataWord fromUInt256(UInt256 uInt256) {
@@ -48,8 +47,7 @@ public final class DWUtil {
 	/**
 	 * Converts {@link DataWord} value to {@link UInt256}
 	 *
-	 * @param dataWord
-	 * 		the value to convert
+	 * @param dataWord the value to convert
 	 * @return the converted {@link UInt256} value
 	 */
 	public static UInt256 fromDataWord(DataWord dataWord) {
@@ -57,7 +55,7 @@ public final class DWUtil {
 	}
 
 	public static int[] asPackedInts(final byte[] data) {
-		return new int[] {
+		return new int[]{
 				data[0] << 3 | data[1] << 2 | data[2] << 1 | data[3],
 				data[4] << 3 | data[5] << 2 | data[6] << 1 | data[7],
 				data[8] << 3 | data[9] << 2 | data[10] << 1 | data[11],

@@ -105,7 +105,7 @@ public class VirtualMapFactory {
 						storageKeySerializer.getSerializedSize(),
 						ContractKey::new,
 						1,
-						32,
+						ContractValue.SERIALIZED_SIZE,
 						ContractValue::new,
 						true);
 

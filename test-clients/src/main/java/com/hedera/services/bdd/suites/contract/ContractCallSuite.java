@@ -114,25 +114,25 @@ public class ContractCallSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> negativeSpecs() {
 		return Arrays.asList(
-				insufficientGas()
-//				invalidContract(),
-//				smartContractFailFirst(),
-//				contractTransferToSigReqAccountWithoutKeyFails()
+				insufficientGas(),
+				invalidContract(),
+				smartContractFailFirst(),
+				contractTransferToSigReqAccountWithoutKeyFails()
 		);
 	}
 
 	List<HapiApiSpec> positiveSpecs() {
 		return Arrays.asList(
-//				resultSizeAffectsFees(),
-//				payableSuccess(),
-//				depositSuccess(),
-//				depositDeleteSuccess(),
-//				multipleDepositSuccess(),
-//				payTestSelfDestructCall(),
-//				multipleSelfDestructsAreSafe(),
+				resultSizeAffectsFees(),
+				payableSuccess(),
+				depositSuccess(),
+				depositDeleteSuccess(),
+				multipleDepositSuccess(),
+				payTestSelfDestructCall(),
+				multipleSelfDestructsAreSafe(),
 				smartContractInlineAssemblyCheck(),
-				ocToken()
-//				contractTransferToSigReqAccountWithKeySucceeds()
+				ocToken(),
+				contractTransferToSigReqAccountWithKeySucceeds()
 		);
 	}
 

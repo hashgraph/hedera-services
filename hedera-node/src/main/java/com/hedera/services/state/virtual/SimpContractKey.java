@@ -1,4 +1,4 @@
-package com.hedera.services.contracts.virtual;
+package com.hedera.services.state.virtual;
 
 /*-
  * ‌
