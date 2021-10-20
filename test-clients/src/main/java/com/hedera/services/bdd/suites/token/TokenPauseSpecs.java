@@ -59,6 +59,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hederahashgraph.api.proto.java.TokenPauseStatus.Paused;
 import static com.hederahashgraph.api.proto.java.TokenPauseStatus.Unpaused;
@@ -82,14 +84,41 @@ public class TokenPauseSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				cannotPauseWithInvalidPauseKey(),
-				cannotChangePauseStatusIfMissingPauseKey(),
-				pausedFungibleTokenCannotBeUsed(),
-				pausedNonFungibleUniqueCannotBeUsed(),
-				unpauseWorks(),
-				basePauseAndUnpauseHaveExpectedPrices(),
-				pausedTokenInCustomFeeCaseStudy()
+//				cannotPauseWithInvalidPauseKey(),
+//				cannotChangePauseStatusIfMissingPauseKey(),
+//				pausedFungibleTokenCannotBeUsed(),
+//				pausedNonFungibleUniqueCannotBeUsed(),
+//				unpauseWorks(),
+//				basePauseAndUnpauseHaveExpectedPrices(),
+//				pausedTokenInCustomFeeCaseStudy(),
+				cannotAddPauseKeyViaTokenUpdate()
 		});
+	}
+
+	private HapiApiSpec cannotAddPauseKeyViaTokenUpdate() {
+		String pauseKey = "pauseKey";
+		String adminKey = "adminKey";
+		String token1 = "primary";
+		String token2 = "secondary";
+		return defaultHapiSpec("CannotAddPauseKeyViaTokenUpdate")
+				.given(
+						cryptoCreate("test"),
+						newKeyNamed(pauseKey),
+						newKeyNamed(adminKey)
+				)
+				.when(
+						tokenCreate(token1),
+						tokenCreate(token2)
+								.adminKey(adminKey)
+				)
+				.then(
+						tokenUpdate(token1)
+								.pauseKey(pauseKey)
+								.hasKnownStatus(TOKEN_IS_IMMUTABLE),
+						tokenUpdate(token2)
+								.pauseKey(pauseKey)
+								.hasKnownStatus(TOKEN_HAS_NO_PAUSE_KEY)
+				);
 	}
 
 	private HapiApiSpec cannotPauseWithInvalidPauseKey() {
