@@ -22,8 +22,6 @@ package com.hedera.services.state;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.StateChildren;
-import com.hedera.services.contracts.virtual.SimpContractKey;
-import com.hedera.services.contracts.virtual.SimpContractValue;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -32,6 +30,8 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
@@ -67,7 +67,7 @@ public class StateAccessor {
 		children.setContractStorage(state.contractStorage());
 	}
 
-	public VirtualMap<SimpContractKey, SimpContractValue> contractStorage() {
+	public VirtualMap<ContractKey, ContractValue> contractStorage() {
 		return children.getContractStorage();
 	}
 

@@ -181,7 +181,6 @@ class GetAccountInfoAnswerTest {
 		view = new StateView(
 				tokenStore,
 				scheduleStore,
-				nodeProps,
 				children,
 				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 		optionValidator = mock(OptionValidator.class);

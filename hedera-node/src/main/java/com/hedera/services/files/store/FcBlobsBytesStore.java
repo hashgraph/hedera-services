@@ -35,7 +35,6 @@ import java.util.function.Supplier;
 import static java.lang.Long.parseLong;
 
 public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
-	private static final Logger log = LogManager.getLogger(FcBlobsBytesStore.class);
 	private final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> blobSupplier;
 
 	public static final int LEGACY_BLOB_CODE_INDEX = 3;

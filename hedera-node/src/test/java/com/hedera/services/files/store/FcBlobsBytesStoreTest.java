@@ -21,8 +21,8 @@ package com.hedera.services.files.store;
  */
 
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.hedera.services.state.merkle.internals.BlobKey;
 import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobKey.Type;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
@@ -31,11 +31,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import static com.hedera.services.files.store.FcBlobsBytesStore.getEntityNumFromPath;
-import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.CONTRACT_BYTECODE;
-import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.CONTRACT_STORAGE;
-import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.FILE_DATA;
-import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.FILE_METADATA;
-import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.SYSTEM_DELETED_ENTITY_EXPIRY;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -49,11 +44,9 @@ import static org.mockito.BDDMockito.verify;
 
 class FcBlobsBytesStoreTest {
 	private static final byte[] aData = "BlobA".getBytes();
-	private static final byte[] bData = "BlobB".getBytes();
 	private static final String dataPath = "/0/f112";
 	private static final String metadataPath = "/0/k3";
 	private static final String bytecodePath = "/0/s4";
-	private static final String storagePath = "/0/d123";
 	private static final String expiryTimePath = "/0/e5";
 	private VirtualBlobKey pathAKey;
 
@@ -188,11 +181,10 @@ class FcBlobsBytesStoreTest {
 
 	@Test
 	void validateBlobKeyBasedOnPath() {
-		assertEquals(new BlobKey(FILE_DATA, 112), subject.at(dataPath));
-		assertEquals(new BlobKey(FILE_METADATA, 3), subject.at(metadataPath));
-		assertEquals(new BlobKey(CONTRACT_STORAGE, 123), subject.at(storagePath));
-		assertEquals(new BlobKey(CONTRACT_BYTECODE, 4), subject.at(bytecodePath));
-		assertEquals(new BlobKey(SYSTEM_DELETED_ENTITY_EXPIRY, 5), subject.at(expiryTimePath));
+		assertEquals(new VirtualBlobKey(Type.FILE_DATA, 112), subject.at(dataPath));
+		assertEquals(new VirtualBlobKey(Type.FILE_METADATA, 3), subject.at(metadataPath));
+		assertEquals(new VirtualBlobKey(Type.CONTRACT_BYTECODE, 4), subject.at(bytecodePath));
+		assertEquals(new VirtualBlobKey(Type.SYSTEM_DELETED_ENTITY_EXPIRY, 5), subject.at(expiryTimePath));
 	}
 
 	@Test
@@ -201,6 +193,5 @@ class FcBlobsBytesStoreTest {
 		assertEquals(3, getEntityNumFromPath(metadataPath));
 		assertEquals(4, getEntityNumFromPath(bytecodePath));
 		assertEquals(5, getEntityNumFromPath(expiryTimePath));
-		assertEquals(123, getEntityNumFromPath(storagePath));
 	}
 }

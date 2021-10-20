@@ -22,8 +22,6 @@ package com.hedera.services;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.BootstrapProperties;
-import com.hedera.services.contracts.virtual.SimpContractKey;
-import com.hedera.services.contracts.virtual.SimpContractValue;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
@@ -44,6 +42,8 @@ import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.state.virtual.VirtualMapFactory;
@@ -95,6 +95,8 @@ import static java.util.concurrent.CompletableFuture.runAsync;
  */
 public class ServicesState extends AbstractNaryMerkleInternal implements SwirldState.SwirldState2 {
 	private static final Logger log = LogManager.getLogger(ServicesState.class);
+
+	public static final String CANONICAL_JDB_LOC = "data/jdb";
 
 	private static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
 	private static final ImmutableHash EMPTY_HASH = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
@@ -252,7 +254,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		}
 
 		if (deserializedVersionFromState < RELEASE_TWENTY_VERSION) {
-			blobMigrator.migrateFromBinaryObjectStore(this, deserializedVersionFromState);
+			blobMigrator.migrateFromBinaryObjectStore(this, jdbLoc, deserializedVersionFromState);
 		}
 	}
 
@@ -427,7 +429,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return getChild(StateChildIndices.UNIQUE_TOKENS);
 	}
 
-	public VirtualMap<SimpContractKey, SimpContractValue> contractStorage() {
+	public VirtualMap<ContractKey, ContractValue> contractStorage() {
 		return getChild(StateChildIndices.CONTRACT_STORAGE);
 	}
 
@@ -505,7 +507,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	void createGenesisChildren(AddressBook addressBook, long seqStart) {
-		final var virtualMapFactory = new VirtualMapFactory("data/jasperdb", VirtualDataSourceJasperDB::new);
+		final var virtualMapFactory = new VirtualMapFactory(jdbLoc, VirtualDataSourceJasperDB::new);
 
 		setChild(StateChildIndices.UNIQUE_TOKENS, new MerkleMap<>());
 		setChild(StateChildIndices.TOKEN_ASSOCIATIONS, new MerkleMap<>());
@@ -546,9 +548,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@FunctionalInterface
 	interface BinaryObjectStoreMigrator {
-		void migrateFromBinaryObjectStore(ServicesState initializingState, int deserializedVersion);
+		void migrateFromBinaryObjectStore(ServicesState initializingState, String jdbcLoc, int deserializedVersion);
 	}
 
+	private static String jdbLoc = CANONICAL_JDB_LOC;
 	private static FcmMigrator fcmMigrator = FCMapMigration::FCMapToMerkleMap;
 	private static Consumer<Boolean> blobMigrationFlag = MerkleOptionalBlob::setInMigration;
 	private static BinaryObjectStoreMigrator blobMigrator = ReleaseTwentyMigration::migrateFromBinaryObjectStore;
@@ -581,5 +584,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	static void setBlobMigrationFlag(Consumer<Boolean> blobMigrationFlag) {
 		ServicesState.blobMigrationFlag = blobMigrationFlag;
+	}
+
+	public static void setJdbLoc(String jdbLoc) {
+		ServicesState.jdbLoc = jdbLoc;
 	}
 }

@@ -30,6 +30,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+import static com.hedera.services.store.contracts.DWUtil.asPackedInts;
 import static com.swirlds.jasperdb.utilities.NonCryptographicHashing.perm64;
 
 /**
@@ -62,6 +63,10 @@ public final class ContractKey implements VirtualKey {
 	public ContractKey(long contractId, long key) {
 		setContractId(contractId);
 		setKey(key);
+	}
+
+	public ContractKey(long contractId, byte[] data) {
+		this(contractId, asPackedInts(data));
 	}
 
 	public ContractKey(long contractId, int[] key) {
@@ -364,7 +369,7 @@ public final class ContractKey implements VirtualKey {
 	 */
 	static byte computeNonZeroBytes(int num) {
 		if (num == 0) return (byte) 1;
-		return (byte) Math.ceil((double) (Integer.SIZE - Integer.numberOfLeadingZeros(num)) / 8D);
+		return (byte) Math.ceil((Integer.SIZE - Integer.numberOfLeadingZeros(num)) / 8D);
 	}
 
 	/**
@@ -376,7 +381,7 @@ public final class ContractKey implements VirtualKey {
 	 */
 	static byte computeNonZeroBytes(long num) {
 		if (num == 0) return (byte) 1;
-		return (byte) Math.ceil((double) (Long.SIZE - Long.numberOfLeadingZeros(num)) / 8D);
+		return (byte) Math.ceil((Long.SIZE - Long.numberOfLeadingZeros(num)) / 8D);
 	}
 
 	/** Simple interface for a function that takes a object and returns a byte */

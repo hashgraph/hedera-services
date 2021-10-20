@@ -41,6 +41,9 @@ public class ContractValue implements VirtualValue {
 	/** if this class is immutable */
 	private boolean isImmutable = false;
 
+	private static final String IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR = "Tried to set value on immutable " +
+			"ContractValue";
+
 	/**
 	 * Construct a zero ContractValue
 	 */
@@ -50,6 +53,9 @@ public class ContractValue implements VirtualValue {
 
 	/**
 	 * Construct a new ContractValue with its 8 least significant bytes set from a long
+	 *
+	 * @param value
+	 * 		long value to be used
 	 */
 	public ContractValue(long value) {
 		setValue(value);
@@ -57,6 +63,9 @@ public class ContractValue implements VirtualValue {
 
 	/**
 	 * Construct a new ContractValue with a BigInteger, see setValue(BigInteger) for details
+	 *
+	 * @param value
+	 * 		BigInteger value to be used
 	 */
 	public ContractValue(BigInteger value) {
 		Objects.requireNonNull(value);
@@ -66,6 +75,9 @@ public class ContractValue implements VirtualValue {
 	/**
 	 * Construct a new ContractValue directly with a 32 byte big endian value. A copy is not made! It is assumed you
 	 * will not mutate the byte[] after you call this method.
+	 *
+	 * @param bigEndianValue
+	 * 		big endian value to be used
 	 */
 	public ContractValue(byte[] bigEndianValue) {
 		Objects.requireNonNull(bigEndianValue);
@@ -84,6 +96,8 @@ public class ContractValue implements VirtualValue {
 
 	/**
 	 * Gets the value of this ContractValue as a BigInteger
+	 *
+	 * @return BigInteger value of ContractValue
 	 */
 	public BigInteger asBigInteger() {
 		return new BigInteger(this.uint256Value, 0, 32);
@@ -91,6 +105,8 @@ public class ContractValue implements VirtualValue {
 
 	/**
 	 * Gets the lower 8 bytes of the value of this ContractValue as a long
+	 *
+	 * @return long value of ContractValue
 	 */
 	public long asLong() {
 		return (((long) uint256Value[24] << 56) +
@@ -112,7 +128,7 @@ public class ContractValue implements VirtualValue {
 	 */
 	public void setValue(byte[] bigEndianUint256Value) {
 		Objects.requireNonNull(bigEndianUint256Value);
-		if (isImmutable) throw new IllegalStateException("Tried to set value on immutable ContractValue");
+		if (isImmutable) throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
 		if (bigEndianUint256Value.length != 32) {
 			throw new IllegalArgumentException("Tried to set ContractValue value with array that is not 32 bytes.");
 		}
@@ -128,7 +144,7 @@ public class ContractValue implements VirtualValue {
 	 */
 	public void setValue(BigInteger value) {
 		Objects.requireNonNull(value);
-		if (isImmutable) throw new IllegalStateException("Tried to set value on immutable ContractValue");
+		if (isImmutable) throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
 		byte[] bigIntegerBytes = value.toByteArray();
 		bigIntegerBytes[0] &= 0b01111111; // remove sign
 		if (bigIntegerBytes.length == 32) {
@@ -150,7 +166,7 @@ public class ContractValue implements VirtualValue {
 	 * 		long value
 	 */
 	public void setValue(long value) {
-		if (isImmutable) throw new IllegalStateException("Tried to set value on immutable ContractValue");
+		if (isImmutable) throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
 		this.uint256Value = new byte[32];
 		this.uint256Value[24] = (byte) (value >>> 56);
 		this.uint256Value[25] = (byte) (value >>> 48);
@@ -231,14 +247,14 @@ public class ContractValue implements VirtualValue {
 
 	@Override
 	public void deserialize(SerializableDataInputStream inputStream, int i) throws IOException {
-		if (isImmutable) throw new IllegalStateException("Tried to set value on immutable ContractValue");
+		if (isImmutable) throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
 		int lengthRead = inputStream.read(this.uint256Value);
 		assert lengthRead == 32;
 	}
 
 	@Override
 	public void deserialize(ByteBuffer byteBuffer, int i) throws IOException {
-		if (isImmutable) throw new IllegalStateException("Tried to set value on immutable ContractValue");
+		if (isImmutable) throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
 		byteBuffer.get(this.uint256Value);
 	}
 }

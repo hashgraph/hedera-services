@@ -58,6 +58,7 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
+import com.hedera.test.utils.TestFileUtils;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.NodeId;
@@ -82,6 +83,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -89,6 +91,7 @@ import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.function.Consumer;
 
+import static com.hedera.services.ServicesState.CANONICAL_JDB_LOC;
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
@@ -114,6 +117,7 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 @ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class ServicesStateTest {
+	private static final String TEST_JDB_LOC = "ServicesState-test-jdb";
 	private final Instant creationTime = Instant.ofEpochSecond(1_234_567L, 8);
 	private final Instant consensusTime = Instant.ofEpochSecond(2_345_678L, 9);
 	private final NodeId selfId = new NodeId(false, 1L);
@@ -479,7 +483,8 @@ class ServicesStateTest {
 						equalTo("Finished with FCMap -> MerkleMap migrations, completing the deferred init")));
 		verify(blobMigrationFlag).accept(true);
 		verify(blobMigrationFlag).accept(false);
-		verify(blobMigrator).migrateFromBinaryObjectStore(subject, StateVersions.RELEASE_0170_VERSION);
+		verify(blobMigrator).migrateFromBinaryObjectStore(
+				subject, CANONICAL_JDB_LOC, StateVersions.RELEASE_0170_VERSION);
 
 		ServicesState.setFcmMigrator(FCMapMigration::FCMapToMerkleMap);
 		ServicesState.setBlobMigrationFlag(MerkleOptionalBlob::setInMigration);
@@ -496,14 +501,17 @@ class ServicesStateTest {
 
 		subject.migrate();
 
-		verify(blobMigrator).migrateFromBinaryObjectStore(subject, StateVersions.RELEASE_0190_VERSION);
+		verify(blobMigrator).migrateFromBinaryObjectStore(
+				subject, CANONICAL_JDB_LOC, StateVersions.RELEASE_0190_VERSION);
 
 		ServicesState.setBlobMigrator(ReleaseTwentyMigration::migrateFromBinaryObjectStore);
 	}
 
 	@Test
-	void genesisInitCreatesChildren() {
+	void genesisInitCreatesChildren() throws IOException {
 		// setup:
+		TestFileUtils.blowAwayDirIfPresent(TEST_JDB_LOC);
+		ServicesState.setJdbLoc(TEST_JDB_LOC);
 		ServicesState.setAppBuilder(() -> appBuilder);
 
 		given(appBuilder.bootstrapProps(any())).willReturn(appBuilder);
@@ -548,7 +556,9 @@ class ServicesStateTest {
 		assertTrue(APPS.includes(selfId.getId()));
 
 		// cleanup:
+		ServicesState.setJdbLoc(CANONICAL_JDB_LOC);
 		ServicesState.setAppBuilder(DaggerServicesApp::builder);
+		TestFileUtils.blowAwayDirIfPresent(TEST_JDB_LOC);
 	}
 
 	@Test

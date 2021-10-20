@@ -21,19 +21,25 @@ package com.hedera.services.state.migration;
  */
 
 import com.hedera.services.ServicesState;
-import com.hedera.services.state.merkle.MerkleBlob;
-import com.hedera.services.state.merkle.MerkleContractStorageValue;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.hedera.services.state.merkle.internals.BlobKey;
-import com.hedera.services.state.merkle.internals.ContractStorageKey;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobKey.Type;
+import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.test.utils.TestFileUtils;
 import com.swirlds.common.CommonUtils;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.io.IOException;
 
 import static com.hedera.services.state.migration.ReleaseTwentyMigration.migrateFromBinaryObjectStore;
 import static com.hedera.services.state.migration.StateChildIndices.CONTRACT_STORAGE;
@@ -46,6 +52,8 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class ReleaseTwentyMigrationTest {
+	private static final String TEST_JDB_LOC = "ReleaseTwentyMigration-test-jdb";
+
 	@Mock
 	private ServicesState state;
 
@@ -56,10 +64,10 @@ class ReleaseTwentyMigrationTest {
 	private final byte[] bytecodeBlob = "bytecode".getBytes();
 	private final byte[] expiryTimeBlob = "expiryTime".getBytes();
 
-	private final BlobKey dataKey = new BlobKey(BlobKey.BlobType.FILE_DATA, 2);
-	private final BlobKey metadataKey = new BlobKey(BlobKey.BlobType.FILE_METADATA, 3);
-	private final BlobKey bytecodeKey = new BlobKey(BlobKey.BlobType.CONTRACT_BYTECODE, 4);
-	private final BlobKey expiryTimeKey = new BlobKey(BlobKey.BlobType.SYSTEM_DELETED_ENTITY_EXPIRY, 6);
+	private final VirtualBlobKey dataKey = new VirtualBlobKey(Type.FILE_DATA, 2);
+	private final VirtualBlobKey metadataKey = new VirtualBlobKey(Type.FILE_METADATA, 3);
+	private final VirtualBlobKey bytecodeKey = new VirtualBlobKey(Type.CONTRACT_BYTECODE, 4);
+	private final VirtualBlobKey expiryTimeKey = new VirtualBlobKey(Type.SYSTEM_DELETED_ENTITY_EXPIRY, 6);
 
 	private final String[] contract5Keys = {
 			"e898111911e68c7ce0f413c269e1f108b76a0cfb828081a0e98f2bb97edec352",
@@ -74,7 +82,9 @@ class ReleaseTwentyMigrationTest {
 			"a0e98f2bb97edec352b190a4ce23a5520349f35d8e6fe647a71fc409e00d5f7fecbf9bf8e86a721cc0";
 
 	@BeforeEach
-	void setUp() {
+	void setUp() throws IOException {
+		TestFileUtils.blowAwayDirIfPresent(TEST_JDB_LOC);
+
 		final String dataPath = "/0/f2";
 		legacyBlobs.put(dataPath, new MerkleOptionalBlob(dataBlob));
 		final String metadataPath = "/0/k3";
@@ -89,33 +99,36 @@ class ReleaseTwentyMigrationTest {
 
 	@Test
 	void migratesToStandInVMapsAsExpected() {
-		@SuppressWarnings("unchecked")
-		final ArgumentCaptor<MerkleMap<BlobKey, MerkleBlob>> blobCaptor =
-				forClass(MerkleMap.class);
-		@SuppressWarnings("unchecked")
-		final ArgumentCaptor<MerkleMap<ContractStorageKey, MerkleContractStorageValue>> storageCaptor =
-				forClass(MerkleMap.class);
+		@SuppressWarnings("unchecked") final ArgumentCaptor<VirtualMap<VirtualBlobKey, VirtualBlobValue>> blobCaptor =
+				forClass(VirtualMap.class);
+		@SuppressWarnings("unchecked") final ArgumentCaptor<VirtualMap<ContractKey, ContractValue>> storageCaptor =
+				forClass(VirtualMap.class);
 
 		given(state.getChild(STORAGE)).willReturn(legacyBlobs);
 
-		migrateFromBinaryObjectStore(state, StateVersions.RELEASE_0190_VERSION);
+		migrateFromBinaryObjectStore(state, TEST_JDB_LOC, StateVersions.RELEASE_0190_VERSION);
 
 		verify(state).setChild(eq(STORAGE), blobCaptor.capture());
 		verify(state).setChild(eq(CONTRACT_STORAGE), storageCaptor.capture());
 
-		final var vmBlobsStandIn = blobCaptor.getValue();
-		final var vmStorageStandIn = storageCaptor.getValue();
+		final var vmBlobs = blobCaptor.getValue();
+		final var vmStorage = storageCaptor.getValue();
 
-		assertArrayEquals(dataBlob, vmBlobsStandIn.get(dataKey).getData());
-		assertArrayEquals(metadataBlob, vmBlobsStandIn.get(metadataKey).getData());
-		assertArrayEquals(bytecodeBlob, vmBlobsStandIn.get(bytecodeKey).getData());
-		assertArrayEquals(expiryTimeBlob, vmBlobsStandIn.get(expiryTimeKey).getData());
+		assertArrayEquals(dataBlob, vmBlobs.get(dataKey).getData());
+		assertArrayEquals(metadataBlob, vmBlobs.get(metadataKey).getData());
+		assertArrayEquals(bytecodeBlob, vmBlobs.get(bytecodeKey).getData());
+		assertArrayEquals(expiryTimeBlob, vmBlobs.get(expiryTimeKey).getData());
 
 		for (int i = 0; i < contract5Keys.length; i++) {
 			final var key = contract5Keys[i];
-			final var mapKey = new ContractStorageKey(5, CommonUtils.unhex(key));
-			final var mapValue = vmStorageStandIn.get(mapKey);
+			final var mapKey = new ContractKey(5, CommonUtils.unhex(key));
+			final var mapValue = vmStorage.get(mapKey);
 			assertArrayEquals(CommonUtils.unhex(contract5Values[i]), mapValue.getValue());
 		}
+	}
+
+	@AfterEach
+	void cleanup() throws IOException {
+		TestFileUtils.blowAwayDirIfPresent(TEST_JDB_LOC);
 	}
 }

@@ -83,7 +83,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
@@ -115,16 +114,14 @@ public class StateView {
 			0L, 0L, 0, "", "",
 			false, false, MISSING_ENTITY_ID);
 	public static final StateView EMPTY_VIEW = new StateView(
-					null, null, null, null,
+					null, null, null,
 					EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 
 	private final TokenStore tokenStore;
 	private final ScheduleStore scheduleStore;
 	private final UniqTokenView uniqTokenView;
-	private final NodeLocalProperties nodeLocalProperties;
 	private final StateChildren stateChildren;
 
-	Map<byte[], byte[]> contractStorage;
 	Map<byte[], byte[]> contractBytecode;
 	Map<FileID, byte[]> fileContents;
 	Map<FileID, HFileMeta> fileAttrs;
@@ -132,13 +129,11 @@ public class StateView {
 	public StateView(
 			@Nullable TokenStore tokenStore,
 			@Nullable ScheduleStore scheduleStore,
-			@Nullable NodeLocalProperties nodeLocalProperties,
 			@Nullable StateChildren stateChildren,
 			UniqTokenViewFactory uniqTokenViewFactory
 	) {
 		this.tokenStore = tokenStore;
 		this.scheduleStore = scheduleStore;
-		this.nodeLocalProperties = nodeLocalProperties;
 		this.stateChildren = stateChildren;
 
 		this.uniqTokenView = uniqTokenViewFactory.viewFor(
@@ -154,7 +149,6 @@ public class StateView {
 
 		fileContents = DataMapFactory.dataMapFrom(blobStore);
 		fileAttrs = MetadataMapFactory.metaMapFrom(blobStore);
-		contractStorage = AddressKeyedMapFactory.storageMapFrom(blobStore);
 		contractBytecode = AddressKeyedMapFactory.bytecodeMapFrom(blobStore);
 	}
 
@@ -176,10 +170,6 @@ public class StateView {
 
 	public Optional<byte[]> bytecodeOf(ContractID id) {
 		return Optional.ofNullable(contractBytecode.get(asSolidityAddress(id)));
-	}
-
-	public Optional<byte[]> storageOf(ContractID id) {
-		return Optional.ofNullable(contractStorage.get(asSolidityAddress(id)));
 	}
 
 	public Optional<MerkleToken> tokenWith(TokenID id) {
@@ -361,29 +351,12 @@ public class StateView {
 	}
 
 	public Optional<FileGetInfoResponse.FileInfo> infoForFile(FileID id) {
-		int attemptsLeft = 1 + (nodeLocalProperties == null ? 0 : nodeLocalProperties.queryBlobLookupRetries());
-		while (attemptsLeft-- > 0) {
-			try {
-				return getFileInfo(id);
-			} catch (com.swirlds.blob.BinaryObjectNotFoundException | com.swirlds.blob.BinaryObjectDeletedException e) {
-				if (attemptsLeft > 0) {
-					log.debug("Retrying fetch of {} file meta {} more times", readableId(id), attemptsLeft);
-					try {
-						TimeUnit.MILLISECONDS.sleep(100);
-					} catch (InterruptedException ex) {
-						log.debug(
-								"Interrupted fetching meta for file {}, {} attempts left",
-								readableId(id),
-								attemptsLeft);
-						Thread.currentThread().interrupt();
-					}
-				}
-			} catch (com.swirlds.blob.BinaryObjectException e) {
-				log.warn("Unexpected error occurred when getting info for file {}", readableId(id), e);
-				break;
-			}
+		try {
+			return getFileInfo(id);
+		} catch (NullPointerException e) {
+			log.warn("View used without a properly initialized VirtualMap", e);
+			return Optional.empty();
 		}
-		return Optional.empty();
 	}
 
 	private Optional<FileGetInfoResponse.FileInfo> getFileInfo(FileID id) {
@@ -463,16 +436,14 @@ public class StateView {
 		}
 
 		var mirrorId = asAccount(id);
-
-		var storageSize = storageOf(id).orElse(EMPTY_BYTES).length;
 		var bytecodeSize = bytecodeOf(id).orElse(EMPTY_BYTES).length;
-		var totalBytesUsed = storageSize + bytecodeSize;
 		var info = ContractGetInfoResponse.ContractInfo.newBuilder()
 				.setAccountID(mirrorId)
 				.setDeleted(contract.isDeleted())
 				.setContractID(id)
 				.setMemo(contract.getMemo())
-				.setStorage(totalBytesUsed)
+				/* TODO - this used to include the size of storage as well as bytecode; is it necessary to preserve? */
+				.setStorage(bytecodeSize)
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(contract.getAutoRenewSecs()))
 				.setBalance(contract.getBalance())
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(contract.getExpiry()))

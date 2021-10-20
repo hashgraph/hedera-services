@@ -20,9 +20,6 @@ package com.hedera.services.state.virtual;
  * ‍
  */
 
-import com.hedera.services.contracts.virtual.SimpContractKey;
-import com.hedera.services.contracts.virtual.SimpContractKeySerializer;
-import com.hedera.services.contracts.virtual.SimpContractValue;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.jasperdb.VirtualInternalRecordSerializer;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
@@ -98,22 +95,21 @@ public class VirtualMapFactory {
 		return new VirtualMap<>(ds);
 	}
 
-	public VirtualMap<SimpContractKey, SimpContractValue> newVirtualizedStorage() {
-		final var storageKeySerializer = new SimpContractKeySerializer();
-		final VirtualLeafRecordSerializer<SimpContractKey, SimpContractValue> storageLeafRecordSerializer =
+	public VirtualMap<ContractKey, ContractValue> newVirtualizedStorage() {
+		final var storageKeySerializer = new ContractKeySerializer();
+		final VirtualLeafRecordSerializer<ContractKey, ContractValue> storageLeafRecordSerializer =
 				new VirtualLeafRecordSerializer<>(
 						1,
 						DigestType.SHA_384,
 						1,
 						storageKeySerializer.getSerializedSize(),
-						SimpContractKey::new,
+						ContractKey::new,
 						1,
 						32,
-						SimpContractValue::new,
+						ContractValue::new,
 						true);
-		;
 
-		final VirtualDataSource<SimpContractKey, SimpContractValue> ds;
+		final VirtualDataSource<ContractKey, ContractValue> ds;
 		try {
 			ds = jdbFactory.newJdb(
 					storageLeafRecordSerializer,

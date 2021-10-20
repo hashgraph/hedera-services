@@ -22,14 +22,14 @@ package com.hedera.services.store.contracts;
  *
  */
 
-import com.hedera.services.contracts.virtual.SimpContractKey;
-import com.hedera.services.contracts.virtual.SimpContractValue;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.utils.EntityIdUtils;
@@ -75,7 +75,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 	private final EntityIdSource ids;
 	private final HederaLedger ledger;
 	private final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> storageBytecode;
-	private final Supplier<VirtualMap<SimpContractKey, SimpContractValue>> contractStorage;
+	private final Supplier<VirtualMap<ContractKey, ContractValue>> contractStorage;
 	private final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
 	private final List<ContractID> provisionalContractCreations = new LinkedList<>();
 
@@ -83,7 +83,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 	public HederaWorldState(
 			final EntityIdSource ids,
 			final HederaLedger ledger,
-			final Supplier<VirtualMap<SimpContractKey, SimpContractValue>> contractStorage,
+			final Supplier<VirtualMap<ContractKey, ContractValue>> contractStorage,
 			final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> storageBytecode
 	) {
 		this.ids = ids;
@@ -200,7 +200,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 			this.contractNum = contractParsedFromSolidityAddress(bytesAddress).getContractNum();
 		}
 
-		private VirtualMap<SimpContractKey, SimpContractValue> storageTrie() {
+		private VirtualMap<ContractKey, ContractValue> storageTrie() {
 			return contractStorage.get();
 		}
 
@@ -253,8 +253,8 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		@Override
 		public UInt256 getStorageValue(final UInt256 key) {
-			final var contractKey = new SimpContractKey(bytesAddress, key.toArray());
-			SimpContractValue value = storageTrie().get(contractKey);
+			final var contractKey = new ContractKey(contractNum, key.toArray());
+			ContractValue value = storageTrie().get(contractKey);
 			return value == null ? UInt256.ZERO : UInt256.fromBytes(Bytes32.wrap(value.getValue()));
 		}
 
@@ -405,22 +405,23 @@ public class HederaWorldState implements HederaMutableWorldState {
 				final Map<UInt256, UInt256> updatedStorage = updated.getUpdatedStorage();
 				if (!updatedStorage.isEmpty()) {
 					// Apply any storage updates
-					final VirtualMap<SimpContractKey, SimpContractValue> storageTrie =
+					final VirtualMap<ContractKey, ContractValue> storageTrie =
 							freshState ? wrapped.contractStorage.get() : origin.storageTrie();
 					final TreeSet<Map.Entry<UInt256, UInt256>> entries =
 							new TreeSet<>(Map.Entry.comparingByKey());
 					entries.addAll(updatedStorage.entrySet());
 
 					for (final Map.Entry<UInt256, UInt256> entry : entries) {
+						final var key = new ContractKey(contractId.getContractNum(), entry.getKey().toArray());
 						final UInt256 value = entry.getValue();
-						final var key = new SimpContractKey(bytesAddress, entry.getKey().toArray());
 						if (value.isZero()) {
-							storageTrie.put(key, new SimpContractValue());
+							storageTrie.put(key, new ContractValue());
 						} else {
-							storageTrie.put(key, new SimpContractValue(value.toArray()));
+							storageTrie.put(key, new ContractValue(value.toArray()));
 						}
 					}
 				}
+
 				// Save the code in storage ...
 				if (updated.codeWasUpdated()) {
 					final var key = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, (int) contractId.getContractNum());

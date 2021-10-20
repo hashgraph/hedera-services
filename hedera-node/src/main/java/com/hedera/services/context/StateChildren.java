@@ -20,8 +20,6 @@ package com.hedera.services.context;
  * ‍
  */
 
-import com.hedera.services.contracts.virtual.SimpContractKey;
-import com.hedera.services.contracts.virtual.SimpContractValue;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -30,6 +28,8 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
@@ -54,7 +54,7 @@ public class StateChildren {
 	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
 	private MerkleMap<EntityNum, MerkleSchedule> schedules;
 	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
-	private VirtualMap<SimpContractKey, SimpContractValue> contractStorage;
+	private VirtualMap<ContractKey, ContractValue> contractStorage;
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
 	private FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations;
 	private FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations;
@@ -109,11 +109,11 @@ public class StateChildren {
 		this.storage = storage;
 	}
 
-	public void setContractStorage(VirtualMap<SimpContractKey, SimpContractValue> contractStorage) {
+	public void setContractStorage(VirtualMap<ContractKey, ContractValue> contractStorage) {
 		this.contractStorage = contractStorage;
 	}
 
-	public VirtualMap<SimpContractKey, SimpContractValue> getContractStorage() {
+	public VirtualMap<ContractKey, ContractValue> getContractStorage() {
 		Objects.requireNonNull(contractStorage);
 		return contractStorage;
 	}

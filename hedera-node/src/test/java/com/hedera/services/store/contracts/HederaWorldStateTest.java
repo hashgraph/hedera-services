@@ -20,13 +20,13 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
-import com.hedera.services.contracts.virtual.SimpContractKey;
-import com.hedera.services.contracts.virtual.SimpContractValue;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.models.Id;
@@ -71,11 +71,11 @@ class HederaWorldStateTest {
 	@Mock
 	private HederaLedger ledger;
 	@Mock
-	private Supplier<VirtualMap<SimpContractKey, SimpContractValue>> supplierContractStorage;
+	private Supplier<VirtualMap<ContractKey, ContractValue>> supplierContractStorage;
 	@Mock
 	private Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> supplierBytecodeStorage;
 	@Mock
-	private VirtualMap<SimpContractKey, SimpContractValue> contractStorage;
+	private VirtualMap<ContractKey, ContractValue> contractStorage;
 	@Mock
 	private VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecodeStorage;
 
@@ -326,8 +326,8 @@ class HederaWorldStateTest {
 		verify(supplierContractStorage).get();
 		// and:
 		verify(supplierContractStorage).get();
-		verify(contractStorage).put(new SimpContractKey(contract.asEvmAddress().toArray(), storageKey.toArray()), new SimpContractValue(storageValue.toArray()));
-		verify(contractStorage).put(new SimpContractKey(contract.asEvmAddress().toArray(), secondStorageKey.toArray()), new SimpContractValue(secondStorageValue.toArray()));
+		verify(contractStorage).put(new ContractKey(contract.getNum(), storageKey.toArray()), new ContractValue(storageValue.toArray()));
+		verify(contractStorage).put(new ContractKey(contract.getNum(), secondStorageKey.toArray()), new ContractValue(secondStorageValue.toArray()));
 		// and:
 		verify(supplierBytecodeStorage).get();
 		verify(bytecodeStorage).put(new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, (int) accountID.getAccountNum()), new VirtualBlobValue(code.toArray()));
