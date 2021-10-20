@@ -142,7 +142,7 @@ public abstract class StateModule {
 	@Provides
 	@Singleton
 	public static VirtualMapFactory provideVirtualMapFactory() {
-		return new VirtualMapFactory("data/jdb", VirtualDataSourceJasperDB::new);
+		return new VirtualMapFactory("data/jasperdb", VirtualDataSourceJasperDB::new);
 	}
 
 	@Provides

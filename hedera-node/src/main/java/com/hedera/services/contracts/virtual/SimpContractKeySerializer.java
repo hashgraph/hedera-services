@@ -29,12 +29,12 @@ import java.nio.ByteBuffer;
 public class SimpContractKeySerializer implements KeySerializer<SimpContractKey> {
 	@Override
 	public int deserializeKeySize(ByteBuffer byteBuffer) {
-		return 52; // TODO:
+		return SimpContractKey.SIZE; // TODO:
 	}
 
 	@Override
 	public int getSerializedSize() {
-		return 52; // TODO:
+		return SimpContractKey.SIZE; // TODO:
 	}
 
 	@Override
@@ -52,6 +52,6 @@ public class SimpContractKeySerializer implements KeySerializer<SimpContractKey>
 	@Override
 	public int serialize(SimpContractKey simpContractKey, SerializableDataOutputStream serializableDataOutputStream) throws IOException {
 		simpContractKey.serialize(serializableDataOutputStream);
-		return 52; // TODO:
+		return SimpContractKey.SIZE; // TODO:
 	}
 }

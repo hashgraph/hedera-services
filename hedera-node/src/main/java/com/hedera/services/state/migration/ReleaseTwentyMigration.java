@@ -72,7 +72,7 @@ public class ReleaseTwentyMigration {
 	) {
 		log.info("Migrating state from version {} to {}", deserializedVersion, RELEASE_TWENTY_VERSION);
 
-		final var virtualMapFactory = new VirtualMapFactory("data/jdb", VirtualDataSourceJasperDB::new);
+		final var virtualMapFactory = new VirtualMapFactory("data/jasperdb", VirtualDataSourceJasperDB::new);
 		final MerkleMap<String, MerkleOptionalBlob> legacyBlobs = initializingState.getChild(StateChildIndices.STORAGE);
 
 		final VirtualMap<VirtualBlobKey, VirtualBlobValue> vmBlobs = virtualMapFactory.newVirtualizedBlobs();

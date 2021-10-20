@@ -35,7 +35,7 @@ public class SimpContractKey implements VirtualKey {
 	static final int RELEASE_0200_VERSION = 1;
 
 	private static final int KEY_SIZE = 32;
-	private static final int SIZE = Address.SIZE + KEY_SIZE;
+	public static final int SIZE = Address.SIZE + KEY_SIZE;
 
 	private byte[] contract;
 
@@ -129,12 +129,12 @@ public class SimpContractKey implements VirtualKey {
 		final StringBuilder sb = new StringBuilder();
 		sb.append("Uint256Key{");
 		sb.append("contract:(");
-		for (int i = 0; i < 20; i++) {
+		for (int i = 0; i < Address.SIZE; i++) {
 			sb.append(String.format("%02X ", this.contract[i]).toUpperCase());
 		}
 		sb.append("),");
 		sb.append("key:(");
-		for (int i = 0; i < 32; i++) {
+		for (int i = 0; i < KEY_SIZE; i++) {
 			sb.append(String.format("%02X ", this.key[i]).toUpperCase());
 		}
 		sb.append(")}");

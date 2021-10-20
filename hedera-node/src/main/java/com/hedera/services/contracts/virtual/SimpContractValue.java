@@ -45,7 +45,7 @@ public class SimpContractValue implements VirtualValue {
 
 	public SimpContractValue(byte[] value) {
 		Objects.requireNonNull(value);
-		if (value.length != 32) {
+		if (value.length != SIZE) {
 			throw new IllegalArgumentException("invalid bytes length");
 		}
 		this.value = value;
@@ -128,7 +128,7 @@ public class SimpContractValue implements VirtualValue {
 	public String toString() {
 		final StringBuilder sb = new StringBuilder();
 		sb.append("Uint256Value{");
-		for (int i = 0; i < 32; i++) {
+		for (int i = 0; i < SIZE; i++) {
 			sb.append(String.format("%02X ", this.value[i]).toUpperCase());
 		}
 		sb.append("}");
