@@ -26,6 +26,7 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
+import com.hederahashgraph.api.proto.java.FreezeType;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -35,6 +36,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.TimeZone;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -42,7 +45,9 @@ import java.util.function.Supplier;
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UPDATE_FILE_HASH_LEN;
+import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.MiscUtils.timestampToInstant;
+import static com.hederahashgraph.api.proto.java.FreezeType.UNKNOWN_FREEZE_TYPE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_ALREADY_SCHEDULED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_START_TIME_MUST_BE_FUTURE;
@@ -56,6 +61,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UPDATE_FILE_HASH_CHANGED_SINCE_PREPARE_UPGRADE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UPDATE_FILE_HASH_DOES_NOT_MATCH_PREPARED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UPDATE_FILE_ID_DOES_NOT_MATCH_PREPARED;
+import static java.util.Calendar.HOUR_OF_DAY;
+import static java.util.Calendar.MINUTE;
 
 @Singleton
 public class FreezeTransitionLogic implements TransitionLogic {
@@ -81,7 +88,7 @@ public class FreezeTransitionLogic implements TransitionLogic {
 
 	@Override
 	public void doStateTransition() {
-		final var op = txnCtx.accessor().getTxn().getFreeze();
+		final var op = sanitized(txnCtx.accessor().getTxn().getFreeze(), txnCtx.consensusTime());
 
 		assertValidityAtCons(op);
 
@@ -120,13 +127,13 @@ public class FreezeTransitionLogic implements TransitionLogic {
 	}
 
 	private ResponseCodeEnum validateBasics(TransactionBody freezeTxn) {
-		final var op = freezeTxn.getFreeze();
+		final var effectiveNow = timestampToInstant(freezeTxn.getTransactionID().getTransactionValidStart());
+		final var op = sanitized(freezeTxn.getFreeze(), effectiveNow);
 
 		if (op.getStartHour() != 0 || op.getStartMin() != 0 || op.getEndHour() != 0 || op.getEndMin() != 0) {
 			return INVALID_FREEZE_TRANSACTION_BODY;
 		}
 
-		final var effectiveNow = timestampToInstant(freezeTxn.getTransactionID().getTransactionValidStart());
 		switch (op.getFreezeType()) {
 			case FREEZE_ABORT:
 				return OK;
@@ -254,5 +261,39 @@ public class FreezeTransitionLogic implements TransitionLogic {
 
 	private boolean isInTheFuture(final Timestamp freezeStartTime, final Instant now) {
 		return Instant.ofEpochSecond(freezeStartTime.getSeconds(), freezeStartTime.getNanos()).isAfter(now);
+	}
+
+	private FreezeTransactionBody sanitized(final FreezeTransactionBody op, final Instant effectiveNow) {
+		if (op.hasStartTime()) {
+			return op;
+		}
+		final var effStart = nextNaturalInstant(effectiveNow, op.getStartHour(), op.getStartMin());
+		final var nominalType = op.getFreezeType();
+		final var effType = (nominalType == UNKNOWN_FREEZE_TYPE) ? FreezeType.FREEZE_ONLY : nominalType;
+		return op.toBuilder()
+				.clearStartHour()
+				.clearStartMin()
+				.clearEndHour()
+				.clearEndMin()
+				.setFreezeType(effType)
+				.setStartTime(asTimestamp(effStart))
+				.build();
+	}
+
+	private Instant nextNaturalInstant(final Instant now, final int nominalHour, final int nominalMin) {
+		final var minsSinceMidnightNow = minutesSinceMidnight(now);
+		final var nominalMinsSinceMidnight = nominalHour * 60 + nominalMin;
+		int diffMins = nominalMinsSinceMidnight - minsSinceMidnightNow;
+		if (diffMins < 0) {
+			/* Can't go back in time, so add a day's worth of minutes to hit the nominal time tomorrow */
+			diffMins += 24 * 60;
+		}
+		return now.plusSeconds(diffMins * 60L);
+	}
+
+	public int minutesSinceMidnight(final Instant now) {
+		final var calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+		calendar.setTimeInMillis(now.getEpochSecond() * 1_000);
+		return calendar.get(HOUR_OF_DAY) * 60 + calendar.get(MINUTE);
 	}
 }
