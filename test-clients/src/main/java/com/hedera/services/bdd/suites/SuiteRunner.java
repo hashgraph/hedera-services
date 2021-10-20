@@ -34,18 +34,26 @@ import com.hedera.services.bdd.suites.consensus.TopicCreateSuite;
 import com.hedera.services.bdd.suites.consensus.TopicDeleteSuite;
 import com.hedera.services.bdd.suites.consensus.TopicGetInfoSuite;
 import com.hedera.services.bdd.suites.consensus.TopicUpdateSuite;
-import com.hedera.services.bdd.suites.contract.BigArraySpec;
-import com.hedera.services.bdd.suites.contract.ChildStorageSpec;
 import com.hedera.services.bdd.suites.contract.ContractCallLocalSuite;
 import com.hedera.services.bdd.suites.contract.ContractCallSuite;
 import com.hedera.services.bdd.suites.contract.ContractCreateSuite;
-import com.hedera.services.bdd.suites.contract.DeprecatedContractKeySuite;
-import com.hedera.services.bdd.suites.contract.NewOpInConstructorSuite;
-import com.hedera.services.bdd.suites.contract.OCTokenSpec;
-import com.hedera.services.bdd.suites.contract.SmartContractFailFirstSpec;
-import com.hedera.services.bdd.suites.contract.SmartContractInlineAssemblySpec;
-import com.hedera.services.bdd.suites.contract.SmartContractPaySpec;
-import com.hedera.services.bdd.suites.contract.SmartContractSelfDestructSpec;
+import com.hedera.services.bdd.suites.contract.ContractDeleteSuite;
+import com.hedera.services.bdd.suites.contract.ContractGetBytecodeSuite;
+import com.hedera.services.bdd.suites.contract.ContractGetInfoSuite;
+import com.hedera.services.bdd.suites.contract.ContractUpdateSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.BalanceOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.CallCodeOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.CallOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.CreateOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.DelegateCallOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.ExtCodeCopyOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.ExtCodeHashOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.ExtCodeSizeOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.GlobalPropertiesSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.SStoreSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.StaticCallOperationSuite;
+import com.hedera.services.bdd.suites.contract.records.LogsSuite;
+import com.hedera.services.bdd.suites.contract.records.RecordsSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCornerCasesSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateForSuiteRunner;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
@@ -68,8 +76,12 @@ import com.hedera.services.bdd.suites.file.ValidateNewAddressBook;
 import com.hedera.services.bdd.suites.file.negative.UpdateFailuresSpec;
 import com.hedera.services.bdd.suites.file.positive.SysDelSysUndelSpec;
 import com.hedera.services.bdd.suites.freeze.CryptoTransferThenFreezeTest;
+import com.hedera.services.bdd.suites.freeze.FreezeAbort;
 import com.hedera.services.bdd.suites.freeze.FreezeSuite;
+import com.hedera.services.bdd.suites.freeze.FreezeUpgrade;
+import com.hedera.services.bdd.suites.freeze.PrepareUpgrade;
 import com.hedera.services.bdd.suites.freeze.SimpleFreezeOnly;
+import com.hedera.services.bdd.suites.freeze.UpdateFileForUpgrade;
 import com.hedera.services.bdd.suites.freeze.UpdateServerFiles;
 import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
 import com.hedera.services.bdd.suites.misc.CannotDeleteSystemEntitiesSuite;
@@ -85,7 +97,11 @@ import com.hedera.services.bdd.suites.perf.AdjustFeeScheduleSuite;
 import com.hedera.services.bdd.suites.perf.FileContractMemoPerfSuite;
 import com.hedera.services.bdd.suites.perf.QueryOnlyLoadTest;
 import com.hedera.services.bdd.suites.perf.contract.ContractCallLoadTest;
+import com.hedera.services.bdd.suites.perf.contract.ContractCallLocalPerfSuite;
+import com.hedera.services.bdd.suites.perf.contract.ContractCallPerfSuite;
+import com.hedera.services.bdd.suites.perf.contract.ContractPerformanceSuite;
 import com.hedera.services.bdd.suites.perf.contract.MixedSmartContractOpsLoadTest;
+import com.hedera.services.bdd.suites.perf.contract.opcodes.SStoreOperationLoadTest;
 import com.hedera.services.bdd.suites.perf.crypto.CryptoCreatePerfSuite;
 import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferLoadTest;
 import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferPerfSuiteWOpProvider;
@@ -135,6 +151,7 @@ import com.hedera.services.bdd.suites.regression.SteadyStateThrottlingCheck;
 import com.hedera.services.bdd.suites.regression.UmbrellaRedux;
 import com.hedera.services.bdd.suites.schedule.ScheduleCreateSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleDeleteSpecs;
+import com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecStateful;
 import com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleRecordSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleSignSpecs;
@@ -146,6 +163,8 @@ import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
 import com.hedera.services.bdd.suites.token.TokenCreateSpecs;
 import com.hedera.services.bdd.suites.token.TokenDeleteSpecs;
 import com.hedera.services.bdd.suites.token.TokenManagementSpecs;
+import com.hedera.services.bdd.suites.token.TokenManagementSpecsStateful;
+import com.hedera.services.bdd.suites.token.TokenPauseSpecs;
 import com.hedera.services.bdd.suites.token.TokenTransactSpecs;
 import com.hedera.services.bdd.suites.token.TokenUpdateSpecs;
 import com.hedera.services.legacy.regression.SmartContractAggregatedTests;
@@ -233,22 +252,32 @@ public class SuiteRunner {
 //				PermissionSemanticsSpec::new,
 //				SysDelSysUndelSpec::new));
 //		put("CiSmartContractJob", aof(
-//				NewOpInConstructorSuite::new,
-//				ContractCallSuite::new,
+//				ContractQueriesStressTests::new,
 //				ContractCallLocalSuite::new,
-//				ContractUpdateSuite::new,
+//				ContractCreateSuite::new,
+//				SStoreSuite::new,
 //				ContractDeleteSuite::new,
-//				ChildStorageSpec::new,
-//				BigArraySpec::new,
-//				CharacterizationSuite::new,
-//				SmartContractFailFirstSpec::new,
-//				SmartContractSelfDestructSpec::new,
-//				DeprecatedContractKeySuite::new,
-//				ContractRecordsSanityCheckSuite::new,
 //				ContractGetBytecodeSuite::new,
-//				SmartContractInlineAssemblySpec::new,
-//				OCTokenSpec::new,
-//				RecordCreationSuite::new));
+//				ContractGetInfoSuite::new,
+//				ContractUpdateSuite::new,
+//				ContractRecordsSanityCheckSuite::new,
+//				ContractCallSuite::new,
+//				BalanceOperationSuite::new,
+//				CallCodeOperationSuite::new,
+//				CallOperationSuite::new,
+//				CreateOperationSuite::new,
+//				DelegateCallOperationSuite::new,
+//				ExtCodeCopyOperationSuite::new,
+//				ExtCodeHashOperationSuite::new,
+//				ExtCodeSizeOperationSuite::new,
+//				GlobalPropertiesSuite::new,
+//				StaticCallOperationSuite::new,
+//				SStoreOperationLoadTest::new,
+//				ContractCallLoadTest::new,
+//				ContractCallLocalPerfSuite::new,
+//				ContractCallPerfSuite::new,
+//				ContractPerformanceSuite::new,
+//				MixedSmartContractOpsLoadTest::new));
 		/* Adjust fee schedules */
 		put("AdjustFeeSchedule", aof(AdjustFeeScheduleSuite::new));
 		/* Umbrella Redux */
@@ -327,6 +356,7 @@ public class SuiteRunner {
 		put("ScheduleRecordSpecs", aof(ScheduleRecordSpecs::new));
 		put("ScheduleDeleteSpecs", aof(ScheduleDeleteSpecs::new));
 		put("ScheduleExecutionSpecs", aof(ScheduleExecutionSpecs::new));
+		put("ScheduleExecutionSpecStateful", aof(ScheduleExecutionSpecStateful::new));
 		/* Functional tests - TOKEN */
 		put("TokenCreateSpecs", aof(TokenCreateSpecs::new));
 		put("TokenUpdateSpecs", aof(TokenUpdateSpecs::new));
@@ -334,7 +364,9 @@ public class SuiteRunner {
 		put("TokenTransactSpecs", aof(TokenTransactSpecs::new));
 		put("TokenManagementSpecs", aof(TokenManagementSpecs::new));
 		put("TokenAssociationSpecs", aof(TokenAssociationSpecs::new));
+		put("TokenPauseSpecs", aof(TokenPauseSpecs::new));
 		put("Hip17UnhappyTokensSuite", aof(Hip17UnhappyTokensSuite::new));
+		put("TokenManagementSpecsStateful", aof(TokenManagementSpecsStateful::new));
 		/* Functional tests - CRYPTO */
 		put("CryptoTransferSuite", aof(CryptoTransferSuite::new));
 		put("CryptoDeleteSuite", aof(CryptoDeleteSuite::new));
@@ -344,18 +376,31 @@ public class SuiteRunner {
 		put("CryptoCornerCasesSuite", aof(CryptoCornerCasesSuite::new));
 		put("CryptoGetInfoRegression", aof(CryptoGetInfoRegression::new));
 		/* Functional tests - CONTRACTS */
-		put("NewOpInConstructorSpecs", aof(NewOpInConstructorSuite::new));
-		put("DeprecatedContractKeySpecs", aof(DeprecatedContractKeySuite::new));
 		put("ContractQueriesStressTests", aof(ContractQueriesStressTests::new));
-		put("ChildStorageSpecs", aof(ChildStorageSpec::new));
 		put("ContractCallLocalSuite", aof(ContractCallLocalSuite::new));
 		put("ContractCreateSuite", aof(ContractCreateSuite::new));
-		put("BigArraySpec", aof(BigArraySpec::new));
-		put("SmartContractFailFirstSpec", aof(SmartContractFailFirstSpec::new));
-		put("OCTokenSpec", aof(OCTokenSpec::new));
-		put("SmartContractInlineAssemblyCheck", aof(SmartContractInlineAssemblySpec::new));
-		put("SmartContractSelfDestructSpec", aof(SmartContractSelfDestructSpec::new));
-		put("SmartContractPaySpec", aof(SmartContractPaySpec::new));
+		put("SStoreSuite", aof(SStoreSuite::new));
+		put("ContractDeleteSuite", aof(ContractDeleteSuite::new));
+		put("ContractGetBytecodeSuite", aof(ContractGetBytecodeSuite::new));
+		put("ContractGetInfoSuite", aof(ContractGetInfoSuite::new));
+		put("ContractUpdateSuite", aof(ContractUpdateSuite::new));
+		put("ContractCallSuite", aof(ContractCallSuite::new));
+		put("BalanceOperationSuite", aof(BalanceOperationSuite::new));
+		put("CallCodeOperationSuite", aof(CallCodeOperationSuite::new));
+		put("CallOperationSuite", aof(CallOperationSuite::new));
+		put("CreateOperationSuite", aof(CreateOperationSuite::new));
+		put("DelegateCallOperationSuite", aof(DelegateCallOperationSuite::new));
+		put("ExtCodeCopyOperationSuite", aof(ExtCodeCopyOperationSuite::new));
+		put("ExtCodeHashOperationSuite", aof(ExtCodeHashOperationSuite::new));
+		put("ExtCodeSizeOperationSuite", aof(ExtCodeSizeOperationSuite::new));
+		put("GlobalPropertiesSuite", aof(GlobalPropertiesSuite::new));
+		put("StaticCallOperationSuite", aof(StaticCallOperationSuite::new));
+		put("SStoreOperationLoadTest", aof(SStoreOperationLoadTest::new));
+		put("ContractCallLoadTest", aof(ContractCallLoadTest::new));
+		put("ContractCallLocalPerfSuite", aof(ContractCallLocalPerfSuite::new));
+		put("ContractCallPerfSuite", aof(ContractCallPerfSuite::new));
+		put("ContractPerformanceSuite", aof(ContractPerformanceSuite::new));
+		put("MixedSmartContractOpsLoadTest", aof(MixedSmartContractOpsLoadTest::new));
 		/* Functional tests - AUTORENEW */
 		put("AccountAutoRenewalSuite", aof(AccountAutoRenewalSuite::new));
 		/* Functional tests - MIXED (record emphasis) */
@@ -364,7 +409,8 @@ public class SuiteRunner {
 		put("CryptoRecordSanityChecks", aof(CryptoRecordsSanityCheckSuite::new));
 		put("FileRecordSanityChecks", aof(FileRecordsSanityCheckSuite::new));
 		put("ContractRecordSanityChecks", aof(ContractRecordsSanityCheckSuite::new));
-		put("ContractCallSuite", aof(ContractCallSuite::new));
+		put("LogsSuite", aof(LogsSuite::new));
+		put("RecordsSuite", aof(RecordsSuite::new));
 		put("ProtectedFilesUpdateSuite", aof(ProtectedFilesUpdateSuite::new));
 		put("DuplicateManagementTest", aof(DuplicateManagementTest::new));
 		/* Record validation. */
@@ -400,6 +446,11 @@ public class SuiteRunner {
 		put("ValidateNewAddressBook", aof(ValidateNewAddressBook::new));
 		put("CryptoTransferPerfSuiteWOpProvider", aof(CryptoTransferPerfSuiteWOpProvider::new));
 		put("ValidateTokensDeleteAfterReconnect", aof(ValidateTokensDeleteAfterReconnect::new));
+		/* Freeze with upgrade */
+		put("UpdateFileForUpgrade", aof(UpdateFileForUpgrade::new));
+		put("PrepareUpgrade", aof(PrepareUpgrade::new));
+		put("FreezeUpgrade", aof(FreezeUpgrade::new));
+		put("FreezeAbort", aof(FreezeAbort::new));
 	}};
 
 	static boolean runAsync;
@@ -412,7 +463,7 @@ public class SuiteRunner {
 	/* Specify the network size so that we can read the appropriate throttle settings for that network. */
 	private static final String NETWORK_SIZE_ARG = "-NETWORKSIZE";
 	/* Specify the network to run legacy SC tests instead of using suiterunner */
-	private static final String LEGACY_SMART_CONTRACT_TESTS="SmartContractAggregatedTests";
+	private static final String LEGACY_SMART_CONTRACT_TESTS = "SmartContractAggregatedTests";
 	private static String payerId = DEFAULT_PAYER_ID;
 
 	public static void main(String... args) throws Exception {
@@ -423,10 +474,10 @@ public class SuiteRunner {
 		log.info("Effective args :: " + List.of(effArgs));
 		if (Arrays.asList(effArgs).contains(LEGACY_SMART_CONTRACT_TESTS)) {
 			SmartContractAggregatedTests.main(
-					new String[]{
+					new String[] {
 							System.getenv("NODES").split(":")[0],
 							args[1],
-							"1"});
+							"1" });
 		} else if (Stream.of(effArgs).anyMatch("-CI"::equals)) {
 			var tlsOverride = overrideOrDefault(effArgs, TLS_ARG, DEFAULT_TLS_CONFIG.toString());
 			var txnOverride = overrideOrDefault(effArgs, TXN_ARG, DEFAULT_TXN_CONFIG.toString());
@@ -438,7 +489,7 @@ public class SuiteRunner {
 			// For HTS perf regression test, we need to know the number of clients to distribute
 			// the creation of the test tokens and token associations to each client.
 			// For current perf test setup, this number will be the size of test network.
-			if(!otherOverrides.containsKey("totalClients")) {
+			if (!otherOverrides.containsKey("totalClients")) {
 				otherOverrides.put("totalClients", "" + expectedNetworkSize);
 			}
 
@@ -485,7 +536,7 @@ public class SuiteRunner {
 			Thread.sleep(r.nextInt(5000));
 			new CryptoCreateForSuiteRunner(nodes, defaultNode).runSuiteAsync();
 			Thread.sleep(2000);
-			if(!isIdLiteral(payerId)){
+			if (!isIdLiteral(payerId)) {
 				payerId = DEFAULT_PAYER_ID;
 			}
 		} catch (InterruptedException e) {
@@ -673,9 +724,10 @@ public class SuiteRunner {
 	public static Supplier<HapiApiSuite[]> aof(Supplier<HapiApiSuite>... items) {
 		return () -> {
 			HapiApiSuite[] suites = new HapiApiSuite[items.length];
-			for(int i = 0; i < items.length; i++) {
+			for (int i = 0; i < items.length; i++) {
 				suites[i] = items[i].get();
-			};
+			}
+			;
 			return suites;
 		};
 	}

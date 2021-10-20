@@ -66,6 +66,7 @@ public final class GetTokenInfoResourceUsage implements QueryResourceUsageEstima
 					.givenCurrentWipeKey(ifPresent(info, TokenInfo::hasWipeKey, TokenInfo::getWipeKey))
 					.givenCurrentSupplyKey(ifPresent(info, TokenInfo::hasSupplyKey, TokenInfo::getSupplyKey))
 					.givenCurrentKycKey(ifPresent(info, TokenInfo::hasKycKey, TokenInfo::getKycKey))
+					.givenCurrentPauseKey(ifPresent(info, TokenInfo::hasPauseKey, TokenInfo::getPauseKey))
 					.givenCurrentName(info.getName())
 					.givenCurrentMemo(info.getMemo())
 					.givenCurrentSymbol(info.getSymbol());

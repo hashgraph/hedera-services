@@ -90,6 +90,16 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 		return this;
 	}
 
+	public ContractFnResultAsserts gasUsed(long gasUsed) {
+		registerProvider((spec, o) -> {
+			ContractFunctionResult result = (ContractFunctionResult) o;
+			Assertions.assertEquals(
+					gasUsed, result.getGasUsed(),
+					"Wrong amount of Gas was used!");
+		});
+		return this;
+	}
+
 	/* Helpers to create the provider for #resultThruAbi. */
 	public static Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> isContractWith(
 			ContractInfoAsserts theExpectedInfo) {

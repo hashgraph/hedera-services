@@ -9,9 +9,9 @@ package com.hedera.services.txns.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,75 +21,105 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.SequenceNumber;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.records.TransactionRecordService;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
-import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.contracts.execution.CallEvmTxProcessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.swirlds.merkle.map.MerkleMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.swirlds.common.CommonUtils;
+import org.apache.tuweni.bytes.Bytes;
+import org.ethereum.db.ServicesRepositoryRoot;
 
 import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.time.Instant;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_BYTECODE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.apache.commons.lang3.ArrayUtils.isNotEmpty;
 
-@Singleton
 public class ContractCallTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(ContractCallTransitionLogic.class);
 
-	private final LegacyCaller delegate;
-	private final OptionValidator validator;
+	private final AccountStore accountStore;
+	private final EntityIdSource ids;
 	private final TransactionContext txnCtx;
-	private final Supplier<SequenceNumber> seqNo;
-	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts;
+	private final HederaWorldState worldState;
+	private final TransactionRecordService recordService;
+	private final CallEvmTxProcessor evmTxProcessor;
+	private final ServicesRepositoryRoot repositoryRoot;
 
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
+	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validateSemantics;
 
 	@Inject
 	public ContractCallTransitionLogic(
-			LegacyCaller delegate,
-			OptionValidator validator,
 			TransactionContext txnCtx,
-			Supplier<SequenceNumber> seqNo,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts
+			EntityIdSource ids,
+			AccountStore accountStore,
+			HederaWorldState worldState,
+			TransactionRecordService recordService,
+			CallEvmTxProcessor evmTxProcessor,
+			ServicesRepositoryRoot repositoryRoot
 	) {
-		this.delegate = delegate;
-		this.validator = validator;
 		this.txnCtx = txnCtx;
-		this.seqNo = seqNo;
-		this.contracts = contracts;
-	}
-
-	@FunctionalInterface
-	public interface LegacyCaller {
-		TransactionRecord perform(TransactionBody txn, Instant consensusTime, SequenceNumber seqNo);
+		this.ids = ids;
+		this.worldState = worldState;
+		this.accountStore = accountStore;
+		this.recordService = recordService;
+		this.evmTxProcessor = evmTxProcessor;
+		this.repositoryRoot = repositoryRoot;
 	}
 
 	@Override
 	public void doStateTransition() {
-		try {
-			var contractCallTxn = txnCtx.accessor().getTxn();
 
-			var legacyRecord = delegate.perform(contractCallTxn, txnCtx.consensusTime(), seqNo.get());
+		/* --- Translate from gRPC types --- */
+		var contractCallTxn = txnCtx.accessor().getTxn();
+		var op = contractCallTxn.getContractCall();
+		final var senderId = Id.fromGrpcAccount(contractCallTxn.getTransactionID().getAccountID());
+		final var contractId = Id.fromGrpcContract(op.getContractID());
 
-			txnCtx.setStatus(legacyRecord.getReceipt().getStatus());
-			txnCtx.setCallResult(legacyRecord.getContractCallResult());
-		} catch (Exception e) {
-			log.warn("Avoidable exception!", e);
-			txnCtx.setStatus(FAIL_INVALID);
-		}
+		/* --- Load the model objects --- */
+		final var sender = accountStore.loadAccount(senderId);
+		final var receiver = accountStore.loadContract(contractId);
+		final var callData = !op.getFunctionParameters().isEmpty()
+				? Bytes.fromHexString(CommonUtils.hex(op.getFunctionParameters().toByteArray())) : Bytes.EMPTY;
+
+		final var bytesReceiver = receiver.getId().asEvmAddress().toArray();
+		validateTrue(isNotEmpty(repositoryRoot.getCode(bytesReceiver)), CONTRACT_BYTECODE_EMPTY);
+
+		/* --- Do the business logic --- */
+		final var result = evmTxProcessor.execute(
+				sender,
+				receiver.getId().asEvmAddress(),
+				op.getGas(),
+				op.getAmount(),
+				callData,
+				txnCtx.consensusTime());
+
+		/* --- Persist changes into state --- */
+		final var createdContracts = worldState.persist();
+		worldState.customizeSponsoredAccounts();
+		result.setCreatedContracts(createdContracts);
+
+		/* --- Externalise result --- */
+		recordService.externaliseEvmCallTransaction(result);
+	}
+
+	@Override
+	public void reclaimCreatedIds() {
+		ids.reclaimProvisionalIds();
+	}
+
+	@Override
+	public void resetCreatedIds() {
+		ids.resetProvisionalIds();
 	}
 
 	@Override
@@ -102,13 +132,9 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 		return SEMANTIC_CHECK;
 	}
 
-	public ResponseCodeEnum validate(TransactionBody contractCallTxn) {
-		var op = contractCallTxn.getContractCall();
+	private ResponseCodeEnum validateSemantics(final TransactionBody transactionBody) {
+		var op = transactionBody.getContractCall();
 
-		var status = validator.queryableContractStatus(op.getContractID(), contracts.get());
-		if (status != OK) {
-			return status;
-		}
 		if (op.getGas() < 0) {
 			return CONTRACT_NEGATIVE_GAS;
 		}

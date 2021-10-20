@@ -32,9 +32,11 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.CommonUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
@@ -45,6 +47,7 @@ import static java.lang.System.arraycopy;
 public final class EntityIdUtils {
 	private static final String ENTITY_ID_FORMAT = "%d.%d.%d";
 	private static final String CANNOT_PARSE_PREFIX = "Cannot parse '";
+	private static final Pattern ENTITY_NUM_RANGE_PATTERN = Pattern.compile("(\\d+)-(\\d+)");
 
 	private EntityIdUtils() {
 		throw new UnsupportedOperationException("Utility Class");
@@ -103,6 +106,25 @@ public final class EntityIdUtils {
 					.build();
 		} catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
 			throw new IllegalArgumentException(String.format("Argument 'literal=%s' is not an account", literal), e);
+		}
+	}
+
+	public static Pair<Long, Long> parseEntityNumRange(final String literal) {
+		final var matcher = ENTITY_NUM_RANGE_PATTERN.matcher(literal);
+		if (matcher.matches()) {
+			try {
+				final var left = Long.valueOf(matcher.group(1));
+				final var right = Long.valueOf(matcher.group(2));
+				if (left > right) {
+					throw new IllegalArgumentException(
+							"Range left endpoint " + left + " should be <= right endpoint " + right);
+				}
+				return Pair.of(left, right);
+			} catch (NumberFormatException nfe) {
+				throw new IllegalArgumentException("Argument literal='" + literal + "' has malformatted long value");
+			}
+		} else {
+			throw new IllegalArgumentException("Argument literal='" + literal + "' is not a valid range literal");
 		}
 	}
 
@@ -173,6 +195,12 @@ public final class EntityIdUtils {
 	public static byte[] asSolidityAddress(final ContractID id) {
 		return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum());
 	}
+	public static byte[] asSolidityAddress(final AccountID id) {
+		return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum());
+	}
+	public static String asSolidityAddressHex(Id id) {
+		return CommonUtils.hex(asSolidityAddress((int) id.getShard(), id.getRealm(), id.getNum()));
+	}
 
 	public static byte[] asSolidityAddress(final int shard, final long realm, final long num) {
 		final byte[] solidityAddress = new byte[20];
@@ -232,4 +260,5 @@ public final class EntityIdUtils {
 		final var rightNum = unsignedLowOrder32From(scopedSerialNo);
 		return STATIC_PROPERTIES.scopedIdLiteralWith(leftNum) + "." + rightNum;
 	}
+
 }

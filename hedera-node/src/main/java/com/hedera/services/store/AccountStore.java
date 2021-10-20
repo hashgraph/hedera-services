@@ -26,8 +26,8 @@ import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.merkle.map.MerkleMap;
 
@@ -40,7 +40,9 @@ import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 
 @Singleton
 public class AccountStore {
@@ -68,11 +70,14 @@ public class AccountStore {
 	 * in order for its changes to be applied to the Swirlds state, and included in the
 	 * {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} for the active transaction.
 	 *
-	 * The method uses the {@link AccountStore#loadAccountOrFailWith(Id, ResponseCodeEnum)} by passing a `null` explicit response code
+	 * The method uses the {@link AccountStore#loadAccountOrFailWith(Id, ResponseCodeEnum)} by passing a `null` explicit
+	 * response code
 	 *
-	 * @param id the account to load
+	 * @param id
+	 * 		the account to load
 	 * @return a usable model of the account
-	 * @throws InvalidTransactionException if the requested account is missing, deleted, or expired and pending removal
+	 * @throws InvalidTransactionException
+	 * 		if the requested account is missing, deleted, or expired and pending removal
 	 */
 	public Account loadAccount(Id id) {
 		return this.loadAccountOrFailWith(id, null);
@@ -87,25 +92,71 @@ public class AccountStore {
 	 * in order for its changes to be applied to the Swirlds state, and included in the
 	 * {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} for the active transaction.
 	 *
-	 * @param id   the account to load
-	 * @param code the {@link ResponseCodeEnum} to fail with if the account is deleted/missing
+	 * @param id
+	 * 		the account to load
+	 * @param code
+	 * 		the {@link ResponseCodeEnum} to fail with if the account is deleted/missing
 	 * @return a usable model of the account if available
 	 */
 	public Account loadAccountOrFailWith(Id id, @Nullable ResponseCodeEnum code) {
-		Account account;
+		return this.loadEntityOrFailWith(id, code, INVALID_ACCOUNT_ID, ACCOUNT_DELETED);
+	}
 
+	/**
+	 * Returns a model of the requested account, with operations that can be used to
+	 * implement business logic in a transaction.
+	 *
+	 * @param id
+	 * 		the account to load
+	 * @return a usable model of the account
+	 * @throws InvalidTransactionException
+	 * 		if the requested contract is missing, deleted or is not smart contract
+	 */
+	public Account loadContract(Id id) {
+		final var account = loadEntityOrFailWith(id, null, INVALID_CONTRACT_ID, CONTRACT_DELETED);
+		validateTrue(account.isSmartContract(), INVALID_CONTRACT_ID);
+		return account;
+	}
+
+	/**
+	 * Returns a model of the requested entity. The method is to be used for loading both Accounts and Contracts as
+	 * it does not validate the type of the entity. Additional validation is to be performed if the consumer must
+	 * validate the type of the entity.
+	 *
+	 * @param id
+	 * 		Id of the requested entity
+	 * @param explicitResponseCode
+	 * 		The explicit {@link ResponseCodeEnum} to be returned in the case of the entity not
+	 * 		being found or deleted
+	 * @param nonExistingCode
+	 * 		The {@link ResponseCodeEnum} to be used in the case of the entity being non-existing
+	 * @param deletedCode
+	 * 		The {@link ResponseCodeEnum} to be used in the case of the entity being deleted
+	 * @return usable model of the entity if available
+	 */
+	private Account loadEntityOrFailWith(Id id, @Nullable ResponseCodeEnum explicitResponseCode,
+			ResponseCodeEnum nonExistingCode, ResponseCodeEnum deletedCode) {
 		final var key = EntityNum.fromModel(id);
 		final var merkleAccount = accounts.get().get(key);
 
-		validateUsable(merkleAccount, code);
+		validateUsable(merkleAccount, explicitResponseCode, nonExistingCode, deletedCode);
 
-		account = new Account(id);
+		final var account = new Account(id);
 		account.setExpiry(merkleAccount.getExpiry());
 		account.initBalance(merkleAccount.getBalance());
 		account.setAssociatedTokens(merkleAccount.tokens().getIds().copy());
 		account.setOwnedNfts(merkleAccount.getNftsOwned());
 		account.setMaxAutomaticAssociations(merkleAccount.getMaxAutomaticAssociations());
 		account.setAlreadyUsedAutomaticAssociations(merkleAccount.getAlreadyUsedAutoAssociations());
+		if (merkleAccount.getProxy() != null) {
+			account.setProxy(merkleAccount.getProxy().asId());
+		}
+		account.setReceiverSigRequired(merkleAccount.isReceiverSigRequired());
+		account.setKey(merkleAccount.state().key());
+		account.setMemo(merkleAccount.getMemo());
+		account.setAutoRenewSecs(merkleAccount.getAutoRenewSecs());
+		account.setDeleted(merkleAccount.isDeleted());
+		account.setSmartContract(merkleAccount.isSmartContract());
 
 		return account;
 	}
@@ -115,28 +166,47 @@ public class AccountStore {
 	 * to update the {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} of the active transaction
 	 * with these changes.
 	 *
-	 * @param account the account to save
+	 * @param account
+	 * 		the account to save
 	 */
 	public void persistAccount(Account account) {
 		final var id = account.getId();
 		final var key = EntityNum.fromLong(id.getNum());
 
-		final var currentAccounts = accounts.get();
-		final var mutableAccount = currentAccounts.getForModify(key);
+		final var mutableAccount = accounts.get().getForModify(key);
+		mapModelToMutable(account, mutableAccount);
 		mutableAccount.tokens().updateAssociationsFrom(account.getAssociatedTokens());
-		mutableAccount.setNftsOwned(account.getOwnedNfts());
-		mutableAccount.setMaxAutomaticAssociations(account.getMaxAutomaticAssociations());
-		mutableAccount.setAlreadyUsedAutomaticAssociations(account.getAlreadyUsedAutomaticAssociations());
 	}
 
-	private void validateUsable(MerkleAccount merkleAccount, @Nullable ResponseCodeEnum explicitResponse) {
-		validateTrue(merkleAccount != null, explicitResponse != null ? explicitResponse : INVALID_ACCOUNT_ID);
-		validateFalse(merkleAccount.isDeleted(), explicitResponse != null ? explicitResponse : ACCOUNT_DELETED);
-		if (dynamicProperties.autoRenewEnabled()) {
-			if (merkleAccount.getBalance() == 0) {
-				final boolean isExpired = !validator.isAfterConsensusSecond(merkleAccount.getExpiry());
-				validateFalse(isExpired, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-			}
+	private void mapModelToMutable(Account model, MerkleAccount mutableAccount) {
+		if (model.getProxy() != null) {
+			mutableAccount.setProxy(model.getProxy().asEntityId());
+		}
+		mutableAccount.setExpiry(model.getExpiry());
+		mutableAccount.setBalanceUnchecked(model.getBalance());
+		mutableAccount.setNftsOwned(model.getOwnedNfts());
+		mutableAccount.setMaxAutomaticAssociations(model.getMaxAutomaticAssociations());
+		mutableAccount.setAlreadyUsedAutomaticAssociations(model.getAlreadyUsedAutomaticAssociations());
+		mutableAccount.state().setAccountKey(model.getKey());
+		mutableAccount.setReceiverSigRequired(model.isReceiverSigRequired());
+		mutableAccount.setDeleted(model.isDeleted());
+		mutableAccount.setAutoRenewSecs(model.getAutoRenewSecs());
+		mutableAccount.setSmartContract(model.isSmartContract());
+	}
+
+	private void validateUsable(MerkleAccount merkleAccount, @Nullable ResponseCodeEnum explicitResponse,
+			ResponseCodeEnum nonExistingCode, ResponseCodeEnum deletedCode) {
+		validateTrue(merkleAccount != null, explicitResponse != null ? explicitResponse : nonExistingCode);
+		validateFalse(merkleAccount.isDeleted(), explicitResponse != null ? explicitResponse : deletedCode);
+		validateFalse(isExpired(merkleAccount.getBalance(), merkleAccount.getExpiry()),
+				ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+	}
+
+	private boolean isExpired(long balance, long expiry) {
+		if (dynamicProperties.autoRenewEnabled() && balance == 0) {
+			return !validator.isAfterConsensusSecond(expiry);
+		} else {
+			return false;
 		}
 	}
 

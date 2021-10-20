@@ -210,6 +210,7 @@ public interface TxnHandlingScenario {
 		var optionalSupplyKey = TOKEN_SUPPLY_KT.asJKeyUnchecked();
 		var optionalFreezeKey = TOKEN_FREEZE_KT.asJKeyUnchecked();
 		var optionalFeeScheduleKey = TOKEN_FEE_SCHEDULE_KT.asJKeyUnchecked();
+		var optionalPauseKey = TOKEN_PAUSE_KT.asJKeyUnchecked();
 
 		var immutableToken = new MerkleToken(
 				Long.MAX_VALUE, 100, 1,
@@ -227,6 +228,16 @@ public interface TxnHandlingScenario {
 		given(tokenStore.resolve(KNOWN_TOKEN_NO_SPECIAL_KEYS))
 				.willReturn(KNOWN_TOKEN_NO_SPECIAL_KEYS);
 		given(tokenStore.get(KNOWN_TOKEN_NO_SPECIAL_KEYS)).willReturn(vanillaToken);
+
+		var pausedToken = new MerkleToken(
+				Long.MAX_VALUE, 100, 1,
+				"PausedToken", "PAUSEDTOKEN", false, false,
+				new EntityId(1, 2, 4));
+		pausedToken.setAdminKey(adminKey);
+		pausedToken.setPauseKey(optionalPauseKey);
+		given(tokenStore.resolve(KNOWN_TOKEN_WITH_PAUSE))
+				.willReturn(KNOWN_TOKEN_WITH_PAUSE);
+		given(tokenStore.get(KNOWN_TOKEN_WITH_PAUSE)).willReturn(pausedToken);
 
 		var frozenToken = new MerkleToken(
 				Long.MAX_VALUE, 100, 1,
@@ -468,6 +479,8 @@ public interface TxnHandlingScenario {
 	TokenID KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY = asToken(KNOWN_TOKEN_WITH_FEE_SCHEDULE_ID);
 	String KNOWN_TOKEN_WITH_ROYALTY_FEE_ID = "0.0.77977";
 	TokenID KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK = asToken(KNOWN_TOKEN_WITH_ROYALTY_FEE_ID);
+	String KNOWN_TOKEN_WITH_PAUSE_ID = "0.0.780";
+	TokenID KNOWN_TOKEN_WITH_PAUSE = asToken(KNOWN_TOKEN_WITH_PAUSE_ID);
 
 	String FIRST_TOKEN_SENDER_ID = "0.0.888";
 	AccountID FIRST_TOKEN_SENDER = asAccount(FIRST_TOKEN_SENDER_ID);
@@ -500,6 +513,7 @@ public interface TxnHandlingScenario {
 	KeyTree TOKEN_SUPPLY_KT = withRoot(ed25519());
 	KeyTree TOKEN_WIPE_KT = withRoot(ed25519());
 	KeyTree TOKEN_KYC_KT = withRoot(ed25519());
+	KeyTree TOKEN_PAUSE_KT = withRoot(ed25519());
 	KeyTree TOKEN_REPLACE_KT = withRoot(ed25519());
 	KeyTree MISC_TOPIC_SUBMIT_KT = withRoot(ed25519());
 	KeyTree MISC_TOPIC_ADMIN_KT = withRoot(ed25519());

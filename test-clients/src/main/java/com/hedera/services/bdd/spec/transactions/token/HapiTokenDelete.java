@@ -130,6 +130,9 @@ public class HapiTokenDelete extends HapiTxnOp<HapiTokenDelete> {
 		if (registry.hasFeeScheduleKey(token)) {
 			registry.forgetFeeScheduleKey(token);
 		}
+		if (registry.hasPauseKey(token)) {
+			registry.forgetPauseKey(token);
+		}
 	}
 
 	@Override

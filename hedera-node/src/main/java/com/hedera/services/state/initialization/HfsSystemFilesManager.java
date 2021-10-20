@@ -47,6 +47,7 @@ import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
@@ -55,7 +56,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -67,7 +67,7 @@ import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static com.swirlds.common.Address.ipString;
 
 @Singleton
-public class HfsSystemFilesManager implements SystemFilesManager {
+public final class HfsSystemFilesManager implements SystemFilesManager {
 	private static final Logger log = LogManager.getLogger(HfsSystemFilesManager.class);
 	private static final String PROPERTIES_SYS_FILE_NAME = "properties";
 	private static final String PERMISSIONS_SYS_FILE_NAME = "API permissions";
@@ -89,12 +89,12 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 
 	@Inject
 	public HfsSystemFilesManager(
-			Supplier<AddressBook> bookSupplier,
-			FileNumbers fileNumbers,
-			@CompositeProps PropertySource properties,
-			TieredHederaFs hfs,
-			Supplier<JKey> keySupplier,
-			SysFileCallbacks callbacks
+			final Supplier<AddressBook> bookSupplier,
+			final FileNumbers fileNumbers,
+			@CompositeProps final PropertySource properties,
+			final TieredHederaFs hfs,
+			final Supplier<JKey> keySupplier,
+			final SysFileCallbacks callbacks
 	) {
 		this.hfs = hfs;
 		this.callbacks = callbacks;
@@ -180,10 +180,14 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	}
 
 	@Override
-	public void createUpdateZipFileIfMissing() {
-		var disFid = fileNumbers.toFid(fileNumbers.softwareUpdateZip());
-		if (!hfs.exists(disFid)) {
-			materialize(disFid, systemFileInfo(), new byte[0]);
+	public void createUpdateFilesIfMissing() {
+		final var firstUpdateNum = fileNumbers.firstSoftwareUpdateFile();
+		final var lastUpdateNum = fileNumbers.lastSoftwareUpdateFile();
+		for (var updateNum = firstUpdateNum; updateNum <= lastUpdateNum; updateNum++) {
+			var disFid = fileNumbers.toFid(updateNum);
+			if (!hfs.exists(disFid)) {
+				materialize(disFid, systemFileInfo(), new byte[0]);
+			}
 		}
 	}
 
@@ -202,61 +206,61 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 		InputStream get() throws IOException;
 	}
 
-	private <T> T loadFrom(FileID disFid, String resource, GrpcParser<T> parser) {
+	private <T> T loadFrom(final FileID disFid, final String resource, final GrpcParser<T> parser) {
 		final byte[] contents = hfs.cat(disFid);
 		try {
 			return parser.parseFrom(hfs.cat(disFid));
-		} catch (InvalidProtocolBufferException e) {
+		} catch (final InvalidProtocolBufferException e) {
 			log.error("Corrupt {} in saved state ({}), unable to continue!", resource, escapeBytes(contents));
 			throw new IllegalStateException(e);
 		}
 	}
 
-	private void bootstrapInto(
-			FileID disFid,
-			String resource,
-			BootstrapLoader loader
-	) {
+	private void bootstrapInto(final FileID disFid, final String resource, final BootstrapLoader loader) {
 		byte[] rawProps;
 		try {
 			rawProps = loader.get();
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			log.error("Failed to read bootstrap {}, unable to continue!", resource, e);
 			throw new IllegalStateException(e);
 		}
 		materialize(disFid, systemFileInfo(), rawProps);
 	}
 
-	private void materialize(FileID fid, HFileMeta info, byte[] contents) {
+	private void materialize(final FileID fid, final HFileMeta info, final byte[] contents) {
 		hfs.getMetadata().put(fid, info);
-		if (fileNumbers.softwareUpdateZip() == fid.getFileNum()) {
-			hfs.diskFs().put(fid, contents);
+		if (isUpdateFile(fid.getFileNum())) {
+			hfs.specialFiles().update(fid, contents);
 		} else {
 			hfs.getData().put(fid, contents);
 		}
 	}
 
+	private boolean isUpdateFile(long num) {
+		return num >= fileNumbers.firstSoftwareUpdateFile() && num <= fileNumbers.lastSoftwareUpdateFile();
+	}
+
 	private <T> void loadProtoWithSupplierFallback(
-			long disNum,
-			String resource,
-			Consumer<T> onSuccess,
-			GrpcParser<T> parser,
-			BootstrapLoader fallback
+			final long disNum,
+			final String resource,
+			final Consumer<T> onSuccess,
+			final GrpcParser<T> parser,
+			final BootstrapLoader fallback
 	) {
-		var disFid = fileNumbers.toFid(disNum);
+		final var disFid = fileNumbers.toFid(disNum);
 		if (!hfs.exists(disFid)) {
 			bootstrapInto(disFid, resource, fallback);
 		}
-		var proto = loadFrom(disFid, resource, parser);
+		final var proto = loadFrom(disFid, resource, parser);
 		onSuccess.accept(proto);
 	}
 
 	private void loadConfigWithJutilPropsFallback(
-			long sysFileNum,
-			String sysFileName,
-			String externalLocProp,
-			String defaultResource,
-			Consumer<ServicesConfigurationList> onSuccess
+			final long sysFileNum,
+			final String sysFileName,
+			final String externalLocProp,
+			final String defaultResource,
+			final Consumer<ServicesConfigurationList> onSuccess
 	) {
 		final var sysFileFid = fileNumbers.toFid(sysFileNum);
 		if (!hfs.exists(sysFileFid)) {
@@ -273,60 +277,64 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 		onSuccess.accept(config);
 	}
 
-	private String errorLogIfAnyForFailureToLoad(String sysFileName) {
+	private String errorLogIfAnyForFailureToLoad(final String sysFileName) {
 		return PERMISSIONS_SYS_FILE_NAME.equals(sysFileName)
 				? "Could not bootstrap permissions, only superusers will be able to perform HAPI operations!"
 				: "Could not bootstrap properties, likely benign but resources should be double-checked!";
 	}
 
 	private byte[] asSerializedConfig(
-			String sysFileName,
-			String externalPropsLoc,
-			String defaultResource,
-			String errorLog
+			final String sysFileName,
+			final String externalPropsLoc,
+			final String defaultResource,
+			final String errorLog
 	) {
 		final var externalSrcMsg = String.format("Bootstrapping %s from '%s':", sysFileName, externalPropsLoc);
-		final var resourceSrcMsg = String.format("Bootstrapping %s from resource '%s':", sysFileName, defaultResource);
+		final var externalConfig = configBytesFrom(() -> Files.newInputStream(Paths.get(externalPropsLoc)),
+				externalSrcMsg);
+		if (null != externalConfig) {
+			return externalConfig;
+		}
 
-		return configBytesFrom(
-				() -> Files.newInputStream(Paths.get(externalPropsLoc)),
-				externalSrcMsg
-		)
-				.or(() ->
-						configBytesFrom(
-								() -> {
-									var in = HfsSystemFilesManager.class.getClassLoader()
-											.getResourceAsStream(defaultResource);
-									if (in == null) {
-										throw new IOException("Could not load resource '" + defaultResource + "'");
-									}
-									return in;
-								},
-								resourceSrcMsg
-						)
-				).or(() -> {
-							log.error(errorLog);
-							return Optional.of(ServicesConfigurationList.getDefaultInstance().toByteArray());
-						}
-				).get();
+		final var resourceSrcMsg = String.format("Bootstrapping %s from resource '%s':", sysFileName, defaultResource);
+		final var defaultConfig = configBytesFrom(() -> {
+					final var in = HfsSystemFilesManager.class.getClassLoader()
+							.getResourceAsStream(defaultResource);
+					if (null == in) {
+						throw new IOException("Could not load resource '" + defaultResource + "'");
+					}
+					return in;
+				},
+				resourceSrcMsg
+		);
+		if (null != defaultConfig) {
+			return defaultConfig;
+		}
+
+		log.error(errorLog);
+		return ServicesConfigurationList.getDefaultInstance().toByteArray();
 	}
 
-	private Optional<byte[]> configBytesFrom(ThrowingStreamProvider inProvider, String baseMsg) {
-		try (var in = inProvider.get()) {
+	private @Nullable
+	byte[] configBytesFrom(final ThrowingStreamProvider inProvider, final String baseMsg) {
+		try (final var in = inProvider.get()) {
 			final var jutilProps = new Properties();
 			jutilProps.load(in);
 			final var config = ServicesConfigurationList.newBuilder();
 			final var sb = new StringBuilder(baseMsg);
 			mapOrderedJutilProps(jutilProps, sb, config);
 			log.info(sb.toString());
-			return Optional.of(config.build().toByteArray());
-		} catch (IOException ignore) {
-			return Optional.empty();
+			return config.build().toByteArray();
+		} catch (final IOException ignore) {
+			return null;
 		}
 	}
 
-	static void mapOrderedJutilProps(Properties jutilProps, StringBuilder intoSb,
-			ServicesConfigurationList.Builder config) {
+	static void mapOrderedJutilProps(
+			final Properties jutilProps,
+			final StringBuilder intoSb,
+			final ServicesConfigurationList.Builder config
+	) {
 		jutilProps.entrySet()
 				.stream()
 				.sorted(Comparator.comparing(entry -> String.valueOf(entry.getKey())))
@@ -347,15 +355,15 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 				properties.getLongProperty("bootstrap.system.entityExpiry"));
 	}
 
-	private void writeFromBookIfMissing(long disNum, Supplier<byte[]> scribe) {
-		var disFid = fileNumbers.toFid(disNum);
+	private void writeFromBookIfMissing(final long disNum, final Supplier<byte[]> scribe) {
+		final var disFid = fileNumbers.toFid(disNum);
 		if (!hfs.exists(disFid)) {
 			materialize(disFid, systemFileInfo(), scribe.get());
 		}
 	}
 
 	private byte[] platformAddressBookToGrpc() {
-		var basics = com.hederahashgraph.api.proto.java.NodeAddressBook.newBuilder();
+		final var basics = com.hederahashgraph.api.proto.java.NodeAddressBook.newBuilder();
 		final var currentBook = bookSupplier.get();
 		LongStream.range(0, currentBook.getSize())
 				.mapToObj(currentBook::getAddress)
@@ -364,34 +372,34 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 		return basics.build().toByteArray();
 	}
 
-	private NodeAddress.Builder basicBioEntryFrom(Address address) {
-		var builder = NodeAddress.newBuilder()
+	private NodeAddress.Builder basicBioEntryFrom(final Address address) {
+		final var builder = NodeAddress.newBuilder()
 				.setIpAddress(ByteString.copyFromUtf8(ipString(address.getAddressExternalIpv4())))
 				.setRSAPubKey(CommonUtils.hex(address.getSigPublicKey().getEncoded()))
 				.setNodeId(address.getId())
 				.setStake(address.getStake())
 				.setMemo(ByteString.copyFromUtf8(address.getMemo()));
-		var serviceEndpoint = ServiceEndpoint.newBuilder()
+		final var serviceEndpoint = ServiceEndpoint.newBuilder()
 				.setIpAddressV4(ByteString.copyFrom(address.getAddressExternalIpv4()))
 				.setPort(address.getPortExternalIpv4());
 		builder.addServiceEndpoint(serviceEndpoint);
 		try {
 			builder.setNodeAccountId(parseAccount(address.getMemo()));
-		} catch (Exception e) {
+		} catch (final IllegalArgumentException e) {
 			log.warn("Address for node {} had memo {}, not a parseable account!", address.getId(), address.getMemo());
 		}
 		return builder;
 	}
 
 	private CurrentAndNextFeeSchedule defaultSchedules() throws Exception {
-		var resource = properties.getStringProperty("bootstrap.feeSchedulesJson.resource");
+		final var resource = properties.getStringProperty("bootstrap.feeSchedulesJson.resource");
 		final var in = HfsSystemFilesManager.class.getClassLoader().getResourceAsStream(resource);
 		return loadFeeScheduleFromStream(in);
 	}
 
 	private ThrottleDefinitions defaultThrottles() throws Exception {
-		var resource = properties.getStringProperty("bootstrap.throttleDefsJson.resource");
-		try (InputStream in = HfsSystemFilesManager.class.getClassLoader().getResourceAsStream(resource)) {
+		final var resource = properties.getStringProperty("bootstrap.throttleDefsJson.resource");
+		try (final var in = HfsSystemFilesManager.class.getClassLoader().getResourceAsStream(resource)) {
 			return ThrottlesJsonToProtoSerde.loadProtoDefs(in);
 		}
 	}
@@ -411,7 +419,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 				.build();
 	}
 
-	private ExchangeRate rateFrom(int centEquiv, int hbarEquiv, long expiry) {
+	private ExchangeRate rateFrom(final int centEquiv, final int hbarEquiv, final long expiry) {
 		return ExchangeRate.newBuilder()
 				.setCentEquiv(centEquiv)
 				.setHbarEquiv(hbarEquiv)
@@ -426,11 +434,11 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 		return systemKey;
 	}
 
-	void setPermsSysFileDefaultResource(String permsSysFileDefaultResource) {
+	void setPermsSysFileDefaultResource(final String permsSysFileDefaultResource) {
 		this.permsSysFileDefaultResource = permsSysFileDefaultResource;
 	}
 
-	public void setPropsSysFileDefaultResource(String propsSysFileDefaultResource) {
+	public void setPropsSysFileDefaultResource(final String propsSysFileDefaultResource) {
 		this.propsSysFileDefaultResource = propsSysFileDefaultResource;
 	}
 }

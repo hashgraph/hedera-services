@@ -1,5 +1,25 @@
 package com.hedera.services.fees.calculation.utils;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.usage.BaseTransactionMeta;
@@ -27,27 +47,9 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenPause;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
-
-/*-
- * ‌
- * Hedera Services Node
- *
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ‍
- */
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
 
 @Singleton
 public class AccessorBasedUsages {
@@ -56,7 +58,7 @@ public class AccessorBasedUsages {
 			CryptoTransfer, CryptoCreate, CryptoUpdate,
 			ConsensusSubmitMessage,
 			TokenFeeScheduleUpdate, TokenCreate, TokenBurn, TokenMint, TokenAccountWipe,
-			TokenFreezeAccount, TokenUnfreezeAccount
+			TokenFreezeAccount, TokenUnfreezeAccount, TokenPause, TokenUnpause
 	);
 
 	private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
@@ -117,6 +119,10 @@ public class AccessorBasedUsages {
 			estimateTokenUnfreezeAccount(sigUsage, accessor, baseMeta, into);
 		} else if (function == TokenAccountWipe) {
 			estimateTokenWipe(sigUsage, accessor, baseMeta, into);
+		} else if (function == TokenPause) {
+			estimateTokenPause(sigUsage, accessor, baseMeta, into);
+		} else if (function == TokenUnpause) {
+			estimateTokenUnpause(sigUsage, accessor, baseMeta, into);
 		}
 	}
 
@@ -240,5 +246,23 @@ public class AccessorBasedUsages {
 	) {
 		final var tokenUnFreezeMeta = accessor.getSpanMapAccessor().getTokenUnfreezeMeta(accessor);
 		tokenOpsUsage.tokenUnfreezeUsage(sigUsage, baseMeta, tokenUnFreezeMeta, into);
+	}
+	private void estimateTokenPause(
+			SigUsage sigUsage,
+			TxnAccessor accessor,
+			BaseTransactionMeta baseMeta,
+			UsageAccumulator into
+	) {
+		final var tokenPauseMeta = accessor.getSpanMapAccessor().getTokenPauseMeta(accessor);
+		tokenOpsUsage.tokenPauseUsage(sigUsage, baseMeta, tokenPauseMeta, into);
+	}
+	private void estimateTokenUnpause(
+			SigUsage sigUsage,
+			TxnAccessor accessor,
+			BaseTransactionMeta baseMeta,
+			UsageAccumulator into
+	) {
+		final var tokenUnpauseMeta = accessor.getSpanMapAccessor().getTokenUnpauseMeta(accessor);
+		tokenOpsUsage.tokenUnpauseUsage(sigUsage, baseMeta, tokenUnpauseMeta, into);
 	}
 }

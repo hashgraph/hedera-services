@@ -190,7 +190,7 @@ public final class BootstrapProperties implements PropertySource {
 			"files.feeSchedules",
 			"files.hapiPermissions",
 			"files.nodeDetails",
-			"files.softwareUpdateZip",
+			"files.softwareUpdateRange",
 			"files.throttleDefinitions",
 			"hedera.numReservedSystemEntities",
 			"hedera.realm",
@@ -210,6 +210,7 @@ public final class BootstrapProperties implements PropertySource {
 			"contracts.defaultLifetime",
 			"contracts.localCall.estRetBytes",
 			"contracts.maxGas",
+			"contracts.chainId",
 			"contracts.maxStorageKb",
 			"files.maxSizeKb",
 			"fees.minCongestionPeriod",
@@ -249,7 +250,8 @@ public final class BootstrapProperties implements PropertySource {
 			"tokens.nfts.maxQueryRange",
 			"tokens.nfts.mintThrottleScaleFactor",
 			"tokens.nfts.useTreasuryWildcards",
-			"consensus.message.maxBytesAllowed"
+			"consensus.message.maxBytesAllowed",
+			"upgrade.artifacts.path"
 	);
 
 	static final Set<String> NODE_PROPS = Set.of(
@@ -265,6 +267,8 @@ public final class BootstrapProperties implements PropertySource {
 			"hedera.recordStream.logPeriod",
 			"hedera.recordStream.queueCapacity",
 			"iss.dumpFcms",
+			"iss.resetPeriod",
+			"iss.roundsToDump",
 			"netty.mode",
 			"netty.prod.flowControlWindow",
 			"netty.prod.maxConcurrentCalls",
@@ -316,8 +320,8 @@ public final class BootstrapProperties implements PropertySource {
 			entry("files.exchangeRates", AS_LONG),
 			entry("files.feeSchedules", AS_LONG),
 			entry("files.hapiPermissions", AS_LONG),
-			entry("files.softwareUpdateZip", AS_LONG),
 			entry("files.nodeDetails", AS_LONG),
+			entry("files.softwareUpdateRange", AS_ENTITY_NUM_RANGE),
 			entry("files.throttleDefinitions", AS_LONG),
 			entry("grpc.port", AS_INT),
 			entry("grpc.tlsPort", AS_INT),
@@ -366,6 +370,8 @@ public final class BootstrapProperties implements PropertySource {
 			entry("ledger.totalTinyBarFloat", AS_LONG),
 			entry("ledger.schedule.txExpiryTimeSecs", AS_INT),
 			entry("iss.dumpFcms", AS_BOOLEAN),
+			entry("iss.resetPeriod", AS_INT),
+			entry("iss.roundsToDump", AS_INT),
 			entry("netty.prod.flowControlWindow", AS_INT),
 			entry("netty.prod.maxConcurrentCalls", AS_INT),
 			entry("netty.prod.maxConnectionAge", AS_LONG),
@@ -391,6 +397,7 @@ public final class BootstrapProperties implements PropertySource {
 			entry("contracts.maxStorageKb", AS_INT),
 			entry("contracts.defaultLifetime", AS_LONG),
 			entry("contracts.maxGas", AS_INT),
+			entry("contracts.chainId", AS_INT),
 			entry("rates.intradayChangeLimitPercent", AS_INT),
 			entry("rates.midnightCheckInterval", AS_LONG),
 			entry("scheduling.whitelist", AS_FUNCTIONS),

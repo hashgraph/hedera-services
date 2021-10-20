@@ -32,37 +32,49 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.EnumSet;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenPause;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 
 @Singleton
 public class TransitionRunner {
 	private static final Logger log = LogManager.getLogger(TransitionRunner.class);
 
-	private static final EnumSet<HederaFunctionality> refactoredOps = EnumSet.of(
+	/**
+	 * Some operation's transition logic still explicitly set SUCCESS instead of letting the runner handle this.
+	 */
+	private static final EnumSet<HederaFunctionality> opsWithDefaultSuccessStatus = EnumSet.of(
 			TokenMint, TokenBurn,
 			TokenFreezeAccount, TokenUnfreezeAccount,
 			TokenGrantKycToAccount, TokenRevokeKycFromAccount,
 			TokenAssociateToAccount, TokenDissociateFromAccount,
 			TokenAccountWipe,
 			TokenCreate,
+			TokenPause, TokenUnpause,
 			TokenFeeScheduleUpdate,
 			CryptoTransfer,
-			TokenDelete
+			ConsensusCreateTopic,
+			TokenDelete,
+			Freeze,
+			FileDelete
 	);
 
 	private final TransactionContext txnCtx;
@@ -99,8 +111,7 @@ public class TransitionRunner {
 			}
 			try {
 				transition.doStateTransition();
-				/* Only certain functions are refactored */
-				if (refactoredOps.contains(function)) {
+				if (opsWithDefaultSuccessStatus.contains(function)) {
 					txnCtx.setStatus(SUCCESS);
 				}
 				transition.resetCreatedIds();
@@ -111,6 +122,10 @@ public class TransitionRunner {
 					log.warn("Avoidable failure in transition logic for {}", accessor.getSignedTxnWrapper(), ite);
 				}
 				logic.get().reclaimCreatedIds();
+			} catch (Exception e) {
+				logic.get().reclaimCreatedIds();
+
+				throw e;
 			}
 			return true;
 		}

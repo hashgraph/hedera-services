@@ -21,34 +21,49 @@ package com.hedera.services.state.merkle;
  */
 
 import com.hedera.services.fees.FeeMultiplierSource;
+import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
+import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.platform.state.DualStateImpl;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.function.Supplier;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 import static java.util.stream.Collectors.toList;
 
 public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private static final Logger log = LogManager.getLogger(MerkleNetworkContext.class);
 
-	static final int UNRECORDED_STATE_VERSION = -1;
+	private static final String LINE_WRAP = "\n    ";
+	private static final String NOT_EXTANT = "<NONE>";
+	private static final String NOT_AVAILABLE = "<N/A>";
+	private static final String NOT_AVAILABLE_SUFFIX = " <N/A>";
+
+	public static final int UPDATE_FILE_HASH_LEN = 48;
+	public static final int UNRECORDED_STATE_VERSION = -1;
+	public static final long NO_PREPARED_UPDATE_FILE_NUM = -1;
+	public static final byte[] NO_PREPARED_UPDATE_FILE_HASH = new byte[0];
 
 	static final int RELEASE_0130_VERSION = 2;
 	static final int RELEASE_0140_VERSION = 3;
 	static final int RELEASE_0150_VERSION = 4;
-	static final int MERKLE_VERSION = RELEASE_0150_VERSION;
+	static final int RELEASE_0190_VERSION = 5;
+	static final int CURRENT_VERSION = RELEASE_0190_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d4aa0f0a968a9f3L;
 	static final Instant[] NO_CONGESTION_STARTS = new Instant[0];
 	static final DeterministicThrottle.UsageSnapshot[] NO_SNAPSHOTS = new DeterministicThrottle.UsageSnapshot[0];
@@ -68,6 +83,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private long lastScannedEntity;
 	private long entitiesScannedThisSecond = 0L;
 	private long entitiesTouchedThisSecond = 0L;
+	private long preparedUpdateFileNum = NO_PREPARED_UPDATE_FILE_NUM;
+	private byte[] preparedUpdateFileHash = NO_PREPARED_UPDATE_FILE_HASH;
 	private FeeMultiplierSource multiplierSource = null;
 	private FunctionalityThrottling throttling = null;
 	private DeterministicThrottle.UsageSnapshot[] usageSnapshots = NO_SNAPSHOTS;
@@ -89,29 +106,19 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.midnightRates = midnightRates;
 	}
 
-	/* Used by copy() */
-	public MerkleNetworkContext(
-			Instant consensusTimeOfLastHandledTxn,
-			SequenceNumber seqNo,
-			long lastScannedEntity,
-			ExchangeRates midnightRates,
-			DeterministicThrottle.UsageSnapshot[] usageSnapshots,
-			Instant[] congestionStartPeriods,
-			int stateVersion,
-			long entitiesScannedThisSecond,
-			long entitiesTouchedThisSecond,
-			Instant lastMidnightBoundaryCheck
-	) {
-		this.consensusTimeOfLastHandledTxn = consensusTimeOfLastHandledTxn;
-		this.seqNo = seqNo;
-		this.lastScannedEntity = lastScannedEntity;
-		this.midnightRates = midnightRates;
-		this.usageSnapshots = usageSnapshots;
-		this.congestionLevelStarts = congestionStartPeriods;
-		this.stateVersion = stateVersion;
-		this.entitiesScannedThisSecond = entitiesScannedThisSecond;
-		this.entitiesTouchedThisSecond = entitiesTouchedThisSecond;
-		this.lastMidnightBoundaryCheck = lastMidnightBoundaryCheck;
+	public MerkleNetworkContext(MerkleNetworkContext that) {
+		this.consensusTimeOfLastHandledTxn = that.consensusTimeOfLastHandledTxn;
+		this.seqNo = that.seqNo.copy();
+		this.lastScannedEntity = that.lastScannedEntity;
+		this.midnightRates = that.midnightRates.copy();
+		this.usageSnapshots = that.usageSnapshots;
+		this.congestionLevelStarts = that.congestionLevelStarts;
+		this.stateVersion = that.stateVersion;
+		this.entitiesScannedThisSecond = that.entitiesScannedThisSecond;
+		this.entitiesTouchedThisSecond = that.entitiesTouchedThisSecond;
+		this.lastMidnightBoundaryCheck = that.lastMidnightBoundaryCheck;
+		this.preparedUpdateFileNum = that.preparedUpdateFileNum;
+		this.preparedUpdateFileHash = that.preparedUpdateFileHash;
 	}
 
 	/* --- Helpers that reset the received argument based on the network context */
@@ -160,6 +167,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	public void syncMultiplierSource(FeeMultiplierSource multiplierSource) {
 		this.multiplierSource = multiplierSource;
 	}
+
 	public void setConsensusTimeOfLastHandledTxn(Instant consensusTimeOfLastHandledTxn) {
 		throwIfImmutable("Cannot set consensus time of last transaction on an immutable context");
 		this.consensusTimeOfLastHandledTxn = consensusTimeOfLastHandledTxn;
@@ -173,6 +181,30 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	public void setStateVersion(int stateVersion) {
 		throwIfImmutable("Cannot set state version on an immutable context");
 		this.stateVersion = stateVersion;
+	}
+
+	public boolean hasPreparedUpgrade() {
+		return preparedUpdateFileNum != NO_PREPARED_UPDATE_FILE_NUM;
+	}
+
+	public void recordPreparedUpgrade(FreezeTransactionBody op) {
+		throwIfImmutable("Cannot record a prepared upgrade on an immutable context");
+		preparedUpdateFileNum = op.getUpdateFile().getFileNum();
+		preparedUpdateFileHash = op.getFileHash().toByteArray();
+	}
+
+	public boolean isPreparedFileHashValidGiven(MerkleSpecialFiles specialFiles) {
+		if (preparedUpdateFileNum == NO_PREPARED_UPDATE_FILE_NUM) {
+			return true;
+		}
+		final var fid = STATIC_PROPERTIES.scopedFileWith(preparedUpdateFileNum);
+		return specialFiles.hashMatches(fid, preparedUpdateFileHash);
+	}
+
+	public void discardPreparedUpgradeMeta() {
+		throwIfImmutable("Cannot rollback a prepared upgrade on an immutable context");
+		preparedUpdateFileNum = NO_PREPARED_UPDATE_FILE_NUM;
+		preparedUpdateFileHash = NO_PREPARED_UPDATE_FILE_HASH;
 	}
 
 	/* --- MerkleLeaf --- */
@@ -189,17 +221,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 		setImmutable(true);
 
-		return new MerkleNetworkContext(
-				consensusTimeOfLastHandledTxn,
-				seqNo.copy(),
-				lastScannedEntity,
-				midnightRates.copy(),
-				usageSnapshots,
-				congestionLevelStarts,
-				stateVersion,
-				entitiesScannedThisSecond,
-				entitiesTouchedThisSecond,
-				lastMidnightBoundaryCheck);
+		return new MerkleNetworkContext(this);
 	}
 
 	@Override
@@ -214,12 +236,15 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		if (version >= RELEASE_0130_VERSION) {
 			readCongestionControlData(in);
 		}
-
 		if (version >= RELEASE_0140_VERSION) {
 			whenVersionHigherOrEqualTo0140(in);
 		}
 		if (version >= RELEASE_0150_VERSION) {
 			whenVersionHigherOrEqualTo0150(in);
+		}
+		if (version >= RELEASE_0190_VERSION) {
+			preparedUpdateFileNum = in.readLong();
+			preparedUpdateFileHash = in.readByteArray(UPDATE_FILE_HASH_LEN);
 		}
 	}
 
@@ -278,6 +303,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		out.writeLong(entitiesTouchedThisSecond);
 		out.writeInt(stateVersion);
 		serdes.writeNullableInstant(fromJava(lastMidnightBoundaryCheck), out);
+		out.writeLong(preparedUpdateFileNum);
+		out.writeByteArray(preparedUpdateFileHash);
 	}
 
 	@Override
@@ -287,39 +314,89 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	@Override
 	public int getVersion() {
-		return MERKLE_VERSION;
+		return CURRENT_VERSION;
 	}
 
-	@Override
-	public String toString() {
-		var sb = new StringBuilder("The network context (state version ")
-				.append(stateVersion == UNRECORDED_STATE_VERSION ? "<N/A>" : stateVersion)
-				.append(") is,")
-				.append("\n  Consensus time of last handled transaction :: ")
-				.append(reprOf(consensusTimeOfLastHandledTxn))
-				.append("\n  Midnight rate set                          :: ")
-				.append(midnightRates.readableRepr())
-				.append("\n  Last midnight boundary check               :: ")
-				.append(reprOf(lastMidnightBoundaryCheck))
-				.append("\n  Next entity number                         :: ")
-				.append(seqNo.current())
-				.append("\n  Last scanned entity                        :: ")
-				.append(lastScannedEntity)
-				.append("\n  Entities scanned last consensus second     :: ")
-				.append(entitiesScannedThisSecond)
-				.append("\n  Entities touched last consensus second     :: ")
-				.append(entitiesTouchedThisSecond);
-		sb.append("\n  Throttle usage snapshots are               ::");
-		for (var snapshot : usageSnapshots) {
-			sb.append("\n    ").append(snapshot.used())
-					.append(" used (last decision time ")
-					.append(reprOf(snapshot.lastDecisionTime())).append(")");
+	public String summarized() {
+		return summarizedWith(null);
+	}
+
+	public String summarizedWith(DualStateAccessor dualStateAccessor) {
+		final var isDualStateAvailable = dualStateAccessor != null && dualStateAccessor.getDualState() != null;
+		final var freezeTime = isDualStateAvailable
+				? ((DualStateImpl) dualStateAccessor.getDualState()).getFreezeTime()
+				: null;
+		final var pendingUpdateDesc = currentPendingUpdateDesc();
+		final var pendingMaintenanceDesc = freezeTimeDesc(freezeTime, isDualStateAvailable) + pendingUpdateDesc;
+
+		return "The network context (state version " +
+				(stateVersion == UNRECORDED_STATE_VERSION ? NOT_AVAILABLE : stateVersion) +
+				") is," +
+				"\n  Consensus time of last handled transaction :: " +
+				reprOf(consensusTimeOfLastHandledTxn) +
+				"\n  Pending maintenance                        :: " +
+				pendingMaintenanceDesc +
+				"\n  Midnight rate set                          :: " +
+				midnightRates.readableRepr() +
+				"\n  Last midnight boundary check               :: " +
+				reprOf(lastMidnightBoundaryCheck) +
+				"\n  Next entity number                         :: " +
+				seqNo.current() +
+				"\n  Last scanned entity                        :: " +
+				lastScannedEntity +
+				"\n  Entities scanned last consensus second     :: " +
+				entitiesScannedThisSecond +
+				"\n  Entities touched last consensus second     :: " +
+				entitiesTouchedThisSecond +
+				"\n  Throttle usage snapshots are               ::" +
+				usageSnapshotsDesc() +
+				"\n  Congestion level start times are           ::" +
+				congestionStartsDesc();
+	}
+
+	private String usageSnapshotsDesc() {
+		if (usageSnapshots.length == 0) {
+			return NOT_AVAILABLE_SUFFIX;
+		} else {
+			final var sb = new StringBuilder();
+			for (var snapshot : usageSnapshots) {
+				sb.append(LINE_WRAP).append(snapshot.used())
+						.append(" used (last decision time ")
+						.append(reprOf(snapshot.lastDecisionTime())).append(")");
+			}
+			return sb.toString();
 		}
-		sb.append("\n  Congestion level start times are           ::");
-		for (var start : congestionLevelStarts) {
-			sb.append("\n    ").append(reprOf(start));
+	}
+
+	private String congestionStartsDesc() {
+		if (congestionLevelStarts.length == 0)	 {
+			return NOT_AVAILABLE_SUFFIX;
+		} else {
+			final var sb = new StringBuilder();
+			for (var start : congestionLevelStarts) {
+				sb.append(LINE_WRAP).append(reprOf(start));
+			}
+			return sb.toString();
 		}
-		return sb.toString();
+	}
+
+	private String currentPendingUpdateDesc() {
+		final var nmtDescStart = "w/ NMT upgrade prepped                   :: ";
+		if (preparedUpdateFileNum == NO_PREPARED_UPDATE_FILE_NUM) {
+			return nmtDescStart + NOT_EXTANT;
+		}
+		return nmtDescStart
+				+ "from "
+				+ STATIC_PROPERTIES.scopedIdLiteralWith(preparedUpdateFileNum)
+				+ " # " + CommonUtils.hex(preparedUpdateFileHash).substring(0, 8);
+	}
+
+	private String freezeTimeDesc(@Nullable Instant freezeTime, boolean isDualStateAvailable) {
+		final var nmtDescSkip = LINE_WRAP;
+		if (freezeTime == null) {
+			return (isDualStateAvailable ? NOT_EXTANT : NOT_AVAILABLE) + nmtDescSkip;
+		}
+		return freezeTime + nmtDescSkip;
 	}
 
 	/* --- Getters --- */
@@ -414,7 +491,25 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	private String reprOf(Instant consensusTime) {
-		return consensusTime == null ? "<N/A>" : consensusTime.toString();
+		return consensusTime == null ? NOT_AVAILABLE : consensusTime.toString();
+	}
+
+	public long getPreparedUpdateFileNum() {
+		return preparedUpdateFileNum;
+	}
+
+	public void setPreparedUpdateFileNum(long preparedUpdateFileNum) {
+		throwIfImmutable("Cannot update prepared update file num on an immutable context");
+		this.preparedUpdateFileNum = preparedUpdateFileNum;
+	}
+
+	public byte[] getPreparedUpdateFileHash() {
+		return preparedUpdateFileHash;
+	}
+
+	public void setPreparedUpdateFileHash(byte[] preparedUpdateFileHash) {
+		throwIfImmutable("Cannot update prepared update file hash on an immutable context");
+		this.preparedUpdateFileHash = preparedUpdateFileHash;
 	}
 
 	/* Only used for unit tests */
@@ -444,7 +539,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	public void setSeqNo(SequenceNumber seqNo) {
 		this.seqNo = seqNo;
-        }
+	}
 
 	FeeMultiplierSource getMultiplierSource() {
 		return multiplierSource;

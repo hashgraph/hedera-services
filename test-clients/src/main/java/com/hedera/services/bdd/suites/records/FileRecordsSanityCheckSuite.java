@@ -105,7 +105,7 @@ public class FileRecordsSanityCheckSuite extends HapiApiSuite {
 								.via("txn")
 								.fee(95_000_000L)
 				).then(
-						getFileInfo("test").expectStrictCostAnswer(),
+						getFileInfo("test").payingWith(EXCHANGE_RATE_CONTROL).expectStrictCostAnswer(),
 						validateTransferListForBalances("txn", List.of(FUNDING, NODE, DEFAULT_PAYER)),
 						validateRecordTransactionFees("txn")
 				);

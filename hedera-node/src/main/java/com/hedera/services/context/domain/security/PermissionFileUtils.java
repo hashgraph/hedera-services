@@ -63,6 +63,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidityID;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleGetInfo;
@@ -83,8 +84,10 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetNft
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetNftInfos;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenPause;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
@@ -147,6 +150,8 @@ public final class PermissionFileUtils {
 		permissionKeys.put(TokenUpdate, "tokenUpdate");
 		permissionKeys.put(TokenAssociateToAccount, "tokenAssociateToAccount");
 		permissionKeys.put(TokenDissociateFromAccount, "tokenDissociateFromAccount");
+		permissionKeys.put(TokenPause, "tokenPause");
+		permissionKeys.put(TokenUnpause, "tokenUnpause");
 		permissionKeys.put(SystemDelete, "systemDelete");
 		permissionKeys.put(SystemUndelete, "systemUndelete");
 		permissionKeys.put(Freeze, "freeze");
@@ -170,6 +175,7 @@ public final class PermissionFileUtils {
 		permissionKeys.put(TransactionGetReceipt, "getTransactionReceipts");
 		permissionKeys.put(TransactionGetRecord, "getTxRecordByTxID");
 		permissionKeys.put(GetVersionInfo, "getVersionInfo");
+		permissionKeys.put(NetworkGetExecutionTime, "networkGetExecutionTime");
 		permissionKeys.put(TokenGetInfo, "tokenGetInfo");
 		permissionKeys.put(ScheduleGetInfo, "scheduleGetInfo");
 		permissionKeys.put(TokenGetNftInfo, "tokenGetNftInfo");

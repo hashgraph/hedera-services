@@ -9,9 +9,9 @@ package com.hedera.services.txns.validation;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -56,10 +56,13 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Optional;
 
+import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.utils.EntityNum.fromContractId;
 import static com.hedera.test.utils.IdUtils.asFile;
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -105,7 +108,8 @@ class ContextOptionValidatorTest {
 	final private TopicID deletedTopicId = TopicID.newBuilder().setTopicNum(2_345L).build();
 	final private TopicID expiredTopicId = TopicID.newBuilder().setTopicNum(3_456L).build();
 	final private TopicID topicId = TopicID.newBuilder().setTopicNum(4_567L).build();
-
+	PropertySource properties;
+	GlobalDynamicProperties dynamicProperties;
 	private MerkleTopic deletedMerkleTopic;
 	private MerkleTopic expiredMerkleTopic;
 	private MerkleTopic merkleTopic;
@@ -120,9 +124,6 @@ class ContextOptionValidatorTest {
 	private long expiry = 2_000_000L;
 	private long maxLifetime = 3_000_000L;
 	private FileID target = asFile("0.0.123");
-
-	PropertySource properties;
-	GlobalDynamicProperties dynamicProperties;
 
 	@BeforeEach
 	private void setup() throws Exception {
@@ -162,6 +163,19 @@ class ContextOptionValidatorTest {
 				.setDeleted(meta.isDeleted())
 				.setKeys(JKey.mapJKey(meta.getWacl()).getKeyList())
 				.build();
+	}
+
+	@Test
+	void decodesKeyAsExpected() throws Exception {
+		final var key = TxnHandlingScenario.SIMPLE_NEW_WACL_KT.asKey();
+		wacl = TxnHandlingScenario.SIMPLE_NEW_WACL_KT.asJKey();
+		assertTrue(equalUpToDecodability(wacl, subject.attemptDecodeOrThrow(key)));
+	}
+
+	@Test
+	void throwsOnInvalidKey() {
+		final var k = Key.getDefaultInstance();
+		assertFailsWith(() -> subject.attemptDecodeOrThrow(k), BAD_ENCODING);
 	}
 
 	@Test
@@ -621,7 +635,7 @@ class ContextOptionValidatorTest {
 	}
 
 	@Test
-	void rejectsInvalidBurnBatchSize(){
+	void rejectsInvalidBurnBatchSize() {
 		given(dynamicProperties.maxBatchSizeBurn()).willReturn(10);
 		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.maxBatchSizeBurnCheck(12));
 	}
@@ -654,5 +668,16 @@ class ContextOptionValidatorTest {
 	void rejectsInvalidMetadata() {
 		given(dynamicProperties.maxNftMetadataBytes()).willReturn(2);
 		assertEquals(METADATA_TOO_LONG, subject.nftMetadataCheck(new byte[]{1, 2, 3, 4}));
+	}
+
+	@Test
+	void acceptsValidQueryRange() {
+		given(dynamicProperties.maxNftQueryRange()).willReturn(10L);
+		assertEquals(OK, subject.nftMaxQueryRangeCheck(0, 9));
+	}
+
+	@Test
+	void rejectsDecodeEmptyKey() {
+		assertFailsWith(() -> subject.attemptToDecodeOrThrow(Key.getDefaultInstance(), BAD_ENCODING), BAD_ENCODING);
 	}
 }

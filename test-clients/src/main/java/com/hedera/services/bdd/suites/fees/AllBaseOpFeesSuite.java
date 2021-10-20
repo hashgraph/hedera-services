@@ -69,7 +69,7 @@ public class AllBaseOpFeesSuite extends HapiApiSuite {
 
 	private static final double EXPECTED_UNFREEZE_PRICE_USD = 0.001;
 	private static final double EXPECTED_FREEZE_PRICE_USD = 0.001;
-	private static final double EXPECTED_NFT_MINT_PRICE_USD = 0.001;
+	private static final double EXPECTED_NFT_MINT_PRICE_USD = 0.05;
 	private static final double EXPECTED_NFT_BURN_PRICE_USD = 0.001;
 	private static final double EXPECTED_NFT_WIPE_PRICE_USD = 0.001;
 
@@ -81,13 +81,12 @@ public class AllBaseOpFeesSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(List.of(new HapiApiSpec[] {
-				baseNftFreezeUnfreezeChargedAsExpected(),
-				baseCommonFreezeUnfreezeChargedAsExpected(),
-				baseNftMintOperationIsChargedExpectedFee(),
-				baseNftWipeOperationIsChargedExpectedFee(),
-				baseNftBurnOperationIsChargedExpectedFee(),
-				}
-			)
+						baseNftFreezeUnfreezeChargedAsExpected(),
+						baseCommonFreezeUnfreezeChargedAsExpected(),
+						baseNftMintOperationIsChargedExpectedFee(),
+						baseNftWipeOperationIsChargedExpectedFee(),
+						baseNftBurnOperationIsChargedExpectedFee(),
+				})
 		);
 	}
 
@@ -208,6 +207,7 @@ public class AllBaseOpFeesSuite extends HapiApiSuite {
 						validateChargedUsdWithin("unfreeze", EXPECTED_UNFREEZE_PRICE_USD, ALLOWED_DIFFERENCE_PERCENTAGE)
 				);
 	}
+
 	private HapiApiSpec baseCommonFreezeUnfreezeChargedAsExpected() {
 		return defaultHapiSpec("baseCommonFreezeUnfreezeChargedAsExpected")
 				.given(

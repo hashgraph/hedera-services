@@ -64,6 +64,7 @@ public class GlobalDynamicProperties {
 	private long minTxnDuration;
 	private int minValidityBuffer;
 	private int maxGas;
+	private int chainId;
 	private long defaultContractLifetime;
 	private int feesTokenTransferUsageMultiplier;
 	private boolean autoRenewEnabled;
@@ -84,6 +85,7 @@ public class GlobalDynamicProperties {
 	private int maxXferBalanceChanges;
 	private int maxCustomFeeDepth;
 	private ThrottleReqOpsScaleFactor nftMintScaleFactor;
+	private String upgradeArtifactsLoc;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -128,6 +130,7 @@ public class GlobalDynamicProperties {
 		minTxnDuration = properties.getLongProperty("hedera.transaction.minValidDuration");
 		minValidityBuffer = properties.getIntProperty("hedera.transaction.minValidityBufferSecs");
 		maxGas = properties.getIntProperty("contracts.maxGas");
+		chainId = properties.getIntProperty("contracts.chainId");
 		defaultContractLifetime = properties.getLongProperty("contracts.defaultLifetime");
 		feesTokenTransferUsageMultiplier = properties.getIntProperty("fees.tokenTransferUsageMultiplier");
 		autoRenewEnabled = properties.getBooleanProperty("autorenew.isEnabled");
@@ -150,6 +153,7 @@ public class GlobalDynamicProperties {
 		maxXferBalanceChanges = properties.getIntProperty("ledger.xferBalanceChanges.maxLen");
 		maxCustomFeeDepth = properties.getIntProperty("tokens.maxCustomFeeDepth");
 		nftMintScaleFactor = properties.getThrottleScaleFactor("tokens.nfts.mintThrottleScaleFactor");
+		upgradeArtifactsLoc = properties.getStringProperty("upgrade.artifacts.path");
 	}
 
 	public int maxTokensPerAccount() {
@@ -252,6 +256,10 @@ public class GlobalDynamicProperties {
 		return maxGas;
 	}
 
+	public int getChainId() {
+		return chainId;
+	}
+
 	public long defaultContractLifetime() {
 		return defaultContractLifetime;
 	}
@@ -330,5 +338,9 @@ public class GlobalDynamicProperties {
 
 	public ThrottleReqOpsScaleFactor nftMintScaleFactor() {
 		return nftMintScaleFactor;
+	}
+
+	public String upgradeArtifactsLoc() {
+		return upgradeArtifactsLoc;
 	}
 }

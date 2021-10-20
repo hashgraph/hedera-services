@@ -23,6 +23,7 @@ package com.hedera.services.utils;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -48,6 +49,7 @@ import static com.hedera.test.utils.IdUtils.asContract;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class MerkleEntityIdUtilsTest {
 	@Test
@@ -128,6 +130,24 @@ class MerkleEntityIdUtilsTest {
 	}
 
 	@Test
+	void asSolidityAddressHexWorksProperly() {
+		final var id = new Id(1, 2, 3);
+
+		assertEquals("0000000100000000000000020000000000000003", EntityIdUtils.asSolidityAddressHex(id));
+	}
+
+	@Test
+	void asSolidityAddressBytesWorksProperly() {
+		final var id = AccountID.newBuilder().setShardNum(1).setRealmNum(2).setAccountNum(3).build();
+
+		final var result = EntityIdUtils.asSolidityAddress(id);
+
+		final var expectedBytes = new byte[]{0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 3};
+
+		assertArrayEquals(expectedBytes, result);
+	}
+
+	@Test
 	void prettyPrintsTokenIds() {
 		final var id = TokenID.newBuilder().setShardNum(1).setRealmNum(2).setTokenNum(3).build();
 
@@ -181,6 +201,26 @@ class MerkleEntityIdUtilsTest {
 	}
 
 	@Test
+	void asAccountFromContractWorks() {
+		final var expected = AccountID.newBuilder().setShardNum(1).setRealmNum(2).setAccountNum(3).build();
+		final var id = ContractID.newBuilder().setShardNum(1).setRealmNum(2).setContractNum(3).build();
+
+		final var aid = EntityIdUtils.asAccount(id);
+
+		assertEquals(expected, aid);
+	}
+
+	@Test
+	void asAccountFromEntityWorks() {
+		final var expected = AccountID.newBuilder().setShardNum(1).setRealmNum(2).setAccountNum(3).build();
+		final var id = EntityId.fromGrpcAccountId(AccountID.newBuilder().setShardNum(1).setRealmNum(2).setAccountNum(3).build());
+
+		final var aid = EntityIdUtils.asAccount(id);
+
+		assertEquals(expected, aid);
+	}
+
+	@Test
 	void asFileWorks() {
 		final var expected = FileID.newBuilder().setShardNum(1).setRealmNum(2).setFileNum(3).build();
 		final var id = AccountID.newBuilder().setShardNum(1).setRealmNum(2).setAccountNum(3).build();
@@ -225,5 +265,33 @@ class MerkleEntityIdUtilsTest {
 
 		// expect:
 		assertEquals("0.0." + bigNum + "." + serialNo, lit);
+	}
+
+	@CsvSource({ "1-2,1,2", "123-456,123,456" })
+	@ParameterizedTest
+	void canParseValidRanges(String literal, long left, long right) {
+		final var range = EntityIdUtils.parseEntityNumRange(literal);
+
+		assertEquals(left, range.getLeft(), "Left endpoint should match");
+		assertEquals(right, range.getRight(), "Right endpoint should match");
+	}
+
+	@CsvSource({
+			"nonsense,Argument literal='nonsense' is not a valid range literal",
+			"-1-,Argument literal='-1-' is not a valid range literal",
+			"-2,Argument literal='-2' is not a valid range literal",
+			"123-,Argument literal='123-' is not a valid range literal",
+			"456-123,Range left endpoint 456 should be <= right endpoint 123",
+			"12345678901234567890-123,Argument literal='12345678901234567890-123' has malformatted long value"
+	})
+	@ParameterizedTest
+	void rejectsInvalidRanges(String literal, String iaeMsg) {
+		try {
+			EntityIdUtils.parseEntityNumRange(literal);
+		} catch (IllegalArgumentException iae) {
+			assertEquals(iaeMsg, iae.getMessage(), "Exception message should be well-formatted");
+			return;
+		}
+		fail("'" + literal + "' should be rejected with " + iaeMsg);
 	}
 }

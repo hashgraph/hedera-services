@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
@@ -55,7 +54,6 @@ public class ThrottleDefValidationSuite extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
-						throttleDefsHaveExpectedDefaults(),
 						throttleDefsRejectUnauthorizedPayers(),
 						throttleUpdateRejectsMultiGroupAssignment(),
 						throttleUpdateWithZeroGroupOpsPerSecFails(),
@@ -131,17 +129,6 @@ public class ThrottleDefValidationSuite extends HapiApiSuite {
 								.contents("BOOM")
 								.payingWith(FEE_SCHEDULE_CONTROL)
 								.hasPrecheck(AUTHORIZATION_FAILED)
-				);
-	}
-
-	private HapiApiSpec throttleDefsHaveExpectedDefaults() {
-		var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
-
-		return defaultHapiSpec("ThrottleDefsHaveExpectedDefaults")
-				.given( ).when( ).then(
-						getFileContents(THROTTLE_DEFS)
-								.payingWith(GENESIS)
-								.hasContents(ignore -> defaultThrottles.toByteArray())
 				);
 	}
 

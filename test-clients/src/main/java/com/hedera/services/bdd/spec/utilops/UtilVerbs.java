@@ -86,6 +86,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.ObjIntConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -114,6 +115,11 @@ import static com.hedera.services.bdd.suites.HapiApiSuite.EXCHANGE_RATE_CONTROL;
 import static com.hedera.services.bdd.suites.HapiApiSuite.FEE_SCHEDULE;
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HBAR;
+import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ABORT;
+import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ONLY;
+import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_UPGRADE;
+import static com.hederahashgraph.api.proto.java.FreezeType.PREPARE_UPGRADE;
+import static com.hederahashgraph.api.proto.java.FreezeType.TELEMETRY_UPGRADE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED;
@@ -125,6 +131,26 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class UtilVerbs {
 	public static HapiFreeze freeze() {
 		return new HapiFreeze();
+	}
+
+	public static HapiFreeze prepareUpgrade() {
+		return new HapiFreeze(PREPARE_UPGRADE);
+	}
+
+	public static HapiFreeze telemetryUpgrade() {
+		return new HapiFreeze(TELEMETRY_UPGRADE);
+	}
+
+	public static HapiFreeze freezeOnly() {
+		return new HapiFreeze(FREEZE_ONLY);
+	}
+
+	public static HapiFreeze freezeUpgrade() {
+		return new HapiFreeze(FREEZE_UPGRADE);
+	}
+
+	public static HapiFreeze freezeAbort() {
+		return new HapiFreeze(FREEZE_ABORT);
 	}
 
 	/* Some fairly simple utility ops */
@@ -513,7 +539,7 @@ public class UtilVerbs {
 			OptionalLong tinyBarsToOffer
 	) {
 		return updateLargeFile(payer, fileName, byteString, signOnlyWithPayer, tinyBarsToOffer,
-				op -> {}, op -> {});
+				op -> {}, (op, i) -> {});
 	}
 
 	public static HapiSpecOperation updateLargeFile(
@@ -523,7 +549,7 @@ public class UtilVerbs {
 			boolean signOnlyWithPayer,
 			OptionalLong tinyBarsToOffer,
 			Consumer<HapiFileUpdate> updateCustomizer,
-			Consumer<HapiFileAppend> appendCustomizer
+			ObjIntConsumer<HapiFileAppend> appendCustomizer
 	) {
 		return withOpContext((spec, ctxLog) -> {
 			List<HapiSpecOperation> opsList = new ArrayList<>();
@@ -535,7 +561,8 @@ public class UtilVerbs {
 					.contents(byteString.substring(0, position))
 					.hasKnownStatusFrom(SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED)
 					.noLogging()
-					.payingWith(payer);
+					.payingWith(payer)
+					.signedBy(payer);
 			updateCustomizer.accept(updateSubOp);
 			if (tinyBarsToOffer.isPresent()) {
 				updateSubOp = updateSubOp.fee(tinyBarsToOffer.getAsLong());
@@ -545,14 +572,18 @@ public class UtilVerbs {
 			}
 			opsList.add(updateSubOp);
 
+			final int bytesLeft = fileSize - position;
+			final int totalAppendsRequired = bytesLeft / BYTES_4K + Math.min(1, bytesLeft % BYTES_4K);
+			int numAppends = 0;
 			while (position < fileSize) {
 				int newPosition = Math.min(fileSize, position + BYTES_4K);
 				var appendSubOp = fileAppend(fileName)
 						.content(byteString.substring(position, newPosition).toByteArray())
 						.hasKnownStatusFrom(SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED)
 						.noLogging()
-						.payingWith(payer);
-				appendCustomizer.accept(appendSubOp);
+						.payingWith(payer)
+						.signedBy(payer);
+				appendCustomizer.accept(appendSubOp, totalAppendsRequired - numAppends);
 				if (tinyBarsToOffer.isPresent()) {
 					appendSubOp = appendSubOp.fee(tinyBarsToOffer.getAsLong());
 				}
@@ -561,6 +592,7 @@ public class UtilVerbs {
 				}
 				opsList.add(appendSubOp);
 				position = newPosition;
+				numAppends++;
 			}
 
 			CustomSpecAssert.allRunFor(spec, opsList);

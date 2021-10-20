@@ -124,7 +124,7 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 									while (!gotPayerInfo) {
 										try {
 											var payerAccountInfo = getAccountInfo("payerAccount")
-													.saveToRegistry("payerAccountInfo")
+													.savingSnapshot("payerAccountInfo")
 													.logged();
 											allRunFor(spec, payerAccountInfo);
 											gotPayerInfo = true;

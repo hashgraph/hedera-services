@@ -22,14 +22,15 @@ package com.hedera.services.bdd.suites.token;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
+import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -42,6 +43,9 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairs;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
@@ -49,6 +53,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
@@ -63,17 +68,22 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.roy
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHbarFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHtsFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fractionalFeeInSchedule;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordSystemProperty;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -95,6 +105,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_F
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 public class TokenCreateSpecs extends HapiApiSuite {
@@ -102,6 +114,10 @@ public class TokenCreateSpecs extends HapiApiSuite {
 
 	private static String TOKEN_TREASURY = "treasury";
 	private static final long A_HUNDRED_SECONDS = 100;
+
+	private static final String A_TOKEN = "TokenA";
+	private static final String B_TOKEN = "TokenB";
+	private static final String FIRST_USER = "Client1";
 
 	private static final long defaultMaxLifetime =
 			Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
@@ -139,43 +155,110 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						numAccountsAllowedIsDynamic(),
 						worksAsExpectedWithDefaultTokenId(),
 						cannotCreateWithExcessiveLifetime(),
-						validateNewTokenAssociations(),
+						prechecksWork(),
 						/* HIP-18 */
 						onlyValidCustomFeeScheduleCanBeCreated(),
 						feeCollectorSigningReqsWorkForTokenCreate(),
 						createsFungibleInfiniteByDefault(),
 						baseCreationsHaveExpectedPrices(),
+						/* HIP-23 */
+						validateNewTokenAssociations()
 				}
 		);
 	}
 
 	private HapiApiSpec validateNewTokenAssociations() {
 		final String aToken = "TokenA";
-		final String firstUser = "Client1";
-		final String secondUser = "Client2";
+		final String notToBeToken = "notToBeToken";
+		final String hbarCollector = "hbarCollector";
+		final String fractionalCollector = "fractionalCollector";
+		final String selfDenominatedFixedCollector = "selfDenominatedFixedCollector";
+		final String otherSelfDenominatedFixedCollector = "otherSelfDenominatedFixedCollector";
 		final String treasury = "treasury";
+		final String tbd = "toBeDeletd";
+		final String creationTxn = "creationTxn";
+		final String failedCreationTxn = "failedCreationTxn";
+
 		return defaultHapiSpec("ValidateNewTokenAssociations")
 				.given(
-						cryptoCreate(firstUser),
-						cryptoCreate(secondUser),
-						cryptoCreate(treasury).balance(ONE_HUNDRED_HBARS)
-				)
-				.when(
+						cryptoCreate(tbd),
+						cryptoDelete(tbd),
+						cryptoCreate(hbarCollector),
+						cryptoCreate(fractionalCollector),
+						cryptoCreate(selfDenominatedFixedCollector),
+						cryptoCreate(otherSelfDenominatedFixedCollector),
+						cryptoCreate(treasury)
+								.maxAutomaticTokenAssociations(10)
+								.balance(ONE_HUNDRED_HBARS)
+				).when(
+						getAccountInfo(treasury)
+								.savingSnapshot(treasury),
+						getAccountInfo(hbarCollector)
+								.savingSnapshot(hbarCollector),
+						getAccountInfo(fractionalCollector)
+								.savingSnapshot(fractionalCollector),
+						getAccountInfo(selfDenominatedFixedCollector)
+								.savingSnapshot(selfDenominatedFixedCollector),
+						getAccountInfo(otherSelfDenominatedFixedCollector)
+								.savingSnapshot(otherSelfDenominatedFixedCollector),
 						tokenCreate(aToken)
 								.tokenType(TokenType.FUNGIBLE_COMMON)
 								.initialSupply(Long.MAX_VALUE)
 								.treasury(treasury)
-								.withCustom(fractionalFee(1L, 100L, 1L, OptionalLong.of(5L), firstUser))
-								.withCustom(fixedHtsFee(2L, "0.0.0", secondUser))
-								.signedBy(DEFAULT_PAYER, treasury, firstUser, secondUser)
-								.via("tokenCreateTxn")
-				)
-				.then(
-						getTxnRecord("tokenCreateTxn")
-								.hasNewTokenAssociation(aToken, treasury)
-								.hasNewTokenAssociation(aToken, firstUser)
-								.hasNewTokenAssociation(aToken, secondUser)
-								.logged()
+								.withCustom(fixedHbarFee(
+										20L,
+										hbarCollector))
+								.withCustom(fractionalFee(
+										1L, 100L, 1L, OptionalLong.of(5L),
+										fractionalCollector))
+								.withCustom(fixedHtsFee(
+										2L, "0.0.0",
+										selfDenominatedFixedCollector))
+								.withCustom(fixedHtsFee(
+										3L, "0.0.0",
+										otherSelfDenominatedFixedCollector))
+								.signedBy(
+										DEFAULT_PAYER,
+										treasury,
+										fractionalCollector,
+										selfDenominatedFixedCollector, otherSelfDenominatedFixedCollector)
+								.via(creationTxn),
+						tokenCreate(notToBeToken)
+								.treasury(tbd)
+								.hasKnownStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN)
+								.via(failedCreationTxn)
+				).then(
+						/* Validate records */
+						getTxnRecord(creationTxn)
+								.hasPriority(recordWith()
+										.autoAssociated(accountTokenPairs(List.of(
+												Pair.of(treasury, aToken),
+												Pair.of(fractionalCollector, aToken),
+												Pair.of(selfDenominatedFixedCollector, aToken),
+												Pair.of(otherSelfDenominatedFixedCollector, aToken)
+										)))),
+						getTxnRecord(failedCreationTxn)
+								.hasPriority(recordWith()
+										.autoAssociated(accountTokenPairs(List.of()))),
+						/* Validate state */
+						getAccountInfo(hbarCollector).has(accountWith()
+								.noChangesFromSnapshot(hbarCollector)),
+						getAccountInfo(treasury)
+								.hasMaxAutomaticAssociations(10)
+								/* TokenCreate auto-associations aren't part of the HIP-23 paradigm */
+								.hasAlreadyUsedAutomaticAssociations(0)
+								.has(accountWith()
+										.newAssociationsFromSnapshot(treasury,
+												List.of(relationshipWith(aToken)))),
+						getAccountInfo(fractionalCollector).has(accountWith()
+								.newAssociationsFromSnapshot(fractionalCollector,
+										List.of(relationshipWith(aToken)))),
+						getAccountInfo(selfDenominatedFixedCollector).has(accountWith()
+								.newAssociationsFromSnapshot(selfDenominatedFixedCollector,
+										List.of(relationshipWith(aToken)))),
+						getAccountInfo(otherSelfDenominatedFixedCollector).has(accountWith()
+								.newAssociationsFromSnapshot(otherSelfDenominatedFixedCollector,
+										List.of(relationshipWith(aToken))))
 				);
 	}
 
@@ -400,7 +483,8 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						newKeyNamed("kycKey"),
 						newKeyNamed("supplyKey"),
 						newKeyNamed("wipeKey"),
-						newKeyNamed("feeScheduleKey")
+						newKeyNamed("feeScheduleKey"),
+						newKeyNamed("pauseKey")
 				).when(
 						tokenCreate("primary")
 								.supplyType(TokenSupplyType.FINITE)
@@ -418,10 +502,12 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.supplyKey("supplyKey")
 								.wipeKey("wipeKey")
 								.feeScheduleKey("feeScheduleKey")
+								.pauseKey("pauseKey")
 								.via("createTxn"),
 						tokenCreate("non-fungible-unique-finite")
 								.tokenType(NON_FUNGIBLE_UNIQUE)
 								.supplyType(TokenSupplyType.FINITE)
+								.pauseKey("pauseKey")
 								.initialSupply(0)
 								.maxSupply(100)
 								.treasury(TOKEN_TREASURY)
@@ -449,13 +535,18 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.hasSupplyKey("primary")
 								.hasWipeKey("primary")
 								.hasFeeScheduleKey("primary")
+								.hasPauseKey("primary")
+								.hasPauseStatus(TokenPauseStatus.Unpaused)
 								.hasMaxSupply(1000)
 								.hasTotalSupply(500)
 								.hasAutoRenewAccount("autoRenewAccount"),
 						getTokenInfo("non-fungible-unique-finite")
+								.logged()
 								.hasRegisteredId("non-fungible-unique-finite")
 								.hasTokenType(NON_FUNGIBLE_UNIQUE)
 								.hasSupplyType(TokenSupplyType.FINITE)
+								.hasPauseKey("primary")
+								.hasPauseStatus(TokenPauseStatus.Unpaused)
 								.hasTotalSupply(0)
 								.hasMaxSupply(100),
 						getAccountInfo(TOKEN_TREASURY)
@@ -466,7 +557,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 												.freeze(TokenFreezeStatus.Unfrozen)
 								)
 								.hasToken(
-										ExpectedTokenRel.relationshipWith("non-fungible-unique-finite")
+										relationshipWith("non-fungible-unique-finite")
 												.balance(0)
 												.kyc(TokenKycStatus.KycNotApplicable)
 												.freeze(TokenFreezeStatus.FreezeNotApplicable)
@@ -548,7 +639,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 
 	public HapiApiSpec creationValidatesMaxSupply() {
 		return defaultHapiSpec("CreationValidatesMaxSupply")
-				.given( ).when( ).then(
+				.given().when().then(
 						tokenCreate("primary")
 								.maxSupply(-1)
 								.hasPrecheck(INVALID_TOKEN_MAX_SUPPLY),
@@ -964,6 +1055,64 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						getAccountBalance(TOKEN_TREASURY)
 								.hasTinyBars(1L)
 								.hasTokenBalance(token, initialSupply)
+				);
+	}
+
+	private HapiApiSpec prechecksWork() {
+		return defaultHapiSpec("PrechecksWork")
+				.given(
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						cryptoCreate(FIRST_USER).balance(0L)
+				).when(
+						tokenCreate(A_TOKEN)
+								.initialSupply(100)
+								.treasury(TOKEN_TREASURY),
+						tokenCreate(B_TOKEN)
+								.initialSupply(100)
+								.treasury(TOKEN_TREASURY)
+				).then(
+						cryptoTransfer(
+								moving(1, A_TOKEN)
+										.between(TOKEN_TREASURY, FIRST_USER),
+								moving(1, A_TOKEN)
+										.between(TOKEN_TREASURY, FIRST_USER)
+						).hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
+						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
+								"ledger.tokenTransfers.maxLen", "" + 2
+						)).payingWith(ADDRESS_BOOK_CONTROL),
+						cryptoTransfer(
+								moving(1, A_TOKEN)
+										.between(TOKEN_TREASURY, FIRST_USER),
+								moving(1, B_TOKEN)
+										.between(TOKEN_TREASURY, FIRST_USER)
+						).hasPrecheck(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED),
+						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
+								"ledger.tokenTransfers.maxLen", "" + 10
+						)).payingWith(ADDRESS_BOOK_CONTROL),
+						cryptoTransfer(
+								movingHbar(1)
+										.between(TOKEN_TREASURY, FIRST_USER),
+								movingHbar(1)
+										.between(TOKEN_TREASURY, FIRST_USER)
+						).hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
+						cryptoTransfer(
+								moving(1, A_TOKEN)
+										.between(TOKEN_TREASURY, FIRST_USER),
+								moving(1, A_TOKEN)
+										.between(TOKEN_TREASURY, FIRST_USER)
+						).hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
+						cryptoTransfer(
+								moving(0, A_TOKEN)
+										.between(TOKEN_TREASURY, FIRST_USER)
+						).hasPrecheck(INVALID_ACCOUNT_AMOUNTS),
+						cryptoTransfer(
+								moving(10, A_TOKEN)
+										.from(TOKEN_TREASURY)
+						).hasPrecheck(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN),
+						cryptoTransfer(
+								moving(10, A_TOKEN)
+										.empty()
+						).hasPrecheck(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS)
 				);
 	}
 
