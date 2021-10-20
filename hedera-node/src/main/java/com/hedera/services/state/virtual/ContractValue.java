@@ -211,7 +211,7 @@ public class ContractValue implements VirtualValue {
 	}
 
 	@Override
-	public VirtualValue asReadOnly() { // TODO is it too expensive to make a copy here?
+	public VirtualValue asReadOnly() { // is it too expensive to make a copy here?
 		ContractValue immutableValue = copy();
 		immutableValue.isImmutable = true;
 		return immutableValue;
