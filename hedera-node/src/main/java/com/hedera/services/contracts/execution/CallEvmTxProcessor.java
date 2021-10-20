@@ -25,7 +25,8 @@ package com.hedera.services.contracts.execution;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.store.contracts.HederaMutableWorldState;
+import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.store.models.Account;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.tuweni.bytes.Bytes;
@@ -47,7 +48,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 
 	@Inject
 	public CallEvmTxProcessor(
-			HederaWorldState worldState,
+			HederaMutableWorldState worldState,
 			HbarCentExchange exchange,
 			UsagePricesProvider usagePrices,
 			GlobalDynamicProperties dynamicProperties,
@@ -84,7 +85,12 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 	}
 
 	@Override
-	protected MessageFrame buildInitialFrame(MessageFrame.Builder baseInitialFrame, HederaWorldState.Updater updater, Address to, Bytes payload) {
+	protected MessageFrame buildInitialFrame(
+			final  MessageFrame.Builder baseInitialFrame,
+			final  HederaWorldUpdater updater,
+			final  Address to,
+			final  Bytes payload
+	) {
 		Bytes code = updater.get(to).getCode();
 		return baseInitialFrame
 				.type(MessageFrame.Type.MESSAGE_CALL)

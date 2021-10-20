@@ -32,7 +32,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class HederaStackedWorldStateUpdater
-		extends StackedUpdater<HederaWorldState, HederaWorldState.WorldStateAccount>
+		extends StackedUpdater<HederaMutableWorldState, HederaWorldState.WorldStateAccount>
 		implements HederaWorldUpdater {
 
 	final HederaMutableWorldState worldState;
@@ -40,7 +40,7 @@ public class HederaStackedWorldStateUpdater
 	private Gas sbhRefund = Gas.ZERO;
 
 	public HederaStackedWorldStateUpdater(
-			final AbstractWorldUpdater<HederaWorldState, HederaWorldState.WorldStateAccount> updater,
+			final AbstractWorldUpdater<HederaMutableWorldState, HederaWorldState.WorldStateAccount> updater,
 			final HederaMutableWorldState worldState) {
 		super(updater);
 		this.worldState = worldState;

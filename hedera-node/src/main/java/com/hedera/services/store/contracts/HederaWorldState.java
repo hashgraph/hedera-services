@@ -50,7 +50,6 @@ import org.hyperledger.besu.evm.worldstate.UpdateTrackingAccount;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -70,7 +69,6 @@ import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityA
 import static com.hedera.services.utils.EntityIdUtils.contractParsedFromSolidityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
-@Singleton
 public class HederaWorldState implements HederaMutableWorldState {
 	private final EntityIdSource ids;
 	private final HederaLedger ledger;
@@ -315,7 +313,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 	}
 
 	public static class Updater
-			extends AbstractWorldUpdater<HederaWorldState, WorldStateAccount>
+			extends AbstractWorldUpdater<HederaMutableWorldState, WorldStateAccount>
 			implements HederaWorldUpdater {
 
 		final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
@@ -331,7 +329,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		@Override
 		protected WorldStateAccount getForMutation(final Address address) {
-			final HederaWorldState wrapped = wrappedWorldView();
+			final HederaWorldState wrapped = (HederaWorldState) wrappedWorldView();
 			return wrapped.get(address);
 		}
 
@@ -373,7 +371,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		@Override
 		public void commit() {
-			final HederaWorldState wrapped = wrappedWorldView();
+			final HederaWorldState wrapped = (HederaWorldState) wrappedWorldView();
 			wrapped.sponsorMap.putAll(sponsorMap);
 			var ledger = wrapped.ledger;
 

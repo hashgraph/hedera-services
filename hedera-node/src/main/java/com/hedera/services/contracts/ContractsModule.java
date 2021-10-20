@@ -41,6 +41,8 @@ import com.hedera.services.keys.StandardSyncActivationCheck;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.contracts.HederaMutableWorldState;
+import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
 import dagger.Binds;
@@ -61,6 +63,10 @@ import static com.hedera.services.files.EntityExpiryMapFactory.entityExpiryMapFr
 
 @Module
 public abstract class ContractsModule {
+	@Binds
+	@Singleton
+	public abstract HederaMutableWorldState provideMutableWorldState(HederaWorldState hederaWorldState);
+
 	@Provides
 	@Singleton
 	public static SoliditySigsVerifier provideSoliditySigsVerifier(
