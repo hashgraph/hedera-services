@@ -34,6 +34,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -334,6 +335,7 @@ class FreezeTransitionLogicTest {
 	}
 
 	@Test
+	@Disabled
 	void freezeOnlyPrecheckRejectsDeprecatedStartHour() {
 		givenTxn(false, FREEZE_ONLY, Optional.empty(), Optional.empty(), false,
 				true, false, false, false);
@@ -342,6 +344,7 @@ class FreezeTransitionLogicTest {
 	}
 
 	@Test
+	@Disabled
 	void freezeOnlyPrecheckRejectsDeprecatedStartMin() {
 		givenTxn(false, FREEZE_ONLY, Optional.empty(), Optional.empty(), false,
 				false, true, false, false);
@@ -350,6 +353,7 @@ class FreezeTransitionLogicTest {
 	}
 
 	@Test
+	@Disabled
 	void freezeOnlyPrecheckRejectsDeprecatedEndHour() {
 		givenTxn(false, FREEZE_ONLY, Optional.empty(), Optional.empty(), false,
 				false, false, true, false);
@@ -358,6 +362,7 @@ class FreezeTransitionLogicTest {
 	}
 
 	@Test
+	@Disabled
 	void freezeOnlyPrecheckRejectsDeprecatedEndMin() {
 		givenTxn(false, FREEZE_ONLY, Optional.empty(), Optional.empty(), false,
 				false, false, false, true);
