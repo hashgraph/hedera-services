@@ -814,11 +814,11 @@ workflows:
   GCP-Daily-Services-Crypto-Migration-7N-1C:
     triggers:
       - schedule:
-          cron: "45 5 * * *"
+          cron: "54 15 * * *"
           filters:
             branches:
               only:
-                - master
+                - 2349-M-fix-NPE-for-dual-state
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1427,7 +1427,7 @@ jobs:
         default: true
       slack_results_channel:
         type: string
-        default: "hedera-regression"
+        default: "hedera-regression-test"
       slack_summary_channel:
         type: string
         default: "hedera-regression-summary"
