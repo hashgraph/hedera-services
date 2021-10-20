@@ -1435,10 +1435,10 @@ jobs:
         default: true
       slack_results_channel:
         type: string
-        default: "hedera-regression"
+        default: "platform-aws-summary"
       slack_summary_channel:
         type: string
-        default: "hedera-regression-summary"
+        default: "platform-aws-summary"
       workflow-name:
         type: string
         default: ""
