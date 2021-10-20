@@ -332,7 +332,6 @@ class StateViewTest {
 		subject = new StateView(
 				tokenStore,
 				scheduleStore,
-				nodeProps,
 				children,
 				uniqTokenViewFactory);
 		subject.fileAttrs = attrs;
@@ -633,7 +632,7 @@ class StateViewTest {
 		children.setTopics(topics);
 
 		subject = new StateView(
-				null, null, null, children, EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+				null, null, children, EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 
 		final var actualTopics = subject.topics();
 
@@ -840,7 +839,7 @@ class StateViewTest {
 
 	@Test
 	void viewAdaptToNullChildren() {
-		subject = new StateView(null, null, null, null, EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+		subject = new StateView(null, null, null, EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 
 		assertSame(EMPTY_UNIQUE_TOKEN_VIEW, subject.uniqTokenView());
 		assertSame(StateView.EMPTY_FCOTMR, subject.treasuryNftsByType());

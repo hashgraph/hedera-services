@@ -111,7 +111,6 @@ class GetMerkleTopicInfoAnswerTest {
 		view = new StateView(
 				null,
 				null,
-				nodeProps,
 				children,
 				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 		optionValidator = mock(OptionValidator.class);

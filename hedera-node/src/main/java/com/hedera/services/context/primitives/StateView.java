@@ -114,13 +114,12 @@ public class StateView {
 			0L, 0L, 0, "", "",
 			false, false, MISSING_ENTITY_ID);
 	public static final StateView EMPTY_VIEW = new StateView(
-					null, null, null, null,
+					null, null, null,
 					EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 
 	private final TokenStore tokenStore;
 	private final ScheduleStore scheduleStore;
 	private final UniqTokenView uniqTokenView;
-	private final NodeLocalProperties nodeLocalProperties;
 	private final StateChildren stateChildren;
 
 	Map<byte[], byte[]> contractBytecode;
@@ -130,13 +129,11 @@ public class StateView {
 	public StateView(
 			@Nullable TokenStore tokenStore,
 			@Nullable ScheduleStore scheduleStore,
-			@Nullable NodeLocalProperties nodeLocalProperties,
 			@Nullable StateChildren stateChildren,
 			UniqTokenViewFactory uniqTokenViewFactory
 	) {
 		this.tokenStore = tokenStore;
 		this.scheduleStore = scheduleStore;
-		this.nodeLocalProperties = nodeLocalProperties;
 		this.stateChildren = stateChildren;
 
 		this.uniqTokenView = uniqTokenViewFactory.viewFor(

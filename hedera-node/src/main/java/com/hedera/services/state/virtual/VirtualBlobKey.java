@@ -9,9 +9,9 @@ package com.hedera.services.state.virtual;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,9 +33,9 @@ import static com.hedera.services.files.store.FcBlobsBytesStore.LEGACY_BLOB_CODE
 import static java.lang.Long.parseLong;
 
 public class VirtualBlobKey implements VirtualKey {
-	private static final int CURRENT_VERSION = 1;
-	private static final int BYTES_IN_SERIALIZED_FORM = 5;
-	private static final long CLASS_ID = 0x11b982c14217d523L;
+	static final int CURRENT_VERSION = 1;
+	static final int BYTES_IN_SERIALIZED_FORM = 5;
+	static final long CLASS_ID = 0x11b982c14217d523L;
 
 	private static final Type[] BLOB_TYPES = Type.values();
 
@@ -133,5 +133,13 @@ public class VirtualBlobKey implements VirtualKey {
 
 	public static int sizeInBytes() {
 		return BYTES_IN_SERIALIZED_FORM;
+	}
+
+	public Type getType() {
+		return type;
+	}
+
+	public int getEntityNumCode() {
+		return entityNumCode;
 	}
 }

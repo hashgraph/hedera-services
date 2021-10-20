@@ -204,14 +204,12 @@ public abstract class StateModule {
 	public static StateView provideCurrentView(
 			TokenStore tokenStore,
 			ScheduleStore scheduleStore,
-			NodeLocalProperties nodeLocalProperties,
 			UniqTokenViewFactory uniqTokenViewFactory,
 			@WorkingState StateAccessor workingState
 	) {
 		return new StateView(
 				tokenStore,
 				scheduleStore,
-				nodeLocalProperties,
 				workingState.children(),
 				uniqTokenViewFactory);
 	}
@@ -221,14 +219,12 @@ public abstract class StateModule {
 	public static Supplier<StateView> provideStateViews(
 			TokenStore tokenStore,
 			ScheduleStore scheduleStore,
-			NodeLocalProperties nodeLocalProperties,
 			UniqTokenViewFactory uniqTokenViewFactory,
 			@WorkingState StateAccessor workingState
 	) {
 		return () -> new StateView(
 				tokenStore,
 				scheduleStore,
-				nodeLocalProperties,
 				workingState.children(),
 				uniqTokenViewFactory);
 	}
