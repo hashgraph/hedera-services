@@ -84,13 +84,13 @@ public class TokenPauseSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//				cannotPauseWithInvalidPauseKey(),
-//				cannotChangePauseStatusIfMissingPauseKey(),
-//				pausedFungibleTokenCannotBeUsed(),
-//				pausedNonFungibleUniqueCannotBeUsed(),
-//				unpauseWorks(),
-//				basePauseAndUnpauseHaveExpectedPrices(),
-//				pausedTokenInCustomFeeCaseStudy(),
+				cannotPauseWithInvalidPauseKey(),
+				cannotChangePauseStatusIfMissingPauseKey(),
+				pausedFungibleTokenCannotBeUsed(),
+				pausedNonFungibleUniqueCannotBeUsed(),
+				unpauseWorks(),
+				basePauseAndUnpauseHaveExpectedPrices(),
+				pausedTokenInCustomFeeCaseStudy(),
 				cannotAddPauseKeyViaTokenUpdate()
 		});
 	}
