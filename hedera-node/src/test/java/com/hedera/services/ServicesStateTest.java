@@ -86,6 +86,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import static com.hedera.services.context.AppsManager.APPS;
+import static com.hedera.services.state.migration.StateVersions.RELEASE_0160_VERSION;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -373,7 +374,7 @@ class ServicesStateTest {
 		// expect:
 		assertEquals(
 				LegacyStateChildIndices.NUM_0160_CHILDREN,
-				subject.getMinimumChildCount(StateVersions.RELEASE_0160_VERSION));
+				subject.getMinimumChildCount(RELEASE_0160_VERSION));
 		assertEquals(
 				StateChildIndices.NUM_POST_0160_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_0170_VERSION));
@@ -411,6 +412,21 @@ class ServicesStateTest {
 		assertSame(platform, subject.getPlatformForDeferredInit());
 		assertSame(addressBook, subject.getAddressBookForDeferredInit());
 		assertSame(dualState, subject.getDualStateForDeferredInit());
+	}
+
+	@Test
+	void doesntThrowWhenDualStateIsNull() {
+		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
+		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+
+		given(app.hashLogger()).willReturn(hashLogger);
+		given(app.initializationFlow()).willReturn(initFlow);
+		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+		given(platform.getSelfId()).willReturn(selfId);
+
+		APPS.save(selfId.getId(), app);
+
+		assertDoesNotThrow(() -> subject.init(platform, addressBook, null));
 	}
 
 	@Test
@@ -613,7 +629,7 @@ class ServicesStateTest {
 		final List<MerkleNode> legacyChildren = legacyChildrenWith(addressBook, networkContext, nfts, tokenRels, true);
 
 		// given:
-		subject.addDeserializedChildren(legacyChildren, StateVersions.RELEASE_0160_VERSION);
+		subject.addDeserializedChildren(legacyChildren, RELEASE_0160_VERSION);
 
 		// when:
 		subject.initialize();
@@ -655,7 +671,7 @@ class ServicesStateTest {
 		final List<MerkleNode> legacyChildren = legacyChildrenWith(addressBook, networkContext, nfts, tokenRels, false);
 
 		// given:
-		subject.addDeserializedChildren(legacyChildren, StateVersions.RELEASE_0160_VERSION);
+		subject.addDeserializedChildren(legacyChildren, RELEASE_0160_VERSION);
 
 		// when:
 		subject.initialize();
