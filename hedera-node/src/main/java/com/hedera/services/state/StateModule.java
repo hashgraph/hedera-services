@@ -24,7 +24,6 @@ import com.hedera.services.ServicesState;
 import com.hedera.services.context.ServicesNodeType;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.ids.EntityIdSource;

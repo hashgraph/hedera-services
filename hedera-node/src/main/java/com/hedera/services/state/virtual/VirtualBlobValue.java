@@ -27,6 +27,7 @@ import com.swirlds.virtualmap.VirtualValue;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 public class VirtualBlobValue implements VirtualValue {
 	private static final int CURRENT_VERSION = 1;
@@ -105,5 +106,18 @@ public class VirtualBlobValue implements VirtualValue {
 
 	public static int sizeInBytes() {
 		return DataFileCommon.VARIABLE_DATA_SIZE;
+	}
+
+	@Override
+	public int hashCode() {
+		return Arrays.hashCode(data);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) return true;
+		if (obj == null || getClass() != obj.getClass()) return false;
+		VirtualBlobValue simpContractValue = (VirtualBlobValue) obj;
+		return Arrays.equals(data, simpContractValue.data);
 	}
 }

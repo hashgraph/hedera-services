@@ -31,21 +31,21 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class DWUtilTest {
-    @Test
-    void fromUInt256() {
-        var argument = UInt256.valueOf(10L);
+	@Test
+	void fromUInt256() {
+		var argument = UInt256.valueOf(10L);
 
-        var expecting = DataWord.of(argument.toArray());
+		var expecting = DataWord.of(argument.toArray());
 
-        Assertions.assertEquals(expecting, DWUtil.fromUInt256(argument));
-    }
+		Assertions.assertEquals(expecting, DWUtil.fromUInt256(argument));
+	}
 
-    @Test
-    void fromDataWord() {
-        var expecting = UInt256.valueOf(10L);
+	@Test
+	void fromDataWord() {
+		var expecting = UInt256.valueOf(10L);
 
-        var argument = DataWord.of(expecting.toArray());
+		var argument = DataWord.of(expecting.toArray());
 
-        Assertions.assertEquals(expecting, DWUtil.fromDataWord(argument));
-    }
+		Assertions.assertEquals(expecting, DWUtil.fromDataWord(argument));
+	}
 }

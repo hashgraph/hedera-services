@@ -21,29 +21,25 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.contracts.execution.CallEvmTxProcessor;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
-import com.hedera.services.contracts.execution.CallEvmTxProcessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
-import org.ethereum.db.ServicesRepositoryRoot;
 
 import javax.inject.Inject;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_BYTECODE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.apache.commons.lang3.ArrayUtils.isNotEmpty;
 
 public class ContractCallTransitionLogic implements TransitionLogic {
 
@@ -53,7 +49,6 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 	private final HederaWorldState worldState;
 	private final TransactionRecordService recordService;
 	private final CallEvmTxProcessor evmTxProcessor;
-	private final ServicesRepositoryRoot repositoryRoot;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validateSemantics;
 
@@ -64,8 +59,7 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 			AccountStore accountStore,
 			HederaWorldState worldState,
 			TransactionRecordService recordService,
-			CallEvmTxProcessor evmTxProcessor,
-			ServicesRepositoryRoot repositoryRoot
+			CallEvmTxProcessor evmTxProcessor
 	) {
 		this.txnCtx = txnCtx;
 		this.ids = ids;
@@ -73,7 +67,6 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 		this.accountStore = accountStore;
 		this.recordService = recordService;
 		this.evmTxProcessor = evmTxProcessor;
-		this.repositoryRoot = repositoryRoot;
 	}
 
 	@Override
@@ -92,7 +85,6 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 				? Bytes.fromHexString(CommonUtils.hex(op.getFunctionParameters().toByteArray())) : Bytes.EMPTY;
 
 		final var bytesReceiver = receiver.getId().asEvmAddress().toArray();
-		validateTrue(isNotEmpty(repositoryRoot.getCode(bytesReceiver)), CONTRACT_BYTECODE_EMPTY);
 
 		/* --- Do the business logic --- */
 		final var result = evmTxProcessor.execute(

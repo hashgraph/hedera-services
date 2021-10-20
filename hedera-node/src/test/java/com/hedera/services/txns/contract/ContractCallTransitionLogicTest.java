@@ -24,7 +24,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.contracts.execution.CallEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
-import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
@@ -39,7 +38,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
-import org.ethereum.db.ServicesRepositoryRoot;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,13 +47,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.List;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_BYTECODE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -82,8 +78,6 @@ class ContractCallTransitionLogicTest {
 	private TransactionRecordService recordService;
 	@Mock
 	private CallEvmTxProcessor evmTxProcessor;
-	@Mock
-	private ServicesRepositoryRoot repositoryRoot;
 
 	private TransactionBody contractCallTxn;
 	private final Instant consensusTime = Instant.now();
@@ -94,7 +88,7 @@ class ContractCallTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new ContractCallTransitionLogic(txnCtx, entityIdSource, accountStore, worldState, recordService, evmTxProcessor, repositoryRoot);
+		subject = new ContractCallTransitionLogic(txnCtx, entityIdSource, accountStore, worldState, recordService, evmTxProcessor);
 	}
 
 	@Test
@@ -118,7 +112,6 @@ class ContractCallTransitionLogicTest {
 		given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
 				.willReturn(contractAccount);
 		// and:
-		given(repositoryRoot.getCode(contractAccount.getId().asEvmAddress().toArray())).willReturn(bytecode);
 		var results = TransactionProcessingResult.successful(
 				null, 1234L, 0L,124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress());
 		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.EMPTY, txnCtx.consensusTime()))
@@ -153,7 +146,6 @@ class ContractCallTransitionLogicTest {
 		given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
 				.willReturn(contractAccount);
 		// and:
-		given(repositoryRoot.getCode(contractAccount.getId().asEvmAddress().toArray())).willReturn(bytecode);
 		var results = TransactionProcessingResult.successful(
 				null, 1234L, 0L,124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress());
 		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())), txnCtx.consensusTime()))
@@ -204,27 +196,6 @@ class ContractCallTransitionLogicTest {
 	void resetMethodDelegates() {
 		subject.resetCreatedIds();
 		verify(entityIdSource).resetProvisionalIds();
-	}
-
-	@Test
-	void throwsWhenBytecodeIsEmpty() {
-		// setup:
-		givenValidTxnCtx();
-		// and:
-		given(accessor.getTxn()).willReturn(contractCallTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
-		// and:
-		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-		given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
-				.willReturn(contractAccount);
-		// and:
-		given(repositoryRoot.getCode(contractAccount.getId().asEvmAddress().toArray())).willReturn(Bytes.EMPTY.toArray());
-
-		// when:
-		final var exception = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
-
-		// then:
-		assertEquals(CONTRACT_BYTECODE_EMPTY, exception.getResponseCode());
 	}
 
 	private void givenValidTxnCtx() {
