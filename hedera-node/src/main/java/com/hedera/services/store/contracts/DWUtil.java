@@ -56,14 +56,14 @@ public final class DWUtil {
 
 	public static int[] asPackedInts(final byte[] data) {
 		return new int[]{
-				data[0] << 3 | data[1] << 2 | data[2] << 1 | data[3],
-				data[4] << 3 | data[5] << 2 | data[6] << 1 | data[7],
-				data[8] << 3 | data[9] << 2 | data[10] << 1 | data[11],
-				data[12] << 3 | data[13] << 2 | data[14] << 1 | data[15],
-				data[16] << 3 | data[17] << 2 | data[18] << 1 | data[19],
-				data[20] << 3 | data[21] << 2 | data[22] << 1 | data[23],
-				data[24] << 3 | data[25] << 2 | data[26] << 1 | data[27],
-				data[28] << 3 | data[29] << 2 | data[30] << 1 | data[31],
+				data[0] << 24 | data[1] << 16 | data[2] << 8 | data[3],
+				data[4] << 24 | data[5] << 16 | data[6] << 8 | data[7],
+				data[8] << 24 | data[9] << 16 | data[10] << 8 | data[11],
+				data[12] << 24 | data[13] << 16 | data[14] << 8 | data[15],
+				data[16] << 24 | data[17] << 16 | data[18] << 8 | data[19],
+				data[20] << 24 | data[21] << 16 | data[22] << 8 | data[23],
+				data[24] << 24 | data[25] << 16 | data[26] << 8 | data[27],
+				data[28] << 24 | data[29] << 16 | data[30] << 8 | data[31],
 		};
 	}
 }
