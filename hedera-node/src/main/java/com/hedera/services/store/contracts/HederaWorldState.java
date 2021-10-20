@@ -22,9 +22,8 @@ package com.hedera.services.store.contracts;
  *
  */
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.contracts.virtual.ContractKey;
-import com.hedera.services.contracts.virtual.ContractValue;
+import com.hedera.services.contracts.virtual.SimpContractKey;
+import com.hedera.services.contracts.virtual.SimpContractValue;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -68,49 +67,33 @@ import static com.hedera.services.ledger.HederaLedger.CONTRACT_ID_COMPARATOR;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.contractParsedFromSolidityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 @Singleton
 public class HederaWorldState implements HederaMutableWorldState {
-
 	private final EntityIdSource ids;
 	private final HederaLedger ledger;
 	private final ServicesRepositoryRoot repositoryRoot;
-	private final Supplier<VirtualMap<ContractKey, ContractValue>> contractStorage;
+	private final Supplier<VirtualMap<SimpContractKey, SimpContractValue>> contractStorage;
 	private final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
 	private final List<ContractID> provisionalContractCreations = new LinkedList<>();
-	private final GlobalDynamicProperties globalDynamicProperties;
 
 	@Inject
 	public HederaWorldState(
 			final EntityIdSource ids,
 			final HederaLedger ledger,
 			final ServicesRepositoryRoot repositoryRoot,
-			final Supplier<VirtualMap<ContractKey, ContractValue>> contractStorage,
-			final GlobalDynamicProperties globalDynamicProperties
+			final Supplier<VirtualMap<SimpContractKey, SimpContractValue>> contractStorage
 	) {
 		this.ids = ids;
 		this.repositoryRoot = repositoryRoot;
 		this.contractStorage = contractStorage;
 		this.ledger = ledger;
-		this.globalDynamicProperties = globalDynamicProperties;
 	}
 
 	@Override
 	public List<ContractID> persist() {
-		var status = SUCCESS;
-		if (!repositoryRoot.flushStorageCacheIfTotalSizeLessThan(globalDynamicProperties.maxContractStorageKb())) {
-			status = MAX_CONTRACT_STORAGE_EXCEEDED;
-		}
-		if (status != SUCCESS) {
-			repositoryRoot.emptyStorageCache();
-			provisionalContractCreations.clear();
-		}
-
 		repositoryRoot.flush();
 
-		validateTrue(status == SUCCESS, status);
 		final var copy = new ArrayList<>(provisionalContractCreations);
 		provisionalContractCreations.clear();
 		copy.sort(CONTRACT_ID_COMPARATOR);
@@ -191,6 +174,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 	public class WorldStateAccount implements Account {
 
 		private final Wei balance;
+		private final long contractNum;
 		private final Address address;
 		private final byte[] bytesAddress;
 
@@ -200,17 +184,23 @@ public class HederaWorldState implements HederaMutableWorldState {
 		private long expiry;
 		private long autoRenew;
 
-		public WorldStateAccount(final Address address, final Wei balance, long expiry, long autoRenew,
-								 EntityId proxyAccount) {
+		public WorldStateAccount(
+				final Address address,
+				final Wei balance,
+				final long expiry,
+				final long autoRenew,
+				final EntityId proxyAccount
+		) {
 			this.expiry = expiry;
 			this.address = address;
 			this.bytesAddress = address.toArray();
 			this.balance = balance;
 			this.autoRenew = autoRenew;
 			this.proxyAccount = proxyAccount;
+			this.contractNum = contractParsedFromSolidityAddress(bytesAddress).getContractNum();
 		}
 
-		private VirtualMap<ContractKey, ContractValue> storageTrie() {
+		private VirtualMap<SimpContractKey, SimpContractValue> storageTrie() {
 			return contractStorage.get();
 		}
 
@@ -260,8 +250,8 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		@Override
 		public UInt256 getStorageValue(final UInt256 key) {
-			final var contractKey = new ContractKey(bytesAddress, key.toArray());
-			ContractValue value = storageTrie().get(contractKey);
+			final var contractKey = new SimpContractKey(bytesAddress, key.toArray());
+			SimpContractValue value = storageTrie().get(contractKey);
 			return value == null ? UInt256.ZERO : UInt256.fromBytes(Bytes32.wrap(value.getValue()));
 		}
 
@@ -272,7 +262,9 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		@Override
 		public NavigableMap<Bytes32, AccountStorageEntry> storageEntriesFrom(
-				final Bytes32 startKeyHash, final int limit) {
+				final Bytes32 startKeyHash,
+				final int limit
+		) {
 			throw new UnsupportedOperationException("Stream storage entries not supported");
 		}
 
@@ -393,10 +385,11 @@ public class HederaWorldState implements HederaMutableWorldState {
 			for (final UpdateTrackingAccount<WorldStateAccount> updated : getUpdatedAccounts()) {
 				final byte[] address = updated.getAddress().toArray();
 
+				final var contractId = contractParsedFromSolidityAddress(address);
 				if (!repository.isExist(address)) {
 					repository.delete(address);
 					repository.createAccount(address);
-					wrapped.provisionalContractCreations.add(contractParsedFromSolidityAddress(address));
+					wrapped.provisionalContractCreations.add(contractId);
 				}
 
 				final var oldBalance = repository.getBalance(address);
@@ -409,7 +402,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 				final Map<UInt256, UInt256> updatedStorage = updated.getUpdatedStorage();
 				if (!updatedStorage.isEmpty()) {
 					// Apply any storage updates
-					final VirtualMap<ContractKey, ContractValue> storageTrie =
+					final VirtualMap<SimpContractKey, SimpContractValue> storageTrie =
 							freshState ? wrapped.contractStorage.get() : origin.storageTrie();
 					final TreeSet<Map.Entry<UInt256, UInt256>> entries =
 							new TreeSet<>(Map.Entry.comparingByKey());
@@ -417,11 +410,11 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 					for (final Map.Entry<UInt256, UInt256> entry : entries) {
 						final UInt256 value = entry.getValue();
-						final var key = new ContractKey(address, entry.getKey().toArray());
+						final var key = new SimpContractKey(address, entry.getKey().toArray());
 						if (value.isZero()) {
-							storageTrie.put(key, new ContractValue());
+							storageTrie.put(key, new SimpContractValue());
 						} else {
-							storageTrie.put(key, new ContractValue(value.toArray()));
+							storageTrie.put(key, new SimpContractValue(value.toArray()));
 						}
 					}
 				}

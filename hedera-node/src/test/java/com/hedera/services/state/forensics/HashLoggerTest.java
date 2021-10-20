@@ -22,17 +22,18 @@ package com.hedera.services.state.forensics;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -42,6 +43,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,7 +51,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.mockito.BDDMockito.given;
-
 
 @ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class HashLoggerTest {
@@ -64,7 +65,7 @@ class HashLoggerTest {
 	@Mock
 	private MerkleMap<EntityNum, MerkleSchedule> schedules;
 	@Mock
-	private MerkleMap<String, MerkleOptionalBlob> storage;
+	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
 	@Mock
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
 	@Mock
@@ -72,7 +73,7 @@ class HashLoggerTest {
 	@Mock
 	private AddressBook addressBook;
 	@Mock
-	private MerkleDiskFs diskFs;
+	private MerkleSpecialFiles specialFiles;
 	@Mock
 	private ServicesState state;
 	@Mock
@@ -101,7 +102,7 @@ class HashLoggerTest {
 				"333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333\n" +
 				"  TokenAssociations      :: " +
 				"373737373737373737373737373737373737373737373737373737373737373737373737373737373737373737373737\n" +
-				"  DiskFs                 :: " +
+				"  SpecialFiles           :: " +
 				"5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a\n" +
 				"  ScheduledTxs           :: " +
 				"353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535\n" +
@@ -135,8 +136,8 @@ class HashLoggerTest {
 		given(networkCtx.getHash()).willReturn(hashOf('8'));
 		given(state.addressBook()).willReturn(addressBook);
 		given(addressBook.getHash()).willReturn(hashOf('9'));
-		given(state.diskFs()).willReturn(diskFs);
-		given(diskFs.getHash()).willReturn(hashOf('Z'));
+		given(state.specialFiles()).willReturn(specialFiles);
+		given(specialFiles.getHash()).willReturn(hashOf('Z'));
 		// and:
 		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
 		given(state.runningHashLeaf()).willReturn(runningHashLeaf);

@@ -9,9 +9,9 @@ package com.hedera.services.state;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,17 +22,18 @@ package com.hedera.services.state;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.StateChildren;
-import com.hedera.services.contracts.virtual.ContractKey;
-import com.hedera.services.contracts.virtual.ContractValue;
+import com.hedera.services.contracts.virtual.SimpContractKey;
+import com.hedera.services.contracts.virtual.SimpContractValue;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
@@ -57,13 +58,17 @@ public class StateAccessor {
 		children.setSchedules(state.scheduleTxs());
 		children.setNetworkCtx(state.networkCtx());
 		children.setAddressBook(state.addressBook());
-		children.setDiskFs(state.diskFs());
+		children.setSpecialFiles(state.specialFiles());
 		children.setUniqueTokens(state.uniqueTokens());
 		children.setUniqueTokenAssociations(state.uniqueTokenAssociations());
 		children.setUniqueOwnershipAssociations(state.uniqueOwnershipAssociations());
 		children.setUniqueOwnershipTreasuryAssociations(state.uniqueTreasuryOwnershipAssociations());
-		children.setContractStorage(state.contractStorage());
 		children.setRunningHashLeaf(state.runningHashLeaf());
+		children.setContractStorage(state.contractStorage());
+	}
+
+	public VirtualMap<SimpContractKey, SimpContractValue> contractStorage() {
+		return children.getContractStorage();
 	}
 
 	public MerkleMap<EntityNum, MerkleAccount> accounts() {
@@ -74,7 +79,7 @@ public class StateAccessor {
 		return children.getTopics();
 	}
 
-	public MerkleMap<String, MerkleOptionalBlob> storage() {
+	public VirtualMap<VirtualBlobKey, VirtualBlobValue> storage() {
 		return children.getStorage();
 	}
 
@@ -106,8 +111,8 @@ public class StateAccessor {
 		return children.getUniqueOwnershipTreasuryAssociations();
 	}
 
-	public MerkleDiskFs diskFs() {
-		return children.getDiskFs();
+	public MerkleSpecialFiles specialFiles() {
+		return children.getSpecialFiles();
 	}
 
 	public MerkleNetworkContext networkCtx() {
@@ -116,10 +121,6 @@ public class StateAccessor {
 
 	public AddressBook addressBook() {
 		return children.getAddressBook();
-	}
-
-	public VirtualMap<ContractKey, ContractValue> contractStorage() {
-		return children.getContractStorage();
 	}
 
 	public RecordsRunningHashLeaf runningHashLeaf() {

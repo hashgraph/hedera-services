@@ -20,9 +20,11 @@ package com.hedera.services.txns.file;
  * ‍
  */
 
+import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -34,12 +36,14 @@ import javax.inject.Singleton;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import static com.hedera.services.txns.file.FileUpdateTransitionLogic.mapToStatus;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PREPARED_UPDATE_FILE_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
 @Singleton
@@ -49,12 +53,21 @@ public class FileAppendTransitionLogic implements TransitionLogic {
 	private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP = ignore -> OK;
 
 	private final HederaFs hfs;
+	private final FileNumbers fileNumbers;
 	private final TransactionContext txnCtx;
+	private final Supplier<MerkleNetworkContext> networkCtx;
 
 	@Inject
-	public FileAppendTransitionLogic(HederaFs hfs, TransactionContext txnCtx) {
+	public FileAppendTransitionLogic(
+			final HederaFs hfs,
+			final FileNumbers fileNumbers,
+			final TransactionContext txnCtx,
+			final Supplier<MerkleNetworkContext> networkCtx
+	) {
 		this.hfs = hfs;
 		this.txnCtx = txnCtx;
+		this.networkCtx = networkCtx;
+		this.fileNumbers = fileNumbers;
 	}
 
 	@Override
@@ -65,10 +78,20 @@ public class FileAppendTransitionLogic implements TransitionLogic {
 			var target = op.getFileID();
 			var data = op.getContents().toByteArray();
 
-			Optional<HFileMeta> attr = hfs.exists(target) ? Optional.of(hfs.getattr(target)) : Optional.empty();
-			var validity = classify(attr);
+			ResponseCodeEnum validity;
+			if (fileNumbers.isSoftwareUpdateFile(target.getFileNum())) {
+				validity = hfs.exists(target) ? OK : INVALID_FILE_ID;
+			} else {
+				Optional<HFileMeta> attr = hfs.exists(target) ? Optional.of(hfs.getattr(target)) : Optional.empty();
+				validity = classify(attr);
+			}
+
 			if (validity != OK) {
 				txnCtx.setStatus(validity);
+				return;
+			}
+			if (networkCtx.get().getPreparedUpdateFileNum() == target.getFileNum()) {
+				txnCtx.setStatus(PREPARED_UPDATE_FILE_IS_IMMUTABLE);
 				return;
 			}
 
@@ -82,7 +105,7 @@ public class FileAppendTransitionLogic implements TransitionLogic {
 		}
 	}
 
-	private ResponseCodeEnum classify(Optional<HFileMeta> attr) {
+	private ResponseCodeEnum classify(final Optional<HFileMeta> attr) {
 		if (attr.isEmpty()) {
 			return INVALID_FILE_ID;
 		} else {

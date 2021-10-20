@@ -46,7 +46,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.DEFAULT_HIGH_SPIN_SCAN_COUNT;
@@ -266,7 +266,7 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 		return defaultHapiSpec("freezeAtTheEnd")
 				.given()
 				.when(
-						freeze().startingIn(0).minutes().andLasting(2).minutes().payingWith(GENESIS)
+						freezeOnly().startingIn(0).minutes().payingWith(GENESIS)
 				)
 				.then(
 						// sleep for a while to wait for this freeze transaction be handled

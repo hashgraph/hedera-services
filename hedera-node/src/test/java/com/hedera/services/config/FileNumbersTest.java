@@ -22,10 +22,13 @@ package com.hedera.services.config;
 
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.test.utils.IdUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
@@ -51,6 +54,7 @@ class FileNumbersTest {
 		given(properties.getLongProperty("files.exchangeRates")).willReturn(112L);
 		given(properties.getLongProperty("files.softwareUpdateZip")).willReturn(150L);
 		given(properties.getLongProperty("files.throttleDefinitions")).willReturn(123L);
+		given(properties.getEntityNumRange("files.softwareUpdateRange")).willReturn(Pair.of(150L, 159L));
 
 		given(properties.getLongProperty("hedera.numReservedSystemEntities")).willReturn(1_000L);
 
@@ -66,8 +70,18 @@ class FileNumbersTest {
 		assertEquals(112, subject.exchangeRates());
 		assertEquals(121, subject.applicationProperties());
 		assertEquals(122, subject.apiPermissions());
-		assertEquals(150, subject.softwareUpdateZip());
 		assertEquals(123, subject.throttleDefinitions());
+		assertEquals(150L, subject.firstSoftwareUpdateFile());
+		assertEquals(159L, subject.lastSoftwareUpdateFile());
+	}
+
+	@Test
+	void knowsSpecialFiles() {
+		assertFalse(subject.isSoftwareUpdateFile(149L));
+		for (long sp = 150L; sp <= 159L; sp++) {
+			assertTrue(subject.isSoftwareUpdateFile(sp));
+		}
+		assertFalse(subject.isSoftwareUpdateFile(160L));
 	}
 
 	@Test

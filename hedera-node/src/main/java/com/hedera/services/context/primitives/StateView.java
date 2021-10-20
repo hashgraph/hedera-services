@@ -31,13 +31,14 @@ import com.hedera.services.files.store.FcBlobsBytesStore;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenView;
@@ -70,6 +71,9 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualKey;
+import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.VirtualValue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -87,12 +91,12 @@ import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY;
-import static com.hedera.services.utils.EntityNum.fromAccountId;
-import static com.hedera.services.utils.EntityNum.fromContractId;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
+import static com.hedera.services.utils.EntityNum.fromAccountId;
+import static com.hedera.services.utils.EntityNum.fromContractId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static java.util.Collections.unmodifiableMap;
 
@@ -103,6 +107,7 @@ public class StateView {
 
 	static final byte[] EMPTY_BYTES = new byte[0];
 	static final MerkleMap<?, ?> EMPTY_FCM = new MerkleMap<>();
+	static final VirtualMap<?, ?> EMPTY_VM = new VirtualMap<>();
 	static final FCOneToManyRelation<?, ?> EMPTY_FCOTMR = new FCOneToManyRelation<>();
 
 	public static final JKey EMPTY_WACL = new JKeyList();
@@ -145,7 +150,7 @@ public class StateView {
 				this::treasuryNftsByType);
 
 		final Map<String, byte[]> blobStore = unmodifiableMap(
-				new FcBlobsBytesStore(MerkleOptionalBlob::new, this::storage));
+				new FcBlobsBytesStore(this::storage));
 
 		fileContents = DataMapFactory.dataMapFrom(blobStore);
 		fileAttrs = MetadataMapFactory.metaMapFrom(blobStore);
@@ -161,9 +166,9 @@ public class StateView {
 		if (stateChildren == null) {
 			return Optional.empty();
 		}
-		final var diskFs = stateChildren.getDiskFs();
-		if (diskFs.contains(id)) {
-			return Optional.ofNullable(diskFs.contentsOf(id));
+		final var specialFiles = stateChildren.getSpecialFiles();
+		if (specialFiles.contains(id)) {
+			return Optional.ofNullable(specialFiles.get(id));
 		} else {
 			return Optional.ofNullable(fileContents.get(id));
 		}
@@ -506,8 +511,8 @@ public class StateView {
 		return stateChildren == null ? emptyMm() : stateChildren.getUniqueTokens();
 	}
 
-	MerkleMap<String, MerkleOptionalBlob> storage() {
-		return stateChildren == null ? emptyMm() : stateChildren.getStorage();
+	VirtualMap<VirtualBlobKey, VirtualBlobValue> storage() {
+		return stateChildren == null ? emptyVm() : stateChildren.getStorage();
 	}
 
 	MerkleMap<EntityNum, MerkleToken> tokens() {
@@ -566,6 +571,10 @@ public class StateView {
 
 	private static <K, V extends MerkleNode & Keyed<K>> MerkleMap<K, V> emptyMm() {
 		return (MerkleMap<K, V>) EMPTY_FCM;
+	}
+
+	private static <K extends VirtualKey, V extends VirtualValue> VirtualMap<K, V> emptyVm() {
+		return (VirtualMap<K, V>) EMPTY_VM;
 	}
 
 	private static <K, V> FCOneToManyRelation<K, V> emptyFcotmr() {

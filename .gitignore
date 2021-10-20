@@ -87,6 +87,7 @@ hedera-node/data/jasperdb/
 hedera-node/output/
 hedera-node/target/
 hedera-node/src/test/resources/diskFs
+hedera-node/src/test/resources/upgrade
 hedera-node/forensics
 hedera-node/pgdata
 hedera-node/temp
