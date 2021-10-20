@@ -226,9 +226,9 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		@Override
 		public Bytes getCode() {
-			final var key = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, (int) this.contractNum);
+			final var blobKey = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, (int) this.contractNum);
 			var codeBytes = storageBytecode.get()
-					.get(key);
+					.get(blobKey);
 
 			return codeBytes == null ? Bytes.EMPTY : Bytes.of(codeBytes.getData());
 		}

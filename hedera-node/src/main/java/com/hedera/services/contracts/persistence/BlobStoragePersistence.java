@@ -37,7 +37,6 @@ import java.util.function.Supplier;
 
 @Singleton
 public class BlobStoragePersistence implements StoragePersistence {
-	private static final Logger log = LogManager.getLogger(BlobStoragePersistence.class);
 
 	private final Map<byte[], byte[]> storage;
 	private final Supplier<VirtualMap<ContractKey, ContractValue>> contractStorage;

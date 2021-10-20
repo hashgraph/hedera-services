@@ -84,8 +84,6 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 		final var callData = !op.getFunctionParameters().isEmpty()
 				? Bytes.fromHexString(CommonUtils.hex(op.getFunctionParameters().toByteArray())) : Bytes.EMPTY;
 
-		final var bytesReceiver = receiver.getId().asEvmAddress().toArray();
-
 		/* --- Do the business logic --- */
 		final var result = evmTxProcessor.execute(
 				sender,

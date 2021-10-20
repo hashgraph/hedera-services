@@ -39,8 +39,6 @@ import static com.swirlds.jasperdb.utilities.NonCryptographicHashing.perm64;
  * We only store the number part of the contract ID as the ideas ia there will be a virtual merkle tree for each shard
  * and realm.
  *
- * TODO based on discussion with Danno we decided uint256 should be a Big Endian byte[] like ContractValue, this class
- * needs updating
  */
 public final class ContractKey implements VirtualKey {
 	/** The estimated average size for a contract key when serialized */
@@ -187,14 +185,14 @@ public final class ContractKey implements VirtualKey {
 	@Override
 	public boolean equals(ByteBuffer buf, int version) throws IOException {
 		byte packedSize = buf.get();
-		final byte contractIdNonZeroBytes = getContractIdNonZeroBytesFromPacked(packedSize);
-		if (contractIdNonZeroBytes != this.contractIdNonZeroBytes) return false;
-		final byte uint256KeyNonZeroBytes = getUint256KeyNonZeroBytesFromPacked(packedSize);
-		if (uint256KeyNonZeroBytes != this.uint256KeyNonZeroBytes) return false;
-		final long contractId = deserializeContractID(contractIdNonZeroBytes, buf, ByteBuffer::get);
-		if (contractId != this.contractId) return false;
-		final int[] uint256Key = deserializeUnit256Key(uint256KeyNonZeroBytes, buf, ByteBuffer::get);
-		return Arrays.equals(uint256Key, this.uint256Key);
+		final byte contractIdNZB = getContractIdNonZeroBytesFromPacked(packedSize);
+		if (contractIdNZB != this.contractIdNonZeroBytes) return false;
+		final byte uint256KeyNZB = getUint256KeyNonZeroBytesFromPacked(packedSize);
+		if (uint256KeyNZB != this.uint256KeyNonZeroBytes) return false;
+		final long deserializedContractId = deserializeContractID(contractIdNZB, buf, ByteBuffer::get);
+		if (deserializedContractId != this.contractId) return false;
+		final int[] deserializedUint256Key = deserializeUnit256Key(uint256KeyNZB, buf, ByteBuffer::get);
+		return Arrays.equals(deserializedUint256Key, this.uint256Key);
 	}
 
 	/**
@@ -290,7 +288,7 @@ public final class ContractKey implements VirtualKey {
 				(byte) (contractIdNonZeroBytes - 1);
 		final byte uint256KeyNonZeroBytesMinusOne = uint256KeyNonZeroBytes == 0 ? (byte) 0 :
 				(byte) (uint256KeyNonZeroBytes - 1);
-		return (byte) ((contractIdNonZeroBytesMinusOne << 5) | uint256KeyNonZeroBytesMinusOne);
+		return (byte) ((contractIdNonZeroBytesMinusOne << 5) | uint256KeyNonZeroBytesMinusOne & 0xff);
 	}
 
 	/**

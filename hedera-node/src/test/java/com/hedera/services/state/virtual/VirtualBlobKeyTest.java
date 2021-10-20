@@ -19,7 +19,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class VirtualBlobKeyTest {
+class VirtualBlobKeyTest {
 	private VirtualBlobKey subject;
 	private int entityNum = 2;
 

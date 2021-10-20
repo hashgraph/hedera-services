@@ -24,8 +24,6 @@ import com.hedera.services.state.merkle.internals.BlobKey;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.swirlds.virtualmap.VirtualMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.AbstractMap;
 import java.util.Optional;

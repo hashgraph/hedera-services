@@ -22,7 +22,6 @@ package com.hedera.services.context.primitives;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.StateChildren;
-import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
 import com.hedera.services.files.DataMapFactory;
 import com.hedera.services.files.HFileMeta;
@@ -442,7 +441,6 @@ public class StateView {
 				.setDeleted(contract.isDeleted())
 				.setContractID(id)
 				.setMemo(contract.getMemo())
-				/* TODO - this used to include the size of storage as well as bytecode; is it necessary to preserve? */
 				.setStorage(bytecodeSize)
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(contract.getAutoRenewSecs()))
 				.setBalance(contract.getBalance())
