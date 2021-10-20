@@ -369,7 +369,7 @@ public final class ContractKey implements VirtualKey {
 	 */
 	static byte computeNonZeroBytes(int num) {
 		if (num == 0) return (byte) 1;
-		return (byte) Math.ceil((double) (Integer.SIZE - Integer.numberOfLeadingZeros(num)) / 8D);
+		return (byte) Math.ceil((Integer.SIZE - Integer.numberOfLeadingZeros(num)) / 8D);
 	}
 
 	/**
@@ -381,7 +381,7 @@ public final class ContractKey implements VirtualKey {
 	 */
 	static byte computeNonZeroBytes(long num) {
 		if (num == 0) return (byte) 1;
-		return (byte) Math.ceil((double) (Long.SIZE - Long.numberOfLeadingZeros(num)) / 8D);
+		return (byte) Math.ceil((Long.SIZE - Long.numberOfLeadingZeros(num)) / 8D);
 	}
 
 	/** Simple interface for a function that takes a object and returns a byte */

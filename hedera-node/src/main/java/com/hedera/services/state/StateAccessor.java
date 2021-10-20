@@ -23,7 +23,6 @@ package com.hedera.services.state;
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleBlob;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;

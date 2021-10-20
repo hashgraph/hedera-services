@@ -63,9 +63,12 @@ public class ReleaseTwentyMigration {
 	 *
 	 * @param initializingState
 	 * 		the saved state being migrated during initialization
+	 * @param jdbDataLoc
+	 * 		canonical jasperDB location
 	 * @param deserializedVersion
 	 * 		for completeness, the version of the saved state
 	 */
+
 	public static void migrateFromBinaryObjectStore(
 			final ServicesState initializingState,
 			final String jdbDataLoc,

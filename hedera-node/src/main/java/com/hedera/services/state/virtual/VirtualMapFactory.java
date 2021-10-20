@@ -109,7 +109,6 @@ public class VirtualMapFactory {
 						ContractValue.SERIALIZED_SIZE,
 						ContractValue::new,
 						true);
-		;
 
 		final VirtualDataSource<ContractKey, ContractValue> ds;
 		try {
