@@ -60,6 +60,7 @@ public class Account {
 	private long expiry;
 	private long balance;
 	private boolean deleted = false;
+	private boolean detached = false;
 	private boolean isSmartContract = false;
 	private boolean isReceiverSigRequired = false;
 	private CopyOnWriteIds associatedTokens;
@@ -119,7 +120,7 @@ public class Account {
 	}
 
 	public void setAlreadyUsedAutomaticAssociations(int alreadyUsedCount) {
-		validateTrue(isValidAlreadyUsedCount(alreadyUsedCount), NO_REMAINING_AUTOMATIC_ASSOCIATIONS );
+		validateTrue(isValidAlreadyUsedCount(alreadyUsedCount), NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
 		autoAssociationMetadata = setAlreadyUsedAutomaticAssociationsTo(autoAssociationMetadata, alreadyUsedCount);
 	}
 
@@ -155,10 +156,8 @@ public class Account {
 	 * Applies the given list of {@link Dissociation}s, validating that this account is
 	 * indeed associated to each involved token.
 	 *
-	 * @param dissociations
-	 * 		the dissociations to perform.
-	 * @param validator
-	 * 		the validator to use for each dissociation
+	 * @param dissociations the dissociations to perform.
+	 * @param validator     the validator to use for each dissociation
 	 */
 	public void dissociateUsing(List<Dissociation> dissociations, OptionValidator validator) {
 		final Set<Id> dissociatedTokenIds = new HashSet<>();

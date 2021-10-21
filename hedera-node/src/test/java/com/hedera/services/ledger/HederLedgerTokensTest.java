@@ -149,15 +149,6 @@ class HederLedgerTokensTest extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
-	void delegatesKnowingOps() {
-		subject.grantKyc(misc, frozenId);
-		verify(tokenStore).grantKyc(misc, frozenId);
-
-		subject.revokeKyc(misc, frozenId);
-		verify(tokenStore).revokeKyc(misc, frozenId);
-	}
-
-	@Test
 	void delegatesTokenChangeDrop() {
 		final var manager = mock(UniqTokenViewsManager.class);
 		subject.setTokenViewsManager(manager);

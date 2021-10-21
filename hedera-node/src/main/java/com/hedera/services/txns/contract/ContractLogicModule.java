@@ -23,7 +23,6 @@ package com.hedera.services.txns.contract;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.annotations.FunctionKey;
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.contract.helpers.UpdateCustomizerFactory;
@@ -34,7 +33,6 @@ import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoMap;
 
-import javax.inject.Singleton;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -45,14 +43,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractUpd
 
 @Module
 public final class ContractLogicModule {
-
-	@Provides
-	@Singleton
-	public static ContractDeleteTransitionLogic.LegacyDeleter provideLegacyDeleter(
-			final SmartContractRequestHandler contracts
-	) {
-		return contracts::deleteContract;
-	}
 
 	@Provides
 	@IntoMap

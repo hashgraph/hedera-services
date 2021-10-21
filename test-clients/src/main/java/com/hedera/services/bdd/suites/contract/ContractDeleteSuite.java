@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.contract;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
@@ -35,12 +36,21 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemContractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemContractUndelete;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.disablingAutoRenewWithDefaults;
+import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.enablingAutoRenewWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_DOES_NOT_EXIST;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_REQUIRED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class ContractDeleteSuite extends HapiApiSuite {
@@ -57,14 +67,20 @@ public class ContractDeleteSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-						rejectsWithoutProperSig(),
-						systemCanUndelete(),
-						deleteWorksWithMutableContract(),
-						deleteFailsWithImmutableContract(),
-						deleteTransfersToAccount(),
-						deleteTransfersToContract()
-				}
+		return List.of(
+				rejectsWithoutProperSig(),
+				systemCanUndelete(),
+				deleteWorksWithMutableContract(),
+				deleteFailsWithImmutableContract(),
+				deleteTransfersToAccount(),
+				deleteTransfersToContract(),
+				deleteWithZeroBalanceDoesNotTransferToAccount(),
+				deleteWithZeroBalanceDoesNotTransferToContract(),
+				deleteFailsWithObtainerRequired(),
+				deleteFailsWithObtainerAccountSameContractID(),
+				deleteFailsWithObtainerContractSameContractID(),
+				deleteFailsWithObtainerDoesNotExist(),
+				deleteFailsWithAccountExpiredAndPendingRemoval()
 		);
 	}
 
@@ -136,6 +152,115 @@ public class ContractDeleteSuite extends HapiApiSuite {
 				).then(
 						getAccountBalance("receiver").hasTinyBars(1L)
 				);
+	}
+
+	private HapiApiSpec deleteWithZeroBalanceDoesNotTransferToAccount() {
+		return defaultHapiSpec("DeleteWithZeroBalanceDoesNotTransferToAccount")
+				.given(
+						fileCreate("contractBytecode").path(PAYABLE_CONSTRUCTOR),
+						cryptoCreate("receiver").balance(0L),
+						contractCreate("toBeDeleted").bytecode("contractBytecode").balance(0L)
+				).when(
+						contractDelete("toBeDeleted").transferAccount("receiver")
+				).then(
+						getAccountBalance("receiver").hasTinyBars(0L)
+				);
+	}
+
+	private HapiApiSpec deleteWithZeroBalanceDoesNotTransferToContract() {
+		return defaultHapiSpec("DeleteWithZeroBalanceDoesNotTransferToContract")
+				.given(
+						fileCreate("contractBytecode").path(PAYABLE_CONSTRUCTOR),
+						contractCreate("receiver").balance(0L),
+						contractCreate("toBeDeleted").bytecode("contractBytecode").balance(0L)
+				).when(
+						contractDelete("toBeDeleted").transferContract("receiver")
+				).then(
+						getAccountBalance("receiver").hasTinyBars(0L)
+				);
+	}
+
+	private HapiApiSpec deleteFailsWithObtainerRequired() {
+		HapiSpecSetup.getDefaultInstance().invalidContract();
+		return defaultHapiSpec("DeleteFailsWithObtainerRequired")
+				.given(
+						fileCreate("contractBytecode").path(PAYABLE_CONSTRUCTOR),
+						contractCreate("toBeDeleted").bytecode("contractBytecode").balance(1L)
+				)
+				.when(
+						contractDelete("toBeDeleted").withNoObtainer().hasKnownStatus(OBTAINER_REQUIRED)
+				)
+				.then(
+						getAccountBalance("toBeDeleted").hasTinyBars(1L)
+				);
+	}
+
+	private HapiApiSpec deleteFailsWithObtainerAccountSameContractID() {
+		return defaultHapiSpec("DeleteFailsWithObtainerAccountSameContractID")
+				.given(
+						fileCreate("contractBytecode").path(PAYABLE_CONSTRUCTOR),
+						contractCreate("toBeDeleted").bytecode("contractBytecode").balance(1L)
+				)
+				.when(
+						contractDelete("toBeDeleted").transferAccount("toBeDeleted").hasKnownStatus(OBTAINER_SAME_CONTRACT_ID)
+				)
+				.then(
+						getAccountBalance("toBeDeleted").hasTinyBars(1L)
+				);
+	}
+
+	private HapiApiSpec deleteFailsWithObtainerContractSameContractID() {
+		return defaultHapiSpec("DeleteFailsWithObtainerContractSameContractID")
+				.given(
+						fileCreate("contractBytecode").path(PAYABLE_CONSTRUCTOR),
+						contractCreate("toBeDeleted").bytecode("contractBytecode").balance(1L)
+				)
+				.when(
+						contractDelete("toBeDeleted").transferContract("toBeDeleted").hasKnownStatus(OBTAINER_SAME_CONTRACT_ID)
+				)
+				.then(
+						getAccountBalance("toBeDeleted").hasTinyBars(1L)
+				);
+	}
+
+	private HapiApiSpec deleteFailsWithObtainerDoesNotExist() {
+		HapiSpecSetup.getDefaultInstance().invalidContract();
+		return defaultHapiSpec("DeleteFailsWithObtainerDoesNotExist")
+				.given(
+						fileCreate("contractBytecode").path(PAYABLE_CONSTRUCTOR),
+						cryptoCreate("receiver").balance(0L),
+						contractCreate("toBeDeleted").bytecode("contractBytecode").balance(1L)
+				)
+				.when(
+						cryptoDelete("receiver"),
+						contractDelete("toBeDeleted").transferAccount("receiver").hasKnownStatus(OBTAINER_DOES_NOT_EXIST)
+				)
+				.then(
+						getAccountBalance("toBeDeleted").hasTinyBars(1L)
+				);
+	}
+
+	private HapiApiSpec deleteFailsWithAccountExpiredAndPendingRemoval() {
+		return defaultHapiSpec("DeleteFailsWithAccountExpiredAndPendingRemoval")
+				.given(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(GENESIS)
+								.overridingProps(enablingAutoRenewWith(1L, 3600L, 10_000, 10_000)),
+						fileCreate("contractBytecode").path(PAYABLE_CONSTRUCTOR),
+						contractCreate("toBeDeleted").bytecode("contractBytecode").balance(1L),
+						cryptoCreate("receiverAccount").balance(0L).autoRenewSecs(1L)
+				)
+				.when(
+						sleepFor(1100L),
+						contractDelete("toBeDeleted").transferAccount("receiverAccount").hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL)
+				)
+				.then(
+						getAccountBalance("toBeDeleted").hasTinyBars(1L),
+						getAccountBalance("receiverAccount").hasTinyBars(0L),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(GENESIS)
+								.overridingProps(disablingAutoRenewWithDefaults())
+						);
 	}
 
 	@Override

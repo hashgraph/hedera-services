@@ -42,6 +42,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiContractDelete extends HapiTxnOp<HapiContractDelete> {
 	private boolean shouldPurge = false;
+	private boolean noObtainer = false;
 	private final String contract;
 	private Optional<String> transferAccount = Optional.empty();
 	private Optional<String> transferContract = Optional.empty();
@@ -74,6 +75,11 @@ public class HapiContractDelete extends HapiTxnOp<HapiContractDelete> {
 		return this;
 	}
 
+	public HapiContractDelete withNoObtainer() {
+		noObtainer = true;
+		return this;
+	}
+
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerSigs) throws Throwable {
 		return spec.fees().forActivityBasedOp(
@@ -94,6 +100,9 @@ public class HapiContractDelete extends HapiTxnOp<HapiContractDelete> {
 									builder.setTransferAccountID(spec.registry().getAccountID(a)));
 						}
 					);
+		if (noObtainer) {
+			return builder -> builder.setContractDeleteInstance(opBody.toBuilder().clearObtainers());
+		}
 		return builder -> builder.setContractDeleteInstance(opBody);
 	}
 
