@@ -220,34 +220,6 @@ public class ContractKeyTest {
     }
 
     @Test
-    public void testEqualsByteBuffer() throws IOException {
-        testEqualsByteBuffer(new ContractKey(1,0));
-        testEqualsByteBuffer(new ContractKey(0xA5A5L,0));
-        testEqualsByteBuffer(new ContractKey(0xA5A5A5L,0));
-        testEqualsByteBuffer(new ContractKey(0xA5A5A5A5L,0));
-        testEqualsByteBuffer(new ContractKey(0xA5A5A5A5A5A5A5A5L,0));
-        testEqualsByteBuffer(new ContractKey(0,1));
-        testEqualsByteBuffer(new ContractKey(0,0xA5A5L));
-        testEqualsByteBuffer(new ContractKey(0,0xA5A5A5L));
-        testEqualsByteBuffer(new ContractKey(0,0xA5A5A5A5A5A5A5A5L));
-        testEqualsByteBuffer(new ContractKey(0,new int[]{0,0,0,0,0,3,2,1}));
-        testEqualsByteBuffer(new ContractKey(0,new int[]{0,0,0,5,4,3,2,1}));
-        testEqualsByteBuffer(new ContractKey(0,new int[]{8,7,6,5,4,3,2,1}));
-    }
-
-    private void testEqualsByteBuffer(ContractKey key) throws IOException {
-        ByteBuffer buf = ByteBuffer.allocate(1+8+32);
-        key.serialize(buf);
-        buf.flip();
-        printSerializedData(buf.array(),buf.remaining());
-        assertTrue(key.equals(buf,key.getVersion()));
-        buf.rewind();
-        assertFalse(new ContractKey(0,0).equals(buf,key.getVersion()));
-        buf.rewind();
-        assertFalse(new ContractKey(Long.MAX_VALUE,Long.MAX_VALUE).equals(buf,key.getVersion()));
-    }
-
-    @Test
     public void testHash() {
         List<Integer> hashes = new ArrayList<>();
         hashes.add(new ContractKey(1,0).hashCode());

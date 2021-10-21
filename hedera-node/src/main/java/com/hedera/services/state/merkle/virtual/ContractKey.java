@@ -157,19 +157,6 @@ public final class ContractKey implements VirtualKey {
         this.uint256Key = deserializeUnit256Key(uint256KeyNonZeroBytes,buf,ByteBuffer::get);
     }
 
-    @Override
-    public boolean equals(ByteBuffer buf, int version) throws IOException {
-        byte packedSize = buf.get();
-        final byte contractIdNonZeroBytes = getContractIdNonZeroBytesFromPacked(packedSize);
-        if (contractIdNonZeroBytes != this.contractIdNonZeroBytes) return false;
-        final byte uint256KeyNonZeroBytes = getUint256KeyNonZeroBytesFromPacked(packedSize);
-        if (uint256KeyNonZeroBytes != this.uint256KeyNonZeroBytes) return false;
-        final long contractId = deserializeContractID(contractIdNonZeroBytes,buf,ByteBuffer::get);
-        if (contractId != this.contractId) return false;
-        final int[] uint256Key = deserializeUnit256Key(uint256KeyNonZeroBytes,buf,ByteBuffer::get);
-        return Arrays.equals(uint256Key,this.uint256Key);
-    }
-
     /**
      * Read the key size in bytes from a byte buffer containing a serialized ContractKey
      *
@@ -335,7 +322,7 @@ public final class ContractKey implements VirtualKey {
 
     /** Simple interface for a function that takes a object and returns a byte */
     @FunctionalInterface
-    private  interface ByteReaderFunction<T> {
+    public  interface ByteReaderFunction<T> {
 
         /**
          * Applies this function to the given argument.

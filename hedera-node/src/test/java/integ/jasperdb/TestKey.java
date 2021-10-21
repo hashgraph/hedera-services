@@ -56,18 +56,6 @@ public final class TestKey implements VirtualKey {
     }
 
     @Override
-    public boolean equals(ByteBuffer buffer, int version) throws IOException {
-        final int length = buffer.getInt();
-        if (length != s.length()) return false;
-
-        final byte[] bytes = new byte[length];
-        buffer.get(bytes);
-        final var tmp = new String(bytes, StandardCharsets.UTF_8);
-
-        return s.equals(tmp);
-    }
-
-    @Override
     public int hashCode() {
         return Objects.hash(s);
     }
