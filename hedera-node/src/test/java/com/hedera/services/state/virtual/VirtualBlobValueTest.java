@@ -26,6 +26,9 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.jasperdb.files.DataFileCommon;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -34,6 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 
@@ -92,6 +96,26 @@ class VirtualBlobValueTest {
 
 		inOrder.verify(buffer).putInt(data.length);
 		inOrder.verify(buffer).put(data);
+	}
+
+	@Test
+	void deserializeWithByteBufferWorks() throws IOException {
+		final var buffer = mock(ByteBuffer.class);
+		final var defaultSubject = new VirtualBlobValue();
+		int len = data.length;
+
+		given(buffer.getInt()).willReturn(len);
+		doAnswer(new Answer() {
+			@Override
+			public Object answer(final InvocationOnMock invocationOnMock) {
+				defaultSubject.setData(data);
+				return null;
+			}
+		}).when(buffer).get(ArgumentMatchers.any());
+
+		defaultSubject.deserialize(buffer, VirtualBlobValue.CURRENT_VERSION);
+
+		assertEquals(subject, defaultSubject);
 	}
 
 	@Test
