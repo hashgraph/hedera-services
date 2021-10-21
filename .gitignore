@@ -86,6 +86,7 @@ hedera-node/data/saved/
 hedera-node/output/
 hedera-node/target/
 hedera-node/src/test/resources/diskFs
+hedera-node/src/test/resources/upgrade
 hedera-node/forensics
 hedera-node/pgdata
 hedera-node/temp

@@ -28,8 +28,8 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -183,7 +183,7 @@ class StateViewTest {
 	private MerkleAccount notContract;
 	private MerkleAccount tokenAccount;
 	private NodeLocalProperties nodeProps;
-	private MerkleDiskFs diskFs;
+	private MerkleSpecialFiles specialFiles;
 	private UniqTokenView uniqTokenView;
 	private UniqTokenViewFactory uniqTokenViewFactory;
 	private StateChildren children;
@@ -308,7 +308,7 @@ class StateViewTest {
 		given(storage.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedStorage);
 		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedBytecode);
 		nodeProps = mock(NodeLocalProperties.class);
-		diskFs = mock(MerkleDiskFs.class);
+		specialFiles = mock(MerkleSpecialFiles.class);
 
 		mockTokenRelsFn = (BiFunction<StateView, AccountID, List<TokenRelationship>>) mock(BiFunction.class);
 
@@ -332,7 +332,7 @@ class StateViewTest {
 		children.setUniqueTokenAssociations(nftsByType);
 		children.setUniqueTokenAssociations(nftsByOwner);
 		children.setUniqueOwnershipTreasuryAssociations(treasuryNftsByType);
-		children.setDiskFs(diskFs);
+		children.setSpecialFiles(specialFiles);
 
 		given(uniqTokenViewFactory.viewFor(any(), any(), any(), any(), any(), any())).willReturn(uniqTokenView);
 
@@ -852,8 +852,8 @@ class StateViewTest {
 	void getsSpecialFileContents() {
 		FileID file150 = asFile("0.0.150");
 
-		given(diskFs.contentsOf(file150)).willReturn(data);
-		given(diskFs.contains(file150)).willReturn(true);
+		given(specialFiles.get(file150)).willReturn(data);
+		given(specialFiles.contains(file150)).willReturn(true);
 
 		final var stuff = subject.contentsOf(file150);
 

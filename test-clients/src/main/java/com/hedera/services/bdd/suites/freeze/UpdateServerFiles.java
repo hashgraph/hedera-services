@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -39,7 +40,7 @@ import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeUpgrade;
 import static com.hedera.services.bdd.suites.utils.ZipUtil.createZip;
 
 public class UpdateServerFiles extends HapiApiSuite {
@@ -119,7 +120,7 @@ public class UpdateServerFiles extends HapiApiSuite {
 			log.error("Directory creation failed", e);
 			Assertions.fail("Directory creation failed");
 		}
-		final byte[] hash = UpdateFile150.sha384Digest(data);
+		final byte[] hash = CommonUtils.noThrowSha384HashOf(data);
 		return defaultHapiSpec("uploadFileAndUpdate")
 				.given(
 						fileUpdate(APP_PROPERTIES)
@@ -127,9 +128,9 @@ public class UpdateServerFiles extends HapiApiSuite {
 								.overridingProps(Map.of("maxFileSize", "2048000")),
 						UtilVerbs.updateLargeFile(GENESIS, fileIDString, ByteString.copyFrom(data))
 				).when(
-						freeze().setFileID(fileIDString)
-								.setFileHash(hash).payingWith(GENESIS)
-								.startingIn(60).seconds().andLasting(10).minutes()
+						freezeUpgrade().withUpdateFile(fileIDString)
+								.havingHash(hash).payingWith(GENESIS)
+								.startingIn(60).seconds()
 				).then(
 				);
 	}

@@ -22,6 +22,7 @@ package com.hedera.services.context.properties;
 
 import com.hedera.services.config.HederaNumbers;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 
@@ -50,6 +51,14 @@ public class StaticPropertiesHolder {
 				.setShardNum(shard)
 				.setRealmNum(realm)
 				.setAccountNum(num)
+				.build();
+	}
+
+	public FileID scopedFileWith(long num) {
+		return FileID.newBuilder()
+				.setShardNum(shard)
+				.setRealmNum(realm)
+				.setFileNum(num)
 				.build();
 	}
 

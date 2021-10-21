@@ -20,9 +20,12 @@ package com.hedera.services.context.domain.trackers;
  * ‍
  */
 
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.context.properties.NodeLocalProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -33,22 +36,22 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
 
+
+@ExtendWith(MockitoExtension.class)
 class IssEventInfoTest {
-	Instant firstIssTime = Instant.now().minus(30, ChronoUnit.SECONDS);
-	Instant recentIssTime = Instant.now();
-	int roundsToDump = 2;
+	private final Instant firstIssTime = Instant.now().minus(30, ChronoUnit.SECONDS);
+	private final Instant recentIssTime = Instant.now();
+	private final int roundsToDump = 2;
 
-	IssEventInfo subject;
-	PropertySource properties;
+	@Mock
+	private NodeLocalProperties nodeLocalProperties;
+
+	private IssEventInfo subject;
 
 	@BeforeEach
 	private void setup() {
-		properties = mock(PropertySource.class);
-		given(properties.getIntProperty("iss.roundsToDump")).willReturn(roundsToDump);
-
-		subject = new IssEventInfo(properties);
+		subject = new IssEventInfo(nodeLocalProperties);
 	}
 
 	@Test
@@ -59,6 +62,8 @@ class IssEventInfoTest {
 
 	@Test
 	void alertWorks() {
+		given(nodeLocalProperties.issRoundsToDump()).willReturn(roundsToDump);
+
 		// when:
 		subject.alert(firstIssTime);
 
@@ -80,16 +85,13 @@ class IssEventInfoTest {
 
 	@Test
 	void relaxWorks() {
-		// given:
+		given(nodeLocalProperties.issRoundsToDump()).willReturn(roundsToDump);
 		subject.alert(firstIssTime);
 
-		// when:
 		subject.relax();
 
-		// then:
 		assertEquals(NO_KNOWN_ISS, subject.status());
 		assertEquals(0, subject.remainingRoundsToDump);
-		// and:
 		assertTrue(subject.consensusTimeOfRecentAlert().isEmpty());
 	}
 }

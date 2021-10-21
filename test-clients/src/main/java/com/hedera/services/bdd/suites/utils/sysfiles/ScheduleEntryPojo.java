@@ -30,7 +30,7 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ScheduleEntryPojo {
 	String hederaFunctionality;
-	List<ScopedResourcePricesPojo> feesList;
+	List<ScopedResourcePricesPojo> fees;
 
 	public static ScheduleEntryPojo from(TransactionFeeSchedule grpc) {
 		var pojo = new ScheduleEntryPojo();
@@ -54,7 +54,7 @@ public class ScheduleEntryPojo {
 			feesList.add(scopedPrices);
 		}
 
-		pojo.setFeesList(feesList);
+		pojo.setFees(feesList);
 		return pojo;
 	}
 
@@ -66,11 +66,11 @@ public class ScheduleEntryPojo {
 		this.hederaFunctionality = hederaFunctionality;
 	}
 
-	public List<ScopedResourcePricesPojo> getFeesList() {
-		return feesList;
+	public List<ScopedResourcePricesPojo> getFees() {
+		return fees;
 	}
 
-	public void setFeesList(List<ScopedResourcePricesPojo> feeData) {
-		this.feesList = feeData;
+	public void setFees(List<ScopedResourcePricesPojo> feeData) {
+		this.fees = feeData;
 	}
 }

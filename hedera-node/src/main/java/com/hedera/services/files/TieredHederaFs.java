@@ -23,8 +23,7 @@ package com.hedera.services.files;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.state.merkle.MerkleDiskFs;
-import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -67,11 +66,11 @@ public final class TieredHederaFs implements HederaFs {
 	private final Map<FileID, byte[]> data;
 	private final Map<FileID, HFileMeta> metadata;
 	private final GlobalDynamicProperties properties;
+	private final Supplier<MerkleSpecialFiles> specialFiles;
 
 	final List<FileUpdateInterceptor> updateInterceptors = new ArrayList<>();
 
-	static final int BYTES_PER_KB = 1024;
-	private final Supplier<MerkleDiskFs> diskFs;
+	public static final int BYTES_PER_KB = 1024;
 
 	public enum IllegalArgumentType {
 		DELETED_FILE(ResponseCodeEnum.FILE_DELETED),
@@ -97,14 +96,14 @@ public final class TieredHederaFs implements HederaFs {
 			final Supplier<Instant> now,
 			final Map<FileID, byte[]> data,
 			final Map<FileID, HFileMeta> metadata,
-			final Supplier<MerkleDiskFs> diskFs
+			final Supplier<MerkleSpecialFiles> specialFiles
 	) {
 		this.ids = ids;
 		this.now = now;
 		this.data = data;
 		this.metadata = metadata;
 		this.properties = properties;
-		this.diskFs = diskFs;
+		this.specialFiles = specialFiles;
 	}
 
 	public Map<FileID, byte[]> getData() {
@@ -115,8 +114,8 @@ public final class TieredHederaFs implements HederaFs {
 		return metadata;
 	}
 
-	public MerkleDiskFs diskFs() {
-		return diskFs.get();
+	public MerkleSpecialFiles specialFiles() {
+		return specialFiles.get();
 	}
 
 	@Override
@@ -148,10 +147,10 @@ public final class TieredHederaFs implements HederaFs {
 
 	@Override
 	public byte[] cat(final FileID id) {
-		assertUsable(id);
-		if (isOnDisk(id)) {
-			return diskFs.get().contentsOf(id);
+		if (isSpecialFile(id)) {
+			return specialFiles.get().get(id);
 		} else {
+			assertUsable(id);
 			return data.get(id);
 		}
 	}
@@ -181,34 +180,34 @@ public final class TieredHederaFs implements HederaFs {
 
 	@Override
 	public UpdateResult overwrite(final FileID id, final byte[] newContents) {
-		assertUsable(id);
-		if (!isOnDisk(id)) {
+		if (isSpecialFile(id)) {
+			final var curSpecialFiles = specialFiles.get();
+			curSpecialFiles.update(id, newContents);
+			return new SimpleUpdateResult(false, true, SUCCESS);
+		} else {
+			assertUsable(id);
 			assertWithinSizeLimits(newContents);
+			return uncheckedUpdate(id, newContents);
 		}
-
-		return uncheckedUpdate(id, newContents);
 	}
 
 	@Override
 	public UpdateResult append(final FileID id, final byte[] moreContents) {
-		assertUsable(id);
-
-		boolean isDiskBased = isOnDisk(id);
-		final var contents = isDiskBased ? diskFs.get().contentsOf(id) : data.get(id);
-
-		final var newContents = ArrayUtils.addAll(contents, moreContents);
-		final var idStr = EntityIdUtils.readableId(id);
-		log.debug(
-				"Appending {} bytes to {} :: new file will have {} bytes.",
-				moreContents.length,
-				idStr,
-				newContents.length);
-
-		if (!isDiskBased) {
+		if (isSpecialFile(id)) {
+			specialFiles.get().append(id, moreContents);
+			return new SimpleUpdateResult(false, true, SUCCESS);
+		} else {
+			assertUsable(id);
+			final var contents = data.get(id);
+			var newContents = ArrayUtils.addAll(contents, moreContents);
+			log.debug(
+					"Appending {} bytes to file num {} :: new file will have {} bytes.",
+					moreContents.length,
+					id.getFileNum(),
+					newContents.length);
 			assertWithinSizeLimits(newContents);
+			return uncheckedUpdate(id, newContents);
 		}
-
-		return uncheckedUpdate(id, newContents);
 	}
 
 	@Override
@@ -266,8 +265,8 @@ public final class TieredHederaFs implements HederaFs {
 		}
 	}
 
-	private boolean isOnDisk(final FileID fid) {
-		return diskFs.get().contains(fid);
+	private boolean isSpecialFile(FileID fid) {
+		return specialFiles.get().contains(fid);
 	}
 
 	private UpdateResult uncheckedSetattr(final FileID id, final HFileMeta attr) {
@@ -281,14 +280,9 @@ public final class TieredHederaFs implements HederaFs {
 	}
 
 	private UpdateResult uncheckedUpdate(final FileID id, final byte[] newContents) {
-		final var verdict = judge(id, (interceptor, ignore) -> interceptor.preUpdate(id, newContents));
-
+		var verdict = judge(id, (interceptor, ignore) -> interceptor.preUpdate(id, newContents));
 		if (verdict.getValue()) {
-			if (diskFs.get().contains(id)) {
-				diskFs.get().put(id, newContents);
-			} else {
-				data.put(id, newContents);
-			}
+			data.put(id, newContents);
 			interceptorsFor(id).forEach(interceptor -> interceptor.postUpdate(id, newContents));
 		}
 		return new SimpleUpdateResult(false, verdict.getValue(), verdict.getKey());

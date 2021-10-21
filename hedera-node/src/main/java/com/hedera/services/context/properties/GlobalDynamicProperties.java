@@ -85,6 +85,7 @@ public class GlobalDynamicProperties {
 	private int maxXferBalanceChanges;
 	private int maxCustomFeeDepth;
 	private ThrottleReqOpsScaleFactor nftMintScaleFactor;
+	private String upgradeArtifactsLoc;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -152,6 +153,7 @@ public class GlobalDynamicProperties {
 		maxXferBalanceChanges = properties.getIntProperty("ledger.xferBalanceChanges.maxLen");
 		maxCustomFeeDepth = properties.getIntProperty("tokens.maxCustomFeeDepth");
 		nftMintScaleFactor = properties.getThrottleScaleFactor("tokens.nfts.mintThrottleScaleFactor");
+		upgradeArtifactsLoc = properties.getStringProperty("upgrade.artifacts.path");
 	}
 
 	public int maxTokensPerAccount() {
@@ -336,5 +338,9 @@ public class GlobalDynamicProperties {
 
 	public ThrottleReqOpsScaleFactor nftMintScaleFactor() {
 		return nftMintScaleFactor;
+	}
+
+	public String upgradeArtifactsLoc() {
+		return upgradeArtifactsLoc;
 	}
 }

@@ -22,7 +22,7 @@
   "TokenDelete": { "DEFAULT": 0.001 },
   "TokenUpdate": { "DEFAULT": 0.001 },
   "TokenFeeScheduleUpdate": { "DEFAULT": 0.001 },
-  "TokenMint": { "TOKEN_FUNGIBLE_COMMON": 0.001, "TOKEN_NON_FUNGIBLE_UNIQUE": 0.001 },
+  "TokenMint": { "TOKEN_FUNGIBLE_COMMON": 0.001, "TOKEN_NON_FUNGIBLE_UNIQUE": 0.05 },
   "TokenBurn": { "TOKEN_FUNGIBLE_COMMON": 0.001, "TOKEN_NON_FUNGIBLE_UNIQUE": 0.001 },
   "TokenGetInfo": { "DEFAULT": 0.0001 },
   "TokenAssociateToAccount": { "DEFAULT": 0.05 },

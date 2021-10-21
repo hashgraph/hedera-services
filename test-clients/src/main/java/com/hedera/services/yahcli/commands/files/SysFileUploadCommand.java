@@ -52,8 +52,9 @@ public class SysFileUploadCommand implements Callable<Integer> {
 			arity = "1",
 			paramLabel = "<sysfile>",
 			description = "one of " +
-					"{ address-book, node-details, fees, rates, props, permissions, throttles } (or " +
-					"{ 101, 102, 111, 112, 121, 122, 123 })")
+					"{ address-book, node-details, fees, rates, props, " +
+					"permissions, throttles, software-zip, telemetry-zip  } (or " +
+					"{ 101, 102, 111, 112, 121, 122, 123, 150, 159 })")
 	private String sysFile;
 
 	@Override
@@ -63,6 +64,7 @@ public class SysFileUploadCommand implements Callable<Integer> {
 		activeSrcDir.set(srcDir);
 
 		var delegate = new SysFileUploadSuite(srcDir, config.asSpecConfig(), sysFile, dryRun);
+
 		delegate.runSuiteSync();
 
 		return 0;

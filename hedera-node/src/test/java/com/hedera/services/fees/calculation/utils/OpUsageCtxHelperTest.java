@@ -21,6 +21,8 @@ package com.hedera.services.fees.calculation.utils;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.config.FileNumbers;
+import com.hedera.services.config.MockFileNumbers;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
@@ -72,33 +74,7 @@ import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class OpUsageCtxHelperTest {
-	private final int newFileBytes = 1234;
-	private final long now = 1_234_567L;
-	private final long then = 1_234_567L + 7776000L;
-	private final FileID targetFile = IdUtils.asFile("0.0.123456");
-	private final Key key = Key.newBuilder()
-			.setEd25519(ByteString.copyFromUtf8("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
-			.build();
-	private final JKeyList wacl = new JKeyList(List.of(
-			new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes(StandardCharsets.UTF_8))));
-	private final MerkleToken extant = new MerkleToken(now, 1, 2,
-			"shLong.asPhlThree", "FOUR", false, true,
-			EntityId.MISSING_ENTITY_ID);
-	private final String memo = "accountInfo";
-	private final int tokenRelationShipCount = 23;
-	private final int maxAutomaticAssociations = 12;
-	private final TokenID target = IdUtils.asToken("0.0.1003");
-	private final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
-	private final HFileMeta fileMeta = new HFileMeta(false, wacl, then);
-	private final TransactionBody appendTxn = TransactionBody.newBuilder()
-			.setTransactionID(TransactionID.newBuilder()
-					.setTransactionValidStart(Timestamp.newBuilder()
-							.setSeconds(now)))
-			.setFileAppend(
-					FileAppendTransactionBody.newBuilder()
-							.setFileID(targetFile)
-							.setContents(ByteString.copyFrom(new byte[newFileBytes])))
-			.build();
+	private final FileNumbers fileNumbers = new MockFileNumbers();
 
 	@Mock
 	private MerkleMap<EntityNum, MerkleToken> tokens;
@@ -112,7 +88,7 @@ class OpUsageCtxHelperTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new OpUsageCtxHelper(workingView, () -> tokens);
+		subject = new OpUsageCtxHelper(workingView, fileNumbers, () -> tokens);
 	}
 
 	@Test
@@ -120,7 +96,7 @@ class OpUsageCtxHelperTest {
 		given(workingView.attrOf(targetFile)).willReturn(Optional.of(fileMeta));
 
 		// when:
-		final var opMeta = subject.metaForFileAppend(appendTxn);
+		final var opMeta = subject.metaForFileAppend(stdAppendTxn);
 
 		// then:
 		assertEquals(newFileBytes, opMeta.getBytesAdded());
@@ -128,9 +104,17 @@ class OpUsageCtxHelperTest {
 	}
 
 	@Test
+	void shortCircuitsFileAppendMetaForSpecialFile() {
+		final var opMeta = subject.metaForFileAppend(specialAppendTxn);
+
+		assertEquals(newFileBytes, opMeta.getBytesAdded());
+		assertEquals(7776000L, opMeta.getLifetime());
+	}
+
+	@Test
 	void returnsZeroLifetimeForUnknownExpiry() {
 		// when:
-		final var opMeta = subject.metaForFileAppend(appendTxn);
+		final var opMeta = subject.metaForFileAppend(stdAppendTxn);
 
 		// then:
 		assertEquals(newFileBytes, opMeta.getBytesAdded());
@@ -327,4 +311,42 @@ class OpUsageCtxHelperTest {
 				.setTokenWipe(op)
 				.build();
 	}
+
+	private final int newFileBytes = 1234;
+	private final long now = 1_234_567L;
+	private final long then = 1_234_567L + 7776000L;
+	private final FileID targetFile = IdUtils.asFile("0.0.123456");
+	private final FileID specialFile = IdUtils.asFile("0.0.159");
+	private final Key key = Key.newBuilder()
+			.setEd25519(ByteString.copyFromUtf8("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+			.build();
+	private final JKeyList wacl = new JKeyList(List.of(
+			new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes(StandardCharsets.UTF_8))));
+	private final MerkleToken extant = new MerkleToken(now, 1, 2,
+			"shLong.asPhlThree", "FOUR", false, true,
+			EntityId.MISSING_ENTITY_ID);
+	private final String memo = "accountInfo";
+	private final int tokenRelationShipCount = 23;
+	private final int maxAutomaticAssociations = 12;
+	private final TokenID target = IdUtils.asToken("0.0.1003");
+	private final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
+	private final HFileMeta fileMeta = new HFileMeta(false, wacl, then);
+	private final TransactionBody stdAppendTxn = TransactionBody.newBuilder()
+			.setTransactionID(TransactionID.newBuilder()
+					.setTransactionValidStart(Timestamp.newBuilder()
+							.setSeconds(now)))
+			.setFileAppend(
+					FileAppendTransactionBody.newBuilder()
+							.setFileID(targetFile)
+							.setContents(ByteString.copyFrom(new byte[newFileBytes])))
+			.build();
+	private final TransactionBody specialAppendTxn = TransactionBody.newBuilder()
+			.setTransactionID(TransactionID.newBuilder()
+					.setTransactionValidStart(Timestamp.newBuilder()
+							.setSeconds(now)))
+			.setFileAppend(
+					FileAppendTransactionBody.newBuilder()
+							.setFileID(specialFile)
+							.setContents(ByteString.copyFrom(new byte[newFileBytes])))
+			.build();
 }

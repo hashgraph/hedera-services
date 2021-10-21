@@ -73,10 +73,17 @@ public class SysFileDownloadSuite extends HapiApiSuite {
 		);
 	}
 
-	private HapiGetFileContents appropriateQuery(long fileNum) {
-		String fid = String.format("0.0.%d", fileNum);
-		SysFileSerde<String> serde = SYS_FILE_SERDES.get(fileNum);
-		String fqLoc = destDir + File.separator + serde.preferredFileName();
+	private HapiGetFileContents appropriateQuery(final long fileNum) {
+		final String fid = String.format("0.0.%d", fileNum);
+		if (Utils.isSpecialFile(fileNum)) {
+			final String fqLoc = Utils.specialFileLoc(destDir, fileNum);
+			return getFileContents(fid)
+					.alertingPre(COMMON_MESSAGES::downloadBeginning)
+					.alertingPost(COMMON_MESSAGES::downloadEnding)
+					.saveTo(fqLoc);
+		}
+		final SysFileSerde<String> serde = SYS_FILE_SERDES.get(fileNum);
+		final String fqLoc = destDir + File.separator + serde.preferredFileName();
 		return getFileContents(fid)
 				.alertingPre(COMMON_MESSAGES::downloadBeginning)
 				.alertingPost(COMMON_MESSAGES::downloadEnding)

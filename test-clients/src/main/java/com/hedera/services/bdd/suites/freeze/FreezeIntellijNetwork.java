@@ -28,7 +28,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 
 public class FreezeIntellijNetwork extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(FreezeIntellijNetwork.class);
@@ -50,7 +50,7 @@ public class FreezeIntellijNetwork extends HapiApiSuite {
 		return defaultHapiSpec("JustFreeze")
 				.given( ).when(
 				).then(
-						freeze().startingIn(60).seconds().andLasting(1).minutes()
+						freezeOnly().startingIn(60).seconds()
 				);
 	}
 
