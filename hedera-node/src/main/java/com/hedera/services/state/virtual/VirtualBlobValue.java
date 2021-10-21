@@ -30,8 +30,8 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 public class VirtualBlobValue implements VirtualValue {
-	private static final int CURRENT_VERSION = 1;
-	private static final long CLASS_ID = 0x7eb72381159d8402L;
+	static final int CURRENT_VERSION = 1;
+	static final long CLASS_ID = 0x7eb72381159d8402L;
 
 	private byte[] data;
 
@@ -119,5 +119,12 @@ public class VirtualBlobValue implements VirtualValue {
 		if (obj == null || getClass() != obj.getClass()) return false;
 		VirtualBlobValue simpContractValue = (VirtualBlobValue) obj;
 		return Arrays.equals(data, simpContractValue.data);
+	}
+
+	@Override
+	public String toString() {
+		return "VirtualBlobValue{" +
+				"data=" + Arrays.toString(data) +
+				'}';
 	}
 }
