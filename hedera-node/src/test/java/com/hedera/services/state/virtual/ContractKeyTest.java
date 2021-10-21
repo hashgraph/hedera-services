@@ -114,9 +114,6 @@ class ContractKeyTest {
 		subject = new ContractKey(Long.MAX_VALUE, key);
 		final var testSubject = new ContractKey();
 
-		final var contractIdNonZeroBytes = subject.getContractIdNonZeroBytes();
-		final var uint256KeyNonZeroBytes = subject.getUint256KeyNonZeroBytes();
-
 		final var fin = mock(SerializableDataInputStream.class);
 		given(fin.readByte())
 				.willReturn(subject.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes())
@@ -148,6 +145,34 @@ class ContractKeyTest {
 				.willReturn(subject.getUint256Byte(0));
 
 		testSubject.deserialize(bin, 1);
+
+		assertEquals(subject, testSubject);
+	}
+
+	@Test
+	void deserializeLargeKeyWorks() throws IOException {
+		UInt256 largeKey = UInt256.fromHexString("0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563");
+		subject = new ContractKey(contactNum, largeKey.toArray());
+
+		final var fin = mock(SerializableDataInputStream.class);
+		given(fin.readByte())
+				.willReturn(subject.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes())
+				.willReturn((byte) (subject.getContractId() >> 8))
+				.willReturn((byte) (subject.getContractId()))
+				.willReturn(subject.getUint256Byte(31), subject.getUint256Byte(30), subject.getUint256Byte(29),
+						subject.getUint256Byte(28), subject.getUint256Byte(27), subject.getUint256Byte(26),
+						subject.getUint256Byte(25), subject.getUint256Byte(24), subject.getUint256Byte(23),
+						subject.getUint256Byte(22), subject.getUint256Byte(21), subject.getUint256Byte(20),
+						subject.getUint256Byte(19), subject.getUint256Byte(18), subject.getUint256Byte(17),
+						subject.getUint256Byte(16), subject.getUint256Byte(15), subject.getUint256Byte(14),
+						subject.getUint256Byte(13), subject.getUint256Byte(12), subject.getUint256Byte(11),
+						subject.getUint256Byte(10), subject.getUint256Byte(9), subject.getUint256Byte(8),
+						subject.getUint256Byte(7), subject.getUint256Byte(6), subject.getUint256Byte(5),
+						subject.getUint256Byte(4), subject.getUint256Byte(3), subject.getUint256Byte(2),
+						subject.getUint256Byte(1), subject.getUint256Byte(0));
+
+		final var testSubject = new ContractKey();
+		testSubject.deserialize(fin, 1);
 
 		assertEquals(subject, testSubject);
 	}
