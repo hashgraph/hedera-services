@@ -25,9 +25,9 @@ public class ContractDataSourceValidator {
 
         VirtualLeafRecordSerializer<ContractKey, ContractValue> virtualLeafRecordSerializer =
                 new VirtualLeafRecordSerializer<>(
-                        1, DigestType.SHA_384,
-                        1, DataFileCommon.VARIABLE_DATA_SIZE,ContractKey::new,
-                        1,ContractValue.SERIALIZED_SIZE,ContractValue::new,
+                        (short) 1, DigestType.SHA_384,
+                        (short) 1, DataFileCommon.VARIABLE_DATA_SIZE,ContractKey::new,
+                        (short) 1,ContractValue.SERIALIZED_SIZE,ContractValue::new,
                         true);;
         VirtualDataSourceJasperDB<ContractKey, ContractValue> dataSourceJasperDB = new VirtualDataSourceJasperDB<>(
                 virtualLeafRecordSerializer,

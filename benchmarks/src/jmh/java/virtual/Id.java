@@ -44,10 +44,6 @@ final class Id implements VirtualLongKey {
         num = byteBuffer.getLong();
     }
 
-    @Override
-    public boolean equals(ByteBuffer byteBuffer, int v) {
-        return byteBuffer.getLong() == num;
-    }
 
     @Override
     public void deserialize(SerializableDataInputStream in, int i) throws IOException {
@@ -97,6 +93,11 @@ final class Id implements VirtualLongKey {
         @Override
         public int deserializeKeySize(ByteBuffer byteBuffer) {
             return Long.BYTES;
+        }
+
+        @Override
+        public boolean equals(final ByteBuffer byteBuffer, final int i, final Id id) throws IOException {
+            return byteBuffer.getLong() == id.num;
         }
 
         @Override

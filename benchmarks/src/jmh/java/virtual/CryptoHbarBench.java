@@ -89,9 +89,9 @@ public class CryptoHbarBench {
     public void prepare() throws Exception {
         pipeline = new Pipeline<>();
         VirtualLeafRecordSerializer<Id,Account> virtualLeafRecordSerializer = new VirtualLeafRecordSerializer<>(
-                1, DigestType.SHA_384,
-                1, Id.SERIALIZED_SIZE,Id::new,
-                1,Account.SERIALIZED_SIZE,Account::new,
+                (short) 1, DigestType.SHA_384,
+                (short) 1, Id.SERIALIZED_SIZE,Id::new,
+                (short) 1,Account.SERIALIZED_SIZE,Account::new,
                 false
         );
 
