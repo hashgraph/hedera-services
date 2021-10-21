@@ -39,14 +39,7 @@ import static com.hedera.services.context.properties.BootstrapProperties.BOOTSTR
 public class StandardizedPropertySources implements PropertySources {
 	public static final Logger log = LogManager.getLogger(StandardizedPropertySources.class);
 
-	static Supplier<ScreenedNodeFileProps> nodePropertiesSupplier = ScreenedNodeFileProps::new;
-	static Supplier<ScreenedSysFileProps> dynamicGlobalPropsSupplier = ScreenedSysFileProps::new;
-
-	private static final int ISS_RESET_PERIOD_SECS = 30;
-	private static final int ISS_ROUNDS_TO_DUMP = 50;
-
 	private final PropertySource bootstrapProps;
-
 	private final ScreenedSysFileProps dynamicGlobalProps;
 	private final ScreenedNodeFileProps nodeProps;
 
@@ -79,10 +72,6 @@ public class StandardizedPropertySources implements PropertySources {
 
 		/* Bootstrap properties, which must include defaults for every system property. */
 		BOOTSTRAP_PROP_NAMES.forEach(name -> source.put(name, () -> bootstrapProps.getProperty(name)));
-
-		/* Node-local properties. */
-		source.put("iss.resetPeriod", () -> ISS_RESET_PERIOD_SECS);
-		source.put("iss.roundsToDump", () -> ISS_ROUNDS_TO_DUMP);
 
 		return source;
 	}

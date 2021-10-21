@@ -89,17 +89,21 @@ public class SysFileUploadSuite extends HapiApiSuite {
 						updateOp -> updateOp
 								.alertingPre(COMMON_MESSAGES::uploadBeginning)
 								.alertingPost(COMMON_MESSAGES::uploadEnding),
-						appendOp -> appendOp
+						(appendOp, appendsLeft) -> appendOp
 								.alertingPre(COMMON_MESSAGES::appendBeginning)
-								.alertingPost(COMMON_MESSAGES::appendEnding)
+								.alertingPost(code -> COMMON_MESSAGES.appendEnding(code, appendsLeft))
 				)
 		);
 	}
 
 	private ByteString appropriateContents(final Long fileNum) {
-		SysFileSerde<String> serde = SYS_FILE_SERDES.get(fileNum);
-		String name = serde.preferredFileName();
-		String loc = srcDir + File.separator + name;
+		if (Utils.isSpecialFile(fileNum)) {
+			return specialFileContents(fileNum);
+		}
+
+		final SysFileSerde<String> serde = SYS_FILE_SERDES.get(fileNum);
+		final String name = serde.preferredFileName();
+		final String loc = srcDir + File.separator + name;
 		try {
 			final var stylized = Files.readString(Paths.get(loc));
 			final var contents = ByteString.copyFrom(serde.toValidatedRawFile(stylized));
@@ -108,6 +112,15 @@ public class SysFileUploadSuite extends HapiApiSuite {
 				Files.write(Paths.get(contentsLoc), contents.toByteArray());
 			}
 			return contents;
+		} catch (IOException e) {
+			throw new IllegalStateException("Cannot read update file @ '" + loc + "'!", e);
+		}
+	}
+
+	private ByteString specialFileContents(long num) {
+		final var loc = Utils.specialFileLoc(srcDir, num);
+		try {
+			return ByteString.copyFrom(Files.readAllBytes(Paths.get(loc)));
 		} catch (IOException e) {
 			throw new IllegalStateException("Cannot read update file @ '" + loc + "'!", e);
 		}

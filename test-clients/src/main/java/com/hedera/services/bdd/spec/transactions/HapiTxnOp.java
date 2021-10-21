@@ -637,11 +637,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		return self();
 	}
 
-	public T noYahcliLogging() {
-		yahcliLogger = false;
-		return self();
-	}
-
 	public T yahcliLogging() {
 		yahcliLogger = true;
 		return self();

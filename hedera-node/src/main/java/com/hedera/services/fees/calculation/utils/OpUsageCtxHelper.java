@@ -20,6 +20,7 @@ package com.hedera.services.fees.calculation.utils;
  * ‍
  */
 
+import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -51,26 +52,40 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQ
 
 @Singleton
 public class OpUsageCtxHelper {
+	private static final long THREE_MONTHS_IN_SECONDS = 7776000L;
+
 	private static final ExtantFeeScheduleContext MISSING_FEE_SCHEDULE_UPDATE_CTX =
 			new ExtantFeeScheduleContext(0, 0);
 
-	private final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
-
-	private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
 	private final StateView workingView;
+	private final FileNumbers fileNumbers;
+	private final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
+	private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
 
 	@Inject
 	public OpUsageCtxHelper(
-			StateView workingView,
-			Supplier<MerkleMap<EntityNum, MerkleToken>> tokens
+			final StateView workingView,
+			final FileNumbers fileNumbers,
+			final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens
 	) {
 		this.tokens = tokens;
+		this.fileNumbers = fileNumbers;
 		this.workingView = workingView;
 	}
 
 	public FileAppendMeta metaForFileAppend(TransactionBody txn) {
 		final var op = txn.getFileAppend();
-		final var fileMeta = workingView.attrOf(op.getFileID());
+		final var fid = op.getFileID();
+		final var newContentsSize = op.getContents().size();
+
+		/* Since only authorized payers can update special files---and their
+		fees will be waived---just return something immediately, without the
+		expense of looking up actual file metadata. */
+		if (fileNumbers.isSoftwareUpdateFile(fid.getFileNum())) {
+			return new FileAppendMeta(newContentsSize, THREE_MONTHS_IN_SECONDS);
+		}
+
+		final var fileMeta = workingView.attrOf(fid);
 
 		final var effCreationTime = txn.getTransactionID().getTransactionValidStart().getSeconds();
 		final var effExpiration = fileMeta.map(HFileMeta::getExpiry).orElse(effCreationTime);

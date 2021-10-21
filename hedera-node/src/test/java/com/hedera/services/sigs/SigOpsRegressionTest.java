@@ -21,17 +21,18 @@ package com.hedera.services.sigs;
  */
 
 import com.hedera.services.config.EntityNumbers;
+import com.hedera.services.config.FileNumbers;
 import com.hedera.services.config.MockEntityNumbers;
+import com.hedera.services.config.MockFileNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.KeyActivationCharacteristics;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
+import com.hedera.services.sigs.metadata.lookups.HfsSigMetaLookup;
 import com.hedera.services.sigs.order.PolicyBasedSigWaivers;
 import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.order.SignatureWaivers;
@@ -42,6 +43,8 @@ import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
+import com.hedera.services.txns.auth.SystemOpPolicies;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.RationalizedSigMeta;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -88,6 +91,7 @@ import static org.mockito.BDDMockito.mock;
 
 class SigOpsRegressionTest {
 	private HederaFs hfs;
+	private FileNumbers fileNumbers = new MockFileNumbers();
 	private MiscRunningAvgs runningAvgs;
 	private MiscSpeedometers speedometers;
 	private List<TransactionSignature> expectedSigs;
@@ -370,8 +374,9 @@ class SigOpsRegressionTest {
 	private boolean invokeOtherPartySigActivationScenario(List<TransactionSignature> knownSigs) {
 		platformTxn.getPlatformTxn().clear();
 		platformTxn.getPlatformTxn().addAll(knownSigs.toArray(new TransactionSignature[0]));
+		final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
 		SigRequirements keysOrder = new SigRequirements(
-				defaultLookupsFor(hfs, () -> accounts, null, ref -> null, ref -> null),
+				defaultLookupsFor(hfsSigMetaLookup, () -> accounts, null, ref -> null, ref -> null),
 				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
 
@@ -380,9 +385,11 @@ class SigOpsRegressionTest {
 
 	private ResponseCodeEnum invokeExpansionScenario() {
 		int MAGIC_NUMBER = 10;
+		final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
 		SigMetadataLookup sigMetaLookups =
 				defaultLookupsPlusAccountRetriesFor(
-						hfs, () -> accounts, () -> null, ref -> null, ref -> null, MAGIC_NUMBER, MAGIC_NUMBER,
+						hfsSigMetaLookup,
+						() -> accounts, () -> null, ref -> null, ref -> null, MAGIC_NUMBER, MAGIC_NUMBER,
 						runningAvgs, speedometers);
 		SigRequirements keyOrder = new SigRequirements(
 				sigMetaLookups,
@@ -396,7 +403,9 @@ class SigOpsRegressionTest {
 	private Rationalization invokeRationalizationScenario() {
 		// setup:
 		SyncVerifier syncVerifier = new CryptoEngine()::verifySync;
-		SigMetadataLookup sigMetaLookups = defaultLookupsFor(hfs, () -> accounts, () -> null, ref -> null, ref -> null);
+		final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
+		SigMetadataLookup sigMetaLookups = defaultLookupsFor(
+				hfsSigMetaLookup, () -> accounts, () -> null, ref -> null, ref -> null);
 		SigRequirements keyOrder = new SigRequirements(
 				sigMetaLookups,
 				new MockGlobalDynamicProps(),
@@ -419,8 +428,9 @@ class SigOpsRegressionTest {
 
 		expectedErrorStatus = null;
 
+		final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
 		signingOrder = new SigRequirements(
-				defaultLookupsFor(hfs, () -> accounts, () -> null, ref -> null, ref -> null),
+				defaultLookupsFor(hfsSigMetaLookup, () -> accounts, () -> null, ref -> null, ref -> null),
 				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
 		final var payerKeys =

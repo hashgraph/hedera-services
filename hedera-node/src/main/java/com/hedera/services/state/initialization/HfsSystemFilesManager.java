@@ -180,10 +180,14 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
 	}
 
 	@Override
-	public void createUpdateZipFileIfMissing() {
-		final var disFid = fileNumbers.toFid(fileNumbers.softwareUpdateZip());
-		if (!hfs.exists(disFid)) {
-			materialize(disFid, systemFileInfo(), new byte[0]);
+	public void createUpdateFilesIfMissing() {
+		final var firstUpdateNum = fileNumbers.firstSoftwareUpdateFile();
+		final var lastUpdateNum = fileNumbers.lastSoftwareUpdateFile();
+		for (var updateNum = firstUpdateNum; updateNum <= lastUpdateNum; updateNum++) {
+			var disFid = fileNumbers.toFid(updateNum);
+			if (!hfs.exists(disFid)) {
+				materialize(disFid, systemFileInfo(), new byte[0]);
+			}
 		}
 	}
 
@@ -225,11 +229,15 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
 
 	private void materialize(final FileID fid, final HFileMeta info, final byte[] contents) {
 		hfs.getMetadata().put(fid, info);
-		if (fileNumbers.softwareUpdateZip() == fid.getFileNum()) {
-			hfs.diskFs().put(fid, contents);
+		if (isUpdateFile(fid.getFileNum())) {
+			hfs.specialFiles().update(fid, contents);
 		} else {
 			hfs.getData().put(fid, contents);
 		}
+	}
+
+	private boolean isUpdateFile(long num) {
+		return num >= fileNumbers.firstSoftwareUpdateFile() && num <= fileNumbers.lastSoftwareUpdateFile();
 	}
 
 	private <T> void loadProtoWithSupplierFallback(

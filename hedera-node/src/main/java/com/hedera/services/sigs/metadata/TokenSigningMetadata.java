@@ -37,6 +37,7 @@ public class TokenSigningMetadata {
 	private final Optional<JKey> freezeKey;
 	private final Optional<JKey> supplyKey;
 	private final Optional<JKey> feeScheduleKey;
+	private final Optional<JKey> pauseKey;
 	private final boolean hasRoyaltyWithFallback;
 	private final EntityId treasury;
 
@@ -47,6 +48,7 @@ public class TokenSigningMetadata {
 			Optional<JKey> freezeKey,
 			Optional<JKey> supplyKey,
 			Optional<JKey> feeScheduleKey,
+			Optional<JKey> pauseKey,
 			boolean hasRoyaltyWithFallback,
 			EntityId treasury
 	) {
@@ -57,6 +59,7 @@ public class TokenSigningMetadata {
 		this.supplyKey = supplyKey;
 		this.treasury = treasury;
 		this.feeScheduleKey = feeScheduleKey;
+		this.pauseKey = pauseKey;
 		this.hasRoyaltyWithFallback = hasRoyaltyWithFallback;
 	}
 
@@ -81,6 +84,7 @@ public class TokenSigningMetadata {
 				token.freezeKey(),
 				token.supplyKey(),
 				token.feeScheduleKey(),
+				token.pauseKey(),
 				hasRoyaltyWithFallback,
 				token.treasury());
 	}
@@ -107,6 +111,10 @@ public class TokenSigningMetadata {
 
 	public Optional<JKey> optionalFeeScheduleKey() {
 		return feeScheduleKey;
+	}
+
+	public Optional<JKey> optionalPauseKey() {
+		return pauseKey;
 	}
 
 	public boolean hasRoyaltyWithFallback() {

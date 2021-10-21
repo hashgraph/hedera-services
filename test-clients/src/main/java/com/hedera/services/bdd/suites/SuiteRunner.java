@@ -76,8 +76,12 @@ import com.hedera.services.bdd.suites.file.ValidateNewAddressBook;
 import com.hedera.services.bdd.suites.file.negative.UpdateFailuresSpec;
 import com.hedera.services.bdd.suites.file.positive.SysDelSysUndelSpec;
 import com.hedera.services.bdd.suites.freeze.CryptoTransferThenFreezeTest;
+import com.hedera.services.bdd.suites.freeze.FreezeAbort;
 import com.hedera.services.bdd.suites.freeze.FreezeSuite;
+import com.hedera.services.bdd.suites.freeze.FreezeUpgrade;
+import com.hedera.services.bdd.suites.freeze.PrepareUpgrade;
 import com.hedera.services.bdd.suites.freeze.SimpleFreezeOnly;
+import com.hedera.services.bdd.suites.freeze.UpdateFileForUpgrade;
 import com.hedera.services.bdd.suites.freeze.UpdateServerFiles;
 import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
 import com.hedera.services.bdd.suites.misc.CannotDeleteSystemEntitiesSuite;
@@ -442,6 +446,11 @@ public class SuiteRunner {
 		put("ValidateNewAddressBook", aof(ValidateNewAddressBook::new));
 		put("CryptoTransferPerfSuiteWOpProvider", aof(CryptoTransferPerfSuiteWOpProvider::new));
 		put("ValidateTokensDeleteAfterReconnect", aof(ValidateTokensDeleteAfterReconnect::new));
+		/* Freeze with upgrade */
+		put("UpdateFileForUpgrade", aof(UpdateFileForUpgrade::new));
+		put("PrepareUpgrade", aof(PrepareUpgrade::new));
+		put("FreezeUpgrade", aof(FreezeUpgrade::new));
+		put("FreezeAbort", aof(FreezeAbort::new));
 	}};
 
 	static boolean runAsync;
@@ -454,7 +463,7 @@ public class SuiteRunner {
 	/* Specify the network size so that we can read the appropriate throttle settings for that network. */
 	private static final String NETWORK_SIZE_ARG = "-NETWORKSIZE";
 	/* Specify the network to run legacy SC tests instead of using suiterunner */
-	private static final String LEGACY_SMART_CONTRACT_TESTS="SmartContractAggregatedTests";
+	private static final String LEGACY_SMART_CONTRACT_TESTS = "SmartContractAggregatedTests";
 	private static String payerId = DEFAULT_PAYER_ID;
 
 	public static void main(String... args) throws Exception {
@@ -465,10 +474,10 @@ public class SuiteRunner {
 		log.info("Effective args :: " + List.of(effArgs));
 		if (Arrays.asList(effArgs).contains(LEGACY_SMART_CONTRACT_TESTS)) {
 			SmartContractAggregatedTests.main(
-					new String[]{
+					new String[] {
 							System.getenv("NODES").split(":")[0],
 							args[1],
-							"1"});
+							"1" });
 		} else if (Stream.of(effArgs).anyMatch("-CI"::equals)) {
 			var tlsOverride = overrideOrDefault(effArgs, TLS_ARG, DEFAULT_TLS_CONFIG.toString());
 			var txnOverride = overrideOrDefault(effArgs, TXN_ARG, DEFAULT_TXN_CONFIG.toString());
@@ -480,7 +489,7 @@ public class SuiteRunner {
 			// For HTS perf regression test, we need to know the number of clients to distribute
 			// the creation of the test tokens and token associations to each client.
 			// For current perf test setup, this number will be the size of test network.
-			if(!otherOverrides.containsKey("totalClients")) {
+			if (!otherOverrides.containsKey("totalClients")) {
 				otherOverrides.put("totalClients", "" + expectedNetworkSize);
 			}
 
@@ -527,7 +536,7 @@ public class SuiteRunner {
 			Thread.sleep(r.nextInt(5000));
 			new CryptoCreateForSuiteRunner(nodes, defaultNode).runSuiteAsync();
 			Thread.sleep(2000);
-			if(!isIdLiteral(payerId)){
+			if (!isIdLiteral(payerId)) {
 				payerId = DEFAULT_PAYER_ID;
 			}
 		} catch (InterruptedException e) {
@@ -715,9 +724,10 @@ public class SuiteRunner {
 	public static Supplier<HapiApiSuite[]> aof(Supplier<HapiApiSuite>... items) {
 		return () -> {
 			HapiApiSuite[] suites = new HapiApiSuite[items.length];
-			for(int i = 0; i < items.length; i++) {
+			for (int i = 0; i < items.length; i++) {
 				suites[i] = items[i].get();
-			};
+			}
+			;
 			return suites;
 		};
 	}

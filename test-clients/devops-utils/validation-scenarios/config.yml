@@ -92,7 +92,10 @@ networks:
     scenarios:
       sysFilesDown:
         evalMode: snapshot
-        numsToFetch: [111]
+        numsToFetch: [121]
+      sysFilesUp:
+        updates:
+        - {num: 121, payer: 50}
   mainnet:
     bootstrap: 950
     defaultNode: 3

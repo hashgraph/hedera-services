@@ -165,6 +165,13 @@ public class TxnUtils {
 		return Timestamp.newBuilder().setSeconds(secs).build();
 	}
 
+	public static Timestamp asTimestamp(Instant when) {
+		return Timestamp.newBuilder()
+				.setSeconds(when.getEpochSecond())
+				.setNanos(when.getNano())
+				.build();
+	}
+
 	public static boolean isIdLiteral(String s) {
 		return ID_LITERAL_PATTERN.matcher(s).matches();
 	}

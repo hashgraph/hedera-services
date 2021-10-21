@@ -174,6 +174,8 @@ class MerkleTokenTest {
 
 	@Test
 	void serializeWorks() throws IOException {
+		subject.setPauseKey(pauseKey);
+		subject.setPaused(isPaused);
 		final var out = mock(SerializableDataOutputStream.class);
 		final var inOrder = inOrder(serdes, out);
 
@@ -206,6 +208,9 @@ class MerkleTokenTest {
 		inOrder.verify(serdes).writeNullable(
 				argThat(feeScheduleKey::equals), argThat(out::equals), any(IoWritingConsumer.class));
 		inOrder.verify(out).writeInt(number);
+		inOrder.verify(serdes).writeNullable(
+				argThat(pauseKey::equals), argThat(out::equals), any(IoWritingConsumer.class));
+		inOrder.verify(out).writeBoolean(isPaused);
 	}
 
 	@Test

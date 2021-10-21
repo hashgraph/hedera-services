@@ -51,6 +51,7 @@ import com.hederahashgraph.api.proto.java.FileGetInfoQuery;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.GetBySolidityIDQuery;
+import com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeQuery;
 import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoQuery;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
@@ -82,8 +83,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForScheduleCreate() {
-		var op = ScheduleCreateTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
+		final var op = ScheduleCreateTransactionBody.getDefaultInstance();
+		final var txn = TransactionBody.newBuilder()
 				.setScheduleCreate(op)
 				.build();
 		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
@@ -91,8 +92,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForScheduleDelete() {
-		var op = ScheduleDeleteTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
+		final var op = ScheduleDeleteTransactionBody.getDefaultInstance();
+		final var txn = TransactionBody.newBuilder()
 				.setScheduleDelete(op)
 				.build();
 		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
@@ -100,8 +101,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForScheduleSign() {
-		var op = ScheduleSignTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
+		final var op = ScheduleSignTransactionBody.getDefaultInstance();
+		final var txn = TransactionBody.newBuilder()
 				.setScheduleSign(op)
 				.build();
 		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
@@ -109,8 +110,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForCryptoCreateAccount() {
-		var op = CryptoCreateTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
+		final var op = CryptoCreateTransactionBody.getDefaultInstance();
+		final var txn = TransactionBody.newBuilder()
 				.setCryptoCreateAccount(op)
 				.build();
 		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
@@ -118,8 +119,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForCryptoTransfer() {
-		var op = CryptoTransferTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
+		final var op = CryptoTransferTransactionBody.getDefaultInstance();
+		final var txn = TransactionBody.newBuilder()
 				.setCryptoTransfer(op)
 				.build();
 		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
@@ -127,8 +128,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForCryptoUpdateAccount() {
-		var op = CryptoUpdateTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
+		final var op = CryptoUpdateTransactionBody.getDefaultInstance();
+		final var txn = TransactionBody.newBuilder()
 				.setCryptoUpdateAccount(op)
 				.build();
 		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
@@ -136,8 +137,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForCryptoDelete() {
-		var op = CryptoDeleteTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
+		final var op = CryptoDeleteTransactionBody.getDefaultInstance();
+		final var txn = TransactionBody.newBuilder()
 				.setCryptoDelete(op)
 				.build();
 		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
@@ -145,8 +146,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForCryptoAddLiveHash() {
-		var op = CryptoAddLiveHashTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
+		final var op = CryptoAddLiveHashTransactionBody.getDefaultInstance();
+		final var txn = TransactionBody.newBuilder()
 				.setCryptoAddLiveHash(op)
 				.build();
 		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
@@ -154,8 +155,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForCryptoDeleteLiveHash() {
-		var op = CryptoDeleteLiveHashTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
+		final var op = CryptoDeleteLiveHashTransactionBody.getDefaultInstance();
+		final var txn = TransactionBody.newBuilder()
 				.setCryptoDeleteLiveHash(op)
 				.build();
 		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
@@ -163,8 +164,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForFileCreate() {
-		var op = FileCreateTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
+		final var op = FileCreateTransactionBody.getDefaultInstance();
+		final var txn = TransactionBody.newBuilder()
 				.setFileCreate(op)
 				.build();
 		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
@@ -172,8 +173,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForFileUpdate() {
-		var op = FileUpdateTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
+		final var op = FileUpdateTransactionBody.getDefaultInstance();
+		final var txn = TransactionBody.newBuilder()
 				.setFileUpdate(op)
 				.build();
 		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
@@ -181,8 +182,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForFileDelete() {
-		var op = FileDeleteTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
+		final var op = FileDeleteTransactionBody.getDefaultInstance();
+		final var txn = TransactionBody.newBuilder()
 				.setFileDelete(op)
 				.build();
 		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
@@ -190,8 +191,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForFileAppend() {
-		var op = FileAppendTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
+		final var op = FileAppendTransactionBody.getDefaultInstance();
+		final var txn = TransactionBody.newBuilder()
 				.setFileAppend(op)
 				.build();
 		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
@@ -199,8 +200,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForContractCreateInstance() {
-		var op = ContractCreateTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
+		final var op = ContractCreateTransactionBody.getDefaultInstance();
+		final var txn = TransactionBody.newBuilder()
 				.setContractCreateInstance(op)
 				.build();
 		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
@@ -208,8 +209,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForContractUpdateInstance() {
-		var op = ContractUpdateTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
+		final var op = ContractUpdateTransactionBody.getDefaultInstance();
+		final var txn = TransactionBody.newBuilder()
 				.setContractUpdateInstance(op)
 				.build();
 		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
@@ -217,8 +218,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForContractCall() {
-		var op = ContractCallTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
+		final var op = ContractCallTransactionBody.getDefaultInstance();
+		final var txn = TransactionBody.newBuilder()
 				.setContractCall(op)
 				.build();
 		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
@@ -226,8 +227,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForTokenFeeScheduleUpdate() {
-		var op = TokenFeeScheduleUpdateTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
+		final var op = TokenFeeScheduleUpdateTransactionBody.getDefaultInstance();
+		final var txn = TransactionBody.newBuilder()
 				.setTokenFeeScheduleUpdate(op)
 				.build();
 		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
@@ -235,8 +236,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForSystemDelete() {
-		var op = SystemDeleteTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
+		final var op = SystemDeleteTransactionBody.getDefaultInstance();
+		final var txn = TransactionBody.newBuilder()
 				.setSystemDelete(op)
 				.build();
 		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
@@ -244,8 +245,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForSystemUndelete() {
-		var op = SystemUndeleteTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
+		final var op = SystemUndeleteTransactionBody.getDefaultInstance();
+		final var txn = TransactionBody.newBuilder()
 				.setSystemUndelete(op)
 				.build();
 		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
@@ -253,8 +254,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForContractDeleteInstance() {
-		var op = ContractDeleteTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
+		final var op = ContractDeleteTransactionBody.getDefaultInstance();
+		final var txn = TransactionBody.newBuilder()
 				.setContractDeleteInstance(op)
 				.build();
 		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
@@ -262,8 +263,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForFreeze() {
-		var op = FreezeTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
+		final var op = FreezeTransactionBody.getDefaultInstance();
+		final var txn = TransactionBody.newBuilder()
 				.setFreeze(op)
 				.build();
 		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
@@ -271,8 +272,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForConsensusCreateTopic() {
-		var op = ConsensusCreateTopicTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
+		final var op = ConsensusCreateTopicTransactionBody.getDefaultInstance();
+		final var txn = TransactionBody.newBuilder()
 				.setConsensusCreateTopic(op)
 				.build();
 		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
@@ -280,8 +281,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForConsensusUpdateTopic() {
-		var op = ConsensusUpdateTopicTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
+		final var op = ConsensusUpdateTopicTransactionBody.getDefaultInstance();
+		final var txn = TransactionBody.newBuilder()
 				.setConsensusUpdateTopic(op)
 				.build();
 		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
@@ -289,8 +290,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForConsensusDeleteTopic() {
-		var op = ConsensusDeleteTopicTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
+		final var op = ConsensusDeleteTopicTransactionBody.getDefaultInstance();
+		final var txn = TransactionBody.newBuilder()
 				.setConsensusDeleteTopic(op)
 				.build();
 		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
@@ -298,8 +299,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForConsensusSubmitMessage() {
-		var op = ConsensusSubmitMessageTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
+		final var op = ConsensusSubmitMessageTransactionBody.getDefaultInstance();
+		final var txn = TransactionBody.newBuilder()
 				.setConsensusSubmitMessage(op)
 				.build();
 		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
@@ -307,17 +308,26 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForGetTopicInfo() {
-		var op = ConsensusGetTopicInfoQuery.getDefaultInstance();
-		var query = Query.newBuilder()
+		final var op = ConsensusGetTopicInfoQuery.getDefaultInstance();
+		final var query = Query.newBuilder()
 				.setConsensusGetTopicInfo(op)
 				.build();
 		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
 	}
 
 	@Test
+	void worksForNetworkGetExecutionTime() {
+		final var op = NetworkGetExecutionTimeQuery.getDefaultInstance();
+		final var query = Query.newBuilder()
+				.setNetworkGetExecutionTime(op)
+				.build();
+		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
+	}
+
+	@Test
 	void worksForGetVersionInfo() {
-		var op = NetworkGetVersionInfoQuery.getDefaultInstance();
-		var query = Query.newBuilder()
+		final var op = NetworkGetVersionInfoQuery.getDefaultInstance();
+		final var query = Query.newBuilder()
 				.setNetworkGetVersionInfo(op)
 				.build();
 		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
@@ -325,8 +335,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForGetSolidityId() {
-		var op = GetBySolidityIDQuery.getDefaultInstance();
-		var query = Query.newBuilder()
+		final var op = GetBySolidityIDQuery.getDefaultInstance();
+		final var query = Query.newBuilder()
 				.setGetBySolidityID(op)
 				.build();
 		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
@@ -334,8 +344,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForGetContractCallLocal() {
-		var op = ContractCallLocalQuery.getDefaultInstance();
-		var query = Query.newBuilder()
+		final var op = ContractCallLocalQuery.getDefaultInstance();
+		final var query = Query.newBuilder()
 				.setContractCallLocal(op)
 				.build();
 		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
@@ -343,8 +353,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForGetContractInfo() {
-		var op = ContractGetInfoQuery.getDefaultInstance();
-		var query = Query.newBuilder()
+		final var op = ContractGetInfoQuery.getDefaultInstance();
+		final var query = Query.newBuilder()
 				.setContractGetInfo(op)
 				.build();
 		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
@@ -352,8 +362,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForGetContractBytecode() {
-		var op = ContractGetBytecodeQuery.getDefaultInstance();
-		var query = Query.newBuilder()
+		final var op = ContractGetBytecodeQuery.getDefaultInstance();
+		final var query = Query.newBuilder()
 				.setContractGetBytecode(op)
 				.build();
 		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
@@ -361,8 +371,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForGetContractRecords() {
-		var op = ContractGetRecordsQuery.getDefaultInstance();
-		var query = Query.newBuilder()
+		final var op = ContractGetRecordsQuery.getDefaultInstance();
+		final var query = Query.newBuilder()
 				.setContractGetRecords(op)
 				.build();
 		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
@@ -370,8 +380,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForGetCryptoBalance() {
-		var op = CryptoGetAccountBalanceQuery.getDefaultInstance();
-		var query = Query.newBuilder()
+		final var op = CryptoGetAccountBalanceQuery.getDefaultInstance();
+		final var query = Query.newBuilder()
 				.setCryptogetAccountBalance(op)
 				.build();
 		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
@@ -379,8 +389,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForGetCryptoRecords() {
-		var op = CryptoGetAccountRecordsQuery.getDefaultInstance();
-		var query = Query.newBuilder()
+		final var op = CryptoGetAccountRecordsQuery.getDefaultInstance();
+		final var query = Query.newBuilder()
 				.setCryptoGetAccountRecords(op)
 				.build();
 		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
@@ -388,8 +398,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForGetCryptoInfo() {
-		var op = CryptoGetInfoQuery.getDefaultInstance();
-		var query = Query.newBuilder()
+		final var op = CryptoGetInfoQuery.getDefaultInstance();
+		final var query = Query.newBuilder()
 				.setCryptoGetInfo(op)
 				.build();
 		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
@@ -397,8 +407,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForGetLiveHash() {
-		var op = CryptoGetLiveHashQuery.getDefaultInstance();
-		var query = Query.newBuilder()
+		final var op = CryptoGetLiveHashQuery.getDefaultInstance();
+		final var query = Query.newBuilder()
 				.setCryptoGetLiveHash(op)
 				.build();
 		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
@@ -406,8 +416,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForGetFileContents() {
-		var op = FileGetContentsQuery.getDefaultInstance();
-		var query = Query.newBuilder()
+		final var op = FileGetContentsQuery.getDefaultInstance();
+		final var query = Query.newBuilder()
 				.setFileGetContents(op)
 				.build();
 		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
@@ -415,8 +425,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForGetFileinfo() {
-		var op = FileGetInfoQuery.getDefaultInstance();
-		var query = Query.newBuilder()
+		final var op = FileGetInfoQuery.getDefaultInstance();
+		final var query = Query.newBuilder()
 				.setFileGetInfo(op)
 				.build();
 		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
@@ -424,8 +434,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForReceipt() {
-		var op = TransactionGetReceiptQuery.getDefaultInstance();
-		var query = Query.newBuilder()
+		final var op = TransactionGetReceiptQuery.getDefaultInstance();
+		final var query = Query.newBuilder()
 				.setTransactionGetReceipt(op)
 				.build();
 		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
@@ -433,8 +443,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForRecord() {
-		var op = TransactionGetRecordQuery.getDefaultInstance();
-		var query = Query.newBuilder()
+		final var op = TransactionGetRecordQuery.getDefaultInstance();
+		final var query = Query.newBuilder()
 				.setTransactionGetRecord(op)
 				.build();
 		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
@@ -442,8 +452,8 @@ class PermissionFileUtilsTest {
 
 	@Test
 	void worksForFastRecord() {
-		var op = TransactionGetFastRecordQuery.getDefaultInstance();
-		var query = Query.newBuilder()
+		final var op = TransactionGetFastRecordQuery.getDefaultInstance();
+		final var query = Query.newBuilder()
 				.setTransactionGetFastRecord(op)
 				.build();
 		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
@@ -452,6 +462,9 @@ class PermissionFileUtilsTest {
 	private String legacyKeyForQuery(Query request) {
 		String queryBody = null;
 		switch (request.getQueryCase()) {
+			case NETWORKGETEXECUTIONTIME:
+				queryBody = "networkGetExecutionTime";
+				break;
 			case NETWORKGETVERSIONINFO:
 				queryBody = "getVersionInfo";
 				break;
