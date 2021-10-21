@@ -14,6 +14,7 @@ import static com.hedera.services.state.virtual.ContractKey.RUNTIME_CONSTRUCTABL
 import static com.hedera.services.state.virtual.ContractKey.readKeySize;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -23,6 +24,7 @@ import static org.mockito.Mockito.mock;
 class ContractKeyTest {
 	private final long contactNum = 1234L;
 	private final long key = 123L;
+	private final long otherContactNum = 1235L;
 	private final long otherKey = 124L;
 	private final UInt256 uIntKey = UInt256.valueOf(key);
 	private final byte[] key_array = uIntKey.toArray();
@@ -30,12 +32,13 @@ class ContractKeyTest {
 	private ContractKey subject;
 
 	@Test
-	void constructorsWork() {
+	void equalsWork() {
 		var testSubject1 = new ContractKey(contactNum, key);
 		var testSubject2 = new ContractKey(contactNum, key_array);
 		var testSubject3 = new ContractKey(contactNum,
 				new int[] { 0, 0, 0, 0, 0, 0, (int) (key >> Integer.SIZE), (int) key });
 		var testSubject4 =  new ContractKey(contactNum, otherKey);
+		var testSubject5 =  new ContractKey(otherContactNum, key);
 
 		subject = new ContractKey();
 		subject.setContractId(contactNum);
@@ -47,6 +50,8 @@ class ContractKeyTest {
 		assertEquals(subject, subject);
 		assertNotEquals(subject, testSubject4);
 		assertNotEquals(subject, null);
+		assertNotEquals(subject, key);
+		assertNotEquals(subject, testSubject5);
 		assertArrayEquals(testSubject1.getKey(), testSubject2.getKey());
 		assertEquals(testSubject2.getContractId(), testSubject3.getContractId());
 		assertEquals(subject.toString(), testSubject1.toString());
@@ -160,6 +165,23 @@ class ContractKeyTest {
 				.willReturn(subject.getUint256Byte(0));
 
 		assertTrue(testSubject.equals(bin, 1));
+	}
+
+	@Test
+	void equalsUsingByteBufferFailsAsExpected() throws IOException {
+		subject = new ContractKey(contactNum, key);
+		final var testSubject1 = new ContractKey(otherContactNum, key);
+		final var testSubject2 = new ContractKey(contactNum, otherKey);
+		final var bin = mock(ByteBuffer.class);
+
+		given(bin.get())
+				.willReturn(subject.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes())
+				.willReturn((byte) (subject.getContractId() >> 8))
+				.willReturn((byte) (subject.getContractId()))
+				.willReturn(subject.getUint256Byte(0));
+
+		assertFalse(testSubject1.equals(bin, 1));
+		assertFalse(testSubject2.equals(bin, 1));
 	}
 
 	@Test
