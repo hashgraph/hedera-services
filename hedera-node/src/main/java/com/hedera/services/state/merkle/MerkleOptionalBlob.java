@@ -24,17 +24,18 @@ import com.google.common.base.MoreObjects;
 import com.swirlds.blob.BinaryObject;
 import com.swirlds.blob.BinaryObjectStore;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.ExternalSelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.common.merkle.MerkleExternalLeaf;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExternalLeaf, Keyed<String> {
+public class MerkleOptionalBlob extends AbstractMerkleLeaf implements ExternalSelfSerializable, Keyed<String> {
 	private static boolean inMigration = false;
 
 	public static synchronized void setInMigration(boolean inMigration) {
@@ -157,7 +158,7 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 	}
 
 	@Override
-	public void serializeAbbreviated(final SerializableDataOutputStream out) throws IOException {
+	public void serializeExternal(final SerializableDataOutputStream out, final File ignored) throws IOException {
 		out.writeNormalisedString(path);
 		/* Nothing to do here, since Platform automatically serializes the
 		 * hash of an MerkleExternalLeaf and passes it as an argument to
@@ -166,14 +167,15 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 	}
 
 	@Override
-	public void deserializeAbbreviated(
+	public void deserializeExternal(
 			final SerializableDataInputStream in,
+			final File ignored,
 			final Hash hash,
 			final int version
 	) throws IOException {
 		if (!MISSING_DELEGATE_HASH.equals(hash)) {
 			delegate = blobSupplier.get();
-			delegate.deserializeAbbreviated(in, hash, BinaryObject.ClassVersion.ORIGINAL);
+			delegate.deserializeExternal(in, ignored, hash, BinaryObject.ClassVersion.ORIGINAL);
 		} else {
 			delegate = MISSING_DELEGATE;
 		}

@@ -25,7 +25,6 @@ import com.hedera.services.ServicesState;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.io.MerkleDataOutputStream;
-import com.swirlds.common.merkle.io.MerkleTreeSerializationOptions;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -42,8 +41,6 @@ import java.util.function.Function;
 public class FcmDump {
 	private static final Logger log = LogManager.getLogger(FcmDump.class);
 
-	private static final MerkleTreeSerializationOptions serOptions =
-			MerkleTreeSerializationOptions.defaults().setAbbreviated(true);
 	static final String FC_DUMP_LOC_TPL = "data/saved/%s/%d/%s-round%d.fcm";
 	static final String DUMP_IO_WARNING = "Couldn't dump %s FCM!";
 
@@ -62,10 +59,10 @@ public class FcmDump {
 	static Function<String, MerkleDataOutputStream> merkleOutFn = dumpLoc -> {
 		try {
 			Files.createDirectories(Path.of(dumpLoc).getParent());
-			return new MerkleDataOutputStream(Files.newOutputStream(Path.of(dumpLoc)), serOptions);
+			return new MerkleDataOutputStream(Files.newOutputStream(Path.of(dumpLoc))).setExternal(true);
 		} catch (Exception e) {
 			log.warn("Unable to use suggested dump location {}, falling back to STDOUT!", dumpLoc, e);
-			return new MerkleDataOutputStream(System.out, true);
+			return new MerkleDataOutputStream(System.out);
 		}
 	};
 
