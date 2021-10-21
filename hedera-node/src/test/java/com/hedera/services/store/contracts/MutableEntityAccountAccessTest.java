@@ -7,6 +7,7 @@ import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -24,6 +25,11 @@ class MutableEntityAccountAccessTest {
 
 	@BeforeEach
 	void setUp() {
+
+	}
+
+	@Test
+	void testsSpawn(){
 
 	}
 }
