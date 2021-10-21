@@ -1,6 +1,5 @@
 package com.hedera.services.state.virtual;
 
-
 /*-
  * ‌
  * Hedera Services Node
@@ -58,18 +57,18 @@ class VirtualBlobKeyTest {
 	void objectContractMet() {
 		final var one = new VirtualBlobKey(VirtualBlobKey.Type.FILE_METADATA, entityNum);
 		final var two = new VirtualBlobKey(FILE_DATA, entityNum);
+		final var twoRef = two;
 		final var three = new VirtualBlobKey(FILE_DATA, entityNum);
 		final var four = new VirtualBlobKey(VirtualBlobKey.Type.FILE_METADATA, otherEntityNum);
 
 		assertNotEquals(two, one);
-		assertEquals(two, two);
+		assertEquals(two, twoRef);
 		assertEquals(two, three);
 
 		assertNotEquals(one.hashCode(), two.hashCode());
 		assertEquals(two.hashCode(), three.hashCode());
 
 		assertNotEquals(null, one);
-		assertNotEquals(FILE_DATA, two);
 		assertNotEquals(one, four);
 	}
 
@@ -123,7 +122,7 @@ class VirtualBlobKeyTest {
 		final var buffer = mock(ByteBuffer.class);
 
 		given(buffer.get()).willReturn((byte) FILE_DATA.ordinal());
-		given(buffer.getInt()).willReturn(2);
+		given(buffer.getInt()).willReturn(entityNum);
 
 		VirtualBlobKey blobKey = new VirtualBlobKey();
 
@@ -143,7 +142,7 @@ class VirtualBlobKeyTest {
 	void gettersWork() {
 		assertEquals(2, subject.getEntityNumCode());
 		assertEquals(FILE_DATA, subject.getType());
-		assertEquals(BYTES_IN_SERIALIZED_FORM, subject.sizeInBytes());
+		assertEquals(BYTES_IN_SERIALIZED_FORM, VirtualBlobKey.sizeInBytes());
 	}
 
 	@Test

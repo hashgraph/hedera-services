@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class VirtualBlobKeySerializer implements KeySerializer<VirtualBlobKey> {
+	static final long DATA_VERSION = 1;
 	@Override
 	public int deserializeKeySize(ByteBuffer byteBuffer) {
 		return VirtualBlobKey.sizeInBytes();
@@ -39,7 +40,7 @@ public class VirtualBlobKeySerializer implements KeySerializer<VirtualBlobKey> {
 
 	@Override
 	public long getCurrentDataVersion() {
-		return 1;
+		return DATA_VERSION;
 	}
 
 	@Override
