@@ -21,6 +21,7 @@ package com.hedera.services.store;
  */
 
 import com.hedera.services.context.annotations.CompositeProps;
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.BackingNfts;
@@ -31,6 +32,7 @@ import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.HederaScheduleStore;
 import com.hedera.services.store.schedule.ScheduleStore;
@@ -108,5 +110,11 @@ public abstract class StoresModule {
 	@AreTreasuryWildcardsEnabled
 	public static boolean provideAreTreasuryWildcardsEnabled(@CompositeProps PropertySource properties) {
 		return properties.getBooleanProperty("tokens.nfts.useTreasuryWildcards");
+	}
+
+	@Provides
+	@Singleton
+	public static CodeCache provideCodeCache(NodeLocalProperties properties) {
+		return new CodeCache(properties);
 	}
 }

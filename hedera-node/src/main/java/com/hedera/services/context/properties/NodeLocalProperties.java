@@ -62,6 +62,9 @@ public class NodeLocalProperties {
 	private int numExecutionTimesToTrack;
 	private int issResetPeriod;
 	private int issRoundsToDump;
+	private int prepareRingBufferPower;
+	private int preparePreFetchHandlerCount;
+	private int preparePreFetchCodeCacheTtlSecs;
 
 	@Inject
 	public NodeLocalProperties(@CompositeProps PropertySource properties) {
@@ -104,6 +107,9 @@ public class NodeLocalProperties {
 		numExecutionTimesToTrack = properties.getIntProperty("stats.executionTimesToTrack");
 		issResetPeriod = properties.getIntProperty("iss.resetPeriod");
 		issRoundsToDump = properties.getIntProperty("iss.roundsToDump");
+		prepareRingBufferPower = properties.getIntProperty("hedera.prepare.ringBufferPower");
+		preparePreFetchHandlerCount = properties.getIntProperty("hedera.prepare.preFetchHandlerCount");
+		preparePreFetchCodeCacheTtlSecs = properties.getIntProperty("hedera.prepare.preFetchCodeCacheTtlSecs");
 	}
 
 	public int port() {
@@ -237,4 +243,10 @@ public class NodeLocalProperties {
 	public int issRoundsToDump() {
 		return issRoundsToDump;
 	}
+
+	public int prepareRingBufferPower() { return prepareRingBufferPower; }
+
+	public int preparePreFetchHandlerCount() { return preparePreFetchHandlerCount; }
+
+	public int getPreparePreFetchCodeCacheTtlSecs() { return preparePreFetchCodeCacheTtlSecs; }
 }

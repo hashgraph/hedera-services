@@ -31,6 +31,8 @@ import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertiesModule;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.contracts.ContractsModule;
+import com.hedera.services.disruptor.DisruptorModule;
+import com.hedera.services.disruptor.PrepareStageProcessor;
 import com.hedera.services.fees.FeesModule;
 import com.hedera.services.files.FilesModule;
 import com.hedera.services.grpc.GrpcModule;
@@ -61,6 +63,7 @@ import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stats.StatsModule;
 import com.hedera.services.store.StoresModule;
+import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.throttling.ThrottlingModule;
 import com.hedera.services.txns.ProcessLogic;
@@ -109,6 +112,7 @@ import java.util.function.Supplier;
 		ThrottlingModule.class,
 		SubmissionModule.class,
 		TransactionsModule.class,
+		DisruptorModule.class
 })
 public interface ServicesApp {
 	/* Needed by ServicesState */
@@ -124,6 +128,8 @@ public interface ServicesApp {
 	GlobalDynamicProperties globalDynamicProperties();
 	@WorkingState StateAccessor workingState();
 	@RetryingSigReqs SigRequirements retryingSigReqs();
+	PrepareStageProcessor prepareStageProcessor();
+	CodeCache codeCache();
 
 	/* Needed by ServicesMain */
 	Pause pause();

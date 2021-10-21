@@ -20,6 +20,7 @@ package com.hedera.services;
  * ‍
  */
 
+import com.google.common.math.LongMath;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -227,6 +228,12 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		try {
 			final var app = metadata.app();
 			final var accessor = app.expandHandleSpan().track(platformTxn);
+
+			// Submit the transaction for any prepare stage processing that can be performed
+			// such as pre-fetching of contract bytecode. This step is performed asynchronously
+			// so get this step started before synchronous signature expansion.
+			app.prepareStageProcessor().getPublisher().submit(accessor);
+
 			app.expansionHelper().expandIn(accessor, app.retryingSigReqs(), accessor.getPkToSigsFn());
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("Method expandSignatures called with non-gRPC txn", e);
@@ -237,7 +244,18 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public void noMoreTransactions() {
-		/* No-op. */
+		final var app = metadata.app();
+		final var stats = app.codeCache().getStats();
+
+		if (log.isDebugEnabled()) {
+			log.debug("Code cache statistics: reqCount={}, hitRate={}, missRate={}. evictCount={}, avgLoadPenalty={}",
+					stats.requestCount(),
+					stats.hitRate(),
+					stats.missRate(),
+					stats.evictionCount(),
+					stats.averageLoadPenalty()
+			);
+		}
 	}
 
 	/* --- FastCopyable --- */
@@ -399,6 +417,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 			metadata = new StateMetadata(app);
 			app.initializationFlow().runWith(this);
+
+			// Ensure the disruptor ring is created and all the handlers are active. If we don't do
+			// this now, it will be lazy created and we could get multiple sets of handlers.
+			app.prepareStageProcessor();
+			log.info("Created prepare stage processor");
 
 			logSummary();
 			log.info("  --> Context initialized accordingly on Services node {}", selfId);

@@ -27,6 +27,7 @@ import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
@@ -38,14 +39,17 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
@@ -78,6 +82,8 @@ class ContractCallTransitionLogicTest {
 	private TransactionRecordService recordService;
 	@Mock
 	private CallEvmTxProcessor evmTxProcessor;
+	@Mock
+	private CodeCache codeCache;
 
 	private TransactionBody contractCallTxn;
 	private final Instant consensusTime = Instant.now();
@@ -88,7 +94,7 @@ class ContractCallTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new ContractCallTransitionLogic(txnCtx, entityIdSource, accountStore, worldState, recordService, evmTxProcessor);
+		subject = new ContractCallTransitionLogic(txnCtx, entityIdSource, accountStore, worldState, recordService, evmTxProcessor, codeCache);
 	}
 
 	@Test
@@ -156,6 +162,39 @@ class ContractCallTransitionLogicTest {
 
 		// then:
 		verify(evmTxProcessor).execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())), txnCtx.consensusTime());
+	}
+
+	@Test
+	void successfulPreFetch() throws ExecutionException {
+		TransactionBody txnBody = Mockito.mock(TransactionBody.class);
+		ContractCallTransactionBody ccTxnBody = Mockito.mock(ContractCallTransactionBody.class);
+
+		given(accessor.getTxn()).willReturn(txnBody);
+		given(txnBody.getContractCall()).willReturn(ccTxnBody);
+		given(ccTxnBody.getContractID()).willReturn(ContractID.getDefaultInstance());
+
+		// when:
+		subject.preFetch(accessor);
+
+		// expect:
+		verify(codeCache).get(any(Address.class));
+	}
+
+	@Test
+	void codeCacheThrowsExceptionDuringGet() throws ExecutionException {
+		TransactionBody txnBody = Mockito.mock(TransactionBody.class);
+		ContractCallTransactionBody ccTxnBody = Mockito.mock(ContractCallTransactionBody.class);
+
+		given(accessor.getTxn()).willReturn(txnBody);
+		given(txnBody.getContractCall()).willReturn(ccTxnBody);
+		given(ccTxnBody.getContractID()).willReturn(ContractID.getDefaultInstance());
+		given(codeCache.get(any(Address.class))).willThrow(new ExecutionException(new RuntimeException("oh no")));
+
+		// when:
+		subject.preFetch(accessor);
+
+		// expect:
+		verify(codeCache).get(any(Address.class));
 	}
 
 	@Test
