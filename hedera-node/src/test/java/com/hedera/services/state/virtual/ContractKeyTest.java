@@ -95,7 +95,6 @@ class ContractKeyTest {
 		subject = new ContractKey(contactNum, key_array);
 
 		final var out = mock(ByteBuffer.class);
-
 		final var inOrder = inOrder(out);
 
 		final var contractIdNonZeroBytes = subject.getContractIdNonZeroBytes();

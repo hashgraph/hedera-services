@@ -32,6 +32,7 @@ import java.util.Objects;
  * KeySerializer for ContractKeys
  */
 public class ContractKeySerializer implements KeySerializer<ContractKey> {
+	static final long DATA_VERSION = 1;
 	/**
 	 * Get if the number of bytes a data item takes when serialized is variable or fixed
 	 *
@@ -67,7 +68,7 @@ public class ContractKeySerializer implements KeySerializer<ContractKey> {
 	 */
 	@Override
 	public long getCurrentDataVersion() {
-		return 1;
+		return DATA_VERSION;
 	}
 
 	/**
