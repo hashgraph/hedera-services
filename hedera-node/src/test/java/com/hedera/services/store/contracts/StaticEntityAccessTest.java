@@ -13,20 +13,26 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigInteger;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class StaticEntityAccessTest {
 	@Mock
 	private StateView stateView;
+	@Mock
+	private HederaAccountCustomizer customizer;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
@@ -37,7 +43,15 @@ class StaticEntityAccessTest {
 	private StaticEntityAccess subject;
 
 	private AccountID id = IdUtils.asAccount("0.0.1234");
-	MerkleAccount someAccount = new HederaAccountCustomizer()
+	private UInt256 uint256Key = UInt256.ONE;
+	private ContractKey contractKey = new ContractKey(id.getAccountNum(), uint256Key.toArray());
+	private VirtualBlobKey blobKey = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE,
+			(int) id.getAccountNum());
+	private ContractValue contractVal = new ContractValue(BigInteger.ONE);
+	private VirtualBlobValue blobVal = new VirtualBlobValue("data".getBytes());
+
+
+	private MerkleAccount someAccount = new HederaAccountCustomizer()
 			.isReceiverSigRequired(false)
 			.proxy(EntityId.MISSING_ENTITY_ID)
 			.isDeleted(false)
@@ -52,15 +66,59 @@ class StaticEntityAccessTest {
 		given(stateView.storage()).willReturn(blobs);
 		given(stateView.accounts()).willReturn(accounts);
 		given(stateView.contractStorage()).willReturn(storage);
-		given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someAccount);
-
 		subject = new StaticEntityAccess(stateView);
 	}
 
-	// need a lot of test coverage. Adding test to resolve sonar issues
 	@Test
-	void testBalance() {
-		final var balance = subject.getBalance(id);
-		assertEquals(someAccount.getBalance(), balance);
+	void mutatorsThrows() {
+		assertThrows(UnsupportedOperationException.class, () -> subject.spawn(id, 0l, customizer));
+		assertThrows(UnsupportedOperationException.class, () -> subject.customize(id, customizer));
+		assertThrows(UnsupportedOperationException.class, () -> subject.adjustBalance(id, 10L));
+		assertThrows(UnsupportedOperationException.class, () -> subject.put(id, uint256Key, uint256Key));
+		assertThrows(UnsupportedOperationException.class, () -> subject.store(id, uint256Key.toBytes()));
 	}
+
+	@Test
+	void nonMutatorsWork() {
+		given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someAccount);
+
+		assertEquals(someAccount.getBalance(), subject.getBalance(id));
+		assertEquals(someAccount.isDeleted(), subject.isDeleted(id));
+		assertEquals(true, subject.isExtant(id));
+		assertEquals(someAccount, subject.lookup(id));
+	}
+
+	@Test
+	void getWorks() {
+		given(storage.get(contractKey)).willReturn(contractVal);
+
+		final var unit256Val = subject.get(id, uint256Key);
+
+		final var expectedVal = UInt256.fromBytes(Bytes.wrap(contractVal.getValue()));
+		assertEquals(expectedVal, unit256Val);
+	}
+
+	@Test
+	void getForUnknownReturnsZero() {
+		final var unit256Val = subject.get(id, UInt256.MAX_VALUE);
+
+		assertEquals(UInt256.ZERO, unit256Val);
+	}
+
+	@Test
+	void fetchWithValueWorks() {
+		given(blobs.get(blobKey)).willReturn(blobVal);
+
+		final var blobBytes = subject.fetch(id);
+
+		final var expectedVal = Bytes.of(blobVal.getData());
+		assertEquals(expectedVal, blobBytes);
+	}
+
+	@Test
+	void fetchWithoutValueReturnsNull() {
+		final var blobBytes = subject.fetch(id);
+		assertEquals(Bytes.EMPTY, blobBytes);
+	}
+
 }
