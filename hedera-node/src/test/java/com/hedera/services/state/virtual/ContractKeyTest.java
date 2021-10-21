@@ -27,6 +27,7 @@ class ContractKeyTest {
 	private final long key = 123L;
 	private final long otherContactNum = 1235L;
 	private final long otherKey = 124L;
+	private final UInt256 largeKey = UInt256.fromHexString("0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563");
 	private final UInt256 uIntKey = UInt256.valueOf(key);
 	private final byte[] key_array = uIntKey.toArray();
 
@@ -152,7 +153,6 @@ class ContractKeyTest {
 
 	@Test
 	void deserializeLargeKeyWorks() throws IOException {
-		UInt256 largeKey = UInt256.fromHexString("0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563");
 		subject = new ContractKey(contactNum, largeKey.toArray());
 
 		final var fin = mock(SerializableDataInputStream.class);
@@ -180,13 +180,12 @@ class ContractKeyTest {
 
 	@Test
 	void equalsUsingByteBufferWorks() throws IOException {
-		subject = new ContractKey(contactNum, key);
-		final var testSubject = new ContractKey(contactNum, key);
+		subject = new ContractKey(0L, key);
+		final var testSubject = new ContractKey(0L, key);
 		final var bin = mock(ByteBuffer.class);
 
 		given(bin.get())
 				.willReturn(subject.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes())
-				.willReturn((byte) (subject.getContractId() >> 8))
 				.willReturn((byte) (subject.getContractId()))
 				.willReturn(subject.getUint256Byte(0));
 
@@ -196,8 +195,8 @@ class ContractKeyTest {
 	@Test
 	void equalsUsingByteBufferFailsAsExpected() throws IOException {
 		subject = new ContractKey(contactNum, key);
-		final var testSubject1 = new ContractKey(otherContactNum, key);
-		final var testSubject2 = new ContractKey(contactNum, otherKey);
+		final var testSubject1 = new ContractKey(Long.MAX_VALUE, key);
+		final var testSubject2 = new ContractKey(contactNum, largeKey.toArray());
 		final var bin = mock(ByteBuffer.class);
 
 		given(bin.get())
