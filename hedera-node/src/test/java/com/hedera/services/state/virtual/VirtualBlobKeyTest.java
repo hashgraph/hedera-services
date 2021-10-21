@@ -57,18 +57,18 @@ class VirtualBlobKeyTest {
 	void objectContractMet() {
 		final var one = new VirtualBlobKey(VirtualBlobKey.Type.FILE_METADATA, entityNum);
 		final var two = new VirtualBlobKey(FILE_DATA, entityNum);
+		final var twoRef = two;
 		final var three = new VirtualBlobKey(FILE_DATA, entityNum);
 		final var four = new VirtualBlobKey(VirtualBlobKey.Type.FILE_METADATA, otherEntityNum);
 
 		assertNotEquals(two, one);
-		assertEquals(two, two);
+		assertEquals(two, twoRef);
 		assertEquals(two, three);
 
 		assertNotEquals(one.hashCode(), two.hashCode());
 		assertEquals(two.hashCode(), three.hashCode());
 
 		assertNotEquals(null, one);
-		assertNotEquals(FILE_DATA, two);
 		assertNotEquals(one, four);
 	}
 
