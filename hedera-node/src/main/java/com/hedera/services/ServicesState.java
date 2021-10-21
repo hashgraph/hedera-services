@@ -68,6 +68,7 @@ import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.jasperdb.VirtualDataSourceJasperDB;
 import com.swirlds.merkle.map.FCMapMigration;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.platform.state.DualStateImpl;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -448,7 +449,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	private void internalInit(
 			final Platform platform,
 			final BootstrapProperties bootstrapProps,
-			final SwirldDualState dualState
+			SwirldDualState dualState
 	) {
 		final var selfId = platform.getSelfId().getId();
 
@@ -463,6 +464,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 					.selfId(selfId)
 					.build();
 			APPS.save(selfId, app);
+		}
+
+		// When migrating from an older state dual state can be null
+		if (dualState == null) {
+			dualState = new DualStateImpl();
 		}
 		app.dualStateAccessor().setDualState(dualState);
 		log.info("Dual state includes freeze time={} and last frozen={}",

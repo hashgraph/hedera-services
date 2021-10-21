@@ -70,7 +70,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-    	        vanillaUpdateSucceeds(),
+				vanillaUpdateSucceeds(),
 				updateFeesCompatibleWithCreates(),
 				apiPermissionsChangeDynamically(),
 				cannotUpdateExpirationPastMaxLifetime(),
@@ -98,7 +98,8 @@ public class FileUpdateSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec updateFeesCompatibleWithCreates() {
-		long origLifetime = 100_000_000;
+		final long origLifetime = 7_200_000L;
+		final long extension = 700_000L;
 		final byte[] old2k = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K / 2);
 		final byte[] new4k = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);
 		final byte[] new2k = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K / 2);
@@ -119,7 +120,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 								.extendingExpiryBy(0)
 								.via("updateTo2"),
 						fileUpdate("test")
-								.extendingExpiryBy(origLifetime)
+								.extendingExpiryBy(extension)
 								.via("extend"),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
@@ -130,13 +131,13 @@ public class FileUpdateSuite extends HapiApiSuite {
 								.overridingProps(Map.of("maxFileSize", "1024"))
 				).then(
 						UtilVerbs.withOpContext((spec, opLog) -> {
-							var createOp = getTxnRecord("create");
-							var to4kOp = getTxnRecord("updateTo4");
-							var to2kOp = getTxnRecord("updateTo2");
-							var extensionOp = getTxnRecord("extend");
-							var specialOp = getTxnRecord("special");
+							final var createOp = getTxnRecord("create");
+							final var to4kOp = getTxnRecord("updateTo4");
+							final var to2kOp = getTxnRecord("updateTo2");
+							final var extensionOp = getTxnRecord("extend");
+							final var specialOp = getTxnRecord("special");
 							allRunFor(spec, createOp, to4kOp, to2kOp, extensionOp, specialOp);
-							var createFee = createOp.getResponseRecord().getTransactionFee();
+							final var createFee = createOp.getResponseRecord().getTransactionFee();
 							opLog.info("Creation : " + createFee);
 							opLog.info("New 4k   : " + to4kOp.getResponseRecord().getTransactionFee()
 									+ " (" + (to4kOp.getResponseRecord().getTransactionFee() - createFee) + ")");
@@ -152,8 +153,8 @@ public class FileUpdateSuite extends HapiApiSuite {
 	private HapiApiSpec vanillaUpdateSucceeds() {
 		final byte[] old4K = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);
 		final byte[] new4k = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);
-		String firstMemo = "Originally";
-		String secondMemo = "Subsequently";
+		final String firstMemo = "Originally";
+		final String secondMemo = "Subsequently";
 
 		return defaultHapiSpec("VanillaUpdateSucceeds")
 				.given(
@@ -178,7 +179,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 		return defaultHapiSpec("CannotUpdateExpirationPastMaxLifetime")
 				.given(
 						fileCreate("test")
-				).when( ).then(
+				).when().then(
 						fileUpdate("test")
 								.lifetime(defaultMaxLifetime + 12_345L)
 								.hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE)
