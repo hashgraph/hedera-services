@@ -20,9 +20,11 @@ package com.hedera.services.legacy.core.jproto;
  * ‍
  */
 
+import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -47,5 +49,34 @@ class JContractIDKeyTest {
 		assertFalse(subject.isForScheduledTxn());
 		subject.setForScheduledTxn(true);
 		assertTrue(subject.isForScheduledTxn());
+	}
+
+	@Test
+	void getsContractIdKey() {
+		final var key = new JContractIDKey(1, 2, 3);
+		final var product = key.getContractIDKey();
+		assertEquals(key.getShardNum(), product.getShardNum());
+		assertEquals(key.getRealmNum(), product.getRealmNum());
+		assertEquals(key.getContractNum(), product.getContractNum());
+		assertTrue(product.hasContractID());
+		assertTrue(!product.toString().isEmpty());
+	}
+
+	@Test
+	void fromModelIdConversionWorks() {
+		final var source = new Id(1, 2, 3);
+		final var target = JContractIDKey.fromId(source);
+		assertEquals(target.getShardNum(), source.getShard());
+		assertEquals(target.getRealmNum(), source.getRealm());
+		assertEquals(target.getContractNum(), source.getNum());
+	}
+
+	@Test
+	void fromJContractIdToContractIdConversionWorks() {
+		final var source = new JContractIDKey(1, 2, 3);
+		final var target = source.getContractID();
+		assertEquals(target.getShardNum(), source.getShardNum());
+		assertEquals(target.getRealmNum(), source.getRealmNum());
+		assertEquals(target.getContractNum(), source.getContractNum());
 	}
 }

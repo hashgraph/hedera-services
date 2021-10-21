@@ -9,9 +9,9 @@ package com.hedera.services.store.models;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,19 +21,28 @@ package com.hedera.services.store.models;
  */
 
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
 import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.test.utils.TxnUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Optional;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.buildAutomaticAssociationMetaData;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
@@ -47,7 +56,7 @@ import static org.mockito.Mockito.verify;
 
 class AccountTest {
 	private final Id subjectId = new Id(0, 0, 12345);
-	private final CopyOnWriteIds assocTokens = new CopyOnWriteIds(new long[] { 666, 0, 0, 777, 0, 0 });
+	private final CopyOnWriteIds assocTokens = new CopyOnWriteIds(new long[]{666, 0, 0, 777, 0, 0});
 	private final long ownedNfts = 5;
 	private final int alreadyUsedAutoAssociations = 123;
 	private final int maxAutoAssociations = 1234;
@@ -64,6 +73,46 @@ class AccountTest {
 		subject.setOwnedNfts(ownedNfts);
 
 		validator = mock(ContextOptionValidator.class);
+	}
+
+	@Test
+	void updatesContractSuccessfully() {
+		subject.setKey(TOKEN_ADMIN_KT.asJKeyUnchecked());
+
+		final var newAdminKey = TOKEN_KYC_KT.asJKeyUnchecked();
+		final var newProxy = AccountID.newBuilder().setAccountNum(4_321L).build();
+		final var newDuration = Duration.newBuilder().setSeconds(1L).build();
+		final var newExpirationTime = Timestamp.newBuilder().setSeconds(2L).build();
+		final var newMemo = "memo";
+
+		subject.updateFromGrpcContract(
+				Optional.ofNullable(newAdminKey),
+				Optional.ofNullable(newProxy),
+				Optional.ofNullable(newDuration),
+				Optional.ofNullable(newExpirationTime),
+				Optional.ofNullable(newMemo));
+
+		assertEquals(subject.getKey(), newAdminKey);
+		assertEquals(subject.getProxy(), Id.fromGrpcAccount(newProxy));
+		assertEquals(subject.getExpiry(), newExpirationTime.getSeconds());
+		assertEquals(subject.getAutoRenewSecs(), newDuration.getSeconds());
+		assertEquals(subject.getMemo(), newMemo);
+	}
+
+	@Test()
+	void failsToUpdateImmutableContract() {
+		subject.setKey(new JContractIDKey(1, 2, 3));
+		final var newAdminKey = TOKEN_KYC_KT.asJKeyUnchecked();
+		TxnUtils.assertFailsWith(() -> subject.updateFromGrpcContract(Optional.ofNullable(newAdminKey), Optional.empty(),
+				Optional.empty(), Optional.empty(), Optional.empty()), MODIFYING_IMMUTABLE_CONTRACT);
+	}
+
+	@Test()
+	void failsToUpdateWithReducedExpiry() {
+		subject.setExpiry(2L);
+		final var newExpirationTime = Timestamp.newBuilder().setSeconds(1L).build();
+		TxnUtils.assertFailsWith(() -> subject.updateFromGrpcContract(Optional.empty(), Optional.empty(),
+				Optional.empty(), Optional.of(newExpirationTime), Optional.empty()), EXPIRATION_REDUCTION_NOT_ALLOWED);
 	}
 
 	@Test
@@ -137,7 +186,7 @@ class AccountTest {
 		// then:
 		verify(dissociationRel).updateModelRelsSubjectTo(validator);
 		assertEquals(expectedFinalTokens, assocTokens.toReadableIdList());
-		assertEquals(alreadyUsedAutoAssociations-1, subject.getAlreadyUsedAutomaticAssociations());
+		assertEquals(alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
 	}
 
 	@Test
@@ -258,7 +307,7 @@ class AccountTest {
 	void incrementsTheAlreadyUsedAutoAssociationAsExpected() {
 		final var firstNewToken = new Token(new Id(0, 0, 888));
 		subject.setMaxAutomaticAssociations(maxAutoAssociations);
-		subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociations-1);
+		subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociations - 1);
 
 		subject.associateWith(List.of(firstNewToken), 10, true);
 
@@ -268,7 +317,7 @@ class AccountTest {
 	@Test
 	void invalidValuesToAlreadyUsedAutoAssociationsFailAsExpected() {
 		assertFailsWith(
-				() -> subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociations+1),
+				() -> subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociations + 1),
 				NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
 
 		subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociations);

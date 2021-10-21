@@ -25,6 +25,9 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
 import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -39,7 +42,9 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.getAlready
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getMaxAutomaticAssociationsFrom;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setMaxAutomaticAssociationsTo;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
@@ -69,6 +74,52 @@ public class Account {
 	private String memo = "";
 	private Id proxy;
 	private int autoAssociationMetadata;
+
+	/**
+	 * Mutates the model account properties in the context of the contract update transition logic.
+	 * The method also performs validation and can throw a {@link com.hedera.services.exceptions.InvalidTransactionException}
+	 * with response code capturing the failure when one occurs.
+	 * Subject of the update can be only:
+	 * <li>Admin key</li>
+	 * <li>Memo</li>
+	 * <li>Proxy</li>
+	 * <li>Expiration time</li>
+	 * <li>AutoRenew period</li>
+	 *
+	 * @param newAdminKey        the new admin key
+	 * @param newProxy           the new proxy
+	 * @param newAutoRenewPeriod the new autoRenew period
+	 * @param newExpirationTime  the new expiration time
+	 * @param newMemo            the new memo
+	 */
+	public void updateFromGrpcContract(
+			final Optional<JKey> newAdminKey,
+			final Optional<AccountID> newProxy,
+			final Optional<Duration> newAutoRenewPeriod,
+			final Optional<Timestamp> newExpirationTime,
+			final Optional<String> newMemo) {
+
+		validateFalse(!affectsExpiryOnly(newAdminKey, newProxy, newAutoRenewPeriod, newMemo)
+				&& this.getKey().hasContractID(), MODIFYING_IMMUTABLE_CONTRACT);
+		validateFalse(reducesExpiry(newExpirationTime), EXPIRATION_REDUCTION_NOT_ALLOWED);
+
+		newAdminKey.ifPresent(this::setKey);
+		newMemo.ifPresent(this::setMemo);
+		newProxy.ifPresent(p -> this.setProxy(Id.fromGrpcAccount(p)));
+		newExpirationTime.ifPresent(e -> this.setExpiry(e.getSeconds()));
+		newAutoRenewPeriod.ifPresent(a -> this.setAutoRenewSecs(a.getSeconds()));
+	}
+
+	private boolean affectsExpiryOnly(final Optional<JKey> newAdminKey,
+									  final Optional<AccountID> newProxy,
+									  final Optional<Duration> newAutoRenewPeriod,
+									  final Optional<String> newMemo) {
+		return newAdminKey.isEmpty() && newProxy.isEmpty() && newAutoRenewPeriod.isEmpty() && newMemo.isEmpty();
+	}
+
+	private boolean reducesExpiry(final Optional<Timestamp> newExpirationTime) {
+		return newExpirationTime.isPresent() && newExpirationTime.get().getSeconds() < this.getExpiry();
+	}
 
 	public Account(Id id) {
 		this.id = id;
@@ -119,7 +170,7 @@ public class Account {
 	}
 
 	public void setAlreadyUsedAutomaticAssociations(int alreadyUsedCount) {
-		validateTrue(isValidAlreadyUsedCount(alreadyUsedCount), NO_REMAINING_AUTOMATIC_ASSOCIATIONS );
+		validateTrue(isValidAlreadyUsedCount(alreadyUsedCount), NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
 		autoAssociationMetadata = setAlreadyUsedAutomaticAssociationsTo(autoAssociationMetadata, alreadyUsedCount);
 	}
 
@@ -155,10 +206,8 @@ public class Account {
 	 * Applies the given list of {@link Dissociation}s, validating that this account is
 	 * indeed associated to each involved token.
 	 *
-	 * @param dissociations
-	 * 		the dissociations to perform.
-	 * @param validator
-	 * 		the validator to use for each dissociation
+	 * @param dissociations the dissociations to perform.
+	 * @param validator     the validator to use for each dissociation
 	 */
 	public void dissociateUsing(List<Dissociation> dissociations, OptionValidator validator) {
 		final Set<Id> dissociatedTokenIds = new HashSet<>();

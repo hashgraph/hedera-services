@@ -147,6 +147,7 @@ class AccountStoreTest {
 				.maxAutomaticAssociations(maxAutoAssociations)
 				.alreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations)
 				.proxy(proxy.asGrpcAccount())
+				.memo(memo)
 				.get();
 
 		// given:
@@ -197,6 +198,7 @@ class AccountStoreTest {
 				.maxAutomaticAssociations(newMax)
 				.alreadyUsedAutomaticAssociations(newUsedCount)
 				.proxy(proxy.asGrpcAccount())
+				.memo(memo)
 				.get();
 
 		// given:
@@ -239,6 +241,7 @@ class AccountStoreTest {
 				.maxAutomaticAssociations(maxAutoAssociations)
 				.alreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations)
 				.proxy(proxy.asGrpcAccount())
+				.memo(memo)
 				.get();
 
 		miscAccount.setExpiry(expiry);
@@ -247,6 +250,7 @@ class AccountStoreTest {
 		miscAccount.setMaxAutomaticAssociations(maxAutoAssociations);
 		miscAccount.setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations);
 		miscAccount.setProxy(proxy);
+		miscAccount.setMemo(memo);
 		autoRenewAccount.setExpiry(expiry);
 		autoRenewAccount.initBalance(balance);
 	}
@@ -260,6 +264,7 @@ class AccountStoreTest {
 	private final long miscProxyAccount = 9_876L;
 	private final int alreadyUsedAutoAssociations = 12;
 	private final int maxAutoAssociations = 123;
+	private final String memo = "memo";
 	private final Id miscId = new Id(0, 0, miscAccountNum);
 	private final Id autoRenewId = new Id(0, 0, autoRenewAccountNum);
 	private final Id firstAssocTokenId = new Id(0, 0, firstAssocTokenNum);

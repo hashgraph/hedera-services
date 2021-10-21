@@ -9,9 +9,9 @@ package com.hedera.services.txns.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,75 +21,93 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.services.legacy.core.jproto.JContractIDKey;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
-import com.hedera.services.txns.contract.helpers.UpdateCustomizerFactory;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.merkle.map.MerkleMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
-import static com.hedera.services.utils.EntityNum.fromContractId;
-import static com.hedera.services.utils.EntityIdUtils.asAccount;
+import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.legacy.core.jproto.JContractIDKey.fromId;
+import static com.hedera.services.sigs.utils.ImmutableKeyUtils.signalsKeyRemoval;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ContractUpdateTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(ContractUpdateTransitionLogic.class);
-
-	private final HederaLedger ledger;
-	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
-	private final UpdateCustomizerFactory customizerFactory;
-	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts;
+	private final OptionValidator validator;
+	private final AccountStore accountStore;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
 	public ContractUpdateTransitionLogic(
-			HederaLedger ledger,
-			OptionValidator validator,
 			TransactionContext txnCtx,
-			UpdateCustomizerFactory customizerFactory,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts
+			OptionValidator validator,
+			AccountStore accountStore
 	) {
-		this.ledger = ledger;
-		this.validator = validator;
 		this.txnCtx = txnCtx;
-		this.contracts = contracts;
-		this.customizerFactory = customizerFactory;
+		this.validator = validator;
+		this.accountStore = accountStore;
 	}
 
 	@Override
 	public void doStateTransition() {
-		try {
-			var contractUpdateTxn = txnCtx.accessor().getTxn();
-			var op = contractUpdateTxn.getContractUpdateInstance();
-			var id = op.getContractID();
-			var target = contracts.get().get(fromContractId(id));
+		/* --- Process gRPC --- */
+		final var contractUpdateTxn = txnCtx.accessor().getTxn();
+		final var op = contractUpdateTxn.getContractUpdateInstance();
+		final var targetId = Id.fromGrpcContract(op.getContractID());
 
-			var result = customizerFactory.customizerFor(target, validator, op);
-			var customizer = result.getLeft();
-			if (customizer.isPresent()) {
-				ledger.customize(asAccount(id), customizer.get());
-				txnCtx.setStatus(SUCCESS);
+		/* --- Translate the account --- */
+		final var target = accountStore.loadContract(targetId);
+
+		/* --- Validate --- */
+		validateFalse(op.hasExpirationTime() && !validator.isValidExpiry(op.getExpirationTime()), INVALID_EXPIRATION_TIME);
+
+		/* --- Process admin key --- */
+		JKey processedAdminKey = null;
+		if (op.hasAdminKey()) {
+			final var newAdminKey = op.getAdminKey();
+			if (signalsKeyRemoval(newAdminKey)) {
+				processedAdminKey = fromId(targetId);
 			} else {
-				txnCtx.setStatus(result.getRight());
+				var optionalJKey = MiscUtils.asUsableFcKey(newAdminKey);
+				validateTrue(optionalJKey.isPresent() && !(optionalJKey.get() instanceof JContractIDKey), INVALID_ADMIN_KEY);
+				processedAdminKey = optionalJKey.get();
 			}
-		} catch (Exception e) {
-			log.warn("Avoidable exception!", e);
-			txnCtx.setStatus(FAIL_INVALID);
 		}
+
+		/* --- Process other candidates --- */
+		final var newProxy = op.hasProxyAccountID() ? op.getProxyAccountID() : null;
+		final var newAutoRenewPeriod = op.hasAutoRenewPeriod() ? op.getAutoRenewPeriod() : null;
+		final var newExpirationTime = op.hasExpirationTime() ? op.getExpirationTime() : null;
+		final var newMemo = op.hasMemoWrapper()
+				? op.getMemoWrapper().getValue()
+				: op.getMemo().length() > 0
+				? op.getMemo()
+				: null;
+
+		/* --- Do the business logic --- */
+		target.updateFromGrpcContract(
+				Optional.ofNullable(processedAdminKey),
+				Optional.ofNullable(newProxy),
+				Optional.ofNullable(newAutoRenewPeriod),
+				Optional.ofNullable(newExpirationTime),
+				Optional.ofNullable(newMemo));
+
+		/* --- Persist the changes --- */
+		accountStore.persistAccount(target);
 	}
 
 	@Override
@@ -105,10 +123,7 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 	public ResponseCodeEnum validate(TransactionBody contractUpdateTxn) {
 		var op = contractUpdateTxn.getContractUpdateInstance();
 
-		var status = validator.queryableContractStatus(op.getContractID(), contracts.get());
-		if (status != OK) {
-			return status;
-		}
+		var status = OK;
 
 		if (op.hasAutoRenewPeriod()) {
 			if (op.getAutoRenewPeriod().getSeconds() < 1) {

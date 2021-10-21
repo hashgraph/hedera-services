@@ -20,6 +20,7 @@ package com.hedera.services.legacy.core.jproto;
  * ‍
  */
 
+import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.ContractID;
 
 /**
@@ -43,6 +44,7 @@ public class JContractIDKey extends JKey {
 		return this;
 	}
 
+	@Override
 	public boolean hasContractID() {
 		return true;
 	}
@@ -57,6 +59,10 @@ public class JContractIDKey extends JKey {
 		this.shardNum = shardNum;
 		this.realmNum = realmNum;
 		this.contractNum = contractNum;
+	}
+
+	public static JContractIDKey fromId(final Id source) {
+		return new JContractIDKey(source.getShard(), source.getRealm(), source.getNum());
 	}
 
 	public long getShardNum() {

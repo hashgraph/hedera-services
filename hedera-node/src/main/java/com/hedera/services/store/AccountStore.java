@@ -192,6 +192,7 @@ public class AccountStore {
 		mutableAccount.setDeleted(model.isDeleted());
 		mutableAccount.setAutoRenewSecs(model.getAutoRenewSecs());
 		mutableAccount.setSmartContract(model.isSmartContract());
+		mutableAccount.setMemo(model.getMemo());
 	}
 
 	private void validateUsable(MerkleAccount merkleAccount, @Nullable ResponseCodeEnum explicitResponse,
