@@ -50,7 +50,7 @@ class ContractKeyTest {
 		assertEquals(subject, testSubject3);
 		assertEquals(subject, subject);
 		assertNotEquals(subject, testSubject4);
-		assertNotEquals(subject, null);
+		assertNotEquals(null, subject);
 		assertNotEquals(subject, key);
 		assertNotEquals(subject, testSubject5);
 		assertArrayEquals(testSubject1.getKey(), testSubject2.getKey());
