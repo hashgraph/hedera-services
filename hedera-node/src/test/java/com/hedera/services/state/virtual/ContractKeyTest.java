@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
@@ -220,5 +221,22 @@ class ContractKeyTest {
 				.willReturn(subject.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
 
 		assertEquals(1 + contractIdNonZeroBytes + uint256KeyNonZeroBytes, readKeySize(bin));
+	}
+
+	@Test
+	void calculatesNonZeroBytesCorrectly() {
+		subject = new ContractKey(0, 0);
+
+		assertEquals(1, subject.getContractIdNonZeroBytes());
+		assertEquals(1, subject.getUint256KeyNonZeroBytes());
+	}
+
+	@Test
+	void computeNonZeroBytesAssertsAsExpected() {
+		final var notEight = 7;
+		final int[] intArr = new int[notEight];
+
+		assertThrows(AssertionError.class, () -> ContractKey.computeNonZeroBytes(null));
+		assertThrows(AssertionError.class, () -> ContractKey.computeNonZeroBytes(intArr));
 	}
 }
