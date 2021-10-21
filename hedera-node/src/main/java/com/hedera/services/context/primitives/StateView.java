@@ -36,6 +36,8 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.schedule.ScheduleStore;
@@ -143,8 +145,7 @@ public class StateView {
 				this::nftsByOwner,
 				this::treasuryNftsByType);
 
-		final Map<String, byte[]> blobStore = unmodifiableMap(
-				new FcBlobsBytesStore(this::storage));
+		final Map<String, byte[]> blobStore = unmodifiableMap(new FcBlobsBytesStore(this::storage));
 
 		fileContents = DataMapFactory.dataMapFrom(blobStore);
 		fileAttrs = MetadataMapFactory.metaMapFrom(blobStore);
@@ -480,8 +481,12 @@ public class StateView {
 		return stateChildren == null ? emptyMm() : stateChildren.getUniqueTokens();
 	}
 
-	VirtualMap<VirtualBlobKey, VirtualBlobValue> storage() {
+	public VirtualMap<VirtualBlobKey, VirtualBlobValue> storage() {
 		return stateChildren == null ? emptyVm() : stateChildren.getStorage();
+	}
+
+	public VirtualMap<ContractKey, ContractValue> contractStorage() {
+		return stateChildren == null ? emptyVm() : stateChildren.getContractStorage();
 	}
 
 	MerkleMap<EntityNum, MerkleToken> tokens() {
