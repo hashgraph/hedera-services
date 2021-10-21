@@ -186,7 +186,6 @@ class ContractKeyTest {
 
 		given(bin.get())
 				.willReturn(subject.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes())
-				.willReturn((byte) (subject.getContractId() >> 8))
 				.willReturn((byte) (subject.getContractId()))
 				.willReturn(subject.getUint256Byte(0));
 
