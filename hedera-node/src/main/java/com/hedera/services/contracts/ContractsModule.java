@@ -38,13 +38,21 @@ import com.hedera.services.contracts.operation.HederaStaticCallOperation;
 import com.hedera.services.contracts.sources.SoliditySigsVerifier;
 import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.keys.StandardSyncActivationCheck;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.store.contracts.EntityAccess;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -99,6 +107,14 @@ public abstract class ContractsModule {
 	@Singleton
 	public static Map<EntityId, Long> provideEntityExpiries(Map<String, byte[]> blobStore) {
 		return entityExpiryMapFrom(blobStore);
+	}
+
+	@Provides
+	@Singleton
+	public static EntityAccess provideMutableEntityAccess(HederaLedger ledger,
+														  Supplier<VirtualMap<ContractKey, ContractValue>> storage,
+														  Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode) {
+		return new MutableEntityAccess(ledger, storage, bytecode);
 	}
 
 	@Provides
