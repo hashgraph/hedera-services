@@ -38,7 +38,6 @@ import static com.swirlds.jasperdb.utilities.NonCryptographicHashing.perm64;
  *
  * We only store the number part of the contract ID as the ideas ia there will be a virtual merkle tree for each shard
  * and realm.
- *
  */
 public final class ContractKey implements VirtualKey {
 	/** The estimated average size for a contract key when serialized */
@@ -229,15 +228,20 @@ public final class ContractKey implements VirtualKey {
 	static <D> long deserializeContractID(byte contractIdNonZeroBytes, D dataSource,
 			ByteReaderFunction<D> reader) throws IOException {
 		long contractId = 0;
-		if (contractIdNonZeroBytes >= 8) contractId |= ((long) reader.read(dataSource) & 255) << 56;
-		if (contractIdNonZeroBytes >= 7) contractId |= ((long) reader.read(dataSource) & 255) << 48;
-		if (contractIdNonZeroBytes >= 6) contractId |= ((long) reader.read(dataSource) & 255) << 40;
-		if (contractIdNonZeroBytes >= 5) contractId |= ((long) reader.read(dataSource) & 255) << 32;
-		if (contractIdNonZeroBytes >= 4) contractId |= ((long) reader.read(dataSource) & 255) << 24;
-		if (contractIdNonZeroBytes >= 3) contractId |= ((long) reader.read(dataSource) & 255) << 16;
-		if (contractIdNonZeroBytes >= 2) contractId |= ((long) reader.read(dataSource) & 255) << 8;
-		if (contractIdNonZeroBytes >= 1) contractId |= ((long) reader.read(dataSource) & 255);
+		if (contractIdNonZeroBytes >= 8) contractId |= getDataSourceShifted(reader, dataSource, 56);
+		if (contractIdNonZeroBytes >= 7) contractId |= getDataSourceShifted(reader, dataSource, 48);
+		if (contractIdNonZeroBytes >= 6) contractId |= getDataSourceShifted(reader, dataSource, 40);
+		if (contractIdNonZeroBytes >= 5) contractId |= getDataSourceShifted(reader, dataSource, 32);
+		if (contractIdNonZeroBytes >= 4) contractId |= getDataSourceShifted(reader, dataSource, 24);
+		if (contractIdNonZeroBytes >= 3) contractId |= getDataSourceShifted(reader, dataSource, 16);
+		if (contractIdNonZeroBytes >= 2) contractId |= getDataSourceShifted(reader, dataSource, 8);
+		if (contractIdNonZeroBytes >= 1) contractId |= getDataSourceShifted(reader, dataSource, 0);
 		return contractId;
+	}
+
+	private static <D> long getDataSourceShifted(final ByteReaderFunction<D> reader,
+			final D dataSource, final int i) throws IOException {
+		return ((long) reader.read(dataSource) & 255) << i;
 	}
 
 	/**
