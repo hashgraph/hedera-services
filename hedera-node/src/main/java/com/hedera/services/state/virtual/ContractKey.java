@@ -53,6 +53,9 @@ public final class ContractKey implements VirtualKey {
 	/** number of the least significant bytes in uint256Key that contain ones. Max is 32 */
 	private byte uint256KeyNonZeroBytes;
 
+	static final long RUNTIME_CONSTRUCTABLE_ID = 0xb2c0a1f733950abdL;
+	static final int MERKLE_VERSION = 1;
+
 	public ContractKey() {
 		// there has to be a default constructor for deserialize
 	}
@@ -101,12 +104,12 @@ public final class ContractKey implements VirtualKey {
 
 	@Override
 	public long getClassId() {
-		return 0xb2c0a1f733950abdL;
+		return RUNTIME_CONSTRUCTABLE_ID;
 	}
 
 	@Override
 	public int getVersion() {
-		return 1;
+		return MERKLE_VERSION;
 	}
 
 	@Override
@@ -228,14 +231,22 @@ public final class ContractKey implements VirtualKey {
 	static <D> long deserializeContractID(byte contractIdNonZeroBytes, D dataSource,
 			ByteReaderFunction<D> reader) throws IOException {
 		long contractId = 0;
-		if (contractIdNonZeroBytes >= 8) contractId |= getDataSourceShifted(reader, dataSource, 56);
-		if (contractIdNonZeroBytes >= 7) contractId |= getDataSourceShifted(reader, dataSource, 48);
-		if (contractIdNonZeroBytes >= 6) contractId |= getDataSourceShifted(reader, dataSource, 40);
-		if (contractIdNonZeroBytes >= 5) contractId |= getDataSourceShifted(reader, dataSource, 32);
-		if (contractIdNonZeroBytes >= 4) contractId |= getDataSourceShifted(reader, dataSource, 24);
-		if (contractIdNonZeroBytes >= 3) contractId |= getDataSourceShifted(reader, dataSource, 16);
-		if (contractIdNonZeroBytes >= 2) contractId |= getDataSourceShifted(reader, dataSource, 8);
-		if (contractIdNonZeroBytes >= 1) contractId |= getDataSourceShifted(reader, dataSource, 0);
+		if (contractIdNonZeroBytes >= 8) 
+			contractId |= getDataSourceShifted(reader, dataSource, 56);
+		if (contractIdNonZeroBytes >= 7)
+			contractId |= getDataSourceShifted(reader, dataSource, 48);
+		if (contractIdNonZeroBytes >= 6)
+			contractId |= getDataSourceShifted(reader, dataSource, 40);
+		if (contractIdNonZeroBytes >= 5)
+			contractId |= getDataSourceShifted(reader, dataSource, 32);
+		if (contractIdNonZeroBytes >= 4)
+			contractId |= getDataSourceShifted(reader, dataSource, 24);
+		if (contractIdNonZeroBytes >= 3)
+			contractId |= getDataSourceShifted(reader, dataSource, 16);
+		if (contractIdNonZeroBytes >= 2)
+			contractId |= getDataSourceShifted(reader, dataSource, 8);
+		if (contractIdNonZeroBytes >= 1)
+			contractId |= getDataSourceShifted(reader, dataSource, 0);
 		return contractId;
 	}
 
