@@ -29,6 +29,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Arrays;
+
+import static com.hedera.services.store.contracts.DWUtil.asPackedInts;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 @ExtendWith(MockitoExtension.class)
 class DWUtilTest {
 	@Test
@@ -48,4 +54,21 @@ class DWUtilTest {
 
 		Assertions.assertEquals(expecting, DWUtil.fromDataWord(argument));
 	}
+
+    @Test
+    void aspackedIntsTest() {
+        UInt256 num1 = UInt256.fromHexString("0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563");
+        UInt256 num2 = UInt256.fromHexString("0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e564");
+        UInt256 num3 = UInt256.fromHexString("0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e565");
+
+        var num1_arr = asPackedInts(num1.toArray());
+        var num2_arr = asPackedInts(num2.toArray());
+        var num3_arr = asPackedInts(num3.toArray());
+
+        assertFalse(Arrays.equals(num1_arr, num2_arr));
+		assertFalse(Arrays.equals(num3_arr, num2_arr));
+
+		var num4_arr = asPackedInts(UInt256.valueOf(100L).toArray());
+		assertArrayEquals(new int[] { 0, 0, 0, 0, 0, 0, 0, 100 }, num4_arr);
+    }
 }

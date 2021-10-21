@@ -53,6 +53,9 @@ public final class ContractKey implements VirtualKey {
 	/** number of the least significant bytes in uint256Key that contain ones. Max is 32 */
 	private byte uint256KeyNonZeroBytes;
 
+	static final long RUNTIME_CONSTRUCTABLE_ID = 0xb2c0a1f733950abdL;
+	static final int MERKLE_VERSION = 1;
+
 	public ContractKey() {
 		// there has to be a default constructor for deserialize
 	}
@@ -101,12 +104,12 @@ public final class ContractKey implements VirtualKey {
 
 	@Override
 	public long getClassId() {
-		return 0xb2c0a1f733950abdL;
+		return RUNTIME_CONSTRUCTABLE_ID;
 	}
 
 	@Override
 	public int getVersion() {
-		return 1;
+		return MERKLE_VERSION;
 	}
 
 	@Override
