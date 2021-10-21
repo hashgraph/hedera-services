@@ -21,6 +21,8 @@ package com.hedera.services.state.virtual;
  * ‍
  */
 
+import com.swirlds.common.io.SerializableDataInputStream;
+import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -34,8 +36,10 @@ import static com.hedera.services.state.virtual.VirtualBlobKey.Type.FILE_METADAT
 import static com.hedera.services.state.virtual.VirtualBlobKey.Type.SYSTEM_DELETED_ENTITY_EXPIRY;
 import static com.hedera.services.state.virtual.VirtualBlobKey.fromPath;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -43,6 +47,7 @@ import static org.mockito.Mockito.verify;
 class VirtualBlobKeyTest {
 	private VirtualBlobKey subject;
 	private int entityNum = 2;
+	private int otherEntityNum = 3;
 
 	@BeforeEach
 	void setup() {
@@ -54,14 +59,18 @@ class VirtualBlobKeyTest {
 		final var one = new VirtualBlobKey(VirtualBlobKey.Type.FILE_METADATA, entityNum);
 		final var two = new VirtualBlobKey(FILE_DATA, entityNum);
 		final var three = new VirtualBlobKey(FILE_DATA, entityNum);
-		final var twoRef = two;
+		final var four = new VirtualBlobKey(VirtualBlobKey.Type.FILE_METADATA, otherEntityNum);
 
 		assertNotEquals(two, one);
-		assertEquals(two, twoRef);
+		assertEquals(two, two);
 		assertEquals(two, three);
 
 		assertNotEquals(one.hashCode(), two.hashCode());
 		assertEquals(two.hashCode(), three.hashCode());
+
+		assertNotEquals(null, one);
+		assertNotEquals(FILE_DATA, two);
+		assertNotEquals(one, four);
 	}
 
 	@Test
@@ -135,5 +144,45 @@ class VirtualBlobKeyTest {
 		assertEquals(2, subject.getEntityNumCode());
 		assertEquals(FILE_DATA, subject.getType());
 		assertEquals(BYTES_IN_SERIALIZED_FORM, subject.sizeInBytes());
+	}
+
+	@Test
+	void equalsUsingByteBufferWorks() throws IOException {
+		final var testSubject1 = new VirtualBlobKey(FILE_DATA, entityNum);
+		final var testSubject2 = new VirtualBlobKey(FILE_DATA, otherEntityNum);
+		final var testSubject3 = new VirtualBlobKey(VirtualBlobKey.Type.FILE_METADATA, entityNum);
+
+		final var bin = mock(ByteBuffer.class);
+		given(bin.get()).willReturn((byte) subject.getType().ordinal());
+		given(bin.getInt()).willReturn(subject.getEntityNumCode());
+
+		assertTrue(testSubject1.equals(bin, 1));
+		assertFalse(testSubject2.equals(bin, 1));
+		assertFalse(testSubject3.equals(bin, 1));
+	}
+
+	@Test
+	void deserializeUsingSerializableDataInputStreamWorks() throws IOException {
+		final var fin = mock(SerializableDataInputStream.class);
+
+		given(fin.readByte()).willReturn((byte) FILE_DATA.ordinal());
+		given(fin.readInt()).willReturn(entityNum);
+
+		VirtualBlobKey blobKey = new VirtualBlobKey();
+
+		blobKey.deserialize(fin, VirtualBlobKey.CURRENT_VERSION);
+
+		assertEquals(subject.getEntityNumCode(), blobKey.getEntityNumCode());
+		assertEquals(subject.getType(), blobKey.getType());
+	}
+
+	@Test
+	void serializeUsingSerializableDataOutputStreamWorks() throws IOException {
+		final var fOut = mock(SerializableDataOutputStream.class);
+
+		subject.serialize(fOut);
+
+		verify(fOut).writeByte((byte) FILE_DATA.ordinal());
+		verify(fOut).writeInt(entityNum);
 	}
 }
