@@ -36,6 +36,10 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenView;
@@ -71,6 +75,7 @@ import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -167,6 +172,8 @@ class StateViewTest {
 	private FCOneToManyRelation<EntityNum, Long> nftsByType;
 	private FCOneToManyRelation<EntityNum, Long> nftsByOwner;
 	private FCOneToManyRelation<EntityNum, Long> treasuryNftsByType;
+	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
+	private VirtualMap<ContractKey, ContractValue> contractStorage;
 	private TokenStore tokenStore;
 	private ScheduleStore scheduleStore;
 	private TransactionBody parentScheduleCreate;
@@ -317,6 +324,8 @@ class StateViewTest {
 		treasuryNftsByType = (FCOneToManyRelation<EntityNum, Long>) mock(FCOneToManyRelation.class);
 		uniqTokenView = mock(UniqTokenView.class);
 		uniqTokenViewFactory = mock(UniqTokenViewFactory.class);
+		storage = (VirtualMap<VirtualBlobKey, VirtualBlobValue>) mock(VirtualMap.class);
+		contractStorage = (VirtualMap<ContractKey, ContractValue>) mock(VirtualMap.class);
 
 		children = new StateChildren();
 		children.setUniqueTokens(uniqueTokens);
@@ -637,6 +646,22 @@ class StateViewTest {
 		final var actualTopics = subject.topics();
 
 		assertEquals(topics, actualTopics);
+	}
+
+	@Test
+	void getStorageAndContractStorage() {
+		final var children = new StateChildren();
+		children.setContractStorage(contractStorage);
+		children.setStorage(storage);
+
+		subject = new StateView(
+				null, null, children, EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+
+		final var actualStorage = subject.storage();
+		final var actualContractStorage = subject.contractStorage();
+
+		assertEquals(storage, actualStorage);
+		assertEquals(contractStorage, actualContractStorage);
 	}
 
 	@Test
