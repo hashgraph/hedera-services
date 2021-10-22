@@ -21,35 +21,26 @@ package com.hedera.services.state.merkle;
  */
 
 import com.hedera.services.state.merkle.internals.BlobKey;
-import com.swirlds.blob.BinaryObject;
-import com.swirlds.blob.BinaryObjectStore;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.never;
-import static org.mockito.BDDMockito.verify;
 
 class MerkleBlobTest {
 	private final BlobKey key = new BlobKey(BlobKey.BlobType.FILE_DATA, 2);
+	private final BlobKey otherKey = new BlobKey(BlobKey.BlobType.FILE_DATA, 1);
 	private static final byte[] data = "abcdefghijklmnopqrstuvwxyz".getBytes();
 	private static final byte[] newData = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".getBytes();
 
@@ -153,6 +144,10 @@ class MerkleBlobTest {
 
 		assertNotEquals(one.hashCode(), two.hashCode());
 		assertEquals(two.hashCode(), three.hashCode());
+
+		two.setKey(key);
+		three.setKey(otherKey);
+		assertNotEquals(two, three);
 	}
 
 	@Test

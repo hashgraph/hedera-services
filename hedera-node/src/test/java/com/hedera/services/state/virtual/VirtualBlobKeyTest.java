@@ -69,6 +69,9 @@ class VirtualBlobKeyTest {
 		assertEquals(two.hashCode(), three.hashCode());
 		assertNotEquals(one, four);
 		assertFalse(one.equals(entityNum));
+
+		final var equalsForcedCallResult = one.equals(FILE_DATA);
+		assertFalse(equalsForcedCallResult);
 	}
 
 	@Test
