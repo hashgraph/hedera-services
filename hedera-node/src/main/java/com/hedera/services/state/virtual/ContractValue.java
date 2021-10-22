@@ -35,7 +35,9 @@ import java.util.Objects;
  */
 @SuppressWarnings({ "PointlessBitwiseExpression", "unused" })
 public class ContractValue implements VirtualValue {
+	public static final int MERKLE_VERSION = 1;
 	public static final int SERIALIZED_SIZE = 32;
+	public static final long RUNTIME_CONSTRUCTABLE_ID = 0xd7c4802f00979857L;
 	/** this is the raw big-endian data for the unit256 */
 	private byte[] uint256Value;
 	/** if this class is immutable */
@@ -211,7 +213,7 @@ public class ContractValue implements VirtualValue {
 	}
 
 	@Override
-	public VirtualValue asReadOnly() { // is it too expensive to make a copy here?
+	public ContractValue asReadOnly() { // is it too expensive to make a copy here?
 		ContractValue immutableValue = copy();
 		immutableValue.isImmutable = true;
 		return immutableValue;
@@ -227,12 +229,12 @@ public class ContractValue implements VirtualValue {
 
 	@Override
 	public long getClassId() {
-		return 0xd7c4802f00979857L;
+		return RUNTIME_CONSTRUCTABLE_ID;
 	}
 
 	@Override
 	public int getVersion() {
-		return 1;
+		return MERKLE_VERSION;
 	}
 
 	@Override
