@@ -64,12 +64,23 @@ public class SysFileUploadSuite extends HapiApiSuite {
 			final String sysFile,
 			final boolean isDryRun
 	) {
+		this(NOT_APPLICABLE, NOT_APPLICABLE, srcDir, specConfig, sysFile, isDryRun);
+	}
+
+	public SysFileUploadSuite(
+			final int bytesPerOp,
+			final int appendsPerBurst,
+			final String srcDir,
+			final Map<String, String> specConfig,
+			final String sysFile,
+			final boolean isDryRun
+	) {
+		this.bytesPerOp = bytesPerOp;
+		this.appendsPerBurst = appendsPerBurst;
 		this.srcDir = srcDir;
 		this.isDryRun = isDryRun;
 		this.specConfig = specConfig;
 		this.sysFileId = Utils.rationalized(sysFile);
-		this.bytesPerOp = NOT_APPLICABLE;
-		this.appendsPerBurst = NOT_APPLICABLE;
 	}
 
 	@Override

@@ -564,7 +564,7 @@ public class UtilVerbs {
 			final var appendsRequired = bytesToAppend / bytesPerOp + Math.min(1, bytesToAppend % bytesPerOp);
 			COMMON_MESSAGES.info(
 					"Beginning update for " + fileName + " (" + appendsRequired + " appends required)");
-			final var numBursts = appendsRequired / appendsPerBurst + Math.min(1, appendsRequired / appendsPerBurst);
+			final var numBursts = appendsRequired / appendsPerBurst + Math.min(1, appendsRequired % appendsPerBurst);
 
 			int position = Math.min(bytesPerOp, bytesToUpload);
 			final var updateSubOp = fileUpdate(fileName)
@@ -604,7 +604,7 @@ public class UtilVerbs {
 						appendSubOp.alertingPre(fid -> {
 							burstStart.set(Instant.now());
 							COMMON_MESSAGES.info(
-									"Starting burst #" + fixedBurstNo
+									"Starting burst " + fixedBurstNo
 											+ "/" + numBursts + " (" + fixedAppendsHere + " ops)");
 						});
 						isFirstAppend = false;
