@@ -36,6 +36,7 @@ import java.nio.ByteBuffer;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doAnswer;
@@ -67,6 +68,9 @@ class VirtualBlobValueTest {
 		assertEquals(two.hashCode(), twoRef.hashCode());
 		assertEquals(one.hashCode(), three.hashCode());
 		assertDoesNotThrow(subject::release);
+
+		final var forcedEqualsCheck = one.equals(data);
+		assertFalse(forcedEqualsCheck, "forcing equals on two different class types.");
 	}
 
 	@Test

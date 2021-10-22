@@ -298,7 +298,7 @@ class HederaWorldStateTest {
 		evmAccount.getMutable().setCode(code);
 		// and:
 		final var accountID = accountParsedFromSolidityAddress(contract.asEvmAddress().toArray());
-		given(entityAccess.isExtant(accountID)).willReturn(false);
+		given(entityAccess.isExtant(accountID)).willReturn(true);
 		given(entityAccess.getBalance(accountID)).willReturn(0L);
 
 		// when:
@@ -306,7 +306,6 @@ class HederaWorldStateTest {
 
 		// then:
 		verify(entityAccess).isExtant(accountID);
-		verify(entityAccess).spawn(any(), anyLong(), any());
 		verify(entityAccess).isExtant(accountID);
 		verify(entityAccess).getBalance(accountID);
 		verify(entityAccess).put(accountID, storageKey, storageValue);

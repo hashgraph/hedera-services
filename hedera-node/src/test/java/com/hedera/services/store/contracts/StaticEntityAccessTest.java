@@ -24,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -44,6 +45,7 @@ class StaticEntityAccessTest {
 	private StaticEntityAccess subject;
 
 	private AccountID id = IdUtils.asAccount("0.0.1234");
+	private AccountID nonExtantId = IdUtils.asAccount("0.0.1235");
 	private UInt256 uint256Key = UInt256.ONE;
 	private Bytes bytesKey = uint256Key.toBytes();
 	private ContractKey contractKey = new ContractKey(id.getAccountNum(), uint256Key.toArray());
@@ -83,10 +85,12 @@ class StaticEntityAccessTest {
 	@Test
 	void nonMutatorsWork() {
 		given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someAccount);
+		given(accounts.get(EntityNum.fromAccountId(nonExtantId))).willReturn(null);
 
 		assertEquals(someAccount.getBalance(), subject.getBalance(id));
 		assertEquals(someAccount.isDeleted(), subject.isDeleted(id));
 		assertTrue(subject.isExtant(id));
+		assertFalse(subject.isExtant(nonExtantId));
 		assertEquals(someAccount, subject.lookup(id));
 	}
 
