@@ -70,7 +70,7 @@ class VirtualBlobKeyTest {
 		assertNotEquals(one, four);
 		assertFalse(one.equals(entityNum));
 
-		final var equalsForcedCallResult = one.equals(FILE_DATA);
+		final var equalsForcedCallResult = one.equals(null);
 		assertFalse(equalsForcedCallResult);
 	}
 
