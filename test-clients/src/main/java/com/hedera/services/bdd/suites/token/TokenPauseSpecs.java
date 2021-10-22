@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.token;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -67,18 +67,17 @@ import static com.hederahashgraph.api.proto.java.TokenPauseStatus.Unpaused;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
-public class TokenPauseSpecs extends HapiApiSuite {
+public final class TokenPauseSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenPauseSpecs.class);
 
-	private static String TOKEN_TREASURY = "treasury";
-
-	private final String pauseKey = "pauseKey";
-	private final String supplyKey = "supplyKey";
-	private final String freezeKey = "freezeKey";
-	private final String adminKey = "adminKey";
-	private final String kycKey = "kycKey";
-	private final String wipeKey = "wipeKey";
-	private final String feeScheduleKey = "feeScheduleKey";
+	private static final String tokenTreasury = "treasury";
+	private static final String pauseKey = "pauseKey";
+	private static final String supplyKey = "supplyKey";
+	private static final String freezeKey = "freezeKey";
+	private static final String adminKey = "adminKey";
+	private static final String kycKey = "kycKey";
+	private static final String wipeKey = "wipeKey";
+	private static final String feeScheduleKey = "feeScheduleKey";
 
 	public static void main(String... args) {
 		new TokenPauseSpecs().runSuiteSync();
@@ -163,7 +162,7 @@ public class TokenPauseSpecs extends HapiApiSuite {
 		final String thirdUser = "thirdUser";
 		return defaultHapiSpec("PausedTokenInCustomFeeCaseStudy")
 				.given(
-						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(tokenTreasury),
 						cryptoCreate(firstUser).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(secondUser).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(thirdUser),
@@ -177,7 +176,7 @@ public class TokenPauseSpecs extends HapiApiSuite {
 								.maxSupply(1000)
 								.initialSupply(500)
 								.decimals(1)
-								.treasury(TOKEN_TREASURY)
+								.treasury(tokenTreasury)
 								.pauseKey(pauseKey)
 								.kycKey(kycKey),
 						tokenAssociate(firstUser, token),
@@ -189,15 +188,15 @@ public class TokenPauseSpecs extends HapiApiSuite {
 								.initialSupply(500)
 								.decimals(1)
 								.kycKey(kycKey)
-								.treasury(TOKEN_TREASURY)
+								.treasury(tokenTreasury)
 								.withCustom(fixedHtsFee(1, token, firstUser)),
 						tokenAssociate(secondUser, token, otherToken),
 						grantTokenKyc(otherToken, secondUser),
 						grantTokenKyc(token, secondUser),
 						tokenAssociate(thirdUser, otherToken),
 						grantTokenKyc(otherToken, thirdUser),
-						cryptoTransfer(moving(10, token).between(TOKEN_TREASURY, secondUser)),
-						cryptoTransfer(moving(100, otherToken).between(TOKEN_TREASURY, secondUser)),
+						cryptoTransfer(moving(10, token).between(tokenTreasury, secondUser)),
+						cryptoTransfer(moving(100, otherToken).between(tokenTreasury, secondUser)),
 						tokenPause(token)
 				)
 				.then(
@@ -214,7 +213,7 @@ public class TokenPauseSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("UnpauseWorks")
 				.given(
-						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(tokenTreasury),
 						cryptoCreate(firstUser),
 						newKeyNamed(pauseKey),
 						newKeyNamed(kycKey)
@@ -228,7 +227,7 @@ public class TokenPauseSpecs extends HapiApiSuite {
 								.decimals(1)
 								.pauseKey(pauseKey)
 								.kycKey(kycKey)
-								.treasury(TOKEN_TREASURY),
+								.treasury(tokenTreasury),
 						getTokenInfo(token)
 								.hasPauseStatus(Unpaused)
 								.hasPauseKey(token),
@@ -240,13 +239,13 @@ public class TokenPauseSpecs extends HapiApiSuite {
 				)
 				.then(
 						cryptoTransfer(moving(10, token)
-								.between(TOKEN_TREASURY, firstUser))
+								.between(tokenTreasury, firstUser))
 								.hasKnownStatus(TOKEN_IS_PAUSED),
 						tokenUnpause(token),
 						getTokenInfo(token)
 								.hasPauseStatus(Unpaused),
 						cryptoTransfer(moving(10, token)
-								.between(TOKEN_TREASURY, firstUser)),
+								.between(tokenTreasury, firstUser)),
 						getAccountInfo(firstUser)
 								.logged()
 				);
@@ -261,7 +260,7 @@ public class TokenPauseSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("PausedNonFungibleUniqueCannotBeUsed")
 				.given(
-						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(tokenTreasury),
 						cryptoCreate(firstUser),
 						cryptoCreate(secondUser),
 						cryptoCreate(thirdUser),
@@ -284,7 +283,7 @@ public class TokenPauseSpecs extends HapiApiSuite {
 								.wipeKey(wipeKey)
 								.initialSupply(0)
 								.maxSupply(100)
-								.treasury(TOKEN_TREASURY),
+								.treasury(tokenTreasury),
 						tokenCreate(otherToken)
 								.tokenType(FUNGIBLE_COMMON)
 								.supplyType(TokenSupplyType.FINITE)
@@ -292,7 +291,7 @@ public class TokenPauseSpecs extends HapiApiSuite {
 								.initialSupply(500)
 								.decimals(1)
 								.kycKey(kycKey)
-								.treasury(TOKEN_TREASURY),
+								.treasury(tokenTreasury),
 						tokenAssociate(firstUser, uniqueToken),
 						mintToken(uniqueToken,
 								List.of(metadata("firstMinted"), metadata("SecondMinted"))),
@@ -300,7 +299,7 @@ public class TokenPauseSpecs extends HapiApiSuite {
 						tokenAssociate(thirdUser, otherToken),
 						grantTokenKyc(otherToken, thirdUser),
 						cryptoTransfer(movingUnique(uniqueToken, 1L)
-								.between(TOKEN_TREASURY, firstUser)),
+								.between(tokenTreasury, firstUser)),
 						tokenPause(uniqueToken)
 				)
 				.then(
@@ -309,13 +308,13 @@ public class TokenPauseSpecs extends HapiApiSuite {
 								.hasPauseKey(uniqueToken)
 								.hasPauseStatus(Paused),
 						tokenCreate("failedTokenCreate")
-								.treasury(TOKEN_TREASURY)
+								.treasury(tokenTreasury)
 								.withCustom(fixedHtsFee(1, uniqueToken, firstUser))
 								.hasKnownStatus(INVALID_TOKEN_ID_IN_CUSTOM_FEES),
 						tokenAssociate(secondUser, uniqueToken)
 								.hasKnownStatus(TOKEN_IS_PAUSED),
 						cryptoTransfer(movingUnique(uniqueToken, 2L)
-								.between(TOKEN_TREASURY, firstUser))
+								.between(tokenTreasury, firstUser))
 								.hasKnownStatus(TOKEN_IS_PAUSED),
 						tokenDissociate(firstUser, uniqueToken)
 								.hasKnownStatus(TOKEN_IS_PAUSED),
@@ -332,7 +331,7 @@ public class TokenPauseSpecs extends HapiApiSuite {
 						grantTokenKyc(uniqueToken, firstUser)
 								.hasKnownStatus(TOKEN_IS_PAUSED),
 						tokenFeeScheduleUpdate(uniqueToken)
-								.withCustom(fixedHbarFee(100, TOKEN_TREASURY))
+								.withCustom(fixedHbarFee(100, tokenTreasury))
 								.hasKnownStatus(TOKEN_IS_PAUSED),
 						wipeTokenAccount(uniqueToken, firstUser, List.of(1L))
 								.hasKnownStatus(TOKEN_IS_PAUSED),
@@ -342,12 +341,12 @@ public class TokenPauseSpecs extends HapiApiSuite {
 						tokenDelete(uniqueToken)
 								.hasKnownStatus(TOKEN_IS_PAUSED),
 						cryptoTransfer(
-								moving(100, otherToken).between(TOKEN_TREASURY, thirdUser),
+								moving(100, otherToken).between(tokenTreasury, thirdUser),
 								movingUnique(uniqueToken, 2L)
-										.between(TOKEN_TREASURY, firstUser))
+										.between(tokenTreasury, firstUser))
 								.via("rolledBack")
 								.hasKnownStatus(TOKEN_IS_PAUSED),
-						getAccountInfo(TOKEN_TREASURY).hasToken(
+						getAccountInfo(tokenTreasury).hasToken(
 								relationshipWith(otherToken)
 										.balance(500)
 						)
@@ -362,7 +361,7 @@ public class TokenPauseSpecs extends HapiApiSuite {
 		final String thirdUser = "thirdUser";
 		return defaultHapiSpec("pausedFungibleTokenCannotBeUsed")
 				.given(
-						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(tokenTreasury),
 						cryptoCreate(firstUser).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(secondUser),
 						cryptoCreate(thirdUser),
@@ -381,7 +380,7 @@ public class TokenPauseSpecs extends HapiApiSuite {
 								.maxSupply(1000)
 								.initialSupply(500)
 								.decimals(1)
-								.treasury(TOKEN_TREASURY)
+								.treasury(tokenTreasury)
 								.adminKey(adminKey)
 								.pauseKey(pauseKey)
 								.freezeKey(freezeKey)
@@ -396,13 +395,13 @@ public class TokenPauseSpecs extends HapiApiSuite {
 								.initialSupply(500)
 								.decimals(1)
 								.kycKey(kycKey)
-								.treasury(TOKEN_TREASURY),
+								.treasury(tokenTreasury),
 						tokenAssociate(firstUser, token),
 						grantTokenKyc(token, firstUser),
 						tokenAssociate(thirdUser, otherToken),
 						grantTokenKyc(otherToken, thirdUser),
 						cryptoTransfer(moving(100, token)
-								.between(TOKEN_TREASURY, firstUser)),
+								.between(tokenTreasury, firstUser)),
 						tokenPause(token)
 				)
 				.then(
@@ -411,13 +410,13 @@ public class TokenPauseSpecs extends HapiApiSuite {
 								.hasPauseKey(token)
 								.hasPauseStatus(Paused),
 						tokenCreate("failedTokenCreate")
-								.treasury(TOKEN_TREASURY)
+								.treasury(tokenTreasury)
 								.withCustom(fixedHtsFee(1, token, firstUser))
 								.hasKnownStatus(INVALID_TOKEN_ID_IN_CUSTOM_FEES),
 						tokenAssociate(secondUser, token)
 								.hasKnownStatus(TOKEN_IS_PAUSED),
 						cryptoTransfer(moving(10, token)
-								.between(TOKEN_TREASURY, firstUser))
+								.between(tokenTreasury, firstUser))
 								.hasKnownStatus(TOKEN_IS_PAUSED),
 						tokenDissociate(firstUser, token)
 								.hasKnownStatus(TOKEN_IS_PAUSED),
@@ -434,7 +433,7 @@ public class TokenPauseSpecs extends HapiApiSuite {
 						grantTokenKyc(token, firstUser)
 								.hasKnownStatus(TOKEN_IS_PAUSED),
 						tokenFeeScheduleUpdate(token)
-								.withCustom(fixedHbarFee(100, TOKEN_TREASURY))
+								.withCustom(fixedHbarFee(100, tokenTreasury))
 								.hasKnownStatus(TOKEN_IS_PAUSED),
 						wipeTokenAccount(token, firstUser, 10)
 								.hasKnownStatus(TOKEN_IS_PAUSED),
@@ -444,11 +443,11 @@ public class TokenPauseSpecs extends HapiApiSuite {
 						tokenDelete(token)
 								.hasKnownStatus(TOKEN_IS_PAUSED),
 						cryptoTransfer(
-								moving(100, otherToken).between(TOKEN_TREASURY, thirdUser),
-								moving(20, token).between(TOKEN_TREASURY, firstUser))
+								moving(100, otherToken).between(tokenTreasury, thirdUser),
+								moving(20, token).between(tokenTreasury, firstUser))
 								.via("rolledBack")
 								.hasKnownStatus(TOKEN_IS_PAUSED),
-						getAccountInfo(TOKEN_TREASURY).hasToken(
+						getAccountInfo(tokenTreasury).hasToken(
 								relationshipWith(otherToken)
 										.balance(500)
 						)
@@ -458,7 +457,7 @@ public class TokenPauseSpecs extends HapiApiSuite {
 	private HapiApiSpec cannotChangePauseStatusIfMissingPauseKey() {
 		return defaultHapiSpec("CannotChangePauseStatusIfMissingPauseKey")
 				.given(
-						cryptoCreate(TOKEN_TREASURY)
+						cryptoCreate(tokenTreasury)
 				)
 				.when(
 						tokenCreate("primary")
@@ -467,13 +466,13 @@ public class TokenPauseSpecs extends HapiApiSuite {
 								.maxSupply(1000)
 								.initialSupply(500)
 								.decimals(1)
-								.treasury(TOKEN_TREASURY),
+								.treasury(tokenTreasury),
 						tokenCreate("non-fungible-unique-primary")
 								.tokenType(NON_FUNGIBLE_UNIQUE)
 								.supplyType(TokenSupplyType.FINITE)
 								.initialSupply(0)
 								.maxSupply(100)
-								.treasury(TOKEN_TREASURY)
+								.treasury(tokenTreasury)
 				)
 				.then(
 						tokenPause("primary")
@@ -500,14 +499,14 @@ public class TokenPauseSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("BasePauseAndUnpauseHaveExpectedPrices")
 				.given(
-						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(tokenTreasury),
 						newKeyNamed(pauseKey),
 						cryptoCreate(civilian).key(pauseKey)
 				)
 				.when(
 						tokenCreate(token)
 								.pauseKey(pauseKey)
-								.treasury(TOKEN_TREASURY)
+								.treasury(tokenTreasury)
 								.payingWith(civilian),
 						tokenPause(token)
 								.blankMemo()
@@ -521,7 +520,7 @@ public class TokenPauseSpecs extends HapiApiSuite {
 								.via(tokenUnpauseTransaction),
 						getTokenInfo(token)
 								.hasPauseStatus(Unpaused)
-						)
+				)
 				.then(
 						validateChargedUsd(tokenPauseTransaction, expectedBaseFee),
 						validateChargedUsd(tokenUnpauseTransaction, expectedBaseFee)

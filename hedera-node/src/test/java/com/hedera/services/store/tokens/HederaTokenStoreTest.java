@@ -292,15 +292,11 @@ class HederaTokenStoreTest {
 	void rebuildsAsExpected() {
 		final var captor = forClass(Consumer.class);
 		subject.getKnownTreasuries().put(treasury, Set.of(anotherMisc));
-
-		// setup:
 		token.setKey(EntityNum.fromLong(1L));
-		// and:
 		final var deletedToken = new MerkleToken();
 		deletedToken.setKey(EntityNum.fromLong(2L));
 		deletedToken.setDeleted(true);
 		deletedToken.setTreasury(EntityId.fromGrpcAccountId(newTreasury));
-
 		given(token.cast()).willReturn(token);
 		given(token.getKey()).willReturn(EntityNum.fromLong(1L));
 
@@ -531,12 +527,10 @@ class HederaTokenStoreTest {
 
 		// auto associate a fungible token
 		var status = subject.associate(sponsor, List.of(misc), true);
-
 		assertEquals(NO_REMAINING_AUTOMATIC_ASSOCIATIONS, status);
 
 		// auto associate a fungibleUnique token
 		status = subject.associate(sponsor, List.of(nonfungible), true);
-
 		assertEquals(NO_REMAINING_AUTOMATIC_ASSOCIATIONS, status);
 	}
 
@@ -888,8 +882,10 @@ class HederaTokenStoreTest {
 
 	@Test
 	void updateRejectsInvalidNewAutoRenewPeriod() {
-		var op = updateWith(NO_KEYS, misc, true, true, false, false, false);
-		op = op.toBuilder().setAutoRenewPeriod(enduring(-1L)).build();
+		final var op = updateWith(NO_KEYS, misc, true, true, false, false, false)
+				.toBuilder()
+				.setAutoRenewPeriod(enduring(-1L))
+				.build();
 
 		final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -1045,8 +1041,10 @@ class HederaTokenStoreTest {
 		final Set<TokenID> tokenSet = new HashSet<>();
 		tokenSet.add(misc);
 		givenUpdateTarget(ALL_KEYS, token);
-		var op = updateWith(ALL_KEYS, misc, true, true, true);
-		op = op.toBuilder().setExpiry(Timestamp.newBuilder().setSeconds(0)).build();
+		final var op = updateWith(ALL_KEYS, misc, true, true, true)
+				.toBuilder()
+				.setExpiry(Timestamp.newBuilder().setSeconds(0))
+				.build();
 
 		final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -1076,8 +1074,8 @@ class HederaTokenStoreTest {
 		final Set<TokenID> tokenSet = new HashSet<>();
 		tokenSet.add(misc);
 		givenUpdateTarget(ALL_KEYS, token);
-		var op = updateWith(ALL_KEYS, misc, true, true, true);
-		op = op.toBuilder()
+		final var op = updateWith(ALL_KEYS, misc, true, true, true)
+				.toBuilder()
 				.setExpiry(Timestamp.newBuilder().setSeconds(newExpiry))
 				.setFeeScheduleKey(newKey)
 				.build();
@@ -1222,7 +1220,7 @@ class HederaTokenStoreTest {
 		if (useNewAutoRenewPeriod) {
 			op.setAutoRenewPeriod(enduring(newAutoRenewPeriod));
 		}
-		for (var key : keys) {
+		for (final var key : keys) {
 			switch (key) {
 				case WIPE:
 					op.setWipeKey(setInvalidKeys ? invalidKey : newKey);
@@ -1263,7 +1261,7 @@ class HederaTokenStoreTest {
 		if (keys.contains(KeyType.FEE_SCHEDULE)) {
 			given(token.hasFeeScheduleKey()).willReturn(true);
 		}
-		if(keys.contains(KeyType.PAUSE)) {
+		if (keys.contains(KeyType.PAUSE)) {
 			given(token.hasPauseKey()).willReturn(true);
 		}
 	}
@@ -1391,7 +1389,7 @@ class HederaTokenStoreTest {
 		given(tokenRelsLedger.exists(anotherFeeCollectorMisc)).willReturn(false);
 		given(hederaLedger.maxAutomaticAssociations(anotherFeeCollector)).willReturn(0);
 
-		var status = subject.adjustBalance(anotherFeeCollector, misc, -1);
+		final var status = subject.adjustBalance(anotherFeeCollector, misc, -1);
 		assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, status);
 	}
 
@@ -1407,7 +1405,7 @@ class HederaTokenStoreTest {
 		given(hederaLedger.getAssociatedTokens(anotherFeeCollector)).willReturn(tokens);
 		given(tokens.includes(misc)).willReturn(false);
 
-		var status = subject.adjustBalance(anotherFeeCollector, misc, 1);
+		final var status = subject.adjustBalance(anotherFeeCollector, misc, 1);
 
 		assertEquals(NO_REMAINING_AUTOMATIC_ASSOCIATIONS, status);
 		verify(tokenRelsLedger, never()).set(anotherFeeCollectorMisc, TOKEN_BALANCE, 1L);
@@ -1426,7 +1424,7 @@ class HederaTokenStoreTest {
 		given(hederaLedger.getAssociatedTokens(anotherFeeCollector)).willReturn(tokens);
 		given(tokens.includes(misc)).willReturn(false);
 
-		var status = subject.adjustBalance(anotherFeeCollector, misc, 1);
+		final var status = subject.adjustBalance(anotherFeeCollector, misc, 1);
 
 		assertEquals(OK, status);
 		verify(tokenRelsLedger).set(anotherFeeCollectorMisc, TOKEN_BALANCE, 1L);
