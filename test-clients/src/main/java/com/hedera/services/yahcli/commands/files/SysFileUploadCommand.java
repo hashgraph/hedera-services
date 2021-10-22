@@ -26,6 +26,7 @@ import picocli.CommandLine;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.BYTES_4K;
 import static com.hedera.services.yahcli.commands.files.SysFilesCommand.resolvedDir;
 import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
 
@@ -48,12 +49,22 @@ public class SysFileUploadCommand implements Callable<Integer> {
 			description = "only write the serialized form of the system file to disk, do not send a FileUpdate")
 	private boolean dryRun;
 
+	@CommandLine.Option(names = { "--bytes-per-append" },
+			description = "number of bytes to add in each append to a special file",
+			defaultValue = "" + BYTES_4K)
+	private Integer bytesPerAppend;
+
+	@CommandLine.Option(names = { "--append-per-burst" },
+			description = "number of appends to \"burst\" when uploading a special file",
+			defaultValue = "" + 256)
+	private Integer appendsPerBurst;
+
 	@CommandLine.Parameters(
 			arity = "1",
 			paramLabel = "<sysfile>",
 			description = "one of " +
 					"{ address-book, node-details, fees, rates, props, " +
-					"permissions, throttles, software-zip, telemetry-zip  } (or " +
+					"permissions, throttles, software-zip, telemetry-zip } (or " +
 					"{ 101, 102, 111, 112, 121, 122, 123, 150, 159 })")
 	private String sysFile;
 
