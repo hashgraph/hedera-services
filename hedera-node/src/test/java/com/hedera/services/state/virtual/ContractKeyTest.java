@@ -43,9 +43,9 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 
 class ContractKeyTest {
-	private final long contactNum = 1234L;
+	private final long contractNum = 1234L;
 	private final long key = 123L;
-	private final long otherContactNum = 1235L;
+	private final long otherContractNum = 1235L;
 	private final long otherKey = 124L;
 	private final UInt256 largeKey = UInt256.fromHexString("0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563");
 	private final UInt256 uIntKey = UInt256.valueOf(key);
@@ -55,15 +55,15 @@ class ContractKeyTest {
 
 	@Test
 	void equalsWork() {
-		var testSubject1 = new ContractKey(contactNum, key);
-		var testSubject2 = new ContractKey(contactNum, key_array);
-		var testSubject3 = new ContractKey(contactNum,
+		var testSubject1 = new ContractKey(contractNum, key);
+		var testSubject2 = new ContractKey(contractNum, key_array);
+		var testSubject3 = new ContractKey(contractNum,
 				new int[] { 0, 0, 0, 0, 0, 0, (int) (key >> Integer.SIZE), (int) key });
-		var testSubject4 =  new ContractKey(contactNum, otherKey);
-		var testSubject5 =  new ContractKey(otherContactNum, key);
+		var testSubject4 =  new ContractKey(contractNum, otherKey);
+		var testSubject5 =  new ContractKey(otherContractNum, key);
 
 		subject = new ContractKey();
-		subject.setContractId(contactNum);
+		subject.setContractId(contractNum);
 		subject.setKey(key);
 
 		assertEquals(testSubject1, testSubject2);
@@ -78,11 +78,12 @@ class ContractKeyTest {
 		assertEquals(testSubject2.getContractId(), testSubject3.getContractId());
 		assertEquals(subject.toString(), testSubject1.toString());
 		assertEquals(subject.getUint256Byte(0), testSubject2.getUint256Byte(0));
+		assertFalse(subject.equals(key), "forcing equals on two different class types.");
 	}
 
 	@Test
 	void gettersWork() {
-		subject = new ContractKey(contactNum, key_array);
+		subject = new ContractKey(contractNum, key_array);
 
 		assertEquals(RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 		assertEquals(MERKLE_VERSION, subject.getVersion());
@@ -91,7 +92,7 @@ class ContractKeyTest {
 
 	@Test
 	void serializeWorks() throws IOException {
-		subject = new ContractKey(contactNum, key_array);
+		subject = new ContractKey(contractNum, key_array);
 
 		final var out = mock(SerializableDataOutputStream.class);
 		final var inOrder = inOrder(out);
@@ -112,7 +113,7 @@ class ContractKeyTest {
 
 	@Test
 	void serializeUsingByteBufferWorks() throws IOException {
-		subject = new ContractKey(contactNum, key_array);
+		subject = new ContractKey(contractNum, key_array);
 
 		final var out = mock(ByteBuffer.class);
 		final var inOrder = inOrder(out);
@@ -155,7 +156,7 @@ class ContractKeyTest {
 
 	@Test
 	void deserializeWithByteBufferWorks() throws IOException {
-		subject = new ContractKey(contactNum, key);
+		subject = new ContractKey(contractNum, key);
 		final var testSubject = new ContractKey();
 
 		final var bin = mock(ByteBuffer.class);
@@ -172,7 +173,7 @@ class ContractKeyTest {
 
 	@Test
 	void deserializeLargeKeyWorks() throws IOException {
-		subject = new ContractKey(contactNum, largeKey.toArray());
+		subject = new ContractKey(contractNum, largeKey.toArray());
 
 		final var fin = mock(SerializableDataInputStream.class);
 		given(fin.readByte())
@@ -213,9 +214,10 @@ class ContractKeyTest {
 
 	@Test
 	void equalsUsingByteBufferFailsAsExpected() throws IOException {
-		subject = new ContractKey(contactNum, key);
+		subject = new ContractKey(contractNum, key);
 		final var testSubject1 = new ContractKey(Long.MAX_VALUE, key);
-		final var testSubject2 = new ContractKey(contactNum, largeKey.toArray());
+		final var testSubject2 = new ContractKey(contractNum, largeKey.toArray());
+		final var testSubject3 = new ContractKey(otherContractNum, key);
 		final var bin = mock(ByteBuffer.class);
 
 		given(bin.get())
@@ -223,14 +225,26 @@ class ContractKeyTest {
 				.willReturn((byte) (subject.getContractId() >> 8))
 				.willReturn((byte) (subject.getContractId()))
 				.willReturn(subject.getUint256Byte(0));
-
 		assertFalse(testSubject1.equals(bin, 1));
+
+		given(bin.get())
+				.willReturn(subject.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes())
+				.willReturn((byte) (subject.getContractId() >> 8))
+				.willReturn((byte) (subject.getContractId()))
+				.willReturn(subject.getUint256Byte(0));
 		assertFalse(testSubject2.equals(bin, 1));
+
+		given(bin.get())
+				.willReturn(subject.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes())
+				.willReturn((byte) (subject.getContractId() >> 8))
+				.willReturn((byte) (subject.getContractId()))
+				.willReturn(subject.getUint256Byte(0));
+		assertFalse(testSubject3.equals(bin, 1));
 	}
 
 	@Test
 	void readKeySizeWorks() {
-		subject = new ContractKey(contactNum, key);
+		subject = new ContractKey(contractNum, key);
 		final var contractIdNonZeroBytes = subject.getContractIdNonZeroBytes();
 		final var uint256KeyNonZeroBytes = subject.getUint256KeyNonZeroBytes();
 		final var bin = mock(ByteBuffer.class);
