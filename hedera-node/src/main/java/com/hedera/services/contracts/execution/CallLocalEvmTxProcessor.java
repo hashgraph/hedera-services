@@ -59,6 +59,7 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 		super(exchange, usagePrices, dynamicProperties, gasCalculator, hederaOperations);
 	}
 
+	@Override
 	public void setWorldState(HederaMutableWorldState worldState) {
 		super.setWorldState(worldState);
 	}

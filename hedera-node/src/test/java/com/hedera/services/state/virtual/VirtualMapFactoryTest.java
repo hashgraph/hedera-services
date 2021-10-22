@@ -35,7 +35,7 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class VirtualMapFactoryTest {
+class VirtualMapFactoryTest {
 	private final String jdbDataLoc = "test/jdb";;
 	private final testJdbFactory jdbFactory = new testJdbFactory();
 

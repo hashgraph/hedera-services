@@ -39,17 +39,21 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 
 /**
- * Endpoint for executing static EVM calls for {@link com.hedera.services.queries.contract.ContractCallLocalAnswer} and
+ * Utility class for executing static EVM calls for {@link com.hedera.services.queries.contract.ContractCallLocalAnswer} and
  * {@link com.hedera.services.fees.calculation.contract.queries.ContractCallLocalResourceUsage}
  */
 public class CallLocalExecutor {
+	private CallLocalExecutor() {
+		throw new UnsupportedOperationException("Utility Class");
+	}
 
 	/**
 	 * Executes the specified {@link ContractCallLocalQuery} through a static call. Parses the result from the
 	 * {@link CallLocalEvmTxProcessor} and sets the appropriate {@link com.hederahashgraph.api.proto.java.ResponseCode}
-	 * @param accountStore the account store
+	 *
+	 * @param accountStore   the account store
 	 * @param evmTxProcessor the {@link CallLocalEvmTxProcessor} processor
-	 * @param op the query to answer
+	 * @param op             the query to answer
 	 * @return {@link ContractCallLocalResponse} result of the execution
 	 */
 	public static ContractCallLocalResponse execute(AccountStore accountStore, CallLocalEvmTxProcessor evmTxProcessor, ContractCallLocalQuery op) {
