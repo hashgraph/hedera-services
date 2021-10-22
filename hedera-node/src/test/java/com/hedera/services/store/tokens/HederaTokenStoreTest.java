@@ -839,6 +839,20 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	void cannotUpdateImmutableTokenWithNewPauseKey() {
+		given(token.hasAdminKey()).willReturn(false);
+		given(token.hasPauseKey()).willReturn(true);
+		var op = updateWith(NO_KEYS, misc, false, false, false);
+		op = op.toBuilder()
+				.setPauseKey(pauseKey)
+				.setExpiry(Timestamp.newBuilder().setSeconds(expiry + 1_234)).build();
+
+		final var outcome = subject.update(op, CONSENSUS_NOW);
+
+		assertEquals(TOKEN_IS_IMMUTABLE, outcome);
+	}
+
+	@Test
 	void ifImmutableWillStayImmutable() {
 		givenUpdateTarget(ALL_KEYS, token);
 		given(token.hasFeeScheduleKey()).willReturn(false);
