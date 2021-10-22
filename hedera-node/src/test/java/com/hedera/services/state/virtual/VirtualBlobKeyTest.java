@@ -67,9 +67,8 @@ class VirtualBlobKeyTest {
 
 		assertNotEquals(one.hashCode(), two.hashCode());
 		assertEquals(two.hashCode(), three.hashCode());
-
-		assertNotEquals(null, one);
 		assertNotEquals(one, four);
+		assertFalse(one.equals(entityNum));
 	}
 
 	@Test

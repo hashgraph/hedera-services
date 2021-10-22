@@ -171,6 +171,11 @@ class HederaWorldStateTest {
 		given(entityAccess.isExtant(any())).willReturn(false);
 		var nonExistent = subject.get(Address.RIPEMD160);
 		assertNull(nonExistent);
+
+		given(entityAccess.isExtant(any())).willReturn(true);
+		given(entityAccess.isDeleted(any())).willReturn(true);
+		nonExistent = subject.get(Address.RIPEMD160);
+		assertNull(nonExistent);
 	}
 
 	/*
