@@ -108,11 +108,6 @@ public final class ContractKey implements VirtualKey {
 	}
 
 	@Override
-	public int getVersion() {
-		return MERKLE_VERSION;
-	}
-
-	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
@@ -195,6 +190,11 @@ public final class ContractKey implements VirtualKey {
 		if (deserializedContractId != this.contractId) return false;
 		final int[] deserializedUint256Key = deserializeUnit256Key(uint256KeyNZB, buf, ByteBuffer::get);
 		return Arrays.equals(deserializedUint256Key, this.uint256Key);
+	}
+
+	@Override
+	public int getVersion() {
+		return MERKLE_VERSION;
 	}
 
 	/**

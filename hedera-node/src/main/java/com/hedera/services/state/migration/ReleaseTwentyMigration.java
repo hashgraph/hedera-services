@@ -33,7 +33,6 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.tuweni.units.bigints.UInt256;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -44,6 +43,7 @@ import static com.hedera.services.files.store.FcBlobsBytesStore.LEGACY_BLOB_CODE
 import static com.hedera.services.state.migration.StateVersions.RELEASE_TWENTY_VERSION;
 import static com.hedera.services.utils.MiscUtils.forEach;
 import static java.lang.Long.parseLong;
+import static org.apache.tuweni.units.bigints.UInt256.SIZE;
 
 public class ReleaseTwentyMigration {
 	private static final Logger log = LogManager.getLogger(ReleaseTwentyMigration.class);
@@ -120,13 +120,13 @@ public class ReleaseTwentyMigration {
 		int offset = 0;
 
 		while (offset < orderedKeyValueStorage.length) {
-			final var rawKey = new byte[UInt256.SIZE];
-			final var rawValue = new byte[UInt256.SIZE];
+			final var rawKey = new byte[SIZE];
+			final var rawValue = new byte[SIZE];
 
-			System.arraycopy(orderedKeyValueStorage, offset, rawKey, 0, UInt256.SIZE);
-			offset += UInt256.SIZE;
-			System.arraycopy(orderedKeyValueStorage, offset, rawValue, 0, UInt256.SIZE);
-			offset += UInt256.SIZE;
+			System.arraycopy(orderedKeyValueStorage, offset, rawKey, 0, SIZE);
+			offset += SIZE;
+			System.arraycopy(orderedKeyValueStorage, offset, rawValue, 0, SIZE);
+			offset += SIZE;
 
 			final var key = new ContractKey(contractNum, DWUtil.asPackedInts(rawKey));
 			final var value = new ContractValue(rawValue);
