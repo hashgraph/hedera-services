@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.freeze;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -58,6 +59,7 @@ public final class UpdateFileForUpgrade extends HapiApiSuite {
 	}
 
 	private HapiApiSpec updateFileForUpgrade() {
+		final int appendsPerBurst = 128;
 		return defaultHapiSpec("UpdateFileForUpgrade")
 				.given(
 						initializeSettings()
@@ -65,8 +67,11 @@ public final class UpdateFileForUpgrade extends HapiApiSuite {
 						sourcing(
 								() -> {
 									try {
-										return UtilVerbs.updateLargeFile(GENESIS, upgradeFileId(),
-												ByteString.copyFrom(Files.readAllBytes(Paths.get(upgradeFilePath()))));
+										return UtilVerbs.updateSpecialFile(GENESIS,
+												upgradeFileId(),
+												ByteString.copyFrom(Files.readAllBytes(Paths.get(upgradeFilePath()))),
+												TxnUtils.BYTES_4K,
+												appendsPerBurst);
 									} catch (IOException e) {
 										e.printStackTrace();
 										return null;
