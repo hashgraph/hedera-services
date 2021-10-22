@@ -42,7 +42,7 @@ import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
  * Utility class for executing static EVM calls for {@link com.hedera.services.queries.contract.ContractCallLocalAnswer} and
  * {@link com.hedera.services.fees.calculation.contract.queries.ContractCallLocalResourceUsage}
  */
-public class CallLocalExecutor {
+public final class CallLocalExecutor {
 	private CallLocalExecutor() {
 		throw new UnsupportedOperationException("Utility Class");
 	}
