@@ -69,8 +69,10 @@ class VirtualBlobKeyTest {
 		assertNotEquals(one.hashCode(), two.hashCode());
 		assertEquals(two.hashCode(), three.hashCode());
 		assertNotEquals(one, four);
-
 		assertNotNull(one);
+
+		final var forcedEqualsCheck = one.equals(entityNum);
+		assertFalse(forcedEqualsCheck, "forcing equals on two different class types.");
 	}
 
 	@Test

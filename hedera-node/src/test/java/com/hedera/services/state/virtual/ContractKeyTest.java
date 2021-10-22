@@ -278,4 +278,12 @@ class ContractKeyTest {
 		assertThrows(IllegalArgumentException.class, () -> subject.setKey(null));
 		assertThrows(IllegalArgumentException.class, () -> new ContractKey(contractNum, intArr));
 	}
+
+	@Test
+	void toStringWorks() {
+		subject = new ContractKey(contractNum, key);
+		final var subjectDescription = "ContractKey{id=1234(4D2), key=123(0,0,0,0,0,0,0,7B)}";
+
+		assertEquals(subjectDescription, subject.toString());
+	}
 }
