@@ -23,16 +23,11 @@ package com.hedera.services.bdd.suites.file;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -41,6 +36,8 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.BYTES_4K;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
@@ -76,35 +73,29 @@ public class FileUpdateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//				vanillaUpdateSucceeds(),
-//				updateFeesCompatibleWithCreates(),
-//				apiPermissionsChangeDynamically(),
-//				cannotUpdateExpirationPastMaxLifetime(),
-				optimisticUpdate(),
+				vanillaUpdateSucceeds(),
+				updateFeesCompatibleWithCreates(),
+				apiPermissionsChangeDynamically(),
+				cannotUpdateExpirationPastMaxLifetime(),
+				optimisticSpecialFileUpdate(),
 		});
 	}
 
-	private HapiApiSpec optimisticUpdate() {
-		try {
-			final var appendsPerBurst = 128;
-			final var loc = "telemetryUpgrade.zip";
-//			final var loc = "softwareUpgrade.zip";
-			final var specialFile = "0.0.159";
-			final var specialFileContents = ByteString.copyFrom(Files.readAllBytes(Paths.get(loc)));
-			return defaultHapiSpec("UpdateSystemFileOptimistically")
-					.given().when(
-							updateSpecialFile(
-									GENESIS,
-									specialFile,
-									specialFileContents,
-									TxnUtils.BYTES_4K,
-									appendsPerBurst)
-					).then(
-//							getFileInfo(specialFile).logged()
-					);
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
+	private HapiApiSpec optimisticSpecialFileUpdate() {
+		final var appendsPerBurst = 128;
+		final var specialFile = "0.0.159";
+		final var specialFileContents = ByteString.copyFrom(randomUtf8Bytes(64 * BYTES_4K));
+		return defaultHapiSpec("OptimisticSpecialFileUpdate")
+				.given().when(
+						updateSpecialFile(
+								GENESIS,
+								specialFile,
+								specialFileContents,
+								BYTES_4K,
+								appendsPerBurst)
+				).then(
+						getFileContents(specialFile).hasContents(ignore -> specialFileContents.toByteArray())
+				);
 	}
 
 	private HapiApiSpec apiPermissionsChangeDynamically() {
@@ -130,9 +121,9 @@ public class FileUpdateSuite extends HapiApiSuite {
 	private HapiApiSpec updateFeesCompatibleWithCreates() {
 		final long origLifetime = 7_200_000L;
 		final long extension = 700_000L;
-		final byte[] old2k = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K / 2);
-		final byte[] new4k = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);
-		final byte[] new2k = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K / 2);
+		final byte[] old2k = randomUtf8Bytes(BYTES_4K / 2);
+		final byte[] new4k = randomUtf8Bytes(BYTES_4K);
+		final byte[] new2k = randomUtf8Bytes(BYTES_4K / 2);
 
 		return defaultHapiSpec("UpdateFeesCompatibleWithCreates")
 				.given(
@@ -181,8 +172,8 @@ public class FileUpdateSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec vanillaUpdateSucceeds() {
-		final byte[] old4K = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);
-		final byte[] new4k = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);
+		final byte[] old4K = randomUtf8Bytes(BYTES_4K);
+		final byte[] new4k = randomUtf8Bytes(BYTES_4K);
 		final String firstMemo = "Originally";
 		final String secondMemo = "Subsequently";
 
