@@ -37,6 +37,7 @@ import static com.hedera.services.state.virtual.VirtualBlobKey.fromPath;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -68,10 +69,8 @@ class VirtualBlobKeyTest {
 		assertNotEquals(one.hashCode(), two.hashCode());
 		assertEquals(two.hashCode(), three.hashCode());
 		assertNotEquals(one, four);
-		assertFalse(one.equals(entityNum));
 
-		final var equalsForcedCallResult = one.equals(null);
-		assertFalse(equalsForcedCallResult);
+		assertNotNull(one);
 	}
 
 	@Test

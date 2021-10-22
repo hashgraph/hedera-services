@@ -847,6 +847,7 @@ class StateViewTest {
 		assertSame(StateView.EMPTY_FCOTMR, subject.nftsByType());
 		assertSame(StateView.EMPTY_FCM, subject.tokens());
 		assertSame(StateView.EMPTY_VM, subject.storage());
+		assertSame(StateView.EMPTY_VM, subject.contractStorage());
 		assertSame(StateView.EMPTY_FCM, subject.uniqueTokens());
 		assertSame(StateView.EMPTY_FCM, subject.tokenAssociations());
 		assertSame(StateView.EMPTY_FCM, subject.contracts());

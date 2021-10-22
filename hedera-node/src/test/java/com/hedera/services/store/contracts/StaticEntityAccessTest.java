@@ -45,6 +45,7 @@ class StaticEntityAccessTest {
 
 	private AccountID id = IdUtils.asAccount("0.0.1234");
 	private UInt256 uint256Key = UInt256.ONE;
+	private Bytes bytesKey = uint256Key.toBytes();
 	private ContractKey contractKey = new ContractKey(id.getAccountNum(), uint256Key.toArray());
 	private VirtualBlobKey blobKey = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE,
 			(int) id.getAccountNum());
@@ -76,7 +77,7 @@ class StaticEntityAccessTest {
 		assertThrows(UnsupportedOperationException.class, () -> subject.customize(id, customizer));
 		assertThrows(UnsupportedOperationException.class, () -> subject.adjustBalance(id, 10L));
 		assertThrows(UnsupportedOperationException.class, () -> subject.put(id, uint256Key, uint256Key));
-		assertThrows(UnsupportedOperationException.class, () -> subject.store(id, uint256Key.toBytes()));
+		assertThrows(UnsupportedOperationException.class, () -> subject.store(id, bytesKey));
 	}
 
 	@Test
