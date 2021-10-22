@@ -266,10 +266,14 @@ class ContractKeyTest {
 	@Test
 	void cannotUseInvalidKeys() {
 		final var notEight = 7;
+		final var not32 = 41;
 		final int[] intArr = new int[notEight];
+		final byte[] byteArr = new byte[not32];
+
 		subject = new ContractKey();
 
 		assertThrows(IllegalArgumentException.class, () -> new ContractKey(contractNum, (byte[]) null));
+		assertThrows(IllegalArgumentException.class, () -> new ContractKey(contractNum, byteArr));
 		assertThrows(IllegalArgumentException.class, () -> subject.setKey(null));
 		assertThrows(IllegalArgumentException.class, () -> new ContractKey(contractNum, intArr));
 	}
