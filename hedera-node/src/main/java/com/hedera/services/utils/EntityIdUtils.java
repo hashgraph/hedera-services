@@ -228,6 +228,12 @@ public final class EntityIdUtils {
 				.build();
 	}
 
+	public static EntityId entityIdFromSolidityAddress(final byte[] solidityAddress) {
+		return new EntityId(Ints.fromByteArray(Arrays.copyOfRange(solidityAddress, 0, 4)),
+				Longs.fromByteArray(Arrays.copyOfRange(solidityAddress, 4, 12)),
+				Longs.fromByteArray(Arrays.copyOfRange(solidityAddress, 12, 20)));
+	}
+
 	public static String asLiteralString(final AccountID id) {
 		return String.format(
 				ENTITY_ID_FORMAT,
@@ -248,7 +254,7 @@ public final class EntityIdUtils {
 		final var leftNum = unsignedHighOrder32From(packedNumbers);
 		final var rightNum = unsignedLowOrder32From(packedNumbers);
 		return "(" + STATIC_PROPERTIES.scopedIdLiteralWith(leftNum)
-				+ ", " + STATIC_PROPERTIES.scopedIdLiteralWith(rightNum) + ")";
+			   + ", " + STATIC_PROPERTIES.scopedIdLiteralWith(rightNum) + ")";
 	}
 
 	public static String asIdLiteral(int num) {

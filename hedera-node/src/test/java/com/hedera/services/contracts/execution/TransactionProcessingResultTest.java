@@ -96,7 +96,8 @@ class TransactionProcessingResultTest {
 				GAS_REFUND,
 				1234L,
 				Bytes.EMPTY,
-				recipient.getId().asEvmAddress());
+				recipient.getId().asEvmAddress(),
+				List.of());
 		result.setCreatedContracts(listOfCreatedContracts);
 
 		assertEquals(expect.getGasUsed(), result.getGasUsed());
@@ -132,7 +133,7 @@ class TransactionProcessingResultTest {
 		expect.setContractID(EntityIdUtils.contractParsedFromSolidityAddress(recipient.getId().asEvmAddress().toArray()));
 		expect.setErrorMessageBytes(ByteString.copyFrom(revertReason.get().toArray()));
 
-		var result = TransactionProcessingResult.failed(GAS_USAGE, GAS_REFUND, GAS_PRICE, revertReason, Optional.of(exception));
+		var result = TransactionProcessingResult.failed(GAS_USAGE, GAS_REFUND, GAS_PRICE, revertReason,	Optional.of(exception),	List.of());
 
 		assertEquals(expect.getGasUsed(), result.getGasUsed());
 		assertEquals(GAS_PRICE, result.getGasPrice());
@@ -149,7 +150,8 @@ class TransactionProcessingResultTest {
 				GAS_REFUND,
 				GAS_PRICE,
 				Bytes.EMPTY,
-				recipient.getId().asEvmAddress());
+				recipient.getId().asEvmAddress(),
+				List.of());
 
 		assertEquals(GAS_PRICE, result.getGasPrice());
 	}
@@ -162,7 +164,8 @@ class TransactionProcessingResultTest {
 				GAS_REFUND,
 				GAS_PRICE,
 				Bytes.EMPTY,
-				recipient.getId().asEvmAddress());
+				recipient.getId().asEvmAddress(),
+				List.of());
 
 		assertEquals(GAS_REFUND, result.getSbhRefund());
 	}
@@ -175,11 +178,12 @@ class TransactionProcessingResultTest {
 				GAS_REFUND,
 				GAS_PRICE,
 				Bytes.EMPTY,
-				recipient.getId().asEvmAddress());
+				recipient.getId().asEvmAddress(),
+				List.of());
 
 		assertEquals(GAS_USAGE, result.getGasUsed());
 	}
-	
+
 	@Test
 	void assertSuccessfulStatus() {
 		var result = TransactionProcessingResult.successful(
@@ -188,7 +192,8 @@ class TransactionProcessingResultTest {
 				GAS_REFUND,
 				GAS_PRICE,
 				Bytes.EMPTY,
-				recipient.getId().asEvmAddress());
+				recipient.getId().asEvmAddress(),
+				List.of());
 
 		assertTrue(result.isSuccessful());
 	}

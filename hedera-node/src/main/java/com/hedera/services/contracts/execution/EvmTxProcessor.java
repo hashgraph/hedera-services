@@ -212,8 +212,9 @@ abstract class EvmTxProcessor {
 				receiver, payload);
 		messageFrameStack.addFirst(initialFrame);
 
+		HederaTracer hederaTracer = new HederaTracer();
 		while (!messageFrameStack.isEmpty()) {
-			process(messageFrameStack.peekFirst(), new HederaTracer());
+			process(messageFrameStack.peekFirst(), hederaTracer);
 		}
 
 		if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS && !isStatic) {
@@ -255,14 +256,16 @@ abstract class EvmTxProcessor {
 					sbhRefund.toLong(),
 					gasPrice,
 					initialFrame.getOutputData(),
-					initialFrame.getRecipientAddress());
+					initialFrame.getRecipientAddress(),
+					hederaTracer.getActions());
 		} else {
 			return TransactionProcessingResult.failed(
 					gasUsedByTransaction.toLong(),
 					sbhRefund.toLong(),
 					gasPrice,
 					initialFrame.getRevertReason(),
-					initialFrame.getExceptionalHaltReason());
+					initialFrame.getExceptionalHaltReason(),
+					hederaTracer.getActions());
 		}
 	}
 

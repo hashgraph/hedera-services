@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
@@ -47,6 +48,7 @@ public class SolidityFnResult implements SelfSerializable {
 	static DomainSerdes serdes = new DomainSerdes();
 
 	public static final int MAX_LOGS = 1_024;
+	public static final int MAX_ACTIONS = 999;
 	public static final int MAX_CREATED_IDS = 32;
 	public static final int MAX_ERROR_BYTES = 1_024;
 	public static final int MAX_RESULT_BYTES = 1_024 * 1_024;
@@ -58,6 +60,7 @@ public class SolidityFnResult implements SelfSerializable {
 	private EntityId contractId;
 	private List<EntityId> createdContractIds = new ArrayList<>();
 	private List<SolidityLog> logs = new ArrayList<>();
+	private List<SolidityAction> actions = new ArrayList<>();
 
 	public SolidityFnResult() {
 	}
@@ -69,7 +72,8 @@ public class SolidityFnResult implements SelfSerializable {
 			byte[] bloom,
 			long gasUsed,
 			List<SolidityLog> logs,
-			List<EntityId> createdContractIds
+			List<EntityId> createdContractIds,
+			List<SolidityAction> actions
 	) {
 		this.contractId = contractId;
 		this.result = result;
@@ -78,6 +82,7 @@ public class SolidityFnResult implements SelfSerializable {
 		this.gasUsed = gasUsed;
 		this.logs = logs;
 		this.createdContractIds = createdContractIds;
+		this.actions = actions;
 	}
 
 	/* --- SelfSerializable --- */
@@ -101,6 +106,7 @@ public class SolidityFnResult implements SelfSerializable {
 		contractId = serdes.readNullableSerializable(in);
 		logs = in.readSerializableList(MAX_LOGS, true, SolidityLog::new);
 		createdContractIds = in.readSerializableList(MAX_CREATED_IDS, true, EntityId::new);
+		actions = in.readSerializableList(MAX_ACTIONS, true, SolidityAction::new);
 	}
 
 	@Override
@@ -112,6 +118,7 @@ public class SolidityFnResult implements SelfSerializable {
 		serdes.writeNullableSerializable(contractId, out);
 		out.writeSerializableList(logs, true, true);
 		out.writeSerializableList(createdContractIds, true, true);
+		out.writeSerializableList(actions, true, true);
 	}
 
 	/* --- Object --- */
@@ -126,12 +133,12 @@ public class SolidityFnResult implements SelfSerializable {
 		}
 		var that = (SolidityFnResult) o;
 		return gasUsed == that.gasUsed &&
-				Objects.equals(contractId, that.contractId) &&
-				Arrays.equals(result, that.result) &&
-				Objects.equals(error, that.error) &&
-				Arrays.equals(bloom, that.bloom) &&
-				Objects.equals(logs, that.logs) &&
-				Objects.equals(createdContractIds, that.createdContractIds);
+			   Objects.equals(contractId, that.contractId) &&
+			   Arrays.equals(result, that.result) &&
+			   Objects.equals(error, that.error) &&
+			   Arrays.equals(bloom, that.bloom) &&
+			   Objects.equals(logs, that.logs) &&
+			   Objects.equals(createdContractIds, that.createdContractIds);
 	}
 
 	@Override
@@ -151,6 +158,7 @@ public class SolidityFnResult implements SelfSerializable {
 				.add("contractId", contractId)
 				.add("createdContractIds", createdContractIds)
 				.add("logs", logs)
+				.add("actions", actions)
 				.toString();
 	}
 
@@ -194,7 +202,8 @@ public class SolidityFnResult implements SelfSerializable {
 				that.getBloom().isEmpty() ? MISSING_BYTES : that.getBloom().toByteArray(),
 				that.getGasUsed(),
 				that.getLogInfoList().stream().map(SolidityLog::fromGrpc).collect(toList()),
-				that.getCreatedContractIDsList().stream().map(EntityId::fromGrpcContractId).collect(toList()));
+				that.getCreatedContractIDsList().stream().map(EntityId::fromGrpcContractId).collect(toList()),
+				that.getActionsList().stream().map(SolidityAction::fromGrpc).collect(toList()));
 	}
 
 	public ContractFunctionResult toGrpc() {
@@ -213,6 +222,9 @@ public class SolidityFnResult implements SelfSerializable {
 		}
 		if (isNotEmpty(createdContractIds)) {
 			grpc.addAllCreatedContractIDs(createdContractIds.stream().map(EntityId::toGrpcContractId).collect(toList()));
+		}
+		if (isNotEmpty(actions)) {
+			grpc.addAllActions(actions.stream().map(SolidityAction::toGrpc).collect(Collectors.toList()));
 		}
 		return grpc.build();
 	}

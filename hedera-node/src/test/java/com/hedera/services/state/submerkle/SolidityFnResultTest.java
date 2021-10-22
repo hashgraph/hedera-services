@@ -70,7 +70,8 @@ class SolidityFnResultTest {
 				bloom,
 				gasUsed,
 				logs,
-				createdContractIds);
+				createdContractIds,
+				List.of());
 
 		SolidityFnResult.serdes = serdes;
 	}
@@ -90,7 +91,8 @@ class SolidityFnResultTest {
 				bloom,
 				gasUsed,
 				logs,
-				createdContractIds);
+				createdContractIds,
+				List.of());
 		final var three = new SolidityFnResult(
 				contractId,
 				result,
@@ -98,7 +100,8 @@ class SolidityFnResultTest {
 				bloom,
 				gasUsed,
 				logs,
-				createdContractIds);
+				createdContractIds,
+				List.of());
 
 		assertNotEquals(null, one);
 		assertNotEquals(new Object(), one);
@@ -119,7 +122,8 @@ class SolidityFnResultTest {
 						subject.getBloom(),
 						subject.getGasUsed(),
 						subject.getLogs(),
-						subject.getCreatedContractIds()),
+						subject.getCreatedContractIds(),
+						List.of()),
 				subject
 		);
 	}
@@ -128,13 +132,13 @@ class SolidityFnResultTest {
 	void toStringWorks() {
 		assertEquals(
 				"SolidityFnResult{" +
-						"gasUsed=" + gasUsed + ", " +
-						"bloom=" + CommonUtils.hex(bloom) + ", " +
-						"result=" + CommonUtils.hex(result) + ", " +
-						"error=" + error + ", " +
-						"contractId=" + contractId + ", " +
-						"createdContractIds=" + createdContractIds + ", " +
-						"logs=" + logs + "}",
+				"gasUsed=" + gasUsed + ", " +
+				"bloom=" + CommonUtils.hex(bloom) + ", " +
+				"result=" + CommonUtils.hex(result) + ", " +
+				"error=" + error + ", " +
+				"contractId=" + contractId + ", " +
+				"createdContractIds=" + createdContractIds + ", " +
+				"logs=" + logs + "}",
 				subject.toString());
 	}
 

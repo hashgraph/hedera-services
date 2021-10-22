@@ -485,6 +485,7 @@ public class ContractCallSuite extends HapiApiSuite {
 								.via("payTxn").sending(depositAmount)
 				).then(
 						getTxnRecord("payTxn")
+								.logged()
 								.hasPriority(recordWith().contractCallResult(
 										resultWith().logs(inOrder()))));
 	}
@@ -538,6 +539,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						contractCall("payableContract").via("payTxn").sending(depositAmount)
 				).then(
 						getTxnRecord("payTxn")
+								.logged()
 								.hasPriority(recordWith().contractCallResult(
 										resultWith().logs(
 												inOrder(
@@ -570,15 +572,15 @@ public class ContractCallSuite extends HapiApiSuite {
 						contractCall("parentDelegate", ContractResources.GET_CHILD_ADDRESS_ABI).via(
 								"getChildAddressTxn")
 				).then(
-						getTxnRecord("createChildTxn")
+						getTxnRecord("createChildTxn").logged()
 								.saveCreatedContractListToRegistry("createChild")
 								.logged(),
-						getTxnRecord("getChildResultTxn")
+						getTxnRecord("getChildResultTxn").logged()
 								.hasPriority(recordWith().contractCallResult(
 										resultWith().resultThruAbi(
 												ContractResources.GET_CHILD_RESULT_ABI,
 												isLiteralResult(new Object[]{BigInteger.valueOf(7L)})))),
-						getTxnRecord("getChildAddressTxn")
+						getTxnRecord("getChildAddressTxn").logged()
 								.hasPriority(recordWith().contractCallResult(
 										resultWith()
 												.resultThruAbi(
@@ -600,7 +602,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						getContractInfo("simpleStorage").saveToRegistry("simpleStorageInfo")
 				).when().then(
 						contractCall("simpleStorage", ContractResources.CREATE_CHILD_ABI).via("simpleStorageTxn")
-								.gas(0L).hasKnownStatus(INSUFFICIENT_GAS),
+								.gas(10L).hasKnownStatus(INSUFFICIENT_GAS),
 						getTxnRecord("simpleStorageTxn").logged()
 				);
 	}
@@ -629,7 +631,7 @@ public class ContractCallSuite extends HapiApiSuite {
 										depositAmount)
 								.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 				).then(
-						getTxnRecord("callTxn").hasPriority(
+						getTxnRecord("callTxn").logged().hasPriority(
 								recordWith().contractCallResult(
 										resultWith().logs(inOrder())))
 				);
@@ -649,11 +651,11 @@ public class ContractCallSuite extends HapiApiSuite {
 		BiConsumer<TransactionRecord, Logger> RESULT_SIZE_FORMATTER = (record, txnLog) -> {
 			ContractFunctionResult result = record.getContractCallResult();
 			txnLog.info("Contract call result FeeBuilder size = "
-					+ FeeBuilder.getContractFunctionSize(result)
-					+ ", fee = " + record.getTransactionFee()
-					+ ", result is [self-reported size = " + result.getContractCallResult().size()
-					+ ", '" + result.getContractCallResult() + "']");
-			txnLog.info("  Literally :: " + result.toString());
+						+ FeeBuilder.getContractFunctionSize(result)
+						+ ", fee = " + record.getTransactionFee()
+						+ ", result is [self-reported size = " + result.getContractCallResult().size()
+						+ ", '" + result.getContractCallResult() + "']");
+			txnLog.info("  Literally :: " + result);
 		};
 
 		return defaultHapiSpec("ResultSizeAffectsFees")
@@ -705,12 +707,12 @@ public class ContractCallSuite extends HapiApiSuite {
 									contractCreate("failInsufficientGas")
 											.balance(0)
 											.payingWith("payer")
-											.gas(1)
+											.gas(10L)
 											.bytecode("bytecode")
 											.hasKnownStatus(INSUFFICIENT_GAS)
 											.via("failInsufficientGas");
 
-							var subop3 = getTxnRecord("failInsufficientGas");
+							var subop3 = getTxnRecord("failInsufficientGas").logged();
 							allRunFor(spec, subop1, subop2, subop3);
 							long delta = subop3.getResponseRecord().getTransactionFee();
 
@@ -732,7 +734,7 @@ public class ContractCallSuite extends HapiApiSuite {
 									.via("failInvalidInitialBalance")
 									.hasKnownStatus(CONTRACT_REVERT_EXECUTED);
 
-							var subop3 = getTxnRecord("failInvalidInitialBalance");
+							var subop3 = getTxnRecord("failInvalidInitialBalance").logged();
 							allRunFor(spec, subop1, subop2, subop3);
 							long delta = subop3.getResponseRecord().getTransactionFee();
 
@@ -754,7 +756,7 @@ public class ContractCallSuite extends HapiApiSuite {
 									.hasKnownStatus(SUCCESS)
 									.via("successWithZeroInitialBalance");
 
-							var subop3 = getTxnRecord("successWithZeroInitialBalance");
+							var subop3 = getTxnRecord("successWithZeroInitialBalance").logged();
 							allRunFor(spec, subop1, subop2, subop3);
 							long delta = subop3.getResponseRecord().getTransactionFee();
 
@@ -775,7 +777,7 @@ public class ContractCallSuite extends HapiApiSuite {
 									.hasKnownStatus(SUCCESS)
 									.via("setValue");
 
-							var subop3 = getTxnRecord("setValue");
+							var subop3 = getTxnRecord("setValue").logged();
 							allRunFor(spec, subop1, subop2, subop3);
 							long delta = subop3.getResponseRecord().getTransactionFee();
 
@@ -796,7 +798,7 @@ public class ContractCallSuite extends HapiApiSuite {
 									.hasKnownStatus(SUCCESS)
 									.via("getValue");
 
-							var subop3 = getTxnRecord("getValue");
+							var subop3 = getTxnRecord("getValue").logged();
 							allRunFor(spec, subop1, subop2, subop3);
 							long delta = subop3.getResponseRecord().getTransactionFee();
 
@@ -806,9 +808,9 @@ public class ContractCallSuite extends HapiApiSuite {
 
 						})
 				).then(
-						getTxnRecord("failInsufficientGas"),
-						getTxnRecord("successWithZeroInitialBalance"),
-						getTxnRecord("failInvalidInitialBalance")
+						getTxnRecord("failInsufficientGas").logged(),
+						getTxnRecord("successWithZeroInitialBalance").logged(),
+						getTxnRecord("failInvalidInitialBalance").logged()
 				);
 	}
 
@@ -857,12 +859,12 @@ public class ContractCallSuite extends HapiApiSuite {
 							CustomSpecAssert.allRunFor(spec, subop1, subop2, subop3, subop4, subop5);
 						})
 				).then(
-						getTxnRecord("deposit"),
-						getTxnRecord("getBalance")
+						getTxnRecord("deposit").logged(),
+						getTxnRecord("getBalance").logged()
 								.hasPriority(recordWith().contractCallResult(
 										resultWith().resultThruAbi(
 												ContractResources.GET_BALANCE_ABI,
-												isLiteralResult(new Object[]{BigInteger.valueOf(1_000L)})))),
+												isLiteralResult(new Object[] { BigInteger.valueOf(1_000L) })))),
 						getAccountBalance("receiver")
 								.hasTinyBars(2_000L)
 				);

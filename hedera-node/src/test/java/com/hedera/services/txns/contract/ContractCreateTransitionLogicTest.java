@@ -226,7 +226,8 @@ class ContractCreateTransitionLogicTest {
 						0L,
 						124L,
 						Bytes.EMPTY,
-						contractAccount.getId().asEvmAddress());
+						contractAccount.getId().asEvmAddress(),
+						List.of());
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress())).willReturn(contractAccount.getId().asEvmAddress());
 		given(evmTxProcessor.execute(
@@ -270,7 +271,7 @@ class ContractCreateTransitionLogicTest {
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		var expiry = RequestBuilder.getExpirationTime(consensusTime,
 				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();
-		var result = TransactionProcessingResult.failed(1234L, 0L, 124L, Optional.empty(), Optional.empty());
+		var result = TransactionProcessingResult.failed(1234L, 0L, 124L, Optional.empty(), Optional.empty(), List.of());
 		given(evmTxProcessor.execute(
 				senderAccount,
 				contractAccount.getId().asEvmAddress(),
@@ -309,7 +310,8 @@ class ContractCreateTransitionLogicTest {
 						0L,
 						124L,
 						Bytes.EMPTY,
-						contractAccount.getId().asEvmAddress());
+						contractAccount.getId().asEvmAddress(),
+						List.of());
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		var expiry = RequestBuilder.getExpirationTime(consensusTime,
 				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();
