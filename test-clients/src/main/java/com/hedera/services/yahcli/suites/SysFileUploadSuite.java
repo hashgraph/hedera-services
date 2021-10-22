@@ -22,6 +22,7 @@ package com.hedera.services.yahcli.suites;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
 import org.apache.logging.log4j.LogManager;
@@ -38,12 +39,18 @@ import java.util.OptionalLong;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes.SYS_FILE_SERDES;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
+import static com.hedera.services.yahcli.suites.Utils.isSpecialFile;
 
 public class SysFileUploadSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(SysFileUploadSuite.class);
 
+	private static final int NOT_APPLICABLE = -1;
+
+	private final int bytesPerOp;
+	private final int appendsPerBurst;
 	private final long sysFileId;
 	private final String srcDir;
 	private final boolean isDryRun;
@@ -57,6 +64,19 @@ public class SysFileUploadSuite extends HapiApiSuite {
 			final String sysFile,
 			final boolean isDryRun
 	) {
+		this(NOT_APPLICABLE, NOT_APPLICABLE, srcDir, specConfig, sysFile, isDryRun);
+	}
+
+	public SysFileUploadSuite(
+			final int bytesPerOp,
+			final int appendsPerBurst,
+			final String srcDir,
+			final Map<String, String> specConfig,
+			final String sysFile,
+			final boolean isDryRun
+	) {
+		this.bytesPerOp = bytesPerOp;
+		this.appendsPerBurst = appendsPerBurst;
 		this.srcDir = srcDir;
 		this.isDryRun = isDryRun;
 		this.specConfig = specConfig;
@@ -76,13 +96,21 @@ public class SysFileUploadSuite extends HapiApiSuite {
 
 	private HapiApiSpec uploadSysFiles() {
 		final var name = String.format("UploadSystemFile-%s", sysFileId);
+		final var fileId = String.format("0.0.%d", sysFileId);
 
 		return customHapiSpec(name).withProperties(
 				specConfig
 		).given().when().then(
-				updateLargeFile(
+				isSpecialFile(sysFileId)
+						? updateSpecialFile(
 						DEFAULT_PAYER,
-						String.format("0.0.%d", sysFileId),
+						fileId,
+						uploadData,
+						bytesPerOp,
+						appendsPerBurst)
+						: updateLargeFile(
+						DEFAULT_PAYER,
+						fileId,
 						uploadData,
 						true,
 						OptionalLong.of(10_000_000_000L),
@@ -92,12 +120,15 @@ public class SysFileUploadSuite extends HapiApiSuite {
 						(appendOp, appendsLeft) -> appendOp
 								.alertingPre(COMMON_MESSAGES::appendBeginning)
 								.alertingPost(code -> COMMON_MESSAGES.appendEnding(code, appendsLeft))
-				)
+				),
+				QueryVerbs.getFileContents(fileId)
+						.payingWith(DEFAULT_PAYER)
+						.nodePayment(ONE_HBAR)
 		);
 	}
 
 	private ByteString appropriateContents(final Long fileNum) {
-		if (Utils.isSpecialFile(fileNum)) {
+		if (isSpecialFile(fileNum)) {
 			return specialFileContents(fileNum);
 		}
 
