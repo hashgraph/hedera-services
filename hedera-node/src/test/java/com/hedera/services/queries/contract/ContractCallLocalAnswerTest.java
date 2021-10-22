@@ -22,8 +22,13 @@ package com.hedera.services.queries.contract;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.contracts.execution.CallLocalExecutor;
+import com.hedera.services.contracts.execution.CallLocalEvmTxProcessor;
+import com.hedera.services.contracts.execution.TransactionProcessingResult;
+import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
@@ -45,6 +50,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
@@ -62,7 +68,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.never;
@@ -79,9 +85,11 @@ class ContractCallLocalAnswerTest {
 
 	StateView view;
 
+	AccountStore accountStore;
 	ContractCallLocalAnswer subject;
+	EntityIdSource ids;
 	OptionValidator validator;
-	CallLocalExecutor callLocalExecutor;
+	CallLocalEvmTxProcessor evmTxProcessor;
 	MerkleMap<EntityNum, MerkleAccount> contracts;
 
 	@BeforeEach
@@ -89,13 +97,15 @@ class ContractCallLocalAnswerTest {
 		contracts = (MerkleMap<EntityNum, MerkleAccount>) mock(MerkleMap.class);
 		view = mock(StateView.class);
 
-		callLocalExecutor = mock(CallLocalExecutor.class);
+		accountStore = mock(AccountStore.class);
+		evmTxProcessor = mock(CallLocalEvmTxProcessor.class);
 		validator = mock(OptionValidator.class);
+		ids = mock(EntityIdSource.class);
 
 		given(view.contracts()).willReturn(contracts);
 		given(validator.queryableContractStatus(target, contracts)).willReturn(OK);
 
-		subject = new ContractCallLocalAnswer(callLocalExecutor, validator);
+		subject = new ContractCallLocalAnswer(ids, accountStore, evmTxProcessor, validator);
 	}
 
 	@Test
@@ -196,17 +206,21 @@ class ContractCallLocalAnswerTest {
 		assertEquals(CONTRACT_EXECUTION_EXCEPTION, opResponse.getHeader().getNodeTransactionPrecheckCode());
 		assertEquals(result, opResponse.getFunctionResult().getContractCallResult());
 		assertEquals(target, opResponse.getFunctionResult().getContractID());
-		verify(callLocalExecutor, never()).execute(any());
+		verify(accountStore, never()).loadAccount(any());
 	}
 
 	@Test
 	void getsCallResponseWhenNoCtx() throws Throwable {
 		// setup:
 		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
-		var executionResponse = response(CONTRACT_EXECUTION_EXCEPTION);
 
-		given(callLocalExecutor.execute(argThat(sensibleQuery.getContractCallLocal()::equals)))
-				.willReturn(executionResponse);
+		final var transactionProcessingResult = TransactionProcessingResult
+				.failed(0, 0, 1, Optional.empty(), Optional.empty());
+
+		given(accountStore.loadAccount(any())).willReturn(new Account(Id.fromGrpcContract(target)));
+		given(accountStore.loadContract(any())).willReturn(new Account(Id.fromGrpcContract(target)));
+		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
+				.willReturn(transactionProcessingResult);
 
 		// when:
 		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
@@ -215,7 +229,6 @@ class ContractCallLocalAnswerTest {
 		var opResponse = response.getContractCallLocal();
 		assertTrue(opResponse.hasHeader(), "Missing response header!");
 		assertEquals(CONTRACT_EXECUTION_EXCEPTION, opResponse.getHeader().getNodeTransactionPrecheckCode());
-		assertEquals(result, opResponse.getFunctionResult().getContractCallResult());
 		assertEquals(target, opResponse.getFunctionResult().getContractID());
 	}
 
@@ -223,8 +236,6 @@ class ContractCallLocalAnswerTest {
 	void translatesFailWhenNoCtx() throws Throwable {
 		// setup:
 		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
-
-		given(callLocalExecutor.execute(any())).willThrow(RuntimeException.class);
 
 		// when:
 		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);

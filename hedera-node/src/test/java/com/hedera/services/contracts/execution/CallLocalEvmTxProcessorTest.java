@@ -22,7 +22,6 @@ package com.hedera.services.contracts.execution;
  *
  */
 
-import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.HbarCentExchange;
@@ -86,8 +85,6 @@ class CallLocalEvmTxProcessorTest {
 
 	@Mock
 	private Transaction transaction;
-	@Mock
-	private TransactionContext transactionContext;
 
 	@Mock
 	private ExchangeRate exchangeRate;
@@ -104,8 +101,10 @@ class CallLocalEvmTxProcessorTest {
 	private void setup() {
 		CommonProcessorSetup.setup(gasCalculator);
 
-		callLocalEvmTxProcessor = new CallLocalEvmTxProcessor(worldState, hbarCentExchange, usagePricesProvider,
+		callLocalEvmTxProcessor = new CallLocalEvmTxProcessor(hbarCentExchange, usagePricesProvider,
 				globalDynamicProperties, gasCalculator, operations);
+
+		callLocalEvmTxProcessor.setWorldState(worldState);
 	}
 
 	@Test

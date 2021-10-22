@@ -51,13 +51,16 @@ import java.util.Set;
 public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 	@Inject
 	public CallLocalEvmTxProcessor(
-			HederaMutableWorldState worldState,
 			HbarCentExchange exchange,
 			UsagePricesProvider usagePrices,
 			GlobalDynamicProperties dynamicProperties,
 			GasCalculator gasCalculator,
 			Set<Operation> hederaOperations) {
-		super(worldState, exchange, usagePrices, dynamicProperties, gasCalculator, hederaOperations);
+		super(exchange, usagePrices, dynamicProperties, gasCalculator, hederaOperations);
+	}
+
+	public void setWorldState(HederaMutableWorldState worldState) {
+		super.setWorldState(worldState);
 	}
 
 	@Override

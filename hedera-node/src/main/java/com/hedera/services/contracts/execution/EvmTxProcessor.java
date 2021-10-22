@@ -81,13 +81,27 @@ abstract class EvmTxProcessor {
 	private static final int MAX_STACK_SIZE = 1024;
 	private static final int MAX_CODE_SIZE = 0x6000;
 
-	private final HederaMutableWorldState worldState;
+	private HederaMutableWorldState worldState;
 	private final HbarCentExchange exchange;
 	private final GasCalculator gasCalculator;
 	private final UsagePricesProvider usagePrices;
 	protected final GlobalDynamicProperties dynamicProperties;
 	private final AbstractMessageProcessor messageCallProcessor;
 	private final AbstractMessageProcessor contractCreationProcessor;
+
+	protected EvmTxProcessor(
+			final HbarCentExchange exchange,
+			final UsagePricesProvider usagePrices,
+			final GlobalDynamicProperties dynamicProperties,
+			final GasCalculator gasCalculator,
+			final Set<Operation> hederaOperations
+	) {
+		this(null, exchange, usagePrices, dynamicProperties, gasCalculator, hederaOperations);
+	}
+
+	protected void setWorldState(HederaMutableWorldState worldState) {
+		this.worldState = worldState;
+	}
 
 	protected EvmTxProcessor(
 			final HederaMutableWorldState worldState,
