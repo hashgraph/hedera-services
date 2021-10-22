@@ -29,10 +29,10 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Arrays;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.EMPTY_CONSTRUCTOR;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
@@ -41,10 +41,10 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ERROR_DECODING_BYTESTRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -64,28 +64,17 @@ public class ContractCreateSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return allOf(
-				positiveTests(),
-				negativeTests()
-		);
-	}
-
-	private List<HapiApiSpec> positiveTests() {
-		return Arrays.asList(
-				createsVanillaContract(),
-				createEmptyConstructor()
-		);
-	}
-
-	private List<HapiApiSpec> negativeTests() {
-		return Arrays.asList(
-				insufficientPayerBalanceUponCreation(),
-				rejectsInvalidMemo(),
-				rejectsInsufficientFee(),
-				rejectsInvalidBytecode(),
-				revertsNonzeroBalance(),
-				createFailsIfMissingSigs(),
-				rejectsInsufficientGas()
+		return List.of(new HapiApiSpec[] {
+						createsVanillaContract(),
+//						createEmptyConstructor(),
+//						insufficientPayerBalanceUponCreation(),
+//						rejectsInvalidMemo(),
+//						rejectsInsufficientFee(),
+//						rejectsInvalidBytecode(),
+//						revertsNonzeroBalance(),
+//						createFailsIfMissingSigs(),
+//						rejectsInsufficientGas(),
+				}
 		);
 	}
 
@@ -107,14 +96,19 @@ public class ContractCreateSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec createsVanillaContract() {
+		final var name = "testContract";
+
 		return defaultHapiSpec("CreatesVanillaContract")
 				.given(
 						fileCreate("contractFile")
 								.path(ContractResources.VALID_BYTECODE_PATH)
 				).when().then(
-						contractCreate("testContract")
-								.bytecode("contractFile")
-								.hasKnownStatus(SUCCESS)
+						contractCreate(name)
+								.omitAdminKey()
+								.bytecode("contractFile"),
+						getContractInfo(name)
+								.has(contractWith().immutableContractKey(name))
+								.logged()
 				);
 	}
 
