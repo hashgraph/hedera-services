@@ -78,7 +78,8 @@ class ContractKeyTest {
 		assertEquals(testSubject2.getContractId(), testSubject3.getContractId());
 		assertEquals(subject.toString(), testSubject1.toString());
 		assertEquals(subject.getUint256Byte(0), testSubject2.getUint256Byte(0));
-		assertFalse(subject.equals(key), "forcing equals on two different class types.");
+		var forcedEqualsCheck = subject.equals(key);
+		assertFalse(forcedEqualsCheck, "forcing equals on two different class types.");
 	}
 
 	@Test

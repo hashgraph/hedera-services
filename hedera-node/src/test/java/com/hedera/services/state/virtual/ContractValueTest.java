@@ -103,7 +103,8 @@ class ContractValueTest {
 
 	@Test
 	void setterFailsOnInvalidBytesLength() {
-		assertThrows(IllegalArgumentException.class, () -> subject.setValue("test".getBytes()));
+		final var invalidValue = "test".getBytes();
+		assertThrows(IllegalArgumentException.class, () -> subject.setValue(invalidValue));
 	}
 
 	@Test
@@ -136,10 +137,11 @@ class ContractValueTest {
 	void setThrowsOnReadOnly() {
 		// when:
 		final var readOnly = subject.asReadOnly();
+		final var bigIntValue = uint256Value.toBigInteger();
 
 		// then:
 		assertThrows(IllegalStateException.class, () -> readOnly.setValue(bytesValue));
-		assertThrows(IllegalStateException.class, () -> readOnly.setValue(uint256Value.toBigInteger()));
+		assertThrows(IllegalStateException.class, () -> readOnly.setValue(bigIntValue));
 		assertThrows(IllegalStateException.class, () -> readOnly.setValue(1));
 	}
 }
