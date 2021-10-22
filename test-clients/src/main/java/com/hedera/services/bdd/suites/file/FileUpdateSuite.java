@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.file;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -28,6 +29,10 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -41,6 +46,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -70,11 +76,35 @@ public class FileUpdateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				vanillaUpdateSucceeds(),
-				updateFeesCompatibleWithCreates(),
-				apiPermissionsChangeDynamically(),
-				cannotUpdateExpirationPastMaxLifetime(),
+//				vanillaUpdateSucceeds(),
+//				updateFeesCompatibleWithCreates(),
+//				apiPermissionsChangeDynamically(),
+//				cannotUpdateExpirationPastMaxLifetime(),
+				optimisticUpdate(),
 		});
+	}
+
+	private HapiApiSpec optimisticUpdate() {
+		try {
+			final var appendsPerBurst = 128;
+			final var loc = "telemetryUpgrade.zip";
+//			final var loc = "softwareUpgrade.zip";
+			final var specialFile = "0.0.159";
+			final var specialFileContents = ByteString.copyFrom(Files.readAllBytes(Paths.get(loc)));
+			return defaultHapiSpec("UpdateSystemFileOptimistically")
+					.given().when(
+							updateSpecialFile(
+									GENESIS,
+									specialFile,
+									specialFileContents,
+									TxnUtils.BYTES_4K,
+									appendsPerBurst)
+					).then(
+//							getFileInfo(specialFile).logged()
+					);
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 
 	private HapiApiSpec apiPermissionsChangeDynamically() {
