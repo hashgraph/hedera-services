@@ -72,6 +72,14 @@ public class TokenPauseSpecs extends HapiApiSuite {
 
 	private static String TOKEN_TREASURY = "treasury";
 
+	private final String pauseKey = "pauseKey";
+	private final String supplyKey = "supplyKey";
+	private final String freezeKey = "freezeKey";
+	private final String adminKey = "adminKey";
+	private final String kycKey = "kycKey";
+	private final String wipeKey = "wipeKey";
+	private final String feeScheduleKey = "feeScheduleKey";
+
 	public static void main(String... args) {
 		new TokenPauseSpecs().runSuiteSync();
 	}
@@ -84,6 +92,7 @@ public class TokenPauseSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
+				setUp(),
 				cannotPauseWithInvalidPauseKey(),
 				cannotChangePauseStatusIfMissingPauseKey(),
 				pausedFungibleTokenCannotBeUsed(),
@@ -95,14 +104,20 @@ public class TokenPauseSpecs extends HapiApiSuite {
 		});
 	}
 
+	private HapiApiSpec setUp() {
+		return defaultHapiSpec("setUpACryptoAccount")
+				.given()
+				.when()
+				.then(
+						cryptoCreate("test")
+				);
+	}
+
 	private HapiApiSpec cannotAddPauseKeyViaTokenUpdate() {
-		String pauseKey = "pauseKey";
-		String adminKey = "adminKey";
-		String token1 = "primary";
-		String token2 = "secondary";
+		final String token1 = "primary";
+		final String token2 = "secondary";
 		return defaultHapiSpec("CannotAddPauseKeyViaTokenUpdate")
 				.given(
-						cryptoCreate("test"),
 						newKeyNamed(pauseKey),
 						newKeyNamed(adminKey)
 				)
@@ -122,9 +137,8 @@ public class TokenPauseSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec cannotPauseWithInvalidPauseKey() {
-		String pauseKey = "pauseKey";
-		String otherKey = "otherKey";
-		String token = "primary";
+		final String otherKey = "otherKey";
+		final String token = "primary";
 		return defaultHapiSpec("CannotPauseWithInvlaidPauseKey")
 				.given(
 						newKeyNamed(pauseKey),
@@ -142,13 +156,11 @@ public class TokenPauseSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec pausedTokenInCustomFeeCaseStudy() {
-		String pauseKey = "pauseKey";
-		String kycKey = "kycKey";
-		String token = "primary";
-		String otherToken = "secondary";
-		String firstUser = "firstUser";
-		String secondUser = "secondUser";
-		String thirdUser = "thirdUser";
+		final String token = "primary";
+		final String otherToken = "secondary";
+		final String firstUser = "firstUser";
+		final String secondUser = "secondUser";
+		final String thirdUser = "thirdUser";
 		return defaultHapiSpec("PausedTokenInCustomFeeCaseStudy")
 				.given(
 						cryptoCreate(TOKEN_TREASURY),
@@ -197,10 +209,8 @@ public class TokenPauseSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec unpauseWorks() {
-		String pauseKey = "pauseKey";
-		String kycKey = "kycKey";
-		String firstUser = "firstUser";
-		String token = "primary";
+		final String firstUser = "firstUser";
+		final String token = "primary";
 
 		return defaultHapiSpec("UnpauseWorks")
 				.given(
@@ -243,17 +253,11 @@ public class TokenPauseSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec pausedNonFungibleUniqueCannotBeUsed() {
-		String uniqueToken = "nonFungibleUnique";
-		String pauseKey = "pauseKey";
-		String supplyKey = "supplyKey";
-		String freezeKey = "freezeKey";
-		String adminKey = "adminKey";
-		String kycKey = "kycKey";
-		String wipeKey = "wipeKey";
-		String firstUser = "firstUser";
-		String secondUser = "secondUser";
-		String otherToken = "secondary";
-		String thirdUser = "thirdUser";
+		final String uniqueToken = "nonFungibleUnique";
+		final String firstUser = "firstUser";
+		final String secondUser = "secondUser";
+		final String otherToken = "secondary";
+		final String thirdUser = "thirdUser";
 
 		return defaultHapiSpec("PausedNonFungibleUniqueCannotBeUsed")
 				.given(
@@ -351,18 +355,11 @@ public class TokenPauseSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec pausedFungibleTokenCannotBeUsed() {
-		String pauseKey = "pauseKey";
-		String supplyKey = "supplyKey";
-		String freezeKey = "freezeKey";
-		String adminKey = "adminKey";
-		String kycKey = "kycKey";
-		String wipeKey = "wipeKey";
-		String feeScheduleKey = "feeScheduleKey";
-		String token = "primary";
-		String otherToken = "secondary";
-		String firstUser = "firstUser";
-		String secondUser = "secondUser";
-		String thirdUser = "thirdUser";
+		final String token = "primary";
+		final String otherToken = "secondary";
+		final String firstUser = "firstUser";
+		final String secondUser = "secondUser";
+		final String thirdUser = "thirdUser";
 		return defaultHapiSpec("pausedFungibleTokenCannotBeUsed")
 				.given(
 						cryptoCreate(TOKEN_TREASURY),
@@ -496,7 +493,6 @@ public class TokenPauseSpecs extends HapiApiSuite {
 
 	private HapiApiSpec basePauseAndUnpauseHaveExpectedPrices() {
 		final var expectedBaseFee = 0.001;
-		final var pauseKey = "pauseKey";
 		final var token = "token";
 		final var tokenPauseTransaction = "tokenPauseTxn";
 		final var tokenUnpauseTransaction = "tokenUnpauseTxn";

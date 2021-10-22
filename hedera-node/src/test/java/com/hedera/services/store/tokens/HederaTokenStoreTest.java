@@ -805,8 +805,8 @@ class HederaTokenStoreTest {
 
 	@Test
 	void updateRejectsInvalidExpiry() {
-		var op = updateWith(NO_KEYS, misc, true, true, false);
-		op = op.toBuilder().setExpiry(Timestamp.newBuilder().setSeconds(expiry - 1)).build();
+		final var op = updateWith(NO_KEYS, misc, true, true, false)
+				.toBuilder().setExpiry(Timestamp.newBuilder().setSeconds(expiry - 1)).build();
 
 		final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -816,8 +816,8 @@ class HederaTokenStoreTest {
 	@Test
 	void canExtendImmutableExpiry() {
 		given(token.hasAdminKey()).willReturn(false);
-		var op = updateWith(NO_KEYS, misc, false, false, false);
-		op = op.toBuilder().setExpiry(Timestamp.newBuilder().setSeconds(expiry + 1_234)).build();
+		final var op = updateWith(NO_KEYS, misc, false, false, false)
+				.toBuilder().setExpiry(Timestamp.newBuilder().setSeconds(expiry + 1_234)).build();
 
 		final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -828,8 +828,8 @@ class HederaTokenStoreTest {
 	void cannotUpdateImmutableTokenWithNewFeeScheduleKey() {
 		given(token.hasAdminKey()).willReturn(false);
 		given(token.hasFeeScheduleKey()).willReturn(true);
-		var op = updateWith(NO_KEYS, misc, false, false, false);
-		op = op.toBuilder()
+		final var op = updateWith(NO_KEYS, misc, false, false, false)
+				.toBuilder()
 				.setFeeScheduleKey(feeScheduleKey)
 				.setExpiry(Timestamp.newBuilder().setSeconds(expiry + 1_234)).build();
 
@@ -842,8 +842,8 @@ class HederaTokenStoreTest {
 	void cannotUpdateImmutableTokenWithNewPauseKey() {
 		given(token.hasAdminKey()).willReturn(false);
 		given(token.hasPauseKey()).willReturn(true);
-		var op = updateWith(NO_KEYS, misc, false, false, false);
-		op = op.toBuilder()
+		final var op = updateWith(NO_KEYS, misc, false, false, false)
+				.toBuilder()
 				.setPauseKey(pauseKey)
 				.setExpiry(Timestamp.newBuilder().setSeconds(expiry + 1_234)).build();
 
@@ -856,8 +856,8 @@ class HederaTokenStoreTest {
 	void ifImmutableWillStayImmutable() {
 		givenUpdateTarget(ALL_KEYS, token);
 		given(token.hasFeeScheduleKey()).willReturn(false);
-		var op = updateWith(ALL_KEYS, misc, false, false, false);
-		op = op.toBuilder().setFeeScheduleKey(feeScheduleKey).build();
+		final var op = updateWith(ALL_KEYS, misc, false, false, false)
+				.toBuilder().setFeeScheduleKey(feeScheduleKey).build();
 
 		final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -868,8 +868,8 @@ class HederaTokenStoreTest {
 	void cannotUpdateNewPauseKeyIfTokenHasNoPauseKey() {
 		givenUpdateTarget(ALL_KEYS, token);
 		given(token.hasPauseKey()).willReturn(false);
-		var op = updateWith(ALL_KEYS, misc, false, false, false);
-		op = op.toBuilder().setPauseKey(pauseKey).build();
+		final var op = updateWith(ALL_KEYS, misc, false, false, false)
+				.toBuilder().setPauseKey(pauseKey).build();
 
 		final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -953,8 +953,8 @@ class HederaTokenStoreTest {
 		final Set<TokenID> tokenSet = new HashSet<>();
 		tokenSet.add(nonfungible);
 		givenUpdateTarget(ALL_KEYS, nonfungibleToken);
-		var op = updateWith(ALL_KEYS, nonfungible, true, true, true);
-		op = op.toBuilder().setExpiry(Timestamp.newBuilder().setSeconds(0)).build();
+		final var op = updateWith(ALL_KEYS, nonfungible, true, true, true)
+				.toBuilder().setExpiry(Timestamp.newBuilder().setSeconds(0)).build();
 
 		final var outcome = subject.update(op, CONSENSUS_NOW);
 
