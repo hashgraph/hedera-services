@@ -34,6 +34,7 @@ import java.util.Arrays;
 import static com.hedera.services.store.contracts.DWUtil.asPackedInts;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
 class DWUtilTest {
@@ -70,5 +71,7 @@ class DWUtilTest {
 
 		var num4_arr = asPackedInts(UInt256.valueOf(100L).toArray());
 		assertArrayEquals(new int[] { 0, 0, 0, 0, 0, 0, 0, 100 }, num4_arr);
+
+		assertThrows(IllegalArgumentException.class, () -> asPackedInts(null));
     }
 }

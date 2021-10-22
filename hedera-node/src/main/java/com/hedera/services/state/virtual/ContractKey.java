@@ -98,6 +98,10 @@ public final class ContractKey implements VirtualKey {
 	}
 
 	public void setKey(int[] uint256Key) {
+		if(uint256Key == null || uint256Key.length != 8) {
+			throw new IllegalArgumentException(
+					"The key cannot be null and the key's packed int array size must be 8");
+		}
 		this.uint256Key = uint256Key;
 		this.uint256KeyNonZeroBytes = computeNonZeroBytes(uint256Key);
 	}
@@ -350,8 +354,6 @@ public final class ContractKey implements VirtualKey {
 	 * @return the number of non-zero bytes. Minimum 1, we always write at least 1 byte even for value 0
 	 */
 	static byte computeNonZeroBytes(int[] num) {
-		assert num != null;
-		assert num.length == 8;
 		int count = 0;
 		while (count < 8 && num[count] == 0) count++;
 		if (count == num.length) return 1; // it is all zeros

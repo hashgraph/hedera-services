@@ -23,6 +23,7 @@ package com.hedera.services.store.contracts;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.ethereum.vm.DataWord;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Util class for converting {@link UInt256} variables to {@link DataWord} and vice-versa. Temporary solution while the
@@ -54,7 +55,7 @@ public final class DWUtil {
 		return UInt256.fromBytes(Bytes32.wrap(dataWord.getData()));
 	}
 
-	public static int[] asPackedInts(final byte[] data) {
+	public static int[] asPackedInts(@NotNull final byte[] data) {
 		return new int[]{
 				data[0] << 24 | data[1] << 16 | data[2] << 8 | data[3],
 				data[4] << 24 | data[5] << 16 | data[6] << 8 | data[7],

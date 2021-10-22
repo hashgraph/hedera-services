@@ -264,11 +264,13 @@ class ContractKeyTest {
 	}
 
 	@Test
-	void computeNonZeroBytesAssertsAsExpected() {
+	void cannotUseInvalidKeys() {
 		final var notEight = 7;
 		final int[] intArr = new int[notEight];
+		subject = new ContractKey();
 
-		assertThrows(AssertionError.class, () -> ContractKey.computeNonZeroBytes(null));
-		assertThrows(AssertionError.class, () -> ContractKey.computeNonZeroBytes(intArr));
+		assertThrows(IllegalArgumentException.class, () -> new ContractKey(contractNum, (byte[]) null));
+		assertThrows(IllegalArgumentException.class, () -> subject.setKey(null));
+		assertThrows(IllegalArgumentException.class, () -> new ContractKey(contractNum, intArr));
 	}
 }
