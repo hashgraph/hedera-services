@@ -285,7 +285,7 @@ class PureTransferSemanticChecksTest {
 	}
 
 	@Test
-	void rejectsBothFungibleAndNonfugibleTransferSpecifications() {
+	void rejectsBothFungibleAndNonfungibleTransferSpecifications() {
 		// expect:
 		assertEquals(INVALID_ACCOUNT_AMOUNTS, subject.validateTokenTransferSyntax(List.of(
 				TokenTransferList.newBuilder()
@@ -339,6 +339,13 @@ class PureTransferSemanticChecksTest {
 				TokenTransferList.newBuilder()
 						.setToken(bTid)
 						.addAllTransfers(withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
+						.build(),
+				TokenTransferList.newBuilder()
+						.setToken(cTid)
+						.addNftTransfers(NftTransfer.newBuilder()
+								.setSenderAccountID(a)
+								.setReceiverAccountID(b)
+								.setSerialNumber(123L))
 						.build()
 		)));
 	}
