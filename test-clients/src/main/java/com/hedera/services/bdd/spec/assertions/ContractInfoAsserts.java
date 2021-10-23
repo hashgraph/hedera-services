@@ -20,6 +20,7 @@ package com.hedera.services.bdd.spec.assertions;
  * ‍
  */
 
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.Key;
 
@@ -128,8 +129,13 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
 			final var actualKey = object2ContractInfo(o).getAdminKey();
 			assertTrue(actualKey.hasContractID(),
 					"Expected a contract admin key, got " + actualKey);
-			assertEquals(spec.registry().getContractId(name), actualKey.getContractID(),
-					"Wrong immutable contract key");
+			if (TxnUtils.isIdLiteral(name)) {
+				assertEquals(HapiPropertySource.asContract(name), actualKey.getContractID(),
+						"Wrong immutable contract key");
+			} else {
+				assertEquals(spec.registry().getContractId(name), actualKey.getContractID(),
+						"Wrong immutable contract key");
+			}
 		});
 		return this;
 	}

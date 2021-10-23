@@ -27,9 +27,11 @@ import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.records.TransactionRecordService;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
@@ -52,6 +54,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -67,10 +70,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -118,10 +124,10 @@ class ContractCreateTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-
-		subject = new ContractCreateTransitionLogic(hfs, entityIdSource, txnCtx, accountStore, validator, worldState,
-				recordServices, evmTxProcessor, hederaLedger);
-
+		subject = new ContractCreateTransitionLogic(
+				hfs, entityIdSource,
+				txnCtx, accountStore, validator,
+				worldState, recordServices, evmTxProcessor, hederaLedger);
 	}
 
 	@Test
@@ -228,7 +234,8 @@ class ContractCreateTransitionLogicTest {
 						Bytes.EMPTY,
 						contractAccount.getId().asEvmAddress());
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
-		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress())).willReturn(contractAccount.getId().asEvmAddress());
+		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
+				.willReturn(contractAccount.getId().asEvmAddress());
 		given(evmTxProcessor.execute(
 				senderAccount,
 				contractAccount.getId().asEvmAddress(),
@@ -250,6 +257,15 @@ class ContractCreateTransitionLogicTest {
 				Bytes.fromHexString(contractByteCodeString),
 				txnCtx.consensusTime(),
 				expiry);
+		final ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
+		verify(hederaLedger).customizePotentiallyDeleted(eq(contractAccount.getId().asGrpcAccount()), captor.capture());
+		final var standin = new MerkleAccount();
+		captor.getValue().customizing(standin);
+		final var accountKey= standin.getAccountKey();
+		assertThat(accountKey, instanceOf(JContractIDKey.class));
+		assertEquals(
+				contractAccount.getId().getNum(),
+				((JContractIDKey) accountKey).getContractID().getContractNum());
 	}
 
 	@Test
@@ -261,7 +277,8 @@ class ContractCreateTransitionLogicTest {
 
 		// and:
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress())).willReturn(contractAccount.getId().asEvmAddress());
+		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress())).willReturn(
+				contractAccount.getId().asEvmAddress());
 		given(worldState.persist()).willReturn(expectedCreatedContracts);
 		given(hfs.exists(bytecodeSrc)).willReturn(true);
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
@@ -313,7 +330,8 @@ class ContractCreateTransitionLogicTest {
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		var expiry = RequestBuilder.getExpirationTime(consensusTime,
 				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();
-		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress())).willReturn(contractAccount.getId().asEvmAddress());
+		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress())).willReturn(
+				contractAccount.getId().asEvmAddress());
 		given(evmTxProcessor.execute(
 				senderAccount,
 				contractAccount.getId().asEvmAddress(),
@@ -392,7 +410,8 @@ class ContractCreateTransitionLogicTest {
 		contractCreateTxn = txn.build();
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(validator.attemptToDecodeOrThrow(key, SERIALIZATION_FAILED)).willThrow(new InvalidTransactionException(SERIALIZATION_FAILED));
+		given(validator.attemptToDecodeOrThrow(key, SERIALIZATION_FAILED)).willThrow(
+				new InvalidTransactionException(SERIALIZATION_FAILED));
 		// when:
 		Exception exception = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
 
@@ -416,10 +435,11 @@ class ContractCreateTransitionLogicTest {
 	@Test
 	void throwsErrorOnInvalidBytecode() {
 		given(hfs.exists(any())).willReturn(true);
-		given(hfs.cat(any())).willReturn(new byte[]{1,2,3,'\n'});
+		given(hfs.cat(any())).willReturn(new byte[] { 1, 2, 3, '\n' });
 		given(transactionBody.getConstructorParameters()).willReturn(ByteString.EMPTY);
 		// when:
-		Exception exception = assertThrows(InvalidTransactionException.class, () -> subject.prepareCodeWithConstructorArguments(transactionBody));
+		Exception exception = assertThrows(InvalidTransactionException.class,
+				() -> subject.prepareCodeWithConstructorArguments(transactionBody));
 		// then:
 		assertEquals("ERROR_DECODING_BYTESTRING", exception.getMessage());
 	}
