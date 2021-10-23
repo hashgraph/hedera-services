@@ -26,7 +26,6 @@ import com.hedera.services.exceptions.DetachedAccountException;
 import com.hedera.services.exceptions.InconsistentAdjustmentsException;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.exceptions.NonZeroNetTransfersException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -313,18 +312,6 @@ public class HederaLedger {
 		updateXfers(id, adjustment, netTransfers);
 	}
 
-	public void doTransfers(TransferList accountAmounts) {
-		throwIfNetAdjustmentIsNonzero(accountAmounts);
-		long[] newBalances = computeNewBalances(accountAmounts);
-		for (int i = 0; i < newBalances.length; i++) {
-			setBalance(accountAmounts.getAccountAmounts(i).getAccountID(), newBalances[i]);
-		}
-
-		for (AccountAmount aa : accountAmounts.getAccountAmountsList()) {
-			updateXfers(aa.getAccountID(), aa.getAmount(), netTransfers);
-		}
-	}
-
 	void doTransfer(AccountID from, AccountID to, long adjustment) {
 		long newFromBalance = computeNewBalance(from, -1 * adjustment);
 		long newToBalance = computeNewBalance(to, adjustment);
@@ -431,8 +418,7 @@ public class HederaLedger {
 			if (change.isForHbar()) {
 				validity = accountsLedger.validate(
 						change.accountId(),
-						scopedCheck.setBalanceChange(change)
-				);
+						scopedCheck.setBalanceChange(change));
 			} else {
 				validity = tokenStore.tryTokenChange(change);
 			}
@@ -581,30 +567,10 @@ public class HederaLedger {
 		return balance + adjustment;
 	}
 
-	private void throwIfNetAdjustmentIsNonzero(TransferList accountAmounts) {
-		if (!isNetZeroAdjustment(accountAmounts)) {
-			throw new NonZeroNetTransfersException(accountAmounts);
-		}
-	}
-
 	private void throwIfPendingStateIsInconsistent() {
 		if (!isNetZeroAdjustment(pendingNetTransfersInTxn())) {
 			throw new InconsistentAdjustmentsException();
 		}
-	}
-
-	private long[] computeNewBalances(TransferList accountAmounts) {
-		int n = accountAmounts.getAccountAmountsCount();
-		if (n == 0) {
-			return NO_NEW_BALANCES;
-		}
-
-		int i = 0;
-		long[] newBalances = new long[n];
-		for (AccountAmount adjustment : accountAmounts.getAccountAmountsList()) {
-			newBalances[i++] = computeNewBalance(adjustment.getAccountID(), adjustment.getAmount());
-		}
-		return newBalances;
 	}
 
 	private void setBalance(AccountID id, long newBalance) {
