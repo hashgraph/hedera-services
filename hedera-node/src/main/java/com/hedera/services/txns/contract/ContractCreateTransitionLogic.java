@@ -102,9 +102,9 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		var op = contractCreateTxn.getContractCreateInstance();
 		final var senderId = Id.fromGrpcAccount(contractCreateTxn.getTransactionID().getAccountID());
 		final var proxyAccount = op.hasProxyAccountID() ? Id.fromGrpcAccount(op.getProxyAccountID()) : Id.DEFAULT;
-		var key = op.hasAdminKey() ?
-				validator.attemptToDecodeOrThrow(op.getAdminKey(), SERIALIZATION_FAILED) :
-				STANDIN_CONTRACT_ID_KEY;
+		var key = op.hasAdminKey()
+				? validator.attemptToDecodeOrThrow(op.getAdminKey(), SERIALIZATION_FAILED)
+				: STANDIN_CONTRACT_ID_KEY;
 
 		/* --- Load the model objects --- */
 		final var sender = accountStore.loadAccount(senderId);
