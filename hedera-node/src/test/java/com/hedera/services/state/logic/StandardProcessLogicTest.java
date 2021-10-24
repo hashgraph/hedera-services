@@ -85,7 +85,9 @@ class StandardProcessLogicTest {
 	@BeforeEach
 	void setUp() {
 		subject = new StandardProcessLogic(
-				expiries, invariantChecks, expandHandleSpan, autoRenewal, txnManager, txnCtx, executionTimeTracker);
+				expiries,
+				invariantChecks, expandHandleSpan, autoRenewal,
+				txnManager, txnCtx, executionTimeTracker);
 	}
 
 	@Test

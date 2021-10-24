@@ -706,6 +706,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				!op.hasSupplyKey() &&
 				!op.hasFeeScheduleKey() &&
 				!op.hasTreasury() &&
+				!op.hasPauseKey() &&
 				!op.hasAutoRenewAccount() &&
 				op.getSymbol().length() == 0 &&
 				op.getName().length() == 0 &&

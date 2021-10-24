@@ -95,6 +95,7 @@ public class HederaSStoreOperation extends AbstractOperation {
 			boolean slotIsWarm = frame.warmUpStorage(address, key);
 			gasCost = gasCost.max(gasCalculator().calculateStorageCost(account, key, value)
 					.plus(slotIsWarm ? Gas.ZERO : this.gasCalculator().getColdSloadCost()));
+			frame.incrementGasRefund(gasCalculator().calculateStorageRefundAmount(account, key, value));
 		}
 
 		Optional<Gas> optionalCost = Optional.of(gasCost);

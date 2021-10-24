@@ -34,7 +34,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountRecords;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 /* --------------------------------------------------------------------------- */
 
@@ -71,7 +71,7 @@ public class MigrationValidation extends HapiApiSuite {
 						doRecordWorthyTransfers(NUM_ACCOUNTS, NUM_RECORDS_PER_ACCOUNT, TRANSFER_AMOUNT)
 				)).when(flattened(
 						takeRecordSnapshots(NUM_ACCOUNTS),
-						freeze().startingIn(60).seconds().andLasting(1).minutes(),
+						freezeOnly().startingIn(60).seconds(),
 						sleepFor(WAIT_FOR_NEW_VERSION_TO_START_MS)
 				)).then(flattened(
 						checkForExpectedRecords(NUM_ACCOUNTS)
