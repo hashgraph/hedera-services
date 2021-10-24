@@ -101,7 +101,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 @SuppressWarnings("unchecked")
 public class HederaLedger {
 	private static final int MAX_CONCEIVABLE_TOKENS_PER_TXN = 1_000;
-	private static final long[] NO_NEW_BALANCES = new long[0];
 	private static final List<AccountProperty> TOKEN_TRANSFER_SIDE_EFFECTS =
 			List.of(TOKENS, NUM_NFTS_OWNED, ALREADY_USED_AUTOMATIC_ASSOCIATIONS);
 
