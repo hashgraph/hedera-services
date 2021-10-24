@@ -73,16 +73,16 @@ public class ContractCreateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						createEmptyConstructor(),
-//						insufficientPayerBalanceUponCreation(),
-//						rejectsInvalidMemo(),
-//						rejectsInsufficientFee(),
-//						rejectsInvalidBytecode(),
-//						revertsNonzeroBalance(),
-//						createFailsIfMissingSigs(),
-//						rejectsInsufficientGas(),
+						createEmptyConstructor(),
+						insufficientPayerBalanceUponCreation(),
+						rejectsInvalidMemo(),
+						rejectsInsufficientFee(),
+						rejectsInvalidBytecode(),
+						revertsNonzeroBalance(),
+						createFailsIfMissingSigs(),
+						rejectsInsufficientGas(),
 						createsVanillaContractAsExpectedWithOmittedAdminKey(),
-//						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
+						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
 				}
 		);
 	}
