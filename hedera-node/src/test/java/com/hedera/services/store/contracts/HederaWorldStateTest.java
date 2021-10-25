@@ -51,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -282,6 +283,26 @@ class HederaWorldStateTest {
 		assertEquals(contract.asEvmAddress(), result);
 		// and:
 		verify(ids).newContractId(sponsor.asGrpcAccount());
+	}
+
+	@Test
+	void updaterCreatesDeletedAccountUponCommit() {
+		// given:
+		final var updater = subject.updater();
+		updater.deleteAccount(contract.asEvmAddress());
+		// and:
+		given(entityAccess.isExtant(contract.asGrpcAccount())).willReturn(false);
+		given(entityAccess.getBalance(contract.asGrpcAccount())).willReturn(0L);
+
+		// when:
+		updater.commit();
+
+		// then:
+		verify(entityAccess).isExtant(contract.asGrpcAccount());
+		verify(entityAccess).spawn(eq(contract.asGrpcAccount()), eq(0L), any());
+		verify(entityAccess).isDeleted(contract.asGrpcAccount());
+		verify(entityAccess).adjustBalance(contract.asGrpcAccount(), 0);
+		verify(entityAccess).customize(eq(contract.asGrpcAccount()), any());
 	}
 
 	@Test

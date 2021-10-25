@@ -358,6 +358,9 @@ public class HederaWorldState implements HederaMutableWorldState {
 			getDeletedAccountAddresses().forEach(address -> {
 				final var accountID = accountParsedFromSolidityAddress(address.toArray());
 				// account may have been created and deleted within the same transaction.
+				if (!entityAccess.isExtant(accountID)) {
+					entityAccess.spawn(accountID, 0, new HederaAccountCustomizer());
+				}
 				validateFalse(entityAccess.isDeleted(accountID), FAIL_INVALID);
 				entityAccess.adjustBalance(accountID, -entityAccess.getBalance(accountID));
 				entityAccess.customize(accountID, new HederaAccountCustomizer().isDeleted(true));

@@ -25,7 +25,7 @@ import com.hedera.services.contracts.execution.CallEvmTxProcessor;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -46,7 +46,7 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 	private final AccountStore accountStore;
 	private final EntityIdSource ids;
 	private final TransactionContext txnCtx;
-	private final HederaWorldState worldState;
+	private final HederaMutableWorldState worldState;
 	private final TransactionRecordService recordService;
 	private final CallEvmTxProcessor evmTxProcessor;
 
@@ -57,7 +57,7 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 			TransactionContext txnCtx,
 			EntityIdSource ids,
 			AccountStore accountStore,
-			HederaWorldState worldState,
+			HederaMutableWorldState worldState,
 			TransactionRecordService recordService,
 			CallEvmTxProcessor evmTxProcessor
 	) {
