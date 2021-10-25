@@ -338,14 +338,6 @@
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
-      <id>ethj-staging</id>
-      <name>Staging repo for ethereumj</name>
-      <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1372</url>
-    </repository>
-    <repository>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
       <id>local-repo-for-swirlds-sdk</id>
       <url>file:${project.basedir}/localSwirldsSDK</url>
     </repository>
