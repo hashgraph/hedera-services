@@ -27,9 +27,12 @@ import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.records.TransactionRecordService;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
@@ -52,6 +55,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -59,7 +63,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
-import static com.hedera.services.utils.EntityIdUtils.asContract;
+import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
@@ -67,10 +71,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -84,7 +92,8 @@ class ContractCreateTransitionLogicTest {
 	private final AccountID proxy = AccountID.newBuilder().setAccountNum(4_321L).build();
 	private final FileID bytecodeSrc = IdUtils.asFile("0.0.75231");
 	private final byte[] bytecode =
-			"6080604052603e8060116000396000f3fe6080604052600080fdfea265627a7a723158209dcac4560f0f51610e07ac469a3401491cfed6040caf961950f8964fe5ca3fe264736f6c634300050b0032".getBytes();
+			("6080604052603e8060116000396000f3fe6080604052600080fdfea265627a7a723158209dcac4560f0f51610e07" +
+					"ac469a3401491cfed6040caf961950f8964fe5ca3fe264736f6c634300050b0032").getBytes();
 
 	@Mock
 	private HederaFs hfs;
@@ -118,10 +127,10 @@ class ContractCreateTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-
-		subject = new ContractCreateTransitionLogic(hfs, entityIdSource, txnCtx, accountStore, validator, worldState,
-				recordServices, evmTxProcessor, hederaLedger);
-
+		subject = new ContractCreateTransitionLogic(
+				hfs, entityIdSource,
+				txnCtx, accountStore, validator,
+				worldState, recordServices, evmTxProcessor, hederaLedger);
 	}
 
 	@Test
@@ -195,12 +204,12 @@ class ContractCreateTransitionLogicTest {
 	}
 
 	@Test
-	void verifyCallingEvmTxProcessorWithConstructorParameters() {
+	void usesContractKeyWhenAdminKeyNotSetInOp() {
 		var op = ContractCreateTransactionBody.newBuilder()
 				.setFileID(bytecodeSrc)
 				.setInitialBalance(balance)
 				.setGas(gas)
-				.setConstructorParameters(ByteString.copyFromUtf8("test"))
+				.setConstructorParameters(copyFromUtf8("test"))
 				.setProxyAccountID(proxy)
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod).build());
 
@@ -228,7 +237,8 @@ class ContractCreateTransitionLogicTest {
 						Bytes.EMPTY,
 						contractAccount.getId().asEvmAddress());
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
-		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress())).willReturn(contractAccount.getId().asEvmAddress());
+		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
+				.willReturn(contractAccount.getId().asEvmAddress());
 		given(evmTxProcessor.execute(
 				senderAccount,
 				contractAccount.getId().asEvmAddress(),
@@ -250,18 +260,103 @@ class ContractCreateTransitionLogicTest {
 				Bytes.fromHexString(contractByteCodeString),
 				txnCtx.consensusTime(),
 				expiry);
+		final ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
+		verify(hederaLedger).customizePotentiallyDeleted(eq(contractAccount.getId().asGrpcAccount()), captor.capture());
+		final var standin = new MerkleAccount();
+		captor.getValue().customizing(standin);
+		final var accountKey = standin.getAccountKey();
+		assertThat(accountKey, instanceOf(JContractIDKey.class));
+		assertEquals(
+				contractAccount.getId().getNum(),
+				((JContractIDKey) accountKey).getContractID().getContractNum());
+	}
+
+	@Test
+	void usesAdminKeyWhenSetInOp() {
+		final var adminKey = Key.newBuilder()
+				.setEd25519(copyFromUtf8("01234567890123456789012345678901"))
+				.build();
+		final var rcAdminKey = new JEd25519Key(adminKey.getEd25519().toByteArray());
+		given(validator.attemptToDecodeOrThrow(adminKey, SERIALIZATION_FAILED))
+				.willReturn(rcAdminKey);
+
+		var op = ContractCreateTransactionBody.newBuilder()
+				.setAdminKey(adminKey)
+				.setFileID(bytecodeSrc)
+				.setInitialBalance(balance)
+				.setGas(gas)
+				.setConstructorParameters(copyFromUtf8("test"))
+				.setProxyAccountID(proxy)
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod).build());
+
+		var txn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setContractCreateInstance(op);
+		contractCreateTxn = txn.build();
+
+		var contractByteCodeString = new String(bytecode);
+		var constructorParamsHexString = CommonUtils.hex(op.getConstructorParameters().toByteArray());
+		contractByteCodeString += constructorParamsHexString;
+		var expiry = RequestBuilder.getExpirationTime(consensusTime,
+				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();
+		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+		given(hfs.exists(bytecodeSrc)).willReturn(true);
+		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
+		given(accessor.getTxn()).willReturn(contractCreateTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		final var result = TransactionProcessingResult
+				.successful(
+						null,
+						1234L,
+						0L,
+						124L,
+						Bytes.EMPTY,
+						contractAccount.getId().asEvmAddress());
+		given(txnCtx.consensusTime()).willReturn(consensusTime);
+		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
+				.willReturn(contractAccount.getId().asEvmAddress());
+		given(evmTxProcessor.execute(
+				senderAccount,
+				contractAccount.getId().asEvmAddress(),
+				gas,
+				balance,
+				Bytes.fromHexString(contractByteCodeString),
+				txnCtx.consensusTime(),
+				expiry))
+				.willReturn(result);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(evmTxProcessor).execute(senderAccount,
+				contractAccount.getId().asEvmAddress(),
+				gas,
+				balance,
+				Bytes.fromHexString(contractByteCodeString),
+				txnCtx.consensusTime(),
+				expiry);
+		final ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
+		verify(hederaLedger).customizePotentiallyDeleted(eq(contractAccount.getId().asGrpcAccount()), captor.capture());
+		final var standin = new MerkleAccount();
+		captor.getValue().customizing(standin);
+		final var accountKey = standin.getAccountKey();
+		assertThat(accountKey, instanceOf(JEd25519Key.class));
+		assertArrayEquals(
+				adminKey.getEd25519().toByteArray(),
+				accountKey.getEd25519());
 	}
 
 	@Test
 	void capturesUnsuccessfulCreate() {
-
 		// setup:
 		givenValidTxnCtx();
 		List<ContractID> expectedCreatedContracts = List.of(contractAccount.getId().asGrpcContract());
 
 		// and:
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress())).willReturn(contractAccount.getId().asEvmAddress());
+		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress())).willReturn(
+				contractAccount.getId().asEvmAddress());
 		given(worldState.persist()).willReturn(expectedCreatedContracts);
 		given(hfs.exists(bytecodeSrc)).willReturn(true);
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
@@ -270,7 +365,8 @@ class ContractCreateTransitionLogicTest {
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		var expiry = RequestBuilder.getExpirationTime(consensusTime,
 				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();
-		var result = TransactionProcessingResult.failed(1234L, 0L, 124L, Optional.empty(), Optional.empty());
+		var result = TransactionProcessingResult.failed(1234L, 0L,
+				124L, Optional.empty(), Optional.empty());
 		given(evmTxProcessor.execute(
 				senderAccount,
 				contractAccount.getId().asEvmAddress(),
@@ -301,7 +397,6 @@ class ContractCreateTransitionLogicTest {
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		final var expectedKey = new JContractIDKey(asContract(senderAccount.getId().asGrpcAccount()));
 		final var result = TransactionProcessingResult
 				.successful(
 						null,
@@ -313,7 +408,8 @@ class ContractCreateTransitionLogicTest {
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		var expiry = RequestBuilder.getExpirationTime(consensusTime,
 				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();
-		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress())).willReturn(contractAccount.getId().asEvmAddress());
+		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress())).willReturn(
+				contractAccount.getId().asEvmAddress());
 		given(evmTxProcessor.execute(
 				senderAccount,
 				contractAccount.getId().asEvmAddress(),
@@ -392,7 +488,8 @@ class ContractCreateTransitionLogicTest {
 		contractCreateTxn = txn.build();
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(validator.attemptToDecodeOrThrow(key, SERIALIZATION_FAILED)).willThrow(new InvalidTransactionException(SERIALIZATION_FAILED));
+		given(validator.attemptToDecodeOrThrow(key, SERIALIZATION_FAILED)).willThrow(
+				new InvalidTransactionException(SERIALIZATION_FAILED));
 		// when:
 		Exception exception = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
 
@@ -416,10 +513,11 @@ class ContractCreateTransitionLogicTest {
 	@Test
 	void throwsErrorOnInvalidBytecode() {
 		given(hfs.exists(any())).willReturn(true);
-		given(hfs.cat(any())).willReturn(new byte[]{1,2,3,'\n'});
+		given(hfs.cat(any())).willReturn(new byte[] { 1, 2, 3, '\n' });
 		given(transactionBody.getConstructorParameters()).willReturn(ByteString.EMPTY);
 		// when:
-		Exception exception = assertThrows(InvalidTransactionException.class, () -> subject.prepareCodeWithConstructorArguments(transactionBody));
+		Exception exception = assertThrows(InvalidTransactionException.class,
+				() -> subject.prepareCodeWithConstructorArguments(transactionBody));
 		// then:
 		assertEquals("ERROR_DECODING_BYTESTRING", exception.getMessage());
 	}

@@ -22,12 +22,14 @@ package com.hedera.services.context.properties;
 
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.config.MockHederaNumbers;
+import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.test.utils.IdUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -55,8 +57,10 @@ class StaticPropertiesHolderTest {
 		assertEquals(expectedToken, STATIC_PROPERTIES.scopedTokenWith(3L));
 		assertEquals(expectedSchedule, STATIC_PROPERTIES.scopedScheduleWith(3L));
 		assertEquals("1.2.3", STATIC_PROPERTIES.scopedIdLiteralWith(3L));
+		final var key = STATIC_PROPERTIES.scopedContractKeyWith(4L);
+		assertInstanceOf(JContractIDKey.class, key);
+		assertEquals(4L, key.getContractID().getContractNum());
 	}
-
 
 	@AfterEach
 	void cleanup() {
