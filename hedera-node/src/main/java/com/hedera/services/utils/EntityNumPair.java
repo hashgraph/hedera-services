@@ -97,6 +97,14 @@ public class EntityNumPair {
 		return this.value == that.value;
 	}
 
+	public long hi() {
+		return BitPackUtils.unsignedHighOrder32From(value);
+	}
+
+	public long lo() {
+		return BitPackUtils.unsignedLowOrder32From(value);
+	}
+
 	@Override
 	public String toString() {
 		return "PermHashLong("
