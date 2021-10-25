@@ -251,7 +251,7 @@ public class ContractValue implements VirtualValue {
 	public void deserialize(SerializableDataInputStream inputStream, int i) throws IOException {
 		if (isImmutable) throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
 		int lengthRead = inputStream.read(this.uint256Value);
-		assert lengthRead == 32;
+		assert lengthRead == SERIALIZED_SIZE;
 	}
 
 	@Override

@@ -59,6 +59,7 @@ class BlobKeyTest {
 		assertNotEquals(two, one);
 		assertEquals(two, twoRef);
 		assertEquals(two, three);
+		assertNotEquals(one, null);
 
 		assertNotEquals(one.hashCode(), two.hashCode());
 		assertEquals(two.hashCode(), three.hashCode());
