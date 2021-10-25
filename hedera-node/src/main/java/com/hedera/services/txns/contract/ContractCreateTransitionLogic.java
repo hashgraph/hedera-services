@@ -130,9 +130,9 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		if (result.isSuccessful()) {
 			/* --- Create customizer for the newly created contract --- */
 			final var account = accountParsedFromSolidityAddress(newContractAddress.toArray());
-			key = (key == STANDIN_CONTRACT_ID_KEY)
-					? new JContractIDKey(account.getShardNum(), account.getRealmNum(), account.getAccountNum())
-					: key;
+			if (key == STANDIN_CONTRACT_ID_KEY) {
+				key = new JContractIDKey(account.getShardNum(), account.getRealmNum(), account.getAccountNum());
+			}
 			final var customizer = new HederaAccountCustomizer()
 					.key(key)
 					.memo(op.getMemo())

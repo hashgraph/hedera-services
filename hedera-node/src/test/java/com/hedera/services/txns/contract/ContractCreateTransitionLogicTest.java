@@ -280,7 +280,7 @@ class ContractCreateTransitionLogicTest {
 		given(validator.attemptToDecodeOrThrow(adminKey, SERIALIZATION_FAILED))
 				.willReturn(rcAdminKey);
 
-		var op = ContractCreateTransactionBody.newBuilder()
+		final var op = ContractCreateTransactionBody.newBuilder()
 				.setAdminKey(adminKey)
 				.setFileID(bytecodeSrc)
 				.setInitialBalance(balance)
@@ -289,15 +289,15 @@ class ContractCreateTransitionLogicTest {
 				.setProxyAccountID(proxy)
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod).build());
 
-		var txn = TransactionBody.newBuilder()
+		final var txn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
 				.setContractCreateInstance(op);
 		contractCreateTxn = txn.build();
 
 		var contractByteCodeString = new String(bytecode);
-		var constructorParamsHexString = CommonUtils.hex(op.getConstructorParameters().toByteArray());
+		final var constructorParamsHexString = CommonUtils.hex(op.getConstructorParameters().toByteArray());
 		contractByteCodeString += constructorParamsHexString;
-		var expiry = RequestBuilder.getExpirationTime(consensusTime,
+		final var expiry = RequestBuilder.getExpirationTime(consensusTime,
 				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
 		given(hfs.exists(bytecodeSrc)).willReturn(true);
