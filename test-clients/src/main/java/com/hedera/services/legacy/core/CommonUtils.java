@@ -20,12 +20,13 @@ package com.hedera.services.legacy.core;
  * ‍
  */
 
+import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import org.ethereum.util.ByteUtil;
 import org.junit.jupiter.api.Assertions;
 
 import java.io.ByteArrayInputStream;
@@ -234,11 +235,11 @@ public class CommonUtils {
 	 */
 	public static String calculateSolidityAddress(int indicator, long realmNum, long accountNum) {
 		byte[] solidityByteArray = new byte[20];
-		byte[] indicatorBytes = ByteUtil.intToBytes(indicator);
+		byte[] indicatorBytes = Ints.toByteArray(indicator);
 		copyArray(0, solidityByteArray, indicatorBytes);
-		byte[] realmNumBytes = ByteUtil.longToBytes(realmNum);
+		byte[] realmNumBytes = Longs.toByteArray(realmNum);
 		copyArray(4, solidityByteArray, realmNumBytes);
-		byte[] accountNumBytes = ByteUtil.longToBytes(accountNum);
+		byte[] accountNumBytes = Longs.toByteArray(accountNum);
 		copyArray(12, solidityByteArray, accountNumBytes);
 		return com.swirlds.common.CommonUtils.hex(solidityByteArray);
 	}

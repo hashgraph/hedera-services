@@ -20,38 +20,15 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
-import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
-import org.ethereum.vm.DataWord;
 
 /**
- * Util class for converting {@link UInt256} variables to {@link DataWord} and vice-versa. Temporary solution while the
- * Legacy Smart Contract State is used
+ * Util class for converting {@link UInt256} variables to packed integers.
  */
 public final class DWUtil {
 
 	private DWUtil() {
 		throw new UnsupportedOperationException("Utility Class");
-	}
-
-	/**
-	 * Converts {@link UInt256} value to {@link DataWord}
-	 *
-	 * @param uInt256 the value to convert
-	 * @return the converted {@link DataWord} value
-	 */
-	public static DataWord fromUInt256(UInt256 uInt256) {
-		return DataWord.of(uInt256.toArray());
-	}
-
-	/**
-	 * Converts {@link DataWord} value to {@link UInt256}
-	 *
-	 * @param dataWord the value to convert
-	 * @return the converted {@link UInt256} value
-	 */
-	public static UInt256 fromDataWord(DataWord dataWord) {
-		return UInt256.fromBytes(Bytes32.wrap(dataWord.getData()));
 	}
 
 	public static int[] asPackedInts(final byte[] data) {

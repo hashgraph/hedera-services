@@ -23,8 +23,6 @@ package com.hedera.services.store.contracts;
  */
 
 import org.apache.tuweni.units.bigints.UInt256;
-import org.ethereum.vm.DataWord;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -38,26 +36,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
 class DWUtilTest {
-	@Test
-	void fromUInt256() {
-		var argument = UInt256.valueOf(10L);
-
-		var expecting = DataWord.of(argument.toArray());
-
-		Assertions.assertEquals(expecting, DWUtil.fromUInt256(argument));
-	}
-
-	@Test
-	void fromDataWord() {
-		var expecting = UInt256.valueOf(10L);
-
-		var argument = DataWord.of(expecting.toArray());
-
-		Assertions.assertEquals(expecting, DWUtil.fromDataWord(argument));
-	}
-
     @Test
-    void aspackedIntsTest() {
+    void asPackedIntsTest() {
 		final UInt256 num1 = UInt256.fromHexString("0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563");
 		final UInt256 num2 = UInt256.fromHexString("0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e564");
 		final UInt256 num3 = UInt256.fromHexString("0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e565");
