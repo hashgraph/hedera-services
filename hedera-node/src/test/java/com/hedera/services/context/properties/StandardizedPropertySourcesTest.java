@@ -21,6 +21,7 @@ package com.hedera.services.context.properties;
  */
 
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,6 +30,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static com.hedera.services.context.properties.BootstrapProperties.BOOTSTRAP_PROP_NAMES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 
@@ -88,5 +90,14 @@ class StandardizedPropertySourcesTest {
 		for (final var bootstrapProp : BOOTSTRAP_PROP_NAMES) {
 			verify(bootstrapProps).getProperty(bootstrapProp);
 		}
+	}
+
+	@Test
+	void noClassCastExceptionForRangeProp() {
+		final var updateRange = Pair.of(150L, 159L);
+		given(bootstrapProps.getProperty("files.softwareUpdateRange")).willReturn(updateRange);
+		final var properties = subject.asResolvingSource();
+
+		assertSame(updateRange, properties.getEntityNumRange("files.softwareUpdateRange"));
 	}
 }

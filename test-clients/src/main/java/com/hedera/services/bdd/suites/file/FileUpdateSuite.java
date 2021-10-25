@@ -20,9 +20,9 @@ package com.hedera.services.bdd.suites.file;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -36,11 +36,14 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.BYTES_4K;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -70,11 +73,29 @@ public class FileUpdateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-    	        vanillaUpdateSucceeds(),
+				vanillaUpdateSucceeds(),
 				updateFeesCompatibleWithCreates(),
 				apiPermissionsChangeDynamically(),
 				cannotUpdateExpirationPastMaxLifetime(),
+				optimisticSpecialFileUpdate(),
 		});
+	}
+
+	private HapiApiSpec optimisticSpecialFileUpdate() {
+		final var appendsPerBurst = 128;
+		final var specialFile = "0.0.159";
+		final var specialFileContents = ByteString.copyFrom(randomUtf8Bytes(64 * BYTES_4K));
+		return defaultHapiSpec("OptimisticSpecialFileUpdate")
+				.given().when(
+						updateSpecialFile(
+								GENESIS,
+								specialFile,
+								specialFileContents,
+								BYTES_4K,
+								appendsPerBurst)
+				).then(
+						getFileContents(specialFile).hasContents(ignore -> specialFileContents.toByteArray())
+				);
 	}
 
 	private HapiApiSpec apiPermissionsChangeDynamically() {
@@ -98,10 +119,11 @@ public class FileUpdateSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec updateFeesCompatibleWithCreates() {
-		long origLifetime = 100_000_000;
-		final byte[] old2k = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K / 2);
-		final byte[] new4k = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);
-		final byte[] new2k = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K / 2);
+		final long origLifetime = 7_200_000L;
+		final long extension = 700_000L;
+		final byte[] old2k = randomUtf8Bytes(BYTES_4K / 2);
+		final byte[] new4k = randomUtf8Bytes(BYTES_4K);
+		final byte[] new2k = randomUtf8Bytes(BYTES_4K / 2);
 
 		return defaultHapiSpec("UpdateFeesCompatibleWithCreates")
 				.given(
@@ -119,7 +141,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 								.extendingExpiryBy(0)
 								.via("updateTo2"),
 						fileUpdate("test")
-								.extendingExpiryBy(origLifetime)
+								.extendingExpiryBy(extension)
 								.via("extend"),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
@@ -130,13 +152,13 @@ public class FileUpdateSuite extends HapiApiSuite {
 								.overridingProps(Map.of("maxFileSize", "1024"))
 				).then(
 						UtilVerbs.withOpContext((spec, opLog) -> {
-							var createOp = getTxnRecord("create");
-							var to4kOp = getTxnRecord("updateTo4");
-							var to2kOp = getTxnRecord("updateTo2");
-							var extensionOp = getTxnRecord("extend");
-							var specialOp = getTxnRecord("special");
+							final var createOp = getTxnRecord("create");
+							final var to4kOp = getTxnRecord("updateTo4");
+							final var to2kOp = getTxnRecord("updateTo2");
+							final var extensionOp = getTxnRecord("extend");
+							final var specialOp = getTxnRecord("special");
 							allRunFor(spec, createOp, to4kOp, to2kOp, extensionOp, specialOp);
-							var createFee = createOp.getResponseRecord().getTransactionFee();
+							final var createFee = createOp.getResponseRecord().getTransactionFee();
 							opLog.info("Creation : " + createFee);
 							opLog.info("New 4k   : " + to4kOp.getResponseRecord().getTransactionFee()
 									+ " (" + (to4kOp.getResponseRecord().getTransactionFee() - createFee) + ")");
@@ -150,10 +172,10 @@ public class FileUpdateSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec vanillaUpdateSucceeds() {
-		final byte[] old4K = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);
-		final byte[] new4k = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);
-		String firstMemo = "Originally";
-		String secondMemo = "Subsequently";
+		final byte[] old4K = randomUtf8Bytes(BYTES_4K);
+		final byte[] new4k = randomUtf8Bytes(BYTES_4K);
+		final String firstMemo = "Originally";
+		final String secondMemo = "Subsequently";
 
 		return defaultHapiSpec("VanillaUpdateSucceeds")
 				.given(
@@ -178,7 +200,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 		return defaultHapiSpec("CannotUpdateExpirationPastMaxLifetime")
 				.given(
 						fileCreate("test")
-				).when( ).then(
+				).when().then(
 						fileUpdate("test")
 								.lifetime(defaultMaxLifetime + 12_345L)
 								.hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE)

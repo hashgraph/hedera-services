@@ -35,17 +35,21 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getExecTime;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getExecTimeNoPayment;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUppercase;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class RandomOps extends HapiApiSuite {
@@ -71,6 +75,7 @@ public class RandomOps extends HapiApiSuite {
 		final var submitMessage = "submitMessage";
 		final var contractCall = "contractCall";
 
+		final var humbleUser = "aamAdmi";
 		final var topic = "ofGeneralInterest";
 		final var contract = "binding";
 		final var bytecode = "bytecode";
@@ -83,6 +88,7 @@ public class RandomOps extends HapiApiSuite {
 										.noLogging())
 								.toArray(HapiSpecOperation[]::new)),
 						sleepFor(5_000),
+						cryptoCreate(humbleUser).balance(ONE_HUNDRED_HBARS),
 						createTopic(topic),
 						fileCreate(bytecode)
 								.path(ContractResources.MULTIPURPOSE_BYTECODE_PATH),
@@ -102,9 +108,20 @@ public class RandomOps extends HapiApiSuite {
 						/* NetworkGetExecutionTime requires superuser payer */
 						getExecTime(cryptoTransfer, submitMessage, contractCall)
 								.payingWith(GENESIS)
+								.hasAnswerOnlyPrecheck(INVALID_TRANSACTION_ID),
 								/* Uncomment to validate failure message */
 //								.assertingNoneLongerThan(1, ChronoUnit.MILLIS)
-								.logged()
+//								.logged(),
+						getExecTimeNoPayment(cryptoTransfer, submitMessage, contractCall)
+								.payingWith(GENESIS)
+								.hasCostAnswerPrecheck(NOT_SUPPORTED),
+						getExecTime(cryptoTransfer, submitMessage, contractCall)
+								.payingWith(humbleUser)
+								.hasCostAnswerPrecheck(NOT_SUPPORTED)
+								.hasAnswerOnlyPrecheck(NOT_SUPPORTED),
+						getExecTimeNoPayment(cryptoTransfer, submitMessage, contractCall)
+								.payingWith(humbleUser)
+								.hasCostAnswerPrecheck(NOT_SUPPORTED)
 				);
 	}
 
@@ -129,7 +146,7 @@ public class RandomOps extends HapiApiSuite {
 						"nodes", "127.0.0.1:50213:0.0.3,127.0.0.1:50214:0.0.4,127.0.0.1:50215:0.0.5"
 				)).given().when(
 				).then(
-						freeze().startingIn(60).seconds().andLasting(1).minutes()
+						freezeOnly().startingIn(60).seconds()
 				);
 	}
 

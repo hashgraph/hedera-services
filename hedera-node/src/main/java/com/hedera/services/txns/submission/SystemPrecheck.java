@@ -24,12 +24,15 @@ import com.hedera.services.context.domain.security.HapiOpPermissions;
 import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.utils.SignedTxnAccessor;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.List;
 import java.util.function.LongPredicate;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -43,6 +46,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 @Singleton
 public class SystemPrecheck {
 	public static final LongPredicate IS_THROTTLE_EXEMPT = num -> num >= 1 && num <= 100L;
+	public static final List<HederaFunctionality> RESTRICTED_FUNCTIONALITIES = List.of(NetworkGetExecutionTime);
 
 	private final SystemOpPolicies systemOpPolicies;
 	private final HapiOpPermissions hapiOpPermissions;

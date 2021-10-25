@@ -922,20 +922,23 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.initialSupply(TOTAL_SUPPLY)
 								.treasury(TOKEN_TREASURY),
 						tokenAssociate(FIRST_USER, A_TOKEN),
+						tokenAssociate(SECOND_USER, A_TOKEN),
 						tokenAssociate(SECOND_USER, B_TOKEN)
 				).when(
 						cryptoTransfer(
 								moving(100, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER),
+								moving(100, A_TOKEN).between(TOKEN_TREASURY, SECOND_USER),
 								moving(100, B_TOKEN).between(TOKEN_TREASURY, SECOND_USER)
-						)
+						).fullyAggregateTokenTransfers()
 				).then(
 						getAccountBalance(TOKEN_TREASURY)
-								.hasTokenBalance(A_TOKEN, TOTAL_SUPPLY - 100)
+								.hasTokenBalance(A_TOKEN, TOTAL_SUPPLY - 200)
 								.hasTokenBalance(B_TOKEN, TOTAL_SUPPLY - 100),
 						getAccountBalance(FIRST_USER)
 								.hasTokenBalance(A_TOKEN, 100),
 						getAccountBalance(SECOND_USER)
 								.hasTokenBalance(B_TOKEN, 100)
+								.hasTokenBalance(A_TOKEN, 100)
 				);
 	}
 

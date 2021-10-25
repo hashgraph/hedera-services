@@ -30,7 +30,7 @@ import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 
 public class TokenCreatePerfSuite extends LoadTest {
@@ -67,7 +67,7 @@ public class TokenCreatePerfSuite extends LoadTest {
 						)
 				).then(
 						UtilVerbs.sleepFor(200000),
-						freeze().payingWith(GENESIS).startingIn(60).seconds().andLasting(1).minutes()
+						freezeOnly().payingWith(GENESIS).startingIn(60).seconds()
 				);
 	}
 

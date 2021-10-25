@@ -259,6 +259,6 @@ public class TxnVerbs {
 
 	/* SYSTEM */
 	public static HapiFreeze hapiFreeze(final Instant freezeStartTime) {
-		return new HapiFreeze().startAt(freezeStartTime);
+		return new HapiFreeze().startingAt(freezeStartTime);
 	}
 }

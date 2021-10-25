@@ -21,43 +21,35 @@ package com.hedera.services.yahcli.commands.system;
  */
 
 import com.hedera.services.yahcli.Yahcli;
-import com.hedera.services.yahcli.suites.FreezeSuite;
+import com.hedera.services.yahcli.suites.FreezeHelperSuite;
 import picocli.CommandLine;
 
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.concurrent.Callable;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.SpecStatus.PASSED;
 import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
+import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
 @CommandLine.Command(
-		name = "freeze",
+		name = "freeze-abort",
 		subcommands = { picocli.CommandLine.HelpCommand.class },
-		description = "Schedules the network to freeze for maintenance")
-public class SysFreezeCommand implements Callable<Integer> {
+		description = "Aborts any scheduled freeze and discards any staged NMT upgrade")
+public class FreezeAbortCommand implements Callable<Integer> {
 	@CommandLine.ParentCommand
 	private Yahcli yahcli;
-
-	@CommandLine.Option(names = { "-s", "--start-time" },
-			paramLabel = "Freeze start time in UTC, use format 'yyyy-MM-dd.HH:mm:ss'",
-			defaultValue = "")
-	private String freezeStartTimeStr;
 
 	@Override
 	public Integer call() throws Exception {
 		final var config = configFrom(yahcli);
-		final var freezeStartTime = getFreezeStartTime(freezeStartTimeStr);
-		final var delegate = new FreezeSuite(config.asSpecConfig(), freezeStartTime);
+
+		final var delegate = new FreezeHelperSuite(config.asSpecConfig(), null, true);
 
 		delegate.runSuiteSync();
 
+		if (delegate.getFinalSpecs().get(0).getStatus() == PASSED) {
+			COMMON_MESSAGES.info("SUCCESS - freeze aborted and/or staged upgrade discarded");
+		}
+
 		return 0;
-	}
-
-	private Instant getFreezeStartTime(final String timeStampInStr) {
-		final var dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd.HH:mm:ss").withZone(ZoneId.of("Etc/UTC"));
-
-		return Instant.from(dtf.parse(timeStampInStr));
 	}
 }

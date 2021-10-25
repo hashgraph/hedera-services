@@ -60,6 +60,8 @@ public class NodeLocalProperties {
 	private long nettyStartRetryIntervalMs;
 	private boolean dumpFcmsOnIss;
 	private int numExecutionTimesToTrack;
+	private int issResetPeriod;
+	private int issRoundsToDump;
 
 	@Inject
 	public NodeLocalProperties(@CompositeProps PropertySource properties) {
@@ -100,6 +102,8 @@ public class NodeLocalProperties {
 		nettyStartRetryIntervalMs = properties.getLongProperty("netty.startRetryIntervalMs");
 		dumpFcmsOnIss = properties.getBooleanProperty("iss.dumpFcms");
 		numExecutionTimesToTrack = properties.getIntProperty("stats.executionTimesToTrack");
+		issResetPeriod = properties.getIntProperty("iss.resetPeriod");
+		issRoundsToDump = properties.getIntProperty("iss.roundsToDump");
 	}
 
 	public int port() {
@@ -224,5 +228,13 @@ public class NodeLocalProperties {
 
 	public int numExecutionTimesToTrack() {
 		return numExecutionTimesToTrack;
+	}
+
+	public int issResetPeriod() {
+		return issResetPeriod;
+	}
+
+	public int issRoundsToDump() {
+		return issRoundsToDump;
 	}
 }

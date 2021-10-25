@@ -225,7 +225,7 @@ abstract class EvmTxProcessor {
 		final Gas selfDestructRefund =
 				gasCalculator.getSelfDestructRefundAmount().times(initialFrame.getSelfDestructs().size()).min(
 						gasUsedByTransaction.dividedBy(gasCalculator.getMaxRefundQuotient()));
-		gasUsedByTransaction = gasUsedByTransaction.minus(selfDestructRefund);
+		gasUsedByTransaction = gasUsedByTransaction.minus(selfDestructRefund).minus(initialFrame.getGasRefund());
 
 		final Gas sbhRefund = updater.getSbhRefund();
 

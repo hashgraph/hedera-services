@@ -27,6 +27,7 @@ import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.stats.ExecutionTimeTracker;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.span.ExpandHandleSpan;
+import com.hedera.services.utils.PlatformTxnAccessor;
 import com.swirlds.common.SwirldTransaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -81,17 +82,26 @@ public class StandardProcessLogic implements ProcessLogic {
 
 			expiries.purge(effectiveConsensusTime.getEpochSecond());
 
-			executionTimeTracker.start();
-			txnManager.process(accessor, effectiveConsensusTime, submittingMember);
-			final var triggeredAccessor = txnCtx.triggeredTxn();
-			if (triggeredAccessor != null) {
-				txnManager.process(triggeredAccessor, consensusTime, submittingMember);
-			}
-			executionTimeTracker.stop();
+			doProcess(submittingMember, consensusTime, effectiveConsensusTime, accessor);
 
 			autoRenewal.execute(consensusTime);
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("Consensus platform txn was not gRPC!", e);
 		}
+	}
+
+	private void doProcess(
+			final long submittingMember,
+			final Instant consensusTime,
+			final Instant effectiveConsensusTime,
+			final PlatformTxnAccessor accessor
+	) {
+		executionTimeTracker.start();
+		txnManager.process(accessor, effectiveConsensusTime, submittingMember);
+		final var triggeredAccessor = txnCtx.triggeredTxn();
+		if (triggeredAccessor != null) {
+			txnManager.process(triggeredAccessor, consensusTime, submittingMember);
+		}
+		executionTimeTracker.stop();
 	}
 }

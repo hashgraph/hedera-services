@@ -75,6 +75,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.ParseException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -83,9 +85,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.ObjIntConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -114,6 +120,13 @@ import static com.hedera.services.bdd.suites.HapiApiSuite.EXCHANGE_RATE_CONTROL;
 import static com.hedera.services.bdd.suites.HapiApiSuite.FEE_SCHEDULE;
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
+import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ABORT;
+import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ONLY;
+import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_UPGRADE;
+import static com.hederahashgraph.api.proto.java.FreezeType.PREPARE_UPGRADE;
+import static com.hederahashgraph.api.proto.java.FreezeType.TELEMETRY_UPGRADE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED;
@@ -125,6 +138,26 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class UtilVerbs {
 	public static HapiFreeze freeze() {
 		return new HapiFreeze();
+	}
+
+	public static HapiFreeze prepareUpgrade() {
+		return new HapiFreeze(PREPARE_UPGRADE);
+	}
+
+	public static HapiFreeze telemetryUpgrade() {
+		return new HapiFreeze(TELEMETRY_UPGRADE);
+	}
+
+	public static HapiFreeze freezeOnly() {
+		return new HapiFreeze(FREEZE_ONLY);
+	}
+
+	public static HapiFreeze freezeUpgrade() {
+		return new HapiFreeze(FREEZE_UPGRADE);
+	}
+
+	public static HapiFreeze freezeAbort() {
+		return new HapiFreeze(FREEZE_ABORT);
 	}
 
 	/* Some fairly simple utility ops */
@@ -513,7 +546,87 @@ public class UtilVerbs {
 			OptionalLong tinyBarsToOffer
 	) {
 		return updateLargeFile(payer, fileName, byteString, signOnlyWithPayer, tinyBarsToOffer,
-				op -> {}, op -> {});
+				op -> {
+				}, (op, i) -> {
+				});
+	}
+
+	public static HapiSpecOperation updateSpecialFile(
+			final String payer,
+			final String fileName,
+			final ByteString contents,
+			final int bytesPerOp,
+			final int appendsPerBurst
+	) {
+		return withOpContext((spec, opLog) -> {
+			final var bytesToUpload = contents.size();
+			final var bytesToAppend = bytesToUpload - bytesPerOp;
+			final var appendsRequired = bytesToAppend / bytesPerOp + Math.min(1, bytesToAppend % bytesPerOp);
+			COMMON_MESSAGES.info(
+					"Beginning update for " + fileName + " (" + appendsRequired + " appends required)");
+			final var numBursts = appendsRequired / appendsPerBurst + Math.min(1, appendsRequired % appendsPerBurst);
+
+			int position = Math.min(bytesPerOp, bytesToUpload);
+			final var updateSubOp = fileUpdate(fileName)
+					.fee(ONE_HUNDRED_HBARS)
+					.contents(contents.substring(0, position))
+					.alertingPre(fid ->
+							COMMON_MESSAGES.info("Submitting initial update for file 0.0." + fid.getFileNum()))
+					.alertingPost(code ->
+							COMMON_MESSAGES.info("Finished initial update with " + code))
+					.noLogging()
+					.payingWith(payer)
+					.signedBy(payer);
+			allRunFor(spec, updateSubOp);
+
+			final AtomicInteger burstNo = new AtomicInteger(1);
+			while (position < bytesToUpload) {
+				final var totalBytesLeft = bytesToUpload - position;
+				final var appendsLeft = totalBytesLeft / bytesPerOp + Math.min(1, totalBytesLeft % bytesPerOp);
+				final var appendsHere = new AtomicInteger(Math.min(appendsPerBurst, appendsLeft));
+				boolean isFirstAppend = true;
+				final List<HapiSpecOperation> theBurst = new ArrayList<>();
+				final CountDownLatch burstLatch = new CountDownLatch(1);
+				final AtomicReference<Instant> burstStart = new AtomicReference<>();
+				while (appendsHere.getAndDecrement() >= 0) {
+					final var bytesLeft = bytesToUpload - position;
+					final var bytesThisAppend = Math.min(bytesLeft, bytesPerOp);
+					final var newPosition = position + bytesThisAppend;
+					final var appendSubOp = fileAppend(fileName)
+							.content(contents.substring(position, newPosition).toByteArray())
+							.noLogging()
+							.payingWith(payer)
+							.signedBy(payer)
+							.deferStatusResolution();
+					if (isFirstAppend) {
+						final var fixedBurstNo = burstNo.get();
+						final var fixedAppendsHere = appendsHere.get() + 1;
+						appendSubOp.alertingPre(fid -> {
+							burstStart.set(Instant.now());
+							COMMON_MESSAGES.info(
+									"Starting burst " + fixedBurstNo
+											+ "/" + numBursts + " (" + fixedAppendsHere + " ops)");
+						});
+						isFirstAppend = false;
+					}
+					if (appendsHere.get() < 0) {
+						final var fixedBurstNo = burstNo.get();
+						appendSubOp.alertingPost(code -> {
+							final var burstSecs = Duration.between(burstStart.get(), Instant.now()).getSeconds();
+							COMMON_MESSAGES.info(
+									"Completed burst #" + fixedBurstNo
+											+ "/" + numBursts + " in " + burstSecs + "s with " + code);
+							burstLatch.countDown();
+						});
+					}
+					theBurst.add(appendSubOp);
+					position = newPosition;
+				}
+				allRunFor(spec, theBurst);
+				burstLatch.await();
+				burstNo.getAndIncrement();
+			}
+		});
 	}
 
 	public static HapiSpecOperation updateLargeFile(
@@ -523,7 +636,7 @@ public class UtilVerbs {
 			boolean signOnlyWithPayer,
 			OptionalLong tinyBarsToOffer,
 			Consumer<HapiFileUpdate> updateCustomizer,
-			Consumer<HapiFileAppend> appendCustomizer
+			ObjIntConsumer<HapiFileAppend> appendCustomizer
 	) {
 		return withOpContext((spec, ctxLog) -> {
 			List<HapiSpecOperation> opsList = new ArrayList<>();
@@ -535,7 +648,8 @@ public class UtilVerbs {
 					.contents(byteString.substring(0, position))
 					.hasKnownStatusFrom(SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED)
 					.noLogging()
-					.payingWith(payer);
+					.payingWith(payer)
+					.signedBy(payer);
 			updateCustomizer.accept(updateSubOp);
 			if (tinyBarsToOffer.isPresent()) {
 				updateSubOp = updateSubOp.fee(tinyBarsToOffer.getAsLong());
@@ -545,14 +659,18 @@ public class UtilVerbs {
 			}
 			opsList.add(updateSubOp);
 
+			final int bytesLeft = fileSize - position;
+			final int totalAppendsRequired = bytesLeft / BYTES_4K + Math.min(1, bytesLeft % BYTES_4K);
+			int numAppends = 0;
 			while (position < fileSize) {
 				int newPosition = Math.min(fileSize, position + BYTES_4K);
 				var appendSubOp = fileAppend(fileName)
 						.content(byteString.substring(position, newPosition).toByteArray())
 						.hasKnownStatusFrom(SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED)
 						.noLogging()
-						.payingWith(payer);
-				appendCustomizer.accept(appendSubOp);
+						.payingWith(payer)
+						.signedBy(payer);
+				appendCustomizer.accept(appendSubOp, totalAppendsRequired - numAppends);
 				if (tinyBarsToOffer.isPresent()) {
 					appendSubOp = appendSubOp.fee(tinyBarsToOffer.getAsLong());
 				}
@@ -561,6 +679,7 @@ public class UtilVerbs {
 				}
 				opsList.add(appendSubOp);
 				position = newPosition;
+				numAppends++;
 			}
 
 			CustomSpecAssert.allRunFor(spec, opsList);
