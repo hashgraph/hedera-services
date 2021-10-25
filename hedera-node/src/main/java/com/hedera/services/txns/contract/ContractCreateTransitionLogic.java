@@ -21,6 +21,7 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.HederaLedger;
@@ -32,7 +33,6 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
-import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
@@ -49,7 +49,6 @@ import java.util.function.Predicate;
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
-import static com.hedera.services.utils.EntityIdUtils.asContract;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
@@ -59,6 +58,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
 
 public class ContractCreateTransitionLogic implements TransitionLogic {
+	private static final JContractIDKey STANDIN_CONTRACT_ID_KEY = new JContractIDKey(0, 0, 0);
 
 	private final HederaFs hfs;
 	private final EntityIdSource ids;
@@ -102,9 +102,9 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		var op = contractCreateTxn.getContractCreateInstance();
 		final var senderId = Id.fromGrpcAccount(contractCreateTxn.getTransactionID().getAccountID());
 		final var proxyAccount = op.hasProxyAccountID() ? Id.fromGrpcAccount(op.getProxyAccountID()) : Id.DEFAULT;
-		var key = op.hasAdminKey() ?
-				validator.attemptToDecodeOrThrow(op.getAdminKey(), SERIALIZATION_FAILED) :
-				new JContractIDKey(asContract(senderId.asGrpcAccount()));
+		var key = op.hasAdminKey()
+				? validator.attemptToDecodeOrThrow(op.getAdminKey(), SERIALIZATION_FAILED)
+				: STANDIN_CONTRACT_ID_KEY;
 
 		/* --- Load the model objects --- */
 		final var sender = accountStore.loadAccount(senderId);
@@ -129,6 +129,10 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 
 		if (result.isSuccessful()) {
 			/* --- Create customizer for the newly created contract --- */
+			final var account = accountParsedFromSolidityAddress(newContractAddress.toArray());
+			key = (key == STANDIN_CONTRACT_ID_KEY)
+					? new JContractIDKey(account.getShardNum(), account.getRealmNum(), account.getAccountNum())
+					: key;
 			final var customizer = new HederaAccountCustomizer()
 					.key(key)
 					.memo(op.getMemo())
@@ -136,7 +140,6 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 					.expiry(expiry)
 					.autoRenewPeriod(op.getAutoRenewPeriod().getSeconds())
 					.isSmartContract(true);
-			final var account = accountParsedFromSolidityAddress(newContractAddress.toArray());
 			hederaLedger.customizePotentiallyDeleted(account, customizer);
 		} else {
 			worldState.reclaimContractId();
