@@ -41,10 +41,11 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ERROR_DECODING_BYTESTRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -72,6 +73,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 
 	private List<HapiApiSpec> positiveTests() {
 		return Arrays.asList(
+				createSomeContractsNoAdminKeys(),
 				createsVanillaContract(),
 				createEmptyConstructor()
 		);
@@ -103,6 +105,18 @@ public class ContractCreateSuite extends HapiApiSuite {
 								.bytecode("contractCode")
 								.payingWith("bankrupt")
 								.hasPrecheck(INSUFFICIENT_PAYER_BALANCE)
+				);
+	}
+
+	private HapiApiSpec createSomeContractsNoAdminKeys() {
+		return defaultHapiSpec("MultipleSelfDestructsAreSafe")
+				.given(
+						fileCreate("bytecode").path(ContractResources.FUSE_BYTECODE_PATH),
+						contractCreate("fuse").omitAdminKey().bytecode("bytecode")
+				).when(
+						contractCall("fuse", ContractResources.LIGHT_ABI).via("lightTxn")
+				).then(
+						getTxnRecord("lightTxn").logged()
 				);
 	}
 

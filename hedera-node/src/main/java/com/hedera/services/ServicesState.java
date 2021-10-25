@@ -74,8 +74,7 @@ import java.util.function.Supplier;
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
 import static com.hedera.services.state.migration.Release0170Migration.moveLargeFcmsToBinaryRoutePositions;
-import static com.hedera.services.state.migration.Release0190Rationalization.fixContractIdKeys;
-import static com.hedera.services.state.migration.Release0190Rationalization.fixNftCounts;
+import static com.hedera.services.state.migration.Release0190Rationalization.rationalizeState;
 import static com.hedera.services.state.migration.StateChildIndices.SPECIAL_FILES;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static com.hedera.services.utils.EntityNumPair.fromLongs;
@@ -162,8 +161,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			setChild(SPECIAL_FILES, specialFiles);
 		}
 		if (deserializedVersion == StateVersions.RELEASE_0190_VERSION) {
-			fixNftCounts(tokens(), accounts(), uniqueTokens(), tokenAssociations());
-			fixContractIdKeys(accounts());
+			rationalizeState(tokens(), accounts(), uniqueTokens(), tokenAssociations());
 		}
 	}
 

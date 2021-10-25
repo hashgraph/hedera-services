@@ -88,21 +88,55 @@ public class CryptoTransferSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						transferWithMissingAccountGetsInvalidAccountId(),
-						vanillaTransferSucceeds(),
-						complexKeyAcctPaysForOwnTransfer(),
-						twoComplexKeysRequired(),
-						specialAccountsBalanceCheck(),
-						transferToTopicReturnsInvalidAccountId(),
-						tokenTransferFeesScaleAsExpected(),
-						okToSetInvalidPaymentHeaderForCostAnswer(),
-						baseCryptoTransferFeeChargedAsExpected(),
-						autoAssociationRequiresOpenSlots(),
-						royaltyCollectorsCanUseAutoAssociation(),
-						royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
-						dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
+//						transferWithMissingAccountGetsInvalidAccountId(),
+//						vanillaTransferSucceeds(),
+//						complexKeyAcctPaysForOwnTransfer(),
+//						twoComplexKeysRequired(),
+//						specialAccountsBalanceCheck(),
+//						transferToTopicReturnsInvalidAccountId(),
+//						tokenTransferFeesScaleAsExpected(),
+//						okToSetInvalidPaymentHeaderForCostAnswer(),
+//						baseCryptoTransferFeeChargedAsExpected(),
+//						autoAssociationRequiresOpenSlots(),
+//						royaltyCollectorsCanUseAutoAssociation(),
+//						royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
+//						dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
+						doSomeNftSelfTransfers(),
 				}
 		);
+	}
+
+	private HapiApiSpec doSomeNftSelfTransfers() {
+		final var owningParty = "owningParty";
+		final var multipurpose = "multi";
+		final var nftType = "nftType";
+
+		return defaultHapiSpec("DoSomeNftSelfTransfers")
+				.given(
+						newKeyNamed(multipurpose),
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(owningParty).maxAutomaticTokenAssociations(123),
+						tokenCreate(nftType)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.treasury(TOKEN_TREASURY)
+								.supplyKey(multipurpose)
+								.initialSupply(0),
+						mintToken(nftType, List.of(
+								copyFromUtf8("We"),
+								copyFromUtf8("are"),
+								copyFromUtf8("the")
+						)),
+						cryptoTransfer(movingUnique(nftType, 1L, 2L)
+								.between(TOKEN_TREASURY, owningParty))
+				).when(
+						cryptoTransfer(movingUnique(nftType, 1L, 2L)
+								.between(owningParty, owningParty)).signedBy(DEFAULT_PAYER, owningParty),
+						cryptoTransfer(movingUnique(nftType, 1L, 2L)
+								.between(owningParty, owningParty)).signedBy(DEFAULT_PAYER, owningParty)
+				).then(
+						getAccountInfo(owningParty)
+								.logged()
+				);
 	}
 
 	@Override

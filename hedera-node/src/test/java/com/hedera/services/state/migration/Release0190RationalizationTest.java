@@ -1,5 +1,7 @@
 package com.hedera.services.state.migration;
 
+import com.hedera.services.legacy.core.jproto.JContractIDKey;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -8,22 +10,58 @@ import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.merkle.map.MerkleMap;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
 
 import static com.hedera.services.state.merkle.MerkleUniqueToken.TREASURY_OWNER_CODE;
+import static com.hedera.services.state.migration.Release0190Rationalization.fixContractIdKeys;
 import static com.hedera.services.state.migration.Release0190Rationalization.fixNftCounts;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
-
 
 class Release0190RationalizationTest {
 	private MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
 	private MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
 	private MerkleMap<EntityNumPair, MerkleUniqueToken> nfts = new MerkleMap<>();
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels = new MerkleMap<>();
+
+	@BeforeEach
+	void setUp() throws ConstructableRegistryException {
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
+	}
+
+	@Test
+	void fixesContractIdKeys() {
+		final var nonContract = 2345L;
+		final var rightKeyContract = 1234L;
+		final var mutableKeyContract = 2345L;
+		final var wrongKeyContract = 4321L;
+
+		addContract(rightKeyContract, rightKeyContract);
+		addContract(wrongKeyContract, nonContract);
+		addContract(mutableKeyContract, -1);
+		addOwner(nonContract, 123);
+
+		final var priorNonContractLeaf = accounts.get(EntityNum.fromLong(nonContract));
+		final var priorOkContractLeaf = accounts.get(EntityNum.fromLong(rightKeyContract));
+		fixContractIdKeys(accounts);
+
+		assertSame(priorNonContractLeaf, accounts.get(EntityNum.fromLong(nonContract)));
+		assertSame(priorOkContractLeaf, accounts.get(EntityNum.fromLong(rightKeyContract)));
+
+		final var fixedContract = accounts.get(EntityNum.fromLong(wrongKeyContract));
+		final var fixedKey = fixedContract.getAccountKey();
+		assertInstanceOf(JContractIDKey.class, fixedKey);
+		assertEquals(wrongKeyContract, ((JContractIDKey) fixedKey).getContractID().getContractNum());
+	}
 
 	@Test
 	void fixesNftCounts() {
@@ -91,6 +129,17 @@ class Release0190RationalizationTest {
 	private void addOwner(long num, long totalNfts) {
 		final var account = new MerkleAccount();
 		account.setNftsOwned(totalNfts);
+		accounts.put(EntityNum.fromLong(num), account);
+	}
+
+	private void addContract(long num, long keyNum) {
+		final var account = new MerkleAccount();
+		account.setSmartContract(true);
+		if (keyNum == -1) {
+			account.setAccountKey(new JEd25519Key("01234567890123456789012345678901".getBytes(StandardCharsets.UTF_8)));
+		} else {
+			account.setAccountKey(new JContractIDKey(0, 0, keyNum));
+		}
 		accounts.put(EntityNum.fromLong(num), account);
 	}
 
