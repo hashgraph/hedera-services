@@ -35,17 +35,11 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
-import com.hedera.services.store.models.Account;
-import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.Token;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.mocks.TestContextValidator;
-import com.hedera.test.utils.TxnUtils;
-import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
@@ -54,11 +48,7 @@ import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
 import static com.hedera.test.utils.IdUtils.asAccount;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInAnyOrder.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -192,68 +182,6 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 		subject.create(genesis, 2_000L, new HederaAccountCustomizer().memo("b"));
 
 		assertEquals(2L, subject.netTransfersInTxn().getAccountAmountsList().size());
-	}
-
-	@Test
-	void returnsNetTransfersInBalancedTxn() {
-		subject.begin();
-		final var a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
-		final var b = subject.create(genesis, 2_000L, new HederaAccountCustomizer().memo("b"));
-		final var c = subject.create(genesis, 3_000L, new HederaAccountCustomizer().memo("c"));
-		final var d = subject.create(genesis, 4_000L, new HederaAccountCustomizer().memo("d"));
-
-		final var aa = new Account(Id.fromGrpcAccount(a));
-		aa.setAssociatedTokens(new CopyOnWriteIds());
-
-		final var ba = new Account(Id.fromGrpcAccount(b));
-		ba.setAssociatedTokens(new CopyOnWriteIds());
-
-		final var ca = new Account(Id.fromGrpcAccount(c));
-		ca.setAssociatedTokens(new CopyOnWriteIds());
-
-		final var da = new Account(Id.fromGrpcAccount(d));
-		da.setAssociatedTokens(new CopyOnWriteIds());
-
-		final var tA = ids.newTokenId(a);
-		final var tB = ids.newTokenId(b);
-		final var rA = Token.fromGrpcOpAndMeta(
-				Id.fromGrpcToken(tA),
-				stdWith("MINE", "MINE", a), aa, null, thisSecond);
-		final var rB = Token.fromGrpcOpAndMeta(
-				Id.fromGrpcToken(tB),
-				stdWith("YOURS", "YOURS", b), ba, null, thisSecond);
-
-		aa.associateWith(List.of(rA, rB), 10, false);
-		ba.associateWith(List.of(rA, rB), 10, false);
-		ca.associateWith(List.of(rA, rB), 10, false);
-		da.associateWith(List.of(rA, rB), 10, false);
-
-		subject.doTransfer(d, a, 1_000L);
-		subject.delete(d, b);
-		subject.adjustBalance(c, 1_000L);
-		subject.adjustBalance(genesis, -1_000L);
-		subject.doTransfers(TxnUtils.withAdjustments(a, -500L, b, 250L, c, 250L));
-
-		subject.adjustTokenBalance(a, tA, +10_000);
-		subject.adjustTokenBalance(a, tA, -5_000);
-		subject.adjustTokenBalance(a, tB, +1);
-		subject.adjustTokenBalance(a, tB, -1);
-
-		subject.adjustTokenBalance(b, tB, +10_000);
-		subject.adjustTokenBalance(c, tB, +50);
-		subject.adjustTokenBalance(c, tB, +50);
-		subject.adjustTokenBalance(c, tB, -50);
-		subject.adjustTokenBalance(c, tA, +5000);
-		subject.freeze(a, tB);
-		subject.adjustTokenBalance(a, tB, +1_000_000);
-
-		assertThat(
-				subject.netTransfersInTxn().getAccountAmountsList(),
-				containsInAnyOrder(
-						AccountAmount.newBuilder().setAccountID(a).setAmount(1_500L).build(),
-						AccountAmount.newBuilder().setAccountID(b).setAmount(5_250L).build(),
-						AccountAmount.newBuilder().setAccountID(c).setAmount(4_250L).build(),
-						AccountAmount.newBuilder().setAccountID(genesis).setAmount(-11_000L).build()));
 	}
 
 	@Test

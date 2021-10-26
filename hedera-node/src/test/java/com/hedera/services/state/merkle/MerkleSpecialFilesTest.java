@@ -79,6 +79,7 @@ class MerkleSpecialFilesTest {
 
 	@Test
 	void copyCreatesNewMaps() {
+		subject.append(fid, stuff);
 		final var copySub = subject.copy();
 
 		assertNotSame(subject.getFileContents(), copySub.getFileContents(),
@@ -109,6 +110,8 @@ class MerkleSpecialFilesTest {
 		assertArrayEquals(stuff, subject.get(fid), "Updated stuff should be identical");
 
 		assertTrue(subject.hashMatches(fid, stuffHash), "Updated stuff should have SHA-384 hash");
+
+		assertArrayEquals(new byte[0], subject.get(secondFid));
 	}
 
 	@Test
@@ -150,7 +153,7 @@ class MerkleSpecialFilesTest {
 		baos.write(Longs.toByteArray(secondFid.getFileNum()));
 		baos.write(secondFcq.getHash().getValue());
 		final var expected = CommonUtils.noThrowSha384HashOf(baos.toByteArray());
-		
+
 		assertArrayEquals(expected, subject.getHash().getValue());
 	}
 

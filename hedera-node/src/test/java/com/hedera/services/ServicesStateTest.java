@@ -583,11 +583,14 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void nonGenesisInitClearsPreparedUpgradeIfStateVersionLessThanCurrentSoftware() {
+	void nonGenesisInitClearsPreparedUpgradeIfLastFrozenMatchesFreezeTime() {
 		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
 
-		given(networkContext.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION - 1);
+		final var when = Instant.ofEpochSecond(1_234_567L, 890);
+		given(dualState.getFreezeTime()).willReturn(when);
+		given(dualState.getLastFrozenTime()).willReturn(when);
+		given(networkContext.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
 
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
