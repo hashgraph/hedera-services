@@ -1,4 +1,4 @@
-package com.hedera.services.throttling;
+package com.hedera.services.state.logic;
 
 /*-
  * ‌
@@ -9,9 +9,9 @@ package com.hedera.services.throttling;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,22 +20,25 @@ package com.hedera.services.throttling;
  * ‍
  */
 
-import com.hedera.services.throttling.annotations.HapiThrottle;
 import com.hedera.services.utils.TxnAccessor;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class TransactionThrottling {
-	private final FunctionalityThrottling throttles;
+public class ThrottleScreen {
+
+	private final NetworkCtxManager networkCtxManager;
 
 	@Inject
-	public TransactionThrottling(@HapiThrottle FunctionalityThrottling throttles) {
-		this.throttles = throttles;
+	public ThrottleScreen(
+			NetworkCtxManager networkCtxManager
+	) {
+		this.networkCtxManager = networkCtxManager;
 	}
 
-	public boolean shouldThrottle(TxnAccessor accessor) {
-		return throttles.shouldThrottleTxn(accessor, true);
+	public ResponseCodeEnum applyTo(TxnAccessor accessor) {
+		return networkCtxManager.prepareForIncorporating(accessor);
 	}
 }

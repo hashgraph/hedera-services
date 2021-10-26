@@ -27,6 +27,7 @@ import static java.util.stream.Collectors.toList;
 
 public class ThrottleDefinitions {
 	List<ThrottleBucket> buckets = new ArrayList<>();
+	long totalAllowedGasPerSec;
 
 	public List<ThrottleBucket> getBuckets() {
 		return buckets;
@@ -36,17 +37,27 @@ public class ThrottleDefinitions {
 		this.buckets = buckets;
 	}
 
+	public long getTotalAllowedGasPerSec() {
+		return totalAllowedGasPerSec;
+	}
+
+	public void setTotalAllowedGasPerSec(long totalAllowedGasPerSec) {
+		this.totalAllowedGasPerSec = totalAllowedGasPerSec;
+	}
+
 	public static ThrottleDefinitions fromProto(com.hederahashgraph.api.proto.java.ThrottleDefinitions defs) {
 		var pojo = new ThrottleDefinitions();
 		pojo.buckets.addAll(defs.getThrottleBucketsList().stream()
 				.map(ThrottleBucket::fromProto)
 				.collect(toList()));
+		pojo.totalAllowedGasPerSec = defs.getTotalAllowedGasPerSec();
 		return pojo;
 	}
 
 	public com.hederahashgraph.api.proto.java.ThrottleDefinitions toProto() {
 		return com.hederahashgraph.api.proto.java.ThrottleDefinitions.newBuilder()
 				.addAllThrottleBuckets(buckets.stream().map(ThrottleBucket::toProto).collect(toList()))
+				.setTotalAllowedGasPerSec(totalAllowedGasPerSec)
 				.build();
 	}
 }

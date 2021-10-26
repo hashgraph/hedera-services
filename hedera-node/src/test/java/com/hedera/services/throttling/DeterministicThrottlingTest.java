@@ -126,7 +126,7 @@ class DeterministicThrottlingTest {
 		// when:
 		subject.rebuildFor(defs);
 		// and:
-		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+		var ans = subject.shouldThrottleTxn(accessor, consensusNow, true);
 		var throttlesNow = subject.activeThrottlesFor(TokenMint);
 		// and:
 		var aNow = throttlesNow.get(0);
@@ -148,7 +148,7 @@ class DeterministicThrottlingTest {
 		// when:
 		subject.rebuildFor(defs);
 		// and:
-		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+		var ans = subject.shouldThrottleTxn(accessor, consensusNow, true);
 		var throttlesNow = subject.activeThrottlesFor(TokenMint);
 		// and:
 		var aNow = throttlesNow.get(0);
@@ -168,7 +168,7 @@ class DeterministicThrottlingTest {
 		// when:
 		subject.rebuildFor(defs);
 		// and:
-		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+		var ans = subject.shouldThrottleTxn(accessor, consensusNow, true);
 		var throttlesNow = subject.activeThrottlesFor(ContractCall);
 		// and:
 		var aNow = throttlesNow.get(0);
@@ -241,7 +241,7 @@ class DeterministicThrottlingTest {
 		givenFunction(ContractCall);
 
 		// expect:
-		assertTrue(subject.shouldThrottleTxn(accessor, consensusNow));
+		assertTrue(subject.shouldThrottleTxn(accessor, consensusNow, true));
 	}
 
 	@Test
@@ -258,13 +258,13 @@ class DeterministicThrottlingTest {
 		given(manager.allReqsMetAt(consensusNow)).willReturn(true);
 
 		// then:
-		assertFalse(subject.shouldThrottleTxn(accessor, consensusNow));
+		assertFalse(subject.shouldThrottleTxn(accessor, consensusNow, true));
 	}
 
 	@Test
 	void requiresExplicitTimestamp() {
 		// expect:
-		assertThrows(UnsupportedOperationException.class, () -> subject.shouldThrottleTxn(accessor));
+		assertThrows(UnsupportedOperationException.class, () -> subject.shouldThrottleTxn(accessor, true));
 		assertThrows(UnsupportedOperationException.class, () -> subject.shouldThrottleQuery(FileGetInfo));
 	}
 

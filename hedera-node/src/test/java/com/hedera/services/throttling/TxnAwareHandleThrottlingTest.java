@@ -70,12 +70,12 @@ class TxnAwareHandleThrottlingTest {
 		final var accessor = SignedTxnAccessor.uncheckedFrom(Transaction.getDefaultInstance());
 
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
-		given(delegate.shouldThrottleTxn(accessor, consensusTime)).willReturn(true);
+		given(delegate.shouldThrottleTxn(accessor, consensusTime, true)).willReturn(true);
 
 		// expect:
-		assertTrue(subject.shouldThrottleTxn(accessor));
+		assertTrue(subject.shouldThrottleTxn(accessor, true));
 		// and:
-		verify(delegate).shouldThrottleTxn(accessor, consensusTime);
+		verify(delegate).shouldThrottleTxn(accessor, consensusTime, true);
 	}
 
 	@Test

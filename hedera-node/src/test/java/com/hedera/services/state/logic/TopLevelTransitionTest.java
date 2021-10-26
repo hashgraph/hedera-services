@@ -56,6 +56,8 @@ class TopLevelTransitionTest {
 	private SignatureScreen signatureScreen;
 	@Mock
 	private KeyActivationScreen keyActivationScreen;
+	@Mock
+	private ThrottleScreen throttleScreen;
 
 	private TopLevelTransition subject;
 
@@ -67,7 +69,8 @@ class TopLevelTransitionTest {
 				txnCtx,
 				signatureScreen,
 				chargingPolicyAgent,
-				keyActivationScreen);
+				keyActivationScreen,
+				throttleScreen);
 	}
 
 	@Test

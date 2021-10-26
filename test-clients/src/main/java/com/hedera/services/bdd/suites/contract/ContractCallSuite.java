@@ -27,6 +27,7 @@ import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -658,6 +659,7 @@ public class ContractCallSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("ResultSizeAffectsFees")
 				.given(
+						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
 						TxnVerbs.fileCreate("bytecode").path(ContractResources.VERBOSE_DEPOSIT_BYTECODE_PATH),
 						TxnVerbs.contractCreate("testContract").bytecode("bytecode")
 				).when(

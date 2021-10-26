@@ -547,6 +547,14 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			return new ExpirableTxnRecord(this);
 		}
 
+		public SolidityFnResult getContractCallResult() {
+			return contractCallResult;
+		}
+
+		public SolidityFnResult getContractCreateResult() {
+			return contractCreateResult;
+		}
+
 		public Builder clear() {
 			fee = 0;
 			txnId = null;

@@ -28,9 +28,9 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.List;
 
 public interface FunctionalityThrottling {
-	boolean shouldThrottleTxn(TxnAccessor accessor);
+	boolean shouldThrottleTxn(TxnAccessor accessor, boolean frontEndThrottle);
 	boolean shouldThrottleQuery(HederaFunctionality queryFunction);
-
+	void leakUnusedGasPreviouslyReserved(long value);
 	void rebuildFor(ThrottleDefinitions defs);
 	List<DeterministicThrottle> activeThrottlesFor(HederaFunctionality function);
 	List<DeterministicThrottle> allActiveThrottles();

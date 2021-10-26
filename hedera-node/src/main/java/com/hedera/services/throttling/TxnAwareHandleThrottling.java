@@ -38,13 +38,18 @@ public class TxnAwareHandleThrottling implements FunctionalityThrottling {
 	}
 
 	@Override
-	public boolean shouldThrottleTxn(TxnAccessor accessor) {
-		return delegate.shouldThrottleTxn(accessor, txnCtx.consensusTime());
+	public boolean shouldThrottleTxn(TxnAccessor accessor, boolean frontEndThrottle) {
+		return delegate.shouldThrottleTxn(accessor, txnCtx.consensusTime(), frontEndThrottle);
 	}
 
 	@Override
 	public boolean shouldThrottleQuery(HederaFunctionality queryFunction) {
 		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void leakUnusedGasPreviouslyReserved(long value) {
+		delegate.leakUnusedGasPreviouslyReserved(value);
 	}
 
 	@Override

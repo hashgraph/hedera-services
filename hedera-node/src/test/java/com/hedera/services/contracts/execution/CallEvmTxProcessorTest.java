@@ -97,6 +97,9 @@ class CallEvmTxProcessorTest {
 	private final Account receiver = new Account(new Id(0, 0, 1006));
 	private final Instant consensusTime = Instant.now();
 	private final int MAX_GAS_LIMIT = 10_000_000;
+	private final int MAX_REFUND_PERCENT = 20;
+	private final long INTRINSIC_GAS_COST = 290_000L;
+	private final long GAS_LIMIT = 300_000L;
 
 	private CallEvmTxProcessor callEvmTxProcessor;
 
@@ -115,6 +118,31 @@ class CallEvmTxProcessorTest {
 		var result = callEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), 33_333L, 1234L, Bytes.EMPTY,
 				consensusTime);
 		assertTrue(result.isSuccessful());
+		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+	}
+
+	@Test
+	void assertSuccessExecutionChargesCorrectMinimumGas() {
+		givenValidMock();
+		given(globalDynamicProperties.getContractMaxRefundPercentOfGasLimit()).willReturn(MAX_REFUND_PERCENT);
+		sender.initBalance(350_000L);
+		var result = callEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), GAS_LIMIT, 1234L, Bytes.EMPTY,
+				consensusTime);
+		assertTrue(result.isSuccessful());
+		assertEquals(result.getGasUsed(), GAS_LIMIT - GAS_LIMIT * MAX_REFUND_PERCENT / 100);
+		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+	}
+
+	@Test
+	void assertSuccessExecutionChargesCorrectGasWhenGasUsedIsLargerThanMinimum() {
+		givenValidMock();
+		given(globalDynamicProperties.getContractMaxRefundPercentOfGasLimit()).willReturn(MAX_REFUND_PERCENT);
+		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(Gas.of(INTRINSIC_GAS_COST));
+		sender.initBalance(350_000L);
+		var result = callEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), GAS_LIMIT, 1234L, Bytes.EMPTY,
+				consensusTime);
+		assertTrue(result.isSuccessful());
+		assertEquals(INTRINSIC_GAS_COST, result.getGasUsed());
 		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
 	}
 

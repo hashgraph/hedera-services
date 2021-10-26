@@ -212,6 +212,8 @@ public final class BootstrapProperties implements PropertySource {
 			"contracts.maxGas",
 			"contracts.chainId",
 			"contracts.maxStorageKb",
+			"contracts.throttle.throttleByGas",
+			"contracts.maxRefundPercentOfGasLimit",
 			"files.maxSizeKb",
 			"fees.minCongestionPeriod",
 			"fees.percentCongestionMultipliers",
@@ -406,6 +408,8 @@ public final class BootstrapProperties implements PropertySource {
 			entry("stats.speedometerHalfLifeSecs", AS_DOUBLE),
 			entry("consensus.message.maxBytesAllowed", AS_INT),
 			entry("tokens.nfts.areEnabled", AS_BOOLEAN),
-			entry("stats.executionTimesToTrack", AS_INT)
+			entry("stats.executionTimesToTrack", AS_INT),
+			entry("contracts.throttle.throttleByGas", AS_BOOLEAN),
+			entry("contracts.maxRefundPercentOfGasLimit", AS_INT)
 	);
 }

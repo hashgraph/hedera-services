@@ -153,7 +153,7 @@ abstract class EvmTxProcessor {
 		final long gasLimit = providedGasLimit > dynamicProperties.maxGas()
 				? dynamicProperties.maxGas()
 				: providedGasLimit;
-		final Wei gasCost = Wei.of(Math.multiplyExact(gasLimit, gasPrice));
+		final Wei gasCost = Wei.of(Math.multiplyExact(providedGasLimit, gasPrice));
 		final Wei upfrontCost = gasCost.add(value);
 		final Gas intrinsicGas =
 				gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
@@ -220,25 +220,33 @@ abstract class EvmTxProcessor {
 			stackedUpdater.commit();
 		}
 
-		Gas gasUsedByTransaction = Gas.of(gasLimit).minus(initialFrame.getRemainingGas());
+		Gas gasUsedByTransaction = Gas.of(providedGasLimit).minus(initialFrame.getRemainingGas());
 		/* Return leftover gas */
 		final Gas selfDestructRefund =
 				gasCalculator.getSelfDestructRefundAmount().times(initialFrame.getSelfDestructs().size()).min(
 						gasUsedByTransaction.dividedBy(gasCalculator.getMaxRefundQuotient()));
+
 		gasUsedByTransaction = gasUsedByTransaction.minus(selfDestructRefund).minus(initialFrame.getGasRefund());
+
+		var maxRefundPercent = dynamicProperties.getContractMaxRefundPercentOfGasLimit();
+		if(maxRefundPercent >= 0 && maxRefundPercent <= 100) {
+			gasUsedByTransaction = Gas.of(
+					Math.max(gasUsedByTransaction.toLong(),
+							providedGasLimit - providedGasLimit * maxRefundPercent / 100));
+		}
 
 		final Gas sbhRefund = updater.getSbhRefund();
 
 		if (!isStatic) {
 			// return gas price to accounts
-			final Gas refunded = Gas.of(gasLimit).minus(gasUsedByTransaction).plus(sbhRefund);
+			final Gas refunded = Gas.of(providedGasLimit).minus(gasUsedByTransaction).plus(sbhRefund);
 			final Wei refundedWei = refunded.priceFor(Wei.of(gasPrice));
 
 			mutableSender.incrementBalance(refundedWei);
 
 			/* Send TX fees to coinbase */
 			final var mutableCoinbase = updater.getOrCreate(coinbase).getMutable();
-			final Gas coinbaseFee = Gas.of(gasLimit).minus(refunded);
+			final Gas coinbaseFee = Gas.of(providedGasLimit).minus(refunded);
 
 			mutableCoinbase.incrementBalance(coinbaseFee.priceFor(Wei.of(gasPrice)));
 			initialFrame.getSelfDestructs().forEach(updater::deleteAccount);

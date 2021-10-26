@@ -21,6 +21,7 @@ package com.hedera.services.state.logic;
  */
 
 import com.hedera.services.config.MockGlobalDynamicProps;
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.context.domain.trackers.IssEventStatus;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -79,6 +80,8 @@ class NetworkCtxManagerTest {
 	private FunctionalityThrottling handleThrottling;
 	@Mock
 	private BiPredicate<Instant, Instant> shouldUpdateMidnightRates;
+	@Mock
+	private TransactionContext txnCtx;
 
 	private NetworkCtxManager subject;
 
@@ -95,7 +98,8 @@ class NetworkCtxManagerTest {
 				feeMultiplierSource,
 				mockDynamicProps,
 				handleThrottling,
-				() -> networkCtx);
+				() -> networkCtx,
+				txnCtx);
 	}
 
 	@Test
@@ -148,7 +152,7 @@ class NetworkCtxManagerTest {
 		subject.prepareForIncorporating(accessor);
 
 		// then:
-		verify(handleThrottling).shouldThrottleTxn(accessor);
+		verify(handleThrottling).shouldThrottleTxn(accessor, true);
 		verify(feeMultiplierSource).updateMultiplier(sometime);
 	}
 

@@ -27,8 +27,8 @@ import java.time.Instant;
 
 public interface TimedFunctionalityThrottling extends FunctionalityThrottling {
 	@Override
-	default boolean shouldThrottleTxn(TxnAccessor accessor)  {
-		return shouldThrottleTxn(accessor, Instant.now());
+	default boolean shouldThrottleTxn(TxnAccessor accessor, boolean frontEndThrottle)  {
+		return shouldThrottleTxn(accessor, Instant.now(), frontEndThrottle);
 	}
 
 	@Override
@@ -36,6 +36,6 @@ public interface TimedFunctionalityThrottling extends FunctionalityThrottling {
 		return shouldThrottleQuery(queryFunction, Instant.now());
 	}
 
-	boolean shouldThrottleTxn(TxnAccessor accessor, Instant now);
+	boolean shouldThrottleTxn(TxnAccessor accessor, Instant now, boolean frontEndThrottle);
 	boolean shouldThrottleQuery(HederaFunctionality queryFunction, Instant now);
 }

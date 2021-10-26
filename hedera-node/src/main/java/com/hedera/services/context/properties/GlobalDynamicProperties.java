@@ -86,6 +86,8 @@ public class GlobalDynamicProperties {
 	private int maxCustomFeeDepth;
 	private ThrottleReqOpsScaleFactor nftMintScaleFactor;
 	private String upgradeArtifactsLoc;
+	private boolean throttleByGas;
+	private int contractMaxRefundPercentOfGasLimit;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -154,6 +156,8 @@ public class GlobalDynamicProperties {
 		maxCustomFeeDepth = properties.getIntProperty("tokens.maxCustomFeeDepth");
 		nftMintScaleFactor = properties.getThrottleScaleFactor("tokens.nfts.mintThrottleScaleFactor");
 		upgradeArtifactsLoc = properties.getStringProperty("upgrade.artifacts.path");
+		throttleByGas = properties.getBooleanProperty("contracts.throttle.throttleByGas");
+		contractMaxRefundPercentOfGasLimit = properties.getIntProperty("contracts.maxRefundPercentOfGasLimit");
 	}
 
 	public int maxTokensPerAccount() {
@@ -342,5 +346,13 @@ public class GlobalDynamicProperties {
 
 	public String upgradeArtifactsLoc() {
 		return upgradeArtifactsLoc;
+	}
+
+	public boolean shouldThrottleByGas() {
+		return throttleByGas;
+	}
+
+	public int getContractMaxRefundPercentOfGasLimit() {
+		return contractMaxRefundPercentOfGasLimit;
 	}
 }

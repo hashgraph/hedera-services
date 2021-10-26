@@ -70,7 +70,7 @@ class HapiThrottlingTest {
 		given(delegate.shouldThrottleTxn(any(), any())).willReturn(true);
 
 		// when:
-		var ans = subject.shouldThrottleTxn(accessor);
+		var ans = subject.shouldThrottleTxn(accessor, true);
 
 		// then:
 		assertTrue(ans);

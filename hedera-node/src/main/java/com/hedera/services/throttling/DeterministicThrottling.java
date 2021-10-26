@@ -23,6 +23,7 @@ package com.hedera.services.throttling;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
 import com.hedera.services.throttles.DeterministicThrottle;
+import com.hedera.services.throttles.GasLimitDeterministicThrottle;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
@@ -38,6 +39,8 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.function.IntSupplier;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 
 public class DeterministicThrottling implements TimedFunctionalityThrottling {
@@ -49,6 +52,9 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	private List<DeterministicThrottle> activeThrottles = Collections.emptyList();
 	private EnumMap<HederaFunctionality, ThrottleReqsManager> functionReqs = new EnumMap<>(HederaFunctionality.class);
 
+	private GasLimitDeterministicThrottle frontEndGasThrottle;
+	private GasLimitDeterministicThrottle backEndGasThrottle;
+
 	public DeterministicThrottling(
 			IntSupplier capacitySplitSource,
 			GlobalDynamicProperties dynamicProperties
@@ -58,7 +64,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	}
 
 	@Override
-	public boolean shouldThrottleTxn(TxnAccessor accessor) {
+	public boolean shouldThrottleTxn(TxnAccessor accessor, boolean frontEndThrottle) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -68,17 +74,35 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	}
 
 	@Override
-	public boolean shouldThrottleTxn(TxnAccessor accessor, Instant now) {
+	public boolean shouldThrottleTxn(TxnAccessor accessor, Instant now, boolean frontEndThrottle) {
 		final var function = accessor.getFunction();
 		ThrottleReqsManager manager;
+
+		if ((function == ContractCreate || function == ContractCall) && dynamicProperties.shouldThrottleByGas()) {
+			final var txGasLimit = function == ContractCreate ?
+					accessor.getTxn().getContractCreateInstance().getGas() : accessor.getTxn().getContractCall().getGas();
+			if(frontEndThrottle) {
+				if (frontEndGasThrottle == null || !frontEndGasThrottle.allow(now, txGasLimit)) {
+					return true;
+				}
+			} else {
+				if (backEndGasThrottle == null || !backEndGasThrottle.allow(now, txGasLimit)) {
+					return true;
+				}
+			}
+		}
+
 		if ((manager = functionReqs.get(function)) == null) {
 			return true;
-		}
-		if (function == TokenMint) {
+		} else if (function == TokenMint) {
 			return shouldThrottleMint(manager, accessor.getTxn().getTokenMint(), now);
 		} else {
 			return !manager.allReqsMetAt(now);
 		}
+	}
+
+	public void leakUnusedGasPreviouslyReserved(long value) {
+		backEndGasThrottle.leakUnusedGasPreviouslyReserved(value);
 	}
 
 	@Override
@@ -131,6 +155,15 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		functionReqs = newFunctionReqs;
 		activeThrottles = newActiveThrottles;
 
+		if(dynamicProperties.shouldThrottleByGas()) {
+			if(defs.getTotalAllowedGasPerSec() == 0) {
+				log.error("ThrottleByGas global dynamic property is set to true but totalAllowedGasPerSec is not set in throttles.json or is set to 0.");
+			} else {
+				frontEndGasThrottle = new GasLimitDeterministicThrottle(defs.getTotalAllowedGasPerSec());
+				backEndGasThrottle = new GasLimitDeterministicThrottle(defs.getTotalAllowedGasPerSec());
+			}
+		}
+
 		logResolvedDefinitions();
 	}
 
@@ -146,6 +179,12 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 							.append(manager.asReadableRequirements())
 							.append("\n");
 				});
+		sb.append("  ")
+				.append("ThrottleByGasLimit: ")
+				.append(frontEndGasThrottle == null ? 0 : frontEndGasThrottle.getCapacity())
+				.append(" throttleByGas ")
+				.append(dynamicProperties.shouldThrottleByGas())
+				.append("\n");
 		log.info(sb.toString().trim());
 	}
 

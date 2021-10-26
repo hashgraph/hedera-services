@@ -20,6 +20,8 @@ package com.hedera.services.state.logic;
  * ‍
  */
 
+import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
@@ -32,6 +34,7 @@ import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.annotations.HandleThrottle;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -43,6 +46,8 @@ import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.domain.trackers.IssEventStatus.ONGOING_ISS;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static java.time.ZoneOffset.UTC;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
@@ -62,6 +67,7 @@ public class NetworkCtxManager {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final FunctionalityThrottling handleThrottling;
 	private final Supplier<MerkleNetworkContext> networkCtx;
+	private final TransactionContext txnCtx;
 
 	private BiPredicate<Instant, Instant> shouldUpdateMidnightRates = (now, then) -> !inSameUtcDay(now, then);
 
@@ -75,7 +81,8 @@ public class NetworkCtxManager {
 			FeeMultiplierSource feeMultiplierSource,
 			GlobalDynamicProperties dynamicProperties,
 			@HandleThrottle FunctionalityThrottling handleThrottling,
-			Supplier<MerkleNetworkContext> networkCtx
+			Supplier<MerkleNetworkContext> networkCtx,
+			TransactionContext txnCtx
 	) {
 		issResetPeriod = nodeLocalProperties.issResetPeriod();
 
@@ -87,6 +94,7 @@ public class NetworkCtxManager {
 		this.feeMultiplierSource = feeMultiplierSource;
 		this.handleThrottling = handleThrottling;
 		this.dynamicProperties = dynamicProperties;
+		this.txnCtx = txnCtx;
 	}
 
 	public void setObservableFilesNotLoaded() {
@@ -150,16 +158,30 @@ public class NetworkCtxManager {
 		return consensusSecondJustChanged;
 	}
 
-	public void prepareForIncorporating(TxnAccessor accessor) {
-		/* This is only to monitor the current network usage for automated
-		congestion pricing; we don't actually throttle consensus transactions. */
-		handleThrottling.shouldThrottleTxn(accessor);
+	public ResponseCodeEnum prepareForIncorporating(TxnAccessor accessor) {
+		/* This is used to monitor the current network usage for automated congestion pricing
+			and throttle ContractCreate and ContractCall TXs by gas limit.*/
+		if(handleThrottling.shouldThrottleTxn(accessor, false) &&
+				(accessor.getFunction().equals(ContractCall) || accessor.getFunction().equals(ContractCreate))){
+			return ResponseCodeEnum.BUSY;
+		}
 
 		feeMultiplierSource.updateMultiplier(networkCtx.get().consensusTimeOfLastHandledTxn());
+		return ResponseCodeEnum.OK;
 	}
 
 	public void finishIncorporating(HederaFunctionality op) {
 		opCounters.countHandled(op);
+
+		if(op.equals(HederaFunctionality.ContractCall) || op.equals(HederaFunctionality.ContractCreate)){
+			var gasUsed = op.equals(HederaFunctionality.ContractCall) ?
+					txnCtx.recordSoFar().getContractCallResult().getGasUsed() :
+					txnCtx.recordSoFar().getContractCreateResult().getGasUsed();
+			final var txGasLimit = op == ContractCreate ?
+					txnCtx.accessor().getTxn().getContractCreateInstance().getGas() :
+					txnCtx.accessor().getTxn().getContractCall().getGas();
+			handleThrottling.leakUnusedGasPreviouslyReserved(txGasLimit - gasUsed);
+		}
 
 		var networkCtxNow = networkCtx.get();
 		networkCtxNow.syncThrottling(handleThrottling);

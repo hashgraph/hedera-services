@@ -36,13 +36,18 @@ public class HapiThrottling implements FunctionalityThrottling {
 	}
 
 	@Override
-	public synchronized boolean shouldThrottleTxn(TxnAccessor accessor) {
-		return delegate.shouldThrottleTxn(accessor, Instant.now());
+	public synchronized boolean shouldThrottleTxn(TxnAccessor accessor, boolean frontEndThrottle) {
+		return delegate.shouldThrottleTxn(accessor, Instant.now(), frontEndThrottle);
 	}
 
 	@Override
 	public synchronized boolean shouldThrottleQuery(HederaFunctionality queryFunction) {
 		return delegate.shouldThrottleQuery(queryFunction, Instant.now());
+	}
+
+	@Override
+	public void leakUnusedGasPreviouslyReserved(long value) {
+		delegate.leakUnusedGasPreviouslyReserved(value);
 	}
 
 	@Override

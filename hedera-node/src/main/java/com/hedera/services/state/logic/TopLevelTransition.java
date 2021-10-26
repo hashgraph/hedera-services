@@ -22,6 +22,7 @@ package com.hedera.services.state.logic;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.charging.TxnChargingPolicyAgent;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -33,6 +34,7 @@ public class TopLevelTransition implements Runnable {
 	private final NetworkCtxManager networkCtxManager;
 	private final TxnChargingPolicyAgent chargingPolicyAgent;
 	private final SignatureScreen signatureScreen;
+	private final ThrottleScreen throttleScreen;
 	private final KeyActivationScreen keyActivationScreen;
 
 	@Inject
@@ -42,7 +44,8 @@ public class TopLevelTransition implements Runnable {
 			TransactionContext txnCtx,
 			SignatureScreen signatureScreen,
 			TxnChargingPolicyAgent chargingPolicyAgent,
-			KeyActivationScreen keyActivationScreen
+			KeyActivationScreen keyActivationScreen,
+			ThrottleScreen throttleScreen
 	) {
 		this.txnCtx = txnCtx;
 		this.networkCtxManager = networkCtxManager;
@@ -50,6 +53,7 @@ public class TopLevelTransition implements Runnable {
 		this.signatureScreen = signatureScreen;
 		this.keyActivationScreen = keyActivationScreen;
 		this.screenedTransition = screenedTransition;
+		this.throttleScreen = throttleScreen;
 	}
 
 	@Override
@@ -64,6 +68,12 @@ public class TopLevelTransition implements Runnable {
 			return;
 		}
 		if (!keyActivationScreen.reqKeysAreActiveGiven(sigStatus)) {
+			return;
+		}
+
+		final var throttleScreenStatus = throttleScreen.applyTo(accessor);
+		if(!throttleScreenStatus.equals(ResponseCodeEnum.OK)) {
+			txnCtx.setStatus(throttleScreenStatus);
 			return;
 		}
 
