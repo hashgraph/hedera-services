@@ -59,7 +59,7 @@ public final class UpdateFileForUpgrade extends HapiApiSuite {
 	}
 
 	private HapiApiSpec updateFileForUpgrade() {
-		final int appendsPerBurst = 128;
+		final int appendsPerBurst = 512;
 		return defaultHapiSpec("UpdateFileForUpgrade")
 				.given(
 						initializeSettings()
