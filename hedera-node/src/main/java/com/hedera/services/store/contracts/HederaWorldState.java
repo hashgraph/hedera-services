@@ -24,6 +24,7 @@ package com.hedera.services.store.contracts;
 
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
@@ -55,6 +56,7 @@ import java.util.NavigableMap;
 import java.util.TreeSet;
 import java.util.stream.Stream;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.HederaLedger.CONTRACT_ID_COMPARATOR;
@@ -90,14 +92,18 @@ public class HederaWorldState implements HederaMutableWorldState {
 	public void customizeSponsoredAccounts() {
 		// copy over sponsor account info for CREATE operations
 		sponsorMap.forEach((contract, sponsorAddress) -> {
-			AccountID newlyCreated = accountParsedFromSolidityAddress(contract.toArray());
-			AccountID sponsorAccount = accountParsedFromSolidityAddress(sponsorAddress.toArrayUnsafe());
+			final var newlyCreated = accountParsedFromSolidityAddress(contract.toArray());
+			final var sponsorAccount = accountParsedFromSolidityAddress(sponsorAddress.toArrayUnsafe());
 			validateTrue(entityAccess.isExtant(newlyCreated), FAIL_INVALID);
 			validateTrue(entityAccess.isExtant(sponsorAccount), FAIL_INVALID);
 
 			final var sponsor = entityAccess.lookup(sponsorAccount);
+			final var sponsorKey = sponsor.getAccountKey();
+			final var createdKey = (sponsorKey instanceof JContractIDKey)
+					? STATIC_PROPERTIES.scopedContractKeyWith(newlyCreated.getAccountNum())
+					: sponsorKey;
 			var customizer = new HederaAccountCustomizer()
-					.key(sponsor.getAccountKey())
+					.key(createdKey)
 					.memo(sponsor.getMemo())
 					.proxy(sponsor.getProxy())
 					.autoRenewPeriod(sponsor.getAutoRenewSecs())

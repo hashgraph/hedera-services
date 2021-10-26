@@ -31,6 +31,7 @@ public class ContractResources {
 	public static final String INLINE_TEST_BYTECODE_PATH = bytecodePath("InlineTest");
 	public static final String INVALID_BYTECODE_PATH = bytecodePath("CorruptOne");
 	public static final String VALID_BYTECODE_PATH = HapiSpecSetup.getDefaultInstance().defaultContractPath();
+	public static final String ERC721_BYTECODE_PATH = bytecodePath("ERC721");
 	public static final String VERBOSE_DEPOSIT_BYTECODE_PATH = bytecodePath("VerboseDeposit");
 	public static final String GROW_ARRAY_BYTECODE_PATH = bytecodePath("GrowArray");
 	public static final String BIG_ARRAY_BYTECODE_PATH = bytecodePath("BigArray");
@@ -51,7 +52,7 @@ public class ContractResources {
 	public static final String DOUBLE_SEND_BYTECODE_PATH = bytecodePath("DoubleSend");
 	public static final String EMPTY_CONSTRUCTOR = bytecodePath("EmptyConstructor");
 	public static final String PAYABLE_CONSTRUCTOR = bytecodePath("PayableConstructor");
-
+	public static final String ERC_1155_BYTECODE_PATH = bytecodePath("erc1155");
 	public static final String BENCHMARK_CONTRACT = bytecodePath("Benchmark");
 	public static final String SIMPLE_UPDATE = bytecodePath("SimpleUpdate");
 	public static final String LOGS = bytecodePath("Logs");
@@ -88,6 +89,18 @@ public class ContractResources {
 	public static final String COMPUTE_NTH_FIB_ABI = "{\"constant\":true,\"inputs\":[{\"internalType\":\"uint32\"," +
 			"\"name\":\"n\",\"type\":\"uint32\"}],\"name\":\"fib\",\"outputs\":[{\"internalType\":\"uint256\"," +
 			"\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"pure\",\"type\":\"function\"}";
+	public static final String ERC721_MINT_ABI = "{ \"inputs\": [ { \"internalType\": \"address\"," +
+			" \"name\": \"player\", \"type\": \"address\" }, { \"internalType\": \"uint256\", \"name\": \"tokenid\", \"type\": \"uint256\" } ]," +
+			" \"name\": \"mint\", \"outputs\": [ { \"internalType\": \"uint256\", " +
+			"\"name\": \"\", \"type\": \"uint256\" } ], " +
+			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+	public static final String ERC721_APPROVE_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"to\", \"type\": \"address\" }, " +
+			"{ \"internalType\": \"uint256\", \"name\": \"tokenId\", \"type\": \"uint256\" } ], \"name\": \"approve\", \"outputs\": [], " +
+			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+	public static final String ERC721_TRANSFER_FROM_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"from\", \"type\": \"address\" }, " +
+			"{ \"internalType\": \"address\", \"name\": \"to\", \"type\": \"address\" }, " +
+			"{ \"internalType\": \"uint256\", \"name\": \"tokenId\", \"type\": \"uint256\" } ], " +
+			"\"name\": \"transferFrom\", \"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 	public static final String CREATE_CHILD_ABI = "{\"constant\":false," +
 			"\"inputs\":[],\"name\":\"create\"," +
 			"\"outputs\":[]," +
@@ -485,6 +498,17 @@ public class ContractResources {
 	public static final String TEMPORARY_SSTORE_HOLD_PERMANENTLY_ABI = "{\"constant\": false,\"inputs\": " +
 			"[{\"internalType\": \"uint256\",\"name\": \"_permanentValue\",\"type\": \"uint256\"}],\"name\": \"holdPermanently\"," +
 			"\"outputs\": [],\"payable\": false,\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	
+	public static final String ERC_1155_ABI_SAFE_TRANSFER_FROM = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"}," +
+			"{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"}," +
+			"{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}]" +
+			",\"name\":\"safeTransferFrom\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String ERC_1155_ABI_APPROVE = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"operator\",\"type\":\"address\"}," +
+			"{\"internalType\":\"bool\",\"name\":\"approved\",\"type\":\"bool\"}],\"name\":\"setApprovalForAll\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String ERC_1155_ABI_MINT = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"tokenType\",\"type\":\"uint256\"}" +
+			",{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"recipient\",\"type\":\"address\"}]" +
+			",\"name\":\"mintToken\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+
 
 	public static String bytecodePath(String bytecode) {
 		return String.format("src/main/resource/contract/bytecodes/%s.bin", bytecode);
