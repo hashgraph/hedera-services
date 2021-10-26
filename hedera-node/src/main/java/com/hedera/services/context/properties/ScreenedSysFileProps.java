@@ -58,7 +58,6 @@ public final class ScreenedSysFileProps implements PropertySource {
 			entry("configAccountNum", "ledger.maxAccountNum"),
 			entry("defaultContractDurationSec", "contracts.defaultLifetime"),
 			entry("maxGasLimit", "contracts.maxGas"),
-			entry("maxContractStateSize", "contracts.maxStorageKb"),
 			entry("maxFileSize", "files.maxSizeKb"),
 			entry("defaultFeeCollectionAccount", "ledger.fundingAccount"),
 			entry("txReceiptTTL", "cache.records.ttl"),

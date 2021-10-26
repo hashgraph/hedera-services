@@ -105,7 +105,6 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(2, subject.maxTokenSymbolUtf8Bytes());
 		assertEquals(6, subject.maxFileSizeKb());
 		assertEquals(8, subject.cacheRecordsTtl());
-		assertEquals(9, subject.maxContractStorageKb());
 		assertEquals(10, subject.ratesIntradayChangeLimitPercent());
 		assertEquals(11, subject.balancesExportPeriodSecs());
 		assertEquals(15, subject.maxTransferListSize());
@@ -187,7 +186,6 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(3, subject.maxTokenSymbolUtf8Bytes());
 		assertEquals(7, subject.maxFileSizeKb());
 		assertEquals(9, subject.cacheRecordsTtl());
-		assertEquals(10, subject.maxContractStorageKb());
 		assertEquals(11, subject.ratesIntradayChangeLimitPercent());
 		assertEquals(12, subject.balancesExportPeriodSecs());
 		assertEquals(16, subject.maxTransferListSize());
@@ -251,7 +249,6 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getIntProperty("files.maxSizeKb")).willReturn(i + 5);
 		given(properties.getLongProperty("ledger.fundingAccount")).willReturn((long)i + 6);
 		given(properties.getIntProperty("cache.records.ttl")).willReturn(i + 7);
-		given(properties.getIntProperty("contracts.maxStorageKb")).willReturn(i + 8);
 		given(properties.getIntProperty("rates.intradayChangeLimitPercent")).willReturn(i + 9);
 		given(properties.getIntProperty("balances.exportPeriodSecs")).willReturn(i + 10);
 		given(properties.getBooleanProperty("balances.exportEnabled")).willReturn((i + 11) % 2 == 0);
