@@ -27,7 +27,6 @@ import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.state.virtual.VirtualMapFactory;
-import com.hedera.services.store.contracts.DWUtil;
 import com.swirlds.jasperdb.VirtualDataSourceJasperDB;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
@@ -129,7 +128,7 @@ public class ReleaseTwentyMigration {
 			System.arraycopy(orderedKeyValueStorage, offset, rawValue, 0, SIZE);
 			offset += SIZE;
 
-			final var key = new ContractKey(contractNum, DWUtil.asPackedInts(rawKey));
+			final var key = new ContractKey(contractNum, rawKey);
 			final var value = new ContractValue(rawValue);
 			vmStorage.put(key, value);
 		}

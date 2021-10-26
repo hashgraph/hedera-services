@@ -30,7 +30,6 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
-import static com.hedera.services.store.contracts.DWUtil.asPackedInts;
 import static com.swirlds.jasperdb.utilities.NonCryptographicHashing.perm64;
 
 /**
@@ -74,6 +73,22 @@ public final class ContractKey implements VirtualKey {
 		setKey(key);
 	}
 
+	public static int[] asPackedInts(final byte[] data) {
+		if (data == null || data.length != 32) {
+			throw new IllegalArgumentException("Key data must be non-null and 32 bytes long");
+		}
+		return new int[] {
+				data[0] << 24 | (data[1] & 255) << 16 | (data[2] & 255) << 8 | (data[3] & 255),
+				data[4] << 24 | (data[5] & 255) << 16 | (data[6] & 255) << 8 | (data[7] & 255),
+				data[8] << 24 | (data[9] & 255) << 16 | (data[10] & 255) << 8 | (data[11] & 255),
+				data[12] << 24 | (data[13] & 255) << 16 | (data[14] & 255) << 8 | (data[15] & 255),
+				data[16] << 24 | (data[17] & 255) << 16 | (data[18] & 255) << 8 | (data[19] & 255),
+				data[20] << 24 | (data[21] & 255) << 16 | (data[22] & 255) << 8 | (data[23] & 255),
+				data[24] << 24 | (data[25] & 255) << 16 | (data[26] & 255) << 8 | (data[27] & 255),
+				data[28] << 24 | (data[29] & 255) << 16 | (data[30] & 255) << 8 | (data[31] & 255),
+		};
+	}
+
 	public long getContractId() {
 		return contractId;
 	}
@@ -98,7 +113,7 @@ public final class ContractKey implements VirtualKey {
 	}
 
 	public void setKey(int[] uint256Key) {
-		if(uint256Key == null || uint256Key.length != 8) {
+		if (uint256Key == null || uint256Key.length != 8) {
 			throw new IllegalArgumentException(
 					"The key cannot be null and the key's packed int array size must be 8");
 		}

@@ -20,10 +20,13 @@ package com.hedera.services.state.virtual;
  * ‍
  */
 
+import com.google.common.primitives.Ints;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -31,6 +34,7 @@ import java.nio.ByteBuffer;
 
 import static com.hedera.services.state.virtual.ContractKey.MERKLE_VERSION;
 import static com.hedera.services.state.virtual.ContractKey.RUNTIME_CONSTRUCTABLE_ID;
+import static com.hedera.services.state.virtual.ContractKey.asPackedInts;
 import static com.hedera.services.state.virtual.ContractKey.readKeySize;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,7 +51,8 @@ class ContractKeyTest {
 	private final long key = 123L;
 	private final long otherContractNum = 1235L;
 	private final long otherKey = 124L;
-	private final UInt256 largeKey = UInt256.fromHexString("0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563");
+	private final UInt256 largeKey = UInt256.fromHexString(
+			"0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563");
 	private final UInt256 uIntKey = UInt256.valueOf(key);
 	private final byte[] key_array = uIntKey.toArray();
 
@@ -59,8 +64,8 @@ class ContractKeyTest {
 		var testSubject2 = new ContractKey(contractNum, key_array);
 		var testSubject3 = new ContractKey(contractNum,
 				new int[] { 0, 0, 0, 0, 0, 0, (int) (key >> Integer.SIZE), (int) key });
-		var testSubject4 =  new ContractKey(contractNum, otherKey);
-		var testSubject5 =  new ContractKey(otherContractNum, key);
+		var testSubject4 = new ContractKey(contractNum, otherKey);
+		var testSubject5 = new ContractKey(otherContractNum, key);
 
 		subject = new ContractKey();
 		subject.setContractId(contractNum);
@@ -285,5 +290,65 @@ class ContractKeyTest {
 		final var subjectDescription = "ContractKey{id=1234(4D2), key=123(0,0,0,0,0,0,0,7B)}";
 
 		assertEquals(subjectDescription, subject.toString());
+	}
+
+	@Test
+	void packsOneIntAsExpected() {
+		final var ints = asPackedInts(UInt256.valueOf(100L).toArray());
+		assertArrayEquals(new int[] { 0, 0, 0, 0, 0, 0, 0, 100 }, ints);
+	}
+
+	@Test
+	void refusesToPackNonsense() {
+		assertThrows(IllegalArgumentException.class, () -> asPackedInts(null));
+		final int not32 = 17;
+		final var bytes = new byte[not32];
+		assertThrows(IllegalArgumentException.class, () -> asPackedInts(bytes));
+	}
+
+	@CsvSource({
+			"-1806530950,-2093446894,-1291596980,1836267745,-868711703,1994865710,1486235392,89268451",
+			"1861848309,517745644,-243623496,2075815091,-629179791,757859505,327257688,-278391897",
+			"576331089,516580313,-1405053523,-1435418758,840608222,-1665385228,-940878767,1825664739",
+			"475306718,1500503753,677704189,-1451652196,-503828291,494501022,932345414,-1886498088",
+			"1668223719,-533534549,1267228217,-771726856,1049051417,-211458117,-930866890,-768673597",
+			"744849374,433724948,-472539246,1187920106,2054923808,1347467396,-11386934,-1632362211",
+			"-1594118990,-844570361,1630591304,820749687,-1709165974,213582391,1311172337,918271256",
+			"171804798,-1744236801,2094722701,685482263,-565603262,1968563920,-762655156,1481812521",
+			"-844903528,-831683594,-16423900,-278321853,1873896845,-266656458,-1872718468,-510960702",
+			"-22130352,1167136334,1555593921,-1288558840,1701145985,-2027232091,-1866141402,-2646571"
+	})
+	@ParameterizedTest
+	void packsVariousAsExpected(
+			final int a, final int b, final int c, final int d, final int e, final int f, final int g, final int h
+	) {
+		final byte[] aBytes = Ints.toByteArray(a);
+		final byte[] bBytes = Ints.toByteArray(b);
+		final byte[] cBytes = Ints.toByteArray(c);
+		final byte[] dBytes = Ints.toByteArray(d);
+		final byte[] eBytes = Ints.toByteArray(e);
+		final byte[] fBytes = Ints.toByteArray(f);
+		final byte[] gBytes = Ints.toByteArray(g);
+		final byte[] hBytes = Ints.toByteArray(h);
+		final byte[] bytes = {
+				aBytes[0], aBytes[1], aBytes[2], aBytes[3],
+				bBytes[0], bBytes[1], bBytes[2], bBytes[3],
+				cBytes[0], cBytes[1], cBytes[2], cBytes[3],
+				dBytes[0], dBytes[1], dBytes[2], dBytes[3],
+				eBytes[0], eBytes[1], eBytes[2], eBytes[3],
+				fBytes[0], fBytes[1], fBytes[2], fBytes[3],
+				gBytes[0], gBytes[1], gBytes[2], gBytes[3],
+				hBytes[0], hBytes[1], hBytes[2], hBytes[3]
+		};
+
+		final int[] actual = asPackedInts(bytes);
+		assertEquals(a, actual[0]);
+		assertEquals(b, actual[1]);
+		assertEquals(c, actual[2]);
+		assertEquals(d, actual[3]);
+		assertEquals(e, actual[4]);
+		assertEquals(f, actual[5]);
+		assertEquals(g, actual[6]);
+		assertEquals(h, actual[7]);
 	}
 }
