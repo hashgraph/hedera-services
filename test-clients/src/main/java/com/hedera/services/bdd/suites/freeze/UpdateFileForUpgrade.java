@@ -36,6 +36,7 @@ import java.util.List;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.initializeSettings;
+import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeFileAppendsPerBurst;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeFileId;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeFilePath;
 
@@ -59,7 +60,6 @@ public final class UpdateFileForUpgrade extends HapiApiSuite {
 	}
 
 	private HapiApiSpec updateFileForUpgrade() {
-		final int appendsPerBurst = 512;
 		return defaultHapiSpec("UpdateFileForUpgrade")
 				.given(
 						initializeSettings()
@@ -71,7 +71,7 @@ public final class UpdateFileForUpgrade extends HapiApiSuite {
 												upgradeFileId(),
 												ByteString.copyFrom(Files.readAllBytes(Paths.get(upgradeFilePath()))),
 												TxnUtils.BYTES_4K,
-												appendsPerBurst);
+												upgradeFileAppendsPerBurst());
 									} catch (IOException e) {
 										e.printStackTrace();
 										return null;
