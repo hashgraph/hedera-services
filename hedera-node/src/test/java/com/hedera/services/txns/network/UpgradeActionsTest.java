@@ -106,7 +106,6 @@ class UpgradeActionsTest {
 
 		given(networkCtx.hasPreparedUpgrade()).willReturn(true);
 		given(networkCtx.getPreparedUpdateFileNum()).willReturn(150L);
-		given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
 
 		subject.catchUpOnMissedSideEffects();
 
@@ -197,6 +196,19 @@ class UpgradeActionsTest {
 				Paths.get(markerFilesLoc, FREEZE_SCHEDULED_MARKER).toFile().exists(),
 				"Should not create " + FREEZE_SCHEDULED_MARKER + " if dual last frozen time is freeze time");
 		verify(dualState).setFreezeTime(null);
+	}
+
+	@Test
+	void doesntCatchUpOnFreezeAbortIfUpgradeIsPrepared() {
+		rmIfPresent(FREEZE_ABORTED_MARKER);
+
+		given(networkCtx.hasPreparedUpgrade()).willReturn(true);
+
+		subject.catchUpOnMissedSideEffects();
+
+		assertFalse(
+				Paths.get(markerFilesLoc, FREEZE_ABORTED_MARKER).toFile().exists(),
+				"Should not create defensive " + FREEZE_ABORTED_MARKER + " if upgrade is prepared");
 	}
 
 	@Test
