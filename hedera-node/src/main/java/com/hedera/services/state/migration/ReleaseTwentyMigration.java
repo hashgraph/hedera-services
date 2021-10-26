@@ -99,18 +99,18 @@ public class ReleaseTwentyMigration {
 		initializingState.setChild(StateChildIndices.STORAGE, vmBlobs);
 		initializingState.setChild(StateChildIndices.CONTRACT_STORAGE, vmStorage);
 
-		final var ZERO = new AtomicInteger();
+		final var defaultZero = new AtomicInteger();
 		log.info("Migration complete for:"
 						+ "\n  ↪ {} file metadata blobs"
 						+ "\n  ↪ {} file data blobs"
 						+ "\n  ↪ {} contract bytecode blobs"
 						+ "\n  ↪ {} contract storage blobs"
 						+ "\n  ↪ {} system-deleted entity expiry blobs",
-				counts.getOrDefault('k', ZERO).get(),
-				counts.getOrDefault('f', ZERO).get(),
-				counts.getOrDefault('s', ZERO).get(),
-				counts.getOrDefault('d', ZERO).get(),
-				counts.getOrDefault('e', ZERO).get());
+				counts.getOrDefault('k', defaultZero).get(),
+				counts.getOrDefault('f', defaultZero).get(),
+				counts.getOrDefault('s', defaultZero).get(),
+				counts.getOrDefault('d', defaultZero).get(),
+				counts.getOrDefault('e', defaultZero).get());
 	}
 
 	static void insertPairsFrom(
