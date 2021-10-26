@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 class IdTest {
@@ -62,6 +63,7 @@ class IdTest {
 		assertNotEquals(dId, aId);
 		assertEquals(eId, aId);
 		assertNotEquals(null, aId);
+		assertFalse(aId.equals(null));
 		assertNotEquals(new Object(), aId);
 		assertEquals(aId, aId);
 	}
