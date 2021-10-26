@@ -1435,10 +1435,10 @@ jobs:
         default: true
       slack_results_channel:
         type: string
-        default: "platform-aws-summary"
+        default: "hedera-update-test"
       slack_summary_channel:
         type: string
-        default: "platform-aws-summary"
+        default: "hedera-update-test"
       workflow-name:
         type: string
         default: ""
