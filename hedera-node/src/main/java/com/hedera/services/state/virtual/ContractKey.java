@@ -39,6 +39,8 @@ import static com.swirlds.jasperdb.utilities.NonCryptographicHashing.perm64;
  * and realm.
  */
 public final class ContractKey implements VirtualKey {
+	/** The shifts required to deserialize a big-endian contractId with leading zeros omitted */
+	private static final int[] BIT_SHIFTS =  { 0, 8, 16, 24, 32, 40, 48, 56 };
 	/** The estimated average size for a contract key when serialized */
 	public static final int ESTIMATED_AVERAGE_SIZE = 20; // assume 50% full typically, max size is (1 + 8 + 32)
 	/** The max size for a contract key when serialized */
@@ -247,17 +249,16 @@ public final class ContractKey implements VirtualKey {
 	 * @throws IOException
 	 * 		If there was a problem reading
 	 */
-	static <D> long deserializeContractID(byte contractIdNonZeroBytes, D dataSource,
-			ByteReaderFunction<D> reader) throws IOException {
+	static <D> long deserializeContractID(
+			final byte contractIdNonZeroBytes,
+			final D dataSource,
+			final ByteReaderFunction<D> reader
+	) throws IOException {
 		long contractId = 0;
-		if (contractIdNonZeroBytes >= 8) contractId |= ((long) reader.read(dataSource) & 255) << 56;
-		if (contractIdNonZeroBytes >= 7) contractId |= ((long) reader.read(dataSource) & 255) << 48;
-		if (contractIdNonZeroBytes >= 6) contractId |= ((long) reader.read(dataSource) & 255) << 40;
-		if (contractIdNonZeroBytes >= 5) contractId |= ((long) reader.read(dataSource) & 255) << 32;
-		if (contractIdNonZeroBytes >= 4) contractId |= ((long) reader.read(dataSource) & 255) << 24;
-		if (contractIdNonZeroBytes >= 3) contractId |= ((long) reader.read(dataSource) & 255) << 16;
-		if (contractIdNonZeroBytes >= 2) contractId |= ((long) reader.read(dataSource) & 255) << 8;
-		if (contractIdNonZeroBytes >= 1) contractId |= ((long) reader.read(dataSource) & 255);
+		/* Bytes are encountered in order of significance (big-endian) */
+		for (int byteI = 0, shiftI = contractIdNonZeroBytes - 1; byteI < contractIdNonZeroBytes; byteI++, shiftI--) {
+			contractId |= ((long) reader.read(dataSource) & 255) << BIT_SHIFTS[shiftI];
+		}
 		return contractId;
 	}
 
@@ -276,9 +277,12 @@ public final class ContractKey implements VirtualKey {
 	 * @throws IOException
 	 * 		If there was a problem reading
 	 */
-	static <D> int[] deserializeUnit256Key(byte uint256KeyNonZeroBytes, D dataSource,
-			ByteReaderFunction<D> reader) throws IOException {
-		int[] uint256 = new int[8];
+	static <D> int[] deserializeUnit256Key(
+			final byte uint256KeyNonZeroBytes,
+			final D dataSource,
+			final ByteReaderFunction<D> reader
+	) throws IOException {
+		final int[] uint256 = new int[8];
 		for (int i = 7; i >= 0; i--) {
 			int integer = 0;
 			if (uint256KeyNonZeroBytes >= (4 + (i * Integer.BYTES)))
@@ -403,7 +407,7 @@ public final class ContractKey implements VirtualKey {
 
 	/** Simple interface for a function that takes a object and returns a byte */
 	@FunctionalInterface
-	private interface ByteReaderFunction<T> {
+	interface ByteReaderFunction<T> {
 
 		/**
 		 * Applies this function to the given argument.

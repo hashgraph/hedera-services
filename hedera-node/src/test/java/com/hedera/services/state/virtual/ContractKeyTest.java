@@ -87,6 +87,21 @@ class ContractKeyTest {
 		assertFalse(forcedEqualsCheck, "forcing equals on two different class types.");
 	}
 
+	@ParameterizedTest
+	@CsvSource( { "0,1,4096,1048576,1099511627776,562949953421312,9223372036854775807" })
+	void contractIdSerdesWork(final long contractId) throws IOException {
+		final var key = new ContractKey(contractId, 0);
+		final var buffer = ByteBuffer.allocate(256);
+		key.serialize(buffer);
+		buffer.rewind();
+		buffer.get();
+		final var deserializedId = ContractKey.deserializeContractID(
+				key.getContractIdNonZeroBytes(),
+				buffer,
+				ByteBuffer::get);
+		assertEquals(contractId, deserializedId);
+	}
+
 	@Test
 	void gettersWork() {
 		subject = new ContractKey(contractNum, key_array);
