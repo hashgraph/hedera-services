@@ -157,12 +157,13 @@ public class UpgradeActions {
 	}
 
 	private void catchUpOnMissedFreezeScheduling() {
-		if (isFreezeScheduled() && networkCtx.get().hasPreparedUpgrade()) {
+		final var isUpgradePrepared = networkCtx.get().hasPreparedUpgrade();
+		if (isFreezeScheduled() && isUpgradePrepared) {
 			writeMarker(FREEZE_SCHEDULED_MARKER, dualState.get().getFreezeTime());
 		} else {
 			/* Must be non-null or isFreezeScheduled() would have thrown */
 			final var ds = dualState.get();
-			if (ds.getFreezeTime() == null) {
+			if (ds.getFreezeTime() == null && !isUpgradePrepared) {
 				/* Under normal conditions, this implies we are initializing after a reconnect. Write a
 				freeze aborted marker just in case we missed handling a FREEZE_ABORT while away. */
 				writeCheckMarker(FREEZE_ABORTED_MARKER);
