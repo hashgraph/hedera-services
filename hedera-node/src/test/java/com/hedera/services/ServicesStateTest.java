@@ -33,7 +33,6 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.migration.LegacyStateChildIndices;
 import com.hedera.services.state.migration.ReleaseTwentyMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
@@ -77,7 +76,6 @@ import java.util.function.Consumer;
 
 import static com.hedera.services.ServicesState.CANONICAL_JDB_LOC;
 import static com.hedera.services.context.AppsManager.APPS;
-import static com.hedera.services.state.migration.StateVersions.RELEASE_0160_VERSION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -354,24 +352,18 @@ class ServicesStateTest {
 	@Test
 	void minimumVersionIsRelease0130() {
 		// expect:
-		assertEquals(StateVersions.RELEASE_0120_VERSION, subject.getMinimumSupportedVersion());
+		assertEquals(StateVersions.RELEASE_0180_VERSION, subject.getMinimumSupportedVersion());
 	}
 
 	@Test
 	void minimumChildCountsAsExpected() {
 		// expect:
 		assertEquals(
-				LegacyStateChildIndices.NUM_0160_CHILDREN,
-				subject.getMinimumChildCount(RELEASE_0160_VERSION));
-		assertEquals(
-				StateChildIndices.NUM_PRE_TWENTY_CHILDREN,
-				subject.getMinimumChildCount(StateVersions.RELEASE_0170_VERSION));
-		assertEquals(
 				StateChildIndices.NUM_PRE_TWENTY_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_0180_VERSION));
 		assertEquals(
-				StateChildIndices.NUM_PRE_0160_CHILDREN,
-				subject.getMinimumChildCount(StateVersions.RELEASE_0120_VERSION));
+				StateChildIndices.NUM_PRE_TWENTY_CHILDREN,
+				subject.getMinimumChildCount(StateVersions.RELEASE_0180_VERSION));
 		assertEquals(
 				StateChildIndices.NUM_TWENTY_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_TWENTY_VERSION));
