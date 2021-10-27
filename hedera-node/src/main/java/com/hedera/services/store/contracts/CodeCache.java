@@ -23,7 +23,6 @@ package com.hedera.services.store.contracts;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
-import com.github.benmanes.caffeine.cache.stats.CacheStats;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -33,7 +32,7 @@ import org.hyperledger.besu.evm.Code;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Arrays;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Weak reference cache with expiration TTL for EVM bytecode. This cache is primarily used
@@ -61,21 +60,18 @@ public class CodeCache {
         };
 
         this.cache = Caffeine.newBuilder()
-//                .expireAfterAccess(properties.getPreparePreFetchCodeCacheTtlSecs(), TimeUnit.SECONDS)
+                .expireAfterAccess(properties.prefetchCodeCacheTtlSecs(), TimeUnit.SECONDS)
                 .weakValues()
-//                .recordStats()
                 .build(loader);
     }
 
-    public Code get(Address address) throws ExecutionException {
+    public Code get(Address address) {
         return cache.get(new BytesKey(address.toArray()));
     }
 
     public void invalidate(Address address) {
         cache.invalidate(new BytesKey(address.toArray()));
     }
-
-    public CacheStats getStats() { return cache.stats(); }
 
     public long size() { return cache.estimatedSize(); }
 

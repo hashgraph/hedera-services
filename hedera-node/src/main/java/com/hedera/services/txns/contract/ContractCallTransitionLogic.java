@@ -38,7 +38,6 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 
 import javax.inject.Inject;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -152,7 +151,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 
 		try {
 			codeCache.get(address);
-		} catch(ExecutionException e) {
+		} catch(RuntimeException e) {
 			log.warn("Exception while attempting to pre-fetch code for {}", address);
 		}
 	}

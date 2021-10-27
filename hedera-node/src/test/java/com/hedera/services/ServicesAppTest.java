@@ -51,6 +51,7 @@ import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.txns.network.UpgradeActions;
+import com.hedera.services.txns.prefetch.PrefetchProcessor;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.JvmSystemExits;
 import com.swirlds.common.Address;
@@ -164,6 +165,7 @@ class ServicesAppTest {
 		assertThat(subject.grpcStarter(), instanceOf(GrpcStarter.class));
 		assertThat(subject.upgradeActions(), instanceOf(UpgradeActions.class));
 		assertThat(subject.virtualMapFactory(), instanceOf(VirtualMapFactory.class));
+		assertThat(subject.prefetchProcessor(), instanceOf(PrefetchProcessor.class));
 		assertSame(subject.nodeId(), selfNodeId);
 		assertSame(subject.pause(), SLEEPING_PAUSE);
 		assertTrue(subject.consoleOut().isEmpty());

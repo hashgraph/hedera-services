@@ -31,8 +31,7 @@ import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertiesModule;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.contracts.ContractsModule;
-import com.hedera.services.disruptor.DisruptorModule;
-import com.hedera.services.disruptor.PrepareStageProcessor;
+import com.hedera.services.txns.prefetch.PrefetchProcessor;
 import com.hedera.services.fees.FeesModule;
 import com.hedera.services.files.FilesModule;
 import com.hedera.services.grpc.GrpcModule;
@@ -111,8 +110,7 @@ import java.util.function.Supplier;
 		PropertiesModule.class,
 		ThrottlingModule.class,
 		SubmissionModule.class,
-		TransactionsModule.class,
-		DisruptorModule.class
+		TransactionsModule.class
 })
 public interface ServicesApp {
 	/* Needed by ServicesState */
@@ -128,7 +126,7 @@ public interface ServicesApp {
 	GlobalDynamicProperties globalDynamicProperties();
 	@WorkingState StateAccessor workingState();
 	@RetryingSigReqs SigRequirements retryingSigReqs();
-	PrepareStageProcessor prepareStageProcessor();
+	PrefetchProcessor prefetchProcessor();
 	CodeCache codeCache();
 
 	/* Needed by ServicesMain */

@@ -188,7 +188,7 @@ class ContractCallTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(txnBody);
 		given(txnBody.getContractCall()).willReturn(ccTxnBody);
 		given(ccTxnBody.getContractID()).willReturn(ContractID.getDefaultInstance());
-		given(codeCache.get(any(Address.class))).willThrow(new ExecutionException(new RuntimeException("oh no")));
+		given(codeCache.get(any(Address.class))).willThrow(new RuntimeException("oh no"));
 
 		// when:
 		subject.preFetch(accessor);

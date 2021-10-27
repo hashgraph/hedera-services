@@ -46,7 +46,6 @@ import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 
 @Singleton
 public class CallEvmTxProcessor extends EvmTxProcessor {
@@ -112,7 +111,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 					.inputData(payload)
 					.code(code)
 					.build();
-		} catch (ExecutionException e) {
+		} catch (RuntimeException e) {
 			logger.warn("Error fetching code from cache", e.getCause());
 			throw new InvalidTransactionException(ResponseCodeEnum.FAIL_INVALID);
 		}

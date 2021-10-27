@@ -162,7 +162,7 @@ class CallLocalEvmTxProcessorTest {
 		given(hbarCentExchange.rate(Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build())).willReturn(exchangeRate);
 		given(exchangeRate.getHbarEquiv()).willReturn(1);
 		given(exchangeRate.getCentEquiv()).willReturn(1);
-		given(codeCache.get(any())).willThrow(new ExecutionException(new RuntimeException("oh no")));
+		given(codeCache.get(any())).willThrow(new RuntimeException("oh no"));
 
 		try {
 			callLocalEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), 33_333L, 1234L, Bytes.EMPTY,
