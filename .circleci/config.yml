@@ -811,36 +811,29 @@ workflows:
 
 
   # This workflow will be running normally in master branch on a daily basis
-  Update-Reconnect:
+
+  GCP-Daily-Services-Crypto-Migration-7N-1C:
+    triggers:
+      - schedule:
+          cron: "45 5 * * *"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/4N_1C/Update
+          result_path: results/7N_1C/Migration
           config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Comp-Update-Reconnect-4N-1C"
+          workflow-name: "GCP-Daily-Services-Crypto-Migration-7N-1C"
           requires:
             - build-platform-and-services
           pre-steps:
             - install-tools
             - attach_workspace:
                 at: /
-#  GCP-Daily-Services-Crypto-Migration-7N-1C:
-#    jobs:
-#      - build-platform-and-services
-#      - jrs-regression:
-#          context: Slack
-#          regression_path: /swirlds-platform/regression
-#          result_path: results/7N_1C/Migration
-#          config_type: "daily"
-#          workflow-name: "GCP-Daily-Services-Crypto-Migration-7N-1C"
-#          requires:
-#            - build-platform-and-services
-#          pre-steps:
-#            - install-tools
-#            - attach_workspace:
-#                at: /
 
 # The mainnet migration test needs to be run in a 18-node test network.
 # Enable this workflow to run on a daily only when a new release branch is tagged and branched.
@@ -887,6 +880,29 @@ workflows:
           result_path: results/4N_1C/Restart
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Crypto-Restart-4N-1C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+  GCP-Daily-Services-Update-Reconnect-4N-1C:
+    triggers:
+      - schedule:
+          cron: "15 7 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_1C/Update
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Comp-Update-Reconnect-4N-1C"
           requires:
             - build-platform-and-services
           pre-steps:
