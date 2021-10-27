@@ -72,7 +72,6 @@ import java.util.function.Supplier;
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
 import static com.hedera.services.state.migration.StateChildIndices.SPECIAL_FILES;
-import static com.hedera.services.state.migration.StateVersions.RELEASE_0160_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_TWENTY_VERSION;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 
@@ -92,7 +91,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	/* All of the state that is not itself hashed or serialized, but only derived from such state */
 	private StateMetadata metadata;
 
-	/* Only needed for to support migration from a 0.17.x state */
+	/* Only needed for to support migration from a 0.19.x state */
 	private Platform platformForDeferredInit;
 	private AddressBook addressBookForDeferredInit;
 	private SwirldDualState dualStateForDeferredInit;
@@ -132,11 +131,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public int getMinimumChildCount(int version) {
-		if (version < RELEASE_0160_VERSION) {
-			return StateChildIndices.NUM_PRE_0160_CHILDREN;
-		} else if (version <= StateVersions.RELEASE_0180_VERSION) {
+		if (version < RELEASE_TWENTY_VERSION) {
 			return StateChildIndices.NUM_PRE_TWENTY_CHILDREN;
-		} else if (version <= RELEASE_TWENTY_VERSION) {
+		} else if (version == RELEASE_TWENTY_VERSION) {
 			return StateChildIndices.NUM_TWENTY_CHILDREN;
 		} else {
 			throw new IllegalArgumentException("Argument 'version='" + version + "' is invalid!");
@@ -180,7 +177,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			platformForDeferredInit = platform;
 			dualStateForDeferredInit = dualState;
 			addressBookForDeferredInit = addressBook;
-			log.info("Deferring init for 0.17.x -> 0.18.x upgrade on Services node {}", platform.getSelfId());
+			log.info("Deferring init for 0.19.x -> 0.20.x upgrade on Services node {}", platform.getSelfId());
 			return;
 		}
 
