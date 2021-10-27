@@ -69,5 +69,6 @@
                 }
             ]
         }
-    ]
+    ],
+    "totalAllowedGasPerSec": 10000000
 }

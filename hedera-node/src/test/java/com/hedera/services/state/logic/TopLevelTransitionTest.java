@@ -33,6 +33,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -114,6 +115,22 @@ class TopLevelTransitionTest {
 		given(txnCtx.consensusTime()).willReturn(consensusNow);
 		given(signatureScreen.applyTo(accessor)).willReturn(OK);
 		given(chargingPolicyAgent.applyPolicyFor(accessor)).willReturn(true);
+
+		// when:
+		subject.run();
+
+		// then:
+		verify(screenedTransition, never()).finishFor(accessor);
+	}
+
+	@Test
+	void abortsWhenThrottleScreenFails() {
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.consensusTime()).willReturn(consensusNow);
+		given(signatureScreen.applyTo(accessor)).willReturn(OK);
+		given(chargingPolicyAgent.applyPolicyFor(accessor)).willReturn(true);
+		given(keyActivationScreen.reqKeysAreActiveGiven(OK)).willReturn(true);
+		given(throttleScreen.applyTo(accessor)).willReturn(BUSY);
 
 		// when:
 		subject.run();

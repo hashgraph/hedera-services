@@ -51,10 +51,6 @@ public class GasLimitDeterministicThrottle {
         return decision;
     }
 
-    public String name() {
-        return null;
-    }
-
     public long getCapacity() {
         return capacity;
     }

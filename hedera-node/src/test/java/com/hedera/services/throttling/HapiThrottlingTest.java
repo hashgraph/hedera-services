@@ -96,4 +96,13 @@ class HapiThrottlingTest {
 		// then:
 		verify(delegate).rebuildFor(defs);
 	}
+
+	@Test
+	void leakUnusedGasCallsDelegateLeakMethod() {
+		//when:
+		subject.leakUnusedGasPreviouslyReserved(12345L);
+
+		//then:
+		verify(delegate).leakUnusedGasPreviouslyReserved(12345L);
+	}
 }

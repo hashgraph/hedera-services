@@ -2,7 +2,7 @@ package com.hedera.services.throttles;
 
 /*-
  * ‌
- * Hedera Services Test Clients
+ * Hedera Services API Utilities
  * ​
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
@@ -20,6 +20,7 @@ package com.hedera.services.throttles;
  * ‍
  */
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -28,17 +29,21 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class GasLimitDeterministicThrottleTest {
 
+    private static final long DEFAULT_CAPACITY = 1_000_000;
     private static final long ONE_SECOND_IN_NANOSECONDS = 1_000_000_000;
+
+    GasLimitDeterministicThrottle subject;
+
+    @BeforeEach
+    void setup() {
+        subject = new GasLimitDeterministicThrottle(DEFAULT_CAPACITY);
+    }
 
     @Test
     void usesZeroElapsedNanosOnFirstDecision() {
         // setup:
-        long capacity = 1_000_000;
         long gasLimitForTX = 100_000;
         Instant now = Instant.ofEpochSecond(1_234_567L);
-
-        // given:
-        var subject = new GasLimitDeterministicThrottle(capacity);
 
         // when:
         var result = subject.allow(now, gasLimitForTX);
@@ -46,18 +51,15 @@ class GasLimitDeterministicThrottleTest {
         // then:
         assertTrue(result);
         assertSame(now, subject.lastDecisionTime());
-        assertEquals(capacity - gasLimitForTX, subject.delegate().bucket().capacityFree());
+        assertEquals(DEFAULT_CAPACITY - gasLimitForTX, subject.delegate().bucket().capacityFree());
     }
 
     @Test
     void requiresMonotonicIncreasingTimeline() {
         // setup:
-        long capacity = 1_000_000;
         long gasLimitForTX = 100_000;
         Instant now = Instant.ofEpochSecond(1_234_567L);
         Instant illegal = now.minusNanos(1);
-        // given:
-        var subject = new GasLimitDeterministicThrottle(capacity);
 
         // when:
         subject.allow(now, gasLimitForTX);
@@ -70,17 +72,13 @@ class GasLimitDeterministicThrottleTest {
     @Test
     void usesCorrectElapsedNanosOnSubsequentDecision() {
         // setup:
-        long capacity = 1_000_000;
         long gasLimitForTX = 100_000;
 
         double elapsed = 1_234;
-        double toLeak = (elapsed / ONE_SECOND_IN_NANOSECONDS) * capacity;
+        double toLeak = (elapsed / ONE_SECOND_IN_NANOSECONDS) * DEFAULT_CAPACITY;
 
         Instant originalDecision = Instant.ofEpochSecond(1_234_567L, 0);
         Instant now = Instant.ofEpochSecond(1_234_567L, (long)elapsed);
-
-        // given:
-        var subject = new GasLimitDeterministicThrottle(capacity);
 
         // when:
         subject.allow(originalDecision, gasLimitForTX);
@@ -91,20 +89,15 @@ class GasLimitDeterministicThrottleTest {
         assertTrue(result);
         assertSame(now, subject.lastDecisionTime());
         assertEquals(
-                (long)(capacity - gasLimitForTX - gasLimitForTX + toLeak),
+                (long)(DEFAULT_CAPACITY - gasLimitForTX - gasLimitForTX + toLeak),
                 subject.delegate().bucket().capacityFree());
     }
 
     @Test
     void returnsExpectedState() {
         // setup:
-        long capacity = 1_000_000;
         long gasLimitForTX = 100_000;
         Instant originalDecision = Instant.ofEpochSecond(1_234_567L, 0);
-
-        // given:
-        var subject = new GasLimitDeterministicThrottle(capacity);
-
 
         // when:
         subject.allow(originalDecision, gasLimitForTX);
@@ -119,12 +112,9 @@ class GasLimitDeterministicThrottleTest {
     @Test
     void resetsAsExpected() {
         // setup:
-        long capacity = 1_000_000;
-        long used = capacity / 2;
+        long used = DEFAULT_CAPACITY / 2;
         Instant originalDecision = Instant.ofEpochSecond(1_234_567L, 0);
 
-        // given:
-        var subject = new GasLimitDeterministicThrottle(capacity);
         // and:
         var snapshot = new DeterministicThrottle.UsageSnapshot(used, originalDecision);
 
@@ -136,4 +126,8 @@ class GasLimitDeterministicThrottleTest {
         assertEquals(originalDecision, subject.lastDecisionTime());
     }
 
+    @Test
+    void capacityReturnsCorrectValue() {
+        assertEquals(DEFAULT_CAPACITY, subject.getCapacity());
+    }
 }

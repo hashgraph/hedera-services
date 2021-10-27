@@ -76,6 +76,7 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.shouldExportTokenBalances());
 		assertFalse(subject.autoRenewEnabled());
 		assertTrue(subject.areNftsEnabled());
+		assertTrue(subject.shouldThrottleByGas());
 	}
 
 	@Test
@@ -126,6 +127,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(36, subject.maxCustomFeesAllowed());
 		assertEquals(46, subject.maxXferBalanceChanges());
 		assertEquals(47, subject.maxCustomFeeDepth());
+		assertEquals(48, subject.getContractMaxRefundPercentOfGasLimit());
 	}
 
 	@Test
@@ -173,6 +175,7 @@ class GlobalDynamicPropertiesTest {
 		assertFalse(subject.shouldExportTokenBalances());
 		assertTrue(subject.autoRenewEnabled());
 		assertFalse(subject.areNftsEnabled());
+		assertFalse(subject.shouldThrottleByGas());
 	}
 
 	@Test
@@ -207,6 +210,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(37, subject.maxCustomFeesAllowed());
 		assertEquals(47, subject.maxXferBalanceChanges());
 		assertEquals(48, subject.maxCustomFeeDepth());
+		assertEquals(49, subject.getContractMaxRefundPercentOfGasLimit());
 	}
 
 	@Test
@@ -300,6 +304,8 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getThrottleScaleFactor("tokens.nfts.mintThrottleScaleFactor"))
 				.willReturn(i % 2 == 0 ? evenFactor : oddFactor);
 		given(properties.getStringProperty("upgrade.artifacts.path")).willReturn(upgradeArtifactLocs[i % 2]);
+		given(properties.getBooleanProperty("contracts.throttle.throttleByGas")).willReturn((i + 47) % 2 == 0);
+		given(properties.getIntProperty("contracts.maxRefundPercentOfGasLimit")).willReturn(i + 47);
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {

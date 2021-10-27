@@ -97,4 +97,13 @@ class TxnAwareHandleThrottlingTest {
 		assertSame(whatever, all);
 		assertSame(whatever, onlyXfer);
 	}
+
+	@Test
+	void leakUnusedGasCallsDelegateLeakMethod() {
+		//when:
+		subject.leakUnusedGasPreviouslyReserved(12345L);
+
+		//then:
+		verify(delegate).leakUnusedGasPreviouslyReserved(12345L);
+	}
 }

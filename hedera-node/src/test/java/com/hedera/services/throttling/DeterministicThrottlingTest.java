@@ -22,15 +22,19 @@ package com.hedera.services.throttling;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hedera.services.throttles.BucketThrottle;
 import com.hedera.services.throttles.DeterministicThrottle;
+import com.hedera.services.throttles.GasLimitDeterministicThrottle;
 import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.SerdeUtils;
+import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -50,6 +54,7 @@ import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCallLocal;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
@@ -61,7 +66,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class DeterministicThrottlingTest {
@@ -75,6 +82,14 @@ class DeterministicThrottlingTest {
 	private ThrottleReqsManager manager;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private GasLimitDeterministicThrottle gasLimitDeterministicThrottle;
+	@Mock
+	private TransactionBody transactionBody;
+	@Mock
+	private ContractCallTransactionBody callTransactionBody;
+	@Mock
+	private ContractCreateTransactionBody createTransactionBody;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -267,6 +282,36 @@ class DeterministicThrottlingTest {
 		// expect:
 		assertThrows(UnsupportedOperationException.class, () -> subject.shouldThrottleTxn(accessor, true));
 		assertThrows(UnsupportedOperationException.class, () -> subject.shouldThrottleQuery(FileGetInfo));
+	}
+
+	@Test
+	void frontEndContractCallTXCallsFrontendGasThrottle() {
+		Instant now = Instant.now();
+
+		//setup:
+		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
+		givenFunction(ContractCreate);
+		given(createTransactionBody.getGas()).willReturn(10_000L);
+		given(transactionBody.getContractCreateInstance()).willReturn(createTransactionBody);
+		given(accessor.getTxn()).willReturn(transactionBody);
+
+		//when:
+		subject.shouldThrottleTxn(accessor, now, true);
+	}
+
+	@Test
+	void frontEndContractCreateTXCallsFrontendGasThrottle() {
+		Instant now = Instant.now();
+
+		//setup:
+		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
+		givenFunction(ContractCall);
+		given(callTransactionBody.getGas()).willReturn(10_000L);
+		given(transactionBody.getContractCall()).willReturn(callTransactionBody);
+		given(accessor.getTxn()).willReturn(transactionBody);
+
+		//when:
+		subject.shouldThrottleTxn(accessor, now, true);
 	}
 
 	private void givenFunction(HederaFunctionality functionality) {
