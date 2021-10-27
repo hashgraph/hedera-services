@@ -26,7 +26,7 @@ import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class GasLimitDeterministicThrottleTest {
+class GasLimitDeterministicThrottleTest {
 
     private static final long ONE_SECOND_IN_NANOSECONDS = 1_000_000_000;
 
@@ -55,7 +55,7 @@ public class GasLimitDeterministicThrottleTest {
         long capacity = 1_000_000;
         long gasLimitForTX = 100_000;
         Instant now = Instant.ofEpochSecond(1_234_567L);
-
+        Instant illegal = now.minusNanos(1);
         // given:
         var subject = new GasLimitDeterministicThrottle(capacity);
 
@@ -63,7 +63,7 @@ public class GasLimitDeterministicThrottleTest {
         subject.allow(now, gasLimitForTX);
 
         // then:
-        assertThrows(IllegalArgumentException.class, () -> subject.allow(now.minusNanos(1), gasLimitForTX));
+        assertThrows(IllegalArgumentException.class, () -> subject.allow(illegal, gasLimitForTX));
         assertDoesNotThrow(() -> subject.allow(now, gasLimitForTX));
     }
 

@@ -31,10 +31,17 @@ import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.ExchangeRates;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
+import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,13 +52,19 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.function.BiPredicate;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
@@ -82,6 +95,18 @@ class NetworkCtxManagerTest {
 	private BiPredicate<Instant, Instant> shouldUpdateMidnightRates;
 	@Mock
 	private TransactionContext txnCtx;
+	@Mock
+	private TxnAccessor txnAccessor;
+	@Mock
+	private ExpirableTxnRecord expirableTxnRecord;
+	@Mock
+	private SolidityFnResult solidityFnResult;
+	@Mock
+	private TransactionBody transactionBody;
+	@Mock
+	private ContractCallTransactionBody callTransactionBody;
+	@Mock
+	private ContractCreateTransactionBody createTransactionBody;
 
 	private NetworkCtxManager subject;
 
@@ -154,6 +179,96 @@ class NetworkCtxManagerTest {
 		// then:
 		verify(handleThrottling).shouldThrottleTxn(accessor, false);
 		verify(feeMultiplierSource).updateMultiplier(sometime);
+	}
+
+	@Test
+	void whenContractCallThrottledPrepareReturnsBusyStatus() {
+
+		given(txnAccessor.getFunction()).willReturn(ContractCall);
+		given(handleThrottling.shouldThrottleTxn(txnAccessor, false)).willReturn(true);
+
+		// then:
+		assertEquals(BUSY, subject.prepareForIncorporating(txnAccessor));
+		verify(handleThrottling).shouldThrottleTxn(txnAccessor, false);
+		verify(feeMultiplierSource, never()).updateMultiplier(any());
+	}
+
+	@Test
+	void whenContractCreateThrottledPrepareReturnsBusyStatus() {
+
+		given(txnAccessor.getFunction()).willReturn(ContractCreate);
+		given(handleThrottling.shouldThrottleTxn(txnAccessor, false)).willReturn(true);
+
+		// then:
+		assertEquals(BUSY, subject.prepareForIncorporating(txnAccessor));
+		verify(handleThrottling).shouldThrottleTxn(txnAccessor, false);
+		verify(feeMultiplierSource, never()).updateMultiplier(any());
+	}
+
+	@Test
+	void whenContractCallNonThrottledPrepareReturnsOKStatus() {
+
+		given(handleThrottling.shouldThrottleTxn(txnAccessor, false)).willReturn(false);
+
+		// then:
+		assertEquals(OK, subject.prepareForIncorporating(txnAccessor));
+		verify(handleThrottling).shouldThrottleTxn(txnAccessor, false);
+		verify(feeMultiplierSource).updateMultiplier(any());
+	}
+
+	@Test
+	void whenContractCreateNONThrottledPrepareReturnsOKStatus() {
+
+		given(handleThrottling.shouldThrottleTxn(txnAccessor, false)).willReturn(false);
+
+		// then:
+		assertEquals(OK, subject.prepareForIncorporating(txnAccessor));
+		verify(handleThrottling).shouldThrottleTxn(txnAccessor, false);
+		verify(feeMultiplierSource).updateMultiplier(any());
+	}
+
+	@Test
+	void whenFinishingContractCallUnusedGasIsLeaked() {
+		// setup:
+		given(solidityFnResult.getGasUsed()).willReturn(1000L);
+		given(expirableTxnRecord.getContractCallResult()).willReturn(solidityFnResult);
+		given(txnCtx.recordSoFar()).willReturn(expirableTxnRecord);
+
+		given(callTransactionBody.getGas()).willReturn(10_000L);
+		given(transactionBody.getContractCall()).willReturn(callTransactionBody);
+		given(txnAccessor.getTxn()).willReturn(transactionBody);
+		given(txnCtx.accessor()).willReturn(txnAccessor);
+
+		// when:
+		subject.finishIncorporating(ContractCall);
+
+		// then:
+		verify(opCounters).countHandled(ContractCall);
+		verify(handleThrottling).leakUnusedGasPreviouslyReserved(9_000L);
+		verify(networkCtx).syncThrottling(handleThrottling);
+		verify(networkCtx).syncMultiplierSource(feeMultiplierSource);
+	}
+
+	@Test
+	void whenFinishingContractCreateUnusedGasIsLeaked() {
+		// setup:
+		given(solidityFnResult.getGasUsed()).willReturn(1000L);
+		given(expirableTxnRecord.getContractCreateResult()).willReturn(solidityFnResult);
+		given(txnCtx.recordSoFar()).willReturn(expirableTxnRecord);
+
+		given(createTransactionBody.getGas()).willReturn(10_000L);
+		given(transactionBody.getContractCreateInstance()).willReturn(createTransactionBody);
+		given(txnAccessor.getTxn()).willReturn(transactionBody);
+		given(txnCtx.accessor()).willReturn(txnAccessor);
+
+		// when:
+		subject.finishIncorporating(ContractCreate);
+
+		// then:
+		verify(opCounters).countHandled(ContractCreate);
+		verify(handleThrottling).leakUnusedGasPreviouslyReserved(9_000L);
+		verify(networkCtx).syncThrottling(handleThrottling);
+		verify(networkCtx).syncMultiplierSource(feeMultiplierSource);
 	}
 
 	@Test

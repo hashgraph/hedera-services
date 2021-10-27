@@ -21,7 +21,6 @@ package com.hedera.services.state.logic;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
@@ -160,7 +159,7 @@ public class NetworkCtxManager {
 
 	public ResponseCodeEnum prepareForIncorporating(TxnAccessor accessor) {
 		/* This is used to monitor the current network usage for automated congestion pricing
-			and throttle ContractCreate and ContractCall TXs by gas limit.*/
+			and to throttle ContractCreate and ContractCall TXs by gas actually used in the last second.*/
 		if(handleThrottling.shouldThrottleTxn(accessor, false) &&
 				(accessor.getFunction().equals(ContractCall) || accessor.getFunction().equals(ContractCreate))){
 			return ResponseCodeEnum.BUSY;
