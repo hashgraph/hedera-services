@@ -23,9 +23,6 @@ package com.hedera.services.bdd.suites.contract.openzeppelin;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceQuery;
-import com.hederahashgraph.api.proto.java.Query;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -48,6 +45,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -81,13 +80,17 @@ public class ERC20ContractInteractions extends HapiApiSuite {
         final var TRANSFER_TX = "transfer";
         final var AMOUNT = 1_000;
         final var INITIAL_AMOUNT = 5_000;
+        final var PAYER_KEY = "payerKey";
+        final var FILE_KEY_LIST = "fileKeyList";
 
         return defaultHapiSpec("callsERC20ContractInteractions")
                 .given(
-                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
+                        newKeyNamed(PAYER_KEY),
+                        newKeyListNamed(FILE_KEY_LIST, List.of(PAYER_KEY)),
+                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).key(PAYER_KEY),
                         cryptoCreate(RECEIVER),
                         getAccountBalance(OWNER).logged(),
-                        fileCreate(CONTRACT_FILE_NAME).payingWith(OWNER),
+                        fileCreate(CONTRACT_FILE_NAME).payingWith(OWNER).key(FILE_KEY_LIST),
                         updateLargeFile(OWNER, CONTRACT_FILE_NAME, extractByteCode(ERC20_BYTECODE_PATH))
                 ).when(
                         getAccountBalance(OWNER).logged(),
