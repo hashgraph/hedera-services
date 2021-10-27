@@ -23,7 +23,7 @@ package com.hedera.services.store.contracts;
  */
 
 import com.hedera.services.context.properties.NodeLocalProperties;
-import org.ethereum.db.ServicesRepositoryRoot;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.Code;
@@ -33,10 +33,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.concurrent.ExecutionException;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
@@ -47,40 +44,39 @@ class CodeCacheTest {
     @Mock
     NodeLocalProperties properties;
     @Mock
-    ServicesRepositoryRoot repositoryRoot;
+    MutableEntityAccess entityAccess;
 
     CodeCache codeCache;
 
     @BeforeEach
     void setup() {
-        codeCache = new CodeCache(properties, repositoryRoot);
+        codeCache = new CodeCache(properties, entityAccess);
     }
 
     @Test
     void successfulCreate() {
-        assertEquals(repositoryRoot, codeCache.repositoryRoot);
         assertNotNull(codeCache.cache);
     }
 
     @Test
-    void getTriggeringLoad() throws ExecutionException {
-        given(repositoryRoot.getCode(any())).willReturn("abc".getBytes());
+    void getTriggeringLoad() {
+        given(entityAccess.fetch(any())).willReturn(Bytes.of("abc".getBytes()));
         Code code = codeCache.get(Address.fromHexString("0xabc"));
 
         assertEquals(Hash.fromHexString("0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45"), code.getCodeHash());
     }
 
     @Test
-    void getContractNotFound() throws ExecutionException {
-        given(repositoryRoot.getCode(any())).willReturn(null);
+    void getContractNotFound() {
+        given(entityAccess.fetch(any())).willReturn(Bytes.EMPTY);
         Code code = codeCache.get(Address.fromHexString("0xabc"));
 
         assertTrue(code.getBytes().isEmpty());
     }
 
     @Test
-    void invalidateSuccess() throws ExecutionException {
-        given(repositoryRoot.getCode(any())).willReturn("abc".getBytes());
+    void invalidateSuccess() {
+        given(entityAccess.fetch(any())).willReturn(Bytes.of("abc".getBytes()));
         Code code = codeCache.get(Address.fromHexString("0xabc"));
 
         assertEquals(1L, codeCache.size());

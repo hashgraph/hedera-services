@@ -33,6 +33,7 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.contracts.CodeCache;
+import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.HederaScheduleStore;
 import com.hedera.services.store.schedule.ScheduleStore;
@@ -114,7 +115,7 @@ public abstract class StoresModule {
 
 	@Provides
 	@Singleton
-	public static CodeCache provideCodeCache(NodeLocalProperties properties) {
-		return new CodeCache(properties);
+	public static CodeCache provideCodeCache(NodeLocalProperties properties, MutableEntityAccess entityAccess) {
+		return new CodeCache(properties, entityAccess);
 	}
 }

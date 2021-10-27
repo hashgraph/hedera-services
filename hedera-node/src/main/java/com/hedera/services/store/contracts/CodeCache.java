@@ -24,7 +24,6 @@ import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.hedera.services.context.properties.NodeLocalProperties;
-import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.Code;
@@ -33,6 +32,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
+
+import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 
 /**
  * Weak reference cache with expiration TTL for EVM bytecode. This cache is primarily used
@@ -47,16 +48,16 @@ import java.util.concurrent.TimeUnit;
 @Singleton
 public class CodeCache {
     LoadingCache<BytesKey, Code> cache;
+    MutableEntityAccess entityAccess;
 
     @Inject
-    public CodeCache(NodeLocalProperties properties) {
-//        this.repositoryRoot = repositoryRoot;
+    public CodeCache(NodeLocalProperties properties, MutableEntityAccess entityAccess) {
+        this.entityAccess = entityAccess;
 
         CacheLoader<BytesKey, Code> loader = key -> {
-//            var codeBytes = repositoryRoot.getCode(key.getArray());
-            byte[] codeBytes = null;
-            Bytes bytes = codeBytes == null ? Bytes.EMPTY : Bytes.of(codeBytes);
-            return new Code(bytes, Hash.hash(bytes));
+            final var acctId = accountParsedFromSolidityAddress(key.getArray());
+            var codeBytes = entityAccess.fetch(acctId);
+            return new Code(codeBytes, Hash.hash(codeBytes));
         };
 
         this.cache = Caffeine.newBuilder()

@@ -31,7 +31,6 @@ import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertiesModule;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.contracts.ContractsModule;
-import com.hedera.services.txns.prefetch.PrefetchProcessor;
 import com.hedera.services.fees.FeesModule;
 import com.hedera.services.files.FilesModule;
 import com.hedera.services.grpc.GrpcModule;
@@ -62,12 +61,12 @@ import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stats.StatsModule;
 import com.hedera.services.store.StoresModule;
-import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.throttling.ThrottlingModule;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.TransactionsModule;
 import com.hedera.services.txns.network.UpgradeActions;
+import com.hedera.services.txns.prefetch.PrefetchProcessor;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.submission.SubmissionModule;
 import com.hedera.services.utils.NamedDigestFactory;
@@ -127,7 +126,6 @@ public interface ServicesApp {
 	@WorkingState StateAccessor workingState();
 	@RetryingSigReqs SigRequirements retryingSigReqs();
 	PrefetchProcessor prefetchProcessor();
-	CodeCache codeCache();
 
 	/* Needed by ServicesMain */
 	Pause pause();
