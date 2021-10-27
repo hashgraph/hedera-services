@@ -152,7 +152,7 @@ class NetworkCtxManagerTest {
 		subject.prepareForIncorporating(accessor);
 
 		// then:
-		verify(handleThrottling).shouldThrottleTxn(accessor, true);
+		verify(handleThrottling).shouldThrottleTxn(accessor, false);
 		verify(feeMultiplierSource).updateMultiplier(sometime);
 	}
 

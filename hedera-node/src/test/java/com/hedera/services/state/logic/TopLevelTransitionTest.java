@@ -83,7 +83,7 @@ class TopLevelTransitionTest {
 		given(signatureScreen.applyTo(accessor)).willReturn(OK);
 		given(chargingPolicyAgent.applyPolicyFor(accessor)).willReturn(true);
 		given(keyActivationScreen.reqKeysAreActiveGiven(OK)).willReturn(true);
-
+		given(throttleScreen.applyTo(accessor)).willReturn(OK);
 		// when:
 		subject.run();
 

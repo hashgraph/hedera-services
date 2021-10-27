@@ -97,6 +97,8 @@ class BootstrapPropertiesTest {
 			entry("contracts.maxGas", 300000),
 			entry("contracts.maxStorageKb", 1024),
 			entry("contracts.chainId", 1),
+			entry("contracts.throttle.throttleByGas", true),
+			entry("contracts.maxRefundPercentOfGasLimit", 20),
 			entry("dev.onlyDefaultNodeListens", true),
 			entry("dev.defaultListeningNodeAccount", "0.0.3"),
 			entry("entities.maxLifetime", 3153600000L),

@@ -207,7 +207,8 @@ class DeterministicThrottlingTest {
 				"  TokenAssociateToAccount: min{50.00 tps (C)}\n" +
 				"  TokenCreate: min{50.00 tps (C)}\n" +
 				"  TokenMint: min{1500.00 tps (A)}\n" +
-				"  TransactionGetReceipt: min{500000.00 tps (D)}";
+				"  TransactionGetReceipt: min{500000.00 tps (D)}\n" +
+				"  ThrottleByGasLimit: 0 throttleByGas false";
 
 		// when:
 		subject.rebuildFor(defs);

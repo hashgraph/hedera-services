@@ -48,6 +48,6 @@ class TimedFunctionalityThrottlingTest {
 
 		// then:
 		verify(subject).shouldThrottleQuery(eq(FileGetInfo), any());
-		verify(subject).shouldThrottleTxn(eq(accessor), any());
+		verify(subject).shouldThrottleTxn(eq(accessor), any(), eq(true));
 	}
 }
