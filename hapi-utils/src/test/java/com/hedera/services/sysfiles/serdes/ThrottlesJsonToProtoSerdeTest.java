@@ -54,6 +54,7 @@ class ThrottlesJsonToProtoSerdeTest {
 				.addThrottleBuckets(bBucket())
 				.addThrottleBuckets(cBucket())
 				.addThrottleBuckets(dBucket())
+				.setTotalAllowedGasPerSec(10_000_000)
 				.build();
 	}
 
