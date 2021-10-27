@@ -1,6 +1,5 @@
 package com.hedera.services.state.virtual;
 
-
 /*-
  * ‌
  * Hedera Services Node

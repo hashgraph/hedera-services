@@ -1,6 +1,5 @@
 package com.hedera.services.state.merkle;
 
-
 /*-
  * ‌
  * Hedera Services Node
