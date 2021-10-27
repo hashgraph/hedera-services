@@ -91,7 +91,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	/* All of the state that is not itself hashed or serialized, but only derived from such state */
 	private StateMetadata metadata;
 
-	/* Only needed for to support migration from a 0.17.x state */
+	/* Only needed for to support migration from a 0.19.x state */
 	private Platform platformForDeferredInit;
 	private AddressBook addressBookForDeferredInit;
 	private SwirldDualState dualStateForDeferredInit;
@@ -177,7 +177,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			platformForDeferredInit = platform;
 			dualStateForDeferredInit = dualState;
 			addressBookForDeferredInit = addressBook;
-			log.info("Deferring init for 0.17.x -> 0.18.x upgrade on Services node {}", platform.getSelfId());
+			log.info("Deferring init for 0.19.x -> 0.20.x upgrade on Services node {}", platform.getSelfId());
 			return;
 		}
 
