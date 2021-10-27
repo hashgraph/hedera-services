@@ -95,5 +95,6 @@ class NftIdTest {
 		final var subject = new NftId(shard, realm, num, serialNo);
 
 		assertNotEquals(null, subject);
+		assertFalse(subject.equals(null));
 	}
 }

@@ -35,6 +35,7 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.SerdeUtils;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -189,8 +190,8 @@ class HfsSystemFilesManagerTest {
 		given(hfs.getMetadata()).willReturn(metadata);
 		given(hfs.specialFiles()).willReturn(specialFiles);
 		fileNumbers = new MockFileNumbers();
-		fileNumbers.setShard(1L);
-		fileNumbers.setRealm(22L);
+		fileNumbers.setShard(0L);
+		fileNumbers.setRealm(0L);
 		given(specialFiles.contains(fileNumbers.toFid(111))).willReturn(false);
 
 		properties = mock(PropertySource.class);
@@ -296,8 +297,10 @@ class HfsSystemFilesManagerTest {
 
 	@Test
 	void createsEmptyUpdateFiles() {
+		final var canonicalUpgradeFid = IdUtils.asFile("0.0.150");
 		// setup:
 		given(hfs.specialFiles()).willReturn(specialFiles);
+		given(hfs.exists(canonicalUpgradeFid)).willReturn(true);
 
 		// when:
 		subject.createUpdateFilesIfMissing();
@@ -311,11 +314,11 @@ class HfsSystemFilesManagerTest {
 	@Test
 	void noOpsOnExistingUpdateFeatureFile() {
 		given(hfs.exists(any())).willReturn(true);
+		given(specialFiles.contains(any())).willReturn(true);
 
 		subject.createUpdateFilesIfMissing();
 
 		verify(hfs, never()).getMetadata();
-		verify(hfs, never()).specialFiles();
 		verify(hfs, never()).getData();
 	}
 
@@ -606,8 +609,6 @@ class HfsSystemFilesManagerTest {
 
 	private static final FileID expectedFid(final long num) {
 		return FileID.newBuilder()
-				.setShardNum(1L)
-				.setRealmNum(22L)
 				.setFileNum(num)
 				.build();
 	}
