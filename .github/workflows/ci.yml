@@ -1,0 +1,102 @@
+name: Hedera Services CI
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_DB: fcfs
+          POSTGRES_PASSWORD: password
+          POSTGRES_USER: swirlds
+          PGDATA: /var/lib/postgresql/data/pgdata
+          POSTGRES_PORT: 5432
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up JDK 12
+        uses: actions/setup-java@v2
+        with:
+          java-version: '12'
+          distribution: 'adopt'
+          cache: maven
+
+      - name: Build with Maven
+        run: mvn install
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v2
+        with:
+          root_dir: '/home/runner/work/hedera-services/'
+          files: 'jacoco.xml'
+
+
+  e2e:
+
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_DB: fcfs
+          POSTGRES_PASSWORD: password
+          POSTGRES_USER: swirlds
+          PGDATA: /var/lib/postgresql/data/pgdata
+          POSTGRES_PORT: 5432
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v2 # checkout current branch
+
+      - name: Set up JDK 12
+        uses: actions/setup-java@v2
+        with:
+          java-version: '12'
+          distribution: 'adopt'
+          cache: maven
+
+      - name: Build docker images # build the  image for hedera-node
+        run: bash compose-build.sh
+
+      - name: Build local
+        run: mvn clean install -DskipTests
+
+      - name: Start network # start 3 node network
+        run: docker-compose -f docker-compose-ci.yml up -d
+
+      - name: Run E2E Specs # run selected e2e specs, after sleeping for a minute
+        run: |
+          cd test-clients
+          mvn integration-test -X -DskipTests  > e2e-output.txt
+
+      - name: Parse E2E Logs # truncates the whole e2e output to "SUITE_NAME - Spec{name=SPEC_NAME, status=SPEC_STATUS}"
+        run: |
+          cat test-clients/e2e-output.txt | grep 'status=' > temp.txt
+          awk '{print $5,$6,$7,$8,$10}' temp.txt > results.txt
+          rm -f test-clients/e2e-output.txt temp.txt
+
+      - name: Upload E2E Output
+        uses: actions/upload-artifact@v2
+        with:
+          name: e2e-results
+          path: results.txt
