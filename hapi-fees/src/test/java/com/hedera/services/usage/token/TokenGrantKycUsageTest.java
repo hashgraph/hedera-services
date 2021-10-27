@@ -81,6 +81,12 @@ class TokenGrantKycUsageTest {
 		verify(base, times(2)).addBpt(FeeBuilder.BASIC_ENTITY_ID_SIZE);
 	}
 
+	@Test
+	void assertSelf() {
+		subject = TokenGrantKycUsage.newEstimate(txn, sigUsage);
+		assertEquals(subject, subject.self());
+	}
+
 	private void givenOp() {
 		op = TokenGrantKycTransactionBody.newBuilder()
 				.setToken(id)
