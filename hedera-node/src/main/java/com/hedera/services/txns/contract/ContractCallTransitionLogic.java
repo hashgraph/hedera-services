@@ -94,7 +94,7 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 				txnCtx.consensusTime());
 
 		/* --- Persist changes into state --- */
-		final var createdContracts = worldState.persist();
+		final var createdContracts = worldState.persistProvisionalContractCreations();
 		worldState.customizeSponsoredAccounts();
 		result.setCreatedContracts(createdContracts);
 

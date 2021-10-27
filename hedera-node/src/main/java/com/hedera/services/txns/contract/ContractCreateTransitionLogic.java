@@ -124,7 +124,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		);
 
 		/* --- Persist changes into state --- */
-		final var createdContracts = worldState.persist();
+		final var createdContracts = worldState.persistProvisionalContractCreations();
 		result.setCreatedContracts(createdContracts);
 
 		if (result.isSuccessful()) {

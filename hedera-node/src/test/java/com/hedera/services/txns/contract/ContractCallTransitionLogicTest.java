@@ -116,13 +116,13 @@ class ContractCallTransitionLogicTest {
 				null, 1234L, 0L,124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress());
 		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.EMPTY, txnCtx.consensusTime()))
 				.willReturn(results);
-		given(worldState.persist()).willReturn(List.of(target));
+		given(worldState.persistProvisionalContractCreations()).willReturn(List.of(target));
 		// when:
 		subject.doStateTransition();
 
 		// then:
 		verify(recordService).externaliseEvmCallTransaction(any());
-		verify(worldState).persist();
+		verify(worldState).persistProvisionalContractCreations();
 	}
 
 	@Test
@@ -150,7 +150,7 @@ class ContractCallTransitionLogicTest {
 				null, 1234L, 0L,124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress());
 		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())), txnCtx.consensusTime()))
 				.willReturn(results);
-		given(worldState.persist()).willReturn(List.of(target));
+		given(worldState.persistProvisionalContractCreations()).willReturn(List.of(target));
 		// when:
 		subject.doStateTransition();
 

@@ -79,8 +79,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 	}
 
 	@Override
-	public List<ContractID> persist() {
-
+	public List<ContractID> persistProvisionalContractCreations() {
 		final var copy = new ArrayList<>(provisionalContractCreations);
 		provisionalContractCreations.clear();
 		copy.sort(CONTRACT_ID_COMPARATOR);

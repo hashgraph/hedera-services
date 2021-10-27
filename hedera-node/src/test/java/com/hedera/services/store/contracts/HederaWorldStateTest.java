@@ -85,10 +85,9 @@ class HederaWorldStateTest {
 	}
 
 	@Test
-	void persist() {
-		/* default empty persist */
-		var persistResult = subject.persist();
-		assertEquals(0, persistResult.size());
+	void getsProvisionalContractCreations() {
+		var provisionalContractCreations = subject.persistProvisionalContractCreations();
+		assertEquals(0, provisionalContractCreations.size());
 	}
 
 	@Test
@@ -388,7 +387,7 @@ class HederaWorldStateTest {
 		// when:
 		actualSubject.commit();
 		// and:
-		final var result = subject.persist();
+		final var result = subject.persistProvisionalContractCreations();
 
 		// then:
 		verify(entityAccess).isExtant(contract.asGrpcAccount());
