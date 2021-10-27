@@ -34,7 +34,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith({ MockitoExtension.class })
-public class ThrottleScreenTest {
+class ThrottleScreenTest {
 
 	@Mock
 	NetworkCtxManager networkCtxManager;

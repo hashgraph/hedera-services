@@ -35,4 +35,13 @@ class ThrottleDefinitionsTest {
 		// expect:
 		Assertions.assertEquals(proto, ThrottleDefinitions.fromProto(proto).toProto());
 	}
+
+	@Test
+	void totalAllowedGasPerSec() throws IOException {
+		// given:
+		var proto = TestUtils.protoDefs("bootstrap/throttles.json");
+
+		// expect:
+		Assertions.assertEquals(proto.getTotalAllowedGasPerSec(), ThrottleDefinitions.fromProto(proto).toProto().getTotalAllowedGasPerSec());
+	}
 }
