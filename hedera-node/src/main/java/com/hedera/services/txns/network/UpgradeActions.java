@@ -89,8 +89,10 @@ public class UpgradeActions {
 		this.dynamicProperties = dynamicProperties;
 	}
 
-	public void externalizeFreeze() {
-		writeCheckMarker(NOW_FROZEN_MARKER);
+	public void externalizeFreezeIfUpgradePending() {
+		if (networkCtx.get().hasPreparedUpgrade()) {
+			writeCheckMarker(NOW_FROZEN_MARKER);
+		}
 	}
 
 	public CompletableFuture<Void> extractTelemetryUpgrade(final byte[] archiveData, final Instant now) {
