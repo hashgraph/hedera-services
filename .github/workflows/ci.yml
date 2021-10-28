@@ -113,12 +113,12 @@ jobs:
         run: |
           cd test-clients
           sleep 45s
-          mvn integration-test -X -DskipTests  > e2e-output.txt
+          mvn integration-test -DskipTests  > e2e-output.txt
 
       - name: Parse E2E Logs # processes the e2e output into csv rows, suitable to fill SUITE,SPEC,STATUS table headers
         run: |
           echo SUITE,SPEC,STATUS > results.csv
-          cat test-clients/e2e-output.txt | grep 'status=' > temp.txt
+          grep 'status=' test-clients/e2e-output.txt > temp.txt
           awk '{print $5,$6,$7,$8,$10}' temp.txt |
           awk -F'[}{]' '{print $1,$2}' |
           awk '{print $1,$4,$5}' |
