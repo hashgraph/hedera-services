@@ -45,14 +45,11 @@ jobs:
           root_dir: '/home/runner/work/hedera-services/'
           files: 'jacoco.xml'
 
-      - name: Cache build
-        uses: actions/cache@v2
-        id: cache-build
-        env:
-          cache-name: services-node-build
+      - name: Upload build
+        uses: actions/upload-artifact@v2
         with:
+          name: build
           path: .
-          key: services-node
 
   e2e:
     needs: [build]
@@ -91,8 +88,12 @@ jobs:
       - name: Start network # start 3 node network
         run: docker-compose -f docker-compose-ci.yml up -d
 
+      - name: Download build artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: build
+
       - name: Run E2E Specs # run selected e2e specs, after sleeping for 45s
-        if: steps.cache-build.outputs.cache-hit == 'true'
         run: |
           cd test-clients
           sleep 45s
