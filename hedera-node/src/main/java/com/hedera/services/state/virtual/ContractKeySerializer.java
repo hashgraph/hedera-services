@@ -26,13 +26,20 @@ import com.swirlds.jasperdb.files.hashmap.KeySerializer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Objects;
+
+import static com.hedera.services.state.virtual.ContractKey.deserializeContractID;
+import static com.hedera.services.state.virtual.ContractKey.deserializeUnit256Key;
+import static com.hedera.services.state.virtual.ContractKey.getContractIdNonZeroBytesFromPacked;
+import static com.hedera.services.state.virtual.ContractKey.getUint256KeyNonZeroBytesFromPacked;
 
 /**
  * KeySerializer for ContractKeys
  */
 public class ContractKeySerializer implements KeySerializer<ContractKey> {
 	static final long DATA_VERSION = 1;
+
 	/**
 	 * Get if the number of bytes a data item takes when serialized is variable or fixed
 	 *
@@ -113,5 +120,18 @@ public class ContractKeySerializer implements KeySerializer<ContractKey> {
 	@Override
 	public int deserializeKeySize(ByteBuffer buffer) {
 		return ContractKey.readKeySize(buffer);
+	}
+
+	@Override
+	public boolean equals(ByteBuffer buf, int version, ContractKey contractKey) throws IOException {
+		byte packedSize = buf.get();
+		final byte contractIdNonZeroBytes = getContractIdNonZeroBytesFromPacked(packedSize);
+		if (contractIdNonZeroBytes != contractKey.getContractIdNonZeroBytes()) return false;
+		final byte uint256KeyNonZeroBytes = getUint256KeyNonZeroBytesFromPacked(packedSize);
+		if (uint256KeyNonZeroBytes != contractKey.getUint256KeyNonZeroBytes()) return false;
+		final long contractId = deserializeContractID(contractIdNonZeroBytes, buf, ByteBuffer::get);
+		if (contractId != contractKey.getContractId()) return false;
+		final int[] uint256Key = deserializeUnit256Key(uint256KeyNonZeroBytes, buf, ByteBuffer::get);
+		return Arrays.equals(uint256Key, contractKey.getKey());
 	}
 }

@@ -41,7 +41,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -219,49 +218,6 @@ class ContractKeyTest {
 		assertEquals(subject, testSubject);
 	}
 
-	@Test
-	void equalsUsingByteBufferWorks() throws IOException {
-		subject = new ContractKey(0L, key);
-		final var testSubject = new ContractKey(0L, key);
-		final var bin = mock(ByteBuffer.class);
-
-		given(bin.get())
-				.willReturn(subject.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes())
-				.willReturn((byte) (subject.getContractId()))
-				.willReturn(subject.getUint256Byte(0));
-
-		assertTrue(testSubject.equals(bin, 1));
-	}
-
-	@Test
-	void equalsUsingByteBufferFailsAsExpected() throws IOException {
-		subject = new ContractKey(contractNum, key);
-		final var testSubject1 = new ContractKey(Long.MAX_VALUE, key);
-		final var testSubject2 = new ContractKey(contractNum, largeKey.toArray());
-		final var testSubject3 = new ContractKey(otherContractNum, key);
-		final var bin = mock(ByteBuffer.class);
-
-		given(bin.get())
-				.willReturn(subject.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes())
-				.willReturn((byte) (subject.getContractId() >> 8))
-				.willReturn((byte) (subject.getContractId()))
-				.willReturn(subject.getUint256Byte(0));
-		assertFalse(testSubject1.equals(bin, 1));
-
-		given(bin.get())
-				.willReturn(subject.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes())
-				.willReturn((byte) (subject.getContractId() >> 8))
-				.willReturn((byte) (subject.getContractId()))
-				.willReturn(subject.getUint256Byte(0));
-		assertFalse(testSubject2.equals(bin, 1));
-
-		given(bin.get())
-				.willReturn(subject.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes())
-				.willReturn((byte) (subject.getContractId() >> 8))
-				.willReturn((byte) (subject.getContractId()))
-				.willReturn(subject.getUint256Byte(0));
-		assertFalse(testSubject3.equals(bin, 1));
-	}
 
 	@Test
 	void readKeySizeWorks() {

@@ -27,7 +27,7 @@ import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.state.virtual.VirtualMapFactory;
-import com.swirlds.jasperdb.VirtualDataSourceJasperDB;
+import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.logging.log4j.LogManager;
@@ -75,7 +75,7 @@ public class ReleaseTwentyMigration {
 	) {
 		log.info("Migrating state from version {} to {}", deserializedVersion, RELEASE_TWENTY_VERSION);
 
-		final var virtualMapFactory = new VirtualMapFactory(jdbDataLoc, VirtualDataSourceJasperDB::new);
+		final var virtualMapFactory = new VirtualMapFactory(jdbDataLoc, JasperDbBuilder::new);
 		final MerkleMap<String, MerkleOptionalBlob> legacyBlobs = initializingState.getChild(StateChildIndices.STORAGE);
 
 		final VirtualMap<VirtualBlobKey, VirtualBlobValue> vmBlobs = virtualMapFactory.newVirtualizedBlobs();

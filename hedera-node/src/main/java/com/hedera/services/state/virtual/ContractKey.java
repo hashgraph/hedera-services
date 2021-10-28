@@ -201,19 +201,6 @@ public final class ContractKey implements VirtualKey {
 	}
 
 	@Override
-	public boolean equals(ByteBuffer buf, int version) throws IOException {
-		byte packedSize = buf.get();
-		final byte contractIdNZB = getContractIdNonZeroBytesFromPacked(packedSize);
-		if (contractIdNZB != this.contractIdNonZeroBytes) return false;
-		final byte uint256KeyNZB = getUint256KeyNonZeroBytesFromPacked(packedSize);
-		if (uint256KeyNZB != this.uint256KeyNonZeroBytes) return false;
-		final long deserializedContractId = deserializeContractID(contractIdNZB, buf, ByteBuffer::get);
-		if (deserializedContractId != this.contractId) return false;
-		final int[] deserializedUint256Key = deserializeUnit256Key(uint256KeyNZB, buf, ByteBuffer::get);
-		return Arrays.equals(deserializedUint256Key, this.uint256Key);
-	}
-
-	@Override
 	public int getVersion() {
 		return MERKLE_VERSION;
 	}

@@ -86,11 +86,6 @@ public class VirtualBlobKey implements VirtualKey {
 	}
 
 	@Override
-	public boolean equals(ByteBuffer buffer, int version) throws IOException {
-		return type.ordinal() == (0xff & buffer.get()) && entityNumCode == buffer.getInt();
-	}
-
-	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
 		type = BLOB_TYPES[0xff & in.readByte()];
 		entityNumCode = in.readInt();

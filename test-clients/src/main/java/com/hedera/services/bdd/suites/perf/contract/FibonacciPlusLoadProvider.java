@@ -81,13 +81,13 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class FibonacciPlusLoadProvider extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(FibonacciPlusLoadProvider.class);
 
-	private static final int CALL_TPS = 1;
+	private static final int CALL_TPS = 400;
 	private static final int SMALLEST_NUM_SLOTS = 32;
 	private static final int SLOTS_PER_CALL = 12;
 	private static final int APPROX_NUM_CONTRACTS = 1000;
 	private static final int FIBONACCI_NUM_TO_USE = 12;
-	private static final long SECS_TO_RUN = 10;
-	private static final long MS_TO_DRAIN_QUEUE = 1_000L;
+	private static final long SECS_TO_RUN = 600;
+	private static final long MS_TO_DRAIN_QUEUE = 60_000L;
 	private static final long GAS_TO_OFFER = 300_000L;
 
 	private static final String SUITE_PROPS_PREFIX = "fibplus_";
@@ -106,7 +106,7 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 	private final AtomicInteger numContracts = new AtomicInteger(APPROX_NUM_CONTRACTS);
 	private final AtomicInteger fibN = new AtomicInteger(FIBONACCI_NUM_TO_USE);
 	private final AtomicReference<BigInteger> fibNValue = new AtomicReference<>(null);
-	private final AtomicBoolean validateStorage = new AtomicBoolean(true);
+	private final AtomicBoolean validateStorage = new AtomicBoolean(false);
 
 	private final AtomicLong gasUsed = new AtomicLong(0);
 	private final AtomicInteger submittedOps = new AtomicInteger(0);

@@ -51,6 +51,11 @@ public class VirtualBlobKeySerializer implements KeySerializer<VirtualBlobKey> {
 	}
 
 	@Override
+	public boolean equals(ByteBuffer buffer, int version, VirtualBlobKey key) throws IOException {
+		return key.getType().ordinal() == (0xff & buffer.get()) && key.getEntityNumCode() == buffer.getInt();
+	}
+
+	@Override
 	public int serialize(VirtualBlobKey key, SerializableDataOutputStream out) throws IOException {
 		key.serialize(out);
 		return VirtualBlobKey.sizeInBytes();

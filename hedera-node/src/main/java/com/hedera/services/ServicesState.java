@@ -57,7 +57,7 @@ import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
 import com.swirlds.fchashmap.FCOneToManyRelation;
-import com.swirlds.jasperdb.VirtualDataSourceJasperDB;
+import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.state.DualStateImpl;
 import com.swirlds.virtualmap.VirtualMap;
@@ -422,7 +422,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	void createGenesisChildren(AddressBook addressBook, long seqStart) {
-		final var virtualMapFactory = new VirtualMapFactory(jdbLoc, VirtualDataSourceJasperDB::new);
+		final var virtualMapFactory = new VirtualMapFactory(jdbLoc, JasperDbBuilder::new);
 
 		setChild(StateChildIndices.UNIQUE_TOKENS, new MerkleMap<>());
 		setChild(StateChildIndices.TOKEN_ASSOCIATIONS, new MerkleMap<>());

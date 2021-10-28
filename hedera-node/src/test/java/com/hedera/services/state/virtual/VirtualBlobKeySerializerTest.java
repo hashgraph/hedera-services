@@ -30,14 +30,17 @@ import static com.hedera.services.state.virtual.VirtualBlobKey.BYTES_IN_SERIALIZ
 import static com.hedera.services.state.virtual.VirtualBlobKey.Type.FILE_DATA;
 import static com.hedera.services.state.virtual.VirtualBlobKeySerializer.DATA_VERSION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 class VirtualBlobKeySerializerTest {
+	private final int entityNum = 2;
+	private final int otherEntityNum = 3;
 
-	private int entityNum = 2;
-	VirtualBlobKeySerializer subject = new VirtualBlobKeySerializer();
+	private final VirtualBlobKeySerializer subject = new VirtualBlobKeySerializer();
 
 	@Test
 	void gettersWork() {
@@ -67,5 +70,20 @@ class VirtualBlobKeySerializerTest {
 
 		verify(out).writeByte((byte) FILE_DATA.ordinal());
 		verify(out).writeInt(entityNum);
+	}
+
+	@Test
+	void equalsUsingByteBufferWorks() throws IOException {
+		final var someKey = new VirtualBlobKey(FILE_DATA, entityNum);
+		final var sameTypeDiffNum = new VirtualBlobKey(FILE_DATA, otherEntityNum);
+		final var diffTypeSameNum = new VirtualBlobKey(VirtualBlobKey.Type.FILE_METADATA, entityNum);
+
+		final var bin = mock(ByteBuffer.class);
+		given(bin.get()).willReturn((byte) someKey.getType().ordinal());
+		given(bin.getInt()).willReturn(someKey.getEntityNumCode());
+
+		assertTrue(subject.equals(bin, 1, someKey));
+		assertFalse(subject.equals(bin, 1, sameTypeDiffNum));
+		assertFalse(subject.equals(bin, 1, diffTypeSameNum));
 	}
 }

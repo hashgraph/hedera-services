@@ -22,6 +22,7 @@ package com.hedera.services.state.virtual;
 
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.jasperdb.files.DataFileCommon;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -29,17 +30,20 @@ import java.nio.ByteBuffer;
 
 import static com.hedera.services.state.virtual.ContractKeySerializer.DATA_VERSION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 
 class ContractKeySerializerTest {
-	private final long contactNum = 1234L;
+	private final long contractNum = 1234L;
 	private final long key = 123L;
+	private final UInt256 largeKey = UInt256.fromHexString(
+			"0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563");
 
 	final ContractKeySerializer subject = new ContractKeySerializer();
-	final ContractKey contractKey = new ContractKey(contactNum, key);
+	final ContractKey contractKey = new ContractKey(contractNum, key);
 
 	@Test
 	void gettersWork() {
@@ -90,5 +94,41 @@ class ContractKeySerializerTest {
 				.willReturn(contractKey.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
 
 		assertEquals(1 + contractIdNonZeroBytes + uint256KeyNonZeroBytes, subject.deserializeKeySize(bin));
+	}
+
+	@Test
+	void equalsUsingByteBufferWorks() throws IOException {
+		final var someKey = new ContractKey(0L, key);
+		final var anIdenticalKey = new ContractKey(0L, key);
+		final var bin = mock(ByteBuffer.class);
+
+		given(bin.get())
+				.willReturn(someKey.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes())
+				.willReturn((byte) (someKey.getContractId()))
+				.willReturn(someKey.getUint256Byte(0));
+
+		assertTrue(subject.equals(bin, 1, anIdenticalKey));
+	}
+
+	@Test
+	void equalsUsingByteBufferFailsAsExpected() throws IOException {
+		final var someKey = new ContractKey(contractNum, key);
+		final var someKeyForDiffContract = new ContractKey(Long.MAX_VALUE, key);
+		final var someDiffKeyForSameContract = new ContractKey(contractNum, largeKey.toArray());
+		final var bin = mock(ByteBuffer.class);
+
+		given(bin.get())
+				.willReturn(someKey.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes())
+				.willReturn((byte) (someKey.getContractId() >> 8))
+				.willReturn((byte) (someKey.getContractId()))
+				.willReturn(someKey.getUint256Byte(0));
+		assertFalse(subject.equals(bin, 1, someKeyForDiffContract));
+
+		given(bin.get())
+				.willReturn(someKey.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes())
+				.willReturn((byte) (someKey.getContractId() >> 8))
+				.willReturn((byte) (someKey.getContractId()))
+				.willReturn(someKey.getUint256Byte(0));
+		assertFalse(subject.equals(bin, 1, someDiffKeyForSameContract));
 	}
 }

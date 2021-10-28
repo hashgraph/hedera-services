@@ -39,7 +39,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -146,21 +145,6 @@ class VirtualBlobKeyTest {
 		assertEquals(2, subject.getEntityNumCode());
 		assertEquals(FILE_DATA, subject.getType());
 		assertEquals(BYTES_IN_SERIALIZED_FORM, VirtualBlobKey.sizeInBytes());
-	}
-
-	@Test
-	void equalsUsingByteBufferWorks() throws IOException {
-		final var testSubject1 = new VirtualBlobKey(FILE_DATA, entityNum);
-		final var testSubject2 = new VirtualBlobKey(FILE_DATA, otherEntityNum);
-		final var testSubject3 = new VirtualBlobKey(VirtualBlobKey.Type.FILE_METADATA, entityNum);
-
-		final var bin = mock(ByteBuffer.class);
-		given(bin.get()).willReturn((byte) subject.getType().ordinal());
-		given(bin.getInt()).willReturn(subject.getEntityNumCode());
-
-		assertTrue(testSubject1.equals(bin, 1));
-		assertFalse(testSubject2.equals(bin, 1));
-		assertFalse(testSubject3.equals(bin, 1));
 	}
 
 	@Test

@@ -81,7 +81,7 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.NotificationFactory;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.fchashmap.FCOneToManyRelation;
-import com.swirlds.jasperdb.VirtualDataSourceJasperDB;
+import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import dagger.Binds;
@@ -141,7 +141,7 @@ public abstract class StateModule {
 	@Provides
 	@Singleton
 	public static VirtualMapFactory provideVirtualMapFactory() {
-		return new VirtualMapFactory("data/jdb", VirtualDataSourceJasperDB::new);
+		return new VirtualMapFactory("data/jdb", JasperDbBuilder::new);
 	}
 
 	@Provides

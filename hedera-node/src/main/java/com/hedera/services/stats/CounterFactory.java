@@ -20,7 +20,8 @@ package com.hedera.services.stats;
  * ‍
  */
 
-import com.swirlds.common.StatEntry;
+
+import com.swirlds.common.statistics.StatEntry;
 
 import java.util.function.Supplier;
 

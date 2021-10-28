@@ -20,24 +20,21 @@ package com.hedera.services.state.virtual;
  * ‍
  */
 
-import com.swirlds.jasperdb.VirtualInternalRecordSerializer;
-import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
-import com.swirlds.jasperdb.files.hashmap.KeySerializer;
+import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
-import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class VirtualMapFactoryTest {
-	private final String jdbDataLoc = "test/jdb";;
-	private final testJdbFactory jdbFactory = new testJdbFactory();
+	private final String jdbDataLoc = "test/jdb";
+	;
+	private final ThrowingJdbFactoryBuilder jdbFactory = new ThrowingJdbFactoryBuilder();
 
 	VirtualMapFactory factory;
 
@@ -47,22 +44,16 @@ class VirtualMapFactoryTest {
 	}
 
 	@Test
-	void throwsAsExpected(){
+	void propagatesUncheckedFromBuilder() {
 		assertThrows(UncheckedIOException.class, () -> factory.newVirtualizedBlobs());
 		assertThrows(UncheckedIOException.class, () -> factory.newVirtualizedStorage());
 	}
 
-	private static class testJdbFactory implements VirtualMapFactory.JasperDbFactory {
-
+	private static class ThrowingJdbFactoryBuilder implements
+			VirtualMapFactory.JasperDbBuilderFactory<VirtualKey, VirtualValue> {
 		@Override
-		public <K extends VirtualKey, V extends VirtualValue> VirtualDataSource<K, V> newJdb(
-				final VirtualLeafRecordSerializer<K, V> leafRecordSerializer,
-				final VirtualInternalRecordSerializer virtualInternalRecordSerializer,
-				final KeySerializer<K> keySerializer,
-				final Path storageDir, final long maxNumOfKeys, final boolean mergingEnabled,
-				final long internalHashesRamToDiskThreshold,
-				final boolean preferDiskBasedIndexes) throws IOException {
-			throw new IOException();
+		public JasperDbBuilder<VirtualKey, VirtualValue> newJdbBuilder() {
+			throw new UncheckedIOException(new IOException("Oops!"));
 		}
 	}
 }
