@@ -269,11 +269,23 @@ class UpgradeActionsTest {
 	void externalizesFreeze() throws IOException {
 		rmIfPresent(NOW_FROZEN_MARKER);
 
+		given(networkCtx.hasPreparedUpgrade()).willReturn(true);
 		given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
 
-		subject.externalizeFreeze();
+		subject.externalizeFreezeIfUpgradePending();
 
 		assertMarkerCreated(NOW_FROZEN_MARKER, null);
+	}
+
+	@Test
+	void doesntExternalizeFreezeIfNoUpgradeIsPrepared() {
+		rmIfPresent(NOW_FROZEN_MARKER);
+
+		subject.externalizeFreezeIfUpgradePending();
+
+		assertFalse(
+				Paths.get(markerFilesLoc, NOW_FROZEN_MARKER).toFile().exists(),
+				"Should not create " + NOW_FROZEN_MARKER + " if no upgrade is prepared");
 	}
 
 	@Test

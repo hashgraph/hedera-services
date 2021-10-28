@@ -255,7 +255,7 @@ class ServicesMainTest {
 
 		// then:
 		verify(currentPlatformStatus).set(MAINTENANCE);
-		verify(upgradeActions).externalizeFreeze();
+		verify(upgradeActions).externalizeFreezeIfUpgradePending();
 		verify(recordStreamManager).setInFreeze(true);
 	}
 
