@@ -887,10 +887,33 @@ workflows:
             - attach_workspace:
                 at: /
 
+  GCP-Daily-Services-Update-4N-1C:
+    triggers:
+      - schedule:
+          cron: "55 21 * * *"
+          filters:
+            branches:
+              only:
+                - 02170-M-update-regression-nightly
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_2C/Update
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Crypto-Update-4N-1C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
   GCP-Daily-Services-Update-Reconnect-4N-1C:
     triggers:
       - schedule:
-          cron: "30 19 * * *"
+          cron: "55 21 * * *"
           filters:
             branches:
               only:
