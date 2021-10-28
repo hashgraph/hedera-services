@@ -115,20 +115,24 @@ jobs:
           sleep 45s
           mvn integration-test -X -DskipTests  > e2e-output.txt
 
-      - name: Parse E2E Logs # truncates the whole e2e output to "SUITE_NAME - Spec{name=SPEC_NAME, status=SPEC_STATUS}"
+      - name: Parse E2E Logs # processes the e2e output into csv rows, suitable to fill SUITE,SPEC,STATUS table headers
         run: |
-          echo SUITE,SPEC,STATUS > results.txt
+          echo SUITE,SPEC,STATUS > results.csv
           cat test-clients/e2e-output.txt | grep 'status=' > temp.txt
-          awk '{print $5,$6,$7,$8,$10}' temp.txt | awk -F'[}{]' '{print $1,$2}' | awk '{print $1,$4, $5}' |
-          awk -F'=' '{print $1,$2,$3}' | awk -F' ' '{print $1,$3,$5}' | awk -F',' '{print $1,$2,$4}' |
-          awk -F' ' '{print $1 "," $2 ","$3}' >> results.txt
+          awk '{print $5,$6,$7,$8,$10}' temp.txt |
+          awk -F'[}{]' '{print $1,$2}' |
+          awk '{print $1,$4,$5}' |
+          awk -F'=' '{print $1,$2,$3}' |
+          awk -F' ' '{print $1,$3,$5}' |
+          awk -F',' '{print $1,$2,$4}' |
+          awk -F' ' '{print $1 "," $2 "," $3}' >> results.csv
           rm -f test-clients/e2e-output.txt temp.txt
 
-      - name: Upload E2E Output # uploads the "parsed" output
+      - name: Upload E2E Output # uploads the csv output
         uses: actions/upload-artifact@v2
         with:
           name: e2e-results
-          path: results.txt
+          path: results.csv
 
       - name: Upload node logs # uploads the logs from the 3-node network
         uses: actions/upload-artifact@v2
