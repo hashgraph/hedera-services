@@ -55,7 +55,7 @@ jobs:
           key: services-node
 
   e2e:
-
+    needs: [build]
     runs-on: ubuntu-latest
 
     services:
