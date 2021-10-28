@@ -1,6 +1,8 @@
 name: Hedera Services CI
 
 on: [push]
+# TODO: upload artefact after build
+# TODO:
 
 jobs:
   build:
@@ -43,6 +45,14 @@ jobs:
           root_dir: '/home/runner/work/hedera-services/'
           files: 'jacoco.xml'
 
+      - name: Cache build
+        uses: actions/cache@v2
+        id: cache-build
+        env:
+          cache-name: services-node-build
+        with:
+          path: .
+          key: services-node
 
   e2e:
 
@@ -78,13 +88,11 @@ jobs:
       - name: Build docker images # build the  image for hedera-node
         run: bash compose-build.sh
 
-      - name: Build local
-        run: mvn clean install -DskipTests
-
       - name: Start network # start 3 node network
         run: docker-compose -f docker-compose-ci.yml up -d
 
-      - name: Run E2E Specs # run selected e2e specs, after sleeping for a minute
+      - name: Run E2E Specs # run selected e2e specs, after sleeping for 45s
+        if: steps.cache-build.outputs.cache-hit == 'true'
         run: |
           cd test-clients
           sleep 45s
