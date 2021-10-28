@@ -1,8 +1,6 @@
 name: Hedera Services CI
 
 on: [push]
-# TODO: upload artefact after build
-# TODO:
 
 jobs:
   build:
@@ -52,6 +50,22 @@ jobs:
           path: |
             **/target/*.jar
             **/target/pom.xml
+
+  javadoc:
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up JDK 12
+        uses: actions/setup-java@v2
+        with:
+          java-version: '12'
+          distribution: 'adopt'
+          cache: maven
+
+      - name: Generate javadocs
+        run: mvn javadoc:javadoc -DskipTests
 
   e2e:
     needs: [build]
@@ -107,8 +121,17 @@ jobs:
           awk '{print $5,$6,$7,$8,$10}' temp.txt > results.txt
           rm -f test-clients/e2e-output.txt temp.txt
 
-      - name: Upload E2E Output
+      - name: Upload E2E Output # uploads the "parsed" output
         uses: actions/upload-artifact@v2
         with:
           name: e2e-results
           path: results.txt
+
+      - name: Upload node logs # uploads the logs from the 3-node network
+        uses: actions/upload-artifact@v2
+        with:
+          name: node-output
+          path: |
+            ./compose-network/node0/output/
+            ./compose-network/node1/output/
+            ./compose-network/node2/output/
