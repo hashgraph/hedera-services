@@ -110,7 +110,7 @@ class MerkleSpecialFilesTest {
 		assertArrayEquals(stuff, subject.get(fid), "Updated stuff should be identical");
 
 		assertTrue(subject.hashMatches(fid, stuffHash), "Updated stuff should have SHA-384 hash");
-		
+
 		assertArrayEquals(new byte[0], subject.get(secondFid));
 	}
 
