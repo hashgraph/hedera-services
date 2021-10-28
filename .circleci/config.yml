@@ -890,7 +890,7 @@ workflows:
   GCP-Daily-Services-Update-Reconnect-4N-1C:
     triggers:
       - schedule:
-          cron: "30 5 * * *"
+          cron: "20 5 * * *"
           filters:
             branches:
               only:
