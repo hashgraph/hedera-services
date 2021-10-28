@@ -87,6 +87,7 @@ jobs:
       - name: Run E2E Specs # run selected e2e specs, after sleeping for a minute
         run: |
           cd test-clients
+          sleep 45s
           mvn integration-test -X -DskipTests  > e2e-output.txt
 
       - name: Parse E2E Logs # truncates the whole e2e output to "SUITE_NAME - Spec{name=SPEC_NAME, status=SPEC_STATUS}"
