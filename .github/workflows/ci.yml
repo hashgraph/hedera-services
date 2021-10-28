@@ -134,6 +134,14 @@ jobs:
           name: e2e-results
           path: results.csv
 
+      - name: Comment with E2E results
+      - uses: harupy/comment-on-pr@master
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+            filename: result.csv
+
       - name: Upload node logs # uploads the logs from the 3-node network
         uses: actions/upload-artifact@v2
         with:
