@@ -133,7 +133,9 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: e2e-results
-          path: results.csv, full_output.txt
+          path: |
+            results.csv
+            full_output.txt
 
       - name: Upload node logs # uploads the logs from the 3-node network
         uses: actions/upload-artifact@v2
