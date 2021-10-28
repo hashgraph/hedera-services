@@ -217,6 +217,12 @@ public final class MiscUtils {
 			NetworkGetExecutionTime
 	);
 
+	public static final Set<HederaFunctionality> CONSENSUS_THROTTLED_FUNCTIONS = EnumSet.of(
+			ContractCallLocal,
+			ContractCall,
+			ContractCreate
+	);
+
 	static final String TOKEN_MINT_METRIC = "mintToken";
 	static final String TOKEN_BURN_METRIC = "burnToken";
 	static final String TOKEN_CREATE_METRIC = "createToken";
@@ -770,5 +776,15 @@ public final class MiscUtils {
 		if (null != map) {
 			map.put(key, value);
 		}
+	}
+
+	public static boolean isConsensusThrottled(HederaFunctionality hederaFunctionality) {
+		return CONSENSUS_THROTTLED_FUNCTIONS.contains(hederaFunctionality);
+	}
+
+	public static long getContractTXGasLimit(TxnAccessor accessor) {
+		return accessor.getFunction() == ContractCreate ?
+				accessor.getTxn().getContractCreateInstance().getGas() :
+				accessor.getTxn().getContractCall().getGas();
 	}
 }

@@ -24,6 +24,7 @@ import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Query;
 
 import java.time.Instant;
 import java.util.List;
@@ -36,13 +37,18 @@ public class HapiThrottling implements FunctionalityThrottling {
 	}
 
 	@Override
-	public synchronized boolean shouldThrottleTxn(TxnAccessor accessor, boolean frontEndThrottle) {
-		return delegate.shouldThrottleTxn(accessor, Instant.now(), frontEndThrottle);
+	public synchronized boolean shouldThrottleTxn(TxnAccessor accessor) {
+		return delegate.shouldThrottleTxn(accessor, Instant.now());
 	}
 
 	@Override
-	public synchronized boolean shouldThrottleQuery(HederaFunctionality queryFunction) {
-		return delegate.shouldThrottleQuery(queryFunction, Instant.now());
+	public boolean shouldThrottleConsensusTxn(TxnAccessor accessor) {
+		return delegate.shouldThrottleConsensusTxn(accessor, Instant.now());
+	}
+
+	@Override
+	public synchronized boolean shouldThrottleQuery(HederaFunctionality queryFunction, Query query) {
+		return delegate.shouldThrottleQuery(queryFunction, Instant.now(), query);
 	}
 
 	@Override

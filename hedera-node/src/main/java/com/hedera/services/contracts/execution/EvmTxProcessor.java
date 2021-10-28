@@ -220,20 +220,7 @@ abstract class EvmTxProcessor {
 			stackedUpdater.commit();
 		}
 
-		Gas gasUsedByTransaction = Gas.of(providedGasLimit).minus(initialFrame.getRemainingGas());
-		/* Return leftover gas */
-		final Gas selfDestructRefund =
-				gasCalculator.getSelfDestructRefundAmount().times(initialFrame.getSelfDestructs().size()).min(
-						gasUsedByTransaction.dividedBy(gasCalculator.getMaxRefundQuotient()));
-
-		gasUsedByTransaction = gasUsedByTransaction.minus(selfDestructRefund).minus(initialFrame.getGasRefund());
-
-		var maxRefundPercent = dynamicProperties.getContractMaxRefundPercentOfGasLimit();
-		if(maxRefundPercent >= 0 && maxRefundPercent <= 100) {
-			gasUsedByTransaction = Gas.of(
-					Math.max(gasUsedByTransaction.toLong(),
-							providedGasLimit - providedGasLimit * maxRefundPercent / 100));
-		}
+		var gasUsedByTransaction = calculateGasUsedByTX(providedGasLimit, initialFrame);
 
 		final Gas sbhRefund = updater.getSbhRefund();
 
@@ -272,6 +259,25 @@ abstract class EvmTxProcessor {
 					initialFrame.getRevertReason(),
 					initialFrame.getExceptionalHaltReason());
 		}
+	}
+
+	private Gas calculateGasUsedByTX(long txGasLimit, MessageFrame initialFrame) {
+		Gas gasUsedByTransaction = Gas.of(txGasLimit).minus(initialFrame.getRemainingGas());
+		/* Return leftover gas */
+		final Gas selfDestructRefund =
+				gasCalculator.getSelfDestructRefundAmount().times(initialFrame.getSelfDestructs().size()).min(
+						gasUsedByTransaction.dividedBy(gasCalculator.getMaxRefundQuotient()));
+
+		gasUsedByTransaction = gasUsedByTransaction.minus(selfDestructRefund).minus(initialFrame.getGasRefund());
+
+		var maxRefundPercent = dynamicProperties.getContractMaxRefundPercentOfGasLimit();
+		if(maxRefundPercent >= 0 && maxRefundPercent <= 100) {
+			gasUsedByTransaction = Gas.of(
+					Math.max(gasUsedByTransaction.toLong(),
+							txGasLimit - txGasLimit * maxRefundPercent / 100));
+		}
+
+		return gasUsedByTransaction;
 	}
 
 	protected long gasPriceTinyBarsGiven(Instant consensusTime) {

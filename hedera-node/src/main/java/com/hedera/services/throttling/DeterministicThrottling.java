@@ -24,8 +24,10 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttles.GasLimitDeterministicThrottle;
+import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -39,8 +41,6 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.function.IntSupplier;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 
 public class DeterministicThrottling implements TimedFunctionalityThrottling {
@@ -64,33 +64,43 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	}
 
 	@Override
-	public boolean shouldThrottleTxn(TxnAccessor accessor, boolean frontEndThrottle) {
+	public boolean shouldThrottleTxn(TxnAccessor accessor) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public boolean shouldThrottleQuery(HederaFunctionality queryFunction) {
+	public boolean shouldThrottleConsensusTxn(TxnAccessor accessor) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public boolean shouldThrottleTxn(TxnAccessor accessor, Instant now, boolean frontEndThrottle) {
-		final var function = accessor.getFunction();
-		ThrottleReqsManager manager;
+	public boolean shouldThrottleQuery(HederaFunctionality queryFunction, Query query) {
+		throw new UnsupportedOperationException();
+	}
 
-		if ((function == ContractCreate || function == ContractCall) && dynamicProperties.shouldThrottleByGas()) {
-			final var txGasLimit = function == ContractCreate ?
-					accessor.getTxn().getContractCreateInstance().getGas() : accessor.getTxn().getContractCall().getGas();
-			if(frontEndThrottle) {
-				if (frontEndGasThrottle == null || !frontEndGasThrottle.allow(now, txGasLimit)) {
-					return true;
-				}
-			} else {
-				if (backEndGasThrottle == null || !backEndGasThrottle.allow(now, txGasLimit)) {
-					return true;
-				}
+	@Override
+	public boolean shouldThrottleTxn(TxnAccessor accessor, Instant now) {
+		if (MiscUtils.isConsensusThrottled(accessor.getFunction()) && dynamicProperties.shouldThrottleByGas()) {
+			if (frontEndGasThrottle == null || !frontEndGasThrottle.allow(now, MiscUtils.getContractTXGasLimit(accessor))) {
+				return true;
 			}
 		}
+		return shouldThrottleTXOpsPerSec(accessor, now);
+	}
+
+	@Override
+	public boolean shouldThrottleConsensusTxn(TxnAccessor accessor, Instant now) {
+		if (MiscUtils.isConsensusThrottled(accessor.getFunction()) && dynamicProperties.shouldThrottleByGas()) {
+			if (backEndGasThrottle == null || !backEndGasThrottle.allow(now, MiscUtils.getContractTXGasLimit(accessor))) {
+				return true;
+			}
+		}
+		return shouldThrottleTXOpsPerSec(accessor, now);
+	}
+
+	private boolean shouldThrottleTXOpsPerSec(TxnAccessor accessor, Instant now) {
+		final var function = accessor.getFunction();
+		ThrottleReqsManager manager;
 
 		if ((manager = functionReqs.get(function)) == null) {
 			return true;
@@ -106,7 +116,12 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	}
 
 	@Override
-	public boolean shouldThrottleQuery(HederaFunctionality queryFunction, Instant now) {
+	public boolean shouldThrottleQuery(HederaFunctionality queryFunction, Instant now, Query query) {
+		if (MiscUtils.isConsensusThrottled(queryFunction) && dynamicProperties.shouldThrottleByGas()) {
+			if (frontEndGasThrottle == null || !frontEndGasThrottle.allow(now, query.getContractCallLocal().getGas())) {
+				return true;
+			}
+		}
 		ThrottleReqsManager manager;
 		if ((manager = functionReqs.get(queryFunction)) == null) {
 			return true;

@@ -24,12 +24,14 @@ import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Query;
 
 import java.util.List;
 
 public interface FunctionalityThrottling {
-	boolean shouldThrottleTxn(TxnAccessor accessor, boolean frontEndThrottle);
-	boolean shouldThrottleQuery(HederaFunctionality queryFunction);
+	boolean shouldThrottleTxn(TxnAccessor accessor);
+	boolean shouldThrottleConsensusTxn(TxnAccessor accessor);
+	boolean shouldThrottleQuery(HederaFunctionality queryFunction, Query query);
 	void leakUnusedGasPreviouslyReserved(long value);
 	void rebuildFor(ThrottleDefinitions defs);
 	List<DeterministicThrottle> activeThrottlesFor(HederaFunctionality function);

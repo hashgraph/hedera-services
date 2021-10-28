@@ -22,20 +22,27 @@ package com.hedera.services.throttling;
 
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Query;
 
 import java.time.Instant;
 
 public interface TimedFunctionalityThrottling extends FunctionalityThrottling {
 	@Override
-	default boolean shouldThrottleTxn(TxnAccessor accessor, boolean frontEndThrottle)  {
-		return shouldThrottleTxn(accessor, Instant.now(), frontEndThrottle);
+	default boolean shouldThrottleTxn(TxnAccessor accessor)  {
+		return shouldThrottleTxn(accessor, Instant.now());
 	}
 
 	@Override
-	default boolean shouldThrottleQuery(HederaFunctionality queryFunction) {
-		return shouldThrottleQuery(queryFunction, Instant.now());
+	default boolean shouldThrottleConsensusTxn(TxnAccessor accessor)  {
+		return shouldThrottleConsensusTxn(accessor, Instant.now());
 	}
 
-	boolean shouldThrottleTxn(TxnAccessor accessor, Instant now, boolean frontEndThrottle);
-	boolean shouldThrottleQuery(HederaFunctionality queryFunction, Instant now);
+	@Override
+	default boolean shouldThrottleQuery(HederaFunctionality queryFunction, Query query) {
+		return shouldThrottleQuery(queryFunction, Instant.now(), query);
+	}
+
+	boolean shouldThrottleTxn(TxnAccessor accessor, Instant now);
+	boolean shouldThrottleConsensusTxn(TxnAccessor accessor, Instant now);
+	boolean shouldThrottleQuery(HederaFunctionality queryFunction, Instant now, Query query);
 }

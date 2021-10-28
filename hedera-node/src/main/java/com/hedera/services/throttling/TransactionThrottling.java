@@ -36,6 +36,6 @@ public class TransactionThrottling {
 	}
 
 	public boolean shouldThrottle(TxnAccessor accessor) {
-		return throttles.shouldThrottleTxn(accessor, true);
+		return throttles.shouldThrottleTxn(accessor);
 	}
 }

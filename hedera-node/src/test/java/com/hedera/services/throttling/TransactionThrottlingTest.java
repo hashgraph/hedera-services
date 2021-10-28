@@ -59,13 +59,13 @@ class TransactionThrottlingTest {
 								.toByteString())
 						.build());
 
-		given(functionalThrottling.shouldThrottleTxn(accessor, true)).willReturn(true);
+		given(functionalThrottling.shouldThrottleTxn(accessor)).willReturn(true);
 
 		// when:
 		boolean should = subject.shouldThrottle(accessor);
 
 		// then:
 		assertTrue(should);
-		verify(functionalThrottling).shouldThrottleTxn(accessor, true);
+		verify(functionalThrottling).shouldThrottleTxn(accessor);
 	}
 }

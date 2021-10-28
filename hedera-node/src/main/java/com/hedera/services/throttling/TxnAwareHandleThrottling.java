@@ -25,6 +25,7 @@ import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Query;
 
 import java.util.List;
 
@@ -38,12 +39,17 @@ public class TxnAwareHandleThrottling implements FunctionalityThrottling {
 	}
 
 	@Override
-	public boolean shouldThrottleTxn(TxnAccessor accessor, boolean frontEndThrottle) {
-		return delegate.shouldThrottleTxn(accessor, txnCtx.consensusTime(), frontEndThrottle);
+	public boolean shouldThrottleTxn(TxnAccessor accessor) {
+		return delegate.shouldThrottleTxn(accessor, txnCtx.consensusTime());
 	}
 
 	@Override
-	public boolean shouldThrottleQuery(HederaFunctionality queryFunction) {
+	public boolean shouldThrottleConsensusTxn(TxnAccessor accessor) {
+		return delegate.shouldThrottleConsensusTxn(accessor, txnCtx.consensusTime());
+	}
+
+	@Override
+	public boolean shouldThrottleQuery(HederaFunctionality queryFunction, Query query) {
 		throw new UnsupportedOperationException();
 	}
 

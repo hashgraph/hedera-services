@@ -36,6 +36,7 @@ import com.hedera.test.utils.SerdeUtils;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Assertions;
@@ -90,6 +91,8 @@ class DeterministicThrottlingTest {
 	private ContractCallTransactionBody callTransactionBody;
 	@Mock
 	private ContractCreateTransactionBody createTransactionBody;
+	@Mock
+	private Query query;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -109,7 +112,7 @@ class DeterministicThrottlingTest {
 		// when:
 		subject.rebuildFor(defs);
 		// and:
-		var ans = subject.shouldThrottleQuery(CryptoGetAccountBalance, consensusNow);
+		var ans = subject.shouldThrottleQuery(CryptoGetAccountBalance, consensusNow, query);
 		var throttlesNow = subject.activeThrottlesFor(CryptoGetAccountBalance);
 		// and:
 		var dNow = throttlesNow.get(0);
@@ -128,7 +131,7 @@ class DeterministicThrottlingTest {
 		subject.rebuildFor(defs);
 
 		// then:
-		assertTrue(subject.shouldThrottleQuery(ContractCallLocal, consensusNow));
+		assertTrue(subject.shouldThrottleQuery(ContractCallLocal, consensusNow, query));
 	}
 
 	@Test
@@ -141,7 +144,7 @@ class DeterministicThrottlingTest {
 		// when:
 		subject.rebuildFor(defs);
 		// and:
-		var ans = subject.shouldThrottleTxn(accessor, consensusNow, true);
+		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
 		var throttlesNow = subject.activeThrottlesFor(TokenMint);
 		// and:
 		var aNow = throttlesNow.get(0);
@@ -163,7 +166,7 @@ class DeterministicThrottlingTest {
 		// when:
 		subject.rebuildFor(defs);
 		// and:
-		var ans = subject.shouldThrottleTxn(accessor, consensusNow, true);
+		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
 		var throttlesNow = subject.activeThrottlesFor(TokenMint);
 		// and:
 		var aNow = throttlesNow.get(0);
@@ -183,7 +186,7 @@ class DeterministicThrottlingTest {
 		// when:
 		subject.rebuildFor(defs);
 		// and:
-		var ans = subject.shouldThrottleTxn(accessor, consensusNow, true);
+		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
 		var throttlesNow = subject.activeThrottlesFor(ContractCall);
 		// and:
 		var aNow = throttlesNow.get(0);
@@ -257,7 +260,7 @@ class DeterministicThrottlingTest {
 		givenFunction(ContractCall);
 
 		// expect:
-		assertTrue(subject.shouldThrottleTxn(accessor, consensusNow, true));
+		assertTrue(subject.shouldThrottleTxn(accessor, consensusNow));
 	}
 
 	@Test
@@ -274,14 +277,14 @@ class DeterministicThrottlingTest {
 		given(manager.allReqsMetAt(consensusNow)).willReturn(true);
 
 		// then:
-		assertFalse(subject.shouldThrottleTxn(accessor, consensusNow, true));
+		assertFalse(subject.shouldThrottleTxn(accessor, consensusNow));
 	}
 
 	@Test
 	void requiresExplicitTimestamp() {
 		// expect:
-		assertThrows(UnsupportedOperationException.class, () -> subject.shouldThrottleTxn(accessor, true));
-		assertThrows(UnsupportedOperationException.class, () -> subject.shouldThrottleQuery(FileGetInfo));
+		assertThrows(UnsupportedOperationException.class, () -> subject.shouldThrottleTxn(accessor));
+		assertThrows(UnsupportedOperationException.class, () -> subject.shouldThrottleQuery(FileGetInfo, query));
 	}
 
 	@Test
@@ -291,12 +294,9 @@ class DeterministicThrottlingTest {
 		//setup:
 		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
 		givenFunction(ContractCreate);
-		given(createTransactionBody.getGas()).willReturn(10_000L);
-		given(transactionBody.getContractCreateInstance()).willReturn(createTransactionBody);
-		given(accessor.getTxn()).willReturn(transactionBody);
 
 		//when:
-		subject.shouldThrottleTxn(accessor, now, true);
+		subject.shouldThrottleTxn(accessor, now);
 	}
 
 	@Test
@@ -306,12 +306,9 @@ class DeterministicThrottlingTest {
 		//setup:
 		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
 		givenFunction(ContractCall);
-		given(callTransactionBody.getGas()).willReturn(10_000L);
-		given(transactionBody.getContractCall()).willReturn(callTransactionBody);
-		given(accessor.getTxn()).willReturn(transactionBody);
 
 		//when:
-		subject.shouldThrottleTxn(accessor, now, true);
+		subject.shouldThrottleTxn(accessor, now);
 	}
 
 	private void givenFunction(HederaFunctionality functionality) {

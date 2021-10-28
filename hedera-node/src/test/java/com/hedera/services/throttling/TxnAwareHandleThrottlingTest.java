@@ -25,6 +25,7 @@ import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAc
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 
@@ -50,6 +52,8 @@ class TxnAwareHandleThrottlingTest {
 	private TimedFunctionalityThrottling delegate;
 	@Mock
 	private TransactionContext txnCtx;
+	@Mock
+	private Query query;
 
 	private TxnAwareHandleThrottling subject;
 
@@ -61,7 +65,7 @@ class TxnAwareHandleThrottlingTest {
 	@Test
 	void txnHandlingDoesntSupportQueries() {
 		// expect:
-		assertThrows(UnsupportedOperationException.class, () -> subject.shouldThrottleQuery(CryptoGetAccountBalance));
+		assertThrows(UnsupportedOperationException.class, () -> subject.shouldThrottleQuery(CryptoGetAccountBalance, query));
 	}
 
 	@Test
@@ -70,12 +74,12 @@ class TxnAwareHandleThrottlingTest {
 		final var accessor = SignedTxnAccessor.uncheckedFrom(Transaction.getDefaultInstance());
 
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
-		given(delegate.shouldThrottleTxn(accessor, consensusTime, true)).willReturn(true);
+		given(delegate.shouldThrottleTxn(accessor, consensusTime)).willReturn(true);
 
 		// expect:
-		assertTrue(subject.shouldThrottleTxn(accessor, true));
+		assertTrue(subject.shouldThrottleTxn(accessor));
 		// and:
-		verify(delegate).shouldThrottleTxn(accessor, consensusTime, true);
+		verify(delegate).shouldThrottleTxn(accessor, consensusTime);
 	}
 
 	@Test

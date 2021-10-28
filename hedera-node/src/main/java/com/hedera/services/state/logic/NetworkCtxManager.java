@@ -31,6 +31,7 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.annotations.HandleThrottle;
+import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -160,7 +161,7 @@ public class NetworkCtxManager {
 	public ResponseCodeEnum prepareForIncorporating(TxnAccessor accessor) {
 		/* This is used to monitor the current network usage for automated congestion pricing
 			and to throttle ContractCreate and ContractCall TXs by gas actually used in the last second.*/
-		if(handleThrottling.shouldThrottleTxn(accessor, false) &&
+		if(handleThrottling.shouldThrottleConsensusTxn(accessor) &&
 				(accessor.getFunction().equals(ContractCall) || accessor.getFunction().equals(ContractCreate))){
 			return ResponseCodeEnum.BUSY;
 		}
@@ -172,14 +173,8 @@ public class NetworkCtxManager {
 	public void finishIncorporating(HederaFunctionality op) {
 		opCounters.countHandled(op);
 
-		if(op.equals(HederaFunctionality.ContractCall) || op.equals(HederaFunctionality.ContractCreate)){
-			var gasUsed = op.equals(HederaFunctionality.ContractCall) ?
-					txnCtx.recordSoFar().getContractCallResult().getGasUsed() :
-					txnCtx.recordSoFar().getContractCreateResult().getGasUsed();
-			final var txGasLimit = op == ContractCreate ?
-					txnCtx.accessor().getTxn().getContractCreateInstance().getGas() :
-					txnCtx.accessor().getTxn().getContractCall().getGas();
-			handleThrottling.leakUnusedGasPreviouslyReserved(txGasLimit - gasUsed);
+		if(MiscUtils.isConsensusThrottled(op)){
+			handleThrottling.leakUnusedGasPreviouslyReserved(getGasLimitFromCtx(op) - getGasUsedFromCtx(op));
 		}
 
 		var networkCtxNow = networkCtx.get();
@@ -201,5 +196,17 @@ public class NetworkCtxManager {
 
 	BiPredicate<Instant, Instant> getShouldUpdateMidnightRates() {
 		return shouldUpdateMidnightRates;
+	}
+
+	private long getGasUsedFromCtx(HederaFunctionality op) {
+		return op.equals(HederaFunctionality.ContractCall) ?
+				txnCtx.recordSoFar().getContractCallResult().getGasUsed() :
+				txnCtx.recordSoFar().getContractCreateResult().getGasUsed();
+	}
+
+	private long getGasLimitFromCtx(HederaFunctionality op) {
+		return op == ContractCreate ?
+				txnCtx.accessor().getTxn().getContractCreateInstance().getGas() :
+				txnCtx.accessor().getTxn().getContractCall().getGas();
 	}
 }
