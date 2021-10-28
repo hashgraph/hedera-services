@@ -217,7 +217,7 @@ public final class MiscUtils {
 			NetworkGetExecutionTime
 	);
 
-	public static final Set<HederaFunctionality> CONSENSUS_THROTTLED_FUNCTIONS = EnumSet.of(
+	private static final Set<HederaFunctionality> CONSENSUS_THROTTLED_FUNCTIONS = EnumSet.of(
 			ContractCallLocal,
 			ContractCall,
 			ContractCreate

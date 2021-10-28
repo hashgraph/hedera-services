@@ -9,9 +9,9 @@ package com.hedera.services.throttling;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -80,20 +80,20 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
 	@Override
 	public boolean shouldThrottleTxn(TxnAccessor accessor, Instant now) {
-		if (MiscUtils.isConsensusThrottled(accessor.getFunction()) && dynamicProperties.shouldThrottleByGas()) {
-			if (frontEndGasThrottle == null || !frontEndGasThrottle.allow(now, MiscUtils.getContractTXGasLimit(accessor))) {
-				return true;
-			}
+		if (MiscUtils.isConsensusThrottled(accessor.getFunction()) &&
+				dynamicProperties.shouldThrottleByGas() &&
+				(frontEndGasThrottle == null || !frontEndGasThrottle.allow(now, MiscUtils.getContractTXGasLimit(accessor)))) {
+			return true;
 		}
 		return shouldThrottleTXOpsPerSec(accessor, now);
 	}
 
 	@Override
 	public boolean shouldThrottleConsensusTxn(TxnAccessor accessor, Instant now) {
-		if (MiscUtils.isConsensusThrottled(accessor.getFunction()) && dynamicProperties.shouldThrottleByGas()) {
-			if (backEndGasThrottle == null || !backEndGasThrottle.allow(now, MiscUtils.getContractTXGasLimit(accessor))) {
-				return true;
-			}
+		if (MiscUtils.isConsensusThrottled(accessor.getFunction()) &&
+				dynamicProperties.shouldThrottleByGas() &&
+				(backEndGasThrottle == null || !backEndGasThrottle.allow(now, MiscUtils.getContractTXGasLimit(accessor)))) {
+			return true;
 		}
 		return shouldThrottleTXOpsPerSec(accessor, now);
 	}
@@ -117,10 +117,10 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
 	@Override
 	public boolean shouldThrottleQuery(HederaFunctionality queryFunction, Instant now, Query query) {
-		if (MiscUtils.isConsensusThrottled(queryFunction) && dynamicProperties.shouldThrottleByGas()) {
-			if (frontEndGasThrottle == null || !frontEndGasThrottle.allow(now, query.getContractCallLocal().getGas())) {
-				return true;
-			}
+		if (MiscUtils.isConsensusThrottled(queryFunction) &&
+				dynamicProperties.shouldThrottleByGas() &&
+				(frontEndGasThrottle == null || !frontEndGasThrottle.allow(now, query.getContractCallLocal().getGas()))) {
+			return true;
 		}
 		ThrottleReqsManager manager;
 		if ((manager = functionReqs.get(queryFunction)) == null) {
