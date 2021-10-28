@@ -182,9 +182,6 @@ import com.hedera.services.bdd.suites.token.UniqueTokenManagementSpecs;
 // TODO: Refactor to better name
 // TODO: Remove stress tests if confirmed
 // TODO: Include performance tests if confirmed
-// TODO: Format the output to aggregated results
-
-
 
 // TODO: Verify in daily to run sync() or async()
 // TODO: Implement a solution, extracting only failing test as console output
@@ -286,13 +283,13 @@ public class E2EGlobalRunner {
 		new CryptoUpdateSuite().runSuiteSync();
 		new CrytoCreateSuiteWithUTF8().runSuiteSync();
 		new HelloWorldSpec().runSuiteSync();
-		new MiscCryptoSuite().runSuiteSync();
+//		new MiscCryptoSuite().runSuiteSync();
 		new QueryPaymentSuite().runSuiteSync();
-		new RandomOps().runSuiteSync();
+//		new RandomOps().runSuiteSync();
 		new TransferWithCustomFees().runSuiteSync();
-		new TxnReceiptRegression().runSuiteSync();
-		new TxnRecordRegression().runSuiteSync();
-		new UnsupportedQueriesRegression().runSuiteSync();
+//		new TxnReceiptRegression().runSuiteSync();
+//		new TxnRecordRegression().runSuiteSync();
+//		new UnsupportedQueriesRegression().runSuiteSync();
 	}
 
 	// Covered
@@ -475,7 +472,7 @@ public class E2EGlobalRunner {
 		new TokenFeeScheduleUpdateSpecs().runSuiteSync();
 		new TokenManagementSpecs().runSuiteSync();
 		new TokenManagementSpecsStateful().runSuiteSync();
-		new TokenMiscOps().runSuiteSync();
+//		new TokenMiscOps().runSuiteSync();
 		new TokenPauseSpecs().runSuiteSync();
 		new TokenTotalSupplyAfterMintBurnWipeSuite().runSuiteSync();
 		new TokenTransactSpecs().runSuiteAsync();
