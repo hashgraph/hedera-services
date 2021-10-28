@@ -49,7 +49,15 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: build
-          path: .
+          path: |
+            test-clients/target/
+            test-clients/pom.xml
+            hapi-fees/target/
+            hapi-fees/pom.xml
+            hapi-utils/target/
+            hapi-utils/pom.xml
+            hedera-node/target/
+            hedera-node/pom.xml
 
   e2e:
     needs: [build]
