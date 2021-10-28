@@ -26,6 +26,7 @@ import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -68,6 +69,7 @@ class ExecutionTimeTrackerTest {
 		assertNull(subject.getExecNanosIfPresentFor(aTxnId));
 	}
 
+	@Disabled
 	@Test
 	void tracksAtMostConfigured() {
 		final var busyNanos = 5_000_000;
