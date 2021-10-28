@@ -127,6 +127,7 @@ jobs:
           awk -F',' '{print $1,$2,$4}' |
           awk -F' ' '{print $1 "," $2 "," $3}' >> results.csv
           rm -f test-clients/e2e-output.txt temp.txt
+          export E2E_OUTPUT=$(cat results.csv)
 
       - name: Upload E2E Output # uploads the csv output
         uses: actions/upload-artifact@v2
@@ -134,13 +135,12 @@ jobs:
           name: e2e-results
           path: results.csv
 
-      - name: Comment with E2E results
-        uses: harupy/comment-on-pr@master
-        continue-on-error: true
+      - name: comment PR
+        uses: unsplash/comment-on-pr@v1.3.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-            filename: result.csv
+          msg: ${{E2E_OUTPUT}}
 
       - name: Upload node logs # uploads the logs from the 3-node network
         uses: actions/upload-artifact@v2
