@@ -135,13 +135,6 @@ jobs:
           name: e2e-results
           path: results.csv
 
-      - name: comment PR
-        uses: unsplash/comment-on-pr@v1.3.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          msg: $E2E_OUTPUT
-
       - name: Upload node logs # uploads the logs from the 3-node network
         uses: actions/upload-artifact@v2
         with:
