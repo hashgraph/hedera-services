@@ -1,6 +1,9 @@
 package com.hedera.services.bdd.suites.misc;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -10,17 +13,43 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 
 public class MemoValidation extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(MemoValidation.class);
 
+	private static final char SINGLE_BYTE_CHAR = 'a';
+	private static final char MULTI_BYTE_CHAR = 'ф';
+
+	private static final byte[] LONG_BYTES = new byte[1000];
+	private static final byte[] VALID_BYTES = new byte[100];
+	private static final byte[] INVALID_BYTES = new byte[102];
+	private static final byte[] BYTES_49 = new byte[49];
+
+	private static String longMemo;
+	private static String validMemoWithMultiByteChars;
+	private static String inValidMemoWithMultiByteChars;
+	private static String stringOf49Bytes;
+
 	public static void main(String... args) {
-		new MemoValidation().runSuiteAsync();
+		new MemoValidation().runSuiteSync();
 	}
 
 	@Override
@@ -30,34 +59,249 @@ public class MemoValidation extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
+		setUpByteArrays();
 		return List.of(
-				memoValidations()
+				cryptoOps(),
+				topicOps(),
+				scheduleOps(),
+				tokenOps(),
+				contractOps()
 		);
 	}
 
-	@Override
-	public boolean canRunAsync() {
-		return true;
+	private HapiApiSpec contractOps() {
+		var primary = "primary";
+		var secondary = "secondary";
+		return defaultHapiSpec("MemoValidationsOnContractOps")
+				.given(
+						fileCreate("contractFile")
+								.path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
+						contractCreate(primary)
+								.omitAdminKey()
+								.bytecode("contractFile")
+				)
+				.when(
+						contractCall(primary, ContractResources.CREATE_CHILD_ABI)
+								.memo(longMemo)
+								.hasPrecheck(MEMO_TOO_LONG),
+						contractCall(primary, ContractResources.CREATE_CHILD_ABI)
+								.memo(ZERO_BYTE_MEMO)
+								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+						contractCall(primary, ContractResources.CREATE_CHILD_ABI)
+								.memo(inValidMemoWithMultiByteChars)
+								.hasPrecheck(MEMO_TOO_LONG),
+						contractCall(primary, ContractResources.CREATE_CHILD_ABI)
+								.memo(stringOf49Bytes + SINGLE_BYTE_CHAR + MULTI_BYTE_CHAR + stringOf49Bytes)
+								.hasPrecheck(MEMO_TOO_LONG)
+				)
+				.then(
+						contractCreate(secondary)
+								.entityMemo(TxnUtils.nAscii(101))
+								.hasPrecheck(MEMO_TOO_LONG),
+						contractCreate(secondary)
+								.entityMemo(ZERO_BYTE_MEMO)
+								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+						contractCreate(secondary)
+								.entityMemo(inValidMemoWithMultiByteChars)
+								.hasPrecheck(MEMO_TOO_LONG),
+						contractCreate(secondary)
+								.entityMemo(stringOf49Bytes + SINGLE_BYTE_CHAR + MULTI_BYTE_CHAR + stringOf49Bytes)
+								.hasPrecheck(MEMO_TOO_LONG)
+				);
+	}
+
+	private HapiApiSpec tokenOps() {
+		var primary = "primary";
+		var secondary = "secondary";
+		return defaultHapiSpec("MemoValidationsOnTokenOps")
+				.given(
+						cryptoCreate("firstUser"),
+						newKeyNamed("adminKey"),
+						tokenCreate(primary)
+								.blankMemo()
+								.adminKey("adminKey")
+				)
+				.when(
+						tokenUpdate(primary)
+								.memo(longMemo)
+								.hasPrecheck(MEMO_TOO_LONG),
+						tokenUpdate(primary)
+								.entityMemo(ZERO_BYTE_MEMO)
+								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+						tokenUpdate(primary)
+								.entityMemo(inValidMemoWithMultiByteChars)
+								.hasPrecheck(MEMO_TOO_LONG),
+						tokenUpdate(primary)
+								.entityMemo(stringOf49Bytes + MULTI_BYTE_CHAR + stringOf49Bytes),
+						tokenUpdate(primary)
+								.entityMemo(stringOf49Bytes + SINGLE_BYTE_CHAR + MULTI_BYTE_CHAR + stringOf49Bytes)
+								.hasPrecheck(MEMO_TOO_LONG)
+				)
+				.then(
+						tokenCreate(secondary)
+								.entityMemo(longMemo)
+								.hasPrecheck(MEMO_TOO_LONG),
+						tokenCreate(secondary)
+								.entityMemo(ZERO_BYTE_MEMO)
+								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+						tokenCreate("inValidMemoWithMultiByteChars")
+								.entityMemo(inValidMemoWithMultiByteChars)
+								.hasPrecheck(MEMO_TOO_LONG),
+						tokenCreate("inValidMemoWithMultiByteChars")
+								.entityMemo(stringOf49Bytes + SINGLE_BYTE_CHAR + MULTI_BYTE_CHAR + stringOf49Bytes)
+								.hasPrecheck(MEMO_TOO_LONG),
+						tokenCreate(secondary)
+								.entityMemo(stringOf49Bytes + MULTI_BYTE_CHAR + stringOf49Bytes),
+						tokenAssociate("firstUser", primary)
+								.memo(inValidMemoWithMultiByteChars)
+								.hasPrecheck(MEMO_TOO_LONG)
+				);
+	}
+
+	private HapiApiSpec scheduleOps() {
+		final String defaultWhitelist =
+				HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist");
+		var primary = "primary";
+		var secondary = "secondary";
+		var toScheduleOp1 = cryptoCreate("test");
+		var toScheduleOp2 = cryptoCreate("test").balance(1L);
+		return defaultHapiSpec("MemoValidationsOnScheduleOps")
+				.given(
+						overriding("scheduling.whitelist", "CryptoCreate"),
+						scheduleCreate(primary, toScheduleOp1)
+								.blankMemo()
+				)
+				.when(
+						scheduleSign(primary)
+								.memo(longMemo)
+								.hasPrecheck(MEMO_TOO_LONG),
+						scheduleSign(primary)
+								.memo(ZERO_BYTE_MEMO)
+								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+						scheduleSign(primary)
+								.memo(inValidMemoWithMultiByteChars)
+								.hasPrecheck(MEMO_TOO_LONG),
+						scheduleSign(primary)
+								.memo(stringOf49Bytes + SINGLE_BYTE_CHAR + MULTI_BYTE_CHAR + stringOf49Bytes)
+								.hasPrecheck(MEMO_TOO_LONG)
+				)
+				.then(
+						scheduleCreate(secondary, toScheduleOp2)
+								.withEntityMemo(longMemo)
+								.hasPrecheck(MEMO_TOO_LONG),
+						scheduleCreate(secondary, toScheduleOp2)
+								.withEntityMemo(ZERO_BYTE_MEMO)
+								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+						scheduleCreate("inValidMemoWithMultiByteChars", toScheduleOp2)
+								.withEntityMemo(inValidMemoWithMultiByteChars)
+								.hasPrecheck(MEMO_TOO_LONG),
+						scheduleCreate(secondary, toScheduleOp2)
+								.withEntityMemo(validMemoWithMultiByteChars),
+						scheduleCreate("validMemo1", toScheduleOp1.balance(100L))
+								.withEntityMemo(stringOf49Bytes + MULTI_BYTE_CHAR + stringOf49Bytes),
+						scheduleCreate("validMemo2", toScheduleOp2.entityMemo(validMemoWithMultiByteChars))
+								.withEntityMemo(stringOf49Bytes + SINGLE_BYTE_CHAR + SINGLE_BYTE_CHAR + stringOf49Bytes),
+						scheduleCreate("invalidMemo", toScheduleOp2.balance(200L))
+								.withEntityMemo(stringOf49Bytes + SINGLE_BYTE_CHAR + MULTI_BYTE_CHAR + stringOf49Bytes)
+								.hasPrecheck(MEMO_TOO_LONG),
+						overriding("scheduling.whitelist", defaultWhitelist)
+				);
+	}
+
+	private HapiApiSpec topicOps() {
+		var primary = "primary";
+		var secondary = "secondary";
+		return defaultHapiSpec("MemoValidationsOnTopicOps")
+				.given(
+						newKeyNamed("adminKey"),
+						createTopic(primary)
+								.adminKeyName("adminKey")
+								.blankMemo()
+				)
+				.when(
+						updateTopic(primary)
+								.topicMemo(longMemo)
+								.hasKnownStatus(MEMO_TOO_LONG),
+						updateTopic(primary)
+								.topicMemo(ZERO_BYTE_MEMO)
+								.hasKnownStatus(INVALID_ZERO_BYTE_IN_STRING),
+						updateTopic(primary)
+								.topicMemo(inValidMemoWithMultiByteChars)
+								.hasKnownStatus(MEMO_TOO_LONG),
+						updateTopic(primary)
+								.topicMemo(stringOf49Bytes + MULTI_BYTE_CHAR + stringOf49Bytes),
+						updateTopic(primary)
+								.topicMemo(stringOf49Bytes + SINGLE_BYTE_CHAR + MULTI_BYTE_CHAR + stringOf49Bytes)
+								.hasKnownStatus(MEMO_TOO_LONG)
+				)
+				.then(
+						createTopic(secondary)
+								.topicMemo(longMemo)
+								.hasKnownStatus(MEMO_TOO_LONG),
+						createTopic(secondary)
+								.topicMemo(ZERO_BYTE_MEMO)
+								.hasKnownStatus(INVALID_ZERO_BYTE_IN_STRING),
+						createTopic(secondary)
+								.topicMemo(validMemoWithMultiByteChars),
+						createTopic("inValidMemoWithMultiByteChars")
+								.topicMemo(inValidMemoWithMultiByteChars)
+								.hasKnownStatus(MEMO_TOO_LONG),
+						createTopic("validMemo1")
+								.topicMemo(stringOf49Bytes + MULTI_BYTE_CHAR + stringOf49Bytes),
+						createTopic("validMemo2")
+								.topicMemo(stringOf49Bytes + SINGLE_BYTE_CHAR + SINGLE_BYTE_CHAR + stringOf49Bytes),
+						createTopic("invalidMemo")
+								.topicMemo(stringOf49Bytes + SINGLE_BYTE_CHAR + MULTI_BYTE_CHAR + stringOf49Bytes)
+								.hasKnownStatus(MEMO_TOO_LONG)
+				);
+	}
+
+	private HapiApiSpec cryptoOps() {
+		var primary = "primary";
+		var secondary = "secondary";
+		return defaultHapiSpec("MemoValidationsOnCryptoOps")
+				.given(
+						cryptoCreate(primary)
+								.blankMemo()
+				)
+				.when(
+						cryptoUpdate(primary)
+								.entityMemo(longMemo)
+								.hasPrecheck(MEMO_TOO_LONG),
+						cryptoUpdate(primary)
+								.entityMemo(ZERO_BYTE_MEMO)
+								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+						cryptoUpdate(primary)
+								.entityMemo(inValidMemoWithMultiByteChars)
+								.hasPrecheck(MEMO_TOO_LONG),
+						cryptoUpdate(primary)
+								.entityMemo(stringOf49Bytes + MULTI_BYTE_CHAR + stringOf49Bytes),
+						cryptoUpdate(primary)
+								.entityMemo(stringOf49Bytes + SINGLE_BYTE_CHAR + MULTI_BYTE_CHAR + stringOf49Bytes)
+								.hasPrecheck(MEMO_TOO_LONG),
+						cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, primary, 1000L))
+								.memo(stringOf49Bytes + SINGLE_BYTE_CHAR + MULTI_BYTE_CHAR + stringOf49Bytes)
+								.hasPrecheck(MEMO_TOO_LONG)
+				)
+				.then(
+						cryptoCreate(secondary)
+								.entityMemo(longMemo)
+								.hasPrecheck(MEMO_TOO_LONG),
+						cryptoCreate(secondary)
+								.entityMemo(ZERO_BYTE_MEMO)
+								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+						cryptoCreate(secondary)
+								.entityMemo(inValidMemoWithMultiByteChars)
+								.hasPrecheck(MEMO_TOO_LONG),
+						cryptoCreate(secondary)
+								.entityMemo(stringOf49Bytes + SINGLE_BYTE_CHAR + MULTI_BYTE_CHAR + stringOf49Bytes)
+								.hasPrecheck(MEMO_TOO_LONG),
+						cryptoCreate(secondary)
+								.entityMemo(stringOf49Bytes + MULTI_BYTE_CHAR + stringOf49Bytes)
+				);
 	}
 
 	private HapiApiSpec memoValidations() {
-		char singleByteChar = 'a';
-		char multiByteChar = 'ф';
-
-		byte[] longBytes = new byte[1000];
-		byte[] validBytes = new byte[100];
-		byte[] inValidBytes = new byte[101];
-		byte[] bytes_49 = new byte[49];
-		Arrays.fill(longBytes, (byte) 33);
-		Arrays.fill(validBytes, (byte)multiByteChar);
-		Arrays.fill(inValidBytes, (byte)multiByteChar);
-		Arrays.fill(bytes_49, (byte)singleByteChar);
-
-		String longMemo = new String(longBytes, StandardCharsets.UTF_8);
-		String validMemoWithMultiByteChars = new String(validBytes, StandardCharsets.UTF_8);
-		String inValidMemoWithMultiByteChars = new String(inValidBytes, StandardCharsets.UTF_8);
-		String stringOf49Bytes = new String(bytes_49, StandardCharsets.UTF_8);
-
 		return defaultHapiSpec("MemoValidations")
 				.given().when().then(
 						createTopic("testTopic")
@@ -72,12 +316,23 @@ public class MemoValidation extends HapiApiSuite {
 								.topicMemo(inValidMemoWithMultiByteChars)
 								.hasKnownStatus(MEMO_TOO_LONG),
 						createTopic("validMemo1")
-								.topicMemo(stringOf49Bytes + multiByteChar + stringOf49Bytes),
+								.topicMemo(stringOf49Bytes + MULTI_BYTE_CHAR + stringOf49Bytes),
 						createTopic("validMemo2")
-								.topicMemo(stringOf49Bytes + singleByteChar + singleByteChar + stringOf49Bytes),
+								.topicMemo(stringOf49Bytes + SINGLE_BYTE_CHAR + SINGLE_BYTE_CHAR + stringOf49Bytes),
 						scheduleCreate("invalidMemo", cryptoCreate("test"))
-								.withEntityMemo(stringOf49Bytes + singleByteChar + multiByteChar + stringOf49Bytes)
-								.hasKnownStatus(MEMO_TOO_LONG)
+								.withEntityMemo(stringOf49Bytes + SINGLE_BYTE_CHAR + MULTI_BYTE_CHAR + stringOf49Bytes)
+								.hasPrecheck(MEMO_TOO_LONG)
 				);
+	}
+
+	private void setUpByteArrays() {
+		Arrays.fill(LONG_BYTES, (byte) 33);
+		Arrays.fill(VALID_BYTES, (byte)MULTI_BYTE_CHAR);
+		Arrays.fill(INVALID_BYTES, (byte)MULTI_BYTE_CHAR);
+		Arrays.fill(BYTES_49, (byte)SINGLE_BYTE_CHAR);
+		longMemo = new String(LONG_BYTES, StandardCharsets.UTF_8);
+		validMemoWithMultiByteChars = new String(VALID_BYTES, StandardCharsets.UTF_8);
+		inValidMemoWithMultiByteChars = new String(INVALID_BYTES, StandardCharsets.UTF_8);
+		stringOf49Bytes = new String(BYTES_49, StandardCharsets.UTF_8);
 	}
 }
