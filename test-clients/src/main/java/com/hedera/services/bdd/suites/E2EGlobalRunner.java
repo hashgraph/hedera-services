@@ -197,12 +197,12 @@ public class E2EGlobalRunner {
 		runConsensusSuites();
 //		runContractOpCodesSuites();
 //		runContractRecordsSuites();
-//		runContractSuites();
-//		runCryptoSuites();
-//		runFeesSuites();
-//		runFileNegativeSuites();
-//		runFilePositiveSuites();
-//		runFileSuites();
+		runContractSuites();
+		runCryptoSuites();
+		runFeesSuites();
+		runFileNegativeSuites();
+		runFilePositiveSuites();
+		runFileSuites();
 //		runFreezeSuites();
 //		runIssuesSuites();
 //		runMetaSuites();
@@ -210,10 +210,10 @@ public class E2EGlobalRunner {
 //		runReconnectSuites();
 //		runRecordsSuites();
 //		runRegressionSuites();
-//		runScheduleSuites();
+		runScheduleSuites();
 //		runStreamingSuites();
 //		runThrottlingSuites();
-//		runTokenSuites();
+		runTokenSuites();
 	}
 
 	// Covered
