@@ -135,7 +135,7 @@ jobs:
           path: results.csv
 
       - name: Comment with E2E results
-      - uses: harupy/comment-on-pr@master
+        uses: harupy/comment-on-pr@master
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
