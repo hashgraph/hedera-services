@@ -152,7 +152,8 @@ class DeterministicThrottlingTest {
 		// then:
 		assertEquals(0L, gasLimitDeterministicThrottle.getCapacity());
 		assertThat(logCaptor.errorLogs(),
-				contains("ThrottleByGas global dynamic property is set to true but totalAllowedGasPerSec is not set in throttles.json or is set to 0."));
+				contains("ThrottleByGas global dynamic property is set to true but totalAllowedGasPerSecFrontend is not set in throttles.json or is set to 0.",
+						"ThrottleByGas global dynamic property is set to true but totalAllowedGasPerSecConsensus is not set in throttles.json or is set to 0."));
 	}
 
 	@Test
@@ -313,7 +314,7 @@ class DeterministicThrottlingTest {
 	void frontEndContractCreateTXCallsFrontendGasThrottle() throws IOException {
 		Instant now = Instant.now();
 		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
-		defs.setTotalAllowedGasPerSec(1_000L);
+		defs.setTotalAllowedGasPerSecFrontend(1_000L);
 
 		//setup:
 		givenFunction(ContractCreate);
@@ -344,7 +345,7 @@ class DeterministicThrottlingTest {
 	void backEndContractCallTXCallsBackendGasThrottle() throws IOException {
 		Instant now = Instant.now();
 		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
-		defs.setTotalAllowedGasPerSec(1_000L);
+		defs.setTotalAllowedGasPerSecConsensus(1_000L);
 
 		//setup:
 		givenFunction(ContractCreate);
@@ -376,7 +377,7 @@ class DeterministicThrottlingTest {
 	void backEndContractCallTxCalls() throws IOException {
 		Instant now = Instant.now();
 		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
-		defs.setTotalAllowedGasPerSec(1L);
+		defs.setTotalAllowedGasPerSecConsensus(1L);
 		var miscUtilsHandle = mockStatic(MiscUtils.class);
 		miscUtilsHandle.when(() -> MiscUtils.isConsensusThrottled(ContractCall)).thenReturn(false);
 		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
@@ -391,10 +392,8 @@ class DeterministicThrottlingTest {
 	void verifyLeakUnusedGas() throws IOException {
 		Instant now = Instant.now();
 		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
-		defs.setTotalAllowedGasPerSec(10L);
+		defs.setTotalAllowedGasPerSecConsensus(10L);
 		var contractCallLocal = mock(ContractCallLocalQuery.class);
-		given(query.getContractCallLocal()).willReturn(contractCallLocal);
-		given(contractCallLocal.getGas()).willReturn(101L);
 		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
 
 		subject.rebuildFor(defs);
