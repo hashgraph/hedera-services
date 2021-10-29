@@ -25,6 +25,11 @@ import com.hedera.services.txns.PreFetchableTransition;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.TransitionLogicLookup;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,6 +49,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.txns.prefetch.PrefetchProcessor.MINIMUM_QUEUE_CAPACITY;
 import static com.hedera.services.txns.prefetch.PrefetchProcessor.MINIMUM_THREAD_POOL_SIZE;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.hamcrest.core.IsNot.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -52,7 +60,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
-@ExtendWith({ MockitoExtension.class })
+@ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 @MockitoSettings(strictness = Strictness.LENIENT)
 class PrefetchProcessorTest {
     @Mock NodeLocalProperties properties;
@@ -60,6 +68,9 @@ class PrefetchProcessorTest {
     @Mock PlatformTxnAccessor accessor;
     @Mock PreFetchableTransition logic;
 
+    @LoggingTarget
+    LogCaptor logCaptor;
+    @LoggingSubject
     PrefetchProcessor processor;
 
     @AfterEach
@@ -151,6 +162,9 @@ class PrefetchProcessorTest {
         processor.offer(accessor);
 
         assertEquals(0, queue.size());
+        assertThat(
+                logCaptor.warnLogs(),
+                not(contains(Matchers.startsWith("Pre-fetch queue is FULL"))));
     }
 
     @Test
@@ -162,6 +176,9 @@ class PrefetchProcessorTest {
 
         assertTrue(processor.offer(accessor));
         assertFalse(processor.offer(accessor));
+        assertThat(
+                logCaptor.warnLogs(),
+                contains(Matchers.startsWith("Pre-fetch queue is FULL")));
     }
 
     @Test

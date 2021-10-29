@@ -96,17 +96,19 @@ public class PrefetchProcessor {
 
         if (!opt.isEmpty()) {
             final var logic = opt.get();
-            if (logic instanceof PreFetchableTransition && queue.offer(() -> {
-                try {
-                    ((PreFetchableTransition) logic).preFetch(accessor);
-                } catch (RuntimeException e) {
-                    logger.warn("Exception thrown during pre-fetch", e);
+            if (logic instanceof PreFetchableTransition) {
+                if (queue.offer(() -> {
+                    try {
+                        ((PreFetchableTransition) logic).preFetch(accessor);
+                    } catch (RuntimeException e) {
+                        logger.warn("Exception thrown during pre-fetch", e);
+                    }
+                })) {
+                    return true;
                 }
-            })) {
-                return true;
-            }
 
-            logger.warn("Pre-fetch queue is FULL!");
+                logger.warn("Pre-fetch queue is FULL!");
+            }
         }
         return false;
     }

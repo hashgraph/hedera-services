@@ -118,7 +118,7 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 					.code(code)
 					.build();
 		} catch (RuntimeException e) {
-			logger.warn("Error fetching code from cache", e.getCause());
+			logger.warn("Error fetching code from cache", e);
 			throw new InvalidTransactionException(ResponseCodeEnum.FAIL_INVALID);
 		}
 	}
