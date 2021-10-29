@@ -53,7 +53,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	private EnumMap<HederaFunctionality, ThrottleReqsManager> functionReqs = new EnumMap<>(HederaFunctionality.class);
 
 	private GasLimitDeterministicThrottle frontEndGasThrottle;
-	private GasLimitDeterministicThrottle backEndGasThrottle;
+	private GasLimitDeterministicThrottle consensusGasThrottle;
 
 	public DeterministicThrottling(
 			IntSupplier capacitySplitSource,
@@ -92,7 +92,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	public boolean shouldThrottleConsensusTxn(TxnAccessor accessor, Instant now) {
 		if (MiscUtils.isConsensusThrottled(accessor.getFunction()) &&
 				dynamicProperties.shouldThrottleByGas() &&
-				(backEndGasThrottle == null || !backEndGasThrottle.allow(now, MiscUtils.getContractTXGasLimit(accessor)))) {
+				(consensusGasThrottle == null || !consensusGasThrottle.allow(now, MiscUtils.getContractTXGasLimit(accessor)))) {
 			return true;
 		}
 		return shouldThrottleTXOpsPerSec(accessor, now);
@@ -112,7 +112,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	}
 
 	public void leakUnusedGasPreviouslyReserved(long value) {
-		backEndGasThrottle.leakUnusedGasPreviouslyReserved(value);
+		consensusGasThrottle.leakUnusedGasPreviouslyReserved(value);
 	}
 
 	@Override
@@ -171,11 +171,15 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		activeThrottles = newActiveThrottles;
 
 		if(dynamicProperties.shouldThrottleByGas()) {
-			if(defs.getTotalAllowedGasPerSec() == 0) {
-				log.error("ThrottleByGas global dynamic property is set to true but totalAllowedGasPerSec is not set in throttles.json or is set to 0.");
+			if(defs.getTotalAllowedGasPerSecFrontend() == 0) {
+				log.error("ThrottleByGas global dynamic property is set to true but totalAllowedGasPerSecFrontend is not set in throttles.json or is set to 0.");
 			} else {
-				frontEndGasThrottle = new GasLimitDeterministicThrottle(defs.getTotalAllowedGasPerSec());
-				backEndGasThrottle = new GasLimitDeterministicThrottle(defs.getTotalAllowedGasPerSec());
+				frontEndGasThrottle = new GasLimitDeterministicThrottle(defs.getTotalAllowedGasPerSecFrontend());
+			}
+			if(defs.getTotalAllowedGasPerSecConsensus() == 0) {
+				log.error("ThrottleByGas global dynamic property is set to true but totalAllowedGasPerSecConsensus is not set in throttles.json or is set to 0.");
+			} else {
+				consensusGasThrottle = new GasLimitDeterministicThrottle(defs.getTotalAllowedGasPerSecConsensus());
 			}
 		}
 
