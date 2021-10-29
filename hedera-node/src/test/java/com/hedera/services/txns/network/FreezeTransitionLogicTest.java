@@ -58,7 +58,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_UPDATE_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_UPGRADE_IN_PROGRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_FREEZE_IS_SCHEDULED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_UPGRADE_HAS_BEEN_PREPARED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UPDATE_FILE_HASH_CHANGED_SINCE_PREPARE_UPGRADE;
@@ -265,31 +264,12 @@ class FreezeTransitionLogicTest {
 	}
 
 	@Test
-	void rejectsPostConsensusFreezeAbortWithNoPendingFreezeOrPreparedUpgrade() {
+	void acceptsFreezeAbortEvenWithNoPendingFreezeOrPreparedUpgrade() {
 		givenTypicalTxnInCtx(false, FREEZE_ABORT, Optional.empty(), Optional.empty());
-
-		assertFailsWith(() -> subject.doStateTransition(), NO_FREEZE_IS_SCHEDULED);
-	}
-
-	@Test
-	void performsFreezeAbortWithJustPreparedUpgrade() {
-		givenTypicalTxnInCtx(false, FREEZE_ABORT, Optional.empty(), Optional.empty());
-		given(networkCtx.hasPreparedUpgrade()).willReturn(true);
 
 		subject.doStateTransition();
 
 		verify(upgradeActions).abortScheduledFreeze();
-	}
-
-	@Test
-	void freezeAbortWithPendingFreezeWorks() {
-		givenTypicalTxnInCtx(false, FREEZE_ABORT, Optional.empty(), Optional.empty());
-		given(upgradeActions.isFreezeScheduled()).willReturn(true);
-
-		subject.doStateTransition();
-
-		verify(upgradeActions).abortScheduledFreeze();
-		verify(networkCtx).discardPreparedUpgradeMeta();
 	}
 
 	@Test
