@@ -29,6 +29,7 @@ import com.hedera.services.bdd.spec.transactions.TxnFactory;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -58,6 +59,7 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 	private Optional<String> newKey = Optional.empty();
 	private Optional<String> newMemo = Optional.empty();
 	private Optional<Long> newAutoRenew = Optional.empty();
+	private Optional<String> newBytecodeFile = Optional.empty();
 	private boolean wipeToThresholdKey = false;
 	private boolean useEmptyAdminKeyList = false;
 	private boolean useDeprecatedMemoField = false;
@@ -85,6 +87,10 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 	}
 	public HapiContractUpdate newMemo(String s) {
 		newMemo = Optional.of(s);
+		return this;
+	}
+	public HapiContractUpdate bytecode(String fileName) {
+		newBytecodeFile = Optional.of(fileName);
 		return this;
 	}
 	public HapiContractUpdate newAutoRenew(long autoRenewSecs) {
@@ -124,11 +130,13 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		Optional<Key> key = newKey.map(spec.registry()::getKey);
+		FileID newBytecodeFileId = TxnUtils.asFileId(newBytecodeFile.get(), spec);
 		ContractUpdateTransactionBody opBody = spec
 				.txns()
 				.<ContractUpdateTransactionBody, ContractUpdateTransactionBody.Builder>body(
 						ContractUpdateTransactionBody.class, b -> {
 							b.setContractID(spec.registry().getContractId(contract));
+							b.setFileID(newBytecodeFileId);
 							if (useDeprecatedAdminKey) {
 								b.setAdminKey(DEPRECATED_CID_ADMIN_KEY);
 							} else if (wipeToThresholdKey) {
