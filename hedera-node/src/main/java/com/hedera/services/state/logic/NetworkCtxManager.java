@@ -163,7 +163,7 @@ public class NetworkCtxManager {
 			and to throttle ContractCreate and ContractCall TXs by gas actually used in the last second.*/
 		if(handleThrottling.shouldThrottleConsensusTxn(accessor) &&
 				(accessor.getFunction().equals(ContractCall) || accessor.getFunction().equals(ContractCreate))){
-			return ResponseCodeEnum.BUSY;
+			return ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 		}
 
 		feeMultiplierSource.updateMultiplier(networkCtx.get().consensusTimeOfLastHandledTxn());

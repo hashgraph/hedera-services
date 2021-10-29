@@ -39,7 +39,6 @@ import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,7 +54,7 @@ import java.util.function.BiPredicate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -64,7 +63,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
@@ -182,25 +180,25 @@ class NetworkCtxManagerTest {
 	}
 
 	@Test
-	void whenContractCallThrottledPrepareReturnsBusyStatus() {
+	void whenContractCallThrottledPrepareReturnsCorrectStatus() {
 
 		given(txnAccessor.getFunction()).willReturn(ContractCall);
 		given(handleThrottling.shouldThrottleConsensusTxn(txnAccessor)).willReturn(true);
 
 		// then:
-		assertEquals(BUSY, subject.prepareForIncorporating(txnAccessor));
+		assertEquals(CONSENSUS_GAS_EXHAUSTED, subject.prepareForIncorporating(txnAccessor));
 		verify(handleThrottling).shouldThrottleConsensusTxn(txnAccessor);
 		verify(feeMultiplierSource, never()).updateMultiplier(any());
 	}
 
 	@Test
-	void whenContractCreateThrottledPrepareReturnsBusyStatus() {
+	void whenContractCreateThrottledPrepareReturnsCorrectStatus() {
 
 		given(txnAccessor.getFunction()).willReturn(ContractCreate);
 		given(handleThrottling.shouldThrottleConsensusTxn(txnAccessor)).willReturn(true);
 
 		// then:
-		assertEquals(BUSY, subject.prepareForIncorporating(txnAccessor));
+		assertEquals(CONSENSUS_GAS_EXHAUSTED, subject.prepareForIncorporating(txnAccessor));
 		verify(handleThrottling).shouldThrottleConsensusTxn(txnAccessor);
 		verify(feeMultiplierSource, never()).updateMultiplier(any());
 	}
