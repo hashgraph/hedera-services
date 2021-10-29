@@ -22,6 +22,8 @@ package com.hedera.services.store.contracts;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.virtual.ContractKey;
@@ -71,12 +73,13 @@ class StaticEntityAccessTest {
 	private ContractKey contractKey = new ContractKey(id.getAccountNum(), uint256Key.toArray());
 	private VirtualBlobKey blobKey = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE,
 			(int) id.getAccountNum());
+	private static final JKey key = new JEd25519Key("aBcDeFgHiJkLmNoPqRsTuVwXyZ012345".getBytes());
 	private ContractValue contractVal = new ContractValue(BigInteger.ONE);
 	private VirtualBlobValue blobVal = new VirtualBlobValue("data".getBytes());
 
-
 	private MerkleAccount someAccount = new HederaAccountCustomizer()
 			.isReceiverSigRequired(false)
+			.key(key)
 			.proxy(EntityId.MISSING_ENTITY_ID)
 			.isDeleted(false)
 			.expiry(1234L)
@@ -111,7 +114,11 @@ class StaticEntityAccessTest {
 		assertEquals(someAccount.isDeleted(), subject.isDeleted(id));
 		assertTrue(subject.isExtant(id));
 		assertFalse(subject.isExtant(nonExtantId));
-		assertEquals(someAccount, subject.lookup(id));
+		assertEquals(someAccount.getMemo(), subject.getMemo(id));
+		assertEquals(someAccount.getExpiry(), subject.getExpiry(id));
+		assertEquals(someAccount.getAutoRenewSecs(), subject.getAutoRenew(id));
+		assertEquals(someAccount.getAccountKey(), subject.getKey(id));
+		assertEquals(someAccount.getProxy(), subject.getProxy(id));
 	}
 
 	@Test

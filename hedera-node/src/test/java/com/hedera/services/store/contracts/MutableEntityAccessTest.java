@@ -22,7 +22,9 @@ package com.hedera.services.store.contracts;
 
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
@@ -38,6 +40,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -63,9 +66,13 @@ class MutableEntityAccessTest {
 
 	private MutableEntityAccess subject;
 
+	private final long autoRenewSecs = Instant.now().getEpochSecond();
 	private final AccountID id = IdUtils.asAccount("0.0.1234");
 	private final long balance = 1234L;
-	private final MerkleAccount merkleAccount = new MerkleAccount();
+	private final long expiry = 5678L;
+	private final String memo = "memo";
+	private final EntityId proxy = EntityId.MISSING_ENTITY_ID;
+	private static final JKey key = new JEd25519Key("aBcDeFgHiJkLmNoPqRsTuVwXyZ012345".getBytes());
 
 	private final UInt256 contractStorageKey = UInt256.ONE;
 	private final ContractKey expectedContractKey = new ContractKey(id.getAccountNum(), contractStorageKey.toArray());
@@ -148,17 +155,73 @@ class MutableEntityAccessTest {
 	}
 
 	@Test
-	void looksUpAccount() {
+	void getsKey() {
 		// given:
-		given(ledger.get(id)).willReturn(merkleAccount);
+		given(ledger.key(id)).willReturn(key);
 
 		// when:
-		final var result = subject.lookup(id);
+		final var result = subject.getKey(id);
 
 		// then:
-		assertEquals(merkleAccount, result);
+		assertEquals(key, result);
 		// and:
-		verify(ledger).get(id);
+		verify(ledger).key(id);
+	}
+
+	@Test
+	void getsMemo() {
+		// given:
+		given(ledger.memo(id)).willReturn(memo);
+
+		// when:
+		final var result = subject.getMemo(id);
+
+		// then:
+		assertEquals(memo, result);
+		// and:
+		verify(ledger).memo(id);
+	}
+
+	@Test
+	void getsExpiry() {
+		// given:
+		given(ledger.expiry(id)).willReturn(expiry);
+
+		// when:
+		final var result = subject.getExpiry(id);
+
+		// then:
+		assertEquals(expiry, result);
+		// and:
+		verify(ledger).expiry(id);
+	}
+
+	@Test
+	void getsAutoRenew() {
+		// given:
+		given(ledger.autoRenewPeriod(id)).willReturn(autoRenewSecs);
+
+		// when:
+		final var result = subject.getAutoRenew(id);
+
+		// then:
+		assertEquals(autoRenewSecs, result);
+		// and:
+		verify(ledger).autoRenewPeriod(id);
+	}
+
+	@Test
+	void getsProxy() {
+		// given:
+		given(ledger.proxy(id)).willReturn(proxy);
+
+		// when:
+		final var result = subject.getProxy(id);
+
+		// then:
+		assertEquals(proxy, result);
+		// and:
+		verify(ledger).proxy(id);
 	}
 
 	@Test

@@ -26,7 +26,6 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -96,17 +95,16 @@ public class HederaWorldState implements HederaMutableWorldState {
 			validateTrue(entityAccess.isExtant(newlyCreated), FAIL_INVALID);
 			validateTrue(entityAccess.isExtant(sponsorAccount), FAIL_INVALID);
 
-			final var sponsor = entityAccess.lookup(sponsorAccount);
-			final var sponsorKey = sponsor.getAccountKey();
+			final var sponsorKey = entityAccess.getKey(sponsorAccount);
 			final var createdKey = (sponsorKey instanceof JContractIDKey)
 					? STATIC_PROPERTIES.scopedContractKeyWith(newlyCreated.getAccountNum())
 					: sponsorKey;
 			var customizer = new HederaAccountCustomizer()
 					.key(createdKey)
-					.memo(sponsor.getMemo())
-					.proxy(sponsor.getProxy())
-					.autoRenewPeriod(sponsor.getAutoRenewSecs())
-					.expiry(sponsor.getExpiry())
+					.memo(entityAccess.getMemo(sponsorAccount))
+					.proxy(entityAccess.getProxy(sponsorAccount))
+					.autoRenewPeriod(entityAccess.getAutoRenew(sponsorAccount))
+					.expiry(entityAccess.getExpiry(sponsorAccount))
 					.isSmartContract(true);
 
 			entityAccess.customize(newlyCreated, customizer);
@@ -153,11 +151,10 @@ public class HederaWorldState implements HederaMutableWorldState {
 			return null;
 		}
 
-		MerkleAccount account = entityAccess.lookup(accountID);
-		final long expiry = account.getExpiry();
-		final long balance = account.getBalance();
-		final long autoRenewPeriod = account.getAutoRenewSecs();
-		return new WorldStateAccount(address, Wei.of(balance), expiry, autoRenewPeriod, account.getProxy());
+		final long expiry = entityAccess.getExpiry(accountID);
+		final long balance = entityAccess.getBalance(accountID);
+		final long autoRenewPeriod = entityAccess.getAutoRenew(accountID);
+		return new WorldStateAccount(address, Wei.of(balance), expiry, autoRenewPeriod, entityAccess.getProxy(accountID));
 	}
 
 	public class WorldStateAccount implements Account {

@@ -38,7 +38,9 @@ import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
+import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -203,6 +205,20 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		subject.proxy(genesis);
 
 		verify(accountsLedger).get(genesis, PROXY);
+	}
+
+	@Test
+	void delegatesToCorrectMemoProperty() {
+		subject.memo(genesis);
+
+		verify(accountsLedger).get(genesis, MEMO);
+	}
+
+	@Test
+	void delegatesToCorrectKeyProperty() {
+		subject.key(genesis);
+
+		verify(accountsLedger).get(genesis, KEY);
 	}
 
 	@Test
