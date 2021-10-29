@@ -102,6 +102,22 @@ class MerkleSpecialFilesTest {
 	}
 
 	@Test
+	void updateClearsHashCache() {
+		subject.update(fid, stuff);
+		assertTrue(subject.hashMatches(fid, stuffHash), "Updated stuff should have SHA-384 hash");
+		subject.update(fid, stuffHash);
+		assertFalse(subject.getHashCache().containsKey(fid));
+	}
+
+	@Test
+	void appendClearsHashCache() {
+		subject.update(fid, stuff);
+		assertTrue(subject.hashMatches(fid, stuffHash), "Updated stuff should have SHA-384 hash");
+		subject.append(fid, stuffHash);
+		assertFalse(subject.getHashCache().containsKey(fid));
+	}
+
+	@Test
 	void updateAccomplishesTheExpected() {
 		subject.update(fid, stuff);
 

@@ -461,8 +461,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		} else {
 			final var maybePostUpgrade = dualState.getFreezeTime() != null;
 			if (maybePostUpgrade && dualState.getFreezeTime().equals(dualState.getLastFrozenTime())) {
-				/* This was an upgrade, discard now-obsolete preparation history */
+				/* This was an upgrade, discard now-obsolete preparation state */
 				networkCtx().discardPreparedUpgradeMeta();
+				dualState.setFreezeTime(null);
 			}
 			networkCtx().setStateVersion(StateVersions.CURRENT_VERSION);
 
