@@ -83,6 +83,22 @@ class HapiThrottlingTest {
 	}
 
 	@Test
+	void delegatesConsensusTxnWithSomeInstant() {
+		// setup:
+		final var accessor = SignedTxnAccessor.uncheckedFrom(Transaction.getDefaultInstance());
+
+		given(delegate.shouldThrottleConsensusTxn(any(), any())).willReturn(true);
+
+		// when:
+		var ans = subject.shouldThrottleConsensusTxn(accessor);
+
+		// then:
+		assertTrue(ans);
+		// and:
+		verify(delegate).shouldThrottleConsensusTxn(eq(accessor), any());
+	}
+
+	@Test
 	void unsupportedMethodsThrow() {
 		// expect:
 		assertThrows(UnsupportedOperationException.class, () -> subject.activeThrottlesFor(null));

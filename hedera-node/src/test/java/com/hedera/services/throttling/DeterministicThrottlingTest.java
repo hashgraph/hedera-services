@@ -27,12 +27,14 @@ import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hedera.services.throttles.BucketThrottle;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttles.GasLimitDeterministicThrottle;
+import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.SerdeUtils;
+import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -68,7 +70,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
@@ -132,6 +138,21 @@ class DeterministicThrottlingTest {
 
 		// then:
 		assertTrue(subject.shouldThrottleQuery(ContractCallLocal, consensusNow, query));
+	}
+
+	@Test
+	void shouldThrottleByGasAndTotalAllowedGasPerSecNotSetOrZero() throws IOException {
+		// setup:
+		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
+
+		// when:
+		subject.rebuildFor(defs);
+
+		// then:
+		assertEquals(0L, gasLimitDeterministicThrottle.getCapacity());
+		assertThat(logCaptor.errorLogs(),
+				contains("ThrottleByGas global dynamic property is set to true but totalAllowedGasPerSec is not set in throttles.json or is set to 0."));
 	}
 
 	@Test
@@ -284,7 +305,27 @@ class DeterministicThrottlingTest {
 	void requiresExplicitTimestamp() {
 		// expect:
 		assertThrows(UnsupportedOperationException.class, () -> subject.shouldThrottleTxn(accessor));
+		assertThrows(UnsupportedOperationException.class, () -> subject.shouldThrottleConsensusTxn(accessor));
 		assertThrows(UnsupportedOperationException.class, () -> subject.shouldThrottleQuery(FileGetInfo, query));
+	}
+
+	@Test
+	void frontEndContractCreateTXCallsFrontendGasThrottle() throws IOException {
+		Instant now = Instant.now();
+		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+		defs.setTotalAllowedGasPerSec(1_000L);
+
+		//setup:
+		givenFunction(ContractCreate);
+		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
+		given(accessor.getTxn()).willReturn(transactionBody);
+		given(transactionBody.getContractCreateInstance()).willReturn(createTransactionBody);
+		given(createTransactionBody.getGas()).willReturn(100_000L);
+
+		subject.rebuildFor(defs);
+
+		//when:
+		assertTrue(subject.shouldThrottleTxn(accessor, now));
 	}
 
 	@Test
@@ -293,14 +334,34 @@ class DeterministicThrottlingTest {
 
 		//setup:
 		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
-		givenFunction(ContractCreate);
+		givenFunction(ContractCall);
 
 		//when:
-		subject.shouldThrottleTxn(accessor, now);
+		assertTrue(subject.shouldThrottleTxn(accessor, now));
 	}
 
 	@Test
-	void frontEndContractCreateTXCallsFrontendGasThrottle() {
+	void backEndContractCallTXCallsBackendGasThrottle() throws IOException {
+		Instant now = Instant.now();
+		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+		defs.setTotalAllowedGasPerSec(1_000L);
+
+		//setup:
+		givenFunction(ContractCreate);
+		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
+		given(accessor.getTxn()).willReturn(transactionBody);
+		given(transactionBody.getContractCreateInstance()).willReturn(createTransactionBody);
+		given(createTransactionBody.getGas()).willReturn(100_000L);
+
+		//when:
+		subject.rebuildFor(defs);
+
+		//expect:
+		assertTrue(subject.shouldThrottleConsensusTxn(accessor, now));
+	}
+
+	@Test
+	void backEndContractCreateTXCallsBackendGasThrottle() {
 		Instant now = Instant.now();
 
 		//setup:
@@ -308,7 +369,39 @@ class DeterministicThrottlingTest {
 		givenFunction(ContractCall);
 
 		//when:
-		subject.shouldThrottleTxn(accessor, now);
+		subject.shouldThrottleConsensusTxn(accessor, now);
+	}
+
+	@Test
+	void backEndContractCallTxCalls() throws IOException {
+		Instant now = Instant.now();
+		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+		defs.setTotalAllowedGasPerSec(1L);
+		var miscUtilsHandle = mockStatic(MiscUtils.class);
+		miscUtilsHandle.when(() -> MiscUtils.isConsensusThrottled(ContractCall)).thenReturn(false);
+		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
+
+		subject.rebuildFor(defs);
+
+		assertTrue(subject.shouldThrottleConsensusTxn(accessor, now));
+		miscUtilsHandle.close();
+	}
+
+	@Test
+	void verifyLeakUnusedGas() throws IOException {
+		Instant now = Instant.now();
+		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+		defs.setTotalAllowedGasPerSec(10L);
+		var contractCallLocal = mock(ContractCallLocalQuery.class);
+		given(query.getContractCallLocal()).willReturn(contractCallLocal);
+		given(contractCallLocal.getGas()).willReturn(101L);
+		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
+
+		subject.rebuildFor(defs);
+
+		subject.leakUnusedGasPreviouslyReserved(100L);
+
+		assertTrue(subject.shouldThrottleQuery(ContractCall, now, query));
 	}
 
 	private void givenFunction(HederaFunctionality functionality) {

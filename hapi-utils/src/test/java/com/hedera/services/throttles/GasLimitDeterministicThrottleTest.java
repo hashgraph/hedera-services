@@ -130,4 +130,13 @@ class GasLimitDeterministicThrottleTest {
     void capacityReturnsCorrectValue() {
         assertEquals(DEFAULT_CAPACITY, subject.getCapacity());
     }
+
+    @Test
+    void verifyLeakUnusedGas() {
+        subject.allow(Instant.now(), 100L);
+        assertEquals(999_900L, subject.delegate().bucket().capacityFree());
+
+        subject.leakUnusedGasPreviouslyReserved(100L);
+        assertEquals(DEFAULT_CAPACITY, subject.delegate().bucket().capacityFree());
+    }
 }

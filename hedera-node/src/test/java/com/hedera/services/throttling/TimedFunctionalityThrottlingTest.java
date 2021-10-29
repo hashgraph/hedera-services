@@ -47,13 +47,16 @@ class TimedFunctionalityThrottlingTest {
 		// and:
 		Mockito.doCallRealMethod().when(subject).shouldThrottleQuery(FileGetInfo, query);
 		Mockito.doCallRealMethod().when(subject).shouldThrottleTxn(accessor);
+		Mockito.doCallRealMethod().when(subject).shouldThrottleConsensusTxn(accessor);
 
 		// when:
 		subject.shouldThrottleQuery(FileGetInfo, query);
 		subject.shouldThrottleTxn(accessor);
+		subject.shouldThrottleConsensusTxn(accessor);
 
 		// then:
 		verify(subject).shouldThrottleQuery(eq(FileGetInfo), any());
 		verify(subject).shouldThrottleTxn(eq(accessor), any());
+		verify(subject).shouldThrottleConsensusTxn(eq(accessor), any());
 	}
 }

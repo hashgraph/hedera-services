@@ -83,6 +83,21 @@ class TxnAwareHandleThrottlingTest {
 	}
 
 	@Test
+	void delegatesThrottlingConsensusTxnDecisionsWithConsensusTime() {
+		// setup:
+		final var accessor = SignedTxnAccessor.uncheckedFrom(Transaction.getDefaultInstance());
+
+		given(txnCtx.consensusTime()).willReturn(consensusTime);
+		given(delegate.shouldThrottleConsensusTxn(accessor, consensusTime)).willReturn(true);
+
+		// expect:
+		assertTrue(subject.shouldThrottleConsensusTxn(accessor));
+
+		// and:
+		verify(delegate).shouldThrottleConsensusTxn(accessor, consensusTime);
+	}
+
+	@Test
 	void otherMethodsPassThrough() {
 		// setup:
 		ThrottleDefinitions defs = new ThrottleDefinitions();

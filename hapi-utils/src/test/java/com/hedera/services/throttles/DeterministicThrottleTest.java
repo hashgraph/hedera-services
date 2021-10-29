@@ -253,9 +253,11 @@ class DeterministicThrottleTest {
 		final var bLast = Instant.ofEpochSecond(7_654_321L, 890);
 		final var a = new DeterministicThrottle.UsageSnapshot(aUsed, aLast);
 
-		assertEquals(a, new DeterministicThrottle.UsageSnapshot(aUsed, aLast));
-		assertNotEquals(null, a);
-		assertNotEquals(new Object(), a);
+		assertTrue(a.equals(a));
+		assertTrue(a.equals(new DeterministicThrottle.UsageSnapshot(aUsed, aLast)));
+		assertFalse(a.equals(null));
+		assertFalse(a.equals(new Object()));
+
 		assertNotEquals(a, new DeterministicThrottle.UsageSnapshot(bUsed, aLast));
 		assertNotEquals(a, new DeterministicThrottle.UsageSnapshot(aUsed, bLast));
 
