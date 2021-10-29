@@ -24,7 +24,9 @@ package com.hedera.services.store.contracts;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
@@ -66,8 +68,33 @@ public class StaticEntityAccess implements EntityAccess {
 	}
 
 	@Override
+	public long getAutoRenew(AccountID id) {
+		return accounts.get(fromAccountId(id)).getAutoRenewSecs();
+	}
+
+	@Override
 	public long getBalance(AccountID id) {
 		return accounts.get(fromAccountId(id)).getBalance();
+	}
+
+	@Override
+	public long getExpiry(AccountID id) {
+		return accounts.get(fromAccountId(id)).getExpiry();
+	}
+
+	@Override
+	public JKey getKey(AccountID id) {
+		return accounts.get(fromAccountId(id)).getAccountKey();
+	}
+
+	@Override
+	public String getMemo(AccountID id) {
+		return accounts.get(fromAccountId(id)).getMemo();
+	}
+
+	@Override
+	public EntityId getProxy(AccountID id) {
+		return accounts.get(fromAccountId(id)).getProxy();
 	}
 
 	@Override
@@ -78,11 +105,6 @@ public class StaticEntityAccess implements EntityAccess {
 	@Override
 	public boolean isExtant(AccountID id) {
 		return accounts.get(fromAccountId(id)) != null;
-	}
-
-	@Override
-	public MerkleAccount lookup(AccountID id) {
-		return accounts.get(fromAccountId(id));
 	}
 
 	@Override

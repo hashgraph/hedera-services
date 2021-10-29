@@ -31,6 +31,7 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -70,7 +71,9 @@ import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
+import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
@@ -537,6 +540,14 @@ public class HederaLedger {
 				&& !(boolean) accountsLedger.get(id, IS_SMART_CONTRACT)
 				&& (long) accountsLedger.get(id, BALANCE) == 0L
 				&& !validator.isAfterConsensusSecond((long) accountsLedger.get(id, EXPIRY));
+	}
+
+	public JKey key(AccountID id) {
+		return (JKey) accountsLedger.get(id, KEY);
+	}
+
+	public String memo(AccountID id) {
+		return (String) accountsLedger.get(id, MEMO);
 	}
 
 	public boolean isPendingCreation(AccountID id) {
