@@ -24,6 +24,7 @@ import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
@@ -76,6 +77,7 @@ class HederaWorldStateTest {
 	final Id sponsor = new Id(0, 0, 1);
 	final Id contract = new Id(0, 0, 2);
 	final Bytes code = Bytes.of("0x60606060".getBytes());
+	JKey key = new JContractIDKey(0, 0, 123L);
 
 	private HederaWorldState subject;
 
@@ -98,11 +100,9 @@ class HederaWorldStateTest {
 		verify(entityAccess, never()).customize(any(), any()); // will do 0 iterations
 
 		/* happy path with 1 existing account */
-		final var merkleAcc = mock(MerkleAccount.class);
-		given(entityAccess.lookup(any())).willReturn(merkleAcc);
-		given(merkleAcc.getMemo()).willReturn("memo");
-		given(merkleAcc.getProxy()).willReturn(EntityId.MISSING_ENTITY_ID);
-		given(merkleAcc.getAutoRenewSecs()).willReturn(100L);
+		given(entityAccess.getMemo(any())).willReturn("memo");
+		given(entityAccess.getProxy(any())).willReturn(EntityId.MISSING_ENTITY_ID);
+		given(entityAccess.getAutoRenew(any())).willReturn(100L);
 		var updater = subject.updater();
 		updater.getSponsorMap().put(Address.RIPEMD160, Address.RIPEMD160);
 		updater.commit();
@@ -124,10 +124,7 @@ class HederaWorldStateTest {
 		final var sponsoredAddress = asSolidityAddress(sponsoredId);
 
 		given(entityAccess.isExtant(any())).willReturn(true);
-
-		final var sponsor = new MerkleAccount();
-		sponsor.setAccountKey(new JContractIDKey(0, 0, 123L));
-		given(entityAccess.lookup(sponsorId)).willReturn(sponsor);
+		given(entityAccess.getKey(sponsorId)).willReturn(new JContractIDKey(0, 0, 123L));
 
 		final var updater = subject.updater();
 		updater.getSponsorMap().put(
@@ -145,7 +142,7 @@ class HederaWorldStateTest {
 		final var key = standin.getAccountKey();
 
 		assertInstanceOf(JContractIDKey.class, key);
-		assertEquals(sponsoredId.getAccountNum(), ((JContractIDKey)key).getContractID().getContractNum());
+		assertEquals(sponsoredId.getAccountNum(), ((JContractIDKey) key).getContractID().getContractNum());
 	}
 
 	@Test
@@ -189,13 +186,12 @@ class HederaWorldStateTest {
 
 	@Test
 	void get() {
-		final var merkleAccount = mock(MerkleAccount.class);
-		given(merkleAccount.getProxy()).willReturn(new EntityId(0, 0, 1));
-		given(merkleAccount.getBalance()).willReturn(balance);
-		given(merkleAccount.getAutoRenewSecs()).willReturn(100L);
+		final var account = accountParsedFromSolidityAddress(Address.RIPEMD160.toArray());
+		given(entityAccess.getProxy(account)).willReturn(new EntityId(0, 0, 1));
+		given(entityAccess.getBalance(account)).willReturn(balance);
+		given(entityAccess.getAutoRenew(account)).willReturn(100L);
 		given(entityAccess.isExtant(any())).willReturn(true);
 		given(entityAccess.isDeleted(any())).willReturn(false);
-		given(entityAccess.lookup(accountParsedFromSolidityAddress(Address.RIPEMD160.toArray()))).willReturn(merkleAccount);
 		given(entityAccess.fetch(any())).willReturn(Bytes.EMPTY);
 		given(entityAccess.get(any(), any())).willReturn(UInt256.ZERO);
 
@@ -287,13 +283,12 @@ class HederaWorldStateTest {
 	void updaterGetsHederaAccount() throws NegativeAccountBalanceException {
 		// given:
 		final var zeroAddress = accountParsedFromSolidityAddress(Address.ZERO.toArray());
-		final var merkleAccount = new MerkleAccount();
-		merkleAccount.setBalance(balance);
-		merkleAccount.setProxy(new EntityId());
 		final var updater = subject.updater();
 		// and:
 		given(entityAccess.isExtant(zeroAddress)).willReturn(true);
-		given(entityAccess.lookup(zeroAddress)).willReturn(merkleAccount);
+		given(entityAccess.getBalance(zeroAddress)).willReturn(balance);
+		given(entityAccess.getProxy(zeroAddress)).willReturn(EntityId.MISSING_ENTITY_ID);
+		given(entityAccess.getAutoRenew(zeroAddress)).willReturn(123L);
 		// and:
 		final var expected = subject.new WorldStateAccount(Address.ZERO, Wei.of(balance), 0, 0, new EntityId());
 
@@ -307,7 +302,9 @@ class HederaWorldStateTest {
 		assertEquals(expected.getExpiry(), result.getExpiry());
 		// and:
 		verify(entityAccess).isExtant(zeroAddress);
-		verify(entityAccess).lookup(zeroAddress);
+		verify(entityAccess).getBalance(zeroAddress);
+		verify(entityAccess).getProxy(zeroAddress);
+		verify(entityAccess).getAutoRenew(zeroAddress);
 	}
 
 	@Test
