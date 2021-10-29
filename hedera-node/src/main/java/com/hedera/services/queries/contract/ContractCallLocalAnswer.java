@@ -21,6 +21,7 @@ package com.hedera.services.queries.contract;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallLocalExecutor;
 import com.hedera.services.queries.AbstractAnswer;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -39,6 +40,7 @@ import java.util.Optional;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCallLocal;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INDIVIDUAL_TX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
@@ -52,7 +54,8 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 	@Inject
 	public ContractCallLocalAnswer(
 			CallLocalExecutor callLocalExecutor,
-			OptionValidator validator) {
+			OptionValidator validator,
+			GlobalDynamicProperties properties) {
 		super(
 				ContractCallLocal,
 				query -> query.getContractCallLocal().getHeader().getPayment(),
@@ -62,6 +65,8 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 					var op = query.getContractCallLocal();
 					if (op.getGas() < 0) {
 						return CONTRACT_NEGATIVE_GAS;
+					} else if (op.getGas() > properties.maxGas()) {
+						return INDIVIDUAL_TX_GAS_LIMIT_EXCEEDED;
 					} else {
 						return validator.queryableContractStatus(op.getContractID(), view.contracts());
 					}

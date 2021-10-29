@@ -22,6 +22,7 @@ package com.hedera.services.queries.contract;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallLocalExecutor;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -42,6 +43,9 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -52,6 +56,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELET
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INDIVIDUAL_TX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -70,7 +75,7 @@ import static org.mockito.Mockito.verify;
 
 class ContractCallLocalAnswerTest {
 	private String node = "0.0.3";
-	private long gas = 123L;
+	private int gas = 123;
 	private long fee = 1_234L;
 	private String payer = "0.0.12345";
 	private Transaction paymentTxn;
@@ -83,6 +88,7 @@ class ContractCallLocalAnswerTest {
 	OptionValidator validator;
 	CallLocalExecutor callLocalExecutor;
 	MerkleMap<EntityNum, MerkleAccount> contracts;
+	GlobalDynamicProperties properties;
 
 	@BeforeEach
 	private void setup() throws Throwable {
@@ -91,17 +97,19 @@ class ContractCallLocalAnswerTest {
 
 		callLocalExecutor = mock(CallLocalExecutor.class);
 		validator = mock(OptionValidator.class);
-
+		properties = mock(GlobalDynamicProperties.class);
 		given(view.contracts()).willReturn(contracts);
 		given(validator.queryableContractStatus(target, contracts)).willReturn(OK);
 
-		subject = new ContractCallLocalAnswer(callLocalExecutor, validator);
+		subject = new ContractCallLocalAnswer(callLocalExecutor, validator, properties);
 	}
 
 	@Test
 	void rejectsInvalidCid() throws Throwable {
 		// given:
 		Query query = validQuery(COST_ANSWER, fee);
+		given(properties.maxGas()).willReturn(gas);
+
 		// and:
 		given(validator.queryableContractStatus(target, contracts)).willReturn(CONTRACT_DELETED);
 
@@ -119,6 +127,17 @@ class ContractCallLocalAnswerTest {
 
 		// expect:
 		assertEquals(CONTRACT_NEGATIVE_GAS, subject.checkValidity(query, view));
+	}
+
+	@Test
+	void rejectsGasLimitOverMaxGas() throws Throwable {
+
+		// given:
+		given(properties.maxGas()).willReturn(gas-1);
+		Query query = validQuery(COST_ANSWER, fee);
+
+		// expect:
+		assertEquals(INDIVIDUAL_TX_GAS_LIMIT_EXCEEDED, subject.checkValidity(query, view));
 	}
 
 	@Test
@@ -156,6 +175,7 @@ class ContractCallLocalAnswerTest {
 	void getsCostAnswerResponse() throws Throwable {
 		// setup:
 		Query query = validQuery(COST_ANSWER, fee);
+		given(properties.maxGas()).willReturn(gas);
 
 		// when:
 		Response response = subject.responseGiven(query, view, OK, fee);
@@ -173,6 +193,7 @@ class ContractCallLocalAnswerTest {
 		// setup:
 		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
 		Map<String, Object> queryCtx = new HashMap<>();
+		given(properties.maxGas()).willReturn(gas);
 
 		// expect:
 		assertThrows(IllegalStateException.class,
@@ -186,6 +207,7 @@ class ContractCallLocalAnswerTest {
 		Map<String, Object> queryCtx = new HashMap<>();
 		var cachedResponse = response(CONTRACT_EXECUTION_EXCEPTION);
 		queryCtx.put(ContractCallLocalAnswer.CONTRACT_CALL_LOCAL_CTX_KEY, cachedResponse);
+		given(properties.maxGas()).willReturn(gas);
 
 		// when:
 		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L, queryCtx);
@@ -208,6 +230,7 @@ class ContractCallLocalAnswerTest {
 		given(callLocalExecutor.execute(argThat(sensibleQuery.getContractCallLocal()::equals)))
 				.willReturn(executionResponse);
 
+		given(properties.maxGas()).willReturn(gas);
 		// when:
 		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
 
@@ -225,6 +248,7 @@ class ContractCallLocalAnswerTest {
 		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
 
 		given(callLocalExecutor.execute(any())).willThrow(RuntimeException.class);
+		given(properties.maxGas()).willReturn(gas);
 
 		// when:
 		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);

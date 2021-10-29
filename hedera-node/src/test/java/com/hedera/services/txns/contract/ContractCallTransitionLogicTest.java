@@ -22,6 +22,7 @@ package com.hedera.services.txns.contract;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.exceptions.InvalidTransactionException;
@@ -52,6 +53,7 @@ import java.util.List;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_BYTECODE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INDIVIDUAL_TX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -64,7 +66,7 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class ContractCallTransitionLogicTest {
 	final private ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
-	private long gas = 1_234L;
+	private int gas = 1_234;
 	private long sent = 1_234L;
 
 
@@ -84,6 +86,8 @@ class ContractCallTransitionLogicTest {
 	private CallEvmTxProcessor evmTxProcessor;
 	@Mock
 	private ServicesRepositoryRoot repositoryRoot;
+	@Mock
+	private GlobalDynamicProperties properties;
 
 	private TransactionBody contractCallTxn;
 	private final Instant consensusTime = Instant.now();
@@ -94,7 +98,14 @@ class ContractCallTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new ContractCallTransitionLogic(txnCtx, entityIdSource, accountStore, worldState, recordService, evmTxProcessor, repositoryRoot);
+		subject = new ContractCallTransitionLogic(txnCtx,
+				entityIdSource,
+				accountStore,
+				worldState,
+				recordService,
+				evmTxProcessor,
+				repositoryRoot,
+				properties);
 	}
 
 	@Test
@@ -169,8 +180,18 @@ class ContractCallTransitionLogicTest {
 	@Test
 	void acceptsOkSyntax() {
 		givenValidTxnCtx();
+		given(properties.maxGas()).willReturn(gas + 1);
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(contractCallTxn));
+	}
+
+	@Test
+	void providingGasOverLimitReturnsCorrectPrecheck() {
+		givenValidTxnCtx();
+		given(properties.maxGas()).willReturn(gas - 1);
+		// expect:
+		assertEquals(INDIVIDUAL_TX_GAS_LIMIT_EXCEEDED,
+				subject.semanticCheck().apply(contractCallTxn));
 	}
 
 	@Test

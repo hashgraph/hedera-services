@@ -21,6 +21,7 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
@@ -42,6 +43,7 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_BYTECODE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INDIVIDUAL_TX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.apache.commons.lang3.ArrayUtils.isNotEmpty;
 
@@ -54,6 +56,7 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 	private final TransactionRecordService recordService;
 	private final CallEvmTxProcessor evmTxProcessor;
 	private final ServicesRepositoryRoot repositoryRoot;
+	private final GlobalDynamicProperties properties;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validateSemantics;
 
@@ -65,7 +68,8 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 			HederaWorldState worldState,
 			TransactionRecordService recordService,
 			CallEvmTxProcessor evmTxProcessor,
-			ServicesRepositoryRoot repositoryRoot
+			ServicesRepositoryRoot repositoryRoot,
+			GlobalDynamicProperties properties
 	) {
 		this.txnCtx = txnCtx;
 		this.ids = ids;
@@ -74,6 +78,7 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 		this.recordService = recordService;
 		this.evmTxProcessor = evmTxProcessor;
 		this.repositoryRoot = repositoryRoot;
+		this.properties = properties;
 	}
 
 	@Override
@@ -140,6 +145,9 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 		}
 		if (op.getAmount() < 0) {
 			return CONTRACT_NEGATIVE_VALUE;
+		}
+		if (op.getGas() > properties.maxGas()) {
+			return INDIVIDUAL_TX_GAS_LIMIT_EXCEEDED;
 		}
 		return OK;
 	}

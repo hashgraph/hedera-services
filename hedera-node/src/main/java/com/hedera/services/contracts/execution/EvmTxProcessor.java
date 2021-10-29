@@ -131,7 +131,7 @@ abstract class EvmTxProcessor {
 	 * 		Receiving {@link Address}. For Create transactions, the newly created Contract address
 	 * @param gasPrice
 	 * 		GasPrice to use for gas calculations
-	 * @param providedGasLimit
+	 * @param gasLimit
 	 * 		Externally provided gas limit
 	 * @param value
 	 * 		Evm transaction value (HBars)
@@ -148,12 +148,9 @@ abstract class EvmTxProcessor {
 	 * @return the result of the EVM execution returned as {@link TransactionProcessingResult}
 	 */
 	protected TransactionProcessingResult execute(Account sender, Address receiver, long gasPrice,
-			long providedGasLimit, long value, Bytes payload, boolean contractCreation,
+			long gasLimit, long value, Bytes payload, boolean contractCreation,
 			Instant consensusTime, boolean isStatic, Optional<Long> expiry) {
-		final long gasLimit = providedGasLimit > dynamicProperties.maxGas()
-				? dynamicProperties.maxGas()
-				: providedGasLimit;
-		final Wei gasCost = Wei.of(Math.multiplyExact(providedGasLimit, gasPrice));
+		final Wei gasCost = Wei.of(Math.multiplyExact(gasLimit, gasPrice));
 		final Wei upfrontCost = gasCost.add(value);
 		final Gas intrinsicGas =
 				gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
@@ -220,20 +217,20 @@ abstract class EvmTxProcessor {
 			stackedUpdater.commit();
 		}
 
-		var gasUsedByTransaction = calculateGasUsedByTX(providedGasLimit, initialFrame);
+		var gasUsedByTransaction = calculateGasUsedByTX(gasLimit, initialFrame);
 
 		final Gas sbhRefund = updater.getSbhRefund();
 
 		if (!isStatic) {
 			// return gas price to accounts
-			final Gas refunded = Gas.of(providedGasLimit).minus(gasUsedByTransaction).plus(sbhRefund);
+			final Gas refunded = Gas.of(gasLimit).minus(gasUsedByTransaction).plus(sbhRefund);
 			final Wei refundedWei = refunded.priceFor(Wei.of(gasPrice));
 
 			mutableSender.incrementBalance(refundedWei);
 
 			/* Send TX fees to coinbase */
 			final var mutableCoinbase = updater.getOrCreate(coinbase).getMutable();
-			final Gas coinbaseFee = Gas.of(providedGasLimit).minus(refunded);
+			final Gas coinbaseFee = Gas.of(gasLimit).minus(refunded);
 
 			mutableCoinbase.incrementBalance(coinbaseFee.priceFor(Wei.of(gasPrice)));
 			initialFrame.getSelfDestructs().forEach(updater::deleteAccount);
