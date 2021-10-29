@@ -49,10 +49,9 @@ class VirtualMapFactoryTest {
 		assertThrows(UncheckedIOException.class, () -> factory.newVirtualizedStorage());
 	}
 
-	private static class ThrowingJdbFactoryBuilder implements
-			VirtualMapFactory.JasperDbBuilderFactory<VirtualKey, VirtualValue> {
+	private static class ThrowingJdbFactoryBuilder implements VirtualMapFactory.JasperDbBuilderFactory {
 		@Override
-		public JasperDbBuilder<VirtualKey, VirtualValue> newJdbBuilder() {
+		public <K extends VirtualKey, V extends VirtualValue> JasperDbBuilder<K, V> newJdbBuilder() {
 			throw new UncheckedIOException(new IOException("Oops!"));
 		}
 	}

@@ -45,19 +45,25 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.util.function.Function;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class FcmDumpTest {
+	private static final String OK_PATH = "src/test/resources/tmp.nothing";
+
 	long selfId = 1, round = 1_234_567;
 	NodeId self = new NodeId(false, selfId);
 
@@ -99,8 +105,6 @@ class FcmDumpTest {
 		given(state.tokens()).willReturn(tokens);
 		given(state.tokenAssociations()).willReturn(tokenAssociations);
 		given(state.scheduleTxs()).willReturn(scheduleTxs);
-//		// and:
-//		willThrow(IOException.class).given(out).writeMerkleTree(scheduleTxs);
 
 		// when:
 		subject.dumpFrom(state, self, round);
@@ -148,15 +152,14 @@ class FcmDumpTest {
 	@Test
 	void merkleSupplierWorks() {
 		// given:
-		var okPath = "src/test/resources/tmp.nothing";
 
 		// when:
-		var fout = FcmDump.merkleOutFn.apply(okPath);
+		var fout = FcmDump.merkleOutFn.apply(OK_PATH);
 		// and:
 		assertDoesNotThrow(() -> fout.writeUTF("Here is something"));
 
 		// cleanup:
-		(new File(okPath)).delete();
+		(new File(OK_PATH)).delete();
 	}
 
 	@Test
@@ -166,5 +169,18 @@ class FcmDumpTest {
 
 		// then:
 		assertDoesNotThrow(() -> FcmDump.merkleOutFn.apply(badPath));
+	}
+
+	@Test
+	void merkleSupplierFnPropagatesIoeUnchecked() {
+		final Function<OutputStream, MerkleDataOutputStream> mockMerkleOut = mock(Function.class);
+
+		FcmDump.setMerkleOut(mockMerkleOut);
+
+		given(mockMerkleOut.apply(any())).willThrow(UncheckedIOException.class);
+
+		assertThrows(UncheckedIOException.class, () -> FcmDump.merkleOutFn.apply(OK_PATH));
+
+		FcmDump.setMerkleOut(MerkleDataOutputStream::new);
 	}
 }

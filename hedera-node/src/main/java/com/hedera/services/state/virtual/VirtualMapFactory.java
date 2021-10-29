@@ -40,8 +40,8 @@ public class VirtualMapFactory {
 	private static final long MAX_IN_MEMORY_INTERNAL_HASHES = 0;
 
 	@FunctionalInterface
-	public interface JasperDbBuilderFactory<K extends VirtualKey, V extends VirtualValue>  {
-		JasperDbBuilder<K, V> newJdbBuilder();
+	public interface JasperDbBuilderFactory  {
+		<K extends VirtualKey, V extends VirtualValue> JasperDbBuilder<K, V> newJdbBuilder();
 	}
 
 	private final String jdbDataLoc;
@@ -69,8 +69,8 @@ public class VirtualMapFactory {
 						VirtualBlobValue::new,
 						false);
 
-		@SuppressWarnings("unchecked")
-		final VirtualDataSourceBuilder<VirtualBlobKey, VirtualBlobValue> dsBuilder = jdbBuilderFactory.newJdbBuilder()
+		final JasperDbBuilder<VirtualBlobKey, VirtualBlobValue> dsBuilder = jdbBuilderFactory.newJdbBuilder();
+		dsBuilder
 						.virtualLeafRecordSerializer(blobLeafRecordSerializer)
 						.virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
 						.keySerializer(blobKeySerializer)
@@ -96,8 +96,8 @@ public class VirtualMapFactory {
 						ContractValue::new,
 						true);
 
-		@SuppressWarnings("unchecked")
-		final VirtualDataSourceBuilder<ContractKey, ContractValue> dsBuilder = jdbBuilderFactory.newJdbBuilder()
+		final JasperDbBuilder<ContractKey, ContractValue> dsBuilder = jdbBuilderFactory.newJdbBuilder();
+		dsBuilder
 				.virtualLeafRecordSerializer(storageLeafRecordSerializer)
 				.virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
 				.keySerializer(storageKeySerializer)
@@ -115,5 +115,9 @@ public class VirtualMapFactory {
 
 	private String storageLoc() {
 		return jdbDataLoc + File.separator + "storage";
+	}
+
+	private <K1 extends VirtualKey, V1 extends VirtualValue> VirtualDataSourceBuilder<K1, V1> aTypedBuilder() {
+		return jdbBuilderFactory.newJdbBuilder();
 	}
 }
