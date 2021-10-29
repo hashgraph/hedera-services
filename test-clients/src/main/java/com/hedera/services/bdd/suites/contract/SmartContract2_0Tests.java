@@ -47,9 +47,9 @@ public class SmartContract2_0Tests extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-//				updateSemanticsWork(),
-//				thresholdAdminKeySemanticsWork(),
-//				deleteSemanticsWork(),
+				updateSemanticsWork(),
+				thresholdAdminKeySemanticsWork(),
+				deleteSemanticsWork(),
 				contractCallLocalMaxCallSizeIsIgnored()
 		);
 	}
