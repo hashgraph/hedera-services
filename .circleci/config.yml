@@ -887,10 +887,10 @@ workflows:
             - attach_workspace:
                 at: /
 
-  GCP-Daily-Services-Update-4N-1C:
+  GCP-Daily-Services-Update-4N-2C:
     triggers:
       - schedule:
-          cron: "5 2 * * *"
+          cron: "30 22,2 * * *"
           filters:
             branches:
               only:
@@ -902,7 +902,7 @@ workflows:
           regression_path: /swirlds-platform/regression
           result_path: results/4N_2C/Update
           config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Crypto-Update-4N-1C"
+          workflow-name: "GCP-Daily-Services-Crypto-Update-4N-2C"
           requires:
             - build-platform-and-services
           pre-steps:
@@ -910,10 +910,10 @@ workflows:
             - attach_workspace:
                 at: /
 
-  GCP-Daily-Services-Update-Reconnect-4N-1C:
+  GCP-Daily-Services-Update-Reconnect-4N-2C:
     triggers:
       - schedule:
-          cron: "10 2 * * *"
+          cron: "15 22,2 * * *"
           filters:
             branches:
               only:
@@ -923,9 +923,9 @@ workflows:
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/4N_1C/ServiceUpdateReconnect
+          result_path: results/4N_2C/UpdateReconnect
           config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Comp-Update-Reconnect-4N-1C"
+          workflow-name: "GCP-Daily-Services-Comp-Update-Reconnect-4N-2C"
           requires:
             - build-platform-and-services
           pre-steps:
