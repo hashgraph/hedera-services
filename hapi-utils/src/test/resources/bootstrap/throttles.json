@@ -70,5 +70,6 @@
             ]
         }
     ],
-    "totalAllowedGasPerSec": 10000000
+    "totalAllowedGasPerSecFrontend": 10000000,
+    "totalAllowedGasPerSecConsensus": 10000000
 }
