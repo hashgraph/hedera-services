@@ -183,10 +183,17 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
 	public void createUpdateFilesIfMissing() {
 		final var firstUpdateNum = fileNumbers.firstSoftwareUpdateFile();
 		final var lastUpdateNum = fileNumbers.lastSoftwareUpdateFile();
+		final var specialFiles = hfs.specialFiles();
 		for (var updateNum = firstUpdateNum; updateNum <= lastUpdateNum; updateNum++) {
-			var disFid = fileNumbers.toFid(updateNum);
+			final var disFid = fileNumbers.toFid(updateNum);
 			if (!hfs.exists(disFid)) {
 				materialize(disFid, systemFileInfo(), new byte[0]);
+			} else if (!specialFiles.contains(disFid)) {
+				/* This can be the case for file 0.0.150, whose metadata had
+				* been created for the legacy MerkleDiskFs. But whatever its
+				* contents were doesn't matter now. Just make sure it exists
+				* in the MerkleSpecialFiles! */
+				specialFiles.update(disFid, new byte[0]);
 			}
 		}
 	}

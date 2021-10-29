@@ -106,7 +106,6 @@ class UpgradeActionsTest {
 
 		given(networkCtx.hasPreparedUpgrade()).willReturn(true);
 		given(networkCtx.getPreparedUpdateFileNum()).willReturn(150L);
-		given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
 
 		subject.catchUpOnMissedSideEffects();
 
@@ -200,6 +199,19 @@ class UpgradeActionsTest {
 	}
 
 	@Test
+	void doesntCatchUpOnFreezeAbortIfUpgradeIsPrepared() {
+		rmIfPresent(FREEZE_ABORTED_MARKER);
+
+		given(networkCtx.hasPreparedUpgrade()).willReturn(true);
+
+		subject.catchUpOnMissedSideEffects();
+
+		assertFalse(
+				Paths.get(markerFilesLoc, FREEZE_ABORTED_MARKER).toFile().exists(),
+				"Should not create defensive " + FREEZE_ABORTED_MARKER + " if upgrade is prepared");
+	}
+
+	@Test
 	void catchesUpOnFreezeAbortIfNullInDual() throws IOException {
 		rmIfPresent(FREEZE_ABORTED_MARKER);
 
@@ -257,11 +269,23 @@ class UpgradeActionsTest {
 	void externalizesFreeze() throws IOException {
 		rmIfPresent(NOW_FROZEN_MARKER);
 
+		given(networkCtx.hasPreparedUpgrade()).willReturn(true);
 		given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
 
-		subject.externalizeFreeze();
+		subject.externalizeFreezeIfUpgradePending();
 
 		assertMarkerCreated(NOW_FROZEN_MARKER, null);
+	}
+
+	@Test
+	void doesntExternalizeFreezeIfNoUpgradeIsPrepared() {
+		rmIfPresent(NOW_FROZEN_MARKER);
+
+		subject.externalizeFreezeIfUpgradePending();
+
+		assertFalse(
+				Paths.get(markerFilesLoc, NOW_FROZEN_MARKER).toFile().exists(),
+				"Should not create " + NOW_FROZEN_MARKER + " if no upgrade is prepared");
 	}
 
 	@Test

@@ -62,6 +62,9 @@ class TopicTest {
 		topic.setDeleted(true);
 		assertTrue(topic.isDeleted());
 
+		topic.setNew(true);
+		assertTrue(topic.isNew());
+
 		topic.setAutoRenewAccountId(Id.DEFAULT);
 		assertEquals(Id.DEFAULT, topic.getAutoRenewAccountId());
 

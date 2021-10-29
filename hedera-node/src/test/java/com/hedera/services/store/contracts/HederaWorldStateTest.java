@@ -26,13 +26,17 @@ package com.hedera.services.store.contracts;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.ethereum.core.AccountState;
@@ -45,22 +49,27 @@ import org.hyperledger.besu.evm.Gas;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigInteger;
 
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
+import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -127,6 +136,38 @@ class HederaWorldStateTest {
 		updater.commit();
 		given(ledger.exists(any())).willReturn(false);
 		assertFailsWith(() -> subject.customizeSponsoredAccounts(), ResponseCodeEnum.FAIL_INVALID);
+	}
+
+	@Test
+	void usesContractKeyWhenSponsorDid() {
+		final var sponsorId = AccountID.newBuilder().setAccountNum(123L).build();
+		final var sponsoredId = AccountID.newBuilder().setAccountNum(321L).build();
+		final var sponsorAddress = asSolidityAddress(sponsorId);
+		final var sponsoredAddress = asSolidityAddress(sponsoredId);
+
+		given(ledger.exists(any())).willReturn(true);
+
+		final var sponsor = new MerkleAccount();
+		sponsor.setAccountKey(new JContractIDKey(0, 0, 123L));
+		given(ledger.get(sponsorId)).willReturn(sponsor);
+
+		final var updater = subject.updater();
+		updater.getSponsorMap().put(
+				Address.fromHexString(Hex.encodeHexString(sponsoredAddress)),
+				Address.fromHexString(Hex.encodeHexString(sponsorAddress)));
+
+		final ArgumentCaptor<HederaAccountCustomizer> captor = forClass(HederaAccountCustomizer.class);
+		updater.commit();
+		subject.customizeSponsoredAccounts();
+
+		verify(ledger).customizePotentiallyDeleted(eq(sponsoredId), captor.capture());
+		final var customizer = captor.getValue();
+		final var standin = new MerkleAccount();
+		customizer.customizing(standin);
+		final var key = standin.getAccountKey();
+
+		assertInstanceOf(JContractIDKey.class, key);
+		assertEquals(sponsoredId.getAccountNum(), ((JContractIDKey)key).getContractID().getContractNum());
 	}
 
 	@Test

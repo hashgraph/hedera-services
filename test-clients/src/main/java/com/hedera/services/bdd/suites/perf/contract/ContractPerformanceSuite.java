@@ -20,7 +20,6 @@ package com.hedera.services.bdd.suites.perf.contract;
  * ‍
  */
 
-
 import com.google.common.io.Files;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;

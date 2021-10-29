@@ -356,6 +356,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		final var nftType = nftId.tokenId();
 		final var fromRel = asTokenRel(from, nftType);
 		final var toRel = asTokenRel(to, nftType);
+
 		final var fromNftsOwned = (long) accountsLedger.get(from, NUM_NFTS_OWNED);
 		final var fromThisNftsOwned = (long) tokenRelsLedger.get(fromRel, TOKEN_BALANCE);
 		final var toNftsOwned = (long) accountsLedger.get(to, NUM_NFTS_OWNED);
@@ -367,6 +368,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			nftsLedger.set(nftId, OWNER, EntityId.fromGrpcAccountId(to));
 		}
 
+		/* Note correctness here depends on rejecting self-transfers */
 		accountsLedger.set(from, NUM_NFTS_OWNED, fromNftsOwned - 1);
 		accountsLedger.set(to, NUM_NFTS_OWNED, toNftsOwned + 1);
 		tokenRelsLedger.set(fromRel, TOKEN_BALANCE, fromThisNftsOwned - 1);
@@ -706,6 +708,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				!op.hasSupplyKey() &&
 				!op.hasFeeScheduleKey() &&
 				!op.hasTreasury() &&
+				!op.hasPauseKey() &&
 				!op.hasAutoRenewAccount() &&
 				op.getSymbol().length() == 0 &&
 				op.getName().length() == 0 &&
