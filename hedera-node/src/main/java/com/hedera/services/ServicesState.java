@@ -67,7 +67,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -460,7 +459,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 					StateVersions.CURRENT_VERSION);
 			app.systemExits().fail(1);
 		} else {
-			if (Objects.equals(dualState.getFreezeTime(), dualState.getLastFrozenTime())) {
+			final var maybePostUpgrade = dualState.getFreezeTime() != null;
+			if (maybePostUpgrade && dualState.getFreezeTime().equals(dualState.getLastFrozenTime())) {
 				/* This was an upgrade, discard now-obsolete preparation history */
 				networkCtx().discardPreparedUpgradeMeta();
 			}
