@@ -245,6 +245,7 @@ class CreateEvmTxProcessorTest {
 	void throwsWhenIntrinsicGasCostExceedsGasLimit() {
 		// given:
 		givenInvalidMock();
+
 		// and:
 		sender.initBalance(200_000);
 
@@ -263,6 +264,7 @@ class CreateEvmTxProcessorTest {
 	void throwsWhenIntrinsicGasCostExceedsGasLimitAndGasLimitIsEqualToMaxGasLimit() {
 		// given:
 		givenInvalidMock();
+
 		// and:
 		sender.initBalance(100_000_000);
 		// and:
@@ -276,7 +278,7 @@ class CreateEvmTxProcessorTest {
 						.execute(sender, receiver, MAX_GAS_LIMIT, 1234L, Bytes.EMPTY, consensusTime, expiry));
 
 		// then:
-		assertEquals(ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED, result.getResponseCode());
+		assertEquals(ResponseCodeEnum.INSUFFICIENT_GAS, result.getResponseCode());
 	}
 
 	private void givenInvalidMock() {
@@ -289,14 +291,12 @@ class CreateEvmTxProcessorTest {
 		given(exchangeRate.getCentEquiv()).willReturn(1);
 		// and:
 		given(worldState.updater()).willReturn(updater);
-		given(globalDynamicProperties.maxGas()).willReturn(MAX_GAS_LIMIT);
 		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(Gas.of(100_000L));
 	}
 
 	private void givenValidMock(boolean expectedSuccess) {
 		given(worldState.updater()).willReturn(updater);
 		given(worldState.updater().updater()).willReturn(updater);
-		given(globalDynamicProperties.maxGas()).willReturn(MAX_GAS_LIMIT);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 
 		var evmAccount = mock(EvmAccount.class);

@@ -43,7 +43,7 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_BYTECODE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INDIVIDUAL_TX_GAS_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.apache.commons.lang3.ArrayUtils.isNotEmpty;
 
@@ -147,7 +147,7 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 			return CONTRACT_NEGATIVE_VALUE;
 		}
 		if (op.getGas() > properties.maxGas()) {
-			return INDIVIDUAL_TX_GAS_LIMIT_EXCEEDED;
+			return MAX_GAS_LIMIT_EXCEEDED;
 		}
 		return OK;
 	}

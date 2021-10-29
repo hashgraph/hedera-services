@@ -65,7 +65,6 @@ import java.util.Set;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 
 /**
@@ -160,10 +159,7 @@ abstract class EvmTxProcessor {
 			validateFalse(upfrontCost.compareTo(Wei.of(sender.getBalance())) > 0,
 					ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
 			if (intrinsicGas.toLong() > gasLimit) {
-				throw new InvalidTransactionException(
-						gasLimit < dynamicProperties.maxGas()
-								? INSUFFICIENT_GAS
-								: MAX_GAS_LIMIT_EXCEEDED);
+				throw new InvalidTransactionException(INSUFFICIENT_GAS);
 			}
 		}
 

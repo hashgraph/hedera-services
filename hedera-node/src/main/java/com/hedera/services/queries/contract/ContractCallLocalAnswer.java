@@ -40,7 +40,7 @@ import java.util.Optional;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCallLocal;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INDIVIDUAL_TX_GAS_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
@@ -66,7 +66,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 					if (op.getGas() < 0) {
 						return CONTRACT_NEGATIVE_GAS;
 					} else if (op.getGas() > properties.maxGas()) {
-						return INDIVIDUAL_TX_GAS_LIMIT_EXCEEDED;
+						return MAX_GAS_LIMIT_EXCEEDED;
 					} else {
 						return validator.queryableContractStatus(op.getContractID(), view.contracts());
 					}

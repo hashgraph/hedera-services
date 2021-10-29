@@ -37,11 +37,20 @@ class ThrottleDefinitionsTest {
 	}
 
 	@Test
-	void totalAllowedGasPerSec() throws IOException {
+	void totalAllowedGasPerSecFrontend() throws IOException {
 		// given:
 		var proto = TestUtils.protoDefs("bootstrap/throttles.json");
 
 		// expect:
-		Assertions.assertEquals(proto.getTotalAllowedGasPerSec(), ThrottleDefinitions.fromProto(proto).toProto().getTotalAllowedGasPerSec());
+		Assertions.assertEquals(proto.getTotalAllowedGasPerSecFrontend(), ThrottleDefinitions.fromProto(proto).toProto().getTotalAllowedGasPerSecFrontend());
+	}
+
+	@Test
+	void totalAllowedGasPerSecConsensus() throws IOException {
+		// given:
+		var proto = TestUtils.protoDefs("bootstrap/throttles.json");
+
+		// expect:
+		Assertions.assertEquals(proto.getTotalAllowedGasPerSecConsensus(), ThrottleDefinitions.fromProto(proto).toProto().getTotalAllowedGasPerSecConsensus());
 	}
 }
