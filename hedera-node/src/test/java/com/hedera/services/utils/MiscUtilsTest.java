@@ -800,7 +800,7 @@ class MiscUtilsTest {
 		given(accessor.getTxn()).willReturn(body);
 		given(body.getContractCall()).willReturn(callTransactionBody);
 		given(callTransactionBody.getGas()).willReturn(123454321L);
-		assertEquals(getContractTXGasLimit(accessor), 123454321L);
+		assertEquals(123454321L, getContractTXGasLimit(accessor));
 	}
 
 	@Test
@@ -809,7 +809,7 @@ class MiscUtilsTest {
 		given(accessor.getFunction()).willReturn(ContractCreate);
 		given(body.getContractCreateInstance()).willReturn(createTransactionBody);
 		given(createTransactionBody.getGas()).willReturn(123454321L);
-		assertEquals(getContractTXGasLimit(accessor), 123454321L);
+		assertEquals(123454321L, getContractTXGasLimit(accessor));
 	}
 
 	public static class BodySetter<T, B> {
