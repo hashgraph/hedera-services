@@ -33,7 +33,7 @@ public class GasLimitBucketThrottle {
 
     /**
      * Creates an instance of the throttle with the specified capacity
-     * @param capacity
+     * @param capacity - the capacity for the throttle
      */
     public GasLimitBucketThrottle(long capacity) {
         this.bucket = new DiscreteLeakyBucket(capacity);
