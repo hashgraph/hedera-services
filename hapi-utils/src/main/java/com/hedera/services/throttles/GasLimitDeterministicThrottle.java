@@ -23,6 +23,11 @@ package com.hedera.services.throttles;
 import java.time.Duration;
 import java.time.Instant;
 
+/**
+ * Main class responsible for throttling transactions by gasLimit.
+ * Keeps track of the instance the last decision was made and calculates the time elapsed since then.
+ * Uses a {@link GasLimitBucketThrottle} under the hood.
+ */
 public class GasLimitDeterministicThrottle {
 
     private static final Instant NEVER = null;
@@ -31,11 +36,22 @@ public class GasLimitDeterministicThrottle {
     private Instant lastDecisionTime;
     private long capacity;
 
+    /**
+     * Creates a new instance of the throttle with capacity - the total amount of gas allowed per sec.
+     * @param capacity - the total amount of gas allowed per sec.
+     */
     public GasLimitDeterministicThrottle(long capacity) {
         this.capacity = capacity;
         this.delegate = new GasLimitBucketThrottle(capacity);
     }
 
+    /**
+     * Calculates the amount of nanoseconds that elapsed since the last time the method was called.
+     * Verifies whether there is enough capacity to handle a transaction with some gasLimit.
+     * @param now - the instant against which the {@link GasLimitBucketThrottle} is tested.
+     * @param txGasLimit - the gasLimit extracted from the transaction payload.
+     * @return true if there is enough capacity to handle this transaction; false if it should be throttled.
+     */
     public boolean allow(Instant now, long txGasLimit) {
         long elapsedNanos = 0L;
         if (lastDecisionTime != NEVER) {
@@ -51,30 +67,28 @@ public class GasLimitDeterministicThrottle {
         return decision;
     }
 
+    /**
+     * Returns the capacity of the throttle.
+     * @return the capacity of the throttle.
+     */
     public long getCapacity() {
         return capacity;
     }
 
-    Instant lastDecisionTime() {
-        return lastDecisionTime;
-    }
-
-    GasLimitBucketThrottle delegate() {
-        return delegate;
-    }
-
+    /**
+     * Used to release some capacity previously reserved by calling {@link GasLimitDeterministicThrottle#allow(Instant, long)}
+     * without having to wait for the natural leakage.
+     * @param value - the amount to release
+     */
     public void leakUnusedGasPreviouslyReserved(long value) {
         delegate().bucket().leak(value);
     }
 
-    public DeterministicThrottle.UsageSnapshot usageSnapshot() {
-        var bucket = delegate.bucket();
-        return new DeterministicThrottle.UsageSnapshot(bucket.capacityUsed(), lastDecisionTime);
-    }
-
-    public void resetUsageTo(DeterministicThrottle.UsageSnapshot usageSnapshot) {
-        var bucket = delegate.bucket();
-        lastDecisionTime = usageSnapshot.lastDecisionTime();
-        bucket.resetUsed(usageSnapshot.used());
+    /**
+     * returns an instance of the {@link GasLimitBucketThrottle} used under the hood.
+     * @return - an instance of the {@link GasLimitBucketThrottle} used under the hood.
+     */
+    GasLimitBucketThrottle delegate() {
+        return delegate;
     }
 }

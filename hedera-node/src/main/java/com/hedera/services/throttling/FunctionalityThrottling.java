@@ -29,9 +29,27 @@ import com.hederahashgraph.api.proto.java.Query;
 import java.util.List;
 
 public interface FunctionalityThrottling {
+
+	/**
+	 * Verifies if the frontend throttle has enough capacity to handle the transaction
+	 * @param accessor - the transaction accessor
+	 * @return true if the transaction should be throttled, false if the system can handle the TX execution
+	 */
 	boolean shouldThrottleTxn(TxnAccessor accessor);
+
+	/**
+	 * Verifies if the consensus throttle has enough capacity to handle the transaction
+	 * @param accessor - the transaction accessor
+	 * @return true if the transaction should be throttled, false if the system can handle the TX execution
+	 */
 	boolean shouldThrottleConsensusTxn(TxnAccessor accessor);
+
 	boolean shouldThrottleQuery(HederaFunctionality queryFunction, Query query);
+
+	/**
+	 * Releases previously reserved gas from the consensus throttle
+	 * @param value - the amount of gas to release
+	 */
 	void leakUnusedGasPreviouslyReserved(long value);
 	void rebuildFor(ThrottleDefinitions defs);
 	List<DeterministicThrottle> activeThrottlesFor(HederaFunctionality function);

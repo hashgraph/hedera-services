@@ -20,15 +20,33 @@ package com.hedera.services.throttles;
  * ‍
  */
 
+/**
+ * Responsible for throttling transaction by gas limit.
+ * Uses a {@link DiscreteLeakyBucket} under the hood.
+ * Calculates the amount of gas that should be leaked from the bucket based on the amount of elapsed nanoseconds
+ * since the last time {@link GasLimitBucketThrottle#allow(long, long)} was called.
+ */
 public class GasLimitBucketThrottle {
 
     private final DiscreteLeakyBucket bucket;
     private static final long ONE_SECOND_IN_NANOSECONDS = 1_000_000_000;
 
+    /**
+     * Creates an instance of the throttle with the specified capacity
+     * @param capacity
+     */
     public GasLimitBucketThrottle(long capacity) {
         this.bucket = new DiscreteLeakyBucket(capacity);
     }
 
+    /**
+     * Calculates and leaks the amount of gas that should be leaked from the bucket based on the amount of nanoseconds
+     * passed as input argument. Verifies whether there is enough capacity to handle a transaction with the specified
+     * gas limit. Reserves the capacity needed for the transaction if there is enough free space.
+     * @param txGasLimit - the gas limit of the transaction
+     * @param elapsedNanos - the amount of time passed since the last call
+     * @return true if there is enough capacity, false if the transaction should be throttled
+     */
     public boolean allow(long txGasLimit, long elapsedNanos) {
 
         if (elapsedNanos >= ONE_SECOND_IN_NANOSECONDS) {
@@ -45,6 +63,10 @@ public class GasLimitBucketThrottle {
         }
     }
 
+    /**
+     * Returns an instance of the {@link DiscreteLeakyBucket} used under the hood.
+     * @return an instance of the {@link DiscreteLeakyBucket} used under the hood.
+     */
     public DiscreteLeakyBucket bucket() {
         return bucket;
     }

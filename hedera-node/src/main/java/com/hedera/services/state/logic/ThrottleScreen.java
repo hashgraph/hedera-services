@@ -26,6 +26,9 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Screens transactions based on the capacity of the system to handle the gasLimit of the transaction
+ */
 @Singleton
 public class ThrottleScreen {
 
@@ -38,6 +41,12 @@ public class ThrottleScreen {
 		this.networkCtxManager = networkCtxManager;
 	}
 
+	/**
+	 * Applies screening to the transaction accessor
+	 * @param accessor - the transaction accessor
+	 * @return - {@link ResponseCodeEnum#OK} if the system has enough capacity to handle the transaction
+	 * 	 * {@link ResponseCodeEnum#CONSENSUS_GAS_EXHAUSTED} if the transaction should be throttled
+	 */
 	public ResponseCodeEnum applyTo(TxnAccessor accessor) {
 		return networkCtxManager.prepareForIncorporating(accessor);
 	}

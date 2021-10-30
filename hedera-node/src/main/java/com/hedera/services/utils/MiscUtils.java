@@ -778,10 +778,21 @@ public final class MiscUtils {
 		}
 	}
 
+	/**
+	 * Verifies whether a {@link HederaFunctionality} should be throttled by the consensus throttle
+	 * @param hederaFunctionality - the {@link HederaFunctionality} to verify
+	 * @return - whether this {@link HederaFunctionality} should be throttled by the consensus throttle
+	 */
 	public static boolean isConsensusThrottled(HederaFunctionality hederaFunctionality) {
 		return CONSENSUS_THROTTLED_FUNCTIONS.contains(hederaFunctionality);
 	}
 
+	/**
+	 * Extracts the gasLimit value from a {@link HederaFunctionality#ContractCall} or a
+	 * {@link HederaFunctionality#ContractCreate} transaction
+	 * @param accessor - the transaction accessor
+	 * @return - the gasLimit value of the transaction
+	 */
 	public static long getContractTXGasLimit(TxnAccessor accessor) {
 		return accessor.getFunction() == ContractCreate ?
 				accessor.getTxn().getContractCreateInstance().getGas() :

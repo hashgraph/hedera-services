@@ -50,7 +50,6 @@ class GasLimitDeterministicThrottleTest {
 
         // then:
         assertTrue(result);
-        assertSame(now, subject.lastDecisionTime());
         assertEquals(DEFAULT_CAPACITY - gasLimitForTX, subject.delegate().bucket().capacityFree());
     }
 
@@ -87,43 +86,9 @@ class GasLimitDeterministicThrottleTest {
 
         // then:
         assertTrue(result);
-        assertSame(now, subject.lastDecisionTime());
         assertEquals(
                 (long)(DEFAULT_CAPACITY - gasLimitForTX - gasLimitForTX + toLeak),
                 subject.delegate().bucket().capacityFree());
-    }
-
-    @Test
-    void returnsExpectedState() {
-        // setup:
-        long gasLimitForTX = 100_000;
-        Instant originalDecision = Instant.ofEpochSecond(1_234_567L, 0);
-
-        // when:
-        subject.allow(originalDecision, gasLimitForTX);
-        // and:
-        var state = subject.usageSnapshot();
-
-        // then:
-        assertEquals(gasLimitForTX, state.used());
-        assertEquals(originalDecision, state.lastDecisionTime());
-    }
-
-    @Test
-    void resetsAsExpected() {
-        // setup:
-        long used = DEFAULT_CAPACITY / 2;
-        Instant originalDecision = Instant.ofEpochSecond(1_234_567L, 0);
-
-        // and:
-        var snapshot = new DeterministicThrottle.UsageSnapshot(used, originalDecision);
-
-        // when:
-        subject.resetUsageTo(snapshot);
-
-        // then:
-        assertEquals(used, subject.delegate().bucket().capacityUsed());
-        assertEquals(originalDecision, subject.lastDecisionTime());
     }
 
     @Test

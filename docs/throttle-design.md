@@ -107,5 +107,7 @@ A final bucket is valuable to put some ceiling on the queries-per-second (qps) a
             ]
         }
 ```
+As of Hedera release 0.20 an additional mechanism for throttling contract-related transactions (`ContractCall`, `ContractCallLocal`, `ContractCreate`) was introduced. It involves a `frontend` (gRpc incoming transactions to the node) maximum gas per second throttle and a `consensus` (backend upon start of the actual execution of the transaction) maximum gas per second allowed property. These are configured by the `totalAllowedGasPerSecFrontend` and `totalAllowedGasPerSecConsensus` properties. 
+Transactions throttled by the frontend receive a status `BUSY` and transactions throttled on the consensus level receive a status `CONSENSUS_GAS_EXHAUSTED`. Transaction may still be throttled by the `opsPerSec` buckets where contract-related ops are listed.
 
 So this is how Hedera does its throttling. It uses four buckets: one for speed, one for reserving some speed, one for limiting entity creation, and one for putting some mild limitations on free queries. Each incoming transaction adds water to only the buckets that list it. And it is blocked only if one of those buckets is full.

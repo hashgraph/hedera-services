@@ -27,11 +27,22 @@ import com.hederahashgraph.api.proto.java.Query;
 import java.time.Instant;
 
 public interface TimedFunctionalityThrottling extends FunctionalityThrottling {
+
+	/**
+	 * Verifies if the frontend throttle has enough capacity to handle the transaction
+	 * @param accessor - the transaction accessor
+	 * @return true if the transaction should be throttled, false if the system can handle the TX execution
+	 */
 	@Override
 	default boolean shouldThrottleTxn(TxnAccessor accessor)  {
 		return shouldThrottleTxn(accessor, Instant.now());
 	}
 
+	/**
+	 * Verifies if the consensus throttle has enough capacity to handle the transaction
+	 * @param accessor - the transaction accessor
+	 * @return true if the transaction should be throttled, false if the system can handle the TX execution
+	 */
 	@Override
 	default boolean shouldThrottleConsensusTxn(TxnAccessor accessor)  {
 		return shouldThrottleConsensusTxn(accessor, Instant.now());
@@ -42,7 +53,20 @@ public interface TimedFunctionalityThrottling extends FunctionalityThrottling {
 		return shouldThrottleQuery(queryFunction, Instant.now(), query);
 	}
 
+	/**
+	 * Verifies if the frontend throttle has enough capacity to handle the transaction
+	 * @param accessor - the transaction accessor
+	 * @param now - the instant for which throttlign should be calculated
+	 * @return true if the transaction should be throttled, false if the system can handle the TX execution
+	 */
 	boolean shouldThrottleTxn(TxnAccessor accessor, Instant now);
+
+	/**
+	 * Verifies if the consensus throttle has enough capacity to handle the transaction
+	 * @param accessor - the transaction accessor
+	 * @param now - the instant for which throttlign should be calculated
+	 * @return true if the transaction should be throttled, false if the system can handle the TX execution
+	 */
 	boolean shouldThrottleConsensusTxn(TxnAccessor accessor, Instant now);
 	boolean shouldThrottleQuery(HederaFunctionality queryFunction, Instant now, Query query);
 }

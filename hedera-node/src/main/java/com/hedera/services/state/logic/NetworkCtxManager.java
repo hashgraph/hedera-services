@@ -158,9 +158,14 @@ public class NetworkCtxManager {
 		return consensusSecondJustChanged;
 	}
 
+	/**
+	 * Used to monitor the current network usage for automated congestion pricing
+	 * and to throttle ContractCreate and ContractCall TXs by the transaction gas limit.
+	 * @param accessor - the accessor for the transaction
+	 * @return - {@link ResponseCodeEnum#OK} if the system has enough capacity to handle the transaction
+	 * {@link ResponseCodeEnum#CONSENSUS_GAS_EXHAUSTED} if the transaction should be throttled
+	 */
 	public ResponseCodeEnum prepareForIncorporating(TxnAccessor accessor) {
-		/* This is used to monitor the current network usage for automated congestion pricing
-			and to throttle ContractCreate and ContractCall TXs by gas actually used in the last second.*/
 		if(handleThrottling.shouldThrottleConsensusTxn(accessor) &&
 				(accessor.getFunction().equals(ContractCall) || accessor.getFunction().equals(ContractCreate))){
 			return ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
