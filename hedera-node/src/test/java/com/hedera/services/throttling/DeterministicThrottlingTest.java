@@ -286,6 +286,30 @@ class DeterministicThrottlingTest {
 	}
 
 	@Test
+	void alwaysRejectsIfNoThrottleForCreate() {
+		givenFunction(ContractCreate);
+
+		// expect:
+		assertTrue(subject.shouldThrottleTxn(accessor, consensusNow));
+	}
+
+	@Test
+	void alwaysRejectsIfNoThrottleForConsensus() {
+		givenFunction(ContractCall);
+
+		// expect:
+		assertTrue(subject.shouldThrottleConsensusTxn(accessor, consensusNow));
+	}
+
+	@Test
+	void alwaysRejectsIfNoThrottleForCreateForConsensus() {
+		givenFunction(ContractCreate);
+
+		// expect:
+		assertTrue(subject.shouldThrottleConsensusTxn(accessor, consensusNow));
+	}
+
+	@Test
 	void returnsNoActiveThrottlesForUnconfiguredOp() {
 		Assertions.assertSame(Collections.emptyList(), subject.activeThrottlesFor(ContractCall));
 	}

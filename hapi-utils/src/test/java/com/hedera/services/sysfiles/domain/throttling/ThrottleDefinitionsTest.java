@@ -23,6 +23,7 @@ package com.hedera.services.sysfiles.domain.throttling;
 import com.hedera.services.TestUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 
@@ -52,5 +53,19 @@ class ThrottleDefinitionsTest {
 
 		// expect:
 		Assertions.assertEquals(proto.getTotalAllowedGasPerSecConsensus(), ThrottleDefinitions.fromProto(proto).toProto().getTotalAllowedGasPerSecConsensus());
+	}
+
+	@Test
+	void getConsensusGasWorks() {
+		var subject = new ThrottleDefinitions();
+		subject.setTotalAllowedGasPerSecConsensus(1234321L);
+		assertEquals(1234321L, subject.getTotalAllowedGasPerSecConsensus());
+	}
+
+	@Test
+	void getFrontendGasWorks() {
+		var subject = new ThrottleDefinitions();
+		subject.setTotalAllowedGasPerSecFrontend(1234321L);
+		assertEquals(1234321L, subject.getTotalAllowedGasPerSecFrontend());
 	}
 }
