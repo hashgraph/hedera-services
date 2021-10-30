@@ -39,6 +39,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -53,6 +56,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_PREFIX_MIS
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
@@ -90,6 +94,17 @@ class HederaToPlatformSigOpsTest {
 				.willReturn("1".getBytes())
 				.willReturn("2".getBytes())
 				.willReturn("3".getBytes());
+	}
+
+	@Test
+	void assertConstructorThrowsException() throws NoSuchMethodException {
+		Constructor<HederaToPlatformSigOps> constructor = HederaToPlatformSigOps.class.getDeclaredConstructor();
+		assertTrue(Modifier.isPrivate(constructor.getModifiers()));
+		constructor.setAccessible(true);
+		assertThrows(InvocationTargetException.class,
+				() -> {
+					constructor.newInstance();
+				});
 	}
 
 	@Test

@@ -1,4 +1,4 @@
-package com.hedera.services.sigs.utils;
+package com.hedera.services.keys;
 
 /*-
  * ‌
@@ -20,25 +20,33 @@ package com.hedera.services.sigs.utils;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
-import com.hederahashgraph.api.proto.java.ThresholdKey;
+import com.hedera.services.legacy.core.jproto.JKeyList;
+import com.hedera.services.legacy.core.jproto.JThresholdKey;
+import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 
-import static com.hedera.services.sigs.utils.ImmutableKeyUtils.signalsKeyRemoval;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class ImmutableKeyUtilsTest {
+class RevocationServiceCharacteristicsTest {
+	private JKeyList l;
+	private JThresholdKey t;
+
+	@BeforeEach
+	private void setup() throws Exception {
+		l = TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey().getKeyList();
+		t = TxnHandlingScenario.LONG_THRESHOLD_KT.asJKey().getThresholdKey();
+	}
 
 	@Test
 	void assertConstructorThrowsException() throws NoSuchMethodException {
-		Constructor<ImmutableKeyUtils> constructor = ImmutableKeyUtils.class.getDeclaredConstructor();
+		Constructor<RevocationServiceCharacteristics> constructor = RevocationServiceCharacteristics.class.getDeclaredConstructor();
 		assertTrue(Modifier.isPrivate(constructor.getModifiers()));
 		constructor.setAccessible(true);
 		assertThrows(InvocationTargetException.class,
@@ -48,9 +56,14 @@ class ImmutableKeyUtilsTest {
 	}
 
 	@Test
-	void recognizesSentinelKey() {
-		assertFalse(signalsKeyRemoval(Key.getDefaultInstance()));
-		assertFalse(signalsKeyRemoval(Key.newBuilder().setThresholdKey(ThresholdKey.getDefaultInstance()).build()));
-		assertTrue(signalsKeyRemoval(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build()));
+	void assertSignNeededForList() {
+		final var characteristics = RevocationServiceCharacteristics.forTopLevelFile(l);
+		assertEquals(1, characteristics.sigsNeededForList(l));
+	}
+
+	@Test
+	void assertSigsNeededForThreshold() {
+		final var characteristics = RevocationServiceCharacteristics.forTopLevelFile(l);
+		assertEquals(1, characteristics.sigsNeededForThreshold(t));
 	}
 }

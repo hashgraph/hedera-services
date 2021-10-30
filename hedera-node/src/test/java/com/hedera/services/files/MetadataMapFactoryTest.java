@@ -26,6 +26,9 @@ import com.hedera.test.utils.IdUtils;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -48,6 +51,17 @@ import static org.mockito.BDDMockito.mock;
 
 class MetadataMapFactoryTest {
 	private static final long expiry = 1_234_567L;
+
+	@Test
+	void assertConstructorThrowsException() throws NoSuchMethodException {
+		Constructor<MetadataMapFactory> constructor = MetadataMapFactory.class.getDeclaredConstructor();
+		assertTrue(Modifier.isPrivate(constructor.getModifiers()));
+		constructor.setAccessible(true);
+		assertThrows(InvocationTargetException.class,
+				() -> {
+					constructor.newInstance();
+				});
+	}
 
 	@Test
 	void toAttrMirrorsNulls() {

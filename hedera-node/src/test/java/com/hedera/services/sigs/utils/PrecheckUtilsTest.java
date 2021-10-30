@@ -20,12 +20,16 @@ package com.hedera.services.sigs.utils;
  * ‍
  */
 
+import com.hedera.services.sigs.HederaToPlatformSigOps;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Modifier;
 import java.util.function.Predicate;
 
 import static com.hedera.services.sigs.utils.PrecheckUtils.queryPaymentTestFor;
@@ -34,11 +38,24 @@ import static com.hedera.test.factories.txns.CryptoUpdateFactory.newSignedCrypto
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PrecheckUtilsTest {
 	private static final String nodeId = SignedTxnFactory.DEFAULT_NODE_ID;
 	private static final AccountID node = SignedTxnFactory.DEFAULT_NODE;
 	private static final Predicate<TransactionBody> subject = queryPaymentTestFor(node);
+
+	@Test
+	void assertConstructorThrowsException() throws NoSuchMethodException {
+		Constructor<PrecheckUtils> constructor = PrecheckUtils.class.getDeclaredConstructor();
+		assertTrue(Modifier.isPrivate(constructor.getModifiers()));
+		constructor.setAccessible(true);
+		assertThrows(InvocationTargetException.class,
+				() -> {
+					constructor.newInstance();
+				});
+	}
 
 	@Test
 	void queryPaymentsMustBeCryptoTransfers() throws Throwable {

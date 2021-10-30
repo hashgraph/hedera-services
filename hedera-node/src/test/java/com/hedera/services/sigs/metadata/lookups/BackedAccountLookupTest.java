@@ -32,6 +32,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -65,5 +67,28 @@ class BackedAccountLookupTest {
 		// then:
 		assertTrue(result.metadata().isReceiverSigRequired());
 		assertSame(account.getAccountKey(), result.metadata().getKey());
+	}
+
+	@Test
+	void asserSafelookupToString() {
+		given(accounts.contains(id)).willReturn(true);
+		given(accounts.getImmutableRef(id)).willReturn(account);
+
+		// when:
+		final var result = subject.safeLookup(id);
+
+		// then:
+		assertEquals("SafeLookupResult{failure=NONE}", result.toString());
+	}
+
+	@Test
+	void assertFailledSafeLookup() {
+		given(accounts.contains(id)).willReturn(false);
+
+		// when:
+		final var result = subject.safeLookup(id);
+
+		// then:
+		assertFalse(result.succeeded());
 	}
 }

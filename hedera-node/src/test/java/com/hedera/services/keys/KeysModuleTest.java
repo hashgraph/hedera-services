@@ -1,4 +1,4 @@
-package com.hedera.services.sigs.utils;
+package com.hedera.services.keys;
 
 /*-
  * ‌
@@ -20,25 +20,31 @@ package com.hedera.services.sigs.utils;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
-import com.hederahashgraph.api.proto.java.ThresholdKey;
+import com.hedera.services.context.TransactionContext;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 
-import static com.hedera.services.sigs.utils.ImmutableKeyUtils.signalsKeyRemoval;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class ImmutableKeyUtilsTest {
+@ExtendWith(MockitoExtension.class)
+class KeysModuleTest {
+	@Mock
+	TransactionContext transactionContext;
+	@Mock
+	CharacteristicsFactory characteristicsFactory;
 
 	@Test
 	void assertConstructorThrowsException() throws NoSuchMethodException {
-		Constructor<ImmutableKeyUtils> constructor = ImmutableKeyUtils.class.getDeclaredConstructor();
+		Constructor<KeysModule> constructor = KeysModule.class.getDeclaredConstructor();
 		assertTrue(Modifier.isPrivate(constructor.getModifiers()));
 		constructor.setAccessible(true);
 		assertThrows(InvocationTargetException.class,
@@ -48,9 +54,7 @@ class ImmutableKeyUtilsTest {
 	}
 
 	@Test
-	void recognizesSentinelKey() {
-		assertFalse(signalsKeyRemoval(Key.getDefaultInstance()));
-		assertFalse(signalsKeyRemoval(Key.newBuilder().setThresholdKey(ThresholdKey.getDefaultInstance()).build()));
-		assertTrue(signalsKeyRemoval(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build()));
+	void assertThatInHandleActivationHelperInstanceIsCreated() {
+		assertThat(KeysModule.provideActivationHelper(transactionContext, characteristicsFactory), instanceOf(InHandleActivationHelper.class));
 	}
 }
