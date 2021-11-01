@@ -22,7 +22,6 @@ package com.hedera.services.throttling;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hedera.services.throttles.BucketThrottle;
 import com.hedera.services.throttles.DeterministicThrottle;
@@ -70,7 +69,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -403,7 +401,7 @@ class DeterministicThrottlingTest {
 		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
 		defs.setTotalAllowedGasPerSecConsensus(1L);
 		var miscUtilsHandle = mockStatic(MiscUtils.class);
-		miscUtilsHandle.when(() -> MiscUtils.isConsensusThrottled(ContractCall)).thenReturn(false);
+		miscUtilsHandle.when(() -> MiscUtils.isGasThrottled(ContractCall)).thenReturn(false);
 		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
 
 		subject.rebuildFor(defs);

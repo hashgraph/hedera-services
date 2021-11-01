@@ -20,6 +20,7 @@ package com.hedera.services.utils;
  * ‍
  */
 
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.HederaLedger;
@@ -783,7 +784,7 @@ public final class MiscUtils {
 	 * @param hederaFunctionality - the {@link HederaFunctionality} to verify
 	 * @return - whether this {@link HederaFunctionality} should be throttled by the consensus throttle
 	 */
-	public static boolean isConsensusThrottled(HederaFunctionality hederaFunctionality) {
+	public static boolean isGasThrottled(HederaFunctionality hederaFunctionality) {
 		return CONSENSUS_THROTTLED_FUNCTIONS.contains(hederaFunctionality);
 	}
 
@@ -797,5 +798,27 @@ public final class MiscUtils {
 		return accessor.getFunction() == ContractCreate ?
 				accessor.getTxn().getContractCreateInstance().getGas() :
 				accessor.getTxn().getContractCall().getGas();
+	}
+
+	/**
+	 * Extracts the amount of gas used by the currently executing transaction.
+	 * @param txnCtx - transaction context
+	 * @return long - the amount of gas used for the TX execution
+	 */
+	public static long getContractTxGasUsed(TransactionContext txnCtx) {
+		return txnCtx.accessor().getFunction().equals(HederaFunctionality.ContractCall) ?
+				txnCtx.recordSoFar().getContractCallResult().getGasUsed() :
+				txnCtx.recordSoFar().getContractCreateResult().getGasUsed();
+	}
+
+	/**
+	 * Verifies if the transaction context for the currently executing transaction has a contract result
+	 * @param txnCtx transaction context
+	 * @return true if there is a ContractCall or ContractCreate result attached to the context
+	 */
+	public static boolean txCtxHasContractResult(TransactionContext txnCtx) {
+		return txnCtx.accessor().getFunction().equals(HederaFunctionality.ContractCall) ?
+				txnCtx.recordSoFar().getContractCallResult() != null :
+				txnCtx.recordSoFar().getContractCreateResult() != null;
 	}
 }

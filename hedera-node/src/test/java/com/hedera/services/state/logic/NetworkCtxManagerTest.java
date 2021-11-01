@@ -184,7 +184,6 @@ class NetworkCtxManagerTest {
 	@Test
 	void whenContractCallThrottledPrepareReturnsCorrectStatus() {
 
-		given(txnAccessor.getFunction()).willReturn(ContractCall);
 		given(handleThrottling.shouldThrottleConsensusTxn(txnAccessor)).willReturn(true);
 
 		// then:
@@ -196,7 +195,6 @@ class NetworkCtxManagerTest {
 	@Test
 	void whenContractCreateThrottledPrepareReturnsCorrectStatus() {
 
-		given(txnAccessor.getFunction()).willReturn(ContractCreate);
 		given(handleThrottling.shouldThrottleConsensusTxn(txnAccessor)).willReturn(true);
 
 		// then:
@@ -237,8 +235,8 @@ class NetworkCtxManagerTest {
 		given(callTransactionBody.getGas()).willReturn(10_000L);
 		given(transactionBody.getContractCall()).willReturn(callTransactionBody);
 		given(txnAccessor.getTxn()).willReturn(transactionBody);
+		given(txnAccessor.getFunction()).willReturn(ContractCall);
 		given(txnCtx.accessor()).willReturn(txnAccessor);
-		given(txnCtx.status()).willReturn(OK);
 		mockDynamicProps.setThrottleByGas(true);
 
 		// when:
@@ -269,7 +267,10 @@ class NetworkCtxManagerTest {
 	@Test
 	void whenFinishingContractCallUnusedGasIsNotLeakedForUnsuccessfulTX() {
 		// setup:
-		given(txnCtx.status()).willReturn(FAIL_INVALID);
+		given(expirableTxnRecord.getContractCallResult()).willReturn(null);
+		given(txnCtx.recordSoFar()).willReturn(expirableTxnRecord);
+		given(txnAccessor.getFunction()).willReturn(ContractCall);
+		given(txnCtx.accessor()).willReturn(txnAccessor);
 		mockDynamicProps.setThrottleByGas(true);
 
 		// when:
@@ -292,8 +293,9 @@ class NetworkCtxManagerTest {
 		given(createTransactionBody.getGas()).willReturn(10_000L);
 		given(transactionBody.getContractCreateInstance()).willReturn(createTransactionBody);
 		given(txnAccessor.getTxn()).willReturn(transactionBody);
+		given(txnAccessor.getFunction()).willReturn(ContractCreate);
+
 		given(txnCtx.accessor()).willReturn(txnAccessor);
-		given(txnCtx.status()).willReturn(OK);
 		mockDynamicProps.setThrottleByGas(true);
 
 		// when:
@@ -309,7 +311,10 @@ class NetworkCtxManagerTest {
 	@Test
 	void whenFinishingContractCreateUnusedGasIsNotLeakedForUnsuccessfulTX() {
 		// setup:
-		given(txnCtx.status()).willReturn(FAIL_INVALID);
+		given(expirableTxnRecord.getContractCreateResult()).willReturn(null);
+		given(txnCtx.recordSoFar()).willReturn(expirableTxnRecord);
+		given(txnAccessor.getFunction()).willReturn(ContractCreate);
+		given(txnCtx.accessor()).willReturn(txnAccessor);
 		mockDynamicProps.setThrottleByGas(true);
 
 		// when:

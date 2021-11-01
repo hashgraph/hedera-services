@@ -80,7 +80,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
 	@Override
 	public boolean shouldThrottleTxn(TxnAccessor accessor, Instant now) {
-		if (MiscUtils.isConsensusThrottled(accessor.getFunction()) &&
+		if (MiscUtils.isGasThrottled(accessor.getFunction()) &&
 				dynamicProperties.shouldThrottleByGas() &&
 				(frontEndGasThrottle == null || !frontEndGasThrottle.allow(now, MiscUtils.getContractTXGasLimit(accessor)))) {
 			return true;
@@ -90,7 +90,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
 	@Override
 	public boolean shouldThrottleConsensusTxn(TxnAccessor accessor, Instant now) {
-		if (MiscUtils.isConsensusThrottled(accessor.getFunction()) &&
+		if (MiscUtils.isGasThrottled(accessor.getFunction()) &&
 				dynamicProperties.shouldThrottleByGas() &&
 				(consensusGasThrottle == null || !consensusGasThrottle.allow(now, MiscUtils.getContractTXGasLimit(accessor)))) {
 			return true;
@@ -117,7 +117,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
 	@Override
 	public boolean shouldThrottleQuery(HederaFunctionality queryFunction, Instant now, Query query) {
-		if (MiscUtils.isConsensusThrottled(queryFunction) &&
+		if (MiscUtils.isGasThrottled(queryFunction) &&
 				dynamicProperties.shouldThrottleByGas() &&
 				(frontEndGasThrottle == null || !frontEndGasThrottle.allow(now, query.getContractCallLocal().getGas()))) {
 			return true;

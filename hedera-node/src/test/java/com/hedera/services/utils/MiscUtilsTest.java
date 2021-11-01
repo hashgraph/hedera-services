@@ -23,6 +23,7 @@ package com.hedera.services.utils;
 import com.google.common.io.Files;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.grpc.controllers.ConsensusController;
 import com.hedera.services.grpc.controllers.ContractController;
@@ -36,8 +37,8 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.stats.ServicesStatsConfig;
-import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -110,7 +111,6 @@ import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionGetFastRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetReceiptQuery;
@@ -178,12 +178,13 @@ import static com.hedera.services.utils.MiscUtils.functionOf;
 import static com.hedera.services.utils.MiscUtils.functionalityOfQuery;
 import static com.hedera.services.utils.MiscUtils.getContractTXGasLimit;
 import static com.hedera.services.utils.MiscUtils.getTxnStat;
-import static com.hedera.services.utils.MiscUtils.isConsensusThrottled;
+import static com.hedera.services.utils.MiscUtils.isGasThrottled;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 import static com.hedera.services.utils.MiscUtils.perm64;
 import static com.hedera.services.utils.MiscUtils.readableNftTransferList;
 import static com.hedera.services.utils.MiscUtils.readableProperty;
 import static com.hedera.services.utils.MiscUtils.readableTransferList;
+import static com.hedera.services.utils.MiscUtils.txCtxHasContractResult;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
@@ -254,8 +255,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -271,6 +274,12 @@ class MiscUtilsTest {
 	ContractCreateTransactionBody createTransactionBody;
 	@Mock
 	ContractCallTransactionBody callTransactionBody;
+	@Mock
+	TransactionContext txCtx;
+	@Mock
+	ExpirableTxnRecord expirableTxnRecord;
+	@Mock
+	SolidityFnResult solidityFnResult;
 
 	@Test
 	void forEachDropInWorksAsExpected() {
@@ -787,12 +796,12 @@ class MiscUtilsTest {
 
 	@Test
 	void contractCallIsConsensusThrottled() {
-		assertTrue(isConsensusThrottled(ContractCall));
+		assertTrue(isGasThrottled(ContractCall));
 	}
 
 	@Test
 	void contractCreateIsConsensusThrottled() {
-		assertTrue(isConsensusThrottled(ContractCreate));
+		assertTrue(isGasThrottled(ContractCreate));
 	}
 
 	@Test
@@ -810,6 +819,50 @@ class MiscUtilsTest {
 		given(body.getContractCreateInstance()).willReturn(createTransactionBody);
 		given(createTransactionBody.getGas()).willReturn(123454321L);
 		assertEquals(123454321L, getContractTXGasLimit(accessor));
+	}
+
+	@Test
+	void contractCreateContextHasCorrectResult() {
+		given(expirableTxnRecord.getContractCreateResult()).willReturn(solidityFnResult);
+		given(txCtx.recordSoFar()).willReturn(expirableTxnRecord);
+		given(accessor.getFunction()).willReturn(ContractCreate);
+		given(txCtx.accessor()).willReturn(accessor);
+		assertTrue(txCtxHasContractResult(txCtx));
+	}
+
+	@Test
+	void contractCallContextHasCorrectResult() {
+		given(expirableTxnRecord.getContractCallResult()).willReturn(solidityFnResult);
+		given(txCtx.recordSoFar()).willReturn(expirableTxnRecord);
+		given(accessor.getFunction()).willReturn(ContractCall);
+		given(txCtx.accessor()).willReturn(accessor);
+		assertTrue(txCtxHasContractResult(txCtx));
+	}
+
+	@Test
+	void notContractContextHasNoContractResult() {
+		given(txCtx.recordSoFar()).willReturn(expirableTxnRecord);
+		given(accessor.getFunction()).willReturn(TokenMint);
+		given(txCtx.accessor()).willReturn(accessor);
+		assertFalse(txCtxHasContractResult(txCtx));
+	}
+
+	@Test
+	void notReadyContractCallTransactionHasNoContractResult() {
+		given(expirableTxnRecord.getContractCallResult()).willReturn(null);
+		given(txCtx.recordSoFar()).willReturn(expirableTxnRecord);
+		given(accessor.getFunction()).willReturn(ContractCall);
+		given(txCtx.accessor()).willReturn(accessor);
+		assertFalse(txCtxHasContractResult(txCtx));
+	}
+
+	@Test
+	void notReadyContractCreateTransactionHasNoContractResult() {
+		given(expirableTxnRecord.getContractCreateResult()).willReturn(null);
+		given(txCtx.recordSoFar()).willReturn(expirableTxnRecord);
+		given(accessor.getFunction()).willReturn(ContractCreate);
+		given(txCtx.accessor()).willReturn(accessor);
+		assertFalse(txCtxHasContractResult(txCtx));
 	}
 
 	public static class BodySetter<T, B> {

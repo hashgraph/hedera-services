@@ -46,8 +46,6 @@ import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.domain.trackers.IssEventStatus.ONGOING_ISS;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static java.time.ZoneOffset.UTC;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
@@ -161,13 +159,13 @@ public class NetworkCtxManager {
 	/**
 	 * Used to monitor the current network usage for automated congestion pricing
 	 * and to throttle ContractCreate and ContractCall TXs by the transaction gas limit.
+	 *
 	 * @param accessor - the accessor for the transaction
 	 * @return - {@link ResponseCodeEnum#OK} if the system has enough capacity to handle the transaction
 	 * {@link ResponseCodeEnum#CONSENSUS_GAS_EXHAUSTED} if the transaction should be throttled
 	 */
 	public ResponseCodeEnum prepareForIncorporating(TxnAccessor accessor) {
-		if(handleThrottling.shouldThrottleConsensusTxn(accessor) &&
-				(accessor.getFunction().equals(ContractCall) || accessor.getFunction().equals(ContractCreate))){
+		if (handleThrottling.shouldThrottleConsensusTxn(accessor)) {
 			return ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 		}
 
@@ -178,10 +176,11 @@ public class NetworkCtxManager {
 	public void finishIncorporating(HederaFunctionality op) {
 		opCounters.countHandled(op);
 
-		if(MiscUtils.isConsensusThrottled(op) &&
+		if (MiscUtils.isGasThrottled(op) &&
 				dynamicProperties.shouldThrottleByGas() &&
-				(txnCtx.status().equals(ResponseCodeEnum.SUCCESS) || txnCtx.status().equals(ResponseCodeEnum.OK))){
-			handleThrottling.leakUnusedGasPreviouslyReserved(getGasLimitFromCtx(op) - getGasUsedFromCtx(op));
+				MiscUtils.txCtxHasContractResult(txnCtx)) {
+			handleThrottling.leakUnusedGasPreviouslyReserved(
+					MiscUtils.getContractTXGasLimit(txnCtx.accessor()) - MiscUtils.getContractTxGasUsed(txnCtx));
 		}
 
 		var networkCtxNow = networkCtx.get();
@@ -203,17 +202,5 @@ public class NetworkCtxManager {
 
 	BiPredicate<Instant, Instant> getShouldUpdateMidnightRates() {
 		return shouldUpdateMidnightRates;
-	}
-
-	private long getGasUsedFromCtx(HederaFunctionality op) {
-		return op.equals(HederaFunctionality.ContractCall) ?
-				txnCtx.recordSoFar().getContractCallResult().getGasUsed() :
-				txnCtx.recordSoFar().getContractCreateResult().getGasUsed();
-	}
-
-	private long getGasLimitFromCtx(HederaFunctionality op) {
-		return op == ContractCreate ?
-				txnCtx.accessor().getTxn().getContractCreateInstance().getGas() :
-				txnCtx.accessor().getTxn().getContractCall().getGas();
 	}
 }
