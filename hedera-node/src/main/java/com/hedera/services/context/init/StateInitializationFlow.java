@@ -27,7 +27,6 @@ import com.hedera.services.files.HederaFs;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.annotations.WorkingState;
 import com.hedera.services.stream.RecordStreamManager;
-import com.hedera.services.txns.network.UpgradeActions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -45,7 +44,6 @@ public class StateInitializationFlow {
 	private final HederaFs hfs;
 	private final HederaNumbers hederaNums;
 	private final StateAccessor stateAccessor;
-	private final UpgradeActions upgradeActions;
 	private final RecordStreamManager recordStreamManager;
 	private final Set<FileUpdateInterceptor> fileUpdateInterceptors;
 
@@ -53,7 +51,6 @@ public class StateInitializationFlow {
 	public StateInitializationFlow(
 			final HederaFs hfs,
 			final HederaNumbers hederaNums,
-			final UpgradeActions upgradeActions,
 			final RecordStreamManager recordStreamManager,
 			final @WorkingState StateAccessor stateAccessor,
 			final Set<FileUpdateInterceptor> fileUpdateInterceptors
@@ -61,7 +58,6 @@ public class StateInitializationFlow {
 		this.hfs = hfs;
 		this.hederaNums = hederaNums;
 		this.stateAccessor = stateAccessor;
-		this.upgradeActions = upgradeActions;
 		this.recordStreamManager = recordStreamManager;
 		this.fileUpdateInterceptors = fileUpdateInterceptors;
 	}
@@ -71,8 +67,6 @@ public class StateInitializationFlow {
 
 		stateAccessor.updateFrom(activeState);
 		log.info("Context updated with working state");
-
-		upgradeActions.catchUpOnMissedSideEffects();
 
 		final var activeHash = activeState.runningHashLeaf().getRunningHash().getHash();
 		recordStreamManager.setInitialHash(activeHash);

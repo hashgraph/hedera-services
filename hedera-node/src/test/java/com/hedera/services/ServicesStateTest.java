@@ -604,6 +604,7 @@ class ServicesStateTest {
 		subject.init(platform, addressBook, dualState);
 
 		verify(networkContext).discardPreparedUpgradeMeta();
+		verify(dualState).setFreezeTime(null);
 	}
 
 	@Test

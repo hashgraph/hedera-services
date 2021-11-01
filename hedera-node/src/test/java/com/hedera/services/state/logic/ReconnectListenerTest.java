@@ -22,6 +22,7 @@ package com.hedera.services.state.logic;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.stream.RecordStreamManager;
+import com.hedera.services.txns.network.UpgradeActions;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -51,6 +52,8 @@ class ReconnectListenerTest {
 	@Mock
 	private ServicesState servicesState;
 	@Mock
+	private UpgradeActions upgradeActions;
+	@Mock
 	private RecordStreamManager recordStreamManager;
 
 	@LoggingTarget
@@ -60,7 +63,7 @@ class ReconnectListenerTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new ReconnectListener(recordStreamManager);
+		subject = new ReconnectListener(upgradeActions, recordStreamManager);
 	}
 
 	@Test
@@ -80,5 +83,6 @@ class ReconnectListenerTest {
 		// and:
 		verify(servicesState).logSummary();
 		verify(recordStreamManager).setStartWriteAtCompleteWindow(true);
+		verify(upgradeActions).catchUpOnMissedSideEffects();
 	}
 }
