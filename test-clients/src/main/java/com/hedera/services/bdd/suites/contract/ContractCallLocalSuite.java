@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.contract;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
@@ -53,7 +54,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCallLocalSuite.class);
 
 	public static void main(String... args) {
-		new ContractCallLocalSuite().runSuiteAsync();
+		new ContractCallLocalSuite().runSuiteSync();
 	}
 
 	@Override
@@ -81,7 +82,9 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 
 	private List<HapiApiSpec> positiveSpecs() {
 		return Arrays.asList(
-				vanillaSuccess()
+				vanillaSuccess(),
+				minChargeIsTXGasUsed(),
+				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller()
 		);
 	}
 
@@ -97,7 +100,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI)
 								.has(resultWith().resultThruAbi(
 										ContractResources.GET_CHILD_RESULT_ABI,
-										isLiteralResult(new Object[] { BigInteger.valueOf(7L) })))
+										isLiteralResult(new Object[]{BigInteger.valueOf(7L)})))
 				);
 	}
 
@@ -185,6 +188,36 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 						getAccountBalance("payer").logged(),
 						sleepFor(1_000L),
 						getAccountBalance("payer").logged()
+				);
+	}
+
+	private HapiApiSpec maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller() {
+		return defaultHapiSpec("MaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller")
+				.given(
+						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "5"),
+						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
+						contractCreate("parentDelegate").bytecode("parentDelegateBytecode").adminKey(THRESHOLD)
+				).when(
+						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI)
+				).then(
+						sleepFor(3_000L),
+						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI).gas(300_000L)
+								.has(resultWith().gasUsed(285_000L))
+				);
+	}
+
+	private HapiApiSpec minChargeIsTXGasUsed() {
+		return defaultHapiSpec("MinChargeIsTXGasUsed")
+				.given(
+						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
+						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
+						contractCreate("parentDelegate").bytecode("parentDelegateBytecode").adminKey(THRESHOLD)
+				).when(
+						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI)
+				).then(
+						sleepFor(3_000L),
+						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI).gas(300_000L)
+								.has(resultWith().gasUsed(5451))
 				);
 	}
 

@@ -97,7 +97,7 @@ public class ContractCallSuite extends HapiApiSuite {
 	private static final long depositAmount = 1000;
 
 	public static void main(String... args) {
-		new ContractCallSuite().runSuiteAsync();
+		new ContractCallSuite().runSuiteSync();
 	}
 
 	@Override
@@ -116,6 +116,8 @@ public class ContractCallSuite extends HapiApiSuite {
 	List<HapiApiSpec> negativeSpecs() {
 		return Arrays.asList(
 				insufficientGas(),
+				insufficientFee(),
+				nonPayable(),
 				invalidContract(),
 				smartContractFailFirst(),
 				contractTransferToSigReqAccountWithoutKeyFails(),
@@ -125,6 +127,7 @@ public class ContractCallSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> positiveSpecs() {
 		return Arrays.asList(
+				vanillaSuccess(),
 				resultSizeAffectsFees(),
 				payableSuccess(),
 				depositSuccess(),
@@ -134,7 +137,9 @@ public class ContractCallSuite extends HapiApiSuite {
 				multipleSelfDestructsAreSafe(),
 				smartContractInlineAssemblyCheck(),
 				ocToken(),
-				contractTransferToSigReqAccountWithKeySucceeds()
+				contractTransferToSigReqAccountWithKeySucceeds(),
+				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
+				minChargeIsTXGasUsed()
 		);
 	}
 
@@ -198,7 +203,7 @@ public class ContractCallSuite extends HapiApiSuite {
 							CallTransaction.Function funcSymbol =
 									CallTransaction.Function.fromJsonInterface(SYMBOL_ABI);
 
-							String symbol = (String) getValueFromRegistry(spec, "token_symbol", funcSymbol);
+							String symbol = getValueFromRegistry(spec, "token_symbol", funcSymbol);
 
 							ctxLog.info("symbol: [{}]", symbol);
 							Assertions.assertEquals(
@@ -534,8 +539,9 @@ public class ContractCallSuite extends HapiApiSuite {
 	HapiApiSpec payableSuccess() {
 		return defaultHapiSpec("PayableSuccess")
 				.given(
+						UtilVerbs.overriding("contracts.maxGas", "1000000"),
 						fileCreate("payableBytecode").path(ContractResources.PAYABLE_CONTRACT_BYTECODE_PATH),
-						contractCreate("payableContract").bytecode("payableBytecode").adminKey(THRESHOLD)
+						contractCreate("payableContract").bytecode("payableBytecode").adminKey(THRESHOLD).gas(1_000_000)
 				).when(
 						contractCall("payableContract").via("payTxn").sending(depositAmount)
 				).then(
@@ -662,7 +668,7 @@ public class ContractCallSuite extends HapiApiSuite {
 					+ ", fee = " + record.getTransactionFee()
 					+ ", result is [self-reported size = " + result.getContractCallResult().size()
 					+ ", '" + result.getContractCallResult() + "']");
-			txnLog.info("  Literally :: " + result.toString());
+			txnLog.info("  Literally :: " + result);
 		};
 
 		return defaultHapiSpec("ResultSizeAffectsFees")
@@ -934,6 +940,48 @@ public class ContractCallSuite extends HapiApiSuite {
 									ContractResources.TRANSFERRING_CONTRACT_TRANSFERTOADDRESS,
 									accountAddress, 1).gas(300_000).hasKnownStatus(INVALID_SIGNATURE);
 							CustomSpecAssert.allRunFor(spec, call);
+						})
+				);
+	}
+
+	private HapiApiSpec maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller() {
+		return defaultHapiSpec("MaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller")
+				.given(
+						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "5"),
+						fileCreate("simpleUpdateBytecode").path(ContractResources.SIMPLE_UPDATE)
+				).when(
+						contractCreate("simpleUpdateContract").bytecode("simpleUpdateBytecode").gas(300_000L),
+						contractCall("simpleUpdateContract",
+								ContractResources.SIMPLE_UPDATE_ABI, 5, 42).gas(300_000L).via("callTX")
+				).then(
+						withOpContext((spec, ignore) -> {
+							final var subop01 = getTxnRecord("callTX").saveTxnRecordToRegistry("callTXRec");
+							CustomSpecAssert.allRunFor(spec, subop01);
+
+							final var gasUsed = spec.registry().getTransactionRecord("callTXRec")
+									.getContractCallResult().getGasUsed();
+							Assertions.assertEquals(285000, gasUsed);
+						})
+				);
+	}
+
+	private HapiApiSpec minChargeIsTXGasUsed() {
+		return defaultHapiSpec("MinChargeIsTXGasUsed")
+				.given(
+						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
+						fileCreate("simpleUpdateBytecode").path(ContractResources.SIMPLE_UPDATE)
+				).when(
+						contractCreate("simpleUpdateContract").bytecode("simpleUpdateBytecode").gas(300_000L),
+						contractCall("simpleUpdateContract",
+								ContractResources.SIMPLE_UPDATE_ABI, 5, 42).gas(300_000L).via("callTX")
+				).then(
+						withOpContext((spec, ignore) -> {
+							final var subop01 = getTxnRecord("callTX").saveTxnRecordToRegistry("callTXRec");
+							CustomSpecAssert.allRunFor(spec, subop01);
+
+							final var gasUsed = spec.registry().getTransactionRecord("callTXRec")
+									.getContractCallResult().getGasUsed();
+							Assertions.assertTrue(gasUsed > 0L);
 						})
 				);
 	}
