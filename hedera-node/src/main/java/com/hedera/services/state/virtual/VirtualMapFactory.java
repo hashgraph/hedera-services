@@ -39,6 +39,9 @@ public class VirtualMapFactory {
 	private static final long MAX_STORAGE_ENTRIES = 500_000_000;
 	private static final long MAX_IN_MEMORY_INTERNAL_HASHES = 0;
 
+	private static final String BLOBS_VM_NAME = "blobs";
+	private static final String STORAGE_VM_NAME = "storage";
+
 	@FunctionalInterface
 	public interface JasperDbBuilderFactory  {
 		<K extends VirtualKey, V extends VirtualValue> JasperDbBuilder<K, V> newJdbBuilder();
@@ -63,10 +66,10 @@ public class VirtualMapFactory {
 						DigestType.SHA_384,
 						CURRENT_SERIALIZATION_VERSION,
 						VirtualBlobKey.sizeInBytes(),
-						VirtualBlobKey::new,
+						new VirtualBlobKeySupplier(),
 						CURRENT_SERIALIZATION_VERSION,
 						VirtualBlobValue.sizeInBytes(),
-						VirtualBlobValue::new,
+						new VirtualBlobValueSupplier(),
 						false);
 
 		final JasperDbBuilder<VirtualBlobKey, VirtualBlobValue> dsBuilder = jdbBuilderFactory.newJdbBuilder();
@@ -79,7 +82,7 @@ public class VirtualMapFactory {
 						.preferDiskBasedIndexes(false)
 						.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES)
 						.mergingEnabled(true);
-		return new VirtualMap<>(dsBuilder);
+		return new VirtualMap<>(BLOBS_VM_NAME, dsBuilder);
 	}
 
 	public VirtualMap<ContractKey, ContractValue> newVirtualizedStorage() {
@@ -90,10 +93,10 @@ public class VirtualMapFactory {
 						DigestType.SHA_384,
 						CURRENT_SERIALIZATION_VERSION,
 						storageKeySerializer.getSerializedSize(),
-						ContractKey::new,
+						new ContractKeySupplier(),
 						CURRENT_SERIALIZATION_VERSION,
 						ContractValue.SERIALIZED_SIZE,
-						ContractValue::new,
+						new ContractValueSupplier(),
 						true);
 
 		final JasperDbBuilder<ContractKey, ContractValue> dsBuilder = jdbBuilderFactory.newJdbBuilder();
@@ -106,7 +109,7 @@ public class VirtualMapFactory {
 				.preferDiskBasedIndexes(false)
 				.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES)
 				.mergingEnabled(true);
-		return new VirtualMap<>(dsBuilder);
+		return new VirtualMap<>(STORAGE_VM_NAME, dsBuilder);
 	}
 
 	private String blobsLoc() {

@@ -52,6 +52,7 @@ import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.LongConsumer;
 
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
@@ -69,9 +70,9 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 	Optional<String> contentsPath = Optional.empty();
 	Optional<byte[]> contents = Optional.empty();
 	Optional<String> memo = Optional.empty();
-	Optional<SigControl> waclControl = Optional.empty();
 	Optional<String> keyName = Optional.empty();
-	Optional<String> resourceName = Optional.empty();
+	Optional<SigControl> waclControl = Optional.empty();
+	Optional<LongConsumer> newFileNumObserver = Optional.empty();
 	AtomicReference<Timestamp> expiryUsed = new AtomicReference<>();
 	Optional<Function<HapiApiSpec, String>> contentsPathFn = Optional.empty();
 
@@ -103,6 +104,11 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 					spec -> spec.registry().getKey(effectivePayer(spec)),
 					ignore -> waclKey);
 		}
+	}
+
+	public HapiFileCreate exposingCreatedNumTo(LongConsumer obs) {
+		newFileNumObserver = Optional.of(obs);
+		return this;
 	}
 
 	public HapiFileCreate unmodifiable() {
@@ -227,7 +233,9 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 		if (!immutable) {
 			spec.registry().saveKey(fileName, waclKey);
 		}
-		spec.registry().saveFileId(fileName, lastReceipt.getFileID());
+		final var createdId = lastReceipt.getFileID();
+		newFileNumObserver.ifPresent(obs -> obs.accept(createdId.getFileNum()));
+		spec.registry().saveFileId(fileName, createdId);
 		spec.registry().saveTimestamp(fileName, expiryUsed.get());
 		if (verboseLoggingOn) {
 			log.info("Created file {} with ID {}.", fileName, lastReceipt.getFileID());

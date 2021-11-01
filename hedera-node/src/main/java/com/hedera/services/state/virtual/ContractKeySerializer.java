@@ -20,6 +20,7 @@ package com.hedera.services.state.virtual;
  * ‍
  */
 
+import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.jasperdb.files.hashmap.KeySerializer;
@@ -38,6 +39,9 @@ import static com.hedera.services.state.virtual.ContractKey.getUint256KeyNonZero
  * KeySerializer for ContractKeys
  */
 public class ContractKeySerializer implements KeySerializer<ContractKey> {
+	private static final long CLASS_ID = 0xfb12270526c45316L;
+	private static final int CURRENT_VERSION = 1;
+
 	static final long DATA_VERSION = 1;
 
 	/**
@@ -133,5 +137,25 @@ public class ContractKeySerializer implements KeySerializer<ContractKey> {
 		if (contractId != contractKey.getContractId()) return false;
 		final int[] uint256Key = deserializeUnit256Key(uint256KeyNonZeroBytes, buf, ByteBuffer::get);
 		return Arrays.equals(uint256Key, contractKey.getKey());
+	}
+
+	@Override
+	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+		/* No-op */
+	}
+
+	@Override
+	public void serialize(SerializableDataOutputStream out) throws IOException {
+		/* No-op */
+	}
+
+	@Override
+	public long getClassId() {
+		return CLASS_ID;
+	}
+
+	@Override
+	public int getVersion() {
+		return CURRENT_VERSION;
 	}
 }
