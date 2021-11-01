@@ -29,6 +29,7 @@
     <besu.version>21.10.0-RC1</besu.version>
     <tuweni.version>2.0.0</tuweni.version>
     <besu-native.version>0.3.0</besu-native.version>
+    <caffeine.version>3.0.4</caffeine.version>
   </properties>
 
   <build>
@@ -322,6 +323,11 @@
       <groupId>org.hyperledger.besu</groupId>
       <artifactId>besu-datatypes</artifactId>
       <version>${besu.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.github.ben-manes.caffeine</groupId>
+      <artifactId>caffeine</artifactId>
+      <version>${caffeine.version}</version>
     </dependency>
   </dependencies>
 
