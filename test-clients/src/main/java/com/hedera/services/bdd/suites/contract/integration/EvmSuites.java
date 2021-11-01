@@ -47,7 +47,8 @@ public class EvmSuites extends HapiApiSuite {
         return List.of(
 //                HSCS_EVM_008_SelfDesctructUpdatesHederaAccount(),
 //                HSCS_EVM_0014_ContractCreateFailsOnLargeContracts(),
-                HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts()
+//                HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts(),
+                HSCS_EVM_006_ContractHBarTransferToAccount()
         );
     }
 
@@ -116,12 +117,38 @@ public class EvmSuites extends HapiApiSuite {
 
     // TODO:
     private HapiApiSpec HSCS_EVM_006_ContractHBarTransferToAccount() {
+        final var ACCOUNT = "account";
+        final var CONTRACT_FROM = "contract1";
         return defaultHapiSpec("HSCS_EVM_006_ContractHBarTransferToAccount")
-                .given()
-                .when()
-                .then();
+                .given(
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
+                        cryptoCreate("receiver").balance(10_000L),
+
+                        fileCreate("contract1Bytecode").path(ContractResources.TRANSFERRING_CONTRACT).payingWith(ACCOUNT),
+                        contractCreate(CONTRACT_FROM).bytecode("contract1Bytecode").balance(10_000L).payingWith(ACCOUNT),
+
+
+                        getContractInfo(CONTRACT_FROM).saveToRegistry("contract_from"),
+                        getAccountInfo(ACCOUNT).savingSnapshot("accountInfo"),
+                        getAccountInfo("receiver").savingSnapshot("receiverInfo")
+                )
+                .when(
+                        withOpContext((spec, log) -> {
+                            var receiverAddr = spec.registry().getAccountInfo("receiverInfo").getContractAccountID();
+                            var transferCall = contractCall(
+                                    CONTRACT_FROM,
+                                    ContractResources.TRANSFERRING_CONTRACT_TRANSFERTOADDRESS,
+                                    receiverAddr, 10)
+                                    .payingWith(ACCOUNT).logged();
+                            allRunFor(spec, transferCall);
+                        })
+                )
+                .then(
+                        getAccountBalance("receiver").hasTinyBars(10_000 + 10)
+                );
     }
 
+    // TODO: check the comments in notion
     private HapiApiSpec HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts() {
         final var ACCOUNT = "account";
         final var CONTRACT_FROM = "contract1";

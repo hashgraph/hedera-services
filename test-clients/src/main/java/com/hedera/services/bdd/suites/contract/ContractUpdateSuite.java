@@ -103,7 +103,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 	private HapiApiSpec updateDoesNotTouchFileID() {
 		Bytes before;
 		try {
-			before = Bytes.fromHexString(ERC1155ContractInteractions.readFileContents(ContractResources.EMPTY_CONSTRUCTOR).toStringUtf8());
+			before = Bytes.fromHexString(ERC1155ContractInteractions.getFileContents(ContractResources.EMPTY_CONSTRUCTOR).toStringUtf8());
 		}catch (Exception e) {
 			before = Bytes.of();
 		}
