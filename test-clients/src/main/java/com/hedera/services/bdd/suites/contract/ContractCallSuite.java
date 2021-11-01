@@ -118,7 +118,8 @@ public class ContractCallSuite extends HapiApiSuite {
 				insufficientGas(),
 				invalidContract(),
 				smartContractFailFirst(),
-				contractTransferToSigReqAccountWithoutKeyFails()
+				contractTransferToSigReqAccountWithoutKeyFails(),
+				callingDestructedContractReturnsStatusDeleted()
 		);
 	}
 
@@ -546,16 +547,23 @@ public class ContractCallSuite extends HapiApiSuite {
 				);
 	}
 
-	HapiApiSpec simpleUpdate() {
-		return defaultHapiSpec("SimpleUpdate")
+	HapiApiSpec callingDestructedContractReturnsStatusDeleted() {
+		return defaultHapiSpec("CallingDestructedContractReturnsStatusDeleted")
 				.given(
+						UtilVerbs.overriding("contracts.maxGas", "1000000"),
 						fileCreate("simpleUpdateBytecode").path(ContractResources.SIMPLE_UPDATE)
 				).when(
-						contractCreate("simpleUpdateContract").bytecode("simpleUpdateBytecode").gas(1_000_000),
-						contractCall("simpleUpdateContract", ContractResources.SIMPLE_UPDATE_ABI, 5, 42).gas(1_000_000),
-						contractCall("simpleUpdateContract", ContractResources.SIMPLE_SELFDESTRUCT_UPDATE_ABI, "0x0000000000000000000000000000000000000002").gas(1_000_000)
+						contractCreate("simpleUpdateContract").bytecode("simpleUpdateBytecode").gas(300_000L),
+						contractCall("simpleUpdateContract",
+								ContractResources.SIMPLE_UPDATE_ABI, 5, 42).gas(300_000L),
+						contractCall("simpleUpdateContract",
+								ContractResources.SIMPLE_SELFDESTRUCT_UPDATE_ABI,
+								"0x0000000000000000000000000000000000000002")
+								.gas(1_000_000L)
 				).then(
-						contractCall("simpleUpdateContract", ContractResources.SIMPLE_UPDATE_ABI, 15, 434).gas(1_000_000).hasKnownStatus(CONTRACT_DELETED)
+						contractCall("simpleUpdateContract",
+								ContractResources.SIMPLE_UPDATE_ABI, 15, 434).gas(350_000L)
+								.hasKnownStatus(CONTRACT_DELETED)
 				);
 	}
 
