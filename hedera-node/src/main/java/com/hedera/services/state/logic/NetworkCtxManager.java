@@ -178,7 +178,9 @@ public class NetworkCtxManager {
 	public void finishIncorporating(HederaFunctionality op) {
 		opCounters.countHandled(op);
 
-		if(MiscUtils.isConsensusThrottled(op)){
+		if(MiscUtils.isConsensusThrottled(op) &&
+				dynamicProperties.shouldThrottleByGas() &&
+				(txnCtx.status().equals(ResponseCodeEnum.SUCCESS) || txnCtx.status().equals(ResponseCodeEnum.OK))){
 			handleThrottling.leakUnusedGasPreviouslyReserved(getGasLimitFromCtx(op) - getGasUsedFromCtx(op));
 		}
 
