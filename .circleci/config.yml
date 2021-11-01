@@ -910,6 +910,29 @@ workflows:
             - attach_workspace:
                 at: /
 
+  GCP-Daily-Services-Comp-Update-DisPreUpdate-4N-2C:
+    triggers:
+      - schedule:
+          cron: "45 22,2 * * *"
+          filters:
+            branches:
+              only:
+                - 02170-M-update-regression-nightly
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_2C/UpdateDisPreUpdate
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Comp-Update-DisPreUpdate-4N-2C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
   GCP-Daily-Services-Update-Reconnect-4N-2C:
     triggers:
       - schedule:
