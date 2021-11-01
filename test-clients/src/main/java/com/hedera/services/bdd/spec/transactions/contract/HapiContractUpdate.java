@@ -89,7 +89,7 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 		newMemo = Optional.of(s);
 		return this;
 	}
-	public HapiContractUpdate bytecode(String fileName) {
+	public HapiContractUpdate newBytecode(String fileName) {
 		newBytecodeFile = Optional.of(fileName);
 		return this;
 	}
@@ -130,13 +130,12 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		Optional<Key> key = newKey.map(spec.registry()::getKey);
-		FileID newBytecodeFileId = TxnUtils.asFileId(newBytecodeFile.get(), spec);
 		ContractUpdateTransactionBody opBody = spec
 				.txns()
 				.<ContractUpdateTransactionBody, ContractUpdateTransactionBody.Builder>body(
 						ContractUpdateTransactionBody.class, b -> {
 							b.setContractID(spec.registry().getContractId(contract));
-							b.setFileID(newBytecodeFileId);
+							newBytecodeFile.ifPresent(s -> b.setFileID(TxnUtils.asFileId(s, spec)));
 							if (useDeprecatedAdminKey) {
 								b.setAdminKey(DEPRECATED_CID_ADMIN_KEY);
 							} else if (wipeToThresholdKey) {
