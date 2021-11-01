@@ -126,6 +126,7 @@ jobs:
           awk -F' ' '{print $1,$3,$5}' |
           awk -F',' '{print $1,$2,$4}' |
           awk -F' ' '{print $1 "," $2 "," $3}' >> results.csv
+          cat results.csv > grep ,from --invert > final_results.csv
           cat test-clients/e2e-output.txt > full_output.txt
           rm -f test-clients/e2e-output.txt temp.txt
 
@@ -134,7 +135,7 @@ jobs:
         with:
           name: e2e-results
           path: |
-            results.csv
+            final_results.csv
             full_output.txt
 
       - name: Upload node logs # uploads the logs from the 3-node network
