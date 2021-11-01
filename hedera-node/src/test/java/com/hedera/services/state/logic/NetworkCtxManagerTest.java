@@ -236,6 +236,7 @@ class NetworkCtxManagerTest {
 		given(transactionBody.getContractCall()).willReturn(callTransactionBody);
 		given(txnAccessor.getTxn()).willReturn(transactionBody);
 		given(txnCtx.accessor()).willReturn(txnAccessor);
+		given(txnCtx.status()).willReturn(OK);
 
 		// when:
 		subject.finishIncorporating(ContractCall);
@@ -258,6 +259,8 @@ class NetworkCtxManagerTest {
 		given(transactionBody.getContractCreateInstance()).willReturn(createTransactionBody);
 		given(txnAccessor.getTxn()).willReturn(transactionBody);
 		given(txnCtx.accessor()).willReturn(txnAccessor);
+
+		given(txnCtx.status()).willReturn(OK);
 
 		// when:
 		subject.finishIncorporating(ContractCreate);
