@@ -32,16 +32,13 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 
-public class MemoValidation extends HapiApiSuite {
+public final class MemoValidation extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(MemoValidation.class);
 
 	private static final char SINGLE_BYTE_CHAR = 'a';
 	private static final char MULTI_BYTE_CHAR = 'ф';
-
-	private static final byte[] LONG_BYTES = new byte[1000];
-	private static final byte[] VALID_BYTES = new byte[100];
-	private static final byte[] INVALID_BYTES = new byte[102];
-	private static final byte[] BYTES_49 = new byte[49];
+	private static final String primary = "primary";
+	private static final String secondary = "secondary";
 
 	private static String longMemo;
 	private static String validMemoWithMultiByteChars;
@@ -70,8 +67,6 @@ public class MemoValidation extends HapiApiSuite {
 	}
 
 	private HapiApiSpec contractOps() {
-		var primary = "primary";
-		var secondary = "secondary";
 		return defaultHapiSpec("MemoValidationsOnContractOps")
 				.given(
 						fileCreate("contractFile")
@@ -111,8 +106,6 @@ public class MemoValidation extends HapiApiSuite {
 	}
 
 	private HapiApiSpec tokenOps() {
-		var primary = "primary";
-		var secondary = "secondary";
 		return defaultHapiSpec("MemoValidationsOnTokenOps")
 				.given(
 						cryptoCreate("firstUser"),
@@ -161,10 +154,8 @@ public class MemoValidation extends HapiApiSuite {
 	private HapiApiSpec scheduleOps() {
 		final String defaultWhitelist =
 				HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist");
-		var primary = "primary";
-		var secondary = "secondary";
-		var toScheduleOp1 = cryptoCreate("test");
-		var toScheduleOp2 = cryptoCreate("test").balance(1L);
+		final var toScheduleOp1 = cryptoCreate("test");
+		final var toScheduleOp2 = cryptoCreate("test").balance(1L);
 		return defaultHapiSpec("MemoValidationsOnScheduleOps")
 				.given(
 						overriding("scheduling.whitelist", "CryptoCreate"),
@@ -209,8 +200,6 @@ public class MemoValidation extends HapiApiSuite {
 	}
 
 	private HapiApiSpec topicOps() {
-		var primary = "primary";
-		var secondary = "secondary";
 		return defaultHapiSpec("MemoValidationsOnTopicOps")
 				.given(
 						newKeyNamed("adminKey"),
@@ -257,8 +246,6 @@ public class MemoValidation extends HapiApiSuite {
 	}
 
 	private HapiApiSpec cryptoOps() {
-		var primary = "primary";
-		var secondary = "secondary";
 		return defaultHapiSpec("MemoValidationsOnCryptoOps")
 				.given(
 						cryptoCreate(primary)
@@ -301,35 +288,16 @@ public class MemoValidation extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec memoValidations() {
-		return defaultHapiSpec("MemoValidations")
-				.given().when().then(
-						createTopic("testTopic")
-								.topicMemo(longMemo)
-								.hasKnownStatus(MEMO_TOO_LONG),
-						createTopic("alsoTestTopic")
-								.topicMemo(ZERO_BYTE_MEMO)
-								.hasKnownStatus(INVALID_ZERO_BYTE_IN_STRING),
-						createTopic("validMemoWithMultiByteChars")
-								.topicMemo(validMemoWithMultiByteChars),
-						createTopic("inValidMemoWithMultiByteChars")
-								.topicMemo(inValidMemoWithMultiByteChars)
-								.hasKnownStatus(MEMO_TOO_LONG),
-						createTopic("validMemo1")
-								.topicMemo(stringOf49Bytes + MULTI_BYTE_CHAR + stringOf49Bytes),
-						createTopic("validMemo2")
-								.topicMemo(stringOf49Bytes + SINGLE_BYTE_CHAR + SINGLE_BYTE_CHAR + stringOf49Bytes),
-						scheduleCreate("invalidMemo", cryptoCreate("test"))
-								.withEntityMemo(stringOf49Bytes + SINGLE_BYTE_CHAR + MULTI_BYTE_CHAR + stringOf49Bytes)
-								.hasPrecheck(MEMO_TOO_LONG)
-				);
-	}
-
 	private void setUpByteArrays() {
+		final var LONG_BYTES = new byte[1000];
+		final var VALID_BYTES = new byte[100];
+		final var INVALID_BYTES = new byte[102];
+		final var BYTES_49 = new byte[49];
+
 		Arrays.fill(LONG_BYTES, (byte) 33);
-		Arrays.fill(VALID_BYTES, (byte)MULTI_BYTE_CHAR);
-		Arrays.fill(INVALID_BYTES, (byte)MULTI_BYTE_CHAR);
-		Arrays.fill(BYTES_49, (byte)SINGLE_BYTE_CHAR);
+		Arrays.fill(VALID_BYTES, (byte) MULTI_BYTE_CHAR);
+		Arrays.fill(INVALID_BYTES, (byte) MULTI_BYTE_CHAR);
+		Arrays.fill(BYTES_49, (byte) SINGLE_BYTE_CHAR);
 		longMemo = new String(LONG_BYTES, StandardCharsets.UTF_8);
 		validMemoWithMultiByteChars = new String(VALID_BYTES, StandardCharsets.UTF_8);
 		inValidMemoWithMultiByteChars = new String(INVALID_BYTES, StandardCharsets.UTF_8);
