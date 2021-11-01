@@ -27,13 +27,18 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.ExternalSelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.merkle.io.SerializationStrategy;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Supplier;
+
+import static com.swirlds.common.merkle.io.SerializationStrategy.EXTERNAL_SELF_SERIALIZATION;
+import static com.swirlds.common.merkle.io.SerializationStrategy.SELF_SERIALIZATION;
 
 public class MerkleOptionalBlob extends AbstractMerkleLeaf implements ExternalSelfSerializable, Keyed<String> {
 	private static boolean inMigration = false;
@@ -82,6 +87,16 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements ExternalSe
 
 	public MerkleOptionalBlob(final BinaryObject delegate) {
 		this.delegate = delegate;
+	}
+
+	private static final Set<SerializationStrategy> STRATEGIES = Set.of(SELF_SERIALIZATION, EXTERNAL_SELF_SERIALIZATION);
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public Set<SerializationStrategy> supportedSerialization(final int version) {
+		return STRATEGIES;
 	}
 
 	@Override
