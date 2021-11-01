@@ -28,6 +28,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -63,16 +64,17 @@ import static com.hedera.services.bdd.suites.file.DiverseStateCreation.SMALL_CON
 import static com.hedera.services.bdd.suites.file.DiverseStateCreation.SMALL_FILE;
 import static com.hedera.services.bdd.suites.file.DiverseStateCreation.STATE_META_JSON_LOC;
 
-public class DiverseStateValidation extends HapiApiSuite {
+/**
+ * Client that validates the blobs mentioned in a JSON metadata file created by {@link DiverseStateCreation} are
+ * present in state as expected (e.g. after a migration).
+ */
+public final class DiverseStateValidation extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(DiverseStateValidation.class);
 
 	private static byte[] SMALL_CONTENTS;
 	private static byte[] LARGE_CONTENTS;
 
 	public static void main(String... args) throws IOException {
-		SMALL_CONTENTS = Files.newInputStream(Paths.get(SMALL_CONTENTS_LOC)).readAllBytes();
-		LARGE_CONTENTS = Files.newInputStream(Paths.get(LARGE_CONTENTS_LOC)).readAllBytes();
-
 		new DiverseStateValidation().runSuiteSync();
 	}
 
@@ -82,6 +84,13 @@ public class DiverseStateValidation extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
+		try {
+			SMALL_CONTENTS = Files.newInputStream(Paths.get(SMALL_CONTENTS_LOC)).readAllBytes();
+			LARGE_CONTENTS = Files.newInputStream(Paths.get(LARGE_CONTENTS_LOC)).readAllBytes();
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+
 		return List.of(
 				validateDiverseState()
 		);

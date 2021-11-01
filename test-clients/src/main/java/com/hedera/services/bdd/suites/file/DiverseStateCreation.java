@@ -31,6 +31,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -53,7 +54,13 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
-public class DiverseStateCreation extends HapiApiSuite {
+/**
+ * Client that creates a state with at least one of every type of blob; and a bit of diversity within type.
+ *
+ * It then writes a JSON metadata file that {@link DiverseStateValidation} can use to validate this state
+ * is as expected (e.g. after a migration).
+ */
+public final class DiverseStateCreation extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(DiverseStateCreation.class);
 
 	private static byte[] SMALL_CONTENTS;
@@ -91,15 +98,19 @@ public class DiverseStateCreation extends HapiApiSuite {
 	public static final String STATE_META_JSON_LOC = "src/main/resource/testfiles/diverseBlobsInfo.json";
 
 	public static void main(String... args) throws IOException {
-		SMALL_CONTENTS = Files.newInputStream(Paths.get(SMALL_CONTENTS_LOC)).readAllBytes();
-		MEDIUM_CONTENTS = Files.newInputStream(Paths.get(MEDIUM_CONTENTS_LOC)).readAllBytes();
-		LARGE_CONTENTS = Files.newInputStream(Paths.get(LARGE_CONTENTS_LOC)).readAllBytes();
-
 		new DiverseStateCreation().runSuiteSync();
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
+		try {
+			SMALL_CONTENTS = Files.newInputStream(Paths.get(SMALL_CONTENTS_LOC)).readAllBytes();
+			MEDIUM_CONTENTS = Files.newInputStream(Paths.get(MEDIUM_CONTENTS_LOC)).readAllBytes();
+			LARGE_CONTENTS = Files.newInputStream(Paths.get(LARGE_CONTENTS_LOC)).readAllBytes();
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+
 		return List.of(
 				createDiverseState()
 		);
