@@ -660,6 +660,7 @@ public class ContractCallSuite extends HapiApiSuite {
 		return defaultHapiSpec("ResultSizeAffectsFees")
 				.given(
 						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
+						UtilVerbs.overriding("contracts.throttle.throttleByGas", "false"),
 						TxnVerbs.fileCreate("bytecode").path(ContractResources.VERBOSE_DEPOSIT_BYTECODE_PATH),
 						TxnVerbs.contractCreate("testContract").bytecode("bytecode")
 				).when(
@@ -881,7 +882,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						fileCreate("transferringContractBytecode").path(ContractResources.TRANSFERRING_CONTRACT)
 				).when(
 						contractCreate("transferringContract").bytecode("transferringContractBytecode")
-								.gas(1_000_000L).balance(5000L)
+								.gas(300_000L).balance(5000L)
 				).then(
 						withOpContext((spec, opLog) -> {
 							String accountAddress = spec.registry()
@@ -916,7 +917,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						fileCreate("transferringContractBytecode").path(ContractResources.TRANSFERRING_CONTRACT)
 				).when(
 						contractCreate("transferringContract").bytecode("transferringContractBytecode")
-								.gas(1_000_000L).balance(5000L)
+								.gas(300_000L).balance(5000L)
 				).then(
 						withOpContext((spec, opLog) -> {
 							String accountAddress = spec.registry()

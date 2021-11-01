@@ -90,7 +90,8 @@ public class SStoreSuite extends HapiApiSuite {
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
 										"contracts.maxStorageKb", "" + MAX_CONTRACT_STORAGE_KB,
-										"contracts.maxGas", "" + MAX_CONTRACT_GAS)))
+										"contracts.maxGas", "" + MAX_CONTRACT_GAS,
+										"contracts.throttle.throttleByGas", "false")))
 				.when()
 				.then();
 	}

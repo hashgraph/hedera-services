@@ -61,6 +61,7 @@ public class GasLimitThrottlingSuite extends HapiApiSuite {
 		return defaultHapiSpec("TXsUnderGasLimitAllowed")
 				.given(
 						UtilVerbs.overriding("contracts.throttle.throttleByGas", "true"),
+						UtilVerbs.overriding("contracts.maxGas", "10000000"),
 						fileUpdate(THROTTLE_DEFS)
 								.fee(ONE_HUNDRED_HBARS)
 								.payingWith(EXCHANGE_RATE_CONTROL)
