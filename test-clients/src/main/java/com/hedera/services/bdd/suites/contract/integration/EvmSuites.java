@@ -1,7 +1,6 @@
 package com.hedera.services.bdd.suites.contract.integration;
 
 import com.google.common.base.Splitter;
-import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -20,13 +19,11 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
@@ -72,7 +69,7 @@ public class EvmSuites extends HapiApiSuite {
     // However, trying to do it at 1 tx will result in TRANSACTION_OVERSIZE
     private HapiApiSpec HSCS_EVM_0014_ContractCreateFailsOnLargeContracts() {
         final var PAYER = "payer";
-        final var data = ERC1155ContractInteractions.getFileContents(ContractResources.LARGE_CONTRACT);
+        final var data = ERC1155ContractInteractions.readFileContents(ContractResources.LARGE_CONTRACT);
         return defaultHapiSpec("HSCS_EVM_0014_ContractCreateFailsOnLargeContracts")
                 .given(
                         cryptoCreate(PAYER)

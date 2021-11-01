@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.transactions.contract;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
@@ -38,6 +39,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.ethereum.vm.trace.Op;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -62,7 +64,7 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 	private boolean wipeToThresholdKey = false;
 	private boolean useEmptyAdminKeyList = false;
 	private boolean useDeprecatedMemoField = false;
-	private Optional<FileID> fileId = Optional.empty();
+	private Optional<String> bytecode = Optional.empty();
 
 	public HapiContractUpdate(String contract) {
 		this.contract = contract;
@@ -109,8 +111,8 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 		useEmptyAdminKeyList = true;
 		return this;
 	}
-	public HapiContractUpdate newFileId(FileID fileId) {
-		this.fileId = Optional.of(fileId);
+	public HapiContractUpdate bytecode(String bytecode) {
+		this.bytecode = Optional.of(bytecode);
 		return this;
 	}
 
@@ -153,7 +155,7 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 								}
 							});
 							newAutoRenew.ifPresent(autoRenew -> b.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenew).build()));
-							fileId.ifPresent(f -> b.setFileID(f).build());
+							bytecode.ifPresent(f -> b.setFileID(TxnUtils.asFileId(bytecode.get(), spec)).build());
 						}
 				);
 		return builder -> builder.setContractUpdateInstance(opBody);

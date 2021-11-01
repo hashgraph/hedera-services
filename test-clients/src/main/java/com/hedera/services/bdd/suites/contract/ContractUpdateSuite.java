@@ -20,23 +20,32 @@ package com.hedera.services.bdd.suites.contract;
  * ‍
  */
 
+import com.google.common.io.Files;
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.FileID;
+import com.hedera.services.bdd.suites.contract.openzeppelin.ERC1155ContractInteractions;
+import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -46,7 +55,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
@@ -55,7 +63,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class ContractUpdateSuite extends HapiApiSuite {
@@ -78,39 +88,46 @@ public class ContractUpdateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-//				updateWithBothMemoSettersWorks(),
-//				updatingExpiryWorks(),
-//				rejectsExpiryTooFarInTheFuture(),
-//				updateAutoRenewWorks(),
-//				updateAdminKeyWorks(),
-//				canMakeContractImmutableWithEmptyKeyList(),
-//				givenAdminKeyMustBeValid(),
-//				fridayThe13thSpec(),
+				updateWithBothMemoSettersWorks(),
+				updatingExpiryWorks(),
+				rejectsExpiryTooFarInTheFuture(),
+				updateAutoRenewWorks(),
+				updateAdminKeyWorks(),
+				canMakeContractImmutableWithEmptyKeyList(),
+				givenAdminKeyMustBeValid(),
+				fridayThe13thSpec(),
 				updateDoesNotTouchFileID()
 		);
 	}
 
 	private HapiApiSpec updateDoesNotTouchFileID() {
+		Bytes before;
+		try {
+			before = Bytes.fromHexString(ERC1155ContractInteractions.readFileContents(ContractResources.EMPTY_CONSTRUCTOR).toStringUtf8());
+		}catch (Exception e) {
+			before = Bytes.of();
+		}
+		Bytes finalBefore = before;
 		return defaultHapiSpec("HSCS-DCPR-001")
-				.given(
-						fileCreate("contractFile")
-								.path(ContractResources.EMPTY_CONSTRUCTOR).via("fileCreate"),
-						contractCreate("contract")
-								.bytecode("contractFile")
-								.hasKnownStatus(SUCCESS)
-				)
-				.when()
-				.then(
-						contractUpdate("contract")
-								.newFileId(FileID.getDefaultInstance())
-								.hasKnownStatus(SUCCESS),
-						assertionsHold((spec, log) -> {
-							var record = getTxnRecord("fileCreate");
-							allRunFor(spec, record);
-							var id = record.getResponseRecord().getReceipt().getFileID();
-							assertNotEquals(id, FileID.getDefaultInstance());
-						})
-				);
+					.given(
+							fileCreate("contractFile")
+									.path(ContractResources.EMPTY_CONSTRUCTOR).via("fileCreate"),
+						fileCreate("bytecode2")
+								.path(ContractResources.SIMPLE_STORAGE_BYTECODE_PATH),
+							contractCreate("contract")
+									.bytecode("contractFile"),
+							getContractBytecode("contract").saveResultTo("initialBytecode")
+					)
+					.when(
+							contractUpdate("contract")
+									.bytecode("bytecode2")
+					)
+					.then(
+							withOpContext((spec, log) -> {
+								var op = getContractBytecode("contract").hasBytecode(spec.registry().getBytes("initialBytecode"));
+								allRunFor(spec, op);
+							})
+					);
 	}
 
 	private HapiApiSpec updateWithBothMemoSettersWorks() {
