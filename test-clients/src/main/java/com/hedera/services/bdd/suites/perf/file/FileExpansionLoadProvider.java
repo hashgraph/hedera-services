@@ -60,6 +60,17 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_FILE_SIZE_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
+/**
+ * Load provider that continually appends 5kb chunks to a random choice of one of a set of target files.
+ *
+ * Along with the standard {@code duration}, {@code unit}, and {@code maxOpsPerSec} parameters, the
+ * client supports configuration based on:
+ * <ul>
+ *     <li>An override for the {@code files.maxSizeKb} property.</li>
+ *     <li>The number of target files to maintain (once a file reaches the maximum size, it is
+ *     "taken out of rotation" and a new target file created).</li>
+ * </ul>
+ */
 public class FileExpansionLoadProvider extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(FileExpansionLoadProvider.class);
 
