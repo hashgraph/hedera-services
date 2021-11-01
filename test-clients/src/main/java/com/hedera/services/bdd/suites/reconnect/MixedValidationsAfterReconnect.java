@@ -31,6 +31,7 @@ import java.util.List;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
@@ -47,7 +48,8 @@ public class MixedValidationsAfterReconnect extends HapiApiSuite {
 		return List.of(
 				getAccountBalanceFromAllNodes(),
 				validateTopicInfo(),
-				validateFileInfo()
+				validateFileInfo(),
+				validateContractInfo()
 		);
 	}
 
@@ -106,6 +108,20 @@ public class MixedValidationsAfterReconnect extends HapiApiSuite {
 						getFileInfo(firstlyCreatedFile).logged().setNode("0.0.8"),
 						getFileInfo(lastlyCreatedFile).logged().setNode("0.0.8"),
 						getFileInfo(invalidFileId).hasCostAnswerPrecheck(ResponseCodeEnum.INVALID_FILE_ID)
+				);
+	}
+
+	private HapiApiSpec validateContractInfo() {
+		final String firstlyCreateContract = "0.0.42004";
+		final String lastlyCreatedContract = "0.0.43003";
+		final String invalidContractId = "0.0.43004";
+		return defaultHapiSpec("ValidateContractInfo")
+				.given()
+				.when()
+				.then(
+						getContractInfo(firstlyCreateContract).logged().setNode("0.0.8"),
+						getContractInfo(lastlyCreatedContract).logged().setNode("0.0.8"),
+						getContractInfo(invalidContractId).hasCostAnswerPrecheck(ResponseCodeEnum.INVALID_FILE_ID)
 				);
 	}
 

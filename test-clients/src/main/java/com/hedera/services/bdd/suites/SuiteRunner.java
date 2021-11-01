@@ -41,6 +41,7 @@ import com.hedera.services.bdd.suites.contract.ContractDeleteSuite;
 import com.hedera.services.bdd.suites.contract.ContractGetBytecodeSuite;
 import com.hedera.services.bdd.suites.contract.ContractGetInfoSuite;
 import com.hedera.services.bdd.suites.contract.ContractUpdateSuite;
+import com.hedera.services.bdd.suites.contract.SmartContract2_0Tests;
 import com.hedera.services.bdd.suites.contract.opcodes.BalanceOperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.CallCodeOperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.CallOperationSuite;
@@ -123,6 +124,7 @@ import com.hedera.services.bdd.suites.perf.topic.SubmitMessageLoadTest;
 import com.hedera.services.bdd.suites.reconnect.AutoRenewEntitiesForReconnect;
 import com.hedera.services.bdd.suites.reconnect.CheckUnavailableNode;
 import com.hedera.services.bdd.suites.reconnect.CreateAccountsBeforeReconnect;
+import com.hedera.services.bdd.suites.reconnect.CreateContractsBeforeReconnect;
 import com.hedera.services.bdd.suites.reconnect.CreateFilesBeforeReconnect;
 import com.hedera.services.bdd.suites.reconnect.CreateSchedulesBeforeReconnect;
 import com.hedera.services.bdd.suites.reconnect.CreateTokensBeforeReconnect;
@@ -315,6 +317,7 @@ public class SuiteRunner {
 		put("CreateFilesBeforeReconnect", aof(CreateFilesBeforeReconnect::new));
 		put("CreateTokensBeforeReconnect", aof(CreateTokensBeforeReconnect::new));
 		put("CreateSchedulesBeforeReconnect", aof(CreateSchedulesBeforeReconnect::new));
+		put("CreateContractsBeforeReconnect", aof(CreateContractsBeforeReconnect::new));
 		put("CheckUnavailableNode", aof(CheckUnavailableNode::new));
 		put("MixedValidationsAfterReconnect", aof(MixedValidationsAfterReconnect::new));
 		put("UpdateApiPermissionsDuringReconnect", aof(UpdateApiPermissionsDuringReconnect::new));
@@ -403,6 +406,7 @@ public class SuiteRunner {
 		put("ContractPerformanceSuite", aof(ContractPerformanceSuite::new));
 		put("MixedSmartContractOpsLoadTest", aof(MixedSmartContractOpsLoadTest::new));
 		put("FibonacciPlusLoadProvider", aof(FibonacciPlusLoadProvider::new));
+		put("SmartContract2_0Tests", aof(SmartContract2_0Tests::new));
 		/* Functional tests - AUTORENEW */
 		put("AccountAutoRenewalSuite", aof(AccountAutoRenewalSuite::new));
 		/* Functional tests - MIXED (record emphasis) */
