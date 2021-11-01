@@ -57,7 +57,7 @@ public class ERC1155ContractInteractions extends HapiApiSuite {
 		new ERC1155ContractInteractions().runSuiteSync();
 	}
 	
-	private ByteString getFileContents(String path) {
+	public static ByteString getFileContents(String path) {
 		ByteString contents = null;
 		try {
 			var bytes = Files.readAllBytes(Path.of(path));

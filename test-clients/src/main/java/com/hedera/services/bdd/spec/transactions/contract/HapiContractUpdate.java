@@ -29,6 +29,7 @@ import com.hedera.services.bdd.spec.transactions.TxnFactory;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -61,6 +62,7 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 	private boolean wipeToThresholdKey = false;
 	private boolean useEmptyAdminKeyList = false;
 	private boolean useDeprecatedMemoField = false;
+	private Optional<FileID> fileId = Optional.empty();
 
 	public HapiContractUpdate(String contract) {
 		this.contract = contract;
@@ -107,6 +109,10 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 		useEmptyAdminKeyList = true;
 		return this;
 	}
+	public HapiContractUpdate newFileId(FileID fileId) {
+		this.fileId = Optional.of(fileId);
+		return this;
+	}
 
 	@Override
 	protected void updateStateOf(HapiApiSpec spec) throws Throwable {
@@ -147,6 +153,7 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 								}
 							});
 							newAutoRenew.ifPresent(autoRenew -> b.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenew).build()));
+							fileId.ifPresent(f -> b.setFileID(f).build());
 						}
 				);
 		return builder -> builder.setContractUpdateInstance(opBody);
