@@ -55,11 +55,13 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCal
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
@@ -71,7 +73,7 @@ class NetworkCtxManagerTest {
 	private Instant sometime = Instant.ofEpochSecond(1_234_567L);
 	private Instant sometimeSameDay = sometime.plusSeconds(issResetPeriod + 1L);
 	private Instant sometimeNextDay = sometime.plusSeconds(86_400L);
-	private final GlobalDynamicProperties mockDynamicProps = new MockGlobalDynamicProps();
+	private final MockGlobalDynamicProps mockDynamicProps = new MockGlobalDynamicProps();
 
 	@Mock
 	private IssEventInfo issInfo;
@@ -237,6 +239,7 @@ class NetworkCtxManagerTest {
 		given(txnAccessor.getTxn()).willReturn(transactionBody);
 		given(txnCtx.accessor()).willReturn(txnAccessor);
 		given(txnCtx.status()).willReturn(OK);
+		mockDynamicProps.setThrottleByGas(true);
 
 		// when:
 		subject.finishIncorporating(ContractCall);
@@ -246,6 +249,37 @@ class NetworkCtxManagerTest {
 		verify(handleThrottling).leakUnusedGasPreviouslyReserved(9_000L);
 		verify(networkCtx).syncThrottling(handleThrottling);
 		verify(networkCtx).syncMultiplierSource(feeMultiplierSource);
+	}
+
+	@Test
+	void whenFinishingContractCallUnusedGasIsNotLeakedIfGasThrottlingIsTurnedOff() {
+		// setup:
+		mockDynamicProps.setThrottleByGas(false);
+
+		// when:
+		subject.finishIncorporating(ContractCall);
+
+		// then:
+		verify(opCounters).countHandled(ContractCall);
+		verify(networkCtx).syncThrottling(handleThrottling);
+		verify(networkCtx).syncMultiplierSource(feeMultiplierSource);
+		verify(handleThrottling, never()).leakUnusedGasPreviouslyReserved(anyLong());
+	}
+
+	@Test
+	void whenFinishingContractCallUnusedGasIsNotLeakedForUnsuccessfulTX() {
+		// setup:
+		given(txnCtx.status()).willReturn(FAIL_INVALID);
+		mockDynamicProps.setThrottleByGas(true);
+
+		// when:
+		subject.finishIncorporating(ContractCall);
+
+		// then:
+		verify(opCounters).countHandled(ContractCall);
+		verify(networkCtx).syncThrottling(handleThrottling);
+		verify(networkCtx).syncMultiplierSource(feeMultiplierSource);
+		verify(handleThrottling, never()).leakUnusedGasPreviouslyReserved(anyLong());
 	}
 
 	@Test
@@ -259,8 +293,8 @@ class NetworkCtxManagerTest {
 		given(transactionBody.getContractCreateInstance()).willReturn(createTransactionBody);
 		given(txnAccessor.getTxn()).willReturn(transactionBody);
 		given(txnCtx.accessor()).willReturn(txnAccessor);
-
 		given(txnCtx.status()).willReturn(OK);
+		mockDynamicProps.setThrottleByGas(true);
 
 		// when:
 		subject.finishIncorporating(ContractCreate);
@@ -268,6 +302,37 @@ class NetworkCtxManagerTest {
 		// then:
 		verify(opCounters).countHandled(ContractCreate);
 		verify(handleThrottling).leakUnusedGasPreviouslyReserved(9_000L);
+		verify(networkCtx).syncThrottling(handleThrottling);
+		verify(networkCtx).syncMultiplierSource(feeMultiplierSource);
+	}
+
+	@Test
+	void whenFinishingContractCreateUnusedGasIsNotLeakedForUnsuccessfulTX() {
+		// setup:
+		given(txnCtx.status()).willReturn(FAIL_INVALID);
+		mockDynamicProps.setThrottleByGas(true);
+
+		// when:
+		subject.finishIncorporating(ContractCreate);
+
+		// then:
+		verify(opCounters).countHandled(ContractCreate);
+		verify(networkCtx).syncThrottling(handleThrottling);
+		verify(networkCtx).syncMultiplierSource(feeMultiplierSource);
+		verify(handleThrottling, never()).leakUnusedGasPreviouslyReserved(anyLong());
+	}
+
+	@Test
+	void whenFinishingContractCreateUnusedGasIsNotLeakedIfThrottleByGasIsTurnedOff() {
+		// setup:
+		mockDynamicProps.setThrottleByGas(false);
+
+		// when:
+		subject.finishIncorporating(ContractCreate);
+
+		// then:
+		verify(opCounters).countHandled(ContractCreate);
+		verify(handleThrottling, never()).leakUnusedGasPreviouslyReserved(anyLong());
 		verify(networkCtx).syncThrottling(handleThrottling);
 		verify(networkCtx).syncMultiplierSource(feeMultiplierSource);
 	}

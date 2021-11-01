@@ -36,6 +36,7 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	private boolean useAutoRenew = true;
 	private boolean exportBalances = true;
 	private CongestionMultipliers currentMultipliers = defaultMultipliers;
+	private boolean throttleByGas;
 
 	public MockGlobalDynamicProps() {
 		super(null, null);
@@ -233,6 +234,10 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 
 	@Override
 	public boolean shouldThrottleByGas() {
-		return true;
+		return throttleByGas;
+	}
+
+	public void setThrottleByGas(boolean throttleByGas) {
+		this.throttleByGas = throttleByGas;
 	}
 }
