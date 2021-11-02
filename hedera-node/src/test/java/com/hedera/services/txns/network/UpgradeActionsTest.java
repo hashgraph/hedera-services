@@ -106,7 +106,6 @@ class UpgradeActionsTest {
 
 		given(networkCtx.hasPreparedUpgrade()).willReturn(true);
 		given(networkCtx.getPreparedUpdateFileNum()).willReturn(150L);
-		given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
 
 		subject.catchUpOnMissedSideEffects();
 
@@ -142,7 +141,6 @@ class UpgradeActionsTest {
 	void catchUpIsNoopWithNothingToDo() {
 		rmIfPresent(FREEZE_SCHEDULED_MARKER);
 		rmIfPresent(EXEC_IMMEDIATE_MARKER);
-		given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
 
 		subject.catchUpOnMissedSideEffects();
 
@@ -181,7 +179,7 @@ class UpgradeActionsTest {
 	}
 
 	@Test
-	void freezeCatchUpClearsDualAndWritesNoMarkersIfJustUnfrozen() {
+	void freezeCatchUpWritesNoMarkersIfJustUnfrozen() {
 		rmIfPresent(FREEZE_ABORTED_MARKER);
 		rmIfPresent(FREEZE_SCHEDULED_MARKER);
 
@@ -196,18 +194,19 @@ class UpgradeActionsTest {
 		assertFalse(
 				Paths.get(markerFilesLoc, FREEZE_SCHEDULED_MARKER).toFile().exists(),
 				"Should not create " + FREEZE_SCHEDULED_MARKER + " if dual last frozen time is freeze time");
-		verify(dualState).setFreezeTime(null);
 	}
 
 	@Test
-	void catchesUpOnFreezeAbortIfNullInDual() throws IOException {
+	void doesntCatchUpOnFreezeAbortIfUpgradeIsPrepared() {
 		rmIfPresent(FREEZE_ABORTED_MARKER);
 
-		given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
+		given(networkCtx.hasPreparedUpgrade()).willReturn(true);
 
 		subject.catchUpOnMissedSideEffects();
 
-		assertMarkerCreated(FREEZE_ABORTED_MARKER, null);
+		assertFalse(
+				Paths.get(markerFilesLoc, FREEZE_ABORTED_MARKER).toFile().exists(),
+				"Should not create defensive " + FREEZE_ABORTED_MARKER + " if upgrade is prepared");
 	}
 
 	@Test
@@ -257,11 +256,23 @@ class UpgradeActionsTest {
 	void externalizesFreeze() throws IOException {
 		rmIfPresent(NOW_FROZEN_MARKER);
 
+		given(networkCtx.hasPreparedUpgrade()).willReturn(true);
 		given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
 
-		subject.externalizeFreeze();
+		subject.externalizeFreezeIfUpgradePending();
 
 		assertMarkerCreated(NOW_FROZEN_MARKER, null);
+	}
+
+	@Test
+	void doesntExternalizeFreezeIfNoUpgradeIsPrepared() {
+		rmIfPresent(NOW_FROZEN_MARKER);
+
+		subject.externalizeFreezeIfUpgradePending();
+
+		assertFalse(
+				Paths.get(markerFilesLoc, NOW_FROZEN_MARKER).toFile().exists(),
+				"Should not create " + NOW_FROZEN_MARKER + " if no upgrade is prepared");
 	}
 
 	@Test

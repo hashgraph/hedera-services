@@ -24,6 +24,7 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 
 import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.DEFAULT_APPENDS_PER_BURST;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.DEFAULT_UPGRADE_DELAY;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.DEFAULT_UPGRADE_FILE_ID;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.DEFAULT_UPGRADE_FILE_PATH;
@@ -128,6 +129,7 @@ public class PerfTestLoadSettings {
 	private int upgradeDelay = DEFAULT_UPGRADE_DELAY;
 	private String upgradeFilePath = DEFAULT_UPGRADE_FILE_PATH;
 	private String upgradeFileId = DEFAULT_UPGRADE_FILE_ID;
+	private int upgradeFileAppendsPerBurst = DEFAULT_APPENDS_PER_BURST;
 	private HapiPropertySource ciProps = null;
 
 	public PerfTestLoadSettings() {
@@ -312,6 +314,9 @@ public class PerfTestLoadSettings {
 		if (ciProps.has("upgradeFileId")) {
 			upgradeFileId = ciProps.get("upgradeFileId");
 		}
+		if (ciProps.has("upgradeFileAppendsPerBurst")) {
+			upgradeFileAppendsPerBurst = ciProps.getInteger("upgradeFileAppendsPerBurst");
+		}
 	}
 
 	@Override
@@ -343,6 +348,7 @@ public class PerfTestLoadSettings {
 				.add("upgradeDelay", upgradeDelay)
 				.add("upgradeFilePath", upgradeFilePath)
 				.add("upgradeFileId", upgradeFileId)
+				.add("upgradeFileAppendsPerBurst", upgradeFileAppendsPerBurst)
 				.toString();
 	}
 }
