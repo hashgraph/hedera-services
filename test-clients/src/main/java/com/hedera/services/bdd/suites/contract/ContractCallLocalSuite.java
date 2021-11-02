@@ -49,6 +49,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELET
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 
 public class ContractCallLocalSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCallLocalSuite.class);
@@ -76,7 +77,8 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 				invalidContractID(),
 				impureCallFails(),
 				insufficientFeeFails(),
-				lowBalanceFails()
+				lowBalanceFails(),
+				gasLimitOverMaxGasLimitFailsPrecheck()
 		);
 	}
 
@@ -201,7 +203,8 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI)
 				).then(
 						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI).gas(300_000L)
-								.has(resultWith().gasUsed(285_000L))
+								.has(resultWith().gasUsed(285_000L)),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -215,7 +218,21 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI)
 				).then(
 						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI).gas(300_000L)
-								.has(resultWith().gasUsed(5451))
+								.has(resultWith().gasUsed(5451)),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+				);
+	}
+
+	private HapiApiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
+		return defaultHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
+				.given(
+						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
+						contractCreate("parentDelegate").bytecode("parentDelegateBytecode"),
+						UtilVerbs.overriding("contracts.maxGas", "100")
+				).when().then(
+						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI).gas(101L)
+								.hasCostAnswerPrecheck(MAX_GAS_LIMIT_EXCEEDED),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 

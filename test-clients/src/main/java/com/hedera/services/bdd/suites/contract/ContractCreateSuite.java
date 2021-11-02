@@ -62,6 +62,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -87,7 +88,8 @@ public class ContractCreateSuite extends HapiApiSuite {
 				createsVanillaContractAsExpectedWithOmittedAdminKey(),
 				childCreationsHaveExpectedKeysWithOmittedAdminKey(),
 				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
-				minChargeIsTXGasUsed());
+				minChargeIsTXGasUsed(),
+				gasLimitOverMaxGasLimitFailsPrecheck());
 	}
 
 	private HapiApiSpec insufficientPayerBalanceUponCreation() {
@@ -283,7 +285,8 @@ public class ContractCreateSuite extends HapiApiSuite {
 							final var gasUsed = spec.registry().getTransactionRecord("createTXRec")
 									.getContractCreateResult().getGasUsed();
 							assertEquals(285_000L, gasUsed);
-						})
+						}),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -302,7 +305,19 @@ public class ContractCreateSuite extends HapiApiSuite {
 							final var gasUsed = spec.registry().getTransactionRecord("createTXRec")
 									.getContractCreateResult().getGasUsed();
 							Assertions.assertTrue(gasUsed > 0L);
-						})
+						}),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+				);
+	}
+
+	private HapiApiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
+		return defaultHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
+				.given(
+						UtilVerbs.overriding("contracts.maxGas", "100"),
+						fileCreate("contractFile").path(ContractResources.VALID_BYTECODE_PATH)
+				).when().then(
+						contractCreate("testContract").bytecode("contractFile").gas(101L).hasPrecheck(MAX_GAS_LIMIT_EXCEEDED),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 

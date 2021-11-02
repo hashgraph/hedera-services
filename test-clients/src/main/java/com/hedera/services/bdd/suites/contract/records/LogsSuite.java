@@ -78,7 +78,9 @@ public class LogsSuite extends HapiApiSuite {
 								recordWith().contractCallResult(
 										resultWith().logs(
 												inOrder(logWith().noTopics().longValue(15))
-										).gasUsed(1285))));
+										).gasUsed(1285))),
+						UtilVerbs.resetAppPropertiesTo(
+								"src/main/resource/bootstrap.properties"));
 	}
 
 	private HapiApiSpec log1Works() {

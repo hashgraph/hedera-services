@@ -258,6 +258,7 @@ public class SStoreSuite extends HapiApiSuite {
 									.saveTxnRecordToRegistry("tempHoldTxRec").logged();
 							final var subop02 = getTxnRecord("permHoldTx")
 									.saveTxnRecordToRegistry("permHoldTxRec").logged();
+
 							CustomSpecAssert.allRunFor(spec, subop01, subop02);
 
 							final var gasUsedForTemporaryHoldTx = spec.registry()
@@ -267,8 +268,10 @@ public class SStoreSuite extends HapiApiSuite {
 
 							Assertions.assertTrue(gasUsedForTemporaryHoldTx < 3000L);
 							Assertions.assertTrue(gasUsedForPermanentHoldTx > 20000L);
-						}
-				));
+						}),
+						UtilVerbs.resetAppPropertiesTo(
+								"src/main/resource/bootstrap.properties")
+				);
 	}
 
 	@Override

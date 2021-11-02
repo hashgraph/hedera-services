@@ -88,6 +88,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -121,7 +122,8 @@ public class ContractCallSuite extends HapiApiSuite {
 				invalidContract(),
 				smartContractFailFirst(),
 				contractTransferToSigReqAccountWithoutKeyFails(),
-				callingDestructedContractReturnsStatusDeleted()
+				callingDestructedContractReturnsStatusDeleted(),
+				gasLimitOverMaxGasLimitFailsPrecheck()
 		);
 	}
 
@@ -549,7 +551,8 @@ public class ContractCallSuite extends HapiApiSuite {
 								.hasPriority(recordWith().contractCallResult(
 										resultWith().logs(
 												inOrder(
-														logWith().longAtBytes(depositAmount, 24)))))
+														logWith().longAtBytes(depositAmount, 24))))),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -569,7 +572,8 @@ public class ContractCallSuite extends HapiApiSuite {
 				).then(
 						contractCall("simpleUpdateContract",
 								ContractResources.SIMPLE_UPDATE_ABI, 15, 434).gas(350_000L)
-								.hasKnownStatus(CONTRACT_DELETED)
+								.hasKnownStatus(CONTRACT_DELETED),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -704,7 +708,8 @@ public class ContractCallSuite extends HapiApiSuite {
 									unloggedRecord.getTransactionFee(),
 									loggedRecord.getTransactionFee(),
 									"Result size should change the txn fee!");
-						})
+						}),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -961,7 +966,8 @@ public class ContractCallSuite extends HapiApiSuite {
 							final var gasUsed = spec.registry().getTransactionRecord("callTXRec")
 									.getContractCallResult().getGasUsed();
 							Assertions.assertEquals(285000, gasUsed);
-						})
+						}),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -982,7 +988,21 @@ public class ContractCallSuite extends HapiApiSuite {
 							final var gasUsed = spec.registry().getTransactionRecord("callTXRec")
 									.getContractCallResult().getGasUsed();
 							Assertions.assertTrue(gasUsed > 0L);
-						})
+						}),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+				);
+	}
+
+	private HapiApiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
+		return defaultHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
+				.given(
+						fileCreate("simpleUpdateBytecode").path(ContractResources.SIMPLE_UPDATE),
+						contractCreate("simpleUpdateContract").bytecode("simpleUpdateBytecode").gas(300_000L),
+						UtilVerbs.overriding("contracts.maxGas", "100")
+						).when().then(
+						contractCall("simpleUpdateContract",
+								ContractResources.SIMPLE_UPDATE_ABI, 5, 42).gas(101L).hasPrecheck(MAX_GAS_LIMIT_EXCEEDED),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 

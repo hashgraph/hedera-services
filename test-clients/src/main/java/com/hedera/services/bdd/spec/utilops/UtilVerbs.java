@@ -71,7 +71,9 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.junit.jupiter.api.Assertions;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.ParseException;
@@ -80,10 +82,12 @@ import java.time.Instant;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -136,6 +140,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class UtilVerbs {
+
 	public static HapiFreeze freeze() {
 		return new HapiFreeze();
 	}
@@ -301,6 +306,32 @@ public class UtilVerbs {
 		return fileUpdate(APP_PROPERTIES)
 				.payingWith(ADDRESS_BOOK_CONTROL)
 				.overridingProps(Map.of(property, "" + value));
+	}
+
+	public static HapiSpecOperation resetAppPropertiesTo(String path) {
+		return fileUpdate(APP_PROPERTIES)
+				.payingWith(ADDRESS_BOOK_CONTROL)
+				.overridingProps(readPropertyFile(path));
+	}
+
+	private static Map<String, String> readPropertyFile(String path) {
+		Properties properties = null;
+
+		try (InputStream input = new FileInputStream(path)) {
+			properties = new Properties();
+			properties.load(input);
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		Map<String, String> resultMap = new HashMap<>();
+
+		for (String key : properties.stringPropertyNames()) {
+			resultMap.put(key, properties.getProperty(key));
+		}
+
+		return resultMap;
 	}
 
 	public static CustomSpecAssert exportAccountBalances(Supplier<String> acctBalanceFile) {
