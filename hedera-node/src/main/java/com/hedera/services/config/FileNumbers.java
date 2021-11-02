@@ -72,7 +72,7 @@ public class FileNumbers {
 
 	public long exchangeRates() {
 		if (exchangeRates == UNKNOWN_NUMBER) {
-			return properties.getLongProperty("files.exchangeRates");
+			exchangeRates = properties.getLongProperty("files.exchangeRates");
 		}
 		return exchangeRates;
 	}
