@@ -1,7 +1,7 @@
 package jasperdb.virtualdatasource;
 
 
-import com.hedera.services.state.merkle.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractKey;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;

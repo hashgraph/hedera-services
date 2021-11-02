@@ -60,38 +60,44 @@ public class VFCMapBenchBase {
                     Path.of("rocksdb")));
  */
             case jasperdbIhRam:
-                map = new VirtualMap<>(new VirtualDataSourceJasperDB<>(
-                        virtualLeafRecordSerializer,
-                        new VirtualInternalRecordSerializer(),
-                        keySerializer,
-                        dataSourcePath,
-                        numEntities,
-                        true,
-                        Long.MAX_VALUE,
-                        preferDiskBasedIndexes));
+                JasperDbBuilder<K, V> ramDbBuilder = new JasperDbBuilder<>();
+                ramDbBuilder
+                        .virtualLeafRecordSerializer(virtualLeafRecordSerializer)
+                        .virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
+                        .keySerializer(keySerializer)
+                        .storageDir(dataSourcePath)
+                        .maxNumOfKeys(numEntities)
+                        .preferDiskBasedIndexes(preferDiskBasedIndexes)
+                        .internalHashesRamToDiskThreshold(Long.MAX_VALUE)
+                        .mergingEnabled(true);
+                map = new VirtualMap<>("vm", ramDbBuilder);
                 break;
             case jasperdbIhDisk:
             default:
-                map = new VirtualMap<>(new VirtualDataSourceJasperDB<>(
-                        virtualLeafRecordSerializer,
-                        new VirtualInternalRecordSerializer(),
-                        keySerializer,
-                        dataSourcePath,
-                        numEntities,
-                        true,
-                        0,
-                        preferDiskBasedIndexes));
+                JasperDbBuilder<K, V> diskDbBuilder = new JasperDbBuilder<>();
+                diskDbBuilder
+                        .virtualLeafRecordSerializer(virtualLeafRecordSerializer)
+                        .virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
+                        .keySerializer(keySerializer)
+                        .storageDir(dataSourcePath)
+                        .maxNumOfKeys(numEntities)
+                        .preferDiskBasedIndexes(preferDiskBasedIndexes)
+                        .internalHashesRamToDiskThreshold(0)
+                        .mergingEnabled(true);
+                map = new VirtualMap<>("vm", diskDbBuilder);
                 break;
             case jasperdbIhHalf:
-                map = new VirtualMap<>(new VirtualDataSourceJasperDB<>(
-                        virtualLeafRecordSerializer,
-                        new VirtualInternalRecordSerializer(),
-                        keySerializer,
-                        dataSourcePath,
-                        numEntities,
-                        true,
-                        numEntities/2,
-                        preferDiskBasedIndexes));
+                JasperDbBuilder<K, V> halfDiskHalfRamDbBuilder = new JasperDbBuilder<>();
+                halfDiskHalfRamDbBuilder
+                        .virtualLeafRecordSerializer(virtualLeafRecordSerializer)
+                        .virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
+                        .keySerializer(keySerializer)
+                        .storageDir(dataSourcePath)
+                        .maxNumOfKeys(numEntities)
+                        .preferDiskBasedIndexes(preferDiskBasedIndexes)
+                        .internalHashesRamToDiskThreshold(numEntities / 2)
+                        .mergingEnabled(true);
+                map = new VirtualMap<>("vm", halfDiskHalfRamDbBuilder);
                 break;
         }
         return map;

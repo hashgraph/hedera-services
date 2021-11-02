@@ -1,6 +1,6 @@
 package maps;
 
-import com.hedera.services.state.merkle.virtual.ContractValue;
+import com.hedera.services.state.virtual.ContractValue;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.openjdk.jmh.annotations.*;

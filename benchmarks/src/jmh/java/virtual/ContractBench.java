@@ -1,8 +1,10 @@
 package virtual;
 
-import com.hedera.services.state.merkle.virtual.ContractKey;
-import com.hedera.services.state.merkle.virtual.ContractKeySerializer;
-import com.hedera.services.state.merkle.virtual.ContractValue;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractKeySerializer;
+import com.hedera.services.state.virtual.ContractKeySupplier;
+import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.ContractValueSupplier;
 import com.swirlds.common.Units;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
@@ -116,8 +118,8 @@ public class ContractBench {
         VirtualLeafRecordSerializer<ContractKey,ContractValue> virtualLeafRecordSerializer =
                 new VirtualLeafRecordSerializer<>(
                         (short) 1, DigestType.SHA_384,
-                        (short) 1, DataFileCommon.VARIABLE_DATA_SIZE,ContractKey::new,
-                        (short) 1,ContractValue.SERIALIZED_SIZE,ContractValue::new,
+                        (short) 1, DataFileCommon.VARIABLE_DATA_SIZE, new ContractKeySupplier(),
+                        (short) 1,ContractValue.SERIALIZED_SIZE, new ContractValueSupplier(),
                         true);
 
 

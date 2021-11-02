@@ -1,6 +1,6 @@
 package maps;
 
-import com.hedera.services.state.merkle.virtual.ContractValue;
+import com.hedera.services.state.virtual.ContractValue;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 

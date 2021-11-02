@@ -1,9 +1,12 @@
 package jasperdb.virtualdatasource;
 
-import com.hedera.services.state.merkle.virtual.ContractKey;
-import com.hedera.services.state.merkle.virtual.ContractKeySerializer;
-import com.hedera.services.state.merkle.virtual.ContractValue;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractKeySerializer;
+import com.hedera.services.state.virtual.ContractKeySupplier;
+import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.ContractValueSupplier;
 import com.swirlds.common.crypto.DigestType;
+import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.jasperdb.VirtualDataSourceJasperDB;
 import com.swirlds.jasperdb.VirtualInternalRecordSerializer;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
@@ -20,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.LongStream;
+import java.util.stream.Stream;
 
 import static utils.CommonTestUtils.deleteDirectoryAndContents;
 import static utils.CommonTestUtils.hash;
@@ -56,18 +60,20 @@ public class DatabaseState {
         VirtualLeafRecordSerializer<ContractKey, ContractValue> virtualLeafRecordSerializer =
                 new VirtualLeafRecordSerializer<>(
                         (short) 1, DigestType.SHA_384,
-                        (short) 1, DataFileCommon.VARIABLE_DATA_SIZE,ContractKey::new,
-                        (short) 1,ContractValue.SERIALIZED_SIZE,ContractValue::new,
+                        (short) 1, DataFileCommon.VARIABLE_DATA_SIZE, new ContractKeySupplier(),
+                        (short) 1,ContractValue.SERIALIZED_SIZE, new ContractValueSupplier(),
                         true);
-        dataSource = new VirtualDataSourceJasperDB<>(
-                virtualLeafRecordSerializer,
-                new VirtualInternalRecordSerializer(),
-                new ContractKeySerializer(),
-                dataSourcePath,
-                500_000_000,
-                mergingEnabled,
-                0,
-                false);
+        JasperDbBuilder<ContractKey, ContractValue> dbBuilder = new JasperDbBuilder<>();
+        dbBuilder
+                .virtualLeafRecordSerializer(virtualLeafRecordSerializer)
+                .virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
+                .keySerializer(new ContractKeySerializer())
+                .storageDir(dataSourcePath)
+                .maxNumOfKeys(500_000_000)
+                .preferDiskBasedIndexes(false)
+                .internalHashesRamToDiskThreshold(0)
+                .mergingEnabled(mergingEnabled);
+        dataSource = dbBuilder.build("jdb", "4dbState");
         // populate with initial data
         System.out.printf("Creating initial data set of %,d leaves\n", initialDataSize);
         progressPercentage = 0;
@@ -84,7 +90,7 @@ public class DatabaseState {
                         new ContractValue(path)
                 ))
                 .peek(leaf -> printProgress(leaf.getPath(),lastLeafPath));
-        dataSource.saveRecords(firstLeafPath, lastLeafPath, internalRecordStream, leafRecordStream);
+        dataSource.saveRecords(firstLeafPath, lastLeafPath, internalRecordStream, leafRecordStream, Stream.empty());
         System.out.printf("Done creating initial data set of %,d leaves\n", initialDataSize);
     }
 

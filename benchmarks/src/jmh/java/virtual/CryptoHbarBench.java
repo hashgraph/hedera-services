@@ -90,8 +90,8 @@ public class CryptoHbarBench {
         pipeline = new Pipeline<>();
         VirtualLeafRecordSerializer<Id,Account> virtualLeafRecordSerializer = new VirtualLeafRecordSerializer<>(
                 (short) 1, DigestType.SHA_384,
-                (short) 1, Id.SERIALIZED_SIZE,Id::new,
-                (short) 1,Account.SERIALIZED_SIZE,Account::new,
+                (short) 1, Id.SERIALIZED_SIZE,new IdSupplier(),
+                (short) 1,Account.SERIALIZED_SIZE,new AccountSupplier(),
                 false
         );
 

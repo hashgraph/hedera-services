@@ -198,8 +198,12 @@ public final class VFCDataSourceLmdb<K extends VirtualKey, V extends VirtualValu
      * @param leafRecords     stream of new leaf nodes and updated leaf nodes
      */
     @Override
-    public void saveRecords(long firstLeafPath, long lastLeafPath, Stream<VirtualInternalRecord> internalRecords,
-                            Stream<VirtualLeafRecord<K, V>> leafRecords) {
+    public void saveRecords(
+            long firstLeafPath,
+            long lastLeafPath,
+            Stream<VirtualInternalRecord> internalRecords,
+            Stream<VirtualLeafRecord<K, V>> leafRecords,
+            Stream<VirtualLeafRecord<K, V>> deletedLeafRecords) {
         try (Txn<ByteBuffer> txn = env.txnWrite()) {
             internalRecords.forEachOrdered(internalRecord -> pathToInternalHashesMap.put(txn,
                     getPathNativeOrderBytes(internalRecord.getPath()),

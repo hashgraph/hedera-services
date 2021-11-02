@@ -7,6 +7,7 @@ import com.swirlds.virtualmap.VirtualLongKey;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.security.SecureClassLoader;
 import java.util.Objects;
 
 @SuppressWarnings("unused")
@@ -89,6 +90,28 @@ final class Id implements VirtualLongKey {
     }
 
     public static class IdKeySerializer implements KeySerializer<Id> {
+        private static final long CLASS_ID = 0x3f69b6c2cd580162L;
+        private static final int CURRENT_VERSION = 1;
+
+        @Override
+        public void deserialize(SerializableDataInputStream serializableDataInputStream, int i) throws IOException {
+            /* No-op */
+        }
+
+        @Override
+        public void serialize(SerializableDataOutputStream serializableDataOutputStream) throws IOException {
+            /* No-op */
+        }
+
+        @Override
+        public long getClassId() {
+            return CLASS_ID;
+        }
+
+        @Override
+        public int getVersion() {
+            return CURRENT_VERSION;
+        }
 
         @Override
         public int deserializeKeySize(ByteBuffer byteBuffer) {

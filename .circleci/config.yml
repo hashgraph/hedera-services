@@ -1198,7 +1198,6 @@ workflows:
               branches:
                 ignore:
                   - NONE
-                  - merge-master-to-node-links
             workflow-name: "Continuous-integration"
         - sonar-check:
             context: SonarCloud

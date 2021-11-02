@@ -1,7 +1,6 @@
 package maps;
 
-import com.hedera.services.state.merkle.virtual.ContractValue;
-import org.cliffc.high_scale_lib.NonBlockingHashMap;
+import com.hedera.services.state.virtual.ContractValue;
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;

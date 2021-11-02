@@ -1,7 +1,7 @@
 package jasperdb.virtualdatasource;
 
-import com.hedera.services.state.merkle.virtual.ContractKey;
-import com.hedera.services.state.merkle.virtual.ContractValue;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractValue;
 import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static utils.CommonTestUtils.hash;
 
@@ -73,6 +74,6 @@ public class UpdateBench {
                 });
         databaseState.dataSource.saveRecords(
                 databaseState.dataSource.getFirstLeafPath(), databaseState.dataSource.getLastLeafPath(),
-                internalRecordStream, leafRecordStream);
+                internalRecordStream, leafRecordStream, Stream.empty());
     }
 }

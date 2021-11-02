@@ -9,6 +9,8 @@ import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,9 +43,13 @@ public class SmallVsBigFilesBench {
     private int numOfDataItemsPerFile;
     private final ThreadLocal<ByteBuffer> dataReadBuffer = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(dataValueSize - Long.BYTES - Integer.BYTES));
     private long[] randomDataLocations;
+    private Method accessibleReadDataItem;
 
     @Setup(Level.Trial)
     public void setup() throws Exception {
+        accessibleReadDataItem = DataFileCollection.class.getDeclaredMethod("readDataItem", long.class);
+        accessibleReadDataItem.setAccessible(true);
+
         // calculate number of files, number of data items per file
         numOfFiles = 512 / fileSizeGb;
         System.out.println("numOfFiles = " + numOfFiles);
@@ -109,7 +115,8 @@ public class SmallVsBigFilesBench {
         ByteBuffer dataReadBuffer = this.dataReadBuffer.get();
         // read data
         dataReadBuffer.clear();
-        blackHole.consume(dataFileCollection.readDataItem(randomDataLocations[0]));
+        final var datum = accessibleReadDataItem.invoke(dataFileCollection, randomDataLocations[0]);
+        blackHole.consume(datum);
     }
 
     @Benchmark
@@ -122,8 +129,9 @@ public class SmallVsBigFilesBench {
                 // read data
                 dataReadBuffer.clear();
                 try {
-                    blackHole.consume(dataFileCollection.readDataItem(dataLocation));
-                } catch (IOException e) {
+                    final var datum = accessibleReadDataItem.invoke(dataFileCollection, dataLocation);
+                    blackHole.consume(datum);
+                } catch (IllegalAccessException | InvocationTargetException e) {
                     e.printStackTrace();
                 }
             }

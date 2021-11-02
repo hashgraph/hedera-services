@@ -1,7 +1,5 @@
 package rockdb;
 
-import com.hedera.services.state.merkle.virtual.ContractKey;
-import com.hedera.services.state.merkle.virtual.ContractValue;
 import com.hedera.services.store.models.Id;
 import com.swirlds.common.crypto.DigestType;
 import org.openjdk.jmh.annotations.Benchmark;

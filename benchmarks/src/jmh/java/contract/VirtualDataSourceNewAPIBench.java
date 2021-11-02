@@ -1,10 +1,13 @@
 package contract;
 
-import com.hedera.services.state.merkle.virtual.ContractKey;
-import com.hedera.services.state.merkle.virtual.ContractKeySerializer;
-import com.hedera.services.state.merkle.virtual.ContractValue;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractKeySerializer;
+import com.hedera.services.state.virtual.ContractKeySupplier;
+import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.ContractValueSupplier;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.jasperdb.VirtualDataSourceJasperDB;
 import com.swirlds.jasperdb.VirtualInternalRecordSerializer;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
@@ -24,6 +27,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.LongStream;
+import java.util.stream.Stream;
 
 import static utils.CommonTestUtils.printDirectorySize;
 
@@ -76,18 +80,20 @@ public class VirtualDataSourceNewAPIBench {
                     VirtualLeafRecordSerializer<ContractKey,ContractValue> virtualLeafRecordSerializer =
                             new VirtualLeafRecordSerializer<>(
                                     (short) 1, DigestType.SHA_384,
-                                    (short) 1, DataFileCommon.VARIABLE_DATA_SIZE,ContractKey::new,
-                                    (short) 1,ContractValue.SERIALIZED_SIZE,ContractValue::new,
+                                    (short) 1, DataFileCommon.VARIABLE_DATA_SIZE, new ContractKeySupplier(),
+                                    (short) 1,ContractValue.SERIALIZED_SIZE, new ContractValueSupplier(),
                                     true);
-                    dataSource = new VirtualDataSourceJasperDB<>(
-                            virtualLeafRecordSerializer,
-                            new VirtualInternalRecordSerializer(),
-                            new ContractKeySerializer(),
-                            storePath,
-                            numEntities+10_000_000,  // TODO see if 10 millionls extra is enough for add method
-                            true,
-                            Long.MAX_VALUE,
-                            false);
+                    JasperDbBuilder<ContractKey, ContractValue> dbBuilder = new JasperDbBuilder<>();
+                    dbBuilder
+                            .virtualLeafRecordSerializer(virtualLeafRecordSerializer)
+                            .virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
+                            .keySerializer(new ContractKeySerializer())
+                            .storageDir(storePath)
+                            .maxNumOfKeys(numEntities+10_000_000)
+                            .preferDiskBasedIndexes(false)
+                            .internalHashesRamToDiskThreshold(Long.MAX_VALUE)
+                            .mergingEnabled(true);
+                    dataSource = dbBuilder.build("jdb", "4ApiBench");
                     break;
                 default:
                     throw new IllegalStateException("Unexpected value: " + impl);
@@ -106,7 +112,8 @@ public class VirtualDataSourceNewAPIBench {
                             LongStream.range(iHaveWritten,iHaveWritten+batchSize).mapToObj(i -> new VirtualInternalRecord(i,hash((int)i))),
                             LongStream.range(iHaveWritten,iHaveWritten+batchSize).mapToObj(i -> new VirtualLeafRecord<>(
                                     i+numEntities,hash((int)i),new ContractKey(i, i), new ContractValue(i) )
-                            )
+                            ),
+                            Stream.empty()
                     );
                     iHaveWritten += batchSize;
                     printUpdate(start, batchSize, ContractValue.SERIALIZED_SIZE, "Created " + iHaveWritten + " Nodes");
@@ -167,7 +174,8 @@ public class VirtualDataSourceNewAPIBench {
         dataSource.saveRecords(
                 numEntities,numEntities*2,
                 LongStream.range(0,Math.min(10_000,numEntities)).mapToObj(i -> new VirtualInternalRecord(i,hash((int)i))),
-                null
+                Stream.empty(),
+                Stream.empty()
         );
     }
 
@@ -178,10 +186,10 @@ public class VirtualDataSourceNewAPIBench {
     public void w1_updateFirst10kLeafValues() throws Exception {
         dataSource.saveRecords(
                 numEntities,numEntities*2,
-                null,
+                Stream.empty(),
                 LongStream.range(0,Math.min(10_000,numEntities)).mapToObj(i -> new VirtualLeafRecord<>(
-                        i+numEntities,hash((int)i),new ContractKey(i, i), new ContractValue(randomNodeIndex1) )
-                )
+                        i+numEntities,hash((int)i),new ContractKey(i, i), new ContractValue(randomNodeIndex1))),
+                Stream.empty()
         );
         // add a small delay between iterations for merging to get a chance on write heavy benchmarks
             try {
@@ -204,8 +212,9 @@ public class VirtualDataSourceNewAPIBench {
         }
         dataSource.saveRecords(
                 numEntities,numEntities*2,
-                null,
-                changes.stream()
+                Stream.empty(),
+                changes.stream(),
+                Stream.empty()
         );
     }
 
@@ -217,7 +226,8 @@ public class VirtualDataSourceNewAPIBench {
         dataSource.saveRecords(
                 numEntities,numEntities*2,
                 LongStream.range(nextPath,nextPath+10_000).mapToObj(i -> new VirtualInternalRecord(i,hash((int)i))),
-                null
+                Stream.empty(),
+                Stream.empty()
         );
         nextPath += 10_000;
     }
@@ -229,10 +239,11 @@ public class VirtualDataSourceNewAPIBench {
     public void w3_add10kLeafValues() throws Exception {
         dataSource.saveRecords(
                 numEntities,numEntities*2,
-                null,
+                Stream.empty(),
                 LongStream.range(nextPath,nextPath+10_000).mapToObj(i -> new VirtualLeafRecord<>(
                         i+numEntities,hash((int)i),new ContractKey(i, i), new ContractValue(i) )
-                )
+                ),
+                Stream.empty()
         );
         nextPath += 10_000;
     }
