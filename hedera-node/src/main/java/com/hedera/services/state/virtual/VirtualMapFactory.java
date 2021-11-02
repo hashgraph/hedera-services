@@ -113,11 +113,11 @@ public class VirtualMapFactory {
 	}
 
 	private String blobsLoc() {
-		return jdbDataLoc + File.separator + "blobs";
+		return jdbDataLoc + File.separator + BLOBS_VM_NAME;
 	}
 
 	private String storageLoc() {
-		return jdbDataLoc + File.separator + "storage";
+		return jdbDataLoc + File.separator + STORAGE_VM_NAME;
 	}
 
 	private <K1 extends VirtualKey, V1 extends VirtualValue> VirtualDataSourceBuilder<K1, V1> aTypedBuilder() {

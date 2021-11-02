@@ -28,6 +28,8 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import static com.hedera.services.state.virtual.ContractKeySerializer.CLASS_ID;
+import static com.hedera.services.state.virtual.ContractKeySerializer.CURRENT_VERSION;
 import static com.hedera.services.state.virtual.ContractKeySerializer.DATA_VERSION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -38,6 +40,7 @@ import static org.mockito.Mockito.mock;
 
 class ContractKeySerializerTest {
 	private final long contractNum = 1234L;
+	private final long otherContractNum = 1235L;
 	private final long key = 123L;
 	private final UInt256 largeKey = UInt256.fromHexString(
 			"0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563");
@@ -49,6 +52,8 @@ class ContractKeySerializerTest {
 	void gettersWork() {
 		assertTrue(subject.isVariableSize());
 		assertEquals(DATA_VERSION , subject.getCurrentDataVersion());
+		assertEquals(CLASS_ID, subject.getClassId());
+		assertEquals(CURRENT_VERSION, subject.getVersion());
 		assertEquals(DataFileCommon.VARIABLE_DATA_SIZE, subject.getSerializedSize());
 		assertEquals(ContractKey.ESTIMATED_AVERAGE_SIZE, subject.getTypicalSerializedSize());
 	}
@@ -113,6 +118,7 @@ class ContractKeySerializerTest {
 	@Test
 	void equalsUsingByteBufferFailsAsExpected() throws IOException {
 		final var someKey = new ContractKey(contractNum, key);
+		final var someKeyForDiffContractButSameNonZeroBytes = new ContractKey(otherContractNum, key);
 		final var someKeyForDiffContract = new ContractKey(Long.MAX_VALUE, key);
 		final var someDiffKeyForSameContract = new ContractKey(contractNum, largeKey.toArray());
 		final var bin = mock(ByteBuffer.class);
@@ -123,6 +129,13 @@ class ContractKeySerializerTest {
 				.willReturn((byte) (someKey.getContractId()))
 				.willReturn(someKey.getUint256Byte(0));
 		assertFalse(subject.equals(bin, 1, someKeyForDiffContract));
+
+		given(bin.get())
+				.willReturn(someKey.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes())
+				.willReturn((byte) (someKey.getContractId() >> 8))
+				.willReturn((byte) (someKey.getContractId()))
+				.willReturn(someKey.getUint256Byte(0));
+		assertFalse(subject.equals(bin, 1, someKeyForDiffContractButSameNonZeroBytes));
 
 		given(bin.get())
 				.willReturn(someKey.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes())

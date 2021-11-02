@@ -26,6 +26,8 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import static com.hedera.services.state.virtual.VirtualBlobKeySerializer.CLASS_ID;
+import static com.hedera.services.state.virtual.VirtualBlobKeySerializer.CURRENT_VERSION;
 import static com.hedera.services.state.virtual.VirtualBlobKey.BYTES_IN_SERIALIZED_FORM;
 import static com.hedera.services.state.virtual.VirtualBlobKey.Type.FILE_DATA;
 import static com.hedera.services.state.virtual.VirtualBlobKeySerializer.DATA_VERSION;
@@ -49,6 +51,8 @@ class VirtualBlobKeySerializerTest {
 		assertEquals(BYTES_IN_SERIALIZED_FORM, subject.deserializeKeySize(bin));
 		assertEquals(BYTES_IN_SERIALIZED_FORM, subject.getSerializedSize());
 		assertEquals(DATA_VERSION, subject.getCurrentDataVersion());
+		assertEquals(CLASS_ID, subject.getClassId());
+		assertEquals(CURRENT_VERSION, subject.getVersion());
 	}
 
 	@Test

@@ -7,8 +7,8 @@ import com.swirlds.jasperdb.SelfSerializableSupplier;
 import java.io.IOException;
 
 public class ContractValueSupplier implements SelfSerializableSupplier<ContractValue> {
-	private static final long CLASS_ID = 0x11cd526cdc0e925dL;
-	private static final int CURRENT_VERSION = 1;
+	static final long CLASS_ID = 0x11cd526cdc0e925dL;
+	static final int CURRENT_VERSION = 1;
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {

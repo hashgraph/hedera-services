@@ -39,8 +39,8 @@ import static com.hedera.services.state.virtual.ContractKey.getUint256KeyNonZero
  * KeySerializer for ContractKeys
  */
 public class ContractKeySerializer implements KeySerializer<ContractKey> {
-	private static final long CLASS_ID = 0xfb12270526c45316L;
-	private static final int CURRENT_VERSION = 1;
+	static final long CLASS_ID = 0xfb12270526c45316L;
+	static final int CURRENT_VERSION = 1;
 
 	static final long DATA_VERSION = 1;
 

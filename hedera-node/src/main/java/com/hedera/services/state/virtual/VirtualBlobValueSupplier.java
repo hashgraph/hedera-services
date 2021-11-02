@@ -7,8 +7,8 @@ import com.swirlds.jasperdb.SelfSerializableSupplier;
 import java.io.IOException;
 
 public class VirtualBlobValueSupplier implements SelfSerializableSupplier<VirtualBlobValue> {
-	private static final long CLASS_ID = 0xd08565ba3cf6c5bfL;
-	private static final int CURRENT_VERSION = 1;
+	static final long CLASS_ID = 0xd08565ba3cf6c5bfL;
+	static final int CURRENT_VERSION = 1;
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
