@@ -994,11 +994,15 @@ public class ContractCallSuite extends HapiApiSuite {
 						getAccountBalance(TOP_LEVEL_CONTRACT).hasTinyBars(INITIAL_CONTRACT_BALANCE + 20),
 
 						getContractInfo(TOP_LEVEL_CONTRACT).saveToRegistry("tcinfo"),
+						getContractInfo(SUB_LEVEL_CONTRACT).saveToRegistry("scinfo"),
 
 						/* sub-level non-payable contract call */
 						assertionsHold((spec, log) -> {
-							final var subLevelSolidityAddr = spec.registry().getContractInfo("tcinfo").getContractAccountID();
-							final var cc = contractCall(SUB_LEVEL_CONTRACT, ContractResources.SUB_LEVEL_NON_PAYABLE_ABI, subLevelSolidityAddr, 20L)
+							final var subLevelSolidityAddr = spec.registry().getContractInfo("scinfo").getContractAccountID();
+							final var cc = contractCall(
+									SUB_LEVEL_CONTRACT,
+									ContractResources.SUB_LEVEL_NON_PAYABLE_ABI,
+									subLevelSolidityAddr, 20L)
 									.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED);
 							allRunFor(spec, cc);
 						}),
@@ -1007,10 +1011,11 @@ public class ContractCallSuite extends HapiApiSuite {
 
 						/* sub-level payable contract call */
 						assertionsHold((spec, log) -> {
-							final var subLevelSolidityAddr = spec.registry().getContractInfo("tcinfo").getContractAccountID();
-							// FIXME: this is currently failing, and needs investigation
-							final var cc = contractCall(SUB_LEVEL_CONTRACT, ContractResources.SUB_LEVEL_PAYABLE_ABI, subLevelSolidityAddr, 20L)
-									.sending(20);
+							final var subLevelSolidityAddr = spec.registry().getContractInfo("scinfo").getContractAccountID();
+							final var cc = contractCall(
+									TOP_LEVEL_CONTRACT,
+									ContractResources.SUB_LEVEL_PAYABLE_ABI,
+									subLevelSolidityAddr, 20);
 							allRunFor(spec, cc);
 						}),
 						getAccountBalance(TOP_LEVEL_CONTRACT).hasTinyBars(INITIAL_CONTRACT_BALANCE),
