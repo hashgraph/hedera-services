@@ -196,11 +196,10 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 				.given(
 						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "5"),
 						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
-						contractCreate("parentDelegate").bytecode("parentDelegateBytecode").adminKey(THRESHOLD)
+						contractCreate("parentDelegate").bytecode("parentDelegateBytecode")
 				).when(
 						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI)
 				).then(
-						sleepFor(3_000L),
 						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI).gas(300_000L)
 								.has(resultWith().gasUsed(285_000L))
 				);
@@ -211,11 +210,10 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 				.given(
 						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
 						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
-						contractCreate("parentDelegate").bytecode("parentDelegateBytecode").adminKey(THRESHOLD)
+						contractCreate("parentDelegate").bytecode("parentDelegateBytecode")
 				).when(
 						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI)
 				).then(
-						sleepFor(3_000L),
 						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI).gas(300_000L)
 								.has(resultWith().gasUsed(5451))
 				);
