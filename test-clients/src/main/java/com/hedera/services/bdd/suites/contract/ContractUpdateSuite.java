@@ -1,5 +1,4 @@
 package com.hedera.services.bdd.suites.contract;
-
 /*-
  * ‌
  * Hedera Services Test Clients
@@ -19,7 +18,6 @@ package com.hedera.services.bdd.suites.contract;
  * limitations under the License.
  * ‍
  */
-
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
@@ -27,10 +25,8 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
 import java.time.Instant;
 import java.util.List;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
@@ -80,11 +76,11 @@ public class ContractUpdateSuite extends HapiApiSuite {
                 canMakeContractImmutableWithEmptyKeyList(),
                 givenAdminKeyMustBeValid(),
                 fridayThe13thSpec(),
-                updateDoesNotTouchFileID()
+                updateDoesNotChangeBytecode()
         );
     }
 
-    private HapiApiSpec updateDoesNotTouchFileID() {
+    private HapiApiSpec updateDoesNotChangeBytecode() {
         return defaultHapiSpec("HSCS-DCPR-001")
                 .given(
                         fileCreate("contractFile")
@@ -154,7 +150,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
         return defaultHapiSpec("RejectsExpiryTooFarInTheFuture")
                 .given(
                         contractCreate("target")
-                ).when().then(
+                ).when( ).then(
                         contractUpdate("target")
                                 .newExpirySecs(excessiveExpiry)
                                 .hasKnownStatus(INVALID_EXPIRATION_TIME)
