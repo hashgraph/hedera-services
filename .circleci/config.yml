@@ -890,7 +890,7 @@ workflows:
   GCP-Daily-Services-Update-4N-2C:
     triggers:
       - schedule:
-          cron: "30 22,2 * * *"
+          cron: "30 22 * * *"
           filters:
             branches:
               only:
@@ -913,7 +913,7 @@ workflows:
   GCP-Daily-Services-Comp-Update-DisPreUpdate-4N-2C:
     triggers:
       - schedule:
-          cron: "45 22,2 * * *"
+          cron: "45 22 * * *"
           filters:
             branches:
               only:
@@ -936,7 +936,7 @@ workflows:
   GCP-Daily-Services-Update-Reconnect-4N-2C:
     triggers:
       - schedule:
-          cron: "15 22,2 * * *"
+          cron: "15 22 * * *"
           filters:
             branches:
               only:
