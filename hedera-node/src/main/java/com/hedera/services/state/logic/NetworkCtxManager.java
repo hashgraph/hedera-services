@@ -43,6 +43,7 @@ import javax.inject.Singleton;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.function.BiPredicate;
+import java.util.function.LongPredicate;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.domain.trackers.IssEventStatus.ONGOING_ISS;
@@ -52,6 +53,7 @@ import static java.time.temporal.ChronoUnit.SECONDS;
 @Singleton
 public class NetworkCtxManager {
 	private static final Logger log = LogManager.getLogger(NetworkCtxManager.class);
+	public static final LongPredicate IS_THROTTLE_EXEMPT = num -> num >= 1 && num <= 100L;
 
 	private final int issResetPeriod;
 
@@ -165,7 +167,8 @@ public class NetworkCtxManager {
 	 * {@link ResponseCodeEnum#CONSENSUS_GAS_EXHAUSTED} if the transaction should be throttled
 	 */
 	public ResponseCodeEnum prepareForIncorporating(TxnAccessor accessor) {
-		if (handleThrottling.shouldThrottleConsensusTxn(accessor)) {
+		if (!IS_THROTTLE_EXEMPT.test(accessor.getPayer().getAccountNum()) &&
+				handleThrottling.shouldThrottleConsensusTxn(accessor)) {
 			return ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 		}
 
@@ -176,7 +179,8 @@ public class NetworkCtxManager {
 	public void finishIncorporating(HederaFunctionality op) {
 		opCounters.countHandled(op);
 
-		if (MiscUtils.isGasThrottled(op) &&
+		if (!IS_THROTTLE_EXEMPT.test(txnCtx.accessor().getPayer().getAccountNum()) &&
+				MiscUtils.isGasThrottled(op) &&
 				dynamicProperties.shouldThrottleByGas() &&
 				MiscUtils.txCtxHasContractResult(txnCtx)) {
 			handleThrottling.leakUnusedGasPreviouslyReserved(
