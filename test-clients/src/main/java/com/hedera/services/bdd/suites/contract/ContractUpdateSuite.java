@@ -34,13 +34,16 @@ import java.util.List;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -76,8 +79,32 @@ public class ContractUpdateSuite extends HapiApiSuite {
                 updateAdminKeyWorks(),
                 canMakeContractImmutableWithEmptyKeyList(),
                 givenAdminKeyMustBeValid(),
-                fridayThe13thSpec()
+                fridayThe13thSpec(),
+                updateDoesNotChangeBytecode()
         );
+    }
+
+    private HapiApiSpec updateDoesNotChangeBytecode() {
+        return defaultHapiSpec("HSCS-DCPR-001")
+                .given(
+                        fileCreate("contractFile")
+                                .path(ContractResources.EMPTY_CONSTRUCTOR).via("fileCreate"),
+                        fileCreate("bytecode2")
+                                .path(ContractResources.SIMPLE_STORAGE_BYTECODE_PATH),
+                        contractCreate("contract")
+                                .bytecode("contractFile"),
+                        getContractBytecode("contract").saveResultTo("initialBytecode")
+                )
+                .when(
+                        contractUpdate("contract")
+                                .bytecode("bytecode2")
+                )
+                .then(
+                        withOpContext((spec, log) -> {
+                            var op = getContractBytecode("contract").hasBytecode(spec.registry().getBytes("initialBytecode"));
+                            allRunFor(spec, op);
+                        })
+                );
     }
 
     private HapiApiSpec updateWithBothMemoSettersWorks() {
