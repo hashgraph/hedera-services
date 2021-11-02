@@ -27,7 +27,7 @@ import static com.hedera.services.state.virtual.ContractValueSupplier.CLASS_ID;
 import static com.hedera.services.state.virtual.ContractValueSupplier.CURRENT_VERSION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ContractValueSupplierTest {
+class ContractValueSupplierTest {
 
 	ContractValueSupplier subject;
 

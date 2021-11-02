@@ -26,7 +26,7 @@ import static com.hedera.services.state.virtual.VirtualBlobKeySupplier.CLASS_ID;
 import static com.hedera.services.state.virtual.VirtualBlobKeySupplier.CURRENT_VERSION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class VirtualBlobKeySupplierTest {
+class VirtualBlobKeySupplierTest {
 	VirtualBlobKeySupplier subject;
 
 	@Test
