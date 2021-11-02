@@ -9,9 +9,9 @@ package com.hedera.services.state;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,19 +23,23 @@ package com.hedera.services.state;
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,7 +57,7 @@ class StateAccessorTest {
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
-	private MerkleMap<String, MerkleOptionalBlob> storage;
+	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
 	@Mock
 	private MerkleMap<EntityNum, MerkleTopic> topics;
 	@Mock
@@ -62,6 +66,8 @@ class StateAccessorTest {
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
 	@Mock
 	private MerkleMap<EntityNum, MerkleSchedule> scheduleTxs;
+	@Mock
+	private VirtualMap<ContractKey, ContractValue> contractStorage;
 	@Mock
 	private MerkleNetworkContext networkCtx;
 	@Mock
@@ -102,6 +108,7 @@ class StateAccessorTest {
 		given(state.uniqueOwnershipAssociations()).willReturn(uniqueOwnershipAssociations);
 		given(state.uniqueTreasuryOwnershipAssociations()).willReturn(uniqueTreasuryOwnershipAssociations);
 		given(state.runningHashLeaf()).willReturn(runningHashLeaf);
+		given(state.contractStorage()).willReturn(contractStorage);
 
 		// when:
 		subject.updateFrom(state);
@@ -121,6 +128,7 @@ class StateAccessorTest {
 		assertSame(uniqueOwnershipAssociations, subject.uniqueOwnershipAssociations());
 		assertSame(uniqueTreasuryOwnershipAssociations, subject.uniqueOwnershipTreasuryAssociations());
 		assertSame(runningHashLeaf, subject.runningHashLeaf());
+		assertSame(contractStorage, subject.contractStorage());
 	}
 
 	@Test

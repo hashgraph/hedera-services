@@ -22,11 +22,11 @@ package com.hedera.services.contracts.execution;
  *
  */
 
-import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
+import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
@@ -34,10 +34,12 @@ import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
@@ -57,6 +59,7 @@ import java.time.Instant;
 import java.util.Deque;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -74,6 +77,8 @@ class CallLocalEvmTxProcessorTest {
 	@Mock
 	private HederaWorldState worldState;
 	@Mock
+	private CodeCache codeCache;
+	@Mock
 	private HbarCentExchange hbarCentExchange;
 	@Mock
 	private UsagePricesProvider usagePricesProvider;
@@ -86,8 +91,6 @@ class CallLocalEvmTxProcessorTest {
 
 	@Mock
 	private Transaction transaction;
-	@Mock
-	private TransactionContext transactionContext;
 
 	@Mock
 	private ExchangeRate exchangeRate;
@@ -104,8 +107,10 @@ class CallLocalEvmTxProcessorTest {
 	private void setup() {
 		CommonProcessorSetup.setup(gasCalculator);
 
-		callLocalEvmTxProcessor = new CallLocalEvmTxProcessor(worldState, hbarCentExchange, usagePricesProvider,
+		callLocalEvmTxProcessor = new CallLocalEvmTxProcessor(codeCache, hbarCentExchange, usagePricesProvider,
 				globalDynamicProperties, gasCalculator, operations);
+
+		callLocalEvmTxProcessor.setWorldState(worldState);
 	}
 
 	@Test
@@ -120,7 +125,7 @@ class CallLocalEvmTxProcessorTest {
 	}
 
 	@Test
-	void assertSuccessExecutе() {
+	void assertSuccessExecutе() throws ExecutionException {
 		givenValidMock();
 		var result = callLocalEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), 33_333L, 1234L, Bytes.EMPTY, consensusTime);
 		assertTrue(result.isSuccessful());
@@ -129,18 +134,56 @@ class CallLocalEvmTxProcessorTest {
 
 
 	@Test
+	void throwsWhenCodeCacheFailsLoading() throws ExecutionException {
+		given(worldState.updater()).willReturn(updater);
+		given(worldState.updater().updater()).willReturn(updater);
+		given(globalDynamicProperties.maxGas()).willReturn(10000000);
+		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
+
+		var evmAccount = mock(EvmAccount.class);
+
+		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(Gas.ZERO);
+
+		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(evmAccount);
+		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()).getMutable()).willReturn(mock(MutableAccount.class));
+		given(worldState.updater()).willReturn(updater);
+		given(codeCache.get(any())).willReturn(new Code());
+
+		var senderMutableAccount = mock(MutableAccount.class);
+
+		given(updater.getSenderAccount(any())).willReturn(evmAccount);
+		given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
+		given(updater.getOrCreate(any())).willReturn(evmAccount);
+		given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
+
+		var feeData = mock(FeeData.class);
+		given(feeData.getServicedata()).willReturn(mock(FeeComponents.class));
+		given(usagePricesProvider.defaultPricesGiven(HederaFunctionality.ContractCallLocal, Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build())).willReturn(feeData);
+		given(hbarCentExchange.rate(Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build())).willReturn(exchangeRate);
+		given(exchangeRate.getHbarEquiv()).willReturn(1);
+		given(exchangeRate.getCentEquiv()).willReturn(1);
+		given(codeCache.get(any())).willThrow(new RuntimeException("oh no"));
+
+		try {
+			callLocalEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), 33_333L, 1234L, Bytes.EMPTY,
+					consensusTime);
+		} catch (InvalidTransactionException e) {
+			assertEquals(ResponseCodeEnum.FAIL_INVALID, e.getResponseCode());
+		}
+	}
+
+	@Test
 	void assertIsContractCallFunctionality() {
 		//expect:
 		assertEquals(HederaFunctionality.ContractCallLocal, callLocalEvmTxProcessor.getFunctionType());
 	}
 
 	@Test
-	void assertTransactionSenderAndValue() {
+	void assertTransactionSenderAndValue() throws ExecutionException {
 		// setup:
 		doReturn(Optional.of(receiver.getId().asEvmAddress())).when(transaction).getTo();
 		given(worldState.updater()).willReturn(mock(HederaWorldState.Updater.class));
-		given(worldState.updater().get(any())).willReturn(mock(org.hyperledger.besu.evm.account.Account.class));
-		given(worldState.updater().get(any()).getCode()).willReturn(Bytes.EMPTY);
+		given(codeCache.get(any())).willReturn(new Code());
 		given(transaction.getSender()).willReturn(sender.getId().asEvmAddress());
 		given(transaction.getValue()).willReturn(Wei.of(1L));
 		final MessageFrame.Builder commonInitialFrame =
@@ -168,7 +211,7 @@ class CallLocalEvmTxProcessorTest {
 		assertEquals(transaction.getValue(), buildMessageFrame.getApparentValue());
 	}
 
-	private void givenValidMock() {
+	private void givenValidMock() throws ExecutionException {
 		given(worldState.updater()).willReturn(updater);
 		given(worldState.updater().updater()).willReturn(updater);
 		given(globalDynamicProperties.maxGas()).willReturn(10000000);
@@ -180,9 +223,8 @@ class CallLocalEvmTxProcessorTest {
 
 		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(evmAccount);
 		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()).getMutable()).willReturn(mock(MutableAccount.class));
-		given(worldState.updater().get(any())).willReturn(mock(org.hyperledger.besu.evm.account.Account.class));
-		given(worldState.updater().get(any()).getCode()).willReturn(Bytes.EMPTY);
 		given(worldState.updater()).willReturn(updater);
+		given(codeCache.get(any())).willReturn(new Code());
 
 
 		var senderMutableAccount = mock(MutableAccount.class);

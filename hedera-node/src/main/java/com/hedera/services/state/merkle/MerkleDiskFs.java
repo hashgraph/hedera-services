@@ -148,13 +148,18 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements ExternalSelfSeri
 
 	/* --- MerkleExternalLeaf --- */
 	@Override
-	public void serializeExternal(SerializableDataOutputStream out, File ignored) throws IOException {
+	public void serializeExternal(final SerializableDataOutputStream out, final File ignored) throws IOException {
 		out.writeInt(fileHashes.size());
 		serializeFidInfo(out, fileHashes::get);
 	}
 
 	@Override
-	public void deserializeExternal(SerializableDataInputStream in, File ignored, Hash hash, int version) throws IOException {
+	public void deserializeExternal(
+			final SerializableDataInputStream in,
+			final File ignored,
+			final Hash hash,
+			final int version
+	) throws IOException {
 		int numSavedHashes = in.readInt();
 		for (int i = 0; i < numSavedHashes; i++) {
 			var fid = FileID.newBuilder()

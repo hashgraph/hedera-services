@@ -20,10 +20,10 @@ package com.hedera.services.bdd.spec.assertions;
  * ‍
  */
 
+import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
-import org.ethereum.util.ByteUtil;
 import org.junit.jupiter.api.Assertions;
 
 import java.nio.charset.Charset;
@@ -58,7 +58,7 @@ public class ContractLogAsserts extends BaseErroringAssertsProvider<ContractLogi
 	public ContractLogAsserts longAtBytes(long expected, int start) {
 		registerProvider((spec, o) -> {
 			byte[] data = dataFrom(o);
-			long actual = ByteUtil.byteArrayToLong(copyOfRange(data, start, start + 8));
+			long actual = Longs.fromByteArray(copyOfRange(data, start, start + 8));
 			Assertions.assertEquals(expected, actual, "Bad long value in log data, starting at byte " + start);
 		});
 		return this;
@@ -67,7 +67,7 @@ public class ContractLogAsserts extends BaseErroringAssertsProvider<ContractLogi
 	public ContractLogAsserts longValue(long expected) {
 		registerProvider((spec, o) -> {
 			byte[] data = dataFrom(o);
-			long actual = ByteUtil.byteArrayToLong(data);
+			long actual = Longs.fromByteArray(copyOfRange(data, data.length - 8, data.length));
 			Assertions.assertEquals(expected, actual, "Bad long value in log data: " + actual);
 		});
 		return this;
@@ -99,9 +99,9 @@ public class ContractLogAsserts extends BaseErroringAssertsProvider<ContractLogi
 	}
 
 	static AccountID accountFromBytes(byte[] data, int start) {
-		long shard = ByteUtil.byteArrayToLong(copyOfRange(data, start, start + 4));
-		long realm = ByteUtil.byteArrayToLong(copyOfRange(data, start + 4, start + 12));
-		long seq = ByteUtil.byteArrayToLong(copyOfRange(data, start + 12, start + 20));
+		long shard = Longs.fromByteArray(copyOfRange(data, start, start + 4));
+		long realm = Longs.fromByteArray(copyOfRange(data, start + 4, start + 12));
+		long seq = Longs.fromByteArray(copyOfRange(data, start + 12, start + 20));
 		return AccountID.newBuilder().setAccountNum(seq).setRealmNum(realm).setShardNum(shard).build();
 	}
 

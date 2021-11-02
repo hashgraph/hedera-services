@@ -109,6 +109,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private Optional<Map<AccountID, Long>> expectedDebits = Optional.empty();
 	private Optional<Consumer<Map<AccountID, Long>>> debitsConsumer = Optional.empty();
 	private Optional<ErroringAssertsProvider<List<TransactionRecord>>> duplicateExpectations = Optional.empty();
+	private Optional<Consumer<TransactionRecord>> observer = Optional.empty();
 
 	public HapiGetTxnRecord(String txn) {
 		this.txn = txn;
@@ -125,6 +126,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	@Override
 	protected HapiGetTxnRecord self() {
+		return this;
+	}
+
+	public HapiGetTxnRecord exposingTo(final Consumer<TransactionRecord> observer) {
+		this.observer = Optional.of(observer);
 		return this;
 	}
 
@@ -515,7 +521,8 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	protected void submitWith(HapiApiSpec spec, Transaction payment) {
 		Query query = getRecordQuery(spec, payment, false);
 		response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getTxRecordByTxID(query);
-		TransactionRecord record = response.getTransactionGetRecord().getTransactionRecord();
+		final TransactionRecord record = response.getTransactionGetRecord().getTransactionRecord();
+		observer.ifPresent(obs -> obs.accept(record));
 		if (verboseLoggingOn) {
 			if (format.isPresent()) {
 				format.get().accept(record, log);

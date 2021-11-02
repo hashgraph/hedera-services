@@ -21,7 +21,6 @@ package com.hedera.services.legacy.unit.serialization;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.contracts.sources.BlobStorageSource;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
@@ -35,6 +34,7 @@ import com.swirlds.common.CommonUtils;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.apache.commons.codec.DecoderException;
+import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
@@ -171,7 +171,7 @@ class JKeySerializerTest {
 			final int size = computeNumOfExpandedKeys(rv, 1, new AtomicCounter());
 			assertEquals(1 + numKeys * 2, size);
 		} else {
-			throw new BlobStorageSource.CannotConstructKeysException("Not implemented yet.");
+			throw new NotImplementedException("Not implemented yet.");
 		}
 
 		return rv;

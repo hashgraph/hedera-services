@@ -109,8 +109,9 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 			 * we've been managing in the normal way. */
 			return impliedTransfers.getMeta().code();
 		} else {
-			/* Accessor is for either (1) a transaction in precheck or (2) a scheduled
-			transaction that reached consensus without a managed expand-handle span. */
+			/* Accessor is for either (1) a transaction in precheck; or (2) a scheduled
+			transaction that reached consensus without a managed expand-handle span; or
+			(3) in a development environment, a transaction submitted via UncheckedSubmit. */
 			final var validationProps = new ImpliedTransfersMeta.ValidationProps(
 					dynamicProperties.maxTransferListSize(),
 					dynamicProperties.maxTokenTransferListSize(),

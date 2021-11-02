@@ -48,4 +48,18 @@ class TokenMintMetaTest {
 		assertEquals(meta1, meta2);
 		assertEquals(meta1.hashCode(), meta1.hashCode());
 	}
+
+	@Test
+	void assertToStringHelper() {
+		var bpt = 1000;
+		var transferRecordRb = 12_345L;
+		var rbs = 1_234_567L;
+		final var meta = new TokenMintMeta(bpt, TOKEN_NON_FUNGIBLE_UNIQUE, transferRecordRb, rbs);
+		String expected = String.format("TokenMintMeta{bpt=%d, transferRecordDb=%d, subType=%s, rbs=%d}",
+				bpt,
+				transferRecordRb,
+				TOKEN_NON_FUNGIBLE_UNIQUE,
+				rbs);
+		assertEquals(expected, meta.toStringHelper().toString());
+	}
 }

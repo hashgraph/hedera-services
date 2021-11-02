@@ -20,7 +20,6 @@ package com.hedera.services.stats;
  * ‍
  */
 
-
 import com.swirlds.common.statistics.StatEntry;
 import com.swirlds.common.statistics.StatsSpeedometer;
 

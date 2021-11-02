@@ -26,6 +26,27 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class FeeScheduleUpdateMetaTest {
 	@Test
+	void assertEqualsWork() {
+		// when:
+		final var subject = new FeeScheduleUpdateMeta(1_234_567L, 22);
+		final var subject2 = new FeeScheduleUpdateMeta(1_234_567L, 22);
+
+		//then:
+		assertEquals(subject, subject2);
+		assertEquals(subject.hashCode(), subject2.hashCode());
+	}
+
+	@Test
+	void assertGetters() {
+		// when:
+		final var subject = new FeeScheduleUpdateMeta(1_234_567L, 22);
+
+		//then:
+		assertEquals(1_234_567L, subject.effConsensusTime());
+		assertEquals(22, subject.numBytesInNewFeeScheduleRepr());
+	}
+
+	@Test
 	void toStringWorks() {
 		// given:
 		final var desired = "FeeScheduleUpdateMeta{effConsensusTime=1234567, " +

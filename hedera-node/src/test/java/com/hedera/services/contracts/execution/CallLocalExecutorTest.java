@@ -66,23 +66,19 @@ class CallLocalExecutorTest {
 	AccountStore accountStore;
 	CallLocalEvmTxProcessor evmTxProcessor;
 
-	CallLocalExecutor subject;
-
 	@BeforeEach
 	private void setup() {
 		accountStore = mock(AccountStore.class);
 		evmTxProcessor = mock(CallLocalEvmTxProcessor.class);
 
 		query = localCallQuery(contractID.asGrpcContract(), ANSWER_ONLY);
-
-		subject = new CallLocalExecutor(accountStore, evmTxProcessor);
 	}
 
 	@Test
 	void processingSuccessful() {
 		// setup:
 		final var transactionProcessingResult = TransactionProcessingResult
-				.successful(new ArrayList<>(), 0, 0,1, Bytes.EMPTY, callerID.asEvmAddress());
+				.successful(new ArrayList<>(), 0, 0, 1, Bytes.EMPTY, callerID.asEvmAddress());
 		final var expected = response(OK, transactionProcessingResult);
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
@@ -91,7 +87,7 @@ class CallLocalExecutorTest {
 				.willReturn(transactionProcessingResult);
 
 		// when:
-		final var result = subject.execute(query);
+		final var result = CallLocalExecutor.execute(accountStore, evmTxProcessor, query);
 
 		// then:
 		assertEquals(expected, result);
@@ -110,7 +106,7 @@ class CallLocalExecutorTest {
 				.willReturn(transactionProcessingResult);
 
 		// when:
-		final var result = subject.execute(query);
+		final var result = CallLocalExecutor.execute(accountStore, evmTxProcessor, query);
 
 		// then:
 		assertEquals(expected, result);
@@ -129,7 +125,7 @@ class CallLocalExecutorTest {
 				.willReturn(transactionProcessingResult);
 
 		// when:
-		final var result = subject.execute(query);
+		final var result = CallLocalExecutor.execute(accountStore, evmTxProcessor, query);
 
 		// then:
 		assertEquals(expected, result);
@@ -148,7 +144,7 @@ class CallLocalExecutorTest {
 				.willReturn(transactionProcessingResult);
 
 		// when:
-		final var result = subject.execute(query);
+		final var result = CallLocalExecutor.execute(accountStore, evmTxProcessor, query);
 
 		// then:
 		assertEquals(expected, result);
@@ -160,7 +156,7 @@ class CallLocalExecutorTest {
 		given(accountStore.loadAccount(any())).willThrow(new InvalidTransactionException(INVALID_ACCOUNT_ID));
 
 		// when:
-		final var result = subject.execute(query);
+		final var result = CallLocalExecutor.execute(accountStore, evmTxProcessor, query);
 
 		assertEquals(failedResponse(INVALID_ACCOUNT_ID), result);
 		// and:
@@ -176,7 +172,7 @@ class CallLocalExecutorTest {
 
 	private ContractCallLocalResponse failedResponse(ResponseCodeEnum status) {
 		return ContractCallLocalResponse.newBuilder()
-				.setHeader( RequestBuilder.getResponseHeader(status, 0l,
+				.setHeader(RequestBuilder.getResponseHeader(status, 0l,
 						ANSWER_ONLY, ByteString.EMPTY))
 				.build();
 	}

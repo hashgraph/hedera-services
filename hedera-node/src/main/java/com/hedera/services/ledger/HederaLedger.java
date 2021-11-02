@@ -26,12 +26,12 @@ import com.hedera.services.exceptions.DetachedAccountException;
 import com.hedera.services.exceptions.InconsistentAdjustmentsException;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.exceptions.NonZeroNetTransfersException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -71,7 +71,9 @@ import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
+import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
@@ -102,7 +104,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 @SuppressWarnings("unchecked")
 public class HederaLedger {
 	private static final int MAX_CONCEIVABLE_TOKENS_PER_TXN = 1_000;
-	private static final long[] NO_NEW_BALANCES = new long[0];
 	private static final List<AccountProperty> TOKEN_TRANSFER_SIDE_EFFECTS =
 			List.of(TOKENS, NUM_NFTS_OWNED, ALREADY_USED_AUTOMATIC_ASSOCIATIONS);
 
@@ -313,18 +314,6 @@ public class HederaLedger {
 		updateXfers(id, adjustment, netTransfers);
 	}
 
-	public void doTransfers(TransferList accountAmounts) {
-		throwIfNetAdjustmentIsNonzero(accountAmounts);
-		long[] newBalances = computeNewBalances(accountAmounts);
-		for (int i = 0; i < newBalances.length; i++) {
-			setBalance(accountAmounts.getAccountAmounts(i).getAccountID(), newBalances[i]);
-		}
-
-		for (AccountAmount aa : accountAmounts.getAccountAmountsList()) {
-			updateXfers(aa.getAccountID(), aa.getAmount(), netTransfers);
-		}
-	}
-
 	void doTransfer(AccountID from, AccountID to, long adjustment) {
 		long newFromBalance = computeNewBalance(from, -1 * adjustment);
 		long newToBalance = computeNewBalance(to, adjustment);
@@ -431,8 +420,7 @@ public class HederaLedger {
 			if (change.isForHbar()) {
 				validity = accountsLedger.validate(
 						change.accountId(),
-						scopedCheck.setBalanceChange(change)
-				);
+						scopedCheck.setBalanceChange(change));
 			} else {
 				validity = tokenStore.tryTokenChange(change);
 			}
@@ -554,6 +542,14 @@ public class HederaLedger {
 				&& !validator.isAfterConsensusSecond((long) accountsLedger.get(id, EXPIRY));
 	}
 
+	public JKey key(AccountID id) {
+		return (JKey) accountsLedger.get(id, KEY);
+	}
+
+	public String memo(AccountID id) {
+		return (String) accountsLedger.get(id, MEMO);
+	}
+
 	public boolean isPendingCreation(AccountID id) {
 		return accountsLedger.existsPending(id);
 	}
@@ -581,30 +577,10 @@ public class HederaLedger {
 		return balance + adjustment;
 	}
 
-	private void throwIfNetAdjustmentIsNonzero(TransferList accountAmounts) {
-		if (!isNetZeroAdjustment(accountAmounts)) {
-			throw new NonZeroNetTransfersException(accountAmounts);
-		}
-	}
-
 	private void throwIfPendingStateIsInconsistent() {
 		if (!isNetZeroAdjustment(pendingNetTransfersInTxn())) {
 			throw new InconsistentAdjustmentsException();
 		}
-	}
-
-	private long[] computeNewBalances(TransferList accountAmounts) {
-		int n = accountAmounts.getAccountAmountsCount();
-		if (n == 0) {
-			return NO_NEW_BALANCES;
-		}
-
-		int i = 0;
-		long[] newBalances = new long[n];
-		for (AccountAmount adjustment : accountAmounts.getAccountAmountsList()) {
-			newBalances[i++] = computeNewBalance(adjustment.getAccountID(), adjustment.getAmount());
-		}
-		return newBalances;
 	}
 
 	private void setBalance(AccountID id, long newBalance) {

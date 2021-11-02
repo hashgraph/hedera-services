@@ -31,6 +31,7 @@ import org.apache.logging.log4j.Logger;
 import org.ethereum.core.CallTransaction;
 import org.junit.jupiter.api.Assertions;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -131,7 +132,13 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 		return ignore -> actualObjs -> matchErrors(objs, actualObjs);
 	}
 
+	public static Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> isLiteralArrayResult(Object[] objs) {
+		return ignore -> actualObjs -> matchErrors(objs, (Object[]) actualObjs[0]);
+	}
+
 	private static Optional<Throwable> matchErrors(Object[] expected, Object[] actual) {
+		System.out.println("Expected (#" + expected.length + "): " + Arrays.toString(expected));
+		System.out.println("Actual (#" + actual.length + "): " + Arrays.toString(actual));
 		try {
 			for (int i = 0; i < Math.max(expected.length, actual.length); i++) {
 				try {

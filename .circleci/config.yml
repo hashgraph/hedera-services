@@ -571,7 +571,8 @@ commands:
 
             CI_PARAMETERS=""
             if [[ "<< parameters.continuous_integration >>" == "true" ]]; then
-              CI_PARAMETERS="${CI_PARAMETERS} $CIRCLE_USERNAME $CIRCLE_BUILD_URL"
+              CI_PARAMETERS="${CI_PARAMETERS} ${JRS_USER}"
+              CI_PARAMETERS="${CI_PARAMETERS}_${CIRCLE_BUILD_URL}"
             fi
 
             pushd "${REGRESSION_PATH}" > /dev/null 2>&1
@@ -596,7 +597,7 @@ commands:
               ${JRS_OPTIONS} \
               -Dlog4j.configurationFile=log4j2-jrs.xml \
               -Dspring.output.ansi.enabled=ALWAYS \
-              -jar regression.jar "${CONFIG_PATH}" -r "<< parameters.hedera_services_path >>" -w DOCKER_REMOTE
+              -jar regression.jar "${CONFIG_PATH}" -r "<< parameters.hedera_services_path >>" -w DOCKER_REMOTE -ci "${CI_PARAMETERS}"
             popd > /dev/null 2>&1
           no_output_timeout: 30m
 
@@ -879,6 +880,29 @@ workflows:
           result_path: results/4N_1C/Restart
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Crypto-Restart-4N-1C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+  GCP-Daily-Services-Update-Reconnect-4N-1C:
+    triggers:
+      - schedule:
+          cron: "15 7 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_1C/Update
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Comp-Update-Reconnect-4N-1C"
           requires:
             - build-platform-and-services
           pre-steps:

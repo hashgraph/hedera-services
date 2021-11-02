@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.contract;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
@@ -29,22 +30,35 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ADD_NTH_FIB_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.EMPTY_CONSTRUCTOR;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FIBONACCI_PLUS_CONSTRUCTOR_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FIBONACCI_PLUS_PATH;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
+import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ERROR_DECODING_BYTESTRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -54,6 +68,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ContractCreateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCreateSuite.class);
@@ -64,28 +79,19 @@ public class ContractCreateSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return allOf(
-				positiveTests(),
-				negativeTests()
-		);
-	}
-
-	private List<HapiApiSpec> positiveTests() {
-		return Arrays.asList(
-				createsVanillaContract(),
-				createEmptyConstructor()
-		);
-	}
-
-	private List<HapiApiSpec> negativeTests() {
-		return Arrays.asList(
-				insufficientPayerBalanceUponCreation(),
-				rejectsInvalidMemo(),
-				rejectsInsufficientFee(),
-				rejectsInvalidBytecode(),
-				revertsNonzeroBalance(),
-				createFailsIfMissingSigs(),
-				rejectsInsufficientGas()
+		return List.of(new HapiApiSpec[] {
+//						createEmptyConstructor(),
+//						insufficientPayerBalanceUponCreation(),
+//						rejectsInvalidMemo(),
+//						rejectsInsufficientFee(),
+//						rejectsInvalidBytecode(),
+//						revertsNonzeroBalance(),
+//						createFailsIfMissingSigs(),
+//						rejectsInsufficientGas(),
+//						createsVanillaContractAsExpectedWithOmittedAdminKey(),
+//						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
+						canCallPendingContractSafely(),
+				}
 		);
 	}
 
@@ -106,15 +112,103 @@ public class ContractCreateSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec createsVanillaContract() {
+	HapiApiSpec canCallPendingContractSafely() {
+		final int numSlots = 64;
+		final int createBurstSize = 500;
+		final int[] targets = { 19, 24 };
+		final AtomicLong createdFileNum = new AtomicLong();
+		final var callTxn = "callTxn";
+		final var initcode = "initcode";
+
+		return defaultHapiSpec("CanCallPendingContract")
+				.given(
+						fileCreate(initcode)
+								.path(FIBONACCI_PLUS_PATH)
+								.payingWith(GENESIS)
+								.exposingNumTo(createdFileNum::set),
+						inParallel(IntStream.range(0, createBurstSize)
+								.mapToObj(i ->
+										contractCreate("contract" + i, FIBONACCI_PLUS_CONSTRUCTOR_ABI, numSlots)
+												.fee(ONE_HUNDRED_HBARS)
+												.gas(300_000L)
+												.payingWith(GENESIS)
+												.noLogging()
+												.deferStatusResolution()
+												.bytecode(initcode)
+												.adminKey(THRESHOLD))
+								.toArray(HapiSpecOperation[]::new))
+				).when(
+						sourcing(() ->
+								contractCall(
+										"0.0." + (createdFileNum.get() + createBurstSize),
+										ADD_NTH_FIB_ABI, targets, 12
+								)
+										.payingWith(GENESIS)
+										.gas(300_000L)
+										.via(callTxn))
+				).then(
+						getTxnRecord(callTxn).logged()
+				);
+	}
+
+
+	private HapiApiSpec createsVanillaContractAsExpectedWithOmittedAdminKey() {
+		final var name = "testContract";
+
 		return defaultHapiSpec("CreatesVanillaContract")
 				.given(
 						fileCreate("contractFile")
 								.path(ContractResources.VALID_BYTECODE_PATH)
 				).when().then(
-						contractCreate("testContract")
-								.bytecode("contractFile")
-								.hasKnownStatus(SUCCESS)
+						contractCreate(name)
+								.omitAdminKey()
+								.bytecode("contractFile"),
+						getContractInfo(name)
+								.has(contractWith().immutableContractKey(name))
+								.logged()
+				);
+	}
+
+	private HapiApiSpec childCreationsHaveExpectedKeysWithOmittedAdminKey() {
+		final AtomicLong firstStickId = new AtomicLong();
+		final AtomicLong secondStickId = new AtomicLong();
+		final AtomicLong thirdStickId = new AtomicLong();
+		final String txn = "creation";
+
+		return defaultHapiSpec("ChildCreationsHaveExpectedKeysWithOmittedAdminKey")
+				.given(
+						fileCreate("bytecode").path(ContractResources.FUSE_BYTECODE_PATH),
+						contractCreate("fuse").bytecode("bytecode").omitAdminKey().via(txn),
+						withOpContext((spec, opLog) -> {
+							final var op = getTxnRecord(txn);
+							allRunFor(spec, op);
+							final var record = op.getResponseRecord();
+							final var creationResult = record.getContractCreateResult();
+							final var createdIds = creationResult.getCreatedContractIDsList();
+							assertEquals(
+									4, createdIds.size(),
+									"Expected four creations but got " + createdIds);
+							firstStickId.set(createdIds.get(1).getContractNum());
+							secondStickId.set(createdIds.get(2).getContractNum());
+							thirdStickId.set(createdIds.get(3).getContractNum());
+						})
+				).when(
+						sourcing(() -> getContractInfo("0.0." + firstStickId.get())
+								.has(contractWith().immutableContractKey("0.0." + firstStickId.get()))
+								.logged()),
+						sourcing(() -> getContractInfo("0.0." + secondStickId.get())
+								.has(contractWith().immutableContractKey("0.0." + secondStickId.get()))
+								.logged()),
+						sourcing(() -> getContractInfo("0.0." + thirdStickId.get())
+								.logged()),
+						contractCall("fuse", ContractResources.LIGHT_ABI).via("lightTxn")
+				).then(
+						sourcing(() -> getContractInfo("0.0." + firstStickId.get())
+								.hasCostAnswerPrecheck(CONTRACT_DELETED)),
+						sourcing(() -> getContractInfo("0.0." + secondStickId.get())
+								.hasCostAnswerPrecheck(CONTRACT_DELETED)),
+						sourcing(() -> getContractInfo("0.0." + thirdStickId.get())
+								.hasCostAnswerPrecheck(CONTRACT_DELETED))
 				);
 	}
 

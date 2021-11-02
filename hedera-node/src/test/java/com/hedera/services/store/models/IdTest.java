@@ -61,8 +61,7 @@ class IdTest {
 		assertNotEquals(cId, aId);
 		assertNotEquals(dId, aId);
 		assertEquals(eId, aId);
-		assertNotEquals(null, aId);
-		assertNotEquals(new Object(), aId);
+		assertNotEquals(aId, new Object());
 		assertEquals(aId, aId);
 	}
 
