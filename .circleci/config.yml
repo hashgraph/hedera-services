@@ -887,6 +887,29 @@ workflows:
             - attach_workspace:
                 at: /
 
+  GCP-Daily-Services-Update-Reconnect-4N-1C:
+    triggers:
+      - schedule:
+          cron: "15 7 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_1C/Update
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Comp-Update-Reconnect-4N-1C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
   GCP-Daily-Services-Account-Balances-client-validation-6N-1C:
     triggers:
       - schedule:

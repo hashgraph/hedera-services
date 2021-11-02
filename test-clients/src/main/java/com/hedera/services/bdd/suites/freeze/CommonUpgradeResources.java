@@ -35,6 +35,7 @@ import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384Ha
 public final class CommonUpgradeResources {
 	public static final String DEFAULT_UPGRADE_FILE_ID = "0.0.150";
 	public static final String DEFAULT_UPGRADE_FILE_PATH = "upgrade.zip";
+	public static final int DEFAULT_APPENDS_PER_BURST = 512;
 	public static final int DEFAULT_UPGRADE_DELAY = 2;
 
 	private static final PerfTestLoadSettings settings = new PerfTestLoadSettings();
@@ -53,6 +54,10 @@ public final class CommonUpgradeResources {
 
 	public static String upgradeFilePath() {
 		return settings.getProperty("upgradeFilePath", DEFAULT_UPGRADE_FILE_PATH);
+	}
+
+	public static int upgradeFileAppendsPerBurst() {
+		return settings.getIntProperty("upgradeFileAppendsPerBurst", DEFAULT_APPENDS_PER_BURST);
 	}
 
 	public static byte[] upgradeFileHash() {

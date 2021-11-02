@@ -84,6 +84,12 @@ class TokenDissociateUsageTest {
 		verify(base, times(3)).addBpt(FeeBuilder.BASIC_ENTITY_ID_SIZE);
 	}
 
+	@Test
+	void assertSelf() {
+		subject = TokenDissociateUsage.newEstimate(txn, sigUsage);
+		assertEquals(subject, subject.self());
+	}
+
 	private void givenOpWithTwoDissociations() {
 		op = TokenDissociateTransactionBody.newBuilder()
 				.setAccount(id)

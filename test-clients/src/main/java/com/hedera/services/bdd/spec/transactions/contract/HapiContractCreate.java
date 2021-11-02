@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.transactions.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -52,6 +52,7 @@ import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.ObjLongConsumer;
+import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
@@ -84,7 +85,13 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 	Optional<Consumer<HapiSpecRegistry>> successCb = Optional.empty();
 	Optional<String> abi = Optional.empty();
 	Optional<Object[]> args = Optional.empty();
-	private Optional<ObjLongConsumer<ResponseCodeEnum>> gasObserver = Optional.empty();
+	Optional<ObjLongConsumer<ResponseCodeEnum>> gasObserver = Optional.empty();
+	Optional<LongConsumer> newNumObserver = Optional.empty();
+
+	public HapiContractCreate exposingNumTo(LongConsumer obs) {
+		newNumObserver = Optional.of(obs);
+		return this;
+	}
 
 	public HapiContractCreate advertisingCreation() {
 		advertiseCreation = true;
@@ -135,22 +142,27 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 		bytecodeFile = Optional.of(fileName);
 		return this;
 	}
+
 	public HapiContractCreate bytecode(Supplier<String> supplier) {
 		bytecodeFileFn = Optional.of(supplier);
 		return this;
 	}
+
 	public HapiContractCreate adminKey(KeyFactory.KeyType type) {
 		adminKeyType = Optional.of(type);
 		return this;
 	}
+
 	public HapiContractCreate adminKeyShape(SigControl controller) {
 		adminKeyControl = Optional.of(controller);
 		return this;
 	}
+
 	public HapiContractCreate autoRenewSecs(long period) {
 		autoRenewPeriodSecs = Optional.of(period);
 		return this;
 	}
+
 	public HapiContractCreate balance(long initial) {
 		balance = Optional.of(initial);
 		return this;
@@ -161,18 +173,21 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 		return this;
 	}
 
-	public HapiContractCreate entityMemo(String s)	 {
+	public HapiContractCreate entityMemo(String s) {
 		memo = Optional.of(s);
 		return this;
 	}
-	public HapiContractCreate omitAdminKey()	 {
+
+	public HapiContractCreate omitAdminKey() {
 		omitAdminKey = true;
 		return this;
 	}
+
 	public HapiContractCreate useDeprecatedAdminKey() {
 		useDeprecatedAdminKey = true;
 		return this;
 	}
+
 	public HapiContractCreate adminKey(String existingKey) {
 		key = Optional.of(existingKey);
 		return this;
@@ -193,11 +208,13 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 			}
 			return;
 		}
+		final var newId = lastReceipt.getContractID();
+		newNumObserver.ifPresent(obs -> obs.accept(newId.getContractNum()));
 		if (shouldAlsoRegisterAsAccount) {
 			spec.registry().saveAccountId(contract, equivAccount(lastReceipt.getContractID()));
 		}
 		spec.registry().saveKey(contract, (omitAdminKey || useDeprecatedAdminKey) ? MISSING_ADMIN_KEY : adminKey);
-		spec.registry().saveContractId(contract, lastReceipt.getContractID());
+		spec.registry().saveContractId(contract, newId);
 		ContractGetInfoResponse.ContractInfo otherInfo = ContractGetInfoResponse.ContractInfo.newBuilder()
 				.setContractAccountID(solidityIdFrom(lastReceipt.getContractID()))
 				.setMemo(memo.orElse(spec.setup().defaultMemo()))
