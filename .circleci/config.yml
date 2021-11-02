@@ -894,7 +894,7 @@ workflows:
           filters:
             branches:
               only:
-                - 02170-M-update-regression-nightly
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -917,7 +917,7 @@ workflows:
           filters:
             branches:
               only:
-                - 02170-M-update-regression-nightly
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -940,7 +940,7 @@ workflows:
           filters:
             branches:
               only:
-                - 02170-M-update-regression-nightly
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1421,8 +1421,6 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression; git checkout 01632-D-update-reconnect-runner-3;
-            cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
