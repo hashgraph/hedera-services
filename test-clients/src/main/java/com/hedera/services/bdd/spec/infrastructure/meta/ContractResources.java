@@ -55,6 +55,8 @@ public class ContractResources {
 	public static final String ERC_1155_BYTECODE_PATH = bytecodePath("erc1155");
 	public static final String BENCHMARK_CONTRACT = bytecodePath("Benchmark");
 	public static final String SIMPLE_UPDATE = bytecodePath("SimpleUpdate");
+	public static final String CONTRACT_INTERACTIONS_BASE = bytecodePath("ContractInteractionsBase");
+	public static final String CONTRACT_INTERACTIONS_EXTRA = bytecodePath("ContractInteractionsExtra");
 	public static final String LOGS = bytecodePath("Logs");
 
 	public static final String CALLING_CONTRACT = bytecodePath("CallingContract");
@@ -492,7 +494,19 @@ public class ContractResources {
 	public static final String ERC_1155_ABI_MINT = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"tokenType\",\"type\":\"uint256\"}" +
 			",{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"recipient\",\"type\":\"address\"}]" +
 			",\"name\":\"mintToken\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-
+	public static final String BASE_CONTRACT_SET_PARAMS_ABI = "{ \"inputs\": [ { \"internalType\": \"uint256\"," +
+			" \"name\": \"a\", \"type\": \"uint256\" }, { \"internalType\": \"uint256\", \"name\": \"b\", " +
+			"\"type\": \"uint256\" } ], \"name\": \"setAB\", \"outputs\": [], \"stateMutability\": \"nonpayable\"," +
+			" \"type\": \"function\" } ";
+	public static final String EXTRA_CONTRACT_CONSTRUCTOR_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", " +
+			"\"name\": \"baseAddress\", \"type\": \"address\" } ], \"stateMutability\": \"nonpayable\", \"type\": \"constructor\" }";
+	public static final String EXTRA_CONTRACT_SET_A_AND_B_IN_BASE_CONTRACT_ABI = "{ \"inputs\": [ " +
+			"{ \"internalType\": \"uint256\", \"name\": \"a\", \"type\": \"uint256\" }, { \"internalType\": \"uint256\"," +
+			" \"name\": \"b\", \"type\": \"uint256\" } ], \"name\": \"baseSetAB\", \"outputs\": [ { \"internalType\": " +
+			"\"bool\", \"name\": \"success\", \"type\": \"bool\" } ], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+	public static final String EXTRA_CONTRACT_GET_SUM_OF_BASE_A_AND_B_ABI = "{ \"inputs\": [], \"name\": " +
+			"\"getSumOfBaseAAndBaseB\", \"outputs\": [ { \"internalType\": \"uint256\", \"name\": \"\", \"type\": " +
+			"\"uint256\" } ], \"stateMutability\": \"view\", \"type\": \"function\" }";
 
 	public static String bytecodePath(String bytecode) {
 		return String.format("src/main/resource/contract/bytecodes/%s.bin", bytecode);

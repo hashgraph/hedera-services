@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.queries.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,8 +28,11 @@ import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCallLocal;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hederahashgraph.api.proto.java.AccessListEntry;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -37,12 +40,14 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.ethereum.core.CallTransaction;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
@@ -61,6 +66,7 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 	private Optional<String> saveResultToEntry = Optional.empty();
 	private Optional<ContractFnResultAsserts> expectations = Optional.empty();
 	private Optional<Function<HapiApiSpec, Object[]>> paramsFn = Optional.empty();
+	private Optional<List<AccessListEntry>> accessListEntries = Optional.empty();
 
 	@Override
 	public HederaFunctionality type() {
@@ -113,6 +119,21 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 		return this;
 	}
 
+	public HapiContractCallLocal withAccessList(ContractID contractID, ByteString... keys) {
+		List<ByteString> byteKeys = Arrays.stream(keys).collect(Collectors.toList());
+		AccessListEntry entry = AccessListEntry.newBuilder().setContractID(contractID).addAllStorageKeys(byteKeys).build();
+		accessListEntries.ifPresentOrElse(list -> list.add(entry), () -> accessListEntries = Optional.of(List.of(entry)));
+
+		return this;
+	}
+
+	public HapiContractCallLocal withAccessList(AccountID accountID) {
+		AccessListEntry entry = AccessListEntry.newBuilder().setAccountID(accountID).build();
+		accessListEntries.ifPresentOrElse(list -> list.add(entry), () -> accessListEntries = Optional.of(List.of(entry)));
+
+		return this;
+	}
+
 	@Override
 	protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
 		if (expectations.isPresent()) {
@@ -139,7 +160,7 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 			log.info(spec.logPrefix() + this + " result = " + response.getContractCallLocal().getFunctionResult());
 		}
 
-		if(saveResultToEntry.isPresent()) {
+		if (saveResultToEntry.isPresent()) {
 			spec.registry().saveBytes(saveResultToEntry.get(), response.getContractCallLocal().getFunctionResult().getContractCallResult());
 		}
 	}
@@ -162,16 +183,23 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 		}
 
 		byte[] callData = (abi != FALLBACK_ABI)
-				? CallTransaction.Function.fromJsonInterface(abi).encode(params) : new byte[] { };
+				? CallTransaction.Function.fromJsonInterface(abi).encode(params) : new byte[]{};
 
 		var target = TxnUtils.asContractId(contract, spec);
-		ContractCallLocalQuery query = ContractCallLocalQuery.newBuilder()
+
+		ContractCallLocalQuery.Builder queryBuilder = ContractCallLocalQuery.newBuilder()
 				.setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
 				.setContractID(target)
 				.setFunctionParameters(ByteString.copyFrom(callData))
 				.setGas(gas.orElse(spec.setup().defaultCallGas()))
-				.setMaxResultSize(maxResultSize.orElse(spec.setup().defaultMaxLocalCallRetBytes()))
-				.build();
+				.setMaxResultSize(maxResultSize.orElse(spec.setup().defaultMaxLocalCallRetBytes()));
+		accessListEntries.ifPresent(allEntries -> {
+			for (AccessListEntry entry : allEntries) {
+				queryBuilder.addAccessList(entry);
+			}
+		});
+
+		ContractCallLocalQuery query = queryBuilder.build();
 		return Query.newBuilder().setContractCallLocal(query).build();
 	}
 

@@ -60,6 +60,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -246,7 +247,8 @@ class ContractCreateTransitionLogicTest {
 				balance,
 				Bytes.fromHexString(contractByteCodeString),
 				txnCtx.consensusTime(),
-				expiry))
+				expiry,
+				Collections.emptyList()))
 				.willReturn(result);
 
 		// when:
@@ -259,7 +261,8 @@ class ContractCreateTransitionLogicTest {
 				balance,
 				Bytes.fromHexString(contractByteCodeString),
 				txnCtx.consensusTime(),
-				expiry);
+				expiry,
+				Collections.emptyList());
 		final ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 		verify(hederaLedger).customizePotentiallyDeleted(eq(contractAccount.getId().asGrpcAccount()), captor.capture());
 		final var standin = new MerkleAccount();
@@ -322,7 +325,8 @@ class ContractCreateTransitionLogicTest {
 				balance,
 				Bytes.fromHexString(contractByteCodeString),
 				txnCtx.consensusTime(),
-				expiry))
+				expiry,
+				Collections.emptyList()))
 				.willReturn(result);
 
 		// when:
@@ -335,7 +339,8 @@ class ContractCreateTransitionLogicTest {
 				balance,
 				Bytes.fromHexString(contractByteCodeString),
 				txnCtx.consensusTime(),
-				expiry);
+				expiry,
+				Collections.emptyList());
 		final ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 		verify(hederaLedger).customizePotentiallyDeleted(eq(contractAccount.getId().asGrpcAccount()), captor.capture());
 		final var standin = new MerkleAccount();
@@ -374,7 +379,8 @@ class ContractCreateTransitionLogicTest {
 				balance,
 				Bytes.fromHexString(new String(bytecode)),
 				txnCtx.consensusTime(),
-				expiry))
+				expiry,
+				Collections.emptyList()))
 				.willReturn(result);
 
 		// when:
@@ -417,7 +423,8 @@ class ContractCreateTransitionLogicTest {
 				balance,
 				Bytes.fromHexString(new String(bytecode)),
 				txnCtx.consensusTime(),
-				expiry))
+				expiry,
+				Collections.emptyList()))
 				.willReturn(result);
 
 		// when:

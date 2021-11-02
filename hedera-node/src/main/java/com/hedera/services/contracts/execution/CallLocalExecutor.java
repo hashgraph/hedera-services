@@ -87,7 +87,8 @@ public class CallLocalExecutor {
 					op.getGas(),
 					0,
 					callData,
-					Instant.now());
+					Instant.now(),
+					op.getAccessListList());
 
 			var status = ResponseCodeUtil.getStatus(result, OK);
 

@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.contract;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
@@ -28,6 +29,7 @@ import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.legacy.core.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
@@ -87,6 +89,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STORAGE_ACCESS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -117,7 +120,8 @@ public class ContractCallSuite extends HapiApiSuite {
 				insufficientGas(),
 				invalidContract(),
 				smartContractFailFirst(),
-				contractTransferToSigReqAccountWithoutKeyFails()
+				contractTransferToSigReqAccountWithoutKeyFails(),
+				rejectsInvalidStorageAccessKey()
 		);
 	}
 
@@ -132,7 +136,8 @@ public class ContractCallSuite extends HapiApiSuite {
 				multipleSelfDestructsAreSafe(),
 				smartContractInlineAssemblyCheck(),
 				ocToken(),
-				contractTransferToSigReqAccountWithKeySucceeds()
+				contractTransferToSigReqAccountWithKeySucceeds(),
+				contractCallAccountAndStorageKeysWarmUpReducesGasCost()
 		);
 	}
 
@@ -923,6 +928,128 @@ public class ContractCallSuite extends HapiApiSuite {
 									ContractResources.TRANSFERRING_CONTRACT_TRANSFERTOADDRESS,
 									accountAddress, 1).gas(300_000).hasKnownStatus(INVALID_SIGNATURE);
 							CustomSpecAssert.allRunFor(spec, call);
+						})
+				);
+	}
+
+	private HapiApiSpec contractCallAccountAndStorageKeysWarmUpReducesGasCost() {
+
+		return defaultHapiSpec("ContractCallAccountAndStorageKeysWarmUpReducesGasCost")
+				.given(
+						fileCreate("contractInteractionBaseBytecode").path(ContractResources.CONTRACT_INTERACTIONS_BASE),
+						fileCreate("contractInteractionExtraBytecode").path(ContractResources.CONTRACT_INTERACTIONS_EXTRA)
+				).when(
+						contractCreate("baseContract").bytecode("contractInteractionBaseBytecode").gas(1_000_000L)
+				).then(
+						withOpContext((spec, opLog) -> {
+							var baseContractId = spec.registry().getContractId("baseContract");
+							var baseContractAddress = CommonUtils.calculateSolidityAddress(
+									(int) baseContractId.getShardNum(),
+									baseContractId.getRealmNum(),
+									baseContractId.getContractNum());
+
+							var baseContractSetParamsCall = contractCall("baseContract",
+									ContractResources.BASE_CONTRACT_SET_PARAMS_ABI,
+									1, 1).hasKnownStatus(SUCCESS).via("baseContractSetParamsCallTx");
+							var extraContractCreate = contractCreate("extraContract",
+									ContractResources.EXTRA_CONTRACT_CONSTRUCTOR_ABI, baseContractAddress)
+									.bytecode("contractInteractionExtraBytecode")
+									.gas(1_000_000L)
+									.via("extraContractCreateTx");
+
+							var contractCall = contractCall("extraContract",
+									ContractResources.EXTRA_CONTRACT_SET_A_AND_B_IN_BASE_CONTRACT_ABI, 1, 1)
+									.hasKnownStatus(SUCCESS)
+									.via("contractCallTx");
+
+							var contractCallWithAccountWarmUp = contractCall("extraContract",
+									ContractResources.EXTRA_CONTRACT_SET_A_AND_B_IN_BASE_CONTRACT_ABI, 1, 1)
+									.hasKnownStatus(SUCCESS)
+									.withAccessList(baseContractId)
+									.via("contractCallWithAccountWarmUpTx");
+
+							var contractCallWithAccountAndStorageKeyWarmUp = contractCall("extraContract",
+									ContractResources.EXTRA_CONTRACT_SET_A_AND_B_IN_BASE_CONTRACT_ABI, 1, 1)
+									.hasKnownStatus(SUCCESS)
+									.withAccessList(baseContractId, ByteString.copyFromUtf8("\000"), ByteString.copyFromUtf8("\001"))
+									.via("contractCallWithAccountAndStorageKeysWarmUpTx");
+
+							final var contractCallTxRec = getTxnRecord("contractCallTx")
+									.saveTxnRecordToRegistry("contractCallTx").logged();
+							final var contractCallWithAccountWarmUpTxRec =
+									getTxnRecord("contractCallWithAccountWarmUpTx").
+											saveTxnRecordToRegistry("contractCallWithAccountWarmUpTx").logged();
+							final var contractCallWithAccountAndStorageWarmUpTxRec =
+									getTxnRecord("contractCallWithAccountAndStorageKeysWarmUpTx").
+											saveTxnRecordToRegistry("contractCallWithAccountAndStorageKeysWarmUpTx").logged();
+							CustomSpecAssert.allRunFor(spec,
+									baseContractSetParamsCall,
+									extraContractCreate,
+									contractCall,
+									contractCallWithAccountWarmUp,
+									contractCallWithAccountAndStorageKeyWarmUp,
+									contractCallTxRec,
+									contractCallWithAccountWarmUpTxRec,
+									contractCallWithAccountAndStorageWarmUpTxRec);
+
+							var gasUsedForContractCallTx = spec.registry()
+									.getTransactionRecord("contractCallTx")
+									.getContractCallResult()
+									.getGasUsed();
+							var gasUsedForContractCallWithAccountWarmUpTx = spec.registry()
+									.getTransactionRecord("contractCallWithAccountWarmUpTx")
+									.getContractCallResult()
+									.getGasUsed();
+							final var gasUsedForContractCallWithAccountAndStorageKeysWarmUpTx = spec.registry()
+									.getTransactionRecord("contractCallWithAccountAndStorageKeysWarmUpTx")
+									.getContractCallResult()
+									.getGasUsed();
+
+							Assertions.assertEquals(100L, gasUsedForContractCallTx - gasUsedForContractCallWithAccountWarmUpTx);
+							Assertions.assertEquals(400L, gasUsedForContractCallWithAccountWarmUpTx - gasUsedForContractCallWithAccountAndStorageKeysWarmUpTx);
+							Assertions.assertEquals(500L, gasUsedForContractCallTx - gasUsedForContractCallWithAccountAndStorageKeysWarmUpTx);
+						})
+				);
+	}
+
+	HapiApiSpec rejectsInvalidStorageAccessKey() {
+
+		return defaultHapiSpec("RejectsInvalidStorageAccessKey")
+				.given(
+						fileCreate("contractInteractionBaseBytecode").path(ContractResources.CONTRACT_INTERACTIONS_BASE),
+						fileCreate("contractInteractionExtraBytecode").path(ContractResources.CONTRACT_INTERACTIONS_EXTRA)
+				).when(
+						contractCreate("baseContract").bytecode("contractInteractionBaseBytecode").gas(1_000_000L)
+				).then(
+						withOpContext((spec, opLog) -> {
+							var baseContractId = spec.registry().getContractId("baseContract");
+							var baseContractAddress = CommonUtils.calculateSolidityAddress(
+									(int) baseContractId.getShardNum(),
+									baseContractId.getRealmNum(),
+									baseContractId.getContractNum());
+
+							var baseContractSetParamsCall = contractCall("baseContract",
+									ContractResources.BASE_CONTRACT_SET_PARAMS_ABI,
+									1, 1).hasKnownStatus(SUCCESS).via("baseContractSetParamsCallTx");
+							var extraContractCreate = contractCreate("extraContract",
+									ContractResources.EXTRA_CONTRACT_CONSTRUCTOR_ABI, baseContractAddress)
+									.bytecode("contractInteractionExtraBytecode")
+									.gas(1_000_000L)
+									.via("extraContractCreateTx");
+
+							var contractCall = contractCall("extraContract",
+									ContractResources.EXTRA_CONTRACT_SET_A_AND_B_IN_BASE_CONTRACT_ABI, 1, 1)
+									.hasKnownStatus(INVALID_STORAGE_ACCESS_KEY)
+									.withAccessList(baseContractId,
+											ByteString.copyFromUtf8("\000\000\000\000\000\000\000\000\000\000\000\000" +
+													"\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000" +
+													"\000\000\000\000\000"),
+											ByteString.copyFromUtf8("\001"));
+
+							CustomSpecAssert.allRunFor(spec,
+									baseContractSetParamsCall,
+									extraContractCreate,
+									contractCall);
 						})
 				);
 	}

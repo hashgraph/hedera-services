@@ -120,7 +120,8 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 				op.getInitialBalance(),
 				codeWithConstructorArgs,
 				txnCtx.consensusTime(),
-				expiry
+				expiry,
+				op.getAccessListList()
 		);
 
 		/* --- Persist changes into state --- */

@@ -40,6 +40,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -50,6 +51,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -87,7 +89,7 @@ class CallLocalExecutorTest {
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
 		given(accountStore.loadContract(any())).willReturn(new Account(contractID));
-		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
+		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any(), anyList()))
 				.willReturn(transactionProcessingResult);
 
 		// when:
@@ -106,7 +108,7 @@ class CallLocalExecutorTest {
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
 		given(accountStore.loadContract(any())).willReturn(new Account(contractID));
-		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
+		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any(), anyList()))
 				.willReturn(transactionProcessingResult);
 
 		// when:
@@ -125,7 +127,7 @@ class CallLocalExecutorTest {
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
 		given(accountStore.loadContract(any())).willReturn(new Account(contractID));
-		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
+		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any(), anyList()))
 				.willReturn(transactionProcessingResult);
 
 		// when:
@@ -144,7 +146,7 @@ class CallLocalExecutorTest {
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
 		given(accountStore.loadContract(any())).willReturn(new Account(contractID));
-		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
+		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any(), anyList()))
 				.willReturn(transactionProcessingResult);
 
 		// when:

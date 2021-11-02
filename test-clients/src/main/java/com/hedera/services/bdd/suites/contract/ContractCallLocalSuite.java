@@ -20,10 +20,13 @@ package com.hedera.services.bdd.suites.contract;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.legacy.core.CommonUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -44,10 +47,13 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STORAGE_ACCESS_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ContractCallLocalSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCallLocalSuite.class);
@@ -75,13 +81,15 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 				invalidContractID(),
 				impureCallFails(),
 				insufficientFeeFails(),
-				lowBalanceFails()
+				lowBalanceFails(),
+				rejectsInvalidStorageAccessKey()
 		);
 	}
 
 	private List<HapiApiSpec> positiveSpecs() {
 		return Arrays.asList(
-				vanillaSuccess()
+				vanillaSuccess(),
+				contractCallLocalAccountAndStorageKeysWarmUpReducesGasCost()
 		);
 	}
 
@@ -185,6 +193,101 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 						getAccountBalance("payer").logged(),
 						sleepFor(1_000L),
 						getAccountBalance("payer").logged()
+				);
+	}
+
+	private HapiApiSpec contractCallLocalAccountAndStorageKeysWarmUpReducesGasCost() {
+
+		return defaultHapiSpec("ContractCallLocalAccountAndStorageKeysWarmUpReducesGasCost")
+				.given(
+						fileCreate("contractInteractionBaseBytecode").path(ContractResources.CONTRACT_INTERACTIONS_BASE),
+						fileCreate("contractInteractionExtraBytecode").path(ContractResources.CONTRACT_INTERACTIONS_EXTRA)
+				).when(
+						contractCreate("baseContract").bytecode("contractInteractionBaseBytecode").gas(1_000_000L)
+				).then(
+						withOpContext((spec, opLog) -> {
+							var baseContractId = spec.registry().getContractId("baseContract");
+							var baseContractAddress = CommonUtils.calculateSolidityAddress(
+									(int) baseContractId.getShardNum(),
+									baseContractId.getRealmNum(),
+									baseContractId.getContractNum());
+
+							var baseContractSetParamsCall = contractCall("baseContract",
+									ContractResources.BASE_CONTRACT_SET_PARAMS_ABI,
+									1, 1).hasKnownStatus(SUCCESS).via("baseContractSetParamsCallTx");
+							var extraContractCreate = contractCreate("extraContract",
+									ContractResources.EXTRA_CONTRACT_CONSTRUCTOR_ABI, baseContractAddress)
+									.bytecode("contractInteractionExtraBytecode")
+									.gas(1_000_000L)
+									.via("extraContractCreateTx");
+
+							var contractCallLocal = contractCallLocal("extraContract",
+									ContractResources.EXTRA_CONTRACT_GET_SUM_OF_BASE_A_AND_B_ABI)
+									.has(resultWith().gasUsed(10_499L));
+
+							var contractCallLocalWithAccountWarmUp = contractCallLocal(
+									"extraContract",
+									ContractResources.EXTRA_CONTRACT_GET_SUM_OF_BASE_A_AND_B_ABI)
+									.withAccessList(baseContractId)
+									.has(resultWith().gasUsed(10_399L));
+
+							var contractCallLocalWithAccountAndStorageKeyWarmUp = contractCallLocal(
+									"extraContract",
+									ContractResources.EXTRA_CONTRACT_GET_SUM_OF_BASE_A_AND_B_ABI)
+									.withAccessList(baseContractId,
+											ByteString.copyFromUtf8("\000"),
+											ByteString.copyFromUtf8("\001"))
+									.has(resultWith().gasUsed(10_199L));
+
+							CustomSpecAssert.allRunFor(spec,
+									baseContractSetParamsCall,
+									extraContractCreate,
+									contractCallLocal,
+									contractCallLocalWithAccountWarmUp,
+									contractCallLocalWithAccountAndStorageKeyWarmUp);
+						})
+				);
+	}
+
+	private HapiApiSpec rejectsInvalidStorageAccessKey() {
+
+		return defaultHapiSpec("RejectsInvalidStorageAccessKey")
+				.given(
+						fileCreate("contractInteractionBaseBytecode").path(ContractResources.CONTRACT_INTERACTIONS_BASE),
+						fileCreate("contractInteractionExtraBytecode").path(ContractResources.CONTRACT_INTERACTIONS_EXTRA)
+				).when(
+						contractCreate("baseContract").bytecode("contractInteractionBaseBytecode").gas(1_000_000L)
+				).then(
+						withOpContext((spec, opLog) -> {
+							var baseContractId = spec.registry().getContractId("baseContract");
+							var baseContractAddress = CommonUtils.calculateSolidityAddress(
+									(int) baseContractId.getShardNum(),
+									baseContractId.getRealmNum(),
+									baseContractId.getContractNum());
+
+							var baseContractSetParamsCall = contractCall("baseContract",
+									ContractResources.BASE_CONTRACT_SET_PARAMS_ABI,
+									1, 1).hasKnownStatus(SUCCESS).via("baseContractSetParamsCallTx");
+							var extraContractCreate = contractCreate("extraContract",
+									ContractResources.EXTRA_CONTRACT_CONSTRUCTOR_ABI, baseContractAddress)
+									.bytecode("contractInteractionExtraBytecode")
+									.gas(1_000_000L)
+									.via("extraContractCreateTx");
+
+							var contractCallLocal = contractCallLocal("extraContract",
+									ContractResources.EXTRA_CONTRACT_GET_SUM_OF_BASE_A_AND_B_ABI)
+									.withAccessList(baseContractId,
+											ByteString.copyFromUtf8("\000\000\000\000\000\000\000\000\000\000\000\000" +
+													"\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000" +
+													"\000\000\000\000\000"),
+											ByteString.copyFromUtf8("\001"))
+									.hasAnswerOnlyPrecheck(INVALID_STORAGE_ACCESS_KEY);
+
+							CustomSpecAssert.allRunFor(spec,
+									baseContractSetParamsCall,
+									extraContractCreate,
+									contractCallLocal);
+						})
 				);
 	}
 

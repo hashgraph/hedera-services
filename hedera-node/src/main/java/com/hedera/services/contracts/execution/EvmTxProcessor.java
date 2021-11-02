@@ -22,6 +22,9 @@ package com.hedera.services.contracts.execution;
  *
  */
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.HbarCentExchange;
@@ -29,12 +32,16 @@ import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.AccessListEntry;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.fee.FeeBuilder;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
@@ -57,7 +64,9 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -72,7 +81,7 @@ import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
  * Abstract processor of EVM transactions that prepares the {@link EVM} and all of the peripherals upon
  * instantiation
  * Provides
- * a base{@link EvmTxProcessor#execute(Account, Address, long, long, long, Bytes, boolean, Instant, boolean, Optional)}
+ * a base{@link EvmTxProcessor#execute(Account, Address, long, long, long, Bytes, boolean, Instant, boolean, Optional, List)}
  * method that handles the end-to-end execution of a EVM transaction
  */
 abstract class EvmTxProcessor {
@@ -125,31 +134,24 @@ abstract class EvmTxProcessor {
 	 * Executes the {@link MessageFrame} of the EVM transaction. Returns the result as {@link
 	 * TransactionProcessingResult}
 	 *
-	 * @param sender
-	 * 		The origin {@link Account} that initiates the transaction
-	 * @param receiver
-	 * 		Receiving {@link Address}. For Create transactions, the newly created Contract address
-	 * @param gasPrice
-	 * 		GasPrice to use for gas calculations
-	 * @param providedGasLimit
-	 * 		Externally provided gas limit
-	 * @param value
-	 * 		Evm transaction value (HBars)
-	 * @param payload
-	 * 		Transaction payload. For Create transactions, the bytecode + constructor arguments
-	 * @param contractCreation
-	 * 		Whether or not this is a contract creation transaction
-	 * @param consensusTime
-	 * 		Current consensus time
-	 * @param isStatic
-	 * 		Whether or not the execution is static
-	 * @param expiry
-	 * 		In the case of Create transactions, the expiry of the top-level contract being created
+	 * @param sender            The origin {@link Account} that initiates the transaction
+	 * @param receiver          Receiving {@link Address}. For Create transactions, the newly created Contract address
+	 * @param gasPrice          GasPrice to use for gas calculations
+	 * @param providedGasLimit  Externally provided gas limit
+	 * @param value             Evm transaction value (HBars)
+	 * @param payload           Transaction payload. For Create transactions, the bytecode + constructor arguments
+	 * @param contractCreation  Whether or not this is a contract creation transaction
+	 * @param consensusTime     Current consensus time
+	 * @param isStatic          Whether or not the execution is static
+	 * @param expiry            In the case of Create transactions, the expiry of the top-level contract being created
+	 * @param accessListEntries List of entries(contract id and storage keys or only account id) used for warming up
+	 *                          in EVM before the execution of the transaction in order to save gas
 	 * @return the result of the EVM execution returned as {@link TransactionProcessingResult}
 	 */
 	protected TransactionProcessingResult execute(Account sender, Address receiver, long gasPrice,
-			long providedGasLimit, long value, Bytes payload, boolean contractCreation,
-			Instant consensusTime, boolean isStatic, Optional<Long> expiry) {
+												  long providedGasLimit, long value, Bytes payload, boolean contractCreation,
+												  Instant consensusTime, boolean isStatic, Optional<Long> expiry,
+												  List<AccessListEntry> accessListEntries) {
 		final long gasLimit = providedGasLimit > dynamicProperties.maxGas()
 				? dynamicProperties.maxGas()
 				: providedGasLimit;
@@ -179,7 +181,15 @@ abstract class EvmTxProcessor {
 			mutableSender.decrementBalance(gasCost);
 		}
 
-		final Gas gasAvailable = Gas.of(gasLimit).minus(intrinsicGas);
+
+		Set<Address> addressList = new HashSet<>();
+		Multimap<Address, Bytes32> storageList = HashMultimap.create();
+		int accessListStorageCount = 0;
+		accessListStorageCount = processAccessList(accessListEntries, addressList, storageList, accessListStorageCount);
+
+		final Gas accessListGas =
+				gasCalculator.accessListGasCost(accessListEntries.size(), accessListStorageCount);
+		final Gas gasAvailable = Gas.of(gasLimit).minus(intrinsicGas).minus(accessListGas);
 		final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
 
 		final var stackedUpdater = updater.updater();
@@ -197,6 +207,8 @@ abstract class EvmTxProcessor {
 						.apparentValue(valueAsWei)
 						.blockValues(blockValues)
 						.depth(0)
+						.accessListWarmAddresses(addressList)
+						.accessListWarmStorage(storageList)
 						.completer(unused -> {
 						})
 						.isStatic(isStatic)
@@ -266,6 +278,34 @@ abstract class EvmTxProcessor {
 		}
 	}
 
+	private int processAccessList(List<AccessListEntry> accessListEntries,
+								  Set<Address> addressList,
+								  Multimap<Address, Bytes32> storageList,
+								  int accessListStorageCount) {
+		for (var entry : accessListEntries) {
+			Address address = Address.wrap(Bytes.wrap(entry.hasContractID()
+					? EntityIdUtils.asSolidityAddress(entry.getContractID())
+					: EntityIdUtils.asSolidityAddress(entry.getAccountID())));
+			addressList.add(address);
+
+			if (entry.hasContractID()) {
+				List<Bytes32> storageKeys = new ArrayList<>();
+				for (ByteString bytes : entry.getStorageKeysList()) {
+					Bytes32 bytes32 = convertToBytes32(bytes);
+					storageKeys.add(bytes32);
+				}
+				storageList.putAll(address, storageKeys);
+				accessListStorageCount += storageKeys.size();
+			}
+		}
+		return accessListStorageCount;
+	}
+
+	protected Bytes32 convertToBytes32(ByteString e) {
+		validateFalse(e.toByteArray().length > 32, ResponseCodeEnum.INVALID_STORAGE_ACCESS_KEY);
+		return Bytes32.fromHexString(Hex.encodeHexString(e.toByteArray()));
+	}
+
 	protected long gasPriceTinyBarsGiven(Instant consensusTime) {
 		final var functionType = getFunctionType();
 		final var timestamp = Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build();
@@ -287,7 +327,7 @@ abstract class EvmTxProcessor {
 	protected abstract HederaFunctionality getFunctionType();
 
 	protected abstract MessageFrame buildInitialFrame(MessageFrame.Builder baseInitialFrame,
-			HederaWorldState.Updater updater, Address to, Bytes payload);
+													  HederaWorldState.Updater updater, Address to, Bytes payload);
 
 	protected void process(final MessageFrame frame, final OperationTracer operationTracer) {
 		final AbstractMessageProcessor executor = getMessageProcessor(frame.getType());

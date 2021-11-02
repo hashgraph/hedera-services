@@ -47,6 +47,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_BYTECODE_EMPTY;
@@ -121,7 +122,7 @@ class ContractCallTransitionLogicTest {
 		given(repositoryRoot.getCode(contractAccount.getId().asEvmAddress().toArray())).willReturn(bytecode);
 		var results = TransactionProcessingResult.successful(
 				null, 1234L, 0L,124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress());
-		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.EMPTY, txnCtx.consensusTime()))
+		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.EMPTY, txnCtx.consensusTime(), Collections.emptyList()))
 				.willReturn(results);
 		given(worldState.persist()).willReturn(List.of(target));
 		// when:
@@ -156,14 +157,14 @@ class ContractCallTransitionLogicTest {
 		given(repositoryRoot.getCode(contractAccount.getId().asEvmAddress().toArray())).willReturn(bytecode);
 		var results = TransactionProcessingResult.successful(
 				null, 1234L, 0L,124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress());
-		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())), txnCtx.consensusTime()))
+		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())), txnCtx.consensusTime(), Collections.emptyList()))
 				.willReturn(results);
 		given(worldState.persist()).willReturn(List.of(target));
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(evmTxProcessor).execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())), txnCtx.consensusTime());
+		verify(evmTxProcessor).execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())), txnCtx.consensusTime(), Collections.emptyList());
 	}
 
 	@Test

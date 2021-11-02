@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.transactions.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,17 +25,24 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hederahashgraph.api.proto.java.AccessListEntry;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.ethereum.core.CallTransaction;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 	private static final String FALLBACK_ABI = "<empty>";
@@ -47,6 +54,7 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 	private Optional<Long> sentTinyHbars = Optional.of(0L);
 	private Optional<String> details = Optional.empty();
 	private Optional<Function<HapiApiSpec, Object[]>> paramsFn = Optional.empty();
+	private Optional<List<AccessListEntry>> accessListEntries = Optional.empty();
 
 	@Override
 	public HederaFunctionality type() {
@@ -63,7 +71,9 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 		call.details = Optional.of(actionable);
 		return call;
 	}
-	private HapiContractCall() { }
+
+	private HapiContractCall() {
+	}
 
 	public HapiContractCall(String contract) {
 		this.abi = FALLBACK_ABI;
@@ -84,6 +94,21 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 
 	public HapiContractCall gas(long amount) {
 		gas = Optional.of(amount);
+		return this;
+	}
+
+	public HapiContractCall withAccessList(ContractID contractID, ByteString... keys) {
+		List<ByteString> byteKeys = Arrays.stream(keys).collect(Collectors.toList());
+		AccessListEntry entry = AccessListEntry.newBuilder().setContractID(contractID).addAllStorageKeys(byteKeys).build();
+		accessListEntries.ifPresentOrElse(list -> list.add(entry), () -> accessListEntries = Optional.of(List.of(entry)));
+
+		return this;
+	}
+
+	public HapiContractCall withAccessList(AccountID accountID) {
+		AccessListEntry entry = AccessListEntry.newBuilder().setAccountID(accountID).build();
+		accessListEntries.ifPresentOrElse(list -> list.add(entry), () -> accessListEntries = Optional.of(List.of(entry)));
+
 		return this;
 	}
 
@@ -115,7 +140,7 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 		}
 
 		byte[] callData = (abi != FALLBACK_ABI)
-				? CallTransaction.Function.fromJsonInterface(abi).encode(params) : new byte[] {};
+				? CallTransaction.Function.fromJsonInterface(abi).encode(params) : new byte[]{};
 
 		ContractCallTransactionBody opBody = spec
 				.txns()
@@ -125,6 +150,11 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 							builder.setFunctionParameters(ByteString.copyFrom(callData));
 							sentTinyHbars.ifPresent(a -> builder.setAmount(a));
 							gas.ifPresent(a -> builder.setGas(a));
+							accessListEntries.ifPresent(allEntries -> {
+								for (AccessListEntry entry : allEntries) {
+									builder.addAccessList(entry);
+								}
+							});
 						}
 				);
 		return b -> b.setContractCall(opBody);
