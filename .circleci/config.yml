@@ -887,10 +887,10 @@ workflows:
             - attach_workspace:
                 at: /
 
-  GCP-Daily-Services-Update-Reconnect-4N-1C:
+  GCP-Daily-Services-Update-4N-2C:
     triggers:
       - schedule:
-          cron: "15 7 * * *"
+          cron: "30 22 * * *"
           filters:
             branches:
               only:
@@ -900,9 +900,55 @@ workflows:
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/4N_1C/Update
+          result_path: results/4N_2C/Update
           config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Comp-Update-Reconnect-4N-1C"
+          workflow-name: "GCP-Daily-Services-Crypto-Update-4N-2C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+  GCP-Daily-Services-Comp-Update-DisPreUpdate-4N-2C:
+    triggers:
+      - schedule:
+          cron: "45 22 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_2C/UpdateDisPreUpdate
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Comp-Update-DisPreUpdate-4N-2C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+  GCP-Daily-Services-Update-Reconnect-4N-2C:
+    triggers:
+      - schedule:
+          cron: "15 22 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_2C/UpdateReconnect
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Comp-Update-Reconnect-4N-2C"
           requires:
             - build-platform-and-services
           pre-steps:
