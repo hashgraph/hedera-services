@@ -20,7 +20,10 @@ package com.hedera.services.bdd.suites.contract;
  * ‍
  */
 
+import com.google.common.base.Splitter;
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
@@ -29,6 +32,9 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -42,11 +48,13 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -61,6 +69,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ContractCreateSuite extends HapiApiSuite {
@@ -83,8 +92,51 @@ public class ContractCreateSuite extends HapiApiSuite {
 						rejectsInsufficientGas(),
 						createsVanillaContractAsExpectedWithOmittedAdminKey(),
 						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
+						cannotCreateTooLargeContract()
 				}
 		);
+	}
+	/* Attempts to create a 46 KB contract */
+	private HapiApiSpec cannotCreateTooLargeContract() {
+		ByteString contents = ByteString.EMPTY;
+		try {
+			contents = ByteString.copyFrom(Files.readAllBytes(Path.of(ContractResources.LARGE_CONTRACT_CRYPTO_KITTIES)));
+		} catch (Exception ignore) {
+
+		}
+		var splitContents = Splitter.fixedLength(4096).split(contents.toStringUtf8());
+		return defaultHapiSpec("cannotCreateLargeContract")
+				.given(
+						cryptoCreate("acc").balance(ONE_MILLION_HBARS),
+						fileCreate("bytecode")
+								.path(ContractResources.LARGE_CONTRACT_CRYPTO_KITTIES)
+								.hasPrecheck(TRANSACTION_OVERSIZE)
+				)
+				.when(
+						fileCreate("bytecode").contents(""),
+						withOpContext((spec, log) -> {
+							var ops = new ArrayList<HapiSpecOperation>();
+							splitContents.forEach(el -> {
+								ops.add(fileAppend("bytecode").content(el.getBytes()).payingWith("acc"));
+							});
+							allRunFor(spec, ops);
+						})
+				)
+				.then(
+						/* should fail */
+						contractCreate("contract").bytecode("bytecode").payingWith("acc").hasKnownStatus(SUCCESS),
+						getAccountInfo("acc").savingSnapshot("accInfo"),
+						withOpContext((spec, log)-> {
+							var addr = spec.registry().getAccountInfo("accInfo").getContractAccountID();
+							var createKittyCC = contractCall(
+									"contract",
+									ContractResources.CRYPTO_KITTIES_CREATE_PROMO_KITTY_ABI,
+									256, addr).payingWith("acc").gas(100_0000)
+									.via("call1");
+							allRunFor(spec, createKittyCC);
+						}),
+						getTxnRecord("call1").logged()
+				);
 	}
 
 	private HapiApiSpec insufficientPayerBalanceUponCreation() {
