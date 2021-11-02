@@ -66,6 +66,7 @@ import com.hedera.services.throttling.ThrottlingModule;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.TransactionsModule;
 import com.hedera.services.txns.network.UpgradeActions;
+import com.hedera.services.txns.prefetch.PrefetchProcessor;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.submission.SubmissionModule;
 import com.hedera.services.utils.NamedDigestFactory;
@@ -108,7 +109,7 @@ import java.util.function.Supplier;
 		PropertiesModule.class,
 		ThrottlingModule.class,
 		SubmissionModule.class,
-		TransactionsModule.class,
+		TransactionsModule.class
 })
 public interface ServicesApp {
 	/* Needed by ServicesState */
@@ -124,6 +125,7 @@ public interface ServicesApp {
 	GlobalDynamicProperties globalDynamicProperties();
 	@WorkingState StateAccessor workingState();
 	@RetryingSigReqs SigRequirements retryingSigReqs();
+	PrefetchProcessor prefetchProcessor();
 
 	/* Needed by ServicesMain */
 	Pause pause();

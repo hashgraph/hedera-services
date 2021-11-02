@@ -37,7 +37,9 @@ import com.hedera.services.state.migration.ReleaseTwentyMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.org.StateMetadata;
+import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.txns.ProcessLogic;
+import com.hedera.services.txns.prefetch.PrefetchProcessor;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
@@ -147,6 +149,10 @@ class ServicesStateTest {
 	private ServicesState.BinaryObjectStoreMigrator blobMigrator;
 	@Mock
 	private Consumer<Boolean> blobMigrationFlag;
+	@Mock
+	private PrefetchProcessor prefetchProcessor;
+	@Mock
+	private CodeCache codeCache;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -258,6 +264,7 @@ class ServicesStateTest {
 		given(app.expansionHelper()).willReturn(expansionHelper);
 		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
 		given(app.retryingSigReqs()).willReturn(retryingKeyOrder);
+		given(app.prefetchProcessor()).willReturn(prefetchProcessor);
 		given(txnAccessor.getPkToSigsFn()).willReturn(pubKeyToSigBytes);
 		given(expandHandleSpan.track(transaction)).willReturn(txnAccessor);
 
@@ -266,6 +273,7 @@ class ServicesStateTest {
 
 		// then:
 		verify(expansionHelper).expandIn(txnAccessor, retryingKeyOrder, pubKeyToSigBytes);
+		verify(prefetchProcessor).offer(txnAccessor);
 	}
 
 	@Test

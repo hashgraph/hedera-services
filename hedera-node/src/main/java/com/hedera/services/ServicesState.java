@@ -227,6 +227,12 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		try {
 			final var app = metadata.app();
 			final var accessor = app.expandHandleSpan().track(platformTxn);
+
+			// Submit the transaction for any prepare stage processing that can be performed
+			// such as pre-fetching of contract bytecode. This step is performed asynchronously
+			// so get this step started before synchronous signature expansion.
+			app.prefetchProcessor().offer(accessor);
+
 			app.expansionHelper().expandIn(accessor, app.retryingSigReqs(), accessor.getPkToSigsFn());
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("Method expandSignatures called with non-gRPC txn", e);
@@ -237,7 +243,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public void noMoreTransactions() {
-		/* No-op. */
+		// no-op
 	}
 
 	/* --- FastCopyable --- */
@@ -399,6 +405,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 			metadata = new StateMetadata(app);
 			app.initializationFlow().runWith(this);
+
+			// Ensure the prefetch queue is created and thread pool is active instead of waiting
+			// for lazy-initialization to take place.
+			app.prefetchProcessor();
+			log.info("Created prefetch processor");
 
 			logSummary();
 			log.info("  --> Context initialized accordingly on Services node {}", selfId);
