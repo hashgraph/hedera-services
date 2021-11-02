@@ -89,6 +89,7 @@ import com.hedera.services.bdd.suites.misc.ConsensusQueriesStressTests;
 import com.hedera.services.bdd.suites.misc.ContractQueriesStressTests;
 import com.hedera.services.bdd.suites.misc.CryptoQueriesStressTests;
 import com.hedera.services.bdd.suites.misc.FileQueriesStressTests;
+import com.hedera.services.bdd.suites.misc.MemoValidation;
 import com.hedera.services.bdd.suites.misc.MixedOpsTransactionsSuite;
 import com.hedera.services.bdd.suites.misc.OneOfEveryTransaction;
 import com.hedera.services.bdd.suites.misc.ZeroStakeNodeTest;
@@ -453,6 +454,8 @@ public class SuiteRunner {
 		put("PrepareUpgrade", aof(PrepareUpgrade::new));
 		put("FreezeUpgrade", aof(FreezeUpgrade::new));
 		put("FreezeAbort", aof(FreezeAbort::new));
+		/* Memo validation */
+		put("MemoValidation", aof(MemoValidation::new));
 	}};
 
 	static boolean runAsync;

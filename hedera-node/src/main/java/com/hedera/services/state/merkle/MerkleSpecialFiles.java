@@ -160,6 +160,7 @@ public class MerkleSpecialFiles extends AbstractMerkleLeaf {
 			return;
 		}
 		fileByParts.add(new FilePart(extraContents));
+		hashCache.remove(fid);
 	}
 
 	/**
@@ -173,6 +174,7 @@ public class MerkleSpecialFiles extends AbstractMerkleLeaf {
 	public synchronized void update(FileID fid, byte[] newContents) {
 		throwIfImmutable();
 		fileContents.put(fid, newFcqWith(newContents));
+		hashCache.remove(fid);
 	}
 
 	/**
@@ -250,6 +252,10 @@ public class MerkleSpecialFiles extends AbstractMerkleLeaf {
 	/* --- Only used by unit tests --- */
 	Map<FileID, FCQueue<FilePart>> getFileContents() {
 		return fileContents;
+	}
+
+	public Map<FileID, byte[]> getHashCache() {
+		return hashCache;
 	}
 
 	static void setBaosSupplier(Supplier<ByteArrayOutputStream> baosSupplier) {

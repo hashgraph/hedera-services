@@ -72,12 +72,17 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 	Optional<String> memo = Optional.empty();
 	Optional<String> keyName = Optional.empty();
 	Optional<SigControl> waclControl = Optional.empty();
-	Optional<LongConsumer> newFileNumObserver = Optional.empty();
+	Optional<LongConsumer> newNumObserver = Optional.empty();
 	AtomicReference<Timestamp> expiryUsed = new AtomicReference<>();
 	Optional<Function<HapiApiSpec, String>> contentsPathFn = Optional.empty();
 
 	public HapiFileCreate(String fileName) {
 		this.fileName = fileName;
+	}
+
+	public HapiFileCreate exposingNumTo(LongConsumer obs) {
+		newNumObserver = Optional.of(obs);
+		return this;
 	}
 
 	public HapiFileCreate advertisingCreation() {
@@ -104,11 +109,6 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 					spec -> spec.registry().getKey(effectivePayer(spec)),
 					ignore -> waclKey);
 		}
-	}
-
-	public HapiFileCreate exposingCreatedNumTo(LongConsumer obs) {
-		newFileNumObserver = Optional.of(obs);
-		return this;
 	}
 
 	public HapiFileCreate unmodifiable() {
@@ -230,12 +230,13 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 		if (actualStatus != SUCCESS) {
 			return;
 		}
+		final var newId = lastReceipt.getFileID();
+		newNumObserver.ifPresent(obs -> obs.accept(newId.getFileNum()));
+
 		if (!immutable) {
 			spec.registry().saveKey(fileName, waclKey);
 		}
-		final var createdId = lastReceipt.getFileID();
-		newFileNumObserver.ifPresent(obs -> obs.accept(createdId.getFileNum()));
-		spec.registry().saveFileId(fileName, createdId);
+		spec.registry().saveFileId(fileName, newId);
 		spec.registry().saveTimestamp(fileName, expiryUsed.get());
 		if (verboseLoggingOn) {
 			log.info("Created file {} with ID {}.", fileName, lastReceipt.getFileID());

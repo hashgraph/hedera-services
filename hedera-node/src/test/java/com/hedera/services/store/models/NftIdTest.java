@@ -88,13 +88,4 @@ class NftIdTest {
 		assertEquals(serialNo, subject.serialNo());
 		assertEquals(expectedTokenId, subject.tokenId());
 	}
-
-	@Test
-	void nullEqualsWorks() {
-		// given:
-		final var subject = new NftId(shard, realm, num, serialNo);
-
-		assertNotEquals(null, subject);
-		assertFalse(subject.equals(null));
-	}
 }

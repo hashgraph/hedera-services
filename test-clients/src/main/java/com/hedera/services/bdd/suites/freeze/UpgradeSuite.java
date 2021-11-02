@@ -1,6 +1,5 @@
 package com.hedera.services.bdd.suites.freeze;
 
-
 /*-
  * ‌
  * Hedera Services Test Clients
@@ -21,6 +20,7 @@ package com.hedera.services.bdd.suites.freeze;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.swirlds.common.CommonUtils;
@@ -36,6 +36,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
@@ -51,9 +52,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_UPDATE_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_UPGRADE_IN_PROGRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_FREEZE_IS_SCHEDULED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_UPGRADE_HAS_BEEN_PREPARED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PREPARED_UPDATE_FILE_IS_IMMUTABLE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UPDATE_FILE_HASH_DOES_NOT_MATCH_PREPARED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UPDATE_FILE_ID_DOES_NOT_MATCH_PREPARED;
 
@@ -68,6 +69,8 @@ public class UpgradeSuite extends HapiApiSuite {
 		new UpgradeSuite().runSuiteSync();
 	}
 
+	private final byte[] poeticUpgrade;
+	private final byte[] heavyPoeticUpgrade;
 	private final byte[] poeticUpgradeHash;
 	private final byte[] heavyPoeticUpgradeHash;
 	private final byte[] notEvenASha384Hash = "abcdefgh".getBytes(StandardCharsets.UTF_8);
@@ -78,8 +81,10 @@ public class UpgradeSuite extends HapiApiSuite {
 	public UpgradeSuite() {
 		try {
 			final var sha384 = MessageDigest.getInstance("SHA-384");
-			poeticUpgradeHash = sha384.digest(Files.readAllBytes(Paths.get(poeticUpgradeLoc)));
-			heavyPoeticUpgradeHash = sha384.digest(Files.readAllBytes(Paths.get(heavyPoeticUpgradeLoc)));
+			poeticUpgrade = Files.readAllBytes(Paths.get(poeticUpgradeLoc));
+			poeticUpgradeHash = sha384.digest(poeticUpgrade);
+			heavyPoeticUpgrade = Files.readAllBytes(Paths.get(heavyPoeticUpgradeLoc));
+			heavyPoeticUpgradeHash = sha384.digest(heavyPoeticUpgrade);
 			log.info("Poetic upgrade hash: " + CommonUtils.hex(poeticUpgradeHash));
 			log.info("Heavy poetic upgrade hash: " + CommonUtils.hex(heavyPoeticUpgradeHash));
 		} catch (NoSuchAlgorithmException | IOException e) {
@@ -98,17 +103,17 @@ public class UpgradeSuite extends HapiApiSuite {
 						precheckRejectsUnknownFreezeType(),
 						freezeOnlyPrecheckRejectsInvalid(),
 						freezeUpgradeValidationRejectsInvalid(),
-						freezeAbortValidationRejectsInvalid(),
 						prepareUpgradeValidationRejectsInvalid(),
 						telemetryUpgradeValidationRejectsInvalid(),
 						canFreezeUpgradeWithPreparedUpgrade(),
 						canTelemetryUpgradeWithValid(),
+						freezeAbortIsIdempotent(),
 				}
 		);
 	}
 
 	private HapiApiSpec precheckRejectsUnknownFreezeType() {
-		return defaultHapiSpec("PrejectRejectsUnknownFreezeType")
+		return defaultHapiSpec("PrejeckRejectsUnknownFreezeType")
 				.given().when().then(
 						freeze().hasPrecheck(INVALID_FREEZE_TRANSACTION_BODY)
 				);
@@ -146,15 +151,16 @@ public class UpgradeSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec freezeAbortValidationRejectsInvalid() {
-		return defaultHapiSpec("FreezeAbortValidationRejectsInvalid")
+	private HapiApiSpec freezeAbortIsIdempotent() {
+		return defaultHapiSpec("FreezeAbortIsIdempotent")
 				.given().when().then(
-						freezeAbort().hasKnownStatus(NO_FREEZE_IS_SCHEDULED)
+						freezeAbort().hasKnownStatus(SUCCESS),
+						freezeAbort().hasKnownStatus(SUCCESS)
 				);
 	}
 
 	private HapiApiSpec prepareUpgradeValidationRejectsInvalid() {
-		return defaultHapiSpec("freezeUpgradeValidationRejectsInvalid")
+		return defaultHapiSpec("PrepareUpgradeValidationRejectsInvalid")
 				.given(
 						fileUpdate(standardUpdateFile)
 								.signedBy(FREEZE_ADMIN)
@@ -187,6 +193,8 @@ public class UpgradeSuite extends HapiApiSuite {
 								.signedBy(FREEZE_ADMIN)
 								.path(poeticUpgradeLoc)
 								.payingWith(FREEZE_ADMIN),
+						getFileContents(standardUpdateFile)
+								.hasByteStringContents(ignore -> ByteString.copyFrom(poeticUpgrade)),
 						prepareUpgrade()
 								.withUpdateFile(standardUpdateFile)
 								.havingHash(poeticUpgradeHash),
@@ -286,7 +294,9 @@ public class UpgradeSuite extends HapiApiSuite {
 						fileUpdate(standardUpdateFile)
 								.signedBy(FREEZE_ADMIN)
 								.path(heavyPoeticUpgradeLoc)
-								.payingWith(FREEZE_ADMIN)
+								.payingWith(FREEZE_ADMIN),
+						getFileContents(standardUpdateFile)
+								.hasByteStringContents(ignore -> ByteString.copyFrom(heavyPoeticUpgrade))
 				).then(
 						telemetryUpgrade()
 								.startingIn(60).minutes()

@@ -125,7 +125,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 						fileCreate(initcode)
 								.path(FIBONACCI_PLUS_PATH)
 								.payingWith(GENESIS)
-								.exposingCreatedNumTo(createdFileNum::set),
+								.exposingNumTo(createdFileNum::set),
 						inParallel(IntStream.range(0, createBurstSize)
 								.mapToObj(i ->
 										contractCreate("contract" + i, FIBONACCI_PLUS_CONSTRUCTOR_ABI, numSlots)
