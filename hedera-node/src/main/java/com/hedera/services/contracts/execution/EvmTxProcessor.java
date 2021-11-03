@@ -184,12 +184,10 @@ abstract class EvmTxProcessor {
 			mutableSender.decrementBalance(gasCost);
 		}
 
-
 		Set<Address> addressList = new HashSet<>();
 		Multimap<Address, Bytes32> storageList = HashMultimap.create();
-		int accessListStorageCount = 0;
 		processAccountAccessList(accountAccessList, addressList);
-		accessListStorageCount = processContractAccessList(contractAccessList, addressList, storageList, accessListStorageCount);
+		final var accessListStorageCount = processContractAccessList(contractAccessList, addressList, storageList);
 
 		final Gas accessListGas =
 				gasCalculator.accessListGasCost(accountAccessList.size() + contractAccessList.size(), accessListStorageCount);
@@ -292,8 +290,8 @@ abstract class EvmTxProcessor {
 
 	private int processContractAccessList(List<ContractAccessEntry> contractAccessEntries,
 										   Set<Address> addressList,
-										   Multimap<Address, Bytes32> storageList,
-										   int accessListStorageCount) {
+										   Multimap<Address, Bytes32> storageList) {
+		var accessListStorageCount = 0;
 		for (var contractAccessEntry : contractAccessEntries) {
 			Address address = Address.wrap(Bytes.wrap(EntityIdUtils.asSolidityAddress(contractAccessEntry.getContractID())));
 			addressList.add(address);
