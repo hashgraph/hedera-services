@@ -52,6 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -309,6 +310,26 @@ class ExpirableTxnRecordTest {
 	void serializableDetWorks() {
 		assertEquals(ExpirableTxnRecord.MERKLE_VERSION, subject.getVersion());
 		assertEquals(ExpirableTxnRecord.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
+	}
+
+	@Test
+	void chosenTokenFailsDueToWrongCollections() {
+		final var s = ExpirableTxnRecordTestHelper.fromGprc(
+				DomainSerdesTest.recordOne().asGrpc().toBuilder()
+						.setTransactionHash(ByteString.copyFrom(pretendHash))
+						.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
+						.addAllTokenTransferLists(List.of(aTokenTransfers, bTokenTransfers, nftTokenTransfers))
+						.setScheduleRef(scheduleID)
+						.addAssessedCustomFees(balanceChange.toGrpc())
+						.addAllAutomaticTokenAssociations(newRelationships)
+						.build());
+		s.setExpiry(expiry);
+		s.setSubmittingMember(submittingMember);
+
+		s.getTokenAdjustments().clear();
+		s.getNftTokenAdjustments().clear();
+
+		assertThrows(IndexOutOfBoundsException.class, () -> s.toString());
 	}
 
 	@Test
