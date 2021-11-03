@@ -28,6 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 
 import static com.hedera.services.state.virtual.ContractValue.MERKLE_VERSION;
@@ -138,6 +139,25 @@ class ContractValueTest {
 	}
 
 	@Test
+	void setsLongerBigInt() {
+		final var len = 33;
+		final int value = 123;
+		byte[] bigIntegerBytes = new byte[len];
+		bigIntegerBytes[0] = (byte) value;
+		bigIntegerBytes[len-1] = (byte) value;
+
+		subject.setValue(new BigInteger(bigIntegerBytes));
+
+		final var actual = subject.getValue();
+		var actualLen = 31;
+		for (int i = len-1; i >= len-32; i--) {
+			assertEquals(bigIntegerBytes[i], actual[actualLen--], "byte at index " + i + " dont match");
+		}
+
+		assertEquals(BigInteger.valueOf(value), new BigInteger(subject.getValue()));
+	}
+
+	@Test
 	void setterFailsOnInvalidBytesLength() {
 		final var invalidValue = "test".getBytes();
 		assertThrows(IllegalArgumentException.class, () -> subject.setValue(invalidValue));
@@ -229,5 +249,27 @@ class ContractValueTest {
 		assertEquals(bytesValue, subject.getValue());
 		// and:
 		verify(byteBuffer).get(defaultEmpty);
+	}
+
+	@Test
+	void cannotDeserializeIntoAReadOnlyContractValue() throws IOException {
+		final var readOnly = subject.asReadOnly();
+
+		final var in = mock(SerializableDataInputStream.class);
+		doAnswer(invocation -> {
+			subject.setValue(bytesValue);
+			return SERIALIZED_SIZE;
+		}).when(in).read(subject.getValue());
+
+		assertThrows(IllegalStateException.class, () -> readOnly.deserialize(in, MERKLE_VERSION));
+
+		// and when
+		final var byteBuffer = mock(ByteBuffer.class);
+		doAnswer(invocation -> {
+			subject.setValue(bytesValue);
+			return null;
+		}).when(byteBuffer).get(subject.getValue());
+
+		assertThrows(IllegalStateException.class, () -> readOnly.deserialize(byteBuffer, MERKLE_VERSION));
 	}
 }
