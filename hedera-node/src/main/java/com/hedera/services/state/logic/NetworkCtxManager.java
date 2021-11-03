@@ -168,7 +168,7 @@ public class NetworkCtxManager {
 	 */
 	public ResponseCodeEnum prepareForIncorporating(TxnAccessor accessor) {
 		if (!IS_THROTTLE_EXEMPT.test(accessor.getPayer().getAccountNum()) &&
-				handleThrottling.shouldThrottleConsensusTxn(accessor)) {
+				handleThrottling.shouldThrottleTxn(accessor)) {
 			return ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 		}
 

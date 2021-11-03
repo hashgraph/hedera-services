@@ -87,15 +87,15 @@ class HapiThrottlingTest {
 		// setup:
 		final var accessor = SignedTxnAccessor.uncheckedFrom(Transaction.getDefaultInstance());
 
-		given(delegate.shouldThrottleConsensusTxn(any(), any())).willReturn(true);
+		given(delegate.shouldThrottleTxn(any(), any())).willReturn(true);
 
 		// when:
-		var ans = subject.shouldThrottleConsensusTxn(accessor);
+		var ans = subject.shouldThrottleTxn(accessor);
 
 		// then:
 		assertTrue(ans);
 		// and:
-		verify(delegate).shouldThrottleConsensusTxn(eq(accessor), any());
+		verify(delegate).shouldThrottleTxn(eq(accessor), any());
 	}
 
 	@Test

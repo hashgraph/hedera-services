@@ -31,18 +31,11 @@ import java.util.List;
 public interface FunctionalityThrottling {
 
 	/**
-	 * Verifies if the frontend throttle has enough capacity to handle the transaction
+	 * Verifies if the frontend/consensus throttle has enough capacity to handle the transaction
 	 * @param accessor - the transaction accessor
 	 * @return true if the transaction should be throttled, false if the system can handle the TX execution
 	 */
 	boolean shouldThrottleTxn(TxnAccessor accessor);
-
-	/**
-	 * Verifies if the consensus throttle has enough capacity to handle the transaction
-	 * @param accessor - the transaction accessor
-	 * @return true if the transaction should be throttled, false if the system can handle the TX execution
-	 */
-	boolean shouldThrottleConsensusTxn(TxnAccessor accessor);
 
 	boolean shouldThrottleQuery(HederaFunctionality queryFunction, Query query);
 

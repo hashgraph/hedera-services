@@ -42,11 +42,6 @@ public class HapiThrottling implements FunctionalityThrottling {
 	}
 
 	@Override
-	public boolean shouldThrottleConsensusTxn(TxnAccessor accessor) {
-		return delegate.shouldThrottleConsensusTxn(accessor, Instant.now());
-	}
-
-	@Override
 	public synchronized boolean shouldThrottleQuery(HederaFunctionality queryFunction, Query query) {
 		return delegate.shouldThrottleQuery(queryFunction, Instant.now(), query);
 	}
