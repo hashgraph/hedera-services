@@ -1,5 +1,26 @@
-package com.hedera.services.bdd.suites;
+package com.hedera.services.bdd.suites.suiterunner;
 
+/*-
+ * ‌
+ * Hedera Services Test Clients
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
+import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.autorenew.AccountAutoRenewalSuite;
 import com.hedera.services.bdd.suites.autorenew.AutoRemovalCasesSuite;
 import com.hedera.services.bdd.suites.autorenew.GracePeriodRestrictionsSuite;
@@ -113,6 +134,7 @@ import com.hedera.services.bdd.suites.misc.InvalidgRPCValuesTest;
 import com.hedera.services.bdd.suites.misc.KeyExport;
 import com.hedera.services.bdd.suites.misc.MixedOpsTransactionsSuite;
 import com.hedera.services.bdd.suites.misc.OneOfEveryTransaction;
+import com.hedera.services.bdd.suites.misc.PerpetualTransfers;
 import com.hedera.services.bdd.suites.misc.PersistenceDevSuite;
 import com.hedera.services.bdd.suites.misc.R5BugChecks;
 import com.hedera.services.bdd.suites.misc.RekeySavedStateTreasury;
@@ -129,13 +151,18 @@ import com.hedera.services.bdd.suites.reconnect.CreateSchedulesBeforeReconnect;
 import com.hedera.services.bdd.suites.reconnect.CreateTokensBeforeReconnect;
 import com.hedera.services.bdd.suites.reconnect.CreateTopicsBeforeReconnect;
 import com.hedera.services.bdd.suites.reconnect.MixedValidationsAfterReconnect;
+import com.hedera.services.bdd.suites.reconnect.SchedulesExpiryDuringReconnect;
 import com.hedera.services.bdd.suites.reconnect.SubmitMessagesForReconnect;
+import com.hedera.services.bdd.suites.reconnect.UpdateAllProtectedFilesDuringReconnect;
 import com.hedera.services.bdd.suites.reconnect.UpdateApiPermissionsDuringReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateApiPermissionStateAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateAppPropertiesStateAfterReconnect;
+import com.hedera.services.bdd.suites.reconnect.ValidateCongestionPricingAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateDuplicateTransactionAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateExchangeRateStateAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateFeeScheduleStateAfterReconnect;
+import com.hedera.services.bdd.suites.reconnect.ValidateTokensDeleteAfterReconnect;
+import com.hedera.services.bdd.suites.reconnect.ValidateTokensStateAfterReconnect;
 import com.hedera.services.bdd.suites.records.CharacterizationSuite;
 import com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.CryptoRecordsSanityCheckSuite;
@@ -178,309 +205,300 @@ import com.hedera.services.bdd.suites.token.TokenTransactSpecs;
 import com.hedera.services.bdd.suites.token.TokenUpdateSpecs;
 import com.hedera.services.bdd.suites.token.UniqueTokenManagementSpecs;
 
-import java.io.IOException;
+import java.util.Arrays;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-// TODO: Refactor to better name
-// TODO: Remove stress tests if confirmed
-// TODO: Include performance tests if confirmed
-// TODO: Format the output to aggregated results
+import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.AUTORENEW_SUITES;
+import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.COMPOSE_SUITES;
+import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.CONSENSUS_SUITES;
+import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.CONTRACT_OP_CODES_SUITES;
+import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.CONTRACT_RECORDS_SUITES;
+import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.CONTRACT_SUITES;
+import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.CRYPTO_SUITES;
+import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.FEES_SUITES;
+import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.FILE_NEGATIVE_SUITES;
+import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.FILE_POSITIVE_SUITES;
+import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.FILE_SUITES;
+import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.FREEZE_SUITES;
+import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.ISSUES_SUITES;
+import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.META_SUITES;
+import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.MISC_SUITES;
+import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.RECONNECT_SUITES;
+import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.RECORDS_SUITES;
+import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.REGRESSION_SUITES;
+import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.SCHEDULE_SUITES;
+import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.STREAMING_SUITES;
+import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.THROTTLING_SUITES;
+import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.TOKEN_SUITES;
 
-// TODO: Verify in daily to run sync() or async()
-// TODO: Implement a solution, extracting only failing test as console output
+//TODO: Performance tests from package perf are not included. Include if confirmed in daily
+public class SuitesStore {
 
+	private static final Map<SuiteCategory, List<HapiApiSuite>> suites = new EnumMap<>(SuiteCategory.class);
 
-public class E2EGlobalRunner {
-	public static void main(String[] args) throws IOException {
-
-		runAutoRenewSuites();
-//		runComposeSuites();
-//		runConsensusSuites();
-//		runContractOpCodesSuites();
-//		runContractRecordsSuites();
-//		runContractSuites();
-//		runCryptoSuites();
-//		runFeesSuites();
-//		runFileNegativeSuites();
-//		runFilePositiveSuites();
-//		runFileSuites();
-//		runFreezeSuites();
-//		runIssuesSuites();
-//		runMetaSuites();
-		//HERE
-//		runMiscSuites();
-		runReconnectSuites();
-//		runRecordsSuites();
-//		runRegressionSuites();
-//		runScheduleSuites();
-//		runStreamingSuites();
-//		runThrottlingSuites();
-//		runTokenSuites();
-	}
-	// Covered
-	private static void runAutoRenewSuites() {
-		new AccountAutoRenewalSuite().runSuiteSync();
-		new AutoRemovalCasesSuite().runSuiteSync();
-		new GracePeriodRestrictionsSuite().runSuiteSync();
-		new MacroFeesChargedSanityCheckSuite().runSuiteSync();
-		new NoGprIfNoAutoRenewSuite().runSuiteSync();
-		new TopicAutoRenewalSuite().runSuiteSync();
+	protected static Map<SuiteCategory, List<HapiApiSuite>> getSuites() {
+		initializeSuites();
+		return suites;
 	}
 
-	// Covered
-	private static void runComposeSuites() {
-		new LocalNetworkCheck().runSuiteSync();
-		new PerpetualLocalCalls().runSuiteSync();
+	// Will be used when providing input options when passing arguments as terminal commands
+	public static List<String> getAllCategories = Arrays
+			.stream(SuiteCategory.values())
+			.map(c -> c.asString)
+			.collect(Collectors.toList());
+
+	protected static void initializeSuites() {
+		suites.put(AUTORENEW_SUITES, List.of(
+				new AccountAutoRenewalSuite(),
+				new AutoRemovalCasesSuite(),
+				new GracePeriodRestrictionsSuite(),
+				new MacroFeesChargedSanityCheckSuite(),
+				new NoGprIfNoAutoRenewSuite(),
+				new TopicAutoRenewalSuite()));
+
+		suites.put(COMPOSE_SUITES, List.of(
+				new LocalNetworkCheck(),
+				new PerpetualLocalCalls()
+		));
+
+		suites.put(CONSENSUS_SUITES, List.of(
+				new AssortedHcsOps(),
+				new ChunkingSuite(),
+				new SubmitMessageSuite(),
+				new TopicCreateSuite(),
+				new TopicDeleteSuite(),
+				new TopicGetInfoSuite(),
+				new TopicUpdateSuite()
+		));
+
+		suites.put(CONTRACT_OP_CODES_SUITES, List.of(
+				new BalanceOperationSuite(),
+				new CallCodeOperationSuite(),
+				new CallOperationSuite(),
+				new CreateOperationSuite(),
+				new DelegateCallOperationSuite(),
+				new ExtCodeCopyOperationSuite(),
+				new ExtCodeHashOperationSuite(),
+				new ExtCodeSizeOperationSuite(),
+				new GlobalPropertiesSuite(),
+				new SStoreSuite(),
+				new StaticCallOperationSuite()
+		));
+
+		suites.put(CONTRACT_RECORDS_SUITES, List.of(
+				new LogsSuite(),
+				new RecordsSuite()
+		));
+
+		suites.put(CONTRACT_SUITES, List.of(
+				new ContractCallLocalSuite(),
+				new ContractCallSuite(),
+				new ContractCreateSuite(),
+				new ContractDeleteSuite(),
+				new ContractGetBytecodeSuite(),
+				new ContractGetInfoSuite(),
+				new ContractUpdateSuite()
+		));
+
+		suites.put(CRYPTO_SUITES, List.of(
+				new CryptoCornerCasesSuite(),
+				new CryptoCreateForSuiteRunner("localhost", "3"),
+				new CryptoCreateSuite(),
+				new CryptoDeleteSuite(),
+				new CryptoGetInfoRegression(),
+				new CryptoGetRecordsRegression(),
+				new CryptoTransferSuite(),
+				new CryptoUpdateSuite(),
+				new CrytoCreateSuiteWithUTF8(),
+				new HelloWorldSpec(),
+				new MiscCryptoSuite(),
+				new QueryPaymentSuite(),
+				new RandomOps(),
+				new TransferWithCustomFees(),
+				new TxnReceiptRegression(),
+				new TxnRecordRegression(),
+				new UnsupportedQueriesRegression()
+		));
+
+		suites.put(FEES_SUITES, List.of(
+				new AllBaseOpFeesSuite(),
+				new CongestionPricingSuite(),
+				new CostOfEverythingSuite(),
+				new CreateAndUpdateOps(),
+				new OverlappingKeysSuite(),
+				new QueryPaymentExploitsSuite(),
+				new SpecialAccountsAreExempted(),
+				new TransferListServiceFeesSuite()
+		));
+
+		suites.put(FILE_NEGATIVE_SUITES, List.of(
+				new AppendFailuresSpec(),
+				new CreateFailuresSpec(),
+				new DeleteFailuresSpec(),
+				new QueryFailuresSpec(),
+				new UpdateFailuresSpec()
+		));
+
+		suites.put(FILE_POSITIVE_SUITES, List.of(
+				new CreateSuccessSpec(),
+				new IssDemoSpec(),
+				new SysDelSysUndelSpec()
+		));
+
+		suites.put(FILE_SUITES, List.of(
+				new ExchangeRateControlSuite(),
+				new FetchSystemFiles(),
+				new FileAppendSuite(),
+				new FileCreateSuite(),
+				new FileDeleteSuite(),
+				new FileUpdateSuite(),
+				new PermissionSemanticsSpec(),
+				new ProtectedFilesUpdateSuite(),
+				new ValidateNewAddressBook()
+		));
+
+		suites.put(FREEZE_SUITES, List.of(
+				new CryptoTransferThenFreezeTest(),
+				new FreezeAbort(),
+				new FreezeDockerNetwork(),
+				new FreezeIntellijNetwork(),
+				new FreezeSuite(),
+				new FreezeUpgrade(),
+				new PrepareUpgrade(),
+				new SimpleFreezeOnly(),
+				new UpdateFileForUpgrade(),
+				new UpdateServerFiles(),
+				new UpgradeSuite()
+		));
+
+		suites.put(ISSUES_SUITES, List.of(
+				new Issue305Spec(),
+				new Issue310Suite(),
+				new Issue1648Suite(),
+				new Issue1741Suite(),
+				new Issue1742Suite(),
+				new Issue1744Suite(),
+				new Issue1758Suite(),
+				new Issue1765Suite(),
+				new Issue2051Spec(),
+				new Issue2098Spec(),
+				new Issue2143Spec(),
+				new Issue2150Spec(),
+				new Issue2319Spec()
+		));
+
+		suites.put(META_SUITES, List.of(new VersionInfoSpec()));
+
+		suites.put(MISC_SUITES, List.of(
+				new CannotDeleteSystemEntitiesSuite(),
+				new ConsensusQueriesStressTests(),
+				new ContractQueriesStressTests(),
+				new CryptoQueriesStressTests(),
+				new FileQueriesStressTests(),
+				new FreezeRekeyedState(),
+				new GuidedTourRemoteSuite(),
+				new InvalidgRPCValuesTest(),
+				new KeyExport(),
+				new MixedOpsTransactionsSuite(),
+				new OneOfEveryTransaction(),
+				new PerpetualTransfers(),
+				new PersistenceDevSuite(),
+				new R5BugChecks(),
+				new RekeySavedStateTreasury(),
+				new ReviewMainnetEntities(),
+				new TogglePayerRecordUse(),
+				new UtilVerbChecks(),
+				new WalletTestSetup(),
+				new ZeroStakeNodeTest()
+		));
+
+		suites.put(RECONNECT_SUITES, List.of(
+				new AutoRenewEntitiesForReconnect(),
+				new CheckUnavailableNode(),
+				new CreateAccountsBeforeReconnect(),
+				new CreateFilesBeforeReconnect(),
+				new CreateSchedulesBeforeReconnect(),
+				new CreateTokensBeforeReconnect(),
+				new CreateTopicsBeforeReconnect(),
+				new MixedValidationsAfterReconnect(),
+				new SchedulesExpiryDuringReconnect(),
+				new SubmitMessagesForReconnect(),
+				new UpdateAllProtectedFilesDuringReconnect(),
+				new UpdateApiPermissionsDuringReconnect(),
+				new ValidateApiPermissionStateAfterReconnect(),
+				new ValidateAppPropertiesStateAfterReconnect(),
+				new ValidateCongestionPricingAfterReconnect(),
+				new ValidateDuplicateTransactionAfterReconnect(),
+				new ValidateExchangeRateStateAfterReconnect(),
+				new ValidateFeeScheduleStateAfterReconnect(),
+				new ValidateTokensDeleteAfterReconnect(),
+				new ValidateTokensStateAfterReconnect()
+		));
+
+		suites.put(RECORDS_SUITES, List.of(
+				new CharacterizationSuite(),
+				new ContractRecordsSanityCheckSuite(),
+				new CryptoRecordsSanityCheckSuite(),
+				new DuplicateManagementTest(),
+				new FeeItemization(),
+				new FileRecordsSanityCheckSuite(),
+				new MigrationValidation(),
+				new MigrationValidationPostSteps(),
+				new MigrationValidationPreSteps(),
+				new RecordCreationSuite(),
+				new RecordPurgeSuite(),
+				new SignedTransactionBytesRecordsSuite()
+		));
+
+		suites.put(REGRESSION_SUITES, List.of(
+				new AddWellKnownEntities(),
+				new JrsRestartTestTemplate(),
+				new SteadyStateThrottlingCheck(),
+				new UmbrellaRedux(),
+				new UmbrellaReduxWithCustomNodes()
+		));
+
+		suites.put(SCHEDULE_SUITES, List.of(
+				new ScheduleCreateSpecs(),
+				new ScheduleDeleteSpecs(),
+				new ScheduleExecutionSpecs(),
+				new ScheduleExecutionSpecStateful(),
+				new ScheduleRecordSpecs(),
+				new ScheduleSignSpecs()
+		));
+
+		suites.put(STREAMING_SUITES, List.of(
+				new RecordStreamValidation(),
+				new RunTransfers()
+		));
+
+		suites.put(THROTTLING_SUITES, List.of(
+				new PrivilegedOpsSuite(),
+				new ThrottleDefValidationSuite()
+		));
+
+		suites.put(TOKEN_SUITES, List.of(
+				new Hip17UnhappyAccountsSuite(),
+				new Hip17UnhappyTokensSuite(),
+				new TokenAssociationSpecs(),
+				new TokenCreateSpecs(),
+				new TokenDeleteSpecs(),
+				new TokenFeeScheduleUpdateSpecs(),
+				new TokenManagementSpecs(),
+				new TokenManagementSpecsStateful(),
+				new TokenMiscOps(),
+				new TokenPauseSpecs(),
+				new TokenTotalSupplyAfterMintBurnWipeSuite(),
+				new TokenTransactSpecs(),
+				new TokenUpdateSpecs(),
+				new UniqueTokenManagementSpecs()
+		));
+
+
 	}
 
-	// Covered
-	private static void runConsensusSuites() {
-		new AssortedHcsOps().runSuiteSync();
-		new ChunkingSuite().runSuiteSync();
-		new SubmitMessageSuite().runSuiteSync();
-		new TopicCreateSuite().runSuiteSync();
-		new TopicDeleteSuite().runSuiteSync();
-		new TopicGetInfoSuite().runSuiteSync();
-		new TopicUpdateSuite().runSuiteSync();
-	}
 
-	// Covered
-	private static void runContractOpCodesSuites() {
-		new BalanceOperationSuite().runSuiteSync();
-		new CallCodeOperationSuite().runSuiteSync();
-		new CallOperationSuite().runSuiteSync();
-		new CreateOperationSuite().runSuiteSync();
-		new DelegateCallOperationSuite().runSuiteSync();
-		new ExtCodeCopyOperationSuite().runSuiteSync();
-		new ExtCodeHashOperationSuite().runSuiteSync();
-		new ExtCodeSizeOperationSuite().runSuiteSync();
-		new GlobalPropertiesSuite().runSuiteSync();
-		new SStoreSuite().runSuiteSync();
-		new StaticCallOperationSuite().runSuiteSync();
-	}
-
-	// Covered
-	private static void runContractRecordsSuites() {
-		new LogsSuite().runSuiteSync();
-		new RecordsSuite().runSuiteSync();
-	}
-
-	// Covered
-	private static void runContractSuites() {
-		new ContractCallLocalSuite().runSuiteSync();
-		new ContractCallSuite().runSuiteSync();
-		new ContractCreateSuite().runSuiteSync();
-		new ContractDeleteSuite().runSuiteSync();
-		new ContractGetBytecodeSuite().runSuiteSync();
-		new ContractGetInfoSuite().runSuiteSync();
-		new ContractUpdateSuite().runSuiteSync();
-	}
-
-	// Covered
-	private static void runCryptoSuites() {
-		new CryptoCornerCasesSuite().runSuiteSync();
-		new CryptoCreateForSuiteRunner("localhost", "3").runSuiteSync();
-		new CryptoCreateSuite().runSuiteSync();
-		new CryptoDeleteSuite().runSuiteSync();
-		new CryptoGetInfoRegression().runSuiteSync();
-		new CryptoGetRecordsRegression().runSuiteSync();
-		new CryptoTransferSuite().runSuiteSync();
-		new CryptoUpdateSuite().runSuiteSync();
-		new CrytoCreateSuiteWithUTF8().runSuiteSync();
-		new HelloWorldSpec().runSuiteSync();
-		new MiscCryptoSuite().runSuiteSync();
-		new QueryPaymentSuite().runSuiteSync();
-		new RandomOps().runSuiteSync();
-		new TransferWithCustomFees().runSuiteSync();
-		new TxnReceiptRegression().runSuiteSync();
-		new TxnRecordRegression().runSuiteSync();
-		new UnsupportedQueriesRegression().runSuiteSync();
-	}
-
-	// Covered
-	private static void runFeesSuites() {
-		new AllBaseOpFeesSuite().runSuiteSync();
-		new CongestionPricingSuite().runSuiteSync();
-		new CostOfEverythingSuite().runSuiteSync();
-		new CreateAndUpdateOps().runSuiteSync();
-		new OverlappingKeysSuite().runSuiteSync();
-		new QueryPaymentExploitsSuite().runSuiteSync();
-		new SpecialAccountsAreExempted().runSuiteSync();
-		new TransferListServiceFeesSuite().runSuiteSync();
-	}
-
-	// Covered
-	private static void runFileNegativeSuites() {
-		new AppendFailuresSpec().runSuiteSync();
-		new CreateFailuresSpec().runSuiteSync();
-		new DeleteFailuresSpec().runSuiteSync();
-		new QueryFailuresSpec().runSuiteSync();
-		new UpdateFailuresSpec().runSuiteSync();
-	}
-
-	// Covered
-	private static void runFilePositiveSuites() {
-		new CreateSuccessSpec().runSuiteSync();
-		new IssDemoSpec().runSuiteSync();
-		new SysDelSysUndelSpec().runSuiteSync();
-	}
-
-	// Covered
-	private static void runFileSuites() {
-		new ExchangeRateControlSuite().runSuiteSync();
-		new FetchSystemFiles().runSuiteSync();
-		new FileAppendSuite().runSuiteSync();
-		new FileCreateSuite().runSuiteSync();
-		new FileDeleteSuite().runSuiteSync();
-		new FileUpdateSuite().runSuiteSync();
-		new PermissionSemanticsSpec().runSuiteSync();
-		new ProtectedFilesUpdateSuite().runSuiteSync();
-		new ValidateNewAddressBook().runSuiteSync();
-	}
-
-	// Covered
-	private static void runFreezeSuites() {
-		new CryptoTransferThenFreezeTest().runSuiteSync();
-		new FreezeAbort().runSuiteSync();
-		new FreezeDockerNetwork().runSuiteSync();
-		new FreezeIntellijNetwork().runSuiteSync();
-		new FreezeSuite().runSuiteSync();
-		new FreezeUpgrade().runSuiteSync();
-		new PrepareUpgrade().runSuiteSync();
-		new SimpleFreezeOnly().runSuiteSync();
-		new UpdateFileForUpgrade().runSuiteSync();
-		new UpdateServerFiles().runSuiteSync();
-		new UpgradeSuite().runSuiteSync();
-	}
-
-	// Covered
-	private static void runIssuesSuites() {
-		new Issue305Spec().runSuiteSync();
-		new Issue310Suite().runSuiteSync();
-		new Issue1648Suite().runSuiteSync();
-		new Issue1741Suite().runSuiteSync();
-		new Issue1742Suite().runSuiteSync();
-		new Issue1744Suite().runSuiteSync();
-		new Issue1758Suite().runSuiteSync();
-		new Issue1765Suite().runSuiteSync();
-		new Issue2051Spec().runSuiteSync();
-		new Issue2098Spec().runSuiteSync();
-		new Issue2143Spec().runSuiteSync();
-		new Issue2150Spec().runSuiteSync();
-		new Issue2319Spec().runSuiteSync();
-	}
-
-	// Covered
-	private static void runMetaSuites() {
-		new VersionInfoSpec().runSuiteSync();
-	}
-
-	private static void runMiscSuites() {
-		new CannotDeleteSystemEntitiesSuite().runSuiteSync();
-		new ConsensusQueriesStressTests().runSuiteSync();
-		new ContractQueriesStressTests().runSuiteSync();
-		new CryptoQueriesStressTests().runSuiteSync();
-		new FileQueriesStressTests().runSuiteSync();
-		new FreezeRekeyedState().runSuiteSync();
-		new GuidedTourRemoteSuite().runSuiteSync();
-		new InvalidgRPCValuesTest().runSuiteSync();
-		new KeyExport().runSuiteSync();
-		new MixedOpsTransactionsSuite().runSuiteSync();
-		new OneOfEveryTransaction().runSuiteSync();
-		//TODO: Skip this test - runs forever
-//		new PerpetualTransfers().runSuiteSync();
-		new PersistenceDevSuite().runSuiteSync();
-		new R5BugChecks().runSuiteSync();
-		new RekeySavedStateTreasury().runSuiteSync();
-		new ReviewMainnetEntities().runSuiteSync();
-		new TogglePayerRecordUse().runSuiteSync();
-		new UtilVerbChecks().runSuiteSync();
-		new WalletTestSetup().runSuiteSync();
-		new ZeroStakeNodeTest().runSuiteSync();
-	}
-
-	private static void runReconnectSuites() {
-		new AutoRenewEntitiesForReconnect().runSuiteSync();
-		new CheckUnavailableNode().runSuiteSync();
-		new CreateAccountsBeforeReconnect().runSuiteSync();
-		new CreateFilesBeforeReconnect().runSuiteSync();
-		new CreateSchedulesBeforeReconnect().runSuiteSync();
-		new CreateTokensBeforeReconnect().runSuiteSync();
-		new CreateTopicsBeforeReconnect().runSuiteSync();
-		new MixedValidationsAfterReconnect().runSuiteSync();
-		new ValidateAppPropertiesStateAfterReconnect().runSuiteSync();
-		new SubmitMessagesForReconnect().runSuiteSync();
-		new ValidateAppPropertiesStateAfterReconnect().runSuiteSync();
-		new UpdateApiPermissionsDuringReconnect().runSuiteSync();
-		new ValidateApiPermissionStateAfterReconnect().runSuiteSync();
-		new ValidateAppPropertiesStateAfterReconnect().runSuiteSync();
-		new ValidateAppPropertiesStateAfterReconnect().runSuiteSync();
-		new ValidateDuplicateTransactionAfterReconnect().runSuiteSync();
-		new ValidateExchangeRateStateAfterReconnect().runSuiteSync();
-		new ValidateFeeScheduleStateAfterReconnect().runSuiteSync();
-		new ValidateAppPropertiesStateAfterReconnect().runSuiteSync();
-		new ValidateAppPropertiesStateAfterReconnect().runSuiteSync();
-	}
-
-	private static void runRecordsSuites() {
-		new CharacterizationSuite().runSuiteSync();
-		new ContractRecordsSanityCheckSuite().runSuiteSync();
-		new CryptoRecordsSanityCheckSuite().runSuiteSync();
-		new DuplicateManagementTest().runSuiteSync();
-		new FeeItemization().runSuiteSync();
-		new FileRecordsSanityCheckSuite().runSuiteSync();
-		new MigrationValidation().runSuiteSync();
-		new MigrationValidationPostSteps().runSuiteSync();
-		new MigrationValidationPreSteps().runSuiteSync();
-		new RecordCreationSuite().runSuiteSync();
-		new RecordPurgeSuite().runSuiteSync();
-		new SignedTransactionBytesRecordsSuite().runSuiteSync();
-	}
-
-	private static void runRegressionSuites() {
-		new AddWellKnownEntities().runSuiteSync();
-		new JrsRestartTestTemplate().runSuiteSync();
-		new SteadyStateThrottlingCheck().runSuiteSync();
-		new UmbrellaRedux().runSuiteSync();
-		new UmbrellaReduxWithCustomNodes().runSuiteSync();
-
-	}
-
-	private static void runScheduleSuites() {
-		new ScheduleCreateSpecs().runSuiteSync();
-		new ScheduleDeleteSpecs().runSuiteAsync();
-		new ScheduleExecutionSpecs().runSuiteAsync();
-		new ScheduleExecutionSpecStateful().runSuiteSync();
-		new ScheduleRecordSpecs().runSuiteAsync();
-		new ScheduleSignSpecs().runSuiteSync();
-	}
-
-	private static void runStreamingSuites() {
-		new RecordStreamValidation().runSuiteSync();
-		new RunTransfers().runSuiteSync();
-	}
-
-	private static void runThrottlingSuites() {
-		new PrivilegedOpsSuite().runSuiteSync();
-		new ThrottleDefValidationSuite().runSuiteSync();
-	}
-
-	private static void runTokenSuites() {
-		new Hip17UnhappyAccountsSuite().runSuiteSync();
-		new Hip17UnhappyTokensSuite().runSuiteSync();
-		final var spec = new TokenAssociationSpecs();
-		spec.deferResultsSummary();
-		spec.runSuiteAsync();
-		spec.summarizeDeferredResults();
-		new TokenCreateSpecs().runSuiteSync();
-		new TokenDeleteSpecs().runSuiteAsync();
-		new TokenFeeScheduleUpdateSpecs().runSuiteSync();
-		new TokenManagementSpecs().runSuiteSync();
-		new TokenManagementSpecsStateful().runSuiteSync();
-		new TokenMiscOps().runSuiteSync();
-		new TokenPauseSpecs().runSuiteSync();
-		new TokenTotalSupplyAfterMintBurnWipeSuite().runSuiteSync();
-		new TokenTransactSpecs().runSuiteAsync();
-		new TokenUpdateSpecs().runSuiteAsync();
-		new UniqueTokenManagementSpecs().runSuiteSync();
-	}
 }
