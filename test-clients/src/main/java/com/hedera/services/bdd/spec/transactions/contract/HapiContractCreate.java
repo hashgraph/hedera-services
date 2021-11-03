@@ -31,8 +31,8 @@ import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
-import com.hederahashgraph.api.proto.java.AccessListEntry;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractAccessEntry;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -45,7 +45,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.tuweni.units.bigints.UInt256;
 import org.ethereum.core.CallTransaction;
 
 import java.util.Arrays;
@@ -88,13 +87,14 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 	Optional<String> abi = Optional.empty();
 	Optional<Object[]> args = Optional.empty();
 	Optional<LongConsumer> newNumObserver = Optional.empty();
+	private Optional<List<AccountID>> accountAccessEntries = Optional.empty();
+	private Optional<List<ContractAccessEntry>> contractAccessEntries = Optional.empty();
 
 
 	public HapiContractCreate exposingNumTo(LongConsumer obs) {
 		newNumObserver = Optional.of(obs);
 		return this;
 	}
-	private Optional<List<AccessListEntry>> accessListEntries = Optional.empty();
 
 	public HapiContractCreate advertisingCreation() {
 		advertiseCreation = true;
@@ -261,9 +261,15 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 							gas.ifPresent(b::setGas);
 							params.ifPresent(bytes -> b.setConstructorParameters(ByteString.copyFrom(bytes)));
 							gas.ifPresent(a -> b.setGas(a));
-							accessListEntries.ifPresent(allEntries -> {
-								for (AccessListEntry entry : allEntries) {
-									b.addAccessList(entry);
+							accountAccessEntries.ifPresent(allEntries -> {
+								for (AccountID entry : allEntries) {
+									b.addAccountAccess(entry);
+								}
+							});
+
+							contractAccessEntries.ifPresent(allEntries -> {
+								for (ContractAccessEntry entry : allEntries) {
+									b.addContractAccess(entry);
 								}
 							});
 						}
@@ -330,16 +336,13 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 
 	public HapiContractCreate withAccessList(ContractID contractID, ByteString... keys) {
 		List<ByteString> byteKeys = Arrays.stream(keys).collect(Collectors.toList());
-		AccessListEntry entry = AccessListEntry.newBuilder().setContractID(contractID).addAllStorageKeys(byteKeys).build();
-		accessListEntries.ifPresentOrElse(list -> list.add(entry), () -> accessListEntries = Optional.of(List.of(entry)));
-
+		ContractAccessEntry entry = ContractAccessEntry.newBuilder().setContractID(contractID).addAllStorageKeys(byteKeys).build();
+		contractAccessEntries.ifPresentOrElse(list -> list.add(entry), () -> contractAccessEntries = Optional.of(List.of(entry)));
 		return this;
 	}
 
 	public HapiContractCreate withAccessList(AccountID accountID) {
-		AccessListEntry entry = AccessListEntry.newBuilder().setAccountID(accountID).build();
-		accessListEntries.ifPresentOrElse(list -> list.add(entry), () -> accessListEntries = Optional.of(List.of(entry)));
-
+		accountAccessEntries.ifPresentOrElse(list -> list.add(accountID), () -> accountAccessEntries = Optional.of(List.of(accountID)));
 		return this;
 	}
 }

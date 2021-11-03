@@ -248,6 +248,7 @@ class ContractCreateTransitionLogicTest {
 				Bytes.fromHexString(contractByteCodeString),
 				txnCtx.consensusTime(),
 				expiry,
+				Collections.emptyList(),
 				Collections.emptyList()))
 				.willReturn(result);
 
@@ -262,6 +263,7 @@ class ContractCreateTransitionLogicTest {
 				Bytes.fromHexString(contractByteCodeString),
 				txnCtx.consensusTime(),
 				expiry,
+				Collections.emptyList(),
 				Collections.emptyList());
 		final ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 		verify(hederaLedger).customizePotentiallyDeleted(eq(contractAccount.getId().asGrpcAccount()), captor.capture());
@@ -326,6 +328,7 @@ class ContractCreateTransitionLogicTest {
 				Bytes.fromHexString(contractByteCodeString),
 				txnCtx.consensusTime(),
 				expiry,
+				Collections.emptyList(),
 				Collections.emptyList()))
 				.willReturn(result);
 
@@ -340,6 +343,7 @@ class ContractCreateTransitionLogicTest {
 				Bytes.fromHexString(contractByteCodeString),
 				txnCtx.consensusTime(),
 				expiry,
+				Collections.emptyList(),
 				Collections.emptyList());
 		final ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 		verify(hederaLedger).customizePotentiallyDeleted(eq(contractAccount.getId().asGrpcAccount()), captor.capture());
@@ -380,6 +384,7 @@ class ContractCreateTransitionLogicTest {
 				Bytes.fromHexString(new String(bytecode)),
 				txnCtx.consensusTime(),
 				expiry,
+				Collections.emptyList(),
 				Collections.emptyList()))
 				.willReturn(result);
 
@@ -424,6 +429,7 @@ class ContractCreateTransitionLogicTest {
 				Bytes.fromHexString(new String(bytecode)),
 				txnCtx.consensusTime(),
 				expiry,
+				Collections.emptyList(),
 				Collections.emptyList()))
 				.willReturn(result);
 

@@ -28,8 +28,8 @@ import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCallLocal;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hederahashgraph.api.proto.java.AccessListEntry;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractAccessEntry;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -40,7 +40,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.tuweni.units.bigints.UInt256;
 import org.ethereum.core.CallTransaction;
 
 import java.util.Arrays;
@@ -66,7 +65,8 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 	private Optional<String> saveResultToEntry = Optional.empty();
 	private Optional<ContractFnResultAsserts> expectations = Optional.empty();
 	private Optional<Function<HapiApiSpec, Object[]>> paramsFn = Optional.empty();
-	private Optional<List<AccessListEntry>> accessListEntries = Optional.empty();
+	private Optional<List<AccountID>> accountAccessEntries = Optional.empty();
+	private Optional<List<ContractAccessEntry>> contractAccessEntries = Optional.empty();
 
 	@Override
 	public HederaFunctionality type() {
@@ -121,16 +121,13 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 
 	public HapiContractCallLocal withAccessList(ContractID contractID, ByteString... keys) {
 		List<ByteString> byteKeys = Arrays.stream(keys).collect(Collectors.toList());
-		AccessListEntry entry = AccessListEntry.newBuilder().setContractID(contractID).addAllStorageKeys(byteKeys).build();
-		accessListEntries.ifPresentOrElse(list -> list.add(entry), () -> accessListEntries = Optional.of(List.of(entry)));
-
+		ContractAccessEntry entry = ContractAccessEntry.newBuilder().setContractID(contractID).addAllStorageKeys(byteKeys).build();
+		contractAccessEntries.ifPresentOrElse(list -> list.add(entry), () -> contractAccessEntries = Optional.of(List.of(entry)));
 		return this;
 	}
 
 	public HapiContractCallLocal withAccessList(AccountID accountID) {
-		AccessListEntry entry = AccessListEntry.newBuilder().setAccountID(accountID).build();
-		accessListEntries.ifPresentOrElse(list -> list.add(entry), () -> accessListEntries = Optional.of(List.of(entry)));
-
+		accountAccessEntries.ifPresentOrElse(list -> list.add(accountID), () -> accountAccessEntries = Optional.of(List.of(accountID)));
 		return this;
 	}
 
@@ -193,9 +190,16 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 				.setFunctionParameters(ByteString.copyFrom(callData))
 				.setGas(gas.orElse(spec.setup().defaultCallGas()))
 				.setMaxResultSize(maxResultSize.orElse(spec.setup().defaultMaxLocalCallRetBytes()));
-		accessListEntries.ifPresent(allEntries -> {
-			for (AccessListEntry entry : allEntries) {
-				queryBuilder.addAccessList(entry);
+
+		accountAccessEntries.ifPresent(allEntries -> {
+			for (AccountID entry : allEntries) {
+				queryBuilder.addAccountAccess(entry);
+			}
+		});
+
+		contractAccessEntries.ifPresent(allEntries -> {
+			for (ContractAccessEntry entry : allEntries) {
+				queryBuilder.addContractAccess(entry);
 			}
 		});
 

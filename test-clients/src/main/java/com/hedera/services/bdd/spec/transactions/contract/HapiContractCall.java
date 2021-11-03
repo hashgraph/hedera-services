@@ -25,18 +25,16 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import com.hederahashgraph.api.proto.java.AccessListEntry;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractAccessEntry;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import org.apache.tuweni.units.bigints.UInt256;
 import org.ethereum.core.CallTransaction;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -54,7 +52,8 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 	private Optional<Long> sentTinyHbars = Optional.of(0L);
 	private Optional<String> details = Optional.empty();
 	private Optional<Function<HapiApiSpec, Object[]>> paramsFn = Optional.empty();
-	private Optional<List<AccessListEntry>> accessListEntries = Optional.empty();
+	private Optional<List<AccountID>> accountAccessEntries = Optional.empty();
+	private Optional<List<ContractAccessEntry>> contractAccessEntries = Optional.empty();
 
 	@Override
 	public HederaFunctionality type() {
@@ -99,16 +98,13 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 
 	public HapiContractCall withAccessList(ContractID contractID, ByteString... keys) {
 		List<ByteString> byteKeys = Arrays.stream(keys).collect(Collectors.toList());
-		AccessListEntry entry = AccessListEntry.newBuilder().setContractID(contractID).addAllStorageKeys(byteKeys).build();
-		accessListEntries.ifPresentOrElse(list -> list.add(entry), () -> accessListEntries = Optional.of(List.of(entry)));
-
+		ContractAccessEntry entry = ContractAccessEntry.newBuilder().setContractID(contractID).addAllStorageKeys(byteKeys).build();
+		contractAccessEntries.ifPresentOrElse(list -> list.add(entry), () -> contractAccessEntries = Optional.of(List.of(entry)));
 		return this;
 	}
 
 	public HapiContractCall withAccessList(AccountID accountID) {
-		AccessListEntry entry = AccessListEntry.newBuilder().setAccountID(accountID).build();
-		accessListEntries.ifPresentOrElse(list -> list.add(entry), () -> accessListEntries = Optional.of(List.of(entry)));
-
+		accountAccessEntries.ifPresentOrElse(list -> list.add(accountID), () -> accountAccessEntries = Optional.of(List.of(accountID)));
 		return this;
 	}
 
@@ -150,9 +146,15 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 							builder.setFunctionParameters(ByteString.copyFrom(callData));
 							sentTinyHbars.ifPresent(a -> builder.setAmount(a));
 							gas.ifPresent(a -> builder.setGas(a));
-							accessListEntries.ifPresent(allEntries -> {
-								for (AccessListEntry entry : allEntries) {
-									builder.addAccessList(entry);
+							accountAccessEntries.ifPresent(allEntries -> {
+								for (AccountID entry : allEntries) {
+									builder.addAccountAccess(entry);
+								}
+							});
+
+							contractAccessEntries.ifPresent(allEntries -> {
+								for (ContractAccessEntry entry : allEntries) {
+									builder.addContractAccess(entry);
 								}
 							});
 						}

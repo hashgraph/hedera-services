@@ -31,7 +31,8 @@ import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hederahashgraph.api.proto.java.AccessListEntry;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractAccessEntry;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
@@ -58,12 +59,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -103,10 +104,12 @@ class CallLocalEvmTxProcessorTest {
 	private Account sender = new Account(new Id(0, 0, 1002));
 	private Account receiver = new Account(new Id(0, 0, 1006));
 	private Instant consensusTime = Instant.now();
-	private final AccessListEntry accessListEntry = AccessListEntry.newBuilder()
+	private final AccountID accountID = asAccount("0.0.10002");
+	private final ContractAccessEntry contractAccessEntry = ContractAccessEntry.newBuilder()
 			.setContractID(ContractID.newBuilder().setContractNum(1425).build())
 			.addStorageKeys(ByteString.copyFrom(UInt256.ZERO.toArray())).build();
-	private final List<AccessListEntry> accessListEntries = List.of(accessListEntry);
+	private final List<AccountID> accountAccessList = List.of(accountID);
+	private final List<ContractAccessEntry> contractAccessList = List.of(contractAccessEntry);
 
 	private CallLocalEvmTxProcessor callLocalEvmTxProcessor;
 
@@ -125,14 +128,33 @@ class CallLocalEvmTxProcessorTest {
 		//expect:
 		Address receiver = this.receiver.getId().asEvmAddress();
 		assertThrows(InvalidTransactionException.class, () ->
-				callLocalEvmTxProcessor.execute(sender, receiver, 1234L, 1_000_000, 15,
-						Bytes.EMPTY, false, consensusTime, false, Optional.empty(), accessListEntries));
+				callLocalEvmTxProcessor.execute(
+						sender,
+						receiver,
+						1234L,
+						1_000_000,
+						15,
+						Bytes.EMPTY,
+						false,
+						consensusTime,
+						false,
+						Optional.empty(),
+						accountAccessList,
+						contractAccessList));
 	}
 
 	@Test
 	void assertSuccessExecutе() {
 		givenValidMock();
-		var result = callLocalEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), 33_333L, 1234L, Bytes.EMPTY, consensusTime, accessListEntries);
+		var result = callLocalEvmTxProcessor.execute(
+				sender,
+				receiver.getId().asEvmAddress(),
+				33_333L,
+				1234L,
+				Bytes.EMPTY,
+				consensusTime,
+				accountAccessList,
+				contractAccessList);
 		assertTrue(result.isSuccessful());
 		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
 	}
@@ -201,7 +223,7 @@ class CallLocalEvmTxProcessorTest {
 
 		given(gasCalculator.getSelfDestructRefundAmount()).willReturn(Gas.ZERO);
 		given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
-		given(gasCalculator.accessListGasCost(1,1)).willReturn(Gas.of(2400));
+		given(gasCalculator.accessListGasCost(2,1)).willReturn(Gas.of(2400));
 
 		given(updater.getSenderAccount(any())).willReturn(evmAccount);
 		given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
@@ -216,6 +238,4 @@ class CallLocalEvmTxProcessorTest {
 		given(exchangeRate.getHbarEquiv()).willReturn(1);
 		given(exchangeRate.getCentEquiv()).willReturn(1);
 	}
-
-
 }

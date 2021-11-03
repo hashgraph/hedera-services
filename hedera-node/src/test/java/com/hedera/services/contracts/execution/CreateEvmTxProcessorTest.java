@@ -31,7 +31,8 @@ import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hederahashgraph.api.proto.java.AccessListEntry;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractAccessEntry;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
@@ -59,12 +60,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -104,10 +105,12 @@ class CreateEvmTxProcessorTest {
 	private final Account sender = new Account(new Id(0, 0, 1002));
 	private final Account receiver = new Account(new Id(0, 0, 1006));
 	private final Instant consensusTime = Instant.now();
-	private final AccessListEntry accessListEntry = AccessListEntry.newBuilder()
+	private final AccountID accountID = asAccount("0.0.10002");
+	private final ContractAccessEntry contractAccessEntry = ContractAccessEntry.newBuilder()
 			.setContractID(ContractID.newBuilder().setContractNum(1425).build())
 			.addStorageKeys(ByteString.copyFrom(UInt256.ZERO.toArray())).build();
-	private final List<AccessListEntry> accessListEntries = List.of(accessListEntry);
+	private final List<AccountID> accountAccessList = List.of(accountID);
+	private final List<ContractAccessEntry> contractAccessList = List.of(contractAccessEntry);
 	private final long expiry = 123456L;
 	private final int MAX_GAS_LIMIT = 10_000_000;
 
@@ -122,9 +125,18 @@ class CreateEvmTxProcessorTest {
 	@Test
 	void assertSuccessfulExecution() {
 		givenValidMock(true);
-		given(gasCalculator.accessListGasCost(1, 1)).willReturn(Gas.of(2400));
+		given(gasCalculator.accessListGasCost(2, 1)).willReturn(Gas.of(2400));
 		sender.initBalance(350_000L);
-		var result = createEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), 33_333L, 1234L, Bytes.EMPTY, consensusTime, expiry, accessListEntries);
+		var result = createEvmTxProcessor.execute(
+				sender,
+				receiver.getId().asEvmAddress(),
+				33_333L,
+				1234L,
+				Bytes.EMPTY,
+				consensusTime,
+				expiry,
+				accountAccessList,
+				contractAccessList);
 		assertTrue(result.isSuccessful());
 		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
 	}
@@ -136,7 +148,7 @@ class CreateEvmTxProcessorTest {
 		given(gasCalculator.mStoreOperationGasCost(any(), anyLong())).willReturn(Gas.of(200));
 		given(gasCalculator.mLoadOperationGasCost(any(), anyLong())).willReturn(Gas.of(30));
 		given(gasCalculator.memoryExpansionGasCost(any(), anyLong(), anyLong())).willReturn(Gas.of(5000));
-		given(gasCalculator.accessListGasCost(1, 1)).willReturn(Gas.of(2400));
+		given(gasCalculator.accessListGasCost(2, 1)).willReturn(Gas.of(2400));
 		sender.initBalance(350_000L);
 
 		// when:
@@ -158,7 +170,8 @@ class CreateEvmTxProcessorTest {
 						"d2464736f6c63430008070033"),
 				consensusTime,
 				expiry,
-				accessListEntries);
+				accountAccessList,
+				contractAccessList);
 
 		// then:
 		assertFalse(result.isSuccessful());
@@ -171,7 +184,19 @@ class CreateEvmTxProcessorTest {
 		//expect:
 		Address receiver = this.receiver.getId().asEvmAddress();
 		assertThrows(InvalidTransactionException.class, () ->
-				createEvmTxProcessor.execute(sender, receiver, 1234, 1_000_000, 15, Bytes.EMPTY, false, consensusTime, false, Optional.of(expiry), accessListEntries));
+				createEvmTxProcessor.execute(
+						sender,
+						receiver,
+						1234,
+						1_000_000,
+						15,
+						Bytes.EMPTY,
+						false,
+						consensusTime,
+						false,
+						Optional.of(expiry),
+						accountAccessList,
+						contractAccessList));
 	}
 
 	@Test
@@ -220,7 +245,16 @@ class CreateEvmTxProcessorTest {
 		final var result = assertThrows(
 				InvalidTransactionException.class,
 				() -> createEvmTxProcessor
-						.execute(sender, receiver, 33_333L, 1234L, Bytes.EMPTY, consensusTime, expiry, accessListEntries));
+						.execute(
+								sender,
+								receiver,
+								33_333L,
+								1234L,
+								Bytes.EMPTY,
+								consensusTime,
+								expiry,
+								accountAccessList,
+								contractAccessList));
 
 		// then:
 		assertEquals(ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE, result.getResponseCode());
@@ -238,7 +272,16 @@ class CreateEvmTxProcessorTest {
 		final var result = assertThrows(
 				InvalidTransactionException.class,
 				() -> createEvmTxProcessor
-						.execute(sender, receiver, 33_333L, 1234L, Bytes.EMPTY, consensusTime, expiry, accessListEntries));
+						.execute(
+								sender,
+								receiver,
+								33_333L,
+								1234L,
+								Bytes.EMPTY,
+								consensusTime,
+								expiry,
+								accountAccessList,
+								contractAccessList));
 
 		// then:
 		assertEquals(ResponseCodeEnum.INSUFFICIENT_GAS, result.getResponseCode());
@@ -258,7 +301,16 @@ class CreateEvmTxProcessorTest {
 		final var result = assertThrows(
 				InvalidTransactionException.class,
 				() -> createEvmTxProcessor
-						.execute(sender, receiver, MAX_GAS_LIMIT, 1234L, Bytes.EMPTY, consensusTime, expiry, accessListEntries));
+						.execute(
+								sender,
+								receiver,
+								MAX_GAS_LIMIT,
+								1234L,
+								Bytes.EMPTY,
+								consensusTime,
+								expiry,
+								accountAccessList,
+								contractAccessList));
 
 		// then:
 		assertEquals(ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED, result.getResponseCode());

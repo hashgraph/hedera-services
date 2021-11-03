@@ -121,7 +121,8 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 				codeWithConstructorArgs,
 				txnCtx.consensusTime(),
 				expiry,
-				op.getAccessListList()
+				op.getAccountAccessList(),
+				op.getContractAccessList()
 		);
 
 		/* --- Persist changes into state --- */

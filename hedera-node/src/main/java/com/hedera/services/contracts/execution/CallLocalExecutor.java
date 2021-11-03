@@ -88,7 +88,8 @@ public class CallLocalExecutor {
 					0,
 					callData,
 					Instant.now(),
-					op.getAccessListList());
+					op.getAccountAccessList(),
+					op.getContractAccessList());
 
 			var status = ResponseCodeUtil.getStatus(result, OK);
 

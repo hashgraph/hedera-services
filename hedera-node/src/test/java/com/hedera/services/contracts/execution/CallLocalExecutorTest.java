@@ -40,7 +40,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -89,7 +88,7 @@ class CallLocalExecutorTest {
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
 		given(accountStore.loadContract(any())).willReturn(new Account(contractID));
-		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any(), anyList()))
+		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any(), anyList(), anyList()))
 				.willReturn(transactionProcessingResult);
 
 		// when:
@@ -108,7 +107,7 @@ class CallLocalExecutorTest {
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
 		given(accountStore.loadContract(any())).willReturn(new Account(contractID));
-		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any(), anyList()))
+		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any(), anyList(), anyList()))
 				.willReturn(transactionProcessingResult);
 
 		// when:
@@ -127,7 +126,7 @@ class CallLocalExecutorTest {
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
 		given(accountStore.loadContract(any())).willReturn(new Account(contractID));
-		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any(), anyList()))
+		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any(), anyList(), anyList()))
 				.willReturn(transactionProcessingResult);
 
 		// when:
@@ -146,7 +145,7 @@ class CallLocalExecutorTest {
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
 		given(accountStore.loadContract(any())).willReturn(new Account(contractID));
-		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any(), anyList()))
+		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any(), anyList(), anyList()))
 				.willReturn(transactionProcessingResult);
 
 		// when:

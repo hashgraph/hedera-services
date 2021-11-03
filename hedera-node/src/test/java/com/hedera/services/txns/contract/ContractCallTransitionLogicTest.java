@@ -122,7 +122,15 @@ class ContractCallTransitionLogicTest {
 		given(repositoryRoot.getCode(contractAccount.getId().asEvmAddress().toArray())).willReturn(bytecode);
 		var results = TransactionProcessingResult.successful(
 				null, 1234L, 0L,124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress());
-		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.EMPTY, txnCtx.consensusTime(), Collections.emptyList()))
+		given(evmTxProcessor.execute(
+				senderAccount,
+				contractAccount.getId().asEvmAddress(),
+				gas,
+				sent,
+				Bytes.EMPTY,
+				txnCtx.consensusTime(),
+				Collections.emptyList(),
+				Collections.emptyList()))
 				.willReturn(results);
 		given(worldState.persist()).willReturn(List.of(target));
 		// when:
@@ -157,14 +165,30 @@ class ContractCallTransitionLogicTest {
 		given(repositoryRoot.getCode(contractAccount.getId().asEvmAddress().toArray())).willReturn(bytecode);
 		var results = TransactionProcessingResult.successful(
 				null, 1234L, 0L,124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress());
-		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())), txnCtx.consensusTime(), Collections.emptyList()))
+		given(evmTxProcessor.execute(
+				senderAccount,
+				contractAccount.getId().asEvmAddress(),
+				gas,
+				sent,
+				Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())),
+				txnCtx.consensusTime(),
+				Collections.emptyList(),
+				Collections.emptyList()))
 				.willReturn(results);
 		given(worldState.persist()).willReturn(List.of(target));
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(evmTxProcessor).execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())), txnCtx.consensusTime(), Collections.emptyList());
+		verify(evmTxProcessor).execute(
+				senderAccount,
+				contractAccount.getId().asEvmAddress(),
+				gas,
+				sent,
+				Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())),
+				txnCtx.consensusTime(),
+				Collections.emptyList(),
+				Collections.emptyList());
 	}
 
 	@Test

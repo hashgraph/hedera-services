@@ -33,7 +33,8 @@ import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hederahashgraph.api.proto.java.AccessListEntry;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractAccessEntry;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -81,7 +82,7 @@ import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
  * Abstract processor of EVM transactions that prepares the {@link EVM} and all of the peripherals upon
  * instantiation
  * Provides
- * a base{@link EvmTxProcessor#execute(Account, Address, long, long, long, Bytes, boolean, Instant, boolean, Optional, List)}
+ * a base{@link EvmTxProcessor#execute(Account, Address, long, long, long, Bytes, boolean, Instant, boolean, Optional, List, List)}
  * method that handles the end-to-end execution of a EVM transaction
  */
 abstract class EvmTxProcessor {
@@ -144,14 +145,16 @@ abstract class EvmTxProcessor {
 	 * @param consensusTime     Current consensus time
 	 * @param isStatic          Whether or not the execution is static
 	 * @param expiry            In the case of Create transactions, the expiry of the top-level contract being created
-	 * @param accessListEntries List of entries(contract id and storage keys or only account id) used for warming up
+	 * @param accountAccessList List of entries(account id's) used for warming up
+	 *                          in EVM before the execution of the transaction in order to save gas
+	 * @param contractAccessList List of entries(contract id and storage keys) used for warming up
 	 *                          in EVM before the execution of the transaction in order to save gas
 	 * @return the result of the EVM execution returned as {@link TransactionProcessingResult}
 	 */
 	protected TransactionProcessingResult execute(Account sender, Address receiver, long gasPrice,
 												  long providedGasLimit, long value, Bytes payload, boolean contractCreation,
 												  Instant consensusTime, boolean isStatic, Optional<Long> expiry,
-												  List<AccessListEntry> accessListEntries) {
+												  List<AccountID> accountAccessList, List<ContractAccessEntry> contractAccessList) {
 		final long gasLimit = providedGasLimit > dynamicProperties.maxGas()
 				? dynamicProperties.maxGas()
 				: providedGasLimit;
@@ -185,10 +188,11 @@ abstract class EvmTxProcessor {
 		Set<Address> addressList = new HashSet<>();
 		Multimap<Address, Bytes32> storageList = HashMultimap.create();
 		int accessListStorageCount = 0;
-		accessListStorageCount = processAccessList(accessListEntries, addressList, storageList, accessListStorageCount);
+		processAccountAccessList(accountAccessList, addressList);
+		accessListStorageCount = processContractAccessList(contractAccessList, addressList, storageList, accessListStorageCount);
 
 		final Gas accessListGas =
-				gasCalculator.accessListGasCost(accessListEntries.size(), accessListStorageCount);
+				gasCalculator.accessListGasCost(accountAccessList.size() + contractAccessList.size(), accessListStorageCount);
 		final Gas gasAvailable = Gas.of(gasLimit).minus(intrinsicGas).minus(accessListGas);
 		final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
 
@@ -278,25 +282,29 @@ abstract class EvmTxProcessor {
 		}
 	}
 
-	private int processAccessList(List<AccessListEntry> accessListEntries,
-								  Set<Address> addressList,
-								  Multimap<Address, Bytes32> storageList,
-								  int accessListStorageCount) {
-		for (var entry : accessListEntries) {
-			Address address = Address.wrap(Bytes.wrap(entry.hasContractID()
-					? EntityIdUtils.asSolidityAddress(entry.getContractID())
-					: EntityIdUtils.asSolidityAddress(entry.getAccountID())));
+	private void processAccountAccessList(List<AccountID> accountAccessEntries,
+										  Set<Address> addressList) {
+		for (var accAccessEntry : accountAccessEntries) {
+			Address address = Address.wrap(Bytes.wrap(EntityIdUtils.asSolidityAddress(accAccessEntry)));
+			addressList.add(address);
+		}
+	}
+
+	private int processContractAccessList(List<ContractAccessEntry> contractAccessEntries,
+										   Set<Address> addressList,
+										   Multimap<Address, Bytes32> storageList,
+										   int accessListStorageCount) {
+		for (var contractAccessEntry : contractAccessEntries) {
+			Address address = Address.wrap(Bytes.wrap(EntityIdUtils.asSolidityAddress(contractAccessEntry.getContractID())));
 			addressList.add(address);
 
-			if (entry.hasContractID()) {
-				List<Bytes32> storageKeys = new ArrayList<>();
-				for (ByteString bytes : entry.getStorageKeysList()) {
-					Bytes32 bytes32 = convertToBytes32(bytes);
-					storageKeys.add(bytes32);
-				}
-				storageList.putAll(address, storageKeys);
-				accessListStorageCount += storageKeys.size();
+			List<Bytes32> storageKeys = new ArrayList<>();
+			for (ByteString bytes : contractAccessEntry.getStorageKeysList()) {
+				Bytes32 bytes32 = convertToBytes32(bytes);
+				storageKeys.add(bytes32);
 			}
+			storageList.putAll(address, storageKeys);
+			accessListStorageCount += storageKeys.size();
 		}
 		return accessListStorageCount;
 	}

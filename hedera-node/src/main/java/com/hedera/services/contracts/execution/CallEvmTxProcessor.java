@@ -27,7 +27,8 @@ import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
-import com.hederahashgraph.api.proto.java.AccessListEntry;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractAccessEntry;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -65,7 +66,8 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 			final long value,
 			final Bytes callData,
 			final Instant consensusTime,
-			final List<AccessListEntry> accessListEntries
+			final List<AccountID> accountAccessList,
+			final List<ContractAccessEntry> contractAccessList
 			) {
 		final long gasPrice = gasPriceTinyBarsGiven(consensusTime);
 
@@ -79,7 +81,8 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 				consensusTime,
 				false,
 				Optional.empty(),
-				accessListEntries);
+				accountAccessList,
+				contractAccessList);
 	}
 
 	@Override

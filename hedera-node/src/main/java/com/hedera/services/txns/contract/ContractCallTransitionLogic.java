@@ -102,7 +102,8 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 				op.getAmount(),
 				callData,
 				txnCtx.consensusTime(),
-				op.getAccessListList());
+				op.getAccountAccessList(),
+				op.getContractAccessList());
 
 		/* --- Persist changes into state --- */
 		final var createdContracts = worldState.persist();
