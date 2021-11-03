@@ -1076,10 +1076,6 @@ public class ContractCallSuite extends HapiApiSuite {
 				)
 				.when(
 						getAccountInfo(ACCOUNT).savingSnapshot("accInfo"),
-						withOpContext((spec, log) -> {
-							var acc = spec.registry().getAccountInfo("accInfo");
-							spec.registry().saveKey("accKey", acc.getKey());
-						}),
 						fileCreate("bytecode")
 								.path(ContractResources.TRANSFERRING_CONTRACT),
 						contractCreate("contract")
@@ -1096,6 +1092,15 @@ public class ContractCallSuite extends HapiApiSuite {
 									acc, ONE_HUNDRED_HBARS/2)
 									.hasKnownStatus(INVALID_SIGNATURE);
 							allRunFor(spec, withoutReceiverSignature);
+
+							var withSignature = contractCall(
+									"contract",
+									ContractResources.TRANSFERRING_CONTRACT_TRANSFERTOADDRESS,
+									acc, ONE_HUNDRED_HBARS/2)
+									.payingWith(ACCOUNT)
+									.signedBy(RECEIVER_KEY)
+									.hasKnownStatus(SUCCESS);
+							allRunFor(spec, withSignature);
 						})
 				);
 	}
