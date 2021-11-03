@@ -686,66 +686,6 @@ public class UtilVerbs {
 		});
 	}
 
-	public static HapiSpecOperation updateLargeFileWithoutSigning(
-			String payer,
-			String fileName,
-			ByteString byteString,
-			OptionalLong tinyBarsToOffer,
-			Consumer<HapiFileUpdate> updateCustomizer,
-			ObjIntConsumer<HapiFileAppend> appendCustomizer
-	) {
-		return withOpContext((spec, ctxLog) -> {
-			List<HapiSpecOperation> opsList = new ArrayList<>();
-
-			int fileSize = byteString.size();
-			int position = Math.min(BYTES_4K, fileSize);
-
-			HapiFileUpdate updateSubOp = fileUpdate(fileName)
-					.contents(byteString.substring(0, position))
-					.hasKnownStatusFrom(SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED)
-					.noLogging()
-					.payingWith(payer);
-			updateCustomizer.accept(updateSubOp);
-			if (tinyBarsToOffer.isPresent()) {
-				updateSubOp = updateSubOp.fee(tinyBarsToOffer.getAsLong());
-			}
-			opsList.add(updateSubOp);
-
-			final int bytesLeft = fileSize - position;
-			final int totalAppendsRequired = bytesLeft / BYTES_4K + Math.min(1, bytesLeft % BYTES_4K);
-			int numAppends = 0;
-			while (position < fileSize) {
-				int newPosition = Math.min(fileSize, position + BYTES_4K);
-				var appendSubOp = fileAppend(fileName)
-						.content(byteString.substring(position, newPosition).toByteArray())
-						.hasKnownStatusFrom(SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED)
-						.noLogging()
-						.payingWith(payer);
-				appendCustomizer.accept(appendSubOp, totalAppendsRequired - numAppends);
-				if (tinyBarsToOffer.isPresent()) {
-					appendSubOp = appendSubOp.fee(tinyBarsToOffer.getAsLong());
-				}
-				opsList.add(appendSubOp);
-				position = newPosition;
-				numAppends++;
-			}
-
-			CustomSpecAssert.allRunFor(spec, opsList);
-		});
-	}
-
-	public static HapiSpecOperation updateLargeFileWithoutSigning(
-			String payer,
-			String fileName,
-			ByteString byteString,
-			OptionalLong tinyBarsToOffer
-	) {
-		return updateLargeFileWithoutSigning(payer, fileName, byteString, tinyBarsToOffer,
-				op -> {
-				}, (op, i) -> {
-				});
-	}
-
 	public static HapiSpecOperation updateLargeFile(String payer, String fileName, String registryEntry) {
 		return withOpContext((spec, ctxLog) -> {
 			ByteString bt = ByteString.copyFrom(spec.registry().getBytes(registryEntry));

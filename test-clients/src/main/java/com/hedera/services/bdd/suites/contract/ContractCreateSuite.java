@@ -34,7 +34,6 @@ import org.apache.logging.log4j.Logger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -55,6 +54,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
@@ -80,16 +81,16 @@ public class ContractCreateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						createEmptyConstructor(),
-						insufficientPayerBalanceUponCreation(),
-						rejectsInvalidMemo(),
-						rejectsInsufficientFee(),
-						rejectsInvalidBytecode(),
-						revertsNonzeroBalance(),
-						createFailsIfMissingSigs(),
-						rejectsInsufficientGas(),
-						createsVanillaContractAsExpectedWithOmittedAdminKey(),
-						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
+//						createEmptyConstructor(),
+//						insufficientPayerBalanceUponCreation(),
+//						rejectsInvalidMemo(),
+//						rejectsInsufficientFee(),
+//						rejectsInvalidBytecode(),
+//						revertsNonzeroBalance(),
+//						createFailsIfMissingSigs(),
+//						rejectsInsufficientGas(),
+//						createsVanillaContractAsExpectedWithOmittedAdminKey(),
+//						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
 						cannotCreateTooLargeContract()
 				}
 		);
@@ -272,6 +273,13 @@ public class ContractCreateSuite extends HapiApiSuite {
 								.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 				);
 	}
+	/*
+	* 2 testa
+	*
+	* - cryptoCreate s key list 2 ot 2 (2ka key-a da podpisvat)
+	* - contractCreate
+	* - contractCall - ne
+	* */
 
 	/* Attempts to create a 46 KB contract */
 	private HapiApiSpec cannotCreateTooLargeContract() {
@@ -281,27 +289,34 @@ public class ContractCreateSuite extends HapiApiSuite {
 		} catch (Exception ignore) {
 
 		}
+		final var FILE_KEY = "fileKey";
+		final var KEY_LIST = "keyList";
+		final var ACCOUNT = "acc";
 		return defaultHapiSpec("cannotCreateLargeContract")
 				.given(
-						cryptoCreate("acc").balance(ONE_MILLION_HBARS).receiverSigRequired(false),
+						newKeyNamed(FILE_KEY),
+						newKeyListNamed(KEY_LIST, List.of(FILE_KEY)),
+						cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(FILE_KEY),
 						fileCreate("bytecode")
 								.path(ContractResources.LARGE_CONTRACT_CRYPTO_KITTIES)
 								.hasPrecheck(TRANSACTION_OVERSIZE)
 				)
 				.when(
-						fileCreate("bytecode").contents(""),
-						UtilVerbs.updateLargeFileWithoutSigning(GENESIS, "bytecode", contents, OptionalLong.of(100000))
+						fileCreate("bytecode").contents("").key(KEY_LIST),
+						UtilVerbs.updateLargeFile(ACCOUNT, "bytecode", contents)
 				)
 				.then(
 						/* should fail */
-						contractCreate("contract").bytecode("bytecode").payingWith("acc").hasKnownStatus(SUCCESS),
-						getAccountInfo("acc").savingSnapshot("accInfo"),
+						contractCreate("contract").bytecode("bytecode").payingWith(ACCOUNT).hasKnownStatus(SUCCESS),
+						getAccountInfo(ACCOUNT).savingSnapshot("accInfo"),
 						withOpContext((spec, log)-> {
 							var addr = spec.registry().getAccountInfo("accInfo").getContractAccountID();
 							var createKittyCC = contractCall(
 									"contract",
 									ContractResources.CRYPTO_KITTIES_CREATE_PROMO_KITTY_ABI,
-									256, addr).payingWith("acc").gas(100_0000)
+									256, addr)
+									.payingWith(ACCOUNT)
+									.gas(100_0000)
 									.via("call1");
 							allRunFor(spec, createKittyCC);
 						}),

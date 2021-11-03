@@ -80,6 +80,8 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -136,7 +138,9 @@ public class ContractCallSuite extends HapiApiSuite {
 				contractTransferToSigReqAccountWithKeySucceeds(),
 				HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts(),
 				HSCS_EVM_006_ContractHBarTransferToAccount(),
-				HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts()
+				HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts(),
+				HSCS_EVM_010_MultiSignatureAccounts(),
+				HSCS_EVM_010_ReceiverMustSignContractTx()
 		);
 	}
 
@@ -1059,14 +1063,96 @@ public class ContractCallSuite extends HapiApiSuite {
 				);
 	}
 
+	private HapiApiSpec HSCS_EVM_010_ReceiverMustSignContractTx() {
+		final var ACCOUNT = "acc";
+		final var RECEIVER_KEY = "receiverKey";
+		return defaultHapiSpec("HSCS_EVM_010_ReceiverMustSignContractTx")
+				.given(
+						newKeyNamed(RECEIVER_KEY),
+						cryptoCreate(ACCOUNT)
+								.balance(ONE_MILLION_HBARS)
+								.receiverSigRequired(true)
+								.key(RECEIVER_KEY)
+				)
+				.when(
+						getAccountInfo(ACCOUNT).savingSnapshot("accInfo"),
+						withOpContext((spec, log) -> {
+							var acc = spec.registry().getAccountInfo("accInfo");
+							spec.registry().saveKey("accKey", acc.getKey());
+						}),
+						fileCreate("bytecode")
+								.path(ContractResources.TRANSFERRING_CONTRACT),
+						contractCreate("contract")
+								.bytecode("bytecode")
+								.payingWith(ACCOUNT)
+								.balance(ONE_HUNDRED_HBARS)
+				)
+				.then(
+						withOpContext((spec, log) -> {
+							var acc = spec.registry().getAccountInfo("accInfo").getContractAccountID();
+							var withoutReceiverSignature = contractCall(
+									"contract",
+									ContractResources.TRANSFERRING_CONTRACT_TRANSFERTOADDRESS,
+									acc, ONE_HUNDRED_HBARS/2)
+									.hasKnownStatus(INVALID_SIGNATURE);
+							allRunFor(spec, withoutReceiverSignature);
+						})
+				);
+	}
+
 	private HapiApiSpec HSCS_EVM_010_MultiSignatureAccounts() {
 		final var ACCOUNT = "acc";
+		final var PAYER_KEY = "pkey";
+		final var OTHER_KEY = "okey";
+		final var KEY_LIST = "klist";
 		return defaultHapiSpec("HSCS_EVM_010_MultiSignatureAccounts")
 				.given(
-						cryptoCreate(ACCOUNT).receiverSigRequired(true)
+						newKeyNamed(PAYER_KEY),
+						newKeyNamed(OTHER_KEY),
+						newKeyListNamed(KEY_LIST, List.of(PAYER_KEY, OTHER_KEY)),
+						cryptoCreate(ACCOUNT)
+								.balance(ONE_MILLION_HBARS)
+								.key(KEY_LIST)
+								.keyType(THRESHOLD)
 				)
-				.when()
-				.then();
+				.when(
+						fileCreate("bytecode")
+								.path(ContractResources.TRANSFERRING_CONTRACT),
+						getAccountInfo(ACCOUNT).savingSnapshot("accInfo"),
+
+						contractCreate("contract").bytecode("bytecode")
+								.payingWith(ACCOUNT)
+								.signedBy(PAYER_KEY)
+								.adminKey(KEY_LIST).hasPrecheck(INVALID_SIGNATURE),
+
+						contractCreate("contract").bytecode("bytecode")
+								.payingWith(ACCOUNT)
+								.signedBy(PAYER_KEY, OTHER_KEY)
+								.balance(10)
+								.adminKey(KEY_LIST)
+				)
+				.then(
+						withOpContext((spec, log) -> {
+							var acc = spec.registry().getAccountInfo("accInfo").getContractAccountID();
+							var assertionWithOnlyOneKey = contractCall(
+									"contract",
+									ContractResources.TRANSFERRING_CONTRACT_TRANSFERTOADDRESS,
+									acc, 10)
+									.payingWith(ACCOUNT)
+									.signedBy(PAYER_KEY)
+									.hasPrecheck(INVALID_SIGNATURE);
+							allRunFor(spec, assertionWithOnlyOneKey);
+
+							var assertionWithBothKeys = contractCall(
+									"contract",
+									ContractResources.TRANSFERRING_CONTRACT_TRANSFERTOADDRESS,
+									acc, 10)
+									.payingWith(ACCOUNT)
+									.signedBy(PAYER_KEY, OTHER_KEY)
+									.hasKnownStatus(SUCCESS);
+							allRunFor(spec, assertionWithBothKeys);
+						})
+				);
 	}
 
 	@Override
