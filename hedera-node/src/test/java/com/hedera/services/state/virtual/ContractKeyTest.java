@@ -322,4 +322,15 @@ class ContractKeyTest {
 		assertEquals(g, actual[6]);
 		assertEquals(h, actual[7]);
 	}
+
+	@Test
+	void getContractIdNonZeroBytesAndUint256KeyNonZeroBytesWorksWithZeroValues() {
+		subject = new ContractKey(0, 0);
+		assertEquals(0, subject.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
+	}
+
+	@Test
+	void computeNonZeroBytesWorkWithZeroInt() {
+		assertEquals(1, ContractKey.computeNonZeroBytes(0));
+	}
 }

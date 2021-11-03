@@ -36,6 +36,7 @@ import static com.hedera.services.state.virtual.ContractValue.RUNTIME_CONSTRUCTA
 import static com.hedera.services.state.virtual.ContractValue.SERIALIZED_SIZE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -96,6 +97,13 @@ class ContractValueTest {
 		assertEquals(testSubject1.getClassId(), subject.getClassId());
 		// and:
 		assertEquals(testSubject1.toString(), subject.toString());
+
+		// forcing equals on null and objects of different class
+		var forcedEquals = subject.equals(null);
+		assertFalse(forcedEquals);
+
+		forcedEquals = subject.equals(otherBytesValue);
+		assertFalse(forcedEquals);
 	}
 
 	@Test
