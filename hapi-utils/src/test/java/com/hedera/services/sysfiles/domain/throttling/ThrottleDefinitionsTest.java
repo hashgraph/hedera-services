@@ -36,36 +36,4 @@ class ThrottleDefinitionsTest {
 		// expect:
 		Assertions.assertEquals(proto, ThrottleDefinitions.fromProto(proto).toProto());
 	}
-
-	@Test
-	void totalAllowedGasPerSecFrontend() throws IOException {
-		// given:
-		var proto = TestUtils.protoDefs("bootstrap/throttles.json");
-
-		// expect:
-		Assertions.assertEquals(proto.getTotalAllowedGasPerSecFrontend(), ThrottleDefinitions.fromProto(proto).toProto().getTotalAllowedGasPerSecFrontend());
-	}
-
-	@Test
-	void totalAllowedGasPerSecConsensus() throws IOException {
-		// given:
-		var proto = TestUtils.protoDefs("bootstrap/throttles.json");
-
-		// expect:
-		Assertions.assertEquals(proto.getTotalAllowedGasPerSecConsensus(), ThrottleDefinitions.fromProto(proto).toProto().getTotalAllowedGasPerSecConsensus());
-	}
-
-	@Test
-	void getConsensusGasWorks() {
-		var subject = new ThrottleDefinitions();
-		subject.setTotalAllowedGasPerSecConsensus(1234321L);
-		assertEquals(1234321L, subject.getTotalAllowedGasPerSecConsensus());
-	}
-
-	@Test
-	void getFrontendGasWorks() {
-		var subject = new ThrottleDefinitions();
-		subject.setTotalAllowedGasPerSecFrontend(1234321L);
-		assertEquals(1234321L, subject.getTotalAllowedGasPerSecFrontend());
-	}
 }

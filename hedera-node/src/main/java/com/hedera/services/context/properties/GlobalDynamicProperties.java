@@ -88,6 +88,8 @@ public class GlobalDynamicProperties {
 	private String upgradeArtifactsLoc;
 	private boolean throttleByGas;
 	private int contractMaxRefundPercentOfGasLimit;
+	private long frontendThrottleMaxGasLimit;
+	private long consensusThrottleMaxGasLimit;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -158,6 +160,8 @@ public class GlobalDynamicProperties {
 		upgradeArtifactsLoc = properties.getStringProperty("upgrade.artifacts.path");
 		throttleByGas = properties.getBooleanProperty("contracts.throttle.throttleByGas");
 		contractMaxRefundPercentOfGasLimit = properties.getIntProperty("contracts.maxRefundPercentOfGasLimit");
+		frontendThrottleMaxGasLimit = properties.getLongProperty("contracts.frontendThrottleMaxGasLimit");
+		consensusThrottleMaxGasLimit = properties.getLongProperty("contracts.consensusThrottleMaxGasLimit");
 	}
 
 	public int maxTokensPerAccount() {
@@ -354,5 +358,13 @@ public class GlobalDynamicProperties {
 
 	public int getContractMaxRefundPercentOfGasLimit() {
 		return contractMaxRefundPercentOfGasLimit;
+	}
+
+	public long getFrontendThrottleMaxGasLimit() {
+		return frontendThrottleMaxGasLimit;
+	}
+
+	public long getConsensusThrottleMaxGasLimit() {
+		return consensusThrottleMaxGasLimit;
 	}
 }

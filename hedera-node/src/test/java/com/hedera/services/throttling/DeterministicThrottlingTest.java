@@ -110,6 +110,7 @@ class DeterministicThrottlingTest {
 	void worksAsExpectedForKnownQueries() throws IOException {
 		// setup:
 		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+		given(dynamicProperties.getConsensusThrottleMaxGasLimit()).willReturn(1L);
 
 		// when:
 		subject.rebuildFor(defs);
@@ -128,6 +129,7 @@ class DeterministicThrottlingTest {
 	void worksAsExpectedForUnknownQueries() throws IOException {
 		// setup:
 		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+		given(dynamicProperties.getConsensusThrottleMaxGasLimit()).willReturn(1L);
 
 		// when:
 		subject.rebuildFor(defs);
@@ -149,7 +151,7 @@ class DeterministicThrottlingTest {
 		// then:
 		assertEquals(0L, gasLimitDeterministicThrottle.getCapacity());
 		assertThat(logCaptor.errorLogs(),
-				contains("ThrottleByGas global dynamic property is set to true but totalAllowedGasPerSecConsensus is not set in throttles.json or is set to 0."));
+				contains("ThrottleByGas global dynamic property is set to true but contracts.consensusThrottleMaxGasLimit is not set in throttles.json or is set to 0."));
 	}
 
 	@Test
@@ -165,13 +167,14 @@ class DeterministicThrottlingTest {
 		// then:
 		assertEquals(0L, gasLimitDeterministicThrottle.getCapacity());
 		assertThat(logCaptor.errorLogs(),
-				contains("ThrottleByGas global dynamic property is set to true but totalAllowedGasPerSecFrontend is not set in throttles.json or is set to 0."));
+				contains("ThrottleByGas global dynamic property is set to true but contracts.frontendThrottleMaxGasLimit is not set in throttles.json or is set to 0."));
 	}
 
 	@Test
 	void managerBehavesAsExpectedForFungibleMint() throws IOException {
 		// setup:
 		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+		given(dynamicProperties.getConsensusThrottleMaxGasLimit()).willReturn(1L);
 
 		givenMintWith(0);
 
@@ -196,7 +199,7 @@ class DeterministicThrottlingTest {
 
 		givenMintWith(numNfts);
 		given(dynamicProperties.nftMintScaleFactor()).willReturn(nftScaleFactor);
-
+		given(dynamicProperties.getConsensusThrottleMaxGasLimit()).willReturn(1L);
 		// when:
 		subject.rebuildFor(defs);
 		// and:
@@ -214,6 +217,7 @@ class DeterministicThrottlingTest {
 	void managerBehavesAsExpectedForMultiBucketOp() throws IOException {
 		// setup:
 		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+		given(dynamicProperties.getConsensusThrottleMaxGasLimit()).willReturn(1L);
 
 		givenFunction(ContractCall);
 
@@ -236,6 +240,7 @@ class DeterministicThrottlingTest {
 	void logsErrorOnBadBucketButDoesntFail() throws IOException {
 		// given:
 		var defs = SerdeUtils.pojoDefs("bootstrap/insufficient-capacity-throttles.json");
+		given(dynamicProperties.getConsensusThrottleMaxGasLimit()).willReturn(1L);
 
 		// expect:
 		assertDoesNotThrow(() -> subject.rebuildFor(defs));
@@ -251,6 +256,8 @@ class DeterministicThrottlingTest {
 	void logsAsExpected() throws IOException {
 		// setup:
 		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+		given(dynamicProperties.getConsensusThrottleMaxGasLimit()).willReturn(1L);
+
 		var desired = "Resolved throttles (after splitting capacity 2 ways) - \n" +
 				"  ContractCall: min{6.00 tps (A), 5.00 tps (B)}\n" +
 				"  CryptoCreate: min{5000.00 tps (A), 1.00 tps (C)}\n" +
@@ -260,7 +267,7 @@ class DeterministicThrottlingTest {
 				"  TokenCreate: min{50.00 tps (C)}\n" +
 				"  TokenMint: min{1500.00 tps (A)}\n" +
 				"  TransactionGetReceipt: min{500000.00 tps (D)}\n" +
-				"  ThrottleByGasLimit: 0 throttleByGas false";
+				"  ThrottleByGasLimit: 1 throttleByGas false";
 
 		// when:
 		subject.rebuildFor(defs);
@@ -273,6 +280,8 @@ class DeterministicThrottlingTest {
 	void constructsExpectedBucketsFromTestResource() throws IOException {
 		// setup:
 		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+		given(dynamicProperties.getConsensusThrottleMaxGasLimit()).willReturn(1L);
+
 		// and:
 		var expected = List.of(
 				DeterministicThrottle.withMtpsAndBurstPeriod(15_000_000, 2),
@@ -351,7 +360,6 @@ class DeterministicThrottlingTest {
 	void frontEndContractCreateTXCallsFrontendGasThrottle() throws IOException {
 		Instant now = Instant.now();
 		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
-		defs.setTotalAllowedGasPerSecFrontend(1_000L);
 
 		//setup:
 		givenFunction(ContractCreate);
@@ -379,14 +387,10 @@ class DeterministicThrottlingTest {
 	void backEndContractCallTXCallsBackendGasThrottle() throws IOException {
 		Instant now = Instant.now();
 		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
-		defs.setTotalAllowedGasPerSecConsensus(1_000L);
 
 		//setup:
 		givenFunction(ContractCreate);
 		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
-		given(accessor.getTxn()).willReturn(transactionBody);
-		given(transactionBody.getContractCreateInstance()).willReturn(createTransactionBody);
-		given(createTransactionBody.getGas()).willReturn(100_000L);
 		subject.setConsensusThrottled(true);
 
 		//when:
@@ -413,7 +417,6 @@ class DeterministicThrottlingTest {
 	void backEndContractCallTxCalls() throws IOException {
 		Instant now = Instant.now();
 		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
-		defs.setTotalAllowedGasPerSecConsensus(1L);
 		var miscUtilsHandle = mockStatic(MiscUtils.class);
 		miscUtilsHandle.when(() -> MiscUtils.isGasThrottled(ContractCall)).thenReturn(false);
 		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
@@ -429,9 +432,8 @@ class DeterministicThrottlingTest {
 	void verifyLeakUnusedGas() throws IOException {
 		Instant now = Instant.now();
 		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
-		defs.setTotalAllowedGasPerSecConsensus(10L);
 		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
-
+		given(dynamicProperties.getConsensusThrottleMaxGasLimit()).willReturn(10L);
 		given(query.getContractCallLocal()).willReturn(callLocalQuery);
 		given(callLocalQuery.getGas()).willReturn(100L);
 

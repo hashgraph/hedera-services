@@ -31,16 +31,17 @@ import org.apache.tuweni.bytes.Bytes;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
-import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class GasLimitThrottlingSuite extends HapiApiSuite {
 
 	private static final Logger log = LogManager.getLogger(GasLimitThrottlingSuite.class);
-	private static final byte[] totalLimits =
-			protoDefsFromResource("testSystemFiles/throttles-gas-limit-1M.json").toByteArray();
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
@@ -62,11 +63,8 @@ public class GasLimitThrottlingSuite extends HapiApiSuite {
 				.given(
 						UtilVerbs.overriding("contracts.throttle.throttleByGas", "true"),
 						UtilVerbs.overriding("contracts.maxGas", "10000000"),
-						fileUpdate(THROTTLE_DEFS)
-								.fee(ONE_HUNDRED_HBARS)
-								.payingWith(EXCHANGE_RATE_CONTROL)
-								.contents(totalLimits)
-								.hasKnownStatusFrom(SUCCESS, SUCCESS_BUT_MISSING_EXPECTED_OPERATION)
+						UtilVerbs.overriding("contracts.frontendThrottleMaxGasLimit", "1000000"),
+						UtilVerbs.overriding("contracts.consensusThrottleMaxGasLimit", "1000000")
 				).when(
 						/* we need the payer account, see SystemPrecheck IS_THROTTLE_EXEMPT */
 						cryptoCreate("payerAccount").balance(ONE_MILLION_HBARS),
@@ -99,11 +97,8 @@ public class GasLimitThrottlingSuite extends HapiApiSuite {
 				.given(
 						UtilVerbs.overriding("contracts.throttle.throttleByGas", "true"),
 						UtilVerbs.overriding("contracts.maxGas", "1000001"),
-						fileUpdate(THROTTLE_DEFS)
-								.fee(ONE_HUNDRED_HBARS)
-								.payingWith(EXCHANGE_RATE_CONTROL)
-								.contents(totalLimits)
-								.hasKnownStatusFrom(SUCCESS, SUCCESS_BUT_MISSING_EXPECTED_OPERATION)
+						UtilVerbs.overriding("contracts.frontendThrottleMaxGasLimit", "1000000"),
+						UtilVerbs.overriding("contracts.consensusThrottleMaxGasLimit", "1000000")
 				).when(
 						cryptoCreate("payerAccount").balance(ONE_MILLION_HBARS),
 						fileCreate("contractBytecode").path(ContractResources.BENCHMARK_CONTRACT),

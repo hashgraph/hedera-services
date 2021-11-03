@@ -146,6 +146,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(34L, subject.autoRenewGracePeriod());
 		assertEquals(35L, subject.ratesMidnightCheckInterval());
 		assertEquals(44L, subject.maxNftMints());
+		assertEquals(49L, subject.getFrontendThrottleMaxGasLimit());
+		assertEquals(50L, subject.getConsensusThrottleMaxGasLimit());
 	}
 
 	@Test
@@ -229,6 +231,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(35L, subject.autoRenewGracePeriod());
 		assertEquals(36L, subject.ratesMidnightCheckInterval());
 		assertEquals(45L, subject.maxNftMints());
+		assertEquals(50L, subject.getFrontendThrottleMaxGasLimit());
+		assertEquals(51L, subject.getConsensusThrottleMaxGasLimit());
 	}
 
 	@Test
@@ -306,6 +310,8 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getStringProperty("upgrade.artifacts.path")).willReturn(upgradeArtifactLocs[i % 2]);
 		given(properties.getBooleanProperty("contracts.throttle.throttleByGas")).willReturn((i + 47) % 2 == 0);
 		given(properties.getIntProperty("contracts.maxRefundPercentOfGasLimit")).willReturn(i + 47);
+		given(properties.getLongProperty("contracts.frontendThrottleMaxGasLimit")).willReturn(i + 48L);
+		given(properties.getLongProperty("contracts.consensusThrottleMaxGasLimit")).willReturn(i + 49L);
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {

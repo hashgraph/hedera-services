@@ -45,6 +45,7 @@ public interface FunctionalityThrottling {
 	 */
 	void leakUnusedGasPreviouslyReserved(long value);
 	void rebuildFor(ThrottleDefinitions defs);
+	void applyGasConfig();
 	List<DeterministicThrottle> activeThrottlesFor(HederaFunctionality function);
 	List<DeterministicThrottle> allActiveThrottles();
 }

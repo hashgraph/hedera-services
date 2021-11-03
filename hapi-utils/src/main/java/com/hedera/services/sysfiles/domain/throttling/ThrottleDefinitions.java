@@ -27,8 +27,6 @@ import static java.util.stream.Collectors.toList;
 
 public class ThrottleDefinitions {
 	List<ThrottleBucket> buckets = new ArrayList<>();
-	long totalAllowedGasPerSecFrontend;
-	long totalAllowedGasPerSecConsensus;
 
 	public List<ThrottleBucket> getBuckets() {
 		return buckets;
@@ -38,37 +36,17 @@ public class ThrottleDefinitions {
 		this.buckets = buckets;
 	}
 
-	public long getTotalAllowedGasPerSecFrontend() {
-		return totalAllowedGasPerSecFrontend;
-	}
-
-	public void setTotalAllowedGasPerSecFrontend(long totalAllowedGasPerSecFrontend) {
-		this.totalAllowedGasPerSecFrontend = totalAllowedGasPerSecFrontend;
-	}
-
-	public long getTotalAllowedGasPerSecConsensus() {
-		return totalAllowedGasPerSecConsensus;
-	}
-
-	public void setTotalAllowedGasPerSecConsensus(long totalAllowedGasPerSecConsensus) {
-		this.totalAllowedGasPerSecConsensus = totalAllowedGasPerSecConsensus;
-	}
-
 	public static ThrottleDefinitions fromProto(com.hederahashgraph.api.proto.java.ThrottleDefinitions defs) {
 		var pojo = new ThrottleDefinitions();
 		pojo.buckets.addAll(defs.getThrottleBucketsList().stream()
 				.map(ThrottleBucket::fromProto)
 				.collect(toList()));
-		pojo.totalAllowedGasPerSecFrontend = defs.getTotalAllowedGasPerSecFrontend();
-		pojo.totalAllowedGasPerSecConsensus = defs.getTotalAllowedGasPerSecConsensus();
 		return pojo;
 	}
 
 	public com.hederahashgraph.api.proto.java.ThrottleDefinitions toProto() {
 		return com.hederahashgraph.api.proto.java.ThrottleDefinitions.newBuilder()
 				.addAllThrottleBuckets(buckets.stream().map(ThrottleBucket::toProto).collect(toList()))
-				.setTotalAllowedGasPerSecFrontend(totalAllowedGasPerSecFrontend)
-				.setTotalAllowedGasPerSecConsensus(totalAllowedGasPerSecConsensus)
 				.build();
 	}
 }

@@ -157,24 +157,25 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
 		functionReqs = newFunctionReqs;
 		activeThrottles = newActiveThrottles;
+		applyGasConfig();
+		logResolvedDefinitions();
+	}
 
-		if(dynamicProperties.shouldThrottleByGas()) {
-			if (consensusThrottled) {
-				if(defs.getTotalAllowedGasPerSecConsensus() == 0) {
-					log.error("ThrottleByGas global dynamic property is set to true but totalAllowedGasPerSecConsensus is not set in throttles.json or is set to 0.");
-				} else {
-					gasThrottle = new GasLimitDeterministicThrottle(defs.getTotalAllowedGasPerSecConsensus());
-				}
+	@Override
+	public void applyGasConfig(){
+		if (consensusThrottled) {
+			if(dynamicProperties.getConsensusThrottleMaxGasLimit() == 0 && dynamicProperties.shouldThrottleByGas()) {
+				log.error("ThrottleByGas global dynamic property is set to true but contracts.consensusThrottleMaxGasLimit is not set in throttles.json or is set to 0.");
 			} else {
-				if(defs.getTotalAllowedGasPerSecFrontend() == 0) {
-					log.error("ThrottleByGas global dynamic property is set to true but totalAllowedGasPerSecFrontend is not set in throttles.json or is set to 0.");
-				} else {
-					gasThrottle = new GasLimitDeterministicThrottle(defs.getTotalAllowedGasPerSecFrontend());
-				}
+				gasThrottle = new GasLimitDeterministicThrottle(dynamicProperties.getConsensusThrottleMaxGasLimit());
+			}
+		} else {
+			if(dynamicProperties.getFrontendThrottleMaxGasLimit() == 0 && dynamicProperties.shouldThrottleByGas()) {
+				log.error("ThrottleByGas global dynamic property is set to true but contracts.frontendThrottleMaxGasLimit is not set in throttles.json or is set to 0.");
+			} else {
+				gasThrottle = new GasLimitDeterministicThrottle(dynamicProperties.getFrontendThrottleMaxGasLimit());
 			}
 		}
-
-		logResolvedDefinitions();
 	}
 
 	private void logResolvedDefinitions() {

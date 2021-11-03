@@ -110,8 +110,8 @@ public final class BootstrapProperties implements PropertySource {
 	private void resolveBootstrapProps(final Properties resourceProps) {
 		bootstrapProps = new HashMap<>();
 		BOOTSTRAP_PROP_NAMES.forEach(prop -> bootstrapProps.put(
-						prop,
-						transformFor(prop).apply(resourceProps.getProperty(prop))));
+				prop,
+				transformFor(prop).apply(resourceProps.getProperty(prop))));
 
 		final var msg = "Resolved bootstrap properties:\n  " + BOOTSTRAP_PROP_NAMES.stream()
 				.sorted()
@@ -130,7 +130,7 @@ public final class BootstrapProperties implements PropertySource {
 		}
 	}
 
-	void ensureProps() throws IllegalStateException{
+	void ensureProps() throws IllegalStateException {
 		if (bootstrapProps == MISSING_PROPS) {
 			initPropsFromResource();
 		}
@@ -214,6 +214,8 @@ public final class BootstrapProperties implements PropertySource {
 			"contracts.maxStorageKb",
 			"contracts.throttle.throttleByGas",
 			"contracts.maxRefundPercentOfGasLimit",
+			"contracts.frontendThrottleMaxGasLimit",
+			"contracts.consensusThrottleMaxGasLimit",
 			"files.maxSizeKb",
 			"fees.minCongestionPeriod",
 			"fees.percentCongestionMultipliers",
@@ -410,6 +412,8 @@ public final class BootstrapProperties implements PropertySource {
 			entry("tokens.nfts.areEnabled", AS_BOOLEAN),
 			entry("stats.executionTimesToTrack", AS_INT),
 			entry("contracts.throttle.throttleByGas", AS_BOOLEAN),
-			entry("contracts.maxRefundPercentOfGasLimit", AS_INT)
+			entry("contracts.maxRefundPercentOfGasLimit", AS_INT),
+			entry("contracts.frontendThrottleMaxGasLimit", AS_LONG),
+			entry("contracts.consensusThrottleMaxGasLimit", AS_LONG)
 	);
 }

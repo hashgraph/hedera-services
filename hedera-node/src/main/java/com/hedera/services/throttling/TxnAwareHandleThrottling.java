@@ -67,4 +67,9 @@ public class TxnAwareHandleThrottling implements FunctionalityThrottling {
 	public void rebuildFor(ThrottleDefinitions defs) {
 		delegate.rebuildFor(defs);
 	}
+
+	@Override
+	public void applyGasConfig() {
+		delegate.applyGasConfig();
+	}
 }
