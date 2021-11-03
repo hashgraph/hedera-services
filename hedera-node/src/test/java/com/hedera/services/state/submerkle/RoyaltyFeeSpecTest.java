@@ -35,6 +35,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUS
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ROYALTY_FRACTION_CANNOT_EXCEED_ONE;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -55,10 +56,10 @@ class RoyaltyFeeSpecTest {
 	@Mock
 	private TypedTokenStore tokenStore;
 
+	final RoyaltyFeeSpec subject = new RoyaltyFeeSpec(1, 10, fallbackSpec);
+
 	@Test
 	void validationRequiresNonFungibleUnique() {
-		final var subject = new RoyaltyFeeSpec(1, 10, fallbackSpec);
-
 		assertFailsWith(
 				() -> subject.validateWith(token, feeCollector, tokenStore),
 				CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE);
@@ -143,14 +144,19 @@ class RoyaltyFeeSpecTest {
 		final var e = new RoyaltyFeeSpec(1, 10, fallback);
 		final var f = a;
 
-		Assertions.assertEquals(a, e);
-		Assertions.assertEquals(a, f);
-		Assertions.assertNotEquals(a, b);
-		Assertions.assertNotEquals(a, c);
-		Assertions.assertNotEquals(a, d);
-		Assertions.assertNotEquals(null, a);
-		Assertions.assertNotEquals(new Object(), a);
+		assertEquals(a, e);
+		assertEquals(a, f);
+		assertNotEquals(a, b);
+		assertNotEquals(a, c);
+		assertNotEquals(a, d);
+		assertNotEquals(null, a);
+		assertNotEquals(new Object(), a);
 
-		Assertions.assertEquals(a.hashCode(), e.hashCode());
+		assertEquals(a.hashCode(), e.hashCode());
+	}
+
+	@Test
+	void nullEqualsTest() {
+		assertNotEquals(null, subject);
 	}
 }

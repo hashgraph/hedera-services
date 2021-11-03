@@ -92,7 +92,7 @@ class NftAdjustmentsTest {
 	void testEquals() {
 		final var same = subject;
 		NftAdjustments adjustments = new NftAdjustments();
-		assertEquals(adjustments, subject);
+		assertEquals(subject, adjustments);
 		assertEquals(subject, same);
 		assertNotEquals(null, subject);
 	}

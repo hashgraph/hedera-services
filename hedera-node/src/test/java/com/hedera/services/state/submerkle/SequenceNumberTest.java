@@ -58,6 +58,17 @@ class SequenceNumberTest {
 	}
 
 	@Test
+	void decWorks() {
+		var expect = startNo - 1;
+
+		// when:
+		initSubject.decrement();
+
+		// then:
+		assertEquals(expect, initSubject.i);
+	}
+
+	@Test
 	void copyWorks() {
 		// when:
 		var subjectCopy = initSubject.copy();

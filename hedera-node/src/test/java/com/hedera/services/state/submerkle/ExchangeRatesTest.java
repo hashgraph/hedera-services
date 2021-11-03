@@ -32,6 +32,8 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.time.Instant;
 
+import static com.hedera.services.state.submerkle.ExchangeRates.MERKLE_VERSION;
+import static com.hedera.services.state.submerkle.ExchangeRates.RUNTIME_CONSTRUCTABLE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -79,9 +81,37 @@ class ExchangeRatesTest {
 	}
 
 	@Test
+	void hashCodeWorks() {
+		int expectedResult = Integer.hashCode(MERKLE_VERSION);
+		expectedResult = expectedResult * 31 + Long.hashCode(RUNTIME_CONSTRUCTABLE_ID);
+		expectedResult = expectedResult * 31 + Integer.hashCode(expCurrentHbarEquiv);
+		expectedResult = expectedResult * 31 + Integer.hashCode(expCurrentCentEquiv);
+		expectedResult = expectedResult * 31 + Long.hashCode(expCurrentExpiry);
+		expectedResult = expectedResult * 31 + Integer.hashCode(expNextHbarEquiv);
+		expectedResult = expectedResult * 31 + Integer.hashCode(expNextCentEquiv);
+		expectedResult = expectedResult * 31 + Long.hashCode(expNextExpiry);
+
+		assertEquals(expectedResult, subject.hashCode());
+	}
+
+	@Test
+	void readableReprWorks() {
+		var expected = new StringBuilder()
+				.append(expCurrentHbarEquiv).append("ℏ <-> ").append(expCurrentCentEquiv).append("¢ til ").append(expCurrentExpiry)
+				.append(" | ")
+				.append(expNextHbarEquiv).append("ℏ <-> ").append(expNextCentEquiv).append("¢ til ").append(expNextExpiry)
+				.toString();
+
+
+		assertEquals(expected, subject.readableRepr());
+	}
+
+	@Test
 	void copyWorks() {
 		final var subjectCopy = subject.copy();
 
+		assertEquals(subject, subject);
+		assertFalse(subject.equals(null));
 		assertEquals(expCurrentHbarEquiv, subjectCopy.getCurrHbarEquiv());
 		assertEquals(expCurrentCentEquiv, subjectCopy.getCurrCentEquiv());
 		assertEquals(expCurrentExpiry, subjectCopy.getCurrExpiry());
@@ -120,7 +150,7 @@ class ExchangeRatesTest {
 				.willReturn(expNextHbarEquiv)
 				.willReturn(expNextCentEquiv);
 
-		subject.deserialize(in, ExchangeRates.MERKLE_VERSION);
+		subject.deserialize(in, MERKLE_VERSION);
 
 		assertEquals(expCurrentHbarEquiv, subject.getCurrHbarEquiv());
 		assertEquals(expCurrentCentEquiv, subject.getCurrCentEquiv());
@@ -193,7 +223,7 @@ class ExchangeRatesTest {
 
 	@Test
 	void serializableDetWorks() {
-		assertEquals(ExchangeRates.MERKLE_VERSION, subject.getVersion());
-		assertEquals(ExchangeRates.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
+		assertEquals(MERKLE_VERSION, subject.getVersion());
+		assertEquals(RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 }

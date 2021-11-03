@@ -58,6 +58,12 @@ class MerkleBlobMetaTest {
 	}
 
 	@Test
+	void nullEqualsWorks() {
+		assertNotEquals(null, subject);
+		assertEquals(subject, subject);
+	}
+
+	@Test
 	void deserializeWorks() throws IOException {
 		final var in = mock(SerializableDataInputStream.class);
 		final var defaultSubject = new MerkleBlobMeta();

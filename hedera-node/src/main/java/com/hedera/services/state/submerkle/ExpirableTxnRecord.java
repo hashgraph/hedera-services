@@ -138,7 +138,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 					.mapToObj(i -> String.format(
 							"%s(%s)",
 							tokens.get(i).toAbbrevString(),
-							tokenAdjustments.get(i)))
+							chosenToken(i, tokenAdjustments, nftTokenAdjustments)))
 					.collect(joining(", "));
 			helper.add("tokenAdjustments", readable);
 		}
@@ -157,6 +157,18 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			helper.add("newTokenAssociations", readable);
 		}
 		return helper.toString();
+	}
+
+	private String chosenToken(int position, List<CurrencyAdjustments> tokenAdjustments, List<NftAdjustments> nftTokenAdjustments) {
+		if (tokenAdjustments.size() > position) {
+			return tokenAdjustments.get(position).toString();
+		}
+
+		if (position - tokenAdjustments.size() < nftTokenAdjustments.size()) {
+			return nftTokenAdjustments.get(position - tokenAdjustments.size()).toString();
+		}
+
+		throw new IndexOutOfBoundsException("Token not found.");
 	}
 
 	@Override
@@ -428,7 +440,6 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 		return grpc.build();
 	}
-
 
 	private static void setGrpcTokens(TransactionRecord.Builder grpcBuilder,
 			final List<EntityId> tokens,

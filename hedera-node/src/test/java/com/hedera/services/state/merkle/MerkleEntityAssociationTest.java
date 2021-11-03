@@ -138,6 +138,13 @@ class MerkleEntityAssociationTest {
 	}
 
 	@Test
+	void equalsWorksWithExtremes() {
+		assertEquals(subject, subject);
+		assertNotEquals(null, subject);
+		assertNotEquals(new Object(), subject);
+	}
+
+	@Test
 	void copyWorks() {
 		final var subjectCopy = subject.copy();
 

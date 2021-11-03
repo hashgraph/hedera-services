@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -70,6 +71,25 @@ class RecordsRunningHashLeafTest {
 		CryptoFactory.getInstance().digestSync(copy, DigestType.SHA_384);
 		CryptoFactory.getInstance().digestSync(runningHashLeaf, DigestType.SHA_384);
 		assertEquals(runningHashLeaf.getHash(), copy.getHash());
+	}
+
+	@Test
+	void equalsTest() {
+		assertTrue(runningHashLeaf.equals(runningHashLeaf));
+		assertFalse(runningHashLeaf.equals(1));
+	}
+
+	@Test
+	void toStringTest() {
+		var example = String.format("RecordsRunningHashLeaf's Hash: %s, Hash contained in the leaf: %s",
+				runningHashLeaf.getHash(),
+				runningHash.getHash());
+		assertEquals(example, runningHashLeaf.toString());
+	}
+
+	@Test
+	void hashCodeTest() {
+		assertEquals(Objects.hash(runningHash), runningHashLeaf.hashCode());
 	}
 
 	@Test

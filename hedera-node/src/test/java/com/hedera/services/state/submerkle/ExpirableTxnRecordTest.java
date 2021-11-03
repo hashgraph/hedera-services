@@ -38,13 +38,16 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.MAX_ASSESSED_CUSTOM_FEES_CHANGES;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.MAX_INVOLVED_TOKENS;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.UNKNOWN_SUBMITTING_MEMBER;
+import static com.hedera.services.state.submerkle.ExpirableTxnRecord.allToGrpc;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
+import static com.hedera.test.utils.TxnUtils.withNftAdjustments;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -59,6 +62,7 @@ class ExpirableTxnRecordTest {
 
 	private static final byte[] pretendHash = "not-really-a-hash".getBytes();
 
+	private static final TokenID nft = IdUtils.asToken("1.2.2");
 	private static final TokenID tokenA = IdUtils.asToken("1.2.3");
 	private static final TokenID tokenB = IdUtils.asToken("1.2.4");
 	private static final AccountID sponsor = IdUtils.asAccount("1.2.5");
@@ -71,6 +75,12 @@ class ExpirableTxnRecordTest {
 	private static final EntityId token = new EntityId(1, 2, 9);
 	private static final long units = 123L;
 
+	private static final TokenTransferList nftTokenTransfers = TokenTransferList.newBuilder()
+			.setToken(nft)
+			.addNftTransfers(
+					withNftAdjustments(nft, sponsor, beneficiary, 1L, sponsor, beneficiary, 2L, sponsor, beneficiary, 3L).getNftTransfers(0)
+			)
+			.build();
 	private static final TokenTransferList aTokenTransfers = TokenTransferList.newBuilder()
 			.setToken(tokenA)
 			.addAllTransfers(
@@ -114,7 +124,7 @@ class ExpirableTxnRecordTest {
 				DomainSerdesTest.recordOne().asGrpc().toBuilder()
 						.setTransactionHash(ByteString.copyFrom(pretendHash))
 						.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
-						.addAllTokenTransferLists(List.of(aTokenTransfers, bTokenTransfers))
+						.addAllTokenTransferLists(List.of(aTokenTransfers, bTokenTransfers, nftTokenTransfers))
 						.setScheduleRef(scheduleID)
 						.addAssessedCustomFees(balanceChange.toGrpc())
 						.addAllAutomaticTokenAssociations(newRelationships)
@@ -239,11 +249,14 @@ class ExpirableTxnRecordTest {
 		given(fin.readSerializableList(MAX_INVOLVED_TOKENS))
 				.willReturn(List.of(
 						subject.getTokens().get(0),
-						subject.getTokens().get(1)))
+						subject.getTokens().get(1),
+						subject.getTokens().get(2)))
 				.willReturn(List.of(
 						subject.getTokenAdjustments().get(0),
 						subject.getTokenAdjustments().get(1)))
-				.willReturn(null);
+				.willReturn(List.of(
+						subject.getNftTokenAdjustments().get(0)
+				));
 		given(fin.readByteArray(ExpirableTxnRecord.MAX_TXN_HASH_BYTES))
 				.willReturn(subject.getTxnHash());
 		given(serdes.readNullableInstant(fin))
@@ -261,7 +274,7 @@ class ExpirableTxnRecordTest {
 
 		deserializedRecord.deserialize(fin, ExpirableTxnRecord.RELEASE_0180_VERSION);
 
-		assertEquals(subject, deserializedRecord);
+		assertEquals(deserializedRecord, subject);
 	}
 
 	@Test
@@ -287,6 +300,8 @@ class ExpirableTxnRecordTest {
 		inOrder.verify(fout).writeSerializableList(
 				subject.getTokenAdjustments(), true, true);
 		inOrder.verify(serdes).writeNullableSerializable(EntityId.fromGrpcScheduleId(scheduleID), fout);
+		inOrder.verify(fout).writeSerializableList(
+				subject.getNftTokenAdjustments(), true, true);
 		inOrder.verify(fout).writeSerializableList(subject.getCustomFeesCharged(), true, true);
 	}
 
@@ -297,12 +312,47 @@ class ExpirableTxnRecordTest {
 	}
 
 	@Test
-	void grpcInterconversionWorks() {
+	void asGrpcWorks() {
 		subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
 		subject.setExpiry(0L);
 		subject.setSubmittingMember(UNKNOWN_SUBMITTING_MEMBER);
 
-		assertEquals(subject, fromGprc(subject.asGrpc()));
+		var newCurrencyAdjustments = new ArrayList<CurrencyAdjustments>();
+		newCurrencyAdjustments.addAll(subject.getTokenAdjustments());
+		newCurrencyAdjustments.add(CurrencyAdjustments.fromGrpc(new ArrayList<>()));
+
+		var newNftAdjustments = new ArrayList<NftAdjustments>();
+		newNftAdjustments.add(NftAdjustments.fromGrpc(new ArrayList<>()));
+		newNftAdjustments.add(NftAdjustments.fromGrpc(new ArrayList<>()));
+		newNftAdjustments.addAll(subject.getNftTokenAdjustments());
+
+		subject.getTokenAdjustments().clear();
+		subject.getTokenAdjustments().addAll(newCurrencyAdjustments);
+
+		subject.getNftTokenAdjustments().clear();
+		subject.getNftTokenAdjustments().addAll(newNftAdjustments);
+
+		final var grpcSubject = subject.asGrpc();
+
+		final var expected = DomainSerdesTest.recordOne().asGrpc().toBuilder()
+				.setTransactionHash(ByteString.copyFrom(pretendHash))
+				.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
+				.addAllTokenTransferLists(List.of(aTokenTransfers, bTokenTransfers, nftTokenTransfers))
+				.setScheduleRef(scheduleID)
+				.addAssessedCustomFees(balanceChange.toGrpc())
+				.addAllAutomaticTokenAssociations(newRelationships)
+				.build();
+
+		var multiple = allToGrpc(List.of(subject, subject));
+
+		assertEquals(List.of(grpcSubject, grpcSubject), multiple);
+		assertEquals(expected, grpcSubject);
+	}
+
+	@Test
+	void nullEqualsWorks() {
+		assertNotEquals(null, subject);
+		assertEquals(subject, subject);
 	}
 
 	@Test
@@ -335,7 +385,7 @@ class ExpirableTxnRecordTest {
 				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
 				"scheduleRef=EntityId{shard=5, realm=6, num=7}, tokenAdjustments=1.2.3(CurrencyAdjustments{" +
 				"readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), 1.2.4(CurrencyAdjustments{" +
-				"readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), assessedCustomFees=(" +
+				"readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), 1.2.2(NftAdjustments{readable=[1 1.2.5 1.2.6]}), assessedCustomFees=(" +
 				"FcAssessedCustomFee{token=EntityId{shard=1, realm=2, num=9}, account=EntityId{shard=1, realm=2, " +
 				"num=8}, units=123, effective payer accounts=[234]}), newTokenAssociations=(FcTokenAssociation" +
 				"{token=10, account=11})}";

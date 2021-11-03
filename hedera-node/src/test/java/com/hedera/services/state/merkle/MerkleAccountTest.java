@@ -103,6 +103,7 @@ class MerkleAccountTest {
                                 autoAssociationMetadata);
 
 		subject = new MerkleAccount(List.of(state, payerRecords, tokens));
+		subject.setNftsOwned(2L);
 	}
 
 	@AfterEach
@@ -160,6 +161,7 @@ class MerkleAccountTest {
 		assertEquals(state.proxy(), subject.getProxy());
 		assertTrue(equalUpToDecodability(state.key(), subject.getAccountKey()));
 		assertSame(tokens, subject.tokens());
+		assertEquals(2L, subject.getNftsOwned());
 		assertEquals(state.getMaxAutomaticAssociations(), subject.getMaxAutomaticAssociations());
 		assertEquals(state.getAlreadyUsedAutomaticAssociations(), subject.getAlreadyUsedAutoAssociations());
 	}
@@ -191,6 +193,7 @@ class MerkleAccountTest {
 		subject.setKey(new EntityNum(number));
 		subject.setMaxAutomaticAssociations(maxAutoAssociations);
 		subject.setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations);
+		subject.setNftsOwned(2L);
 
 		verify(delegate).setExpiry(otherExpiry);
 		verify(delegate).setAutoRenewSecs(otherAutoRenewSecs);
@@ -204,6 +207,13 @@ class MerkleAccountTest {
 		verify(delegate).setNumber(number);
 		verify(delegate).setMaxAutomaticAssociations(maxAutoAssociations);
 		verify(delegate).setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations);
+		verify(delegate).setNftsOwned(2L);
+	}
+
+	@Test
+	void isDeletedWorks() {
+		subject.setDeleted(true);
+		assertTrue(subject.isDeleted());
 	}
 
 	@Test
@@ -250,6 +260,13 @@ class MerkleAccountTest {
 		subject.copy();
 
 		assertTrue(subject.isImmutable());
+	}
+
+	@Test
+	void equalsWorksWithExtremes() {
+		assertEquals(subject, subject);
+		assertNotEquals(null, subject);
+		assertNotEquals(new Object(), subject);
 	}
 
 	@Test

@@ -68,6 +68,17 @@ class CurrencyAdjustmentsTest {
 	}
 
 	@Test
+	void equalsWork() {
+		var expectedAmounts = new long[] {1, 2, 3};
+		var expectedParties = List.of(EntityId.fromGrpcAccountId(IdUtils.asAccount("0.0.1")));
+
+		var anotherSubject = new CurrencyAdjustments(expectedAmounts, expectedParties);
+		assertNotEquals(subject, anotherSubject);
+		assertEquals(subject, subject);
+		assertNotEquals(null, subject);
+	}
+
+	@Test
 	void toStringWorks() {
 		assertEquals(
 				"CurrencyAdjustments{readable=" + "[0.0.13257 <- +1, 0.0.13258 <- +2, 0.0.13259 -> -3]" + "}",

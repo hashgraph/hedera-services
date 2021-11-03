@@ -227,7 +227,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			).join();
 			blobMigrationFlag.accept(false);
 			log.info("Finished with FCMap -> MerkleMap migrations, completing the deferred init");
-
 			init(getPlatformForDeferredInit(), getAddressBookForDeferredInit());
 		}
 	}
