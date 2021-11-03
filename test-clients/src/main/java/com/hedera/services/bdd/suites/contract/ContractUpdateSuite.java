@@ -84,29 +84,6 @@ public class ContractUpdateSuite extends HapiApiSuite {
         );
     }
 
-    private HapiApiSpec updateDoesNotChangeBytecode() {
-        return defaultHapiSpec("HSCS-DCPR-001")
-                .given(
-                        fileCreate("contractFile")
-                                .path(ContractResources.EMPTY_CONSTRUCTOR).via("fileCreate"),
-                        fileCreate("bytecode2")
-                                .path(ContractResources.SIMPLE_STORAGE_BYTECODE_PATH),
-                        contractCreate("contract")
-                                .bytecode("contractFile"),
-                        getContractBytecode("contract").saveResultTo("initialBytecode")
-                )
-                .when(
-                        contractUpdate("contract")
-                                .bytecode("bytecode2")
-                )
-                .then(
-                        withOpContext((spec, log) -> {
-                            var op = getContractBytecode("contract").hasBytecode(spec.registry().getBytes("initialBytecode"));
-                            allRunFor(spec, op);
-                        })
-                );
-    }
-
     private HapiApiSpec updateWithBothMemoSettersWorks() {
         String firstMemo = "First";
         String secondMemo = "Second";
@@ -347,6 +324,29 @@ public class ContractUpdateSuite extends HapiApiSuite {
                         contractDelete("contract")
                                 .payingWith("payer")
                                 .hasKnownStatus(SUCCESS)
+                );
+    }
+
+    private HapiApiSpec updateDoesNotChangeBytecode() {
+        return defaultHapiSpec("HSCS-DCPR-001")
+                .given(
+                        fileCreate("contractFile")
+                                .path(ContractResources.EMPTY_CONSTRUCTOR).via("fileCreate"),
+                        fileCreate("bytecode2")
+                                .path(ContractResources.SIMPLE_STORAGE_BYTECODE_PATH),
+                        contractCreate("contract")
+                                .bytecode("contractFile"),
+                        getContractBytecode("contract").saveResultTo("initialBytecode")
+                )
+                .when(
+                        contractUpdate("contract")
+                                .bytecode("bytecode2")
+                )
+                .then(
+                        withOpContext((spec, log) -> {
+                            var op = getContractBytecode("contract").hasBytecode(spec.registry().getBytes("initialBytecode"));
+                            allRunFor(spec, op);
+                        })
                 );
     }
 
