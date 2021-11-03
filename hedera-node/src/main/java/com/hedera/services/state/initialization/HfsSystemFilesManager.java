@@ -180,10 +180,21 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
 	}
 
 	@Override
-	public void createUpdateZipFileIfMissing() {
-		final var disFid = fileNumbers.toFid(fileNumbers.softwareUpdateZip());
-		if (!hfs.exists(disFid)) {
-			materialize(disFid, systemFileInfo(), new byte[0]);
+	public void createUpdateFilesIfMissing() {
+		final var firstUpdateNum = fileNumbers.firstSoftwareUpdateFile();
+		final var lastUpdateNum = fileNumbers.lastSoftwareUpdateFile();
+		final var specialFiles = hfs.specialFiles();
+		for (var updateNum = firstUpdateNum; updateNum <= lastUpdateNum; updateNum++) {
+			final var disFid = fileNumbers.toFid(updateNum);
+			if (!hfs.exists(disFid)) {
+				materialize(disFid, systemFileInfo(), new byte[0]);
+			} else if (!specialFiles.contains(disFid)) {
+				/* This can be the case for file 0.0.150, whose metadata had
+				* been created for the legacy MerkleDiskFs. But whatever its
+				* contents were doesn't matter now. Just make sure it exists
+				* in the MerkleSpecialFiles! */
+				specialFiles.update(disFid, new byte[0]);
+			}
 		}
 	}
 
@@ -225,11 +236,15 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
 
 	private void materialize(final FileID fid, final HFileMeta info, final byte[] contents) {
 		hfs.getMetadata().put(fid, info);
-		if (fileNumbers.softwareUpdateZip() == fid.getFileNum()) {
-			hfs.diskFs().put(fid, contents);
+		if (isUpdateFile(fid.getFileNum())) {
+			hfs.specialFiles().update(fid, contents);
 		} else {
 			hfs.getData().put(fid, contents);
 		}
+	}
+
+	private boolean isUpdateFile(long num) {
+		return num >= fileNumbers.firstSoftwareUpdateFile() && num <= fileNumbers.lastSoftwareUpdateFile();
 	}
 
 	private <T> void loadProtoWithSupplierFallback(

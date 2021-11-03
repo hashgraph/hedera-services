@@ -22,10 +22,10 @@ package com.hedera.services.state;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -67,7 +67,7 @@ class StateAccessorTest {
 	@Mock
 	private AddressBook addressBook;
 	@Mock
-	private MerkleDiskFs diskFs;
+	private MerkleSpecialFiles specialFiles;
 	@Mock
 	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
 	@Mock
@@ -96,7 +96,7 @@ class StateAccessorTest {
 		given(state.scheduleTxs()).willReturn(scheduleTxs);
 		given(state.networkCtx()).willReturn(networkCtx);
 		given(state.addressBook()).willReturn(addressBook);
-		given(state.diskFs()).willReturn(diskFs);
+		given(state.specialFiles()).willReturn(specialFiles);
 		given(state.uniqueTokens()).willReturn(uniqueTokens);
 		given(state.uniqueTokenAssociations()).willReturn(uniqueTokenAssociations);
 		given(state.uniqueOwnershipAssociations()).willReturn(uniqueOwnershipAssociations);
@@ -115,7 +115,7 @@ class StateAccessorTest {
 		assertSame(scheduleTxs, subject.schedules());
 		assertSame(networkCtx, subject.networkCtx());
 		assertSame(addressBook, subject.addressBook());
-		assertSame(diskFs, subject.diskFs());
+		assertSame(specialFiles, subject.specialFiles());
 		assertSame(uniqueTokens, subject.uniqueTokens());
 		assertSame(uniqueTokenAssociations, subject.uniqueTokenAssociations());
 		assertSame(uniqueOwnershipAssociations, subject.uniqueOwnershipAssociations());

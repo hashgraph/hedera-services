@@ -21,9 +21,9 @@ package com.hedera.services.txns.network;
  */
 
 import com.hedera.services.fees.annotations.FunctionKey;
-import com.hedera.services.legacy.handler.FreezeHandler;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.txns.TransitionLogic;
+import com.hedera.services.utils.UnzipUtility;
 import com.swirlds.common.SwirldDualState;
 import dagger.Module;
 import dagger.Provides;
@@ -40,14 +40,14 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSu
 public final class NetworkLogicModule {
 	@Provides
 	@Singleton
-	public static Supplier<SwirldDualState> provideDualState(final DualStateAccessor dualStateAccessor) {
-		return dualStateAccessor::getDualState;
+	public static UpgradeActions.UnzipAction provideUnzipAction() {
+		return UnzipUtility::unzip;
 	}
 
 	@Provides
 	@Singleton
-	public static FreezeTransitionLogic.LegacyFreezer provideLegacyFreezer(final FreezeHandler freezeHandler) {
-		return freezeHandler::freeze;
+	public static Supplier<SwirldDualState> provideDualState(DualStateAccessor dualStateAccessor) {
+		return dualStateAccessor::getDualState;
 	}
 
 	@Provides

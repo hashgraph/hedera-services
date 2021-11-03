@@ -30,7 +30,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
@@ -55,7 +55,7 @@ public class CryptoTransferThenFreezeTest extends CryptoTransferLoadTest {
 				.given(
 						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
 						logIt(ignore -> settings.toString()))
-				.when(freeze().startingIn(0).minutes().andLasting(2).minutes().payingWith(GENESIS)).then(
+				.when(freezeOnly().startingIn(0).minutes().payingWith(GENESIS)).then(
 						// sleep for a while to wait for this freeze transaction be handled
 						UtilVerbs.sleepFor(75_000)
 				);

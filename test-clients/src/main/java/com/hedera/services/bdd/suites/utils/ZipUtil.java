@@ -37,6 +37,13 @@ public class ZipUtil {
 	private static final Logger log = LogManager.getLogger(ZipUtil.class);
 	private static final int BUFFER_SIZE = 4096;
 
+	public static void main(String... args) {
+		final var toyArchiveDir = "poems";
+		final var toyArchive = "poeticUpgrade.zip";
+
+		createZip(toyArchiveDir, toyArchive, null);
+	}
+
 	public static void createZip(String srcDirName, String zipFile, String defaultScript) {
 		try (FileOutputStream fos = new FileOutputStream(zipFile);
 			 ZipOutputStream zos = new ZipOutputStream(fos)) {
@@ -67,7 +74,7 @@ public class ZipUtil {
 	 * 		current working directory
 	 */
 	public static void addZipEntry(ZipOutputStream zos, File rootDirectory, File currentDirectory) {
-		log.info("Root = " + rootDirectory + ", current = " + currentDirectory);
+		log.info("Root = {}, current = {}", rootDirectory, currentDirectory);
 		if (!rootDirectory.equals(currentDirectory)) {
 			try {
 				String pathDiff = currentDirectory.toString().replace(rootDirectory.toString(), "");
@@ -83,7 +90,7 @@ public class ZipUtil {
 			}
 		}
 
-		log.info("Current directory " + currentDirectory.toString());
+		log.info("Current directory {}", currentDirectory);
 		File[] files = currentDirectory.listFiles();
 		byte[] buffer = new byte[BUFFER_SIZE];
 

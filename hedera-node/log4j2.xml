@@ -168,10 +168,6 @@
       <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
-    <Logger name="com.hedera.services.legacy.handler.FreezeHandler" level="info" additivity="false">
-      <!-- <AppenderRef ref="Console"/> -->
-      <AppenderRef ref="RollingFile"/>
-    </Logger>
     <Logger name="com.hedera.services.utils.UnzipUtility" level="info" additivity="false">
       <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>

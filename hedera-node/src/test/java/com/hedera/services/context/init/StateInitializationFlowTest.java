@@ -94,11 +94,11 @@ class StateInitializationFlowTest {
 		subject.runWith(activeState);
 
 		// then:
+		verify(staticNumbersHolder).accept(defaultNumbers);
 		verify(stateAccessor).updateFrom(activeState);
 		verify(recordStreamManager).setInitialHash(hash);
 		verify(hfs).register(aFileInterceptor);
 		verify(hfs).register(bFileInterceptor);
-		verify(staticNumbersHolder).accept(defaultNumbers);
 
 		cleanupMockNumInitialization();
 	}

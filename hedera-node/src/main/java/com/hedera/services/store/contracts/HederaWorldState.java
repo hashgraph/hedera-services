@@ -26,10 +26,10 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -60,6 +60,7 @@ import java.util.NavigableMap;
 import java.util.TreeSet;
 import java.util.stream.Stream;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.HederaLedger.CONTRACT_ID_COMPARATOR;
@@ -71,7 +72,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 @Singleton
 public class HederaWorldState implements HederaMutableWorldState {
-
 	private final EntityIdSource ids;
 	private final HederaLedger ledger;
 	private final ServicesRepositoryRoot repositoryRoot;
@@ -117,14 +117,18 @@ public class HederaWorldState implements HederaMutableWorldState {
 	public void customizeSponsoredAccounts() {
 		// copy over sponsor account info for CREATE operations
 		sponsorMap.forEach((contract, sponsorAddress) -> {
-			AccountID newlyCreated = accountParsedFromSolidityAddress(contract.toArray());
-			AccountID sponsorAccount = accountParsedFromSolidityAddress(sponsorAddress.toArrayUnsafe());
+			final var newlyCreated = accountParsedFromSolidityAddress(contract.toArray());
+			final var sponsorAccount = accountParsedFromSolidityAddress(sponsorAddress.toArrayUnsafe());
 			validateTrue(ledger.exists(newlyCreated), FAIL_INVALID);
 			validateTrue(ledger.exists(sponsorAccount), FAIL_INVALID);
 
 			final var sponsor = ledger.get(sponsorAccount);
-			var customizer = new HederaAccountCustomizer()
-					.key(sponsor.getAccountKey())
+			final var sponsorKey = sponsor.getAccountKey();
+			final var createdKey = (sponsorKey instanceof JContractIDKey)
+					? STATIC_PROPERTIES.scopedContractKeyWith(newlyCreated.getAccountNum())
+					: sponsorKey;
+			final var customizer = new HederaAccountCustomizer()
+					.key(createdKey)
 					.memo(sponsor.getMemo())
 					.proxy(sponsor.getProxy())
 					.autoRenewPeriod(sponsor.getAutoRenewSecs())

@@ -49,11 +49,11 @@ public class StateInitializationFlow {
 
 	@Inject
 	public StateInitializationFlow(
-			HederaFs hfs,
-			HederaNumbers hederaNums,
-			RecordStreamManager recordStreamManager,
-			@WorkingState StateAccessor stateAccessor,
-			Set<FileUpdateInterceptor> fileUpdateInterceptors
+			final HederaFs hfs,
+			final HederaNumbers hederaNums,
+			final RecordStreamManager recordStreamManager,
+			final @WorkingState StateAccessor stateAccessor,
+			final Set<FileUpdateInterceptor> fileUpdateInterceptors
 	) {
 		this.hfs = hfs;
 		this.hederaNums = hederaNums;

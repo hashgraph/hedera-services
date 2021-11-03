@@ -22,6 +22,10 @@ package com.hedera.services.yahcli.suites;
 
 import com.hederahashgraph.api.proto.java.FileID;
 
+import java.io.File;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -33,6 +37,27 @@ import java.util.stream.Collectors;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.isIdLiteral;
 
 public class Utils {
+	private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter
+			.ofPattern("yyyy-MM-dd.HH:mm:ss")
+			.withZone(ZoneId.of("Etc/UTC"));
+
+	public static final long FIRST_SPECIAL_FILE_NUM = 150L;
+	public static final long LAST_SPECIAL_FILE_NUM = 159L;
+
+	public static boolean isSpecialFile(final long num) {
+		return FIRST_SPECIAL_FILE_NUM <= num && num <= LAST_SPECIAL_FILE_NUM;
+	}
+
+	public static String specialFileLoc(final String srcDir, final long num) {
+		if (num == 150) {
+			return srcDir + File.separator + "softwareUpgrade.zip";
+		} else if (num == 159) {
+			return srcDir + File.separator + "telemetryUpgrade.zip";
+		} else {
+			return srcDir + File.separator + "specialFile" + num + ".bin";
+		}
+	}
+
 	static String extractAccount(final String account) {
 		if (isIdLiteral(account)) {
 			return account;
@@ -44,6 +69,10 @@ public class Utils {
 				throw new IllegalArgumentException("Named accounts not yet supported!");
 			}
 		}
+	}
+
+	public static Instant parseFormattedInstant(final String timeStampInStr) {
+		return Instant.from(DATE_TIME_FORMAT.parse(timeStampInStr));
 	}
 
 	enum ServiceType {
@@ -73,7 +102,9 @@ public class Utils {
 			Map.entry("permissions", 122L),
 			Map.entry("api-permission.properties", 122L),
 			Map.entry("throttles", 123L),
-			Map.entry("throttles.json", 123L));
+			Map.entry("throttles.json", 123L),
+			Map.entry("software-zip", 150L),
+			Map.entry("telemetry-zip", 159L));
 	private static final Map<FileID, String> IDS_TO_NAMES = NAMES_TO_NUMBERS.entrySet().stream()
 			.filter(entry -> !entry.getKey().contains("."))
 			.collect(Collectors.toMap(

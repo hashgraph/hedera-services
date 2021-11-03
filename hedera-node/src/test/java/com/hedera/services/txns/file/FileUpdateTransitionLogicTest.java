@@ -30,6 +30,7 @@ import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -63,11 +64,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_I
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PREPARED_UPDATE_FILE_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
@@ -105,6 +107,7 @@ class FileUpdateTransitionLogicTest {
 
 	HederaFs hfs;
 	OptionValidator validator;
+	MerkleNetworkContext networkCtx;
 	EntityNumbers number = new MockEntityNumbers();
 	TransactionContext txnCtx;
 
@@ -123,6 +126,9 @@ class FileUpdateTransitionLogicTest {
 		accessor = mock(PlatformTxnAccessor.class);
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.activePayer()).willReturn(nonSysAdmin);
+
+		networkCtx = mock(MerkleNetworkContext.class);
+
 		hfs = mock(HederaFs.class);
 		given(hfs.exists(nonSysFileTarget)).willReturn(true);
 		given(hfs.getattr(nonSysFileTarget)).willReturn(oldAttr);
@@ -132,7 +138,7 @@ class FileUpdateTransitionLogicTest {
 		given(validator.hasGoodEncoding(newWacl)).willReturn(true);
 		given(validator.memoCheck(newMemo)).willReturn(OK);
 
-		subject = new FileUpdateTransitionLogic(hfs, number, validator, txnCtx);
+		subject = new FileUpdateTransitionLogic(hfs, number, validator, txnCtx, () -> networkCtx);
 	}
 
 	@Test
@@ -394,6 +400,21 @@ class FileUpdateTransitionLogicTest {
 
 		// expect:
 		verify(txnCtx).setStatus(INVALID_FILE_ID);
+		verify(hfs).exists(nonSysFileTarget);
+	}
+
+	@Test
+	void transitionRejectsPreparedUpdateFile() {
+		givenTxnCtxUpdating(EnumSet.of(UpdateTarget.EXPIRY));
+		// and:
+		given(hfs.exists(nonSysFileTarget)).willReturn(true);
+		given(networkCtx.getPreparedUpdateFileNum()).willReturn(nonSysFileTarget.getFileNum());
+
+		// when:
+		subject.doStateTransition();
+
+		// expect:
+		verify(txnCtx).setStatus(PREPARED_UPDATE_FILE_IS_IMMUTABLE);
 		verify(hfs).exists(nonSysFileTarget);
 	}
 
