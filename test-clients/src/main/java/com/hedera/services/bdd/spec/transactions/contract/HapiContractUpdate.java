@@ -21,7 +21,6 @@ package com.hedera.services.bdd.spec.transactions.contract;
  */
 
 import com.google.common.base.MoreObjects;
-import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
@@ -30,7 +29,6 @@ import com.hedera.services.bdd.spec.transactions.TxnFactory;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -39,7 +37,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.ethereum.vm.trace.Op;
 
 import java.util.ArrayList;
 import java.util.List;

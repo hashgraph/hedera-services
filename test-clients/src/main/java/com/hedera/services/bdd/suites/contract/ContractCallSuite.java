@@ -1059,28 +1059,14 @@ public class ContractCallSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec HSCS_EVM_004_GasRefund() {
-		return defaultHapiSpec("HSCS_EVM_004_GasRefund")
+	private HapiApiSpec HSCS_EVM_010_MultiSignatureAccounts() {
+		final var ACCOUNT = "acc";
+		return defaultHapiSpec("HSCS_EVM_010_MultiSignatureAccounts")
 				.given(
-						cryptoCreate("acc").balance(ONE_HUNDRED_HBARS),
-						fileCreate("parentDelegateBytecode")
-								.path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
-						contractCreate("parentDelegate").bytecode("parentDelegateBytecode")
-				).when(
-						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI).via("callTxn").sending(
-										depositAmount).payingWith("acc")
-								.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-				).then(
-						assertionsHold((spec, log) -> {
-							var record = getTxnRecord("callTxn");
-							var balance = getAccountBalance("acc");
-							allRunFor(spec, record, balance);
-							var fee = record.getResponseRecord().getTransactionFee();
-							var gas = record.getResponseRecord().getContractCallResult().getGasUsed();
-							log.info("FEE {}", fee);
-							log.info("GAS {}", gas);
-						})
-				);
+						cryptoCreate(ACCOUNT).receiverSigRequired(true)
+				)
+				.when()
+				.then();
 	}
 
 	@Override

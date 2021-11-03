@@ -70,7 +70,10 @@ public class ContractResources {
 	public static final String TEMPORARY_SSTORE_REFUND_CONTRACT = bytecodePath("TemporarySStoreRefund");
 	public static final String TOP_LEVEL_TRANSFERRING_CONTRACT = bytecodePath("TopLevelTransferringContract");
 	public static final String SUB_LEVEL_TRANSFERRING_CONTRACT = bytecodePath("SubLevelTransferringContract");
-	public static final String LARGE_CONTRACT_CRYPTO_KITTIES = bytecodePath("LargeContract");
+	public static final String LARGE_CONTRACT_CRYPTO_KITTIES = bytecodePath("CryptoKitties");
+	public static final String SELF_DESTRUCT_CALLABLE = bytecodePath("SelfDestructCallable");
+
+	public static final String SELF_DESTRUCT_CALL_ABI = "{\"inputs\":[],\"name\":\"destroy\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"}";
 
 	public static final String CRYPTO_KITTIES_CREATE_PROMO_KITTY_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"_genes\",\"type\":\"uint256\"},{\"name\":\"_owner\",\"type\":\"address\"}],\"name\":\"createPromoKitty\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
