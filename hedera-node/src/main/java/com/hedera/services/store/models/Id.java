@@ -32,6 +32,8 @@ import org.hyperledger.besu.datatypes.Address;
 
 import java.util.Comparator;
 
+import static com.hedera.services.utils.MiscUtils.perm64;
+
 /**
  * Represents the id of a Hedera entity (account, topic, token, contract, file, or schedule).
  */
@@ -132,17 +134,7 @@ public class Id {
 
 	@Override
 	public int hashCode() {
-		// was using Objects.hash but it is horrible in hot spot as has to box longs into Longs and create a Object[]
-		int result = 1;
-//		result = 31 * result + (int)(shard ^ (shard >>> 32));
-//		result = 31 * result + (int)(realm ^ (realm >>> 32));
-//		result = 31 * result + (int)(num ^ (num >>> 32));
-		long k = num;
-		k ^= k >> 12;
-		k ^= k << 25;
-		k ^= k >> 27;
-		k *= 0x2545F4914F6CDD1DL;
-		return (int)k;
+		return (int) perm64(perm64(perm64(shard) ^ realm) ^ num);
 	}
 
 	@Override
@@ -160,6 +152,7 @@ public class Id {
 
 	/**
 	 * Returns the EVM representation of the Account
+	 *
 	 * @return {@link Address} evm representation
 	 */
 	public Address asEvmAddress() {
