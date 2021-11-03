@@ -27,7 +27,6 @@ import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
-import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 
 import java.io.File;
 import java.nio.file.Paths;
@@ -43,7 +42,7 @@ public class VirtualMapFactory {
 	private static final String STORAGE_VM_NAME = "storage";
 
 	@FunctionalInterface
-	public interface JasperDbBuilderFactory  {
+	public interface JasperDbBuilderFactory {
 		<K extends VirtualKey, V extends VirtualValue> JasperDbBuilder<K, V> newJdbBuilder();
 	}
 
@@ -74,14 +73,14 @@ public class VirtualMapFactory {
 
 		final JasperDbBuilder<VirtualBlobKey, VirtualBlobValue> dsBuilder = jdbBuilderFactory.newJdbBuilder();
 		dsBuilder
-						.virtualLeafRecordSerializer(blobLeafRecordSerializer)
-						.virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
-						.keySerializer(blobKeySerializer)
-						.storageDir(Paths.get(blobsLoc()))
-						.maxNumOfKeys(MAX_BLOBS)
-						.preferDiskBasedIndexes(false)
-						.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES)
-						.mergingEnabled(true);
+				.virtualLeafRecordSerializer(blobLeafRecordSerializer)
+				.virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
+				.keySerializer(blobKeySerializer)
+				.storageDir(Paths.get(blobsLoc()))
+				.maxNumOfKeys(MAX_BLOBS)
+				.preferDiskBasedIndexes(false)
+				.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES)
+				.mergingEnabled(true);
 		return new VirtualMap<>(BLOBS_VM_NAME, dsBuilder);
 	}
 
@@ -118,9 +117,5 @@ public class VirtualMapFactory {
 
 	private String storageLoc() {
 		return jdbDataLoc + File.separator + STORAGE_VM_NAME;
-	}
-
-	private <K1 extends VirtualKey, V1 extends VirtualValue> VirtualDataSourceBuilder<K1, V1> aTypedBuilder() {
-		return jdbBuilderFactory.newJdbBuilder();
 	}
 }
