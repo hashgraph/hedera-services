@@ -46,7 +46,6 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -273,15 +272,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 								.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 				);
 	}
-	/*
-	* 2 testa
-	*
-	* - cryptoCreate s key list 2 ot 2 (2ka key-a da podpisvat)
-	* - contractCreate
-	* - contractCall - ne
-	* */
 
-	/* Attempts to create a 46 KB contract */
 	private HapiApiSpec cannotCreateTooLargeContract() {
 		ByteString contents = ByteString.EMPTY;
 		try {
@@ -306,21 +297,10 @@ public class ContractCreateSuite extends HapiApiSuite {
 						UtilVerbs.updateLargeFile(ACCOUNT, "bytecode", contents)
 				)
 				.then(
-						/* should fail */
-						contractCreate("contract").bytecode("bytecode").payingWith(ACCOUNT).hasKnownStatus(SUCCESS),
-						getAccountInfo(ACCOUNT).savingSnapshot("accInfo"),
-						withOpContext((spec, log)-> {
-							var addr = spec.registry().getAccountInfo("accInfo").getContractAccountID();
-							var createKittyCC = contractCall(
-									"contract",
-									ContractResources.CRYPTO_KITTIES_CREATE_PROMO_KITTY_ABI,
-									256, addr)
-									.payingWith(ACCOUNT)
-									.gas(100_0000)
-									.via("call1");
-							allRunFor(spec, createKittyCC);
-						}),
-						getTxnRecord("call1").logged()
+						contractCreate("contract")
+								.bytecode("bytecode")
+								.payingWith(ACCOUNT)
+								.hasKnownStatus(INSUFFICIENT_GAS)
 				);
 	}
 
