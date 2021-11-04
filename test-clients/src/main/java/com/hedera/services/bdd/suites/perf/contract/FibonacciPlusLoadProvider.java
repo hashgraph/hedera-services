@@ -107,6 +107,7 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 	private final AtomicInteger fibN = new AtomicInteger(FIBONACCI_NUM_TO_USE);
 	private final AtomicReference<BigInteger> fibNValue = new AtomicReference<>(null);
 	private final AtomicBoolean validateStorage = new AtomicBoolean(false);
+	private final AtomicBoolean verbose = new AtomicBoolean(false);
 
 	private final AtomicLong gasUsed = new AtomicLong(0);
 	private final AtomicInteger submittedOps = new AtomicInteger(0);
@@ -157,6 +158,7 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 						mgmtOfIntProp(slotsPerCall, SUITE_PROPS_PREFIX + "slotsPerCall"),
 						mgmtOfIntProp(numContracts, SUITE_PROPS_PREFIX + "numContracts"),
 						mgmtOfBooleanProp(validateStorage, SUITE_PROPS_PREFIX + "validateStorage"),
+						mgmtOfBooleanProp(verbose, SUITE_PROPS_PREFIX + "verbose"),
 						withOpContext((spec, opLog) -> {
 							fibNValue.set(BigInteger.valueOf(fib(fibN.get())));
 							opLog.info("Resolved configuration:\n  " +
@@ -280,16 +282,20 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 						targets[i] = random.nextInt(m);
 					}
 					final var targetsDesc = Arrays.toString(targets);
-					log.info("Calling {} with targets {} and fibN {}",
-							choice, targetsDesc, fibN.get());
+					if (verbose.get()) {
+						log.info("Calling {} with targets {} and fibN {}",
+								choice, targetsDesc, fibN.get());
+					}
 
 					op = contractCall(choice, ADD_NTH_FIB_ABI, targets, fibN.get())
 							.noLogging()
 							.payingWith(civilian)
 							.gas(GAS_TO_OFFER)
 							.exposingGasTo((code, gas) -> {
-								log.info("(Tried to) call {} (targets = {}, fibN = {}) with {} gas --> {}",
-										choice, targetsDesc, fibN.get(), gas, code);
+								if (verbose.get()) {
+									log.info("(Tried to) call {} (targets = {}, fibN = {}) with {} gas --> {}",
+											choice, targetsDesc, fibN.get(), gas, code);
+								}
 								that.observeExposedGas(gas);
 								if (code == SUCCESS && validateStorage.get()) {
 									final var curSlots = contractStorage.get(choice);

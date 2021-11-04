@@ -338,7 +338,7 @@
       </snapshots>
       <id>sdk-staging</id>
       <name>Staging repo for SDK</name>
-      <url>https://oss.sonatype.org/content/repositories/comswirlds-1162</url>
+      <url>https://oss.sonatype.org/content/repositories/comswirlds-1170</url>
     </repository>
     <repository>
       <snapshots>
