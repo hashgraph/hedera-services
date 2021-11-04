@@ -23,6 +23,8 @@ package com.hedera.services.throttling;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
 import com.hedera.services.throttles.DeterministicThrottle;
+import com.hedera.services.throttles.GasLimitBucketThrottle;
+import com.hedera.services.throttles.GasLimitDeterministicThrottle;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -61,6 +63,11 @@ public class TxnAwareHandleThrottling implements FunctionalityThrottling {
 	@Override
 	public List<DeterministicThrottle> allActiveThrottles() {
 		return delegate.allActiveThrottles();
+	}
+
+	@Override
+	public GasLimitDeterministicThrottle gasLimitThrottle() {
+		return delegate.gasLimitThrottle();
 	}
 
 	@Override

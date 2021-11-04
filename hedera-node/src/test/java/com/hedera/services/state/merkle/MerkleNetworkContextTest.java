@@ -27,6 +27,7 @@ import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.throttles.DeterministicThrottle;
+import com.hedera.services.throttles.GasLimitDeterministicThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -102,6 +103,9 @@ class MerkleNetworkContextTest {
 	private FunctionalityThrottling throttling;
 	private FeeMultiplierSource feeMultiplierSource;
 
+	private GasLimitDeterministicThrottle gasLimitDeterministicThrottle;
+	private DeterministicThrottle.UsageSnapshot gasLimitUsageSnapshot;
+
 	@LoggingTarget
 	private LogCaptor logCaptor;
 	@LoggingSubject
@@ -132,12 +136,16 @@ class MerkleNetworkContextTest {
 						456L, consensusTimeOfLastHandledTxn.plusSeconds(1L))
 		};
 
+		gasLimitDeterministicThrottle = mock(GasLimitDeterministicThrottle.class);
+		gasLimitUsageSnapshot = new DeterministicThrottle.UsageSnapshot(1234L, consensusTimeOfLastHandledTxn);
+
 		serdes = mock(DomainSerdes.class, RETURNS_DEEP_STUBS);
 		MerkleNetworkContext.serdes = serdes;
 
 		subject = new MerkleNetworkContext(consensusTimeOfLastHandledTxn, seqNo, lastScannedEntity, midnightRateSet);
 
 		subject.setUsageSnapshots(usageSnapshots);
+		subject.setGasThrottleUsageSnapshot(gasLimitUsageSnapshot);
 		subject.setCongestionLevelStarts(congestionStarts());
 		subject.setStateVersion(stateVersion);
 		subject.updateAutoRenewSummaryCounts((int) entitiesScannedThisSecond, (int) entitiesTouchedThisSecond);
@@ -212,6 +220,9 @@ class MerkleNetworkContextTest {
 		final var syncedStarts = new Instant[] { someStart };
 
 		given(throttling.allActiveThrottles()).willReturn(List.of(someThrottle));
+
+		given(throttling.gasLimitThrottle()).willReturn(gasLimitDeterministicThrottle);
+		given(gasLimitDeterministicThrottle.usageSnapshot()).willReturn(gasLimitUsageSnapshot);
 		given(feeMultiplierSource.congestionLevelStarts()).willReturn(syncedStarts);
 		// and:
 		subject.syncThrottling(throttling);
@@ -351,6 +362,7 @@ class MerkleNetworkContextTest {
 		final var accessor = mock(DualStateAccessor.class);
 
 		given(throttling.allActiveThrottles()).willReturn(activeThrottles());
+		given(throttling.gasLimitThrottle()).willReturn(gasLimitDeterministicThrottle);
 		// and:
 		subject.updateSnapshotsFrom(throttling);
 		subject.setPreparedUpdateFileNum(NO_PREPARED_UPDATE_FILE_NUM);
@@ -446,6 +458,7 @@ class MerkleNetworkContextTest {
 				"  Throttle usage snapshots are               ::\n" +
 				"    123 used (last decision time 1970-01-15T06:56:07.000054321Z)\n" +
 				"    456 used (last decision time 1970-01-15T06:56:08.000054321Z)\n" +
+				"    1234 used (last decision time 1970-01-15T06:56:07.000054321Z)\n" +
 				"  Congestion level start times are           ::\n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
 				"    1970-01-15T06:59:49.000012345Z";
@@ -463,6 +476,7 @@ class MerkleNetworkContextTest {
 				"  Throttle usage snapshots are               ::\n" +
 				"    123 used (last decision time 1970-01-15T06:56:07.000054321Z)\n" +
 				"    456 used (last decision time 1970-01-15T06:56:08.000054321Z)\n" +
+				"    1234 used (last decision time 1970-01-15T06:56:07.000054321Z)\n" +
 				"  Congestion level start times are           ::\n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
 				"    1970-01-15T06:59:49.000012345Z";
@@ -500,6 +514,8 @@ class MerkleNetworkContextTest {
 		throttling = mock(FunctionalityThrottling.class);
 
 		given(throttling.allActiveThrottles()).willReturn(Collections.emptyList());
+		given(throttling.gasLimitThrottle()).willReturn(gasLimitDeterministicThrottle);
+		given(gasLimitDeterministicThrottle.usageSnapshot()).willReturn(gasLimitUsageSnapshot);
 
 		// when:
 		subject.updateSnapshotsFrom(throttling);
@@ -553,6 +569,8 @@ class MerkleNetworkContextTest {
 		throttling = mock(FunctionalityThrottling.class);
 
 		given(throttling.allActiveThrottles()).willReturn(activeThrottles);
+		given(throttling.gasLimitThrottle()).willReturn(gasLimitDeterministicThrottle);
+		given(gasLimitDeterministicThrottle.usageSnapshot()).willReturn(gasLimitUsageSnapshot);
 
 		// when:
 		subject.updateSnapshotsFrom(throttling);
@@ -594,6 +612,8 @@ class MerkleNetworkContextTest {
 		throttling = mock(FunctionalityThrottling.class);
 
 		given(throttling.allActiveThrottles()).willReturn(List.of(aThrottle, bThrottle));
+		given(throttling.gasLimitThrottle()).willReturn(gasLimitDeterministicThrottle);
+		given(gasLimitDeterministicThrottle.usageSnapshot()).willReturn(gasLimitUsageSnapshot);
 		// and:
 		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[] { subjectSnapshotA, subjectSnapshotC });
 
@@ -647,6 +667,8 @@ class MerkleNetworkContextTest {
 		throttling = mock(FunctionalityThrottling.class);
 
 		given(throttling.allActiveThrottles()).willReturn(List.of(aThrottle));
+		given(throttling.gasLimitThrottle()).willReturn(gasLimitDeterministicThrottle);
+		given(gasLimitDeterministicThrottle.usageSnapshot()).willReturn(gasLimitUsageSnapshot);
 		// given:
 		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[]{ subjectSnapshot });
 
@@ -919,6 +941,8 @@ class MerkleNetworkContextTest {
 		var active = activeThrottles();
 
 		given(throttling.allActiveThrottles()).willReturn(active);
+		given(throttling.gasLimitThrottle()).willReturn(gasLimitDeterministicThrottle);
+		given(gasLimitDeterministicThrottle.usageSnapshot()).willReturn(gasLimitUsageSnapshot);
 
 		// when:
 		subject.updateSnapshotsFrom(throttling);

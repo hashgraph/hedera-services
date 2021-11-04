@@ -22,6 +22,8 @@ package com.hedera.services.throttling;
 
 import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
 import com.hedera.services.throttles.DeterministicThrottle;
+import com.hedera.services.throttles.GasLimitBucketThrottle;
+import com.hedera.services.throttles.GasLimitDeterministicThrottle;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -53,6 +55,11 @@ public class HapiThrottling implements FunctionalityThrottling {
 
 	@Override
 	public List<DeterministicThrottle> allActiveThrottles() {
+		throw new UnsupportedOperationException("HAPI throttling should not be treated as a stable source of throttles");
+	}
+
+	@Override
+	public GasLimitDeterministicThrottle gasLimitThrottle() {
 		throw new UnsupportedOperationException("HAPI throttling should not be treated as a stable source of throttles");
 	}
 
