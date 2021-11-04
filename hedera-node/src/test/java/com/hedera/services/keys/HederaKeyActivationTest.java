@@ -126,7 +126,7 @@ class HederaKeyActivationTest {
 		assertEquals(presentSigs.get(0), present0);
 		assertEquals(presentSigs.get(1), present1);
 		assertEquals(HederaKeyActivation.INVALID_MISSING_SIG, missing);
-		assertEquals(HederaKeyActivation.INVALID_MISSING_SIG.getSignatureStatus(), VerificationStatus.INVALID);
+		assertEquals(VerificationStatus.INVALID, HederaKeyActivation.INVALID_MISSING_SIG.getSignatureStatus());
 	}
 
 	@Test

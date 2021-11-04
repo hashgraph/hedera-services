@@ -36,6 +36,7 @@ import static com.hedera.services.state.submerkle.ExchangeRates.MERKLE_VERSION;
 import static com.hedera.services.state.submerkle.ExchangeRates.RUNTIME_CONSTRUCTABLE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
@@ -111,7 +112,7 @@ class ExchangeRatesTest {
 		final var subjectCopy = subject.copy();
 
 		assertEquals(subject, subject);
-		assertFalse(subject.equals(null));
+		assertNotEquals(subject, null);
 		assertEquals(expCurrentHbarEquiv, subjectCopy.getCurrHbarEquiv());
 		assertEquals(expCurrentCentEquiv, subjectCopy.getCurrCentEquiv());
 		assertEquals(expCurrentExpiry, subjectCopy.getCurrExpiry());

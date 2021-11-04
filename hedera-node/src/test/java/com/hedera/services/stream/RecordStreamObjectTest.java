@@ -108,8 +108,8 @@ class RecordStreamObjectTest {
 
 	@Test
 	void equalsTest() {
-		assertFalse(recordStreamObject.equals(1));
-		assertTrue(recordStreamObject.equals(recordStreamObject));
+		assertNotEquals(recordStreamObject, 1);
+		assertEquals(recordStreamObject, recordStreamObject);
 
 		assertEquals(recordStreamObject, new RecordStreamObject(record, transaction, consensusTimestamp));
 
