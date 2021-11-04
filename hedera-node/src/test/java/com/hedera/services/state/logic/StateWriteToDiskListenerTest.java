@@ -20,7 +20,6 @@ package com.hedera.services.state.logic;
  * ‍
  */
 
-import com.hedera.services.ServicesState;
 import com.hedera.services.txns.network.UpgradeActions;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -43,9 +42,9 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class StateWriteToDiskListenerTest {
-	private final long round = 234L;
-	private final long sequence = 123L;
-	private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
+	private static final long round = 234L;
+	private static final long sequence = 123L;
+	private static final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
 
 	@Mock
 	private StateWriteToDiskCompleteNotification notification;
@@ -69,14 +68,11 @@ class StateWriteToDiskListenerTest {
 		given(notification.getConsensusTimestamp()).willReturn(consensusNow);
 		given(notification.isFreezeState()).willReturn(true);
 
-		// when:
 		subject.notify(notification);
 
-		// then:
 		assertThat(logCaptor.infoLogs(),
 				contains("Notification Received: Freeze State Finished. consensusTimestamp: 1970-01-15T06:56:07.000000890Z, " +
 						"roundNumber: 234, sequence: 123"));
-		// and:
 		verify(upgradeActions).externalizeFreezeIfUpgradePending();
 	}
 
@@ -84,10 +80,8 @@ class StateWriteToDiskListenerTest {
 	void doesntNotifyForEverySignedStateWritten() {
 		given(notification.isFreezeState()).willReturn(false);
 
-		// when:
 		subject.notify(notification);
 
-		// then:
 		verify(upgradeActions, never()).externalizeFreezeIfUpgradePending();
 	}
 }
