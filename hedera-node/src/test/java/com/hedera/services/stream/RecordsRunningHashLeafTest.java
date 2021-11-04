@@ -77,7 +77,7 @@ class RecordsRunningHashLeafTest {
 	@Test
 	void equalsTest() {
 		assertEquals(runningHashLeaf, runningHashLeaf);
-		assertNotEquals(runningHashLeaf, 1);
+		assertNotEquals(1, runningHashLeaf);
 	}
 
 	@Test
