@@ -21,51 +21,89 @@ package com.hedera.services.bdd.suites.suiterunner;
  */
 
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.SuiteRunner;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import java.util.HashMap;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.groupingBy;
+import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.PERF_SUITES;
+import static com.hedera.services.bdd.suites.suiterunner.SuitesStore.getCategories;
+import static com.hedera.services.bdd.suites.suiterunner.SuitesStore.initialize;
 
-/* Notes to the reviewer
-*  The bellow functions are pure experiments and should not be considered by any means as working solution.
-*  Actual working implementation will be performed today (03.11)
-* */
+// TODO: implement dialogue before running the tests to display available options
 public class TypedSuiteRunner {
+	private static final Logger log = LogManager.getLogger(SuiteRunner.class);
+	private static final Map<SuiteCategory, List<HapiApiSuite>> suites = initialize();
 
 	public static void main(String[] args) {
-		Map<SuiteCategory, List<HapiApiSuite>> suites = SuitesStore.getSuites();
-
-		Map<Boolean, Set<SuiteCategory>> suitesByRunType = distributeByRunType(suites);
-
-		Map<Boolean, List<SuiteCategory>> test = suites.keySet().stream()
-				.collect(groupingBy(cat -> testFunction(suites.get(cat))));
+		final var effectiveArguments = getArguments(args);
+		final var suiteCategories = getCategories(effectiveArguments);
+		final var suiteByRunType = distributeByRunType(suiteCategories);
 
 		System.out.println();
 	}
 
-	private static Boolean testFunction(final List<HapiApiSuite> hapiApiSuites) {
-		return hapiApiSuites.stream().anyMatch(HapiApiSuite::canRunAsync);
+	// TODO: Handle Illegal characters exception
+	private static List<String> getArguments(final String[] args) {
+		if (Arrays.stream(args).anyMatch(arg -> arg.toLowerCase().contains("-spt".toLowerCase()))) {
+			return suites
+					.keySet()
+					.stream()
+					.filter(key -> key != PERF_SUITES)
+					.map(key -> key.asString)
+					.collect(Collectors.toList());
+		}
+
+		if (args.length == 0 || (args.length == 1 && args[0].toLowerCase().contains("-a".toLowerCase()))) {
+			return suites
+					.keySet()
+					.stream()
+					.map(key -> key.asString)
+					.collect(Collectors.toList());
+		}
+
+		var arguments = args[0].contains("-s")
+				? Arrays
+				.stream(args[0].replaceAll("-s ", "").trim().split(",\\s+|,"))
+				.collect(Collectors.toCollection(ArrayList::new))
+				: Arrays
+				.stream(args)
+				.collect(Collectors.toCollection(ArrayList::new));
+
+		final var wrongArguments = arguments
+				.stream()
+				.filter(arg -> !SuitesStore.isValidCategory(arg))
+				.collect(Collectors.toList());
+
+		arguments.removeAll(wrongArguments);
+
+		if (!wrongArguments.isEmpty()) {
+			log.warn(String.format(
+					"Input arguments are misspelled or test suites are missing. Skipping tests for: %s ",
+					String.join(", ", wrongArguments)));
+		}
+		return arguments;
 	}
 
-	private static Map<Boolean, Set<SuiteCategory>> distributeByRunType(final Map<SuiteCategory, List<HapiApiSuite>> suites) {
-		Map<Boolean, Set<SuiteCategory>> suitesByRunType = new HashMap<>();
+	private static Map<Boolean, Set<HapiApiSuite>> distributeByRunType(final ArrayDeque<SuiteCategory> categories) {
+		final Map<Boolean, Set<HapiApiSuite>> suitesByRunType = Map.of(true, new HashSet<>(), false, new HashSet<>());
 
-		suitesByRunType.put(true, new HashSet<>());
-		suitesByRunType.put(false, new HashSet<>());
-
-		suites.keySet().forEach(cat -> {
-			List<HapiApiSuite> hapiApiSuites = suites.get(cat);
-			for (HapiApiSuite hapiApiSuite : hapiApiSuites) {
-				suitesByRunType.get(hapiApiSuite.canRunAsync()).add(cat);
-			}
-		});
+		while (!categories.isEmpty()) {
+			suites.get(categories.pop()).forEach(suite -> suitesByRunType.get(suite.canRunAsync()).add(suite));
+		}
 
 		return suitesByRunType;
 	}
-
-
 }
+
+
+
+

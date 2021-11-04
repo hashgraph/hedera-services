@@ -205,6 +205,7 @@ import com.hedera.services.bdd.suites.token.TokenTransactSpecs;
 import com.hedera.services.bdd.suites.token.TokenUpdateSpecs;
 import com.hedera.services.bdd.suites.token.UniqueTokenManagementSpecs;
 
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
@@ -226,6 +227,7 @@ import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.FREEZE_SU
 import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.ISSUES_SUITES;
 import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.META_SUITES;
 import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.MISC_SUITES;
+import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.PERF_SUITES;
 import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.RECONNECT_SUITES;
 import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.RECORDS_SUITES;
 import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.REGRESSION_SUITES;
@@ -236,21 +238,48 @@ import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.TOKEN_SUI
 
 //TODO: Performance tests from package perf are not included. Include if confirmed in daily
 public class SuitesStore {
-
 	private static final Map<SuiteCategory, List<HapiApiSuite>> suites = new EnumMap<>(SuiteCategory.class);
 
-	protected static Map<SuiteCategory, List<HapiApiSuite>> getSuites() {
+	protected static Map<SuiteCategory, List<HapiApiSuite>> initialize() {
 		initializeSuites();
 		return suites;
 	}
 
+	// TODO: Add JavaDoc if approved
 	// Will be used when providing input options when passing arguments as terminal commands
 	public static List<String> getAllCategories = Arrays
 			.stream(SuiteCategory.values())
 			.map(c -> c.asString)
 			.collect(Collectors.toList());
 
+	// TODO: Add JavaDoc if approved
+	public static boolean isValidCategory(String arg) {
+		return suites.keySet().stream().anyMatch(key -> key.asString.equalsIgnoreCase(arg));
+	}
+
+	// TODO: Add JavaDoc if approved
+	public static ArrayDeque<SuiteCategory> getCategories(List<String> input) {
+		return input
+				.stream()
+				.map(SuitesStore::getCategory)
+				.collect(Collectors.toCollection(ArrayDeque<SuiteCategory>::new));
+	}
+
+	private static SuiteCategory getCategory(final String input) {
+		return suites
+				.keySet()
+				.stream()
+				.filter(cat -> cat.asString.equalsIgnoreCase(input))
+				.findFirst()
+				.orElse(null);
+	}
+
 	protected static void initializeSuites() {
+		//TODO: PERF_SUITES initialized for testing purposes only. Either remove it or to populate with actual performance suites
+		suites.put(PERF_SUITES, List.of(
+				new AccountAutoRenewalSuite(),
+				new AutoRemovalCasesSuite()));
+
 		suites.put(AUTORENEW_SUITES, List.of(
 				new AccountAutoRenewalSuite(),
 				new AutoRemovalCasesSuite(),
@@ -496,9 +525,5 @@ public class SuitesStore {
 				new TokenUpdateSpecs(),
 				new UniqueTokenManagementSpecs()
 		));
-
-
 	}
-
-
 }
