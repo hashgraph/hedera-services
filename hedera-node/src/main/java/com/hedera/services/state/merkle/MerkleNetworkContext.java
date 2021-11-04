@@ -376,12 +376,10 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 						.append(" used (last decision time ")
 						.append(reprOf(snapshot.lastDecisionTime())).append(")");
 			}
-			if (gasThrottleUsageSnapshot != null) {
-				sb.append(LINE_WRAP)
-						.append(gasThrottleUsageSnapshot.used())
-						.append(" used (last decision time ")
-						.append(reprOf(gasThrottleUsageSnapshot.lastDecisionTime())).append(")");
-			}
+			sb.append(LINE_WRAP)
+					.append(gasThrottleUsageSnapshot.used())
+					.append(" used (last decision time ")
+					.append(reprOf(gasThrottleUsageSnapshot.lastDecisionTime())).append(")");
 			return sb.toString();
 		}
 	}
@@ -499,16 +497,14 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			}
 		}
 
-		if (gasThrottleUsageSnapshot != null) {
-			var currGasThrottleUsageSnapshot = gasLimitThrottle.usageSnapshot();
-			try {
-				gasLimitThrottle.resetUsageTo(gasThrottleUsageSnapshot);
-				log.info("Reset {} with saved gas throttle usage snapshot", gasThrottleUsageSnapshot);
-			} catch (Exception e) {
-				log.warn("Saved gas throttle usage snapshot was not compatible " +
-						"with the corresponding active throttle (%s); not performing a reset!", e.getMessage());
-				gasLimitThrottle.resetUsageTo(currGasThrottleUsageSnapshot);
-			}
+		var currGasThrottleUsageSnapshot = gasLimitThrottle.usageSnapshot();
+		try {
+			gasLimitThrottle.resetUsageTo(gasThrottleUsageSnapshot);
+			log.info("Reset {} with saved gas throttle usage snapshot", gasThrottleUsageSnapshot);
+		} catch (Exception e) {
+			log.warn(String.format("Saved gas throttle usage snapshot was not compatible " +
+					"with the corresponding active throttle (%s); not performing a reset!", e.getMessage()));
+			gasLimitThrottle.resetUsageTo(currGasThrottleUsageSnapshot);
 		}
 	}
 

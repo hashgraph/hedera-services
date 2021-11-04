@@ -32,6 +32,8 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
@@ -488,6 +490,34 @@ class SignedTxnAccessorTest {
 		assertEquals(memo.getBytes().length, expandedMeta.getMemoSize());
 		assertEquals(25, expandedMeta.getMaxAutomaticAssociations());
 		assertTrue(expandedMeta.hasProxy());
+	}
+
+	@Test
+	void getGasLimitWorksForCreate() {
+		final var op = ContractCreateTransactionBody.newBuilder()
+				.setGas(123456789L)
+				.build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setContractCreateInstance(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		assertEquals(123456789L, subject.getGasLimitForContractTx());
+	}
+
+	@Test
+	void getGasLimitWorksForCall() {
+		final var op = ContractCallTransactionBody.newBuilder()
+				.setGas(123456789L)
+				.build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setContractCall(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		assertEquals(123456789L, subject.getGasLimitForContractTx());
 	}
 
 	private Transaction signedCryptoCreateTxn() {

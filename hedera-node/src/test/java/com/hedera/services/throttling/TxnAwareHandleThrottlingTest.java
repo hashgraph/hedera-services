@@ -23,6 +23,7 @@ package com.hedera.services.throttling;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
 import com.hedera.services.throttles.DeterministicThrottle;
+import com.hedera.services.throttles.GasLimitDeterministicThrottle;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -37,6 +38,7 @@ import java.time.Instant;
 import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -124,5 +126,19 @@ class TxnAwareHandleThrottlingTest {
 
 		//then:
 		verify(delegate).leakUnusedGasPreviouslyReserved(12345L);
+	}
+
+	@Test
+	void gasLimitThrottleWorks() {
+		GasLimitDeterministicThrottle gasLimitDeterministicThrottle = new GasLimitDeterministicThrottle(1234);
+		given(delegate.gasLimitThrottle()).willReturn(gasLimitDeterministicThrottle);
+		GasLimitDeterministicThrottle gasLimitDeterministicThrottle1 = subject.gasLimitThrottle();
+		assertEquals(gasLimitDeterministicThrottle, gasLimitDeterministicThrottle1);
+	}
+
+	@Test
+	void applyGasConfig() {
+		subject.applyGasConfig();
+		verify(delegate).applyGasConfig();
 	}
 }

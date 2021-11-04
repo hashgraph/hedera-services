@@ -125,4 +125,15 @@ class HapiThrottlingTest {
 		//then:
 		verify(delegate).leakUnusedGasPreviouslyReserved(12345L);
 	}
+
+	@Test
+	void gasLimitThrottleThrows() {
+		assertThrows(UnsupportedOperationException.class, () -> subject.gasLimitThrottle());
+	}
+
+	@Test
+	void applyGasConfigTest() {
+		subject.applyGasConfig();
+		verify(delegate).applyGasConfig();
+	}
 }

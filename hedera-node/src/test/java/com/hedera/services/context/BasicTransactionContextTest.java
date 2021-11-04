@@ -50,6 +50,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -93,6 +94,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
@@ -158,6 +160,12 @@ class BasicTransactionContextTest {
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
 	private EntityCreator creator;
+	@Mock
+	private ExpirableTxnRecord expirableTxnRecord;
+	@Mock
+	private ExpirableTxnRecord.Builder expirableTxnRecordBuilder;
+	@Mock
+	private SolidityFnResult fnResult;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -644,6 +652,68 @@ class BasicTransactionContextTest {
 
 		// when:
 		assertThrows(IllegalStateException.class, () -> subject.trigger(accessor));
+	}
+
+	@Test
+	void hasContractResultWorksForCreateWithResult() {
+		given(accessor.getFunction()).willReturn(HederaFunctionality.ContractCreate);
+		given(expirableTxnRecord.getContractCreateResult()).willReturn(fnResult);
+		given(expirableTxnRecordBuilder.build()).willReturn(expirableTxnRecord);
+		given(creator.buildExpiringRecord(anyLong(), any(), any(), any(), any(), any(), any(), any())).willReturn(expirableTxnRecordBuilder);
+
+		assertTrue(subject.hasContractResult());
+	}
+
+	@Test
+	void hasContractResultWorksForCreateWithoutResult() {
+		given(accessor.getFunction()).willReturn(HederaFunctionality.ContractCreate);
+		given(expirableTxnRecord.getContractCreateResult()).willReturn(null);
+		given(expirableTxnRecordBuilder.build()).willReturn(expirableTxnRecord);
+		given(creator.buildExpiringRecord(anyLong(), any(), any(), any(), any(), any(), any(), any())).willReturn(expirableTxnRecordBuilder);
+
+		assertFalse(subject.hasContractResult());
+	}
+
+	@Test
+	void hasContractResultWorksForCallWithResult() {
+		given(accessor.getFunction()).willReturn(HederaFunctionality.ContractCall);
+		given(expirableTxnRecord.getContractCallResult()).willReturn(fnResult);
+		given(expirableTxnRecordBuilder.build()).willReturn(expirableTxnRecord);
+		given(creator.buildExpiringRecord(anyLong(), any(), any(), any(), any(), any(), any(), any())).willReturn(expirableTxnRecordBuilder);
+
+		assertTrue(subject.hasContractResult());
+	}
+
+	@Test
+	void hasContractResultWorksForCallWithoutResult() {
+		given(accessor.getFunction()).willReturn(HederaFunctionality.ContractCall);
+		given(expirableTxnRecord.getContractCallResult()).willReturn(null);
+		given(expirableTxnRecordBuilder.build()).willReturn(expirableTxnRecord);
+		given(creator.buildExpiringRecord(anyLong(), any(), any(), any(), any(), any(), any(), any())).willReturn(expirableTxnRecordBuilder);
+
+		assertFalse(subject.hasContractResult());
+	}
+
+	@Test
+	void getGasUsedForContractTXWorksForCreate() {
+		given(accessor.getFunction()).willReturn(HederaFunctionality.ContractCreate);
+		given(fnResult.getGasUsed()).willReturn(123456789L);
+		given(expirableTxnRecord.getContractCreateResult()).willReturn(fnResult);
+		given(expirableTxnRecordBuilder.build()).willReturn(expirableTxnRecord);
+		given(creator.buildExpiringRecord(anyLong(), any(), any(), any(), any(), any(), any(), any())).willReturn(expirableTxnRecordBuilder);
+
+		assertEquals(123456789L, subject.getGasUsedForContractTxn());
+	}
+
+	@Test
+	void getGasUsedForContractTXWorksForCall() {
+		given(accessor.getFunction()).willReturn(HederaFunctionality.ContractCall);
+		given(fnResult.getGasUsed()).willReturn(123456789L);
+		given(expirableTxnRecord.getContractCallResult()).willReturn(fnResult);
+		given(expirableTxnRecordBuilder.build()).willReturn(expirableTxnRecord);
+		given(creator.buildExpiringRecord(anyLong(), any(), any(), any(), any(), any(), any(), any())).willReturn(expirableTxnRecordBuilder);
+
+		assertEquals(123456789L, subject.getGasUsedForContractTxn());
 	}
 
 	private ExpirableTxnRecord.Builder buildRecord(
