@@ -111,8 +111,8 @@ class ExchangeRatesTest {
 	void copyWorks() {
 		final var subjectCopy = subject.copy();
 
-		assertEquals(subject, subject);
-		assertNotEquals(subject, null);
+		var anotherSub = subject;
+		assertEquals(subject, anotherSub);
 		assertEquals(expCurrentHbarEquiv, subjectCopy.getCurrHbarEquiv());
 		assertEquals(expCurrentCentEquiv, subjectCopy.getCurrCentEquiv());
 		assertEquals(expCurrentExpiry, subjectCopy.getCurrExpiry());
