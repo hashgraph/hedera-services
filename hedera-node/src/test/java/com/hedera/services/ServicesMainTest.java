@@ -249,7 +249,6 @@ class ServicesMainTest {
 		withRunnableApp();
 		withChangeableApp();
 
-		given(app.upgradeActions()).willReturn(upgradeActions);
 		given(app.recordStreamManager()).willReturn(recordStreamManager);
 		// and:
 		subject.init(platform, nodeId);
