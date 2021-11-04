@@ -787,38 +787,4 @@ public final class MiscUtils {
 	public static boolean isGasThrottled(HederaFunctionality hederaFunctionality) {
 		return CONSENSUS_THROTTLED_FUNCTIONS.contains(hederaFunctionality);
 	}
-
-	/**
-	 * Extracts the gasLimit value from a {@link HederaFunctionality#ContractCall} or a
-	 * {@link HederaFunctionality#ContractCreate} transaction
-	 * @param accessor - the transaction accessor
-	 * @return - the gasLimit value of the transaction
-	 */
-	public static long getContractTXGasLimit(TxnAccessor accessor) {
-		return accessor.getFunction() == ContractCreate ?
-				accessor.getTxn().getContractCreateInstance().getGas() :
-				accessor.getTxn().getContractCall().getGas();
-	}
-
-	/**
-	 * Extracts the amount of gas used by the currently executing transaction.
-	 * @param txnCtx - transaction context
-	 * @return long - the amount of gas used for the TX execution
-	 */
-	public static long getContractTxGasUsed(TransactionContext txnCtx) {
-		return txnCtx.accessor().getFunction().equals(HederaFunctionality.ContractCall) ?
-				txnCtx.recordSoFar().getContractCallResult().getGasUsed() :
-				txnCtx.recordSoFar().getContractCreateResult().getGasUsed();
-	}
-
-	/**
-	 * Verifies if the transaction context for the currently executing transaction has a contract result
-	 * @param txnCtx transaction context
-	 * @return true if there is a ContractCall or ContractCreate result attached to the context
-	 */
-	public static boolean txCtxHasContractResult(TransactionContext txnCtx) {
-		return txnCtx.accessor().getFunction().equals(HederaFunctionality.ContractCall) ?
-				txnCtx.recordSoFar().getContractCallResult() != null :
-				txnCtx.recordSoFar().getContractCreateResult() != null;
-	}
 }

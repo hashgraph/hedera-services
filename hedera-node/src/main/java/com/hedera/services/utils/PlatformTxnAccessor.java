@@ -24,6 +24,8 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.SwirldTransaction;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
+
 /**
  * Encapsulates access to several commonly referenced parts of a {@link com.swirlds.common.SwirldTransaction}
  * whose contents is <i>supposed</i> to be a Hedera Services gRPC {@link Transaction}. (The constructor of this
@@ -68,5 +70,10 @@ public class PlatformTxnAccessor extends SignedTxnAccessor {
 	@Override
 	public RationalizedSigMeta getSigMeta() {
 		return sigMeta;
+	}
+
+	@Override
+	public long getGasLimitForContractTx() {
+		return getFunction() == ContractCreate ? getTxn().getContractCreateInstance().getGas() : getTxn().getContractCall().getGas();
 	}
 }

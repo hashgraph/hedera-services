@@ -40,6 +40,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -344,6 +345,20 @@ public class BasicTransactionContext implements TransactionContext {
 	@Override
 	public void setCreated(List<Long> serialNumbers) {
 		receiptConfig = receipt -> receipt.setSerialNumbers(serialNumbers.stream().mapToLong(l -> l).toArray());
+	}
+
+	@Override
+	public boolean hasContractResult() {
+		return accessor().getFunction().equals(HederaFunctionality.ContractCall) ?
+				recordSoFar().getContractCallResult() != null :
+				recordSoFar().getContractCreateResult() != null;
+	}
+
+	@Override
+	public long getGasUsedForContractTxn() {
+		return accessor().getFunction().equals(HederaFunctionality.ContractCall) ?
+				recordSoFar().getContractCallResult().getGasUsed() :
+				recordSoFar().getContractCreateResult().getGasUsed();
 	}
 
 	/* --- Used by unit tests --- */

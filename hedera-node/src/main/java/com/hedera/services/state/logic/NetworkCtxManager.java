@@ -182,9 +182,9 @@ public class NetworkCtxManager {
 		if (!IS_THROTTLE_EXEMPT.test(txnCtx.accessor().getPayer().getAccountNum()) &&
 				MiscUtils.isGasThrottled(op) &&
 				dynamicProperties.shouldThrottleByGas() &&
-				MiscUtils.txCtxHasContractResult(txnCtx)) {
+				txnCtx.hasContractResult()) {
 			handleThrottling.leakUnusedGasPreviouslyReserved(
-					MiscUtils.getContractTXGasLimit(txnCtx.accessor()) - MiscUtils.getContractTxGasUsed(txnCtx));
+					txnCtx.accessor().getGasLimitForContractTx() - txnCtx.getGasUsedForContractTxn());
 		}
 
 		var networkCtxNow = networkCtx.get();

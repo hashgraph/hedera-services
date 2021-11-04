@@ -9,9 +9,9 @@ package com.hedera.services.state.logic;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,7 +24,6 @@ import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.context.domain.trackers.IssEventStatus;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
@@ -56,7 +55,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCal
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -235,16 +233,12 @@ class NetworkCtxManagerTest {
 	@Test
 	void whenFinishingContractCallUnusedGasIsLeaked() {
 		// setup:
-		given(solidityFnResult.getGasUsed()).willReturn(1000L);
-		given(expirableTxnRecord.getContractCallResult()).willReturn(solidityFnResult);
-		given(txnCtx.recordSoFar()).willReturn(expirableTxnRecord);
 		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
-
-		given(callTransactionBody.getGas()).willReturn(10_000L);
-		given(transactionBody.getContractCall()).willReturn(callTransactionBody);
-		given(txnAccessor.getTxn()).willReturn(transactionBody);
-		given(txnAccessor.getFunction()).willReturn(ContractCall);
+		given(txnAccessor.getGasLimitForContractTx()).willReturn(10_000L);
 		given(txnCtx.accessor()).willReturn(txnAccessor);
+		given(txnCtx.hasContractResult()).willReturn(true);
+		given(txnCtx.getGasUsedForContractTxn()).willReturn(1000L);
+
 		mockDynamicProps.setThrottleByGas(true);
 
 		// when:
@@ -277,11 +271,9 @@ class NetworkCtxManagerTest {
 	@Test
 	void whenFinishingContractCallUnusedGasIsNotLeakedForUnsuccessfulTX() {
 		// setup:
-		given(expirableTxnRecord.getContractCallResult()).willReturn(null);
-		given(txnCtx.recordSoFar()).willReturn(expirableTxnRecord);
 		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
-		given(txnAccessor.getFunction()).willReturn(ContractCall);
 		given(txnCtx.accessor()).willReturn(txnAccessor);
+		given(txnCtx.hasContractResult()).willReturn(false);
 		mockDynamicProps.setThrottleByGas(true);
 
 		// when:
@@ -297,17 +289,11 @@ class NetworkCtxManagerTest {
 	@Test
 	void whenFinishingContractCreateUnusedGasIsLeaked() {
 		// setup:
-		given(solidityFnResult.getGasUsed()).willReturn(1000L);
-		given(expirableTxnRecord.getContractCreateResult()).willReturn(solidityFnResult);
-		given(txnCtx.recordSoFar()).willReturn(expirableTxnRecord);
 		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
-
-		given(createTransactionBody.getGas()).willReturn(10_000L);
-		given(transactionBody.getContractCreateInstance()).willReturn(createTransactionBody);
-		given(txnAccessor.getTxn()).willReturn(transactionBody);
-		given(txnAccessor.getFunction()).willReturn(ContractCreate);
-
+		given(txnAccessor.getGasLimitForContractTx()).willReturn(10_000L);
 		given(txnCtx.accessor()).willReturn(txnAccessor);
+		given(txnCtx.hasContractResult()).willReturn(true);
+		given(txnCtx.getGasUsedForContractTxn()).willReturn(1000L);
 		mockDynamicProps.setThrottleByGas(true);
 
 		// when:
@@ -323,12 +309,9 @@ class NetworkCtxManagerTest {
 	@Test
 	void whenFinishingContractCreateUnusedGasIsNotLeakedForUnsuccessfulTX() {
 		// setup:
-		given(expirableTxnRecord.getContractCreateResult()).willReturn(null);
-		given(txnCtx.recordSoFar()).willReturn(expirableTxnRecord);
 		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
-
-		given(txnAccessor.getFunction()).willReturn(ContractCreate);
 		given(txnCtx.accessor()).willReturn(txnAccessor);
+		given(txnCtx.hasContractResult()).willReturn(false);
 		mockDynamicProps.setThrottleByGas(true);
 
 		// when:

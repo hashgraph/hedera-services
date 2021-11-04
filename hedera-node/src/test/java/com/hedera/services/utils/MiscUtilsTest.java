@@ -176,7 +176,6 @@ import static com.hedera.services.utils.MiscUtils.canonicalRepr;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static com.hedera.services.utils.MiscUtils.functionOf;
 import static com.hedera.services.utils.MiscUtils.functionalityOfQuery;
-import static com.hedera.services.utils.MiscUtils.getContractTXGasLimit;
 import static com.hedera.services.utils.MiscUtils.getTxnStat;
 import static com.hedera.services.utils.MiscUtils.isGasThrottled;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
@@ -184,7 +183,6 @@ import static com.hedera.services.utils.MiscUtils.perm64;
 import static com.hedera.services.utils.MiscUtils.readableNftTransferList;
 import static com.hedera.services.utils.MiscUtils.readableProperty;
 import static com.hedera.services.utils.MiscUtils.readableTransferList;
-import static com.hedera.services.utils.MiscUtils.txCtxHasContractResult;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
@@ -802,67 +800,6 @@ class MiscUtilsTest {
 	@Test
 	void contractCreateIsConsensusThrottled() {
 		assertTrue(isGasThrottled(ContractCreate));
-	}
-
-	@Test
-	void getsCorrectTxGasLimitFromContractCall() {
-		given(accessor.getTxn()).willReturn(body);
-		given(body.getContractCall()).willReturn(callTransactionBody);
-		given(callTransactionBody.getGas()).willReturn(123454321L);
-		assertEquals(123454321L, getContractTXGasLimit(accessor));
-	}
-
-	@Test
-	void getsCorrectTxGasLimitFromContractCreate() {
-		given(accessor.getTxn()).willReturn(body);
-		given(accessor.getFunction()).willReturn(ContractCreate);
-		given(body.getContractCreateInstance()).willReturn(createTransactionBody);
-		given(createTransactionBody.getGas()).willReturn(123454321L);
-		assertEquals(123454321L, getContractTXGasLimit(accessor));
-	}
-
-	@Test
-	void contractCreateContextHasCorrectResult() {
-		given(expirableTxnRecord.getContractCreateResult()).willReturn(solidityFnResult);
-		given(txCtx.recordSoFar()).willReturn(expirableTxnRecord);
-		given(accessor.getFunction()).willReturn(ContractCreate);
-		given(txCtx.accessor()).willReturn(accessor);
-		assertTrue(txCtxHasContractResult(txCtx));
-	}
-
-	@Test
-	void contractCallContextHasCorrectResult() {
-		given(expirableTxnRecord.getContractCallResult()).willReturn(solidityFnResult);
-		given(txCtx.recordSoFar()).willReturn(expirableTxnRecord);
-		given(accessor.getFunction()).willReturn(ContractCall);
-		given(txCtx.accessor()).willReturn(accessor);
-		assertTrue(txCtxHasContractResult(txCtx));
-	}
-
-	@Test
-	void notContractContextHasNoContractResult() {
-		given(txCtx.recordSoFar()).willReturn(expirableTxnRecord);
-		given(accessor.getFunction()).willReturn(TokenMint);
-		given(txCtx.accessor()).willReturn(accessor);
-		assertFalse(txCtxHasContractResult(txCtx));
-	}
-
-	@Test
-	void notReadyContractCallTransactionHasNoContractResult() {
-		given(expirableTxnRecord.getContractCallResult()).willReturn(null);
-		given(txCtx.recordSoFar()).willReturn(expirableTxnRecord);
-		given(accessor.getFunction()).willReturn(ContractCall);
-		given(txCtx.accessor()).willReturn(accessor);
-		assertFalse(txCtxHasContractResult(txCtx));
-	}
-
-	@Test
-	void notReadyContractCreateTransactionHasNoContractResult() {
-		given(expirableTxnRecord.getContractCreateResult()).willReturn(null);
-		given(txCtx.recordSoFar()).willReturn(expirableTxnRecord);
-		given(accessor.getFunction()).willReturn(ContractCreate);
-		given(txCtx.accessor()).willReturn(accessor);
-		assertFalse(txCtxHasContractResult(txCtx));
 	}
 
 	public static class BodySetter<T, B> {

@@ -79,7 +79,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	public boolean shouldThrottleTxn(TxnAccessor accessor, Instant now) {
 		if (MiscUtils.isGasThrottled(accessor.getFunction()) &&
 				dynamicProperties.shouldThrottleByGas() &&
-				(gasThrottle == null || !gasThrottle.allow(now, MiscUtils.getContractTXGasLimit(accessor)))) {
+				(gasThrottle == null || !gasThrottle.allow(now, accessor.getGasLimitForContractTx()))) {
 			return true;
 		}
 
