@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.PERF_SUITES;
@@ -41,14 +42,12 @@ import static com.hedera.services.bdd.suites.suiterunner.SuitesStore.initialize;
 // TODO: implement dialogue before running the tests to display available options
 public class TypedSuiteRunner {
 	private static final Logger log = LogManager.getLogger(SuiteRunner.class);
-	private static final Map<SuiteCategory, List<HapiApiSuite>> suites = initialize();
+	private static final Map<SuiteCategory, Supplier<List<HapiApiSuite>>> suites = initialize();
 
 	public static void main(String[] args) {
 		final var effectiveArguments = getArguments(args);
 		final var suiteCategories = getCategories(effectiveArguments);
 		final var suiteByRunType = distributeByRunType(suiteCategories);
-
-		System.out.println();
 	}
 
 	// TODO: Handle Illegal characters exception
@@ -97,7 +96,7 @@ public class TypedSuiteRunner {
 		final Map<Boolean, Set<HapiApiSuite>> suitesByRunType = Map.of(true, new HashSet<>(), false, new HashSet<>());
 
 		while (!categories.isEmpty()) {
-			suites.get(categories.pop()).forEach(suite -> suitesByRunType.get(suite.canRunAsync()).add(suite));
+			suites.get(categories.pop()).get().forEach(suite -> suitesByRunType.get(suite.canRunAsync()).add(suite));
 		}
 
 		return suitesByRunType;

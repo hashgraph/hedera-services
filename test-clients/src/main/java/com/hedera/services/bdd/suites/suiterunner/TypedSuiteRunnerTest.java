@@ -26,11 +26,14 @@ import org.junit.jupiter.api.Test;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 class TypedSuiteRunnerTest {
-	private final Map<SuiteCategory, List<HapiApiSuite>> suites = SuitesStore.initialize();
+	private final Map<SuiteCategory, Supplier<List<HapiApiSuite>>> suites = SuitesStore.initialize();
 
 	// TODO: Refactor the different cases as separate tests.
+	// TODO: Fix bug where when we pass "-s Autorenew suites" - does not split at all and is interpreting it
+	//  as an wrong argument "-s Autorenew suites"
 	@Test
 	void properlyParses() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 		final String[] withSplit = {"-s Autorenew suites,compose suites, Consensus suites, LimeChain suites, meta suites, Hedera suites"};
@@ -41,8 +44,9 @@ class TypedSuiteRunnerTest {
 		final String[] withSplitNoPerfSuites = {"-s -a -spt"};
 		final String[] withoutSplitNoPerfSuites = {"-a", "-spt"};
 		final String[] withInvalidCharacter = {"-s Autorenew suites; compose suites, Consensus suites, LimeChain suites, meta suites, Hedera suites"};
+		final String[] isolated = {"-s Autorenew suites,compose suites,  LimeChain suites, meta suites, Hedera suites"};
 
-		TypedSuiteRunner.main(withoutSplitNoPerfSuites);
+		TypedSuiteRunner.main(withSplit);
 
 	}
 

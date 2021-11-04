@@ -210,6 +210,7 @@ import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.AUTORENEW_SUITES;
@@ -238,9 +239,9 @@ import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.TOKEN_SUI
 
 //TODO: Performance tests from package perf are not included. Include if confirmed in daily
 public class SuitesStore {
-	private static final Map<SuiteCategory, List<HapiApiSuite>> suites = new EnumMap<>(SuiteCategory.class);
+	private static final Map<SuiteCategory, Supplier<List<HapiApiSuite>>> suites = new EnumMap<>(SuiteCategory.class);
 
-	protected static Map<SuiteCategory, List<HapiApiSuite>> initialize() {
+	protected static Map<SuiteCategory, Supplier<List<HapiApiSuite>>> initialize() {
 		initializeSuites();
 		return suites;
 	}
@@ -274,13 +275,13 @@ public class SuitesStore {
 				.orElse(null);
 	}
 
+	// TODO: PERF_SUITES initialized for testing purposes only. Either remove it or to populate with actual performance suites
 	protected static void initializeSuites() {
-		//TODO: PERF_SUITES initialized for testing purposes only. Either remove it or to populate with actual performance suites
-		suites.put(PERF_SUITES, List.of(
+		suites.put(PERF_SUITES, () -> List.of(
 				new AccountAutoRenewalSuite(),
 				new AutoRemovalCasesSuite()));
 
-		suites.put(AUTORENEW_SUITES, List.of(
+		suites.put(AUTORENEW_SUITES, () -> List.of(
 				new AccountAutoRenewalSuite(),
 				new AutoRemovalCasesSuite(),
 				new GracePeriodRestrictionsSuite(),
@@ -288,12 +289,12 @@ public class SuitesStore {
 				new NoGprIfNoAutoRenewSuite(),
 				new TopicAutoRenewalSuite()));
 
-		suites.put(COMPOSE_SUITES, List.of(
+		suites.put(COMPOSE_SUITES, () -> List.of(
 				new LocalNetworkCheck(),
 				new PerpetualLocalCalls()
 		));
 
-		suites.put(CONSENSUS_SUITES, List.of(
+		suites.put(CONSENSUS_SUITES, () -> List.of(
 				new AssortedHcsOps(),
 				new ChunkingSuite(),
 				new SubmitMessageSuite(),
@@ -303,7 +304,7 @@ public class SuitesStore {
 				new TopicUpdateSuite()
 		));
 
-		suites.put(CONTRACT_OP_CODES_SUITES, List.of(
+		suites.put(CONTRACT_OP_CODES_SUITES, () -> List.of(
 				new BalanceOperationSuite(),
 				new CallCodeOperationSuite(),
 				new CallOperationSuite(),
@@ -317,12 +318,12 @@ public class SuitesStore {
 				new StaticCallOperationSuite()
 		));
 
-		suites.put(CONTRACT_RECORDS_SUITES, List.of(
+		suites.put(CONTRACT_RECORDS_SUITES, () -> List.of(
 				new LogsSuite(),
 				new RecordsSuite()
 		));
 
-		suites.put(CONTRACT_SUITES, List.of(
+		suites.put(CONTRACT_SUITES, () -> List.of(
 				new ContractCallLocalSuite(),
 				new ContractCallSuite(),
 				new ContractCreateSuite(),
@@ -332,7 +333,7 @@ public class SuitesStore {
 				new ContractUpdateSuite()
 		));
 
-		suites.put(CRYPTO_SUITES, List.of(
+		suites.put(CRYPTO_SUITES, () -> List.of(
 				new CryptoCornerCasesSuite(),
 				new CryptoCreateForSuiteRunner("localhost", "3"),
 				new CryptoCreateSuite(),
@@ -352,7 +353,7 @@ public class SuitesStore {
 				new UnsupportedQueriesRegression()
 		));
 
-		suites.put(FEES_SUITES, List.of(
+		suites.put(FEES_SUITES, () -> List.of(
 				new AllBaseOpFeesSuite(),
 				new CongestionPricingSuite(),
 				new CostOfEverythingSuite(),
@@ -363,7 +364,7 @@ public class SuitesStore {
 				new TransferListServiceFeesSuite()
 		));
 
-		suites.put(FILE_NEGATIVE_SUITES, List.of(
+		suites.put(FILE_NEGATIVE_SUITES, () -> List.of(
 				new AppendFailuresSpec(),
 				new CreateFailuresSpec(),
 				new DeleteFailuresSpec(),
@@ -371,13 +372,13 @@ public class SuitesStore {
 				new UpdateFailuresSpec()
 		));
 
-		suites.put(FILE_POSITIVE_SUITES, List.of(
+		suites.put(FILE_POSITIVE_SUITES, () -> List.of(
 				new CreateSuccessSpec(),
 				new IssDemoSpec(),
 				new SysDelSysUndelSpec()
 		));
 
-		suites.put(FILE_SUITES, List.of(
+		suites.put(FILE_SUITES, () -> List.of(
 				new ExchangeRateControlSuite(),
 				new FetchSystemFiles(),
 				new FileAppendSuite(),
@@ -389,7 +390,7 @@ public class SuitesStore {
 				new ValidateNewAddressBook()
 		));
 
-		suites.put(FREEZE_SUITES, List.of(
+		suites.put(FREEZE_SUITES, () -> List.of(
 				new CryptoTransferThenFreezeTest(),
 				new FreezeAbort(),
 				new FreezeDockerNetwork(),
@@ -403,7 +404,7 @@ public class SuitesStore {
 				new UpgradeSuite()
 		));
 
-		suites.put(ISSUES_SUITES, List.of(
+		suites.put(ISSUES_SUITES, () -> List.of(
 				new Issue305Spec(),
 				new Issue310Suite(),
 				new Issue1648Suite(),
@@ -419,9 +420,9 @@ public class SuitesStore {
 				new Issue2319Spec()
 		));
 
-		suites.put(META_SUITES, List.of(new VersionInfoSpec()));
+		suites.put(META_SUITES, () -> List.of(new VersionInfoSpec()));
 
-		suites.put(MISC_SUITES, List.of(
+		suites.put(MISC_SUITES, () -> List.of(
 				new CannotDeleteSystemEntitiesSuite(),
 				new ConsensusQueriesStressTests(),
 				new ContractQueriesStressTests(),
@@ -444,7 +445,7 @@ public class SuitesStore {
 				new ZeroStakeNodeTest()
 		));
 
-		suites.put(RECONNECT_SUITES, List.of(
+		suites.put(RECONNECT_SUITES, () -> List.of(
 				new AutoRenewEntitiesForReconnect(),
 				new CheckUnavailableNode(),
 				new CreateAccountsBeforeReconnect(),
@@ -467,7 +468,7 @@ public class SuitesStore {
 				new ValidateTokensStateAfterReconnect()
 		));
 
-		suites.put(RECORDS_SUITES, List.of(
+		suites.put(RECORDS_SUITES, () -> List.of(
 				new CharacterizationSuite(),
 				new ContractRecordsSanityCheckSuite(),
 				new CryptoRecordsSanityCheckSuite(),
@@ -482,7 +483,7 @@ public class SuitesStore {
 				new SignedTransactionBytesRecordsSuite()
 		));
 
-		suites.put(REGRESSION_SUITES, List.of(
+		suites.put(REGRESSION_SUITES, () -> List.of(
 				new AddWellKnownEntities(),
 				new JrsRestartTestTemplate(),
 				new SteadyStateThrottlingCheck(),
@@ -490,7 +491,7 @@ public class SuitesStore {
 				new UmbrellaReduxWithCustomNodes()
 		));
 
-		suites.put(SCHEDULE_SUITES, List.of(
+		suites.put(SCHEDULE_SUITES, () -> List.of(
 				new ScheduleCreateSpecs(),
 				new ScheduleDeleteSpecs(),
 				new ScheduleExecutionSpecs(),
@@ -499,17 +500,17 @@ public class SuitesStore {
 				new ScheduleSignSpecs()
 		));
 
-		suites.put(STREAMING_SUITES, List.of(
+		suites.put(STREAMING_SUITES, () -> List.of(
 				new RecordStreamValidation(),
 				new RunTransfers()
 		));
 
-		suites.put(THROTTLING_SUITES, List.of(
+		suites.put(THROTTLING_SUITES, () -> List.of(
 				new PrivilegedOpsSuite(),
 				new ThrottleDefValidationSuite()
 		));
 
-		suites.put(TOKEN_SUITES, List.of(
+		suites.put(TOKEN_SUITES, () -> List.of(
 				new Hip17UnhappyAccountsSuite(),
 				new Hip17UnhappyTokensSuite(),
 				new TokenAssociationSpecs(),
