@@ -106,10 +106,13 @@ public class ContractCallSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return allOf(
-				positiveSpecs(),
-				negativeSpecs()
+		return List.of(
+				HSCS_EVM_004_GasRefund()
 		);
+//		return allOf(
+//				positiveSpecs(),
+//				negativeSpecs()
+//		);
 	}
 
 	List<HapiApiSpec> negativeSpecs() {
@@ -925,6 +928,57 @@ public class ContractCallSuite extends HapiApiSuite {
 							CustomSpecAssert.allRunFor(spec, call);
 						})
 				);
+	}
+
+	/* WIP */
+	private HapiApiSpec HSCS_EVM_004_GasRefund() {
+		final var GAS = 100_000;
+		return defaultHapiSpec("HSCS_EVM_004_GasRefund")
+				.given(
+						cryptoCreate("acc").balance(ONE_HUNDRED_HBARS),
+						fileCreate("parentDelegateBytecode")
+								.path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
+						contractCreate("parentDelegate").bytecode("parentDelegateBytecode")
+				).when(
+						getAccountInfo("acc").savingSnapshot("accSnapshot")
+				).then(
+						cryptoCreate("acc2").balance(ONE_HUNDRED_HBARS),
+						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI).via("callTxn2")
+								.payingWith("acc2").gas(GAS).hasKnownStatus(SUCCESS),
+						getAccountInfo("acc2").savingSnapshot("acc2Snapshot"),
+
+						/* examine successful contract call */
+						assertionsHold((spec, log) -> {
+							var record = getTxnRecord("callTxn2");
+							var accountInfo = spec.registry().getAccountInfo("acc2Snapshot");
+							allRunFor(spec, record);
+
+							var fee = record.getResponseRecord().getTransactionFee();
+							var gasUsed = record.getResponseRecord().getContractCallResult().getGasUsed();
+							var allTransfers = record.getResponseRecord().getTransferList().getAccountAmountsList();
+							log.debug("Gas used {}; Gas sent {}; Expected gas refund {};", gasUsed, GAS, GAS - gasUsed);
+
+							var coinbaseGasInTb = allTransfers.stream().filter(aa -> aa.getAccountID().getAccountNum() == 98).findFirst().get().getAmount();
+							log.info("Coinbase account received {} tinybars", coinbaseGasInTb);
+							var denom = gasDenomInTb(gasUsed, coinbaseGasInTb);
+							log.info("{} gas is {} tb; Denomination 1 Gas = {} tb", gasUsed, coinbaseGasInTb, denom);
+							var txnGasCost = (long) (denom * gasUsed);
+							log.info("Coinbase fee in tb: {}", txnGasCost);
+							log.info("Txn fee in gas {}", (long) fee/denom);
+							var refund = (long) GAS - gasUsed;
+							log.info("Refunds: Gas {} = Tb {} = {} Hb", refund, refund * denom, tinybarToHbar(refund));
+							var assertion = getAccountBalance("acc2").hasTinyBars(ONE_HUNDRED_HBARS - fee);
+							allRunFor(spec, assertion);
+						})
+				);
+	}
+
+	private Double gasDenomInTb(long gas, long tinybars) {
+		return Double.valueOf(tinybars)/Double.valueOf(gas);
+	}
+
+	private Double tinybarToHbar(long tb) {
+		return Double.valueOf(tb)/100_000_000;
 	}
 
 	@Override
