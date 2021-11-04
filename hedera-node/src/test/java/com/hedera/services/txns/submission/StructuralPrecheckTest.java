@@ -23,6 +23,7 @@ package com.hedera.services.txns.submission;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
+import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
@@ -37,10 +38,13 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 import java.util.List;
 import java.util.stream.IntStream;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -50,15 +54,19 @@ import static java.util.stream.Collectors.joining;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.verify;
 
 class StructuralPrecheckTest {
 	private static final int pretendSizeLimit = 1_000;
 	private static final int pretendMaxMessageDepth = 42;
 	private StructuralPrecheck subject;
 
+	@Mock
+	HapiOpCounters counters;
+
 	@BeforeEach
 	void setUp() {
-		subject = new StructuralPrecheck(pretendSizeLimit, pretendMaxMessageDepth);
+		subject = new StructuralPrecheck(pretendSizeLimit, pretendMaxMessageDepth, counters);
 	}
 
 	@Test
@@ -118,6 +126,7 @@ class StructuralPrecheckTest {
 
 		final var assess = subject.assess(signedTxn);
 
+		verify(counters).countDeprecatedTxnReceived(CryptoCreate);
 		assertExpectedFail(TRANSACTION_TOO_MANY_LAYERS, assess);
 	}
 
@@ -155,6 +164,11 @@ class StructuralPrecheckTest {
 		final var actualDepth = subject.protoDepthOf(weirdlyNestedKey);
 
 		assertEquals(expectedDepth, actualDepth);
+	}
+
+	@Test
+	void testIncrementCounter(){
+
 	}
 
 	private int verboseCalc(final GeneratedMessageV3 msg) {

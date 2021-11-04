@@ -23,6 +23,7 @@ package com.hedera.services.txns.submission;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
+import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.txns.submission.annotations.MaxProtoMsgDepth;
 import com.hedera.services.txns.submission.annotations.MaxSignedTxnSize;
 import com.hedera.services.utils.SignedTxnAccessor;
@@ -55,35 +56,45 @@ public final class StructuralPrecheck {
 
 	private final int maxSignedTxnSize;
 	private final int maxProtoMessageDepth;
+	private HapiOpCounters opCounters;
 
 	@Inject
 	public StructuralPrecheck(
 			@MaxSignedTxnSize final int maxSignedTxnSize,
-			@MaxProtoMsgDepth final int maxProtoMessageDepth
+			@MaxProtoMsgDepth final int maxProtoMessageDepth,
+			final HapiOpCounters counters
 	) {
 		this.maxSignedTxnSize = maxSignedTxnSize;
 		this.maxProtoMessageDepth = maxProtoMessageDepth;
+		this.opCounters = counters;
 	}
 
 	public Pair<TxnValidityAndFeeReq, SignedTxnAccessor> assess(final Transaction signedTxn) {
 		final var hasSignedTxnBytes = !signedTxn.getSignedTransactionBytes().isEmpty();
 		final var hasDeprecatedSigMap = signedTxn.hasSigMap();
 		final var hasDeprecatedBodyBytes = !signedTxn.getBodyBytes().isEmpty();
-
-		if (hasSignedTxnBytes) {
-			if (hasDeprecatedBodyBytes || hasDeprecatedSigMap) {
-				return WELL_KNOWN_FLAWS.get(INVALID_TRANSACTION);
-			}
-		} else if (!hasDeprecatedBodyBytes) {
-			return WELL_KNOWN_FLAWS.get(INVALID_TRANSACTION_BODY);
-		}
-
-		if (signedTxn.getSerializedSize() > maxSignedTxnSize) {
-			return WELL_KNOWN_FLAWS.get(TRANSACTION_OVERSIZE);
-		}
+		final var hasDeprecatedBody = signedTxn.hasBody();
+		final var hasDeprecatedSigs = signedTxn.hasSigs();
 
 		try {
 			final var accessor = new SignedTxnAccessor(signedTxn);
+
+			if (hasDeprecatedBody || hasDeprecatedSigs || hasDeprecatedSigMap || hasDeprecatedBodyBytes) {
+				opCounters.countDeprecatedTxnReceived(accessor.getFunction());
+			}
+
+			if (hasSignedTxnBytes) {
+				if (hasDeprecatedBodyBytes || hasDeprecatedSigMap) {
+					return WELL_KNOWN_FLAWS.get(INVALID_TRANSACTION);
+				}
+			} else if (!hasDeprecatedBodyBytes) {
+				return WELL_KNOWN_FLAWS.get(INVALID_TRANSACTION_BODY);
+			}
+
+			if (signedTxn.getSerializedSize() > maxSignedTxnSize) {
+				return WELL_KNOWN_FLAWS.get(TRANSACTION_OVERSIZE);
+			}
+
 			if (hasTooManyLayers(signedTxn) || hasTooManyLayers(accessor.getTxn())) {
 				return WELL_KNOWN_FLAWS.get(TRANSACTION_TOO_MANY_LAYERS);
 			}
