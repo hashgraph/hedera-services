@@ -23,7 +23,6 @@ package com.hedera.services.throttling;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
 import com.hedera.services.throttles.DeterministicThrottle;
-import com.hedera.services.throttles.GasLimitBucketThrottle;
 import com.hedera.services.throttles.GasLimitDeterministicThrottle;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.TxnAccessor;
@@ -163,15 +162,15 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	}
 
 	@Override
-	public void applyGasConfig(){
+	public void applyGasConfig() {
 		if (consensusThrottled) {
-			if(dynamicProperties.getConsensusThrottleMaxGasLimit() == 0 && dynamicProperties.shouldThrottleByGas()) {
+			if (dynamicProperties.getConsensusThrottleMaxGasLimit() == 0 && dynamicProperties.shouldThrottleByGas()) {
 				log.error("ThrottleByGas global dynamic property is set to true but contracts.consensusThrottleMaxGasLimit is not set in throttles.json or is set to 0.");
 			} else {
 				gasThrottle = new GasLimitDeterministicThrottle(dynamicProperties.getConsensusThrottleMaxGasLimit());
 			}
 		} else {
-			if(dynamicProperties.getFrontendThrottleMaxGasLimit() == 0 && dynamicProperties.shouldThrottleByGas()) {
+			if (dynamicProperties.getFrontendThrottleMaxGasLimit() == 0 && dynamicProperties.shouldThrottleByGas()) {
 				log.error("ThrottleByGas global dynamic property is set to true but contracts.frontendThrottleMaxGasLimit is not set in throttles.json or is set to 0.");
 			} else {
 				gasThrottle = new GasLimitDeterministicThrottle(dynamicProperties.getFrontendThrottleMaxGasLimit());

@@ -505,8 +505,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				gasLimitThrottle.resetUsageTo(gasThrottleUsageSnapshot);
 				log.info("Reset {} with saved gas throttle usage snapshot", gasThrottleUsageSnapshot);
 			} catch (Exception e) {
-				log.warn("Saved gas throttle usage snapshot was not compatible with the corresponding active throttle ("
-						+ e.getMessage() + "); not performing a reset!");
+				log.warn("Saved gas throttle usage snapshot was not compatible " +
+						"with the corresponding active throttle (%s); not performing a reset!", e.getMessage());
 				gasLimitThrottle.resetUsageTo(currGasThrottleUsageSnapshot);
 			}
 		}

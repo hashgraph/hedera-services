@@ -20,7 +20,6 @@ package com.hedera.services.utils;
  * ‍
  */
 
-import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.HederaLedger;
@@ -743,8 +742,7 @@ public final class MiscUtils {
 	 * flipping bit j of perm64(x). For each possible pair (i,j), this function
 	 * achieves a probability between 49.8 and 50.2 percent.
 	 *
-	 * @param x
-	 * 		the value to permute
+	 * @param x the value to permute
 	 * @return the avalanche-optimized permutation
 	 */
 	public static long perm64(long x) {
@@ -781,6 +779,7 @@ public final class MiscUtils {
 
 	/**
 	 * Verifies whether a {@link HederaFunctionality} should be throttled by the consensus throttle
+	 *
 	 * @param hederaFunctionality - the {@link HederaFunctionality} to verify
 	 * @return - whether this {@link HederaFunctionality} should be throttled by the consensus throttle
 	 */
