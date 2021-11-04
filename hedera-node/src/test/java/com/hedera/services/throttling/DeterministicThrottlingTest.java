@@ -253,6 +253,59 @@ class DeterministicThrottlingTest {
 	}
 
 	@Test
+	void alwaysThrottlesContractCallWhenGasThrottleIsNotDefined() {
+		givenFunction(ContractCall);
+		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
+		given(dynamicProperties.getConsensusThrottleMaxGasLimit()).willReturn(0L);
+		subject.setConsensusThrottled(true);
+		subject.applyGasConfig();
+		// expect:
+		assertTrue(subject.shouldThrottleTxn(accessor, consensusNow));
+	}
+
+	@Test
+	void alwaysThrottlesContractCallWhenGasThrottleReturnsTrue() {
+		givenFunction(ContractCall);
+		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
+		given(dynamicProperties.getConsensusThrottleMaxGasLimit()).willReturn(0L);
+		subject.setConsensusThrottled(true);
+		subject.applyGasConfig();
+		// expect:
+		assertTrue(subject.shouldThrottleTxn(accessor, consensusNow));
+	}
+
+	@Test
+	void alwaysThrottlesContractCreateWhenGasThrottleIsNotDefined() {
+		givenFunction(ContractCreate);
+		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
+		given(dynamicProperties.getConsensusThrottleMaxGasLimit()).willReturn(0L);
+		subject.setConsensusThrottled(true);
+		subject.applyGasConfig();
+		// expect:
+		assertTrue(subject.shouldThrottleTxn(accessor, consensusNow));
+	}
+
+	@Test
+	void alwaysThrottlesContractCreateWhenGasThrottleReturnsTrue() {
+		givenFunction(ContractCreate);
+		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
+		given(dynamicProperties.getConsensusThrottleMaxGasLimit()).willReturn(0L);
+		subject.setConsensusThrottled(true);
+		subject.applyGasConfig();
+		// expect:
+		assertTrue(subject.shouldThrottleTxn(accessor, consensusNow));
+	}
+
+	@Test
+	void gasLimitThrottleReturnsCorrectObject() {
+		given(dynamicProperties.getConsensusThrottleMaxGasLimit()).willReturn(10L);
+		subject.setConsensusThrottled(true);
+		subject.applyGasConfig();
+		// expect:
+		assertEquals(10L, subject.gasLimitThrottle().getCapacity());
+	}
+
+	@Test
 	void logsAsExpected() throws IOException {
 		// setup:
 		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
