@@ -23,21 +23,27 @@ package com.hedera.services.state.merkle.internals;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.CONTRACT_BYTECODE;
+import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.CONTRACT_STORAGE;
+import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.FILE_DATA;
+import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.FILE_METADATA;
+import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.SYSTEM_DELETED_ENTITY_EXPIRY;
+import static com.hedera.services.state.merkle.internals.BlobKey.typeFromCharCode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class BlobKeyTest {
 	private BlobKey subject;
 
 	@BeforeEach
 	void setup() {
-		subject = new BlobKey(BlobKey.BlobType.FILE_DATA, 2);
+		subject = new BlobKey(FILE_DATA, 2);
 	}
 
 	@Test
 	void gettersWork() {
-		// expect:
-		assertEquals(BlobKey.BlobType.FILE_DATA, subject.getType());
+		assertEquals(FILE_DATA, subject.getType());
 		assertEquals(2, subject.getEntityNum());
 	}
 
@@ -51,9 +57,9 @@ class BlobKeyTest {
 
 	@Test
 	void objectContractMet() {
-		final var one = new BlobKey(BlobKey.BlobType.FILE_METADATA, 2);
-		final var two = new BlobKey(BlobKey.BlobType.FILE_DATA, 2);
-		final var three = new BlobKey(BlobKey.BlobType.FILE_DATA, 2);
+		final var one = new BlobKey(FILE_METADATA, 2);
+		final var two = new BlobKey(FILE_DATA, 2);
+		final var three = new BlobKey(FILE_DATA, 2);
 		final var twoRef = two;
 
 		assertNotEquals(two, one);
@@ -63,5 +69,17 @@ class BlobKeyTest {
 
 		assertNotEquals(one.hashCode(), two.hashCode());
 		assertEquals(two.hashCode(), three.hashCode());
+	}
+
+	@Test
+	void legacyBlobCodeSupported() {
+		assertEquals(FILE_DATA, typeFromCharCode('f'));
+		assertEquals(FILE_METADATA, typeFromCharCode('k'));
+		assertEquals(CONTRACT_BYTECODE, typeFromCharCode('s'));
+		assertEquals(CONTRACT_STORAGE, typeFromCharCode('d'));
+		assertEquals(SYSTEM_DELETED_ENTITY_EXPIRY, typeFromCharCode('e'));
+
+		final var iae = assertThrows(IllegalArgumentException.class, () -> typeFromCharCode('a'));
+		assertEquals("Invalid legacy code 'a'", iae.getMessage());
 	}
 }
