@@ -31,7 +31,6 @@ import io.grpc.Server;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.netty.NettyServerBuilder;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -138,7 +137,6 @@ class NettyGrpcServerManagerTest {
 		}
 	}
 
-	@Disabled
 	@Test
 	void givesUpIfMaxRetriesExhaustedAndPropagatesIOException() throws Exception {
 		// setup:
