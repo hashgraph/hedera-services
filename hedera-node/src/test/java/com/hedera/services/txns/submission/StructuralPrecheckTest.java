@@ -60,9 +60,7 @@ class StructuralPrecheckTest {
 	private static final int pretendSizeLimit = 1_000;
 	private static final int pretendMaxMessageDepth = 42;
 	private StructuralPrecheck subject;
-
-	@Mock
-	HapiOpCounters counters;
+	private HapiOpCounters counters;
 
 	@BeforeEach
 	void setUp() {

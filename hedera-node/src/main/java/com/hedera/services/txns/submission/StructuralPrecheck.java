@@ -35,6 +35,7 @@ import javax.inject.Singleton;
 import java.util.List;
 
 import static com.hedera.services.txns.submission.PresolvencyFlaws.WELL_KNOWN_FLAWS;
+import static com.hedera.services.utils.SignedTxnAccessor.functionExtractor;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
@@ -76,25 +77,24 @@ public final class StructuralPrecheck {
 		final var hasDeprecatedBody = signedTxn.hasBody();
 		final var hasDeprecatedSigs = signedTxn.hasSigs();
 
+		if (hasDeprecatedBody || hasDeprecatedSigs || hasDeprecatedSigMap || hasDeprecatedBodyBytes) {
+			opCounters.countDeprecatedTxnReceived(functionExtractor.apply(signedTxn.getBody()));
+		}
+
+		if (hasSignedTxnBytes) {
+			if (hasDeprecatedBodyBytes || hasDeprecatedSigMap) {
+				return WELL_KNOWN_FLAWS.get(INVALID_TRANSACTION);
+			}
+		} else if (!hasDeprecatedBodyBytes) {
+			return WELL_KNOWN_FLAWS.get(INVALID_TRANSACTION_BODY);
+		}
+
+		if (signedTxn.getSerializedSize() > maxSignedTxnSize) {
+			return WELL_KNOWN_FLAWS.get(TRANSACTION_OVERSIZE);
+		}
+
 		try {
 			final var accessor = new SignedTxnAccessor(signedTxn);
-
-			if (hasDeprecatedBody || hasDeprecatedSigs || hasDeprecatedSigMap || hasDeprecatedBodyBytes) {
-				opCounters.countDeprecatedTxnReceived(accessor.getFunction());
-			}
-
-			if (hasSignedTxnBytes) {
-				if (hasDeprecatedBodyBytes || hasDeprecatedSigMap) {
-					return WELL_KNOWN_FLAWS.get(INVALID_TRANSACTION);
-				}
-			} else if (!hasDeprecatedBodyBytes) {
-				return WELL_KNOWN_FLAWS.get(INVALID_TRANSACTION_BODY);
-			}
-
-			if (signedTxn.getSerializedSize() > maxSignedTxnSize) {
-				return WELL_KNOWN_FLAWS.get(TRANSACTION_OVERSIZE);
-			}
-
 			if (hasTooManyLayers(signedTxn) || hasTooManyLayers(accessor.getTxn())) {
 				return WELL_KNOWN_FLAWS.get(TRANSACTION_TOO_MANY_LAYERS);
 			}
