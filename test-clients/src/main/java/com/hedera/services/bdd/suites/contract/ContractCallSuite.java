@@ -952,22 +952,31 @@ public class ContractCallSuite extends HapiApiSuite {
 							var record = getTxnRecord("callTxn2");
 							var accountInfo = spec.registry().getAccountInfo("acc2Snapshot");
 							allRunFor(spec, record);
-
 							var fee = record.getResponseRecord().getTransactionFee();
 							var gasUsed = record.getResponseRecord().getContractCallResult().getGasUsed();
 							var allTransfers = record.getResponseRecord().getTransferList().getAccountAmountsList();
-							log.debug("Gas used {}; Gas sent {}; Expected gas refund {};", gasUsed, GAS, GAS - gasUsed);
-
-							var coinbaseGasInTb = allTransfers.stream().filter(aa -> aa.getAccountID().getAccountNum() == 98).findFirst().get().getAmount();
-							log.info("Coinbase account received {} tinybars", coinbaseGasInTb);
-							var denom = gasDenomInTb(gasUsed, coinbaseGasInTb);
-							log.info("{} gas is {} tb; Denomination 1 Gas = {} tb", gasUsed, coinbaseGasInTb, denom);
-							var txnGasCost = (long) (denom * gasUsed);
-							log.info("Coinbase fee in tb: {}", txnGasCost);
-							log.info("Txn fee in gas {}", (long) fee/denom);
-							var refund = (long) GAS - gasUsed;
-							log.info("Refunds: Gas {} = Tb {} = {} Hb", refund, refund * denom, tinybarToHbar(refund));
-							var assertion = getAccountBalance("acc2").hasTinyBars(ONE_HUNDRED_HBARS - fee);
+							log.info("Gas used {}; Gas sent {}; Expected gas refund {};", gasUsed, GAS, GAS - gasUsed);
+							var coinbaseReceiveTransfer = allTransfers
+									.stream()
+									.filter(aa -> aa.getAccountID().getAccountNum() == 98)
+									.findAny()
+									.get();
+							var payerTransfer = allTransfers
+									.stream()
+									.filter(aa -> aa.getAccountID().equals(accountInfo.getAccountID()))
+									.findAny()
+									.get();
+							var otherTransfer = allTransfers
+									.stream()
+									.filter(aa -> aa.getAccountID().getAccountNum() == 3)
+									.findAny()
+									.get();
+							log.info("Tx Payer transfer:\n -> {{}}", payerTransfer);
+							log.info("Transfer to coinbase:\n -> {{}}", coinbaseReceiveTransfer);
+							log.info("Transfer to {{}}:\n -> {{}}", otherTransfer.getAccountID(), otherTransfer);
+							// check if amount paid to coinbase is the used gas
+							var assertion = getAccountBalance("acc2")
+									.hasTinyBars(ONE_HUNDRED_HBARS - fee);
 							allRunFor(spec, assertion);
 						})
 				);
