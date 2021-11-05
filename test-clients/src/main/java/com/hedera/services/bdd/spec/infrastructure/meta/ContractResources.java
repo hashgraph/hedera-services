@@ -68,6 +68,27 @@ public class ContractResources {
 	public static final String FACTORY_SELF_DESTRUCT_CONSTRUCTOR_CONTRACT = bytecodePath("FactorySelfDestructConstructor");
 	public static final String FACTORY_QUICK_SELF_DESTRUCT_CONTRACT = bytecodePath("FactoryQuickSelfDestruct");
 	public static final String TEMPORARY_SSTORE_REFUND_CONTRACT = bytecodePath("TemporarySStoreRefund");
+	public static final String TOP_LEVEL_TRANSFERRING_CONTRACT = bytecodePath("TopLevelTransferringContract");
+	public static final String SUB_LEVEL_TRANSFERRING_CONTRACT = bytecodePath("SubLevelTransferringContract");
+	public static final String LARGE_CONTRACT_CRYPTO_KITTIES = bytecodePath("CryptoKitties");
+	public static final String SELF_DESTRUCT_CALLABLE = bytecodePath("SelfDestructCallable");
+
+	public static final String SELF_DESTRUCT_CALL_ABI = "{\"inputs\":[],\"name\":\"destroy\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"}";
+
+	public static final String CRYPTO_KITTIES_CREATE_PROMO_KITTY_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"_genes\",\"type\":\"uint256\"},{\"name\":\"_owner\",\"type\":\"address\"}],\"name\":\"createPromoKitty\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+
+	public static final String TOP_LEVEL_TRANSFERRING_CONTRACT_TRANSFER_CALL_PAYABLE_ABI = "{\"inputs\":[],\"name\":\"topLevelTransferCall\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"payable\",\"type\":\"function\"}";
+	public static final String TOP_LEVEL_TRANSFERRING_CONTRACT_NON_PAYABLE_ABI = "{\"inputs\":[],\"name\":\"topLevelNonPayableCall\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"pure\",\"type\":\"function\"}";
+
+	public static final String SUB_LEVEL_PAYABLE_ABI = "{\"inputs\":" +
+			"[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"}" +
+			",{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"subLevelPayableCall\"," +
+			"\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+
+	public static final String SUB_LEVEL_NON_PAYABLE_ABI = "{\"inputs\":" +
+			"[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"}," +
+			"{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}]," +
+			"\"name\":\"subLevelNonPayableCall\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
 	public static final String TWO_SSTORES = "{ \"inputs\": [ { \"internalType\": \"bytes32\", \"name\": \"_singleProp\", \"type\": \"bytes32\" } ], \"name\": \"twoSSTOREs\", \"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
