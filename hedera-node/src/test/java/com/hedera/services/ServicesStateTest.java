@@ -271,7 +271,7 @@ class ServicesStateTest {
 
 		// then:
 		verify(expansionHelper).expandIn(txnAccessor, retryingKeyOrder, pubKeyToSigBytes);
-		verify(prefetchProcessor).offer(txnAccessor);
+		verify(prefetchProcessor).submit(txnAccessor);
 	}
 
 	@Test
