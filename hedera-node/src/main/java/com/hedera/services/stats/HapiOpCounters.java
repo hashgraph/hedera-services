@@ -89,8 +89,17 @@ public class HapiOpCounters {
 		registerCounters(platform, submittedTxns, COUNTER_SUBMITTED_NAME_TPL, COUNTER_SUBMITTED_DESC_TPL);
 		registerCounters(platform, handledTxns, COUNTER_HANDLED_NAME_TPL, COUNTER_HANDLED_DESC_TPL);
 		registerCounters(platform, answeredQueries, COUNTER_ANSWERED_NAME_TPL, COUNTER_ANSWERED_DESC_TPL);
+		registerCounter(platform, receivedDeprecatedTxns, COUNTER_RECEIVED_DEPRECATED_NAME_TPL,
+				COUNTER_RECEIVED_DEPRECATED_DESC_TPL);
+	}
 
-		platform.addAppStatEntry(counter.from(COUNTER_RECEIVED_DEPRECATED_NAME_TPL, COUNTER_RECEIVED_DEPRECATED_DESC_TPL, receivedDeprecatedTxns::get));
+	private void registerCounter(
+			final Platform platform,
+			final AtomicLong counters,
+			final String nameTpl,
+			final String descTpl
+	) {
+		platform.addAppStatEntry(counter.from(nameTpl, descTpl, counters::get));
 	}
 
 	private void registerCounters(

@@ -99,9 +99,17 @@ public class HapiOpSpeedometers {
 		registerSpeedometers(platform, submittedTxns, SPEEDOMETER_SUBMITTED_NAME_TPL, SPEEDOMETER_SUBMITTED_DESC_TPL);
 		registerSpeedometers(platform, handledTxns, SPEEDOMETER_HANDLED_NAME_TPL, SPEEDOMETER_HANDLED_DESC_TPL);
 		registerSpeedometers(platform, answeredQueries, SPEEDOMETER_ANSWERED_NAME_TPL, SPEEDOMETER_ANSWERED_DESC_TPL);
+		registerSpeedometer(platform, receivedDeprecatedTxns, SPEEDOMETER_RECEIVED_DEPRECATED_NAME_TPL,
+				SPEEDOMETER_RECEIVED_DEPRECATED_DESC_TPL);
+	}
 
-		platform.addAppStatEntry(speedometer.from(SPEEDOMETER_RECEIVED_DEPRECATED_NAME_TPL,
-				SPEEDOMETER_RECEIVED_DEPRECATED_DESC_TPL, receivedDeprecatedTxns));
+	private void registerSpeedometer(
+			Platform platform,
+			StatsSpeedometer speedometers,
+			String nameTpl,
+			String descTpl
+	) {
+		platform.addAppStatEntry(speedometer.from(nameTpl, descTpl, speedometers));
 	}
 
 	private void registerSpeedometers(
