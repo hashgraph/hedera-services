@@ -54,7 +54,7 @@ class HapiOpSpeedometersTest {
 	HapiOpSpeedometers subject;
 
 	@BeforeEach
-	void setup() throws Exception {
+	void setup() {
 		HapiOpSpeedometers.allFunctions = () -> new HederaFunctionality[] {
 				CryptoTransfer,
 				TokenGetInfo
@@ -82,25 +82,23 @@ class HapiOpSpeedometersTest {
 		assertTrue(subject.submittedTxns.containsKey(CryptoTransfer));
 		assertTrue(subject.handledTxns.containsKey(CryptoTransfer));
 		assertFalse(subject.answeredQueries.containsKey(CryptoTransfer));
-		assertTrue(subject.receivedDeprecatedTxns.containsKey(CryptoTransfer));
 		// and:
 		assertTrue(subject.lastReceivedOpsCount.containsKey(CryptoTransfer));
 		assertTrue(subject.lastSubmittedTxnsCount.containsKey(CryptoTransfer));
 		assertTrue(subject.lastHandledTxnsCount.containsKey(CryptoTransfer));
 		assertFalse(subject.lastAnsweredQueriesCount.containsKey(CryptoTransfer));
-		assertTrue(subject.lastReceivedDeprecatedTxnCount.containsKey(CryptoTransfer));
+
 		// and:
 		assertTrue(subject.receivedOps.containsKey(TokenGetInfo));
 		assertTrue(subject.answeredQueries.containsKey(TokenGetInfo));
 		assertFalse(subject.submittedTxns.containsKey(TokenGetInfo));
 		assertFalse(subject.handledTxns.containsKey(TokenGetInfo));
-		assertFalse(subject.receivedDeprecatedTxns.containsKey(TokenGetInfo));
 		// and:
 		assertTrue(subject.lastReceivedOpsCount.containsKey(TokenGetInfo));
 		assertTrue(subject.lastAnsweredQueriesCount.containsKey(TokenGetInfo));
 		assertFalse(subject.lastSubmittedTxnsCount.containsKey(TokenGetInfo));
 		assertFalse(subject.lastHandledTxnsCount.containsKey(TokenGetInfo));
-		assertFalse(subject.lastReceivedDeprecatedTxnCount.containsKey(TokenGetInfo));
+		assertEquals(0L, subject.lastReceivedDeprecatedTxnCount);
 	}
 
 	@Test
@@ -116,12 +114,12 @@ class HapiOpSpeedometersTest {
 		var xferRcvName = String.format(ServicesStatsConfig.SPEEDOMETER_RECEIVED_NAME_TPL, "CryptoTransfer");
 		var xferSubName = String.format(ServicesStatsConfig.SPEEDOMETER_SUBMITTED_NAME_TPL, "CryptoTransfer");
 		var xferHdlName = String.format(ServicesStatsConfig.SPEEDOMETER_HANDLED_NAME_TPL, "CryptoTransfer");
-		var xferDeprecatedRcvName = String.format(ServicesStatsConfig.SPEEDOMETER_RECEIVED_DEPRECATED_NAME_TPL, "CryptoTransfer");
+		var xferDeprecatedRcvName = ServicesStatsConfig.SPEEDOMETER_RECEIVED_DEPRECATED_NAME_TPL;
 		// and:
 		var xferRcvDesc = String.format(ServicesStatsConfig.SPEEDOMETER_RECEIVED_DESC_TPL, "CryptoTransfer");
 		var xferSubDesc = String.format(ServicesStatsConfig.SPEEDOMETER_SUBMITTED_DESC_TPL, "CryptoTransfer");
 		var xferHdlDesc = String.format(ServicesStatsConfig.SPEEDOMETER_HANDLED_DESC_TPL, "CryptoTransfer");
-		var xferDeprecatedRcvDesc = String.format(ServicesStatsConfig.SPEEDOMETER_RECEIVED_DEPRECATED_DESC_TPL, "CryptoTransfer");
+		var xferDeprecatedRcvDesc = ServicesStatsConfig.SPEEDOMETER_RECEIVED_DEPRECATED_DESC_TPL;
 		// and:
 		var infoRcvName = String.format(ServicesStatsConfig.SPEEDOMETER_RECEIVED_NAME_TPL, "TokenGetInfo");
 		var infoAnsName = String.format(ServicesStatsConfig.SPEEDOMETER_ANSWERED_NAME_TPL, "TokenGetInfo");
@@ -173,7 +171,7 @@ class HapiOpSpeedometersTest {
 		subject.lastReceivedOpsCount.put(CryptoTransfer, 1L);
 		subject.lastSubmittedTxnsCount.put(CryptoTransfer, 2L);
 		subject.lastHandledTxnsCount.put(CryptoTransfer, 3L);
-		subject.lastReceivedDeprecatedTxnCount.put(CryptoTransfer, 4L);
+		subject.lastReceivedDeprecatedTxnCount = 4L;
 		// and:
 		subject.lastReceivedOpsCount.put(TokenGetInfo, 4L);
 		subject.lastAnsweredQueriesCount.put(TokenGetInfo, 5L);
@@ -190,14 +188,14 @@ class HapiOpSpeedometersTest {
 		given(counters.handledSoFar(CryptoTransfer)).willReturn(6L);
 		given(counters.receivedSoFar(TokenGetInfo)).willReturn(8L);
 		given(counters.answeredSoFar(TokenGetInfo)).willReturn(10L);
-		given(counters.receivedDeprecatedTxnSoFar(CryptoTransfer)).willReturn(12L);
+		given(counters.receivedDeprecatedTxnSoFar()).willReturn(12L);
 		// and:
 		subject.receivedOps.put(CryptoTransfer, xferReceived);
 		subject.submittedTxns.put(CryptoTransfer, xferSubmitted);
 		subject.handledTxns.put(CryptoTransfer, xferHandled);
 		subject.receivedOps.put(TokenGetInfo, infoReceived);
 		subject.answeredQueries.put(TokenGetInfo, infoAnswered);
-		subject.receivedDeprecatedTxns.put(CryptoTransfer, xferDeprecatedRcvd);
+		subject.receivedDeprecatedTxns = xferDeprecatedRcvd;
 
 		// when:
 		subject.updateAll();
@@ -208,13 +206,12 @@ class HapiOpSpeedometersTest {
 		assertEquals(6L, subject.lastHandledTxnsCount.get(CryptoTransfer));
 		assertEquals(8L, subject.lastReceivedOpsCount.get(TokenGetInfo));
 		assertEquals(10L, subject.lastAnsweredQueriesCount.get(TokenGetInfo));
-		assertEquals(12L, subject.lastReceivedDeprecatedTxnCount.get(CryptoTransfer));
+		assertEquals(12L, subject.lastReceivedDeprecatedTxnCount);
 		// and:
 		verify(xferReceived).update(1);
 		verify(xferSubmitted).update(2);
 		verify(xferHandled).update(3);
 		verify(infoReceived).update(4);
 		verify(infoAnswered).update(5);
-		verify(xferDeprecatedRcvd).update(8);
 	}
 }

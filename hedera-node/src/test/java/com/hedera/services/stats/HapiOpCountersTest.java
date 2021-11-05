@@ -84,20 +84,18 @@ class HapiOpCountersTest {
 		assertTrue(subject.receivedOps.containsKey(CryptoTransfer));
 		assertTrue(subject.submittedTxns.containsKey(CryptoTransfer));
 		assertTrue(subject.handledTxns.containsKey(CryptoTransfer));
-		assertTrue(subject.receivedDeprecatedTxns.containsKey(CryptoTransfer));
+		assertEquals(0, subject.receivedDeprecatedTxns.get());
 		assertFalse(subject.answeredQueries.containsKey(CryptoTransfer));
 
 		assertTrue(subject.receivedOps.containsKey(TokenGetInfo));
 		assertTrue(subject.answeredQueries.containsKey(TokenGetInfo));
 		assertFalse(subject.submittedTxns.containsKey(TokenGetInfo));
 		assertFalse(subject.handledTxns.containsKey(TokenGetInfo));
-		assertFalse(subject.receivedDeprecatedTxns.containsKey(TokenGetInfo));
 
 		assertFalse(subject.receivedOps.containsKey(NONE));
 		assertFalse(subject.submittedTxns.containsKey(NONE));
 		assertFalse(subject.answeredQueries.containsKey(NONE));
 		assertFalse(subject.handledTxns.containsKey(NONE));
-		assertFalse(subject.receivedDeprecatedTxns.containsKey(NONE));
 	}
 
 	@Test
@@ -111,11 +109,11 @@ class HapiOpCountersTest {
 		final var xferRcvName = String.format(ServicesStatsConfig.COUNTER_RECEIVED_NAME_TPL, "CryptoTransfer");
 		final var xferSubName = String.format(ServicesStatsConfig.COUNTER_SUBMITTED_NAME_TPL, "CryptoTransfer");
 		final var xferHdlName = String.format(ServicesStatsConfig.COUNTER_HANDLED_NAME_TPL, "CryptoTransfer");
-		final var xferRcvDeprecatedName = String.format(ServicesStatsConfig.COUNTER_RECEIVED_DEPRECATED_NAME_TPL, "CryptoTransfer");
+		final var xferRcvDeprecatedName = String.format(ServicesStatsConfig.COUNTER_RECEIVED_DEPRECATED_NAME_TPL);
 		final var xferRcvDesc = String.format(ServicesStatsConfig.COUNTER_RECEIVED_DESC_TPL, "CryptoTransfer");
 		final var xferSubDesc = String.format(ServicesStatsConfig.COUNTER_SUBMITTED_DESC_TPL, "CryptoTransfer");
 		final var xferHdlDesc = String.format(ServicesStatsConfig.COUNTER_HANDLED_DESC_TPL, "CryptoTransfer");
-		final var xferRcvDeprecatedDesc = String.format(ServicesStatsConfig.COUNTER_RECEIVED_DEPRECATED_DESC_TPL, "CryptoTransfer");
+		final var xferRcvDeprecatedDesc = String.format(ServicesStatsConfig.COUNTER_RECEIVED_DEPRECATED_DESC_TPL);
 		final var infoRcvName = String.format(ServicesStatsConfig.COUNTER_RECEIVED_NAME_TPL, "TokenGetInfo");
 		final var infoAnsName = String.format(ServicesStatsConfig.COUNTER_ANSWERED_NAME_TPL, "TokenGetInfo");
 		final var infoRcvDesc = String.format(ServicesStatsConfig.COUNTER_RECEIVED_DESC_TPL, "TokenGetInfo");
@@ -192,7 +190,7 @@ class HapiOpCountersTest {
 		subject.countSubmitted(CryptoTransfer);
 		subject.countSubmitted(CryptoTransfer);
 		subject.countHandled(CryptoTransfer);
-		subject.countDeprecatedTxnReceived(CryptoTransfer);
+		subject.countDeprecatedTxnReceived();
 		subject.countReceived(TokenGetInfo);
 		subject.countReceived(TokenGetInfo);
 		subject.countReceived(TokenGetInfo);
@@ -202,7 +200,7 @@ class HapiOpCountersTest {
 		assertEquals(3L, subject.receivedSoFar(CryptoTransfer));
 		assertEquals(2L, subject.submittedSoFar(CryptoTransfer));
 		assertEquals(1L, subject.handledSoFar(CryptoTransfer));
-		assertEquals(1L, subject.receivedDeprecatedTxnSoFar(CryptoTransfer));
+		assertEquals(1L, subject.receivedDeprecatedTxnSoFar());
 		assertEquals(3L, subject.receivedSoFar(TokenGetInfo));
 		assertEquals(2L, subject.answeredSoFar(TokenGetInfo));
 	}
@@ -213,12 +211,16 @@ class HapiOpCountersTest {
 		assertDoesNotThrow(() -> subject.countSubmitted(NONE));
 		assertDoesNotThrow(() -> subject.countHandled(NONE));
 		assertDoesNotThrow(() -> subject.countAnswered(NONE));
-		assertDoesNotThrow(() -> subject.countDeprecatedTxnReceived(NONE));
 
 		assertEquals(0L, subject.receivedSoFar(NONE));
 		assertEquals(0L, subject.submittedSoFar(NONE));
 		assertEquals(0L, subject.handledSoFar(NONE));
 		assertEquals(0L, subject.answeredSoFar(NONE));
-		assertEquals(0L, subject.receivedDeprecatedTxnSoFar(NONE));
+	}
+
+	@Test
+	void deprecatedTxnsCountIncrementsByOne() {
+		subject.countDeprecatedTxnReceived();
+		assertEquals(1L, subject.receivedDeprecatedTxnSoFar());
 	}
 }

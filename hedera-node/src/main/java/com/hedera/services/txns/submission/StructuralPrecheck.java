@@ -78,7 +78,7 @@ public final class StructuralPrecheck {
 		final var hasDeprecatedSigs = signedTxn.hasSigs();
 
 		if (hasDeprecatedBody || hasDeprecatedSigs || hasDeprecatedSigMap || hasDeprecatedBodyBytes) {
-			opCounters.countDeprecatedTxnReceived(functionExtractor.apply(signedTxn.getBody()));
+			opCounters.countDeprecatedTxnReceived();
 		}
 
 		if (hasSignedTxnBytes) {

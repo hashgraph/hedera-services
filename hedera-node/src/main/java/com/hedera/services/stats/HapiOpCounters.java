@@ -26,6 +26,7 @@ import com.swirlds.common.Platform;
 
 import java.util.Arrays;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
@@ -57,7 +58,7 @@ public class HapiOpCounters {
 	EnumMap<HederaFunctionality, AtomicLong> handledTxns = new EnumMap<>(HederaFunctionality.class);
 	EnumMap<HederaFunctionality, AtomicLong> submittedTxns = new EnumMap<>(HederaFunctionality.class);
 	EnumMap<HederaFunctionality, AtomicLong> answeredQueries = new EnumMap<>(HederaFunctionality.class);
-	EnumMap<HederaFunctionality, AtomicLong> receivedDeprecatedTxns = new EnumMap<>(HederaFunctionality.class);
+	AtomicLong receivedDeprecatedTxns;
 
 	public HapiOpCounters(
 			final CounterFactory counter,
@@ -79,9 +80,9 @@ public class HapiOpCounters {
 					} else {
 						submittedTxns.put(function, new AtomicLong());
 						handledTxns.put(function, new AtomicLong());
-						receivedDeprecatedTxns.put(function, new AtomicLong());
 					}
 				});
+		receivedDeprecatedTxns = new AtomicLong();
 	}
 
 	public void registerWith(final Platform platform) {
@@ -89,8 +90,8 @@ public class HapiOpCounters {
 		registerCounters(platform, submittedTxns, COUNTER_SUBMITTED_NAME_TPL, COUNTER_SUBMITTED_DESC_TPL);
 		registerCounters(platform, handledTxns, COUNTER_HANDLED_NAME_TPL, COUNTER_HANDLED_DESC_TPL);
 		registerCounters(platform, answeredQueries, COUNTER_ANSWERED_NAME_TPL, COUNTER_ANSWERED_DESC_TPL);
-		registerCounters(platform, receivedDeprecatedTxns, COUNTER_RECEIVED_DEPRECATED_NAME_TPL,
-				COUNTER_RECEIVED_DEPRECATED_DESC_TPL);
+
+		platform.addAppStatEntry(counter.from(COUNTER_RECEIVED_DEPRECATED_NAME_TPL, COUNTER_RECEIVED_DEPRECATED_DESC_TPL, receivedDeprecatedTxns::get));
 	}
 
 	private void registerCounters(
@@ -152,11 +153,11 @@ public class HapiOpCounters {
 		}
 	}
 
-	public void countDeprecatedTxnReceived(final HederaFunctionality txn) {
-		safeIncrement(receivedDeprecatedTxns, txn);
+	public void countDeprecatedTxnReceived() {
+		receivedDeprecatedTxns.getAndIncrement();
 	}
 
-	public long receivedDeprecatedTxnSoFar(final HederaFunctionality txn) {
-		return IGNORED_FUNCTIONS.contains(txn) ? 0 : receivedDeprecatedTxns.get(txn).get();
+	public long receivedDeprecatedTxnSoFar() {
+		return receivedDeprecatedTxns.get();
 	}
 }

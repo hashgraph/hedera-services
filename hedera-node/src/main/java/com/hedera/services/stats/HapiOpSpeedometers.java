@@ -56,13 +56,13 @@ public class HapiOpSpeedometers {
 	final Map<HederaFunctionality, Long> lastHandledTxnsCount = new HashMap<>();
 	final Map<HederaFunctionality, Long> lastSubmittedTxnsCount = new HashMap<>();
 	final Map<HederaFunctionality, Long> lastAnsweredQueriesCount = new HashMap<>();
-	final Map<HederaFunctionality, Long> lastReceivedDeprecatedTxnCount = new HashMap<>();
+	Long lastReceivedDeprecatedTxnCount;
 
 	final EnumMap<HederaFunctionality, StatsSpeedometer> receivedOps = new EnumMap<>(HederaFunctionality.class);
 	final EnumMap<HederaFunctionality, StatsSpeedometer> handledTxns = new EnumMap<>(HederaFunctionality.class);
 	final EnumMap<HederaFunctionality, StatsSpeedometer> submittedTxns = new EnumMap<>(HederaFunctionality.class);
 	final EnumMap<HederaFunctionality, StatsSpeedometer> answeredQueries = new EnumMap<>(HederaFunctionality.class);
-	final EnumMap<HederaFunctionality, StatsSpeedometer> receivedDeprecatedTxns = new EnumMap<>(HederaFunctionality.class);
+	StatsSpeedometer receivedDeprecatedTxns;
 
 	public HapiOpSpeedometers(
 			HapiOpCounters counters,
@@ -78,37 +78,39 @@ public class HapiOpSpeedometers {
 		Arrays.stream(allFunctions.get())
 				.filter(function -> !IGNORED_FUNCTIONS.contains(function))
 				.forEach(function -> {
-			receivedOps.put(function, new StatsSpeedometer(halfLife));
-			lastReceivedOpsCount.put(function, 0L);
-			if (QUERY_FUNCTIONS.contains(function)) {
-				answeredQueries.put(function, new StatsSpeedometer(halfLife));
-				lastAnsweredQueriesCount.put(function, 0L);
-			} else {
-				submittedTxns.put(function, new StatsSpeedometer(halfLife));
-				lastSubmittedTxnsCount.put(function, 0L);
-				handledTxns.put(function, new StatsSpeedometer(halfLife));
-				lastHandledTxnsCount.put(function, 0L);
-				receivedDeprecatedTxns.put(function, new StatsSpeedometer(halfLife));
-				lastReceivedDeprecatedTxnCount.put(function, 0L);
-			}
-		});
+					receivedOps.put(function, new StatsSpeedometer(halfLife));
+					lastReceivedOpsCount.put(function, 0L);
+					if (QUERY_FUNCTIONS.contains(function)) {
+						answeredQueries.put(function, new StatsSpeedometer(halfLife));
+						lastAnsweredQueriesCount.put(function, 0L);
+					} else {
+						submittedTxns.put(function, new StatsSpeedometer(halfLife));
+						lastSubmittedTxnsCount.put(function, 0L);
+						handledTxns.put(function, new StatsSpeedometer(halfLife));
+						lastHandledTxnsCount.put(function, 0L);
+					}
+				});
+		receivedDeprecatedTxns = new StatsSpeedometer(halfLife);
+		lastReceivedDeprecatedTxnCount = 0L;
 	}
 
 	public void registerWith(Platform platform) {
-		registerSpeedometers(platform, receivedOps, SPEEDOMETER_RECEIVED_NAME_TPL, SPEEDOMETER_RECEIVED_DESC_TPL);
-		registerSpeedometers(platform, submittedTxns, SPEEDOMETER_SUBMITTED_NAME_TPL, SPEEDOMETER_SUBMITTED_DESC_TPL);
-		registerSpeedometers(platform, handledTxns, SPEEDOMETER_HANDLED_NAME_TPL, SPEEDOMETER_HANDLED_DESC_TPL);
-		registerSpeedometers(platform, answeredQueries, SPEEDOMETER_ANSWERED_NAME_TPL, SPEEDOMETER_ANSWERED_DESC_TPL);
-		registerSpeedometers(platform, receivedDeprecatedTxns, SPEEDOMETER_RECEIVED_DEPRECATED_NAME_TPL, SPEEDOMETER_RECEIVED_DEPRECATED_DESC_TPL);
+		registerSpeedometer(platform, receivedOps, SPEEDOMETER_RECEIVED_NAME_TPL, SPEEDOMETER_RECEIVED_DESC_TPL);
+		registerSpeedometer(platform, submittedTxns, SPEEDOMETER_SUBMITTED_NAME_TPL, SPEEDOMETER_SUBMITTED_DESC_TPL);
+		registerSpeedometer(platform, handledTxns, SPEEDOMETER_HANDLED_NAME_TPL, SPEEDOMETER_HANDLED_DESC_TPL);
+		registerSpeedometer(platform, answeredQueries, SPEEDOMETER_ANSWERED_NAME_TPL, SPEEDOMETER_ANSWERED_DESC_TPL);
+
+		platform.addAppStatEntry(speedometer.from(SPEEDOMETER_RECEIVED_DEPRECATED_NAME_TPL,
+				SPEEDOMETER_RECEIVED_DEPRECATED_DESC_TPL, receivedDeprecatedTxns));
 	}
 
-	private void registerSpeedometers(
+	private void registerSpeedometer(
 			Platform platform,
 			Map<HederaFunctionality, StatsSpeedometer> speedometers,
 			String nameTpl,
 			String descTpl
 	) {
-		for (Map.Entry<HederaFunctionality, StatsSpeedometer> entry : speedometers.entrySet())	{
+		for (Map.Entry<HederaFunctionality, StatsSpeedometer> entry : speedometers.entrySet()) {
 			var baseName = statNameFn.apply(entry.getKey());
 			var fullName = String.format(nameTpl, baseName);
 			var description = String.format(descTpl, baseName);
@@ -121,7 +123,9 @@ public class HapiOpSpeedometers {
 		updateSpeedometers(submittedTxns, lastSubmittedTxnsCount, counters::submittedSoFar);
 		updateSpeedometers(handledTxns, lastHandledTxnsCount, counters::handledSoFar);
 		updateSpeedometers(answeredQueries, lastAnsweredQueriesCount, counters::answeredSoFar);
-		updateSpeedometers(receivedDeprecatedTxns, lastReceivedDeprecatedTxnCount, counters::receivedDeprecatedTxnSoFar);
+
+		receivedDeprecatedTxns.update((double) counters.receivedDeprecatedTxnSoFar() - lastReceivedDeprecatedTxnCount);
+		lastReceivedDeprecatedTxnCount = counters.receivedDeprecatedTxnSoFar();
 	}
 
 	private void updateSpeedometers(
@@ -129,7 +133,8 @@ public class HapiOpSpeedometers {
 			Map<HederaFunctionality, Long> lastMeasurements,
 			Function<HederaFunctionality, Long> currMeasurement
 	) {
-		for (Map.Entry<HederaFunctionality, StatsSpeedometer> entry : speedometers.entrySet())	{
+
+		for (Map.Entry<HederaFunctionality, StatsSpeedometer> entry : speedometers.entrySet()) {
 			var function = entry.getKey();
 			long last = lastMeasurements.get(function);
 			long curr = currMeasurement.apply(function);
