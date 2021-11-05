@@ -230,7 +230,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			// Submit the transaction for any prepare stage processing that can be performed
 			// such as pre-fetching of contract bytecode. This step is performed asynchronously
 			// so get this step started before synchronous signature expansion.
-			app.prefetchProcessor().offer(accessor);
+			app.prefetchProcessor().submit(accessor);
 
 			app.expansionHelper().expandIn(accessor, app.retryingSigReqs(), accessor.getPkToSigsFn());
 		} catch (InvalidProtocolBufferException e) {
