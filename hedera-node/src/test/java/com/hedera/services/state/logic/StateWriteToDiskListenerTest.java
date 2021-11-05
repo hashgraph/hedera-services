@@ -20,14 +20,12 @@ package com.hedera.services.state.logic;
  * ‍
  */
 
-import com.hedera.services.ServicesState;
-import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.txns.network.UpgradeActions;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
-import com.swirlds.common.notification.listeners.ReconnectCompleteNotification;
+import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteNotification;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,50 +37,51 @@ import java.time.Instant;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
-class ReconnectListenerTest {
-	private final long round = 234L;
-	private final long sequence = 123L;
-	private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
+class StateWriteToDiskListenerTest {
+	private static final long round = 234L;
+	private static final long sequence = 123L;
+	private static final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
 
 	@Mock
-	private ReconnectCompleteNotification notification;
-	@Mock
-	private ServicesState servicesState;
+	private StateWriteToDiskCompleteNotification notification;
 	@Mock
 	private UpgradeActions upgradeActions;
-	@Mock
-	private RecordStreamManager recordStreamManager;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
 	@LoggingSubject
-	private ReconnectListener subject;
+	private StateWriteToDiskListener subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new ReconnectListener(upgradeActions, recordStreamManager);
+		subject = new StateWriteToDiskListener(upgradeActions);
 	}
 
 	@Test
-	void listensAsExpected() {
+	void notifiesWhenFrozen() {
 		given(notification.getSequence()).willReturn(sequence);
 		given(notification.getRoundNumber()).willReturn(round);
 		given(notification.getConsensusTimestamp()).willReturn(consensusNow);
-		given(notification.getState()).willReturn(servicesState);
+		given(notification.isFreezeState()).willReturn(true);
 
-		// when:
 		subject.notify(notification);
 
-		// then:
 		assertThat(logCaptor.infoLogs(),
-				contains("Notification Received: Reconnect Finished. consensusTimestamp: 1970-01-15T06:56:07.000000890Z, " +
+				contains("Notification Received: Freeze State Finished. consensusTimestamp: 1970-01-15T06:56:07.000000890Z, " +
 						"roundNumber: 234, sequence: 123"));
-		// and:
-		verify(servicesState).logSummary();
-		verify(recordStreamManager).setStartWriteAtCompleteWindow(true);
-		verify(upgradeActions).catchUpOnMissedSideEffects();
+		verify(upgradeActions).externalizeFreezeIfUpgradePending();
+	}
+
+	@Test
+	void doesntNotifyForEverySignedStateWritten() {
+		given(notification.isFreezeState()).willReturn(false);
+
+		subject.notify(notification);
+
+		verify(upgradeActions, never()).externalizeFreezeIfUpgradePending();
 	}
 }
