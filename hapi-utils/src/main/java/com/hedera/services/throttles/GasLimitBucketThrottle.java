@@ -20,6 +20,8 @@ package com.hedera.services.throttles;
  * ‍
  */
 
+import static com.hedera.services.legacy.proto.utils.CommonUtils.productWouldOverflow;
+
 /**
  * Responsible for throttling transaction by gas limit.
  * Uses a {@link DiscreteLeakyBucket} under the hood.
@@ -52,7 +54,10 @@ public class GasLimitBucketThrottle {
         if (elapsedNanos >= ONE_SECOND_IN_NANOSECONDS) {
             bucket.leak(bucket.totalCapacity());
         } else if (elapsedNanos > 0) {
-            bucket.leak(elapsedNanos * bucket.totalCapacity() / ONE_SECOND_IN_NANOSECONDS);
+            boolean wouldOverflow = productWouldOverflow(elapsedNanos, bucket.totalCapacity());
+            long toLeak = wouldOverflow ? Long.MAX_VALUE / ONE_SECOND_IN_NANOSECONDS :
+                    elapsedNanos * bucket.totalCapacity() / ONE_SECOND_IN_NANOSECONDS;
+            bucket.leak(toLeak);
         }
 
         if (bucket.capacityFree() >= txGasLimit) {
