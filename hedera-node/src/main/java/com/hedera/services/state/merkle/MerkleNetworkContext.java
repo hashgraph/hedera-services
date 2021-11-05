@@ -378,7 +378,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			}
 			sb.append(LINE_WRAP)
 					.append(gasThrottleUsageSnapshot.used())
-					.append(" used (last decision time ")
+					.append(" gas used (last decision time ")
 					.append(reprOf(gasThrottleUsageSnapshot.lastDecisionTime())).append(")");
 			return sb.toString();
 		}
@@ -501,7 +501,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		try {
 			gasLimitThrottle.resetUsageTo(gasThrottleUsageSnapshot);
 			log.info("Reset {} with saved gas throttle usage snapshot", gasThrottleUsageSnapshot);
-		} catch (Exception e) {
+		} catch (IllegalArgumentException e) {
 			log.warn(String.format("Saved gas throttle usage snapshot was not compatible " +
 					"with the corresponding active throttle (%s); not performing a reset!", e.getMessage()));
 			gasLimitThrottle.resetUsageTo(currGasThrottleUsageSnapshot);

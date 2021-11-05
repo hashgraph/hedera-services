@@ -384,7 +384,7 @@ class MerkleNetworkContextTest {
 				"    100 used (last decision time 1970-01-01T00:00:01.000000100Z)\n" +
 				"    200 used (last decision time 1970-01-01T00:00:02.000000200Z)\n" +
 				"    300 used (last decision time 1970-01-01T00:00:03.000000300Z)\n" +
-				"    0 used (last decision time <N/A>)\n" +
+				"    0 gas used (last decision time <N/A>)\n" +
 				"  Congestion level start times are           ::\n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
 				"    1970-01-15T06:59:49.000012345Z";
@@ -402,7 +402,7 @@ class MerkleNetworkContextTest {
 				"    100 used (last decision time 1970-01-01T00:00:01.000000100Z)\n" +
 				"    200 used (last decision time 1970-01-01T00:00:02.000000200Z)\n" +
 				"    300 used (last decision time 1970-01-01T00:00:03.000000300Z)\n" +
-				"    0 used (last decision time <N/A>)\n" +
+				"    0 gas used (last decision time <N/A>)\n" +
 				"  Congestion level start times are           ::\n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
 				"    1970-01-15T06:59:49.000012345Z";
@@ -420,7 +420,7 @@ class MerkleNetworkContextTest {
 				"    100 used (last decision time 1970-01-01T00:00:01.000000100Z)\n" +
 				"    200 used (last decision time 1970-01-01T00:00:02.000000200Z)\n" +
 				"    300 used (last decision time 1970-01-01T00:00:03.000000300Z)\n" +
-				"    0 used (last decision time <N/A>)\n" +
+				"    0 gas used (last decision time <N/A>)\n" +
 				"  Congestion level start times are           ::\n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
 				"    1970-01-15T06:59:49.000012345Z";
@@ -464,7 +464,7 @@ class MerkleNetworkContextTest {
 				"  Throttle usage snapshots are               ::\n" +
 				"    123 used (last decision time 1970-01-15T06:56:07.000054321Z)\n" +
 				"    456 used (last decision time 1970-01-15T06:56:08.000054321Z)\n" +
-				"    1234 used (last decision time 1970-01-15T06:56:07.000054321Z)\n" +
+				"    1234 gas used (last decision time 1970-01-15T06:56:07.000054321Z)\n" +
 				"  Congestion level start times are           ::\n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
 				"    1970-01-15T06:59:49.000012345Z";
@@ -482,7 +482,7 @@ class MerkleNetworkContextTest {
 				"  Throttle usage snapshots are               ::\n" +
 				"    123 used (last decision time 1970-01-15T06:56:07.000054321Z)\n" +
 				"    456 used (last decision time 1970-01-15T06:56:08.000054321Z)\n" +
-				"    1234 used (last decision time 1970-01-15T06:56:07.000054321Z)\n" +
+				"    1234 gas used (last decision time 1970-01-15T06:56:07.000054321Z)\n" +
 				"  Congestion level start times are           ::\n" +
 				"    1970-01-15T06:56:07.000054321Z\n" +
 				"    1970-01-15T06:59:49.000012345Z";

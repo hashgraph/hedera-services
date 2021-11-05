@@ -23,7 +23,6 @@ package com.hedera.services.sysfiles.domain.throttling;
 import com.hedera.services.TestUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 

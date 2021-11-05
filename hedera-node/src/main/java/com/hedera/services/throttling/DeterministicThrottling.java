@@ -157,25 +157,35 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
 		functionReqs = newFunctionReqs;
 		activeThrottles = newActiveThrottles;
-		applyGasConfig();
 		logResolvedDefinitions();
 	}
 
 	@Override
 	public void applyGasConfig() {
+		int n = capacitySplitSource.getAsInt();
 		if (consensusThrottled) {
 			if (dynamicProperties.getConsensusThrottleMaxGasLimit() == 0 && dynamicProperties.shouldThrottleByGas()) {
 				log.error("ThrottleByGas global dynamic property is set to true but contracts.consensusThrottleMaxGasLimit is not set in throttles.json or is set to 0.");
+				return;
 			} else {
-				gasThrottle = new GasLimitDeterministicThrottle(dynamicProperties.getConsensusThrottleMaxGasLimit());
+				gasThrottle = new GasLimitDeterministicThrottle(dynamicProperties.getConsensusThrottleMaxGasLimit() / n);
 			}
 		} else {
 			if (dynamicProperties.getFrontendThrottleMaxGasLimit() == 0 && dynamicProperties.shouldThrottleByGas()) {
 				log.error("ThrottleByGas global dynamic property is set to true but contracts.frontendThrottleMaxGasLimit is not set in throttles.json or is set to 0.");
+				return;
 			} else {
-				gasThrottle = new GasLimitDeterministicThrottle(dynamicProperties.getFrontendThrottleMaxGasLimit() / capacitySplitSource.getAsInt());
+				gasThrottle = new GasLimitDeterministicThrottle(dynamicProperties.getFrontendThrottleMaxGasLimit() / n);
 			}
 		}
+		var sb = new StringBuilder("Resolved gas throttle limit (after splitting capacity " + n + " ways) - \n");
+		sb.append("  ")
+				.append("ThrottleByGasLimit: ")
+				.append(gasThrottle == null ? 0 : gasThrottle.getCapacity())
+				.append(" throttleByGas ")
+				.append(dynamicProperties.shouldThrottleByGas())
+				.append("\n");
+		log.info(sb.toString().trim());
 	}
 
 	@Override
@@ -195,12 +205,6 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 							.append(manager.asReadableRequirements())
 							.append("\n");
 				});
-		sb.append("  ")
-				.append("ThrottleByGasLimit: ")
-				.append(gasThrottle == null ? 0 : gasThrottle.getCapacity())
-				.append(" throttleByGas ")
-				.append(dynamicProperties.shouldThrottleByGas())
-				.append("\n");
 		log.info(sb.toString().trim());
 	}
 
