@@ -62,6 +62,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
@@ -164,6 +165,22 @@ class NetworkCtxManagerTest {
 		verify(opCounters).countHandled(TokenMint);
 		verify(networkCtx).syncThrottling(handleThrottling);
 		verify(networkCtx).syncMultiplierSource(feeMultiplierSource);
+		verify(handleThrottling, times(0)).leakUnusedGasPreviouslyReserved(anyLong());
+	}
+
+	@Test
+	void finalizesContextWithThrottleExemptAccountAsExpected() {
+		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(1).build());
+		given(txnCtx.accessor()).willReturn(txnAccessor);
+
+		// when:
+		subject.finishIncorporating(ContractCall);
+
+		// then:
+		verify(opCounters).countHandled(ContractCall);
+		verify(networkCtx).syncThrottling(handleThrottling);
+		verify(networkCtx).syncMultiplierSource(feeMultiplierSource);
+		verify(handleThrottling, times(0)).leakUnusedGasPreviouslyReserved(anyLong());
 	}
 
 	@Test
@@ -178,6 +195,35 @@ class NetworkCtxManagerTest {
 
 		// then:
 		verify(handleThrottling).shouldThrottleTxn(txnAccessor);
+		verify(feeMultiplierSource).updateMultiplier(sometime);
+	}
+
+	@Test
+	void preparesContextWithThrottleExemptAccountAsExpected() {
+		// setup:
+		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(1).build());
+		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
+
+		// when:
+		subject.prepareForIncorporating(txnAccessor);
+
+		// then:
+		verify(handleThrottling, times(0)).shouldThrottleTxn(txnAccessor);
+		verify(feeMultiplierSource).updateMultiplier(sometime);
+	}
+
+	@Test
+	void preparesContextWithNonThrottledFunctionalityAsExpected() {
+		// setup:
+		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(111).build());
+		given(txnAccessor.getFunction()).willReturn(TokenMint);
+		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
+
+		// when:
+		subject.prepareForIncorporating(txnAccessor);
+
+		// then:
+		verify(handleThrottling, times(0)).shouldThrottleTxn(txnAccessor);
 		verify(feeMultiplierSource).updateMultiplier(sometime);
 	}
 

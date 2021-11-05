@@ -181,11 +181,12 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		var sb = new StringBuilder("Resolved gas throttle limit (after splitting capacity " + n + " ways) - \n");
 		sb.append("  ")
 				.append("ThrottleByGasLimit: ")
-				.append(gasThrottle == null ? 0 : gasThrottle.getCapacity())
+				.append(gasThrottle.getCapacity())
 				.append(" throttleByGas ")
 				.append(dynamicProperties.shouldThrottleByGas())
 				.append("\n");
-		log.info(sb.toString().trim());
+		String logInfo = sb.toString().trim();
+		log.info(logInfo);
 	}
 
 	@Override
