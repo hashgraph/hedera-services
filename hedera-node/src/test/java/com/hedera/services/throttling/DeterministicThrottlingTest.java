@@ -51,6 +51,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.function.IntSupplier;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCallLocal;
@@ -299,11 +300,12 @@ class DeterministicThrottlingTest {
 
 	@Test
 	void gasLimitFrontendThrottleReturnsCorrectObject() {
-		given(dynamicProperties.getFrontendThrottleMaxGasLimit()).willReturn(10L);
+		long capacity = 3423423423L;
+		given(dynamicProperties.getFrontendThrottleMaxGasLimit()).willReturn(capacity);
 		subject.setConsensusThrottled(false);
 		subject.applyGasConfig();
 		// expect:
-		assertEquals(10L, subject.gasLimitThrottle().getCapacity());
+		assertEquals(capacity/n, subject.gasLimitThrottle().getCapacity());
 	}
 
 	@Test

@@ -173,7 +173,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 			if (dynamicProperties.getFrontendThrottleMaxGasLimit() == 0 && dynamicProperties.shouldThrottleByGas()) {
 				log.error("ThrottleByGas global dynamic property is set to true but contracts.frontendThrottleMaxGasLimit is not set in throttles.json or is set to 0.");
 			} else {
-				gasThrottle = new GasLimitDeterministicThrottle(dynamicProperties.getFrontendThrottleMaxGasLimit());
+				gasThrottle = new GasLimitDeterministicThrottle(dynamicProperties.getFrontendThrottleMaxGasLimit() / capacitySplitSource.getAsInt());
 			}
 		}
 	}
