@@ -35,7 +35,6 @@ import javax.inject.Singleton;
 import java.util.List;
 
 import static com.hedera.services.txns.submission.PresolvencyFlaws.WELL_KNOWN_FLAWS;
-import static com.hedera.services.utils.SignedTxnAccessor.functionExtractor;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
