@@ -34,12 +34,10 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.throttling.FunctionalityThrottling;
-import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -171,15 +169,15 @@ class NetworkCtxManagerTest {
 	@Test
 	void preparesContextAsExpected() {
 		// setup:
-		final var accessor = SignedTxnAccessor.uncheckedFrom(Transaction.getDefaultInstance());
-
+		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
+		given(txnAccessor.getFunction()).willReturn(ContractCall);
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
 
 		// when:
-		subject.prepareForIncorporating(accessor);
+		subject.prepareForIncorporating(txnAccessor);
 
 		// then:
-		verify(handleThrottling).shouldThrottleTxn(accessor);
+		verify(handleThrottling).shouldThrottleTxn(txnAccessor);
 		verify(feeMultiplierSource).updateMultiplier(sometime);
 	}
 
@@ -188,6 +186,7 @@ class NetworkCtxManagerTest {
 
 		given(handleThrottling.shouldThrottleTxn(txnAccessor)).willReturn(true);
 		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
+		given(txnAccessor.getFunction()).willReturn(ContractCall);
 
 		// then:
 		assertEquals(CONSENSUS_GAS_EXHAUSTED, subject.prepareForIncorporating(txnAccessor));
@@ -200,6 +199,7 @@ class NetworkCtxManagerTest {
 
 		given(handleThrottling.shouldThrottleTxn(txnAccessor)).willReturn(true);
 		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
+		given(txnAccessor.getFunction()).willReturn(ContractCall);
 		// then:
 		assertEquals(CONSENSUS_GAS_EXHAUSTED, subject.prepareForIncorporating(txnAccessor));
 		verify(handleThrottling).shouldThrottleTxn(txnAccessor);
@@ -211,6 +211,7 @@ class NetworkCtxManagerTest {
 
 		given(handleThrottling.shouldThrottleTxn(txnAccessor)).willReturn(false);
 		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
+		given(txnAccessor.getFunction()).willReturn(ContractCall);
 
 		// then:
 		assertEquals(OK, subject.prepareForIncorporating(txnAccessor));
@@ -223,6 +224,7 @@ class NetworkCtxManagerTest {
 
 		given(handleThrottling.shouldThrottleTxn(txnAccessor)).willReturn(false);
 		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
+		given(txnAccessor.getFunction()).willReturn(ContractCall);
 
 		// then:
 		assertEquals(OK, subject.prepareForIncorporating(txnAccessor));
