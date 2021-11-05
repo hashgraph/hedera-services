@@ -77,7 +77,8 @@ public class BlobKey {
 	/**
 	 * Returns the type corresponding to a legacy character code.
 	 *
-	 * @param code the legacy blob code
+	 * @param code
+	 * 		the legacy blob code
 	 * @return the blob type
 	 */
 	public static BlobType typeFromCharCode(final char code) {
