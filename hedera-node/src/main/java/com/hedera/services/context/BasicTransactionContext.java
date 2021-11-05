@@ -40,7 +40,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -85,8 +84,10 @@ public class BasicTransactionContext implements TransactionContext {
 
 	private TxnAccessor triggeredTxn = null;
 
-	private static final Consumer<TxnReceipt.Builder> noopReceiptConfig = ignore -> { };
-	private static final Consumer<ExpirableTxnRecord.Builder> noopRecordConfig = ignore -> { };
+	private static final Consumer<TxnReceipt.Builder> noopReceiptConfig = ignore -> {
+	};
+	private static final Consumer<ExpirableTxnRecord.Builder> noopRecordConfig = ignore -> {
+	};
 
 	private long submittingMember;
 	private long otherNonThresholdFees;
@@ -104,6 +105,7 @@ public class BasicTransactionContext implements TransactionContext {
 
 	boolean hasComputedRecordSoFar;
 	ExpirableTxnRecord.Builder recordSoFar = ExpirableTxnRecord.newBuilder();
+	private ContractFunctionResult contractFunctionResult;
 
 	private final NodeInfo nodeInfo;
 	private final EntityCreator creator;
@@ -148,6 +150,7 @@ public class BasicTransactionContext implements TransactionContext {
 		narratedCharging.resetForTxn(accessor, submittingMember);
 
 		recordSoFar.clear();
+		contractFunctionResult = null;
 	}
 
 	@Override
@@ -301,11 +304,13 @@ public class BasicTransactionContext implements TransactionContext {
 
 	@Override
 	public void setCallResult(ContractFunctionResult result) {
+		this.contractFunctionResult = result;
 		recordConfig = expiringRecord -> expiringRecord.setContractCallResult(SolidityFnResult.fromGrpc(result));
 	}
 
 	@Override
 	public void setCreateResult(ContractFunctionResult result) {
+		this.contractFunctionResult = result;
 		recordConfig = expiringRecord -> expiringRecord.setContractCreateResult(SolidityFnResult.fromGrpc(result));
 	}
 
@@ -349,16 +354,12 @@ public class BasicTransactionContext implements TransactionContext {
 
 	@Override
 	public boolean hasContractResult() {
-		return accessor().getFunction().equals(HederaFunctionality.ContractCall) ?
-				recordSoFar().getContractCallResult() != null :
-				recordSoFar().getContractCreateResult() != null;
+		return contractFunctionResult != null;
 	}
 
 	@Override
 	public long getGasUsedForContractTxn() {
-		return accessor().getFunction().equals(HederaFunctionality.ContractCall) ?
-				recordSoFar().getContractCallResult().getGasUsed() :
-				recordSoFar().getContractCreateResult().getGasUsed();
+		return contractFunctionResult.getGasUsed();
 	}
 
 	/* --- Used by unit tests --- */
