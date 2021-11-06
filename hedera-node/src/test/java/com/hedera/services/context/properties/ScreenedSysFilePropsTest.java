@@ -119,7 +119,9 @@ class ScreenedSysFilePropsTest {
 			"1, ledger.transfers.maxLen, true,",
 			"1, ledger.tokenTransfers.maxLen, true,",
 			(MerkleToken.UPPER_BOUND_SYMBOL_UTF8_BYTES + 1) + ", tokens.maxSymbolUtf8Bytes, true,",
-			"-1, rates.intradayChangeLimitPercent, true,"
+			"-1, rates.intradayChangeLimitPercent, true,",
+			"-1, contracts.maxRefundPercentOfGasLimit, true,",
+			"101, contracts.maxRefundPercentOfGasLimit, true,",
 	})
 	void warnsOfUnusableOrUnparseable(
 			String unsupported,

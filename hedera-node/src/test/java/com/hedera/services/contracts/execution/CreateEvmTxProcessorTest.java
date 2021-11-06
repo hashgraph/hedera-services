@@ -124,7 +124,7 @@ class CreateEvmTxProcessorTest {
 	@Test
 	void assertSuccessExecutionChargesCorrectMinimumGas() {
 		givenValidMock(true);
-		given(globalDynamicProperties.getContractMaxRefundPercentOfGasLimit()).willReturn(MAX_REFUND_PERCENT);
+		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENT);
 		sender.initBalance(350_000L);
 		var result = createEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(),
 				GAS_LIMIT, 1234L, Bytes.EMPTY, consensusTime, expiry);
@@ -136,7 +136,7 @@ class CreateEvmTxProcessorTest {
 	@Test
 	void assertSuccessExecutionChargesCorrectGasWhenGasUsedIsLargerThanMinimum() {
 		givenValidMock(true);
-		given(globalDynamicProperties.getContractMaxRefundPercentOfGasLimit()).willReturn(5);
+		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(5);
 		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(Gas.of(INTRINSIC_GAS_COST));
 		sender.initBalance(350_000L);
 		var result = createEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(),

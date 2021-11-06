@@ -263,12 +263,10 @@ abstract class EvmTxProcessor {
 
 		gasUsedByTransaction = gasUsedByTransaction.minus(selfDestructRefund).minus(initialFrame.getGasRefund());
 
-		var maxRefundPercent = dynamicProperties.getContractMaxRefundPercentOfGasLimit();
-		if(maxRefundPercent >= 0 && maxRefundPercent <= 100) {
-			gasUsedByTransaction = Gas.of(
-					Math.max(gasUsedByTransaction.toLong(),
-							txGasLimit - txGasLimit * maxRefundPercent / 100));
-		}
+		var maxRefundPercent = dynamicProperties.maxGasRefundPercentage();
+		gasUsedByTransaction = Gas.of(
+				Math.max(gasUsedByTransaction.toLong(),
+						txGasLimit - txGasLimit * maxRefundPercent / 100));
 
 		return gasUsedByTransaction;
 	}

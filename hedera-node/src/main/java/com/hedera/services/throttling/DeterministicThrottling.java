@@ -164,18 +164,18 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	public void applyGasConfig() {
 		int n = capacitySplitSource.getAsInt();
 		if (consensusThrottled) {
-			if (dynamicProperties.getConsensusThrottleMaxGasLimit() == 0 && dynamicProperties.shouldThrottleByGas()) {
+			if (dynamicProperties.consensusThrottleGasLimit() == 0 && dynamicProperties.shouldThrottleByGas()) {
 				log.error("ThrottleByGas global dynamic property is set to true but contracts.consensusThrottleMaxGasLimit is not set in throttles.json or is set to 0.");
 				return;
 			} else {
-				gasThrottle = new GasLimitDeterministicThrottle(dynamicProperties.getConsensusThrottleMaxGasLimit() / n);
+				gasThrottle = new GasLimitDeterministicThrottle(dynamicProperties.consensusThrottleGasLimit() / n);
 			}
 		} else {
-			if (dynamicProperties.getFrontendThrottleMaxGasLimit() == 0 && dynamicProperties.shouldThrottleByGas()) {
+			if (dynamicProperties.frontendThrottleGasLimit() == 0 && dynamicProperties.shouldThrottleByGas()) {
 				log.error("ThrottleByGas global dynamic property is set to true but contracts.frontendThrottleMaxGasLimit is not set in throttles.json or is set to 0.");
 				return;
 			} else {
-				gasThrottle = new GasLimitDeterministicThrottle(dynamicProperties.getFrontendThrottleMaxGasLimit() / n);
+				gasThrottle = new GasLimitDeterministicThrottle(dynamicProperties.frontendThrottleGasLimit() / n);
 			}
 		}
 		var sb = new StringBuilder("Resolved gas throttle limit (after splitting capacity " + n + " ways) - \n");
