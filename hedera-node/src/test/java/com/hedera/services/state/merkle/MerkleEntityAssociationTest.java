@@ -139,9 +139,10 @@ class MerkleEntityAssociationTest {
 
 	@Test
 	void equalsWorksWithExtremes() {
-		assertEquals(subject, subject);
-		assertNotEquals(null, subject);
-		assertNotEquals(new Object(), subject);
+		final var sameButDifferent = subject;
+		assertEquals(subject, sameButDifferent);
+		assertNotEquals(subject, null);
+		assertNotEquals(subject, new Object());
 	}
 
 	@Test

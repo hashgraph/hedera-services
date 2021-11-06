@@ -136,7 +136,7 @@ class RichInstantTest {
 
 	@Test
 	void nullEqualsWorks() {
-		assertNotEquals(null, subject);
+		assertNotEquals(subject, null);
 	}
 
 	@Test

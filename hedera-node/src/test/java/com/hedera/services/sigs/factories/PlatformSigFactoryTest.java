@@ -25,9 +25,6 @@ import com.swirlds.common.crypto.TransactionSignature;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Modifier;
 import java.util.List;
 
 import static com.hedera.services.sigs.factories.PlatformSigFactory.allVaryingMaterialEquals;
@@ -35,9 +32,7 @@ import static com.hedera.services.sigs.factories.PlatformSigFactory.createEd2551
 import static com.hedera.services.sigs.factories.PlatformSigFactory.pkSigRepr;
 import static com.hedera.services.sigs.factories.PlatformSigFactory.varyingMaterialEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 
 public class PlatformSigFactoryTest {
 	private static final String PK = "Not really a ed25519 public key!";
@@ -59,17 +54,6 @@ public class PlatformSigFactoryTest {
 			0, sig.length,
 			pk, 0, pk.length,
 			sig.length, data.length);
-
-	@Test
-	void assertConstructorThrowsException() throws NoSuchMethodException {
-		Constructor<PlatformSigFactory> constructor = PlatformSigFactory.class.getDeclaredConstructor();
-		assertTrue(Modifier.isPrivate(constructor.getModifiers()));
-		constructor.setAccessible(true);
-		assertThrows(InvocationTargetException.class,
-				() -> {
-					constructor.newInstance();
-				});
-	}
 
 	@Test
 	void createsExpectedSig() {

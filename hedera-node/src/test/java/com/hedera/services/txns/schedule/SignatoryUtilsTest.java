@@ -169,7 +169,7 @@ class SignatoryUtilsTest {
 		given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
 		given(activationHelper.areScheduledPartiesActive(any(), any())).willReturn(true);
 		// and:
-		given(schedule.witnessValidEd25519Signature(eq(goodKey.getEd25519()))).willReturn(true);
+		given(schedule.witnessValidEd25519Signature(goodKey.getEd25519())).willReturn(true);
 		willAnswer(inv -> {
 			Consumer<MerkleSchedule> action = inv.getArgument(1);
 			action.accept(schedule);

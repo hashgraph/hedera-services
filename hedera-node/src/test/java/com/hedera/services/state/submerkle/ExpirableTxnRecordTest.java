@@ -29,6 +29,7 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenAssociation;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -38,7 +39,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.MAX_ASSESSED_CUSTOM_FEES_CHANGES;
@@ -51,8 +52,8 @@ import static com.hedera.test.utils.TxnUtils.withNftAdjustments;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -79,7 +80,8 @@ class ExpirableTxnRecordTest {
 	private static final TokenTransferList nftTokenTransfers = TokenTransferList.newBuilder()
 			.setToken(nft)
 			.addNftTransfers(
-					withNftAdjustments(nft, sponsor, beneficiary, 1L, sponsor, beneficiary, 2L, sponsor, beneficiary, 3L).getNftTransfers(0)
+					withNftAdjustments(nft, sponsor, beneficiary, 1L, sponsor, beneficiary, 2L, sponsor, beneficiary,
+							3L).getNftTransfers(0)
 			)
 			.build();
 	private static final TokenTransferList aTokenTransfers = TokenTransferList.newBuilder()
@@ -121,18 +123,22 @@ class ExpirableTxnRecordTest {
 	}
 
 	private static ExpirableTxnRecord subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations() {
-		final var s = ExpirableTxnRecordTestHelper.fromGprc(
-				DomainSerdesTest.recordOne().asGrpc().toBuilder()
-						.setTransactionHash(ByteString.copyFrom(pretendHash))
-						.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
-						.addAllTokenTransferLists(List.of(aTokenTransfers, bTokenTransfers, nftTokenTransfers))
-						.setScheduleRef(scheduleID)
-						.addAssessedCustomFees(balanceChange.toGrpc())
-						.addAllAutomaticTokenAssociations(newRelationships)
-						.build());
+		final var source = grpcRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
+		final var s = ExpirableTxnRecordTestHelper.fromGprc(source);
 		s.setExpiry(expiry);
 		s.setSubmittingMember(submittingMember);
 		return s;
+	}
+
+	private static TransactionRecord grpcRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations() {
+		return DomainSerdesTest.recordOne().asGrpc().toBuilder()
+				.setTransactionHash(ByteString.copyFrom(pretendHash))
+				.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
+				.addAllTokenTransferLists(List.of(aTokenTransfers, bTokenTransfers, nftTokenTransfers))
+				.setScheduleRef(scheduleID)
+				.addAssessedCustomFees(balanceChange.toGrpc())
+				.addAllAutomaticTokenAssociations(newRelationships)
+				.build();
 	}
 
 	private static ExpirableTxnRecord subjectRecordWithTokenTransfersAndScheduleRefCustomFees() {
@@ -195,6 +201,7 @@ class ExpirableTxnRecordTest {
 		final var deserializedRecord = new ExpirableTxnRecord();
 
 		deserializedRecord.deserialize(fin, ExpirableTxnRecord.RELEASE_0120_VERSION);
+		deserializedRecord.setNewTokenAssociations(Collections.emptyList());
 
 		assertEquals(subject, deserializedRecord);
 	}
@@ -217,6 +224,9 @@ class ExpirableTxnRecordTest {
 				.willReturn(List.of(
 						subject.getTokenAdjustments().get(0),
 						subject.getTokenAdjustments().get(1)))
+				.willReturn(List.of(
+						subject.getNftTokenAdjustments().get(0),
+						subject.getNftTokenAdjustments().get(1)))
 				.willReturn(null);
 		given(fin.readByteArray(ExpirableTxnRecord.MAX_TXN_HASH_BYTES))
 				.willReturn(subject.getTxnHash());
@@ -254,9 +264,12 @@ class ExpirableTxnRecordTest {
 						subject.getTokens().get(2)))
 				.willReturn(List.of(
 						subject.getTokenAdjustments().get(0),
-						subject.getTokenAdjustments().get(1)))
+						subject.getTokenAdjustments().get(1),
+						subject.getTokenAdjustments().get(2)))
 				.willReturn(List.of(
-						subject.getNftTokenAdjustments().get(0)
+						subject.getNftTokenAdjustments().get(0),
+						subject.getNftTokenAdjustments().get(1),
+						subject.getNftTokenAdjustments().get(2)
 				));
 		given(fin.readByteArray(ExpirableTxnRecord.MAX_TXN_HASH_BYTES))
 				.willReturn(subject.getTxnHash());
@@ -313,61 +326,23 @@ class ExpirableTxnRecordTest {
 	}
 
 	@Test
-	void chosenTokenFailsDueToWrongCollections() {
-		final var s = ExpirableTxnRecordTestHelper.fromGprc(
-				DomainSerdesTest.recordOne().asGrpc().toBuilder()
-						.setTransactionHash(ByteString.copyFrom(pretendHash))
-						.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
-						.addAllTokenTransferLists(List.of(aTokenTransfers, bTokenTransfers, nftTokenTransfers))
-						.setScheduleRef(scheduleID)
-						.addAssessedCustomFees(balanceChange.toGrpc())
-						.addAllAutomaticTokenAssociations(newRelationships)
-						.build());
-		s.setExpiry(expiry);
-		s.setSubmittingMember(submittingMember);
-
-		s.getTokenAdjustments().clear();
-		s.getNftTokenAdjustments().clear();
-
-		assertThrows(IndexOutOfBoundsException.class, () -> s.toString());
-	}
-
-	@Test
 	void asGrpcWorks() {
+		final var expected = grpcRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
 		subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
 		subject.setExpiry(0L);
 		subject.setSubmittingMember(UNKNOWN_SUBMITTING_MEMBER);
 
-		var newCurrencyAdjustments = new ArrayList<CurrencyAdjustments>();
-		newCurrencyAdjustments.addAll(subject.getTokenAdjustments());
-		newCurrencyAdjustments.add(CurrencyAdjustments.fromGrpc(new ArrayList<>()));
-
-		var newNftAdjustments = new ArrayList<NftAdjustments>();
-		newNftAdjustments.add(NftAdjustments.fromGrpc(new ArrayList<>()));
-		newNftAdjustments.add(NftAdjustments.fromGrpc(new ArrayList<>()));
-		newNftAdjustments.addAll(subject.getNftTokenAdjustments());
-
-		subject.getTokenAdjustments().clear();
-		subject.getTokenAdjustments().addAll(newCurrencyAdjustments);
-
-		subject.getNftTokenAdjustments().clear();
-		subject.getNftTokenAdjustments().addAll(newNftAdjustments);
-
 		final var grpcSubject = subject.asGrpc();
-
-		final var expected = DomainSerdesTest.recordOne().asGrpc().toBuilder()
-				.setTransactionHash(ByteString.copyFrom(pretendHash))
-				.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
-				.addAllTokenTransferLists(List.of(aTokenTransfers, bTokenTransfers, nftTokenTransfers))
-				.setScheduleRef(scheduleID)
-				.addAssessedCustomFees(balanceChange.toGrpc())
-				.addAllAutomaticTokenAssociations(newRelationships)
-				.build();
 
 		var multiple = allToGrpc(List.of(subject, subject));
 
-		assertEquals(List.of(grpcSubject, grpcSubject), multiple);
 		assertEquals(expected, grpcSubject);
+		assertEquals(List.of(expected, expected), multiple);
+	}
+
+	@Test
+	void makeupNftAdjustmentsUsesNullForNullFungibleAdjusts() {
+		assertNull(subject.makeupNftAdjustsMatching(null));
 	}
 
 	@Test
@@ -406,7 +381,8 @@ class ExpirableTxnRecordTest {
 				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
 				"scheduleRef=EntityId{shard=5, realm=6, num=7}, tokenAdjustments=1.2.3(CurrencyAdjustments{" +
 				"readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), 1.2.4(CurrencyAdjustments{" +
-				"readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), 1.2.2(NftAdjustments{readable=[1 1.2.5 1.2.6]}), assessedCustomFees=(" +
+				"readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), 1.2.2(NftAdjustments{readable=[1 1.2.5 1.2.6]})" +
+				", assessedCustomFees=(" +
 				"FcAssessedCustomFee{token=EntityId{shard=1, realm=2, num=9}, account=EntityId{shard=1, realm=2, " +
 				"num=8}, units=123, effective payer accounts=[234]}), newTokenAssociations=(FcTokenAssociation" +
 				"{token=10, account=11})}";

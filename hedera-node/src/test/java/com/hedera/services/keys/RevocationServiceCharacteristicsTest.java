@@ -26,13 +26,7 @@ import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Modifier;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RevocationServiceCharacteristicsTest {
 	private JKeyList l;
@@ -42,17 +36,6 @@ class RevocationServiceCharacteristicsTest {
 	private void setup() throws Exception {
 		l = TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey().getKeyList();
 		t = TxnHandlingScenario.LONG_THRESHOLD_KT.asJKey().getThresholdKey();
-	}
-
-	@Test
-	void assertConstructorThrowsException() throws NoSuchMethodException {
-		Constructor<RevocationServiceCharacteristics> constructor = RevocationServiceCharacteristics.class.getDeclaredConstructor();
-		assertTrue(Modifier.isPrivate(constructor.getModifiers()));
-		constructor.setAccessible(true);
-		assertThrows(InvocationTargetException.class,
-				() -> {
-					constructor.newInstance();
-				});
 	}
 
 	@Test

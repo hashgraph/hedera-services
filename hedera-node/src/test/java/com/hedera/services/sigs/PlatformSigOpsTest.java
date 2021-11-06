@@ -23,16 +23,12 @@ package com.hedera.services.sigs;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
-import com.hedera.services.sigs.factories.PlatformSigFactory;
 import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.test.factories.keys.KeyTree;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -46,7 +42,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_PREFIX_MIS
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -80,17 +75,6 @@ class PlatformSigOpsTest {
 		for (final var kt : kts) {
 			pubKeys.add(kt.asJKey());
 		}
-	}
-
-	@Test
-	void assertConstructorThrowsException() throws NoSuchMethodException {
-		Constructor<PlatformSigOps> constructor = PlatformSigOps.class.getDeclaredConstructor();
-		assertTrue(Modifier.isPrivate(constructor.getModifiers()));
-		constructor.setAccessible(true);
-		assertThrows(InvocationTargetException.class,
-				() -> {
-					constructor.newInstance();
-				});
 	}
 
 	@Test

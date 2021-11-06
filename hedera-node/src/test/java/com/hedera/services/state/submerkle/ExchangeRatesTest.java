@@ -28,7 +28,6 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.time.Instant;
 
@@ -36,6 +35,7 @@ import static com.hedera.services.state.submerkle.ExchangeRates.MERKLE_VERSION;
 import static com.hedera.services.state.submerkle.ExchangeRates.RUNTIME_CONSTRUCTABLE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
@@ -61,13 +61,10 @@ class ExchangeRatesTest {
 					.setExpirationTime(TimestampSeconds.newBuilder().setSeconds(expNextExpiry)))
 			.build();
 
-	private DataInputStream din;
 	private ExchangeRates subject;
 
 	@BeforeEach
 	private void setup() {
-		din = mock(DataInputStream.class);
-
 		subject = new ExchangeRates(
 				expCurrentHbarEquiv, expCurrentCentEquiv, expCurrentExpiry,
 				expNextHbarEquiv, expNextCentEquiv, expNextExpiry);
@@ -108,10 +105,11 @@ class ExchangeRatesTest {
 
 	@Test
 	void copyWorks() {
+		final var sameButDifferent = subject;
 		final var subjectCopy = subject.copy();
 
-		assertEquals(subject, subject);
-		assertFalse(subject.equals(null));
+		assertEquals(subject, sameButDifferent);
+		assertNotEquals(subject, null);
 		assertEquals(expCurrentHbarEquiv, subjectCopy.getCurrHbarEquiv());
 		assertEquals(expCurrentCentEquiv, subjectCopy.getCurrCentEquiv());
 		assertEquals(expCurrentExpiry, subjectCopy.getCurrExpiry());

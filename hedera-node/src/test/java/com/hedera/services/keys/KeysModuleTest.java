@@ -26,14 +26,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Modifier;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
 class KeysModuleTest {
@@ -43,18 +37,8 @@ class KeysModuleTest {
 	CharacteristicsFactory characteristicsFactory;
 
 	@Test
-	void assertConstructorThrowsException() throws NoSuchMethodException {
-		Constructor<KeysModule> constructor = KeysModule.class.getDeclaredConstructor();
-		assertTrue(Modifier.isPrivate(constructor.getModifiers()));
-		constructor.setAccessible(true);
-		assertThrows(InvocationTargetException.class,
-				() -> {
-					constructor.newInstance();
-				});
-	}
-
-	@Test
 	void assertThatInHandleActivationHelperInstanceIsCreated() {
-		assertThat(KeysModule.provideActivationHelper(transactionContext, characteristicsFactory), instanceOf(InHandleActivationHelper.class));
+		assertThat(KeysModule.provideActivationHelper(transactionContext, characteristicsFactory),
+				instanceOf(InHandleActivationHelper.class));
 	}
 }

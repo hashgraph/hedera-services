@@ -25,28 +25,11 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Modifier;
-
 import static com.hedera.services.sigs.utils.ImmutableKeyUtils.signalsKeyRemoval;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ImmutableKeyUtilsTest {
-
-	@Test
-	void assertConstructorThrowsException() throws NoSuchMethodException {
-		Constructor<ImmutableKeyUtils> constructor = ImmutableKeyUtils.class.getDeclaredConstructor();
-		assertTrue(Modifier.isPrivate(constructor.getModifiers()));
-		constructor.setAccessible(true);
-		assertThrows(InvocationTargetException.class,
-				() -> {
-					constructor.newInstance();
-				});
-	}
-
 	@Test
 	void recognizesSentinelKey() {
 		assertFalse(signalsKeyRemoval(Key.getDefaultInstance()));

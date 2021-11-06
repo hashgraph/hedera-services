@@ -66,7 +66,8 @@ class SolidityLogTest {
 
 	@Test
 	void equalsSame() {
-		assertEquals(subject, subject);
+		final var sameButDifferent = subject;
+		assertEquals(subject, sameButDifferent);
 	}
 
 	@Test

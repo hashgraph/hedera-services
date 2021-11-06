@@ -40,10 +40,8 @@ import java.io.IOException;
 import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -108,8 +106,9 @@ class RecordStreamObjectTest {
 
 	@Test
 	void equalsTest() {
-		assertFalse(recordStreamObject.equals(1));
-		assertTrue(recordStreamObject.equals(recordStreamObject));
+		final var sameButDifferent = recordStreamObject;
+		assertNotEquals(recordStreamObject, new Object());
+		assertEquals(recordStreamObject, sameButDifferent);
 
 		assertEquals(recordStreamObject, new RecordStreamObject(record, transaction, consensusTimestamp));
 

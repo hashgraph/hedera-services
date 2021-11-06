@@ -43,8 +43,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 class NftAdjustmentsTest {
-	private AccountID sender = AccountID.getDefaultInstance();
-	private AccountID recipient = AccountID.newBuilder().setAccountNum(3).setRealmNum(2).setShardNum(1).build();
+	private final AccountID sender = AccountID.getDefaultInstance();
+	private final AccountID recipient = AccountID.newBuilder().setAccountNum(3).setRealmNum(2).setShardNum(1).build();
 
 	private NftAdjustments subject;
 
@@ -78,7 +78,7 @@ class NftAdjustmentsTest {
 
 	@Test
 	void serialize() throws IOException {
-		givenTransferList();
+		givenCanonicalSubject();
 		SerializableDataOutputStream stream = mock(SerializableDataOutputStream.class);
 		subject.serialize(stream);
 		verify(stream).writeLongArray(new long[] { 1 });
@@ -90,11 +90,12 @@ class NftAdjustmentsTest {
 
 	@Test
 	void testEquals() {
+		givenCanonicalSubject();
 		final var same = subject;
-		NftAdjustments adjustments = new NftAdjustments();
-		assertEquals(subject, adjustments);
 		assertEquals(subject, same);
-		assertNotEquals(null, subject);
+		assertEquals(subject, canonicalOwnershipChange());
+		assertNotEquals(subject, null);
+		assertNotEquals(subject, new Object());
 	}
 
 	@Test
@@ -104,7 +105,7 @@ class NftAdjustmentsTest {
 
 	@Test
 	void toStringWorks() {
-		givenTransferList();
+		givenCanonicalSubject();
 		var str = "NftAdjustments{readable=[1 0.0.0 1.2.3]}";
 		assertEquals(str, subject.toString());
 	}
@@ -112,7 +113,7 @@ class NftAdjustmentsTest {
 	@Test
 	void toGrpc() {
 		assertNotNull(subject.toGrpc());
-		givenTransferList();
+		givenCanonicalSubject();
 		var grpc = subject.toGrpc();
 		var transferList = grpc.getNftTransfersList();
 		assertEquals(1, transferList.get(0).getSerialNumber());
@@ -122,7 +123,7 @@ class NftAdjustmentsTest {
 
 	@Test
 	void fromGrpc() {
-		givenTransferList();
+		givenCanonicalSubject();
 		var grpc = List.of(NftTransfer.newBuilder()
 				.setSerialNumber(1)
 				.setReceiverAccountID(recipient).setSenderAccountID(sender).build());
@@ -130,8 +131,12 @@ class NftAdjustmentsTest {
 		assertEquals(subject, NftAdjustments.fromGrpc(grpc));
 	}
 
-	private void givenTransferList() {
-		subject = NftAdjustments.fromGrpc(List.of(
+	private void givenCanonicalSubject() {
+		subject = canonicalOwnershipChange();
+	}
+
+	private NftAdjustments canonicalOwnershipChange() {
+		return NftAdjustments.fromGrpc(List.of(
 				NftTransfer
 						.newBuilder()
 						.setSerialNumber(1)

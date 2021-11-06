@@ -73,8 +73,9 @@ class TxnIdTest {
 	@Test
 	void sameAndNullEqualsWork() {
 		subject = scheduledSubject();
-		assertEquals(subject, subject);
-		assertNotEquals(null, subject);
+		final var same = subject;
+		assertEquals(subject, same);
+		assertNotEquals(subject, null);
 	}
 
 	@Test

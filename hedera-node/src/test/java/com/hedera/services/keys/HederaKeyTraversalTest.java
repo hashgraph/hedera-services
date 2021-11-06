@@ -25,9 +25,6 @@ import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.keys.KeyTree;
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,8 +34,6 @@ import static com.hedera.test.factories.keys.NodeFactory.threshold;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class HederaKeyTraversalTest {
 	private static final KeyTree kt = KeyTree.withRoot(
@@ -88,16 +83,5 @@ class HederaKeyTraversalTest {
 		final List<ByteString> keys = new ArrayList<>();
 		kt.traverseLeaves(leaf -> keys.add(leaf.asKey().getEd25519()));
 		return keys;
-	}
-
-	@Test
-	void assertConstructorThrowsException() throws NoSuchMethodException {
-		Constructor<HederaKeyTraversal> constructor = HederaKeyTraversal.class.getDeclaredConstructor();
-		assertTrue(Modifier.isPrivate(constructor.getModifiers()));
-		constructor.setAccessible(true);
-		assertThrows(InvocationTargetException.class,
-				() -> {
-					constructor.newInstance();
-				});
 	}
 }

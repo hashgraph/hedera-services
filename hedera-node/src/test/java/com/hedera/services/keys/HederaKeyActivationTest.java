@@ -32,9 +32,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.function.Function;
 
@@ -126,7 +123,7 @@ class HederaKeyActivationTest {
 		assertEquals(presentSigs.get(0), present0);
 		assertEquals(presentSigs.get(1), present1);
 		assertEquals(HederaKeyActivation.INVALID_MISSING_SIG, missing);
-		assertEquals(HederaKeyActivation.INVALID_MISSING_SIG.getSignatureStatus(), VerificationStatus.INVALID);
+		assertEquals(VerificationStatus.INVALID, HederaKeyActivation.INVALID_MISSING_SIG.getSignatureStatus());
 	}
 
 	@Test
@@ -164,16 +161,5 @@ class HederaKeyActivationTest {
 		given(accessor.getSigMeta()).willReturn(RationalizedSigMeta.noneAvailable());
 
 		assertFalse(HederaKeyActivation.payerSigIsActive(accessor, ONLY_IF_SIG_IS_VALID));
-	}
-
-	@Test
-	void assertConstructorThrowsException() throws NoSuchMethodException {
-		Constructor<HederaKeyActivation> constructor = HederaKeyActivation.class.getDeclaredConstructor();
-		assertTrue(Modifier.isPrivate(constructor.getModifiers()));
-		constructor.setAccessible(true);
-		assertThrows(InvocationTargetException.class,
-				() -> {
-					constructor.newInstance();
-				});
 	}
 }

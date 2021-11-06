@@ -34,16 +34,12 @@ import com.swirlds.common.crypto.TransactionSignature;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 
 import static com.hedera.services.keys.StandardSyncActivationCheck.allKeysAreActive;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
@@ -144,16 +140,5 @@ class StandardSyncActivationCheckTest {
 				sigsFnProvider);
 
 		assertFalse(flag);
-	}
-
-	@Test
-	void assertConstructorThrowsException() throws NoSuchMethodException {
-		Constructor<StandardSyncActivationCheck> constructor = StandardSyncActivationCheck.class.getDeclaredConstructor();
-		assertTrue(Modifier.isPrivate(constructor.getModifiers()));
-		constructor.setAccessible(true);
-		assertThrows(InvocationTargetException.class,
-				() -> {
-					constructor.newInstance();
-				});
 	}
 }
