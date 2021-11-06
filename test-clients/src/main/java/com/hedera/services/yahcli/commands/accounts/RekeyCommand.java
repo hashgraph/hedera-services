@@ -81,6 +81,9 @@ public class RekeyCommand implements Callable<Integer> {
 
 		if (delegate.getFinalSpecs().get(0).getStatus() == PASSED) {
 			COMMON_MESSAGES.info("SUCCESS - account 0.0." + accountNum + " has been re-keyed");
+		} else {
+			COMMON_MESSAGES.warn("FAILED to re-key account 0.0." + accountNum);
+			return 1;
 		}
 
 		return 0;
