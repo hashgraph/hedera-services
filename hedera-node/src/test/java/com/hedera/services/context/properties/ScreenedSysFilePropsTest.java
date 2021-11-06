@@ -84,9 +84,15 @@ class ScreenedSysFilePropsTest {
 	void incorporatesStandardGlobalDynamic() {
 		final var oldMap = subject.from121;
 
-		subject.screenNew(withJust("tokens.maxPerAccount", "42"));
+		subject.screenNew(withAllOf(Map.of(
+				"tokens.maxPerAccount", "42",
+				"ledger.transfers.maxLen", "42",
+				"contracts.maxRefundPercentOfGasLimit", "42"
+		)));
 
-		assertEquals(Map.of("tokens.maxPerAccount", 42), subject.from121);
+		assertEquals(42, subject.from121.get("tokens.maxPerAccount"));
+		assertEquals(42, subject.from121.get("ledger.transfers.maxLen"));
+		assertEquals(42, subject.from121.get("contracts.maxRefundPercentOfGasLimit"));
 		assertNotSame(oldMap, subject.from121);
 	}
 
@@ -153,13 +159,19 @@ class ScreenedSysFilePropsTest {
 				"Property 'defaultFeeCollectionAccount' is not global/dynamic, please find it a proper home!"));
 	}
 
-	private static final ServicesConfigurationList withJust(final String name, final String value) {
+	private static ServicesConfigurationList withJust(final String name, final String value) {
 		return ServicesConfigurationList.newBuilder()
 				.addNameValue(from(name, value))
 				.build();
 	}
 
-	private static final Setting from(final String name, final String value) {
+	private static ServicesConfigurationList withAllOf(final Map<String, String> settings) {
+		final var builder = ServicesConfigurationList.newBuilder();
+		settings.forEach((key, value) -> builder.addNameValue(from(key, value)));
+		return builder.build();
+	}
+
+	private static Setting from(final String name, final String value) {
 		return Setting.newBuilder().setName(name).setValue(value).build();
 	}
 }

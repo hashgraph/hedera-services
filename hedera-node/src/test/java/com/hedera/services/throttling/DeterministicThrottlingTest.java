@@ -139,14 +139,12 @@ class DeterministicThrottlingTest {
 
 		// then:
 		assertEquals(0L, gasLimitDeterministicThrottle.getCapacity());
-		assertThat(logCaptor.errorLogs(),
-				contains("ThrottleByGas global dynamic property is set to true but contracts.consensusThrottleMaxGasLimit is not set in throttles.json or is set to 0."));
+		assertThat(logCaptor.warnLogs(), contains("Consensus gas throttling enabled, but limited to 0 gas/sec"));
 	}
 
 	@Test
 	void shouldThrottleByGasAndTotalAllowedGasPerSecNotSetOrZeroFrontend() throws IOException {
 		// setup:
-		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
 		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
 		subject.setConsensusThrottled(false);
 
@@ -155,8 +153,7 @@ class DeterministicThrottlingTest {
 
 		// then:
 		assertEquals(0L, gasLimitDeterministicThrottle.getCapacity());
-		assertThat(logCaptor.errorLogs(),
-				contains("ThrottleByGas global dynamic property is set to true but contracts.frontendThrottleMaxGasLimit is not set in throttles.json or is set to 0."));
+		assertThat(logCaptor.warnLogs(), contains("Frontend gas throttling enabled, but limited to 0 gas/sec"));
 	}
 
 	@Test

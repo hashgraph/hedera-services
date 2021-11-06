@@ -45,6 +45,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 
 public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	private static final Logger log = LogManager.getLogger(DeterministicThrottling.class);
+	private static final String GAS_THROTTLE_AT_ZERO_WARNING_TPL = "{} gas throttling enabled, but limited to 0 gas/sec";
 
 	private final IntSupplier capacitySplitSource;
 	private final GlobalDynamicProperties dynamicProperties;
@@ -165,14 +166,14 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		int n = capacitySplitSource.getAsInt();
 		if (consensusThrottled) {
 			if (dynamicProperties.consensusThrottleGasLimit() == 0 && dynamicProperties.shouldThrottleByGas()) {
-				log.error("ThrottleByGas global dynamic property is set to true but contracts.consensusThrottleMaxGasLimit is not set in throttles.json or is set to 0.");
+				log.warn(GAS_THROTTLE_AT_ZERO_WARNING_TPL, "Consensus");
 				return;
 			} else {
 				gasThrottle = new GasLimitDeterministicThrottle(dynamicProperties.consensusThrottleGasLimit() / n);
 			}
 		} else {
 			if (dynamicProperties.frontendThrottleGasLimit() == 0 && dynamicProperties.shouldThrottleByGas()) {
-				log.error("ThrottleByGas global dynamic property is set to true but contracts.frontendThrottleMaxGasLimit is not set in throttles.json or is set to 0.");
+				log.warn(GAS_THROTTLE_AT_ZERO_WARNING_TPL, "Frontend");
 				return;
 			} else {
 				gasThrottle = new GasLimitDeterministicThrottle(dynamicProperties.frontendThrottleGasLimit() / n);
