@@ -113,7 +113,8 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						handlesUseOfDefaultTokenId(),
 						contractInfoQueriesAsExpected(),
 						dissociateHasExpectedSemanticsForDeletedTokens(),
-						dissociateHasExpectedSemanticsForDissociatedContracts()
+						dissociateHasExpectedSemanticsForDissociatedContracts(),
+						canDissociateFromDeletedTokenWithAlreadyDissociatedTreasury()
 				}
 		);
 	}
@@ -343,6 +344,37 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 										.freeze(Frozen)),
 						tokenDissociate(frozenAccount, expiringToken)
 								.hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN)
+				);
+	}
+
+	public HapiApiSpec canDissociateFromDeletedTokenWithAlreadyDissociatedTreasury() {
+		String multiKey = "multiKey";
+		String tbdToken = "ToBeDeleted";
+		String nonTreasuryAcquaintance = "1bFrozen";
+		long initialSupply = 100L;
+		long nonZeroXfer = 10L;
+		final var treasuryDissoc = "treasuryDissoc";
+		final var nonTreasuryDissoc = "nonTreasuryDissoc";
+
+		return defaultHapiSpec("CanDissociateFromDeletedTokenWithAlreadyDissociatedTreasury")
+				.given(
+						newKeyNamed(multiKey),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						tokenCreate(tbdToken)
+								.freezeKey(multiKey)
+								.freezeDefault(false)
+								.adminKey(multiKey)
+								.initialSupply(initialSupply)
+								.treasury(TOKEN_TREASURY),
+						cryptoCreate(nonTreasuryAcquaintance).balance(0L)
+				).when(
+						tokenAssociate(nonTreasuryAcquaintance, tbdToken),
+						cryptoTransfer(moving(nonZeroXfer, tbdToken).between(TOKEN_TREASURY, nonTreasuryAcquaintance)),
+						tokenFreeze(tbdToken, nonTreasuryAcquaintance),
+						tokenDelete(tbdToken)
+				).then(
+						tokenDissociate(TOKEN_TREASURY, tbdToken).via(treasuryDissoc),
+						tokenDissociate(nonTreasuryAcquaintance, tbdToken).via(nonTreasuryDissoc)
 				);
 	}
 
