@@ -583,6 +583,13 @@ class TokenTest {
 		hmap.put(1L, new UniqueToken(new Id(1, 2, 3), 4));
 		subject.setLoadedUniqueTokens(hmap);
 		assertEquals(hmap, subject.getLoadedUniqueTokens());
+
+		subject.setType(TokenType.FUNGIBLE_COMMON);
+		assertTrue(subject.isFungibleCommon());
+		assertFalse(subject.isNonFungibleUnique());
+
+		subject.setNew(true);
+		assertTrue(subject.isNew());
 	}
 
 	@Test

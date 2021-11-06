@@ -105,6 +105,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
@@ -583,11 +584,14 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void nonGenesisInitClearsPreparedUpgradeIfStateVersionLessThanCurrentSoftware() {
+	void nonGenesisInitClearsPreparedUpgradeIfNonNullLastFrozenMatchesFreezeTime() {
 		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
 
-		given(networkContext.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION - 1);
+		final var when = Instant.ofEpochSecond(1_234_567L, 890);
+		given(dualState.getFreezeTime()).willReturn(when);
+		given(dualState.getLastFrozenTime()).willReturn(when);
+		given(networkContext.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
 
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
@@ -600,6 +604,27 @@ class ServicesStateTest {
 		subject.init(platform, addressBook, dualState);
 
 		verify(networkContext).discardPreparedUpgradeMeta();
+		verify(dualState).setFreezeTime(null);
+	}
+
+	@Test
+	void nonGenesisInitDoesntClearPreparedUpgradeIfBothFreezeAndLastFrozenAreNull() {
+		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
+		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+
+		given(networkContext.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
+
+		given(app.hashLogger()).willReturn(hashLogger);
+		given(app.initializationFlow()).willReturn(initFlow);
+		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+		given(platform.getSelfId()).willReturn(selfId);
+		// and:
+		APPS.save(selfId.getId(), app);
+
+		// when:
+		subject.init(platform, addressBook, dualState);
+
+		verify(networkContext, never()).discardPreparedUpgradeMeta();
 	}
 
 	@Test

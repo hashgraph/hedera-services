@@ -33,16 +33,15 @@ import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, AccountProperty> {
-
 	private final GlobalDynamicProperties dynamicProperties;
 	private final OptionValidator validator;
+
 	private BalanceChange balanceChange;
 
-	MerkleAccountScopedCheck(
-			GlobalDynamicProperties dynamicProperties,
-			OptionValidator validator) {
+	MerkleAccountScopedCheck(final GlobalDynamicProperties dynamicProperties, final OptionValidator validator) {
 		this.dynamicProperties = dynamicProperties;
 		this.validator = validator;
 	}
@@ -59,11 +58,10 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 
 		final var balance = (long) getEffective(BALANCE, account, changeSet);
 
-		if (
-				dynamicProperties.autoRenewEnabled() &&
-				balance == 0L &&
-				!validator.isAfterConsensusSecond((long) getEffective(EXPIRY, account, changeSet))
-		) {
+		final var isDetached = dynamicProperties.autoRenewEnabled() &&
+						balance == 0L &&
+						!validator.isAfterConsensusSecond((long) getEffective(EXPIRY, account, changeSet));
+		if (isDetached) {
 			return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 		}
 
@@ -73,7 +71,7 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 		}
 		balanceChange.setNewBalance(newBalance);
 
-		return ResponseCodeEnum.OK;
+		return OK;
 	}
 
 	public MerkleAccountScopedCheck setBalanceChange(final BalanceChange balanceChange) {
@@ -81,7 +79,11 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 		return this;
 	}
 
-	Object getEffective(AccountProperty prop, MerkleAccount account, Map<AccountProperty, Object> changeSet) {
+	Object getEffective(
+			final AccountProperty prop,
+			final MerkleAccount account,
+			final Map<AccountProperty, Object> changeSet
+	) {
 		if (changeSet != null && changeSet.containsKey(prop)) {
 			return changeSet.get(prop);
 		}

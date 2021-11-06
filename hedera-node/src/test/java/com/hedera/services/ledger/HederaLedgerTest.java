@@ -70,6 +70,12 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
+	void zeroTouchesNetTransfers() {
+		final var net = subject.netTokenTransfersInTxn();
+		assertEquals(0, net.size());
+	}
+
+	@Test
 	void indicatesNoChangeSetIfNotInTx() {
 		final var summary = subject.currentChangeSet();
 

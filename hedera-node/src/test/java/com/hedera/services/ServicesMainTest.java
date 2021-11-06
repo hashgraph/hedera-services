@@ -45,6 +45,7 @@ import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
+import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -112,6 +113,8 @@ class ServicesMainTest {
 	private NodeInfo nodeInfo;
 	@Mock
 	private ReconnectCompleteListener reconnectListener;
+	@Mock
+	private StateWriteToDiskCompleteListener stateToDiskListener;
 	@Mock
 	private InvalidSignedStateListener issListener;
 	@Mock
@@ -192,6 +195,7 @@ class ServicesMainTest {
 		verify(statsManager).initializeFor(platform);
 		verify(accountsExporter).toFile(accounts);
 		verify(notificationEngine).register(ReconnectCompleteListener.class, reconnectListener);
+		verify(notificationEngine).register(StateWriteToDiskCompleteListener.class, stateToDiskListener);
 		verify(grpcStarter).startIfAppropriate();
 	}
 
@@ -245,7 +249,6 @@ class ServicesMainTest {
 		withRunnableApp();
 		withChangeableApp();
 
-		given(app.upgradeActions()).willReturn(upgradeActions);
 		given(app.recordStreamManager()).willReturn(recordStreamManager);
 		// and:
 		subject.init(platform, nodeId);
@@ -255,7 +258,6 @@ class ServicesMainTest {
 
 		// then:
 		verify(currentPlatformStatus).set(MAINTENANCE);
-		verify(upgradeActions).externalizeFreeze();
 		verify(recordStreamManager).setInFreeze(true);
 	}
 
@@ -344,6 +346,7 @@ class ServicesMainTest {
 		given(app.issListener()).willReturn(issListener);
 		given(app.notificationEngine()).willReturn(() -> notificationEngine);
 		given(app.reconnectListener()).willReturn(reconnectListener);
+		given(app.stateWriteToDiskListener()).willReturn(stateToDiskListener);
 		given(app.statsManager()).willReturn(statsManager);
 		given(app.accountsExporter()).willReturn(accountsExporter);
 		given(app.grpcStarter()).willReturn(grpcStarter);

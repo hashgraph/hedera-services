@@ -50,6 +50,7 @@ import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
@@ -59,6 +60,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
@@ -68,9 +70,12 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -101,6 +106,8 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						royaltyCollectorsCanUseAutoAssociation(),
 						royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
 						dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
+						nftSelfTransfersRejectedBothInPrecheckAndHandle(),
+						hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
 				}
 		);
 	}
@@ -108,6 +115,102 @@ public class CryptoTransferSuite extends HapiApiSuite {
 	@Override
 	public boolean canRunAsync() {
 		return true;
+	}
+
+	private HapiApiSpec nftSelfTransfersRejectedBothInPrecheckAndHandle() {
+		final var owningParty = "owningParty";
+		final var multipurpose = "multi";
+		final var nftType = "nftType";
+		final var uncheckedTxn = "uncheckedTxn";
+
+		return defaultHapiSpec("NftSelfTransfersRejectedBothInPrecheckAndHandle")
+				.given(
+						newKeyNamed(multipurpose),
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(owningParty).maxAutomaticTokenAssociations(123),
+						tokenCreate(nftType)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.treasury(TOKEN_TREASURY)
+								.supplyKey(multipurpose)
+								.initialSupply(0),
+						mintToken(nftType, List.of(
+								copyFromUtf8("We"),
+								copyFromUtf8("are"),
+								copyFromUtf8("the")
+						)),
+						cryptoTransfer(movingUnique(nftType, 1L, 2L)
+								.between(TOKEN_TREASURY, owningParty))
+				).when(
+						getAccountInfo(owningParty)
+								.savingSnapshot(owningParty),
+						cryptoTransfer(movingUnique(nftType, 1L)
+								.between(owningParty, owningParty)
+						)
+								.signedBy(DEFAULT_PAYER, owningParty)
+								.hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
+						usableTxnIdNamed(uncheckedTxn).payerId(DEFAULT_PAYER),
+						uncheckedSubmit(
+								cryptoTransfer(movingUnique(nftType, 1L)
+										.between(owningParty, owningParty)
+								)
+										.signedBy(DEFAULT_PAYER, owningParty)
+										.txnId(uncheckedTxn)
+						).payingWith(GENESIS)
+				).then(
+						sleepFor(1_000),
+						getReceipt(uncheckedTxn).hasPriorityStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
+						getAccountInfo(owningParty)
+								.has(accountWith().noChangesFromSnapshot(owningParty))
+				);
+	}
+
+	private HapiApiSpec hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle() {
+		final var owningParty = "owningParty";
+		final var multipurpose = "multi";
+		final var fungibleType = "fungible";
+		final var uncheckedHbarTxn = "uncheckedHbarTxn";
+		final var uncheckedFtTxn = "uncheckedFtTxn";
+
+		return defaultHapiSpec("NftSelfTransfersRejectedBothInPrecheckAndHandle")
+				.given(
+						newKeyNamed(multipurpose),
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(owningParty).maxAutomaticTokenAssociations(123),
+						tokenCreate(fungibleType)
+								.tokenType(FUNGIBLE_COMMON)
+								.treasury(TOKEN_TREASURY)
+								.initialSupply(1234),
+						cryptoTransfer(moving(100, fungibleType)
+								.between(TOKEN_TREASURY, owningParty))
+				).when(
+						getAccountInfo(owningParty)
+								.savingSnapshot(owningParty),
+						cryptoTransfer(tinyBarsFromTo(owningParty, owningParty, 1))
+								.signedBy(DEFAULT_PAYER, owningParty)
+								.hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
+						cryptoTransfer(moving(1, fungibleType).between(owningParty, owningParty))
+								.signedBy(DEFAULT_PAYER, owningParty)
+								.hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
+						/* And bypassing precheck */
+						usableTxnIdNamed(uncheckedHbarTxn).payerId(DEFAULT_PAYER),
+						usableTxnIdNamed(uncheckedFtTxn).payerId(DEFAULT_PAYER),
+						uncheckedSubmit(
+								cryptoTransfer(tinyBarsFromTo(owningParty, owningParty, 1))
+										.signedBy(DEFAULT_PAYER, owningParty)
+										.txnId(uncheckedHbarTxn)
+						).payingWith(GENESIS),
+						uncheckedSubmit(
+								cryptoTransfer(moving(1, fungibleType).between(owningParty, owningParty))
+										.signedBy(DEFAULT_PAYER, owningParty)
+										.txnId(uncheckedFtTxn)
+						).payingWith(GENESIS)
+				).then(
+						sleepFor(1_000),
+						getReceipt(uncheckedHbarTxn).hasPriorityStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
+						getReceipt(uncheckedFtTxn).hasPriorityStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
+						getAccountInfo(owningParty)
+								.has(accountWith().noChangesFromSnapshot(owningParty))
+				);
 	}
 
 	private HapiApiSpec dissociatedRoyaltyCollectorsCanUseAutoAssociation() {
