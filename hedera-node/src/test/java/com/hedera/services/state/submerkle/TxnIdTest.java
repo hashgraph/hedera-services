@@ -75,7 +75,7 @@ class TxnIdTest {
 		subject = scheduledSubject();
 		final var same = subject;
 		assertEquals(subject, same);
-		assertNotEquals(subject, null);
+		assertNotEquals(null, subject);
 	}
 
 	@Test

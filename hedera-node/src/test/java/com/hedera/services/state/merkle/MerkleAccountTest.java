@@ -266,7 +266,7 @@ class MerkleAccountTest {
 	void equalsWorksWithExtremes() {
 		final var sameButDifferent = subject;
 		assertEquals(subject, sameButDifferent);
-		assertNotEquals(subject, null);
+		assertNotEquals(null, subject);
 		assertNotEquals(subject, new Object());
 	}
 

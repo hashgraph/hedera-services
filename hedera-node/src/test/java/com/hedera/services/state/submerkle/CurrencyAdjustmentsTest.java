@@ -78,7 +78,7 @@ class CurrencyAdjustmentsTest {
 		final var anotherSubject = new CurrencyAdjustments(expectedAmounts, expectedParties);
 		assertNotEquals(subject, anotherSubject);
 		assertEquals(subject, sameButDifferent);
-		assertNotEquals(subject, null);
+		assertNotEquals(null, subject);
 	}
 
 	@Test

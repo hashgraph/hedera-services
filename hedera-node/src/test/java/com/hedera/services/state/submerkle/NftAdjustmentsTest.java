@@ -94,7 +94,7 @@ class NftAdjustmentsTest {
 		final var same = subject;
 		assertEquals(subject, same);
 		assertEquals(subject, canonicalOwnershipChange());
-		assertNotEquals(subject, null);
+		assertNotEquals(null, subject);
 		assertNotEquals(subject, new Object());
 	}
 

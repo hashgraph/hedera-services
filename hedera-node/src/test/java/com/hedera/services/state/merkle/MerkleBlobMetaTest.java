@@ -60,7 +60,7 @@ class MerkleBlobMetaTest {
 	@Test
 	void nullEqualsWorks() {
 		final var sameButDifferent = subject;
-		assertNotEquals(subject, null);
+		assertNotEquals(null, subject);
 		assertEquals(subject, sameButDifferent);
 	}
 

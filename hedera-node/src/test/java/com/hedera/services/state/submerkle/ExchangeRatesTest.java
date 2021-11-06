@@ -109,7 +109,7 @@ class ExchangeRatesTest {
 		final var subjectCopy = subject.copy();
 
 		assertEquals(subject, sameButDifferent);
-		assertNotEquals(subject, null);
+		assertNotEquals(null, subject);
 		assertEquals(expCurrentHbarEquiv, subjectCopy.getCurrHbarEquiv());
 		assertEquals(expCurrentCentEquiv, subjectCopy.getCurrCentEquiv());
 		assertEquals(expCurrentExpiry, subjectCopy.getCurrExpiry());

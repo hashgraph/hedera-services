@@ -153,9 +153,4 @@ class RoyaltyFeeSpecTest {
 
 		assertEquals(a.hashCode(), e.hashCode());
 	}
-
-	@Test
-	void nullEqualsTest() {
-		assertNotEquals(subject, null);
-	}
 }
