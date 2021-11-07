@@ -163,31 +163,32 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
 	@Override
 	public void applyGasConfig() {
-		int n = capacitySplitSource.getAsInt();
+		final var n = capacitySplitSource.getAsInt();
+		long splitCapacity;
 		if (consensusThrottled) {
-			if (dynamicProperties.consensusThrottleGasLimit() == 0 && dynamicProperties.shouldThrottleByGas()) {
+			if (dynamicProperties.shouldThrottleByGas() && dynamicProperties.consensusThrottleGasLimit() == 0) {
 				log.warn(GAS_THROTTLE_AT_ZERO_WARNING_TPL, "Consensus");
 				return;
 			} else {
-				gasThrottle = new GasLimitDeterministicThrottle(dynamicProperties.consensusThrottleGasLimit() / n);
+				splitCapacity = dynamicProperties.consensusThrottleGasLimit() / n;
 			}
 		} else {
-			if (dynamicProperties.frontendThrottleGasLimit() == 0 && dynamicProperties.shouldThrottleByGas()) {
+			if (dynamicProperties.shouldThrottleByGas() && dynamicProperties.frontendThrottleGasLimit() == 0) {
 				log.warn(GAS_THROTTLE_AT_ZERO_WARNING_TPL, "Frontend");
 				return;
 			} else {
-				gasThrottle = new GasLimitDeterministicThrottle(dynamicProperties.frontendThrottleGasLimit() / n);
+				splitCapacity = dynamicProperties.frontendThrottleGasLimit() / n;
 			}
 		}
-		var sb = new StringBuilder("Resolved gas throttle limit (after splitting capacity " + n + " ways) - \n");
-		sb.append("  ")
-				.append("ThrottleByGasLimit: ")
-				.append(gasThrottle.getCapacity())
-				.append(" throttleByGas ")
-				.append(dynamicProperties.shouldThrottleByGas())
-				.append("\n");
-		String logInfo = sb.toString().trim();
-		log.info(logInfo);
+		gasThrottle = new GasLimitDeterministicThrottle(splitCapacity);
+		final var configDesc = "Resolved " +
+				(consensusThrottled ? "consensus" : "frontend") +
+				" gas throttle (after splitting capacity " + n + " ways) -\n  " +
+				gasThrottle.getCapacity() +
+				" gas/sec (throttling " +
+				(dynamicProperties.shouldThrottleByGas() ? "ON" : "OFF") +
+				")";
+		log.info(configDesc);
 	}
 
 	@Override

@@ -129,7 +129,7 @@ class DeterministicThrottlingTest {
 	}
 
 	@Test
-	void shouldThrottleByGasAndTotalAllowedGasPerSecNotSetOrZero() throws IOException {
+	void shouldThrottleByGasAndTotalAllowedGasPerSecNotSetOrZero() {
 		// setup:
 		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
 		subject.setConsensusThrottled(true);
@@ -143,7 +143,7 @@ class DeterministicThrottlingTest {
 	}
 
 	@Test
-	void shouldThrottleByGasAndTotalAllowedGasPerSecNotSetOrZeroFrontend() throws IOException {
+	void shouldThrottleByGasAndTotalAllowedGasPerSecNotSetOrZeroFrontend() {
 		// setup:
 		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
 		subject.setConsensusThrottled(false);
@@ -321,14 +321,67 @@ class DeterministicThrottlingTest {
 	}
 
 	@Test
-	void logsGasThrottleAsExpected() {
+	void logsActiveConsensusGasThrottlesAsExpected() {
 		var capacity = 1000L;
 		// setup:
 		given(dynamicProperties.consensusThrottleGasLimit()).willReturn(capacity);
 		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
 
-		var desired = "Resolved gas throttle limit (after splitting capacity " + n + " ways) - \n" +
-				"  ThrottleByGasLimit: " + capacity / n + " throttleByGas true";
+		final var desired = "Resolved consensus gas throttle (after splitting capacity 2 ways) -" +
+				"\n  500 gas/sec (throttling ON)";
+
+		// when:
+		subject.applyGasConfig();
+
+		// then:
+		assertThat(logCaptor.infoLogs(), contains(desired));
+	}
+
+	@Test
+	void logsInertConsensusGasThrottlesAsExpected() {
+		var capacity = 1000L;
+		// setup:
+		given(dynamicProperties.consensusThrottleGasLimit()).willReturn(capacity);
+
+		final var desired = "Resolved consensus gas throttle (after splitting capacity 2 ways) -" +
+				"\n  500 gas/sec (throttling OFF)";
+
+		// when:
+		subject.applyGasConfig();
+
+		// then:
+		assertThat(logCaptor.infoLogs(), contains(desired));
+	}
+
+	@Test
+	void logsActiveFrontendGasThrottlesAsExpected() {
+		subject = new DeterministicThrottling(() -> 4, dynamicProperties, false);
+
+		var capacity = 1000L;
+		// setup:
+		given(dynamicProperties.frontendThrottleGasLimit()).willReturn(capacity);
+		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
+
+		final var desired = "Resolved frontend gas throttle (after splitting capacity 4 ways) -" +
+				"\n  250 gas/sec (throttling ON)";
+
+		// when:
+		subject.applyGasConfig();
+
+		// then:
+		assertThat(logCaptor.infoLogs(), contains(desired));
+	}
+
+	@Test
+	void logsInertFrontendGasThrottlesAsExpected() {
+		subject = new DeterministicThrottling(() -> 4, dynamicProperties, false);
+
+		var capacity = 1000L;
+		// setup:
+		given(dynamicProperties.frontendThrottleGasLimit()).willReturn(capacity);
+
+		final var desired = "Resolved frontend gas throttle (after splitting capacity 4 ways) -" +
+				"\n  250 gas/sec (throttling OFF)";
 
 		// when:
 		subject.applyGasConfig();
@@ -474,7 +527,7 @@ class DeterministicThrottlingTest {
 	}
 
 	@Test
-	void contractCreateTXCallsConsensusGasThrottleWithDefinitions() throws IOException {
+	void contractCreateTXCallsConsensusGasThrottleWithDefinitions() {
 		Instant now = Instant.now();
 
 		//setup:
@@ -492,7 +545,7 @@ class DeterministicThrottlingTest {
 	}
 
 	@Test
-	void contractCallTXCallsConsensusGasThrottleWithDefinitions() throws IOException {
+	void contractCallTXCallsConsensusGasThrottleWithDefinitions() {
 		Instant now = Instant.now();
 
 		//setup:
