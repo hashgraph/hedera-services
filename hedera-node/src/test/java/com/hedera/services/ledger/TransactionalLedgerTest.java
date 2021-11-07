@@ -25,14 +25,12 @@ import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.ledger.accounts.TestAccount;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.TestAccountProperty;
-import com.hedera.services.state.merkle.MerkleToken;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
 import java.util.List;
-import java.util.function.Supplier;
 import java.util.stream.LongStream;
 
 import static com.hedera.services.ledger.properties.TestAccountProperty.FLAG;
@@ -63,31 +61,26 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.when;
 
 class TransactionalLedgerTest {
-	Supplier<TestAccount> newAccountFactory;
-	BackingStore<Long, TestAccount> backingAccounts;
-	LedgerCheck scopedCheck;
-	ChangeSummaryManager<TestAccount, TestAccountProperty> changeManager = new ChangeSummaryManager<>();
-	TransactionalLedger<Long, TestAccountProperty, TestAccount> subject;
+	private final Object[] things = { "a", "b", "c", "d" };
+	private final TestAccount account1 = new TestAccount(1L, things[1], false, 667L);
+	private final ChangeSummaryManager<TestAccount, TestAccountProperty> changeManager = new ChangeSummaryManager<>();
 
-	Object[] things = { "a", "b", "c", "d" };
-	MerkleToken token;
-	TestAccount account1 = new TestAccount(1L, things[1], false, 667L);
+	private BackingStore<Long, TestAccount> backingAccounts;
+	private LedgerCheck<TestAccount, TestAccountProperty> scopedCheck;
+	private TransactionalLedger<Long, TestAccountProperty, TestAccount> subject;
+
 	@BeforeEach
+	@SuppressWarnings("unchecked")
 	private void setup() {
-		token = mock(MerkleToken.class);
-
-		backingAccounts = mock(BackingStore.class);
+		backingAccounts = (BackingStore<Long, TestAccount>) mock(BackingStore.class);
 		scopedCheck = new TestAccountScopedCheck();
+
 		given(backingAccounts.getRef(1L)).willReturn(account1);
 		given(backingAccounts.getImmutableRef(1L)).willReturn(account1);
 		given(backingAccounts.contains(1L)).willReturn(true);
-		newAccountFactory = () -> new TestAccount();
 
 		subject = new TransactionalLedger<>(
-				TestAccountProperty.class,
-				newAccountFactory,
-				backingAccounts,
-				changeManager);
+				TestAccountProperty.class, TestAccount::new, backingAccounts, changeManager);
 	}
 
 	@Test
@@ -329,6 +322,8 @@ class TransactionalLedgerTest {
 
 	@Test
 	void reflectsChangeToExistingAccountIfInTransaction() {
+		final var expected = new TestAccount(account1.value, things[0], account1.flag, 667L);
+
 		// given:
 		subject.begin();
 
@@ -336,7 +331,7 @@ class TransactionalLedgerTest {
 		subject.set(1L, OBJ, things[0]);
 
 		// expect:
-		assertEquals(new TestAccount(account1.value, things[0], account1.flag, 667L), subject.getFinalized(1L));
+		assertEquals(expected, subject.getFinalized(1L));
 	}
 
 	@Test

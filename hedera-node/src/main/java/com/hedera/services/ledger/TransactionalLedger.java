@@ -43,6 +43,7 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.MiscUtils.readableProperty;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static java.util.stream.Collectors.joining;
 
 /**
@@ -58,11 +59,13 @@ import static java.util.stream.Collectors.joining;
  * @param <A>
  * 		the type of a ledger entity.
  */
-public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> implements Ledger<K, P, A> {
+public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
+		implements Ledger<K, P, A>, BackingStore<K, A> {
 	private static final int MAX_ENTITIES_LIKELY_TOUCHED_IN_LEDGER_TXN = 42;
 
 	private static final Logger log = LogManager.getLogger(TransactionalLedger.class);
 
+	private final P[] allProps;
 	private final Set<K> deadEntities = new HashSet<>();
 	private final List<K> createdKeys = new ArrayList<>(MAX_ENTITIES_LIKELY_TOUCHED_IN_LEDGER_TXN);
 	private final List<K> changedKeys = new ArrayList<>(MAX_ENTITIES_LIKELY_TOUCHED_IN_LEDGER_TXN);
@@ -70,6 +73,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	private final Class<P> propertyType;
 	private final Supplier<A> newEntity;
 	private final BackingStore<K, A> entities;
+	private final TransactionalLedger<K, P, A> entitiesLedger;
 	private final ChangeSummaryManager<A, P> changeManager;
 	private final Function<K, EnumMap<P, Object>> changeFactory;
 
@@ -85,10 +89,17 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 			ChangeSummaryManager<A, P> changeManager
 	) {
 		this.entities = entities;
+		this.allProps = propertyType.getEnumConstants();
 		this.newEntity = newEntity;
 		this.propertyType = propertyType;
 		this.changeManager = changeManager;
 		this.changeFactory = ignore -> new EnumMap<>(propertyType);
+
+		if (entities instanceof TransactionalLedger) {
+			this.entitiesLedger = (TransactionalLedger<K, P, A>) entities;
+		} else {
+			this.entitiesLedger = null;
+		}
 	}
 
 	public void setKeyToString(Function<K, String> keyToString) {
@@ -203,7 +214,16 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		if (changeSet != null && changeSet.containsKey(property)) {
 			return changeSet.get(property);
 		} else {
-			return property.getter().apply(toGetterTarget(id));
+			if (entitiesLedger == null) {
+				return property.getter().apply(toGetterTarget(id));
+			} else {
+				/* If we are backed by a ledger, it is far more efficient to source properties
+				 * by using get(), since each call to a ledger's getRef() creates a new entity
+				 * and sets all its properties. */
+				return entitiesLedger.contains(id)
+						? entitiesLedger.get(id, property)
+						: property.getter().apply(newEntity.get());
+			}
 		}
 	}
 
@@ -223,13 +243,64 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		perishedKeys.add(id);
 	}
 
-	public ResponseCodeEnum validate(final K id, final LedgerCheck<A, P> ledgerCheck) {
-		if(!exists(id)) {
-			return ResponseCodeEnum.INVALID_ACCOUNT_ID;
+	/* --- BackingStore --- */
+	@Override
+	public A getRef(K id) {
+		throw new AssertionError("Not implemented");
+	}
+
+	@Override
+	public A getImmutableRef(K id) {
+		throw new UnsupportedOperationException("Ledger BackingStore implementations only support getRef()");
+	}
+
+	@Override
+	public void put(K id, A entity) {
+		throwIfNotInTxn();
+
+		/* The ledger wrapping us may have created an entity we don't have; so catch up on that if necessary. */
+		if (!exists(id)) {
+			create(id);
+		}
+		/* Now accumulate the entire change-set represented by the received entity. */
+		for (final var prop : allProps) {
+			set(id, prop, prop.getter().apply(entity));
+		}
+	}
+
+	@Override
+	public void remove(K id) {
+		destroy(id);
+	}
+
+	@Override
+	public boolean contains(K id) {
+		return exists(id);
+	}
+
+	@Override
+	public Set<K> idSet() {
+		throw new UnsupportedOperationException("Use of BackingStore.idSet() is an anti-pattern");
+	}
+
+	/* --- Helpers --- */
+	ResponseCodeEnum validate(final K id, final LedgerCheck<A, P> ledgerCheck) {
+		if (!exists(id)) {
+			return INVALID_ACCOUNT_ID;
 		}
 		var changeSet = changes.get(id);
-		var getterTarget = toGetterTarget(id);
-		return ledgerCheck.checkUsing(getterTarget, changeSet);
+		if (entitiesLedger == null) {
+			final var getterTarget = toGetterTarget(id);
+			return ledgerCheck.checkUsing(getterTarget, changeSet);
+		} else {
+			/* If we are backed by a ledger, it is far more efficient to source properties
+			 * by using get(), since each call to a ledger's getRef() creates a new entity
+			 * and sets all its properties. */
+			final Function<P, Object> extantProps = entitiesLedger.contains(id)
+					? prop -> entitiesLedger.get(id, prop)
+					: newDefaultPropertySource();
+			return ledgerCheck.checkUsing(extantProps, changeSet);
+		}
 	}
 
 	boolean isInTransaction() {
@@ -326,5 +397,10 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 
 	private boolean isZombie(K id) {
 		return deadEntities.contains(id);
+	}
+
+	private Function<P, Object> newDefaultPropertySource() {
+		final var defaultEntity = newEntity.get();
+		return prop -> prop.getter().apply(defaultEntity);
 	}
 }

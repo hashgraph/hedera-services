@@ -43,16 +43,16 @@ public interface BackingStore<K, A> {
 	/**
 	 * Gets a possibly mutable reference to the account with the specified id.
 	 *
-	 * @param id the id of the relevant account.
-	 * @return a reference to the account.
+	 * @param id the id of the relevant account
+	 * @return a reference to the account
 	 */
 	A getRef(K id);
 
 	/**
 	 * Gets a reference to the account with the specified id which should not be mutated.
 	 *
-	 * @param id the id of the relevant account.
-	 * @return a reference to the account.
+	 * @param id the id of the relevant account
+	 * @return a reference to the account
 	 */
 	A getImmutableRef(K id);
 
@@ -60,30 +60,30 @@ public interface BackingStore<K, A> {
 	 * Updates (or creates, if absent) the account with the given id
 	 * to the accompanying account.
 	 *
-	 * @param id the id of the relevant account.
-	 * @param account the account that should have this id.
+	 * @param id the id of the relevant account
+	 * @param account the account that should have this id
 	 */
 	void put(K id, A account);
 
 	/**
 	 * Frees the account with the given id for reclamation.
 	 *
-	 * @param id the id of the relevant account.
+	 * @param id the id of the relevant account
 	 */
 	void remove(K id);
 
 	/**
 	 * Checks if the collection contains the account with the given id.
 	 *
-	 * @param id the account in question.
-	 * @return a flag for existence.
+	 * @param id the account in question
+	 * @return a flag for existence
 	 */
 	boolean contains(K id);
 
 	/**
 	 * Returns the set of extant account ids.
 	 *
-	 * @return the set of extant account ids.
+	 * @return the set of extant account ids
 	 */
 	Set<K> idSet();
 }
