@@ -106,6 +106,10 @@ class RecordStreamObjectTest {
 
 	@Test
 	void equalsTest() {
+		final var sameButDifferent = recordStreamObject;
+		assertNotEquals(recordStreamObject, new Object());
+		assertEquals(recordStreamObject, sameButDifferent);
+
 		assertEquals(recordStreamObject, new RecordStreamObject(record, transaction, consensusTimestamp));
 
 		assertNotEquals(recordStreamObject, realObject);

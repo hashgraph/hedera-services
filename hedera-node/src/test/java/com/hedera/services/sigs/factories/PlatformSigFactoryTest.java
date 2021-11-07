@@ -34,7 +34,6 @@ import static com.hedera.services.sigs.factories.PlatformSigFactory.varyingMater
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-
 public class PlatformSigFactoryTest {
 	private static final String PK = "Not really a ed25519 public key!";
 	private static final String DIFFERENT_PK = "NOT really a ed25519 public key!";

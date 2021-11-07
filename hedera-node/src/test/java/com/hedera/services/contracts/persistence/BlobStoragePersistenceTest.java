@@ -23,6 +23,9 @@ package com.hedera.services.contracts.persistence;
 import com.hedera.services.utils.EntityIdUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -31,21 +34,20 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
+@ExtendWith(MockitoExtension.class)
 class BlobStoragePersistenceTest {
 	byte[] address = EntityIdUtils.asSolidityAddress(0, 0, 13257);
 	byte[] addressStorage = "STUFF".getBytes();
 
+	@Mock
 	Map<byte[], byte[]> storage;
 
 	BlobStoragePersistence subject;
 
 	@BeforeEach
 	private void setup() {
-		storage = mock(Map.class);
-
 		subject = new BlobStoragePersistence(storage);
 	}
 
