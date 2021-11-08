@@ -607,7 +607,7 @@ public class SuiteRunner {
 				log.info(result.summary);
 				for (HapiApiSuite failed : result.failedSuites) {
 					String specList = failed.getFinalSpecs().stream()
-							.filter(HapiApiSpec::NOT_OK)
+							.filter(spec -> HapiApiSpec.NOT_OK(spec))
 							.map(HapiApiSpec::toString)
 							.collect(joining(", "));
 					log.info("  --> Problems in suite '" + failed.name() + "' :: " + specList);

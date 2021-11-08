@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.suites.suiterunner;
+package com.hedera.services.bdd.suiterunner;
 
 /*-
  * ‌
@@ -20,6 +20,8 @@ package com.hedera.services.bdd.suites.suiterunner;
  * ‍
  */
 
+import com.hedera.services.bdd.suiterunner.enums.SuitePackage;
+import com.hedera.services.bdd.suiterunner.store.PackageStore;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.junit.jupiter.api.Test;
 
@@ -29,11 +31,12 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 class TypedSuiteRunnerTest {
-	private final Map<SuiteCategory, Supplier<List<HapiApiSuite>>> suites = SuitesStore.initialize();
+	private final PackageStore packageStore = new PackageStore();
+	private final Map<SuitePackage, Supplier<List<HapiApiSuite>>> suites = packageStore.initialize();
 
 	// TODO: Refactor the different cases as separate tests.
 	// TODO: Fix bug where when we pass "-s Autorenew suites" - does not split at all and is interpreting it
-	//  as an wrong argument "-s Autorenew suites"
+	//       as an wrong argument "-s Autorenew suites"
 	@Test
 	void properlyParses() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 		final String[] withSplit = {"-s Autorenew suites,compose suites, Consensus suites, LimeChain suites, meta suites, Hedera suites"};
@@ -44,7 +47,7 @@ class TypedSuiteRunnerTest {
 		final String[] withSplitNoPerfSuites = {"-s -a -spt"};
 		final String[] withoutSplitNoPerfSuites = {"-a", "-spt"};
 		final String[] withInvalidCharacter = {"-s Autorenew suites; compose suites, Consensus suites, LimeChain suites, meta suites, Hedera suites"};
-		final String[] isolated = {"-s Autorenew suites,compose suites,  LimeChain suites, meta suites, Hedera suites"};
+		final String[] isolated = {"-s Crypto suites, LimeChain suites,  Hedera suites"};
 
 		TypedSuiteRunner.main(withSplit);
 

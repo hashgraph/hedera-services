@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.suites.suiterunner;
+package com.hedera.services.bdd.suiterunner.store;
 
 /*-
  * ‌
@@ -20,7 +20,6 @@ package com.hedera.services.bdd.suites.suiterunner;
  * ‍
  */
 
-import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.autorenew.AccountAutoRenewalSuite;
 import com.hedera.services.bdd.suites.autorenew.AutoRemovalCasesSuite;
 import com.hedera.services.bdd.suites.autorenew.GracePeriodRestrictionsSuite;
@@ -205,78 +204,38 @@ import com.hedera.services.bdd.suites.token.TokenTransactSpecs;
 import com.hedera.services.bdd.suites.token.TokenUpdateSpecs;
 import com.hedera.services.bdd.suites.token.UniqueTokenManagementSpecs;
 
-import java.util.ArrayDeque;
-import java.util.Arrays;
-import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
-import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.AUTORENEW_SUITES;
-import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.COMPOSE_SUITES;
-import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.CONSENSUS_SUITES;
-import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.CONTRACT_OP_CODES_SUITES;
-import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.CONTRACT_RECORDS_SUITES;
-import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.CONTRACT_SUITES;
-import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.CRYPTO_SUITES;
-import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.FEES_SUITES;
-import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.FILE_NEGATIVE_SUITES;
-import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.FILE_POSITIVE_SUITES;
-import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.FILE_SUITES;
-import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.FREEZE_SUITES;
-import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.ISSUES_SUITES;
-import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.META_SUITES;
-import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.MISC_SUITES;
-import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.PERF_SUITES;
-import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.RECONNECT_SUITES;
-import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.RECORDS_SUITES;
-import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.REGRESSION_SUITES;
-import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.SCHEDULE_SUITES;
-import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.STREAMING_SUITES;
-import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.THROTTLING_SUITES;
-import static com.hedera.services.bdd.suites.suiterunner.SuiteCategory.TOKEN_SUITES;
+import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.AUTORENEW_SUITES;
+import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.COMPOSE_SUITES;
+import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.CONSENSUS_SUITES;
+import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.CONTRACT_OP_CODES_SUITES;
+import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.CONTRACT_RECORDS_SUITES;
+import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.CONTRACT_SUITES;
+import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.CRYPTO_SUITES;
+import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.FEES_SUITES;
+import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.FILE_NEGATIVE_SUITES;
+import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.FILE_POSITIVE_SUITES;
+import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.FILE_SUITES;
+import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.FREEZE_SUITES;
+import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.ISSUES_SUITES;
+import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.META_SUITES;
+import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.MISC_SUITES;
+import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.PERF_SUITES;
+import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.RECONNECT_SUITES;
+import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.RECORDS_SUITES;
+import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.REGRESSION_SUITES;
+import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.SCHEDULE_SUITES;
+import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.STREAMING_SUITES;
+import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.THROTTLING_SUITES;
+import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.TOKEN_SUITES;
 
-//TODO: Performance tests from package perf are not included. Include if confirmed in daily
-public class SuitesStore {
-	private static final Map<SuiteCategory, Supplier<List<HapiApiSuite>>> suites = new EnumMap<>(SuiteCategory.class);
+// TODO: Performance tests from package perf are not included. Include if confirmed in daily
 
-	protected static Map<SuiteCategory, Supplier<List<HapiApiSuite>>> initialize() {
-		initializeSuites();
-		return suites;
-	}
-
-	// TODO: Add JavaDoc if approved
-	// Will be used when providing input options when passing arguments as terminal commands
-	public static List<String> getAllCategories = Arrays
-			.stream(SuiteCategory.values())
-			.map(c -> c.asString)
-			.collect(Collectors.toList());
-
-	// TODO: Add JavaDoc if approved
-	public static boolean isValidCategory(String arg) {
-		return suites.keySet().stream().anyMatch(key -> key.asString.equalsIgnoreCase(arg));
-	}
-
-	// TODO: Add JavaDoc if approved
-	public static ArrayDeque<SuiteCategory> getCategories(List<String> input) {
-		return input
-				.stream()
-				.map(SuitesStore::getCategory)
-				.collect(Collectors.toCollection(ArrayDeque<SuiteCategory>::new));
-	}
-
-	private static SuiteCategory getCategory(final String input) {
-		return suites
-				.keySet()
-				.stream()
-				.filter(cat -> cat.asString.equalsIgnoreCase(input))
-				.findFirst()
-				.orElse(null);
-	}
-
+public class PackageStore extends SuiteStore {
 	// TODO: PERF_SUITES initialized for testing purposes only. Either remove it or to populate with actual performance suites
-	protected static void initializeSuites() {
+	@Override
+	protected  void initializeSuites() {
 		suites.put(PERF_SUITES, () -> List.of(
 				new AccountAutoRenewalSuite(),
 				new AutoRemovalCasesSuite()));

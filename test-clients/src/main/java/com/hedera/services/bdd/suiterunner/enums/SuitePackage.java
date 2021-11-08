@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.suites.suiterunner;
+package com.hedera.services.bdd.suiterunner.enums;
 
 /*-
  * ‌
@@ -20,7 +20,7 @@ package com.hedera.services.bdd.suites.suiterunner;
  * ‍
  */
 
-public enum SuiteCategory {
+public enum SuitePackage {
 	ALL("All"),
 	AUTORENEW_SUITES("Autorenew suites"),
 	COMPOSE_SUITES("Compose suites"),
@@ -48,7 +48,7 @@ public enum SuiteCategory {
 
 	public final String asString;
 
-	SuiteCategory(final String asString) {
+	SuitePackage(final String asString) {
 		this.asString = asString;
 	}
 }
