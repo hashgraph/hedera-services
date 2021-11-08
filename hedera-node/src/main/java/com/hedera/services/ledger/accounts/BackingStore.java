@@ -44,7 +44,7 @@ public interface BackingStore<K, A> {
 	 * Gets a possibly mutable reference to the account with the specified id.
 	 *
 	 * @param id the id of the relevant account
-	 * @return a reference to the account
+	 * @return a reference to the account, or null if it is missing
 	 */
 	A getRef(K id);
 

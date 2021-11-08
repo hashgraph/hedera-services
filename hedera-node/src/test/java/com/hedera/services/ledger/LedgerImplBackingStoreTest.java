@@ -32,9 +32,11 @@ import org.mockito.ArgumentCaptor;
 import java.util.Map;
 import java.util.function.Function;
 
+import static com.hedera.services.ledger.TransactionalLedger.activeLedgerWrapping;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -49,6 +51,7 @@ class LedgerImplBackingStoreTest {
 	private static final TestAccountProperty[] ALL_PROPS = TestAccountProperty.class.getEnumConstants();
 
 	private final TestAccount aTestAccount = new TestAccount(1L, new Object(), true, 9L);
+	private final TestAccount bTestAccount = new TestAccount(2L, new Object(), false, 8L);
 
 	private BackingStore<Long, TestAccount> backingTestAccounts;
 	private TransactionalLedger<Long, TestAccountProperty, TestAccount> firstOrder;
@@ -139,6 +142,77 @@ class LedgerImplBackingStoreTest {
 	}
 
 	@Test
+	void returnsNullForMissingEntity() {
+		givenSecondOrderSubject();
+
+		assertNull(subject.getRef(1L));
+	}
+
+	@Test
+	void usesScopedPropertyGetterToGetEntityRefWithPendingChangeSetIfBackedByLedger() {
+		givenSecondOrderSubject();
+
+		backingTestAccounts.put(1L, aTestAccount);
+		firstOrder.begin();
+		firstOrder.set(1L, TestAccountProperty.LONG, 2L);
+
+		subject.begin();
+		subject.set(1L, TestAccountProperty.TOKEN_LONG, 8L);
+
+		final var netEntity = subject.getRef(1L);
+		assertNotSame(aTestAccount, netEntity);
+		assertEquals(2L, netEntity.getValue());
+		assertEquals(aTestAccount.isFlag(), netEntity.isFlag());
+		assertSame(aTestAccount.getThing(), netEntity.getThing());
+		assertEquals(8L, netEntity.getTokenThing());
+	}
+
+	@Test
+	void usesScopedPropertyGetterToGetEntityRefWithPendingChangeSetIfBackedByStore() {
+		givenFirstOrderSubject();
+
+		backingTestAccounts.put(1L, aTestAccount);
+
+		subject.begin();
+		subject.set(1L, TestAccountProperty.LONG, 2L);
+		subject.set(1L, TestAccountProperty.TOKEN_LONG, 8L);
+
+		final var netEntity = subject.getRef(1L);
+		assertNotSame(aTestAccount, netEntity);
+		assertEquals(2L, netEntity.getValue());
+		assertEquals(aTestAccount.isFlag(), netEntity.isFlag());
+		assertSame(aTestAccount.getThing(), netEntity.getThing());
+		assertEquals(8L, netEntity.getTokenThing());
+	}
+
+	@Test
+	void usesScopedPropertyGetterToGetEntityRefWithNoPendingChangeSetIfBackedByStore() {
+		givenFirstOrderSubject();
+
+		backingTestAccounts.put(1L, aTestAccount);
+
+		final var netEntity = subject.getRef(1L);
+		assertNotSame(aTestAccount, netEntity);
+		assertEquals(aTestAccount, netEntity);
+	}
+
+	@Test
+	void usesScopedPropertyGetterToGetEntityRefWithoutPendingChangeSetIfBackedByLedger() {
+		givenSecondOrderSubject();
+
+		backingTestAccounts.put(1L, aTestAccount);
+		firstOrder.begin();
+		firstOrder.set(1L, TestAccountProperty.LONG, 2L);
+
+		final var netEntity = subject.getRef(1L);
+		assertNotSame(aTestAccount, netEntity);
+		assertEquals(2L, netEntity.getValue());
+		assertEquals(aTestAccount.isFlag(), netEntity.isFlag());
+		assertSame(aTestAccount.getThing(), netEntity.getThing());
+		assertEquals(aTestAccount.getTokenThing(), netEntity.getTokenThing());
+	}
+
+	@Test
 	@SuppressWarnings("unchecked")
 	void usesScopedPropertyGetterToValidateExtantEntityIfBackedByLedger() {
 		givenSecondOrderSubject();
@@ -207,9 +281,7 @@ class LedgerImplBackingStoreTest {
 
 	@Test
 	void usesDefaultPropertyWithNewlyCreatedEntityIfBackedByLedger() {
-		final var expected = new Object();
-		final var mockLedger = mockLedger();
-		givenSecondOrderSubjectBackedBy(mockLedger);
+		givenSecondOrderSubject();
 
 		subject.begin();
 		subject.create(1L);
@@ -219,6 +291,26 @@ class LedgerImplBackingStoreTest {
 		assertEquals(TestAccount.DEFAULT_TOKEN_THING, actual);
 	}
 
+	@Test
+	void createsWrappingLedgerAsExpected() {
+		givenFirstOrderSubject();
+
+		backingTestAccounts.put(1L, aTestAccount);
+		subject.begin();
+		subject.put(2L, bTestAccount);
+
+		final var wrapper = activeLedgerWrapping(subject);
+		assertTrue(wrapper.isInTransaction());
+		wrapper.create(3L);
+
+		assertEquals(aTestAccount, wrapper.getRef(1L));
+		assertEquals(bTestAccount, wrapper.getRef(2L));
+		assertSame(subject.getChangeManager(), wrapper.getChangeManager());
+		assertSame(subject.getNewEntity(), wrapper.getNewEntity());
+		assertFalse(subject.contains(3L));
+	}
+
+	/* --- Helpers --- */
 	private void givenFirstOrderSubject() {
 		subject = firstOrder;
 	}
