@@ -109,13 +109,10 @@ public class ContractCallSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(
-				HSCS_EVM_004_GasRefund()
+		return allOf(
+				positiveSpecs(),
+				negativeSpecs()
 		);
-//		return allOf(
-//				positiveSpecs(),
-//				negativeSpecs()
-//		);
 	}
 
 	List<HapiApiSpec> negativeSpecs() {
@@ -138,7 +135,8 @@ public class ContractCallSuite extends HapiApiSuite {
 				multipleSelfDestructsAreSafe(),
 				smartContractInlineAssemblyCheck(),
 				ocToken(),
-				contractTransferToSigReqAccountWithKeySucceeds()
+				contractTransferToSigReqAccountWithKeySucceeds(),
+				HSCS_EVM_004_GasRefund()
 		);
 	}
 
@@ -933,7 +931,6 @@ public class ContractCallSuite extends HapiApiSuite {
 				);
 	}
 
-	/* WIP */
 	private HapiApiSpec HSCS_EVM_004_GasRefund() {
 		final var GAS = 100_000;
 		long initialExpiry = Instant.now().plusSeconds(10_000_000L).getEpochSecond();
