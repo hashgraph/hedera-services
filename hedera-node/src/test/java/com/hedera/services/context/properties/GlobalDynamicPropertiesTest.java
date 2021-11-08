@@ -80,7 +80,7 @@ class GlobalDynamicPropertiesTest {
 	}
 
 	@Test
-	void nftPropertiesTest(){
+	void nftPropertiesTest() {
 		givenPropsWithSeed(1);
 		subject = new GlobalDynamicProperties(numbers, properties);
 
@@ -95,7 +95,30 @@ class GlobalDynamicPropertiesTest {
 	}
 
 	@Test
-	void constructsIntsAsExpected() {
+	void constructsNonMaxIntsAsExpected() {
+		givenPropsWithSeed(1);
+
+		// when:
+		subject = new GlobalDynamicProperties(numbers, properties);
+
+		// then:
+		assertEquals(8, subject.cacheRecordsTtl());
+		assertEquals(10, subject.ratesIntradayChangeLimitPercent());
+		assertEquals(11, subject.balancesExportPeriodSecs());
+		assertEquals(20, subject.minValidityBuffer());
+		assertEquals(22, subject.getChainId());
+		assertEquals(24, subject.feesTokenTransferUsageMultiplier());
+		assertEquals(26, subject.minAutoRenewDuration());
+		assertEquals(27, subject.localCallEstRetBytes());
+		assertEquals(28, subject.scheduledTxExpiryTimeSecs());
+		assertEquals(29, subject.messageMaxBytesAllowed());
+		assertEquals(30, subject.feesMinCongestionPeriod());
+		assertEquals(32, subject.autoRenewNumberOfEntitiesToScan());
+		assertEquals(33, subject.autoRenewMaxNumberOfEntitiesToRenewOrDelete());
+	}
+
+	@Test
+	void constructsMaxIntsAsExpected() {
 		givenPropsWithSeed(1);
 
 		// when:
@@ -105,29 +128,16 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(1, subject.maxTokensPerAccount());
 		assertEquals(2, subject.maxTokenSymbolUtf8Bytes());
 		assertEquals(6, subject.maxFileSizeKb());
-		assertEquals(8, subject.cacheRecordsTtl());
 		assertEquals(9, subject.maxContractStorageKb());
-		assertEquals(10, subject.ratesIntradayChangeLimitPercent());
-		assertEquals(11, subject.balancesExportPeriodSecs());
 		assertEquals(15, subject.maxTransferListSize());
 		assertEquals(16, subject.maxTokenTransferListSize());
 		assertEquals(17, subject.maxMemoUtf8Bytes());
-		assertEquals(20, subject.minValidityBuffer());
 		assertEquals(21, subject.maxGas());
-		assertEquals(22, subject.getChainId());
-		assertEquals(24, subject.feesTokenTransferUsageMultiplier());
 		assertEquals(25, subject.maxAutoRenewDuration());
-		assertEquals(26, subject.minAutoRenewDuration());
-		assertEquals(27, subject.localCallEstRetBytes());
-		assertEquals(28, subject.scheduledTxExpiryTimeSecs());
-		assertEquals(29, subject.messageMaxBytesAllowed());
-		assertEquals(30, subject.feesMinCongestionPeriod());
-		assertEquals(32, subject.autoRenewNumberOfEntitiesToScan());
-		assertEquals(33, subject.autoRenewMaxNumberOfEntitiesToRenewOrDelete());
 		assertEquals(36, subject.maxCustomFeesAllowed());
 		assertEquals(46, subject.maxXferBalanceChanges());
 		assertEquals(47, subject.maxCustomFeeDepth());
-		assertEquals(48, subject.getContractMaxRefundPercentOfGasLimit());
+		assertEquals(48, subject.maxGasRefundPercentage());
 	}
 
 	@Test
@@ -146,8 +156,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(34L, subject.autoRenewGracePeriod());
 		assertEquals(35L, subject.ratesMidnightCheckInterval());
 		assertEquals(44L, subject.maxNftMints());
-		assertEquals(49L, subject.getFrontendThrottleMaxGasLimit());
-		assertEquals(50L, subject.getConsensusThrottleMaxGasLimit());
+		assertEquals(49L, subject.frontendThrottleGasLimit());
+		assertEquals(50L, subject.consensusThrottleGasLimit());
 	}
 
 	@Test
@@ -212,7 +222,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(37, subject.maxCustomFeesAllowed());
 		assertEquals(47, subject.maxXferBalanceChanges());
 		assertEquals(48, subject.maxCustomFeeDepth());
-		assertEquals(49, subject.getContractMaxRefundPercentOfGasLimit());
+		assertEquals(49, subject.maxGasRefundPercentage());
 	}
 
 	@Test
@@ -231,8 +241,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(35L, subject.autoRenewGracePeriod());
 		assertEquals(36L, subject.ratesMidnightCheckInterval());
 		assertEquals(45L, subject.maxNftMints());
-		assertEquals(50L, subject.getFrontendThrottleMaxGasLimit());
-		assertEquals(51L, subject.getConsensusThrottleMaxGasLimit());
+		assertEquals(50L, subject.frontendThrottleGasLimit());
+		assertEquals(51L, subject.consensusThrottleGasLimit());
 	}
 
 	@Test
@@ -255,9 +265,9 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getIntProperty("tokens.maxPerAccount")).willReturn(i);
 		given(properties.getIntProperty("tokens.maxSymbolUtf8Bytes")).willReturn(i + 1);
 		given(properties.getBooleanProperty("ledger.keepRecordsInState")).willReturn((i % 2) == 0);
-		given(properties.getLongProperty("ledger.maxAccountNum")).willReturn((long)i + 2);
+		given(properties.getLongProperty("ledger.maxAccountNum")).willReturn((long) i + 2);
 		given(properties.getIntProperty("files.maxSizeKb")).willReturn(i + 5);
-		given(properties.getLongProperty("ledger.fundingAccount")).willReturn((long)i + 6);
+		given(properties.getLongProperty("ledger.fundingAccount")).willReturn((long) i + 6);
 		given(properties.getIntProperty("cache.records.ttl")).willReturn(i + 7);
 		given(properties.getIntProperty("contracts.maxStorageKb")).willReturn(i + 8);
 		given(properties.getIntProperty("rates.intradayChangeLimitPercent")).willReturn(i + 9);

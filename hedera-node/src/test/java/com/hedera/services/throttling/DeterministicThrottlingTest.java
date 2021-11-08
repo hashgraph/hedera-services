@@ -129,7 +129,7 @@ class DeterministicThrottlingTest {
 	}
 
 	@Test
-	void shouldThrottleByGasAndTotalAllowedGasPerSecNotSetOrZero() throws IOException {
+	void shouldThrottleByGasAndTotalAllowedGasPerSecNotSetOrZero() {
 		// setup:
 		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
 		subject.setConsensusThrottled(true);
@@ -139,14 +139,12 @@ class DeterministicThrottlingTest {
 
 		// then:
 		assertEquals(0L, gasLimitDeterministicThrottle.getCapacity());
-		assertThat(logCaptor.errorLogs(),
-				contains("ThrottleByGas global dynamic property is set to true but contracts.consensusThrottleMaxGasLimit is not set in throttles.json or is set to 0."));
+		assertThat(logCaptor.warnLogs(), contains("Consensus gas throttling enabled, but limited to 0 gas/sec"));
 	}
 
 	@Test
-	void shouldThrottleByGasAndTotalAllowedGasPerSecNotSetOrZeroFrontend() throws IOException {
+	void shouldThrottleByGasAndTotalAllowedGasPerSecNotSetOrZeroFrontend() {
 		// setup:
-		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
 		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
 		subject.setConsensusThrottled(false);
 
@@ -155,8 +153,7 @@ class DeterministicThrottlingTest {
 
 		// then:
 		assertEquals(0L, gasLimitDeterministicThrottle.getCapacity());
-		assertThat(logCaptor.errorLogs(),
-				contains("ThrottleByGas global dynamic property is set to true but contracts.frontendThrottleMaxGasLimit is not set in throttles.json or is set to 0."));
+		assertThat(logCaptor.warnLogs(), contains("Frontend gas throttling enabled, but limited to 0 gas/sec"));
 	}
 
 	@Test
@@ -241,7 +238,7 @@ class DeterministicThrottlingTest {
 	void alwaysThrottlesContractCallWhenGasThrottleIsNotDefined() {
 		givenFunction(ContractCall);
 		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
-		given(dynamicProperties.getConsensusThrottleMaxGasLimit()).willReturn(0L);
+		given(dynamicProperties.consensusThrottleGasLimit()).willReturn(0L);
 		subject.setConsensusThrottled(true);
 		subject.applyGasConfig();
 		// expect:
@@ -252,7 +249,7 @@ class DeterministicThrottlingTest {
 	void alwaysThrottlesContractCallWhenGasThrottleReturnsTrue() {
 		givenFunction(ContractCall);
 		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
-		given(dynamicProperties.getConsensusThrottleMaxGasLimit()).willReturn(0L);
+		given(dynamicProperties.consensusThrottleGasLimit()).willReturn(0L);
 		subject.setConsensusThrottled(true);
 		subject.applyGasConfig();
 		// expect:
@@ -263,7 +260,7 @@ class DeterministicThrottlingTest {
 	void alwaysThrottlesContractCreateWhenGasThrottleIsNotDefined() {
 		givenFunction(ContractCreate);
 		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
-		given(dynamicProperties.getConsensusThrottleMaxGasLimit()).willReturn(0L);
+		given(dynamicProperties.consensusThrottleGasLimit()).willReturn(0L);
 		subject.setConsensusThrottled(true);
 		subject.applyGasConfig();
 		// expect:
@@ -274,7 +271,7 @@ class DeterministicThrottlingTest {
 	void alwaysThrottlesContractCreateWhenGasThrottleReturnsTrue() {
 		givenFunction(ContractCreate);
 		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
-		given(dynamicProperties.getConsensusThrottleMaxGasLimit()).willReturn(0L);
+		given(dynamicProperties.consensusThrottleGasLimit()).willReturn(0L);
 		subject.setConsensusThrottled(true);
 		subject.applyGasConfig();
 		// expect:
@@ -284,7 +281,7 @@ class DeterministicThrottlingTest {
 	@Test
 	void gasLimitThrottleReturnsCorrectObject() {
 		var capacity = 10L;
-		given(dynamicProperties.getConsensusThrottleMaxGasLimit()).willReturn(capacity);
+		given(dynamicProperties.consensusThrottleGasLimit()).willReturn(capacity);
 		subject.setConsensusThrottled(true);
 		subject.applyGasConfig();
 		// expect:
@@ -294,7 +291,7 @@ class DeterministicThrottlingTest {
 	@Test
 	void gasLimitFrontendThrottleReturnsCorrectObject() {
 		long capacity = 3423423423L;
-		given(dynamicProperties.getFrontendThrottleMaxGasLimit()).willReturn(capacity);
+		given(dynamicProperties.frontendThrottleGasLimit()).willReturn(capacity);
 		subject.setConsensusThrottled(false);
 		subject.applyGasConfig();
 		// expect:
@@ -324,14 +321,67 @@ class DeterministicThrottlingTest {
 	}
 
 	@Test
-	void logsGasThrottleAsExpected() {
+	void logsActiveConsensusGasThrottlesAsExpected() {
 		var capacity = 1000L;
 		// setup:
-		given(dynamicProperties.getConsensusThrottleMaxGasLimit()).willReturn(capacity);
+		given(dynamicProperties.consensusThrottleGasLimit()).willReturn(capacity);
 		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
 
-		var desired = "Resolved gas throttle limit (after splitting capacity " + n + " ways) - \n" +
-				"  ThrottleByGasLimit: " + capacity / n + " throttleByGas true";
+		final var desired = "Resolved consensus gas throttle (after splitting capacity 2 ways) -" +
+				"\n  500 gas/sec (throttling ON)";
+
+		// when:
+		subject.applyGasConfig();
+
+		// then:
+		assertThat(logCaptor.infoLogs(), contains(desired));
+	}
+
+	@Test
+	void logsInertConsensusGasThrottlesAsExpected() {
+		var capacity = 1000L;
+		// setup:
+		given(dynamicProperties.consensusThrottleGasLimit()).willReturn(capacity);
+
+		final var desired = "Resolved consensus gas throttle (after splitting capacity 2 ways) -" +
+				"\n  500 gas/sec (throttling OFF)";
+
+		// when:
+		subject.applyGasConfig();
+
+		// then:
+		assertThat(logCaptor.infoLogs(), contains(desired));
+	}
+
+	@Test
+	void logsActiveFrontendGasThrottlesAsExpected() {
+		subject = new DeterministicThrottling(() -> 4, dynamicProperties, false);
+
+		var capacity = 1000L;
+		// setup:
+		given(dynamicProperties.frontendThrottleGasLimit()).willReturn(capacity);
+		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
+
+		final var desired = "Resolved frontend gas throttle (after splitting capacity 4 ways) -" +
+				"\n  250 gas/sec (throttling ON)";
+
+		// when:
+		subject.applyGasConfig();
+
+		// then:
+		assertThat(logCaptor.infoLogs(), contains(desired));
+	}
+
+	@Test
+	void logsInertFrontendGasThrottlesAsExpected() {
+		subject = new DeterministicThrottling(() -> 4, dynamicProperties, false);
+
+		var capacity = 1000L;
+		// setup:
+		given(dynamicProperties.frontendThrottleGasLimit()).willReturn(capacity);
+
+		final var desired = "Resolved frontend gas throttle (after splitting capacity 4 ways) -" +
+				"\n  250 gas/sec (throttling OFF)";
 
 		// when:
 		subject.applyGasConfig();
@@ -477,13 +527,13 @@ class DeterministicThrottlingTest {
 	}
 
 	@Test
-	void contractCreateTXCallsConsensusGasThrottleWithDefinitions() throws IOException {
+	void contractCreateTXCallsConsensusGasThrottleWithDefinitions() {
 		Instant now = Instant.now();
 
 		//setup:
 		givenFunction(ContractCreate);
 		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
-		given(dynamicProperties.getConsensusThrottleMaxGasLimit()).willReturn(10L);
+		given(dynamicProperties.consensusThrottleGasLimit()).willReturn(10L);
 		given(accessor.getGasLimitForContractTx()).willReturn(11L);
 		subject.setConsensusThrottled(true);
 
@@ -495,13 +545,13 @@ class DeterministicThrottlingTest {
 	}
 
 	@Test
-	void contractCallTXCallsConsensusGasThrottleWithDefinitions() throws IOException {
+	void contractCallTXCallsConsensusGasThrottleWithDefinitions() {
 		Instant now = Instant.now();
 
 		//setup:
 		givenFunction(ContractCall);
 		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
-		given(dynamicProperties.getConsensusThrottleMaxGasLimit()).willReturn(10L);
+		given(dynamicProperties.consensusThrottleGasLimit()).willReturn(10L);
 		given(accessor.getGasLimitForContractTx()).willReturn(11L);
 		subject.setConsensusThrottled(true);
 
@@ -530,7 +580,7 @@ class DeterministicThrottlingTest {
 	void verifyLeakUnusedGas() throws IOException {
 		Instant now = Instant.now();
 		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
-		given(dynamicProperties.getConsensusThrottleMaxGasLimit()).willReturn(10L);
+		given(dynamicProperties.consensusThrottleGasLimit()).willReturn(10L);
 		given(query.getContractCallLocal()).willReturn(callLocalQuery);
 		given(callLocalQuery.getGas()).willReturn(100L);
 

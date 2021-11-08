@@ -356,15 +356,15 @@ public class GlobalDynamicProperties {
 		return throttleByGas;
 	}
 
-	public int getContractMaxRefundPercentOfGasLimit() {
+	public int maxGasRefundPercentage() {
 		return contractMaxRefundPercentOfGasLimit;
 	}
 
-	public long getFrontendThrottleMaxGasLimit() {
+	public long frontendThrottleGasLimit() {
 		return frontendThrottleMaxGasLimit;
 	}
 
-	public long getConsensusThrottleMaxGasLimit() {
+	public long consensusThrottleGasLimit() {
 		return consensusThrottleMaxGasLimit;
 	}
 }

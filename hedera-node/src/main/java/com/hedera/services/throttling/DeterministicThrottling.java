@@ -45,6 +45,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 
 public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	private static final Logger log = LogManager.getLogger(DeterministicThrottling.class);
+	private static final String GAS_THROTTLE_AT_ZERO_WARNING_TPL = "{} gas throttling enabled, but limited to 0 gas/sec";
 
 	private final IntSupplier capacitySplitSource;
 	private final GlobalDynamicProperties dynamicProperties;
@@ -162,31 +163,32 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
 	@Override
 	public void applyGasConfig() {
-		int n = capacitySplitSource.getAsInt();
+		final var n = capacitySplitSource.getAsInt();
+		long splitCapacity;
 		if (consensusThrottled) {
-			if (dynamicProperties.getConsensusThrottleMaxGasLimit() == 0 && dynamicProperties.shouldThrottleByGas()) {
-				log.error("ThrottleByGas global dynamic property is set to true but contracts.consensusThrottleMaxGasLimit is not set in throttles.json or is set to 0.");
+			if (dynamicProperties.shouldThrottleByGas() && dynamicProperties.consensusThrottleGasLimit() == 0) {
+				log.warn(GAS_THROTTLE_AT_ZERO_WARNING_TPL, "Consensus");
 				return;
 			} else {
-				gasThrottle = new GasLimitDeterministicThrottle(dynamicProperties.getConsensusThrottleMaxGasLimit() / n);
+				splitCapacity = dynamicProperties.consensusThrottleGasLimit() / n;
 			}
 		} else {
-			if (dynamicProperties.getFrontendThrottleMaxGasLimit() == 0 && dynamicProperties.shouldThrottleByGas()) {
-				log.error("ThrottleByGas global dynamic property is set to true but contracts.frontendThrottleMaxGasLimit is not set in throttles.json or is set to 0.");
+			if (dynamicProperties.shouldThrottleByGas() && dynamicProperties.frontendThrottleGasLimit() == 0) {
+				log.warn(GAS_THROTTLE_AT_ZERO_WARNING_TPL, "Frontend");
 				return;
 			} else {
-				gasThrottle = new GasLimitDeterministicThrottle(dynamicProperties.getFrontendThrottleMaxGasLimit() / n);
+				splitCapacity = dynamicProperties.frontendThrottleGasLimit() / n;
 			}
 		}
-		var sb = new StringBuilder("Resolved gas throttle limit (after splitting capacity " + n + " ways) - \n");
-		sb.append("  ")
-				.append("ThrottleByGasLimit: ")
-				.append(gasThrottle.getCapacity())
-				.append(" throttleByGas ")
-				.append(dynamicProperties.shouldThrottleByGas())
-				.append("\n");
-		String logInfo = sb.toString().trim();
-		log.info(logInfo);
+		gasThrottle = new GasLimitDeterministicThrottle(splitCapacity);
+		final var configDesc = "Resolved " +
+				(consensusThrottled ? "consensus" : "frontend") +
+				" gas throttle (after splitting capacity " + n + " ways) -\n  " +
+				gasThrottle.getCapacity() +
+				" gas/sec (throttling " +
+				(dynamicProperties.shouldThrottleByGas() ? "ON" : "OFF") +
+				")";
+		log.info(configDesc);
 	}
 
 	@Override
