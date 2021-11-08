@@ -41,8 +41,10 @@ import org.ethereum.core.CallTransaction;
 import org.junit.jupiter.api.Assertions;
 
 import java.math.BigInteger;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -73,6 +75,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -933,61 +936,81 @@ public class ContractCallSuite extends HapiApiSuite {
 	/* WIP */
 	private HapiApiSpec HSCS_EVM_004_GasRefund() {
 		final var GAS = 100_000;
+		long initialExpiry = Instant.now().plusSeconds(10_000_000L).getEpochSecond();
+		final AtomicLong lowExpiryGasCost = new AtomicLong(0);
 		return defaultHapiSpec("HSCS_EVM_004_GasRefund")
 				.given(
-						cryptoCreate("acc").balance(ONE_HUNDRED_HBARS),
 						fileCreate("parentDelegateBytecode")
 								.path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
-						contractCreate("parentDelegate").bytecode("parentDelegateBytecode")
+						contractCreate("parentDelegate")
+								.bytecode("parentDelegateBytecode")
 				).when(
-						getAccountInfo("acc").savingSnapshot("accSnapshot")
 				).then(
-						cryptoCreate("acc2").balance(ONE_HUNDRED_HBARS),
-						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI).via("callTxn2")
-								.payingWith("acc2").gas(GAS).hasKnownStatus(SUCCESS),
-						getAccountInfo("acc2").savingSnapshot("acc2Snapshot"),
-
-						/* examine successful contract call */
+						cryptoCreate("acc")
+								.balance(ONE_HUNDRED_HBARS),
+						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI)
+								.via("callTxn2")
+								.payingWith("acc")
+								.gas(GAS)
+								.hasKnownStatus(SUCCESS),
+						contractUpdate("parentDelegate").newExpiryTime(initialExpiry).newExpirySecs(initialExpiry),
 						assertionsHold((spec, log) -> {
 							var record = getTxnRecord("callTxn2");
-							var accountInfo = spec.registry().getAccountInfo("acc2Snapshot");
 							allRunFor(spec, record);
-							var fee = record.getResponseRecord().getTransactionFee();
 							var gasUsed = record.getResponseRecord().getContractCallResult().getGasUsed();
 							var allTransfers = record.getResponseRecord().getTransferList().getAccountAmountsList();
-							log.info("Gas used {}; Gas sent {}; Expected gas refund {};", gasUsed, GAS, GAS - gasUsed);
+							var expectedRefund = GAS - gasUsed;
+							log.info("Gas used {}; Gas sent {}; Expected gas refund {};", gasUsed, GAS, expectedRefund);
+							// coinbase transfer is representing the gas paid
 							var coinbaseReceiveTransfer = allTransfers
 									.stream()
 									.filter(aa -> aa.getAccountID().getAccountNum() == 98)
 									.findAny()
 									.get();
-							var payerTransfer = allTransfers
-									.stream()
-									.filter(aa -> aa.getAccountID().equals(accountInfo.getAccountID()))
-									.findAny()
-									.get();
-							var otherTransfer = allTransfers
+							// node transfer is the network fee + some other tx fees
+							var nodeTransfer = allTransfers
 									.stream()
 									.filter(aa -> aa.getAccountID().getAccountNum() == 3)
 									.findAny()
 									.get();
-							log.info("Tx Payer transfer:\n -> {{}}", payerTransfer);
-							log.info("Transfer to coinbase:\n -> {{}}", coinbaseReceiveTransfer);
-							log.info("Transfer to {{}}:\n -> {{}}", otherTransfer.getAccountID(), otherTransfer);
-							// check if amount paid to coinbase is the used gas
-							var assertion = getAccountBalance("acc2")
-									.hasTinyBars(ONE_HUNDRED_HBARS - fee);
+							/* hedera gas cost */
+							double oneGasInTinybars = getGasToTinybarsRatio(gasUsed, coinbaseReceiveTransfer.getAmount());
+							var expectedRefundInTinybars = oneGasInTinybars*expectedRefund;
+							var usedGasInTinybars = oneGasInTinybars*gasUsed;
+							var gasSentInTinybars = GAS*oneGasInTinybars;
+							assert gasSentInTinybars == expectedRefundInTinybars + usedGasInTinybars;
+							// total charge in tinybars includes the used gas and the network fee
+							var totalCharge = (usedGasInTinybars + nodeTransfer.getAmount());
+							/* asserting hbar to gas ratio calculation works as expected + the refund amount */
+							var expectedBalance = ONE_HUNDRED_HBARS - (long) totalCharge;
+							var assertion = getAccountBalance("acc")
+									.hasTinyBars(expectedBalance);
 							allRunFor(spec, assertion);
+							lowExpiryGasCost.set(gasUsed);
+						}),
+						contractUpdate("parentDelegate")
+								.newExpiryTime(initialExpiry*2)
+								.newExpirySecs(initialExpiry*2)
+								.via("updateTx")
+								.payingWith("acc"),
+						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI)
+								.via("callTxn3")
+								.payingWith("acc")
+								.gas(GAS)
+								.hasKnownStatus(SUCCESS),
+						assertionsHold((spec, log) -> {
+								var record = getTxnRecord("callTxn3");
+								allRunFor(spec, record);
+								var gasUsed = record.getResponseRecord().getContractCallResult().getGasUsed();
+								log.info("Before {}; Now {}", lowExpiryGasCost.get(), gasUsed);
+								// fails
+								Assertions.assertTrue(gasUsed >= lowExpiryGasCost.get());
 						})
 				);
 	}
 
-	private Double gasDenomInTb(long gas, long tinybars) {
+	private Double getGasToTinybarsRatio(long gas, long tinybars) {
 		return Double.valueOf(tinybars)/Double.valueOf(gas);
-	}
-
-	private Double tinybarToHbar(long tb) {
-		return Double.valueOf(tb)/100_000_000;
 	}
 
 	@Override
