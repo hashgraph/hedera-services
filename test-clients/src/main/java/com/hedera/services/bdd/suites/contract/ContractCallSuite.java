@@ -940,7 +940,7 @@ public class ContractCallSuite extends HapiApiSuite {
 		final var CONTRACT_FROM = "contract1";
 		return defaultHapiSpec("HSCS_EVM_006_ContractHBarTransferToAccount")
 				.given(
-						cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
+						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate("receiver").balance(10_000L),
 
 						fileCreate("contract1Bytecode").path(ContractResources.TRANSFERRING_CONTRACT).payingWith(ACCOUNT),
@@ -974,7 +974,7 @@ public class ContractCallSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts")
 				.given(
-						cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
+						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
 						fileCreate(TOP_LEVEL_CONTRACT + "bytecode").path(ContractResources.TOP_LEVEL_TRANSFERRING_CONTRACT),
 						fileCreate(SUB_LEVEL_CONTRACT + "bytecode").path(ContractResources.SUB_LEVEL_TRANSFERRING_CONTRACT)
 				)
@@ -1034,7 +1034,7 @@ public class ContractCallSuite extends HapiApiSuite {
 		final var CONTRACT_TO = "contract2";
 		return defaultHapiSpec("HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts")
 				.given(
-						cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
+						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
 
 						fileCreate("contract1Bytecode").path(ContractResources.TRANSFERRING_CONTRACT).payingWith(ACCOUNT),
 						contractCreate(CONTRACT_FROM).bytecode("contract1Bytecode").balance(10_000L).payingWith(ACCOUNT),
@@ -1070,7 +1070,7 @@ public class ContractCallSuite extends HapiApiSuite {
 				.given(
 						newKeyNamed(RECEIVER_KEY),
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_MILLION_HBARS)
+								.balance(5*ONE_HUNDRED_HBARS)
 								.receiverSigRequired(true)
 								.key(RECEIVER_KEY)
 				)
@@ -1116,7 +1116,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						newKeyNamed(OTHER_KEY),
 						newKeyListNamed(KEY_LIST, List.of(PAYER_KEY, OTHER_KEY)),
 						cryptoCreate(ACCOUNT)
-								.balance(ONE_MILLION_HBARS)
+								.balance(ONE_HUNDRED_HBARS)
 								.key(KEY_LIST)
 								.keyType(THRESHOLD)
 				)
