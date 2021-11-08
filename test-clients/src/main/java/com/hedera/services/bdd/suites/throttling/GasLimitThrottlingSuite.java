@@ -36,6 +36,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -48,7 +49,8 @@ public class GasLimitThrottlingSuite extends HapiApiSuite {
 		return List.of(
 				new HapiApiSpec[]{
 						txsUnderGasLimitAllowed(),
-						txOverGasLimitThrottled()
+						txOverGasLimitThrottled(),
+						txOverGasLimitNotAllowed()
 				}
 		);
 	}
@@ -112,6 +114,19 @@ public class GasLimitThrottlingSuite extends HapiApiSuite {
 								.payingWith("payerAccount")
 								.hasPrecheck(BUSY),
 						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+				);
+	}
+
+	private HapiApiSpec txOverGasLimitNotAllowed() {
+		return defaultHapiSpec("TxOverGasLimitNotAllowed")
+				.given(
+						UtilVerbs.overriding("contracts.maxGas", "5000000")
+				).when(
+						fileCreate("contractBytecode").path(ContractResources.BENCHMARK_CONTRACT)
+				).then(
+						contractCreate("perf").bytecode("contractBytecode")
+								.gas(5_000_001)
+								.hasPrecheck(MAX_GAS_LIMIT_EXCEEDED)
 				);
 	}
 
