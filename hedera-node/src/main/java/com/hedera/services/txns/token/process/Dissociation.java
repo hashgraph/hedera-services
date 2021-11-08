@@ -53,7 +53,7 @@ public class Dissociation {
 			return new Dissociation(dissociatingAccountRel, null);
 		} else {
 			final var treasury = token.getTreasury();
-			final var dissociatedTokenTreasuryRel = tokenStore.loadTokenRelationship(token, treasury);
+			final var dissociatedTokenTreasuryRel = tokenStore.loadPossiblyDeletedTokenRelationship(token, treasury);
 			return new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel);
 		}
 	}
