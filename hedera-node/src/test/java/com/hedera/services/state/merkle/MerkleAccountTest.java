@@ -99,8 +99,8 @@ class MerkleAccountTest {
 				memo,
 				deleted, smartContract, receiverSigRequired,
 				proxy,
-				number, 
-                                autoAssociationMetadata);
+				number,
+				autoAssociationMetadata);
 
 		subject = new MerkleAccount(List.of(state, payerRecords, tokens));
 		subject.setNftsOwned(2L);
@@ -149,7 +149,6 @@ class MerkleAccountTest {
 
 	@Test
 	void gettersDelegate() {
-		// expect:
 		assertEquals(new EntityNum(number), subject.getKey());
 		assertEquals(state.expiry(), subject.getExpiry());
 		assertEquals(state.balance(), subject.getBalance());
@@ -224,8 +223,6 @@ class MerkleAccountTest {
 
 		verify(payerRecords).copy();
 		verify(tokens).copy();
-		assertNotEquals(null, one);
-		assertNotEquals(new Object(), one);
 		assertNotEquals(two, one);
 		assertEquals(two, three);
 
@@ -252,7 +249,7 @@ class MerkleAccountTest {
 	void throwsOnInvalidAlreadyUsedAtoAssociations() {
 		assertThrows(IllegalArgumentException.class, () -> subject.setAlreadyUsedAutomaticAssociations(-1));
 		assertThrows(IllegalArgumentException.class, () -> subject.setAlreadyUsedAutomaticAssociations(
-				maxAutoAssociations +1));
+				maxAutoAssociations + 1));
 	}
 
 	@Test

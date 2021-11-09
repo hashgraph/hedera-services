@@ -27,6 +27,7 @@ import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.MiscUtils;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
@@ -134,18 +135,15 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	/* ---- Object ---- */
-	@Override
-	public boolean equals(final Object o) {
-		if (o == this) {
-			return true;
-		}
-		if (o == null || MerkleAccount.class != o.getClass()) {
-			return false;
-		}
-		final var that = (MerkleAccount) o;
+	private boolean sameClassEquals(final MerkleAccount that) {
 		return this.state().equals(that.state()) &&
 				this.records().equals(that.records()) &&
 				this.tokens().equals(that.tokens());
+	}
+
+	@Override
+	public boolean equals(final Object o) {
+		return MiscUtils.compare(this, o, this::sameClassEquals);
 	}
 
 	@Override
@@ -302,7 +300,8 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 
 	public void setAlreadyUsedAutomaticAssociations(int alreadyUsedAutoAssociations) {
 		if (alreadyUsedAutoAssociations < 0 || alreadyUsedAutoAssociations > getMaxAutomaticAssociations()) {
-			throw new IllegalArgumentException("Cannot set alreadyUsedAutoAssociations to " + alreadyUsedAutoAssociations);
+			throw new IllegalArgumentException(
+					"Cannot set alreadyUsedAutoAssociations to " + alreadyUsedAutoAssociations);
 		}
 		state().setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations);
 	}

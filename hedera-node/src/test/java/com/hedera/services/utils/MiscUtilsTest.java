@@ -248,6 +248,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -257,22 +258,16 @@ import static org.mockito.Mockito.verify;
 class MiscUtilsTest {
 	@Test
 	void forEachDropInWorksAsExpected() {
-		// setup:
 		final MerkleMap<FcLong, KeyedMerkleLong<FcLong>> testMm = new MerkleMap<>();
 		@SuppressWarnings("unchecked")
 		final BiConsumer<FcLong, KeyedMerkleLong<FcLong>> mockConsumer = BDDMockito.mock(BiConsumer.class);
-		// and:
 		final var key1 = new FcLong(1L);
 		final var key2 = new FcLong(2L);
-
-		// given:
 		putValue(1L, testMm);
 		putValue(2L, testMm);
 
-		// when:
 		MiscUtils.forEach(testMm, mockConsumer);
 
-		// then:
 		verify(mockConsumer).accept(key1, new KeyedMerkleLong<>(key1, 1L));
 		verify(mockConsumer).accept(key2, new KeyedMerkleLong<>(key2, 2L));
 	}
@@ -567,7 +562,8 @@ class MiscUtilsTest {
 			put(ConsensusController.CREATE_TOPIC_METRIC, new BodySetter<>(ConsensusCreateTopicTransactionBody.class));
 			put(ConsensusController.UPDATE_TOPIC_METRIC, new BodySetter<>(ConsensusUpdateTopicTransactionBody.class));
 			put(ConsensusController.DELETE_TOPIC_METRIC, new BodySetter<>(ConsensusDeleteTopicTransactionBody.class));
-			put(ConsensusController.SUBMIT_MESSAGE_METRIC, new BodySetter<>(ConsensusSubmitMessageTransactionBody.class));
+			put(ConsensusController.SUBMIT_MESSAGE_METRIC,
+					new BodySetter<>(ConsensusSubmitMessageTransactionBody.class));
 			put(TOKEN_CREATE_METRIC, new BodySetter<>(TokenCreateTransactionBody.class));
 			put(TOKEN_FREEZE_METRIC, new BodySetter<>(TokenFreezeAccountTransactionBody.class));
 			put(TOKEN_UNFREEZE_METRIC, new BodySetter<>(TokenUnfreezeAccountTransactionBody.class));
@@ -770,6 +766,25 @@ class MiscUtilsTest {
 
 		final var tooDeep = TxnUtils.nestJKeys(15);
 		assertEquals("<N/A>", describe(tooDeep));
+	}
+
+	@Test
+	void comparesCorrectly() {
+		final var instant = Instant.ofEpochSecond(epochSecond);
+		final var instantRef = instant;
+		final var otherEqualInstant = Instant.ofEpochSecond(epochSecond);
+		final var otherDifferentInstant = Instant.ofEpochSecond(epochSecond + 1);
+
+		assertTrue(MiscUtils.compare(instant, instantRef, this::sameInstant));
+		assertFalse(MiscUtils.compare(instant, null, this::sameInstant));
+		assertFalse(MiscUtils.compare(instant, Timestamp.getDefaultInstance(), this::sameInstant));
+		assertTrue(MiscUtils.compare(instant, otherEqualInstant, this::sameInstant));
+		assertFalse(MiscUtils.compare(instant, otherDifferentInstant, this::sameInstant));
+	}
+
+	private static final long epochSecond = 1_234_567L;
+	private boolean sameInstant(final Instant that) {
+		return epochSecond == that.getEpochSecond();
 	}
 
 	public static class BodySetter<T, B> {

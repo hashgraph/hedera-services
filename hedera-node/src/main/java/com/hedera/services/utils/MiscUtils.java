@@ -56,6 +56,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -770,5 +771,16 @@ public final class MiscUtils {
 		if (null != map) {
 			map.put(key, value);
 		}
+	}
+
+	public static <T> boolean compare(final T self, @Nullable final Object o, final Predicate<T> sameClassEquals) {
+		if (self == o) {
+			return true;
+		}
+		if (o == null || self.getClass() != o.getClass()) {
+			return false;
+		}
+		final var that = (T) o;
+		return sameClassEquals.test(that);
 	}
 }
