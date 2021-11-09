@@ -1196,7 +1196,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - split-reconect-correctness-panel
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1219,7 +1219,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - split-reconect-correctness-panel
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1444,7 +1444,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression; git checkout https://github.com/swirlds/swirlds-platform-regression/tree/01788-D-SplitReconnectCorrectnessPanel; cd ..;
+            cd regression; git checkout 01788-D-SplitReconnectCorrectnessPanel; cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
