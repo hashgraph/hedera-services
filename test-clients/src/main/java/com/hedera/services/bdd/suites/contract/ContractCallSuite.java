@@ -935,27 +935,37 @@ public class ContractCallSuite extends HapiApiSuite {
 		final var GAS = 100_000;
 		long initialExpiry = Instant.now().plusSeconds(10_000_000L).getEpochSecond();
 		final AtomicLong lowExpiryGasCost = new AtomicLong(0);
+		final var ACCOUNT = "acc";
+		final var CONTRACT_NAME = "contract";
 		return defaultHapiSpec("HSCS_EVM_004_GasRefund")
 				.given(
 						fileCreate("parentDelegateBytecode")
 								.path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
-						contractCreate("parentDelegate")
+						contractCreate(CONTRACT_NAME)
 								.bytecode("parentDelegateBytecode")
 				).when(
 				).then(
-						cryptoCreate("acc")
+						cryptoCreate(ACCOUNT)
 								.balance(ONE_HUNDRED_HBARS),
-						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI)
+						/* warm-up call */
+						contractCall(CONTRACT_NAME, ContractResources.CREATE_CHILD_ABI)
+								.via("warmUp"),
+						/* initial call */
+						contractCall(CONTRACT_NAME, ContractResources.CREATE_CHILD_ABI)
 								.via("callTxn2")
-								.payingWith("acc")
-								.gas(GAS)
-								.hasKnownStatus(SUCCESS),
-						contractUpdate("parentDelegate").newExpiryTime(initialExpiry).newExpirySecs(initialExpiry),
+								.payingWith(ACCOUNT)
+								.gas(GAS),
 						assertionsHold((spec, log) -> {
 							var record = getTxnRecord("callTxn2");
 							allRunFor(spec, record);
-							var gasUsed = record.getResponseRecord().getContractCallResult().getGasUsed();
-							var allTransfers = record.getResponseRecord().getTransferList().getAccountAmountsList();
+							var gasUsed = record
+									.getResponseRecord()
+									.getContractCallResult()
+									.getGasUsed();
+							var allTransfers = record
+									.getResponseRecord()
+									.getTransferList()
+									.getAccountAmountsList();
 							var expectedRefund = GAS - gasUsed;
 							log.info("Gas used {}; Gas sent {}; Expected gas refund {};", gasUsed, GAS, expectedRefund);
 							// coinbase transfer is representing the gas paid
@@ -972,35 +982,40 @@ public class ContractCallSuite extends HapiApiSuite {
 									.get();
 							/* hedera gas cost */
 							double oneGasInTinybars = getGasToTinybarsRatio(gasUsed, coinbaseReceiveTransfer.getAmount());
-							var expectedRefundInTinybars = oneGasInTinybars*expectedRefund;
-							var usedGasInTinybars = oneGasInTinybars*gasUsed;
-							var gasSentInTinybars = GAS*oneGasInTinybars;
+							var expectedRefundInTinybars = oneGasInTinybars * expectedRefund;
+							var usedGasInTinybars = oneGasInTinybars * gasUsed;
+							var gasSentInTinybars = GAS * oneGasInTinybars;
 							assert gasSentInTinybars == expectedRefundInTinybars + usedGasInTinybars;
 							// total charge in tinybars includes the used gas and the network fee
 							var totalCharge = (usedGasInTinybars + nodeTransfer.getAmount());
 							/* asserting hbar to gas ratio calculation works as expected + the refund amount */
 							var expectedBalance = ONE_HUNDRED_HBARS - (long) totalCharge;
-							var assertion = getAccountBalance("acc")
+							var assertion = getAccountBalance(ACCOUNT)
 									.hasTinyBars(expectedBalance);
 							allRunFor(spec, assertion);
 							lowExpiryGasCost.set(gasUsed);
 						}),
-						contractUpdate("parentDelegate")
-								.newExpiryTime(initialExpiry*2)
-								.newExpirySecs(initialExpiry*2)
+						contractUpdate(CONTRACT_NAME)
+								.newExpiryTime(initialExpiry*4)
 								.via("updateTx")
 								.payingWith("acc"),
-						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI)
+
+						contractCall(CONTRACT_NAME, ContractResources.CREATE_CHILD_ABI)
+								.via("warmUp2")
+								.gas(GAS),
+
+						contractCall(CONTRACT_NAME, ContractResources.CREATE_CHILD_ABI)
 								.via("callTxn3")
-								.payingWith("acc")
+								.payingWith(ACCOUNT)
 								.gas(GAS)
 								.hasKnownStatus(SUCCESS),
+
 						assertionsHold((spec, log) -> {
 								var record = getTxnRecord("callTxn3");
 								allRunFor(spec, record);
 								var gasUsed = record.getResponseRecord().getContractCallResult().getGasUsed();
 								log.info("Before {}; Now {}", lowExpiryGasCost.get(), gasUsed);
-								// fails
+								// equal
 								Assertions.assertTrue(gasUsed >= lowExpiryGasCost.get());
 						})
 				);
