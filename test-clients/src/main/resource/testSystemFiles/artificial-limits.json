@@ -5,7 +5,7 @@
             "burstPeriod": 3,
             "throttleGroups": [
                 {
-                    "opsPerSec": 100,
+                    "opsPerSec": 2,
                     "operations": [
                         "CryptoCreate", "CryptoTransfer", "CryptoUpdate", "CryptoDelete", "CryptoGetInfo", "CryptoGetAccountRecords",
                         "ConsensusCreateTopic", "ConsensusSubmitMessage", "ConsensusUpdateTopic", "ConsensusDeleteTopic", "ConsensusGetTopicInfo",
@@ -18,7 +18,7 @@
                     ]
                 },
                 {
-                    "opsPerSec": 3,
+                    "opsPerSec": 200,
                     "operations": [ "ContractCall", "ContractCreate", "FileCreate", "FileUpdate", "FileAppend", "FileDelete" ]
                 },
                 {
@@ -37,7 +37,7 @@
             "burstPeriod": 3,
             "throttleGroups": [
                 {
-                    "opsPerSec": 2,
+                    "opsPerSec": 200,
                     "operations": [ "ContractCall", "ContractCreate", "FileCreate", "FileUpdate", "FileAppend", "FileDelete" ]
                 }
             ]

@@ -28,6 +28,7 @@ import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountBalance;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -61,6 +62,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -73,12 +75,12 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 			HapiSpecSetup.getDefaultNodeProps().get("tokens.nfts.mintThrottleScaleFactor");
 
 	private static final int LOCAL_NETWORK_SIZE = 3;
-	private static final int REGRESSION_NETWORK_SIZE = 4;
+	private static final int REGRESSION_NETWORK_SIZE = 1;
 
 	private static final double THROUGHPUT_LIMITS_XFER_NETWORK_TPS = 100.0;
 	private static final double THROUGHPUT_LIMITS_FUNGIBLE_MINT_NETWORK_TPS = 30.0;
 	private static final double THROUGHPUT_LIMITS_NFT_MINT_NETWORK_TPS = 15.0;
-	private static final double PRIORITY_RESERVATIONS_CONTRACT_CALL_NETWORK_TPS = 2.0;
+	private static final double PRIORITY_RESERVATIONS_CONTRACT_CALL_NETWORK_TPS = 200.0;
 	private static final double CREATION_LIMITS_CRYPTO_CREATE_NETWORK_TPS = 1.0;
 	private static final double FREE_QUERY_LIMITS_GET_BALANCE_NETWORK_QPS = 100.0;
 
@@ -91,6 +93,8 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 			THROUGHPUT_LIMITS_FUNGIBLE_MINT_NETWORK_TPS / NETWORK_SIZE;
 	private static final double expectedContractCallTps =
 			PRIORITY_RESERVATIONS_CONTRACT_CALL_NETWORK_TPS / NETWORK_SIZE;
+	private static final double expectedContractCallSmallGasTps = 5;
+	private static final double expectedContractCallLargeGasTps = 2;
 	private static final double expectedCryptoCreateTps = CREATION_LIMITS_CRYPTO_CREATE_NETWORK_TPS / NETWORK_SIZE;
 	private static final double expectedGetBalanceQps = FREE_QUERY_LIMITS_GET_BALANCE_NETWORK_QPS / NETWORK_SIZE;
 	private static final double toleratedPercentDeviation = 5;
@@ -108,12 +112,17 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 		return List.of(
 				new HapiApiSpec[] {
 						setArtificialLimits(),
-						checkTps("Xfers", expectedXferTps, xferOps()),
-						checkTps("FungibleMints", expectedFungibleMintTps, fungibleMintOps()),
-						checkTps("ContractCalls", expectedContractCallTps, scCallOps()),
-						checkTps("CryptoCreates", expectedCryptoCreateTps, cryptoCreateOps()),
+//						checkTps("Xfers", expectedXferTps, xferOps()),
+//						checkTps("FungibleMints", expectedFungibleMintTps, fungibleMintOps()),
+//						checkTps("ContractCalls", expectedContractCallTps, scCallOps()),
+//						checkTps("ContractCalls", expectedContractCallTps, scCallLargeTxs()),
+						checkGasThrottledTps("ContractCalls", expectedContractCallSmallGasTps, scCallSmallTxsBlockedFromFE()),
+						checkGasThrottledTps("ContractCalls", expectedContractCallLargeGasTps, scCallLargeTxsBlockedFromFE()),
+						checkGasThrottledTps("ContractCalls", expectedContractCallSmallGasTps, scCallSmallTxsBlockedFromBE()),
+						checkGasThrottledTps("ContractCalls", expectedContractCallLargeGasTps, scCallLargeTxsBlockedFromBE()),
+//						checkTps("CryptoCreates", expectedCryptoCreateTps, cryptoCreateOps()),
 //						checkTps("NftMints", expectedNftMintTps, nftMintOps()),
-						checkBalanceQps(1000, expectedGetBalanceQps),
+//						checkBalanceQps(1000, expectedGetBalanceQps),
 						restoreDevLimits(),
 				}
 		);
@@ -152,6 +161,28 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 				).then(
 						withOpContext((spec, opLog) -> {
 							var actualTps = 1.0 * spec.finalAdhoc() / duration.get();
+							var percentDeviation = Math.abs(actualTps / expectedTps - 1.0) * 100.0;
+							opLog.info("Total ops accepted in {} {} = {} ==> {}tps vs {}tps expected ({}% deviation)",
+									duration.get(),
+									unit.get(),
+									spec.finalAdhoc(),
+									String.format("%.3f", actualTps),
+									String.format("%.3f", expectedTps),
+									String.format("%.3f", percentDeviation));
+							Assertions.assertEquals(0.0, percentDeviation, toleratedPercentDeviation);
+						})
+				);
+	}
+
+	private HapiApiSpec checkGasThrottledTps(String txn, double expectedTps, Function<HapiApiSpec, OpProvider> provider) {
+		return defaultHapiSpec("Throttles" + txn + "AsExpected")
+				.given().when(
+						runWithProvider(provider)
+								.lasting(duration::get, unit::get)
+								.maxOpsPerSec(maxOpsPerSec::get)
+				).then(
+						withOpContext((spec, opLog) -> {
+							var actualTps = 1.0 * spec.finalizedStatusCounts().get(SUCCESS).doubleValue() / duration.get();
 							var percentDeviation = Math.abs(actualTps / expectedTps - 1.0) * 100.0;
 							opLog.info("Total ops accepted in {} {} = {} ==> {}tps vs {}tps expected ({}% deviation)",
 									duration.get(),
@@ -295,7 +326,8 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 						.deferStatusResolution()
 						.payingWith("civilian")
 						.sending(ONE_HBAR)
-						.hasPrecheckFrom(OK, BUSY);
+						.hasPrecheckFrom(OK, BUSY)
+						.hasKnownStatusFrom(SUCCESS, CONSENSUS_GAS_EXHAUSTED);
 				return Optional.of(op);
 			}
 		};
@@ -365,6 +397,154 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 						.payingWith(TOKEN_TREASURY)
 						.hasKnownStatusFrom(OK, SUCCESS)
 						.hasPrecheckFrom(OK, BUSY);
+				return Optional.of(op);
+			}
+		};
+	}
+
+	private Function<HapiApiSpec, OpProvider> scCallSmallTxsBlockedFromFE() {
+
+		return spec -> new OpProvider() {
+			@Override
+			public List<HapiSpecOperation> suggestedInitializers() {
+				return List.of(
+						UtilVerbs.overriding("contracts.throttle.throttleByGas", "true"),
+						UtilVerbs.overriding("contracts.consensusThrottleMaxGasLimit", "20000"),
+						UtilVerbs.overriding("contracts.frontendThrottleMaxGasLimit", "10000"),
+						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "0"),
+						fileCreate("bytecode")
+								.path(ContractResources.MULTIPURPOSE_BYTECODE_PATH)
+								.payingWith(GENESIS),
+						contractCreate("scMulti")
+								.bytecode("bytecode")
+								.payingWith(GENESIS),
+						cryptoCreate("civilian")
+								.balance(ONE_MILLION_HBARS)
+								.payingWith(GENESIS)
+				);
+			}
+
+			@Override
+			public Optional<HapiSpecOperation> get() {
+				var op = contractCall("scMulti")
+						.noLogging()
+						.deferStatusResolution()
+						.payingWith("civilian")
+						.gas(2_000)
+						.sending(ONE_HBAR)
+						.hasPrecheckFrom(OK, BUSY)
+						.hasKnownStatusFrom(SUCCESS, CONSENSUS_GAS_EXHAUSTED, OK);
+				return Optional.of(op);
+			}
+		};
+	}
+
+	private Function<HapiApiSpec, OpProvider> scCallLargeTxsBlockedFromFE() {
+
+		return spec -> new OpProvider() {
+			@Override
+			public List<HapiSpecOperation> suggestedInitializers() {
+				return List.of(
+						UtilVerbs.overriding("contracts.throttle.throttleByGas", "true"),
+						UtilVerbs.overriding("contracts.consensusThrottleMaxGasLimit", "20000"),
+						UtilVerbs.overriding("contracts.frontendThrottleMaxGasLimit", "10000"),
+						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "0"),
+						fileCreate("bytecode")
+								.path(ContractResources.MULTIPURPOSE_BYTECODE_PATH)
+								.payingWith(GENESIS),
+						contractCreate("scMulti")
+								.bytecode("bytecode")
+								.payingWith(GENESIS),
+						cryptoCreate("civilian")
+								.balance(ONE_MILLION_HBARS)
+								.payingWith(GENESIS)
+				);
+			}
+
+			@Override
+			public Optional<HapiSpecOperation> get() {
+				var op = contractCall("scMulti")
+						.noLogging()
+						.deferStatusResolution()
+						.payingWith("civilian")
+						.gas(5_000)
+						.sending(ONE_HBAR)
+						.hasPrecheckFrom(OK, BUSY)
+						.hasKnownStatusFrom(SUCCESS, CONSENSUS_GAS_EXHAUSTED, OK);
+				return Optional.of(op);
+			}
+		};
+	}
+
+	private Function<HapiApiSpec, OpProvider> scCallSmallTxsBlockedFromBE() {
+
+		return spec -> new OpProvider() {
+			@Override
+			public List<HapiSpecOperation> suggestedInitializers() {
+				return List.of(
+						UtilVerbs.overriding("contracts.throttle.throttleByGas", "true"),
+						UtilVerbs.overriding("contracts.consensusThrottleMaxGasLimit", "10000"),
+						UtilVerbs.overriding("contracts.frontendThrottleMaxGasLimit", "20000"),
+						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "0"),
+						fileCreate("bytecode")
+								.path(ContractResources.MULTIPURPOSE_BYTECODE_PATH)
+								.payingWith(GENESIS),
+						contractCreate("scMulti")
+								.bytecode("bytecode")
+								.payingWith(GENESIS),
+						cryptoCreate("civilian")
+								.balance(ONE_MILLION_HBARS)
+								.payingWith(GENESIS)
+				);
+			}
+
+			@Override
+			public Optional<HapiSpecOperation> get() {
+				var op = contractCall("scMulti")
+						.noLogging()
+						.deferStatusResolution()
+						.payingWith("civilian")
+						.gas(2_000)
+						.sending(ONE_HBAR)
+						.hasPrecheckFrom(OK, BUSY)
+						.hasKnownStatusFrom(SUCCESS, CONSENSUS_GAS_EXHAUSTED, OK);
+				return Optional.of(op);
+			}
+		};
+	}
+
+	private Function<HapiApiSpec, OpProvider> scCallLargeTxsBlockedFromBE() {
+
+		return spec -> new OpProvider() {
+			@Override
+			public List<HapiSpecOperation> suggestedInitializers() {
+				return List.of(
+						UtilVerbs.overriding("contracts.throttle.throttleByGas", "true"),
+						UtilVerbs.overriding("contracts.consensusThrottleMaxGasLimit", "10000"),
+						UtilVerbs.overriding("contracts.frontendThrottleMaxGasLimit", "20000"),
+						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "0"),
+						fileCreate("bytecode")
+								.path(ContractResources.MULTIPURPOSE_BYTECODE_PATH)
+								.payingWith(GENESIS),
+						contractCreate("scMulti")
+								.bytecode("bytecode")
+								.payingWith(GENESIS),
+						cryptoCreate("civilian")
+								.balance(ONE_MILLION_HBARS)
+								.payingWith(GENESIS)
+				);
+			}
+
+			@Override
+			public Optional<HapiSpecOperation> get() {
+				var op = contractCall("scMulti")
+						.noLogging()
+						.deferStatusResolution()
+						.payingWith("civilian")
+						.gas(5_000)
+						.sending(ONE_HBAR)
+						.hasPrecheckFrom(OK, BUSY)
+						.hasKnownStatusFrom(SUCCESS, CONSENSUS_GAS_EXHAUSTED, OK);
 				return Optional.of(op);
 			}
 		};
