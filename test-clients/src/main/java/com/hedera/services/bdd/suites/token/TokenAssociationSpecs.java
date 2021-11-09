@@ -91,6 +91,8 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 	private static final String FREEZABLE_TOKEN_OFF_BY_DEFAULT = "TokenB";
 	private static final String KNOWABLE_TOKEN = "TokenC";
 	private static final String VANILLA_TOKEN = "TokenD";
+	private static final String MULTI_KEY = "multiKey";
+	private static final String TBD_TOKEN = "ToBeDeleted";
 
 	public static void main(String... args) {
 		final var spec = new TokenAssociationSpecs();
@@ -113,7 +115,8 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						handlesUseOfDefaultTokenId(),
 						contractInfoQueriesAsExpected(),
 						dissociateHasExpectedSemanticsForDeletedTokens(),
-						dissociateHasExpectedSemanticsForDissociatedContracts()
+						dissociateHasExpectedSemanticsForDissociatedContracts(),
+						canDissociateFromDeletedTokenWithAlreadyDissociatedTreasury()
 				}
 		);
 	}
@@ -202,11 +205,11 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 	}
 
 	public HapiApiSpec expiredAndDeletedTokensStillAppearInContractInfo() {
-		String contract = "nothingMattersAnymore";
-		String treasury = "something";
-		String expiringToken = "expiringToken";
-		long lifetimeSecs = 10;
-		long xfer = 123L;
+		final String contract = "nothingMattersAnymore";
+		final String treasury = "something";
+		final String expiringToken = "expiringToken";
+		final long lifetimeSecs = 10;
+		final long xfer = 123L;
 		AtomicLong now = new AtomicLong();
 		return defaultHapiSpec("ExpiredAndDeletedTokensStillAppearInContractInfo")
 				.given(
@@ -254,10 +257,10 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 	}
 
 	public HapiApiSpec dissociationFromExpiredTokensAsExpected() {
-		String treasury = "accountA";
-		String frozenAccount = "frozen";
-		String unfrozenAccount = "unfrozen";
-		String expiringToken = "expiringToken";
+		final String treasury = "accountA";
+		final String frozenAccount = "frozen";
+		final String unfrozenAccount = "unfrozen";
+		final String expiringToken = "expiringToken";
 		long lifetimeSecs = 10;
 
 		AtomicLong now = new AtomicLong();
@@ -346,16 +349,43 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 				);
 	}
 
+	public HapiApiSpec canDissociateFromDeletedTokenWithAlreadyDissociatedTreasury() {
+		final String nonTreasuryAcquaintance = "1bFrozen";
+		final long initialSupply = 100L;
+		final long nonZeroXfer = 10L;
+		final var treasuryDissoc = "treasuryDissoc";
+		final var nonTreasuryDissoc = "nonTreasuryDissoc";
+
+		return defaultHapiSpec("CanDissociateFromDeletedTokenWithAlreadyDissociatedTreasury")
+				.given(
+						newKeyNamed(MULTI_KEY),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						tokenCreate(TBD_TOKEN)
+								.freezeKey(MULTI_KEY)
+								.freezeDefault(false)
+								.adminKey(MULTI_KEY)
+								.initialSupply(initialSupply)
+								.treasury(TOKEN_TREASURY),
+						cryptoCreate(nonTreasuryAcquaintance).balance(0L)
+				).when(
+						tokenAssociate(nonTreasuryAcquaintance, TBD_TOKEN),
+						cryptoTransfer(moving(nonZeroXfer, TBD_TOKEN).between(TOKEN_TREASURY, nonTreasuryAcquaintance)),
+						tokenFreeze(TBD_TOKEN, nonTreasuryAcquaintance),
+						tokenDelete(TBD_TOKEN)
+				).then(
+						tokenDissociate(TOKEN_TREASURY, TBD_TOKEN).via(treasuryDissoc),
+						tokenDissociate(nonTreasuryAcquaintance, TBD_TOKEN).via(nonTreasuryDissoc)
+				);
+	}
+
 	public HapiApiSpec dissociateHasExpectedSemanticsForDeletedTokens() {
-		String multiKey = "multiKey";
-		String tbdToken = "ToBeDeleted";
-		String tbdUniqToken = "UniqToBeDeleted";
-		String zeroBalanceFrozen = "0bFrozen";
-		String zeroBalanceUnfrozen = "0bUnfrozen";
-		String nonZeroBalanceFrozen = "1bFrozen";
-		String nonZeroBalanceUnfrozen = "1bUnfrozen";
-		long initialSupply = 100L;
-		long nonZeroXfer = 10L;
+		final String tbdUniqToken = "UniqToBeDeleted";
+		final String zeroBalanceFrozen = "0bFrozen";
+		final String zeroBalanceUnfrozen = "0bUnfrozen";
+		final String nonZeroBalanceFrozen = "1bFrozen";
+		final String nonZeroBalanceUnfrozen = "1bUnfrozen";
+		final long initialSupply = 100L;
+		final long nonZeroXfer = 10L;
 		final var zeroBalanceDissoc = "zeroBalanceDissoc";
 		final var nonZeroBalanceDissoc = "nonZeroBalanceDissoc";
 		final var uniqDissoc = "uniqDissoc";
@@ -365,56 +395,56 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("DissociateHasExpectedSemanticsForDeletedTokens")
 				.given(
-						newKeyNamed(multiKey),
+						newKeyNamed(MULTI_KEY),
 						cryptoCreate(TOKEN_TREASURY).balance(0L),
-						tokenCreate(tbdToken)
-								.adminKey(multiKey)
+						tokenCreate(TBD_TOKEN)
+								.adminKey(MULTI_KEY)
 								.initialSupply(initialSupply)
 								.treasury(TOKEN_TREASURY)
-								.freezeKey(multiKey)
+								.freezeKey(MULTI_KEY)
 								.freezeDefault(true),
 						tokenCreate(tbdUniqToken)
 								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
 								.treasury(TOKEN_TREASURY)
-								.adminKey(multiKey)
-								.supplyKey(multiKey)
+								.adminKey(MULTI_KEY)
+								.supplyKey(MULTI_KEY)
 								.initialSupply(0),
 						cryptoCreate(zeroBalanceFrozen).balance(0L),
 						cryptoCreate(zeroBalanceUnfrozen).balance(0L),
 						cryptoCreate(nonZeroBalanceFrozen).balance(0L),
 						cryptoCreate(nonZeroBalanceUnfrozen).balance(0L)
 				).when(
-						tokenAssociate(zeroBalanceFrozen, tbdToken),
-						tokenAssociate(zeroBalanceUnfrozen, tbdToken),
-						tokenAssociate(nonZeroBalanceFrozen, tbdToken),
-						tokenAssociate(nonZeroBalanceUnfrozen, tbdToken),
+						tokenAssociate(zeroBalanceFrozen, TBD_TOKEN),
+						tokenAssociate(zeroBalanceUnfrozen, TBD_TOKEN),
+						tokenAssociate(nonZeroBalanceFrozen, TBD_TOKEN),
+						tokenAssociate(nonZeroBalanceUnfrozen, TBD_TOKEN),
 						mintToken(tbdUniqToken, List.of(firstMeta, secondMeta, thirdMeta)),
 						getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(3),
-						tokenUnfreeze(tbdToken, zeroBalanceUnfrozen),
-						tokenUnfreeze(tbdToken, nonZeroBalanceUnfrozen),
-						tokenUnfreeze(tbdToken, nonZeroBalanceFrozen),
+						tokenUnfreeze(TBD_TOKEN, zeroBalanceUnfrozen),
+						tokenUnfreeze(TBD_TOKEN, nonZeroBalanceUnfrozen),
+						tokenUnfreeze(TBD_TOKEN, nonZeroBalanceFrozen),
 
-						cryptoTransfer(moving(nonZeroXfer, tbdToken).between(TOKEN_TREASURY, nonZeroBalanceFrozen)),
-						cryptoTransfer(moving(nonZeroXfer, tbdToken).between(TOKEN_TREASURY, nonZeroBalanceUnfrozen)),
+						cryptoTransfer(moving(nonZeroXfer, TBD_TOKEN).between(TOKEN_TREASURY, nonZeroBalanceFrozen)),
+						cryptoTransfer(moving(nonZeroXfer, TBD_TOKEN).between(TOKEN_TREASURY, nonZeroBalanceUnfrozen)),
 
-						tokenFreeze(tbdToken, nonZeroBalanceFrozen),
+						tokenFreeze(TBD_TOKEN, nonZeroBalanceFrozen),
 						getAccountBalance(TOKEN_TREASURY)
-								.hasTokenBalance(tbdToken, initialSupply - 2 * nonZeroXfer),
-						tokenDelete(tbdToken),
+								.hasTokenBalance(TBD_TOKEN, initialSupply - 2 * nonZeroXfer),
+						tokenDelete(TBD_TOKEN),
 						tokenDelete(tbdUniqToken)
 				).then(
-						tokenDissociate(zeroBalanceFrozen, tbdToken).via(zeroBalanceDissoc),
-						tokenDissociate(zeroBalanceUnfrozen, tbdToken),
-						tokenDissociate(nonZeroBalanceFrozen, tbdToken).via(nonZeroBalanceDissoc),
-						tokenDissociate(nonZeroBalanceUnfrozen, tbdToken),
+						tokenDissociate(zeroBalanceFrozen, TBD_TOKEN).via(zeroBalanceDissoc),
+						tokenDissociate(zeroBalanceUnfrozen, TBD_TOKEN),
+						tokenDissociate(nonZeroBalanceFrozen, TBD_TOKEN).via(nonZeroBalanceDissoc),
+						tokenDissociate(nonZeroBalanceUnfrozen, TBD_TOKEN),
 						tokenDissociate(TOKEN_TREASURY, tbdUniqToken).via(uniqDissoc),
 						getAccountBalance(TOKEN_TREASURY)
-								.hasTokenBalance(tbdToken, initialSupply - 2 * nonZeroXfer),
+								.hasTokenBalance(TBD_TOKEN, initialSupply - 2 * nonZeroXfer),
 						getTxnRecord(zeroBalanceDissoc)
 								.hasPriority(recordWith().tokenTransfers(emptyTokenTransfers())),
 						getTxnRecord(nonZeroBalanceDissoc)
 								.hasPriority(recordWith().tokenTransfers(changingFungibleBalances()
-										.including(tbdToken, nonZeroBalanceFrozen, -nonZeroXfer))),
+										.including(TBD_TOKEN, nonZeroBalanceFrozen, -nonZeroXfer))),
 						getTxnRecord(uniqDissoc)
 								.hasPriority(recordWith().tokenTransfers(changingFungibleBalances()
 										.including(tbdUniqToken, TOKEN_TREASURY, -3))),

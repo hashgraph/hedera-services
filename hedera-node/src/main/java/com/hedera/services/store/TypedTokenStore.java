@@ -158,22 +158,43 @@ public class TypedTokenStore {
 	 * 		if the requested relationship does not exist
 	 */
 	public TokenRelationship loadTokenRelationship(Token token, Account account) {
-		final var tokenNum = EntityNum.fromModel(token.getId());
-		final var accountNum = EntityNum.fromModel(account.getId());
-		final var key = EntityNumPair.fromLongs(accountNum.longValue(), tokenNum.longValue());
-		final var merkleTokenRel = tokenRels.get().get(key);
+		final var merkleTokenRel = getMerkleTokenRelationship(token, account);
 
 		validateUsable(merkleTokenRel);
 
-		final var tokenRelationship = new TokenRelationship(token, account);
-		tokenRelationship.initBalance(merkleTokenRel.getBalance());
-		tokenRelationship.setKycGranted(merkleTokenRel.isKycGranted());
-		tokenRelationship.setFrozen(merkleTokenRel.isFrozen());
-		tokenRelationship.setAutomaticAssociation(merkleTokenRel.isAutomaticAssociation());
+		return buildTokenRelationship(token, account, merkleTokenRel);
+	}
 
-		tokenRelationship.markAsPersisted();
+	/**
+	 * Returns a model of the requested token relationship, with operations that
+	 * can be used to implement business logic in a transaction. If the requested token relationship
+	 * does not exist, returns null.
+	 * <p>
+	 * The arguments <i>should</i> be model objects that were returned by the
+	 * {@link TypedTokenStore#loadToken(Id)} and {@link AccountStore#loadAccount(Id)}
+	 * methods, respectively, since it will very rarely (or never) be correct
+	 * to do business logic on a relationship whose token or account have not
+	 * been validated as usable.
+	 *
+	 * <b>IMPORTANT:</b> Changes to the returned model are not automatically persisted
+	 * to state! The altered model must be passed to {@link TypedTokenStore#persistTokenRelationships(List)}
+	 * in order for its changes to be applied to the Swirlds state, and included in the
+	 * {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} for the active transaction.
+	 *
+	 * @param token
+	 * 		the token in the relationship to load
+	 * @param account
+	 * 		the account in the relationship to load
+	 * @return a usable model of the token-account relationship or null if the requested relationship doesnt exist
+	 */
+	public TokenRelationship loadPossiblyDeletedTokenRelationship(Token token, Account account) {
+		final var merkleTokenRel = getMerkleTokenRelationship(token, account);
 
-		return tokenRelationship;
+		if(merkleTokenRel == null) {
+			return null;
+		} else {
+			return buildTokenRelationship(token, account, merkleTokenRel);
+		}
 	}
 
 	/**
@@ -197,6 +218,27 @@ public class TypedTokenStore {
 			}
 		}
 		transactionRecordService.includeChangesToTokenRels(tokenRelationships);
+	}
+
+	private MerkleTokenRelStatus getMerkleTokenRelationship(Token token, Account account) {
+		final var tokenNum = EntityNum.fromModel(token.getId());
+		final var accountNum = EntityNum.fromModel(account.getId());
+		final var key = EntityNumPair.fromLongs(accountNum.longValue(), tokenNum.longValue());
+
+		return tokenRels.get().get(key);
+	}
+
+	private TokenRelationship buildTokenRelationship(
+			final Token token, final Account account, final MerkleTokenRelStatus merkleTokenRel) {
+		final var tokenRelationship = new TokenRelationship(token, account);
+		tokenRelationship.initBalance(merkleTokenRel.getBalance());
+		tokenRelationship.setKycGranted(merkleTokenRel.isKycGranted());
+		tokenRelationship.setFrozen(merkleTokenRel.isFrozen());
+		tokenRelationship.setAutomaticAssociation(merkleTokenRel.isAutomaticAssociation());
+
+		tokenRelationship.markAsPersisted();
+
+		return tokenRelationship;
 	}
 
 	private void persistNonDestroyed(
