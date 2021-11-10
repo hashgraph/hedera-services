@@ -146,7 +146,7 @@ class UtilsConstructorTest {
 			ScheduleLogicModule.class,
 			TokenLogicModule.class,
 			TopicConversion.class,
-			CallLocalExecutor.class
+			CallLocalExecutor.class,
 			HederaOperationUtil.class,
 			GasCalculatorHederaUtil.class
 	));
