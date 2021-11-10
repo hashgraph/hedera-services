@@ -5,7 +5,7 @@ import "./HederaResponseCodes.sol";
 
 library HederaTokenService {
 
-    address constant precompileAddress = address(0x129);
+    address constant precompileAddress = address(0x167);
 
     /// Transfers tokens from the calling account to the recipient account.
     /// @param recipient the recipient account
