@@ -20,7 +20,6 @@ package com.hedera.services.legacy.core.jproto;
  * ‍
  */
 
-import com.hedera.services.files.HFileMeta;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -28,31 +27,31 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class JECDSA_secp256k1KeyTest {
-	JECDSA_secp256k1Key subject;
+class JECDSAsecp256k1KeyTest {
+	JECDSAsecp256k1Key subject;
 	byte[] bytes;
 
 	@BeforeEach
 	void setUp() {
 		bytes = new byte[33];
 		bytes[0] = 0x03;
-		subject = new JECDSA_secp256k1Key(bytes);
+		subject = new JECDSAsecp256k1Key(bytes);
 	}
 
 	@Test
 	void emptyJECDSA_secp256k1KeyTest() {
-		JECDSA_secp256k1Key key1 = new JECDSA_secp256k1Key(null);
+		JECDSAsecp256k1Key key1 = new JECDSAsecp256k1Key(null);
 		assertTrue(key1.isEmpty());
 		assertFalse(key1.isValid());
 
-		JECDSA_secp256k1Key key2 = new JECDSA_secp256k1Key(new byte[0]);
+		JECDSAsecp256k1Key key2 = new JECDSAsecp256k1Key(new byte[0]);
 		assertTrue(key2.isEmpty());
 		assertFalse(key2.isValid());
 	}
 
 	@Test
 	void nonEmptyInvalidLengthJECDSA_secp256k1KeyTest() {
-		JECDSA_secp256k1Key key = new JECDSA_secp256k1Key(new byte[1]);
+		JECDSAsecp256k1Key key = new JECDSAsecp256k1Key(new byte[1]);
 		assertFalse(key.isEmpty());
 		assertFalse(key.isValid());
 	}
@@ -61,7 +60,7 @@ class JECDSA_secp256k1KeyTest {
 	void nonEmptyValid0x02JECDSA_secp256k1KeyTest() {
 		byte[] bytes = new byte[33];
 		bytes[0] = 0x02;
-		JECDSA_secp256k1Key key = new JECDSA_secp256k1Key(bytes);
+		JECDSAsecp256k1Key key = new JECDSAsecp256k1Key(bytes);
 		assertFalse(key.isEmpty());
 		assertTrue(key.isValid());
 	}
@@ -80,7 +79,7 @@ class JECDSA_secp256k1KeyTest {
 	@Test
 	void toStringWorks() {
 		assertEquals(
-				"<JECDSA_secp256k1Key: ECDSA_secp256k1Key " +
+				"<JECDSAsecp256k1Key: ECDSA_secp256k1Key " +
 						"hex=030000000000000000000000000000000000000000000000000000000000000000>",
 				subject.toString());
 	}
