@@ -66,6 +66,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -119,13 +120,13 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 						checkTps("FungibleMints", expectedFungibleMintTps, fungibleMintOps()),
 						checkTps("ContractCalls", expectedContractCallTps, scCallOps()),
 						checkTps("CryptoCreates", expectedCryptoCreateTps, cryptoCreateOps()),
-						checkTps("NftMints", expectedNftMintTps, nftMintOps()),
+//						checkTps("NftMints", expectedNftMintTps, nftMintOps()),
 						checkBalanceQps(1000, expectedGetBalanceQps),
 						setArtificialLimits(artificialGasLimits),
-						checkGasThrottledTps("ContractCalls", expectedContractCallSmallGasTps, scCallSmallTxsBlockedFromFE()),
-						checkGasThrottledTps("ContractCalls", expectedContractCallLargeGasTps, scCallLargeTxsBlockedFromFE()),
-						checkGasThrottledTps("ContractCalls", expectedContractCallSmallGasTps, scCallSmallTxsBlockedFromBE()),
-						checkGasThrottledTps("ContractCalls", expectedContractCallLargeGasTps, scCallLargeTxsBlockedFromBE()),
+						checkGasThrottledTps("ContractCallSmallGasFrontend", expectedContractCallSmallGasTps, scCallSmallTxsBlockedFromFE()),
+						checkGasThrottledTps("ContractCallLargeGasFrontend", expectedContractCallLargeGasTps, scCallLargeTxsBlockedFromFE()),
+						checkGasThrottledTps("ContractCallSmallGasConsensus", expectedContractCallSmallGasTps, scCallSmallTxsBlockedFromBE()),
+						checkGasThrottledTps("ContractCallLargeGasConsensus", expectedContractCallLargeGasTps, scCallLargeTxsBlockedFromBE()),
 						restoreDevLimits(),
 				}
 		);
@@ -137,6 +138,7 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 						fileUpdate(THROTTLE_DEFS)
 								.payingWith(EXCHANGE_RATE_CONTROL)
 								.contents(artificialLimits.toByteArray())
+								.hasKnownStatusFrom(SUCCESS, SUCCESS_BUT_MISSING_EXPECTED_OPERATION)
 				);
 	}
 
