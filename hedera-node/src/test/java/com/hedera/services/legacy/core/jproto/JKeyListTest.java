@@ -20,6 +20,8 @@ package com.hedera.services.legacy.core.jproto;
  * ‍
  */
 
+import com.google.common.primitives.Bytes;
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.Key;
@@ -81,12 +83,19 @@ class JKeyListTest {
 		Key validED25519Key = Key.newBuilder().setEd25519(
 				TxnUtils.randomUtf8ByteString(JEd25519Key.ED25519_BYTE_LENGTH)
 		).build();
+
+		ByteString edcsaSecp256K1Bytes = ByteString.copyFrom(new byte[]{0x06})
+				.concat(TxnUtils.randomUtf8ByteString(JECDSA_secp256k1Key.ECDSAsecp256_COMPRESSED_BYTE_LENGTH - 1));
+		Key invalidECDSAsecp256k1Key = Key.newBuilder().setECDSASecp256K1(edcsaSecp256K1Bytes).build();
+
 		KeyList invalidKeyList1 = KeyList.newBuilder().build();
 		Key invalidKey1 = Key.newBuilder().setKeyList(invalidKeyList1).build();
 		KeyList invalidKeyList2 = KeyList.newBuilder().addKeys(validED25519Key).addKeys(invalidKey1).build();
 		Key invalidKey2 = Key.newBuilder().setKeyList(invalidKeyList2).build();
 		KeyList invalidKeyList3 = KeyList.newBuilder().addKeys(validED25519Key).addKeys(invalidKey2).build();
 		Key invalidKey3 = Key.newBuilder().setKeyList(invalidKeyList3).build();
+		KeyList invalidKeyList4 = KeyList.newBuilder().addKeys(invalidECDSAsecp256k1Key).addKeys(invalidKey3).build();
+		Key invalidKey4 = Key.newBuilder().setKeyList(invalidKeyList4).build();
 
 		JKey jKeyList1 = JKey.convertKey(invalidKey1, 1);
 		assertFalse(jKeyList1.isValid());
@@ -96,6 +105,9 @@ class JKeyListTest {
 
 		JKey jKeyList3 = JKey.convertKey(invalidKey3, 1);
 		assertFalse(jKeyList3.isValid());
+
+		JKey jKeyList4 = JKey.convertKey(invalidKey4, 1);
+		assertFalse(jKeyList4.isValid());
 	}
 
 	@Test
@@ -103,6 +115,9 @@ class JKeyListTest {
 		Key validED25519Key = Key.newBuilder().setEd25519(
 				TxnUtils.randomUtf8ByteString(JEd25519Key.ED25519_BYTE_LENGTH)
 		).build();
+		ByteString edcsaSecp256K1Bytes = ByteString.copyFrom(new byte[]{0x02})
+				.concat(TxnUtils.randomUtf8ByteString(JECDSA_secp256k1Key.ECDSAsecp256_COMPRESSED_BYTE_LENGTH - 1));
+		Key validECDSAsecp256k1Key = Key.newBuilder().setECDSASecp256K1(edcsaSecp256K1Bytes).build();
 		Key validECDSA384Key = Key.newBuilder().setECDSA384(
 				TxnUtils.randomUtf8ByteString(24)
 		).build();
@@ -112,6 +127,8 @@ class JKeyListTest {
 		Key validKey2 = Key.newBuilder().setKeyList(validKeyList2).build();
 		KeyList validKeyList3 = KeyList.newBuilder().addKeys(validED25519Key).addKeys(validKey2).build();
 		Key validKey3 = Key.newBuilder().setKeyList(validKeyList3).build();
+		KeyList validKeyList4 = KeyList.newBuilder().addKeys(validECDSAsecp256k1Key).addKeys(validKey3).build();
+		Key validKey4 = Key.newBuilder().setKeyList(validKeyList4).build();
 
 		JKey jKeyList1 = JKey.convertKey(validKey1, 1);
 		assertTrue(jKeyList1.isValid());
@@ -121,6 +138,9 @@ class JKeyListTest {
 
 		JKey jKeyList3 = JKey.convertKey(validKey3, 1);
 		assertTrue(jKeyList3.isValid());
+
+		JKey jKeyList4 = JKey.convertKey(validKey4, 1);
+		assertTrue(jKeyList4.isValid());
 	}
 
 	@Test
@@ -130,8 +150,9 @@ class JKeyListTest {
 		var ecdsa384Key = new JECDSA_384Key("ecdsa384".getBytes());
 		var rsa3072Key = new JRSA_3072Key("rsa3072".getBytes());
 		var contractKey = new JContractIDKey(0, 0, 75231);
+		var ecdsasecp256k1Key = new JECDSA_secp256k1Key("ecdsasecp256k1".getBytes());
 		// and:
-		List<JKey> keys = List.of(ed25519Key, ecdsa384Key, rsa3072Key, contractKey);
+		List<JKey> keys = List.of(ed25519Key, ecdsa384Key, rsa3072Key, contractKey, ecdsasecp256k1Key);
 
 		// given:
 		var subject = new JKeyList(keys);

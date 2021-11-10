@@ -23,8 +23,9 @@ public class JECDSA_secp256k1Key extends JKey {
 
 	@Override
 	public boolean isValid() {
-		if (isEmpty()
-				|| (ECDSA_secp256k1Key.length != ECDSAsecp256_COMPRESSED_BYTE_LENGTH)
+		if (isEmpty()) {
+			return false;
+		} else if ((ECDSA_secp256k1Key.length != ECDSAsecp256_COMPRESSED_BYTE_LENGTH)
 				|| (ECDSA_secp256k1Key[0] != 0x02 && ECDSA_secp256k1Key[0] != 0x03)) {
 			return false;
 		}

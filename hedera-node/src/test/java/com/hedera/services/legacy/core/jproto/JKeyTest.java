@@ -102,4 +102,18 @@ class JKeyTest {
 		assertNotSame(dup, orig);
 		assertEquals(asKeyUnchecked(orig), asKeyUnchecked(dup));
 	}
+
+	@Test
+	void convertsECDSA_secp256k1KeyKey() {
+		// given:
+//		final Key aKey = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey();
+//
+//		var secp256k1Key = Key.newBuilder(), JKey.MAX_KEY_DEPTH).build();
+//
+//		// expect:
+//		assertThrows(
+//				DecoderException.class,
+//				() -> JKey.convertKey(secp256k1Key, 1),
+//				"Exceeding max expansion depth of " + JKey.MAX_KEY_DEPTH);
+	}
 }

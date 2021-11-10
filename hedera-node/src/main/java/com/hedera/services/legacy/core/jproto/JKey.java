@@ -119,7 +119,10 @@ public abstract class JKey implements Serializable {
 		} else if (!key.getRSA3072().isEmpty()) {
 			byte[] pubKeyBytes = key.getRSA3072().toByteArray();
 			rv = new JRSA_3072Key(pubKeyBytes);
-		} else if (key.getContractID() != null && key.getContractID().getContractNum() != 0) {
+		}else if (!key.getECDSASecp256K1().isEmpty()) {
+			byte[] pubKeyBytes = key.getECDSASecp256K1().toByteArray();
+			rv = new JECDSA_secp256k1Key(pubKeyBytes);
+		}  else if (key.getContractID() != null && key.getContractID().getContractNum() != 0) {
 			ContractID cid = key.getContractID();
 			rv = new JContractIDKey(cid);
 		} else {
