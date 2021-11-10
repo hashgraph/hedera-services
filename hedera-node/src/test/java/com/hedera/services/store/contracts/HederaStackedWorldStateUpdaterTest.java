@@ -47,7 +47,7 @@ import static org.mockito.Mockito.verify;
 class HederaStackedWorldStateUpdaterTest {
 
 	@Mock(extraInterfaces = {HederaWorldUpdater.class})
-	private AbstractWorldUpdater<HederaWorldState, WorldStateAccount> updater;
+	private AbstractWorldUpdater<HederaMutableWorldState, WorldStateAccount> updater;
 	@Mock
 	private HederaMutableWorldState worldState;
 	@Mock

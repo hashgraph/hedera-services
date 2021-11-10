@@ -20,8 +20,8 @@ package com.hedera.services.stats;
  * ‍
  */
 
-import com.swirlds.common.StatEntry;
-import com.swirlds.platform.StatsRunningAverage;
+import com.swirlds.common.statistics.StatEntry;
+import com.swirlds.common.statistics.StatsRunningAverage;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

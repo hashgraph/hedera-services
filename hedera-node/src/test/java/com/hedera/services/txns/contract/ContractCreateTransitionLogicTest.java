@@ -357,7 +357,7 @@ class ContractCreateTransitionLogicTest {
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
 		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress())).willReturn(
 				contractAccount.getId().asEvmAddress());
-		given(worldState.persist()).willReturn(expectedCreatedContracts);
+		given(worldState.persistProvisionalContractCreations()).willReturn(expectedCreatedContracts);
 		given(hfs.exists(bytecodeSrc)).willReturn(true);
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
@@ -382,7 +382,7 @@ class ContractCreateTransitionLogicTest {
 
 		// then:
 		verify(worldState).reclaimContractId();
-		verify(worldState).persist();
+		verify(worldState).persistProvisionalContractCreations();
 		verify(txnCtx, never()).setCreated(contractAccount.getId().asGrpcContract());
 		verify(recordServices).externaliseEvmCreateTransaction(result);
 	}
@@ -425,7 +425,7 @@ class ContractCreateTransitionLogicTest {
 
 		// then:
 		verify(worldState).newContractAddress(senderAccount.getId().asEvmAddress());
-		verify(worldState).persist();
+		verify(worldState).persistProvisionalContractCreations();
 		verify(recordServices).externaliseEvmCreateTransaction(result);
 		verify(worldState, never()).reclaimContractId();
 		verify(txnCtx).setCreated(contractAccount.getId().asGrpcContract());

@@ -260,5 +260,4 @@ public final class EntityIdUtils {
 		final var rightNum = unsignedLowOrder32From(scopedSerialNo);
 		return STATIC_PROPERTIES.scopedIdLiteralWith(leftNum) + "." + rightNum;
 	}
-
 }
