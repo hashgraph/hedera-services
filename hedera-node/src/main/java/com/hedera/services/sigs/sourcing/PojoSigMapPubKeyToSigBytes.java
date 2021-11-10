@@ -56,7 +56,7 @@ public class PojoSigMapPubKeyToSigBytes implements PubKeyToSigBytes {
 							"Source signature map with prefix " + CommonUtils.hex(pubKeyPrefix) +
 									" is ambiguous for given public key! (" + CommonUtils.hex(pubKey) + ")");
 				}
-				sigBytes = pojoSigMap.ed25519Signature(i);
+				sigBytes = pojoSigMap.signature(i);
 			}
 		}
 		return sigBytes;

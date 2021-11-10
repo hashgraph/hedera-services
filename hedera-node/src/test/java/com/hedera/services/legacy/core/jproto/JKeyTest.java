@@ -43,6 +43,15 @@ class JKeyTest {
 	}
 
 	@Test
+	void positiveConvertKeyECDSAsecp256k1KeyTest() {
+		// given:
+		final Key aKey = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey();
+
+		// expect:
+		assertDoesNotThrow(() -> JKey.convertKey(aKey, 1));
+	}
+
+	@Test
 	void negativeConvertKeyTest() {
 		// given:
 		var keyTooDeep = TxnUtils.nestKeys(Key.newBuilder(), JKey.MAX_KEY_DEPTH).build();

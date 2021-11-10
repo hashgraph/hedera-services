@@ -75,7 +75,7 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 					requiredKeys,
 					syncVerifier,
 					accessor,
-					PlatformSigOps::createEd25519PlatformSigsFrom,
+					PlatformSigOps::createPlatformSigsFrom,
 					accessor.getPkToSigsFn(),
 					BodySigningSigFactory::new,
 					(key, sigsFn) -> isActive(key, sigsFn, ONLY_IF_SIG_IS_VALID),

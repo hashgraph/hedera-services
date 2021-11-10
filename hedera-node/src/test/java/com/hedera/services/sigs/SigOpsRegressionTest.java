@@ -212,7 +212,7 @@ class SigOpsRegressionTest {
 		// given:
 		setupFor(CRYPTO_CREATE_COMPLEX_PAYER_RECEIVER_SIG_SCENARIO);
 		// and:
-		List<TransactionSignature> unknownSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
+		List<TransactionSignature> unknownSigs = PlatformSigOps.createPlatformSigsFrom(
 				List.of(COMPLEX_KEY_ACCOUNT_KT.asJKey(), CryptoCreateFactory.DEFAULT_ACCOUNT_KT.asJKey()),
 				platformTxn.getPkToSigsFn(),
 				new BodySigningSigFactory(platformTxn)
@@ -237,7 +237,7 @@ class SigOpsRegressionTest {
 		// given:
 		setupFor(CRYPTO_CREATE_COMPLEX_PAYER_RECEIVER_SIG_SCENARIO);
 		// and:
-		List<TransactionSignature> unknownSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
+		List<TransactionSignature> unknownSigs = PlatformSigOps.createPlatformSigsFrom(
 				List.of(COMPLEX_KEY_ACCOUNT_KT.asJKey(), CryptoCreateFactory.DEFAULT_ACCOUNT_KT.asJKey()),
 				platformTxn.getPkToSigsFn(),
 				new BodySigningSigFactory(platformTxn)
@@ -262,7 +262,7 @@ class SigOpsRegressionTest {
 		// given:
 		setupFor(CRYPTO_UPDATE_COMPLEX_KEY_ACCOUNT_SCENARIO);
 		// and:
-		List<TransactionSignature> unknownSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
+		List<TransactionSignature> unknownSigs = PlatformSigOps.createPlatformSigsFrom(
 				List.of(DEFAULT_PAYER_KT.asJKey(), COMPLEX_KEY_ACCOUNT_KT.asJKey()),
 				platformTxn.getPkToSigsFn(),
 				new BodySigningSigFactory(platformTxn)
@@ -288,7 +288,7 @@ class SigOpsRegressionTest {
 		// given:
 		setupFor(CRYPTO_UPDATE_COMPLEX_KEY_ACCOUNT_SCENARIO);
 		// and:
-		List<TransactionSignature> unknownSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
+		List<TransactionSignature> unknownSigs = PlatformSigOps.createPlatformSigsFrom(
 				List.of(DEFAULT_PAYER_KT.asJKey(), COMPLEX_KEY_ACCOUNT_KT.asJKey()),
 				platformTxn.getPkToSigsFn(),
 				new BodySigningSigFactory(platformTxn)
@@ -314,7 +314,7 @@ class SigOpsRegressionTest {
 		// given:
 		setupFor(CRYPTO_UPDATE_COMPLEX_KEY_ACCOUNT_ADD_NEW_KEY_SCENARIO);
 		// and:
-		List<TransactionSignature> unknownSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
+		List<TransactionSignature> unknownSigs = PlatformSigOps.createPlatformSigsFrom(
 				List.of(DEFAULT_PAYER_KT.asJKey(), COMPLEX_KEY_ACCOUNT_KT.asJKey(), NEW_ACCOUNT_KT.asJKey()),
 				platformTxn.getPkToSigsFn(),
 				new BodySigningSigFactory(platformTxn)
@@ -340,7 +340,7 @@ class SigOpsRegressionTest {
 	}
 
 	private List<TransactionSignature> expectedCryptoCreateScenarioSigs() throws Throwable {
-		return PlatformSigOps.createEd25519PlatformSigsFrom(
+		return PlatformSigOps.createPlatformSigsFrom(
 				List.of(
 						DEFAULT_PAYER_KT.asJKey(),
 						CryptoCreateFactory.DEFAULT_ACCOUNT_KT.asJKey()),
@@ -439,7 +439,7 @@ class SigOpsRegressionTest {
 		if (payerKeys.hasErrorReport()) {
 			expectedErrorStatus = payerKeys.getErrorReport();
 		} else {
-			PlatformSigsCreationResult payerResult = PlatformSigOps.createEd25519PlatformSigsFrom(
+			PlatformSigsCreationResult payerResult = PlatformSigOps.createPlatformSigsFrom(
 					payerKeys.getOrderedKeys(),
 					new PojoSigMapPubKeyToSigBytes(platformTxn.getSigMap()),
 					new BodySigningSigFactory(platformTxn)
@@ -450,7 +450,7 @@ class SigOpsRegressionTest {
 			if (otherKeys.hasErrorReport()) {
 				expectedErrorStatus = otherKeys.getErrorReport();
 			} else {
-				PlatformSigsCreationResult otherResult = PlatformSigOps.createEd25519PlatformSigsFrom(
+				PlatformSigsCreationResult otherResult = PlatformSigOps.createPlatformSigsFrom(
 						otherKeys.getOrderedKeys(),
 						new PojoSigMapPubKeyToSigBytes(platformTxn.getSigMap()),
 						new BodySigningSigFactory(platformTxn)

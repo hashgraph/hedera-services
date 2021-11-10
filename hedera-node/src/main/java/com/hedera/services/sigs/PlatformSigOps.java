@@ -51,20 +51,20 @@ public final class PlatformSigOps {
 	 * 		a factory to convert public keys and cryptographic sigs into sigs.
 	 * @return the result of attempting this creation.
 	 */
-	public static PlatformSigsCreationResult createEd25519PlatformSigsFrom(
+	public static PlatformSigsCreationResult createPlatformSigsFrom(
 			final List<JKey> pubKeys,
 			final PubKeyToSigBytes sigBytesFn,
 			final TxnScopedPlatformSigFactory factory
 	) {
 		final var result = new PlatformSigsCreationResult();
 		for (final var pk : pubKeys) {
-			visitSimpleKeys(pk, ed25519Key -> createPlatformSigFor(ed25519Key, sigBytesFn, factory, result));
+			visitSimpleKeys(pk, key -> createPlatformSigFor(key, sigBytesFn, factory, result));
 		}
 		return result;
 	}
 
 	private static void createPlatformSigFor(
-			final JKey ed25519Key,
+			final JKey key,
 			final PubKeyToSigBytes sigBytesFn,
 			final TxnScopedPlatformSigFactory factory,
 			final PlatformSigsCreationResult result
@@ -74,14 +74,20 @@ public final class PlatformSigOps {
 		}
 
 		try {
-			final var keyBytes = ed25519Key.getEd25519();
+			final byte[] keyBytes;
+			if (key.hasECDSA_secp256k1Key()) {
+				keyBytes = key.getECDSAsecp256k1Key();
+			} else {
+				keyBytes = key.getEd25519();
+			}
+
 			final var sigBytes = sigBytesFn.sigBytesFor(keyBytes);
 			if (sigBytes.length > 0) {
 				result.getPlatformSigs().add(factory.create(keyBytes, sigBytes));
 			}
 		} catch (KeyPrefixMismatchException kmpe) {
 			/* Nbd if a signature map is ambiguous for a key linked to a scheduled transaction. */
-			if (!ed25519Key.isForScheduledTxn()) {
+			if (!key.isForScheduledTxn()) {
 				result.setTerminatingEx(kmpe);
 			}
 		} catch (Exception e) {

@@ -33,7 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.hedera.services.sigs.PlatformSigOps.createEd25519PlatformSigsFrom;
+import static com.hedera.services.sigs.PlatformSigOps.createPlatformSigsFrom;
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
 import static com.hedera.test.factories.keys.NodeFactory.list;
 import static com.hedera.test.factories.keys.NodeFactory.threshold;
@@ -64,6 +64,11 @@ class PlatformSigOpsTest {
 			KeyTree.withRoot(list(ed25519(), ed25519())),
 			KeyTree.withRoot(threshold(1, list(ed25519()), ed25519()))
 	);
+	private static final List<KeyTree> kts = List.of(
+			KeyTree.withRoot(ed25519()),
+			KeyTree.withRoot(list(ed25519(), ed25519())),
+			KeyTree.withRoot(threshold(1, list(ed25519()), ed25519()))
+	);
 	private PubKeyToSigBytes sigBytes;
 	private TxnScopedPlatformSigFactory sigFactory;
 
@@ -81,7 +86,7 @@ class PlatformSigOpsTest {
 	void createsOnlyNonDegenerateSigs() throws Throwable {
 		given(sigBytes.sigBytesFor(any())).willReturn(MOCK_SIG, MORE_EMPTY_SIGS);
 
-		final var result = createEd25519PlatformSigsFrom(pubKeys, sigBytes, sigFactory);
+		final var result = createPlatformSigsFrom(pubKeys, sigBytes, sigFactory);
 
 		final var nextSigIndex = new AtomicInteger(0);
 		for (final var kt : kts) {
@@ -102,7 +107,7 @@ class PlatformSigOpsTest {
 	void createsSigsInTraversalOrder() throws Throwable {
 		given(sigBytes.sigBytesFor(any())).willReturn(MOCK_SIG, MORE_MOCK_SIGS);
 
-		final var result = createEd25519PlatformSigsFrom(pubKeys, sigBytes, sigFactory);
+		final var result = createPlatformSigsFrom(pubKeys, sigBytes, sigFactory);
 
 		final var nextSigIndex = new AtomicInteger(0);
 		for (final var kt : kts) {
@@ -122,7 +127,7 @@ class PlatformSigOpsTest {
 		scheduledKey.setForScheduledTxn(true);
 		given(sigBytes.sigBytesFor(any())).willThrow(KeyPrefixMismatchException.class);
 
-		final var result = createEd25519PlatformSigsFrom(List.of(scheduledKey), sigBytes, sigFactory);
+		final var result = createPlatformSigsFrom(List.of(scheduledKey), sigBytes, sigFactory);
 
 		assertFalse(result.hasFailed());
 		assertTrue(result.getPlatformSigs().isEmpty());
@@ -134,7 +139,7 @@ class PlatformSigOpsTest {
 		scheduledKey.setForScheduledTxn(true);
 		given(sigBytes.sigBytesFor(any())).willThrow(IllegalStateException.class);
 
-		final var result = createEd25519PlatformSigsFrom(List.of(scheduledKey), sigBytes, sigFactory);
+		final var result = createPlatformSigsFrom(List.of(scheduledKey), sigBytes, sigFactory);
 
 		assertTrue(result.hasFailed());
 	}
@@ -143,7 +148,7 @@ class PlatformSigOpsTest {
 	void failsOnInsufficientSigs() throws Throwable {
 		given(sigBytes.sigBytesFor(any())).willReturn(MOCK_SIG).willThrow(Exception.class);
 
-		final var result = createEd25519PlatformSigsFrom(pubKeys, sigBytes, sigFactory);
+		final var result = createPlatformSigsFrom(pubKeys, sigBytes, sigFactory);
 
 		assertEquals(1, result.getPlatformSigs().size());
 		assertTrue(result.hasFailed());

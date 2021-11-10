@@ -40,7 +40,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 
-import static com.hedera.services.sigs.PlatformSigOps.createEd25519PlatformSigsFrom;
+import static com.hedera.services.sigs.PlatformSigOps.createPlatformSigsFrom;
 import static com.hedera.services.sigs.factories.PlatformSigFactory.allVaryingMaterialEquals;
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -169,7 +169,7 @@ public class Rationalization {
 			return lastOrderResult.getErrorReport();
 		}
 		final var creation =
-				createEd25519PlatformSigsFrom(lastOrderResult.getOrderedKeys(), pkToSigFn, bodySigningFactory);
+				createPlatformSigsFrom(lastOrderResult.getOrderedKeys(), pkToSigFn, bodySigningFactory);
 		if (creation.hasFailed()) {
 			return creation.asCode();
 		}

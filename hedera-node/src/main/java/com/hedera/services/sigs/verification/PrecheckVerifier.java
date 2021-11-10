@@ -35,7 +35,7 @@ import java.util.function.Function;
 import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
 import static com.hedera.services.keys.HederaKeyActivation.isActive;
 import static com.hedera.services.keys.HederaKeyActivation.pkToSigMapFrom;
-import static com.hedera.services.sigs.PlatformSigOps.createEd25519PlatformSigsFrom;
+import static com.hedera.services.sigs.PlatformSigOps.createPlatformSigsFrom;
 
 /**
  * Encapsulates logic to validate a transaction has the necessary
@@ -82,7 +82,7 @@ public class PrecheckVerifier {
 	private List<TransactionSignature> getAvailSigs(List<JKey> reqKeys, SignedTxnAccessor accessor) throws Exception {
 		final var pkToSigFn = accessor.getPkToSigsFn();
 		TxnScopedPlatformSigFactory sigFactory = new BodySigningSigFactory(accessor);
-		PlatformSigsCreationResult creationResult = createEd25519PlatformSigsFrom(reqKeys, pkToSigFn, sigFactory);
+		PlatformSigsCreationResult creationResult = createPlatformSigsFrom(reqKeys, pkToSigFn, sigFactory);
 		if (creationResult.hasFailed()) {
 			throw creationResult.getTerminatingEx();
 		} else {

@@ -20,7 +20,6 @@ package com.hedera.services.legacy.core.jproto;
  * ‍
  */
 
-import com.hedera.services.files.HFileMeta;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
