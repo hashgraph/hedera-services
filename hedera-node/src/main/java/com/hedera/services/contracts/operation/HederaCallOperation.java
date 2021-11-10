@@ -31,6 +31,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.CallOperation;
 
 import javax.inject.Inject;
+import java.util.function.BiFunction;
 
 /**
  * Hedera adapted version of the {@link CallOperation}.
@@ -45,13 +46,16 @@ import javax.inject.Inject;
  */
 public class HederaCallOperation extends CallOperation {
 	private final SoliditySigsVerifier sigsVerifier;
+	private final BiFunction<Address, MessageFrame, Boolean> addressValidator;
 
 	@Inject
 	public HederaCallOperation(
 			SoliditySigsVerifier sigsVerifier,
-			GasCalculator gasCalculator) {
+			GasCalculator gasCalculator,
+			BiFunction<Address, MessageFrame, Boolean> addressValidator) {
 		super(gasCalculator);
 		this.sigsVerifier = sigsVerifier;
+		this.addressValidator = addressValidator;
 	}
 
 	@Override
@@ -61,7 +65,8 @@ public class HederaCallOperation extends CallOperation {
 				frame,
 				to(frame),
 				() -> cost(frame),
-				() -> super.execute(frame, evm)
+				() -> super.execute(frame, evm),
+				addressValidator
 		);
 	}
 }
