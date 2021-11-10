@@ -27,31 +27,31 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class JECDSAsecp256k1KeyTest {
-	JECDSAsecp256k1Key subject;
+class JECDSASecp256K1KeyTest {
+	JECDSASecp256k1Key subject;
 	byte[] bytes;
 
 	@BeforeEach
 	void setUp() {
 		bytes = new byte[33];
 		bytes[0] = 0x03;
-		subject = new JECDSAsecp256k1Key(bytes);
+		subject = new JECDSASecp256k1Key(bytes);
 	}
 
 	@Test
 	void emptyJECDSAsecp256k1KeyTest() {
-		JECDSAsecp256k1Key key1 = new JECDSAsecp256k1Key(null);
+		JECDSASecp256k1Key key1 = new JECDSASecp256k1Key(null);
 		assertTrue(key1.isEmpty());
 		assertFalse(key1.isValid());
 
-		JECDSAsecp256k1Key key2 = new JECDSAsecp256k1Key(new byte[0]);
+		JECDSASecp256k1Key key2 = new JECDSASecp256k1Key(new byte[0]);
 		assertTrue(key2.isEmpty());
 		assertFalse(key2.isValid());
 	}
 
 	@Test
 	void nonEmptyInvalidLengthJECDSAsecp256k1KeyTest() {
-		JECDSAsecp256k1Key key = new JECDSAsecp256k1Key(new byte[1]);
+		JECDSASecp256k1Key key = new JECDSASecp256k1Key(new byte[1]);
 		assertFalse(key.isEmpty());
 		assertFalse(key.isValid());
 	}
@@ -60,7 +60,7 @@ class JECDSAsecp256k1KeyTest {
 	void nonEmptyValid0x02JECDSAsecp256k1KeyTest() {
 		byte[] bytes = new byte[33];
 		bytes[0] = 0x02;
-		JECDSAsecp256k1Key key = new JECDSAsecp256k1Key(bytes);
+		JECDSASecp256k1Key key = new JECDSASecp256k1Key(bytes);
 		assertFalse(key.isEmpty());
 		assertTrue(key.isValid());
 	}
@@ -75,7 +75,7 @@ class JECDSAsecp256k1KeyTest {
 	void constructorWorks() {
 		var bytes = new byte[33];
 		bytes[0] = 0x03;
-		var subject = new JECDSAsecp256k1Key(bytes);
+		var subject = new JECDSASecp256k1Key(bytes);
 
 		assertEquals(bytes, subject.getECDSASecp256k1Key());
 	}
@@ -88,7 +88,7 @@ class JECDSAsecp256k1KeyTest {
 	@Test
 	void toStringWorks() {
 		assertEquals(
-				"<JECDSAsecp256k1Key: ecdsaSecp256k1Key " +
+				"<JECDSASecp256k1Key: ecdsaSecp256k1Key " +
 						"hex=030000000000000000000000000000000000000000000000000000000000000000>",
 				subject.toString());
 	}

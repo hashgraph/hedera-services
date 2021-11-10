@@ -57,7 +57,7 @@ public class JKeySerializer {
 				objectType = JObjectType.JRSA_3072Key;
 			} else if (rootObject instanceof JContractIDKey) {
 				objectType = JObjectType.JContractIDKey;
-			} else if (rootObject instanceof JECDSAsecp256k1Key) {
+			} else if (rootObject instanceof JECDSASecp256k1Key) {
 				objectType = JObjectType.JECDSASecp256k1Key;
 			}
 
@@ -172,7 +172,7 @@ public class JKeySerializer {
 			byte[] key = new byte[(int) length];
 			stream.readFully(key);
 
-			return (T) new JECDSAsecp256k1Key(key);
+			return (T) new JECDSASecp256k1Key(key);
 		} else {
 			throw new IllegalStateException(
 					"Unknown type was encountered while reading from the input stream");

@@ -144,7 +144,7 @@ class JKeyListTest {
 		var ecdsa384Key = new JECDSA_384Key("ecdsa384".getBytes());
 		var rsa3072Key = new JRSA_3072Key("rsa3072".getBytes());
 		var contractKey = new JContractIDKey(0, 0, 75231);
-		var ecdsasecp256k1Key = new JECDSAsecp256k1Key("ecdsasecp256k1".getBytes());
+		var ecdsasecp256k1Key = new JECDSASecp256k1Key("ecdsasecp256k1".getBytes());
 		// and:
 		List<JKey> keys = List.of(ed25519Key, ecdsa384Key, rsa3072Key, contractKey, ecdsasecp256k1Key);
 
@@ -188,13 +188,13 @@ class JKeyListTest {
 
 	public static Key randomValidECDSASecp256K1Key() {
 		ByteString edcsaSecp256K1Bytes = ByteString.copyFrom(new byte[] { 0x02 })
-				.concat(TxnUtils.randomUtf8ByteString(JECDSAsecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH - 1));
+				.concat(TxnUtils.randomUtf8ByteString(JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH - 1));
 		return Key.newBuilder().setECDSASecp256K1(edcsaSecp256K1Bytes).build();
 	}
 
 	public static Key randomInvalidECDSASecp256K1Key() {
 		ByteString edcsaSecp256K1Bytes = ByteString.copyFrom(new byte[] { 0x06 })
-				.concat(TxnUtils.randomUtf8ByteString(JECDSAsecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH - 1));
+				.concat(TxnUtils.randomUtf8ByteString(JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH - 1));
 		return Key.newBuilder().setECDSASecp256K1(edcsaSecp256K1Bytes).build();
 	}
 }
