@@ -44,7 +44,7 @@ public enum JObjectType {
 		addLookup(JContractIDKey, 15545316);
 		addLookup(JFileInfo, 15636803);
 		addLookup(JMemoAdminKey, 15661754);
-        addLookup(JECDSASecp256k1Key, 15661654); // Is this random ?
+        addLookup(JECDSASecp256k1Key, 15661654);
 	}
 
 	private static void addLookup(final JObjectType type, final long value) {
