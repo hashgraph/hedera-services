@@ -30,6 +30,7 @@ import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountBalance;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -75,12 +76,12 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 			HapiSpecSetup.getDefaultNodeProps().get("tokens.nfts.mintThrottleScaleFactor");
 
 	private static final int LOCAL_NETWORK_SIZE = 3;
-	private static final int REGRESSION_NETWORK_SIZE = 1;
+	private static final int REGRESSION_NETWORK_SIZE = 4;
 
 	private static final double THROUGHPUT_LIMITS_XFER_NETWORK_TPS = 100.0;
 	private static final double THROUGHPUT_LIMITS_FUNGIBLE_MINT_NETWORK_TPS = 30.0;
 	private static final double THROUGHPUT_LIMITS_NFT_MINT_NETWORK_TPS = 15.0;
-	private static final double PRIORITY_RESERVATIONS_CONTRACT_CALL_NETWORK_TPS = 200.0;
+	private static final double PRIORITY_RESERVATIONS_CONTRACT_CALL_NETWORK_TPS = 2.0;
 	private static final double CREATION_LIMITS_CRYPTO_CREATE_NETWORK_TPS = 1.0;
 	private static final double FREE_QUERY_LIMITS_GET_BALANCE_NETWORK_QPS = 100.0;
 
@@ -93,11 +94,13 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 			THROUGHPUT_LIMITS_FUNGIBLE_MINT_NETWORK_TPS / NETWORK_SIZE;
 	private static final double expectedContractCallTps =
 			PRIORITY_RESERVATIONS_CONTRACT_CALL_NETWORK_TPS / NETWORK_SIZE;
-	private static final double expectedContractCallSmallGasTps = 5;
-	private static final double expectedContractCallLargeGasTps = 2;
+	private static final double expectedContractCallSmallGasTps = 5.0;
+	private static final double expectedContractCallLargeGasTps = 2.0;
 	private static final double expectedCryptoCreateTps = CREATION_LIMITS_CRYPTO_CREATE_NETWORK_TPS / NETWORK_SIZE;
 	private static final double expectedGetBalanceQps = FREE_QUERY_LIMITS_GET_BALANCE_NETWORK_QPS / NETWORK_SIZE;
 	private static final double toleratedPercentDeviation = 5;
+	private static final ThrottleDefinitions artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits.json");
+	private static final ThrottleDefinitions artificialGasLimits = protoDefsFromResource("testSystemFiles/artificial-gas-limits.json");
 
 	private AtomicLong duration = new AtomicLong(180);
 	private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
@@ -110,27 +113,25 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-				new HapiApiSpec[] {
-						setArtificialLimits(),
-//						checkTps("Xfers", expectedXferTps, xferOps()),
-//						checkTps("FungibleMints", expectedFungibleMintTps, fungibleMintOps()),
-//						checkTps("ContractCalls", expectedContractCallTps, scCallOps()),
-//						checkTps("ContractCalls", expectedContractCallTps, scCallLargeTxs()),
+				new HapiApiSpec[]{
+						setArtificialLimits(artificialLimits),
+						checkTps("Xfers", expectedXferTps, xferOps()),
+						checkTps("FungibleMints", expectedFungibleMintTps, fungibleMintOps()),
+						checkTps("ContractCalls", expectedContractCallTps, scCallOps()),
+						checkTps("CryptoCreates", expectedCryptoCreateTps, cryptoCreateOps()),
+						checkTps("NftMints", expectedNftMintTps, nftMintOps()),
+						checkBalanceQps(1000, expectedGetBalanceQps),
+						setArtificialLimits(artificialGasLimits),
 						checkGasThrottledTps("ContractCalls", expectedContractCallSmallGasTps, scCallSmallTxsBlockedFromFE()),
 						checkGasThrottledTps("ContractCalls", expectedContractCallLargeGasTps, scCallLargeTxsBlockedFromFE()),
 						checkGasThrottledTps("ContractCalls", expectedContractCallSmallGasTps, scCallSmallTxsBlockedFromBE()),
 						checkGasThrottledTps("ContractCalls", expectedContractCallLargeGasTps, scCallLargeTxsBlockedFromBE()),
-//						checkTps("CryptoCreates", expectedCryptoCreateTps, cryptoCreateOps()),
-//						checkTps("NftMints", expectedNftMintTps, nftMintOps()),
-//						checkBalanceQps(1000, expectedGetBalanceQps),
 						restoreDevLimits(),
 				}
 		);
 	}
 
-	private HapiApiSpec setArtificialLimits() {
-		var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits.json");
-
+	private HapiApiSpec setArtificialLimits(ThrottleDefinitions artificialLimits) {
 		return defaultHapiSpec("SetArtificialLimits")
 				.given().when().then(
 						fileUpdate(THROTTLE_DEFS)
