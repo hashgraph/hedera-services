@@ -64,6 +64,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -117,6 +118,20 @@ class TypedTokenStoreTest {
 	@Test
 	void failsLoadingMissingRelationship() {
 		assertMiscRelLoadFailsWith(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+	}
+
+	@Test
+	void loadPossiblyDeletedTokenRelationshipWorks() {
+		givenRelationship(miscTokenRelId, miscTokenMerkleRel);
+
+		final var actualTokenRel = subject.loadPossiblyDeletedTokenRelationship(token, miscAccount);
+
+		assertEquals(miscTokenRel, actualTokenRel);
+	}
+
+	@Test
+	void loadPossiblyDeletedTokenRelationshipReturnsNullAsExpected() {
+		assertNull(subject.loadPossiblyDeletedTokenRelationship(token, miscAccount));
 	}
 
 	@Test

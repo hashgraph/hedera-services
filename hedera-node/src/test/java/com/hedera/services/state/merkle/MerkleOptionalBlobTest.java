@@ -31,7 +31,10 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Set;
 
+import static com.swirlds.common.merkle.io.SerializationStrategy.EXTERNAL_SELF_SERIALIZATION;
+import static com.swirlds.common.merkle.io.SerializationStrategy.SELF_SERIALIZATION;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -102,7 +105,6 @@ class MerkleOptionalBlobTest {
 
 	@Test
 	void keyedContractMet() {
-		// expect:
 		assertEquals(path, subject.getKey());
 	}
 
@@ -182,13 +184,10 @@ class MerkleOptionalBlobTest {
 
 	@Test
 	void serializeAbbreviatedWorks() throws IOException {
-		// setup:
 		final var out = mock(SerializableDataOutputStream.class);
 
-		// when:
-		subject.serializeAbbreviated(out);
+		subject.serializeExternal(out, null);
 
-		// then:
 		verify(out).writeNormalisedString(path);
 	}
 
@@ -229,14 +228,11 @@ class MerkleOptionalBlobTest {
 
 	@Test
 	void deserializeAbbrevWorksWithDelegatePre0180() throws IOException {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
+		final var in = mock(SerializableDataInputStream.class);
 
-		// when:
-		subject.deserializeAbbreviated(in, stuffDelegateHash, MerkleOptionalBlob.PRE_RELEASE_0180_VERSION);
+		subject.deserializeExternal(in, null, stuffDelegateHash, MerkleOptionalBlob.PRE_RELEASE_0180_VERSION);
 
-		// then:
-		verify(newDelegate).deserializeAbbreviated(in, stuffDelegateHash, BinaryObject.ClassVersion.ORIGINAL);
+		verify(newDelegate).deserializeExternal(in, null, stuffDelegateHash, BinaryObject.ClassVersion.ORIGINAL);
 	}
 
 	@Test
@@ -246,9 +242,9 @@ class MerkleOptionalBlobTest {
 
 		given(in.readNormalisedString(Integer.MAX_VALUE)).willReturn(path);
 
-		defaultSubject.deserializeAbbreviated(in, stuffDelegateHash, MerkleOptionalBlob.RELEASE_0180_VERSION);
+		defaultSubject.deserializeExternal(in, null, stuffDelegateHash, MerkleOptionalBlob.RELEASE_0180_VERSION);
 
-		verify(newDelegate).deserializeAbbreviated(in, stuffDelegateHash, BinaryObject.ClassVersion.ORIGINAL);
+		verify(newDelegate).deserializeExternal(in, null, stuffDelegateHash, BinaryObject.ClassVersion.ORIGINAL);
 		assertEquals(path, defaultSubject.getKey());
 	}
 
@@ -256,8 +252,8 @@ class MerkleOptionalBlobTest {
 	void deserializeAbbrevWorksWithoutDelegatePre0180() throws IOException {
 		final var in = mock(SerializableDataInputStream.class);
 
-		subject.deserializeAbbreviated(
-				in, MerkleOptionalBlob.MISSING_DELEGATE_HASH, MerkleOptionalBlob.PRE_RELEASE_0180_VERSION);
+		subject.deserializeExternal(
+				in, null, MerkleOptionalBlob.MISSING_DELEGATE_HASH, MerkleOptionalBlob.PRE_RELEASE_0180_VERSION);
 
 		assertEquals(MerkleOptionalBlob.NO_DATA, subject.getData());
 		assertEquals(MerkleOptionalBlob.MISSING_DELEGATE, subject.getDelegate());
@@ -357,5 +353,12 @@ class MerkleOptionalBlobTest {
 
 		assertNotEquals(one.hashCode(), two.hashCode());
 		assertEquals(two.hashCode(), three.hashCode());
+	}
+
+	@Test
+	void serializationStrategiesAsExpected() {
+		final var strategies = subject.supportedSerialization(MerkleOptionalBlob.CURRENT_VERSION);
+
+		assertEquals(Set.of(SELF_SERIALIZATION, EXTERNAL_SELF_SERIALIZATION), strategies);
 	}
 }

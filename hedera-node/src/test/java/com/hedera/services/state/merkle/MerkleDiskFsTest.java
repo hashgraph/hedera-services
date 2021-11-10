@@ -201,7 +201,7 @@ class MerkleDiskFsTest {
 	void serializeAbbreviatedWorks() throws IOException {
 		final var out = mock(SerializableDataOutputStream.class);
 
-		subject.serializeAbbreviated(out);
+		subject.serializeExternal(out, null);
 
 		verify(out).writeInt(1);
 		verify(out, times(2)).writeLong(0);
@@ -256,7 +256,7 @@ class MerkleDiskFsTest {
 		given(fin.readByteArray(48)).willReturn(origFileHash);
 		final var read = new MerkleDiskFs();
 
-		read.deserializeAbbreviated(fin, expectedHash, MerkleDiskFs.MERKLE_VERSION);
+		read.deserializeExternal(fin, null, expectedHash, MerkleDiskFs.MERKLE_VERSION);
 
 		assertEquals(subject, read);
 		assertEquals(expectedHash, read.getHash());

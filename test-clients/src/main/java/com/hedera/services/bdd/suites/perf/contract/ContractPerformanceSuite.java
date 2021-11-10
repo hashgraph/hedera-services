@@ -158,7 +158,6 @@ public class ContractPerformanceSuite extends HapiApiSuite {
 									getExecTime(via)
 											.payingWith(GENESIS)
 											.logged()
-											// this is very high because of EthereumJ
 											.assertingNoneLongerThan(20, ChronoUnit.SECONDS),
 									getReceipt(via).hasPriorityStatus(ResponseCodeEnum.SUCCESS),
 									getTxnRecord(via).hasPriority(

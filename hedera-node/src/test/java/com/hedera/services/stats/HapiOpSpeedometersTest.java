@@ -23,8 +23,8 @@ package com.hedera.services.stats;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.common.Platform;
-import com.swirlds.common.StatEntry;
-import com.swirlds.platform.StatsSpeedometer;
+import com.swirlds.common.statistics.StatEntry;
+import com.swirlds.common.statistics.StatsSpeedometer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,7 +54,7 @@ class HapiOpSpeedometersTest {
 	HapiOpSpeedometers subject;
 
 	@BeforeEach
-	void setup() throws Exception {
+	void setup() {
 		HapiOpSpeedometers.allFunctions = () -> new HederaFunctionality[] {
 				CryptoTransfer,
 				TokenGetInfo
@@ -87,6 +87,7 @@ class HapiOpSpeedometersTest {
 		assertTrue(subject.lastSubmittedTxnsCount.containsKey(CryptoTransfer));
 		assertTrue(subject.lastHandledTxnsCount.containsKey(CryptoTransfer));
 		assertFalse(subject.lastAnsweredQueriesCount.containsKey(CryptoTransfer));
+
 		// and:
 		assertTrue(subject.receivedOps.containsKey(TokenGetInfo));
 		assertTrue(subject.answeredQueries.containsKey(TokenGetInfo));
@@ -97,6 +98,7 @@ class HapiOpSpeedometersTest {
 		assertTrue(subject.lastAnsweredQueriesCount.containsKey(TokenGetInfo));
 		assertFalse(subject.lastSubmittedTxnsCount.containsKey(TokenGetInfo));
 		assertFalse(subject.lastHandledTxnsCount.containsKey(TokenGetInfo));
+		assertEquals(0L, subject.lastReceivedDeprecatedTxnCount);
 	}
 
 	@Test
@@ -105,16 +107,19 @@ class HapiOpSpeedometersTest {
 		StatEntry transferRcv = mock(StatEntry.class);
 		StatEntry transferSub = mock(StatEntry.class);
 		StatEntry transferHdl = mock(StatEntry.class);
+		StatEntry deprecatedTxnRcv = mock(StatEntry.class);
 		StatEntry tokenInfoRcv = mock(StatEntry.class);
 		StatEntry tokenInfoAns = mock(StatEntry.class);
 		// and:
 		var xferRcvName = String.format(ServicesStatsConfig.SPEEDOMETER_RECEIVED_NAME_TPL, "CryptoTransfer");
 		var xferSubName = String.format(ServicesStatsConfig.SPEEDOMETER_SUBMITTED_NAME_TPL, "CryptoTransfer");
 		var xferHdlName = String.format(ServicesStatsConfig.SPEEDOMETER_HANDLED_NAME_TPL, "CryptoTransfer");
+		var xferDeprecatedRcvName = ServicesStatsConfig.SPEEDOMETER_RECEIVED_DEPRECATED_NAME_TPL;
 		// and:
 		var xferRcvDesc = String.format(ServicesStatsConfig.SPEEDOMETER_RECEIVED_DESC_TPL, "CryptoTransfer");
 		var xferSubDesc = String.format(ServicesStatsConfig.SPEEDOMETER_SUBMITTED_DESC_TPL, "CryptoTransfer");
 		var xferHdlDesc = String.format(ServicesStatsConfig.SPEEDOMETER_HANDLED_DESC_TPL, "CryptoTransfer");
+		var xferDeprecatedRcvDesc = ServicesStatsConfig.SPEEDOMETER_RECEIVED_DEPRECATED_DESC_TPL;
 		// and:
 		var infoRcvName = String.format(ServicesStatsConfig.SPEEDOMETER_RECEIVED_NAME_TPL, "TokenGetInfo");
 		var infoAnsName = String.format(ServicesStatsConfig.SPEEDOMETER_ANSWERED_NAME_TPL, "TokenGetInfo");
@@ -134,6 +139,10 @@ class HapiOpSpeedometersTest {
 				argThat(xferHdlName::equals),
 				argThat(xferHdlDesc::equals),
 				any())).willReturn(transferHdl);
+		given(factory.from(
+				argThat(xferDeprecatedRcvName::equals),
+				argThat(xferDeprecatedRcvDesc::equals),
+				any())).willReturn(deprecatedTxnRcv);
 		// and:
 		given(factory.from(
 				argThat(infoRcvName::equals),
@@ -153,6 +162,7 @@ class HapiOpSpeedometersTest {
 		verify(platform).addAppStatEntry(transferHdl);
 		verify(platform).addAppStatEntry(tokenInfoRcv);
 		verify(platform).addAppStatEntry(tokenInfoAns);
+		verify(platform).addAppStatEntry(deprecatedTxnRcv);
 	}
 
 	@Test
@@ -161,6 +171,7 @@ class HapiOpSpeedometersTest {
 		subject.lastReceivedOpsCount.put(CryptoTransfer, 1L);
 		subject.lastSubmittedTxnsCount.put(CryptoTransfer, 2L);
 		subject.lastHandledTxnsCount.put(CryptoTransfer, 3L);
+		subject.lastReceivedDeprecatedTxnCount = 4L;
 		// and:
 		subject.lastReceivedOpsCount.put(TokenGetInfo, 4L);
 		subject.lastAnsweredQueriesCount.put(TokenGetInfo, 5L);
@@ -170,18 +181,21 @@ class HapiOpSpeedometersTest {
 		StatsSpeedometer xferHandled = mock(StatsSpeedometer.class);
 		StatsSpeedometer infoReceived = mock(StatsSpeedometer.class);
 		StatsSpeedometer infoAnswered = mock(StatsSpeedometer.class);
+		StatsSpeedometer xferDeprecatedRcvd = mock(StatsSpeedometer.class);
 
 		given(counters.receivedSoFar(CryptoTransfer)).willReturn(2L);
 		given(counters.submittedSoFar(CryptoTransfer)).willReturn(4L);
 		given(counters.handledSoFar(CryptoTransfer)).willReturn(6L);
 		given(counters.receivedSoFar(TokenGetInfo)).willReturn(8L);
 		given(counters.answeredSoFar(TokenGetInfo)).willReturn(10L);
+		given(counters.receivedDeprecatedTxnSoFar()).willReturn(12L);
 		// and:
 		subject.receivedOps.put(CryptoTransfer, xferReceived);
 		subject.submittedTxns.put(CryptoTransfer, xferSubmitted);
 		subject.handledTxns.put(CryptoTransfer, xferHandled);
 		subject.receivedOps.put(TokenGetInfo, infoReceived);
 		subject.answeredQueries.put(TokenGetInfo, infoAnswered);
+		subject.receivedDeprecatedTxns = xferDeprecatedRcvd;
 
 		// when:
 		subject.updateAll();
@@ -192,6 +206,7 @@ class HapiOpSpeedometersTest {
 		assertEquals(6L, subject.lastHandledTxnsCount.get(CryptoTransfer));
 		assertEquals(8L, subject.lastReceivedOpsCount.get(TokenGetInfo));
 		assertEquals(10L, subject.lastAnsweredQueriesCount.get(TokenGetInfo));
+		assertEquals(12L, subject.lastReceivedDeprecatedTxnCount);
 		// and:
 		verify(xferReceived).update(1);
 		verify(xferSubmitted).update(2);

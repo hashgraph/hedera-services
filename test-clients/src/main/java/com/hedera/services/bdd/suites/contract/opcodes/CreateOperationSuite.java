@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.contract.opcodes;
  * ‍
  */
 
+import com.google.common.primitives.Longs;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -32,7 +33,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.core.CallTransaction;
-import org.ethereum.util.ByteUtil;
 import org.junit.jupiter.api.Assertions;
 
 import java.math.BigInteger;
@@ -50,7 +50,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
@@ -373,8 +372,8 @@ public class CreateOperationSuite extends HapiApiSuite {
 							if (retResults != null && retResults.length > 0) {
 								byte[] retVal = (byte[]) retResults[0];
 
-								long realm = ByteUtil.byteArrayToLong(Arrays.copyOfRange(retVal, 4, 12));
-								long accountNum = ByteUtil.byteArrayToLong(Arrays.copyOfRange(retVal, 12, 20));
+								long realm = Longs.fromByteArray(Arrays.copyOfRange(retVal, 4, 12));
+								long accountNum = Longs.fromByteArray(Arrays.copyOfRange(retVal, 12, 20));
 								contractIDString = String.format("%d.%d.%d", realm, 0, accountNum);
 							}
 							ctxLog.info("The created contract ID {}", contractIDString);

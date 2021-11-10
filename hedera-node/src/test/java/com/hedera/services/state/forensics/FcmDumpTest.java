@@ -22,11 +22,12 @@ package com.hedera.services.state.forensics;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.extensions.LogCaptor;
@@ -36,6 +37,7 @@ import com.hedera.test.extensions.LoggingTarget;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.merkle.io.MerkleDataOutputStream;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -45,20 +47,26 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.util.function.Function;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class FcmDumpTest {
+	private static final String OK_PATH = "src/test/resources/tmp.nothing";
+
 	long selfId = 1, round = 1_234_567;
 	NodeId self = new NodeId(false, selfId);
 
@@ -71,7 +79,7 @@ class FcmDumpTest {
 	@Mock
 	MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
-	MerkleMap<String, MerkleOptionalBlob> storage;
+	VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
 	@Mock
 	MerkleMap<EntityNum, MerkleTopic> topics;
 	@Mock
@@ -115,8 +123,6 @@ class FcmDumpTest {
 		given(state.tokens()).willReturn(tokens);
 		given(state.tokenAssociations()).willReturn(tokenAssociations);
 		given(state.scheduleTxs()).willReturn(scheduleTxs);
-//		// and:
-//		willThrow(IOException.class).given(out).writeMerkleTree(scheduleTxs);
 
 		// when:
 		subject.dumpFrom(state, self, round);
@@ -164,15 +170,14 @@ class FcmDumpTest {
 	@Test
 	void merkleSupplierWorks() {
 		// given:
-		var okPath = "src/test/resources/tmp.nothing";
 
 		// when:
-		var fout = FcmDump.merkleOutFn.apply(okPath);
+		var fout = FcmDump.merkleOutFn.apply(OK_PATH);
 		// and:
 		assertDoesNotThrow(() -> fout.writeUTF("Here is something"));
 
 		// cleanup:
-		(new File(okPath)).delete();
+		(new File(OK_PATH)).delete();
 	}
 
 	@Test
@@ -182,5 +187,18 @@ class FcmDumpTest {
 
 		// then:
 		assertDoesNotThrow(() -> FcmDump.merkleOutFn.apply(badPath));
+	}
+
+	@Test
+	void merkleSupplierFnPropagatesIoeUnchecked() {
+		final Function<OutputStream, MerkleDataOutputStream> mockMerkleOut = mock(Function.class);
+
+		FcmDump.setMerkleOut(mockMerkleOut);
+
+		given(mockMerkleOut.apply(any())).willThrow(UncheckedIOException.class);
+
+		assertThrows(UncheckedIOException.class, () -> FcmDump.merkleOutFn.apply(OK_PATH));
+
+		FcmDump.setMerkleOut(MerkleDataOutputStream::new);
 	}
 }
