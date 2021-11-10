@@ -33,156 +33,168 @@ import java.util.List;
  * Custom Serializer for JKey structure.
  */
 public class JKeySerializer {
-  private static final long LEGACY_VERSION = 1;
-  private static final long BPACK_VERSION = 2;
+	private static final long LEGACY_VERSION = 1;
+	private static final long BPACK_VERSION = 2;
 
-  private JKeySerializer() {}
+	private JKeySerializer() {
+	}
 
-  public static byte[] serialize(Object rootObject) throws IOException {
-    return byteStream(buffer -> {
-      buffer.writeLong(BPACK_VERSION);
+	public static byte[] serialize(Object rootObject) throws IOException {
+		return byteStream(buffer -> {
+			buffer.writeLong(BPACK_VERSION);
 
-      JObjectType objectType = JObjectType.JKey;
+			JObjectType objectType = JObjectType.JKey;
 
-      if (rootObject instanceof JKeyList) {
-        objectType = JObjectType.JKeyList;
-      } else if (rootObject instanceof JThresholdKey) {
-        objectType = JObjectType.JThresholdKey;
-      } else if (rootObject instanceof JEd25519Key) {
-        objectType = JObjectType.JEd25519Key;
-      } else if (rootObject instanceof JECDSA_384Key) {
-        objectType = JObjectType.JECDSA_384Key;
-      } else if (rootObject instanceof JRSA_3072Key) {
-        objectType = JObjectType.JRSA_3072Key;
-      } else if (rootObject instanceof JContractIDKey) {
-        objectType = JObjectType.JContractIDKey;
-      }
+			if (rootObject instanceof JKeyList) {
+				objectType = JObjectType.JKeyList;
+			} else if (rootObject instanceof JThresholdKey) {
+				objectType = JObjectType.JThresholdKey;
+			} else if (rootObject instanceof JEd25519Key) {
+				objectType = JObjectType.JEd25519Key;
+			} else if (rootObject instanceof JECDSA_384Key) {
+				objectType = JObjectType.JECDSA_384Key;
+			} else if (rootObject instanceof JRSA_3072Key) {
+				objectType = JObjectType.JRSA_3072Key;
+			} else if (rootObject instanceof JContractIDKey) {
+				objectType = JObjectType.JContractIDKey;
+			} else if (rootObject instanceof JECDSA_secp256k1Key) {
+				objectType = JObjectType.JECDSA_secp256k1Key;
+			}
 
-      final JObjectType finalObjectType = objectType;
-      buffer.writeLong(objectType.longValue());
+			final JObjectType finalObjectType = objectType;
+			buffer.writeLong(objectType.longValue());
 
-      byte[] content = byteStream(os -> pack(os, finalObjectType, rootObject));
-      int length = (content != null) ? content.length : 0;
+			byte[] content = byteStream(os -> pack(os, finalObjectType, rootObject));
+			int length = (content != null) ? content.length : 0;
 
-      buffer.writeLong(length);
+			buffer.writeLong(length);
 
-      if (length > 0) {
-        buffer.write(content);
-      }
-    });
-  }
+			if (length > 0) {
+				buffer.write(content);
+			}
+		});
+	}
 
-  public static <T> T deserialize(DataInputStream stream) throws IOException {
-    long version = stream.readLong();
-    long objectType = stream.readLong();
-    long length = stream.readLong();
+	public static <T> T deserialize(DataInputStream stream) throws IOException {
+		long version = stream.readLong();
+		long objectType = stream.readLong();
+		long length = stream.readLong();
 
-    if (version == LEGACY_VERSION) {
-      byte[] content = new byte[(int) length];
-      return SerializationUtils.deserialize(content);
-    }
+		if (version == LEGACY_VERSION) {
+			byte[] content = new byte[(int) length];
+			return SerializationUtils.deserialize(content);
+		}
 
-    JObjectType type = JObjectType.valueOf(objectType);
+		JObjectType type = JObjectType.valueOf(objectType);
 
-    if (objectType < 0 || type == null) {
-      throw new IllegalStateException("Illegal JObjectType was read from the stream");
-    }
+		if (objectType < 0 || type == null) {
+			throw new IllegalStateException("Illegal JObjectType was read from the stream");
+		}
 
-    return unpack(stream, type, length);
-  }
+		return unpack(stream, type, length);
+	}
 
-  private static void pack(DataOutputStream stream, JObjectType type, Object object) throws IOException {
-    if (JObjectType.JEd25519Key.equals(type) || JObjectType.JECDSA_384Key.equals(type)) {
-      JKey jKey = (JKey)object;
-      byte[] key = (jKey.hasEd25519Key()) ? jKey.getEd25519() : jKey.getECDSA384();
-      stream.write(key);
-    } else if (JObjectType.JThresholdKey.equals(type)) {
-      JThresholdKey key = (JThresholdKey) object;
-      stream.writeInt(key.getThreshold());
-      stream.write(serialize(key.getKeys()));
-    } else if (JObjectType.JKeyList.equals(type)) {
-      JKeyList list = (JKeyList) object;
-      List<JKey> keys = list.getKeysList();
+	private static void pack(DataOutputStream stream, JObjectType type, Object object) throws IOException {
+		if (JObjectType.JEd25519Key.equals(type) || JObjectType.JECDSA_384Key.equals(type)) {
+			JKey jKey = (JKey) object;
+			byte[] key = (jKey.hasEd25519Key()) ? jKey.getEd25519() : jKey.getECDSA384();
+			stream.write(key);
+		} else if (JObjectType.JThresholdKey.equals(type)) {
+			JThresholdKey key = (JThresholdKey) object;
+			stream.writeInt(key.getThreshold());
+			stream.write(serialize(key.getKeys()));
+		} else if (JObjectType.JKeyList.equals(type)) {
+			JKeyList list = (JKeyList) object;
+			List<JKey> keys = list.getKeysList();
 
-      stream.writeInt(keys.size());
+			stream.writeInt(keys.size());
 
-      if (keys.size() > 0) {
-        for (JKey key : keys) {
-          stream.write(serialize(key));
-        }
-      }
-    } else if (JObjectType.JRSA_3072Key.equals(type)) {
-      JKey jKey = (JKey) object;
-      byte[] key = jKey.getRSA3072();
-      stream.write(key);
-    } else if (JObjectType.JContractIDKey.equals(type)) {
-      JContractIDKey key = (JContractIDKey) object;
-      stream.writeLong(key.getShardNum());
-      stream.writeLong(key.getRealmNum());
-      stream.writeLong(key.getContractNum());
-    } else {
-      throw new IllegalStateException(
-          "Unknown type was encountered while writing to the output stream");
-    }
-  }
+			if (keys.size() > 0) {
+				for (JKey key : keys) {
+					stream.write(serialize(key));
+				}
+			}
+		} else if (JObjectType.JRSA_3072Key.equals(type)) {
+			JKey jKey = (JKey) object;
+			byte[] key = jKey.getRSA3072();
+			stream.write(key);
+		} else if (JObjectType.JContractIDKey.equals(type)) {
+			JContractIDKey key = (JContractIDKey) object;
+			stream.writeLong(key.getShardNum());
+			stream.writeLong(key.getRealmNum());
+			stream.writeLong(key.getContractNum());
+		} else if (JObjectType.JECDSA_secp256k1Key.equals(type)) {
+			JKey jKey = (JKey) object;
+			byte[] key = jKey.getECDSAsecp256k1Key();
+			stream.write(key);
+		} else {
+			throw new IllegalStateException(
+					"Unknown type was encountered while writing to the output stream");
+		}
+	}
 
-  @SuppressWarnings("unchecked")
-  private static <T> T unpack(DataInputStream stream, JObjectType type, long length) throws IOException {
-    if (JObjectType.JEd25519Key.equals(type) || JObjectType.JECDSA_384Key.equals(type)) {
-      byte[] key = new byte[(int) length];
-      stream.readFully(key);
+	@SuppressWarnings("unchecked")
+	private static <T> T unpack(DataInputStream stream, JObjectType type, long length) throws IOException {
+		if (JObjectType.JEd25519Key.equals(type) || JObjectType.JECDSA_384Key.equals(type)) {
+			byte[] key = new byte[(int) length];
+			stream.readFully(key);
 
-      return (JObjectType.JEd25519Key.equals(type)) ? (T) new JEd25519Key(key) : (T) new JECDSA_384Key(key);
-    } else if (JObjectType.JThresholdKey.equals(type)) {
-      int threshold = stream.readInt();
-      JKeyList keyList = deserialize(stream);
+			return (JObjectType.JEd25519Key.equals(type)) ? (T) new JEd25519Key(key) : (T) new JECDSA_384Key(key);
+		} else if (JObjectType.JThresholdKey.equals(type)) {
+			int threshold = stream.readInt();
+			JKeyList keyList = deserialize(stream);
 
-      return (T) new JThresholdKey(keyList, threshold);
-    } else if (JObjectType.JKeyList.equals(type)) {
-      List<JKey> elements = new LinkedList<>();
+			return (T) new JThresholdKey(keyList, threshold);
+		} else if (JObjectType.JKeyList.equals(type)) {
+			List<JKey> elements = new LinkedList<>();
 
-      int size = stream.readInt();
+			int size = stream.readInt();
 
-      if (size > 0) {
-        for (int i = 0; i < size; i++) {
-          elements.add(deserialize(stream));
-        }
-      }
+			if (size > 0) {
+				for (int i = 0; i < size; i++) {
+					elements.add(deserialize(stream));
+				}
+			}
 
-      return (T) new JKeyList(elements);
-    } else if (JObjectType.JRSA_3072Key.equals(type)) {
-      byte[] key = new byte[(int) length];
-      stream.readFully(key);
+			return (T) new JKeyList(elements);
+		} else if (JObjectType.JRSA_3072Key.equals(type)) {
+			byte[] key = new byte[(int) length];
+			stream.readFully(key);
 
-      return (T) new JRSA_3072Key(key);
-    } else if (JObjectType.JContractIDKey.equals(type)) {
-      long shard = stream.readLong();
-      long realm = stream.readLong();
-      long contract = stream.readLong();
+			return (T) new JRSA_3072Key(key);
+		} else if (JObjectType.JContractIDKey.equals(type)) {
+			long shard = stream.readLong();
+			long realm = stream.readLong();
+			long contract = stream.readLong();
 
-      return (T) new JContractIDKey(shard, realm, contract);
-    } else {
-      throw new IllegalStateException(
-          "Unknown type was encountered while reading from the input stream");
-    }
-  }
+			return (T) new JContractIDKey(shard, realm, contract);
+		} else if (JObjectType.JECDSA_secp256k1Key.equals(type)) {
+			byte[] key = new byte[(int) length];
+			stream.readFully(key);
 
-  public static byte[] byteStream(StreamConsumer<DataOutputStream> consumer) throws IOException {
-    try (ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
-      try (DataOutputStream dos = new DataOutputStream(bos)) {
-        consumer.accept(dos);
+			return (T) new JECDSA_secp256k1Key(key);
+		} else {
+			throw new IllegalStateException(
+					"Unknown type was encountered while reading from the input stream");
+		}
+	}
 
-        dos.flush();
-        bos.flush();
+	public static byte[] byteStream(StreamConsumer<DataOutputStream> consumer) throws IOException {
+		try (ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
+			try (DataOutputStream dos = new DataOutputStream(bos)) {
+				consumer.accept(dos);
 
-        return bos.toByteArray();
-      }
-    }
-  }
+				dos.flush();
+				bos.flush();
+
+				return bos.toByteArray();
+			}
+		}
+	}
 
 	@FunctionalInterface
 	public interface StreamConsumer<T> {
 
-	  void accept(T stream) throws IOException;
+		void accept(T stream) throws IOException;
 	}
 }
