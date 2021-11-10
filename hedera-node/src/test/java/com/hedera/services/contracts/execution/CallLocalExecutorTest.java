@@ -38,6 +38,9 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
 import java.util.Optional;
@@ -52,9 +55,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+@ExtendWith(MockitoExtension.class)
 class CallLocalExecutorTest {
 	int gas = 1_234;
 	ByteString params = ByteString.copyFrom("Hungry, and...".getBytes());
@@ -63,14 +66,13 @@ class CallLocalExecutorTest {
 
 	ContractCallLocalQuery query;
 
+	@Mock
 	AccountStore accountStore;
+	@Mock
 	CallLocalEvmTxProcessor evmTxProcessor;
 
 	@BeforeEach
 	private void setup() {
-		accountStore = mock(AccountStore.class);
-		evmTxProcessor = mock(CallLocalEvmTxProcessor.class);
-
 		query = localCallQuery(contractID.asGrpcContract(), ANSWER_ONLY);
 	}
 

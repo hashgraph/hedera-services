@@ -45,6 +45,7 @@ import com.hedera.services.state.initialization.SystemAccountsCreator;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.logic.HandleLogicModule;
 import com.hedera.services.state.logic.ReconnectListener;
+import com.hedera.services.state.logic.StateWriteToDiskListener;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -80,6 +81,7 @@ import com.swirlds.common.Platform;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.NotificationFactory;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
+import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
@@ -109,6 +111,11 @@ public abstract class StateModule {
 	@Binds
 	@Singleton
 	public abstract ReconnectCompleteListener bindReconnectListener(ReconnectListener reconnectListener);
+
+	@Binds
+	@Singleton
+	public abstract StateWriteToDiskCompleteListener bindStateWrittenToDiskListener(
+			StateWriteToDiskListener stateWriteToDiskListener);
 
 	@Binds
 	@Singleton

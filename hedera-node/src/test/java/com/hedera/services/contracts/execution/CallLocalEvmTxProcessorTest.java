@@ -88,10 +88,8 @@ class CallLocalEvmTxProcessorTest {
 	private GasCalculator gasCalculator;
 	@Mock
 	private Set<Operation> operations;
-
 	@Mock
 	private Transaction transaction;
-
 	@Mock
 	private ExchangeRate exchangeRate;
 	@Mock

@@ -23,6 +23,8 @@ package com.hedera.services.utils;
 import com.hedera.services.context.domain.security.PermissionFileUtils;
 import com.hedera.services.context.properties.PropUtils;
 import com.hedera.services.contracts.execution.CallLocalExecutor;
+import com.hedera.services.contracts.gascalculator.GasCalculatorHederaUtil;
+import com.hedera.services.contracts.operation.HederaOperationUtil;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
 import com.hedera.services.exceptions.ValidationUtils;
 import com.hedera.services.fees.calculation.FeeCalcUtils;
@@ -145,6 +147,8 @@ class UtilsConstructorTest {
 			TokenLogicModule.class,
 			TopicConversion.class,
 			CallLocalExecutor.class
+			HederaOperationUtil.class,
+			GasCalculatorHederaUtil.class
 	));
 
 	@Test

@@ -82,7 +82,7 @@ class DissociationTest {
 	void loadsExpectedRelsForExtantToken() {
 		given(tokenStore.loadPossiblyDeletedOrAutoRemovedToken(tokenId)).willReturn(token);
 		given(tokenStore.loadTokenRelationship(token, account)).willReturn(dissociatingAccountRel);
-		given(tokenStore.loadTokenRelationship(token, treasury)).willReturn(dissociatedTokenTreasuryRel);
+		given(tokenStore.loadPossiblyDeletedTokenRelationship(token, treasury)).willReturn(dissociatedTokenTreasuryRel);
 
 		final var subject = Dissociation.loadFrom(tokenStore, account, tokenId);
 
@@ -103,6 +103,20 @@ class DissociationTest {
 		verify(tokenStore, never()).loadTokenRelationship(token, treasury);
 		assertSame(dissociatingAccountRel, subject.dissociatingAccountRel());
 		assertNull(subject.dissociatedTokenTreasuryRel());
+		assertSame(tokenId, subject.dissociatedTokenId());
+		assertSame(accountId, subject.dissociatingAccountId());
+	}
+
+	@Test
+	void loadsExpectedRelsForTokenDissociatedFromTreasury() {
+		given(tokenStore.loadPossiblyDeletedOrAutoRemovedToken(tokenId)).willReturn(token);
+		given(tokenStore.loadTokenRelationship(token, account)).willReturn(dissociatingAccountRel);
+		given(tokenStore.loadPossiblyDeletedTokenRelationship(token, treasury)).willReturn(null);
+
+		final var subject = Dissociation.loadFrom(tokenStore, account, tokenId);
+
+		assertSame(dissociatingAccountRel, subject.dissociatingAccountRel());
+		assertSame(null, subject.dissociatedTokenTreasuryRel());
 		assertSame(tokenId, subject.dissociatedTokenId());
 		assertSame(accountId, subject.dissociatingAccountId());
 	}

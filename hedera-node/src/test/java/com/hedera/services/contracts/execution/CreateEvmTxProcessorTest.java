@@ -22,7 +22,6 @@ package com.hedera.services.contracts.execution;
  *
  */
 
-import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.HbarCentExchange;
@@ -91,8 +90,6 @@ class CreateEvmTxProcessorTest {
 	private Set<Operation> operations;
 	@Mock
 	private Transaction transaction;
-	@Mock
-	private TransactionContext transactionContext;
 	@Mock
 	private HederaWorldState.Updater updater;
 	@Mock

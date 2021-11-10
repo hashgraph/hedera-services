@@ -79,6 +79,7 @@ import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
+import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
 import dagger.BindsInstance;
 import dagger.Component;
 
@@ -150,6 +151,7 @@ public interface ServicesApp {
 	SystemAccountsCreator sysAccountsCreator();
 	Optional<PrintStream> consoleOut();
 	ReconnectCompleteListener reconnectListener();
+	StateWriteToDiskCompleteListener stateWriteToDiskListener();
 	InvalidSignedStateListener issListener();
 	Supplier<NotificationEngine> notificationEngine();
 	BackingStore<AccountID, MerkleAccount> backingAccounts();

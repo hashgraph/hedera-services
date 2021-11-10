@@ -20,16 +20,20 @@ package com.hedera.services.bdd.suites.contract;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
@@ -56,6 +60,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
@@ -68,6 +74,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ContractCreateSuite extends HapiApiSuite {
@@ -80,16 +87,17 @@ public class ContractCreateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						createEmptyConstructor(),
-//						insufficientPayerBalanceUponCreation(),
-//						rejectsInvalidMemo(),
-//						rejectsInsufficientFee(),
-//						rejectsInvalidBytecode(),
-//						revertsNonzeroBalance(),
-//						createFailsIfMissingSigs(),
-//						rejectsInsufficientGas(),
-//						createsVanillaContractAsExpectedWithOmittedAdminKey(),
-//						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
+						createEmptyConstructor(),
+						insufficientPayerBalanceUponCreation(),
+						rejectsInvalidMemo(),
+						rejectsInsufficientFee(),
+						rejectsInvalidBytecode(),
+						revertsNonzeroBalance(),
+						createFailsIfMissingSigs(),
+						rejectsInsufficientGas(),
+						createsVanillaContractAsExpectedWithOmittedAdminKey(),
+						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
+						cannotCreateTooLargeContract(),
 						canCallPendingContractSafely(),
 				}
 		);
@@ -310,6 +318,37 @@ public class ContractCreateSuite extends HapiApiSuite {
 								.balance(1L)
 								.bytecode("contractFile")
 								.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+				);
+	}
+
+	private HapiApiSpec cannotCreateTooLargeContract() {
+		ByteString contents = ByteString.EMPTY;
+		try {
+			contents = ByteString.copyFrom(Files.readAllBytes(Path.of(ContractResources.LARGE_CONTRACT_CRYPTO_KITTIES)));
+		} catch (Exception ignore) {
+
+		}
+		final var FILE_KEY = "fileKey";
+		final var KEY_LIST = "keyList";
+		final var ACCOUNT = "acc";
+		return defaultHapiSpec("cannotCreateLargeContract")
+				.given(
+						newKeyNamed(FILE_KEY),
+						newKeyListNamed(KEY_LIST, List.of(FILE_KEY)),
+						cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(FILE_KEY),
+						fileCreate("bytecode")
+								.path(ContractResources.LARGE_CONTRACT_CRYPTO_KITTIES)
+								.hasPrecheck(TRANSACTION_OVERSIZE)
+				)
+				.when(
+						fileCreate("bytecode").contents("").key(KEY_LIST),
+						UtilVerbs.updateLargeFile(ACCOUNT, "bytecode", contents)
+				)
+				.then(
+						contractCreate("contract")
+								.bytecode("bytecode")
+								.payingWith(ACCOUNT)
+								.hasKnownStatus(INSUFFICIENT_GAS)
 				);
 	}
 

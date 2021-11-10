@@ -26,9 +26,11 @@ import picocli.CommandLine;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.SpecStatus.PASSED;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.BYTES_4K;
 import static com.hedera.services.yahcli.commands.files.SysFilesCommand.resolvedDir;
 import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
+import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
 @CommandLine.Command(
 		name = "upload",
@@ -102,6 +104,13 @@ public class SysFileUploadCommand implements Callable<Integer> {
 				: new SysFileUploadSuite(srcDir, config.asSpecConfig(), sysFile, dryRun);
 
 		delegate.runSuiteSync();
+
+		if (delegate.getFinalSpecs().get(0).getStatus() == PASSED) {
+			COMMON_MESSAGES.info("SUCCESS - Uploaded all requested system files");
+		} else {
+			COMMON_MESSAGES.warn("FAILED Uploading requested system files");
+			return 1;
+		}
 
 		return 0;
 	}

@@ -23,6 +23,7 @@ package com.hedera.services.txns.submission;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
+import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.txns.submission.annotations.MaxProtoMsgDepth;
 import com.hedera.services.txns.submission.annotations.MaxSignedTxnSize;
 import com.hedera.services.utils.SignedTxnAccessor;
@@ -55,20 +56,29 @@ public final class StructuralPrecheck {
 
 	private final int maxSignedTxnSize;
 	private final int maxProtoMessageDepth;
+	private HapiOpCounters opCounters;
 
 	@Inject
 	public StructuralPrecheck(
 			@MaxSignedTxnSize final int maxSignedTxnSize,
-			@MaxProtoMsgDepth final int maxProtoMessageDepth
+			@MaxProtoMsgDepth final int maxProtoMessageDepth,
+			final HapiOpCounters counters
 	) {
 		this.maxSignedTxnSize = maxSignedTxnSize;
 		this.maxProtoMessageDepth = maxProtoMessageDepth;
+		this.opCounters = counters;
 	}
 
 	public Pair<TxnValidityAndFeeReq, SignedTxnAccessor> assess(final Transaction signedTxn) {
 		final var hasSignedTxnBytes = !signedTxn.getSignedTransactionBytes().isEmpty();
 		final var hasDeprecatedSigMap = signedTxn.hasSigMap();
 		final var hasDeprecatedBodyBytes = !signedTxn.getBodyBytes().isEmpty();
+		final var hasDeprecatedBody = signedTxn.hasBody();
+		final var hasDeprecatedSigs = signedTxn.hasSigs();
+
+		if (hasDeprecatedBody || hasDeprecatedSigs || hasDeprecatedSigMap || hasDeprecatedBodyBytes) {
+			opCounters.countDeprecatedTxnReceived();
+		}
 
 		if (hasSignedTxnBytes) {
 			if (hasDeprecatedBodyBytes || hasDeprecatedSigMap) {
