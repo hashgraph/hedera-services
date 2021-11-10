@@ -38,6 +38,7 @@ import org.hyperledger.besu.evm.operation.Operation;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 /**
@@ -53,6 +54,7 @@ public final class HederaOperationUtil {
 	 * Returns the expiry to be used for a new contract. Climbs the {@link MessageFrame} and searches for the parent
 	 * {@link com.hedera.services.store.contracts.HederaWorldState.WorldStateAccount}. The expiry to be used is
 	 * the expiry of the first account found in the stack
+	 *
 	 * @param frame Current message frame
 	 * @return Expiry to be used for new contracts
 	 */
@@ -85,21 +87,22 @@ public final class HederaOperationUtil {
 	 * An extracted address check and execution of extended Hedera Operations.
 	 * Halts the execution of the EVM transaction with {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if
 	 * the account does not exist, or it is deleted.
-	 * @param frame The current message frame
+	 *
+	 * @param frame                The current message frame
 	 * @param supplierAddressBytes Supplier for the address bytes
-	 * @param supplierHaltGasCost Supplier for the gas cost
-	 * @param supplierExecution Supplier with the execution
+	 * @param supplierHaltGasCost  Supplier for the gas cost
+	 * @param supplierExecution    Supplier with the execution
 	 * @return The operation result of the execution
 	 */
 	public static Operation.OperationResult addressCheckExecution(
 			MessageFrame frame,
 			Supplier<Bytes> supplierAddressBytes,
 			Supplier<Gas> supplierHaltGasCost,
-			Supplier<Operation.OperationResult> supplierExecution) {
+			Supplier<Operation.OperationResult> supplierExecution,
+			BiFunction<Address, MessageFrame, Boolean> addressValidator) {
 		try {
 			final var address = Words.toAddress(supplierAddressBytes.get());
-			final var account = frame.getWorldUpdater().get(address);
-			if (account == null) {
+			if (!addressValidator.apply(address, frame)) {
 				return new Operation.OperationResult(
 						Optional.of(supplierHaltGasCost.get()), Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
 			}
@@ -116,15 +119,16 @@ public final class HederaOperationUtil {
 	 * Performs an existence check on the {@link Address} to be called
 	 * Halts the execution of the EVM transaction with {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if
 	 * the account does not exist or it is deleted.
-	 *
+	 * <p>
 	 * If the target {@link Address} has {@link com.hedera.services.state.merkle.MerkleAccount#isReceiverSigRequired()} set to true, verification of the
 	 * provided signature is performed. If the signature is not
 	 * active, the execution is halted with {@link HederaExceptionalHaltReason#INVALID_SIGNATURE}.
-	 * @param sigsVerifier The signature
-	 * @param frame The current message frame
-	 * @param address The target address
+	 *
+	 * @param sigsVerifier        The signature
+	 * @param frame               The current message frame
+	 * @param address             The target address
 	 * @param supplierHaltGasCost Supplier for the gas cost
-	 * @param supplierExecution Supplier with the execution
+	 * @param supplierExecution   Supplier with the execution
 	 * @return The operation result of the execution
 	 */
 	public static Operation.OperationResult addressSignatureCheckExecution(
@@ -132,9 +136,10 @@ public final class HederaOperationUtil {
 			MessageFrame frame,
 			Address address,
 			Supplier<Gas> supplierHaltGasCost,
-			Supplier<Operation.OperationResult> supplierExecution) {
+			Supplier<Operation.OperationResult> supplierExecution,
+			BiFunction<Address, MessageFrame, Boolean> addressValidator) {
 		final var account = frame.getWorldUpdater().get(address);
-		if (account == null) {
+		if (!addressValidator.apply(address, frame)) {
 			return new Operation.OperationResult(
 					Optional.of(supplierHaltGasCost.get()), Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
 		}

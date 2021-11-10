@@ -24,6 +24,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.Gas;
+import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -34,6 +35,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.util.function.BiFunction;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -59,13 +61,16 @@ class HederaSelfDestructOperationTest {
 
 	@Mock
 	EVM evm;
+	@Mock
+	private Account account;
+	@Mock
+	private BiFunction<Address, MessageFrame, Boolean> addressValidator;
 
 	HederaSelfDestructOperation subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new HederaSelfDestructOperation(gasCalculator);
-		given(mf.getWorldUpdater()).willReturn(worldUpdater);
+		subject = new HederaSelfDestructOperation(gasCalculator, addressValidator);
 		given(mf.getStackItem(0)).willReturn(ethAddressInstance);
 		given(gasCalculator.selfDestructOperationGasCost(any(), eq(Wei.ONE))).willReturn(Gas.of(2L));
 	}
@@ -73,6 +78,8 @@ class HederaSelfDestructOperationTest {
 	@Test
 	void executeSelfDestructToSelf() {
 		given(mf.getRecipientAddress()).willReturn(ethAddressInstance);
+		given(addressValidator.apply(any(), any())).willReturn(true);
+		given(mf.getWorldUpdater()).willReturn(worldUpdater);
 
 		var opResult = subject.execute(mf, evm);
 
@@ -82,7 +89,8 @@ class HederaSelfDestructOperationTest {
 
 	@Test
 	void executeInvalidSolidityAddress() {
-		given(mf.getRecipientAddress()).willReturn(receiverEthAddressInstance);
+
+		given(addressValidator.apply(any(), any())).willReturn(false);
 
 		var opResult = subject.execute(mf, evm);
 

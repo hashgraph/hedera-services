@@ -127,7 +127,8 @@ class HederaOperationUtilTest {
 				messageFrame,
 				() -> messageFrame.getStackItem(0),
 				gasSupplier,
-				executionSupplier);
+				executionSupplier,
+				(a, b) -> true);
 
 		// then:
 		assertEquals(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS, result.getHaltReason().get());
@@ -143,7 +144,6 @@ class HederaOperationUtilTest {
 	void haltsWithInvalidSolidityAddressWhenAccountCheckExecution() {
 		// given:
 		given(messageFrame.getStackItem(0)).willReturn(Address.ZERO);
-		given(messageFrame.getWorldUpdater()).willReturn(hederaWorldUpdater);
 		given(gasSupplier.get()).willReturn(expectedHaltGas.get());
 
 		// when:
@@ -151,15 +151,14 @@ class HederaOperationUtilTest {
 				messageFrame,
 				() -> messageFrame.getStackItem(0),
 				gasSupplier,
-				executionSupplier);
+				executionSupplier,
+				(a, b) -> false);
 
 		// then:
 		assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, result.getHaltReason().get());
 		assertEquals(expectedHaltGas, result.getGasCost());
 		// and:
 		verify(messageFrame).getStackItem(0);
-		verify(messageFrame).getWorldUpdater();
-		verify(hederaWorldUpdater).get(Address.ZERO);
 		verify(gasSupplier).get();
 		verify(executionSupplier, never()).get();
 	}
@@ -168,8 +167,6 @@ class HederaOperationUtilTest {
 	void successfulWhenAddressCheckExecution() {
 		// given:
 		given(messageFrame.getStackItem(0)).willReturn(Address.ZERO);
-		given(messageFrame.getWorldUpdater()).willReturn(hederaWorldUpdater);
-		given(hederaWorldUpdater.get(Address.ZERO)).willReturn(worldStateAccount);
 		given(executionSupplier.get())
 				.willReturn(new Operation.OperationResult(expectedSuccessfulGas, Optional.empty()));
 
@@ -178,15 +175,14 @@ class HederaOperationUtilTest {
 				messageFrame,
 				() -> messageFrame.getStackItem(0),
 				gasSupplier,
-				executionSupplier);
+				executionSupplier,
+				(a, b) -> true);
 
 		// when:
 		assertTrue(result.getHaltReason().isEmpty());
 		assertEquals(expectedSuccessfulGas, result.getGasCost());
 		// and:
 		verify(messageFrame).getStackItem(0);
-		verify(messageFrame).getWorldUpdater();
-		verify(hederaWorldUpdater).get(Address.ZERO);
 		verify(gasSupplier, never()).get();
 		verify(executionSupplier).get();
 	}
@@ -203,7 +199,8 @@ class HederaOperationUtilTest {
 				messageFrame,
 				Address.ZERO,
 				gasSupplier,
-				executionSupplier);
+				executionSupplier,
+				(a, b) -> false);
 
 		// then:
 		assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, result.getHaltReason().get());
@@ -233,7 +230,8 @@ class HederaOperationUtilTest {
 				messageFrame,
 				Address.ZERO,
 				gasSupplier,
-				executionSupplier);
+				executionSupplier,
+				(a, b) -> true);
 
 		// then:
 		assertEquals(HederaExceptionalHaltReason.INVALID_SIGNATURE, result.getHaltReason().get());
@@ -266,7 +264,8 @@ class HederaOperationUtilTest {
 				messageFrame,
 				Address.ZERO,
 				gasSupplier,
-				executionSupplier);
+				executionSupplier,
+				(a, b) -> true);
 
 		// then:
 		assertTrue(result.getHaltReason().isEmpty());

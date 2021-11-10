@@ -35,6 +35,7 @@ import org.hyperledger.besu.evm.operation.ExtCodeHashOperation;
 
 import javax.inject.Inject;
 import java.util.Optional;
+import java.util.function.BiFunction;
 
 /**
  * Hedera adapted version of the {@link ExtCodeHashOperation}.
@@ -46,21 +47,24 @@ import java.util.Optional;
  */
 public class HederaExtCodeHashOperation extends ExtCodeHashOperation {
 
+	private final BiFunction<Address, MessageFrame, Boolean> addressValidator;
+
 	@Inject
-	public HederaExtCodeHashOperation(GasCalculator gasCalculator) {
+	public HederaExtCodeHashOperation(GasCalculator gasCalculator,
+									  BiFunction<Address, MessageFrame, Boolean> addressValidator) {
 		super(gasCalculator);
+		this.addressValidator = addressValidator;
 	}
 
 	@Override
 	public OperationResult execute(MessageFrame frame, EVM evm) {
 		try {
 			final Address address = Words.toAddress(frame.popStackItem());
-			final var account = frame.getWorldUpdater().get(address);
-			if (account == null) {
+			if (!addressValidator.apply(address, frame)) {
 				return new OperationResult(
 						Optional.of(cost(true)), Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
 			}
-
+			final var account = frame.getWorldUpdater().get(address);
 			boolean accountIsWarm = frame.warmUpAddress(address) || this.gasCalculator().isPrecompile(address);
 			Optional<Gas> optionalCost = Optional.of(this.cost(accountIsWarm));
 			if (frame.getRemainingGas().compareTo(optionalCost.get()) < 0) {

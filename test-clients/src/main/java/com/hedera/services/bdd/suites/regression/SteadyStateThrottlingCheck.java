@@ -29,6 +29,7 @@ import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountBalance;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -295,6 +296,7 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 						.deferStatusResolution()
 						.payingWith("civilian")
 						.sending(ONE_HBAR)
+						.hasKnownStatusFrom(SUCCESS)
 						.hasPrecheckFrom(OK, BUSY);
 				return Optional.of(op);
 			}

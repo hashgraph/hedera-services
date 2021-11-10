@@ -35,10 +35,12 @@ import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.Operation;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -56,8 +58,9 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 			UsagePricesProvider usagePrices,
 			GlobalDynamicProperties globalDynamicProperties,
 			GasCalculator gasCalculator,
-			Set<Operation> hederaOperations) {
-		super(worldState, exchange, usagePrices, globalDynamicProperties, gasCalculator, hederaOperations);
+			Set<Operation> hederaOperations,
+			Map<String, PrecompiledContract> precompiledContractMap) {
+		super(worldState, exchange, usagePrices, globalDynamicProperties, gasCalculator, hederaOperations, precompiledContractMap);
 	}
 
 	public TransactionProcessingResult execute(
