@@ -27,12 +27,14 @@ import com.hederahashgraph.api.proto.java.Key;
 import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.Test;
 
-import static com.hedera.services.legacy.core.jproto.JKeyListTest.randomValidECDSASecp256K1Key;
+import java.util.Arrays;
+
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JKeyTest {
 	@Test
@@ -83,7 +85,8 @@ class JKeyTest {
 			}
 
 			@Override
-			public void setForScheduledTxn(boolean flag) { }
+			public void setForScheduledTxn(boolean flag) {
+			}
 
 			@Override
 			public boolean isForScheduledTxn() {
@@ -106,9 +109,15 @@ class JKeyTest {
 	}
 
 	@Test
-	void convertsECDSAsecp256k1KeyKey() {
-		final Key aKey = randomValidECDSASecp256K1Key();
-		var validEDCSAsecp256K1Key  = assertDoesNotThrow(() -> JKey.convertKey(aKey, 1));
-		assertEquals(33, validEDCSAsecp256K1Key.getECDSAsecp256k1Key().length);
+	void convertsECDSAsecp256k1Key() {
+		ByteString edcsaSecp256K1Bytes = ByteString.copyFrom(new byte[] { 0x02 })
+				.concat(TxnUtils.randomUtf8ByteString(JECDSAsecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH - 1));
+		final Key aKey = Key.newBuilder().setECDSASecp256K1(edcsaSecp256K1Bytes).build();
+
+		var validEDCSAsecp256K1Key = assertDoesNotThrow(() -> JKey.convertKey(aKey, 1));
+		assertTrue(validEDCSAsecp256K1Key instanceof JECDSAsecp256k1Key);
+		assertEquals(33, validEDCSAsecp256K1Key.getEcdsaSecp256k1Key().length);
+		assertTrue(validEDCSAsecp256K1Key.isValid());
+		assertTrue(Arrays.equals(edcsaSecp256K1Bytes.toByteArray(), validEDCSAsecp256K1Key.getEcdsaSecp256k1Key()));
 	}
 }

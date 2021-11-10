@@ -39,7 +39,7 @@ class JECDSAsecp256k1KeyTest {
 	}
 
 	@Test
-	void emptyJECDSA_secp256k1KeyTest() {
+	void emptyJECDSAsecp256k1KeyTest() {
 		JECDSAsecp256k1Key key1 = new JECDSAsecp256k1Key(null);
 		assertTrue(key1.isEmpty());
 		assertFalse(key1.isValid());
@@ -50,14 +50,14 @@ class JECDSAsecp256k1KeyTest {
 	}
 
 	@Test
-	void nonEmptyInvalidLengthJECDSA_secp256k1KeyTest() {
+	void nonEmptyInvalidLengthJECDSAsecp256k1KeyTest() {
 		JECDSAsecp256k1Key key = new JECDSAsecp256k1Key(new byte[1]);
 		assertFalse(key.isEmpty());
 		assertFalse(key.isValid());
 	}
 
 	@Test
-	void nonEmptyValid0x02JECDSA_secp256k1KeyTest() {
+	void nonEmptyValid0x02JECDSAsecp256k1KeyTest() {
 		byte[] bytes = new byte[33];
 		bytes[0] = 0x02;
 		JECDSAsecp256k1Key key = new JECDSAsecp256k1Key(bytes);
@@ -66,14 +66,14 @@ class JECDSAsecp256k1KeyTest {
 	}
 
 	@Test
-	void nonEmptyValid0x03JECDSA_secp256k1KeyTest() {
+	void nonEmptyValid0x03JECDSAsecp256k1KeyTest() {
 		assertFalse(subject.isEmpty());
 		assertTrue(subject.isValid());
 	}
 
 	@Test
 	void getterWorks() {
-		assertEquals(bytes, subject.getECDSAsecp256k1Key());
+		assertEquals(bytes, subject.getEcdsaSecp256k1Key());
 	}
 
 	@Test

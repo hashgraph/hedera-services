@@ -125,7 +125,7 @@ public class JKeySerializer {
 			stream.writeLong(key.getContractNum());
 		} else if (JObjectType.JECDSAsecp256k1Key.equals(type)) {
 			JKey jKey = (JKey) object;
-			byte[] key = jKey.getECDSAsecp256k1Key();
+			byte[] key = jKey.getEcdsaSecp256k1Key();
 			stream.write(key);
 		} else {
 			throw new IllegalStateException(
