@@ -20,12 +20,14 @@ package com.hedera.services.legacy.core.jproto;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.Test;
 
+import static com.hedera.services.legacy.core.jproto.JKeyListTest.randomValidECDSASecp256K1Key;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -104,16 +106,9 @@ class JKeyTest {
 	}
 
 	@Test
-	void convertsECDSA_secp256k1KeyKey() {
-		// given:
-//		final Key aKey = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey();
-//
-//		var secp256k1Key = Key.newBuilder(), JKey.MAX_KEY_DEPTH).build();
-//
-//		// expect:
-//		assertThrows(
-//				DecoderException.class,
-//				() -> JKey.convertKey(secp256k1Key, 1),
-//				"Exceeding max expansion depth of " + JKey.MAX_KEY_DEPTH);
+	void convertsECDSAsecp256k1KeyKey() {
+		final Key aKey = randomValidECDSASecp256K1Key();
+		var validEDCSAsecp256K1Key  = assertDoesNotThrow(() -> JKey.convertKey(aKey, 1));
+		assertEquals(33, validEDCSAsecp256K1Key.getECDSAsecp256k1Key().length);
 	}
 }

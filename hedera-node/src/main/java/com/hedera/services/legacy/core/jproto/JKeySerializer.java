@@ -57,8 +57,8 @@ public class JKeySerializer {
 				objectType = JObjectType.JRSA_3072Key;
 			} else if (rootObject instanceof JContractIDKey) {
 				objectType = JObjectType.JContractIDKey;
-			} else if (rootObject instanceof JECDSA_secp256k1Key) {
-				objectType = JObjectType.JECDSA_secp256k1Key;
+			} else if (rootObject instanceof JECDSAsecp256k1Key) {
+				objectType = JObjectType.JECDSAsecp256k1Key;
 			}
 
 			final JObjectType finalObjectType = objectType;
@@ -123,7 +123,7 @@ public class JKeySerializer {
 			stream.writeLong(key.getShardNum());
 			stream.writeLong(key.getRealmNum());
 			stream.writeLong(key.getContractNum());
-		} else if (JObjectType.JECDSA_secp256k1Key.equals(type)) {
+		} else if (JObjectType.JECDSAsecp256k1Key.equals(type)) {
 			JKey jKey = (JKey) object;
 			byte[] key = jKey.getECDSAsecp256k1Key();
 			stream.write(key);
@@ -168,11 +168,11 @@ public class JKeySerializer {
 			long contract = stream.readLong();
 
 			return (T) new JContractIDKey(shard, realm, contract);
-		} else if (JObjectType.JECDSA_secp256k1Key.equals(type)) {
+		} else if (JObjectType.JECDSAsecp256k1Key.equals(type)) {
 			byte[] key = new byte[(int) length];
 			stream.readFully(key);
 
-			return (T) new JECDSA_secp256k1Key(key);
+			return (T) new JECDSAsecp256k1Key(key);
 		} else {
 			throw new IllegalStateException(
 					"Unknown type was encountered while reading from the input stream");

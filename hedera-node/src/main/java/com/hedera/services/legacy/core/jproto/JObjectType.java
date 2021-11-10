@@ -27,7 +27,7 @@ import java.util.HashMap;
  */
 public enum JObjectType {
 
-	JKey, JKeyList, JThresholdKey, JEd25519Key, JECDSA_384Key, JRSA_3072Key, JContractIDKey, JECDSA_secp256k1Key,
+	JKey, JKeyList, JThresholdKey, JEd25519Key, JECDSA_384Key, JRSA_3072Key, JContractIDKey, JECDSAsecp256k1Key,
 	JFileInfo,
 	JMemoAdminKey;
 
@@ -44,7 +44,7 @@ public enum JObjectType {
 		addLookup(JContractIDKey, 15545316);
 		addLookup(JFileInfo, 15636803);
 		addLookup(JMemoAdminKey, 15661754);
-        addLookup(JECDSA_secp256k1Key, 15661654); // Is this random ?
+        addLookup(JECDSAsecp256k1Key, 15661654); // Is this random ?
 	}
 
 	private static void addLookup(final JObjectType type, final long value) {

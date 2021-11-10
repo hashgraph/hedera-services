@@ -121,7 +121,7 @@ public abstract class JKey implements Serializable {
 			rv = new JRSA_3072Key(pubKeyBytes);
 		}else if (!key.getECDSASecp256K1().isEmpty()) {
 			byte[] pubKeyBytes = key.getECDSASecp256K1().toByteArray();
-			rv = new JECDSA_secp256k1Key(pubKeyBytes);
+			rv = new JECDSAsecp256k1Key(pubKeyBytes);
 		}  else if (key.getContractID() != null && key.getContractID().getContractNum() != 0) {
 			ContractID cid = key.getContractID();
 			rv = new JContractIDKey(cid);
@@ -151,7 +151,7 @@ public abstract class JKey implements Serializable {
 			rv = Key.newBuilder().setRSA3072(ByteString.copyFrom(jkey.getRSA3072())).build();
 		} else if (jkey.hasContractID()) {
 			rv = Key.newBuilder().setContractID(jkey.getContractIDKey().getContractID()).build();
-		} else if (jkey.hasECDSA_secp256k1Key()) {
+		} else if (jkey.hasECDSAsecp256k1Key()) {
 			rv = Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(jkey.getECDSAsecp256k1Key())).build();
 		} else {
 			throw new DecoderException("Key type not implemented: key=" + jkey);
@@ -258,7 +258,7 @@ public abstract class JKey implements Serializable {
 		return false;
 	}
 
-	public boolean hasECDSA_secp256k1Key() {
+	public boolean hasECDSAsecp256k1Key() {
 		return false;
 	}
 
