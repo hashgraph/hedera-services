@@ -116,8 +116,8 @@ class JKeyTest {
 
 		var validEDCSAsecp256K1Key = assertDoesNotThrow(() -> JKey.convertKey(aKey, 1));
 		assertTrue(validEDCSAsecp256K1Key instanceof JECDSAsecp256k1Key);
-		assertEquals(33, validEDCSAsecp256K1Key.getEcdsaSecp256k1Key().length);
+		assertEquals(33, validEDCSAsecp256K1Key.getECDSASecp256k1Key().length);
 		assertTrue(validEDCSAsecp256K1Key.isValid());
-		assertTrue(Arrays.equals(edcsaSecp256K1Bytes.toByteArray(), validEDCSAsecp256K1Key.getEcdsaSecp256k1Key()));
+		assertTrue(Arrays.equals(edcsaSecp256K1Bytes.toByteArray(), validEDCSAsecp256K1Key.getECDSASecp256k1Key()));
 	}
 }

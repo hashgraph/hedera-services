@@ -72,14 +72,23 @@ class JECDSAsecp256k1KeyTest {
 	}
 
 	@Test
+	void constructorWorks() {
+		var bytes = new byte[33];
+		bytes[0] = 0x03;
+		var subject = new JECDSAsecp256k1Key(bytes);
+
+		assertEquals(bytes, subject.getECDSASecp256k1Key());
+	}
+
+	@Test
 	void getterWorks() {
-		assertEquals(bytes, subject.getEcdsaSecp256k1Key());
+		assertEquals(bytes, subject.getECDSASecp256k1Key());
 	}
 
 	@Test
 	void toStringWorks() {
 		assertEquals(
-				"<JECDSAsecp256k1Key: ECDSA_secp256k1Key " +
+				"<JECDSAsecp256k1Key: ecdsaSecp256k1Key " +
 						"hex=030000000000000000000000000000000000000000000000000000000000000000>",
 				subject.toString());
 	}

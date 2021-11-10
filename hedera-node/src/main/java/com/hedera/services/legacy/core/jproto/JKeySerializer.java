@@ -58,7 +58,7 @@ public class JKeySerializer {
 			} else if (rootObject instanceof JContractIDKey) {
 				objectType = JObjectType.JContractIDKey;
 			} else if (rootObject instanceof JECDSAsecp256k1Key) {
-				objectType = JObjectType.JECDSAsecp256k1Key;
+				objectType = JObjectType.JECDSASecp256k1Key;
 			}
 
 			final JObjectType finalObjectType = objectType;
@@ -123,9 +123,9 @@ public class JKeySerializer {
 			stream.writeLong(key.getShardNum());
 			stream.writeLong(key.getRealmNum());
 			stream.writeLong(key.getContractNum());
-		} else if (JObjectType.JECDSAsecp256k1Key.equals(type)) {
+		} else if (JObjectType.JECDSASecp256k1Key.equals(type)) {
 			JKey jKey = (JKey) object;
-			byte[] key = jKey.getEcdsaSecp256k1Key();
+			byte[] key = jKey.getECDSASecp256k1Key();
 			stream.write(key);
 		} else {
 			throw new IllegalStateException(
@@ -168,7 +168,7 @@ public class JKeySerializer {
 			long contract = stream.readLong();
 
 			return (T) new JContractIDKey(shard, realm, contract);
-		} else if (JObjectType.JECDSAsecp256k1Key.equals(type)) {
+		} else if (JObjectType.JECDSASecp256k1Key.equals(type)) {
 			byte[] key = new byte[(int) length];
 			stream.readFully(key);
 
