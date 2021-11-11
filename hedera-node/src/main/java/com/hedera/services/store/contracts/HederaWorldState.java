@@ -94,7 +94,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 			final var createdKey = (sponsorKey instanceof JContractIDKey)
 					? STATIC_PROPERTIES.scopedContractKeyWith(createdId.getAccountNum())
 					: sponsorKey;
-			var customizer = new HederaAccountCustomizer()
+			final var customizer = new HederaAccountCustomizer()
 					.key(createdKey)
 					.memo(entityAccess.getMemo(sponsorId))
 					.proxy(entityAccess.getProxy(sponsorId))
@@ -141,15 +141,19 @@ public class HederaWorldState implements HederaMutableWorldState {
 	@Override
 	public WorldStateAccount get(Address address) {
 		final var accountID = accountParsedFromSolidityAddress(address);
-		if (!entityAccess.isExtant(accountID) || entityAccess.isDeleted(accountID)) {
+		if (!isGettable(accountID)) {
 			return null;
 		}
-		/* TODO - also return null for detached accounts (that is, zero-balance accounts past their expiry) */
 
 		final long expiry = entityAccess.getExpiry(accountID);
 		final long balance = entityAccess.getBalance(accountID);
 		final long autoRenewPeriod = entityAccess.getAutoRenew(accountID);
-		return new WorldStateAccount(address, Wei.of(balance), expiry, autoRenewPeriod, entityAccess.getProxy(accountID));
+		return new WorldStateAccount(address, Wei.of(balance), expiry, autoRenewPeriod,
+				entityAccess.getProxy(accountID));
+	}
+
+	private boolean isGettable(final AccountID id) {
+		return entityAccess.isExtant(id) && !entityAccess.isDeleted(id) && !entityAccess.isDetached(id);
 	}
 
 	public class WorldStateAccount implements Account {
@@ -200,7 +204,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		@Override
 		public Bytes getCode() {
-			return entityAccess.fetch(account);
+			return entityAccess.fetchCode(account);
 		}
 
 		public EntityId getProxyAccount() {
@@ -223,7 +227,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		@Override
 		public UInt256 getStorageValue(final UInt256 key) {
-			return entityAccess.get(account, key);
+			return entityAccess.getStorage(account, key);
 		}
 
 		@Override
@@ -290,6 +294,8 @@ public class HederaWorldState implements HederaMutableWorldState {
 			extends AbstractLedgerWorldUpdater<HederaMutableWorldState, WorldStateAccount>
 			implements HederaWorldUpdater {
 
+		private static final HederaAccountCustomizer NOOP_CUSTOMIZER = new HederaAccountCustomizer();
+
 		private final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
 
 		private Gas sbhRefund = Gas.ZERO;
@@ -341,31 +347,42 @@ public class HederaWorldState implements HederaMutableWorldState {
 			final HederaWorldState wrapped = (HederaWorldState) wrappedWorldView();
 			final var entityAccess = wrapped.entityAccess;
 
-			for (final var updatedAccount : updatedAccounts()) {
+			for (final var updatedAccount : getUpdatedAccounts()) {
 				final var accountId = accountParsedFromSolidityAddress(updatedAccount.getAddress());
 
+				/* ⚠️ Note that both the spawn() and adjustBalance() calls in the block below are ONLY
+				 * needed to make sure the record's ℏ transfer list is constructed properly---the
+				 * finishing call to trackingLedgers().commits() at the end of this method will persist
+				 * all the same information.
+				 *
+				 * Once record-keeping logic is property extracted from HederaLedger, we can probably
+				 * drop these spawn() and adjustBalance() calls.*/
 				if (!entityAccess.isExtant(accountId)) {
 					wrapped.provisionalContractCreations.add(asContract(accountId));
+					entityAccess.spawn(accountId, 0L, NOOP_CUSTOMIZER);
 				}
+				final var balanceChange = updatedAccount.getBalance().toLong() - entityAccess.getBalance(accountId);
+				entityAccess.adjustBalance(accountId, balanceChange);
 
-				/* TODO - what if updated.getStorageWasCleared() is true? */
+				/* Note that we don't have the equivalent of an account-scoped storage  trie, so we can't
+				 * do anything in particular when updated.getStorageWasCleared() is true. (We will address
+				 * this in our global state expiration implementation.) */
 				final Map<UInt256, UInt256> updatedStorage = updatedAccount.getUpdatedStorage();
 				if (!updatedStorage.isEmpty()) {
 					final TreeSet<Map.Entry<UInt256, UInt256>> entries = new TreeSet<>(Map.Entry.comparingByKey());
 					entries.addAll(updatedStorage.entrySet());
 					for (final var entry : entries) {
-						entityAccess.put(accountId, entry.getKey(), entry.getValue());
+						entityAccess.putStorage(accountId, entry.getKey(), entry.getValue());
 					}
 				}
-
 				if (updatedAccount.codeWasUpdated()) {
-					entityAccess.store(accountId, updatedAccount.getCode());
+					entityAccess.storeCode(accountId, updatedAccount.getCode());
 				}
 			}
 
 			/* Because we have tracked all account creations, deletions, and balance changes in the ledgers,
-			this commit() eliminates the need to persist any of that information from the deletedAccounts or
-			updatedAccounts collections. */
+			this commit() persists all of that information without any additional use of the deletedAccounts
+			or updatedAccounts collections. */
 			trackingLedgers().commit();
 			/* But we do a sanity check to ensure no deleted accounts have non-zero balances */
 			getDeletedAccountAddresses().forEach(address -> {

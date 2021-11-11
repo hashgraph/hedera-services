@@ -121,21 +121,19 @@ class MutableEntityAccessTest {
 	}
 
 	@Test
-	void spawnsAccount() {
-		// when:
-		subject.spawn(id, balance, new HederaAccountCustomizer());
-
-		// then:
-		verify(ledger).spawn(eq(id), eq(balance), any());
-	}
-
-	@Test
 	void customizesAccount() {
 		// when:
 		subject.customize(id, new HederaAccountCustomizer());
 
 		// then:
 		verify(ledger).customizePotentiallyDeleted(eq(id), any());
+	}
+
+	@Test
+	void delegatesDetachmentTest() {
+		given(ledger.isDetached(id)).willReturn(true);
+
+		assertTrue(subject.isDetached(id));
 	}
 
 	@Test
@@ -261,7 +259,7 @@ class MutableEntityAccessTest {
 		given(supplierContractStorage.get()).willReturn(contractStorage);
 
 		// when:
-		subject.put(id, contractStorageKey, UInt256.ZERO);
+		subject.putStorage(id, contractStorageKey, UInt256.ZERO);
 
 		// then:
 		verify(contractStorage).put(expectedContractKey, new ContractValue());
@@ -273,7 +271,7 @@ class MutableEntityAccessTest {
 		given(supplierContractStorage.get()).willReturn(contractStorage);
 
 		// when:
-		subject.put(id, contractStorageKey, contractStorageValue);
+		subject.putStorage(id, contractStorageKey, contractStorageValue);
 
 		// then:
 		verify(contractStorage).put(expectedContractKey, expectedContractValue);
@@ -285,7 +283,7 @@ class MutableEntityAccessTest {
 		given(supplierContractStorage.get()).willReturn(contractStorage);
 
 		// when:
-		final var result = subject.get(id, contractStorageKey);
+		final var result = subject.getStorage(id, contractStorageKey);
 
 		// then:
 		assertEquals(UInt256.ZERO, result);
@@ -301,7 +299,7 @@ class MutableEntityAccessTest {
 		given(contractStorage.get(expectedContractKey)).willReturn(expectedContractValue);
 
 		// when:
-		final var result = subject.get(id, contractStorageKey);
+		final var result = subject.getStorage(id, contractStorageKey);
 
 		// then:
 		assertEquals(UInt256.MAX_VALUE, result);
@@ -315,7 +313,7 @@ class MutableEntityAccessTest {
 		given(supplierBytecode.get()).willReturn(bytecodeStorage);
 
 		// when:
-		subject.store(id, bytecode);
+		subject.storeCode(id, bytecode);
 
 		// then:
 		verify(bytecodeStorage).put(expectedBytecodeKey, expectedBytecodeValue);
@@ -327,7 +325,7 @@ class MutableEntityAccessTest {
 		given(supplierBytecode.get()).willReturn(bytecodeStorage);
 
 		// when:
-		final var result = subject.fetch(id);
+		final var result = subject.fetchCode(id);
 
 		// then:
 		assertEquals(Bytes.EMPTY, result);
@@ -343,7 +341,7 @@ class MutableEntityAccessTest {
 		given(bytecodeStorage.get(expectedBytecodeKey)).willReturn(expectedBytecodeValue);
 
 		// when:
-		final var result = subject.fetch(id);
+		final var result = subject.fetchCode(id);
 
 		// then:
 		assertEquals(bytecode, result);

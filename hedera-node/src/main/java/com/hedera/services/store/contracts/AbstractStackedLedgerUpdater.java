@@ -27,7 +27,7 @@ import org.hyperledger.besu.evm.worldstate.WorldView;
 public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extends Account>
 		extends AbstractLedgerWorldUpdater<AbstractLedgerWorldUpdater<W, A>, UpdateTrackingLedgerAccount<A>> {
 
-	public AbstractStackedLedgerUpdater(
+	protected AbstractStackedLedgerUpdater(
 			final AbstractLedgerWorldUpdater<W, A> world,
 			final WorldLedgers trackingLedgers
 	) {
@@ -55,10 +55,10 @@ public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extend
 		/* NOTE - in a traditional Ethereum context, it is technically possible with use of CREATE2
 		 * for a stacked updater to re-create an account that was deleted by the updater below it.
 		 * But that is not possible in Hedera. */
-		deletedAccounts().forEach(wrapped.updatedAccounts::remove);
-		wrapped.deletedAccounts.addAll(deletedAccounts());
+		getDeletedAccounts().forEach(wrapped.updatedAccounts::remove);
+		wrapped.deletedAccounts.addAll(getDeletedAccounts());
 
-		for (final var updatedAccount : updatedAccounts()) {
+		for (final var updatedAccount : getUpdatedAccounts()) {
 			var mutable = wrapped.updatedAccounts.get(updatedAccount.getAddress());
 			if (mutable == null) {
 				// If we don't track this account, it's either a new one or getForMutation above had

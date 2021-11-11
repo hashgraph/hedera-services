@@ -30,6 +30,7 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.StaticEntityAccess;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -53,12 +54,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public final class ContractCallLocalResourceUsage implements QueryResourceUsageEstimator {
 	private static final Logger log = LogManager.getLogger(ContractCallLocalResourceUsage.class);
 
-	private final SmartContractFeeBuilder usageEstimator;
-	private final GlobalDynamicProperties properties;
-
 	private final AccountStore accountStore;
-	private final CallLocalEvmTxProcessor evmTxProcessor;
 	private final EntityIdSource ids;
+	private final OptionValidator validator;
+	private final GlobalDynamicProperties properties;
+	private final SmartContractFeeBuilder usageEstimator;
+	private final CallLocalEvmTxProcessor evmTxProcessor;
 
 	@Inject
 	public ContractCallLocalResourceUsage(
@@ -66,12 +67,13 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
 			final GlobalDynamicProperties properties,
 			final AccountStore accountStore,
 			final CallLocalEvmTxProcessor evmTxProcessor,
-			final EntityIdSource ids
-			) {
+			final EntityIdSource ids,
+			final OptionValidator validator
+	) {
 		this.accountStore = accountStore;
 		this.evmTxProcessor = evmTxProcessor;
 		this.ids = ids;
-
+		this.validator = validator;
 		this.properties = properties;
 		this.usageEstimator = usageEstimator;
 	}
@@ -83,7 +85,7 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
 
 	@Override
 	public FeeData usageGivenType(final Query query, final StateView view, final ResponseType type) {
-		return usageFor(query, type, view,null);
+		return usageFor(query, type, view, null);
 	}
 
 	@Override
@@ -91,14 +93,15 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
 		return usageFor(query, query.getContractCallLocal().getHeader().getResponseType(), view, queryCtx);
 	}
 
-	private FeeData usageFor(final Query query, final ResponseType type, final StateView view, @Nullable final Map<String, Object> queryCtx) {
+	private FeeData usageFor(final Query query, final ResponseType type, final StateView view,
+			@Nullable final Map<String, Object> queryCtx) {
 		try {
 			final var op = query.getContractCallLocal();
 			ContractCallLocalResponse response;
 			if (null == queryCtx) {
 				response = dummyResponse(op.getContractID());
 			} else {
-				final var entityAccess  = new StaticEntityAccess(view);
+				final var entityAccess = new StaticEntityAccess(view, validator, properties);
 				final var worldState = new HederaWorldState(ids, entityAccess);
 				evmTxProcessor.setWorldState(worldState);
 

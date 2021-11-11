@@ -63,15 +63,17 @@ public interface EntityAccess {
 
 	boolean isDeleted(AccountID id);
 
+	boolean isDetached(AccountID id);
+
 	boolean isExtant(AccountID id);
 
 	/* --- Storage access --- */
-	void put(AccountID id, UInt256 key, UInt256 value);
+	void putStorage(AccountID id, UInt256 key, UInt256 value);
 
-	UInt256 get(AccountID id, UInt256 key);
+	UInt256 getStorage(AccountID id, UInt256 key);
 
 	/* --- Bytecode access --- */
-	void store(AccountID id, Bytes code);
+	void storeCode(AccountID id, Bytes code);
 
-	Bytes fetch(AccountID id);
+	Bytes fetchCode(AccountID id);
 }

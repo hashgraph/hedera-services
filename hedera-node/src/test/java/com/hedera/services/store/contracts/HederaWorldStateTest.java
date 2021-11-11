@@ -23,11 +23,11 @@ package com.hedera.services.store.contracts;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -47,6 +47,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
+import static com.hedera.services.utils.EntityIdUtils.asTypedSolidityAddress;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -76,8 +77,8 @@ class HederaWorldStateTest {
 	final long balance = 1_234L;
 	final Id sponsor = new Id(0, 0, 1);
 	final Id contract = new Id(0, 0, 2);
+	final AccountID accountId = IdUtils.asAccount("0.0.12345");
 	final Bytes code = Bytes.of("0x60606060".getBytes());
-	JKey key = new JContractIDKey(0, 0, 123L);
 
 	private HederaWorldState subject;
 
@@ -189,15 +190,24 @@ class HederaWorldStateTest {
 	}
 
 	@Test
-	void get() {
+	void returnsNullForDetached() {
+		given(entityAccess.isExtant(accountId)).willReturn(true);
+		given(entityAccess.isDeleted(accountId)).willReturn(false);
+		given(entityAccess.isDetached(accountId)).willReturn(true);
+
+		assertNull(subject.get(asTypedSolidityAddress(accountId)));
+	}
+
+	@Test
+	void getsAsExpected() {
 		final var account = accountParsedFromSolidityAddress(Address.RIPEMD160.toArray());
 		given(entityAccess.getProxy(account)).willReturn(new EntityId(0, 0, 1));
 		given(entityAccess.getBalance(account)).willReturn(balance);
 		given(entityAccess.getAutoRenew(account)).willReturn(100L);
 		given(entityAccess.isExtant(any())).willReturn(true);
 		given(entityAccess.isDeleted(any())).willReturn(false);
-		given(entityAccess.fetch(any())).willReturn(Bytes.EMPTY);
-		given(entityAccess.get(any(), any())).willReturn(UInt256.ZERO);
+		given(entityAccess.fetchCode(any())).willReturn(Bytes.EMPTY);
+		given(entityAccess.getStorage(any(), any())).willReturn(UInt256.ZERO);
 
 		final var acc = subject.get(Address.RIPEMD160);
 		assertNotNull(acc);
@@ -366,10 +376,10 @@ class HederaWorldStateTest {
 		// then:
 		verify(entityAccess).isExtant(accountID);
 		verify(entityAccess).isExtant(accountID);
-		verify(entityAccess).put(accountID, storageKey, storageValue);
-		verify(entityAccess).put(accountID, secondStorageKey, secondStorageValue);
+		verify(entityAccess).putStorage(accountID, storageKey, storageValue);
+		verify(entityAccess).putStorage(accountID, secondStorageKey, secondStorageValue);
 		// and:
-		verify(entityAccess).store(accountID, code);
+		verify(entityAccess).storeCode(accountID, code);
 	}
 
 	@Test

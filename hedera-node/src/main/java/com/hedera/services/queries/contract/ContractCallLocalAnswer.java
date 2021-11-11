@@ -9,9 +9,9 @@ package com.hedera.services.queries.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,7 @@ package com.hedera.services.queries.contract;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.services.contracts.execution.CallLocalExecutor;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -53,15 +54,19 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 			ContractCallLocalAnswer.class.getSimpleName() + "_localCallResponse";
 
 	private final AccountStore accountStore;
-	private final CallLocalEvmTxProcessor callLocalEvmTxProcessor;
 	private final EntityIdSource ids;
+	private final OptionValidator validator;
+	private final GlobalDynamicProperties dynamicProperties;
+	private final CallLocalEvmTxProcessor callLocalEvmTxProcessor;
 
 	@Inject
 	public ContractCallLocalAnswer(
-			EntityIdSource ids,
-			AccountStore accountStore,
-			CallLocalEvmTxProcessor callLocalEvmTxProcessor,
-			OptionValidator validator) {
+			final EntityIdSource ids,
+			final AccountStore accountStore,
+			final OptionValidator validator,
+			final GlobalDynamicProperties dynamicProperties,
+			final CallLocalEvmTxProcessor callLocalEvmTxProcessor
+	) {
 		super(
 				ContractCallLocal,
 				query -> query.getContractCallLocal().getHeader().getPayment(),
@@ -76,9 +81,11 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 					}
 				});
 
-		this.accountStore = accountStore;
-		this.callLocalEvmTxProcessor = callLocalEvmTxProcessor;
 		this.ids = ids;
+		this.validator = validator;
+		this.accountStore = accountStore;
+		this.dynamicProperties = dynamicProperties;
+		this.callLocalEvmTxProcessor = callLocalEvmTxProcessor;
 	}
 
 	@Override
@@ -137,13 +144,13 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 				throw new IllegalStateException("Query context had no cached local call result!");
 			} else {
 				response.mergeFrom(
-						withCid((ContractCallLocalResponse)ctx.get(CONTRACT_CALL_LOCAL_CTX_KEY), op.getContractID()));
+						withCid((ContractCallLocalResponse) ctx.get(CONTRACT_CALL_LOCAL_CTX_KEY), op.getContractID()));
 			}
 		} else {
 			/* If answering from a zero-stake node, there are no node payments, and the
 			usage estimator won't have cached the result it got from the local call. */
 			try {
-				final var entityAccess  = new StaticEntityAccess(view);
+				final var entityAccess = new StaticEntityAccess(view, validator, dynamicProperties);
 				final var worldState = new HederaWorldState(ids, entityAccess);
 				callLocalEvmTxProcessor.setWorldState(worldState);
 
@@ -157,8 +164,8 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 
 	private ContractCallLocalResponse withCid(ContractCallLocalResponse response, ContractID target) {
 		return response.toBuilder()
-						.setFunctionResult(response.getFunctionResult().toBuilder()
-								.setContractID(target))
-						.build();
+				.setFunctionResult(response.getFunctionResult().toBuilder()
+						.setContractID(target))
+				.build();
 	}
 }

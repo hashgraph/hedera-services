@@ -56,7 +56,7 @@ public class CodeCache {
 
         CacheLoader<BytesKey, Code> loader = key -> {
             final var acctId = accountParsedFromSolidityAddress(key.getArray());
-            var codeBytes = entityAccess.fetch(acctId);
+            var codeBytes = entityAccess.fetchCode(acctId);
             return new Code(codeBytes, Hash.hash(codeBytes));
         };
 

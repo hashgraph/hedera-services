@@ -61,7 +61,7 @@ import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityA
  *     account, the same balance change is made in the {@code accounts} ledger.</li>
  * </ol>
  *
- * 📝 TODO When an HTS precompile is executed, reflect ℏ balance changes in the {@code updatedAccounts} map.
+ * 📝 (FUTURE WORK) When an HTS precompile is executed, reflect ℏ balance changes in the {@code updatedAccounts} map.
  *
  * Concrete subclasses must then manage the "external" information flow from these data structures to their
  * wrapped {@link WorldView} in a {@link HederaWorldUpdater#commit()} implementation. This will certainly
@@ -151,7 +151,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 
 	@Override
 	public Collection<? extends Account> getTouchedAccounts() {
-		return new ArrayList<>(updatedAccounts());
+		return new ArrayList<>(getUpdatedAccounts());
 	}
 
 	@Override
@@ -161,8 +161,8 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 
 	@Override
 	public void revert() {
-		deletedAccounts().clear();
-		updatedAccounts().clear();
+		getDeletedAccounts().clear();
+		getUpdatedAccounts().clear();
 		trackingLedgers().revert();
 	}
 
@@ -181,11 +181,11 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 		return world;
 	}
 
-	protected Collection<Address> deletedAccounts() {
+	protected Collection<Address> getDeletedAccounts() {
 		return deletedAccounts;
 	}
 
-	protected Collection<UpdateTrackingLedgerAccount<A>> updatedAccounts() {
+	protected Collection<UpdateTrackingLedgerAccount<A>> getUpdatedAccounts() {
 		return updatedAccounts.values();
 	}
 
