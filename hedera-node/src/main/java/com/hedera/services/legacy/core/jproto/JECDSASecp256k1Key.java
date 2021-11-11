@@ -57,4 +57,9 @@ public class JECDSASecp256k1Key extends JKey {
 	public String toString() {
 		return "<JECDSASecp256k1Key: ecdsaSecp256k1Key hex=" + CommonUtils.hex(ecdsaSecp256k1Key) + ">";
 	}
+
+	@Override
+	public boolean hasECDSAsecp256k1Key() {
+		return true;
+	}
 }
