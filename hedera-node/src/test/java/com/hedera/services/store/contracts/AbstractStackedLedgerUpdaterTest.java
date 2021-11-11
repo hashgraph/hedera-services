@@ -45,7 +45,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
@@ -72,7 +71,7 @@ class AbstractStackedLedgerUpdaterTest {
 	void revertsAsExpected() {
 		subject.revert();
 
-		assertTrackingLedgersNotInTxn();
+		assertTrackingLedgersInTxn();
 	}
 
 	@Test
@@ -87,10 +86,18 @@ class AbstractStackedLedgerUpdaterTest {
 		assertEquals(aBalance, wrapped.trackingLedgers().accounts().get(aAccount, BALANCE));
 	}
 
+	private void assertTrackingLedgersInTxn() {
+		assertTrackingLedgersTxnStatus(true);
+	}
+
 	private void assertTrackingLedgersNotInTxn() {
-		assertFalse(subject.trackingLedgers().tokenRels().isInTransaction());
-		assertFalse(subject.trackingLedgers().accounts().isInTransaction());
-		assertFalse(subject.trackingLedgers().nfts().isInTransaction());
+		assertTrackingLedgersTxnStatus(false);
+	}
+
+	private void assertTrackingLedgersTxnStatus(final boolean inTxn) {
+		assertEquals(inTxn, subject.trackingLedgers().tokenRels().isInTransaction());
+		assertEquals(inTxn, subject.trackingLedgers().accounts().isInTransaction());
+		assertEquals(inTxn, subject.trackingLedgers().nfts().isInTransaction());
 	}
 
 	private void setupLedgers() {
