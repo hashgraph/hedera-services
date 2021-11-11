@@ -203,8 +203,11 @@ public final class EntityIdUtils {
 	}
 
 	public static Address asTypedSolidityAddress(final AccountID id) {
-		final var rawAddress = asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum());
-		return Address.wrap(Bytes.wrap(rawAddress));
+		return Address.wrap(Bytes.wrap(asSolidityAddress(id)));
+	}
+
+	public static Address asTypedSolidityAddress(final ContractID id) {
+		return Address.wrap(Bytes.wrap(asSolidityAddress(id)));
 	}
 
 	public static String asSolidityAddressHex(Id id) {

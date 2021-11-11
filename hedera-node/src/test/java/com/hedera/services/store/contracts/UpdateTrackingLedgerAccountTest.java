@@ -68,7 +68,7 @@ class UpdateTrackingLedgerAccountTest {
 		final var account = parentState.new WorldStateAccount(
 				targetAddress, Wei.of(initialBalance), expiry, autoRenewPeriod, proxyId);
 
-		final var subject = new UpdateTrackingLedgerAccount(account, trackingAccounts);
+		final var subject = new UpdateTrackingLedgerAccount<>(account, trackingAccounts);
 
 		subject.setBalance(Wei.of(newBalance));
 

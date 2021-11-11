@@ -137,7 +137,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		this.keyToString = Optional.of(keyToString);
 	}
 
-	void begin() {
+	public void begin() {
 		if (isInTransaction) {
 			throw new IllegalStateException("A transaction is already active!");
 		}

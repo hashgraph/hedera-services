@@ -40,7 +40,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 
@@ -92,23 +91,14 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 	protected abstract A getForMutation(Address address);
 
 	@Override
-	public WorldUpdater updater() {
-		return new StackedLedgerUpdater<>(this, trackingLedgers.wrapped());
-	}
-
-	@Override
 	public EvmAccount createAccount(final Address address, final long nonce, final Wei balance) {
 		final var newMutable = new UpdateTrackingLedgerAccount<A>(address, trackingLedgers.accounts());
+		if (trackingLedgers.areUsable()) {
+			trackingLedgers.accounts().create(newMutable.getAccountId());
+		}
+
 		newMutable.setNonce(nonce);
 		newMutable.setBalance(balance);
-
-
-		if (trackingLedgers.areUsable()) {
-			final var accounts = trackingLedgers.accounts();
-			final var accountId = newMutable.getAccountId();
-			accounts.create(accountId);
-			accounts.set(accountId, BALANCE, balance.toLong());
-		}
 
 		return new WrappedEvmAccount(track(newMutable));
 	}
@@ -167,6 +157,13 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 	@Override
 	public Collection<Address> getDeletedAccountAddresses() {
 		return new ArrayList<>(deletedAccounts);
+	}
+
+	@Override
+	public void revert() {
+		deletedAccounts().clear();
+		updatedAccounts().clear();
+		trackingLedgers().revert();
 	}
 
 	protected UpdateTrackingLedgerAccount<A> track(final UpdateTrackingLedgerAccount<A> account) {

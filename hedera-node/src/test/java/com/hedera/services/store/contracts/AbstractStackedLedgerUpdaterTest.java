@@ -49,14 +49,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
-class StackedLedgerUpdaterTest {
+class AbstractStackedLedgerUpdaterTest {
 	@Mock
 	private HederaWorldState worldState;
 
 	private WorldLedgers ledgers;
 	private MockLedgerWorldUpdater wrapped;
 
-	private StackedLedgerUpdater<HederaWorldState, HederaWorldState.WorldStateAccount> subject;
+	private AbstractStackedLedgerUpdater<HederaWorldState, HederaWorldState.WorldStateAccount> subject;
 
 	@BeforeEach
 	@SuppressWarnings("unchecked")
@@ -65,7 +65,7 @@ class StackedLedgerUpdaterTest {
 
 		wrapped = new MockLedgerWorldUpdater(worldState, ledgers.wrapped());
 
-		subject = (StackedLedgerUpdater<HederaWorldState, HederaWorldState.WorldStateAccount>) wrapped.updater();
+		subject = (AbstractStackedLedgerUpdater<HederaWorldState, HederaWorldState.WorldStateAccount>) wrapped.updater();
 	}
 
 	@Test

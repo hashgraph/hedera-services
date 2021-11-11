@@ -42,6 +42,7 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
+import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 
 public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAccount, EvmAccount {
@@ -60,7 +61,6 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
 	@Nullable
 	private Hash updatedCodeHash;
 	private boolean storageWasCleared = false;
-	private boolean transactionBoundary = false;
 
 	public UpdateTrackingLedgerAccount(
 			final Address address,
@@ -104,15 +104,6 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
 	 */
 	public A getWrappedAccount() {
 		return account;
-	}
-
-	public void setWrappedAccount(final A account) {
-		if (this.account == null) {
-			this.account = account;
-			storageWasCleared = false;
-		} else {
-			throw new IllegalStateException("Already tracking a wrapped account");
-		}
 	}
 
 	/**
@@ -163,6 +154,9 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
 	@Override
 	public void setBalance(final Wei value) {
 		this.balance = value;
+		if (trackingAccounts != null) {
+			trackingAccounts.set(accountId, BALANCE, value.toLong());
+		}
 	}
 
 	@Override
@@ -198,10 +192,6 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
 		this.updatedCodeHash = null;
 	}
 
-	void markTransactionBoundary() {
-		this.transactionBoundary = true;
-	}
-
 	@Override
 	public UInt256 getStorageValue(final UInt256 key) {
 		final UInt256 value = updatedStorage.get(key);
@@ -219,9 +209,7 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
 
 	@Override
 	public UInt256 getOriginalStorageValue(final UInt256 key) {
-		if (transactionBoundary) {
-			return getStorageValue(key);
-		} else if (storageWasCleared || account == null) {
+		if (storageWasCleared || account == null) {
 			return UInt256.ZERO;
 		} else {
 			return account.getOriginalStorageValue(key);
@@ -262,10 +250,6 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
 
 	public boolean getStorageWasCleared() {
 		return storageWasCleared;
-	}
-
-	public void setStorageWasCleared(final boolean storageWasCleared) {
-		this.storageWasCleared = storageWasCleared;
 	}
 
 	@Override

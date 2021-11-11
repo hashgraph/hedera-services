@@ -53,15 +53,26 @@ public class WorldLedgers {
 	}
 
 	public void commit() {
-		tokenRelsLedger.commit();
-		accountsLedger.commit();
-		nftsLedger.commit();
+		if (areUsable()) {
+			tokenRelsLedger.commit();
+			accountsLedger.commit();
+			nftsLedger.commit();
+		}
 	}
 
 	public void revert() {
-		tokenRelsLedger.rollback();
-		accountsLedger.rollback();
-		nftsLedger.rollback();
+		if (areUsable()) {
+			tokenRelsLedger.rollback();
+			accountsLedger.rollback();
+			nftsLedger.rollback();
+
+			/* Since AbstractMessageProcessor.clearAccumulatedStateBesidesGasAndOutput() will make a
+			 * second token call to commit() after the initial revert(), we want to keep these ledgers
+			 * in an active transaction. */
+			tokenRelsLedger.begin();
+			accountsLedger.begin();
+			nftsLedger.begin();
+		}
 	}
 
 	public boolean areUsable() {

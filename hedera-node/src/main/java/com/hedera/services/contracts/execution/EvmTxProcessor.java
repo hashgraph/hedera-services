@@ -231,10 +231,6 @@ abstract class EvmTxProcessor {
 			process(messageFrameStack.peekFirst(), new HederaTracer());
 		}
 
-		if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS && !isStatic) {
-			stackedUpdater.commit();
-		}
-
 		Gas gasUsedByTransaction = Gas.of(gasLimit).minus(initialFrame.getRemainingGas());
 		/* Return leftover gas */
 		final Gas selfDestructRefund =

@@ -43,6 +43,7 @@ import java.util.function.Supplier;
 @Singleton
 public class MutableEntityAccess implements EntityAccess {
 	private final HederaLedger ledger;
+	private final WorldLedgers worldLedgers;
 	private final Supplier<VirtualMap<ContractKey, ContractValue>> storage;
 	private final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode;
 
@@ -55,9 +56,17 @@ public class MutableEntityAccess implements EntityAccess {
 		this.ledger = ledger;
 		this.storage = storage;
 		this.bytecode = bytecode;
+
+		this.worldLedgers = new WorldLedgers(
+				ledger.getTokenRelsLedger(),
+				ledger.getAccountsLedger(),
+				ledger.getNftsLedger());
 	}
 
-
+	@Override
+	public WorldLedgers worldLedgers() {
+		return worldLedgers;
+	}
 
 	@Override
 	public void spawn(AccountID id, long balance, HederaAccountCustomizer customizer) {

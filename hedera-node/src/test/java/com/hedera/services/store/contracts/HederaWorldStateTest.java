@@ -20,7 +20,6 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
-import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
@@ -59,7 +58,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -68,6 +66,8 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class HederaWorldStateTest {
+	@Mock
+	private WorldLedgers worldLedgers;
 	@Mock
 	private EntityIdSource ids;
 	@Mock
@@ -94,6 +94,8 @@ class HederaWorldStateTest {
 
 	@Test
 	void customizeSponsoredAccounts() {
+		givenNonNullWorldLedgers();
+
 		/* happy path with 0 existing accounts */
 		given(entityAccess.isExtant(any())).willReturn(true);
 		subject.customizeSponsoredAccounts();
@@ -123,6 +125,7 @@ class HederaWorldStateTest {
 		final var sponsorAddress = asSolidityAddress(sponsorId);
 		final var sponsoredAddress = asSolidityAddress(sponsoredId);
 
+		givenNonNullWorldLedgers();
 		given(entityAccess.isExtant(any())).willReturn(true);
 		given(entityAccess.getKey(sponsorId)).willReturn(new JContractIDKey(0, 0, 123L));
 
@@ -165,6 +168,7 @@ class HederaWorldStateTest {
 
 	@Test
 	void updater() {
+		givenNonNullWorldLedgers();
 		var updater = subject.updater();
 		assertNotNull(updater);
 		assertTrue(updater instanceof HederaWorldState.Updater);
@@ -256,6 +260,8 @@ class HederaWorldStateTest {
 
 	@Test
 	void staticInnerUpdaterWorksAsExpected() {
+		givenNonNullWorldLedgers();
+
 		/* Please note that the subject of this test is the actual inner updater class */
 		var actualSubject = subject.updater();
 		assertNotNull(actualSubject.updater());
@@ -263,15 +269,14 @@ class HederaWorldStateTest {
 
 		/* delete branch */
 		var mockedZeroAcc = mock(Address.class);
-		given(entityAccess.getBalance(any())).willReturn(10L);
-		actualSubject.sponsorMap.put(Address.ZERO, mockedZeroAcc);
+		actualSubject.getSponsorMap().put(Address.ZERO, mockedZeroAcc);
 		actualSubject.deleteAccount(Address.ZERO);
 		actualSubject.commit();
-		verify(entityAccess).customize(any(), any());
+		verify(worldLedgers).commit();
 
-		actualSubject.sponsorMap.put(Address.ZERO, mockedZeroAcc);
+		actualSubject.getSponsorMap().put(Address.ZERO, mockedZeroAcc);
 		actualSubject.revert();
-		assertEquals(0, actualSubject.sponsorMap.size());
+		assertEquals(0, actualSubject.getSponsorMap().size());
 
 		actualSubject.addSbhRefund(Gas.of(234L));
 		assertEquals(234L, actualSubject.getSbhRefund().toLong());
@@ -280,8 +285,9 @@ class HederaWorldStateTest {
 	}
 
 	@Test
-	void updaterGetsHederaAccount() throws NegativeAccountBalanceException {
-		// given:
+	void updaterGetsHederaAccount() {
+		givenNonNullWorldLedgers();
+
 		final var zeroAddress = accountParsedFromSolidityAddress(Address.ZERO.toArray());
 		final var updater = subject.updater();
 		// and:
@@ -309,7 +315,7 @@ class HederaWorldStateTest {
 
 	@Test
 	void updaterAllocatesNewAddress() {
-		// given:
+		givenNonNullWorldLedgers();
 		given(ids.newContractId(sponsor.asGrpcAccount())).willReturn(contract.asGrpcContract());
 
 		// when:
@@ -323,27 +329,24 @@ class HederaWorldStateTest {
 
 	@Test
 	void updaterCreatesDeletedAccountUponCommit() {
-		// given:
+		givenNonNullWorldLedgers();
+
 		final var updater = subject.updater();
 		updater.deleteAccount(contract.asEvmAddress());
 		// and:
-		given(entityAccess.isExtant(contract.asGrpcAccount())).willReturn(false);
 		given(entityAccess.getBalance(contract.asGrpcAccount())).willReturn(0L);
 
 		// when:
 		updater.commit();
 
 		// then:
-		verify(entityAccess).isExtant(contract.asGrpcAccount());
-		verify(entityAccess).spawn(eq(contract.asGrpcAccount()), eq(0L), any());
-		verify(entityAccess).isDeleted(contract.asGrpcAccount());
-		verify(entityAccess).adjustBalance(contract.asGrpcAccount(), 0);
-		verify(entityAccess).customize(eq(contract.asGrpcAccount()), any());
+		verify(worldLedgers).commit();
 	}
 
 	@Test
 	void updaterCommitsSuccessfully() {
-		// given:
+		givenNonNullWorldLedgers();
+
 		final var actualSubject = subject.updater();
 		final var evmAccount = actualSubject.createAccount(contract.asEvmAddress(), 0, Wei.of(balance));
 		final var storageKey = UInt256.ONE;
@@ -356,7 +359,6 @@ class HederaWorldStateTest {
 		// and:
 		final var accountID = accountParsedFromSolidityAddress(contract.asEvmAddress().toArray());
 		given(entityAccess.isExtant(accountID)).willReturn(true);
-		given(entityAccess.getBalance(accountID)).willReturn(0L);
 
 		// when:
 		actualSubject.commit();
@@ -364,7 +366,6 @@ class HederaWorldStateTest {
 		// then:
 		verify(entityAccess).isExtant(accountID);
 		verify(entityAccess).isExtant(accountID);
-		verify(entityAccess).getBalance(accountID);
 		verify(entityAccess).put(accountID, storageKey, storageValue);
 		verify(entityAccess).put(accountID, secondStorageKey, secondStorageValue);
 		// and:
@@ -373,12 +374,12 @@ class HederaWorldStateTest {
 
 	@Test
 	void persistNewlyCreatedContracts() {
-		// given:
+		givenNonNullWorldLedgers();
+
 		final var actualSubject = subject.updater();
 		actualSubject.createAccount(contract.asEvmAddress(), 0, Wei.of(balance));
 		// and:
 		given(entityAccess.isExtant(contract.asGrpcAccount())).willReturn(false);
-		given(entityAccess.getBalance(contract.asGrpcAccount())).willReturn(0L);
 		// and:
 
 		// when:
@@ -388,10 +389,13 @@ class HederaWorldStateTest {
 
 		// then:
 		verify(entityAccess).isExtant(contract.asGrpcAccount());
-		verify(entityAccess).spawn(any(), anyLong(), any());
-		verify(entityAccess).getBalance(contract.asGrpcAccount());
 		// and:
 		assertEquals(1, result.size());
 		assertEquals(contract.asGrpcContract(), result.get(0));
+	}
+
+	private void givenNonNullWorldLedgers() {
+		given(worldLedgers.wrapped()).willReturn(worldLedgers);
+		given(entityAccess.worldLedgers()).willReturn(worldLedgers);
 	}
 }

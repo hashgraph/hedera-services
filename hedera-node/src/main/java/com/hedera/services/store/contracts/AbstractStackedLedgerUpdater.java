@@ -24,10 +24,13 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.WorldView;
 
-public class StackedLedgerUpdater<W extends WorldView, A extends Account>
+public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extends Account>
 		extends AbstractLedgerWorldUpdater<AbstractLedgerWorldUpdater<W, A>, UpdateTrackingLedgerAccount<A>> {
 
-	public StackedLedgerUpdater(final AbstractLedgerWorldUpdater<W, A> world, final WorldLedgers trackingLedgers) {
+	public AbstractStackedLedgerUpdater(
+			final AbstractLedgerWorldUpdater<W, A> world,
+			final WorldLedgers trackingLedgers
+	) {
 		super(world, trackingLedgers);
 	}
 
@@ -46,19 +49,13 @@ public class StackedLedgerUpdater<W extends WorldView, A extends Account>
 	}
 
 	@Override
-	public void revert() {
-		deletedAccounts().clear();
-		updatedAccounts().clear();
-		trackingLedgers().revert();
-	}
-
-	@Override
 	public void commit() {
 		final var wrapped = wrappedWorldView();
-		deletedAccounts().forEach(wrapped.updatedAccounts::remove);
-		updatedAccounts().forEach(a -> wrapped.deletedAccounts.remove(a.getAddress()));
 
-		// Then push our deletes and updates to the stacked ones.
+		/* NOTE - in a traditional Ethereum context, it is technically possible with use of CREATE2
+		 * for a stacked updater to re-create an account that was deleted by the updater below it.
+		 * But that is not possible in Hedera. */
+		deletedAccounts().forEach(wrapped.updatedAccounts::remove);
 		wrapped.deletedAccounts.addAll(deletedAccounts());
 
 		for (final var updatedAccount : updatedAccounts()) {

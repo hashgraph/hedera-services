@@ -38,6 +38,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.store.contracts.WorldLedgers.NULL_WORLD_LEDGERS;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -79,6 +80,10 @@ class WorldLedgersTest {
 		verify(tokenRelsLedger).rollback();
 		verify(accountsLedger).rollback();
 		verify(nftsLedger).rollback();
+
+		verify(tokenRelsLedger).begin();
+		verify(accountsLedger).begin();
+		verify(nftsLedger).begin();
 	}
 
 	@Test
@@ -113,5 +118,7 @@ class WorldLedgersTest {
 	void nullLedgersWorkAsExpected() {
 		assertSame(NULL_WORLD_LEDGERS, NULL_WORLD_LEDGERS.wrapped());
 		assertFalse(NULL_WORLD_LEDGERS.areUsable());
+		assertDoesNotThrow(NULL_WORLD_LEDGERS::commit);
+		assertDoesNotThrow(NULL_WORLD_LEDGERS::revert);
 	}
 }

@@ -54,6 +54,7 @@ import java.time.Instant;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -103,18 +104,20 @@ class MutableEntityAccessTest {
 
 	@BeforeEach
 	void setUp() {
+		given(ledger.getTokenRelsLedger()).willReturn(tokenRelsLedger);
+		given(ledger.getAccountsLedger()).willReturn(accountsLedger);
+		given(ledger.getNftsLedger()).willReturn(nftsLedger);
+
 		subject = new MutableEntityAccess(ledger, supplierContractStorage, supplierBytecode);
 	}
 
 	@Test
 	void delegatesLedgerAccess() {
-		given(ledger.getTokenRelsLedger()).willReturn(tokenRelsLedger);
-		given(ledger.getAccountsLedger()).willReturn(accountsLedger);
-		given(ledger.getNftsLedger()).willReturn(nftsLedger);
+		final var worldLedgers = subject.worldLedgers();
 
-//		assertSame(tokenRelsLedger, subject.tokenRelsLedger());
-//		assertSame(accountsLedger, subject.accountsLedger());
-//		assertSame(nftsLedger, subject.nftsLedger());
+		assertSame(tokenRelsLedger, worldLedgers.tokenRels());
+		assertSame(accountsLedger, worldLedgers.accounts());
+		assertSame(nftsLedger, worldLedgers.nfts());
 	}
 
 	@Test
