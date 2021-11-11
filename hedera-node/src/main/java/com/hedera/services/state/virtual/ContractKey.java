@@ -23,6 +23,7 @@ package com.hedera.services.state.virtual;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -38,9 +39,9 @@ import static com.swirlds.jasperdb.utilities.NonCryptographicHashing.perm64;
  * We only store the number part of the contract ID as the ideas ia there will be a virtual merkle tree for each shard
  * and realm.
  */
-public final class ContractKey implements VirtualKey {
+public final class ContractKey implements VirtualKey<ContractKey> {
 	/** The shifts required to deserialize a big-endian contractId with leading zeros omitted */
-	private static final int[] BIT_SHIFTS =  { 0, 8, 16, 24, 32, 40, 48, 56 };
+	private static final int[] BIT_SHIFTS = { 0, 8, 16, 24, 32, 40, 48, 56 };
 	/** The estimated average size for a contract key when serialized */
 	public static final int ESTIMATED_AVERAGE_SIZE = 20; // assume 50% full typically, max size is (1 + 8 + 32)
 	/** The max size for a contract key when serialized */
@@ -390,6 +391,24 @@ public final class ContractKey implements VirtualKey {
 	static byte computeNonZeroBytes(long num) {
 		if (num == 0) return (byte) 1;
 		return (byte) Math.ceil((Long.SIZE - Long.numberOfLeadingZeros(num)) / 8D);
+	}
+
+	@Override
+	public int compareTo(@NotNull final ContractKey that) {
+		if (this == that) {
+			return 0;
+		}
+		int order = Long.compare(this.contractId, that.contractId);
+
+		if (order != 0) {
+			return order;
+		}
+		return Arrays.compare(uint256Key, that.uint256Key);
+	}
+
+	@Override
+	public int getMinimumSupportedVersion() {
+		return 1;
 	}
 
 	/** Simple interface for a function that takes a object and returns a byte */

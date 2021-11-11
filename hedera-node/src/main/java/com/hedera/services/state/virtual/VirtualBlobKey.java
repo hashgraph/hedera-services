@@ -25,6 +25,7 @@ import com.hedera.services.utils.MiscUtils;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -32,7 +33,7 @@ import java.nio.ByteBuffer;
 import static com.hedera.services.files.store.FcBlobsBytesStore.LEGACY_BLOB_CODE_INDEX;
 import static java.lang.Long.parseLong;
 
-public class VirtualBlobKey implements VirtualKey {
+public class VirtualBlobKey implements VirtualKey<VirtualBlobKey> {
 	static final int CURRENT_VERSION = 1;
 	static final int BYTES_IN_SERIALIZED_FORM = 5;
 	static final long CLASS_ID = 0x11b982c14217d523L;
@@ -136,5 +137,23 @@ public class VirtualBlobKey implements VirtualKey {
 
 	public int getEntityNumCode() {
 		return entityNumCode;
+	}
+
+	@Override
+	public int compareTo(@NotNull final VirtualBlobKey that) {
+		if (this == that) {
+			return 0;
+		}
+		int order = Integer.compare(this.entityNumCode, that.entityNumCode);
+		if (order != 0) {
+			return order;
+		}
+
+		return this.type.compareTo(that.type);
+	}
+
+	@Override
+	public int getMinimumSupportedVersion() {
+		return CURRENT_VERSION;
 	}
 }
