@@ -29,7 +29,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -118,11 +117,9 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	 * @return an active ledger wrapping the source
 	 */
 	public static <K, P extends Enum<P> & BeanProperty<A>, A> TransactionalLedger<K, P, A> activeLedgerWrapping(
-			@Nullable final TransactionalLedger<K, P, A> sourceLedger
+			final TransactionalLedger<K, P, A> sourceLedger
 	) {
-		if (sourceLedger == null) {
-			return null;
-		}
+		Objects.requireNonNull(sourceLedger);
 
 		final var wrapper = new TransactionalLedger<>(
 				sourceLedger.getPropertyType(),
