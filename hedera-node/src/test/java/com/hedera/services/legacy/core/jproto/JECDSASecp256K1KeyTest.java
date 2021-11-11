@@ -58,7 +58,6 @@ class JECDSASecp256K1KeyTest {
 
 	@Test
 	void nonEmptyValid0x02JECDSAsecp256k1KeyTest() {
-		byte[] bytes = new byte[33];
 		bytes[0] = 0x02;
 		JECDSASecp256k1Key key = new JECDSASecp256k1Key(bytes);
 		assertFalse(key.isEmpty());
@@ -69,6 +68,13 @@ class JECDSASecp256K1KeyTest {
 	void nonEmptyValid0x03JECDSAsecp256k1KeyTest() {
 		assertFalse(subject.isEmpty());
 		assertTrue(subject.isValid());
+	}
+
+	@Test
+	void nonEmptyInvalid0x06JECDSAsecp256k1KeyTest() {
+		bytes[0] = 0x06;
+		assertFalse(subject.isEmpty());
+		assertFalse(subject.isValid());
 	}
 
 	@Test

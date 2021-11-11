@@ -22,7 +22,7 @@ package com.hedera.services.legacy.unit.serialization;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.contracts.sources.BlobStorageSource;
-import com.hedera.services.legacy.core.jproto.JECDSAsecp256k1Key;
+import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
@@ -436,7 +436,7 @@ class JKeySerializerTest {
 			final JKey jKeyReborn = JKeySerializer.deserialize(dis);
 			assertAll("JKeyRebornChecks-Top Level",
 					() -> assertNotNull(jKeyReborn),
-					() -> assertTrue(jKeyReborn instanceof JECDSAsecp256k1Key),
+					() -> assertTrue(jKeyReborn instanceof JECDSASecp256k1Key),
 					() -> assertFalse(jKeyReborn.hasKeyList()),
 					() -> assertFalse(jKeyReborn.hasThresholdKey())
 			);

@@ -47,7 +47,7 @@ class JThresholdKeyTest {
 
     assertTrue(cut.isEmpty());
 
-    final var cut1 = new JThresholdKey(new JKeyList(List.of(new JECDSAsecp256k1Key(new byte[0]))), 1);
+    final var cut1 = new JThresholdKey(new JKeyList(List.of(new JECDSASecp256k1Key(new byte[0]))), 1);
 
     assertTrue(cut1.isEmpty());
   }
@@ -128,7 +128,7 @@ class JThresholdKeyTest {
     var ed25519Key = new JEd25519Key("ed25519".getBytes());
     var ecdsa384Key = new JECDSA_384Key("ecdsa384".getBytes());
     var rsa3072Key = new JRSA_3072Key("rsa3072".getBytes());
-    var ecdsasecp256k1Key = new JECDSAsecp256k1Key("ecdsasecp256k1".getBytes());
+    var ecdsasecp256k1Key = new JECDSASecp256k1Key("ecdsasecp256k1".getBytes());
     var contractKey = new JContractIDKey(0, 0, 75231);
     // and:
     List<JKey> keys = List.of(ed25519Key, ecdsa384Key, rsa3072Key, contractKey, ecdsasecp256k1Key);
