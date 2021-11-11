@@ -166,6 +166,10 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 		trackingLedgers().revert();
 	}
 
+	public WorldLedgers trackingLedgers() {
+		return trackingLedgers;
+	}
+
 	protected UpdateTrackingLedgerAccount<A> track(final UpdateTrackingLedgerAccount<A> account) {
 		final var address = account.getAddress();
 		updatedAccounts.put(address, account);
@@ -183,10 +187,6 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 
 	protected Collection<UpdateTrackingLedgerAccount<A>> updatedAccounts() {
 		return updatedAccounts.values();
-	}
-
-	protected WorldLedgers trackingLedgers() {
-		return trackingLedgers;
 	}
 
 	protected TransactionalLedger<AccountID, AccountProperty, MerkleAccount> trackingAccounts() {
