@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static com.hedera.services.legacy.core.jproto.JKeyListTest.randomValidECDSASecp256K1Key;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -45,6 +46,10 @@ class JThresholdKeyTest {
     final var cut = new JThresholdKey(new JKeyList(List.of(new JEd25519Key(new byte[0]))), 1);
 
     assertTrue(cut.isEmpty());
+
+    final var cut1 = new JThresholdKey(new JKeyList(List.of(new JECDSASecp256k1Key(new byte[0]))), 1);
+
+    assertTrue(cut1.isEmpty());
   }
 
   @Test
@@ -88,11 +93,15 @@ class JThresholdKeyTest {
     Key validECDSA384Key = Key.newBuilder().setECDSA384(
             TxnUtils.randomUtf8ByteString(24)
     ).build();
+    Key validECDSASecp256Key = randomValidECDSASecp256K1Key();
+
     KeyList invalidKeyList1 = KeyList.newBuilder().build();
     Key invalidKey1 = thresholdKey(invalidKeyList1, 1);
     KeyList invalidKeyList2 = KeyList.newBuilder().addKeys(validED25519Key).addKeys(invalidKey1).build();
     Key invalidKey2 = thresholdKey(invalidKeyList2, 2);
     KeyList invalidKeyList3 = KeyList.newBuilder().addKeys(validECDSA384Key).addKeys(invalidKey2).build();
+    Key invalidKey3 = thresholdKey(invalidKeyList2, 2);
+    KeyList invalidKeyList4 = KeyList.newBuilder().addKeys(validECDSASecp256Key).addKeys(invalidKey3).build();
 
     JKey jThresholdKey1 = JKey.convertKey(invalidKey1, 1);
     assertFalse(jThresholdKey1.isValid());
@@ -101,6 +110,7 @@ class JThresholdKeyTest {
     assertFalse(jThresholdKey2.isValid());
 
     assertFalse(jThresholdKey(invalidKeyList3, 1).isValid());
+    assertFalse(jThresholdKey(invalidKeyList4, 1).isValid());
   }
 
   @Test
@@ -118,9 +128,10 @@ class JThresholdKeyTest {
     var ed25519Key = new JEd25519Key("ed25519".getBytes());
     var ecdsa384Key = new JECDSA_384Key("ecdsa384".getBytes());
     var rsa3072Key = new JRSA_3072Key("rsa3072".getBytes());
+    var ecdsasecp256k1Key = new JECDSASecp256k1Key("ecdsasecp256k1".getBytes());
     var contractKey = new JContractIDKey(0, 0, 75231);
     // and:
-    List<JKey> keys = List.of(ed25519Key, ecdsa384Key, rsa3072Key, contractKey);
+    List<JKey> keys = List.of(ed25519Key, ecdsa384Key, rsa3072Key, contractKey, ecdsasecp256k1Key);
     var delegate = new JKeyList(keys);
 
     // given:

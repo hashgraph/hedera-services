@@ -22,6 +22,7 @@ package com.hedera.services.legacy.unit.serialization;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.contracts.sources.BlobStorageSource;
+import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
@@ -142,6 +143,15 @@ class JKeySerializerTest {
 		return key;
 	}
 
+	private static Key genSingleECDSASecp256k1Key(final Map<String, PrivateKey> pubKey2privKeyMap) {
+		final var pair = new KeyPairGenerator().generateKeyPair();
+		final var pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
+		final var key = Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(pubKey)).build();
+		final var pubKeyHex = CommonUtils.hex(pubKey);
+		pubKey2privKeyMap.put(pubKeyHex, pair.getPrivate());
+		return key;
+	}
+
 	/**
 	 * Generates a complex key of given depth with a mix of basic key, threshold key and key list.
 	 *
@@ -163,13 +173,14 @@ class JKeySerializerTest {
 		} else if (depth == 2) {
 			final List<Key> keys = new ArrayList<>();
 			keys.add(genSingleEd25519Key(pubKey2privKeyMap));
+			keys.add(genSingleECDSASecp256k1Key(pubKey2privKeyMap));
 			keys.add(genThresholdKeyInstance(numKeys, threshold, pubKey2privKeyMap));
 			keys.add(genKeyListInstance(numKeys, pubKey2privKeyMap));
 			rv = genKeyList(keys);
 
 			//verify the size
 			final int size = computeNumOfExpandedKeys(rv, 1, new AtomicCounter());
-			assertEquals(1 + numKeys * 2, size);
+			assertEquals(2 + numKeys * 2, size);
 		} else {
 			throw new BlobStorageSource.CannotConstructKeysException("Not implemented yet.");
 		}
@@ -368,7 +379,7 @@ class JKeySerializerTest {
 		Key protoKey;
 		JKey jkey = null;
 		List<JKey> jListBefore = null;
-		//Jkey will have JEd25519Key,JThresholdKey,JKeyList
+		//Jkey will have JEd25519Key,JECDSASecp256K1Key,JThresholdKey,JKeyList
 		try {
 			protoKey = genSampleComplexKey(2, pubKey2privKeyMap);
 			jkey = JKey.mapKey(protoKey);
@@ -399,6 +410,36 @@ class JKeySerializerTest {
 			for (int i = 0; i < jListBefore.size(); i++) {
 				assertTrue(equalUpToDecodability(jListBefore.get(i), jListAfter.get(i)));
 			}
+		} catch (Exception ignore) {
+		}
+	}
+
+	@Test
+	void jKeyECDSASecp256k1KeySerDes() {
+		final Map<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();
+		Key protoKey;
+		JKey jkey = null;
+		try {
+			protoKey = genSingleECDSASecp256k1Key(pubKey2privKeyMap);
+			jkey = JKey.mapKey(protoKey);
+		} catch (DecoderException ignore) {
+		}
+		byte[] serializedJKey = null;
+		try {
+			serializedJKey = jkey.serialize();
+		} catch (IOException ignore) {
+		}
+
+		try (final var in = new ByteArrayInputStream(serializedJKey);
+			 final var dis = new DataInputStream(in)
+		) {
+			final JKey jKeyReborn = JKeySerializer.deserialize(dis);
+			assertAll("JKeyRebornChecks-Top Level",
+					() -> assertNotNull(jKeyReborn),
+					() -> assertTrue(jKeyReborn instanceof JECDSASecp256k1Key),
+					() -> assertFalse(jKeyReborn.hasKeyList()),
+					() -> assertFalse(jKeyReborn.hasThresholdKey())
+			);
 		} catch (Exception ignore) {
 		}
 	}
