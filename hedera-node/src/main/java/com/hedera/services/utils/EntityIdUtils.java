@@ -33,6 +33,8 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.CommonUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -195,9 +197,16 @@ public final class EntityIdUtils {
 	public static byte[] asSolidityAddress(final ContractID id) {
 		return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum());
 	}
+
 	public static byte[] asSolidityAddress(final AccountID id) {
 		return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum());
 	}
+
+	public static Address asTypedSolidityAddress(final AccountID id) {
+		final var rawAddress = asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum());
+		return Address.wrap(Bytes.wrap(rawAddress));
+	}
+
 	public static String asSolidityAddressHex(Id id) {
 		return CommonUtils.hex(asSolidityAddress((int) id.getShard(), id.getRealm(), id.getNum()));
 	}
@@ -210,6 +219,10 @@ public final class EntityIdUtils {
 		arraycopy(Longs.toByteArray(num), 0, solidityAddress, 12, 8);
 
 		return solidityAddress;
+	}
+
+	public static AccountID accountParsedFromSolidityAddress(final Address address) {
+		return accountParsedFromSolidityAddress(address.toArrayUnsafe());
 	}
 
 	public static AccountID accountParsedFromSolidityAddress(final byte[] solidityAddress) {

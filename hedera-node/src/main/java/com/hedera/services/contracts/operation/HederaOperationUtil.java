@@ -139,7 +139,7 @@ public final class HederaOperationUtil {
 					Optional.of(supplierHaltGasCost.get()), Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
 		}
 
-		final var accountId = EntityIdUtils.accountParsedFromSolidityAddress(account.getAddress().toArray());
+		final var accountId = EntityIdUtils.accountParsedFromSolidityAddress(account.getAddress());
 		if (!sigsVerifier.allRequiredKeysAreActive(Set.of(accountId))) {
 			return new Operation.OperationResult(
 					Optional.of(supplierHaltGasCost.get()), Optional.of(HederaExceptionalHaltReason.INVALID_SIGNATURE)

@@ -50,6 +50,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willCallRealMethod;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class StaticEntityAccessTest {
@@ -154,4 +156,10 @@ class StaticEntityAccessTest {
 		assertEquals(Bytes.EMPTY, blobBytes);
 	}
 
+	@Test
+	void defaultLedgersAreNull() {
+		final var mockSubject = mock(EntityAccess.class);
+
+		willCallRealMethod().given(mockSubject).worldLedgers();
+	}
 }

@@ -21,17 +21,27 @@ package com.hedera.services.store.contracts;
  */
 
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.properties.NftProperty;
+import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.store.models.NftId;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.virtualmap.VirtualMap;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,6 +73,12 @@ class MutableEntityAccessTest {
 	private VirtualMap<ContractKey, ContractValue> contractStorage;
 	@Mock
 	private VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecodeStorage;
+	@Mock
+	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
+	@Mock
+	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	@Mock
+	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 
 	private MutableEntityAccess subject;
 
@@ -80,13 +96,25 @@ class MutableEntityAccessTest {
 	private final ContractValue expectedContractValue = new ContractValue(contractStorageValue.toArray());
 
 	private final Bytes bytecode = Bytes.of("contract-code".getBytes());
-	private final VirtualBlobKey expectedBytecodeKey = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, (int) id.getAccountNum());
+	private final VirtualBlobKey expectedBytecodeKey = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE,
+			(int) id.getAccountNum());
 	private final VirtualBlobValue expectedBytecodeValue = new VirtualBlobValue(bytecode.toArray());
 
 
 	@BeforeEach
 	void setUp() {
 		subject = new MutableEntityAccess(ledger, supplierContractStorage, supplierBytecode);
+	}
+
+	@Test
+	void delegatesLedgerAccess() {
+		given(ledger.getTokenRelsLedger()).willReturn(tokenRelsLedger);
+		given(ledger.getAccountsLedger()).willReturn(accountsLedger);
+		given(ledger.getNftsLedger()).willReturn(nftsLedger);
+
+//		assertSame(tokenRelsLedger, subject.tokenRelsLedger());
+//		assertSame(accountsLedger, subject.accountsLedger());
+//		assertSame(nftsLedger, subject.nftsLedger());
 	}
 
 	@Test

@@ -90,8 +90,8 @@ public class HederaWorldState implements HederaMutableWorldState {
 	public void customizeSponsoredAccounts() {
 		// copy over sponsor account info for CREATE operations
 		sponsorMap.forEach((contract, sponsorAddress) -> {
-			final var newlyCreated = accountParsedFromSolidityAddress(contract.toArray());
-			final var sponsorAccount = accountParsedFromSolidityAddress(sponsorAddress.toArrayUnsafe());
+			final var newlyCreated = accountParsedFromSolidityAddress(contract);
+			final var sponsorAccount = accountParsedFromSolidityAddress(sponsorAddress);
 			validateTrue(entityAccess.isExtant(newlyCreated), FAIL_INVALID);
 			validateTrue(entityAccess.isExtant(sponsorAccount), FAIL_INVALID);
 
@@ -114,8 +114,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 	@Override
 	public Address newContractAddress(Address sponsor) {
-		final var newContractId =
-				ids.newContractId(accountParsedFromSolidityAddress(sponsor.toArrayUnsafe()));
+		final var newContractId = ids.newContractId(accountParsedFromSolidityAddress(sponsor));
 		return Address.wrap(Bytes.wrap(EntityIdUtils.asSolidityAddress(newContractId)));
 	}
 
@@ -146,7 +145,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 	@Override
 	public WorldStateAccount get(Address address) {
-		final var accountID = accountParsedFromSolidityAddress(address.toArray());
+		final var accountID = accountParsedFromSolidityAddress(address);
 		if (!entityAccess.isExtant(accountID) || entityAccess.isDeleted(accountID)) {
 			return null;
 		}
@@ -158,7 +157,6 @@ public class HederaWorldState implements HederaMutableWorldState {
 	}
 
 	public class WorldStateAccount implements Account {
-
 		private final Wei balance;
 		private final AccountID account;
 		private final Address address;
@@ -292,6 +290,10 @@ public class HederaWorldState implements HederaMutableWorldState {
 		public void setExpiry(final long expiry) {
 			this.expiry = expiry;
 		}
+
+		public AccountID getAccount() {
+			return account;
+		}
 	}
 
 	public static class Updater
@@ -358,7 +360,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 			var entityAccess = wrapped.entityAccess;
 
 			getDeletedAccountAddresses().forEach(address -> {
-				final var accountID = accountParsedFromSolidityAddress(address.toArray());
+				final var accountID = accountParsedFromSolidityAddress(address);
 				// account may have been created and deleted within the same transaction.
 				if (!entityAccess.isExtant(accountID)) {
 					entityAccess.spawn(accountID, 0, new HederaAccountCustomizer());

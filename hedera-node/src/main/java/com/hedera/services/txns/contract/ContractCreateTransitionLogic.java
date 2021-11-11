@@ -129,7 +129,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 
 		if (result.isSuccessful()) {
 			/* --- Create customizer for the newly created contract --- */
-			final var account = accountParsedFromSolidityAddress(newContractAddress.toArray());
+			final var account = accountParsedFromSolidityAddress(newContractAddress);
 			if (key == STANDIN_CONTRACT_ID_KEY) {
 				key = new JContractIDKey(account.getShardNum(), account.getRealmNum(), account.getAccountNum());
 			}

@@ -292,6 +292,11 @@ class LedgerImplBackingStoreTest {
 	}
 
 	@Test
+	void nullLedgerWrappedAsNull() {
+		assertNull(activeLedgerWrapping(null));
+	}
+
+	@Test
 	void createsWrappingLedgerAsExpected() {
 		givenFirstOrderSubject();
 

@@ -29,6 +29,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -117,8 +118,12 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	 * @return an active ledger wrapping the source
 	 */
 	public static <K, P extends Enum<P> & BeanProperty<A>, A> TransactionalLedger<K, P, A> activeLedgerWrapping(
-			final TransactionalLedger<K, P, A> sourceLedger
+			@Nullable final TransactionalLedger<K, P, A> sourceLedger
 	) {
+		if (sourceLedger == null) {
+			return null;
+		}
+
 		final var wrapper = new TransactionalLedger<>(
 				sourceLedger.getPropertyType(),
 				sourceLedger.getNewEntity(),
@@ -155,7 +160,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		}
 	}
 
-	void rollback() {
+	public void rollback() {
 		if (!isInTransaction) {
 			throw new IllegalStateException("Cannot perform rollback, no transaction is active!");
 		}
@@ -169,7 +174,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		isInTransaction = false;
 	}
 
-	void commit() {
+	public void commit() {
 		if (!isInTransaction) {
 			throw new IllegalStateException("Cannot perform commit, no transaction is active!");
 		}
@@ -377,7 +382,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 				: newDefaultPropertySource();
 	}
 
-	boolean isInTransaction() {
+	public boolean isInTransaction() {
 		return isInTransaction;
 	}
 
@@ -488,5 +493,10 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 
 	Class<P> getPropertyType() {
 		return propertyType;
+	}
+
+	/* --- Only used by unit tests --- */
+	public TransactionalLedger<K, P, A> getEntitiesLedger() {
+		return entitiesLedger;
 	}
 }

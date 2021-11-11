@@ -44,6 +44,7 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.EMPTY_CONSTRUCTOR;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FIBONACCI_PLUS_CONSTRUCTOR_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FIBONACCI_PLUS_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SEND_THEN_REVERT_NESTED_SENDS_ABI;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
@@ -52,6 +53,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -87,18 +89,19 @@ public class ContractCreateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						createEmptyConstructor(),
-						insufficientPayerBalanceUponCreation(),
-						rejectsInvalidMemo(),
-						rejectsInsufficientFee(),
-						rejectsInvalidBytecode(),
-						revertsNonzeroBalance(),
-						createFailsIfMissingSigs(),
-						rejectsInsufficientGas(),
-						createsVanillaContractAsExpectedWithOmittedAdminKey(),
-						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
-						cannotCreateTooLargeContract(),
-						canCallPendingContractSafely(),
+//						createEmptyConstructor(),
+//						insufficientPayerBalanceUponCreation(),
+//						rejectsInvalidMemo(),
+//						rejectsInsufficientFee(),
+//						rejectsInvalidBytecode(),
+//						revertsNonzeroBalance(),
+//						createFailsIfMissingSigs(),
+//						rejectsInsufficientGas(),
+//						createsVanillaContractAsExpectedWithOmittedAdminKey(),
+//						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
+//						cannotCreateTooLargeContract(),
+//						canCallPendingContractSafely(),
+						revertedTryExtCallHasNoSideEffects(),
 				}
 		);
 	}
@@ -234,6 +237,45 @@ public class ContractCreateSuite extends HapiApiSuite {
 				);
 	}
 
+	private HapiApiSpec revertedTryExtCallHasNoSideEffects() {
+		final var balance = 3_000;
+		final int sendAmount = (int) balance / 3;
+		final var initcode = "initcode";
+		final var contract = "contract";
+		final var aBeneficiary = "aBeneficiary";
+		final var bBeneficiary = "bBeneficiary";
+		final var txn = "txn";
+
+		return defaultHapiSpec("RevertedTryExtCallHasNoSideEffects")
+				.given(
+						fileCreate(initcode)
+								.path(ContractResources.REVERTING_SEND_TRY),
+						contractCreate(contract)
+								.bytecode(initcode)
+								.balance(balance),
+						cryptoCreate(aBeneficiary).balance(0L),
+						cryptoCreate(bBeneficiary).balance(0L)
+				).when(
+						withOpContext((spec, opLog) -> {
+							final var registry = spec.registry();
+							final int aNum = (int) registry.getAccountID(aBeneficiary).getAccountNum();
+							final int bNum = (int) registry.getAccountID(bBeneficiary).getAccountNum();
+							final Object[] sendArgs = new Object[] { sendAmount, aNum, bNum };
+
+							final var op = contractCall(
+									contract,
+									SEND_THEN_REVERT_NESTED_SENDS_ABI,
+									sendArgs
+							).via(txn);
+							allRunFor(spec, op);
+						})
+				).then(
+						getTxnRecord(txn).logged(),
+						getAccountBalance(aBeneficiary).logged(),
+						getAccountBalance(bBeneficiary).logged()
+				);
+	}
+
 	private HapiApiSpec createFailsIfMissingSigs() {
 		KeyShape shape = listOf(SIMPLE, threshOf(2, 3), threshOf(1, 3));
 		SigControl validSig = shape.signedWith(sigs(ON, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
@@ -324,7 +366,8 @@ public class ContractCreateSuite extends HapiApiSuite {
 	private HapiApiSpec cannotCreateTooLargeContract() {
 		ByteString contents = ByteString.EMPTY;
 		try {
-			contents = ByteString.copyFrom(Files.readAllBytes(Path.of(ContractResources.LARGE_CONTRACT_CRYPTO_KITTIES)));
+			contents =
+					ByteString.copyFrom(Files.readAllBytes(Path.of(ContractResources.LARGE_CONTRACT_CRYPTO_KITTIES)));
 		} catch (Exception ignore) {
 
 		}

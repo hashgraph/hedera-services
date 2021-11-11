@@ -57,6 +57,8 @@ public class MutableEntityAccess implements EntityAccess {
 		this.bytecode = bytecode;
 	}
 
+
+
 	@Override
 	public void spawn(AccountID id, long balance, HederaAccountCustomizer customizer) {
 		ledger.spawn(id, balance, customizer);
