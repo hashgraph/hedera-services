@@ -20,14 +20,9 @@ package com.hedera.services.bdd.suiterunner.store;
  * ‍
  */
 
-/*	Note to the reviewer:
-*	Will contain a collection of E2E suites, executed by the CI tool and will be a replica of the map, initialized
-* 	in the SuiteRunner.class
-* */
 public class CiStore extends SuiteStore {
 
 	@Override
 	protected void initializeSuites() {
-
 	}
 }

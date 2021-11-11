@@ -54,11 +54,8 @@ public class SuiteReport {
 	@Override
 	public boolean equals(final Object o) {
 		if (this == o) return true;
-
 		if (o == null || getClass() != o.getClass()) return false;
-
 		final SuiteReport that = (SuiteReport) o;
-
 		return new EqualsBuilder().append(getName(), that.getName()).isEquals();
 	}
 

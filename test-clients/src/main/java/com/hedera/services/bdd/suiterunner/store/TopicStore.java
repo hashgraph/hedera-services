@@ -27,6 +27,7 @@ public class TopicStore extends SuiteStore {
 
 	@Override
 	protected void initializeSuites() {
-
 	}
+
+
 }

@@ -27,8 +27,11 @@ import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
+import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.FREEZE_SUITES;
 
 public abstract class SuiteStore {
 	protected static final Map<SuitePackage, Supplier<List<HapiApiSuite>>> suites = new EnumMap<>(SuitePackage.class);
@@ -40,26 +43,20 @@ public abstract class SuiteStore {
 
 	protected abstract void initializeSuites();
 
-	// TODO: Add JavaDoc if approved
-	/*	Note to the reviewer:
-	* 	This method will be called when generating the options, available to the developer,
-	* 	when running E2E suites locally
-	**/
 	public static List<String> getAllCategories = Arrays
 			.stream(SuitePackage.values())
 			.map(c -> c.asString)
 			.collect(Collectors.toList());
 
-	// TODO: Add JavaDoc if approved
 	public static boolean isValidCategory(String arg) {
 		return suites.keySet().stream().anyMatch(key -> key.asString.equalsIgnoreCase(arg));
 	}
 
-	// TODO: Add JavaDoc if approved
-	public static List<SuitePackage> getCategories(List<String> input) {
+	public static List<SuitePackage> getCategories(Set<String> input) {
 		return input
 				.stream()
 				.map(PackageStore::getCategory)
+				.filter(cat -> cat != FREEZE_SUITES)
 				.collect(Collectors.toList());
 	}
 

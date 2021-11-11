@@ -221,7 +221,6 @@ import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.FREEZE_SUIT
 import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.ISSUES_SUITES;
 import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.META_SUITES;
 import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.MISC_SUITES;
-import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.PERF_SUITES;
 import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.RECONNECT_SUITES;
 import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.RECORDS_SUITES;
 import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.REGRESSION_SUITES;
@@ -230,16 +229,9 @@ import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.STREAMING_S
 import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.THROTTLING_SUITES;
 import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.TOKEN_SUITES;
 
-// TODO: Performance tests from package perf are not included. Include if confirmed in daily
-
 public class PackageStore extends SuiteStore {
-	// TODO: PERF_SUITES initialized for testing purposes only. Either remove it or to populate with actual performance suites
 	@Override
-	protected  void initializeSuites() {
-		suites.put(PERF_SUITES, () -> List.of(
-				new AccountAutoRenewalSuite(),
-				new AutoRemovalCasesSuite()));
-
+	protected void initializeSuites() {
 		suites.put(AUTORENEW_SUITES, () -> List.of(
 				new AccountAutoRenewalSuite(),
 				new AutoRemovalCasesSuite(),
@@ -486,4 +478,5 @@ public class PackageStore extends SuiteStore {
 				new UniqueTokenManagementSpecs()
 		));
 	}
+
 }
