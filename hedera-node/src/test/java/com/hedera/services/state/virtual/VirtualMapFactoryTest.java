@@ -51,7 +51,7 @@ class VirtualMapFactoryTest {
 
 	private static class ThrowingJdbFactoryBuilder implements VirtualMapFactory.JasperDbBuilderFactory {
 		@Override
-		public <K extends VirtualKey, V extends VirtualValue> JasperDbBuilder<K, V> newJdbBuilder() {
+		public <K extends VirtualKey<K>, V extends VirtualValue> JasperDbBuilder<K, V> newJdbBuilder() {
 			throw new UncheckedIOException(new IOException("Oops!"));
 		}
 	}
