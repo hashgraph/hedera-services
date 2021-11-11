@@ -144,7 +144,12 @@ public class VirtualBlobKey implements VirtualKey<VirtualBlobKey> {
 		if (this == that) {
 			return 0;
 		}
-		return Integer.compare(this.entityNumCode, that.entityNumCode);
+		int order = Integer.compare(this.entityNumCode, that.entityNumCode);
+		if (order != 0) {
+			return order;
+		}
+
+		return this.type.compareTo(that.type);
 	}
 
 	@Override
