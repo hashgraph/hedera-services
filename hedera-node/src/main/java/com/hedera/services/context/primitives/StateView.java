@@ -547,7 +547,7 @@ public class StateView {
 		return (MerkleMap<K, V>) EMPTY_FCM;
 	}
 
-	private static <K extends VirtualKey, V extends VirtualValue> VirtualMap<K, V> emptyVm() {
+	private static <K extends VirtualKey<K>, V extends VirtualValue> VirtualMap<K, V> emptyVm() {
 		return (VirtualMap<K, V>) EMPTY_VM;
 	}
 
