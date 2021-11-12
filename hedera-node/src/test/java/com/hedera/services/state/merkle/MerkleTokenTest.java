@@ -47,6 +47,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static com.hedera.services.state.merkle.MerkleTopic.serdes;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
@@ -54,7 +55,6 @@ import static com.hedera.test.factories.fees.CustomFeeBuilder.fractional;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -648,6 +648,8 @@ class MerkleTokenTest {
 		assertTrue(subject.hasAutoRenewAccount());
 		assertEquals(supplyKey, subject.getSupplyKey());
 		assertEquals(wipeKey, subject.getWipeKey());
+		assertEquals(pauseKey, subject.getPauseKey());
+		assertEquals(adminKey, subject.getAdminKey());
 		assertEquals(kycKey, subject.getKycKey());
 		assertEquals(freezeKey, subject.getFreezeKey());
 		assertEquals(memo, subject.memo());
@@ -659,9 +661,17 @@ class MerkleTokenTest {
 	void hasFeeScheduleKeyWorks() {
 		assertTrue(subject.hasFeeScheduleKey());
 
-		subject.setFeeScheduleKey(MerkleToken.UNUSED_KEY);
+		subject.setFeeScheduleKey(feeScheduleKey);
 
-		assertFalse(subject.hasFeeScheduleKey());
+		assertTrue(subject.hasFeeScheduleKey());
+		assertEquals(feeScheduleKey, subject.getFeeScheduleKey());
+		assertEquals(Optional.of(feeScheduleKey), subject.feeScheduleKey());
+	}
+
+	@Test
+	void pausedWorks() {
+		subject.setPaused(true);
+		assertTrue(subject.isPaused());
 	}
 
 	private void setOptionalElements(final MerkleToken token) {
@@ -696,8 +706,8 @@ class MerkleTokenTest {
 		final var other = new MerkleToken(
 				otherExpiry, otherTotalSupply, otherDecimals, otherSymbol, otherName,
 				otherFreezeDefault, otherAccountsKycGrantedByDefault, otherTreasury);
-		other.setTokenType(TokenType.FUNGIBLE_COMMON);
-		other.setSupplyType(TokenSupplyType.INFINITE);
+		other.setTokenType(0);
+		other.setSupplyType(0);
 		other.setMaxSupply(subject.maxSupply());
 		other.setLastUsedSerialNumber(subject.getLastUsedSerialNumber());
 

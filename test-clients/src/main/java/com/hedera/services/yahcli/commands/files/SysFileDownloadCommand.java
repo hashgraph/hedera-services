@@ -28,7 +28,9 @@ import picocli.CommandLine.ParentCommand;
 
 import java.util.concurrent.Callable;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.SpecStatus.PASSED;
 import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
+import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
 @Command(
 		name = "download",
@@ -59,6 +61,13 @@ public class SysFileDownloadCommand implements Callable<Integer> {
 
 		var delegate = new SysFileDownloadSuite(destDir, config.asSpecConfig(), sysFiles);
 		delegate.runSuiteSync();
+
+		if (delegate.getFinalSpecs().get(0).getStatus() == PASSED) {
+			COMMON_MESSAGES.info("SUCCESS - downloaded all requested system files");
+		} else {
+			COMMON_MESSAGES.warn("FAILED downloading requested system files");
+			return 1;
+		}
 
 		return 0;
 	}

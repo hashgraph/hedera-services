@@ -106,7 +106,7 @@ public class NetworkCtxManager {
 			var networkCtxNow = networkCtx.get();
 			log.info("Observable files not yet loaded, doing now.");
 			systemFilesManager.loadObservableSystemFiles();
-			log.info("Loaded observable files. {}", networkCtxNow);
+			log.info("Loaded observable files");
 			networkCtxNow.resetThrottlingFromSavedSnapshots(handleThrottling);
 			feeMultiplierSource.resetExpectations();
 			networkCtxNow.resetMultiplierSourceFromSavedCongestionStarts(feeMultiplierSource);

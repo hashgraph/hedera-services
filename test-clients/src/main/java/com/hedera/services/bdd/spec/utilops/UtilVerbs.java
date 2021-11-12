@@ -679,8 +679,7 @@ public class UtilVerbs {
 					.contents(byteString.substring(0, position))
 					.hasKnownStatusFrom(SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED)
 					.noLogging()
-					.payingWith(payer)
-					.signedBy(payer);
+					.payingWith(payer);
 			updateCustomizer.accept(updateSubOp);
 			if (tinyBarsToOffer.isPresent()) {
 				updateSubOp = updateSubOp.fee(tinyBarsToOffer.getAsLong());
@@ -699,8 +698,7 @@ public class UtilVerbs {
 						.content(byteString.substring(position, newPosition).toByteArray())
 						.hasKnownStatusFrom(SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED)
 						.noLogging()
-						.payingWith(payer)
-						.signedBy(payer);
+						.payingWith(payer);
 				appendCustomizer.accept(appendSubOp, totalAppendsRequired - numAppends);
 				if (tinyBarsToOffer.isPresent()) {
 					appendSubOp = appendSubOp.fee(tinyBarsToOffer.getAsLong());

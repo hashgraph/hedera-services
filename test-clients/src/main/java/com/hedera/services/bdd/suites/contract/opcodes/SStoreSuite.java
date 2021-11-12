@@ -53,7 +53,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
 
 public class SStoreSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(SStoreSuite.class);
@@ -109,7 +108,6 @@ public class SStoreSuite extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
-										"contracts.maxStorageKb", "" + MAX_CONTRACT_STORAGE_KB,
 										"contracts.maxGas", "" + MAX_CONTRACT_GAS
 								)),
 						fileCreate("bigArrayContractFile").path(ContractResources.GROW_ARRAY_BYTECODE_PATH),
@@ -148,12 +146,12 @@ public class SStoreSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec childStorage() {
+		// Successfully exceeds deprecated max contract storage of 1 KB
 		return defaultHapiSpec("ChildStorage")
 				.given(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
-										"contracts.maxStorageKb", "" + MAX_CONTRACT_STORAGE_KB,
 										"contracts.maxGas", "" + MAX_CONTRACT_GAS
 								)),
 						fileCreate("bytecode").path(ContractResources.CHILD_STORAGE_BYTECODE_PATH),
@@ -177,9 +175,8 @@ public class SStoreSuite extends HapiApiSuite {
 						valuesMatch(19, 17, 19),
 						contractCall("childStorage", ContractResources.SET_ZERO_READ_ONE_ABI, 23),
 						valuesMatch(23, 23, 19),
-						contractCall("childStorage", ContractResources.SET_BOTH_ABI, 29)
-								.hasKnownStatus(MAX_CONTRACT_STORAGE_EXCEEDED),
-						valuesMatch(23, 23, 19)
+						contractCall("childStorage", ContractResources.SET_BOTH_ABI, 29),
+						valuesMatch(29, 29, 29)
 				));
 	}
 

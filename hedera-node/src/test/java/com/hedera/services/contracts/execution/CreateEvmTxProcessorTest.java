@@ -22,11 +22,11 @@ package com.hedera.services.contracts.execution;
  *
  */
 
-import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
+import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
@@ -68,6 +68,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class CreateEvmTxProcessorTest {
@@ -75,6 +76,8 @@ class CreateEvmTxProcessorTest {
 
 	@Mock
 	private HederaWorldState worldState;
+	@Mock
+	private CodeCache codeCache;
 	@Mock
 	private HbarCentExchange hbarCentExchange;
 	@Mock
@@ -87,8 +90,6 @@ class CreateEvmTxProcessorTest {
 	private Set<Operation> operations;
 	@Mock
 	private Transaction transaction;
-	@Mock
-	private TransactionContext transactionContext;
 	@Mock
 	private HederaWorldState.Updater updater;
 	@Mock
@@ -108,7 +109,7 @@ class CreateEvmTxProcessorTest {
 	private void setup() {
 		CommonProcessorSetup.setup(gasCalculator);
 
-		createEvmTxProcessor = new CreateEvmTxProcessor(worldState, hbarCentExchange, usagePricesProvider,
+		createEvmTxProcessor = new CreateEvmTxProcessor(worldState, codeCache, hbarCentExchange, usagePricesProvider,
 				globalDynamicProperties, gasCalculator, operations);
 	}
 
@@ -119,6 +120,7 @@ class CreateEvmTxProcessorTest {
 		var result = createEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), 33_333L, 1234L, Bytes.EMPTY, consensusTime, expiry);
 		assertTrue(result.isSuccessful());
 		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+		verify(codeCache).invalidate(receiver.getId().asEvmAddress());
 	}
 
 	@Test

@@ -49,7 +49,6 @@ import static java.util.Collections.unmodifiableList;
 import static java.util.stream.Collectors.toList;
 
 public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> {
-	static final int PRE_RELEASE_0120_VERSION = 1;
 	static final int RELEASE_0120_VERSION = 2;
 	static final int RELEASE_0160_VERSION = 3;
 	static final int RELEASE_0180_VERSION = 4;

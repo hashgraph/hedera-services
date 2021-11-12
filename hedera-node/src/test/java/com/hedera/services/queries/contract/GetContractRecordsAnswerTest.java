@@ -75,7 +75,6 @@ class GetContractRecordsAnswerTest {
 		view = new StateView(
 				null,
 				null,
-				null,
 				children,
 				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 

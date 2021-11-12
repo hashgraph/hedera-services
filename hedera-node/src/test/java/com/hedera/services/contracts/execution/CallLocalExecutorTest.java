@@ -38,6 +38,9 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
 import java.util.Optional;
@@ -52,9 +55,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+@ExtendWith(MockitoExtension.class)
 class CallLocalExecutorTest {
 	int gas = 1_234;
 	ByteString params = ByteString.copyFrom("Hungry, and...".getBytes());
@@ -63,26 +66,21 @@ class CallLocalExecutorTest {
 
 	ContractCallLocalQuery query;
 
+	@Mock
 	AccountStore accountStore;
+	@Mock
 	CallLocalEvmTxProcessor evmTxProcessor;
-
-	CallLocalExecutor subject;
 
 	@BeforeEach
 	private void setup() {
-		accountStore = mock(AccountStore.class);
-		evmTxProcessor = mock(CallLocalEvmTxProcessor.class);
-
 		query = localCallQuery(contractID.asGrpcContract(), ANSWER_ONLY);
-
-		subject = new CallLocalExecutor(accountStore, evmTxProcessor);
 	}
 
 	@Test
 	void processingSuccessful() {
 		// setup:
 		final var transactionProcessingResult = TransactionProcessingResult
-				.successful(new ArrayList<>(), 0, 0,1, Bytes.EMPTY, callerID.asEvmAddress());
+				.successful(new ArrayList<>(), 0, 0, 1, Bytes.EMPTY, callerID.asEvmAddress());
 		final var expected = response(OK, transactionProcessingResult);
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
@@ -91,7 +89,7 @@ class CallLocalExecutorTest {
 				.willReturn(transactionProcessingResult);
 
 		// when:
-		final var result = subject.execute(query);
+		final var result = CallLocalExecutor.execute(accountStore, evmTxProcessor, query);
 
 		// then:
 		assertEquals(expected, result);
@@ -110,7 +108,7 @@ class CallLocalExecutorTest {
 				.willReturn(transactionProcessingResult);
 
 		// when:
-		final var result = subject.execute(query);
+		final var result = CallLocalExecutor.execute(accountStore, evmTxProcessor, query);
 
 		// then:
 		assertEquals(expected, result);
@@ -129,7 +127,7 @@ class CallLocalExecutorTest {
 				.willReturn(transactionProcessingResult);
 
 		// when:
-		final var result = subject.execute(query);
+		final var result = CallLocalExecutor.execute(accountStore, evmTxProcessor, query);
 
 		// then:
 		assertEquals(expected, result);
@@ -148,7 +146,7 @@ class CallLocalExecutorTest {
 				.willReturn(transactionProcessingResult);
 
 		// when:
-		final var result = subject.execute(query);
+		final var result = CallLocalExecutor.execute(accountStore, evmTxProcessor, query);
 
 		// then:
 		assertEquals(expected, result);
@@ -160,7 +158,7 @@ class CallLocalExecutorTest {
 		given(accountStore.loadAccount(any())).willThrow(new InvalidTransactionException(INVALID_ACCOUNT_ID));
 
 		// when:
-		final var result = subject.execute(query);
+		final var result = CallLocalExecutor.execute(accountStore, evmTxProcessor, query);
 
 		assertEquals(failedResponse(INVALID_ACCOUNT_ID), result);
 		// and:
@@ -176,7 +174,7 @@ class CallLocalExecutorTest {
 
 	private ContractCallLocalResponse failedResponse(ResponseCodeEnum status) {
 		return ContractCallLocalResponse.newBuilder()
-				.setHeader( RequestBuilder.getResponseHeader(status, 0l,
+				.setHeader(RequestBuilder.getResponseHeader(status, 0l,
 						ANSWER_ONLY, ByteString.EMPTY))
 				.build();
 	}

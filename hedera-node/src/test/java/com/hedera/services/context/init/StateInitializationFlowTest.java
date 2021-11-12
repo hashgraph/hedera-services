@@ -28,7 +28,6 @@ import com.hedera.services.files.HederaFs;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
-import com.hedera.services.txns.network.UpgradeActions;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,8 +58,6 @@ class StateInitializationFlowTest {
 	@Mock
 	private ServicesState activeState;
 	@Mock
-	private UpgradeActions upgradeActions;
-	@Mock
 	private RecordsRunningHashLeaf runningHashLeaf;
 	@Mock
 	private StateAccessor stateAccessor;
@@ -80,7 +77,6 @@ class StateInitializationFlowTest {
 		subject = new StateInitializationFlow(
 				hfs,
 				defaultNumbers,
-				upgradeActions,
 				recordStreamManager,
 				stateAccessor,
 				Set.of(aFileInterceptor, bFileInterceptor));
@@ -100,7 +96,6 @@ class StateInitializationFlowTest {
 		// then:
 		verify(staticNumbersHolder).accept(defaultNumbers);
 		verify(stateAccessor).updateFrom(activeState);
-		verify(upgradeActions).catchUpOnMissedSideEffects();
 		verify(recordStreamManager).setInitialHash(hash);
 		verify(hfs).register(aFileInterceptor);
 		verify(hfs).register(bFileInterceptor);

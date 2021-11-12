@@ -55,4 +55,11 @@ class EarliestEntryExpiryTest {
 
 		assertEquals(expectedHashCode, ere.hashCode());
 	}
+
+	@Test
+	void comparisonWorks() {
+		final var ere = new EarliestRecordExpiry(5L, asAccount("0.0.5"));
+		final var ere2 = new EarliestRecordExpiry(4L, asAccount("0.0.1"));
+		assertEquals(1, ere.compareTo(ere2));
+	}
 }

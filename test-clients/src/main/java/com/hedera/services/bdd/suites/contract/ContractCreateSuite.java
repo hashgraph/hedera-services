@@ -20,25 +20,35 @@ package com.hedera.services.bdd.suites.contract;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ADD_NTH_FIB_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.EMPTY_CONSTRUCTOR;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FIBONACCI_PLUS_CONSTRUCTOR_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FIBONACCI_PLUS_PATH;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
+import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
@@ -52,6 +62,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
@@ -65,6 +78,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_B
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ContractCreateSuite extends HapiApiSuite {
@@ -89,7 +103,9 @@ public class ContractCreateSuite extends HapiApiSuite {
 				childCreationsHaveExpectedKeysWithOmittedAdminKey(),
 				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
 				minChargeIsTXGasUsed(),
-				gasLimitOverMaxGasLimitFailsPrecheck());
+				gasLimitOverMaxGasLimitFailsPrecheck(),
+				cannotCreateTooLargeContract(),
+				canCallPendingContractSafely());
 	}
 
 	private HapiApiSpec insufficientPayerBalanceUponCreation() {
@@ -108,6 +124,46 @@ public class ContractCreateSuite extends HapiApiSuite {
 								.hasPrecheck(INSUFFICIENT_PAYER_BALANCE)
 				);
 	}
+
+	HapiApiSpec canCallPendingContractSafely() {
+		final int numSlots = 64;
+		final int createBurstSize = 500;
+		final int[] targets = { 19, 24 };
+		final AtomicLong createdFileNum = new AtomicLong();
+		final var callTxn = "callTxn";
+		final var initcode = "initcode";
+
+		return defaultHapiSpec("CanCallPendingContract")
+				.given(
+						fileCreate(initcode)
+								.path(FIBONACCI_PLUS_PATH)
+								.payingWith(GENESIS)
+								.exposingNumTo(createdFileNum::set),
+						inParallel(IntStream.range(0, createBurstSize)
+								.mapToObj(i ->
+										contractCreate("contract" + i, FIBONACCI_PLUS_CONSTRUCTOR_ABI, numSlots)
+												.fee(ONE_HUNDRED_HBARS)
+												.gas(300_000L)
+												.payingWith(GENESIS)
+												.noLogging()
+												.deferStatusResolution()
+												.bytecode(initcode)
+												.adminKey(THRESHOLD))
+								.toArray(HapiSpecOperation[]::new))
+				).when(
+						sourcing(() ->
+								contractCall(
+										"0.0." + (createdFileNum.get() + createBurstSize),
+										ADD_NTH_FIB_ABI, targets, 12
+								)
+										.payingWith(GENESIS)
+										.gas(300_000L)
+										.via(callTxn))
+				).then(
+						getTxnRecord(callTxn).logged()
+				);
+	}
+
 
 	private HapiApiSpec createsVanillaContractAsExpectedWithOmittedAdminKey() {
 		final var name = "testContract";
@@ -267,6 +323,37 @@ public class ContractCreateSuite extends HapiApiSuite {
 								.balance(1L)
 								.bytecode("contractFile")
 								.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+				);
+	}
+
+	private HapiApiSpec cannotCreateTooLargeContract() {
+		ByteString contents = ByteString.EMPTY;
+		try {
+			contents = ByteString.copyFrom(Files.readAllBytes(Path.of(ContractResources.LARGE_CONTRACT_CRYPTO_KITTIES)));
+		} catch (Exception ignore) {
+
+		}
+		final var FILE_KEY = "fileKey";
+		final var KEY_LIST = "keyList";
+		final var ACCOUNT = "acc";
+		return defaultHapiSpec("cannotCreateLargeContract")
+				.given(
+						newKeyNamed(FILE_KEY),
+						newKeyListNamed(KEY_LIST, List.of(FILE_KEY)),
+						cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(FILE_KEY),
+						fileCreate("bytecode")
+								.path(ContractResources.LARGE_CONTRACT_CRYPTO_KITTIES)
+								.hasPrecheck(TRANSACTION_OVERSIZE)
+				)
+				.when(
+						fileCreate("bytecode").contents("").key(KEY_LIST),
+						UtilVerbs.updateLargeFile(ACCOUNT, "bytecode", contents)
+				)
+				.then(
+						contractCreate("contract")
+								.bytecode("bytecode")
+								.payingWith(ACCOUNT)
+								.hasKnownStatus(INSUFFICIENT_GAS)
 				);
 	}
 

@@ -29,7 +29,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
@@ -48,6 +50,18 @@ class RawTokenRelationshipTest {
 	void setUp() {
 		token = mock(MerkleToken.class);
 		given(token.symbol()).willReturn("HEYMA");
+	}
+
+	@Test
+	void isFrozenAndKycGrantedWorks() {
+		assertTrue(subject.isFrozen());
+		assertFalse(subject.isKycGranted());
+	}
+
+	@Test
+	void equalsWorks() {
+		assertEquals(subject, subject);
+		assertNotEquals(null, subject);
 	}
 
 	@Test

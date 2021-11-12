@@ -144,7 +144,6 @@ class GetAccountBalanceAnswerTest {
 		view = new StateView(
 				tokenStore,
 				scheduleStore,
-				nodeProps,
 				children,
 				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 
@@ -294,6 +293,38 @@ class GetAccountBalanceAnswerTest {
 		assertEquals(OK, status);
 		assertEquals(balance, answer);
 		assertEquals(id, response.getCryptogetAccountBalance().getAccountID());
+	}
+
+	@Test
+	void answersWithAccountBalanceWhenTheAccountIDIsContractID() {
+		// setup:
+		ContractID id = asContract(accountIdLit);
+
+		// given:
+		CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder()
+				.setContractID(id)
+				.build();
+		Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
+
+		// when:
+		Response response = subject.responseGiven(query, view, OK);
+		ResponseCodeEnum status = response.getCryptogetAccountBalance()
+				.getHeader()
+				.getNodeTransactionPrecheckCode();
+		long answer = response.getCryptogetAccountBalance().getBalance();
+
+		// expect:
+		assertTrue(response.getCryptogetAccountBalance().hasHeader(), "Missing response header!");
+		assertEquals(
+				List.of(tokenBalanceWith(aToken, aBalance, 1),
+						tokenBalanceWith(bToken, bBalance, 2),
+						tokenBalanceWith(cToken, cBalance, 123),
+						tokenBalanceWith(dToken, dBalance, 0)
+				),
+				response.getCryptogetAccountBalance().getTokenBalancesList());
+		assertEquals(OK, status);
+		assertEquals(balance, answer);
+		assertEquals(asAccount(accountIdLit), response.getCryptogetAccountBalance().getAccountID());
 	}
 
 	@Test

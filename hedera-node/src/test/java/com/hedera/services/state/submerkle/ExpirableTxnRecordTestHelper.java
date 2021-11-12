@@ -39,22 +39,13 @@ public class ExpirableTxnRecordTestHelper {
 
 		if (n > 0) {
 			tokens = new ArrayList<>();
+			tokenAdjustments = new ArrayList<>();
+			nftTokenAdjustments = new ArrayList<>();
 			for (TokenTransferList tokenTransfers : record.getTokenTransferListsList()) {
 				tokens.add(EntityId.fromGrpcTokenId(tokenTransfers.getToken()));
-				if (!tokenTransfers.getTransfersList().isEmpty()) {
-					if (tokenAdjustments == null) {
-						tokenAdjustments = new ArrayList<>();
-					}
-					tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList()));
-				}
-				if (!tokenTransfers.getNftTransfersList().isEmpty()) {
-					if (nftTokenAdjustments == null) {
-						nftTokenAdjustments = new ArrayList<>();
-					}
-					nftTokenAdjustments.add(NftAdjustments.fromGrpc(tokenTransfers.getNftTransfersList()));
-				}
+				tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList()));
+				nftTokenAdjustments.add(NftAdjustments.fromGrpc(tokenTransfers.getNftTransfersList()));
 			}
-
 		}
 
 		return createExpiryTxnRecordFrom(record, tokens, tokenAdjustments, nftTokenAdjustments);
@@ -68,6 +59,8 @@ public class ExpirableTxnRecordTestHelper {
 		final var fcAssessedFees = record.getAssessedCustomFeesCount() > 0
 				? record.getAssessedCustomFeesList().stream().map(FcAssessedCustomFee::fromGrpc).collect(toList())
 				: null;
+		final var newTokenAssociations =
+				 record.getAutomaticTokenAssociationsList().stream().map(FcTokenAssociation::fromGrpc).collect(toList());
 		return ExpirableTxnRecord.newBuilder()
 				.setReceipt(TxnReceipt.fromGrpc(record.getReceipt()))
 				.setTxnHash(record.getTransactionHash().toByteArray())
@@ -86,8 +79,7 @@ public class ExpirableTxnRecordTestHelper {
 				.setNftTokenAdjustments(nftTokenAdjustments)
 				.setScheduleRef(record.hasScheduleRef() ? fromGrpcScheduleId(record.getScheduleRef()) : null)
 				.setCustomFeesCharged(fcAssessedFees)
-				.setNewTokenAssociations(record.getAutomaticTokenAssociationsList()
-						.stream().map(a -> FcTokenAssociation.fromGrpc(a)).collect(toList()))
+				.setNewTokenAssociations(newTokenAssociations)
 				.build();
 	}
 }

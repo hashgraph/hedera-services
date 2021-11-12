@@ -48,7 +48,6 @@ public class GlobalDynamicProperties {
 	private int maxTokenNameUtf8Bytes;
 	private int maxFileSizeKb;
 	private int cacheRecordsTtl;
-	private int maxContractStorageKb;
 	private int balancesExportPeriodSecs;
 	private int ratesIntradayChangeLimitPercent;
 	private long maxAccountNum;
@@ -119,7 +118,6 @@ public class GlobalDynamicProperties {
 				.setAccountNum(properties.getLongProperty("ledger.fundingAccount"))
 				.build();
 		cacheRecordsTtl = properties.getIntProperty("cache.records.ttl");
-		maxContractStorageKb = properties.getIntProperty("contracts.maxStorageKb");
 		ratesIntradayChangeLimitPercent = properties.getIntProperty("rates.intradayChangeLimitPercent");
 		balancesExportPeriodSecs = properties.getIntProperty("balances.exportPeriodSecs");
 		shouldExportBalances = properties.getBooleanProperty("balances.exportEnabled");
@@ -206,10 +204,6 @@ public class GlobalDynamicProperties {
 
 	public int cacheRecordsTtl() {
 		return cacheRecordsTtl;
-	}
-
-	public int maxContractStorageKb() {
-		return maxContractStorageKb;
 	}
 
 	public int ratesIntradayChangeLimitPercent() {

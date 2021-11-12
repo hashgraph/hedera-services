@@ -61,6 +61,9 @@ public class StageUpgradeCommand implements Callable<Integer> {
 
 		if (delegate.getFinalSpecs().get(0).getStatus() == PASSED) {
 			COMMON_MESSAGES.info("SUCCESS - NMT upgrade staged from " + upgradeFile + " artifacts ZIP");
+		} else {
+			COMMON_MESSAGES.warn("FAILED - NMT software upgrade is not in staged ");
+			return 1;
 		}
 
 		return 0;

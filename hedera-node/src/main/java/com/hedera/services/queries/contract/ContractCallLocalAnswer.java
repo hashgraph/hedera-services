@@ -22,8 +22,13 @@ package com.hedera.services.queries.contract;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.services.contracts.execution.CallLocalExecutor;
+import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.queries.AbstractAnswer;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.store.contracts.StaticEntityAccess;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
@@ -49,13 +54,17 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 	public static final String CONTRACT_CALL_LOCAL_CTX_KEY =
 			ContractCallLocalAnswer.class.getSimpleName() + "_localCallResponse";
 
-	private final CallLocalExecutor callLocalExecutor;
+	private final AccountStore accountStore;
+	private final CallLocalEvmTxProcessor callLocalEvmTxProcessor;
+	private final EntityIdSource ids;
 
 	@Inject
 	public ContractCallLocalAnswer(
-			CallLocalExecutor callLocalExecutor,
-			OptionValidator validator,
-			GlobalDynamicProperties properties) {
+			GlobalDynamicProperties properties,
+			EntityIdSource ids,
+			AccountStore accountStore,
+			CallLocalEvmTxProcessor callLocalEvmTxProcessor,
+			OptionValidator validator) {
 		super(
 				ContractCallLocal,
 				query -> query.getContractCallLocal().getHeader().getPayment(),
@@ -72,7 +81,9 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 					}
 				});
 
-		this.callLocalExecutor = callLocalExecutor;
+		this.accountStore = accountStore;
+		this.callLocalEvmTxProcessor = callLocalEvmTxProcessor;
+		this.ids = ids;
 	}
 
 	@Override
@@ -137,7 +148,11 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 			/* If answering from a zero-stake node, there are no node payments, and the
 			usage estimator won't have cached the result it got from the local call. */
 			try {
-				var callLocalResponse = callLocalExecutor.execute(op);
+				final var entityAccess  = new StaticEntityAccess(view);
+				final var worldState = new HederaWorldState(ids, entityAccess);
+				callLocalEvmTxProcessor.setWorldState(worldState);
+
+				final var callLocalResponse = CallLocalExecutor.execute(accountStore, callLocalEvmTxProcessor, op);
 				response.mergeFrom(withCid(callLocalResponse, op.getContractID()));
 			} catch (Exception e) {
 				response.setHeader(answerOnlyHeader(FAIL_INVALID, cost));

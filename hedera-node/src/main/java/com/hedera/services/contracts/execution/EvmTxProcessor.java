@@ -26,7 +26,8 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.store.contracts.HederaMutableWorldState;
+import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -79,7 +80,7 @@ abstract class EvmTxProcessor {
 	private static final int MAX_STACK_SIZE = 1024;
 	private static final int MAX_CODE_SIZE = 0x6000;
 
-	private final HederaWorldState worldState;
+	private HederaMutableWorldState worldState;
 	private final HbarCentExchange exchange;
 	private final GasCalculator gasCalculator;
 	private final UsagePricesProvider usagePrices;
@@ -88,7 +89,21 @@ abstract class EvmTxProcessor {
 	private final AbstractMessageProcessor contractCreationProcessor;
 
 	protected EvmTxProcessor(
-			final HederaWorldState worldState,
+			final HbarCentExchange exchange,
+			final UsagePricesProvider usagePrices,
+			final GlobalDynamicProperties dynamicProperties,
+			final GasCalculator gasCalculator,
+			final Set<Operation> hederaOperations
+	) {
+		this(null, exchange, usagePrices, dynamicProperties, gasCalculator, hederaOperations);
+	}
+
+	protected void setWorldState(HederaMutableWorldState worldState) {
+		this.worldState = worldState;
+	}
+
+	protected EvmTxProcessor(
+			final HederaMutableWorldState worldState,
 			final HbarCentExchange exchange,
 			final UsagePricesProvider usagePrices,
 			final GlobalDynamicProperties dynamicProperties,
@@ -291,8 +306,11 @@ abstract class EvmTxProcessor {
 
 	protected abstract HederaFunctionality getFunctionType();
 
-	protected abstract MessageFrame buildInitialFrame(MessageFrame.Builder baseInitialFrame,
-			HederaWorldState.Updater updater, Address to, Bytes payload);
+	protected abstract MessageFrame buildInitialFrame(
+			MessageFrame.Builder baseInitialFrame,
+			HederaWorldUpdater updater,
+			Address to,
+			Bytes payload);
 
 	protected void process(final MessageFrame frame, final OperationTracer operationTracer) {
 		final AbstractMessageProcessor executor = getMessageProcessor(frame.getType());

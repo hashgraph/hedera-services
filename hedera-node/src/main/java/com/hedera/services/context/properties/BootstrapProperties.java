@@ -110,8 +110,8 @@ public final class BootstrapProperties implements PropertySource {
 	private void resolveBootstrapProps(final Properties resourceProps) {
 		bootstrapProps = new HashMap<>();
 		BOOTSTRAP_PROP_NAMES.forEach(prop -> bootstrapProps.put(
-				prop,
-				transformFor(prop).apply(resourceProps.getProperty(prop))));
+						prop,
+						transformFor(prop).apply(resourceProps.getProperty(prop))));
 
 		final var msg = "Resolved bootstrap properties:\n  " + BOOTSTRAP_PROP_NAMES.stream()
 				.sorted()
@@ -130,7 +130,7 @@ public final class BootstrapProperties implements PropertySource {
 		}
 	}
 
-	void ensureProps() throws IllegalStateException {
+	void ensureProps() throws IllegalStateException{
 		if (bootstrapProps == MISSING_PROPS) {
 			initPropsFromResource();
 		}
@@ -265,6 +265,9 @@ public final class BootstrapProperties implements PropertySource {
 			"grpc.tlsPort",
 			"hedera.accountsExportPath",
 			"hedera.exportAccountsOnStartup",
+			"hedera.prefetch.queueCapacity",
+			"hedera.prefetch.threadPoolSize",
+			"hedera.prefetch.codeCacheTtlSecs",
 			"hedera.profiles.active",
 			"hedera.recordStream.isEnabled",
 			"hedera.recordStream.logDir",
@@ -331,6 +334,9 @@ public final class BootstrapProperties implements PropertySource {
 			entry("grpc.tlsPort", AS_INT),
 			entry("hedera.exportAccountsOnStartup", AS_BOOLEAN),
 			entry("hedera.numReservedSystemEntities", AS_LONG),
+			entry("hedera.prefetch.queueCapacity", AS_INT),
+			entry("hedera.prefetch.threadPoolSize", AS_INT),
+			entry("hedera.prefetch.codeCacheTtlSecs", AS_INT),
 			entry("hedera.profiles.active", AS_PROFILE),
 			entry("hedera.realm", AS_LONG),
 			entry("hedera.recordStream.logPeriod", AS_LONG),
@@ -398,7 +404,6 @@ public final class BootstrapProperties implements PropertySource {
 			entry("tokens.nfts.useTreasuryWildcards", AS_BOOLEAN),
 			entry("tokens.nfts.areQueriesEnabled", AS_BOOLEAN),
 			entry("contracts.localCall.estRetBytes", AS_INT),
-			entry("contracts.maxStorageKb", AS_INT),
 			entry("contracts.defaultLifetime", AS_LONG),
 			entry("contracts.maxGas", AS_INT),
 			entry("contracts.chainId", AS_INT),

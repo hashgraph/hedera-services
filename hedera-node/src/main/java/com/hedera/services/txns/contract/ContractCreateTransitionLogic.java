@@ -31,7 +31,7 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -67,7 +67,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 	private final AccountStore accountStore;
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
-	private final HederaWorldState worldState;
+	private final HederaMutableWorldState worldState;
 	private final TransactionRecordService recordService;
 	private final CreateEvmTxProcessor evmTxProcessor;
 	private final HederaLedger hederaLedger;
@@ -82,7 +82,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 			TransactionContext txnCtx,
 			AccountStore accountStore,
 			OptionValidator validator,
-			HederaWorldState worldState,
+			HederaMutableWorldState worldState,
 			TransactionRecordService recordService,
 			CreateEvmTxProcessor evmTxProcessor,
 			HederaLedger hederaLedger,
@@ -129,7 +129,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		);
 
 		/* --- Persist changes into state --- */
-		final var createdContracts = worldState.persist();
+		final var createdContracts = worldState.persistProvisionalContractCreations();
 		result.setCreatedContracts(createdContracts);
 
 		if (result.isSuccessful()) {

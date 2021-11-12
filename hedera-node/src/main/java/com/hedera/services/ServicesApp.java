@@ -57,6 +57,7 @@ import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.validation.LedgerValidator;
+import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stats.StatsModule;
 import com.hedera.services.store.StoresModule;
@@ -65,6 +66,7 @@ import com.hedera.services.throttling.ThrottlingModule;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.TransactionsModule;
 import com.hedera.services.txns.network.UpgradeActions;
+import com.hedera.services.txns.prefetch.PrefetchProcessor;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.submission.SubmissionModule;
 import com.hedera.services.utils.NamedDigestFactory;
@@ -77,6 +79,7 @@ import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
+import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
 import dagger.BindsInstance;
 import dagger.Component;
 
@@ -107,7 +110,7 @@ import java.util.function.Supplier;
 		PropertiesModule.class,
 		ThrottlingModule.class,
 		SubmissionModule.class,
-		TransactionsModule.class,
+		TransactionsModule.class
 })
 public interface ServicesApp {
 	/* Needed by ServicesState */
@@ -117,11 +120,13 @@ public interface ServicesApp {
 	ExpandHandleSpan expandHandleSpan();
 	ServicesInitFlow initializationFlow();
 	DualStateAccessor dualStateAccessor();
+	VirtualMapFactory virtualMapFactory();
 	RecordStreamManager recordStreamManager();
 	NodeLocalProperties nodeLocalProperties();
 	GlobalDynamicProperties globalDynamicProperties();
 	@WorkingState StateAccessor workingState();
 	@RetryingSigReqs SigRequirements retryingSigReqs();
+	PrefetchProcessor prefetchProcessor();
 
 	/* Needed by ServicesMain */
 	Pause pause();
@@ -146,6 +151,7 @@ public interface ServicesApp {
 	SystemAccountsCreator sysAccountsCreator();
 	Optional<PrintStream> consoleOut();
 	ReconnectCompleteListener reconnectListener();
+	StateWriteToDiskCompleteListener stateWriteToDiskListener();
 	InvalidSignedStateListener issListener();
 	Supplier<NotificationEngine> notificationEngine();
 	BackingStore<AccountID, MerkleAccount> backingAccounts();

@@ -57,6 +57,7 @@ class SignatoryUtilsTest {
 	private ScheduleID id = IdUtils.asSchedule("0.0.75231");
 	private Optional<List<JKey>> noValidNoInvalid = Optional.of(Collections.emptyList());
 	private Optional<List<JKey>> goodValidNoInvalid = Optional.of(List.of(goodKey));
+	private Optional<List<JKey>> doublingValidNoInvalid = Optional.of(List.of(goodKey, goodKey));
 
 	@Mock
 	ScheduleStore store;
@@ -157,6 +158,26 @@ class SignatoryUtilsTest {
 
 		// when:
 		var outcome = SignatoryUtils.witnessScoped(id, store, goodValidNoInvalid, activationHelper);
+
+		// then:
+		assertEquals(Pair.of(OK, true), outcome);
+	}
+
+	@Test
+	void respondsToActivatingDoublingKeysCorrectly() {
+		given(store.get(id)).willReturn(schedule);
+		given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
+		given(activationHelper.areScheduledPartiesActive(any(), any())).willReturn(true);
+		// and:
+		given(schedule.witnessValidEd25519Signature(goodKey.getEd25519())).willReturn(true);
+		willAnswer(inv -> {
+			Consumer<MerkleSchedule> action = inv.getArgument(1);
+			action.accept(schedule);
+			return null;
+		}).given(store).apply(eq(id), any());
+
+		// when:
+		var outcome = SignatoryUtils.witnessScoped(id, store, doublingValidNoInvalid, activationHelper);
 
 		// then:
 		assertEquals(Pair.of(OK, true), outcome);
