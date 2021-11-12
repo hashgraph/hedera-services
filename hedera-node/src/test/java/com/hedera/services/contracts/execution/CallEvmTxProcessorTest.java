@@ -22,7 +22,6 @@ package com.hedera.services.contracts.execution;
  *
  */
 
-import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.HbarCentExchange;
@@ -60,7 +59,6 @@ import java.time.Instant;
 import java.util.Deque;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -92,8 +90,6 @@ class CallEvmTxProcessorTest {
 	@Mock
 	private Transaction transaction;
 	@Mock
-	private TransactionContext transactionContext;
-	@Mock
 	private HederaWorldState.Updater updater;
 	@Mock
 	private ExchangeRate exchangeRate;
@@ -117,7 +113,7 @@ class CallEvmTxProcessorTest {
 	}
 
 	@Test
-	void assertSuccessExecution() throws ExecutionException {
+	void assertSuccessExecution() {
 		givenValidMock();
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 
@@ -129,10 +125,9 @@ class CallEvmTxProcessorTest {
 	}
 
 	@Test
-	void throwsWhenCodeCacheFailsLoading() throws ExecutionException {
+	void throwsWhenCodeCacheFailsLoading() {
 		given(worldState.updater()).willReturn(updater);
 		given(worldState.updater().updater()).willReturn(updater);
-		given(globalDynamicProperties.maxGas()).willReturn(MAX_GAS_LIMIT);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 
 		var evmAccount = mock(EvmAccount.class);
@@ -269,7 +264,7 @@ class CallEvmTxProcessorTest {
 
 
 	@Test
-	void assertTransactionSenderAndValue() throws ExecutionException {
+	void assertTransactionSenderAndValue() {
 		// setup:
 		doReturn(Optional.of(receiver.getId().asEvmAddress())).when(transaction).getTo();
 		given(worldState.updater()).willReturn(mock(HederaWorldState.Updater.class));
@@ -317,10 +312,9 @@ class CallEvmTxProcessorTest {
 		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(Gas.of(100_000L));
 	}
 
-	private void givenValidMock() throws ExecutionException {
+	private void givenValidMock() {
 		given(worldState.updater()).willReturn(updater);
 		given(worldState.updater().updater()).willReturn(updater);
-		given(globalDynamicProperties.maxGas()).willReturn(MAX_GAS_LIMIT);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 
 		var evmAccount = mock(EvmAccount.class);

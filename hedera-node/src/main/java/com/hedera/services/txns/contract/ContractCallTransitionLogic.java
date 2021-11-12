@@ -56,7 +56,6 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 	private final HederaMutableWorldState worldState;
 	private final TransactionRecordService recordService;
 	private final CallEvmTxProcessor evmTxProcessor;
-	private final ServicesRepositoryRoot repositoryRoot;
 	private final GlobalDynamicProperties properties;
 	private final CodeCache codeCache;
 

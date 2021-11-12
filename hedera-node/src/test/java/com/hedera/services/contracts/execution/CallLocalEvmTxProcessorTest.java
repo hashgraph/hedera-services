@@ -135,7 +135,6 @@ class CallLocalEvmTxProcessorTest {
 	void throwsWhenCodeCacheFailsLoading() throws ExecutionException {
 		given(worldState.updater()).willReturn(updater);
 		given(worldState.updater().updater()).willReturn(updater);
-		given(globalDynamicProperties.maxGas()).willReturn(10000000);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 
 		var evmAccount = mock(EvmAccount.class);

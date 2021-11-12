@@ -211,7 +211,6 @@ public final class BootstrapProperties implements PropertySource {
 			"contracts.localCall.estRetBytes",
 			"contracts.maxGas",
 			"contracts.chainId",
-			"contracts.maxStorageKb",
 			"contracts.throttle.throttleByGas",
 			"contracts.maxRefundPercentOfGasLimit",
 			"contracts.frontendThrottleMaxGasLimit",
@@ -407,6 +406,10 @@ public final class BootstrapProperties implements PropertySource {
 			entry("contracts.defaultLifetime", AS_LONG),
 			entry("contracts.maxGas", AS_INT),
 			entry("contracts.chainId", AS_INT),
+			entry("contracts.maxRefundPercentOfGasLimit", AS_INT),
+			entry("contracts.frontendThrottleMaxGasLimit", AS_LONG),
+			entry("contracts.consensusThrottleMaxGasLimit", AS_LONG),
+			entry("contracts.throttle.throttleByGas", AS_BOOLEAN),
 			entry("rates.intradayChangeLimitPercent", AS_INT),
 			entry("rates.midnightCheckInterval", AS_LONG),
 			entry("scheduling.whitelist", AS_FUNCTIONS),
@@ -415,10 +418,6 @@ public final class BootstrapProperties implements PropertySource {
 			entry("stats.speedometerHalfLifeSecs", AS_DOUBLE),
 			entry("consensus.message.maxBytesAllowed", AS_INT),
 			entry("tokens.nfts.areEnabled", AS_BOOLEAN),
-			entry("stats.executionTimesToTrack", AS_INT),
-			entry("contracts.throttle.throttleByGas", AS_BOOLEAN),
-			entry("contracts.maxRefundPercentOfGasLimit", AS_INT),
-			entry("contracts.frontendThrottleMaxGasLimit", AS_LONG),
-			entry("contracts.consensusThrottleMaxGasLimit", AS_LONG)
+			entry("stats.executionTimesToTrack", AS_INT)
 	);
 }

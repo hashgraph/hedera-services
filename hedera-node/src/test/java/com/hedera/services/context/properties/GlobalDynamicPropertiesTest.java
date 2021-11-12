@@ -128,7 +128,6 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(1, subject.maxTokensPerAccount());
 		assertEquals(2, subject.maxTokenSymbolUtf8Bytes());
 		assertEquals(6, subject.maxFileSizeKb());
-		assertEquals(9, subject.maxContractStorageKb());
 		assertEquals(15, subject.maxTransferListSize());
 		assertEquals(16, subject.maxTokenTransferListSize());
 		assertEquals(17, subject.maxMemoUtf8Bytes());
