@@ -161,18 +161,18 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
 
 	@Override
 	public Bytes getCode() {
-		// Note that we set code for new account, so it's only null if account isn't.
+		/* Since the constructor that omits account sets updatedCode to Bytes.ZERO, no risk of NPE here. */
 		return updatedCode == null ? account.getCode() : updatedCode;
 	}
 
 	@Override
 	public Hash getCodeHash() {
 		if (updatedCode == null) {
-			// Note that we set code for new account, so it's only null if account isn't.
+			/* Since the constructor that omits account sets updatedCode to Bytes.ZERO, no risk of NPE here. */
 			return account.getCodeHash();
 		} else {
-			// Cache the hash of updated code to avoid DOS attacks which repeatedly request hash
-			// of updated code and cause us to regenerate it.
+			/* This optimization is actually important to avoid DOS attacks that would otherwise force
+			* frequent re-hashing of the updated code. */
 			if (updatedCodeHash == null) {
 				updatedCodeHash = Hash.hash(updatedCode);
 			}
@@ -182,7 +182,7 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
 
 	@Override
 	public boolean hasCode() {
-		// Note that we set code for new account, so it's only null if account isn't.
+		/* Since the constructor that omits account sets updatedCode to Bytes.ZERO, no risk of NPE here. */
 		return updatedCode == null ? account.hasCode() : !updatedCode.isEmpty();
 	}
 
@@ -201,9 +201,6 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
 		if (storageWasCleared) {
 			return UInt256.ZERO;
 		}
-
-		// We haven't updated the key-value yet, so either it's a new account and it doesn't have the
-		// key, or we should query the underlying storage for its existing value (which might be 0).
 		return account == null ? UInt256.ZERO : account.getStorageValue(key);
 	}
 
@@ -217,24 +214,8 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
-	public NavigableMap<Bytes32, AccountStorageEntry> storageEntriesFrom(
-			final Bytes32 startKeyHash, final int limit) {
-		final NavigableMap<Bytes32, AccountStorageEntry> entries;
-		if (account != null) {
-			entries = account.storageEntriesFrom(startKeyHash, limit);
-		} else {
-			entries = new TreeMap<>();
-		}
-		updatedStorage.entrySet().stream()
-				.map(entry -> AccountStorageEntry.forKeyAndValue(entry.getKey(), entry.getValue()))
-				.filter(entry -> entry.getKeyHash().compareTo(startKeyHash) >= 0)
-				.forEach(entry -> entries.put(entry.getKeyHash(), entry));
-
-		while (entries.size() > limit) {
-			entries.remove(entries.lastKey());
-		}
-		return entries;
+	public NavigableMap<Bytes32, AccountStorageEntry> storageEntriesFrom(final Bytes32 startKeyHash, final int limit) {
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -254,7 +235,7 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
 
 	@Override
 	public String toString() {
-		String storage = updatedStorage.isEmpty() ? "[not updated]" : updatedStorage.toString();
+		var storage = updatedStorage.isEmpty() ? "[not updated]" : updatedStorage.toString();
 		if (updatedStorage.isEmpty() && storageWasCleared) {
 			storage = "[cleared]";
 		}
