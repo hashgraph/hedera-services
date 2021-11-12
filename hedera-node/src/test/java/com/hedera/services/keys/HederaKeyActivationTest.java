@@ -27,6 +27,7 @@ import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.sigs.SigWrappers;
 import com.swirlds.common.crypto.TransactionSignature;
+import com.swirlds.common.crypto.VerificationStatus;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -122,6 +123,7 @@ class HederaKeyActivationTest {
 		assertEquals(presentSigs.get(0), present0);
 		assertEquals(presentSigs.get(1), present1);
 		assertEquals(HederaKeyActivation.INVALID_MISSING_SIG, missing);
+		assertEquals(VerificationStatus.INVALID, HederaKeyActivation.INVALID_MISSING_SIG.getSignatureStatus());
 	}
 
 	@Test

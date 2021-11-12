@@ -36,6 +36,8 @@ import com.hedera.test.extensions.LoggingTarget;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.merkle.io.MerkleDataOutputStream;
 import com.swirlds.merkle.map.MerkleMap;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -48,6 +50,7 @@ import java.util.function.Function;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.times;
@@ -78,11 +81,26 @@ class FcmDumpTest {
 	@Mock
 	MerkleMap<EntityNum, MerkleSchedule> scheduleTxs;
 
+	private final Function<String, MerkleDataOutputStream> originalMerkleOutFn = merkleOutFn;
+
 	@LoggingTarget
 	private LogCaptor logCaptor;
 
 	@LoggingSubject
 	private FcmDump subject = new FcmDump();
+
+	@AfterEach
+	void reset() {
+		merkleOutFn = originalMerkleOutFn;
+	}
+
+	@Test
+	@Order(1)
+	void merkleOutFnFails() {
+		FcmDump.merkleOutFn.apply("invalid-location");
+		File tempFile = new File("invalid-location");
+		assertFalse(tempFile.exists());
+	}
 
 	@Test
 	void dumpsAllFcms() throws IOException {

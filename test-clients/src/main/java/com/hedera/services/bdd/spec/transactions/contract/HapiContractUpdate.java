@@ -61,6 +61,7 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 	private boolean wipeToThresholdKey = false;
 	private boolean useEmptyAdminKeyList = false;
 	private boolean useDeprecatedMemoField = false;
+	private Optional<String> bytecode = Optional.empty();
 
 	public HapiContractUpdate(String contract) {
 		this.contract = contract;
@@ -107,6 +108,10 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 		useEmptyAdminKeyList = true;
 		return this;
 	}
+	public HapiContractUpdate bytecode(String bytecode) {
+		this.bytecode = Optional.of(bytecode);
+		return this;
+	}
 
 	@Override
 	protected void updateStateOf(HapiApiSpec spec) throws Throwable {
@@ -147,6 +152,7 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 								}
 							});
 							newAutoRenew.ifPresent(autoRenew -> b.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenew).build()));
+							bytecode.ifPresent(f -> b.setFileID(TxnUtils.asFileId(bytecode.get(), spec)).build());
 						}
 				);
 		return builder -> builder.setContractUpdateInstance(opBody);

@@ -47,6 +47,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
@@ -111,6 +113,13 @@ class TokenDissociateTransitionLogicTest {
 	void oksValidTxn() {
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(validDissociateTxn()));
+	}
+
+	@Test
+	void hasCorrectApplicability() {
+		// expect:
+		assertTrue(subject.applicability().test(validDissociateTxn()));
+		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
 	}
 
 	@Test
