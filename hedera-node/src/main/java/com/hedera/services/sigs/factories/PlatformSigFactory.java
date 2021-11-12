@@ -39,17 +39,18 @@ public final class PlatformSigFactory {
 	}
 
 	/**
-	 * Combine raw bytes into a syntactically valid ed25519 {@link com.swirlds.common.crypto.Signature}.
+	 * Combine raw bytes into a syntactically valid ed25519 or ecdsaSecp256k1 {@link
+	 * com.swirlds.common.crypto.Signature}.
 	 *
 	 * @param pk
-	 * 		bytes of the ed25519 public key.
+	 * 		bytes of the ed25519 or ecdsaSecp256k1 public key.
 	 * @param sig
 	 * 		bytes of the cryptographic signature.
 	 * @param data
 	 * 		bytes of the data claimed to have been signed.
 	 * @return the platform signature representing the collective input parameters.
 	 */
-	public static TransactionSignature createEd25519(final byte[] pk, final byte[] sig, final byte[] data) {
+	public static TransactionSignature createSignature(final byte[] pk, final byte[] sig, final byte[] data) {
 		final var contents = new byte[sig.length + data.length];
 		System.arraycopy(sig, 0, contents, 0, sig.length);
 		System.arraycopy(data, 0, contents, sig.length, data.length);

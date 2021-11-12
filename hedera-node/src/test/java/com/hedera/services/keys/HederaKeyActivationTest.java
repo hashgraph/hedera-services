@@ -38,7 +38,7 @@ import java.util.function.Function;
 import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
 import static com.hedera.services.keys.HederaKeyActivation.isActive;
 import static com.hedera.services.keys.HederaKeyActivation.pkToSigMapFrom;
-import static com.hedera.services.sigs.factories.PlatformSigFactory.createEd25519;
+import static com.hedera.services.sigs.factories.PlatformSigFactory.createSignature;
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
 import static com.hedera.test.factories.keys.NodeFactory.list;
 import static com.hedera.test.factories.keys.NodeFactory.threshold;
@@ -59,13 +59,13 @@ class HederaKeyActivationTest {
 	private static final byte[] data = "DATA".getBytes();
 	private Function<byte[], TransactionSignature> sigsFn;
 	private static final TransactionSignature VALID_SIG = SigWrappers
-			.asValid(List.of(createEd25519(pk, sig, data)))
+			.asValid(List.of(createSignature(pk, sig, data)))
 			.get(0);
 	private static final TransactionSignature INVALID_SIG = SigWrappers
-			.asInvalid(List.of(createEd25519(pk, sig, data)))
+			.asInvalid(List.of(createSignature(pk, sig, data)))
 			.get(0);
 
-	private static final Function<Integer, TransactionSignature> mockSigFn = i -> createEd25519(
+	private static final Function<Integer, TransactionSignature> mockSigFn = i -> createSignature(
 			String.format("PK%d", i).getBytes(),
 			String.format("SIG%d", i).getBytes(),
 			String.format("DATA%d", i).getBytes());

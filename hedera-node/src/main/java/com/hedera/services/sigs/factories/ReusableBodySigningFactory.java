@@ -40,7 +40,7 @@ public class ReusableBodySigningFactory implements TxnScopedPlatformSigFactory {
 
 	@Override
 	public TransactionSignature create(byte[] publicKey, byte[] sigBytes) {
-		return PlatformSigFactory.createEd25519(publicKey, sigBytes, accessor.getTxnBytes());
+		return PlatformSigFactory.createSignature(publicKey, sigBytes, accessor.getTxnBytes());
 	}
 
 	/* --- Only used by unit tests --- */

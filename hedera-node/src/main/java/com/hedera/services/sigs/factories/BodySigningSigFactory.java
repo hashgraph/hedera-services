@@ -25,7 +25,7 @@ import com.swirlds.common.crypto.TransactionSignature;
 
 /**
  * A trivial convenience implementation of a {@link TxnScopedPlatformSigFactory} that
- * creates {@link com.swirlds.common.crypto.TransactionSignature} objects representing ed25519 sigs
+ * creates {@link com.swirlds.common.crypto.TransactionSignature} objects representing ed25519 or ecdsaSecp256k1 sigs
  * of the body bytes for a gRPC transaction.
  */
 public class BodySigningSigFactory implements TxnScopedPlatformSigFactory {
@@ -37,6 +37,6 @@ public class BodySigningSigFactory implements TxnScopedPlatformSigFactory {
 
 	@Override
 	public TransactionSignature create(byte[] publicKey, byte[] sigBytes) {
-		return PlatformSigFactory.createEd25519(publicKey, sigBytes, accessor.getTxnBytes());
+		return PlatformSigFactory.createSignature(publicKey, sigBytes, accessor.getTxnBytes());
 	}
 }
