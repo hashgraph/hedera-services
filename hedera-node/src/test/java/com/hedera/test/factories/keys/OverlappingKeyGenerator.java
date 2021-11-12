@@ -92,12 +92,4 @@ public class OverlappingKeyGenerator implements KeyGenerator {
 		mutablePkMap.put(hexPubKey, pkMap.get(hexPubKey));
 		return key;
 	}
-
-	public Key genECDSASecp256k1AndUpdateMap(Map<String, PrivateKey> mutablePkMap) {
-		Key key = precomputed.get(nextKey);
-		nextKey = (nextKey + 1) % precomputed.size();
-		String hexPubKey = CommonUtils.hex(key.getECDSASecp256K1().toByteArray());
-		mutablePkMap.put(hexPubKey, pkMap.get(hexPubKey));
-		return key;
-	}
 }

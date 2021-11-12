@@ -48,15 +48,6 @@ class JKeyTest {
 	}
 
 	@Test
-	void positiveConvertKeyECDSAsecp256k1KeyTest() {
-		// given:
-		final Key aKey = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey();
-
-		// expect:
-		assertDoesNotThrow(() -> JKey.convertKey(aKey, 1));
-	}
-
-	@Test
 	void negativeConvertKeyTest() {
 		// given:
 		var keyTooDeep = TxnUtils.nestKeys(Key.newBuilder(), JKey.MAX_KEY_DEPTH).build();
@@ -129,6 +120,14 @@ class JKeyTest {
 		assertEquals(33, validEDCSAsecp256K1Key.getECDSASecp256k1Key().length);
 		assertTrue(validEDCSAsecp256K1Key.isValid());
 		assertTrue(Arrays.equals(edcsaSecp256K1Bytes.toByteArray(), validEDCSAsecp256K1Key.getECDSASecp256k1Key()));
+	}
+
+	@Test
+	void negativeConvertKeyECDSAsecp256k1KeyTest() throws DecoderException {
+		ByteString edcsaSecp256K1Bytes = ByteString.copyFrom(new byte[] { 0x08 })
+				.concat(TxnUtils.randomUtf8ByteString(JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH - 1));
+		final Key aKey = Key.newBuilder().setECDSASecp256K1(edcsaSecp256K1Bytes).build();
+		assertFalse(JKey.convertKey(aKey, 1).isValid());
 	}
 
 	@Test
