@@ -32,7 +32,7 @@ import com.hedera.services.yahcli.commands.files.SysFilesCommand;
 import com.hedera.services.yahcli.commands.system.FreezeAbortCommand;
 import com.hedera.services.yahcli.commands.system.FreezeOnlyCommand;
 import com.hedera.services.yahcli.commands.system.FreezeUpgradeCommand;
-import com.hedera.services.yahcli.commands.system.StageUpgradeCommand;
+import com.hedera.services.yahcli.commands.system.PrepareUpgradeCommand;
 import com.hedera.services.yahcli.commands.system.TelemetryUpgradeCommand;
 import com.hedera.services.yahcli.commands.validation.ValidationCommand;
 import com.hedera.services.yahcli.suites.BalanceSuite;
@@ -65,7 +65,7 @@ import java.util.concurrent.Callable;
 				FeesCommand.class,
 				FreezeAbortCommand.class,
 				FreezeOnlyCommand.class,
-				StageUpgradeCommand.class,
+				PrepareUpgradeCommand.class,
 				FreezeUpgradeCommand.class,
 				TelemetryUpgradeCommand.class
 		},
