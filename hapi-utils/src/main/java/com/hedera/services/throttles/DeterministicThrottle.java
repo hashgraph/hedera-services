@@ -24,7 +24,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 
-import static com.hedera.services.throttles.BucketThrottle.productWouldOverflow;
+import static com.hedera.services.legacy.proto.utils.CommonUtils.productWouldOverflow;
 
 /**
  * A throttle with milli-TPS resolution that exists in a deterministic timeline.

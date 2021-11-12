@@ -22,6 +22,7 @@ package com.hedera.services.queries.contract;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -60,6 +61,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
@@ -76,7 +78,7 @@ import static org.mockito.Mockito.verify;
 
 class ContractCallLocalAnswerTest {
 	private String node = "0.0.3";
-	private long gas = 123L;
+	private int gas = 123;
 	private long fee = 1_234L;
 	private String payer = "0.0.12345";
 	private Transaction paymentTxn;
@@ -91,6 +93,7 @@ class ContractCallLocalAnswerTest {
 	OptionValidator validator;
 	CallLocalEvmTxProcessor evmTxProcessor;
 	MerkleMap<EntityNum, MerkleAccount> contracts;
+	GlobalDynamicProperties properties;
 
 	@BeforeEach
 	private void setup() throws Throwable {
@@ -100,18 +103,21 @@ class ContractCallLocalAnswerTest {
 		accountStore = mock(AccountStore.class);
 		evmTxProcessor = mock(CallLocalEvmTxProcessor.class);
 		validator = mock(OptionValidator.class);
+		properties = mock(GlobalDynamicProperties.class);
 		ids = mock(EntityIdSource.class);
 
 		given(view.contracts()).willReturn(contracts);
 		given(validator.queryableContractStatus(target, contracts)).willReturn(OK);
 
-		subject = new ContractCallLocalAnswer(ids, accountStore, evmTxProcessor, validator);
+		subject = new ContractCallLocalAnswer(properties, ids,  accountStore, evmTxProcessor, validator);
 	}
 
 	@Test
 	void rejectsInvalidCid() throws Throwable {
 		// given:
 		Query query = validQuery(COST_ANSWER, fee);
+		given(properties.maxGas()).willReturn(gas);
+
 		// and:
 		given(validator.queryableContractStatus(target, contracts)).willReturn(CONTRACT_DELETED);
 
@@ -129,6 +135,17 @@ class ContractCallLocalAnswerTest {
 
 		// expect:
 		assertEquals(CONTRACT_NEGATIVE_GAS, subject.checkValidity(query, view));
+	}
+
+	@Test
+	void rejectsGasLimitOverMaxGas() throws Throwable {
+
+		// given:
+		given(properties.maxGas()).willReturn(gas-1);
+		Query query = validQuery(COST_ANSWER, fee);
+
+		// expect:
+		assertEquals(MAX_GAS_LIMIT_EXCEEDED, subject.checkValidity(query, view));
 	}
 
 	@Test
@@ -166,6 +183,7 @@ class ContractCallLocalAnswerTest {
 	void getsCostAnswerResponse() throws Throwable {
 		// setup:
 		Query query = validQuery(COST_ANSWER, fee);
+		given(properties.maxGas()).willReturn(gas);
 
 		// when:
 		Response response = subject.responseGiven(query, view, OK, fee);
@@ -183,6 +201,7 @@ class ContractCallLocalAnswerTest {
 		// setup:
 		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
 		Map<String, Object> queryCtx = new HashMap<>();
+		given(properties.maxGas()).willReturn(gas);
 
 		// expect:
 		assertThrows(IllegalStateException.class,
@@ -196,6 +215,7 @@ class ContractCallLocalAnswerTest {
 		Map<String, Object> queryCtx = new HashMap<>();
 		var cachedResponse = response(CONTRACT_EXECUTION_EXCEPTION);
 		queryCtx.put(ContractCallLocalAnswer.CONTRACT_CALL_LOCAL_CTX_KEY, cachedResponse);
+		given(properties.maxGas()).willReturn(gas);
 
 		// when:
 		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L, queryCtx);
@@ -222,6 +242,7 @@ class ContractCallLocalAnswerTest {
 		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
 				.willReturn(transactionProcessingResult);
 
+		given(properties.maxGas()).willReturn(gas);
 		// when:
 		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
 
@@ -236,6 +257,8 @@ class ContractCallLocalAnswerTest {
 	void translatesFailWhenNoCtx() throws Throwable {
 		// setup:
 		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
+
+		given(properties.maxGas()).willReturn(gas);
 
 		// when:
 		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);

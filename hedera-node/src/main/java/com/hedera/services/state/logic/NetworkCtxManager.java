@@ -20,6 +20,7 @@ package com.hedera.services.state.logic;
  * ‍
  */
 
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
@@ -30,8 +31,10 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.annotations.HandleThrottle;
+import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -40,6 +43,7 @@ import javax.inject.Singleton;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.function.BiPredicate;
+import java.util.function.LongPredicate;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.domain.trackers.IssEventStatus.ONGOING_ISS;
@@ -49,6 +53,7 @@ import static java.time.temporal.ChronoUnit.SECONDS;
 @Singleton
 public class NetworkCtxManager {
 	private static final Logger log = LogManager.getLogger(NetworkCtxManager.class);
+	public static final LongPredicate IS_THROTTLE_EXEMPT = num -> num >= 1 && num <= 100L;
 
 	private final int issResetPeriod;
 
@@ -62,6 +67,7 @@ public class NetworkCtxManager {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final FunctionalityThrottling handleThrottling;
 	private final Supplier<MerkleNetworkContext> networkCtx;
+	private final TransactionContext txnCtx;
 
 	private BiPredicate<Instant, Instant> shouldUpdateMidnightRates = (now, then) -> !inSameUtcDay(now, then);
 
@@ -75,7 +81,8 @@ public class NetworkCtxManager {
 			FeeMultiplierSource feeMultiplierSource,
 			GlobalDynamicProperties dynamicProperties,
 			@HandleThrottle FunctionalityThrottling handleThrottling,
-			Supplier<MerkleNetworkContext> networkCtx
+			Supplier<MerkleNetworkContext> networkCtx,
+			TransactionContext txnCtx
 	) {
 		issResetPeriod = nodeLocalProperties.issResetPeriod();
 
@@ -87,6 +94,7 @@ public class NetworkCtxManager {
 		this.feeMultiplierSource = feeMultiplierSource;
 		this.handleThrottling = handleThrottling;
 		this.dynamicProperties = dynamicProperties;
+		this.txnCtx = txnCtx;
 	}
 
 	public void setObservableFilesNotLoaded() {
@@ -150,16 +158,35 @@ public class NetworkCtxManager {
 		return consensusSecondJustChanged;
 	}
 
-	public void prepareForIncorporating(TxnAccessor accessor) {
-		/* This is only to monitor the current network usage for automated
-		congestion pricing; we don't actually throttle consensus transactions. */
-		handleThrottling.shouldThrottleTxn(accessor);
+	/**
+	 * Used to monitor the current network usage for automated congestion pricing
+	 * and to throttle ContractCreate and ContractCall TXs by the transaction gas limit.
+	 *
+	 * @param accessor - the accessor for the transaction
+	 * @return - {@link ResponseCodeEnum#OK} if the system has enough capacity to handle the transaction
+	 * {@link ResponseCodeEnum#CONSENSUS_GAS_EXHAUSTED} if the transaction should be throttled
+	 */
+	public ResponseCodeEnum prepareForIncorporating(TxnAccessor accessor) {
+		if (!IS_THROTTLE_EXEMPT.test(accessor.getPayer().getAccountNum()) &&
+				MiscUtils.isGasThrottled(accessor.getFunction()) &&
+				handleThrottling.shouldThrottleTxn(accessor)) {
+			return ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
+		}
 
 		feeMultiplierSource.updateMultiplier(networkCtx.get().consensusTimeOfLastHandledTxn());
+		return ResponseCodeEnum.OK;
 	}
 
 	public void finishIncorporating(HederaFunctionality op) {
 		opCounters.countHandled(op);
+
+		if (!IS_THROTTLE_EXEMPT.test(txnCtx.accessor().getPayer().getAccountNum()) &&
+				MiscUtils.isGasThrottled(op) &&
+				dynamicProperties.shouldThrottleByGas() &&
+				txnCtx.hasContractResult()) {
+			handleThrottling.leakUnusedGasPreviouslyReserved(
+					txnCtx.accessor().getGasLimitForContractTx() - txnCtx.getGasUsedForContractTxn());
+		}
 
 		var networkCtxNow = networkCtx.get();
 		networkCtxNow.syncThrottling(handleThrottling);

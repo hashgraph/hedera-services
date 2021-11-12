@@ -21,6 +21,7 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
@@ -53,6 +54,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
@@ -69,6 +71,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 	private final TransactionRecordService recordService;
 	private final CreateEvmTxProcessor evmTxProcessor;
 	private final HederaLedger hederaLedger;
+	private final GlobalDynamicProperties properties;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
@@ -82,7 +85,8 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 			HederaMutableWorldState worldState,
 			TransactionRecordService recordService,
 			CreateEvmTxProcessor evmTxProcessor,
-			HederaLedger hederaLedger
+			HederaLedger hederaLedger,
+			GlobalDynamicProperties properties
 	) {
 		this.ids = ids;
 		this.hfs = hfs;
@@ -93,6 +97,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		this.recordService = recordService;
 		this.evmTxProcessor = evmTxProcessor;
 		this.hederaLedger = hederaLedger;
+		this.properties = properties;
 	}
 
 	@Override
@@ -190,7 +195,9 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		if (op.getInitialBalance() < 0) {
 			return CONTRACT_NEGATIVE_VALUE;
 		}
-
+		if (op.getGas() > properties.maxGas()) {
+			return MAX_GAS_LIMIT_EXCEEDED;
+		}
 		return validator.memoCheck(op.getMemo());
 	}
 
