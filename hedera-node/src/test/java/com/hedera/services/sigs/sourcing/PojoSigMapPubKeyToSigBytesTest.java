@@ -116,6 +116,8 @@ class PojoSigMapPubKeyToSigBytesTest {
 			return key.getECDSA384().toByteArray();
 		} else if (key.getRSA3072() != ByteString.EMPTY) {
 			return key.getRSA3072().toByteArray();
+		} else if (key.getECDSASecp256K1() != ByteString.EMPTY) {
+			return key.getECDSASecp256K1().toByteArray();
 		}
 		throw new AssertionError("Impossible leaf type!");
 	}

@@ -20,12 +20,16 @@ package com.hedera.services.sigs;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.test.factories.keys.KeyTree;
+import com.hedera.test.utils.TxnUtils;
+import com.hederahashgraph.api.proto.java.Key;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -59,11 +63,14 @@ class PlatformSigOpsTest {
 			EMPTY_SIG, EMPTY_SIG, EMPTY_SIG, EMPTY_SIG
 	};
 	private final List<JKey> pubKeys = new ArrayList<>();
+	private final List<JKey> secp256k1PubKeys = new ArrayList<>();
 	private static final List<KeyTree> kts = List.of(
 			KeyTree.withRoot(ed25519()),
 			KeyTree.withRoot(list(ed25519(), ed25519())),
 			KeyTree.withRoot(threshold(1, list(ed25519()), ed25519()))
 	);
+
+	private static final Key secpJKey = randomValidECDSASecp256K1Key();
 
 	private PubKeyToSigBytes sigBytes;
 	private TxnScopedPlatformSigFactory sigFactory;
@@ -76,6 +83,7 @@ class PlatformSigOpsTest {
 		for (final var kt : kts) {
 			pubKeys.add(kt.asJKey());
 		}
+		secp256k1PubKeys.add(JKey.mapKey(secpJKey));
 	}
 
 	@Test
@@ -177,5 +185,21 @@ class PlatformSigOpsTest {
 		final var status = subject.asCode();
 
 		assertEquals(INVALID_SIGNATURE, status);
+	}
+
+	@Test
+	void testWithSecp256K1Keys() throws Exception {
+		given(sigBytes.sigBytesFor(any())).willReturn(MOCK_SIG);
+
+		assertTrue(secp256k1PubKeys.get(0).hasECDSAsecp256k1Key());
+		final var result = createPlatformSigsFrom(secp256k1PubKeys, sigBytes, sigFactory);
+
+		assertEquals(1, result.getPlatformSigs().size());
+	}
+
+	public static Key randomValidECDSASecp256K1Key() {
+		ByteString edcsaSecp256K1Bytes = ByteString.copyFrom(new byte[] { 0x02 })
+				.concat(TxnUtils.randomUtf8ByteString(JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH - 1));
+		return Key.newBuilder().setECDSASecp256K1(edcsaSecp256K1Bytes).build();
 	}
 }

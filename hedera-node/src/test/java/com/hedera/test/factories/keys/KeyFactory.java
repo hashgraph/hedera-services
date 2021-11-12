@@ -9,9 +9,9 @@ package com.hedera.test.factories.keys;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -87,7 +87,8 @@ public class KeyFactory {
 	/**
 	 * Generates a single Ed25519 key.
 	 *
-	 * @param pubKey2privKeyMap map of public key hex string as key and the private key as value
+	 * @param pubKey2privKeyMap
+	 * 		map of public key hex string as key and the private key as value
 	 * @return generated Ed25519 key
 	 */
 	public static Key genSingleEd25519Key(Map<String, PrivateKey> pubKey2privKeyMap) {
@@ -97,5 +98,21 @@ public class KeyFactory {
 		String pubKeyHex = CommonUtils.hex(pubKey);
 		pubKey2privKeyMap.put(pubKeyHex, pair.getPrivate());
 		return akey;
+	}
+
+	/**
+	 * Generates a single ECDSASecp256k1 key.
+	 *
+	 * @param pubKey2privKeyMap
+	 * 		map of public key hex string as key and the private key as value
+	 * @return generated ECDSASecp256k1Key key
+	 */
+	public static Key genSingleECDSASecp256k1Key(final Map<String, PrivateKey> pubKey2privKeyMap) {
+		final var pair = new KeyPairGenerator().generateKeyPair();
+		final var pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
+		final var key = Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(pubKey)).build();
+		final var pubKeyHex = CommonUtils.hex(pubKey);
+		pubKey2privKeyMap.put(pubKeyHex, pair.getPrivate());
+		return key;
 	}
 }

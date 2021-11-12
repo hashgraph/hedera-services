@@ -48,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
+import static com.hedera.test.factories.keys.KeyFactory.genSingleECDSASecp256k1Key;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -138,15 +139,6 @@ class JKeySerializerTest {
 		final var pair = new KeyPairGenerator().generateKeyPair();
 		final var pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
 		final var key = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
-		final var pubKeyHex = CommonUtils.hex(pubKey);
-		pubKey2privKeyMap.put(pubKeyHex, pair.getPrivate());
-		return key;
-	}
-
-	private static Key genSingleECDSASecp256k1Key(final Map<String, PrivateKey> pubKey2privKeyMap) {
-		final var pair = new KeyPairGenerator().generateKeyPair();
-		final var pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
-		final var key = Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(pubKey)).build();
 		final var pubKeyHex = CommonUtils.hex(pubKey);
 		pubKey2privKeyMap.put(pubKeyHex, pair.getPrivate());
 		return key;
