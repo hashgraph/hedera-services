@@ -211,8 +211,7 @@ public class ERC20ContractInteractions extends HapiApiSuite {
                             final var transferMoreThanApprovedRecord = getTxnRecord(TRANSFER_MORE_THAN_APPROVED_FROM_TX).logged();
 
                             allRunFor(spec, transfer, notEnoughBalanceTransfer, approve, transferMoreThanApprovedFrom, transferFrom, getCreateRecord, getTransferRecord, getApproveRecord, getTransferFromRecord, getNotEnoughBalanceTransferRecord, transferMoreThanApprovedRecord);
-                        }),
-                        getAccountBalance("testContract").logged()
+                        })
                 );
     }
 
