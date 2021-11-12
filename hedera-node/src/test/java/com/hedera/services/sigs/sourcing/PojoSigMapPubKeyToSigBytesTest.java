@@ -21,6 +21,8 @@ package com.hedera.services.sigs.sourcing;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.utils.SignedTxnAccessor;
@@ -28,24 +30,33 @@ import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.keys.KeyTreeLeaf;
 import com.hedera.test.factories.sigs.SigFactory;
+import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.SignatureType;
+import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.hedera.services.sigs.PlatformSigOps.createPlatformSigsFrom;
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
 import static com.hedera.test.factories.keys.NodeFactory.list;
 import static com.hedera.test.factories.txns.SystemDeleteFactory.newSignedSystemDelete;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 
 class PojoSigMapPubKeyToSigBytesTest {
 	private final byte[] EMPTY_SIG = { };
@@ -62,7 +73,8 @@ class PojoSigMapPubKeyToSigBytesTest {
 				.payerKt(payerKt)
 				.nonPayerKts(otherKt)
 				.get();
-		PubKeyToSigBytes subject = new PojoSigMapPubKeyToSigBytes(SignedTxnAccessor.uncheckedFrom(signedTxn).getSigMap());
+		PubKeyToSigBytes subject = new PojoSigMapPubKeyToSigBytes(
+				SignedTxnAccessor.uncheckedFrom(signedTxn).getSigMap());
 
 		// expect:
 		lookupsMatch(payerKt, defaultFactory, CommonUtils.extractTransactionBodyBytes(signedTxn), subject);
@@ -86,6 +98,19 @@ class PojoSigMapPubKeyToSigBytesTest {
 		assertEquals(
 				"Source signature map with prefix 544553545f535452494e47 is ambiguous for given public key! " +
 						"(544553545f535452494e47)", exception.getMessage());
+	}
+
+	@Test
+	void acceptsEdcsaSecp256K1Key() throws Exception {
+		ByteString edcsaSecp256K1Bytes = ByteString.copyFrom(new byte[] { 0x02 })
+				.concat(TxnUtils.randomUtf8ByteString(JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH - 1));
+		byte[] pubKey = JKey.mapKey(Key.newBuilder().setECDSASecp256K1(edcsaSecp256K1Bytes).build())
+				.getECDSASecp256k1Key();
+		SignaturePair sigPair = SignaturePair.newBuilder().setECDSASecp256K1(edcsaSecp256K1Bytes).build();
+		SignatureMap sigMap = SignatureMap.newBuilder().addSigPair(sigPair).build();
+		PojoSigMapPubKeyToSigBytes sigMapPubKeyToSigBytes = new PojoSigMapPubKeyToSigBytes(sigMap);
+		var sigBytes = assertDoesNotThrow(() -> sigMapPubKeyToSigBytes.sigBytesFor(pubKey));
+		assertFalse(sigBytes.equals(EMPTY_SIG));
 	}
 
 	private void lookupsMatch(KeyTree kt, KeyFactory factory, byte[] data, PubKeyToSigBytes subject) throws Exception {

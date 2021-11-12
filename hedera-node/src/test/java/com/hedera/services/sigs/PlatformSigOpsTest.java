@@ -70,8 +70,6 @@ class PlatformSigOpsTest {
 			KeyTree.withRoot(threshold(1, list(ed25519()), ed25519()))
 	);
 
-	private static final Key secpJKey = randomValidECDSASecp256K1Key();
-
 	private PubKeyToSigBytes sigBytes;
 	private TxnScopedPlatformSigFactory sigFactory;
 
@@ -83,7 +81,7 @@ class PlatformSigOpsTest {
 		for (final var kt : kts) {
 			pubKeys.add(kt.asJKey());
 		}
-		secp256k1PubKeys.add(JKey.mapKey(secpJKey));
+		secp256k1PubKeys.add(JKey.mapKey(randomValidECDSASecp256K1Key()));
 	}
 
 	@Test
@@ -195,6 +193,7 @@ class PlatformSigOpsTest {
 		final var result = createPlatformSigsFrom(secp256k1PubKeys, sigBytes, sigFactory);
 
 		assertEquals(1, result.getPlatformSigs().size());
+		assertEquals(1, result.getPlatformSigs().get(0).getSignatureType());
 	}
 
 	public static Key randomValidECDSASecp256K1Key() {
