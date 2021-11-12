@@ -86,6 +86,7 @@ public class GlobalDynamicProperties {
 	private ThrottleReqOpsScaleFactor nftMintScaleFactor;
 	private String upgradeArtifactsLoc;
 	private boolean throttleByGas;
+	private boolean exemptFromConsensusThrottle;
 	private int contractMaxRefundPercentOfGasLimit;
 	private long frontendThrottleMaxGasLimit;
 	private long consensusThrottleMaxGasLimit;
@@ -157,6 +158,7 @@ public class GlobalDynamicProperties {
 		nftMintScaleFactor = properties.getThrottleScaleFactor("tokens.nfts.mintThrottleScaleFactor");
 		upgradeArtifactsLoc = properties.getStringProperty("upgrade.artifacts.path");
 		throttleByGas = properties.getBooleanProperty("contracts.throttle.throttleByGas");
+		exemptFromConsensusThrottle = properties.getBooleanProperty("contracts.throttle.exemptFromConsensusThrottle");
 		contractMaxRefundPercentOfGasLimit = properties.getIntProperty("contracts.maxRefundPercentOfGasLimit");
 		frontendThrottleMaxGasLimit = properties.getLongProperty("contracts.frontendThrottleMaxGasLimit");
 		consensusThrottleMaxGasLimit = properties.getLongProperty("contracts.consensusThrottleMaxGasLimit");
@@ -348,6 +350,10 @@ public class GlobalDynamicProperties {
 
 	public boolean shouldThrottleByGas() {
 		return throttleByGas;
+	}
+
+	public boolean shouldExemptFromConsensusThrottle() {
+		return exemptFromConsensusThrottle;
 	}
 
 	public int maxGasRefundPercentage() {

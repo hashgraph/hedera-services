@@ -37,6 +37,7 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	private boolean exportBalances = true;
 	private CongestionMultipliers currentMultipliers = defaultMultipliers;
 	private boolean throttleByGas;
+	private boolean exemptFromConsensusThrottle;
 
 	public MockGlobalDynamicProps() {
 		super(null, null);
@@ -234,5 +235,14 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 
 	public void setThrottleByGas(boolean throttleByGas) {
 		this.throttleByGas = throttleByGas;
+	}
+
+	@Override
+	public boolean shouldExemptFromConsensusThrottle() {
+		return exemptFromConsensusThrottle;
+	}
+
+	public void setExemptFromConsensusThrottle(boolean exemptFromConsensusThrottle) {
+		this.exemptFromConsensusThrottle = exemptFromConsensusThrottle;
 	}
 }

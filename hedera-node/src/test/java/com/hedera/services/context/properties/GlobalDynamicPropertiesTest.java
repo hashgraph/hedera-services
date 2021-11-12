@@ -77,6 +77,7 @@ class GlobalDynamicPropertiesTest {
 		assertFalse(subject.autoRenewEnabled());
 		assertTrue(subject.areNftsEnabled());
 		assertTrue(subject.shouldThrottleByGas());
+		assertFalse(subject.shouldExemptFromConsensusThrottle());
 	}
 
 	@Test

@@ -186,6 +186,21 @@ class NetworkCtxManagerTest {
 	@Test
 	void preparesContextAsExpected() {
 		// setup:
+		given(txnAccessor.getFunction()).willReturn(ContractCall);
+		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
+
+		// when:
+		subject.prepareForIncorporating(txnAccessor);
+
+		// then:
+		verify(handleThrottling).shouldThrottleTxn(txnAccessor);
+		verify(feeMultiplierSource).updateMultiplier(sometime);
+	}
+
+	@Test
+	void preparesContextWithExemptFromConsensusThrottleAsExpected() {
+		// setup:
+		mockDynamicProps.setExemptFromConsensusThrottle(true);
 		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
 		given(txnAccessor.getFunction()).willReturn(ContractCall);
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
@@ -201,6 +216,20 @@ class NetworkCtxManagerTest {
 	@Test
 	void preparesContextWithThrottleExemptAccountAsExpected() {
 		// setup:
+		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
+
+		// when:
+		subject.prepareForIncorporating(txnAccessor);
+
+		// then:
+		verify(handleThrottling, times(0)).shouldThrottleTxn(txnAccessor);
+		verify(feeMultiplierSource).updateMultiplier(sometime);
+	}
+
+	@Test
+	void preparesContextWithThrottleExemptAccountWithExemptFromConsensusThrottleAsExpected() {
+		// setup:
+		mockDynamicProps.setExemptFromConsensusThrottle(true);
 		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(1).build());
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
 
@@ -215,6 +244,21 @@ class NetworkCtxManagerTest {
 	@Test
 	void preparesContextWithNonThrottledFunctionalityAsExpected() {
 		// setup:
+		given(txnAccessor.getFunction()).willReturn(TokenMint);
+		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
+
+		// when:
+		subject.prepareForIncorporating(txnAccessor);
+
+		// then:
+		verify(handleThrottling, times(0)).shouldThrottleTxn(txnAccessor);
+		verify(feeMultiplierSource).updateMultiplier(sometime);
+	}
+
+	@Test
+	void preparesContextWithNonThrottledFunctionalityWithExemptFromConsensusThrottleAsExpected() {
+		// setup:
+		mockDynamicProps.setExemptFromConsensusThrottle(true);
 		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(111).build());
 		given(txnAccessor.getFunction()).willReturn(TokenMint);
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
@@ -231,6 +275,19 @@ class NetworkCtxManagerTest {
 	void whenContractCallThrottledPrepareReturnsCorrectStatus() {
 
 		given(handleThrottling.shouldThrottleTxn(txnAccessor)).willReturn(true);
+		given(txnAccessor.getFunction()).willReturn(ContractCall);
+
+		// then:
+		assertEquals(CONSENSUS_GAS_EXHAUSTED, subject.prepareForIncorporating(txnAccessor));
+		verify(handleThrottling).shouldThrottleTxn(txnAccessor);
+		verify(feeMultiplierSource, never()).updateMultiplier(any());
+	}
+
+	@Test
+	void whenContractCallThrottledPrepareWithExemptFromConsensusThrottleReturnsCorrectStatus() {
+
+		mockDynamicProps.setExemptFromConsensusThrottle(true);
+		given(handleThrottling.shouldThrottleTxn(txnAccessor)).willReturn(true);
 		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
 		given(txnAccessor.getFunction()).willReturn(ContractCall);
 
@@ -244,6 +301,18 @@ class NetworkCtxManagerTest {
 	void whenContractCreateThrottledPrepareReturnsCorrectStatus() {
 
 		given(handleThrottling.shouldThrottleTxn(txnAccessor)).willReturn(true);
+		given(txnAccessor.getFunction()).willReturn(ContractCall);
+		// then:
+		assertEquals(CONSENSUS_GAS_EXHAUSTED, subject.prepareForIncorporating(txnAccessor));
+		verify(handleThrottling).shouldThrottleTxn(txnAccessor);
+		verify(feeMultiplierSource, never()).updateMultiplier(any());
+	}
+
+	@Test
+	void whenContractCreateThrottledPrepareWithExemptFromConsensusThrottleReturnsCorrectStatus() {
+
+		mockDynamicProps.setExemptFromConsensusThrottle(true);
+		given(handleThrottling.shouldThrottleTxn(txnAccessor)).willReturn(true);
 		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
 		given(txnAccessor.getFunction()).willReturn(ContractCall);
 		// then:
@@ -255,6 +324,19 @@ class NetworkCtxManagerTest {
 	@Test
 	void whenContractCallNonThrottledPrepareReturnsOKStatus() {
 
+		given(handleThrottling.shouldThrottleTxn(txnAccessor)).willReturn(false);
+		given(txnAccessor.getFunction()).willReturn(ContractCall);
+
+		// then:
+		assertEquals(OK, subject.prepareForIncorporating(txnAccessor));
+		verify(handleThrottling).shouldThrottleTxn(txnAccessor);
+		verify(feeMultiplierSource).updateMultiplier(any());
+	}
+
+	@Test
+	void whenContractCallNonThrottledPrepareWithExemptFromConsensusThrottleReturnsOKStatus() {
+
+		mockDynamicProps.setExemptFromConsensusThrottle(true);
 		given(handleThrottling.shouldThrottleTxn(txnAccessor)).willReturn(false);
 		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
 		given(txnAccessor.getFunction()).willReturn(ContractCall);
@@ -268,6 +350,19 @@ class NetworkCtxManagerTest {
 	@Test
 	void whenContractCreateNONThrottledPrepareReturnsOKStatus() {
 
+		given(handleThrottling.shouldThrottleTxn(txnAccessor)).willReturn(false);
+		given(txnAccessor.getFunction()).willReturn(ContractCall);
+
+		// then:
+		assertEquals(OK, subject.prepareForIncorporating(txnAccessor));
+		verify(handleThrottling).shouldThrottleTxn(txnAccessor);
+		verify(feeMultiplierSource).updateMultiplier(any());
+	}
+
+	@Test
+	void whenContractCreateNONThrottledPrepareWithExemptFromConsensusThrottleReturnsOKStatus() {
+
+		mockDynamicProps.setExemptFromConsensusThrottle(true);
 		given(handleThrottling.shouldThrottleTxn(txnAccessor)).willReturn(false);
 		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
 		given(txnAccessor.getFunction()).willReturn(ContractCall);

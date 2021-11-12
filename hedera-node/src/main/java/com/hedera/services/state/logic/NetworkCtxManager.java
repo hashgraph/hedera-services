@@ -167,7 +167,8 @@ public class NetworkCtxManager {
 	 * {@link ResponseCodeEnum#CONSENSUS_GAS_EXHAUSTED} if the transaction should be throttled
 	 */
 	public ResponseCodeEnum prepareForIncorporating(TxnAccessor accessor) {
-		if (!IS_THROTTLE_EXEMPT.test(accessor.getPayer().getAccountNum()) &&
+		if ((!dynamicProperties.shouldExemptFromConsensusThrottle() ||
+				!IS_THROTTLE_EXEMPT.test(accessor.getPayer().getAccountNum())) &&
 				MiscUtils.isGasThrottled(accessor.getFunction()) &&
 				handleThrottling.shouldThrottleTxn(accessor)) {
 			return ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
