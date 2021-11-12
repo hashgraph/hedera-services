@@ -50,7 +50,7 @@ public enum JObjectType {
 		addLookup(JCONTRACTID_KEY, 15545316);
 		addLookup(JFILE_INFO, 15636803);
 		addLookup(JMEMO_ADMIN_KEY, 15661754);
-        addLookup(JECDSA_SECP256K1_KEY, 15661654);
+		addLookup(JECDSA_SECP256K1_KEY, 15661654);
 	}
 
 	private static void addLookup(final JObjectType type, final long value) {
