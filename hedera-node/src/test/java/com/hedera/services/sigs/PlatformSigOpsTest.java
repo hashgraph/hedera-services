@@ -193,7 +193,6 @@ class PlatformSigOpsTest {
 		final var result = createPlatformSigsFrom(secp256k1PubKeys, sigBytes, sigFactory);
 
 		assertEquals(1, result.getPlatformSigs().size());
-		assertEquals(1, result.getPlatformSigs().get(0).getSignatureType());
 	}
 
 	public static Key randomValidECDSASecp256K1Key() {
