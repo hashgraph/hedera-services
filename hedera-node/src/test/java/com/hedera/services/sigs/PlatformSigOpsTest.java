@@ -64,11 +64,7 @@ class PlatformSigOpsTest {
 			KeyTree.withRoot(list(ed25519(), ed25519())),
 			KeyTree.withRoot(threshold(1, list(ed25519()), ed25519()))
 	);
-	private static final List<KeyTree> kts = List.of(
-			KeyTree.withRoot(ed25519()),
-			KeyTree.withRoot(list(ed25519(), ed25519())),
-			KeyTree.withRoot(threshold(1, list(ed25519()), ed25519()))
-	);
+
 	private PubKeyToSigBytes sigBytes;
 	private TxnScopedPlatformSigFactory sigFactory;
 

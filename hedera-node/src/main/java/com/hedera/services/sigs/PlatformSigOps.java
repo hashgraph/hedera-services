@@ -75,8 +75,8 @@ public final class PlatformSigOps {
 
 		try {
 			final byte[] keyBytes;
-			if (key.hasECDSA_secp256k1Key()) {
-				keyBytes = key.getECDSAsecp256k1Key();
+			if (key.hasECDSAsecp256k1Key()) {
+				keyBytes = key.getECDSASecp256k1Key();
 			} else {
 				keyBytes = key.getEd25519();
 			}

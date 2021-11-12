@@ -36,10 +36,6 @@ public interface NodeFactory {
 		return LeafFactory.DEFAULT_FACTORY;
 	}
 
-	static NodeFactory ed25519() {
-		return LeafFactory.DEFAULT_FACTORY;
-	}
-
 	static NodeFactory ed25519(boolean usedToSign) {
 		return new LeafFactory(null, usedToSign, SignatureType.ED25519);
 	}

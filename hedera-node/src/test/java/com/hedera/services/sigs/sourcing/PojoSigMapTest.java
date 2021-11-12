@@ -73,17 +73,11 @@ class PojoSigMapTest {
 
 	@Test
 	void accessorsAsExpectedForECDSASecp256K1Key() {
-		final var fakePrefix = "a";
-		final var secondFakePrefix = "ab";
-		final var thirdFakePrefix = "abc";
+		final var fakePrefix = "abc";
 		final var fakeSig = "012345678901234567890123456789012345678901234567";
-		final var secondFakeSig = (fakeSig.substring(1) + fakeSig.substring(0, 1));
-		final var thirdFakeSig = (fakeSig.substring(2) + fakeSig.substring(0, 2));
 		// and:
 		final byte[][][] expected = new byte[][][] {
-				{ fakePrefix.getBytes(), fakeSig.getBytes() },
-				{ secondFakePrefix.getBytes(), secondFakeSig.getBytes() },
-				{ thirdFakePrefix.getBytes(), thirdFakeSig.getBytes() }
+				{ fakePrefix.getBytes(), fakeSig.getBytes() }
 		};
 
 		// given:
@@ -91,12 +85,6 @@ class PojoSigMapTest {
 				.addSigPair(SignaturePair.newBuilder()
 						.setPubKeyPrefix(ByteString.copyFromUtf8(fakePrefix))
 						.setECDSASecp256K1(ByteString.copyFromUtf8(fakeSig)))
-				.addSigPair(SignaturePair.newBuilder()
-						.setPubKeyPrefix(ByteString.copyFromUtf8(secondFakePrefix))
-						.setECDSASecp256K1(ByteString.copyFromUtf8(secondFakeSig)))
-				.addSigPair(SignaturePair.newBuilder()
-						.setPubKeyPrefix(ByteString.copyFromUtf8(thirdFakePrefix))
-						.setECDSASecp256K1(ByteString.copyFromUtf8(thirdFakeSig)))
 				.build();
 
 		// when:
@@ -105,11 +93,7 @@ class PojoSigMapTest {
 		// then:
 		assertArrayEquals(expected[0][0], subject.pubKeyPrefix(0));
 		assertArrayEquals(expected[0][1], subject.signature(0));
-		assertArrayEquals(expected[1][0], subject.pubKeyPrefix(1));
-		assertArrayEquals(expected[1][1], subject.signature(1));
-		assertArrayEquals(expected[2][0], subject.pubKeyPrefix(2));
-		assertArrayEquals(expected[2][1], subject.signature(2));
 		// and:
-		assertEquals(3, subject.numSigsPairs());
+		assertEquals(1, subject.numSigsPairs());
 	}
 }
