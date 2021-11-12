@@ -77,7 +77,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 					var op = query.getContractCallLocal();
 					if (op.getGas() < 0) {
 						return CONTRACT_NEGATIVE_GAS;
-					} else if (op.getGas() > properties.maxGas()) {
+					} else if (op.getGas() > dynamicProperties.maxGas()) {
 						return MAX_GAS_LIMIT_EXCEEDED;
 					} else {
 						return validator.queryableContractStatus(op.getContractID(), view.contracts());
