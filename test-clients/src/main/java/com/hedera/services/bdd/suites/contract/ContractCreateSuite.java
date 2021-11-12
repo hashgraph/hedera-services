@@ -41,9 +41,11 @@ import java.util.stream.IntStream;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ADD_NTH_FIB_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CONSPICUOUS_DONATION_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.EMPTY_CONSTRUCTOR;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FIBONACCI_PLUS_CONSTRUCTOR_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FIBONACCI_PLUS_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MULTIPURPOSE_BYTECODE_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SEND_THEN_REVERT_NESTED_SENDS_ABI;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
@@ -89,19 +91,20 @@ public class ContractCreateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						createEmptyConstructor(),
-//						insufficientPayerBalanceUponCreation(),
-//						rejectsInvalidMemo(),
-//						rejectsInsufficientFee(),
-//						rejectsInvalidBytecode(),
-//						revertsNonzeroBalance(),
-//						createFailsIfMissingSigs(),
-//						rejectsInsufficientGas(),
-//						createsVanillaContractAsExpectedWithOmittedAdminKey(),
-//						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
-//						cannotCreateTooLargeContract(),
-//						canCallPendingContractSafely(),
+						createEmptyConstructor(),
+						insufficientPayerBalanceUponCreation(),
+						rejectsInvalidMemo(),
+						rejectsInsufficientFee(),
+						rejectsInvalidBytecode(),
+						revertsNonzeroBalance(),
+						createFailsIfMissingSigs(),
+						rejectsInsufficientGas(),
+						createsVanillaContractAsExpectedWithOmittedAdminKey(),
+						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
+						cannotCreateTooLargeContract(),
+						canCallPendingContractSafely(),
 						revertedTryExtCallHasNoSideEffects(),
+						cannotSendToNonExistentAccount(),
 				}
 		);
 	}
@@ -162,6 +165,20 @@ public class ContractCreateSuite extends HapiApiSuite {
 				);
 	}
 
+	HapiApiSpec cannotSendToNonExistentAccount() {
+		Object[] donationArgs = new Object[] { 666666, "Hey, Ma!" };
+
+		return defaultHapiSpec("CannotSendToNonExistentAccount").given(
+				fileCreate("multiBytecode")
+						.path(MULTIPURPOSE_BYTECODE_PATH)
+		).when(
+				contractCreate("multi")
+						.bytecode("multiBytecode")
+						.balance(666)
+		).then(
+				contractCall("multi", CONSPICUOUS_DONATION_ABI, donationArgs)
+		);
+	}
 
 	private HapiApiSpec createsVanillaContractAsExpectedWithOmittedAdminKey() {
 		final var name = "testContract";
@@ -239,7 +256,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 
 	private HapiApiSpec revertedTryExtCallHasNoSideEffects() {
 		final var balance = 3_000;
-		final int sendAmount = (int) balance / 3;
+		final int sendAmount = balance / 3;
 		final var initcode = "initcode";
 		final var contract = "contract";
 		final var aBeneficiary = "aBeneficiary";

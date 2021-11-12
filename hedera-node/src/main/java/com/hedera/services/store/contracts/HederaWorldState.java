@@ -99,8 +99,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 					.memo(entityAccess.getMemo(sponsorId))
 					.proxy(entityAccess.getProxy(sponsorId))
 					.autoRenewPeriod(entityAccess.getAutoRenew(sponsorId))
-					.expiry(entityAccess.getExpiry(sponsorId))
-					.isSmartContract(true);
+					.expiry(entityAccess.getExpiry(sponsorId));
 
 			entityAccess.customize(createdId, customizer);
 		});
@@ -294,7 +293,8 @@ public class HederaWorldState implements HederaMutableWorldState {
 			extends AbstractLedgerWorldUpdater<HederaMutableWorldState, WorldStateAccount>
 			implements HederaWorldUpdater {
 
-		private static final HederaAccountCustomizer NOOP_CUSTOMIZER = new HederaAccountCustomizer();
+		private static final HederaAccountCustomizer CONTRACT_CUSTOMIZER =
+				new HederaAccountCustomizer().isSmartContract(true);
 
 		private final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
 
@@ -359,7 +359,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 				 * drop these spawn() and adjustBalance() calls.*/
 				if (!entityAccess.isExtant(accountId)) {
 					wrapped.provisionalContractCreations.add(asContract(accountId));
-					entityAccess.spawn(accountId, 0L, NOOP_CUSTOMIZER);
+					entityAccess.spawn(accountId, 0L, CONTRACT_CUSTOMIZER);
 				}
 				final var balanceChange = updatedAccount.getBalance().toLong() - entityAccess.getBalance(accountId);
 				entityAccess.adjustBalance(accountId, balanceChange);
