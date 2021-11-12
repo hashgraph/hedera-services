@@ -70,7 +70,7 @@ public class ExtCodeHashOperationSuite extends HapiApiSuite {
 						fileCreate("bytecode").path(ContractResources.EXT_CODE_OPERATIONS_CHECKER_CONTRACT),
 						contractCreate(CONTRACT)
 								.bytecode("bytecode")
-								.gas(1_000_000)
+								.gas(300_000L)
 				).when(
 				)
 				.then(

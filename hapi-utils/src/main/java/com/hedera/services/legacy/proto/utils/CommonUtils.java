@@ -304,4 +304,9 @@ public final class CommonUtils {
   public static void writeTxId2File(String txIdString) throws IOException {
     writeToFileUTF8("output/txIds.txt", ProtoCommonUtils.getCurrentInstantUTC() + "-->" + txIdString + "\n", true);
   }
+
+  public static boolean productWouldOverflow(long multiplier, long multiplicand) {
+    final var maxMultiplier = Long.MAX_VALUE / multiplicand;
+    return multiplier > maxMultiplier;
+  }
 }

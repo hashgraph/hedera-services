@@ -40,7 +40,7 @@ public final class ThrottlingModule {
 			final Supplier<AddressBook> addressBook,
 			final GlobalDynamicProperties dynamicProperties
 	) {
-		final var delegate = new DeterministicThrottling(() -> addressBook.get().getSize(), dynamicProperties);
+		final var delegate = new DeterministicThrottling(() -> addressBook.get().getSize(), dynamicProperties, false);
 		return new HapiThrottling(delegate);
 	}
 
@@ -51,7 +51,7 @@ public final class ThrottlingModule {
 			final TransactionContext txnCtx,
 			final GlobalDynamicProperties dynamicProperties
 	) {
-		final var delegate = new DeterministicThrottling(() -> 1, dynamicProperties);
+		final var delegate = new DeterministicThrottling(() -> 1, dynamicProperties, true);
 		return new TxnAwareHandleThrottling(txnCtx, delegate);
 	}
 

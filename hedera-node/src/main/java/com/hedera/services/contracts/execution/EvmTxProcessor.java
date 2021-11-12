@@ -66,7 +66,6 @@ import java.util.Set;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 
 /**
@@ -146,7 +145,7 @@ abstract class EvmTxProcessor {
 	 * 		Receiving {@link Address}. For Create transactions, the newly created Contract address
 	 * @param gasPrice
 	 * 		GasPrice to use for gas calculations
-	 * @param providedGasLimit
+	 * @param gasLimit
 	 * 		Externally provided gas limit
 	 * @param value
 	 * 		Evm transaction value (HBars)
@@ -163,11 +162,8 @@ abstract class EvmTxProcessor {
 	 * @return the result of the EVM execution returned as {@link TransactionProcessingResult}
 	 */
 	protected TransactionProcessingResult execute(Account sender, Address receiver, long gasPrice,
-			long providedGasLimit, long value, Bytes payload, boolean contractCreation,
+			long gasLimit, long value, Bytes payload, boolean contractCreation,
 			Instant consensusTime, boolean isStatic, Optional<Long> expiry) {
-		final long gasLimit = providedGasLimit > dynamicProperties.maxGas()
-				? dynamicProperties.maxGas()
-				: providedGasLimit;
 		final Wei gasCost = Wei.of(Math.multiplyExact(gasLimit, gasPrice));
 		final Wei upfrontCost = gasCost.add(value);
 		final Gas intrinsicGas =
@@ -178,10 +174,7 @@ abstract class EvmTxProcessor {
 			validateFalse(upfrontCost.compareTo(Wei.of(sender.getBalance())) > 0,
 					ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
 			if (intrinsicGas.toLong() > gasLimit) {
-				throw new InvalidTransactionException(
-						gasLimit < dynamicProperties.maxGas()
-								? INSUFFICIENT_GAS
-								: MAX_GAS_LIMIT_EXCEEDED);
+				throw new InvalidTransactionException(INSUFFICIENT_GAS);
 			}
 		}
 
@@ -231,12 +224,7 @@ abstract class EvmTxProcessor {
 			process(messageFrameStack.peekFirst(), new HederaTracer());
 		}
 
-		Gas gasUsedByTransaction = Gas.of(gasLimit).minus(initialFrame.getRemainingGas());
-		/* Return leftover gas */
-		final Gas selfDestructRefund =
-				gasCalculator.getSelfDestructRefundAmount().times(initialFrame.getSelfDestructs().size()).min(
-						gasUsedByTransaction.dividedBy(gasCalculator.getMaxRefundQuotient()));
-		gasUsedByTransaction = gasUsedByTransaction.minus(selfDestructRefund).minus(initialFrame.getGasRefund());
+		var gasUsedByTransaction = calculateGasUsedByTX(gasLimit, initialFrame);
 
 		final Gas sbhRefund = updater.getSbhRefund();
 
@@ -275,6 +263,23 @@ abstract class EvmTxProcessor {
 					initialFrame.getRevertReason(),
 					initialFrame.getExceptionalHaltReason());
 		}
+	}
+
+	private Gas calculateGasUsedByTX(long txGasLimit, MessageFrame initialFrame) {
+		Gas gasUsedByTransaction = Gas.of(txGasLimit).minus(initialFrame.getRemainingGas());
+		/* Return leftover gas */
+		final Gas selfDestructRefund =
+				gasCalculator.getSelfDestructRefundAmount().times(initialFrame.getSelfDestructs().size()).min(
+						gasUsedByTransaction.dividedBy(gasCalculator.getMaxRefundQuotient()));
+
+		gasUsedByTransaction = gasUsedByTransaction.minus(selfDestructRefund).minus(initialFrame.getGasRefund());
+
+		var maxRefundPercent = dynamicProperties.maxGasRefundPercentage();
+		gasUsedByTransaction = Gas.of(
+				Math.max(gasUsedByTransaction.toLong(),
+						txGasLimit - txGasLimit * maxRefundPercent / 100));
+
+		return gasUsedByTransaction;
 	}
 
 	protected long gasPriceTinyBarsGiven(Instant consensusTime) {

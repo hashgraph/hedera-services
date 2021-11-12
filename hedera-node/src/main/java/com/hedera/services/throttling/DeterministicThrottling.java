@@ -9,9 +9,9 @@ package com.hedera.services.throttling;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,8 +23,11 @@ package com.hedera.services.throttling;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
 import com.hedera.services.throttles.DeterministicThrottle;
+import com.hedera.services.throttles.GasLimitDeterministicThrottle;
+import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -42,6 +45,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 
 public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	private static final Logger log = LogManager.getLogger(DeterministicThrottling.class);
+	private static final String GAS_THROTTLE_AT_ZERO_WARNING_TPL = "{} gas throttling enabled, but limited to 0 gas/sec";
 
 	private final IntSupplier capacitySplitSource;
 	private final GlobalDynamicProperties dynamicProperties;
@@ -49,12 +53,17 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	private List<DeterministicThrottle> activeThrottles = Collections.emptyList();
 	private EnumMap<HederaFunctionality, ThrottleReqsManager> functionReqs = new EnumMap<>(HederaFunctionality.class);
 
+	private GasLimitDeterministicThrottle gasThrottle;
+	private boolean consensusThrottled;
+
 	public DeterministicThrottling(
 			IntSupplier capacitySplitSource,
-			GlobalDynamicProperties dynamicProperties
+			GlobalDynamicProperties dynamicProperties,
+			boolean consensusThrottled
 	) {
 		this.capacitySplitSource = capacitySplitSource;
 		this.dynamicProperties = dynamicProperties;
+		this.consensusThrottled = consensusThrottled;
 	}
 
 	@Override
@@ -63,26 +72,45 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	}
 
 	@Override
-	public boolean shouldThrottleQuery(HederaFunctionality queryFunction) {
+	public boolean shouldThrottleQuery(HederaFunctionality queryFunction, Query query) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public boolean shouldThrottleTxn(TxnAccessor accessor, Instant now) {
-		final var function = accessor.getFunction();
-		ThrottleReqsManager manager;
-		if ((manager = functionReqs.get(function)) == null) {
+		if (MiscUtils.isGasThrottled(accessor.getFunction()) &&
+				dynamicProperties.shouldThrottleByGas() &&
+				(gasThrottle == null || !gasThrottle.allow(now, accessor.getGasLimitForContractTx()))) {
 			return true;
 		}
-		if (function == TokenMint) {
+
+		final var function = accessor.getFunction();
+		ThrottleReqsManager manager;
+
+		if ((manager = functionReqs.get(function)) == null) {
+			return true;
+		} else if (function == TokenMint) {
 			return shouldThrottleMint(manager, accessor.getTxn().getTokenMint(), now);
 		} else {
 			return !manager.allReqsMetAt(now);
 		}
 	}
 
+	public void leakUnusedGasPreviouslyReserved(long value) {
+		gasThrottle.leakUnusedGasPreviouslyReserved(value);
+	}
+
+	public void setConsensusThrottled(boolean consensusThrottled) {
+		this.consensusThrottled = consensusThrottled;
+	}
+
 	@Override
-	public boolean shouldThrottleQuery(HederaFunctionality queryFunction, Instant now) {
+	public boolean shouldThrottleQuery(HederaFunctionality queryFunction, Instant now, Query query) {
+		if (MiscUtils.isGasThrottled(queryFunction) &&
+				dynamicProperties.shouldThrottleByGas() &&
+				(gasThrottle == null || !gasThrottle.allow(now, query.getContractCallLocal().getGas()))) {
+			return true;
+		}
 		ThrottleReqsManager manager;
 		if ((manager = functionReqs.get(queryFunction)) == null) {
 			return true;
@@ -130,8 +158,42 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
 		functionReqs = newFunctionReqs;
 		activeThrottles = newActiveThrottles;
-
 		logResolvedDefinitions();
+	}
+
+	@Override
+	public void applyGasConfig() {
+		final var n = capacitySplitSource.getAsInt();
+		long splitCapacity;
+		if (consensusThrottled) {
+			if (dynamicProperties.shouldThrottleByGas() && dynamicProperties.consensusThrottleGasLimit() == 0) {
+				log.warn(GAS_THROTTLE_AT_ZERO_WARNING_TPL, "Consensus");
+				return;
+			} else {
+				splitCapacity = dynamicProperties.consensusThrottleGasLimit() / n;
+			}
+		} else {
+			if (dynamicProperties.shouldThrottleByGas() && dynamicProperties.frontendThrottleGasLimit() == 0) {
+				log.warn(GAS_THROTTLE_AT_ZERO_WARNING_TPL, "Frontend");
+				return;
+			} else {
+				splitCapacity = dynamicProperties.frontendThrottleGasLimit() / n;
+			}
+		}
+		gasThrottle = new GasLimitDeterministicThrottle(splitCapacity);
+		final var configDesc = "Resolved " +
+				(consensusThrottled ? "consensus" : "frontend") +
+				" gas throttle (after splitting capacity " + n + " ways) -\n  " +
+				gasThrottle.getCapacity() +
+				" gas/sec (throttling " +
+				(dynamicProperties.shouldThrottleByGas() ? "ON" : "OFF") +
+				")";
+		log.info(configDesc);
+	}
+
+	@Override
+	public GasLimitDeterministicThrottle gasLimitThrottle() {
+		return gasThrottle;
 	}
 
 	private void logResolvedDefinitions() {

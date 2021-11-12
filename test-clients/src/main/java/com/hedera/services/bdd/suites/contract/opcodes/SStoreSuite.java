@@ -26,6 +26,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -87,7 +88,8 @@ public class SStoreSuite extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
-										"contracts.maxGas", "" + MAX_CONTRACT_GAS)))
+										"contracts.maxGas", "" + MAX_CONTRACT_GAS,
+										"contracts.throttle.throttleByGas", "false")))
 				.when()
 				.then();
 	}
@@ -236,6 +238,7 @@ public class SStoreSuite extends HapiApiSuite {
 	HapiApiSpec temporarySStoreRefundTest() {
 		return defaultHapiSpec("TemporarySStoreRefundTest")
 				.given(
+						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
 						fileCreate("bytecode").path(ContractResources.TEMPORARY_SSTORE_REFUND_CONTRACT),
 						contractCreate("sStoreRefundContract").bytecode("bytecode")
 				).when(
@@ -251,6 +254,7 @@ public class SStoreSuite extends HapiApiSuite {
 									.saveTxnRecordToRegistry("tempHoldTxRec").logged();
 							final var subop02 = getTxnRecord("permHoldTx")
 									.saveTxnRecordToRegistry("permHoldTxRec").logged();
+
 							CustomSpecAssert.allRunFor(spec, subop01, subop02);
 
 							final var gasUsedForTemporaryHoldTx = spec.registry()
@@ -260,8 +264,10 @@ public class SStoreSuite extends HapiApiSuite {
 
 							Assertions.assertTrue(gasUsedForTemporaryHoldTx < 3000L);
 							Assertions.assertTrue(gasUsedForPermanentHoldTx > 20000L);
-						}
-				));
+						}),
+						UtilVerbs.resetAppPropertiesTo(
+								"src/main/resource/bootstrap.properties")
+				);
 	}
 
 	@Override

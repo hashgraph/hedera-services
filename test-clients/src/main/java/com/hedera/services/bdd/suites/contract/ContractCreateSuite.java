@@ -27,10 +27,13 @@ import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -76,6 +79,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
@@ -409,6 +413,57 @@ public class ContractCreateSuite extends HapiApiSuite {
 								.bytecode("bytecode")
 								.payingWith(ACCOUNT)
 								.hasKnownStatus(INSUFFICIENT_GAS)
+				);
+	}
+
+	private HapiApiSpec maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller() {
+		return defaultHapiSpec("MaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller")
+				.given(
+						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "5"),
+						fileCreate("contractFile").path(ContractResources.VALID_BYTECODE_PATH)
+				).when(
+						contractCreate("testContract").bytecode("contractFile").gas(300_000L).via("createTX")
+				).then(
+						withOpContext((spec, ignore) -> {
+							final var subop01 = getTxnRecord("createTX").saveTxnRecordToRegistry("createTXRec");
+							CustomSpecAssert.allRunFor(spec, subop01);
+
+							final var gasUsed = spec.registry().getTransactionRecord("createTXRec")
+									.getContractCreateResult().getGasUsed();
+							assertEquals(285_000L, gasUsed);
+						}),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+				);
+	}
+
+	private HapiApiSpec minChargeIsTXGasUsed() {
+		return defaultHapiSpec("MinChargeIsTXGasUsed")
+				.given(
+						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
+						fileCreate("contractFile").path(ContractResources.VALID_BYTECODE_PATH)
+				).when(
+						contractCreate("testContract").bytecode("contractFile").gas(300_000L).via("createTX")
+				).then(
+						withOpContext((spec, ignore) -> {
+							final var subop01 = getTxnRecord("createTX").saveTxnRecordToRegistry("createTXRec");
+							CustomSpecAssert.allRunFor(spec, subop01);
+
+							final var gasUsed = spec.registry().getTransactionRecord("createTXRec")
+									.getContractCreateResult().getGasUsed();
+							Assertions.assertTrue(gasUsed > 0L);
+						}),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+				);
+	}
+
+	private HapiApiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
+		return defaultHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
+				.given(
+						UtilVerbs.overriding("contracts.maxGas", "100"),
+						fileCreate("contractFile").path(ContractResources.VALID_BYTECODE_PATH)
+				).when().then(
+						contractCreate("testContract").bytecode("contractFile").gas(101L).hasPrecheck(MAX_GAS_LIMIT_EXCEEDED),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 

@@ -217,6 +217,12 @@ public final class MiscUtils {
 			NetworkGetExecutionTime
 	);
 
+	private static final Set<HederaFunctionality> CONSENSUS_THROTTLED_FUNCTIONS = EnumSet.of(
+			ContractCallLocal,
+			ContractCall,
+			ContractCreate
+	);
+
 	static final String TOKEN_MINT_METRIC = "mintToken";
 	static final String TOKEN_BURN_METRIC = "burnToken";
 	static final String TOKEN_CREATE_METRIC = "createToken";
@@ -736,8 +742,7 @@ public final class MiscUtils {
 	 * flipping bit j of perm64(x). For each possible pair (i,j), this function
 	 * achieves a probability between 49.8 and 50.2 percent.
 	 *
-	 * @param x
-	 * 		the value to permute
+	 * @param x the value to permute
 	 * @return the avalanche-optimized permutation
 	 */
 	public static long perm64(long x) {
@@ -770,5 +775,15 @@ public final class MiscUtils {
 		if (null != map) {
 			map.put(key, value);
 		}
+	}
+
+	/**
+	 * Verifies whether a {@link HederaFunctionality} should be throttled by the consensus throttle
+	 *
+	 * @param hederaFunctionality - the {@link HederaFunctionality} to verify
+	 * @return - whether this {@link HederaFunctionality} should be throttled by the consensus throttle
+	 */
+	public static boolean isGasThrottled(HederaFunctionality hederaFunctionality) {
+		return CONSENSUS_THROTTLED_FUNCTIONS.contains(hederaFunctionality);
 	}
 }
