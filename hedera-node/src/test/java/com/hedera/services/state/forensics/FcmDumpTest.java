@@ -38,8 +38,6 @@ import com.swirlds.common.NodeId;
 import com.swirlds.common.merkle.io.MerkleDataOutputStream;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -47,49 +45,44 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.UncheckedIOException;
 import java.util.function.Function;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.mock;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class FcmDumpTest {
+	private static final long selfId = 1; 
+	private static final long round = 1_234_567;
+	private static final NodeId self = new NodeId(false, selfId);
 	private static final String OK_PATH = "src/test/resources/tmp.nothing";
 
-	long selfId = 1, round = 1_234_567;
-	NodeId self = new NodeId(false, selfId);
-
 	@Mock
-	ServicesState state;
+	private ServicesState state;
 	@Mock
-	MerkleDataOutputStream out;
+	private MerkleDataOutputStream out;
 	@Mock
-	Function<String, MerkleDataOutputStream> merkleOutFn;
+	private Function<String, MerkleDataOutputStream> merkleOutFn;
 	@Mock
-	MerkleMap<EntityNum, MerkleAccount> accounts;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
-	VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
+	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
 	@Mock
-	MerkleMap<EntityNum, MerkleTopic> topics;
+	private MerkleMap<EntityNum, MerkleTopic> topics;
 	@Mock
-	MerkleMap<EntityNum, MerkleToken> tokens;
+	private MerkleMap<EntityNum, MerkleToken> tokens;
 	@Mock
-	MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
+	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
 	@Mock
-	MerkleMap<EntityNum, MerkleSchedule> scheduleTxs;
-
-	private final Function<String, MerkleDataOutputStream> originalMerkleOutFn = merkleOutFn;
+	private MerkleMap<EntityNum, MerkleSchedule> scheduleTxs;
+	@Mock
+	private FcmDump.DirectoryCreation directoryCreation;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -97,23 +90,9 @@ class FcmDumpTest {
 	@LoggingSubject
 	private FcmDump subject = new FcmDump();
 
-	@AfterEach
-	void reset() {
-		merkleOutFn = originalMerkleOutFn;
-	}
-
-	@Test
-	@Order(1)
-	void merkleOutFnFails() {
-		FcmDump.merkleOutFn.apply("invalid-location");
-		File tempFile = new File("invalid-location");
-		assertFalse(tempFile.exists());
-	}
-
 	@Test
 	void dumpsAllFcms() throws IOException {
-		// setup:
-		FcmDump.merkleOutFn = merkleOutFn;
+		subject.setMerkleOutFn(merkleOutFn);
 
 		given(merkleOutFn.apply(any())).willReturn(out);
 		// and:
@@ -141,7 +120,7 @@ class FcmDumpTest {
 	@Test
 	void recoversToKeepTryingDumps() throws IOException {
 		// setup:
-		FcmDump.merkleOutFn = merkleOutFn;
+		subject.setMerkleOutFn(merkleOutFn);
 
 		given(merkleOutFn.apply(any())).willReturn(out);
 		// and:
@@ -168,37 +147,16 @@ class FcmDumpTest {
 	}
 
 	@Test
-	void merkleSupplierWorks() {
-		// given:
-
+	void merkleSupplierWorksWithOkPath() {
 		// when:
-		var fout = FcmDump.merkleOutFn.apply(OK_PATH);
+		final var fout = subject.getMerkleOutFn().apply(OK_PATH);
 		// and:
 		assertDoesNotThrow(() -> fout.writeUTF("Here is something"));
 
-		// cleanup:
 		(new File(OK_PATH)).delete();
 	}
 
 	@Test
-	void merkleSupplierFnDoesntBlowUp() {
-		// given:
-		var badPath = "/impermissible/path";
-
-		// then:
-		assertDoesNotThrow(() -> FcmDump.merkleOutFn.apply(badPath));
-	}
-
-	@Test
-	void merkleSupplierFnPropagatesIoeUnchecked() {
-		final Function<OutputStream, MerkleDataOutputStream> mockMerkleOut = mock(Function.class);
-
-		FcmDump.setMerkleOut(mockMerkleOut);
-
-		given(mockMerkleOut.apply(any())).willThrow(UncheckedIOException.class);
-
-		assertThrows(UncheckedIOException.class, () -> FcmDump.merkleOutFn.apply(OK_PATH));
-
-		FcmDump.setMerkleOut(MerkleDataOutputStream::new);
+	void propagatesIoE() {
 	}
 }
