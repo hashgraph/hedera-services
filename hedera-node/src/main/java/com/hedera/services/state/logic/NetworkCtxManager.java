@@ -69,6 +69,8 @@ public class NetworkCtxManager {
 	private final Supplier<MerkleNetworkContext> networkCtx;
 	private final TransactionContext txnCtx;
 
+	private boolean shouldThrottleTX;
+
 	private BiPredicate<Instant, Instant> shouldUpdateMidnightRates = (now, then) -> !inSameUtcDay(now, then);
 
 	@Inject
@@ -167,10 +169,11 @@ public class NetworkCtxManager {
 	 * {@link ResponseCodeEnum#CONSENSUS_GAS_EXHAUSTED} if the transaction should be throttled
 	 */
 	public ResponseCodeEnum prepareForIncorporating(TxnAccessor accessor) {
-		if ((!dynamicProperties.shouldExemptFromConsensusThrottle() ||
-				!IS_THROTTLE_EXEMPT.test(accessor.getPayer().getAccountNum())) &&
-				MiscUtils.isGasThrottled(accessor.getFunction()) &&
-				handleThrottling.shouldThrottleTxn(accessor)) {
+		shouldThrottleTX = (!dynamicProperties.shouldExemptFromConsensusThrottle() ||
+						!IS_THROTTLE_EXEMPT.test(accessor.getPayer().getAccountNum())) &&
+						MiscUtils.isGasThrottled(accessor.getFunction());
+
+		if (shouldThrottleTX && handleThrottling.shouldThrottleTxn(accessor)) {
 			return ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 		}
 
@@ -181,10 +184,7 @@ public class NetworkCtxManager {
 	public void finishIncorporating(HederaFunctionality op) {
 		opCounters.countHandled(op);
 
-		if (!IS_THROTTLE_EXEMPT.test(txnCtx.accessor().getPayer().getAccountNum()) &&
-				MiscUtils.isGasThrottled(op) &&
-				dynamicProperties.shouldThrottleByGas() &&
-				txnCtx.hasContractResult()) {
+		if (shouldThrottleTX && dynamicProperties.shouldThrottleByGas() && txnCtx.hasContractResult()) {
 			handleThrottling.leakUnusedGasPreviouslyReserved(
 					txnCtx.accessor().getGasLimitForContractTx() - txnCtx.getGasUsedForContractTxn());
 		}
@@ -208,5 +208,10 @@ public class NetworkCtxManager {
 
 	BiPredicate<Instant, Instant> getShouldUpdateMidnightRates() {
 		return shouldUpdateMidnightRates;
+	}
+
+	/** used by unit tests */
+	public void setShouldThrottleTX(boolean shouldThrottleTX) {
+		this.shouldThrottleTX = shouldThrottleTX;
 	}
 }

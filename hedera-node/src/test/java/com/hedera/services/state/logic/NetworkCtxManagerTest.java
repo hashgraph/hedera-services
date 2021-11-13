@@ -30,15 +30,10 @@ import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.ExchangeRates;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -67,10 +62,10 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class NetworkCtxManagerTest {
-	private int issResetPeriod = 5;
-	private Instant sometime = Instant.ofEpochSecond(1_234_567L);
-	private Instant sometimeSameDay = sometime.plusSeconds(issResetPeriod + 1L);
-	private Instant sometimeNextDay = sometime.plusSeconds(86_400L);
+	private final int issResetPeriod = 5;
+	private final Instant sometime = Instant.ofEpochSecond(1_234_567L);
+	private final Instant sometimeSameDay = sometime.plusSeconds(issResetPeriod + 1L);
+	private final Instant sometimeNextDay = sometime.plusSeconds(86_400L);
 	private final MockGlobalDynamicProps mockDynamicProps = new MockGlobalDynamicProps();
 
 	@Mock
@@ -95,16 +90,6 @@ class NetworkCtxManagerTest {
 	private TransactionContext txnCtx;
 	@Mock
 	private TxnAccessor txnAccessor;
-	@Mock
-	private ExpirableTxnRecord expirableTxnRecord;
-	@Mock
-	private SolidityFnResult solidityFnResult;
-	@Mock
-	private TransactionBody transactionBody;
-	@Mock
-	private ContractCallTransactionBody callTransactionBody;
-	@Mock
-	private ContractCreateTransactionBody createTransactionBody;
 
 	private NetworkCtxManager subject;
 
@@ -155,9 +140,6 @@ class NetworkCtxManagerTest {
 
 	@Test
 	void finalizesContextAsExpected() {
-		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
-		given(txnCtx.accessor()).willReturn(txnAccessor);
-
 		// when:
 		subject.finishIncorporating(TokenMint);
 
@@ -170,10 +152,9 @@ class NetworkCtxManagerTest {
 
 	@Test
 	void finalizesContextWithThrottleExemptAccountAsExpected() {
-		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(1).build());
-		given(txnCtx.accessor()).willReturn(txnAccessor);
 
 		// when:
+		subject.setShouldThrottleTX(false);
 		subject.finishIncorporating(ContractCall);
 
 		// then:
@@ -376,14 +357,13 @@ class NetworkCtxManagerTest {
 	@Test
 	void whenFinishingContractCallUnusedGasIsLeaked() {
 		// setup:
-		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
 		given(txnAccessor.getGasLimitForContractTx()).willReturn(10_000L);
 		given(txnCtx.accessor()).willReturn(txnAccessor);
 		given(txnCtx.hasContractResult()).willReturn(true);
 		given(txnCtx.getGasUsedForContractTxn()).willReturn(1000L);
 
 		mockDynamicProps.setThrottleByGas(true);
-
+		subject.setShouldThrottleTX(true);
 		// when:
 		subject.finishIncorporating(ContractCall);
 
@@ -398,8 +378,6 @@ class NetworkCtxManagerTest {
 	void whenFinishingContractCallUnusedGasIsNotLeakedIfGasThrottlingIsTurnedOff() {
 		// setup:
 		mockDynamicProps.setThrottleByGas(false);
-		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
-		given(txnCtx.accessor()).willReturn(txnAccessor);
 
 		// when:
 		subject.finishIncorporating(ContractCall);
@@ -414,10 +392,9 @@ class NetworkCtxManagerTest {
 	@Test
 	void whenFinishingContractCallUnusedGasIsNotLeakedForUnsuccessfulTX() {
 		// setup:
-		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
-		given(txnCtx.accessor()).willReturn(txnAccessor);
 		given(txnCtx.hasContractResult()).willReturn(false);
 		mockDynamicProps.setThrottleByGas(true);
+		subject.setShouldThrottleTX(true);
 
 		// when:
 		subject.finishIncorporating(ContractCall);
@@ -432,12 +409,12 @@ class NetworkCtxManagerTest {
 	@Test
 	void whenFinishingContractCreateUnusedGasIsLeaked() {
 		// setup:
-		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
 		given(txnAccessor.getGasLimitForContractTx()).willReturn(10_000L);
 		given(txnCtx.accessor()).willReturn(txnAccessor);
 		given(txnCtx.hasContractResult()).willReturn(true);
 		given(txnCtx.getGasUsedForContractTxn()).willReturn(1000L);
 		mockDynamicProps.setThrottleByGas(true);
+		subject.setShouldThrottleTX(true);
 
 		// when:
 		subject.finishIncorporating(ContractCreate);
@@ -452,10 +429,9 @@ class NetworkCtxManagerTest {
 	@Test
 	void whenFinishingContractCreateUnusedGasIsNotLeakedForUnsuccessfulTX() {
 		// setup:
-		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
-		given(txnCtx.accessor()).willReturn(txnAccessor);
 		given(txnCtx.hasContractResult()).willReturn(false);
 		mockDynamicProps.setThrottleByGas(true);
+		subject.setShouldThrottleTX(true);
 
 		// when:
 		subject.finishIncorporating(ContractCreate);
@@ -471,8 +447,7 @@ class NetworkCtxManagerTest {
 	void whenFinishingContractCreateUnusedGasIsNotLeakedIfThrottleByGasIsTurnedOff() {
 		// setup:
 		mockDynamicProps.setThrottleByGas(false);
-		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
-		given(txnCtx.accessor()).willReturn(txnAccessor);
+		subject.setShouldThrottleTX(true);
 
 		// when:
 		subject.finishIncorporating(ContractCreate);
