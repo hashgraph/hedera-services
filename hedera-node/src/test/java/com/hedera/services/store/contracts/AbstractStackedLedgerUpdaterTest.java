@@ -73,6 +73,13 @@ class AbstractStackedLedgerUpdaterTest {
 	}
 
 	@Test
+	void parentUpdaterIsSetForStackedUpdater() {
+		final var parent = subject.parentUpdater();
+		assertTrue(parent.isPresent());
+		assertSame(wrapped, parent.get());
+	}
+
+	@Test
 	void getForMutationReturnsTrackingAccountIfPresentInParent() {
 		wrapped.createAccount(aAddress, aNonce, Wei.of(aBalance));
 

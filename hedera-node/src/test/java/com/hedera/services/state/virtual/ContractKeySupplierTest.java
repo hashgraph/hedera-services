@@ -25,25 +25,28 @@ import org.junit.jupiter.api.Test;
 import static com.hedera.services.state.virtual.ContractKey.RUNTIME_CONSTRUCTABLE_ID;
 import static com.hedera.services.state.virtual.ContractKeySupplier.CLASS_ID;
 import static com.hedera.services.state.virtual.ContractKeySupplier.CURRENT_VERSION;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ContractKeySupplierTest {
-	ContractKeySupplier subject;
+	private ContractKeySupplier subject = new ContractKeySupplier();
 
 	@Test
 	void gettersWork() {
-		subject = new ContractKeySupplier();
-
 		assertEquals(CLASS_ID, subject.getClassId());
 		assertEquals(CURRENT_VERSION, subject.getVersion());
 	}
 
 	@Test
 	void delegatesAsExpected() {
-		subject = new ContractKeySupplier();
-
 		var contractKey = subject.get();
 
 		assertEquals(RUNTIME_CONSTRUCTABLE_ID, contractKey.getClassId());
+	}
+
+	@Test
+	void serdesAreNoop() {
+		assertDoesNotThrow(() -> subject.deserialize(null, 1));
+		assertDoesNotThrow(() -> subject.serialize(null));
 	}
 }

@@ -160,6 +160,10 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
 		}
 	}
 
+	public void setBalanceFromCommitInterceptor(final Wei value) {
+		this.balance = value;
+	}
+
 	@Override
 	public Bytes getCode() {
 		/* Since the constructor that omits account sets updatedCode to Bytes.ZERO, no risk of NPE here. */

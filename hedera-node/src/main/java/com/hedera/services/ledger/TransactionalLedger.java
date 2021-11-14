@@ -81,6 +81,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	final Map<K, EnumMap<P, Object>> changes = new HashMap<>();
 
 	private boolean isInTransaction = false;
+	private PropertyChangeObserver commitInterceptor = null;
 	private Optional<Function<K, String>> keyToString = Optional.empty();
 
 	public TransactionalLedger(
@@ -130,8 +131,12 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		return wrapper;
 	}
 
-	public void setKeyToString(Function<K, String> keyToString) {
+	public void setKeyToString(final Function<K, String> keyToString) {
 		this.keyToString = Optional.of(keyToString);
+	}
+
+	public void setCommitInterceptor(final PropertyChangeObserver<K, P> commitInterceptor) {
+		this.commitInterceptor = commitInterceptor;
 	}
 
 	public void begin() {
@@ -228,7 +233,11 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		final boolean hasPendingChanges = changeSet != null;
 		final A account = entities.contains(id) ? entities.getRef(id) : newEntity.get();
 		if (hasPendingChanges) {
-			changeManager.persist(changeSet, account);
+			if (commitInterceptor != null) {
+				changeManager.persistWithObserver(id, changeSet, account, commitInterceptor);
+			} else {
+				changeManager.persist(changeSet, account);
+			}
 		}
 
 		return account;
@@ -428,9 +437,9 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		return changes;
 	}
 
-	private void flushListed(List<K> l) {
+	private void flushListed(final List<K> l) {
 		if (!l.isEmpty()) {
-			for (var key : l) {
+			for (final var key : l) {
 				if (!deadEntities.contains(key)) {
 					entities.put(key, getFinalized(key));
 				}

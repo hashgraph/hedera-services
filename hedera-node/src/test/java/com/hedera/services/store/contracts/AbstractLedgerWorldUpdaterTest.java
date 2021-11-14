@@ -9,9 +9,9 @@ package com.hedera.services.store.contracts;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,9 +31,13 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
+import org.apache.commons.lang3.tuple.Pair;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
@@ -43,33 +47,207 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
+import static com.hedera.services.ledger.properties.NftProperty.OWNER;
+import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class AbstractLedgerWorldUpdaterTest {
+	private static final TokenID aToken = IdUtils.asToken("0.0.666");
+	private static final TokenID bToken = IdUtils.asToken("0.0.777");
+	private static final AccountID aAccount = IdUtils.asAccount("0.0.12345");
+	private static final AccountID bAccount = IdUtils.asAccount("0.0.23456");
+	private static final Pair<AccountID, TokenID> aaRel = Pair.of(aAccount, aToken);
+	private static final Pair<AccountID, TokenID> abRel = Pair.of(aAccount, bToken);
+	private static final Pair<AccountID, TokenID> bbRel = Pair.of(bAccount, bToken);
+	private static final NftId aNft = new NftId(0, 0, 0, 3456);
+	private static final NftId bNft = new NftId(0, 0, 0, 4567);
+	private static final Address aAddress = EntityIdUtils.asTypedSolidityAddress(aAccount);
+	private static final Address bAddress = EntityIdUtils.asTypedSolidityAddress(bAccount);
+	private static final long aaBalance = 1L;
+	private static final long bbBalance = 9L;
+	private static final long aHbarBalance = 1_000L;
+	private static final long bHbarBalance = 2_000L;
+	private static final long aNonce = 1L;
+
 	@Mock
 	private HederaWorldState worldState;
 
 	private WorldLedgers ledgers;
-
 	private MockLedgerWorldUpdater subject;
 
 	@BeforeEach
 	void setUp() {
 		setupLedgers();
 
-		subject = new MockLedgerWorldUpdater(worldState, ledgers.wrapped());
+		subject = new MockLedgerWorldUpdater(worldState, ledgers);
+	}
+
+	@Test
+	void getDelegatesToWrappedIfNotDeletedAndNotMutable() {
+		final var wrappedAccount =
+				worldState.new WorldStateAccount(
+						aAddress, Wei.of(aHbarBalance), 1_234_567L, 7776000L, EntityId.MISSING_ENTITY_ID);
+		given(worldState.get(aAddress)).willReturn(wrappedAccount);
+
+		final var actual = subject.get(aAddress);
+		assertSame(wrappedAccount, actual);
+	}
+
+	@Test
+	void parentUpdaterIsEmptyForBaseUpdater() {
+		assertTrue(subject.parentUpdater().isEmpty());
+	}
+
+	@Test
+	void getAndGetAccountReturnNullForDeleted() {
+		final var trackingAccounts = ledgers.accountsLedger;
+		trackingAccounts.create(aAccount);
+		trackingAccounts.set(aAccount, BALANCE, aHbarBalance);
+
+		subject.deleteAccount(aAddress);
+
+		assertNull(subject.get(aAddress));
+		assertNull(subject.getAccount(aAddress));
+	}
+
+	@Test
+	void getReusesMutableIfPresent() {
+		final var trackingAccounts = ledgers.accountsLedger;
+		trackingAccounts.create(aAccount);
+		trackingAccounts.set(aAccount, BALANCE, aHbarBalance);
+
+		given(worldState.get(aAddress)).willReturn(worldState.new WorldStateAccount(
+				aAddress, Wei.of(aHbarBalance), 1_234_567L, 7776000L, EntityId.MISSING_ENTITY_ID));
+
+		final var mutableResponse = subject.getAccount(aAddress);
+		final var getResponse = subject.get(aAddress);
+		assertSame(mutableResponse.getMutable(), getResponse);
+	}
+
+	@Test
+	void commitsToWrappedTrackingAccountsRejectChangesToMissingAccountBalances() {
+		/* Get the wrapped accounts for the updater */
+		final var wrappedLedgers = subject.wrappedTrackingLedgers();
+		final var wrappedAccounts = wrappedLedgers.accounts();
+
+		/* Make an illegal change to them...well-behaved HTS precompiles should not create accounts! */
+		wrappedAccounts.create(aAccount);
+		wrappedAccounts.set(aAccount, BALANCE, aHbarBalance + 2);
+
+		/* Verify we cannot commit the illegal change */
+		assertThrows(IllegalArgumentException.class, wrappedLedgers::commit);
+	}
+
+	@Test
+	void commitsToWrappedTrackingAccountsRejectChangesToDeletedAccountBalances() {
+		final var trackingAccounts = ledgers.accountsLedger;
+		trackingAccounts.create(aAccount);
+
+		/* Make some pending changes to one of the well-known accounts */
+		subject.deleteAccount(aAddress);
+
+		/* Get the wrapped accounts for the updater */
+		final var wrappedLedgers = subject.wrappedTrackingLedgers();
+		final var wrappedAccounts = wrappedLedgers.accounts();
+
+		/* Make an illegal change to them---this should never happen from a well-behaved HTS
+		 * precompile, since our wrapped tracking ledger should show this account as deleted! */
+		wrappedAccounts.set(aAccount, BALANCE, aHbarBalance + 2);
+
+		/* Verify we cannot commit the illegal change */
+		assertThrows(IllegalArgumentException.class, wrappedLedgers::commit);
+	}
+
+	@Test
+	void commitsToWrappedTrackingAccountsAreRespectedAndSyncedWithUpdatedAccounts() {
+		final var mockNftsOwned = 1_234_567L;
+		setupWellKnownAccounts();
+
+		/* Make some pending changes to one of the well-known accounts */
+		subject.getAccount(aAddress).getMutable().setBalance(Wei.of(aHbarBalance + 1));
+
+		/* Get the wrapped accounts for the updater */
+		final var wrappedLedgers = subject.wrappedTrackingLedgers();
+		final var wrappedAccounts = wrappedLedgers.accounts();
+
+		/* Make some changes to them (e.g. as part of an HTS precompile) */
+		wrappedAccounts.set(aAccount, BALANCE, aHbarBalance + 2);
+		wrappedAccounts.set(aAccount, NUM_NFTS_OWNED, mockNftsOwned);
+		wrappedAccounts.set(bAccount, BALANCE, bHbarBalance - 2);
+
+		/* Commit the changes */
+		wrappedLedgers.commit();
+
+		/* And they should be present in the underlying ledgers */
+		assertEquals(aHbarBalance + 2, ledgers.accountsLedger.get(aAccount, BALANCE));
+		assertEquals(bHbarBalance - 2, ledgers.accountsLedger.get(bAccount, BALANCE));
+		/* And consistently in the updatedAccounts map */
+		assertTrue(subject.updatedAccounts.containsKey(aAddress));
+		assertEquals(aHbarBalance + 2, subject.updatedAccounts.get(aAddress).getBalance().toLong());
+		assertTrue(subject.updatedAccounts.containsKey(bAddress));
+		assertEquals(bHbarBalance - 2, subject.updatedAccounts.get(bAddress).getBalance().toLong());
+	}
+
+	@Test
+	void commitsToWrappedTrackingLedgersAreRespected() {
+		final var aEntityId = EntityId.fromGrpcAccountId(aAccount);
+		setupWellKnownNfts();
+
+		/* Get the wrapped nfts for the updater */
+		final var wrappedLedgers = subject.wrappedTrackingLedgers();
+		final var wrappedNfts = wrappedLedgers.nfts();
+
+		/* Make some changes to them (e.g. as part of an HTS precompile) */
+		wrappedNfts.destroy(aNft);
+		wrappedNfts.set(bNft, OWNER, aEntityId);
+
+		/* Commit the changes */
+		wrappedLedgers.commit();
+
+		/* And they should be present in the underlying ledgers */
+		assertFalse(ledgers.nftsLedger.contains(aNft));
+		assertEquals(aEntityId, ledgers.nftsLedger.get(bNft, OWNER));
+	}
+
+	@Test
+	void commitsToWrappedTrackingTokenRelsAreRespected() {
+		setupWellKnownTokenRels();
+
+		/* Get the wrapped token rels for the updater */
+		final var wrappedLedgers = subject.wrappedTrackingLedgers();
+		final var wrappedTokenRels = wrappedLedgers.tokenRels();
+
+		/* Make some changes to them (e.g. as part of an HTS precompile) */
+		wrappedTokenRels.set(aaRel, TOKEN_BALANCE, aaBalance + 1L);
+		wrappedTokenRels.destroy(abRel);
+		wrappedTokenRels.create(bbRel);
+		wrappedTokenRels.set(bbRel, TOKEN_BALANCE, bbBalance);
+
+		/* Commit the changes */
+		wrappedLedgers.commit();
+
+		/* And they should be present in the underlying ledgers */
+		assertEquals(aaBalance + 1, ledgers.tokenRelsLedger.get(aaRel, TOKEN_BALANCE));
+		assertFalse(ledgers.tokenRelsLedger.contains(abRel));
+		assertTrue(ledgers.tokenRelsLedger.contains(bbRel));
+		assertEquals(bbBalance, ledgers.tokenRelsLedger.get(bbRel, TOKEN_BALANCE));
 	}
 
 	@Test
 	void updatesTrackingLedgerAccountOnCreateIfUsable() {
-		final var newAccount = subject.createAccount(aAddress, aNonce, Wei.of(aBalance));
+		final var newAccount = subject.createAccount(aAddress, aNonce, Wei.of(aHbarBalance));
 		assertInstanceOf(WrappedEvmAccount.class, newAccount);
 		final var newWrappedAccount = (WrappedEvmAccount) newAccount;
 		assertFalse(newWrappedAccount.isImmutable());
@@ -77,12 +255,12 @@ class AbstractLedgerWorldUpdaterTest {
 
 		final var trackingAccounts = subject.trackingLedgers().accounts();
 		assertTrue(trackingAccounts.contains(aAccount));
-		assertEquals(aBalance, trackingAccounts.get(aAccount, AccountProperty.BALANCE));
+		assertEquals(aHbarBalance, trackingAccounts.get(aAccount, AccountProperty.BALANCE));
 	}
 
 	@Test
 	void updatesTrackingLedgerAccountOnDeleteIfUsable() {
-		subject.createAccount(aAddress, aNonce, Wei.of(aBalance));
+		subject.createAccount(aAddress, aNonce, Wei.of(aHbarBalance));
 
 		subject.deleteAccount(aAddress);
 
@@ -96,7 +274,7 @@ class AbstractLedgerWorldUpdaterTest {
 	void noopsOnCreateWithUnusableTrackingErrorToPreserveExistingErrorHandling() {
 		subject = new MockLedgerWorldUpdater(worldState, WorldLedgers.NULL_WORLD_LEDGERS);
 
-		assertDoesNotThrow(() -> subject.createAccount(aAddress, aNonce, Wei.of(aBalance)));
+		assertDoesNotThrow(() -> subject.createAccount(aAddress, aNonce, Wei.of(aHbarBalance)));
 	}
 
 	private void setupLedgers() {
@@ -116,11 +294,42 @@ class AbstractLedgerWorldUpdaterTest {
 				new HashMapBackingNfts(),
 				new ChangeSummaryManager<>());
 
+		tokenRelsLedger.begin();
+		accountsLedger.begin();
+		nftsLedger.begin();
+
 		ledgers = new WorldLedgers(tokenRelsLedger, accountsLedger, nftsLedger);
 	}
 
-	private static final AccountID aAccount = IdUtils.asAccount("0.0.12345");
-	private static final Address aAddress = EntityIdUtils.asTypedSolidityAddress(aAccount);
-	private static final long aBalance = 1_000L;
-	private static final long aNonce = 1L;
+	private void setupWellKnownAccounts() {
+		final var trackingAccounts = ledgers.accountsLedger;
+		trackingAccounts.create(aAccount);
+		trackingAccounts.set(aAccount, BALANCE, aHbarBalance);
+		trackingAccounts.create(bAccount);
+		trackingAccounts.set(bAccount, BALANCE, bHbarBalance);
+
+		given(worldState.get(aAddress)).willReturn(worldState.new WorldStateAccount(
+				aAddress, Wei.of(aHbarBalance), 1_234_567L, 7776000L, EntityId.MISSING_ENTITY_ID));
+		given(worldState.get(bAddress)).willReturn(worldState.new WorldStateAccount(
+				bAddress, Wei.of(bHbarBalance), 1_234_567L, 7776000L, EntityId.MISSING_ENTITY_ID));
+	}
+
+	private void setupWellKnownNfts() {
+		final var trackingNfts = ledgers.nftsLedger;
+		trackingNfts.create(aNft);
+		trackingNfts.set(aNft, OWNER, EntityId.fromGrpcAccountId(aAccount));
+		trackingNfts.create(bNft);
+		trackingNfts.set(bNft, OWNER, EntityId.fromGrpcAccountId(bAccount));
+		trackingNfts.commit();
+		trackingNfts.begin();
+	}
+
+	private void setupWellKnownTokenRels() {
+		final var trackingRels = ledgers.tokenRelsLedger;
+		trackingRels.create(aaRel);
+		trackingRels.set(aaRel, TOKEN_BALANCE, aaBalance);
+		trackingRels.create(abRel);
+		trackingRels.commit();
+		trackingRels.begin();
+	}
 }

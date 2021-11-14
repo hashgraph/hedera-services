@@ -165,6 +165,7 @@ class FcmDumpTest {
 
 		subject.setDirectoryCreation(directoryCreation);
 
-		assertThrows(UncheckedIOException.class, () -> subject.getMerkleOutFn().apply(OK_PATH));
+		final var actualMerkleOutFn = subject.getMerkleOutFn();
+		assertThrows(UncheckedIOException.class, () -> actualMerkleOutFn.apply(OK_PATH));
 	}
 }

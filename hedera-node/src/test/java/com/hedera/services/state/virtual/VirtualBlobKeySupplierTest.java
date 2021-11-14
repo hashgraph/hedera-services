@@ -24,25 +24,28 @@ import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.state.virtual.VirtualBlobKeySupplier.CLASS_ID;
 import static com.hedera.services.state.virtual.VirtualBlobKeySupplier.CURRENT_VERSION;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class VirtualBlobKeySupplierTest {
-	VirtualBlobKeySupplier subject;
+	private VirtualBlobKeySupplier subject = new VirtualBlobKeySupplier();
 
 	@Test
 	void gettersWork() {
-		subject = new VirtualBlobKeySupplier();
-
 		assertEquals(CLASS_ID, subject.getClassId());
 		assertEquals(CURRENT_VERSION, subject.getVersion());
 	}
 
 	@Test
 	void delegatesAsExpected() {
-		subject = new VirtualBlobKeySupplier();
-
 		var virtualBlobKey = subject.get();
 
 		assertEquals(VirtualBlobKey.CLASS_ID, virtualBlobKey.getClassId());
+	}
+
+	@Test
+	void serdesAreNoop() {
+		assertDoesNotThrow(() -> subject.deserialize(null, 1));
+		assertDoesNotThrow(() -> subject.serialize(null));
 	}
 }

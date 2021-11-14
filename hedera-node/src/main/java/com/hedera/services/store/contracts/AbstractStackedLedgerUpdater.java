@@ -76,7 +76,7 @@ public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extend
 					/* We created this account, so create a new tracker for our parent. */
 					mutable = new UpdateTrackingLedgerAccount<>(updatedAccount.getAddress(), wrapped.trackingAccounts());
 				} else {
-					/* This tracker is reusable, just update its tracking accounts to the parent's. */
+					/* This tracker is reusable, just update its tracking accounts to our parent's. */
 					mutable.updateTrackingAccounts(wrapped.trackingAccounts());
 				}
 				wrapped.updatedAccounts.put(mutable.getAddress(), mutable);
