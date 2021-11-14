@@ -93,7 +93,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 						createsVanillaContractAsExpectedWithOmittedAdminKey(),
 						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
 						cannotCreateTooLargeContract(),
-						getsInsufficientPayerBalanceIfSendingAccountJustInsolventAfterPayingFees(),
+						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
 				}
 		);
 	}
@@ -276,7 +276,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec getsInsufficientPayerBalanceIfSendingAccountJustInsolventAfterPayingFees() {
+	private HapiApiSpec getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee() {
 		final var initcode = "initcode";
 		final var firstContract = "firstContract";
 		final var secondContract = "secondContract";
@@ -284,7 +284,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 		final var creation = "creation";
 		final AtomicLong baseCreationFee = new AtomicLong();
 
-		return defaultHapiSpec("GetsInsufficientPayerBalanceIfSendingAccountJustInsolventAfterPayingFees")
+		return defaultHapiSpec("GetsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee")
 				.given(
 						cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
 						fileCreate(initcode)
@@ -300,7 +300,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 				).then(
 						sourcing(() -> contractCreate(secondContract)
 								.bytecode(initcode)
-								.gas(300_000L)
+								.gas(100_000L)
 								.payingWith(civilian)
 								.balance(ONE_HUNDRED_HBARS - 2 * baseCreationFee.get()))
 				);

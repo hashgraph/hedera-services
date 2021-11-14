@@ -188,7 +188,6 @@ public class HederaWorldState implements HederaMutableWorldState {
 	}
 
 	public class WorldStateAccount implements Account {
-
 		private final Wei balance;
 		private final Address address;
 
