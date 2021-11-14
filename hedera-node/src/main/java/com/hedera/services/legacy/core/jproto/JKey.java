@@ -40,7 +40,7 @@ import java.util.Objects;
  */
 public abstract class JKey implements Serializable {
 	static final int MAX_KEY_DEPTH = 15;
-	private static byte[] EMPTY_ARRAY = new byte[0];
+	private static final byte[] EMPTY_ARRAY = new byte[0];
 
 	private static final long serialVersionUID = 1L;
 
