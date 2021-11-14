@@ -295,15 +295,15 @@ class UpdateTrackingLedgerAccountTest {
 	@Test
 	void toStringWorksAsExpected() {
 		final var expectedNoUpdatedStorageOrCode = "0x0000000000000000000000000000000000003039 -> " +
-				"{nonce: 0, balance:0x00000000000000000000000000000000000000000000000000000000000186a0, " +
+				"{nonce:0, balance:0x00000000000000000000000000000000000000000000000000000000000186a0, " +
 				"code:[not updated], storage:[not updated] }";
 		final var expectedUpdatedStorageNotCode = "0x0000000000000000000000000000000000003039 -> " +
-				"{nonce: 0, balance:0x00000000000000000000000000000000000000000000000000000000000186a0, " +
+				"{nonce:0, balance:0x00000000000000000000000000000000000000000000000000000000000186a0, " +
 				"code:[not updated], " +
 				"storage:{0x0000000000000000000000000000000000000000000000000000000000000001" +
 				"=0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff} }";
 		final var expectedUpdatedCodeClearedStorage = "0x0000000000000000000000000000000000003039 -> " +
-				"{nonce: 0, balance:0x00000000000000000000000000000000000000000000000000000000000186a0, " +
+				"{nonce:0, balance:0x00000000000000000000000000000000000000000000000000000000000186a0, " +
 				"code:0x04d2, storage:[cleared] }";
 
 		final var account = parentState.new WorldStateAccount(
