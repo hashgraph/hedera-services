@@ -81,7 +81,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	final Map<K, EnumMap<P, Object>> changes = new HashMap<>();
 
 	private boolean isInTransaction = false;
-	private PropertyChangeObserver commitInterceptor = null;
+	private PropertyChangeObserver<K, P> commitInterceptor = null;
 	private Optional<Function<K, String>> keyToString = Optional.empty();
 
 	public TransactionalLedger(
