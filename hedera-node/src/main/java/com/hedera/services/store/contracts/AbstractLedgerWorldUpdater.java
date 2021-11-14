@@ -92,7 +92,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 
 	@Override
 	public EvmAccount createAccount(final Address address, final long nonce, final Wei balance) {
-		final var newMutable = new UpdateTrackingLedgerAccount<A>(address, trackingLedgers.accounts());
+		final var newMutable = new UpdateTrackingLedgerAccount<A>(address, trackingAccounts());
 		if (trackingLedgers.areUsable()) {
 			trackingLedgers.accounts().create(newMutable.getAccountId());
 		}

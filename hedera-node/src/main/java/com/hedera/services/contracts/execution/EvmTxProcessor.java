@@ -32,7 +32,6 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.apache.tuweni.bytes.Bytes;
@@ -61,18 +60,19 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 
 /**
  * Abstract processor of EVM transactions that prepares the {@link EVM} and all of the peripherals upon
  * instantiation
  * Provides
- * a base{@link EvmTxProcessor#execute(Account, Address, long, long, long, Bytes, boolean, Instant, boolean, Optional)}
+ * a base{@link EvmTxProcessor#execute(Account, Address, long, long, long, Bytes, boolean, Instant, boolean, OptionalLong)}
  * method that handles the end-to-end execution of a EVM transaction
  */
 abstract class EvmTxProcessor {
@@ -130,8 +130,7 @@ abstract class EvmTxProcessor {
 				gasCalculator,
 				evm,
 				true,
-				List.of(MaxCodeSizeRule.of(MAX_CODE_SIZE),
-						PrefixCodeRule.of()),
+				List.of(MaxCodeSizeRule.of(MAX_CODE_SIZE), PrefixCodeRule.of()),
 				1);
 	}
 
@@ -161,26 +160,33 @@ abstract class EvmTxProcessor {
 	 * 		In the case of Create transactions, the expiry of the top-level contract being created
 	 * @return the result of the EVM execution returned as {@link TransactionProcessingResult}
 	 */
-	protected TransactionProcessingResult execute(Account sender, Address receiver, long gasPrice,
-			long gasLimit, long value, Bytes payload, boolean contractCreation,
-			Instant consensusTime, boolean isStatic, Optional<Long> expiry) {
+	protected TransactionProcessingResult execute(
+			final Account sender,
+			final Address receiver,
+			final long gasPrice,
+			final long gasLimit,
+			final long value,
+			final Bytes payload,
+			final boolean contractCreation,
+			final Instant consensusTime,
+			final boolean isStatic,
+			final OptionalLong expiry
+	) {
 		final Wei gasCost = Wei.of(Math.multiplyExact(gasLimit, gasPrice));
 		final Wei upfrontCost = gasCost.add(value);
-		final Gas intrinsicGas =
-				gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
+		final Gas intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
 		final var updater = worldState.updater();
 
 		if (!isStatic) {
-			validateFalse(upfrontCost.compareTo(Wei.of(sender.getBalance())) > 0,
-					ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
+			final var senderCanAffordGas = Wei.of(sender.getBalance()).compareTo(upfrontCost) >= 0;
+			validateTrue(senderCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
 			if (intrinsicGas.toLong() > gasLimit) {
 				throw new InvalidTransactionException(INSUFFICIENT_GAS);
 			}
 		}
 
 		final Address coinbase = Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress();
-		final HederaBlockValues blockValues = new HederaBlockValues(gasLimit,
-				consensusTime.getEpochSecond());
+		final HederaBlockValues blockValues = new HederaBlockValues(gasLimit, consensusTime.getEpochSecond());
 		Address senderEvmAddress = sender.getId().asEvmAddress();
 		final MutableAccount mutableSender = updater.getOrCreateSenderAccount(senderEvmAddress).getMutable();
 		if (!isStatic) {

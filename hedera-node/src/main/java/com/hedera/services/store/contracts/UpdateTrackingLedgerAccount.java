@@ -50,7 +50,8 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
 	private final Address address;
 	private final AccountID accountId;
 	private final NavigableMap<UInt256, UInt256> updatedStorage;
-	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> trackingAccounts;
+
+	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> trackingAccounts;
 
 	@Nullable
 	private A account;
@@ -240,7 +241,7 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
 			storage = "[cleared]";
 		}
 		return String.format(
-				"%s -> {nonce: %s, balance:%s, code:%s, storage:%s }",
+				"%s -> {nonce:%s, balance:%s, code:%s, storage:%s }",
 				address, nonce, balance, updatedCode == null ? "[not updated]" : updatedCode, storage);
 	}
 
@@ -251,5 +252,11 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
 
 	public AccountID getAccountId() {
 		return accountId;
+	}
+
+	public void updateTrackingAccounts(
+			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> trackingAccounts
+	) {
+		this.trackingAccounts = trackingAccounts;
 	}
 }

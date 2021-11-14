@@ -43,7 +43,7 @@ public class MockLedgerWorldUpdater
 
 	@Override
 	public void commit() {
-		throw new NotImplementedException("This is just a mock!");
+		trackingLedgers().commit();
 	}
 
 	@Override

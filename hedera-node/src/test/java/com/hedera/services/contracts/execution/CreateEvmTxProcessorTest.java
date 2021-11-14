@@ -57,6 +57,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.Deque;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -188,7 +189,9 @@ class CreateEvmTxProcessorTest {
 		//expect:
 		Address receiver = this.receiver.getId().asEvmAddress();
 		assertThrows(InvalidTransactionException.class, () ->
-				createEvmTxProcessor.execute(sender, receiver, 1234, 1_000_000, 15, Bytes.EMPTY, false, consensusTime, false, Optional.of(expiry)));
+				createEvmTxProcessor.execute(
+						sender, receiver, 1234, 1_000_000, 15, Bytes.EMPTY, false,
+						consensusTime, false, OptionalLong.of(expiry)));
 	}
 
 	@Test

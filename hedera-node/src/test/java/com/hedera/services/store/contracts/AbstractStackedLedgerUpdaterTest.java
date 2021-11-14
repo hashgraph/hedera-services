@@ -32,9 +32,11 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,7 +47,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class AbstractStackedLedgerUpdaterTest {
@@ -68,6 +73,36 @@ class AbstractStackedLedgerUpdaterTest {
 	}
 
 	@Test
+	void getForMutationReturnsTrackingAccountIfPresentInParent() {
+		wrapped.createAccount(aAddress, aNonce, Wei.of(aBalance));
+
+		assertSame(subject.getForMutation(aAddress), wrapped.updatedAccounts.get(aAddress));
+	}
+
+	@Test
+	void getForMutationReturnsNullForDeletedAccount() {
+		wrapped.createAccount(aAddress, aNonce, Wei.of(aBalance));
+		wrapped.deleteAccount(aAddress);
+
+		assertNull(subject.getForMutation(aAddress));
+	}
+
+	@Test
+	void getForMutationPropagatesNullIfParentDoesntHave() {
+		assertNull(subject.getForMutation(aAddress));
+	}
+
+	@Test
+	void getForMutationWrapsParentMutable() {
+		final var account = worldState.new WorldStateAccount(
+				aAddress, Wei.of(aBalance), aExpiry, aAutoRenew, EntityId.MISSING_ENTITY_ID);
+		given(worldState.get(aAddress)).willReturn(account);
+
+		final var mutableAccount = subject.getForMutation(aAddress);
+		assertSame(account, mutableAccount.getWrappedAccount());
+	}
+
+	@Test
 	void revertsAsExpected() {
 		subject.revert();
 
@@ -75,7 +110,7 @@ class AbstractStackedLedgerUpdaterTest {
 	}
 
 	@Test
-	void commitsAsExpected() {
+	void commitsNewlyCreatedAccountAsExpected() {
 		subject.createAccount(aAddress, aNonce, Wei.of(aBalance));
 
 		subject.commit();
@@ -84,6 +119,37 @@ class AbstractStackedLedgerUpdaterTest {
 		assertEquals(aNonce, wrapped.getAccount(aAddress).getNonce());
 		assertTrue(wrapped.trackingLedgers().accounts().contains(aAccount));
 		assertEquals(aBalance, wrapped.trackingLedgers().accounts().get(aAccount, BALANCE));
+
+		final var wrappedMutableAccount = wrapped.getAccount(aAddress);
+		wrappedMutableAccount.getMutable().decrementBalance(Wei.of(1));
+
+		wrapped.commit();
+		assertEquals(aBalance - 1, ledgers.accounts().get(aAccount, BALANCE));
+	}
+
+	@Test
+	void commitsNewlyModifiedAccountAsExpected() {
+		final var mockCode = Bytes.ofUnsignedLong(1_234L);
+		final var account = worldState.new WorldStateAccount(
+				aAddress, Wei.of(aBalance), aExpiry, aAutoRenew, EntityId.MISSING_ENTITY_ID);
+		given(worldState.get(aAddress)).willReturn(account);
+		ledgers.accounts().create(aAccount);
+		ledgers.accounts().set(aAccount, BALANCE, aBalance);
+
+		final var mutableAccount = subject.getAccount(aAddress);
+		mutableAccount.getMutable().decrementBalance(Wei.of(1));
+		mutableAccount.getMutable().setCode(mockCode);
+		mutableAccount.getMutable().clearStorage();
+
+		subject.commit();
+
+		final var wrappedMutableAccount = wrapped.getAccount(aAddress);
+		assertEquals(mockCode, wrappedMutableAccount.getCode());
+		wrappedMutableAccount.getMutable().decrementBalance(Wei.of(1));
+		assertEquals(aBalance, ledgers.accounts().get(aAccount, BALANCE));
+
+		wrapped.commit();
+		assertEquals(aBalance - 2, ledgers.accounts().get(aAccount, BALANCE));
 	}
 
 	private void assertTrackingLedgersInTxn() {
@@ -117,6 +183,10 @@ class AbstractStackedLedgerUpdaterTest {
 				new HashMapBackingNfts(),
 				new ChangeSummaryManager<>());
 
+		tokenRelsLedger.begin();
+		accountsLedger.begin();
+		nftsLedger.begin();
+
 		ledgers = new WorldLedgers(tokenRelsLedger, accountsLedger, nftsLedger);
 	}
 
@@ -124,4 +194,6 @@ class AbstractStackedLedgerUpdaterTest {
 	private static final Address aAddress = EntityIdUtils.asTypedSolidityAddress(aAccount);
 	private static final long aBalance = 1_000L;
 	private static final long aNonce = 1L;
+	private static final long aExpiry = 1_234_567L;
+	private static final long aAutoRenew = 7776000L;
 }

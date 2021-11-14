@@ -45,11 +45,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Paths;
 import java.util.function.Function;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.times;
@@ -157,6 +160,11 @@ class FcmDumpTest {
 	}
 
 	@Test
-	void propagatesIoE() {
+	void propagatesIoEUnchecked() throws IOException {
+		given(directoryCreation.createDirectories(Paths.get(OK_PATH).getParent())).willThrow(IOException.class);
+
+		subject.setDirectoryCreation(directoryCreation);
+
+		assertThrows(UncheckedIOException.class, () -> subject.getMerkleOutFn().apply(OK_PATH));
 	}
 }

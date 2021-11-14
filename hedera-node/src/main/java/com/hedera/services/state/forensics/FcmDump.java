@@ -52,6 +52,7 @@ public class FcmDump {
 	}
 
 	private DirectoryCreation directoryCreation = Files::createDirectories;
+
 	private Function<String, MerkleDataOutputStream> merkleOutFn = dumpLoc -> {
 		try {
 			directoryCreation.createDirectories(Path.of(dumpLoc).getParent());

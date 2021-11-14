@@ -383,7 +383,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		return isInTransaction;
 	}
 
-	String changeSetSoFar() {
+	public String changeSetSoFar() {
 		StringBuilder desc = new StringBuilder("{");
 		AtomicBoolean isFirstChange = new AtomicBoolean(true);
 		changes.entrySet().forEach(change -> {

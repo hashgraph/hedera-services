@@ -58,6 +58,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.Deque;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
@@ -119,7 +120,7 @@ class CallLocalEvmTxProcessorTest {
 		Address receiver = this.receiver.getId().asEvmAddress();
 		assertThrows(InvalidTransactionException.class, () ->
 				callLocalEvmTxProcessor.execute(sender, receiver, 1234L, 1_000_000, 15,
-						Bytes.EMPTY, false, consensusTime, false, Optional.empty()));
+						Bytes.EMPTY, false, consensusTime, false, OptionalLong.empty()));
 	}
 
 	@Test
