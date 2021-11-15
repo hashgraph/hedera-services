@@ -283,4 +283,16 @@ public interface TransactionContext {
 	 * @param newTokenAssociations the newly created token associations
 	 */
 	void setNewTokenAssociations(List<FcTokenAssociation> newTokenAssociations);
+
+	/**
+	 * Verifies if the transaction context for the currently executing transaction has a contract result
+	 * @return true if there is a ContractCall or ContractCreate result attached to the context
+	 */
+	boolean hasContractResult();
+
+	/**
+	 * Extracts the amount of gas used by the currently executing transaction.
+	 * @return long - the amount of gas used for the TX execution
+	 */
+	long getGasUsedForContractTxn();
 }

@@ -57,6 +57,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.Deque;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -101,6 +102,9 @@ class CreateEvmTxProcessorTest {
 	private final Instant consensusTime = Instant.now();
 	private final long expiry = 123456L;
 	private final int MAX_GAS_LIMIT = 10_000_000;
+	private final int MAX_REFUND_PERCENT = 20;
+	private final long INTRINSIC_GAS_COST = 290_000L;
+	private final long GAS_LIMIT = 300_000L;
 
 	@BeforeEach
 	private void setup() {
@@ -118,6 +122,31 @@ class CreateEvmTxProcessorTest {
 		assertTrue(result.isSuccessful());
 		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
 		verify(codeCache).invalidate(receiver.getId().asEvmAddress());
+	}
+
+	@Test
+	void assertSuccessExecutionChargesCorrectMinimumGas() {
+		givenValidMock(true);
+		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENT);
+		sender.initBalance(350_000L);
+		var result = createEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(),
+				GAS_LIMIT, 1234L, Bytes.EMPTY, consensusTime, expiry);
+		assertTrue(result.isSuccessful());
+		assertEquals(result.getGasUsed(), GAS_LIMIT - GAS_LIMIT * MAX_REFUND_PERCENT / 100);
+		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+	}
+
+	@Test
+	void assertSuccessExecutionChargesCorrectGasWhenGasUsedIsLargerThanMinimum() {
+		givenValidMock(true);
+		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(5);
+		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(Gas.of(INTRINSIC_GAS_COST));
+		sender.initBalance(350_000L);
+		var result = createEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(),
+				GAS_LIMIT, 1234L, Bytes.EMPTY, consensusTime, expiry);
+		assertTrue(result.isSuccessful());
+		assertEquals(INTRINSIC_GAS_COST, result.getGasUsed());
+		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
 	}
 
 	@Test
@@ -160,7 +189,9 @@ class CreateEvmTxProcessorTest {
 		//expect:
 		Address receiver = this.receiver.getId().asEvmAddress();
 		assertThrows(InvalidTransactionException.class, () ->
-				createEvmTxProcessor.execute(sender, receiver, 1234, 1_000_000, 15, Bytes.EMPTY, false, consensusTime, false, Optional.of(expiry)));
+				createEvmTxProcessor.execute(
+						sender, receiver, 1234, 1_000_000, 15, Bytes.EMPTY, false,
+						consensusTime, false, OptionalLong.of(expiry)));
 	}
 
 	@Test
@@ -219,6 +250,7 @@ class CreateEvmTxProcessorTest {
 	void throwsWhenIntrinsicGasCostExceedsGasLimit() {
 		// given:
 		givenInvalidMock();
+
 		// and:
 		sender.initBalance(200_000);
 
@@ -237,6 +269,7 @@ class CreateEvmTxProcessorTest {
 	void throwsWhenIntrinsicGasCostExceedsGasLimitAndGasLimitIsEqualToMaxGasLimit() {
 		// given:
 		givenInvalidMock();
+
 		// and:
 		sender.initBalance(100_000_000);
 		// and:
@@ -250,7 +283,7 @@ class CreateEvmTxProcessorTest {
 						.execute(sender, receiver, MAX_GAS_LIMIT, 1234L, Bytes.EMPTY, consensusTime, expiry));
 
 		// then:
-		assertEquals(ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED, result.getResponseCode());
+		assertEquals(ResponseCodeEnum.INSUFFICIENT_GAS, result.getResponseCode());
 	}
 
 	private void givenInvalidMock() {
@@ -263,14 +296,12 @@ class CreateEvmTxProcessorTest {
 		given(exchangeRate.getCentEquiv()).willReturn(1);
 		// and:
 		given(worldState.updater()).willReturn(updater);
-		given(globalDynamicProperties.maxGas()).willReturn(MAX_GAS_LIMIT);
 		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(Gas.of(100_000L));
 	}
 
 	private void givenValidMock(boolean expectedSuccess) {
 		given(worldState.updater()).willReturn(updater);
 		given(worldState.updater().updater()).willReturn(updater);
-		given(globalDynamicProperties.maxGas()).willReturn(MAX_GAS_LIMIT);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 
 		var evmAccount = mock(EvmAccount.class);

@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@ExtendWith({ LogCaptureExtension.class })
+@ExtendWith({LogCaptureExtension.class})
 class BootstrapPropertiesTest {
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -96,6 +96,10 @@ class BootstrapPropertiesTest {
 			entry("contracts.localCall.estRetBytes", 32),
 			entry("contracts.maxGas", 300000),
 			entry("contracts.chainId", 1),
+			entry("contracts.throttle.throttleByGas", true),
+			entry("contracts.maxRefundPercentOfGasLimit", 20),
+			entry("contracts.frontendThrottleMaxGasLimit", 15000000L),
+			entry("contracts.consensusThrottleMaxGasLimit", 15000000L),
 			entry("dev.onlyDefaultNodeListens", true),
 			entry("dev.defaultListeningNodeAccount", "0.0.3"),
 			entry("entities.maxLifetime", 3153600000L),

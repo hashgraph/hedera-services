@@ -21,17 +21,27 @@ package com.hedera.services.store.contracts;
  */
 
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.properties.NftProperty;
+import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.store.models.NftId;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.virtualmap.VirtualMap;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,6 +54,7 @@ import java.time.Instant;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -63,6 +74,12 @@ class MutableEntityAccessTest {
 	private VirtualMap<ContractKey, ContractValue> contractStorage;
 	@Mock
 	private VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecodeStorage;
+	@Mock
+	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
+	@Mock
+	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	@Mock
+	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 
 	private MutableEntityAccess subject;
 
@@ -80,22 +97,27 @@ class MutableEntityAccessTest {
 	private final ContractValue expectedContractValue = new ContractValue(contractStorageValue.toArray());
 
 	private final Bytes bytecode = Bytes.of("contract-code".getBytes());
-	private final VirtualBlobKey expectedBytecodeKey = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, (int) id.getAccountNum());
+	private final VirtualBlobKey expectedBytecodeKey = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE,
+			(int) id.getAccountNum());
 	private final VirtualBlobValue expectedBytecodeValue = new VirtualBlobValue(bytecode.toArray());
 
 
 	@BeforeEach
 	void setUp() {
+		given(ledger.getTokenRelsLedger()).willReturn(tokenRelsLedger);
+		given(ledger.getAccountsLedger()).willReturn(accountsLedger);
+		given(ledger.getNftsLedger()).willReturn(nftsLedger);
+
 		subject = new MutableEntityAccess(ledger, supplierContractStorage, supplierBytecode);
 	}
 
 	@Test
-	void spawnsAccount() {
-		// when:
-		subject.spawn(id, balance, new HederaAccountCustomizer());
+	void delegatesLedgerAccess() {
+		final var worldLedgers = subject.worldLedgers();
 
-		// then:
-		verify(ledger).spawn(eq(id), eq(balance), any());
+		assertSame(tokenRelsLedger, worldLedgers.tokenRels());
+		assertSame(accountsLedger, worldLedgers.accounts());
+		assertSame(nftsLedger, worldLedgers.nfts());
 	}
 
 	@Test
@@ -105,6 +127,13 @@ class MutableEntityAccessTest {
 
 		// then:
 		verify(ledger).customizePotentiallyDeleted(eq(id), any());
+	}
+
+	@Test
+	void delegatesDetachmentTest() {
+		given(ledger.isDetached(id)).willReturn(true);
+
+		assertTrue(subject.isDetached(id));
 	}
 
 	@Test
@@ -230,7 +259,7 @@ class MutableEntityAccessTest {
 		given(supplierContractStorage.get()).willReturn(contractStorage);
 
 		// when:
-		subject.put(id, contractStorageKey, UInt256.ZERO);
+		subject.putStorage(id, contractStorageKey, UInt256.ZERO);
 
 		// then:
 		verify(contractStorage).put(expectedContractKey, new ContractValue());
@@ -242,7 +271,7 @@ class MutableEntityAccessTest {
 		given(supplierContractStorage.get()).willReturn(contractStorage);
 
 		// when:
-		subject.put(id, contractStorageKey, contractStorageValue);
+		subject.putStorage(id, contractStorageKey, contractStorageValue);
 
 		// then:
 		verify(contractStorage).put(expectedContractKey, expectedContractValue);
@@ -254,7 +283,7 @@ class MutableEntityAccessTest {
 		given(supplierContractStorage.get()).willReturn(contractStorage);
 
 		// when:
-		final var result = subject.get(id, contractStorageKey);
+		final var result = subject.getStorage(id, contractStorageKey);
 
 		// then:
 		assertEquals(UInt256.ZERO, result);
@@ -270,7 +299,7 @@ class MutableEntityAccessTest {
 		given(contractStorage.get(expectedContractKey)).willReturn(expectedContractValue);
 
 		// when:
-		final var result = subject.get(id, contractStorageKey);
+		final var result = subject.getStorage(id, contractStorageKey);
 
 		// then:
 		assertEquals(UInt256.MAX_VALUE, result);
@@ -284,7 +313,7 @@ class MutableEntityAccessTest {
 		given(supplierBytecode.get()).willReturn(bytecodeStorage);
 
 		// when:
-		subject.store(id, bytecode);
+		subject.storeCode(id, bytecode);
 
 		// then:
 		verify(bytecodeStorage).put(expectedBytecodeKey, expectedBytecodeValue);
@@ -296,7 +325,7 @@ class MutableEntityAccessTest {
 		given(supplierBytecode.get()).willReturn(bytecodeStorage);
 
 		// when:
-		final var result = subject.fetch(id);
+		final var result = subject.fetchCode(id);
 
 		// then:
 		assertEquals(Bytes.EMPTY, result);
@@ -312,7 +341,7 @@ class MutableEntityAccessTest {
 		given(bytecodeStorage.get(expectedBytecodeKey)).willReturn(expectedBytecodeValue);
 
 		// when:
-		final var result = subject.fetch(id);
+		final var result = subject.fetchCode(id);
 
 		// then:
 		assertEquals(bytecode, result);

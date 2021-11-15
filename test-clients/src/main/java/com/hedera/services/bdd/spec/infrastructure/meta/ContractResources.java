@@ -74,6 +74,7 @@ public class ContractResources {
 	public static final String SUB_LEVEL_TRANSFERRING_CONTRACT = bytecodePath("SubLevelTransferringContract");
 	public static final String LARGE_CONTRACT_CRYPTO_KITTIES = bytecodePath("CryptoKitties");
 	public static final String SELF_DESTRUCT_CALLABLE = bytecodePath("SelfDestructCallable");
+	public static final String REVERTING_SEND_TRY = bytecodePath("RevertingSendTry");
 
 	public static final String SELF_DESTRUCT_CALL_ABI = "{\"inputs\":[],\"name\":\"destroy\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"}";
 
@@ -81,6 +82,11 @@ public class ContractResources {
 
 	public static final String TOP_LEVEL_TRANSFERRING_CONTRACT_TRANSFER_CALL_PAYABLE_ABI = "{\"inputs\":[],\"name\":\"topLevelTransferCall\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"payable\",\"type\":\"function\"}";
 	public static final String TOP_LEVEL_TRANSFERRING_CONTRACT_NON_PAYABLE_ABI = "{\"inputs\":[],\"name\":\"topLevelNonPayableCall\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"pure\",\"type\":\"function\"}";
+
+	public static final String SEND_THEN_REVERT_NESTED_SENDS_ABI = "{\"inputs\":[{\"internalType\":\"uint32\"," +
+			"\"name\":\"amount\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"numA\"," +
+			"\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"numB\",\"type\":\"uint32\"}]," +
+			"\"name\":\"sendTo\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"}";
 
 	public static final String SUB_LEVEL_PAYABLE_ABI = "{\"inputs\":" +
 			"[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"}" +

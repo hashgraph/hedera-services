@@ -57,8 +57,6 @@ class SignatureScreenTest {
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
-	private NetworkCtxManager networkCtxManager;
-	@Mock
 	private MiscSpeedometers speedometers;
 	@Mock
 	private BiPredicate<JKey, TransactionSignature> validityTest;
@@ -73,7 +71,7 @@ class SignatureScreenTest {
 	@BeforeEach
 	void setUp() {
 		subject = new SignatureScreen(
-				rationalization, payerSigValidity, txnCtx, networkCtxManager, speedometers, validityTest);
+				rationalization, payerSigValidity, txnCtx, speedometers, validityTest);
 	}
 
 	@Test
@@ -100,7 +98,6 @@ class SignatureScreenTest {
 
 		// then:
 		verify(txnCtx).payerSigIsKnownActive();
-		verify(networkCtxManager).prepareForIncorporating(accessor);
 		// and:
 		Assertions.assertEquals(OK, result);
 	}

@@ -148,7 +148,6 @@ public class VirtualBlobKey implements VirtualKey<VirtualBlobKey> {
 		if (order != 0) {
 			return order;
 		}
-
 		return this.type.compareTo(that.type);
 	}
 

@@ -58,6 +58,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.Deque;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
@@ -119,7 +120,7 @@ class CallLocalEvmTxProcessorTest {
 		Address receiver = this.receiver.getId().asEvmAddress();
 		assertThrows(InvalidTransactionException.class, () ->
 				callLocalEvmTxProcessor.execute(sender, receiver, 1234L, 1_000_000, 15,
-						Bytes.EMPTY, false, consensusTime, false, Optional.empty()));
+						Bytes.EMPTY, false, consensusTime, false, OptionalLong.empty()));
 	}
 
 	@Test
@@ -135,7 +136,6 @@ class CallLocalEvmTxProcessorTest {
 	void throwsWhenCodeCacheFailsLoading() throws ExecutionException {
 		given(worldState.updater()).willReturn(updater);
 		given(worldState.updater().updater()).willReturn(updater);
-		given(globalDynamicProperties.maxGas()).willReturn(10000000);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 
 		var evmAccount = mock(EvmAccount.class);
@@ -212,7 +212,6 @@ class CallLocalEvmTxProcessorTest {
 	private void givenValidMock() throws ExecutionException {
 		given(worldState.updater()).willReturn(updater);
 		given(worldState.updater().updater()).willReturn(updater);
-		given(globalDynamicProperties.maxGas()).willReturn(10000000);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 
 		var evmAccount = mock(EvmAccount.class);

@@ -44,7 +44,7 @@ import org.hyperledger.besu.evm.operation.Operation;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
-import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 
 /**
@@ -98,7 +98,7 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 				false,
 				consensusTime,
 				true,
-				Optional.empty());
+				OptionalLong.empty());
 	}
 
 	@Override

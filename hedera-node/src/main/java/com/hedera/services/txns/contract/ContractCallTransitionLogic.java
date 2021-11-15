@@ -21,6 +21,7 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallEvmTxProcessor;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.records.TransactionRecordService;
@@ -43,6 +44,7 @@ import java.util.function.Predicate;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class ContractCallTransitionLogic implements PreFetchableTransition {
@@ -54,6 +56,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 	private final HederaMutableWorldState worldState;
 	private final TransactionRecordService recordService;
 	private final CallEvmTxProcessor evmTxProcessor;
+	private final GlobalDynamicProperties properties;
 	private final CodeCache codeCache;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validateSemantics;
@@ -66,6 +69,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 			HederaMutableWorldState worldState,
 			TransactionRecordService recordService,
 			CallEvmTxProcessor evmTxProcessor,
+			GlobalDynamicProperties properties,
 			CodeCache codeCache
 	) {
 		this.txnCtx = txnCtx;
@@ -74,6 +78,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 		this.accountStore = accountStore;
 		this.recordService = recordService;
 		this.evmTxProcessor = evmTxProcessor;
+		this.properties = properties;
 		this.codeCache = codeCache;
 	}
 
@@ -138,6 +143,9 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 		}
 		if (op.getAmount() < 0) {
 			return CONTRACT_NEGATIVE_VALUE;
+		}
+		if (op.getGas() > properties.maxGas()) {
+			return MAX_GAS_LIMIT_EXCEEDED;
 		}
 		return OK;
 	}

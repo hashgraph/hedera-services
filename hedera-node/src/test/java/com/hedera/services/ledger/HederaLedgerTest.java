@@ -71,6 +71,13 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
+	void ledgerGettersWork() {
+		assertSame(nftsLedger, subject.getNftsLedger());
+		assertSame(accountsLedger, subject.getAccountsLedger());
+		assertSame(tokenRelsLedger, subject.getTokenRelsLedger());
+	}
+
+	@Test
 	void delegatesDestroy() {
 		subject.destroy(genesis);
 
