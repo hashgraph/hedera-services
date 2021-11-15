@@ -1835,7 +1835,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.via(txnFromDebbie)
 				).then(
 						getTxnRecord(txnFromTreasury)
-								.hasTokenAmount(feeToken, debbie, 1_000L)
+								.hasTokenAmount(feeToken, debbie, 666L)
 								.hasTokenAmount(feeToken, DEFAULT_PAYER, -1_000L)
 								.hasTokenAmount(tokenWithHtsFee, debbie, 1_000L)
 								.hasTokenAmount(tokenWithHtsFee, treasuryForNestedCollection, -1_000L)
