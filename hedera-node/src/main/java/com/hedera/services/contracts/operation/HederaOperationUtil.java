@@ -37,6 +37,7 @@ import org.hyperledger.besu.evm.operation.Operation;
 
 import java.util.Iterator;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -65,9 +66,9 @@ public final class HederaOperationUtil {
 			messageFrame = framesIterator.next();
 			/* if this is the initial frame from the deque, check context vars first */
 			if (!framesIterator.hasNext()) {
-				Optional<Long> expiryOptional = messageFrame.getContextVariable("expiry");
+				OptionalLong expiryOptional = messageFrame.getContextVariable("expiry");
 				if (expiryOptional.isPresent()) {
-					expiry = expiryOptional.get();
+					expiry = expiryOptional.getAsLong();
 					break;
 				}
 			}
