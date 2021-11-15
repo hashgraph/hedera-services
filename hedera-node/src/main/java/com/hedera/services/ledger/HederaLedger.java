@@ -30,12 +30,14 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
@@ -133,6 +135,7 @@ public class HederaLedger {
 	private final List<FcTokenAssociation> newTokenAssociations = new ArrayList<>();
 	private final AccountRecordsHistorian historian;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	private final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 
 	private UniqTokenViewsManager tokenViewsManager = null;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger = null;
@@ -155,14 +158,15 @@ public class HederaLedger {
 			OptionValidator validator,
 			AccountRecordsHistorian historian,
 			GlobalDynamicProperties dynamicProperties,
-			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger
-	) {
+			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
+			TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger) {
 		this.ids = ids;
 		this.validator = validator;
 		this.historian = historian;
 		this.tokenStore = tokenStore;
 		this.accountsLedger = accountsLedger;
 		this.dynamicProperties = dynamicProperties;
+		this.tokensLedger = tokensLedger;
 
 		creator.setLedger(this);
 		historian.setCreator(creator);
@@ -678,5 +682,21 @@ public class HederaLedger {
 				updateXfers(accountId, change.units(), netTransfers);
 			}
 		}
+	}
+
+	public TransactionalLedger<TokenID, TokenProperty, MerkleToken> getTokenLedger() {
+		return tokensLedger;
+	}
+
+	public TransactionalLedger<AccountID, AccountProperty, MerkleAccount> getAccountsLedger() {
+		return accountsLedger;
+	}
+
+	public TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> getNftsLedger() {
+		return nftsLedger;
+	}
+
+	public TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> getTokenRelsLedger() {
+		return tokenRelsLedger;
 	}
 }

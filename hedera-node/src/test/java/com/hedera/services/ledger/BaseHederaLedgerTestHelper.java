@@ -26,6 +26,7 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.records.AccountRecordsHistorian;
@@ -87,6 +88,7 @@ public class BaseHederaLedgerTestHelper {
 	protected AccountRecordsHistorian historian;
 	protected TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 	protected TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	protected TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 	protected TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
 	protected AccountID misc = AccountID.newBuilder().setAccountNum(1_234).build();
 	protected long MISC_BALANCE = 1_234L;
@@ -233,7 +235,7 @@ public class BaseHederaLedgerTestHelper {
 				.willReturn(tokenId);
 		given(tokenStore.get(frozenId)).willReturn(frozenToken);
 
-		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger);
+		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger, tokensLedger);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setNftsLedger(nftsLedger);
 	}

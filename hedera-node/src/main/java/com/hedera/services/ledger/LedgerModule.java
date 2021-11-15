@@ -23,17 +23,21 @@ package com.hedera.services.ledger;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.accounts.BackingStore;
+import com.hedera.services.ledger.accounts.BackingTokens;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -46,6 +50,10 @@ public abstract class LedgerModule {
 	@Singleton
 	public abstract BackingStore<AccountID, MerkleAccount> bindBackingAccounts(BackingAccounts backingAccounts);
 
+	@Binds
+	@Singleton
+	public abstract BackingStore<TokenID, MerkleToken> bindBackingTokens(BackingTokens backingTokens);
+
 	@Provides
 	@Singleton
 	public static HederaLedger provideHederaLedger(
@@ -57,13 +65,20 @@ public abstract class LedgerModule {
 			UniqTokenViewsManager uniqTokenViewsManager,
 			AccountRecordsHistorian recordsHistorian,
 			GlobalDynamicProperties dynamicProperties,
-			BackingStore<AccountID, MerkleAccount> backingAccounts
+			BackingStore<AccountID, MerkleAccount> backingAccounts,
+			BackingStore<TokenID, MerkleToken> backingTokens
 	) {
 		TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger =
 				new TransactionalLedger<>(
 						AccountProperty.class,
 						MerkleAccount::new,
 						backingAccounts,
+						new ChangeSummaryManager<>());
+		TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger =
+				new TransactionalLedger<>(
+						TokenProperty.class,
+						MerkleToken::new,
+						backingTokens,
 						new ChangeSummaryManager<>());
 		final var ledger = new HederaLedger(
 				tokenStore,
@@ -72,7 +87,8 @@ public abstract class LedgerModule {
 				validator,
 				recordsHistorian,
 				dynamicProperties,
-				accountsLedger);
+				accountsLedger,
+				tokensLedger);
 		ledger.setTokenViewsManager(uniqTokenViewsManager);
 		scheduleStore.setAccountsLedger(accountsLedger);
 		scheduleStore.setHederaLedger(ledger);

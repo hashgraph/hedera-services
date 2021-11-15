@@ -31,6 +31,7 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.enums.TokenType;
@@ -91,6 +92,7 @@ class LedgerBalanceChangesTest {
 	private final FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations = new FCOneToManyRelation<>();
 	private final FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations = new FCOneToManyRelation<>();
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 	private TransactionalLedger<
 			Pair<AccountID, TokenID>,
 			TokenRelProperty,
@@ -142,7 +144,7 @@ class LedgerBalanceChangesTest {
 				nftsLedger);
 		tokenStore.rebuildViews();
 
-		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProperties, accountsLedger);
+		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProperties, accountsLedger, tokensLedger);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setTokenViewsManager(tokenViewsManager);
 	}
@@ -242,7 +244,7 @@ class LedgerBalanceChangesTest {
 				tokenRelsLedger,
 				nftsLedger);
 
-		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProperties, accountsLedger);
+		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProperties, accountsLedger, tokensLedger);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setTokenViewsManager(viewManager);
 		tokenStore.rebuildViews();

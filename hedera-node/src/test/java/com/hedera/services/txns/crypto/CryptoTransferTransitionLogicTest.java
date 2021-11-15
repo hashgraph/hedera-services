@@ -28,11 +28,13 @@ import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.MerkleAccountScopedCheck;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -100,6 +102,14 @@ class CryptoTransferTransitionLogicTest {
 	private ExpandHandleSpanMapAccessor spanMapAccessor;
 	@Mock
 	private PlatformTxnAccessor accessor;
+	@Mock
+	private TransferLogic transferLogic;
+	@Mock
+	private OptionValidator validator;
+	@Mock
+	private MerkleAccountScopedCheck scopedCheck;
+	@Mock
+	private SideEffectsTracker sideEffectsTracker;
 
 	private TransactionBody cryptoTransferTxn;
 
@@ -108,7 +118,7 @@ class CryptoTransferTransitionLogicTest {
 	@BeforeEach
 	private void setup() {
 		subject = new CryptoTransferTransitionLogic(
-				ledger, txnCtx, dynamicProperties, impliedTransfersMarshal, transferSemanticChecks, spanMapAccessor);
+				ledger, txnCtx, dynamicProperties, impliedTransfersMarshal, transferSemanticChecks, spanMapAccessor, validator, scopedCheck, sideEffectsTracker);
 	}
 
 	@Test

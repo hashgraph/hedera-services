@@ -26,9 +26,11 @@ import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.MerkleAccountScopedCheck;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -52,9 +54,14 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 	private final HederaLedger ledger;
 	private final TransactionContext txnCtx;
 	private final GlobalDynamicProperties dynamicProperties;
+	private final OptionValidator validator;
 	private final ImpliedTransfersMarshal impliedTransfersMarshal;
 	private final PureTransferSemanticChecks transferSemanticChecks;
 	private final ExpandHandleSpanMapAccessor spanMapAccessor;
+	private final MerkleAccountScopedCheck scopedCheck;
+	private final SideEffectsTracker sideEffectsTracker;
+
+	private TransferLogic transferLogic = null;
 
 	@Inject
 	public CryptoTransferTransitionLogic(
@@ -63,14 +70,20 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 			GlobalDynamicProperties dynamicProperties,
 			ImpliedTransfersMarshal impliedTransfersMarshal,
 			PureTransferSemanticChecks transferSemanticChecks,
-			ExpandHandleSpanMapAccessor spanMapAccessor
-	) {
+			ExpandHandleSpanMapAccessor spanMapAccessor,
+			OptionValidator validator,
+			MerkleAccountScopedCheck scopedCheck,
+			SideEffectsTracker sideEffectsTracker) {
 		this.txnCtx = txnCtx;
 		this.ledger = ledger;
 		this.spanMapAccessor = spanMapAccessor;
 		this.dynamicProperties = dynamicProperties;
 		this.transferSemanticChecks = transferSemanticChecks;
 		this.impliedTransfersMarshal = impliedTransfersMarshal;
+		this.validator = validator;
+		this.scopedCheck = scopedCheck;
+		this.sideEffectsTracker = sideEffectsTracker;
+		this.transferLogic = new TransferLogic(scopedCheck, dynamicProperties, validator, ledger.getAccountsLedger(), ledger.getTokenLedger(), ledger.getNftsLedger(), ledger.getTokenRelsLedger(), sideEffectsTracker);
 	}
 
 	@Override
@@ -82,7 +95,9 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 		validateTrue(outcome == OK, outcome);
 
 		final var changes = impliedTransfers.getAllBalanceChanges();
-		ledger.doZeroSum(changes);
+
+		// TODO: Implement token transfer logic
+		transferLogic.cryptoTransfer(changes);
 
 		txnCtx.setAssessedCustomFees(impliedTransfers.getAssessedCustomFees());
 	}
