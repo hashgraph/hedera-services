@@ -10,11 +10,15 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
+import static com.hedera.services.ledger.HederaLedger.TOKEN_ID_COMPARATOR;
 
 @Singleton
 public class SideEffectsTracker {
@@ -84,8 +88,34 @@ public class SideEffectsTracker {
 		return netHbarChanges.build();
 	}
 
-	public List<TokenTransferList> computeNetTokenUnitChanges() {
-		throw new AssertionError("Not implemented");
+	public List<TokenTransferList> computeNetTokenUnitAndOwnershipChanges() {
+		if (numTouches == 0) {
+			return Collections.emptyList();
+		}
+		final List<TokenTransferList> all = new ArrayList<>();
+		Arrays.sort(tokensTouched, 0, numTouches, TOKEN_ID_COMPARATOR);
+		for (int i = 0; i < numTouches; i++) {
+			var token = tokensTouched[i];
+			if (i == 0 || !token.equals(tokensTouched[i - 1])) {
+				final var uniqueTransfersHere = uniqueTokenTransfers.get(token);
+				if (uniqueTransfersHere != null) {
+					all.add(TokenTransferList.newBuilder()
+							.setToken(token)
+							.addAllNftTransfers(uniqueTransfersHere.getNftTransfersList())
+							.build());
+				} else {
+					final var fungibleTransfersHere = netTokenTransfers.get(token);
+					if (fungibleTransfersHere != null) {
+						purgeZeroAdjustments(fungibleTransfersHere);
+						all.add(TokenTransferList.newBuilder()
+								.setToken(token)
+								.addAllTransfers(fungibleTransfersHere.getAccountAmountsList())
+								.build());
+					}
+				}
+			}
+		}
+		return all;
 	}
 
 	/* --- Internal helpers --- */

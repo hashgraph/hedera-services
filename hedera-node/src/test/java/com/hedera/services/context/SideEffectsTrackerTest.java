@@ -20,6 +20,7 @@ package com.hedera.services.context;
  * ‍
  */
 
+import com.hedera.services.store.models.NftId;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -40,17 +41,42 @@ class SideEffectsTrackerTest {
 	}
 
 	@Test
-	void tracksAndResetsTokenUnitChangesAsExpected() {
+	void tracksAndResetsTokenUnitAndOwnershipChangesAsExpected() {
+		subject.nftOwnerChange(cSN1, aAccount, bAccount);
 		subject.tokenUnitsChange(bToken, cAccount, cOnlyBalanceChange);
 		subject.tokenUnitsChange(aToken, aAccount, aFirstBalanceChange);
 		subject.tokenUnitsChange(aToken, bAccount, bOnlyBalanceChange);
 		subject.tokenUnitsChange(aToken, aAccount, aSecondBalanceChange);
 		subject.tokenUnitsChange(aToken, bAccount, -bOnlyBalanceChange);
 
-//		final var netTokenChanges = subject.n
+		final var netTokenChanges = subject.computeNetTokenUnitAndOwnershipChanges();
+
+		assertEquals(3, netTokenChanges.size());
+
+		final var netAChanges = netTokenChanges.get(0);
+		assertEquals(aToken, netAChanges.getToken());
+		assertEquals(1, netAChanges.getTransfersCount());
+		final var aaChange = netAChanges.getTransfers(0);
+		assertEquals(aAccount, aaChange.getAccountID());
+		assertEquals(aFirstBalanceChange + aSecondBalanceChange, aaChange.getAmount());
+
+		final var netBChanges = netTokenChanges.get(1);
+		assertEquals(bToken, netBChanges.getToken());
+		assertEquals(1, netBChanges.getTransfersCount());
+		final var bcChange = netBChanges.getTransfers(0);
+		assertEquals(cAccount, bcChange.getAccountID());
+		assertEquals(cOnlyBalanceChange, bcChange.getAmount());
+
+		final var netCChanges = netTokenChanges.get(2);
+		assertEquals(cToken, netCChanges.getToken());
+		assertEquals(1, netCChanges.getNftTransfersCount());
+		final var abcChange = netCChanges.getNftTransfers(0);
+		assertEquals(aAccount, abcChange.getSenderAccountID());
+		assertEquals(bAccount, abcChange.getReceiverAccountID());
+		assertEquals(1L, abcChange.getSerialNumber());
 
 		subject.reset();
-		assertSame(Collections.emptyList(), subject.computeNetTokenUnitChanges());
+		assertSame(Collections.emptyList(), subject.computeNetTokenUnitAndOwnershipChanges());
 	}
 
 	@Test
@@ -80,6 +106,8 @@ class SideEffectsTrackerTest {
 	private static final long cOnlyBalanceChange = 8_888L;
 	private static final TokenID aToken = IdUtils.asToken("0.0.666");
 	private static final TokenID bToken = IdUtils.asToken("0.0.777");
+	private static final TokenID cToken = IdUtils.asToken("0.0.888");
+	private static final NftId cSN1 = new NftId(0, 0, 888, 1);
 	private static final AccountID aAccount = IdUtils.asAccount("0.0.12345");
 	private static final AccountID bAccount = IdUtils.asAccount("0.0.23456");
 	private static final AccountID cAccount = IdUtils.asAccount("0.0.34567");
