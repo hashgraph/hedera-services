@@ -161,7 +161,7 @@ abstract class EvmTxProcessor {
 		final var updater = worldState.updater();
 		final var senderEvmAddress = sender.getId().asEvmAddress();
 		final var senderAccount = updater.getOrCreateSenderAccount(senderEvmAddress);
-		final MutableAccount mutableSender = updater.getOrCreateSenderAccount(senderEvmAddress).getMutable();
+		final MutableAccount mutableSender = senderAccount.getMutable();
 
 		if (!isStatic) {
 			validateFalse(upfrontCost.compareTo(mutableSender.getBalance()) > 0, INSUFFICIENT_PAYER_BALANCE);
