@@ -144,7 +144,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 				.build();
 	}
 
-	public boolean hasValidEd25519Signature(byte[] key) {
+	public boolean hasValidSignature(byte[] key) {
 		return notary.contains(copyFrom(key));
 	}
 

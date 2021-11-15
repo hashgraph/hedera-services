@@ -33,12 +33,14 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 
 import static com.hedera.services.keys.DefaultActivationCharacteristics.DEFAULT_ACTIVATION_CHARACTERISTICS;
+import static com.hedera.services.legacy.core.jproto.JKey.getValidKeyBytes;
 import static com.swirlds.common.crypto.VerificationStatus.INVALID;
 import static com.swirlds.common.crypto.VerificationStatus.VALID;
 
 /**
  * Provides a static method to determine if a Hedera key is <i>active</i> relative to
  * a set of platform signatures corresponding to its simple keys.
+ *
  * @see JKey
  */
 public final class HederaKeyActivation {
@@ -108,7 +110,7 @@ public final class HederaKeyActivation {
 			final KeyActivationCharacteristics characteristics
 	) {
 		if (!key.hasKeyList() && !key.hasThresholdKey()) {
-			return validity.test(key, sigsFn.apply(key.getEd25519()));
+			return validity.test(key, sigsFn.apply(getValidKeyBytes(key)));
 		} else {
 			final var children = key.hasKeyList()
 					? key.getKeyList().getKeysList()

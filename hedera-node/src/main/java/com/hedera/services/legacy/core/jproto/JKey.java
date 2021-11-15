@@ -120,10 +120,10 @@ public abstract class JKey implements Serializable {
 		} else if (!key.getRSA3072().isEmpty()) {
 			byte[] pubKeyBytes = key.getRSA3072().toByteArray();
 			rv = new JRSA_3072Key(pubKeyBytes);
-		}else if (!key.getECDSASecp256K1().isEmpty()) {
+		} else if (!key.getECDSASecp256K1().isEmpty()) {
 			byte[] pubKeyBytes = key.getECDSASecp256K1().toByteArray();
 			rv = new JECDSASecp256k1Key(pubKeyBytes);
-		}  else if (key.getContractID() != null && key.getContractID().getContractNum() != 0) {
+		} else if (key.getContractID() != null && key.getContractID().getContractNum() != 0) {
 			ContractID cid = key.getContractID();
 			rv = new JContractIDKey(cid);
 		} else {
@@ -318,5 +318,12 @@ public abstract class JKey implements Serializable {
 		} catch (IOException ex) {
 			throw new IllegalArgumentException(ex);
 		}
+	}
+
+	public static byte[] getValidKeyBytes(JKey key) {
+		if (key.hasECDSAsecp256k1Key()) {
+			return key.getECDSASecp256k1Key();
+		}
+		return key.getEd25519();
 	}
 }

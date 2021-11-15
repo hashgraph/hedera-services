@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.hedera.services.legacy.core.jproto.JKey.getValidKeyBytes;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
@@ -95,7 +96,7 @@ public class SignatoryUtils {
 	) {
 		List<byte[]> signatories = new ArrayList<>();
 		for (JKey key : valid) {
-			appendIfUnique(signatories, key.getEd25519());
+			appendIfUnique(signatories, getValidKeyBytes(key));
 		}
 		return witnessAnyNew(store, id, signatories) ? OK : NO_NEW_VALID_SIGNATURES;
 	}
@@ -112,7 +113,7 @@ public class SignatoryUtils {
 	private static boolean isReady(MerkleSchedule schedule, InHandleActivationHelper activationHelper) {
 		return activationHelper.areScheduledPartiesActive(
 				schedule.ordinaryViewOfScheduledTxn(),
-				(key, sig) -> schedule.hasValidEd25519Signature(key.getEd25519()));
+				(key, sig) -> schedule.hasValidSignature(getValidKeyBytes(key)));
 	}
 
 	private static boolean witnessAnyNew(ScheduleStore store, ScheduleID id, List<byte[]> signatories) {
