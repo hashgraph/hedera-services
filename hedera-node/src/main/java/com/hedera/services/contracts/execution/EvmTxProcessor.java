@@ -31,7 +31,6 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.apache.tuweni.bytes.Bytes;
@@ -65,6 +64,7 @@ import java.util.Set;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 
@@ -157,11 +157,14 @@ abstract class EvmTxProcessor {
 		final Wei upfrontCost = gasCost.add(value);
 		final Gas intrinsicGas =
 				gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
+
 		final var updater = worldState.updater();
+		final var senderEvmAddress = sender.getId().asEvmAddress();
+		final var senderAccount = updater.getOrCreateSenderAccount(senderEvmAddress);
+		final MutableAccount mutableSender = senderAccount.getMutable();
 
 		if (!isStatic) {
-			validateFalse(upfrontCost.compareTo(Wei.of(sender.getBalance())) > 0,
-					ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
+			validateFalse(upfrontCost.compareTo(mutableSender.getBalance()) > 0, INSUFFICIENT_PAYER_BALANCE);
 			if (intrinsicGas.toLong() > gasLimit) {
 				throw new InvalidTransactionException(
 						gasLimit < dynamicProperties.maxGas()
@@ -171,10 +174,7 @@ abstract class EvmTxProcessor {
 		}
 
 		final Address coinbase = Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress();
-		final HederaBlockValues blockValues = new HederaBlockValues(gasLimit,
-				consensusTime.getEpochSecond());
-		Address senderEvmAddress = sender.getId().asEvmAddress();
-		final MutableAccount mutableSender = updater.getOrCreateSenderAccount(senderEvmAddress).getMutable();
+		final HederaBlockValues blockValues = new HederaBlockValues(gasLimit, consensusTime.getEpochSecond());
 		if (!isStatic) {
 			mutableSender.decrementBalance(gasCost);
 		}
