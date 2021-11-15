@@ -122,10 +122,10 @@ public class TransitionRunner {
 					log.warn("Avoidable failure in transition logic for {}", accessor.getSignedTxnWrapper(), ite);
 				}
 				logic.get().reclaimCreatedIds();
-			} catch (Exception e) {
+			} catch (Exception processFailure) {
 				logic.get().reclaimCreatedIds();
 
-				throw e;
+				throw processFailure;
 			}
 			return true;
 		}

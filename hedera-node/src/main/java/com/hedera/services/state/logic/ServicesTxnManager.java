@@ -66,11 +66,10 @@ public class ServicesTxnManager {
 		this.scopedTriggeredProcessing = scopedTriggeredProcessing;
 	}
 
-	private boolean processFailed;
 	private boolean createdStreamableRecord;
 
 	public void process(TxnAccessor accessor, Instant consensusTime, long submittingMember) {
-		processFailed = false;
+		var processFailed = false;
 		createdStreamableRecord = false;
 
 		try {
