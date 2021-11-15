@@ -26,7 +26,10 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 class SideEffectsTrackerTest {
 	private SideEffectsTracker subject;
@@ -44,7 +47,10 @@ class SideEffectsTrackerTest {
 		subject.tokenUnitsChange(aToken, aAccount, aSecondBalanceChange);
 		subject.tokenUnitsChange(aToken, bAccount, -bOnlyBalanceChange);
 
-		
+//		final var netTokenChanges = subject.n
+
+		subject.reset();
+		assertSame(Collections.emptyList(), subject.computeNetTokenUnitChanges());
 	}
 
 	@Test

@@ -4,10 +4,15 @@ import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 
@@ -16,6 +21,11 @@ public class SideEffectsTracker {
 	private static final int MAX_CONCEIVABLE_TOKENS_PER_TXN = 1_000;
 
 	private final TransferList.Builder netHbarChanges = TransferList.newBuilder();
+	private final TokenID[] tokensTouched = new TokenID[MAX_CONCEIVABLE_TOKENS_PER_TXN];
+	private final Map<TokenID, TransferList.Builder> netTokenTransfers = new HashMap<>();
+	private final Map<TokenID, TokenTransferList.Builder> uniqueTokenTransfers = new HashMap<>();
+
+	private int numTouches = 0;
 
 	@Inject
 	public SideEffectsTracker() {
@@ -72,6 +82,10 @@ public class SideEffectsTracker {
 	public TransferList computeNetHbarChanges() {
 		purgeZeroAdjustments(netHbarChanges);
 		return netHbarChanges.build();
+	}
+
+	public List<TokenTransferList> computeNetTokenUnitChanges() {
+		throw new AssertionError("Not implemented");
 	}
 
 	/* --- Internal helpers --- */
