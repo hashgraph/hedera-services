@@ -66,9 +66,11 @@ public class ServicesTxnManager {
 		this.scopedTriggeredProcessing = scopedTriggeredProcessing;
 	}
 
+	private boolean processFailed;
 	private boolean createdStreamableRecord;
 
 	public void process(TxnAccessor accessor, Instant consensusTime, long submittingMember) {
+		processFailed = false;
 		createdStreamableRecord = false;
 
 		try {
@@ -80,9 +82,14 @@ public class ServicesTxnManager {
 				scopedProcessing.run();
 			}
 		} catch (Exception processFailure) {
+			processFailed = true;
 			logContextualizedError(processFailure, "txn processing");
 			txnCtx.setStatus(FAIL_INVALID);
-		} finally {
+		}
+
+		if (processFailed) {
+			attemptRollback(accessor, consensusTime, submittingMember);
+		} else {
 			attemptCommit(accessor, consensusTime, submittingMember);
 			if (createdStreamableRecord) {
 				attemptRecordStreaming();
