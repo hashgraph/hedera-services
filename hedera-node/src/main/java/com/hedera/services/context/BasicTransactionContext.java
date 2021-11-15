@@ -103,7 +103,6 @@ public class BasicTransactionContext implements TransactionContext {
 	private List<FcAssessedCustomFee> assessedCustomFees;
 	private List<FcTokenAssociation> newTokenAssociations;
 
-	boolean hasComputedRecordSoFar;
 	ExpirableTxnRecord.Builder recordSoFar = ExpirableTxnRecord.newBuilder();
 	private ContractFunctionResult contractFunctionResult;
 
@@ -142,7 +141,6 @@ public class BasicTransactionContext implements TransactionContext {
 		recordConfig = noopRecordConfig;
 		receiptConfig = noopReceiptConfig;
 		isPayerSigKnownActive = false;
-		hasComputedRecordSoFar = false;
 		explicitTokenTransfers = null;
 		assessedCustomFees = null;
 		newTokenAssociations = null;
@@ -213,7 +211,6 @@ public class BasicTransactionContext implements TransactionContext {
 				newTokenAssociations);
 
 		recordConfig.accept(recordSoFar);
-		hasComputedRecordSoFar = true;
 		return recordSoFar.build();
 	}
 
@@ -373,13 +370,5 @@ public class BasicTransactionContext implements TransactionContext {
 
 	void setRecordSoFar(ExpirableTxnRecord.Builder recordSoFar) {
 		this.recordSoFar = recordSoFar;
-	}
-
-	void setHasComputedRecordSoFar(boolean hasComputedRecordSoFar) {
-		this.hasComputedRecordSoFar = hasComputedRecordSoFar;
-	}
-
-	public boolean hasComputedRecordSoFar() {
-		return hasComputedRecordSoFar;
 	}
 }

@@ -158,12 +158,6 @@ class BasicTransactionContextTest {
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
 	private EntityCreator creator;
-	@Mock
-	private ExpirableTxnRecord expirableTxnRecord;
-	@Mock
-	private ExpirableTxnRecord.Builder expirableTxnRecordBuilder;
-	@Mock
-	private SolidityFnResult fnResult;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -259,7 +253,6 @@ class BasicTransactionContextTest {
 		subject.setStatus(SUCCESS);
 		subject.setCreated(contractCreated);
 		subject.payerSigIsKnownActive();
-		subject.setHasComputedRecordSoFar(true);
 		subject.setAssessedCustomFees(Collections.emptyList());
 		subject.setNewTokenAssociations(Collections.emptyList());
 		// and:
@@ -269,7 +262,6 @@ class BasicTransactionContextTest {
 		// when:
 		subject.resetFor(accessor, now, anotherMemberId);
 		assertNull(subject.getAssessedCustomFees());
-		assertFalse(subject.hasComputedRecordSoFar());
 		// and:
 		setUpBuildingExpirableTxnRecord();
 		record = subject.recordSoFar();
@@ -280,7 +272,6 @@ class BasicTransactionContextTest {
 		assertEquals(0, record.asGrpc().getTransactionFee());
 		assertFalse(record.asGrpc().hasContractCallResult());
 		assertFalse(subject.isPayerSigKnownActive());
-		assertTrue(subject.hasComputedRecordSoFar());
 		assertEquals(anotherNodeAccount, subject.submittingNodeAccount());
 		assertEquals(anotherMemberId, subject.submittingSwirldsMember());
 		assertEquals(newTokenAssociations.get(0), record.getNewTokenAssociations().get(0));
