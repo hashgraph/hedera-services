@@ -1558,7 +1558,6 @@ jobs:
             set +e;
             cd /swirlds-platform/regression
             CI_RESULTS_LOG=$(find results/4N_1C -name hapi-client-combined.log)
-            echo $CI_RESULTS_LOG
             grep $CI_RESULTS_LOG -e 'status=ERROR' -e 'status=FAILED'
             if [ "$?" -eq "0" ]; then
               exit 1
