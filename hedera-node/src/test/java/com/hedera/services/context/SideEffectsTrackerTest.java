@@ -41,6 +41,22 @@ class SideEffectsTrackerTest {
 	}
 
 	@Test
+	void canClearJustTokenChanges() {
+		subject.hbarChange(aAccount, aFirstBalanceChange);
+		subject.tokenUnitsChange(bToken, cAccount, cOnlyBalanceChange);
+		subject.nftOwnerChange(cSN1, aAccount, bAccount);
+
+		subject.clearTokenChanges();
+
+		assertSame(Collections.emptyList(), subject.computeNetTokenUnitAndOwnershipChanges());
+		final var netChanges = subject.computeNetHbarChanges();
+		assertEquals(1, netChanges.getAccountAmountsCount());
+		final var aChange = netChanges.getAccountAmounts(0);
+		assertEquals(aAccount, aChange.getAccountID());
+		assertEquals(aFirstBalanceChange, aChange.getAmount());
+	}
+
+	@Test
 	void tracksAndResetsTokenUnitAndOwnershipChangesAsExpected() {
 		subject.nftOwnerChange(cSN1, aAccount, bAccount);
 		subject.tokenUnitsChange(bToken, cAccount, cOnlyBalanceChange);
