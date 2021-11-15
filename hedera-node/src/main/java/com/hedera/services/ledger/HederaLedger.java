@@ -190,18 +190,6 @@ public class HederaLedger {
 		this.tokenRelsLedger = tokenRelsLedger;
 	}
 
-	public TransactionalLedger<AccountID, AccountProperty, MerkleAccount> getAccountsLedger() {
-		return accountsLedger;
-	}
-
-	public TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> getNftsLedger() {
-		return nftsLedger;
-	}
-
-	public TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> getTokenRelsLedger() {
-		return tokenRelsLedger;
-	}
-
 	/* -- TRANSACTIONAL SEMANTICS -- */
 	public void begin() {
 		accountsLedger.begin();
