@@ -40,6 +40,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -81,7 +82,7 @@ class HederaOperationUtilTest {
 		frameDeque.add(messageFrame);
 
 		given(messageFrame.getMessageFrameStack()).willReturn(frameDeque);
-		given(messageFrame.getContextVariable("expiry")).willReturn(Optional.of(expectedExpiry));
+		given(messageFrame.getContextVariable("expiry")).willReturn(OptionalLong.of(expectedExpiry));
 
 		var actualExpiry = HederaOperationUtil.computeExpiryForNewContract(messageFrame);
 

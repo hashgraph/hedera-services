@@ -99,7 +99,8 @@ public class HederaWorldState implements HederaMutableWorldState {
 					.memo(entityAccess.getMemo(sponsorId))
 					.proxy(entityAccess.getProxy(sponsorId))
 					.autoRenewPeriod(entityAccess.getAutoRenew(sponsorId))
-					.expiry(entityAccess.getExpiry(sponsorId));
+					.expiry(entityAccess.getExpiry(sponsorId))
+					.isSmartContract(true);
 
 			entityAccess.customize(createdId, customizer);
 		});
