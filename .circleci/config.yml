@@ -1554,7 +1554,11 @@ jobs:
       - run:
           name: Check for CI test failures
           command: |
+            set -x;
+            set +e;
+            cd /swirlds-platform/regression
             CI_RESULTS_LOG=$(find . -name hapi-client-combined.log)
+            echo $CI_RESULTS_LOG
             grep $CI_RESULTS -e 'status=ERROR' -e 'status=FAILED'
             if [ "$?" -eq "0" ]; then
               exit 1
