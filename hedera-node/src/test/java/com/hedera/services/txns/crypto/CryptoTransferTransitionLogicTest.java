@@ -118,7 +118,7 @@ class CryptoTransferTransitionLogicTest {
 	@BeforeEach
 	private void setup() {
 		subject = new CryptoTransferTransitionLogic(
-				ledger, txnCtx, dynamicProperties, impliedTransfersMarshal, transferSemanticChecks, spanMapAccessor, validator, scopedCheck, sideEffectsTracker);
+				ledger, txnCtx, dynamicProperties, impliedTransfersMarshal, transferSemanticChecks, spanMapAccessor, validator, sideEffectsTracker);
 	}
 
 	@Test

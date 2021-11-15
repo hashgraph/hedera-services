@@ -72,7 +72,6 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 			PureTransferSemanticChecks transferSemanticChecks,
 			ExpandHandleSpanMapAccessor spanMapAccessor,
 			OptionValidator validator,
-			MerkleAccountScopedCheck scopedCheck,
 			SideEffectsTracker sideEffectsTracker) {
 		this.txnCtx = txnCtx;
 		this.ledger = ledger;
@@ -81,8 +80,8 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 		this.transferSemanticChecks = transferSemanticChecks;
 		this.impliedTransfersMarshal = impliedTransfersMarshal;
 		this.validator = validator;
-		this.scopedCheck = scopedCheck;
 		this.sideEffectsTracker = sideEffectsTracker;
+		this.scopedCheck = new MerkleAccountScopedCheck(dynamicProperties, validator);
 		this.transferLogic = new TransferLogic(scopedCheck, dynamicProperties, validator, ledger.getAccountsLedger(), ledger.getTokenLedger(), ledger.getNftsLedger(), ledger.getTokenRelsLedger(), sideEffectsTracker);
 	}
 
