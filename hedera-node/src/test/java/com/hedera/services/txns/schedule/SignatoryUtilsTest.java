@@ -109,7 +109,7 @@ class SignatoryUtilsTest {
 		given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
 		given(activationHelper.areScheduledPartiesActive(any(), any())).willReturn(false);
 		// and:
-		given(schedule.witnessValidEd25519Signature(eq(goodKey.getEd25519()))).willReturn(false);
+		given(schedule.witnessValidSignature(eq(goodKey.getEd25519()))).willReturn(false);
 		willAnswer(inv -> {
 			Consumer<MerkleSchedule> action = inv.getArgument(1);
 			action.accept(schedule);
@@ -129,7 +129,7 @@ class SignatoryUtilsTest {
 		given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
 		given(activationHelper.areScheduledPartiesActive(any(), any())).willReturn(true);
 		// and:
-		given(schedule.witnessValidEd25519Signature(eq(goodKey.getEd25519()))).willReturn(false);
+		given(schedule.witnessValidSignature(eq(goodKey.getEd25519()))).willReturn(false);
 		willAnswer(inv -> {
 			Consumer<MerkleSchedule> action = inv.getArgument(1);
 			action.accept(schedule);
@@ -149,7 +149,7 @@ class SignatoryUtilsTest {
 		given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
 		given(activationHelper.areScheduledPartiesActive(any(), any())).willReturn(true);
 		// and:
-		given(schedule.witnessValidEd25519Signature(eq(goodKey.getEd25519()))).willReturn(true);
+		given(schedule.witnessValidSignature(eq(goodKey.getEd25519()))).willReturn(true);
 		willAnswer(inv -> {
 			Consumer<MerkleSchedule> action = inv.getArgument(1);
 			action.accept(schedule);
@@ -169,7 +169,7 @@ class SignatoryUtilsTest {
 		given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
 		given(activationHelper.areScheduledPartiesActive(any(), any())).willReturn(true);
 		// and:
-		given(schedule.witnessValidEd25519Signature(goodKey.getEd25519())).willReturn(true);
+		given(schedule.witnessValidSignature(goodKey.getEd25519())).willReturn(true);
 		willAnswer(inv -> {
 			Consumer<MerkleSchedule> action = inv.getArgument(1);
 			action.accept(schedule);

@@ -120,7 +120,7 @@ public class SignatoryUtils {
 		var witnessedNew = new AtomicBoolean(false);
 		store.apply(id, schedule -> {
 			for (byte[] key : signatories) {
-				if (schedule.witnessValidEd25519Signature(key)) {
+				if (schedule.witnessValidSignature(key)) {
 					witnessedNew.set(true);
 				}
 			}

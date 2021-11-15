@@ -293,9 +293,9 @@ class StateViewTest {
 						MiscUtils.asTimestamp(now.toJava())
 				);
 		schedule = MerkleSchedule.from(parentScheduleCreate.toByteArray(), expiry);
-		schedule.witnessValidEd25519Signature("firstPretendKey".getBytes());
-		schedule.witnessValidEd25519Signature("secondPretendKey".getBytes());
-		schedule.witnessValidEd25519Signature("thirdPretendKey".getBytes());
+		schedule.witnessValidSignature("firstPretendKey".getBytes());
+		schedule.witnessValidSignature("secondPretendKey".getBytes());
+		schedule.witnessValidSignature("thirdPretendKey".getBytes());
 
 		given(scheduleStore.resolve(scheduleId)).willReturn(scheduleId);
 		given(scheduleStore.resolve(missingScheduleId)).willReturn(ScheduleStore.MISSING_SCHEDULE);
