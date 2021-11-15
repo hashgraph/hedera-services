@@ -36,27 +36,21 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.SignatureType;
-import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.hedera.services.sigs.PlatformSigOps.createPlatformSigsFrom;
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
 import static com.hedera.test.factories.keys.NodeFactory.list;
 import static com.hedera.test.factories.txns.SystemDeleteFactory.newSignedSystemDelete;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
 
 class PojoSigMapPubKeyToSigBytesTest {
 	private final byte[] EMPTY_SIG = { };
@@ -110,7 +104,7 @@ class PojoSigMapPubKeyToSigBytesTest {
 		SignatureMap sigMap = SignatureMap.newBuilder().addSigPair(sigPair).build();
 		PojoSigMapPubKeyToSigBytes sigMapPubKeyToSigBytes = new PojoSigMapPubKeyToSigBytes(sigMap);
 		var sigBytes = assertDoesNotThrow(() -> sigMapPubKeyToSigBytes.sigBytesFor(pubKey));
-		assertFalse(sigBytes.equals(EMPTY_SIG));
+		assertNotEquals(EMPTY_SIG, sigBytes);
 	}
 
 	private void lookupsMatch(KeyTree kt, KeyFactory factory, byte[] data, PubKeyToSigBytes subject) throws Exception {
