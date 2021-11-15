@@ -20,12 +20,16 @@ package com.hedera.services.keys;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.utils.RationalizedSigMeta;
 import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.sigs.SigWrappers;
+import com.hedera.test.utils.TxnUtils;
+import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
 import org.junit.jupiter.api.BeforeAll;
@@ -38,10 +42,12 @@ import java.util.function.Function;
 import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
 import static com.hedera.services.keys.HederaKeyActivation.isActive;
 import static com.hedera.services.keys.HederaKeyActivation.pkToSigMapFrom;
+import static com.hedera.services.legacy.core.jproto.JKey.getValidKeyBytes;
 import static com.hedera.services.sigs.factories.PlatformSigFactory.createSignature;
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
 import static com.hedera.test.factories.keys.NodeFactory.list;
 import static com.hedera.test.factories.keys.NodeFactory.threshold;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -54,6 +60,7 @@ import static org.mockito.Mockito.verify;
 
 class HederaKeyActivationTest {
 	private static JKey complexKey;
+	private static JKey simpleEcdsaSecp256K1Key;
 	private static final byte[] pk = "PK".getBytes();
 	private static final byte[] sig = "SIG".getBytes();
 	private static final byte[] data = "DATA".getBytes();
@@ -70,6 +77,9 @@ class HederaKeyActivationTest {
 			String.format("SIG%d", i).getBytes(),
 			String.format("DATA%d", i).getBytes());
 
+	private static final ByteString edcsaSecp256K1Bytes = ByteString.copyFrom(new byte[] { 0x02 })
+			.concat(TxnUtils.randomUtf8ByteString(JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH - 1));
+
 	@BeforeAll
 	private static void setupAll() throws Throwable {
 		complexKey = KeyTree.withRoot(
@@ -81,6 +91,9 @@ class HederaKeyActivationTest {
 						list(
 								threshold(2,
 										ed25519(), ed25519(), ed25519())))).asJKey();
+
+		final Key aKey = Key.newBuilder().setECDSASecp256K1(edcsaSecp256K1Bytes).build();
+		simpleEcdsaSecp256K1Key = JKey.mapKey(aKey);
 	}
 
 	@BeforeEach
@@ -161,5 +174,18 @@ class HederaKeyActivationTest {
 		given(accessor.getSigMeta()).willReturn(RationalizedSigMeta.noneAvailable());
 
 		assertFalse(HederaKeyActivation.payerSigIsActive(accessor, ONLY_IF_SIG_IS_VALID));
+	}
+
+	@Test
+	void testWithEcdsaSecp256K1Key() {
+		given(sigsFn.apply(any())).willReturn(VALID_SIG);
+
+		assertTrue(isActive(simpleEcdsaSecp256K1Key, sigsFn, ONLY_IF_SIG_IS_VALID));
+		verify(sigsFn, times(1)).apply(any());
+	}
+
+	@Test
+	void testGetValidBytesFromKey() {
+		assertArrayEquals(edcsaSecp256K1Bytes.toByteArray(), getValidKeyBytes(simpleEcdsaSecp256K1Key));
 	}
 }
