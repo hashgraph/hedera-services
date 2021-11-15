@@ -40,6 +40,7 @@ import java.util.Objects;
  */
 public abstract class JKey implements Serializable {
 	static final int MAX_KEY_DEPTH = 15;
+	private static final byte[] EMPTY_ARRAY = new byte[0];
 
 	private static final long serialVersionUID = 1L;
 
@@ -291,19 +292,19 @@ public abstract class JKey implements Serializable {
 	}
 
 	public byte[] getEd25519() {
-		return null;
+		return EMPTY_ARRAY;
 	}
 
 	public byte[] getECDSA384() {
-		return null;
+		return EMPTY_ARRAY;
 	}
 
 	public byte[] getECDSASecp256k1Key() {
-		return null;
+		return EMPTY_ARRAY;
 	}
 
 	public byte[] getRSA3072() {
-		return null;
+		return EMPTY_ARRAY;
 	}
 
 	public JKey duplicate() {

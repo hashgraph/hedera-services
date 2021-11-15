@@ -43,22 +43,22 @@ public class JKeySerializer {
 		return byteStream(buffer -> {
 			buffer.writeLong(BPACK_VERSION);
 
-			JObjectType objectType = JObjectType.JKey;
+			JObjectType objectType = JObjectType.JKEY;
 
 			if (rootObject instanceof JKeyList) {
-				objectType = JObjectType.JKeyList;
+				objectType = JObjectType.JKEY_LIST;
 			} else if (rootObject instanceof JThresholdKey) {
-				objectType = JObjectType.JThresholdKey;
+				objectType = JObjectType.JTHRESHOLD_KEY;
 			} else if (rootObject instanceof JEd25519Key) {
-				objectType = JObjectType.JEd25519Key;
+				objectType = JObjectType.JED25519_KEY;
 			} else if (rootObject instanceof JECDSA_384Key) {
-				objectType = JObjectType.JECDSA_384Key;
+				objectType = JObjectType.JECDSA_384KEY;
 			} else if (rootObject instanceof JRSA_3072Key) {
-				objectType = JObjectType.JRSA_3072Key;
+				objectType = JObjectType.JRSA_3072KEY;
 			} else if (rootObject instanceof JContractIDKey) {
-				objectType = JObjectType.JContractIDKey;
+				objectType = JObjectType.JCONTRACTID_KEY;
 			} else if (rootObject instanceof JECDSASecp256k1Key) {
-				objectType = JObjectType.JECDSASecp256k1Key;
+				objectType = JObjectType.JECDSA_SECP256K1_KEY;
 			}
 
 			final JObjectType finalObjectType = objectType;
@@ -95,15 +95,15 @@ public class JKeySerializer {
 	}
 
 	private static void pack(DataOutputStream stream, JObjectType type, Object object) throws IOException {
-		if (JObjectType.JEd25519Key.equals(type) || JObjectType.JECDSA_384Key.equals(type)) {
+		if (JObjectType.JED25519_KEY.equals(type) || JObjectType.JECDSA_384KEY.equals(type)) {
 			JKey jKey = (JKey) object;
 			byte[] key = (jKey.hasEd25519Key()) ? jKey.getEd25519() : jKey.getECDSA384();
 			stream.write(key);
-		} else if (JObjectType.JThresholdKey.equals(type)) {
+		} else if (JObjectType.JTHRESHOLD_KEY.equals(type)) {
 			JThresholdKey key = (JThresholdKey) object;
 			stream.writeInt(key.getThreshold());
 			stream.write(serialize(key.getKeys()));
-		} else if (JObjectType.JKeyList.equals(type)) {
+		} else if (JObjectType.JKEY_LIST.equals(type)) {
 			JKeyList list = (JKeyList) object;
 			List<JKey> keys = list.getKeysList();
 
@@ -114,16 +114,16 @@ public class JKeySerializer {
 					stream.write(serialize(key));
 				}
 			}
-		} else if (JObjectType.JRSA_3072Key.equals(type)) {
+		} else if (JObjectType.JRSA_3072KEY.equals(type)) {
 			JKey jKey = (JKey) object;
 			byte[] key = jKey.getRSA3072();
 			stream.write(key);
-		} else if (JObjectType.JContractIDKey.equals(type)) {
+		} else if (JObjectType.JCONTRACTID_KEY.equals(type)) {
 			JContractIDKey key = (JContractIDKey) object;
 			stream.writeLong(key.getShardNum());
 			stream.writeLong(key.getRealmNum());
 			stream.writeLong(key.getContractNum());
-		} else if (JObjectType.JECDSASecp256k1Key.equals(type)) {
+		} else if (JObjectType.JECDSA_SECP256K1_KEY.equals(type)) {
 			JKey jKey = (JKey) object;
 			byte[] key = jKey.getECDSASecp256k1Key();
 			stream.write(key);
@@ -135,17 +135,17 @@ public class JKeySerializer {
 
 	@SuppressWarnings("unchecked")
 	private static <T> T unpack(DataInputStream stream, JObjectType type, long length) throws IOException {
-		if (JObjectType.JEd25519Key.equals(type) || JObjectType.JECDSA_384Key.equals(type)) {
+		if (JObjectType.JED25519_KEY.equals(type) || JObjectType.JECDSA_384KEY.equals(type)) {
 			byte[] key = new byte[(int) length];
 			stream.readFully(key);
 
-			return (JObjectType.JEd25519Key.equals(type)) ? (T) new JEd25519Key(key) : (T) new JECDSA_384Key(key);
-		} else if (JObjectType.JThresholdKey.equals(type)) {
+			return (JObjectType.JED25519_KEY.equals(type)) ? (T) new JEd25519Key(key) : (T) new JECDSA_384Key(key);
+		} else if (JObjectType.JTHRESHOLD_KEY.equals(type)) {
 			int threshold = stream.readInt();
 			JKeyList keyList = deserialize(stream);
 
 			return (T) new JThresholdKey(keyList, threshold);
-		} else if (JObjectType.JKeyList.equals(type)) {
+		} else if (JObjectType.JKEY_LIST.equals(type)) {
 			List<JKey> elements = new LinkedList<>();
 
 			int size = stream.readInt();
@@ -157,18 +157,18 @@ public class JKeySerializer {
 			}
 
 			return (T) new JKeyList(elements);
-		} else if (JObjectType.JRSA_3072Key.equals(type)) {
+		} else if (JObjectType.JRSA_3072KEY.equals(type)) {
 			byte[] key = new byte[(int) length];
 			stream.readFully(key);
 
 			return (T) new JRSA_3072Key(key);
-		} else if (JObjectType.JContractIDKey.equals(type)) {
+		} else if (JObjectType.JCONTRACTID_KEY.equals(type)) {
 			long shard = stream.readLong();
 			long realm = stream.readLong();
 			long contract = stream.readLong();
 
 			return (T) new JContractIDKey(shard, realm, contract);
-		} else if (JObjectType.JECDSASecp256k1Key.equals(type)) {
+		} else if (JObjectType.JECDSA_SECP256K1_KEY.equals(type)) {
 			byte[] key = new byte[(int) length];
 			stream.readFully(key);
 
