@@ -44,7 +44,11 @@ networks:
 ```
 
 We can add details for multiple networks to this config file; for example,
-we could add information about stabletestnet.
+we can add information about the stable testnet. And we can override the 
+default payer account or default node account for any network using the 
+`defaultPayer` and `defaultNodeAccount` fields, respectively. (Where we 
+have the command line option `-p` to override `defaultPayer`, and the 
+command line option `-a` to override `defaultNodeAccount`.)
 ```
 defaultNetwork: previewnet
 
@@ -53,6 +57,8 @@ networks:
     nodes:
       - { id: 0, account: 3, ipv4Addr: 35.231.208.148 }
   stabletestnet:
+    defaultPayer: 50
+    defaultNodeAccount: 4
     nodes:
       - { id: 0, account: 3, ipv4Addr: 34.94.106.61 }
       - { id: 1, account: 4, ipv4Addr: 35.237.119.55 }

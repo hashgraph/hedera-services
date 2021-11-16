@@ -85,6 +85,10 @@ public class Yahcli implements Callable<Integer> {
 			paramLabel = "network")
 	String net;
 
+	@Option(names = { "-a", "--node-account" },
+			paramLabel = "node account")
+	String nodeAccount;
+
 	@Option(names = { "-p", "--payer" },
 			paramLabel = "payer")
 	String payer;
@@ -123,6 +127,10 @@ public class Yahcli implements Callable<Integer> {
 
 	public Long getFixedFee() {
 		return fixedFee;
+	}
+
+	public String getNodeAccount() {
+		return nodeAccount == null ? nodeAccount : ("0.0." + nodeAccount);
 	}
 
 	private static void setLogLevelsToLessNoisy() {
