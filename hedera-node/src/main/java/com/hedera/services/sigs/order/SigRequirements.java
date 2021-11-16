@@ -68,7 +68,6 @@ import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_AUTORENEW_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.NONE;
-import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static java.util.Collections.EMPTY_LIST;
 
@@ -84,8 +83,6 @@ public class SigRequirements {
 	private final SignatureWaivers signatureWaivers;
 	private final SigMetadataLookup sigMetaLookup;
 	private final GlobalDynamicProperties properties;
-
-	private static AccountID payer = MISSING_ENTITY_ID.toGrpcAccountId();
 
 	public SigRequirements(
 			SigMetadataLookup sigMetaLookup,
@@ -127,7 +124,6 @@ public class SigRequirements {
 	 * @return a {@link SigningOrderResult} summarizing the listing attempt
 	 */
 	public <T> SigningOrderResult<T> keysForOtherParties(TransactionBody txn, SigningOrderResultFactory<T> factory) {
-		payer = txn.getTransactionID().getAccountID();
 		final var cryptoOrder = forCrypto(txn, factory);
 		if (cryptoOrder != null) {
 			return cryptoOrder;
@@ -156,8 +152,8 @@ public class SigRequirements {
 	}
 
 	private <T> SigningOrderResult<T> orderForPayer(TransactionBody txn, SigningOrderResultFactory<T> factory) {
-		var payer = txn.getTransactionID().getAccountID();
-		var result = sigMetaLookup.accountSigningMetaFor(payer);
+		final var payer = txn.getTransactionID().getAccountID();
+		final var result = sigMetaLookup.accountSigningMetaFor(payer);
 		if (result.succeeded()) {
 			return factory.forValidOrder(List.of(result.metadata().getKey()));
 		} else {
@@ -182,22 +178,24 @@ public class SigRequirements {
 	}
 
 	private <T> SigningOrderResult<T> forCrypto(TransactionBody txn, SigningOrderResultFactory<T> factory) {
+		final var payer = txn.getTransactionID().getAccountID();
 		if (txn.hasCryptoCreateAccount()) {
 			return cryptoCreate(txn.getCryptoCreateAccount(), factory);
 		} else if (txn.hasCryptoTransfer()) {
-			return cryptoTransfer(txn.getCryptoTransfer(), factory);
+			return cryptoTransfer(payer, txn.getCryptoTransfer(), factory);
 		} else if (txn.hasCryptoUpdateAccount()) {
-			return cryptoUpdate(txn, factory);
+			return cryptoUpdate(payer, txn, factory);
 		} else if (txn.hasCryptoDelete()) {
-			return cryptoDelete(txn.getCryptoDelete(), factory);
+			return cryptoDelete(payer, txn.getCryptoDelete(), factory);
 		} else {
 			return null;
 		}
 	}
 
 	private <T> SigningOrderResult<T> forSchedule(TransactionBody txn, SigningOrderResultFactory<T> factory) {
+		final var payer = txn.getTransactionID().getAccountID();
 		if (txn.hasScheduleCreate()) {
-			return scheduleCreate(txn.getScheduleCreate(), factory);
+			return scheduleCreate(payer, txn.getScheduleCreate(), factory);
 		} else if (txn.hasScheduleSign()) {
 			return scheduleSign(txn.getScheduleSign().getScheduleID(), factory);
 		} else if (txn.hasScheduleDelete()) {
@@ -208,12 +206,13 @@ public class SigRequirements {
 	}
 
 	private <T> SigningOrderResult<T> forToken(TransactionBody txn, SigningOrderResultFactory<T> factory) {
+		final var payer = txn.getTransactionID().getAccountID();
 		if (txn.hasTokenCreation()) {
-			return tokenCreate(txn.getTokenCreation(), factory);
+			return tokenCreate(payer, txn.getTokenCreation(), factory);
 		} else if (txn.hasTokenAssociate()) {
-			return tokenAssociate(txn.getTokenAssociate(), factory);
+			return tokenAssociate(payer, txn.getTokenAssociate(), factory);
 		} else if (txn.hasTokenDissociate()) {
-			return tokenDissociate(txn.getTokenDissociate(), factory);
+			return tokenDissociate(payer, txn.getTokenDissociate(), factory);
 		} else if (txn.hasTokenFreeze()) {
 			return tokenFreezing(txn.getTokenFreeze().getToken(), factory);
 		} else if (txn.hasTokenUnfreeze()) {
@@ -231,9 +230,9 @@ public class SigRequirements {
 		} else if (txn.hasTokenDeletion()) {
 			return tokenMutates(txn.getTokenDeletion().getToken(), factory);
 		} else if (txn.hasTokenUpdate()) {
-			return tokenUpdates(txn.getTokenUpdate(), factory);
+			return tokenUpdates(payer, txn.getTokenUpdate(), factory);
 		} else if (txn.hasTokenFeeScheduleUpdate()) {
-			return tokenFeeScheduleUpdates(txn.getTokenFeeScheduleUpdate(), factory);
+			return tokenFeeScheduleUpdates(payer, txn.getTokenFeeScheduleUpdate(), factory);
 		} else if (txn.hasTokenPause()) {
 			return tokenPausing(txn.getTokenPause().getToken(), factory);
 		} else if (txn.hasTokenUnpause()) {
@@ -258,12 +257,13 @@ public class SigRequirements {
 	}
 
 	private <T> SigningOrderResult<T> forConsensus(TransactionBody txn, SigningOrderResultFactory<T> factory) {
+		final var payer = txn.getTransactionID().getAccountID();
 		if (txn.hasConsensusCreateTopic()) {
-			return topicCreate(txn.getConsensusCreateTopic(), factory);
+			return topicCreate(payer, txn.getConsensusCreateTopic(), factory);
 		} else if (txn.hasConsensusSubmitMessage()) {
 			return messageSubmit(txn.getConsensusSubmitMessage(), factory);
 		} else if (txn.hasConsensusUpdateTopic()) {
-			return topicUpdate(txn.getConsensusUpdateTopic(), factory);
+			return topicUpdate(payer, txn.getConsensusUpdateTopic(), factory);
 		} else if (txn.hasConsensusDeleteTopic()) {
 			return topicDelete(txn.getConsensusDeleteTopic(), factory);
 		} else {
@@ -423,13 +423,14 @@ public class SigRequirements {
 	}
 
 	private <T> SigningOrderResult<T> cryptoDelete(
+			AccountID payer,
 			CryptoDeleteTransactionBody op,
 			SigningOrderResultFactory<T> factory
 	) {
 		List<JKey> required = EMPTY_LIST;
 
 		var target = op.getDeleteAccountID();
-		if (!doesMatchPayer(target)) {
+		if (!payer.equals(target)) {
 			var targetResult = sigMetaLookup.accountSigningMetaFor(target);
 			if (!targetResult.succeeded()) {
 				return accountFailure(targetResult.failureIfAny(), factory);
@@ -439,7 +440,7 @@ public class SigRequirements {
 		}
 
 		var beneficiary = op.getTransferAccountID();
-		if (!doesMatchPayer(beneficiary)) {
+		if (!payer.equals(beneficiary)) {
 			var beneficiaryResult = sigMetaLookup.accountSigningMetaFor(beneficiary);
 			if (!beneficiaryResult.succeeded()) {
 				return accountFailure(beneficiaryResult.failureIfAny(), factory);
@@ -453,6 +454,7 @@ public class SigRequirements {
 	}
 
 	private <T> SigningOrderResult<T> cryptoUpdate(
+			AccountID payer,
 			TransactionBody cryptoUpdateTxn,
 			SigningOrderResultFactory<T> factory
 	) {
@@ -465,7 +467,7 @@ public class SigRequirements {
 		if (!result.succeeded()) {
 			return accountFailure(result.failureIfAny(), factory);
 		} else {
-			if (targetAccountKeyMustSign && !doesMatchPayer(target)) {
+			if (targetAccountKeyMustSign && !payer.equals(target)) {
 				required = mutable(required);
 				required.add(result.metadata().getKey());
 			}
@@ -480,6 +482,7 @@ public class SigRequirements {
 	}
 
 	private <T> SigningOrderResult<T> cryptoTransfer(
+			AccountID payer,
 			CryptoTransferTransactionBody op,
 			SigningOrderResultFactory<T> factory) {
 		List<JKey> required = new ArrayList<>();
@@ -487,24 +490,24 @@ public class SigRequirements {
 		KeyOrderingFailure failure;
 		for (TokenTransferList xfers : op.getTokenTransfersList()) {
 			for (AccountAmount adjust : xfers.getTransfersList()) {
-				if ((failure = includeIfNecessary(adjust, required)) != NONE) {
+				if ((failure = includeIfNecessary(payer, adjust, required)) != NONE) {
 					return accountFailure(failure, factory);
 				}
 			}
 			final var token = xfers.getToken();
 			for (NftTransfer adjust : xfers.getNftTransfersList()) {
 				final var sender = adjust.getSenderAccountID();
-				if ((failure = nftIncludeIfNecessary(sender, null, required, token, op)) != NONE) {
+				if ((failure = nftIncludeIfNecessary(payer, sender, null, required, token, op)) != NONE) {
 					return accountFailure(failure, factory);
 				}
 				final var receiver = adjust.getReceiverAccountID();
-				if ((failure = nftIncludeIfNecessary(receiver, sender, required, token, op)) != NONE) {
+				if ((failure = nftIncludeIfNecessary(payer, receiver, sender, required, token, op)) != NONE) {
 					return (failure == MISSING_TOKEN) ? factory.forMissingToken() : accountFailure(failure, factory);
 				}
 			}
 		}
 		for (AccountAmount adjust : op.getTransfers().getAccountAmountsList()) {
-			if ((failure = includeIfNecessary(adjust, required)) != NONE) {
+			if ((failure = includeIfNecessary(payer, adjust, required)) != NONE) {
 				return accountFailure(failure, factory);
 			}
 		}
@@ -561,6 +564,7 @@ public class SigRequirements {
 	}
 
 	private <T> SigningOrderResult<T> topicCreate(
+			AccountID payer,
 			ConsensusCreateTopicTransactionBody op,
 			SigningOrderResultFactory<T> factory
 	) {
@@ -572,6 +576,7 @@ public class SigRequirements {
 				ConsensusCreateTopicTransactionBody::getAdminKey,
 				required);
 		if (!addAccount(
+				payer,
 				op,
 				ConsensusCreateTopicTransactionBody::hasAutoRenewAccount,
 				ConsensusCreateTopicTransactionBody::getAutoRenewAccount,
@@ -583,11 +588,13 @@ public class SigRequirements {
 	}
 
 	private <T> SigningOrderResult<T> tokenCreate(
+			AccountID payer,
 			TokenCreateTransactionBody op,
 			SigningOrderResultFactory<T> factory) {
 		final List<JKey> required = new ArrayList<>();
 
 		final var couldAddTreasury = addAccount(
+				payer,
 				op,
 				TokenCreateTransactionBody::hasTreasury,
 				TokenCreateTransactionBody::getTreasury,
@@ -596,6 +603,7 @@ public class SigRequirements {
 			return accountFailure(MISSING_ACCOUNT, factory);
 		}
 		final var couldAddAutoRenew = addAccount(
+				payer,
 				op,
 				TokenCreateTransactionBody::hasAutoRenewAccount,
 				TokenCreateTransactionBody::getAutoRenewAccount,
@@ -618,9 +626,9 @@ public class SigRequirements {
 				final var fixedFee = customFee.getFixedFee();
 				final var alwaysAdd = fixedFee.hasDenominatingTokenId()
 						&& fixedFee.getDenominatingTokenId().getTokenNum() == 0L;
-				couldAddCollector = addAccount(collector, required, alwaysAdd);
+				couldAddCollector = addAccount(payer, collector, required, alwaysAdd);
 			} else if (customFee.hasFractionalFee()) {
-				couldAddCollector = addAccount(collector, required, true);
+				couldAddCollector = addAccount(payer, collector, required, true);
 			} else {
 				final var royaltyFee = customFee.getRoyaltyFee();
 				var alwaysAdd = false;
@@ -628,7 +636,7 @@ public class SigRequirements {
 					final var fFee = royaltyFee.getFallbackFee();
 					alwaysAdd = fFee.hasDenominatingTokenId() && fFee.getDenominatingTokenId().getTokenNum() == 0;
 				}
-				couldAddCollector = addAccount(collector, required, alwaysAdd);
+				couldAddCollector = addAccount(payer, collector, required, alwaysAdd);
 			}
 			if (!couldAddCollector) {
 				return factory.forMissingFeeCollector();
@@ -665,6 +673,7 @@ public class SigRequirements {
 	}
 
 	private <T> SigningOrderResult<T> tokenFeeScheduleUpdates(
+			AccountID payer,
 			TokenFeeScheduleUpdateTransactionBody op,
 			SigningOrderResultFactory<T> factory
 	) {
@@ -677,7 +686,7 @@ public class SigRequirements {
 				required.add(feeScheduleKey.get());
 				for (var customFee : op.getCustomFeesList()) {
 					final var collector = customFee.getFeeCollectorAccountId();
-					final var couldAddCollector = addAccountIfReceiverSigRequired(collector, required);
+					final var couldAddCollector = addAccountIfReceiverSigRequired(payer, collector, required);
 					if (!couldAddCollector) {
 						return factory.forMissingFeeCollector();
 					}
@@ -693,6 +702,7 @@ public class SigRequirements {
 	}
 
 	private <T> SigningOrderResult<T> tokenUpdates(
+			AccountID payer,
 			TokenUpdateTransactionBody op,
 			SigningOrderResultFactory<T> factory
 	) {
@@ -700,6 +710,7 @@ public class SigRequirements {
 		var basic = tokenMutates(op.getToken(), factory, nonAdminReqs);
 		var required = basic.getOrderedKeys();
 		if (!addAccount(
+				payer,
 				op,
 				TokenUpdateTransactionBody::hasAutoRenewAccount,
 				TokenUpdateTransactionBody::getAutoRenewAccount,
@@ -707,6 +718,7 @@ public class SigRequirements {
 			return accountFailure(MISSING_AUTORENEW_ACCOUNT, factory);
 		}
 		if (!addAccount(
+				payer,
 				op,
 				TokenUpdateTransactionBody::hasTreasury,
 				TokenUpdateTransactionBody::getTreasury,
@@ -721,25 +733,27 @@ public class SigRequirements {
 		return basic;
 	}
 
-	private boolean addAccountIfReceiverSigRequired(AccountID id, List<JKey> reqs) {
-		return addAccount(id, reqs, false);
+	private boolean addAccountIfReceiverSigRequired(AccountID payer, AccountID id, List<JKey> reqs) {
+		return addAccount(payer, id, reqs, false);
 	}
 
 	private <T> boolean addAccount(
+			AccountID payer,
 			T op, Predicate<T> isPresent,
 			Function<T, AccountID> getter, List<JKey> reqs) {
 		if (isPresent.test(op)) {
-			return addAccount(getter.apply(op), reqs, true);
+			return addAccount(payer, getter.apply(op), reqs, true);
 		}
 		return true;
 	}
 
 	private boolean addAccount(
+			AccountID payer,
 			AccountID id,
 			List<JKey> reqs,
 			boolean alwaysAdd
 	) {
-		if (!doesMatchPayer(id)) {
+		if (!payer.equals(id)) {
 			var result = sigMetaLookup.accountSigningMetaFor(id);
 			if (result.succeeded()) {
 				final var metadata = result.metadata();
@@ -801,20 +815,23 @@ public class SigRequirements {
 	}
 
 	private <T> SigningOrderResult<T> tokenAssociate(
+			AccountID payer,
 			TokenAssociateTransactionBody op,
 			SigningOrderResultFactory<T> factory
 	) {
-		return forSingleAccount(op.getAccount(), factory);
+		return forSingleAccount(payer, op.getAccount(), factory);
 	}
 
 	private <T> SigningOrderResult<T> tokenDissociate(
+			AccountID payer,
 			TokenDissociateTransactionBody op,
 			SigningOrderResultFactory<T> factory
 	) {
-		return forSingleAccount(op.getAccount(), factory);
+		return forSingleAccount(payer, op.getAccount(), factory);
 	}
 
 	private <T> SigningOrderResult<T> scheduleCreate(
+			AccountID payer,
 			ScheduleCreateTransactionBody op,
 			SigningOrderResultFactory<T> factory
 	) {
@@ -828,6 +845,7 @@ public class SigRequirements {
 
 		int before = required.size();
 		var couldAddPayer = addAccount(
+				payer,
 				op,
 				ScheduleCreateTransactionBody::hasPayerAccountID,
 				ScheduleCreateTransactionBody::getPayerAccountID,
@@ -918,11 +936,12 @@ public class SigRequirements {
 	}
 
 	private <T> SigningOrderResult<T> forSingleAccount(
+			AccountID payer,
 			AccountID target,
 			SigningOrderResultFactory<T> factory) {
 		List<JKey> required = EMPTY_LIST;
 
-		if (!doesMatchPayer(target)) {
+		if (!payer.equals(target)) {
 			var result = sigMetaLookup.accountSigningMetaFor(target);
 			if (result.succeeded()) {
 				var meta = result.metadata();
@@ -936,9 +955,9 @@ public class SigRequirements {
 		return factory.forValidOrder(required);
 	}
 
-	private KeyOrderingFailure includeIfNecessary(AccountAmount adjust, List<JKey> required) {
+	private KeyOrderingFailure includeIfNecessary(AccountID payer, AccountAmount adjust, List<JKey> required) {
 		var account = adjust.getAccountID();
-		if (!doesMatchPayer(account)) {
+		if (!payer.equals(account)) {
 			var result = sigMetaLookup.accountSigningMetaFor(account);
 			if (result.succeeded()) {
 				var meta = result.metadata();
@@ -952,12 +971,13 @@ public class SigRequirements {
 	}
 
 	private KeyOrderingFailure nftIncludeIfNecessary(
+			AccountID payer,
 			AccountID party,
 			AccountID counterparty,
 			List<JKey> required,
 			TokenID token,
 			CryptoTransferTransactionBody op) {
-		if (!doesMatchPayer(party)) {
+		if (!payer.equals(party)) {
 			var result = sigMetaLookup.accountSigningMetaFor(party);
 			if (!result.succeeded()) {
 				return result.failureIfAny();
@@ -1033,6 +1053,7 @@ public class SigRequirements {
 	}
 
 	private <T> SigningOrderResult<T> topicUpdate(
+			AccountID payer,
 			ConsensusUpdateTopicTransactionBody op,
 			SigningOrderResultFactory<T> factory
 	) {
@@ -1059,7 +1080,7 @@ public class SigRequirements {
 		}
 		if (op.hasAutoRenewAccount() && !isEliding(op.getAutoRenewAccount())) {
 			var account = op.getAutoRenewAccount();
-			if (!doesMatchPayer(account)) {
+			if (!payer.equals(account)) {
 				var autoRenewResult = sigMetaLookup.accountSigningMetaFor(account);
 				if (autoRenewResult.succeeded()) {
 					required = mutable(required);
@@ -1103,7 +1124,7 @@ public class SigRequirements {
 		return factory.forValidOrder(required);
 	}
 
-	private Boolean doesMatchPayer(AccountID subject) {
+	private Boolean doesMatchPayer(AccountID subject, AccountID payer) {
 		return payer.equals(subject);
 	}
 }
