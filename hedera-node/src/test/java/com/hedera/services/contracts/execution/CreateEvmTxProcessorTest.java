@@ -23,7 +23,6 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.store.contracts.CodeCache;
@@ -57,12 +56,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.Deque;
 import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.Set;
 
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -117,8 +116,9 @@ class CreateEvmTxProcessorTest {
 	@Test
 	void assertSuccessfulExecution() {
 		givenValidMock(true);
-		sender.initBalance(350_000L);
-		var result = createEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), 33_333L, 1234L, Bytes.EMPTY, consensusTime, expiry);
+		givenSenderWithBalance(350_000L);
+		var result = createEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), 33_333L, 1234L, Bytes.EMPTY,
+				consensusTime, expiry);
 		assertTrue(result.isSuccessful());
 		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
 		verify(codeCache).invalidate(receiver.getId().asEvmAddress());
@@ -128,7 +128,7 @@ class CreateEvmTxProcessorTest {
 	void assertSuccessExecutionChargesCorrectMinimumGas() {
 		givenValidMock(true);
 		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENT);
-		sender.initBalance(350_000L);
+		givenSenderWithBalance(350_000L);
 		var result = createEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(),
 				GAS_LIMIT, 1234L, Bytes.EMPTY, consensusTime, expiry);
 		assertTrue(result.isSuccessful());
@@ -141,7 +141,7 @@ class CreateEvmTxProcessorTest {
 		givenValidMock(true);
 		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(5);
 		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(Gas.of(INTRINSIC_GAS_COST));
-		sender.initBalance(350_000L);
+		givenSenderWithBalance(350_000L);
 		var result = createEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(),
 				GAS_LIMIT, 1234L, Bytes.EMPTY, consensusTime, expiry);
 		assertTrue(result.isSuccessful());
@@ -156,7 +156,7 @@ class CreateEvmTxProcessorTest {
 		given(gasCalculator.mStoreOperationGasCost(any(), anyLong())).willReturn(Gas.of(200));
 		given(gasCalculator.mLoadOperationGasCost(any(), anyLong())).willReturn(Gas.of(30));
 		given(gasCalculator.memoryExpansionGasCost(any(), anyLong(), anyLong())).willReturn(Gas.of(5000));
-		sender.initBalance(350_000L);
+		givenSenderWithBalance(350_000L);
 
 		// when:
 		var result = createEvmTxProcessor.execute(
@@ -166,32 +166,20 @@ class CreateEvmTxProcessorTest {
 				0,
 				Bytes.fromHexString(
 						"6080604052348015600f57600080fd5b506000604e576040517f08c379a" +
-						"00000000000000000000000000000000000000000000000000000000081" +
-						"526004016045906071565b60405180910390fd5b60c9565b6000605d601" +
-						"183608f565b915060668260a0565b602082019050919050565b60006020" +
-						"8201905081810360008301526088816052565b9050919050565b6000828" +
-						"25260208201905092915050565b7f636f756c64206e6f74206578656375" +
-						"7465000000000000000000000000000000600082015250565b603f80610" +
-						"0d76000396000f3fe6080604052600080fdfea2646970667358221220d8" +
-						"2b5e4f0118f9b6972aae9287dfe93930fdbc1e62ca10ea7ac70bde1c0ad" +
-						"d2464736f6c63430008070033"),
+								"00000000000000000000000000000000000000000000000000000000081" +
+								"526004016045906071565b60405180910390fd5b60c9565b6000605d601" +
+								"183608f565b915060668260a0565b602082019050919050565b60006020" +
+								"8201905081810360008301526088816052565b9050919050565b6000828" +
+								"25260208201905092915050565b7f636f756c64206e6f74206578656375" +
+								"7465000000000000000000000000000000600082015250565b603f80610" +
+								"0d76000396000f3fe6080604052600080fdfea2646970667358221220d8" +
+								"2b5e4f0118f9b6972aae9287dfe93930fdbc1e62ca10ea7ac70bde1c0ad" +
+								"d2464736f6c63430008070033"),
 				consensusTime,
 				expiry);
 
 		// then:
 		assertFalse(result.isSuccessful());
-	}
-
-	@Test
-	void assertThatExecuteMethodThrowsInvalidTransactionException() {
-		var consensusTime = Instant.ofEpochSecond(1631778674L);
-
-		//expect:
-		Address receiver = this.receiver.getId().asEvmAddress();
-		assertThrows(InvalidTransactionException.class, () ->
-				createEvmTxProcessor.execute(
-						sender, receiver, 1234, 1_000_000, 15, Bytes.EMPTY, false,
-						consensusTime, false, OptionalLong.of(expiry)));
 	}
 
 	@Test
@@ -223,7 +211,9 @@ class CreateEvmTxProcessorTest {
 						.miningBeneficiary(mock(Address.class))
 						.blockHashLookup(h -> null);
 		//when:
-		MessageFrame buildMessageFrame = createEvmTxProcessor.buildInitialFrame(commonInitialFrame, worldState.updater(), (Address) transaction.getTo().get(), Bytes.EMPTY);
+		MessageFrame buildMessageFrame = createEvmTxProcessor.buildInitialFrame(commonInitialFrame,
+				worldState.updater(),
+				(Address) transaction.getTo().get(), Bytes.EMPTY);
 
 		//expect:
 		assertEquals(transaction.getSender(), buildMessageFrame.getSenderAddress());
@@ -232,66 +222,49 @@ class CreateEvmTxProcessorTest {
 
 	@Test
 	void throwsWhenSenderCannotCoverUpfrontCost() {
-		// given:
 		givenInvalidMock();
+		givenSenderWithBalance(123);
 
-		// when:
 		Address receiver = this.receiver.getId().asEvmAddress();
-		final var result = assertThrows(
-				InvalidTransactionException.class,
+		assertFailsWith(
 				() -> createEvmTxProcessor
-						.execute(sender, receiver, 33_333L, 1234L, Bytes.EMPTY, consensusTime, expiry));
-
-		// then:
-		assertEquals(ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE, result.getResponseCode());
+						.execute(sender, receiver, 333_333L, 1234L, Bytes.EMPTY, consensusTime, expiry),
+				ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
 	}
 
 	@Test
 	void throwsWhenIntrinsicGasCostExceedsGasLimit() {
-		// given:
 		givenInvalidMock();
+		givenExtantSender();
 
-		// and:
-		sender.initBalance(200_000);
-
-		// when:
 		Address receiver = this.receiver.getId().asEvmAddress();
-		final var result = assertThrows(
-				InvalidTransactionException.class,
+		assertFailsWith(
 				() -> createEvmTxProcessor
-						.execute(sender, receiver, 33_333L, 1234L, Bytes.EMPTY, consensusTime, expiry));
-
-		// then:
-		assertEquals(ResponseCodeEnum.INSUFFICIENT_GAS, result.getResponseCode());
+						.execute(sender, receiver, 33_333L, 1234L, Bytes.EMPTY, consensusTime, expiry),
+				INSUFFICIENT_GAS);
 	}
 
 	@Test
 	void throwsWhenIntrinsicGasCostExceedsGasLimitAndGasLimitIsEqualToMaxGasLimit() {
-		// given:
 		givenInvalidMock();
-
-		// and:
-		sender.initBalance(100_000_000);
-		// and:
+		givenExtantSender();
 		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(Gas.of(MAX_GAS_LIMIT + 1));
 
-		// when:
 		Address receiver = this.receiver.getId().asEvmAddress();
-		final var result = assertThrows(
-				InvalidTransactionException.class,
+		assertFailsWith(
 				() -> createEvmTxProcessor
-						.execute(sender, receiver, MAX_GAS_LIMIT, 1234L, Bytes.EMPTY, consensusTime, expiry));
-
-		// then:
-		assertEquals(ResponseCodeEnum.INSUFFICIENT_GAS, result.getResponseCode());
+						.execute(sender, receiver, 33_333L, 1234L, Bytes.EMPTY, consensusTime, expiry),
+				INSUFFICIENT_GAS);
 	}
 
 	private void givenInvalidMock() {
 		// given:
 		var feeData = mock(FeeData.class);
 		given(feeData.getServicedata()).willReturn(mock(FeeComponents.class));
-		given(usagePricesProvider.defaultPricesGiven(HederaFunctionality.ContractCreate, Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build())).willReturn(feeData);
-		given(hbarCentExchange.rate(Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build())).willReturn(exchangeRate);
+		given(usagePricesProvider.defaultPricesGiven(HederaFunctionality.ContractCreate,
+				Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build())).willReturn(feeData);
+		given(hbarCentExchange.rate(
+				Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build())).willReturn(exchangeRate);
 		given(exchangeRate.getHbarEquiv()).willReturn(1);
 		given(exchangeRate.getCentEquiv()).willReturn(1);
 		// and:
@@ -307,7 +280,6 @@ class CreateEvmTxProcessorTest {
 		var evmAccount = mock(EvmAccount.class);
 
 		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(evmAccount);
-		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()).getMutable()).willReturn(mock(MutableAccount.class));
 		given(worldState.updater()).willReturn(updater);
 
 		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(Gas.ZERO);
@@ -332,8 +304,10 @@ class CreateEvmTxProcessorTest {
 
 		var feeData = mock(FeeData.class);
 		given(feeData.getServicedata()).willReturn(mock(FeeComponents.class));
-		given(usagePricesProvider.defaultPricesGiven(HederaFunctionality.ContractCreate, Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build())).willReturn(feeData);
-		given(hbarCentExchange.rate(Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build())).willReturn(exchangeRate);
+		given(usagePricesProvider.defaultPricesGiven(HederaFunctionality.ContractCreate,
+				Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build())).willReturn(feeData);
+		given(hbarCentExchange.rate(
+				Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build())).willReturn(exchangeRate);
 		given(exchangeRate.getHbarEquiv()).willReturn(1);
 		given(exchangeRate.getCentEquiv()).willReturn(1);
 
@@ -341,5 +315,20 @@ class CreateEvmTxProcessorTest {
 		given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
 		given(updater.updater().getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
 
+	}
+
+	private void givenExtantSender() {
+		givenSenderWithBalance(-1L);
+	}
+
+	private void givenSenderWithBalance(final long amount) {
+		final var wrappedSenderAccount = mock(EvmAccount.class);
+		final var mutableSenderAccount = mock(MutableAccount.class);
+		given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
+		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(wrappedSenderAccount);
+
+		if (amount >= 0) {
+			given(mutableSenderAccount.getBalance()).willReturn(Wei.of(amount));
+		}
 	}
 }

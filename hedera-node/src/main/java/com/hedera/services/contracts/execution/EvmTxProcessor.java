@@ -175,24 +175,23 @@ abstract class EvmTxProcessor {
 		final Wei gasCost = Wei.of(Math.multiplyExact(gasLimit, gasPrice));
 		final Wei upfrontCost = gasCost.add(value);
 		final Gas intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
+
 		final var updater = worldState.updater();
+		final var senderEvmAddress = sender.getId().asEvmAddress();
+		final var senderAccount = updater.getOrCreateSenderAccount(senderEvmAddress);
+		final MutableAccount mutableSender = senderAccount.getMutable();
 
 		if (!isStatic) {
-			final var senderCanAffordGas = Wei.of(sender.getBalance()).compareTo(upfrontCost) >= 0;
-			validateTrue(senderCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
 			if (intrinsicGas.toLong() > gasLimit) {
 				throw new InvalidTransactionException(INSUFFICIENT_GAS);
 			}
+			final var senderCanAffordGas = mutableSender.getBalance().compareTo(upfrontCost) >= 0;
+			validateTrue(senderCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
+			mutableSender.decrementBalance(gasCost);
 		}
 
 		final Address coinbase = Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress();
 		final HederaBlockValues blockValues = new HederaBlockValues(gasLimit, consensusTime.getEpochSecond());
-		Address senderEvmAddress = sender.getId().asEvmAddress();
-		final MutableAccount mutableSender = updater.getOrCreateSenderAccount(senderEvmAddress).getMutable();
-		if (!isStatic) {
-			mutableSender.decrementBalance(gasCost);
-		}
-
 		final Gas gasAvailable = Gas.of(gasLimit).minus(intrinsicGas);
 		final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
 
@@ -221,9 +220,7 @@ abstract class EvmTxProcessor {
 								"HederaFunctionality", getFunctionType(),
 								"expiry", expiry));
 
-		final MessageFrame initialFrame = buildInitialFrame(commonInitialFrame,
-				updater,
-				receiver, payload);
+		final MessageFrame initialFrame = buildInitialFrame(commonInitialFrame, updater, receiver, payload);
 		messageFrameStack.addFirst(initialFrame);
 
 		while (!messageFrameStack.isEmpty()) {
@@ -231,9 +228,7 @@ abstract class EvmTxProcessor {
 		}
 
 		var gasUsedByTransaction = calculateGasUsedByTX(gasLimit, initialFrame);
-
 		final Gas sbhRefund = updater.getSbhRefund();
-
 		if (!isStatic) {
 			// return gas price to accounts
 			final Gas refunded = Gas.of(gasLimit).minus(gasUsedByTransaction).plus(sbhRefund);

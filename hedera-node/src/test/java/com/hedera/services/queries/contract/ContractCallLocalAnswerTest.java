@@ -237,7 +237,6 @@ class ContractCallLocalAnswerTest {
 		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
 				.willReturn(transactionProcessingResult);
 
-		// when:
 		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
 
 		// then:
