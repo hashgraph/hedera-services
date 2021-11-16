@@ -22,6 +22,13 @@ import java.util.Map;
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.ledger.HederaLedger.TOKEN_ID_COMPARATOR;
 
+/**
+ * Extracts the record-creation logic previously squashed into {@link com.hedera.services.ledger.HederaLedger}.
+ *
+ * Despite all the well-known opportunities for performance improvements in this implementation, changes nothing...
+ *
+ * ...yet. 😉
+ */
 @Singleton
 public class SideEffectsTracker {
 	private static final int MAX_TOKENS_TOUCHED = 1_000;
@@ -164,24 +171,6 @@ public class SideEffectsTracker {
 	}
 
 	/* --- Internal helpers --- */
-	private void purgeZeroAdjustments(final TransferList.Builder changes) {
-		int lastZeroRemoved;
-		do {
-			lastZeroRemoved = -1;
-			for (int i = 0; i < changes.getAccountAmountsCount(); i++) {
-				if (changes.getAccountAmounts(i).getAmount() == 0) {
-					changes.removeAccountAmounts(i);
-					lastZeroRemoved = i;
-					break;
-				}
-			}
-		} while (lastZeroRemoved != -1);
-	}
-
-	private AccountAmount.Builder aaBuilderWith(final AccountID account, final long amount) {
-		return AccountAmount.newBuilder().setAccountID(account).setAmount(amount);
-	}
-
 	private void updateFungibleChanges(final AccountID account, final long amount, final TransferList.Builder builder) {
 		int loc = 0;
 		int diff = -1;
@@ -205,6 +194,20 @@ public class SideEffectsTracker {
 		}
 	}
 
+	private void purgeZeroAdjustments(final TransferList.Builder changes) {
+		int lastZeroRemoved;
+		do {
+			lastZeroRemoved = -1;
+			for (int i = 0; i < changes.getAccountAmountsCount(); i++) {
+				if (changes.getAccountAmounts(i).getAmount() == 0) {
+					changes.removeAccountAmounts(i);
+					lastZeroRemoved = i;
+					break;
+				}
+			}
+		} while (lastZeroRemoved != -1);
+	}
+
 	private NftTransfer.Builder nftTransferBuilderWith(
 			final AccountID senderId,
 			final AccountID receiverId,
@@ -214,5 +217,9 @@ public class SideEffectsTracker {
 				.setSenderAccountID(senderId)
 				.setReceiverAccountID(receiverId)
 				.setSerialNumber(serialNumber);
+	}
+
+	private AccountAmount.Builder aaBuilderWith(final AccountID account, final long amount) {
+		return AccountAmount.newBuilder().setAccountID(account).setAmount(amount);
 	}
 }
