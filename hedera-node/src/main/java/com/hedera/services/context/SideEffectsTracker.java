@@ -2,6 +2,7 @@ package com.hedera.services.context;
 
 import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.store.models.TokenRelationship;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
@@ -23,12 +24,9 @@ import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.ledger.HederaLedger.TOKEN_ID_COMPARATOR;
 
 /**
- * Extracts the side-effect tracking logic previously squashed into {@link com.hedera.services.ledger.HederaLedger},
- * along with support for tracking minted NFT serial numbers and a new token supply.
- *
- * Despite all the well-known opportunities for performance improvements here, this implementation changes nothing...
- *
- * ...yet. 😉
+ * Extracts the side-effect tracking logic previously squashed into {@link com.hedera.services.ledger.HederaLedger}
+ * and the {@link com.hedera.services.store.TypedTokenStore}. Despite all the well-known opportunities for performance
+ * improvements here, this implementation changes nothing...yet. 😉
  */
 @Singleton
 public class SideEffectsTracker {
@@ -48,6 +46,15 @@ public class SideEffectsTracker {
 	@Inject
 	public SideEffectsTracker() {
 		/* For Dagger2 */
+	}
+
+	/**
+	 * Tracks the summarized balance changes (if any) contained in the given token relationships.
+	 *
+	 * @param changedTokenRels the changed token relationships
+	 */
+	public void trackSummarizedTokenBalanceChanges(final List<TokenRelationship> changedTokenRels) {
+
 	}
 
 	/**

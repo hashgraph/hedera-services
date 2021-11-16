@@ -20,6 +20,7 @@ package com.hedera.services.store;
  * ‍
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -76,6 +77,8 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class TypedTokenStoreTest {
 	@Mock
+	private SideEffectsTracker sideEffectsTracker;
+	@Mock
 	private AccountStore accountStore;
 	@Mock
 	private UniqTokenViewsManager uniqTokenViewsManager;
@@ -111,7 +114,8 @@ class TypedTokenStoreTest {
 				backingTokenRels,
 				uniqTokenViewsManager,
 				tokenStore::addKnownTreasury,
-				legacyStore::removeKnownTreasuryForToken);
+				legacyStore::removeKnownTreasuryForToken,
+				sideEffectsTracker);
 	}
 
 	/* --- Token relationship loading --- */
