@@ -20,6 +20,7 @@ package com.hedera.services.context;
  * ‍
  */
 
+import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.models.NftId;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -28,9 +29,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SideEffectsTrackerTest {
 	private SideEffectsTracker subject;
@@ -41,15 +45,65 @@ class SideEffectsTrackerTest {
 	}
 
 	@Test
+	void tracksAndResetsTokenSupplyAsExpected() {
+		final var newSupply = 1_234L;
+
+		subject.trackTokenSupply(newSupply);
+
+		assertTrue(subject.hasTrackedTokenSupply());
+		assertEquals(newSupply, subject.getTrackedTokenSupply());
+
+		subject.reset();
+		assertFalse(subject.hasTrackedTokenSupply());
+	}
+
+	@Test
+	void tracksAndResetsNftMintsAsExpected() {
+		subject.trackMintedNft(1L);
+		subject.trackMintedNft(2L);
+		subject.trackMintedNft(3L);
+
+		assertTrue(subject.hasTrackedNftMints());
+		assertEquals(List.of(1L, 2L, 3L), subject.getTrackedNftMints());
+
+		subject.reset();
+
+		assertFalse(subject.hasTrackedNftMints());
+		assertTrue(subject.getTrackedNftMints().isEmpty());
+	}
+
+	@Test
+	void tracksAndResetsAutoAssociationsAsExpected() {
+		final var expected = List.of(
+				new FcTokenAssociation(aToken.getTokenNum(), aAccount.getAccountNum()),
+				new FcTokenAssociation(bToken.getTokenNum(), bAccount.getAccountNum()));
+
+		subject.trackAutoAssociation(aToken, aAccount);
+		subject.trackAutoAssociation(bToken, bAccount);
+
+		assertEquals(expected, subject.getTrackedAutoAssociations());
+
+		subject.reset();
+
+		assertTrue(subject.getTrackedAutoAssociations().isEmpty());
+	}
+
+	@Test
 	void canClearJustTokenChanges() {
-		subject.hbarChange(aAccount, aFirstBalanceChange);
-		subject.tokenUnitsChange(bToken, cAccount, cOnlyBalanceChange);
-		subject.nftOwnerChange(cSN1, aAccount, bAccount);
+		subject.trackHbarChange(aAccount, aFirstBalanceChange);
+		subject.trackTokenUnitsChange(bToken, cAccount, cOnlyBalanceChange);
+		subject.trackNftOwnerChange(cSN1, aAccount, bAccount);
+		subject.trackAutoAssociation(aToken, bAccount);
+		subject.trackMintedNft(1L);
+		subject.trackTokenSupply(1_234L);
 
 		subject.clearTokenChanges();
 
-		assertSame(Collections.emptyList(), subject.computeNetTokenUnitAndOwnershipChanges());
-		final var netChanges = subject.computeNetHbarChanges();
+		assertFalse(subject.hasTrackedTokenSupply());
+		assertFalse(subject.hasTrackedNftMints());
+		assertTrue(subject.getTrackedAutoAssociations().isEmpty());
+		assertSame(Collections.emptyList(), subject.getNetTrackedTokenUnitAndOwnershipChanges());
+		final var netChanges = subject.getNetTrackedHbarChanges();
 		assertEquals(1, netChanges.getAccountAmountsCount());
 		final var aChange = netChanges.getAccountAmounts(0);
 		assertEquals(aAccount, aChange.getAccountID());
@@ -58,14 +112,14 @@ class SideEffectsTrackerTest {
 
 	@Test
 	void tracksAndResetsTokenUnitAndOwnershipChangesAsExpected() {
-		subject.nftOwnerChange(cSN1, aAccount, bAccount);
-		subject.tokenUnitsChange(bToken, cAccount, cOnlyBalanceChange);
-		subject.tokenUnitsChange(aToken, aAccount, aFirstBalanceChange);
-		subject.tokenUnitsChange(aToken, bAccount, bOnlyBalanceChange);
-		subject.tokenUnitsChange(aToken, aAccount, aSecondBalanceChange);
-		subject.tokenUnitsChange(aToken, bAccount, -bOnlyBalanceChange);
+		subject.trackNftOwnerChange(cSN1, aAccount, bAccount);
+		subject.trackTokenUnitsChange(bToken, cAccount, cOnlyBalanceChange);
+		subject.trackTokenUnitsChange(aToken, aAccount, aFirstBalanceChange);
+		subject.trackTokenUnitsChange(aToken, bAccount, bOnlyBalanceChange);
+		subject.trackTokenUnitsChange(aToken, aAccount, aSecondBalanceChange);
+		subject.trackTokenUnitsChange(aToken, bAccount, -bOnlyBalanceChange);
 
-		final var netTokenChanges = subject.computeNetTokenUnitAndOwnershipChanges();
+		final var netTokenChanges = subject.getNetTrackedTokenUnitAndOwnershipChanges();
 
 		assertEquals(3, netTokenChanges.size());
 
@@ -92,18 +146,18 @@ class SideEffectsTrackerTest {
 		assertEquals(1L, abcChange.getSerialNumber());
 
 		subject.reset();
-		assertSame(Collections.emptyList(), subject.computeNetTokenUnitAndOwnershipChanges());
+		assertSame(Collections.emptyList(), subject.getNetTrackedTokenUnitAndOwnershipChanges());
 	}
 
 	@Test
 	public void tracksAndResetsHbarChangesAsExpected() {
-		subject.hbarChange(cAccount, cOnlyBalanceChange);
-		subject.hbarChange(aAccount, aFirstBalanceChange);
-		subject.hbarChange(bAccount, bOnlyBalanceChange);
-		subject.hbarChange(aAccount, aSecondBalanceChange);
-		subject.hbarChange(bAccount, -bOnlyBalanceChange);
+		subject.trackHbarChange(cAccount, cOnlyBalanceChange);
+		subject.trackHbarChange(aAccount, aFirstBalanceChange);
+		subject.trackHbarChange(bAccount, bOnlyBalanceChange);
+		subject.trackHbarChange(aAccount, aSecondBalanceChange);
+		subject.trackHbarChange(bAccount, -bOnlyBalanceChange);
 
-		final var netChanges = subject.computeNetHbarChanges();
+		final var netChanges = subject.getNetTrackedHbarChanges();
 		assertEquals(2, netChanges.getAccountAmountsCount());
 		final var aChange = netChanges.getAccountAmounts(0);
 		assertEquals(aAccount, aChange.getAccountID());
@@ -113,7 +167,7 @@ class SideEffectsTrackerTest {
 		assertEquals(cOnlyBalanceChange, cChange.getAmount());
 
 		subject.reset();
-		assertEquals(0, subject.computeNetHbarChanges().getAccountAmountsCount());
+		assertEquals(0, subject.getNetTrackedHbarChanges().getAccountAmountsCount());
 	}
 
 	private static final long aFirstBalanceChange = 1_000L;

@@ -23,23 +23,27 @@ import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.ledger.HederaLedger.TOKEN_ID_COMPARATOR;
 
 /**
- * Extracts the record-creation logic previously squashed into {@link com.hedera.services.ledger.HederaLedger}.
+ * Extracts the side-effect tracking logic previously squashed into {@link com.hedera.services.ledger.HederaLedger},
+ * along with support for tracking minted NFT serial numbers and a new token supply.
  *
- * Despite all the well-known opportunities for performance improvements in this implementation, changes nothing...
+ * Despite all the well-known opportunities for performance improvements here, this implementation changes nothing...
  *
  * ...yet. 😉
  */
 @Singleton
 public class SideEffectsTracker {
+	private static final long INAPPLICABLE_NEW_SUPPLY = -1;
 	private static final int MAX_TOKENS_TOUCHED = 1_000;
 
 	private final TokenID[] tokensTouched = new TokenID[MAX_TOKENS_TOUCHED];
 	private final TransferList.Builder netHbarChanges = TransferList.newBuilder();
-	private final List<FcTokenAssociation> newTokenAssociations = new ArrayList<>();
+	private final List<Long> nftMints = new ArrayList<>();
+	private final List<FcTokenAssociation> autoAssociations = new ArrayList<>();
 	private final Map<TokenID, TransferList.Builder> netTokenChanges = new HashMap<>();
 	private final Map<TokenID, TokenTransferList.Builder> nftOwnerChanges = new HashMap<>();
 
 	private int numTouches = 0;
+	private long newSupply = INAPPLICABLE_NEW_SUPPLY;
 
 	@Inject
 	public SideEffectsTracker() {
@@ -47,31 +51,86 @@ public class SideEffectsTracker {
 	}
 
 	/**
-	 * Clears all side effects tracked since the last call to this method.
+	 * Tracks the new supply of a token as changed by the active transaction. (Since only
+	 * one token's supply can change in a record-level transaction, it is redundant to
+	 * mention the type here.)
+	 *
+	 * @param newSupply the new supply of the token
 	 */
-	public void reset() {
-		netHbarChanges.clear();
-		clearTokenChanges();
+	public void trackTokenSupply(final long newSupply) {
+		this.newSupply = newSupply;
 	}
 
 	/**
-	 * Clears all token-related side effects tracked since the last call to this method. These include:
-	 * <ul>
-	 *  	<li>Changes to balances of fungible token units.</li>
-	 *  	<li>Changes to NFT owners.</li>
-	 *  	<li>(TODO) Automatically created token associations.</li>
-	 * </ul>
+	 * Indicates whether there any token supply changes were tracked this transaction.
+	 *
+	 * @return if any token supply changes were tracked
 	 */
-	public void clearTokenChanges() {
-		for (int i = 0; i < numTouches; i++) {
-			final var fungibleBuilder = netTokenChanges.get(tokensTouched[i]);
-			if (fungibleBuilder != null) {
-				fungibleBuilder.clearAccountAmounts();
-			} else {
-				nftOwnerChanges.get(tokensTouched[i]).clearNftTransfers();
-			}
-		}
-		numTouches = 0;
+	public boolean hasTrackedTokenSupply() {
+		return newSupply != INAPPLICABLE_NEW_SUPPLY;
+	}
+
+	/**
+	 * Returns the token supply change that occurred d during the transaction.
+	 *
+	 * @return the token supply change
+	 */
+	public long getTrackedTokenSupply() {
+		return newSupply;
+	}
+
+	/**
+	 * Tracks an NFT serial number minted during the transaction. (Since a record-level
+	 * transaction can only mint NFTs of one type, it is redundant to mention more here.)
+	 *
+	 * @param serialNo
+	 * 		the minted NFT
+	 */
+	public void trackMintedNft(final long serialNo) {
+		nftMints.add(serialNo);
+	}
+
+	/**
+	 * Indicates whether there any NFT mints were tracked this transaction.
+	 *
+	 * @return if any NFT mints were tracked
+	 */
+	public boolean hasTrackedNftMints() {
+		return !nftMints.isEmpty();
+	}
+
+	/**
+	 * Returns the list of NFT serial numbers minted during the transaction; these will
+	 * be in consecutive ascending order.
+	 *
+	 * @return the tracked NFT mints
+	 */
+	public List<Long> getTrackedNftMints() {
+		return nftMints;
+	}
+
+	/**
+	 * Tracks an account/token association automatically created (either by a {@code TokenCreate}
+	 * or a {@code CryptoTransfer}).
+	 *
+	 * @param token
+	 * 		the token involved in the auto-association
+	 * @param account
+	 * 		the account involved in the auto-association
+	 */
+	public void trackAutoAssociation(final TokenID token, final AccountID account) {
+		final var association = new FcTokenAssociation(token.getTokenNum(), account.getAccountNum());
+		autoAssociations.add(association);
+	}
+
+	/**
+	 * Returns the list of automatically created account/token associations, in the order they were
+	 * created during the transaction.
+	 *
+	 * @return the created auto-associations
+	 */
+	public List<FcTokenAssociation> getTrackedAutoAssociations() {
+		return autoAssociations;
 	}
 
 	/**
@@ -84,7 +143,7 @@ public class SideEffectsTracker {
 	 * @param amount
 	 * 		the incremental ℏ change to track
 	 */
-	public void hbarChange(final AccountID account, final long amount) {
+	public void trackHbarChange(final AccountID account, final long amount) {
 		updateFungibleChanges(account, amount, netHbarChanges);
 	}
 
@@ -101,7 +160,7 @@ public class SideEffectsTracker {
 	 * @param amount
 	 * 		the incremental unit change to track
 	 */
-	public void tokenUnitsChange(final TokenID token, final AccountID account, final long amount) {
+	public void trackTokenUnitsChange(final TokenID token, final AccountID account, final long amount) {
 		tokensTouched[numTouches++] = token;
 		final var unitChanges = netTokenChanges.computeIfAbsent(token, __ -> TransferList.newBuilder());
 		updateFungibleChanges(account, amount, unitChanges);
@@ -112,7 +171,7 @@ public class SideEffectsTracker {
 	 * does <b>not</b> perform a "transitive closure" over ownership changes; that is, if say NFT {@code 0.0.666.1}
 	 * changes ownership twice in the same transaction, once from {@code 0.0.12345} to {@code 0.0.23456}, and
 	 * again from {@code 0.0.23456} to {@code 0.0.34567}, then <b>both</b> these ownership changes will be
-	 * recorded in the list returned by {@link SideEffectsTracker#computeNetTokenUnitAndOwnershipChanges()}.
+	 * recorded in the list returned by {@link SideEffectsTracker#getNetTrackedTokenUnitAndOwnershipChanges()}.
 	 *
 	 * @param nftId
 	 * 		the NFT changing hands
@@ -121,7 +180,7 @@ public class SideEffectsTracker {
 	 * @param to
 	 * 		the receiver of the NFT
 	 */
-	public void nftOwnerChange(final NftId nftId, final AccountID from, AccountID to) {
+	public void trackNftOwnerChange(final NftId nftId, final AccountID from, AccountID to) {
 		final var token = nftId.tokenId();
 		tokensTouched[numTouches++] = token;
 		var xfers = nftOwnerChanges.computeIfAbsent(token, __ -> TokenTransferList.newBuilder());
@@ -129,18 +188,29 @@ public class SideEffectsTracker {
 	}
 
 	/**
-	 * Returns the list of net ℏ balance changes after all incremental side effects tracked since the last
-	 * call to {@link SideEffectsTracker#reset()}. The returned list is sorted in ascending order by the
-	 * {@link com.hedera.services.ledger.HederaLedger#ACCOUNT_ID_COMPARATOR}.
+	 * Returns the list of net ℏ balance changes including all incremental side effects tracked since the
+	 * last call to {@link SideEffectsTracker#reset()}. The returned list is sorted in ascending order by
+	 * the {@link com.hedera.services.ledger.HederaLedger#ACCOUNT_ID_COMPARATOR}.
 	 *
 	 * @return the ordered net balance changes
 	 */
-	public TransferList computeNetHbarChanges() {
+	public TransferList getNetTrackedHbarChanges() {
 		purgeZeroAdjustments(netHbarChanges);
 		return netHbarChanges.build();
 	}
 
-	public List<TokenTransferList> computeNetTokenUnitAndOwnershipChanges() {
+	/**
+	 * Returns the list-of-lists of net token changes (in unit balances for fungible token types, NFT
+	 * ownership changes for non-fungible), including all incremental side effects since the last call
+	 * to {@link SideEffectsTracker#reset()}. The outer list is sorted in ascending order by the
+	 * {@link com.hedera.services.ledger.HederaLedger#TOKEN_ID_COMPARATOR}. Inner lists that represent
+	 * changes in fungible unit balances are sorted in ascending order by the
+	 * {@link com.hedera.services.ledger.HederaLedger#ACCOUNT_ID_COMPARATOR}; while inner lists that
+	 * represent NFT ownership changes are in the order the NFTs were exchanged in the transaction.
+	 *
+	 * @return the ordered list of ordered balance and NFT ownership changes
+	 */
+	public List<TokenTransferList> getNetTrackedTokenUnitAndOwnershipChanges() {
 		if (numTouches == 0) {
 			return Collections.emptyList();
 		}
@@ -168,6 +238,38 @@ public class SideEffectsTracker {
 			}
 		}
 		return all;
+	}
+
+	/**
+	 * Clears all side effects tracked since the last call to this method.
+	 */
+	public void reset() {
+		clearTokenChanges();
+		netHbarChanges.clear();
+	}
+
+	/**
+	 * Clears all token-related side effects tracked since the last call to this method. These include:
+	 * <ul>
+	 *  	<li>Changes to balances of fungible token units.</li>
+	 *  	<li>Changes to NFT owners.</li>
+	 *  	<li>Automatically created token associations.</li>
+	 * </ul>
+	 */
+	public void clearTokenChanges() {
+		for (int i = 0; i < numTouches; i++) {
+			final var fungibleBuilder = netTokenChanges.get(tokensTouched[i]);
+			if (fungibleBuilder != null) {
+				fungibleBuilder.clearAccountAmounts();
+			} else {
+				nftOwnerChanges.get(tokensTouched[i]).clearNftTransfers();
+			}
+		}
+		numTouches = 0;
+
+		newSupply = INAPPLICABLE_NEW_SUPPLY;
+		nftMints.clear();
+		autoAssociations.clear();
 	}
 
 	/* --- Internal helpers --- */
