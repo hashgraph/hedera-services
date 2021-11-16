@@ -57,7 +57,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.Deque;
 import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.Set;
 
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
@@ -72,7 +71,6 @@ import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class CallEvmTxProcessorTest {
-
 	private static final int MAX_STACK_SIZE = 1024;
 
 	@Mock
@@ -120,7 +118,7 @@ class CallEvmTxProcessorTest {
 		givenValidMock();
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 
-		sender.initBalance(350_000L);
+		givenSenderWithBalance(350_000L);
 		var result = callEvmTxProcessor.execute(
 				sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
 		assertTrue(result.isSuccessful());
@@ -163,7 +161,7 @@ class CallEvmTxProcessorTest {
 		givenValidMock();
 		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENT);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
-		sender.initBalance(350_000L);
+		givenSenderWithBalance(350_000L);
 		var result = callEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), GAS_LIMIT, 1234L, Bytes.EMPTY,
 				consensusTime);
 		assertTrue(result.isSuccessful());
@@ -178,35 +176,7 @@ class CallEvmTxProcessorTest {
 		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(Gas.of(INTRINSIC_GAS_COST));
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 
-		sender.initBalance(350_000L);
-		var result = callEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), GAS_LIMIT, 1234L, Bytes.EMPTY,
-				consensusTime);
-		assertTrue(result.isSuccessful());
-		assertEquals(INTRINSIC_GAS_COST, result.getGasUsed());
-		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
-	}
-
-	@Test
-	void assertSuccessExecutionChargesCorrectMinimumGas() {
-		givenValidMock();
-		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENT);
-		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
-		sender.initBalance(350_000L);
-		var result = callEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), GAS_LIMIT, 1234L, Bytes.EMPTY,
-				consensusTime);
-		assertTrue(result.isSuccessful());
-		assertEquals(result.getGasUsed(), GAS_LIMIT - GAS_LIMIT * MAX_REFUND_PERCENT / 100);
-		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
-	}
-
-	@Test
-	void assertSuccessExecutionChargesCorrectGasWhenGasUsedIsLargerThanMinimum() {
-		givenValidMock();
-		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENT);
-		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(Gas.of(INTRINSIC_GAS_COST));
-		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
-
-		sender.initBalance(350_000L);
+		givenSenderWithBalance(350_000L);
 		var result = callEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), GAS_LIMIT, 1234L, Bytes.EMPTY,
 				consensusTime);
 		assertTrue(result.isSuccessful());
@@ -221,14 +191,17 @@ class CallEvmTxProcessorTest {
 
 		assertFailsWith(
 				() -> callEvmTxProcessor.execute(
-						sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime),
+						sender, receiverAddress, 333_333L, 1234L, Bytes.EMPTY, consensusTime),
 				ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
 	}
 
 	@Test
 	void throwsWhenIntrinsicGasCostExceedsGasLimit() {
 		givenInvalidMock();
-		givenSenderWithBalance(200_000);
+		final var wrappedSenderAccount = mock(EvmAccount.class);
+		final var mutableSenderAccount = mock(MutableAccount.class);
+		given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
+		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(wrappedSenderAccount);
 
 		assertFailsWith(() ->
 						callEvmTxProcessor.execute(
@@ -239,7 +212,10 @@ class CallEvmTxProcessorTest {
 	@Test
 	void throwsWhenIntrinsicGasCostExceedsGasLimitAndGasLimitIsEqualToMaxGasLimit() {
 		givenInvalidMock();
-		givenSenderWithBalance(100_000_000);
+		final var wrappedSenderAccount = mock(EvmAccount.class);
+		final var mutableSenderAccount = mock(MutableAccount.class);
+		given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
+		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(wrappedSenderAccount);
 		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(Gas.of(MAX_GAS_LIMIT + 1));
 
 		assertFailsWith(
@@ -322,7 +298,6 @@ class CallEvmTxProcessorTest {
 		var senderMutableAccount = mock(MutableAccount.class);
 		given(senderMutableAccount.decrementBalance(any())).willReturn(Wei.of(1234L));
 		given(senderMutableAccount.incrementBalance(any())).willReturn(Wei.of(1500L));
-		given(senderMutableAccount.getBalance()).willReturn(Wei.of(Integer.MAX_VALUE));
 		given(evmAccount.getMutable()).willReturn(senderMutableAccount);
 
 		given(updater.getSenderAccount(any())).willReturn(evmAccount);
@@ -345,8 +320,8 @@ class CallEvmTxProcessorTest {
 		final var wrappedSenderAccount = mock(EvmAccount.class);
 		final var mutableSenderAccount = mock(MutableAccount.class);
 		given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
-		given(mutableSenderAccount.getBalance()).willReturn(Wei.of(amount));
 		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(wrappedSenderAccount);
-	}
 
+		given(mutableSenderAccount.getBalance()).willReturn(Wei.of(amount));
+	}
 }

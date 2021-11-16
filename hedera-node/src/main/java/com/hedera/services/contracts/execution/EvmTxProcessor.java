@@ -182,11 +182,11 @@ abstract class EvmTxProcessor {
 		final MutableAccount mutableSender = senderAccount.getMutable();
 
 		if (!isStatic) {
-			final var senderCanAffordGas = Wei.of(sender.getBalance()).compareTo(upfrontCost) >= 0;
-			validateTrue(senderCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
 			if (intrinsicGas.toLong() > gasLimit) {
 				throw new InvalidTransactionException(INSUFFICIENT_GAS);
 			}
+			final var senderCanAffordGas = mutableSender.getBalance().compareTo(upfrontCost) >= 0;
+			validateTrue(senderCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
 			mutableSender.decrementBalance(gasCost);
 		}
 

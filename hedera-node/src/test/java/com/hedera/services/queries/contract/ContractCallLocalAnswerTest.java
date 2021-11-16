@@ -181,7 +181,6 @@ class ContractCallLocalAnswerTest {
 	void getsCostAnswerResponse() throws Throwable {
 		// setup:
 		Query query = validQuery(COST_ANSWER, fee);
-		given(properties.maxGas()).willReturn(gas);
 
 		// when:
 		Response response = subject.responseGiven(query, view, OK, fee);
@@ -199,7 +198,6 @@ class ContractCallLocalAnswerTest {
 		// setup:
 		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
 		Map<String, Object> queryCtx = new HashMap<>();
-		given(properties.maxGas()).willReturn(gas);
 
 		// expect:
 		assertThrows(IllegalStateException.class,
@@ -213,7 +211,6 @@ class ContractCallLocalAnswerTest {
 		Map<String, Object> queryCtx = new HashMap<>();
 		var cachedResponse = response(CONTRACT_EXECUTION_EXCEPTION);
 		queryCtx.put(ContractCallLocalAnswer.CONTRACT_CALL_LOCAL_CTX_KEY, cachedResponse);
-		given(properties.maxGas()).willReturn(gas);
 
 		// when:
 		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L, queryCtx);
@@ -240,8 +237,6 @@ class ContractCallLocalAnswerTest {
 		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
 				.willReturn(transactionProcessingResult);
 
-		given(properties.maxGas()).willReturn(gas);
-		// when:
 		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
 
 		// then:
@@ -255,8 +250,6 @@ class ContractCallLocalAnswerTest {
 	void translatesFailWhenNoCtx() throws Throwable {
 		// setup:
 		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
-
-		given(properties.maxGas()).willReturn(gas);
 
 		// when:
 		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
