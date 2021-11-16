@@ -1123,8 +1123,4 @@ public class SigRequirements {
 		}
 		return factory.forValidOrder(required);
 	}
-
-	private Boolean doesMatchPayer(AccountID subject, AccountID payer) {
-		return payer.equals(subject);
-	}
 }
