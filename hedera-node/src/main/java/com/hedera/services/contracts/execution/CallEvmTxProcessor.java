@@ -55,15 +55,16 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 
 	@Inject
 	public CallEvmTxProcessor(
-			HederaMutableWorldState worldState,
-			CodeCache codeCache,
-			HbarCentExchange exchange,
-			UsagePricesProvider usagePrices,
-			GlobalDynamicProperties dynamicProperties,
-			GasCalculator gasCalculator,
-			Set<Operation> hederaOperations
+			final HederaMutableWorldState worldState,
+			final LivePricesSource livePricesSource,
+			final CodeCache codeCache,
+			final HbarCentExchange exchange,
+			final UsagePricesProvider usagePrices,
+			final GlobalDynamicProperties dynamicProperties,
+			final GasCalculator gasCalculator,
+			final Set<Operation> hederaOperations
 	) {
-		super(worldState, exchange, usagePrices, dynamicProperties, gasCalculator, hederaOperations);
+		super(worldState, livePricesSource, dynamicProperties, gasCalculator, hederaOperations);
 		this.codeCache = codeCache;
 	}
 

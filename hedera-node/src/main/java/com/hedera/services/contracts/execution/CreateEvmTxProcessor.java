@@ -23,8 +23,6 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
@@ -54,14 +52,14 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 
 	@Inject
 	public CreateEvmTxProcessor(
-			HederaMutableWorldState worldState,
-			CodeCache codeCache,
-			HbarCentExchange exchange,
-			UsagePricesProvider usagePrices,
-			GlobalDynamicProperties globalDynamicProperties,
-			GasCalculator gasCalculator,
-			Set<Operation> hederaOperations) {
-		super(worldState, exchange, usagePrices, globalDynamicProperties, gasCalculator, hederaOperations);
+			final HederaMutableWorldState worldState,
+			final LivePricesSource livePricesSource,
+			final CodeCache codeCache,
+			final GlobalDynamicProperties globalDynamicProperties,
+			final GasCalculator gasCalculator,
+			final Set<Operation> hederaOperations
+	) {
+		super(worldState, livePricesSource, globalDynamicProperties, gasCalculator, hederaOperations);
 		this.codeCache = codeCache;
 	}
 

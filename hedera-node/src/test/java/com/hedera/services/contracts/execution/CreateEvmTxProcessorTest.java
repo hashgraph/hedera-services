@@ -23,18 +23,12 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hederahashgraph.api.proto.java.ExchangeRate;
-import com.hederahashgraph.api.proto.java.FeeComponents;
-import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -75,13 +69,11 @@ class CreateEvmTxProcessorTest {
 	private static final int MAX_STACK_SIZE = 1024;
 
 	@Mock
+	private LivePricesSource livePricesSource;
+	@Mock
 	private HederaWorldState worldState;
 	@Mock
 	private CodeCache codeCache;
-	@Mock
-	private HbarCentExchange hbarCentExchange;
-	@Mock
-	private UsagePricesProvider usagePricesProvider;
 	@Mock
 	private GlobalDynamicProperties globalDynamicProperties;
 	@Mock
@@ -92,8 +84,6 @@ class CreateEvmTxProcessorTest {
 	private Transaction transaction;
 	@Mock
 	private HederaWorldState.Updater updater;
-	@Mock
-	private ExchangeRate exchangeRate;
 
 	private CreateEvmTxProcessor createEvmTxProcessor;
 	private final Account sender = new Account(new Id(0, 0, 1002));
@@ -109,8 +99,8 @@ class CreateEvmTxProcessorTest {
 	private void setup() {
 		CommonProcessorSetup.setup(gasCalculator);
 
-		createEvmTxProcessor = new CreateEvmTxProcessor(worldState, codeCache, hbarCentExchange, usagePricesProvider,
-				globalDynamicProperties, gasCalculator, operations);
+		createEvmTxProcessor = new CreateEvmTxProcessor(
+				worldState, livePricesSource, codeCache, globalDynamicProperties, gasCalculator, operations);
 	}
 
 	@Test
@@ -258,16 +248,6 @@ class CreateEvmTxProcessorTest {
 	}
 
 	private void givenInvalidMock() {
-		// given:
-		var feeData = mock(FeeData.class);
-		given(feeData.getServicedata()).willReturn(mock(FeeComponents.class));
-		given(usagePricesProvider.defaultPricesGiven(HederaFunctionality.ContractCreate,
-				Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build())).willReturn(feeData);
-		given(hbarCentExchange.rate(
-				Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build())).willReturn(exchangeRate);
-		given(exchangeRate.getHbarEquiv()).willReturn(1);
-		given(exchangeRate.getCentEquiv()).willReturn(1);
-		// and:
 		given(worldState.updater()).willReturn(updater);
 		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(Gas.of(100_000L));
 	}
@@ -301,15 +281,6 @@ class CreateEvmTxProcessorTest {
 		given(updater.getOrCreate(any())).willReturn(evmAccount);
 		given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
 		given(updater.getSbhRefund()).willReturn(Gas.ZERO);
-
-		var feeData = mock(FeeData.class);
-		given(feeData.getServicedata()).willReturn(mock(FeeComponents.class));
-		given(usagePricesProvider.defaultPricesGiven(HederaFunctionality.ContractCreate,
-				Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build())).willReturn(feeData);
-		given(hbarCentExchange.rate(
-				Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build())).willReturn(exchangeRate);
-		given(exchangeRate.getHbarEquiv()).willReturn(1);
-		given(exchangeRate.getCentEquiv()).willReturn(1);
 
 		given(updater.getSenderAccount(any())).willReturn(evmAccount);
 		given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
