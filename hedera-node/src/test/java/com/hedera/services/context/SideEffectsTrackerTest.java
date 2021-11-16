@@ -150,7 +150,7 @@ class SideEffectsTrackerTest {
 	}
 
 	@Test
-	public void tracksAndResetsHbarChangesAsExpected() {
+	void tracksAndResetsHbarChangesAsExpected() {
 		subject.trackHbarChange(cAccount, cOnlyBalanceChange);
 		subject.trackHbarChange(aAccount, aFirstBalanceChange);
 		subject.trackHbarChange(bAccount, bOnlyBalanceChange);

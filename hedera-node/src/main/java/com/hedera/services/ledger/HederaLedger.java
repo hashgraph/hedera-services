@@ -54,7 +54,6 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
 import org.apache.commons.lang3.tuple.Pair;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -124,8 +123,6 @@ public class HederaLedger {
 	private final OptionValidator validator;
 	private final SideEffectsTracker sideEffectsTracker;
 	private final GlobalDynamicProperties dynamicProperties;
-	private final TransferList.Builder netTransfers = TransferList.newBuilder();
-	private final List<FcTokenAssociation> newTokenAssociations = new ArrayList<>();
 	private final AccountRecordsHistorian historian;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
@@ -234,12 +231,8 @@ public class HederaLedger {
 		}
 	}
 
-	public void addNewAssociationToList(FcTokenAssociation newAssociation) {
-		newTokenAssociations.add(newAssociation);
-	}
-
 	public List<FcTokenAssociation> getNewTokenAssociations() {
-		return newTokenAssociations;
+		return sideEffectsTracker.getTrackedAutoAssociations();
 	}
 
 	public TransferList netTransfersInTxn() {

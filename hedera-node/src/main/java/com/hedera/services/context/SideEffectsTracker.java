@@ -162,7 +162,7 @@ public class SideEffectsTracker {
 	 */
 	public void trackTokenUnitsChange(final TokenID token, final AccountID account, final long amount) {
 		tokensTouched[numTouches++] = token;
-		final var unitChanges = netTokenChanges.computeIfAbsent(token, __ -> TransferList.newBuilder());
+		final var unitChanges = netTokenChanges.computeIfAbsent(token, ignore -> TransferList.newBuilder());
 		updateFungibleChanges(account, amount, unitChanges);
 	}
 
@@ -184,7 +184,7 @@ public class SideEffectsTracker {
 	public void trackNftOwnerChange(final NftId nftId, final AccountID from, AccountID to) {
 		final var token = nftId.tokenId();
 		tokensTouched[numTouches++] = token;
-		var xfers = nftOwnerChanges.computeIfAbsent(token, __ -> TokenTransferList.newBuilder());
+		var xfers = nftOwnerChanges.computeIfAbsent(token, ignore -> TokenTransferList.newBuilder());
 		xfers.addNftTransfers(nftTransferBuilderWith(from, to, nftId.serialNo()));
 	}
 
