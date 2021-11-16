@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.token;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.BaseErroringAssertsProvider;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
@@ -35,10 +36,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.IntFunction;
+import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.NoTokenTransfers.emptyTokenTransfers;
@@ -63,6 +67,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -86,6 +91,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TokenAssociationSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenAssociationSpecs.class);
+
+	static final String defaultMinAutoRenewPeriod =
+			HapiSpecSetup.getDefaultNodeProps().get("ledger.autoRenewPeriod.minDuration");
 
 	private static final String FREEZABLE_TOKEN_ON_BY_DEFAULT = "TokenA";
 	private static final String FREEZABLE_TOKEN_OFF_BY_DEFAULT = "TokenB";
@@ -116,7 +124,8 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						contractInfoQueriesAsExpected(),
 						dissociateHasExpectedSemanticsForDeletedTokens(),
 						dissociateHasExpectedSemanticsForDissociatedContracts(),
-						canDissociateFromDeletedTokenWithAlreadyDissociatedTreasury()
+						canDissociateFromDeletedTokenWithAlreadyDissociatedTreasury(),
+						canDissociateFromMultipleExpiredTokens(),
 				}
 		);
 	}
@@ -375,6 +384,46 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 				).then(
 						tokenDissociate(TOKEN_TREASURY, TBD_TOKEN).via(treasuryDissoc),
 						tokenDissociate(nonTreasuryAcquaintance, TBD_TOKEN).via(nonTreasuryDissoc)
+				);
+	}
+
+	public HapiApiSpec canDissociateFromMultipleExpiredTokens() {
+		final var civilian = "civilian";
+		final long initialSupply = 100L;
+		final long nonZeroXfer = 10L;
+		final var dissociateTxn = "dissociateTxn";
+		final var numTokens = 10;
+		final IntFunction<String> tokenNameFn = i -> "fungible" + i;
+		final String[] toDissoc = new String[numTokens];
+		Arrays.setAll(toDissoc, tokenNameFn);
+
+		return defaultHapiSpec("CanDissociateFromMultipleExpiredTokens")
+				.given(
+						fileUpdate(APP_PROPERTIES).payingWith(GENESIS).overridingProps(
+								Map.of("ledger.autoRenewPeriod.minDuration", "1")
+						),
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(civilian).balance(0L),
+						blockingOrder(IntStream.range(0, numTokens).mapToObj(i ->
+								tokenCreate(tokenNameFn.apply(i))
+										.autoRenewAccount(DEFAULT_PAYER)
+										.autoRenewPeriod(1L)
+										.initialSupply(initialSupply)
+										.treasury(TOKEN_TREASURY))
+								.toArray(HapiSpecOperation[]::new)),
+						tokenAssociate(civilian, List.of(toDissoc)),
+						blockingOrder(IntStream.range(0, numTokens).mapToObj(i ->
+								cryptoTransfer(moving(nonZeroXfer, tokenNameFn.apply(i))
+										.between(TOKEN_TREASURY, civilian)))
+								.toArray(HapiSpecOperation[]::new))
+				).when(
+						sleepFor(1_000L),
+						tokenDissociate(civilian, toDissoc).via(dissociateTxn)
+				).then(
+						getTxnRecord(dissociateTxn).logged(),
+						fileUpdate(APP_PROPERTIES).payingWith(GENESIS).overridingProps(
+								Map.of("ledger.autoRenewPeriod.minDuration", defaultMinAutoRenewPeriod)
+						)
 				);
 	}
 
