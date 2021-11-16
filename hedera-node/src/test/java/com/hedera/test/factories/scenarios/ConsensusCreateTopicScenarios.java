@@ -25,6 +25,7 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 import static com.hedera.test.factories.txns.ConsensusCreateTopicFactory.SIMPLE_TOPIC_ADMIN_KEY;
 import static com.hedera.test.factories.txns.ConsensusCreateTopicFactory.newSignedConsensusCreateTopic;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
+import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_ID;
 
 public enum ConsensusCreateTopicScenarios implements TxnHandlingScenario {
 	CONSENSUS_CREATE_TOPIC_NO_ADDITIONAL_KEYS_SCENARIO {
@@ -51,6 +52,18 @@ public enum ConsensusCreateTopicScenarios implements TxnHandlingScenario {
 							.adminKey(SIMPLE_TOPIC_ADMIN_KEY)
 							.autoRenewAccountId(MISC_ACCOUNT_ID)
 							.nonPayerKts(SIMPLE_TOPIC_ADMIN_KEY, MISC_ACCOUNT_KT)
+							.get()
+			));
+		}
+	},
+
+	CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_PAYER_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedConsensusCreateTopic()
+							.adminKey(SIMPLE_TOPIC_ADMIN_KEY)
+							.autoRenewAccountId(DEFAULT_PAYER_ID)
+							.nonPayerKts(SIMPLE_TOPIC_ADMIN_KEY)
 							.get()
 			));
 		}

@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -119,10 +120,13 @@ class PrecheckKeyReqsTest {
 
 	@Test
 	void usesBothOrderForQueryPayments() throws Exception {
+		final List<JKey> duplicateKeys = new ArrayList<>();
+		duplicateKeys.addAll(PAYER_KEYS);
+		duplicateKeys.addAll(OTHER_KEYS);
 		given(keyOrder.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY))
 				.willReturn(new SigningOrderResult<>(PAYER_KEYS));
 		given(keyOrderModuloRetry.keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY))
-				.willReturn(new SigningOrderResult<>(OTHER_KEYS));
+				.willReturn(new SigningOrderResult<>(duplicateKeys));
 		givenImpliedSubject(FOR_QUERY_PAYMENT);
 
 		// when:
@@ -134,6 +138,7 @@ class PrecheckKeyReqsTest {
 		verify(keyOrderModuloRetry).keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY);
 		verifyNoMoreInteractions(keyOrderModuloRetry);
 		assertEquals(keys, ALL_KEYS);
+		assertEquals(3, keys.size());
 	}
 
 	private void givenImpliedSubject(Predicate<TransactionBody> isQueryPayment) {
