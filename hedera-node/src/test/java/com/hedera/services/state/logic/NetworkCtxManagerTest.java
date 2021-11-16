@@ -35,7 +35,6 @@ import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.utils.TxnAccessor;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -155,9 +154,6 @@ class NetworkCtxManagerTest {
 
 	@Test
 	void finalizesContextAsExpected() {
-		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
-		given(txnCtx.accessor()).willReturn(txnAccessor);
-
 		// when:
 		subject.finishIncorporating(TokenMint);
 
@@ -169,24 +165,8 @@ class NetworkCtxManagerTest {
 	}
 
 	@Test
-	void finalizesContextWithThrottleExemptAccountAsExpected() {
-		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(1).build());
-		given(txnCtx.accessor()).willReturn(txnAccessor);
-
-		// when:
-		subject.finishIncorporating(ContractCall);
-
-		// then:
-		verify(opCounters).countHandled(ContractCall);
-		verify(networkCtx).syncThrottling(handleThrottling);
-		verify(networkCtx).syncMultiplierSource(feeMultiplierSource);
-		verify(handleThrottling, times(0)).leakUnusedGasPreviouslyReserved(anyLong());
-	}
-
-	@Test
 	void preparesContextAsExpected() {
 		// setup:
-		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
 		given(txnAccessor.getFunction()).willReturn(ContractCall);
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
 
@@ -199,23 +179,8 @@ class NetworkCtxManagerTest {
 	}
 
 	@Test
-	void preparesContextWithThrottleExemptAccountAsExpected() {
-		// setup:
-		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(1).build());
-		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
-
-		// when:
-		subject.prepareForIncorporating(txnAccessor);
-
-		// then:
-		verify(handleThrottling, times(0)).shouldThrottleTxn(txnAccessor);
-		verify(feeMultiplierSource).updateMultiplier(sometime);
-	}
-
-	@Test
 	void preparesContextWithNonThrottledFunctionalityAsExpected() {
 		// setup:
-		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(111).build());
 		given(txnAccessor.getFunction()).willReturn(TokenMint);
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
 
@@ -223,15 +188,12 @@ class NetworkCtxManagerTest {
 		subject.prepareForIncorporating(txnAccessor);
 
 		// then:
-		verify(handleThrottling, times(0)).shouldThrottleTxn(txnAccessor);
 		verify(feeMultiplierSource).updateMultiplier(sometime);
 	}
 
 	@Test
 	void whenContractCallThrottledPrepareReturnsCorrectStatus() {
-
 		given(handleThrottling.shouldThrottleTxn(txnAccessor)).willReturn(true);
-		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
 		given(txnAccessor.getFunction()).willReturn(ContractCall);
 
 		// then:
@@ -242,9 +204,7 @@ class NetworkCtxManagerTest {
 
 	@Test
 	void whenContractCreateThrottledPrepareReturnsCorrectStatus() {
-
 		given(handleThrottling.shouldThrottleTxn(txnAccessor)).willReturn(true);
-		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
 		given(txnAccessor.getFunction()).willReturn(ContractCall);
 		// then:
 		assertEquals(CONSENSUS_GAS_EXHAUSTED, subject.prepareForIncorporating(txnAccessor));
@@ -254,9 +214,7 @@ class NetworkCtxManagerTest {
 
 	@Test
 	void whenContractCallNonThrottledPrepareReturnsOKStatus() {
-
 		given(handleThrottling.shouldThrottleTxn(txnAccessor)).willReturn(false);
-		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
 		given(txnAccessor.getFunction()).willReturn(ContractCall);
 
 		// then:
@@ -266,10 +224,8 @@ class NetworkCtxManagerTest {
 	}
 
 	@Test
-	void whenContractCreateNONThrottledPrepareReturnsOKStatus() {
-
+	void whenContractCreateNonThrottledPrepareReturnsOk() {
 		given(handleThrottling.shouldThrottleTxn(txnAccessor)).willReturn(false);
-		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
 		given(txnAccessor.getFunction()).willReturn(ContractCall);
 
 		// then:
@@ -281,7 +237,6 @@ class NetworkCtxManagerTest {
 	@Test
 	void whenFinishingContractCallUnusedGasIsLeaked() {
 		// setup:
-		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
 		given(txnAccessor.getGasLimitForContractTx()).willReturn(10_000L);
 		given(txnCtx.accessor()).willReturn(txnAccessor);
 		given(txnCtx.hasContractResult()).willReturn(true);
@@ -303,8 +258,6 @@ class NetworkCtxManagerTest {
 	void whenFinishingContractCallUnusedGasIsNotLeakedIfGasThrottlingIsTurnedOff() {
 		// setup:
 		mockDynamicProps.setThrottleByGas(false);
-		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
-		given(txnCtx.accessor()).willReturn(txnAccessor);
 
 		// when:
 		subject.finishIncorporating(ContractCall);
@@ -317,10 +270,8 @@ class NetworkCtxManagerTest {
 	}
 
 	@Test
-	void whenFinishingContractCallUnusedGasIsNotLeakedForUnsuccessfulTX() {
+	void whenFinishingContractCallUnusedGasIsNotLeakedForUnsuccessfulTxn() {
 		// setup:
-		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
-		given(txnCtx.accessor()).willReturn(txnAccessor);
 		given(txnCtx.hasContractResult()).willReturn(false);
 		mockDynamicProps.setThrottleByGas(true);
 
@@ -337,7 +288,6 @@ class NetworkCtxManagerTest {
 	@Test
 	void whenFinishingContractCreateUnusedGasIsLeaked() {
 		// setup:
-		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
 		given(txnAccessor.getGasLimitForContractTx()).willReturn(10_000L);
 		given(txnCtx.accessor()).willReturn(txnAccessor);
 		given(txnCtx.hasContractResult()).willReturn(true);
@@ -357,8 +307,6 @@ class NetworkCtxManagerTest {
 	@Test
 	void whenFinishingContractCreateUnusedGasIsNotLeakedForUnsuccessfulTX() {
 		// setup:
-		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
-		given(txnCtx.accessor()).willReturn(txnAccessor);
 		given(txnCtx.hasContractResult()).willReturn(false);
 		mockDynamicProps.setThrottleByGas(true);
 
@@ -376,8 +324,6 @@ class NetworkCtxManagerTest {
 	void whenFinishingContractCreateUnusedGasIsNotLeakedIfThrottleByGasIsTurnedOff() {
 		// setup:
 		mockDynamicProps.setThrottleByGas(false);
-		given(txnAccessor.getPayer()).willReturn(AccountID.newBuilder().setAccountNum(101).build());
-		given(txnCtx.accessor()).willReturn(txnAccessor);
 
 		// when:
 		subject.finishIncorporating(ContractCreate);

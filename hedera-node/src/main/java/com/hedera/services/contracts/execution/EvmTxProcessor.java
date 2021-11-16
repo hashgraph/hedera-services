@@ -24,16 +24,11 @@ package com.hedera.services.contracts.execution;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.fee.FeeBuilder;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -76,26 +71,24 @@ import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
  * method that handles the end-to-end execution of a EVM transaction
  */
 abstract class EvmTxProcessor {
-
 	private static final int MAX_STACK_SIZE = 1024;
 	private static final int MAX_CODE_SIZE = 0x6000;
 
 	private HederaMutableWorldState worldState;
-	private final HbarCentExchange exchange;
 	private final GasCalculator gasCalculator;
-	private final UsagePricesProvider usagePrices;
-	protected final GlobalDynamicProperties dynamicProperties;
+	private final LivePricesSource livePricesSource;
 	private final AbstractMessageProcessor messageCallProcessor;
 	private final AbstractMessageProcessor contractCreationProcessor;
 
+	protected final GlobalDynamicProperties dynamicProperties;
+
 	protected EvmTxProcessor(
-			final HbarCentExchange exchange,
-			final UsagePricesProvider usagePrices,
+			final LivePricesSource livePricesSource,
 			final GlobalDynamicProperties dynamicProperties,
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations
 	) {
-		this(null, exchange, usagePrices, dynamicProperties, gasCalculator, hederaOperations);
+		this(null, livePricesSource, dynamicProperties, gasCalculator, hederaOperations);
 	}
 
 	protected void setWorldState(HederaMutableWorldState worldState) {
@@ -104,15 +97,13 @@ abstract class EvmTxProcessor {
 
 	protected EvmTxProcessor(
 			final HederaMutableWorldState worldState,
-			final HbarCentExchange exchange,
-			final UsagePricesProvider usagePrices,
+			final LivePricesSource livePricesSource,
 			final GlobalDynamicProperties dynamicProperties,
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations
 	) {
 		this.worldState = worldState;
-		this.exchange = exchange;
-		this.usagePrices = usagePrices;
+		this.livePricesSource = livePricesSource;
 		this.dynamicProperties = dynamicProperties;
 		this.gasCalculator = gasCalculator;
 
@@ -266,7 +257,7 @@ abstract class EvmTxProcessor {
 		}
 	}
 
-	private Gas calculateGasUsedByTX(long txGasLimit, MessageFrame initialFrame) {
+	private Gas calculateGasUsedByTX(final long txGasLimit, final MessageFrame initialFrame) {
 		Gas gasUsedByTransaction = Gas.of(txGasLimit).minus(initialFrame.getRemainingGas());
 		/* Return leftover gas */
 		final Gas selfDestructRefund =
@@ -275,30 +266,19 @@ abstract class EvmTxProcessor {
 
 		gasUsedByTransaction = gasUsedByTransaction.minus(selfDestructRefund).minus(initialFrame.getGasRefund());
 
-		var maxRefundPercent = dynamicProperties.maxGasRefundPercentage();
+		final var maxRefundPercent = dynamicProperties.maxGasRefundPercentage();
 		gasUsedByTransaction = Gas.of(
-				Math.max(gasUsedByTransaction.toLong(),
-						txGasLimit - txGasLimit * maxRefundPercent / 100));
+				Math.max(gasUsedByTransaction.toLong(), txGasLimit - txGasLimit * maxRefundPercent / 100));
 
 		return gasUsedByTransaction;
 	}
 
-	protected long gasPriceTinyBarsGiven(Instant consensusTime) {
-		final var functionType = getFunctionType();
-		final var timestamp = Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build();
-		FeeData prices = usagePrices.defaultPricesGiven(functionType, timestamp);
-		long feeInTinyCents = prices.getServicedata().getGas() / 1000;
-		long feeInTinyBars = FeeBuilder.getTinybarsFromTinyCents(exchange.rate(timestamp), feeInTinyCents);
-		return Math.max(1L, feeInTinyBars);
+	protected long gasPriceTinyBarsGiven(final Instant consensusTime) {
+		return livePricesSource.currentGasPrice(consensusTime, getFunctionType());
 	}
 
-	protected long storageByteHoursTinyBarsGiven(Instant consensusTime) {
-		final var functionType = getFunctionType();
-		final var timestamp = Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build();
-		FeeData prices = usagePrices.defaultPricesGiven(functionType, timestamp);
-		long feeInTinyCents = prices.getServicedata().getSbh() / 1000;
-		long feeInTinyBars = FeeBuilder.getTinybarsFromTinyCents(exchange.rate(timestamp), feeInTinyCents);
-		return Math.max(1L, feeInTinyBars);
+	protected long storageByteHoursTinyBarsGiven(final Instant consensusTime) {
+		return livePricesSource.currentGasPrice(consensusTime, getFunctionType());
 	}
 
 	protected abstract HederaFunctionality getFunctionType();

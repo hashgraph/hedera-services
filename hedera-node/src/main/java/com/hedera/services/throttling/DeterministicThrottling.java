@@ -24,7 +24,6 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttles.GasLimitDeterministicThrottle;
-import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -41,11 +40,13 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.function.IntSupplier;
 
+import static com.hedera.services.utils.MiscUtils.isGasThrottled;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 
 public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	private static final Logger log = LogManager.getLogger(DeterministicThrottling.class);
-	private static final String GAS_THROTTLE_AT_ZERO_WARNING_TPL = "{} gas throttling enabled, but limited to 0 gas/sec";
+	private static final String GAS_THROTTLE_AT_ZERO_WARNING_TPL = "{} gas throttling enabled, but limited to 0 " +
+			"gas/sec";
 
 	private final IntSupplier capacitySplitSource;
 	private final GlobalDynamicProperties dynamicProperties;
@@ -77,10 +78,8 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	}
 
 	@Override
-	public boolean shouldThrottleTxn(TxnAccessor accessor, Instant now) {
-		if (MiscUtils.isGasThrottled(accessor.getFunction()) &&
-				dynamicProperties.shouldThrottleByGas() &&
-				(gasThrottle == null || !gasThrottle.allow(now, accessor.getGasLimitForContractTx()))) {
+	public boolean shouldThrottleTxn(final TxnAccessor accessor, final Instant now) {
+		if (isGasExhausted(accessor, now)) {
 			return true;
 		}
 
@@ -96,6 +95,12 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		}
 	}
 
+	private boolean isGasExhausted(final TxnAccessor accessor, final Instant now) {
+		return dynamicProperties.shouldThrottleByGas() &&
+				isGasThrottled(accessor.getFunction()) &&
+				(gasThrottle == null || !gasThrottle.allow(now, accessor.getGasLimitForContractTx()));
+	}
+
 	public void leakUnusedGasPreviouslyReserved(long value) {
 		gasThrottle.leakUnusedGasPreviouslyReserved(value);
 	}
@@ -106,7 +111,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
 	@Override
 	public boolean shouldThrottleQuery(HederaFunctionality queryFunction, Instant now, Query query) {
-		if (MiscUtils.isGasThrottled(queryFunction) &&
+		if (isGasThrottled(queryFunction) &&
 				dynamicProperties.shouldThrottleByGas() &&
 				(gasThrottle == null || !gasThrottle.allow(now, query.getContractCallLocal().getGas()))) {
 			return true;

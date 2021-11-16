@@ -128,13 +128,14 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
 	}
 
 	@Override
-	public FeeData defaultPricesGiven(HederaFunctionality function, Timestamp at) {
+	public FeeData defaultPricesGiven(final HederaFunctionality function, final Timestamp at) {
 		return pricesGiven(function, at).get(DEFAULT);
 	}
 
 	@Override
 	public Triple<Map<SubType, FeeData>, Instant, Map<SubType, FeeData>> activePricingSequence(
-			HederaFunctionality function) {
+			final HederaFunctionality function
+	) {
 		return Triple.of(
 				currFunctionUsagePrices.get(function),
 				Instant.ofEpochSecond(
@@ -143,7 +144,7 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
 				nextFunctionUsagePrices.get(function));
 	}
 
-	private Map<HederaFunctionality, Map<SubType, FeeData>> applicableUsagePrices(Timestamp at) {
+	private Map<HederaFunctionality, Map<SubType, FeeData>> applicableUsagePrices(final Timestamp at) {
 		if (onlyNextScheduleApplies(at)) {
 			return nextFunctionUsagePrices;
 		} else {
@@ -151,12 +152,12 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
 		}
 	}
 
-	private boolean onlyNextScheduleApplies(Timestamp at) {
+	private boolean onlyNextScheduleApplies(final Timestamp at) {
 		return at.getSeconds() >= currFunctionUsagePricesExpiry.getSeconds() &&
 				at.getSeconds() < nextFunctionUsagePricesExpiry.getSeconds();
 	}
 
-	public void setFeeSchedules(CurrentAndNextFeeSchedule feeSchedules) {
+	public void setFeeSchedules(final CurrentAndNextFeeSchedule feeSchedules) {
 		this.feeSchedules = feeSchedules;
 
 		currFunctionUsagePrices = functionUsagePricesFrom(feeSchedules.getCurrentFeeSchedule());
@@ -166,11 +167,11 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
 		nextFunctionUsagePricesExpiry = asTimestamp(feeSchedules.getNextFeeSchedule().getExpiryTime());
 	}
 
-	private Timestamp asTimestamp(TimestampSeconds ts) {
+	private Timestamp asTimestamp(final TimestampSeconds ts) {
 		return Timestamp.newBuilder().setSeconds(ts.getSeconds()).build();
 	}
 
-	EnumMap<HederaFunctionality, Map<SubType, FeeData>> functionUsagePricesFrom(FeeSchedule feeSchedule) {
+	EnumMap<HederaFunctionality, Map<SubType, FeeData>> functionUsagePricesFrom(final FeeSchedule feeSchedule) {
 		final EnumMap<HederaFunctionality, Map<SubType, FeeData>> allPrices = new EnumMap<>(HederaFunctionality.class);
 		for (var pricingData : feeSchedule.getTransactionFeeScheduleList()) {
 			final var function = pricingData.getHederaFunctionality();
@@ -186,9 +187,9 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
 	}
 
 	void ensurePricesMapHasRequiredTypes(
-			TransactionFeeSchedule tfs,
-			Map<SubType, FeeData> pricesMap,
-			Set<SubType> requiredTypes
+			final TransactionFeeSchedule tfs,
+			final Map<SubType, FeeData> pricesMap,
+			final Set<SubType> requiredTypes
 	) {
 		/* The deprecated prices are the final fallback; if even they are not set, the function will be free */
 		final var oldDefaultPrices = tfs.getFeeData();
