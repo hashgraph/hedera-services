@@ -474,9 +474,9 @@ class SigRequirementsTest {
 		final var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
-		assertThat(
-				sanityRestored(summary.getOrderedKeys()),
-				contains(SECOND_TOKEN_SENDER_KT.asKey(), FIRST_TOKEN_SENDER_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+		assertTrue(sanityRestored(summary.getOrderedKeys()).contains(SECOND_TOKEN_SENDER_KT.asKey()));
+		assertTrue(sanityRestored(summary.getOrderedKeys()).contains(RECEIVER_SIG_KT.asKey()));
+		assertTrue(sanityRestored(summary.getOrderedKeys()).contains(FIRST_TOKEN_SENDER_KT.asKey()));
 		assertFalse(sanityRestored(summary.getOrderedKeys()).contains(DEFAULT_PAYER_KT.asKey()));
 	}
 
