@@ -95,7 +95,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * methods like {@link HederaLedger#adjustBalance(AccountID, long)} in
  * order to match transfer semantics the EVM expects.
  */
-@SuppressWarnings("unchecked")
 public class HederaLedger {
 	private static final List<AccountProperty> TOKEN_TRANSFER_SIDE_EFFECTS =
 			List.of(TOKENS, NUM_NFTS_OWNED, ALREADY_USED_AUTOMATIC_ASSOCIATIONS);
@@ -327,10 +326,6 @@ public class HederaLedger {
 
 	public ResponseCodeEnum grantKyc(AccountID aId, TokenID tId) {
 		return tokenStore.grantKyc(aId, tId);
-	}
-
-	public ResponseCodeEnum revokeKyc(AccountID aId, TokenID tId) {
-		return tokenStore.revokeKyc(aId, tId);
 	}
 
 	public ResponseCodeEnum freeze(AccountID aId, TokenID tId) {

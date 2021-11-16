@@ -144,9 +144,6 @@ class HederLedgerTokensTest extends BaseHederaLedgerTestHelper {
 	void delegatesKnowingOps() {
 		subject.grantKyc(misc, frozenId);
 		verify(tokenStore).grantKyc(misc, frozenId);
-
-		subject.revokeKyc(misc, frozenId);
-		verify(tokenStore).revokeKyc(misc, frozenId);
 	}
 
 	@Test
