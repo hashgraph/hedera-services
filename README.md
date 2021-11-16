@@ -16,7 +16,7 @@ nodes in the Hedera public network, which is built on the Platform.
 OpenJDK12 is strongly recommended.
 
 ## Solidity 
-Hedera Contracts support `pragma solidity <=0.5.9`.
+Hedera Contracts support `pragma solidity <=0.8.9`.
 
 ## Docker Compose quickstart 
 

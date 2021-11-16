@@ -51,7 +51,7 @@ import java.util.Set;
 public class CallEvmTxProcessor extends EvmTxProcessor {
 	private static final Logger logger = LogManager.getLogger(CallEvmTxProcessor.class);
 
-	private CodeCache codeCache;
+	private final CodeCache codeCache;
 
 	@Inject
 	public CallEvmTxProcessor(
