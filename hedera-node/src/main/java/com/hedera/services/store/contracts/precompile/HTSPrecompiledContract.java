@@ -62,11 +62,18 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private final TypedTokenStore tokenStore;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final OptionValidator validator;
-	int ABI_ID_ASSOCIATE_TOKEN = 0xa7efe348;  // "associateToken(address)"
-	int ABI_ID_BURN_TOKEN = 0xd4e34845;       // "burnToken(address,int64)"
-	int ABI_ID_DISSOCIATE_TOKEN = 0xd5d607b6; // "dissociateToken(address)"
-	int ABI_ID_MINT_TOKEN = 0x67c44fb8;       // "mintToken(address,int64)"
-	int ABI_ID_TRANSFER_TOKEN = 0x75fd1606;   // "transferToken(address,address,int64)"
+
+	private static final int ABI_ID_CRYPTO_TRANSFER = 0x189a554c;    // "cryptoTransfer((address,(address,int64)[],(address,address,int64)[])[])"
+	private static final int ABI_ID_TRANSFER_TOKENS = 0x82bba493;    // "transerTokens(address,address[],int64[])"
+	private static final int ABI_ID_TRANSFER_TOKEN = 0xeca36917;    // "transferToken(address,address,address,int64)"
+	private static final int ABI_ID_TRANSFER_NFTS = 0x2c4ba191;        // "transferNFTs(address,address[],address[],int64[])"
+	private static final int ABI_ID_TRANSFER_NFT = 0x7c502795;        // "transferNFT(address,address,address,int64)"
+	private static final int ABI_ID_MINT_TOKEN = 0x36dcedf0;        // "mintToken(address,uint64,bytes)"
+	private static final int ABI_ID_BURN_TOKEN = 0xacb9cff9;        // "burnToken(address,uint64,int64[])"
+	private static final int ABI_ID_ASSOCIATE_TOKENS = 0x2e63879b;    // "associateTokens(address,address[])"
+	private static final int ABI_ID_ASSOCIATE_TOKEN = 0x49146bde;    // "associateToken(address,address[])"
+	private static final int ABI_ID_DISSOCIATE_TOKENS = 0x78b63918;    // "dissociateTokens(address,address[])"
+	private static final int ABI_ID_DISSOCIATE_TOKEN = 0x099794e8;    // "dissociateToken(address,address[])"
 
 	@Inject
 	public HTSPrecompiledContract(
@@ -98,27 +105,53 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		int functionId = input.getInt(0);
-		if (functionId == ABI_ID_TRANSFER_TOKEN) {
-			return computeTransferToken(input, messageFrame);
-		} else if (functionId == ABI_ID_MINT_TOKEN) {
-			return computeMintToken(input, messageFrame);
-		} else if (functionId == ABI_ID_BURN_TOKEN) {
-			return computeBurnToken(input, messageFrame);
-		} else if (functionId == ABI_ID_ASSOCIATE_TOKEN) {
-			return computeAssociateToken(input, messageFrame);
-		} else if (functionId == ABI_ID_DISSOCIATE_TOKEN) {
-			return computeDissociateToken(input, messageFrame);
-		} else {
-			// Null is the "Precompile Failed" signal
-			return null;
+		switch (functionId) {
+			case ABI_ID_CRYPTO_TRANSFER:
+				return computeCryptoTransfer(input, messageFrame);
+			case ABI_ID_TRANSFER_TOKENS:
+				return computeTransferTokens(input, messageFrame);
+			case ABI_ID_TRANSFER_TOKEN:
+				return computeTransferToken(input, messageFrame);
+			case ABI_ID_TRANSFER_NFTS:
+				return computeTransferNfts(input, messageFrame);
+			case ABI_ID_TRANSFER_NFT:
+				return computeTransferNft(input, messageFrame);
+			case ABI_ID_MINT_TOKEN:
+				return computeMintToken(input, messageFrame);
+			case ABI_ID_BURN_TOKEN:
+				return computeBurnToken(input, messageFrame);
+			case ABI_ID_ASSOCIATE_TOKENS:
+				return computeAssociateTokens(input, messageFrame);
+			case ABI_ID_ASSOCIATE_TOKEN:
+				return computeAssociateToken(input, messageFrame);
+			case ABI_ID_DISSOCIATE_TOKENS:
+				return computeDissociateTokens(input, messageFrame);
+			case ABI_ID_DISSOCIATE_TOKEN:
+				return computeDissociateToken(input, messageFrame);
+			default: {
+				// Null is the "Precompile Failed" signal
+				return null;
+			}
 		}
 	}
 
+	@SuppressWarnings("unused")
+	private Bytes computeCryptoTransfer(final Bytes input, final MessageFrame messageFrame) {
+		return null;
+	}
+
+	@SuppressWarnings("unused")
+	private Bytes computeTransferTokens(final Bytes input, final MessageFrame messageFrame) {
+		return null;
+	}
+
+	@SuppressWarnings("unused")
 	private Bytes computeTransferToken(final Bytes input, final MessageFrame messageFrame) {
-		final var fromAddress = messageFrame.getSenderAddress();
+
 		final Bytes tokenAddress = Address.wrap(input.slice(16, 20));
-		final Bytes toAddress = Address.wrap(input.slice(48, 20));
-		final BigInteger amount = input.slice(68, 32).toBigInteger();
+		final Bytes fromAddress = Address.wrap(input.slice(48, 20));
+		final Bytes toAddress = Address.wrap(input.slice(80, 20));
+		final BigInteger amount = input.slice(100, 32).toBigInteger();
 
 		final var from = EntityIdUtils.accountParsedFromSolidityAddress(fromAddress.toArray());
 		final var token = EntityIdUtils.tokenParsedFromSolidityAddress(tokenAddress.toArray());
@@ -155,6 +188,16 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	@SuppressWarnings("unused")
+	private Bytes computeTransferNfts(final Bytes input, final MessageFrame messageFrame) {
+		return null;
+	}
+
+	@SuppressWarnings("unused")
+	private Bytes computeTransferNft(final Bytes input, final MessageFrame messageFrame) {
+		return null;
+	}
+
+	@SuppressWarnings("unused")
 	private Bytes computeMintToken(final Bytes input, final MessageFrame messageFrame) {
 		return null;
 	}
@@ -165,9 +208,15 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	@SuppressWarnings("unused")
+	private Bytes computeAssociateTokens(final Bytes input, final MessageFrame messageFrame) {
+		return null;
+	}
+
+	@SuppressWarnings("unused")
 	private Bytes computeAssociateToken(final Bytes input, final MessageFrame messageFrame) {
-		final var address = messageFrame.getSenderAddress();
-		final Bytes tokenAddress = Address.wrap(input.slice(16, 20));
+		final Bytes address = Address.wrap(input.slice(16, 20));
+		final Bytes tokenAddress = Address.wrap(input.slice(48, 20));
+
 		final var accountID = EntityIdUtils.accountParsedFromSolidityAddress(address.toArrayUnsafe());
 		var account = accountStore.loadAccount(Id.fromGrpcAccount(accountID));
 		final var tokenID = EntityIdUtils.tokenParsedFromSolidityAddress(tokenAddress.toArrayUnsafe());
@@ -186,9 +235,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	@SuppressWarnings("unused")
+	private Bytes computeDissociateTokens(final Bytes input, final MessageFrame messageFrame) {
+		return null;
+	}
+
+	@SuppressWarnings("unused")
 	private Bytes computeDissociateToken(final Bytes input, final MessageFrame messageFrame) {
-		final var address = messageFrame.getSenderAddress();
-		final Bytes tokenAddress = Address.wrap(input.slice(16, 20));
+		final Bytes address = Address.wrap(input.slice(16, 20));
+		final Bytes tokenAddress = Address.wrap(input.slice(48, 20));
 		final var accountID = EntityIdUtils.accountParsedFromSolidityAddress(address.toArrayUnsafe());
 		var account = accountStore.loadAccount(Id.fromGrpcAccount(accountID));
 		final var tokenID =
@@ -215,6 +269,5 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		} catch (Exception e) {
 			return UInt256.valueOf(ResponseCodeEnum.UNKNOWN_VALUE);
 		}
-
 	}
 }

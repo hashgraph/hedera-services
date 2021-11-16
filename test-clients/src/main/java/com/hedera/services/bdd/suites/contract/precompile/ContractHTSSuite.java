@@ -43,8 +43,10 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 
 public class ContractHTSSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractHTSSuite.class);
@@ -94,7 +96,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 								.tokenType(TokenType.FUNGIBLE_COMMON)
 								.initialSupply(TOTAL_SUPPLY)
 								.treasury(TOKEN_TREASURY),
-						fileCreate("bytecode").path(ContractResources.ZENOS_BANK_CONTRACT).payingWith(theAccount),
+						fileCreate("bytecode").payingWith(theAccount),
+						updateLargeFile(theAccount, "bytecode", extractByteCode(ContractResources.ZENOS_BANK_CONTRACT)),
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -105,14 +108,15 @@ public class ContractHTSSuite extends HapiApiSuite {
 														.bytecode("bytecode")
 														.via("creationTx")
 														.gas(1_000_000))),
+						getTxnRecord("creationTx").logged(),
 						tokenAssociate(theAccount, List.of(A_TOKEN)),
 						tokenAssociate(theContract, List.of(A_TOKEN)),
 						cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, theAccount))
 				).when(
 						contractCall(theContract, ZENOS_BANK_DEPOSIT_TOKENS, 50).payingWith(theAccount).via("zeno"),
-						getTxnRecord("zeno"),
+						getTxnRecord("zeno").logged(),
 						contractCall(theContract, ZENOS_BANK_WITHDRAW_TOKENS).payingWith(theReceiver).via("receiver"),
-						getTxnRecord("receiver")
+						getTxnRecord("receiver").logged()
 				).then(
 				);
 	}

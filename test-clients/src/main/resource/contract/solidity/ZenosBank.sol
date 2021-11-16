@@ -17,7 +17,7 @@ contract ZenosBank {
     }
 
     function depositTokens(int64 amount) public {
-        int response = HederaTokenService.transferToken(tokenAddress, address(this), amount);
+        int response = HederaTokenService.transferToken(tokenAddress, msg.sender, address(this), amount);
         if (response == 22) {//FIXME HederaResponseCodes.SUCCESS) {
             deposited += amount;
         } else {
@@ -27,7 +27,7 @@ contract ZenosBank {
 
     function withdrawTokens() external {
         if (block.timestamp > lastWithdrawalTime) {
-            HederaTokenService.associateToken(tokenAddress);
+            HederaTokenService.associateToken(msg.sender, tokenAddress);
             depositTokens(- deposited / 2);
             lastWithdrawalTime = block.timestamp;
         } else {

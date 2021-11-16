@@ -29,6 +29,10 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.Hash;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 import static java.lang.System.arraycopy;
 
 public class Utils {
@@ -59,5 +63,15 @@ public class Utils {
 		arraycopy(Longs.toByteArray(num), 0, solidityAddress, 12, 8);
 
 		return solidityAddress;
+	}
+
+	public static ByteString extractByteCode(String path) {
+		try {
+			final var bytes = Files.readAllBytes(Path.of(path));
+			return ByteString.copyFrom(bytes);
+		} catch (IOException e) {
+			e.printStackTrace();
+			return ByteString.EMPTY;
+		}
 	}
 }

@@ -199,7 +199,7 @@ public abstract class ContractsModule {
 	@Binds
 	@Singleton
 	@IntoMap
-	@StringKey("0x129")
+	@StringKey("0x167")
 	public abstract PrecompiledContract bindHTSPrecompile(HTSPrecompiledContract htsPrecompiledContract);
 
 
