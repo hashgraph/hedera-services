@@ -110,21 +110,24 @@ public class BasicTransactionContext implements TransactionContext {
 	private final EntityCreator creator;
 	private final NarratedCharging narratedCharging;
 	private final HbarCentExchange exchange;
+	private final SideEffectsTracker sideEffectsTracker;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
 	@Inject
 	BasicTransactionContext(
-			NarratedCharging narratedCharging,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-			NodeInfo nodeInfo,
-			HbarCentExchange exchange,
-			EntityCreator creator
+			final NarratedCharging narratedCharging,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final NodeInfo nodeInfo,
+			final HbarCentExchange exchange,
+			final EntityCreator creator,
+			final SideEffectsTracker sideEffectsTracker
 	) {
 		this.accounts = accounts;
 		this.narratedCharging = narratedCharging;
 		this.nodeInfo = nodeInfo;
 		this.exchange = exchange;
 		this.creator = creator;
+		this.sideEffectsTracker = sideEffectsTracker;
 	}
 
 	@Override
@@ -148,6 +151,7 @@ public class BasicTransactionContext implements TransactionContext {
 		narratedCharging.resetForTxn(accessor, submittingMember);
 
 		recordSoFar.clear();
+		sideEffectsTracker.reset();
 		contractFunctionResult = null;
 	}
 

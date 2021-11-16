@@ -166,6 +166,7 @@ public class SideEffectsTracker {
 		updateFungibleChanges(account, amount, unitChanges);
 	}
 
+
 	/**
 	 * Tracks ownership of the given NFT changing from the given sender to the given receiver. This tracking
 	 * does <b>not</b> perform a "transitive closure" over ownership changes; that is, if say NFT {@code 0.0.666.1}
@@ -244,7 +245,7 @@ public class SideEffectsTracker {
 	 * Clears all side effects tracked since the last call to this method.
 	 */
 	public void reset() {
-		clearTokenChanges();
+		resetTrackedTokenChanges();
 		netHbarChanges.clear();
 	}
 
@@ -256,7 +257,7 @@ public class SideEffectsTracker {
 	 *  	<li>Automatically created token associations.</li>
 	 * </ul>
 	 */
-	public void clearTokenChanges() {
+	public void resetTrackedTokenChanges() {
 		for (int i = 0; i < numTouches; i++) {
 			final var fungibleBuilder = netTokenChanges.get(tokensTouched[i]);
 			if (fungibleBuilder != null) {

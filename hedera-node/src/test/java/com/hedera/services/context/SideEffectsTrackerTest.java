@@ -97,7 +97,7 @@ class SideEffectsTrackerTest {
 		subject.trackMintedNft(1L);
 		subject.trackTokenSupply(1_234L);
 
-		subject.clearTokenChanges();
+		subject.resetTrackedTokenChanges();
 
 		assertFalse(subject.hasTrackedTokenSupply());
 		assertFalse(subject.hasTrackedNftMints());

@@ -97,6 +97,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class BasicTransactionContextTest {
@@ -158,6 +159,8 @@ class BasicTransactionContextTest {
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
 	private EntityCreator creator;
+	@Mock
+	private SideEffectsTracker sideEffectsTracker;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -166,7 +169,8 @@ class BasicTransactionContextTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new BasicTransactionContext(narratedCharging, () -> accounts, nodeInfo, exchange, creator);
+		subject = new BasicTransactionContext(
+				narratedCharging, () -> accounts, nodeInfo, exchange, creator, sideEffectsTracker);
 
 		subject.resetFor(accessor, now, memberId);
 
@@ -277,6 +281,7 @@ class BasicTransactionContextTest {
 		assertEquals(newTokenAssociations.get(0), record.getNewTokenAssociations().get(0));
 		// and:
 		verify(narratedCharging).resetForTxn(accessor, memberId);
+		verify(sideEffectsTracker, times(2)).reset();
 	}
 
 	@Test
