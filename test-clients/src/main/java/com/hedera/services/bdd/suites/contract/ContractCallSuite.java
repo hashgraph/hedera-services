@@ -103,7 +103,7 @@ public class ContractCallSuite extends HapiApiSuite {
 
 	@Override
 	public boolean canRunAsync() {
-		return true;
+		return false;
 	}
 
 	@Override

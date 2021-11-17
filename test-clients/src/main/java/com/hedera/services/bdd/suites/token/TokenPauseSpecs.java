@@ -102,7 +102,6 @@ public final class TokenPauseSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				setUp(),
 				cannotPauseWithInvalidPauseKey(),
 				cannotChangePauseStatusIfMissingPauseKey(),
 				pausedFungibleTokenCannotBeUsed(),
@@ -113,15 +112,6 @@ public final class TokenPauseSpecs extends HapiApiSuite {
 				cannotAddPauseKeyViaTokenUpdate(),
 				canDissociateFromMultipleExpiredTokens(),
 		});
-	}
-
-	private HapiApiSpec setUp() {
-		return defaultHapiSpec("setUpACryptoAccount")
-				.given()
-				.when()
-				.then(
-						cryptoCreate("test")
-				);
 	}
 
 	private HapiApiSpec cannotAddPauseKeyViaTokenUpdate() {
