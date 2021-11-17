@@ -94,10 +94,10 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 			token.wipe(ownershipTracker, accountRel, op.getSerialNumbersList());
 		}
 		/* --- Persist the updated models --- */
-		tokenStore.persistToken(token);
-		tokenStore.persistTokenRelationships(List.of(accountRel));
-		tokenStore.persistTrackers(ownershipTracker);
-		accountStore.persistAccount(account);
+		tokenStore.commitToken(token);
+		tokenStore.commitTokenRelationships(List.of(accountRel));
+		tokenStore.commitTrackers(ownershipTracker);
+		accountStore.commitAccount(account);
 	}
 
 	@Override

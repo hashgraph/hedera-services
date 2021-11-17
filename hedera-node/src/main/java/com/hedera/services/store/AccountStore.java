@@ -22,19 +22,19 @@ package com.hedera.services.store;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.swirlds.merkle.map.MerkleMap;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
@@ -48,14 +48,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRA
 public class AccountStore {
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties dynamicProperties;
-	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
 
 	@Inject
 	public AccountStore(
 			OptionValidator validator,
 			GlobalDynamicProperties dynamicProperties,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
-	) {
+			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
 		this.validator = validator;
 		this.dynamicProperties = dynamicProperties;
 		this.accounts = accounts;
@@ -66,7 +65,7 @@ public class AccountStore {
 	 * implement business logic in a transaction.
 	 *
 	 * <b>IMPORTANT:</b> Changes to the returned model are not automatically persisted
-	 * to state! The altered model must be passed to {@link AccountStore#persistAccount(Account)}
+	 * to state! The altered model must be passed to {@link AccountStore#commitAccount(Account)}
 	 * in order for its changes to be applied to the Swirlds state, and included in the
 	 * {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} for the active transaction.
 	 *
@@ -88,7 +87,7 @@ public class AccountStore {
 	 * and throws the given code if an exception occurs due to an invalid account.
 	 *
 	 * <b>IMPORTANT:</b> Changes to the returned model are not automatically persisted
-	 * to state! The altered model must be passed to {@link AccountStore#persistAccount(Account)}
+	 * to state! The altered model must be passed to {@link AccountStore#commitAccount(Account)}
 	 * in order for its changes to be applied to the Swirlds state, and included in the
 	 * {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} for the active transaction.
 	 *
@@ -136,8 +135,7 @@ public class AccountStore {
 	 */
 	private Account loadEntityOrFailWith(Id id, @Nullable ResponseCodeEnum explicitResponseCode,
 			ResponseCodeEnum nonExistingCode, ResponseCodeEnum deletedCode) {
-		final var key = EntityNum.fromModel(id);
-		final var merkleAccount = accounts.get().get(key);
+		final var merkleAccount = accounts.getFinalized(id.asGrpcAccount());
 
 		validateUsable(merkleAccount, explicitResponseCode, nonExistingCode, deletedCode);
 
@@ -169,11 +167,10 @@ public class AccountStore {
 	 * @param account
 	 * 		the account to save
 	 */
-	public void persistAccount(Account account) {
+	public void commitAccount(Account account) {
 		final var id = account.getId();
-		final var key = EntityNum.fromLong(id.getNum());
 
-		final var mutableAccount = accounts.get().getForModify(key);
+		final var mutableAccount = accounts.getFinalized(id.asGrpcAccount());
 		mapModelToMutable(account, mutableAccount);
 		mutableAccount.tokens().updateAssociationsFrom(account.getAssociatedTokens());
 	}

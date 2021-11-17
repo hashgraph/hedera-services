@@ -96,7 +96,7 @@ public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
 		token.setCustomFees(customFees);
 
 		/* --- Persist the updated models --- */
-		tokenStore.persistToken(token);
+		tokenStore.commitToken(token);
 	}
 
 	@Override

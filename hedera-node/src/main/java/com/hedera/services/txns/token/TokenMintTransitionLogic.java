@@ -22,12 +22,9 @@ package com.hedera.services.txns.token;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.OwnershipTracker;
-import com.hedera.services.store.models.Token;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -36,17 +33,12 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
-import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 import static com.hedera.services.txns.token.TokenOpsValidator.validateTokenOpsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED;
 
 /**
  * Provides the state transition for token minting.
@@ -60,6 +52,7 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 	private final TransactionContext txnCtx;
 	private final AccountStore accountStore;
 	private final GlobalDynamicProperties dynamicProperties;
+	private final MintLogic mintLogic;
 
 	@Inject
 	public TokenMintTransitionLogic(
@@ -67,13 +60,15 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 			AccountStore accountStore,
 			TypedTokenStore tokenStore,
 			TransactionContext txnCtx,
-			GlobalDynamicProperties dynamicProperties
+			GlobalDynamicProperties dynamicProperties,
+			MintLogic mintLogic
 	) {
 		this.validator = validator;
 		this.tokenStore = tokenStore;
 		this.txnCtx = txnCtx;
 		this.accountStore = accountStore;
 		this.dynamicProperties = dynamicProperties;
+		this.mintLogic = mintLogic;
 	}
 
 	@Override
@@ -85,31 +80,13 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 
 		/* --- Load the model objects --- */
 		final var token = tokenStore.loadToken(targetId);
-		validateMinting(token, op);
-		final var treasuryRel = tokenStore.loadTokenRelationship(token, token.getTreasury());
 
-		/* --- Instantiate change trackers --- */
-		final var ownershipTracker = new OwnershipTracker();
-
-		/* --- Do the business logic --- */
-		if (token.getType() == TokenType.FUNGIBLE_COMMON) {
-			token.mint(treasuryRel, op.getAmount(), false);
-		} else {
-			token.mint(ownershipTracker, treasuryRel, op.getMetadataList(), fromJava(txnCtx.consensusTime()));
-		}
-
-		/* --- Persist the updated models --- */
-		tokenStore.persistToken(token);
-		tokenStore.persistTokenRelationships(List.of(treasuryRel));
-		tokenStore.persistTrackers(ownershipTracker);
-		accountStore.persistAccount(token.getTreasury());
-	}
-
-	private void validateMinting(Token token, TokenMintTransactionBody op) {
-		if (token.getType() == NON_FUNGIBLE_UNIQUE) {
-			final var proposedTotal = tokenStore.currentMintedNfts() + op.getMetadataCount();
-			validateTrue(validator.isPermissibleTotalNfts(proposedTotal), MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED);
-		}
+		mintLogic.mint(validator,
+				accountStore,
+				tokenStore,
+				token,
+				op,
+				txnCtx.consensusTime());
 	}
 
 	@Override

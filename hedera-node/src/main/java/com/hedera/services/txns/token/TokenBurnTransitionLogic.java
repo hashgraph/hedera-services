@@ -93,10 +93,10 @@ public class TokenBurnTransitionLogic implements TransitionLogic {
 		}
 
 		/* --- Persist the updated models --- */
-		tokenStore.persistToken(token);
-		tokenStore.persistTokenRelationships(List.of(treasuryRel));
-		tokenStore.persistTrackers(ownershipTracker);
-		accountStore.persistAccount(token.getTreasury());
+		tokenStore.commitToken(token);
+		tokenStore.commitTokenRelationships(List.of(treasuryRel));
+		tokenStore.commitTrackers(ownershipTracker);
+		accountStore.commitAccount(token.getTreasury());
 	}
 
 	@Override

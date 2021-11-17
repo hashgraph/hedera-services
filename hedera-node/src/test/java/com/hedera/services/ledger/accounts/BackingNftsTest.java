@@ -38,7 +38,7 @@ import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
@@ -53,6 +53,10 @@ class BackingNftsTest {
 			new EntityId(0, 0, 3),
 			"abcdefgh".getBytes(),
 			new RichInstant(1_234_567L, 1));
+	private MerkleUniqueToken bValue = new MerkleUniqueToken(
+			new EntityId(0, 0, 4),
+			"abcdefgh".getBytes(),
+			new RichInstant(1_234_568L, 2));
 	private MerkleUniqueToken theToken = new MerkleUniqueToken(
 			MISSING_ENTITY_ID,
 			"HI".getBytes(StandardCharsets.UTF_8),
@@ -77,16 +81,17 @@ class BackingNftsTest {
 	}
 
 	@Test
-	void doesntSupportGettingIdSet() {
+	void doSupportGettingIdSet() {
 		// when:
 		subject = new BackingNfts(() -> delegate);
 
 		// expect:
-		assertThrows(UnsupportedOperationException.class, subject::idSet);
+		assertNotNull(subject.idSet());
 	}
 
 	@Test
 	void containsWorks() {
+		subject.rebuildFromSources();
 		// expect:
 		assertTrue(subject.contains(aNftId));
 		assertTrue(subject.contains(bNftId));
@@ -116,10 +121,10 @@ class BackingNftsTest {
 	void putWorks() {
 		// when:
 		subject.put(aNftId, aValue);
-		subject.put(cNftId, aValue);
+		subject.put(cNftId, bValue);
 
 		// then:
-		assertEquals(aValue, subject.getImmutableRef(cNftId));
+		assertEquals(aValue, subject.getImmutableRef(aNftId));
 	}
 
 	@Test
