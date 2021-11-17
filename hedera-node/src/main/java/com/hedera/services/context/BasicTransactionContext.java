@@ -126,7 +126,7 @@ public class BasicTransactionContext implements TransactionContext {
 	}
 
 	@Override
-	public void resetFor(TxnAccessor accessor, Instant consensusTime, long submittingMember) {
+	public void resetFor(final TxnAccessor accessor, final Instant consensusTime, final long submittingMember) {
 		this.accessor = accessor;
 		this.consensusTime = consensusTime;
 		this.submittingMember = submittingMember;
@@ -149,7 +149,7 @@ public class BasicTransactionContext implements TransactionContext {
 	}
 
 	@Override
-	public void setAssessedCustomFees(List<FcAssessedCustomFee> assessedCustomFees) {
+	public void setAssessedCustomFees(final List<FcAssessedCustomFee> assessedCustomFees) {
 		this.assessedCustomFees = assessedCustomFees;
 	}
 
@@ -234,42 +234,42 @@ public class BasicTransactionContext implements TransactionContext {
 	}
 
 	@Override
-	public void setStatus(ResponseCodeEnum status) {
+	public void setStatus(final ResponseCodeEnum status) {
 		statusSoFar = status;
 	}
 
 	@Override
-	public void setCreated(AccountID id) {
+	public void setCreated(final AccountID id) {
 		receiptConfig = receipt -> receipt.setAccountId(EntityId.fromGrpcAccountId(id));
 	}
 
 	@Override
-	public void setCreated(ScheduleID id) {
+	public void setCreated(final ScheduleID id) {
 		receiptConfig = receipt -> receipt.setScheduleId(EntityId.fromGrpcScheduleId(id));
 	}
 
 	@Override
-	public void setScheduledTxnId(TransactionID txnId) {
+	public void setScheduledTxnId(final TransactionID txnId) {
 		receiptConfig = receiptConfig.andThen(receipt -> receipt.setScheduledTxnId(TxnId.fromGrpc(txnId)));
 	}
 
 	@Override
-	public void setCreated(FileID id) {
+	public void setCreated(final FileID id) {
 		receiptConfig = receipt -> receipt.setFileId(EntityId.fromGrpcFileId(id));
 	}
 
 	@Override
-	public void setCreated(ContractID id) {
+	public void setCreated(final ContractID id) {
 		receiptConfig = receipt -> receipt.setContractId(EntityId.fromGrpcContractId(id));
 	}
 
 	@Override
-	public void setCreated(TopicID id) {
+	public void setCreated(final TopicID id) {
 		receiptConfig = receipt -> receipt.setTopicId(EntityId.fromGrpcTopicId(id));
 	}
 
 	@Override
-	public void setTopicRunningHash(byte[] topicRunningHash, long sequenceNumber) {
+	public void setTopicRunningHash(final byte[] topicRunningHash, final long sequenceNumber) {
 		receiptConfig = receipt -> receipt
 				.setTopicRunningHash(topicRunningHash)
 				.setTopicSequenceNumber(sequenceNumber)
@@ -277,18 +277,18 @@ public class BasicTransactionContext implements TransactionContext {
 	}
 
 	@Override
-	public void addNonThresholdFeeChargedToPayer(long amount) {
+	public void addNonThresholdFeeChargedToPayer(final long amount) {
 		otherNonThresholdFees += amount;
 	}
 
 	@Override
-	public void setCallResult(ContractFunctionResult result) {
+	public void setCallResult(final ContractFunctionResult result) {
 		this.contractFunctionResult = result;
 		recordConfig = expiringRecord -> expiringRecord.setContractCallResult(SolidityFnResult.fromGrpc(result));
 	}
 
 	@Override
-	public void setCreateResult(ContractFunctionResult result) {
+	public void setCreateResult(final ContractFunctionResult result) {
 		this.contractFunctionResult = result;
 		recordConfig = expiringRecord -> expiringRecord.setContractCreateResult(SolidityFnResult.fromGrpc(result));
 	}
@@ -304,7 +304,7 @@ public class BasicTransactionContext implements TransactionContext {
 	}
 
 	@Override
-	public void trigger(TxnAccessor scopedAccessor) {
+	public void trigger(final TxnAccessor scopedAccessor) {
 		if (accessor().isTriggeredTxn()) {
 			throw new IllegalStateException("Unable to trigger txns in triggered txns");
 		}
@@ -317,7 +317,7 @@ public class BasicTransactionContext implements TransactionContext {
 	}
 
 	@Override
-	public void addExpiringEntities(Collection<ExpiringEntity> entities) {
+	public void addExpiringEntities(final Collection<ExpiringEntity> entities) {
 		expiringEntities.addAll(entities);
 	}
 
@@ -345,7 +345,7 @@ public class BasicTransactionContext implements TransactionContext {
 		return recordSoFar;
 	}
 
-	void setRecordSoFar(ExpirableTxnRecord.Builder recordSoFar) {
+	void setRecordSoFar(final ExpirableTxnRecord.Builder recordSoFar) {
 		this.recordSoFar = recordSoFar;
 	}
 
