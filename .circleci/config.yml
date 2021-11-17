@@ -957,6 +957,13 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Comp-Update-Reconnect-Abort-4N-2C:
+    triggers:
+      - schedule:
+          cron: "15 23 * * *"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -973,12 +980,19 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Comp-Update-Reconnect-Abort-DisPreUpdate-4N-2C:
+    triggers:
+      - schedule:
+          cron: "30 23 * * *"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/4N_2C/UpdateReconnectAbortDisPreUpdate
+          result_path: results/4N_2C/UpdateReconnectAbortPreUpdate
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Comp-Update-Reconnect-Abort-DisPreUpdate-4N-2C"
           requires:
