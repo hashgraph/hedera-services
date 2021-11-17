@@ -23,7 +23,6 @@ package com.hedera.services.legacy.core.jproto;
 import com.swirlds.common.CommonUtils;
 
 import java.util.Arrays;
-import java.util.Objects;
 
 /**
  * Maps to proto Key of type ed25519.
@@ -83,6 +82,6 @@ public class JEd25519Key extends JKey {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(ed25519);
+		return Arrays.hashCode(ed25519);
 	}
 }
