@@ -348,16 +348,22 @@ public class HederaWorldState implements HederaMutableWorldState {
 			final HederaWorldState wrapped = (HederaWorldState) wrappedWorldView();
 			final var entityAccess = wrapped.entityAccess;
 
+			/* ⚠️ Note that both the adjustBalance() and spawn() calls in the blocks below are ONLY
+			 * needed to make sure the record's ℏ transfer list is constructed properly---the
+			 * finishing call to trackingLedgers().commits() at the end of this method will persist
+			 * all the same information.
+			 *
+			 * Once record-keeping logic is property extracted from HederaLedger, we can probably
+			 * drop these spawn() and adjustBalance() calls.*/
+			final var deletedAddresses = getDeletedAccountAddresses();
+			deletedAddresses.forEach(address -> {
+				final var accountId = accountParsedFromSolidityAddress(address);
+				final var deletedBalance= entityAccess.getBalance(accountId);
+				entityAccess.adjustBalance(accountId, -deletedBalance);
+			});
 			for (final var updatedAccount : getUpdatedAccounts()) {
 				final var accountId = accountParsedFromSolidityAddress(updatedAccount.getAddress());
 
-				/* ⚠️ Note that both the spawn() and adjustBalance() calls in the block below are ONLY
-				 * needed to make sure the record's ℏ transfer list is constructed properly---the
-				 * finishing call to trackingLedgers().commits() at the end of this method will persist
-				 * all the same information.
-				 *
-				 * Once record-keeping logic is property extracted from HederaLedger, we can probably
-				 * drop these spawn() and adjustBalance() calls.*/
 				if (!entityAccess.isExtant(accountId)) {
 					wrapped.provisionalContractCreations.add(asContract(accountId));
 					entityAccess.spawn(accountId, 0L, CONTRACT_CUSTOMIZER);
@@ -385,11 +391,6 @@ public class HederaWorldState implements HederaMutableWorldState {
 			this commit() persists all of that information without any additional use of the deletedAccounts
 			or updatedAccounts collections. */
 			trackingLedgers().commit();
-			/* But we do a sanity check to ensure no deleted accounts have non-zero balances */
-			getDeletedAccountAddresses().forEach(address -> {
-				final var accountID = accountParsedFromSolidityAddress(address);
-				validateTrue(entityAccess.getBalance(accountID) == 0, FAIL_INVALID);
-			});
 
 			wrapped.sponsorMap.putAll(sponsorMap);
 		}

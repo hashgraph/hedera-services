@@ -26,6 +26,7 @@ import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -270,6 +271,9 @@ class HederaWorldStateTest {
 
 	@Test
 	void staticInnerUpdaterWorksAsExpected() {
+		final var tbd = IdUtils.asAccount("0.0.321");
+		final var tbdBalance = 123L;
+		final var tbdAddress = EntityIdUtils.asTypedSolidityAddress(tbd);
 		givenNonNullWorldLedgers();
 
 		/* Please note that the subject of this test is the actual inner updater class */
@@ -278,13 +282,15 @@ class HederaWorldStateTest {
 		assertEquals(0, actualSubject.getTouchedAccounts().size());
 
 		/* delete branch */
-		var mockedZeroAcc = mock(Address.class);
-		actualSubject.getSponsorMap().put(Address.ZERO, mockedZeroAcc);
-		actualSubject.deleteAccount(Address.ZERO);
+		given(entityAccess.getBalance(tbd)).willReturn(tbdBalance).willReturn(0L);
+		var mockTbdAccount = mock(Address.class);
+		actualSubject.getSponsorMap().put(tbdAddress, mockTbdAccount);
+		actualSubject.deleteAccount(tbdAddress);
 		actualSubject.commit();
 		verify(worldLedgers).commit();
+		verify(entityAccess).adjustBalance(tbd, -tbdBalance);
 
-		actualSubject.getSponsorMap().put(Address.ZERO, mockedZeroAcc);
+		actualSubject.getSponsorMap().put(Address.ZERO, mockTbdAccount);
 		actualSubject.revert();
 		assertEquals(0, actualSubject.getSponsorMap().size());
 

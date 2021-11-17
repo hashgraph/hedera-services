@@ -24,8 +24,6 @@ package com.hedera.services.contracts.execution;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
@@ -61,14 +59,14 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 
 	@Inject
 	public CallLocalEvmTxProcessor(
-			CodeCache codeCache,
-			HbarCentExchange exchange,
-			UsagePricesProvider usagePrices,
-			GlobalDynamicProperties dynamicProperties,
-			GasCalculator gasCalculator,
-			Set<Operation> hederaOperations,
-			Map<String, PrecompiledContract> precompiledContractMap) {
-		super(exchange, usagePrices, dynamicProperties, gasCalculator, hederaOperations, precompiledContractMap);
+			final CodeCache codeCache,
+			final LivePricesSource livePricesSource,
+			final GlobalDynamicProperties dynamicProperties,
+			final GasCalculator gasCalculator,
+			final Set<Operation> hederaOperations,
+			final Map<String, PrecompiledContract> precompiledContractMap
+	) {
+		super(livePricesSource, dynamicProperties, gasCalculator, hederaOperations, precompiledContractMap);
 		this.codeCache = codeCache;
 	}
 

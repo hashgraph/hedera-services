@@ -23,19 +23,11 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hederahashgraph.api.proto.java.ExchangeRate;
-import com.hederahashgraph.api.proto.java.FeeComponents;
-import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -60,12 +52,11 @@ import java.time.Instant;
 import java.util.Deque;
 import java.util.Map;
 import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -74,17 +65,14 @@ import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class CallLocalEvmTxProcessorTest {
-
 	private static final int MAX_STACK_SIZE = 1024;
 
+	@Mock
+	private LivePricesSource livePricesSource;
 	@Mock
 	private HederaWorldState worldState;
 	@Mock
 	private CodeCache codeCache;
-	@Mock
-	private HbarCentExchange hbarCentExchange;
-	@Mock
-	private UsagePricesProvider usagePricesProvider;
 	@Mock
 	private GlobalDynamicProperties globalDynamicProperties;
 	@Mock
@@ -94,15 +82,14 @@ class CallLocalEvmTxProcessorTest {
 	@Mock
 	private Transaction transaction;
 	@Mock
-	private ExchangeRate exchangeRate;
-	@Mock
 	private HederaWorldState.Updater updater;
 	@Mock
 	Map<String, PrecompiledContract> precompiledContractMap;
 
-	private Account sender = new Account(new Id(0, 0, 1002));
-	private Account receiver = new Account(new Id(0, 0, 1006));
-	private Instant consensusTime = Instant.now();
+	private final Account sender = new Account(new Id(0, 0, 1002));
+	private final Account receiver = new Account(new Id(0, 0, 1006));
+	private final Address receiverAddress = receiver.getId().asEvmAddress();
+	private final Instant consensusTime = Instant.now();
 
 	private CallLocalEvmTxProcessor callLocalEvmTxProcessor;
 
@@ -110,35 +97,24 @@ class CallLocalEvmTxProcessorTest {
 	private void setup() {
 		CommonProcessorSetup.setup(gasCalculator);
 
-		callLocalEvmTxProcessor = new CallLocalEvmTxProcessor(codeCache, hbarCentExchange, usagePricesProvider,
-				globalDynamicProperties, gasCalculator, operations, precompiledContractMap);
+		callLocalEvmTxProcessor = new CallLocalEvmTxProcessor(
+				codeCache, livePricesSource, globalDynamicProperties, gasCalculator, operations, precompiledContractMap);
 
 		callLocalEvmTxProcessor.setWorldState(worldState);
 	}
 
 	@Test
-	void assertThatExecuteMethodThrowsInvalidTransactionException() {
-		var consensusTime = Instant.ofEpochSecond(1631778674L);
-
-		//expect:
-		Address receiver = this.receiver.getId().asEvmAddress();
-		var expiry = OptionalLong.empty();
-		assertThrows(InvalidTransactionException.class, () ->
-				callLocalEvmTxProcessor.execute(sender, receiver, 1234L, 1_000_000, 15,
-						Bytes.EMPTY, false, consensusTime, false, expiry));
-	}
-
-	@Test
-	void assertSuccessExecutе() throws ExecutionException {
+	void assertSuccessExecutе() {
 		givenValidMock();
-		var result = callLocalEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), 33_333L, 1234L, Bytes.EMPTY, consensusTime);
+		var result = callLocalEvmTxProcessor.execute(
+				sender, receiver.getId().asEvmAddress(), 33_333L, 1234L, Bytes.EMPTY, consensusTime);
 		assertTrue(result.isSuccessful());
 		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
 	}
 
 
 	@Test
-	void throwsWhenCodeCacheFailsLoading() throws ExecutionException {
+	void throwsWhenCodeCacheFailsLoading() {
 		given(worldState.updater()).willReturn(updater);
 		given(worldState.updater().updater()).willReturn(updater);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
@@ -148,7 +124,8 @@ class CallLocalEvmTxProcessorTest {
 		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(Gas.ZERO);
 
 		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(evmAccount);
-		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()).getMutable()).willReturn(mock(MutableAccount.class));
+		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()).getMutable()).willReturn(
+				mock(MutableAccount.class));
 		given(worldState.updater()).willReturn(updater);
 		given(codeCache.get(any())).willReturn(new Code());
 
@@ -159,20 +136,12 @@ class CallLocalEvmTxProcessorTest {
 		given(updater.getOrCreate(any())).willReturn(evmAccount);
 		given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
 
-		var feeData = mock(FeeData.class);
-		given(feeData.getServicedata()).willReturn(mock(FeeComponents.class));
-		given(usagePricesProvider.defaultPricesGiven(HederaFunctionality.ContractCallLocal, Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build())).willReturn(feeData);
-		given(hbarCentExchange.rate(Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build())).willReturn(exchangeRate);
-		given(exchangeRate.getHbarEquiv()).willReturn(1);
-		given(exchangeRate.getCentEquiv()).willReturn(1);
 		given(codeCache.get(any())).willThrow(new RuntimeException("oh no"));
 
-		try {
-			callLocalEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), 33_333L, 1234L, Bytes.EMPTY,
-					consensusTime);
-		} catch (InvalidTransactionException e) {
-			assertEquals(ResponseCodeEnum.FAIL_INVALID, e.getResponseCode());
-		}
+		assertFailsWith(() ->
+						callLocalEvmTxProcessor.execute(
+								sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime),
+				FAIL_INVALID);
 	}
 
 	@Test
@@ -182,7 +151,7 @@ class CallLocalEvmTxProcessorTest {
 	}
 
 	@Test
-	void assertTransactionSenderAndValue() throws ExecutionException {
+	void assertTransactionSenderAndValue() {
 		// setup:
 		doReturn(Optional.of(receiver.getId().asEvmAddress())).when(transaction).getTo();
 		given(worldState.updater()).willReturn(mock(HederaWorldState.Updater.class));
@@ -207,14 +176,15 @@ class CallLocalEvmTxProcessorTest {
 						.miningBeneficiary(mock(Address.class))
 						.blockHashLookup(h -> null);
 		//when:
-		MessageFrame buildMessageFrame = callLocalEvmTxProcessor.buildInitialFrame(commonInitialFrame, worldState.updater(), (Address) transaction.getTo().get(), Bytes.EMPTY);
+		MessageFrame buildMessageFrame = callLocalEvmTxProcessor.buildInitialFrame(commonInitialFrame,
+				worldState.updater(), (Address) transaction.getTo().get(), Bytes.EMPTY);
 
 		//expect:
 		assertEquals(transaction.getSender(), buildMessageFrame.getSenderAddress());
 		assertEquals(transaction.getValue(), buildMessageFrame.getApparentValue());
 	}
 
-	private void givenValidMock() throws ExecutionException {
+	private void givenValidMock() {
 		given(worldState.updater()).willReturn(updater);
 		given(worldState.updater().updater()).willReturn(updater);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
@@ -224,7 +194,8 @@ class CallLocalEvmTxProcessorTest {
 		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(Gas.ZERO);
 
 		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(evmAccount);
-		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()).getMutable()).willReturn(mock(MutableAccount.class));
+		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()).getMutable()).willReturn(
+				mock(MutableAccount.class));
 		given(worldState.updater()).willReturn(updater);
 		given(codeCache.get(any())).willReturn(new Code());
 
@@ -241,14 +212,5 @@ class CallLocalEvmTxProcessorTest {
 		given(updater.getOrCreate(any())).willReturn(evmAccount);
 		given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
 		given(updater.getSbhRefund()).willReturn(Gas.ZERO);
-
-		var feeData = mock(FeeData.class);
-		given(feeData.getServicedata()).willReturn(mock(FeeComponents.class));
-		given(usagePricesProvider.defaultPricesGiven(HederaFunctionality.ContractCallLocal, Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build())).willReturn(feeData);
-		given(hbarCentExchange.rate(Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build())).willReturn(exchangeRate);
-		given(exchangeRate.getHbarEquiv()).willReturn(1);
-		given(exchangeRate.getCentEquiv()).willReturn(1);
 	}
-
-
 }
