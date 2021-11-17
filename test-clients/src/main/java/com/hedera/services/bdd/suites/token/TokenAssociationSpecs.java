@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.token;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.BaseErroringAssertsProvider;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
@@ -92,8 +91,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class TokenAssociationSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenAssociationSpecs.class);
 
-	static final String defaultMinAutoRenewPeriod =
-			HapiSpecSetup.getDefaultNodeProps().get("ledger.autoRenewPeriod.minDuration");
+	static final String defaultCiMinAutoRenewPeriod = "10";
 
 	private static final String FREEZABLE_TOKEN_ON_BY_DEFAULT = "TokenA";
 	private static final String FREEZABLE_TOKEN_OFF_BY_DEFAULT = "TokenB";
@@ -422,7 +420,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 				).then(
 						getTxnRecord(dissociateTxn).logged(),
 						fileUpdate(APP_PROPERTIES).payingWith(GENESIS).overridingProps(
-								Map.of("ledger.autoRenewPeriod.minDuration", defaultMinAutoRenewPeriod)
+								Map.of("ledger.autoRenewPeriod.minDuration", defaultCiMinAutoRenewPeriod)
 						)
 				);
 	}
