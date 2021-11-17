@@ -71,7 +71,7 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import javax.inject.Singleton;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -205,7 +205,7 @@ public abstract class ContractsModule {
 
 	@Provides
 	@Singleton
-	public static BiFunction<Address, MessageFrame, Boolean> provideAddressValidator(
+	public static BiPredicate<Address, MessageFrame> provideAddressValidator(
 			Map<String, PrecompiledContract> precompiledContractMap) {
 		Set<Address> precompiledAddresses =
 				precompiledContractMap.keySet().stream().map(Address::fromHexString).collect(Collectors.toSet());

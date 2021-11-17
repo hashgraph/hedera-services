@@ -35,7 +35,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
-import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -48,7 +48,6 @@ class HederaSelfDestructOperationTest {
 	final private String ethRecipientAddress = "0xc257274276a4e539741ca11b590b9447b26a8052";
 
 	private Address ethAddressInstance = Address.fromHexString(ethAddress);
-	private Address receiverEthAddressInstance = Address.fromHexString(ethRecipientAddress);
 
 	@Mock
 	WorldUpdater worldUpdater;
@@ -64,7 +63,7 @@ class HederaSelfDestructOperationTest {
 	@Mock
 	private Account account;
 	@Mock
-	private BiFunction<Address, MessageFrame, Boolean> addressValidator;
+	private BiPredicate<Address, MessageFrame> addressValidator;
 
 	HederaSelfDestructOperation subject;
 
@@ -78,7 +77,7 @@ class HederaSelfDestructOperationTest {
 	@Test
 	void executeSelfDestructToSelf() {
 		given(mf.getRecipientAddress()).willReturn(ethAddressInstance);
-		given(addressValidator.apply(any(), any())).willReturn(true);
+		given(addressValidator.test(any(), any())).willReturn(true);
 		given(mf.getWorldUpdater()).willReturn(worldUpdater);
 
 		var opResult = subject.execute(mf, evm);
@@ -90,7 +89,7 @@ class HederaSelfDestructOperationTest {
 	@Test
 	void executeInvalidSolidityAddress() {
 
-		given(addressValidator.apply(any(), any())).willReturn(false);
+		given(addressValidator.test(any(), any())).willReturn(false);
 
 		var opResult = subject.execute(mf, evm);
 

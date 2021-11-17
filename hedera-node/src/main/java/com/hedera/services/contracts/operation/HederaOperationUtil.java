@@ -39,7 +39,7 @@ import java.util.Iterator;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
-import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 
 /**
@@ -100,10 +100,10 @@ public final class HederaOperationUtil {
 			Supplier<Bytes> supplierAddressBytes,
 			Supplier<Gas> supplierHaltGasCost,
 			Supplier<Operation.OperationResult> supplierExecution,
-			BiFunction<Address, MessageFrame, Boolean> addressValidator) {
+			BiPredicate<Address, MessageFrame> addressValidator) {
 		try {
 			final var address = Words.toAddress(supplierAddressBytes.get());
-			if (!addressValidator.apply(address, frame)) {
+			if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {
 				return new Operation.OperationResult(
 						Optional.of(supplierHaltGasCost.get()), Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
 			}
@@ -138,9 +138,9 @@ public final class HederaOperationUtil {
 			Address address,
 			Supplier<Gas> supplierHaltGasCost,
 			Supplier<Operation.OperationResult> supplierExecution,
-			BiFunction<Address, MessageFrame, Boolean> addressValidator) {
+			BiPredicate<Address, MessageFrame> addressValidator) {
 		final var account = frame.getWorldUpdater().get(address);
-		if (!addressValidator.apply(address, frame)) {
+		if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {
 			return new Operation.OperationResult(
 					Optional.of(supplierHaltGasCost.get()), Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
 		}

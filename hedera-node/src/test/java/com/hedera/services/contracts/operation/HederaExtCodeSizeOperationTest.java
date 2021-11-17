@@ -37,7 +37,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
-import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -66,7 +66,7 @@ class HederaExtCodeSizeOperationTest {
 	@Mock
 	private Address accountAddr;
 	@Mock
-	private BiFunction<Address, MessageFrame, Boolean> addressValidator;
+	private BiPredicate<Address, MessageFrame> addressValidator;
 
 	HederaExtCodeSizeOperation subject;
 
@@ -81,7 +81,7 @@ class HederaExtCodeSizeOperationTest {
 	@Test
 	void executeWorldUpdaterResolvesToNull() {
 		given(mf.getStackItem(0)).willReturn(ethAddressInstance);
-		given(addressValidator.apply(any(), any())).willReturn(false);
+		given(addressValidator.test(any(), any())).willReturn(false);
 
 		var opResult = subject.execute(mf, evm);
 
@@ -110,7 +110,7 @@ class HederaExtCodeSizeOperationTest {
 		given(mf.popStackItem()).willReturn(ethAddressInstance);
 		given(mf.warmUpAddress(ethAddressInstance)).willReturn(true);
 		given(mf.getRemainingGas()).willReturn(Gas.of(100));
-		given(addressValidator.apply(any(), any())).willReturn(true);
+		given(addressValidator.test(any(), any())).willReturn(true);
 
 		// when:
 		var opResult = subject.execute(mf, evm);

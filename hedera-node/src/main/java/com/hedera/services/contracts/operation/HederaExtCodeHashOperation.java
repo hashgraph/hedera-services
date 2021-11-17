@@ -35,7 +35,7 @@ import org.hyperledger.besu.evm.operation.ExtCodeHashOperation;
 
 import javax.inject.Inject;
 import java.util.Optional;
-import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 
 /**
  * Hedera adapted version of the {@link ExtCodeHashOperation}.
@@ -47,11 +47,11 @@ import java.util.function.BiFunction;
  */
 public class HederaExtCodeHashOperation extends ExtCodeHashOperation {
 
-	private final BiFunction<Address, MessageFrame, Boolean> addressValidator;
+	private final BiPredicate<Address, MessageFrame> addressValidator;
 
 	@Inject
 	public HederaExtCodeHashOperation(GasCalculator gasCalculator,
-									  BiFunction<Address, MessageFrame, Boolean> addressValidator) {
+									  BiPredicate<Address, MessageFrame> addressValidator) {
 		super(gasCalculator);
 		this.addressValidator = addressValidator;
 	}
@@ -60,7 +60,7 @@ public class HederaExtCodeHashOperation extends ExtCodeHashOperation {
 	public OperationResult execute(MessageFrame frame, EVM evm) {
 		try {
 			final Address address = Words.toAddress(frame.popStackItem());
-			if (!addressValidator.apply(address, frame)) {
+			if (!addressValidator.test(address, frame)) {
 				return new OperationResult(
 						Optional.of(cost(true)), Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
 			}

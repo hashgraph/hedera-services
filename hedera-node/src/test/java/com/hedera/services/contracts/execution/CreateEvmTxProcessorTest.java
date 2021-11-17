@@ -192,10 +192,11 @@ class CreateEvmTxProcessorTest {
 
 		//expect:
 		Address receiver = this.receiver.getId().asEvmAddress();
+		var expiryOptional = OptionalLong.of(expiry);
 		assertThrows(InvalidTransactionException.class, () ->
 				createEvmTxProcessor.execute(
 						sender, receiver, 1234, 1_000_000, 15, Bytes.EMPTY, false,
-						consensusTime, false, OptionalLong.of(expiry)));
+						consensusTime, false, expiryOptional));
 	}
 
 	@Test

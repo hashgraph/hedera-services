@@ -38,7 +38,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
-import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -64,7 +64,7 @@ class HederaExtCodeHashOperationTest {
 	private EVM evm;
 
 	@Mock
-	private BiFunction<Address, MessageFrame, Boolean> addressValidator;
+	private BiPredicate<Address, MessageFrame> addressValidator;
 
 	private HederaExtCodeHashOperation subject;
 
@@ -84,7 +84,7 @@ class HederaExtCodeHashOperationTest {
 	@Test
 	void executeResolvesToInvalidSolidityAddress() {
 		given(mf.popStackItem()).willReturn(ETH_ADDRESS_INSTANCE);
-		given(addressValidator.apply(any(), any())).willReturn(false);
+		given(addressValidator.test(any(), any())).willReturn(false);
 
 		var opResult = subject.execute(mf, evm);
 
@@ -95,7 +95,7 @@ class HederaExtCodeHashOperationTest {
 	@Test
 	void executeResolvesToInsufficientGas() {
 		givenMessageFrameWithRemainingGas(ACTUAL_COST.minus(Gas.of(1L)));
-		given(addressValidator.apply(any(), any())).willReturn(true);
+		given(addressValidator.test(any(), any())).willReturn(true);
 
 		var opResult = subject.execute(mf, evm);
 
@@ -107,7 +107,7 @@ class HederaExtCodeHashOperationTest {
 	void executeHappyPathWithEmptyAccount() {
 		givenMessageFrameWithRemainingGas(ACTUAL_COST.plus(Gas.of(1L)));
 		given(account.isEmpty()).willReturn(true);
-		given(addressValidator.apply(any(), any())).willReturn(true);
+		given(addressValidator.test(any(), any())).willReturn(true);
 
 		var opResult = subject.execute(mf, evm);
 
@@ -119,7 +119,7 @@ class HederaExtCodeHashOperationTest {
 		givenMessageFrameWithRemainingGas(ACTUAL_COST.plus(Gas.of(1L)));
 		given(account.isEmpty()).willReturn(false);
 		given(account.getCodeHash()).willReturn(Hash.hash(Bytes.of(1)));
-		given(addressValidator.apply(any(), any())).willReturn(true);
+		given(addressValidator.test(any(), any())).willReturn(true);
 
 		var opResult = subject.execute(mf, evm);
 
@@ -131,7 +131,7 @@ class HederaExtCodeHashOperationTest {
 		givenMessageFrameWithRemainingGas(ACTUAL_COST);
 		given(account.isEmpty()).willReturn(false);
 		given(account.getCodeHash()).willReturn(Hash.hash(Bytes.of(1)));
-		given(addressValidator.apply(any(), any())).willReturn(true);
+		given(addressValidator.test(any(), any())).willReturn(true);
 
 		var opResult = subject.execute(mf, evm);
 

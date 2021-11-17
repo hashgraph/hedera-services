@@ -39,7 +39,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
-import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 
 import static com.hedera.services.contracts.operation.CommonCallSetup.commonSetup;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -69,7 +69,7 @@ class HederaCallCodeOperationTest {
 	@Mock
 	private SoliditySigsVerifier sigsVerifier;
 	@Mock
-	private BiFunction<Address, MessageFrame, Boolean> addressValidator;
+	private BiPredicate<Address, MessageFrame> addressValidator;
 
 	private HederaCallCodeOperation subject;
 
@@ -94,7 +94,7 @@ class HederaCallCodeOperationTest {
 		given(evmMsgFrame.getStackItem(4)).willReturn(Bytes.EMPTY);
 		given(evmMsgFrame.getStackItem(5)).willReturn(Bytes.EMPTY);
 		given(evmMsgFrame.getStackItem(6)).willReturn(Bytes.EMPTY);
-		given(addressValidator.apply(any(), any())).willReturn(false);
+		given(addressValidator.test(any(), any())).willReturn(false);
 
 		var opRes = subject.execute(evmMsgFrame, evm);
 
@@ -128,7 +128,7 @@ class HederaCallCodeOperationTest {
 		given(accountAddr.toArrayUnsafe()).willReturn(
 				new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22 });
 		given(sigsVerifier.allRequiredKeysAreActive(anySet())).willReturn(true);
-		given(addressValidator.apply(any(), any())).willReturn(true);
+		given(addressValidator.test(any(), any())).willReturn(true);
 
 		var opRes = subject.execute(evmMsgFrame, evm);
 		assertEquals(Optional.empty(), opRes.getHaltReason());
@@ -161,7 +161,7 @@ class HederaCallCodeOperationTest {
 		given(accountAddr.toArrayUnsafe()).willReturn(
 				new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22 });
 		given(sigsVerifier.allRequiredKeysAreActive(anySet())).willReturn(false);
-		given(addressValidator.apply(any(), any())).willReturn(true);
+		given(addressValidator.test(any(), any())).willReturn(true);
 
 		var opRes = subject.execute(evmMsgFrame, evm);
 		assertEquals(Optional.of(HederaExceptionalHaltReason.INVALID_SIGNATURE), opRes.getHaltReason());

@@ -29,7 +29,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.ExtCodeSizeOperation;
 
 import javax.inject.Inject;
-import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 
 /**
  * Hedera adapted version of the {@link ExtCodeSizeOperation}.
@@ -39,11 +39,11 @@ import java.util.function.BiFunction;
  * the account does not exist or it is deleted.
  */
 public class HederaExtCodeSizeOperation extends ExtCodeSizeOperation {
-	private final BiFunction<Address, MessageFrame, Boolean> addressValidator;
+	private final BiPredicate<Address, MessageFrame> addressValidator;
 
 	@Inject
 	public HederaExtCodeSizeOperation(GasCalculator gasCalculator,
-									  BiFunction<Address, MessageFrame, Boolean> addressValidator) {
+									  BiPredicate<Address, MessageFrame> addressValidator) {
 		super(gasCalculator);
 		this.addressValidator = addressValidator;
 	}

@@ -35,7 +35,7 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import java.util.Optional;
-import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 
 /**
  * Hedera adapted version of the {@link SelfDestructOperation}.
@@ -49,11 +49,11 @@ import java.util.function.BiFunction;
  */
 public class HederaSelfDestructOperation extends SelfDestructOperation {
 
-	private final BiFunction<Address, MessageFrame, Boolean> addressValidator;
+	private final BiPredicate<Address, MessageFrame> addressValidator;
 
 	@Inject
 	public HederaSelfDestructOperation(final GasCalculator gasCalculator,
-									   final BiFunction<Address, MessageFrame, Boolean> addressValidator) {
+									   final BiPredicate<Address, MessageFrame> addressValidator) {
 		super(gasCalculator);
 		this.addressValidator = addressValidator;
 	}
@@ -61,7 +61,7 @@ public class HederaSelfDestructOperation extends SelfDestructOperation {
 	@Override
 	public OperationResult execute(final MessageFrame frame, final EVM evm) {
 		Address recipientAddress = Words.toAddress(frame.getStackItem(0));
-		if (!addressValidator.apply(recipientAddress, frame)) {
+		if (!addressValidator.test(recipientAddress, frame)) {
 			return new OperationResult(errorGasCost(null),
 					Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
 		}
