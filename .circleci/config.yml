@@ -1196,7 +1196,7 @@ workflows:
           filters:
             branches:
               only:
-                - split-reconect-correctness-panel
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1219,7 +1219,7 @@ workflows:
           filters:
             branches:
               only:
-                - split-reconect-correctness-panel
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
