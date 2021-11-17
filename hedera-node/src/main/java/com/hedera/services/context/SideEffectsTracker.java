@@ -1,7 +1,10 @@
 package com.hedera.services.context;
 
 import com.hedera.services.state.submerkle.FcTokenAssociation;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.store.models.OwnershipTracker;
+import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -12,7 +15,6 @@ import com.hederahashgraph.api.proto.java.TransferList;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -36,13 +38,14 @@ public class SideEffectsTracker {
 	private final TokenID[] tokensTouched = new TokenID[MAX_TOKENS_TOUCHED];
 	private final TransferList.Builder netHbarChanges = TransferList.newBuilder();
 	private final List<Long> nftMints = new ArrayList<>();
-	private final List<TokenTransferList> explicitNetTokenChanges = null;
 	private final List<FcTokenAssociation> autoAssociations = new ArrayList<>();
 	private final Map<TokenID, TransferList.Builder> netTokenChanges = new HashMap<>();
 	private final Map<TokenID, TokenTransferList.Builder> nftOwnerChanges = new HashMap<>();
 
 	private int numTouches = 0;
 	private long newSupply = INAPPLICABLE_NEW_SUPPLY;
+	private TokenID newTokenId = null;
+	private List<TokenTransferList> explicitNetTokenUnitOrOwnershipChanges = null;
 
 	@Inject
 	public SideEffectsTracker() {
@@ -50,23 +53,106 @@ public class SideEffectsTracker {
 	}
 
 	/**
-	 * Tracks the summarized balance changes (if any) contained in the given token relationships.
+	 * Tracks the side-effects to a token changed by the active transaction that are
+	 * of interest to a records historian.
 	 *
-	 * @param changedTokenRels the changed token relationships
+	 * @param changedToken
+	 * 		a model of the changed token
 	 */
-	public void trackSummarizedTokenBalanceChanges(final List<TokenRelationship> changedTokenRels) {
-
+	public void trackTokenChanges(final Token changedToken) {
+		if (changedToken.isNew()) {
+			newTokenId = changedToken.getId().asGrpcToken();
+		}
+		if (changedToken.hasChangedSupply()) {
+			newSupply = changedToken.getTotalSupply();
+		}
+		if (changedToken.hasMintedUniqueTokens()) {
+			for (final var nft : changedToken.mintedUniqueTokens()) {
+				nftMints.add(nft.getSerialNumber());
+			}
+		}
 	}
 
 	/**
-	 * Tracks the new supply of a token as changed by the active transaction. (Since only
-	 * one token's supply can change in a record-level transaction, it is redundant to
-	 * mention the type here.)
+	 * Tracks the summarized NFT ownership changes (if any) contained in the given token relationships.
 	 *
-	 * @param newSupply the new supply of the token
+	 * @param changedOwners
+	 * 		the changed ownerships
 	 */
-	public void trackTokenSupply(final long newSupply) {
-		this.newSupply = newSupply;
+	public void trackTokenOwnershipChanges(final OwnershipTracker changedOwners) {
+		if (changedOwners.isEmpty()) {
+			return;
+		}
+
+		final var changes = changedOwners.getChanges();
+		final var changedIds = new ArrayList<>(changes.keySet());
+		changedIds.sort(Id.ID_COMPARATOR);
+
+		explicitNetTokenUnitOrOwnershipChanges = new ArrayList<>();
+		for (final var id : changedIds) {
+			final var tokenId = id.asGrpcToken();
+			final List<NftTransfer> transfers = new ArrayList<>();
+			for (final var change : changes.get(id)) {
+				transfers.add(NftTransfer.newBuilder()
+						.setSenderAccountID(change.getPreviousOwner().asGrpcAccount())
+						.setReceiverAccountID(change.getNewOwner().asGrpcAccount())
+						.setSerialNumber(change.getSerialNumber())
+						.build());
+			}
+			explicitNetTokenUnitOrOwnershipChanges.add(TokenTransferList.newBuilder()
+					.setToken(tokenId)
+					.addAllNftTransfers(transfers)
+					.build());
+		}
+	}
+
+	/**
+	 * Tracks the summarized balance changes (if any) contained in the given token relationships.
+	 *
+	 * @param changedTokenRels
+	 * 		the changed token relationships
+	 */
+	public void trackTokenBalanceChanges(final List<TokenRelationship> changedTokenRels) {
+		final Map<Id, TokenTransferList.Builder> changesById = new HashMap<>();
+
+		for (final var tokenRel : changedTokenRels) {
+			if (!tokenRel.hasChangesForRecord()) {
+				continue;
+			}
+
+			final var tokenId = tokenRel.getToken().getId();
+			final var accountId = tokenRel.getAccount().getId();
+			final var scopedChanges = changesById.computeIfAbsent(
+					tokenId, ignore -> TokenTransferList.newBuilder().setToken(tokenId.asGrpcToken()));
+			scopedChanges.addTransfers(AccountAmount.newBuilder()
+					.setAccountID(accountId.asGrpcAccount())
+					.setAmount(tokenRel.getBalanceChange()));
+		}
+
+		if (!changesById.isEmpty()) {
+			explicitNetTokenUnitOrOwnershipChanges = new ArrayList<>();
+			final List<Id> tokenIds = new ArrayList<>(changesById.keySet());
+			tokenIds.sort(Id.ID_COMPARATOR);
+			tokenIds.forEach(id -> explicitNetTokenUnitOrOwnershipChanges.add(changesById.get(id).build()));
+		}
+	}
+
+	/**
+	 * Indicates whether there any new token id was tracked this transaction.
+	 *
+	 * @return if any new token id was tracked
+	 */
+	public boolean hasTrackedNewTokenId() {
+		return newTokenId != null;
+	}
+
+	/**
+	 * Returns the new token id that occurred during the transaction.
+	 *
+	 * @return the new token id
+	 */
+	public TokenID getTrackedNewTokenId() {
+		return newTokenId;
 	}
 
 	/**
@@ -79,23 +165,12 @@ public class SideEffectsTracker {
 	}
 
 	/**
-	 * Returns the token supply change that occurred d during the transaction.
+	 * Returns the token supply change that occurred during the transaction.
 	 *
 	 * @return the token supply change
 	 */
 	public long getTrackedTokenSupply() {
 		return newSupply;
-	}
-
-	/**
-	 * Tracks an NFT serial number minted during the transaction. (Since a record-level
-	 * transaction can only mint NFTs of one type, it is redundant to mention more here.)
-	 *
-	 * @param serialNo
-	 * 		the minted NFT
-	 */
-	public void trackMintedNft(final long serialNo) {
-		nftMints.add(serialNo);
 	}
 
 	/**
@@ -128,6 +203,17 @@ public class SideEffectsTracker {
 	 */
 	public void trackAutoAssociation(final TokenID token, final AccountID account) {
 		final var association = new FcTokenAssociation(token.getTokenNum(), account.getAccountNum());
+		autoAssociations.add(association);
+	}
+
+	/**
+	 * Tracks an account/token association automatically created (either by a {@code TokenCreate}
+	 * or a {@code CryptoTransfer}).
+	 *
+	 * @param association
+	 * 		the auto-association
+	 */
+	public void trackExplicitAutoAssociation(final FcTokenAssociation association) {
 		autoAssociations.add(association);
 	}
 
@@ -220,6 +306,10 @@ public class SideEffectsTracker {
 	 * @return the ordered list of ordered balance and NFT ownership changes
 	 */
 	public List<TokenTransferList> getNetTrackedTokenUnitAndOwnershipChanges() {
+		if (explicitNetTokenUnitOrOwnershipChanges != null) {
+			return explicitNetTokenUnitOrOwnershipChanges;
+		}
+
 		if (numTouches == 0) {
 			return Collections.emptyList();
 		}
@@ -277,8 +367,10 @@ public class SideEffectsTracker {
 		numTouches = 0;
 
 		newSupply = INAPPLICABLE_NEW_SUPPLY;
+		newTokenId = null;
 		nftMints.clear();
 		autoAssociations.clear();
+		explicitNetTokenUnitOrOwnershipChanges = null;
 	}
 
 	/* --- Internal helpers --- */

@@ -86,7 +86,6 @@ public class TypedTokenStore {
 	private final AccountStore accountStore;
 	private final SideEffectsTracker sideEffectsTracker;
 	private final UniqTokenViewsManager uniqTokenViewsManager;
-	private final TransactionRecordService transactionRecordService;
 	private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
 	private final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens;
 	private final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels;
@@ -99,7 +98,6 @@ public class TypedTokenStore {
 	@Inject
 	public TypedTokenStore(
 			final AccountStore accountStore,
-			final TransactionRecordService transactionRecordService,
 			final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
 			final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens,
 			final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels,
@@ -114,7 +112,6 @@ public class TypedTokenStore {
 		this.tokenRels = tokenRels;
 		this.uniqueTokens = uniqueTokens;
 		this.accountStore = accountStore;
-		this.transactionRecordService = transactionRecordService;
 		this.delegate = delegate;
 		this.sideEffectsTracker = sideEffectsTracker;
 		this.backingTokenRels = backingTokenRels;
@@ -221,7 +218,7 @@ public class TypedTokenStore {
 				persistNonDestroyed(tokenRelationship, key, currentTokenRels);
 			}
 		}
-		transactionRecordService.includeChangesToTokenRels(tokenRelationships);
+		sideEffectsTracker.trackTokenBalanceChanges(tokenRelationships);
 	}
 
 	private MerkleTokenRelStatus getMerkleTokenRelationship(Token token, Account account) {
@@ -273,8 +270,8 @@ public class TypedTokenStore {
 	 * @param ownershipTracker
 	 * 		holds changes to {@link UniqueToken} ownership
 	 */
-	public void persistTrackers(OwnershipTracker ownershipTracker) {
-		transactionRecordService.includeOwnershipChanges(ownershipTracker);
+	public void persistTrackers(final OwnershipTracker ownershipTracker) {
+		sideEffectsTracker.trackTokenOwnershipChanges(ownershipTracker);
 	}
 
 	/**
@@ -424,7 +421,7 @@ public class TypedTokenStore {
 			final TokenID mutatedToken = token.getId().asGrpcToken();
 			delegate.removeKnownTreasuryForToken(affectedTreasury, mutatedToken);
 		}
-		transactionRecordService.includeChangesToToken(token);
+		sideEffectsTracker.trackTokenChanges(token);
 	}
 
 	/**
@@ -453,8 +450,7 @@ public class TypedTokenStore {
 
 		tokens.get().put(newMerkleTokenId, newMerkleToken);
 		addKnownTreasury.perform(token.getTreasury().getId().asGrpcAccount(), token.getId().asGrpcToken());
-
-		transactionRecordService.includeChangesToToken(token);
+		sideEffectsTracker.trackTokenChanges(token);
 	}
 
 	private void destroyRemoved(List<UniqueToken> nfts, EntityId treasury) {

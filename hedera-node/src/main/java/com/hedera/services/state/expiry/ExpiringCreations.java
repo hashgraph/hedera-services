@@ -20,6 +20,7 @@ package com.hedera.services.state.expiry;
  * ‍
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.ledger.HederaLedger;
@@ -95,6 +96,36 @@ public class ExpiringCreations implements EntityCreator {
 		expiries.trackRecordInState(payer, expiringRecord.getExpiry());
 
 		return expiringRecord;
+	}
+
+	@Override
+	public ExpirableTxnRecord.Builder createExpiringRecord(
+			final long fee,
+			final byte[] hash,
+			final TxnAccessor accessor,
+			final Instant consensusTime,
+			final TxnReceipt receipt,
+			final List<FcAssessedCustomFee> customFeesCharged,
+			final SideEffectsTracker sideEffectsTracker
+	) {
+		final var answer = ExpirableTxnRecord.newBuilder()
+				.setReceipt(receipt)
+				.setTxnHash(hash)
+				.setTxnId(TxnId.fromGrpc(accessor.getTxnId()))
+				.setConsensusTime(RichInstant.fromJava(consensusTime))
+				.setMemo(accessor.getMemo())
+				.setFee(fee)
+				.setTransferList(CurrencyAdjustments.fromGrpc(sideEffectsTracker.getNetTrackedHbarChanges()))
+				.setCustomFeesCharged(customFeesCharged)
+				.setNewTokenAssociations(sideEffectsTracker.getTrackedAutoAssociations());
+		if (accessor.isTriggeredTxn()) {
+			answer.setScheduleRef(fromGrpcScheduleId(accessor.getScheduleRef()));
+		}
+		final var tokenChanges = sideEffectsTracker.getNetTrackedTokenUnitAndOwnershipChanges();
+		if (!tokenChanges.isEmpty()) {
+			setTokensAndTokenAdjustments(answer, tokenChanges);
+		}
+		return answer;
 	}
 
 	@Override

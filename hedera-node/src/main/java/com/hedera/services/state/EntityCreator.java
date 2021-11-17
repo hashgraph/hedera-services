@@ -20,6 +20,7 @@ package com.hedera.services.state;
  * ‍
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordCache;
@@ -37,7 +38,8 @@ public interface EntityCreator {
 	/**
 	 * Sets the ledger for the entity creator.
 	 *
-	 * @param ledger the ledger to use
+	 * @param ledger
+	 * 		the ledger to use
 	 */
 	void setLedger(HederaLedger ledger);
 
@@ -63,8 +65,7 @@ public interface EntityCreator {
 			long submittingMember);
 
 	/**
-	 * Build {@link ExpirableTxnRecord.Builder} when the record is finalized before committing
-	 * the active transaction
+	 * Build {@link ExpirableTxnRecord.Builder} when the record is finalized before committing the active transaction.
 	 *
 	 * @param otherNonThresholdFees
 	 * 		part of fees
@@ -93,6 +94,34 @@ public interface EntityCreator {
 			List<TokenTransferList> explicitTokenTransfers,
 			List<FcAssessedCustomFee> assessedCustomFees,
 			List<FcTokenAssociation> newTokenAssociations);
+
+	/**
+	 * Build {@link ExpirableTxnRecord.Builder} when the record is finalized before committing the active transaction.
+	 *
+	 * @param fee
+	 * 		the fee to include the record
+	 * @param hash
+	 * 		the hash of the transaction to include in the record
+	 * @param accessor
+	 * 		the accessor for the id, memo, and schedule reference (if any) for the transaction
+	 * @param consensusTime
+	 * 		the consensus time of the transaction
+	 * @param receipt
+	 * 		the receipt for the record
+	 * @param assessedCustomFees
+	 * 		the custom fees assessed during the transaction
+	 * @param sideEffectsTracker
+	 * 		the side effects tracked throughout the transaction
+	 * @return a {@link ExpirableTxnRecord.Builder} for the finalized record
+	 */
+	ExpirableTxnRecord.Builder createExpiringRecord(
+			long fee,
+			byte[] hash,
+			TxnAccessor accessor,
+			Instant consensusTime,
+			TxnReceipt receipt,
+			List<FcAssessedCustomFee> assessedCustomFees,
+			SideEffectsTracker sideEffectsTracker);
 
 	/**
 	 * Build a {@link ExpirableTxnRecord.Builder} for a transaction failed to commit

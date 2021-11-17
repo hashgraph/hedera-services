@@ -1244,6 +1244,7 @@ workflows:
               branches:
                 ignore:
                   - NONE
+                  - 02412-HtsContracts-ExtractSideEffectsTracker
             workflow-name: "Continuous-integration"
         - sonar-check:
             context: SonarCloud

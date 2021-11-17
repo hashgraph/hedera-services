@@ -258,7 +258,6 @@ class BasicTransactionContextTest {
 		subject.setCreated(contractCreated);
 		subject.payerSigIsKnownActive();
 		subject.setAssessedCustomFees(Collections.emptyList());
-		subject.setNewTokenAssociations(Collections.emptyList());
 		// and:
 		assertEquals(memberId, subject.submittingSwirldsMember());
 		assertEquals(nodeAccount, subject.submittingNodeAccount());
@@ -454,9 +453,10 @@ class BasicTransactionContextTest {
 		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
 		given(accessor.getTxnId()).willReturn(txnId);
 		given(accessor.getTxn()).willReturn(txn);
+		given(sideEffectsTracker.hasTrackedNewTokenId()).willReturn(true);
+		given(sideEffectsTracker.getTrackedNewTokenId()).willReturn(tokenCreated);
 
 		// when:
-		subject.setCreated(tokenCreated);
 		setUpBuildingExpirableTxnRecord();
 
 		record = subject.recordSoFar();
@@ -468,13 +468,14 @@ class BasicTransactionContextTest {
 
 	@Test
 	void getsExpectedReceiptForTokenMintBurnWipe() {
+		final var newTotalSupply = 1000L;
+
 		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
 		given(accessor.getTxnId()).willReturn(txnId);
 		given(accessor.getTxn()).willReturn(txn);
+		given(sideEffectsTracker.hasTrackedTokenSupply()).willReturn(true);
+		given(sideEffectsTracker.getTrackedTokenSupply()).willReturn(newTotalSupply);
 
-		// when:
-		final var newTotalSupply = 1000L;
-		subject.setNewTotalSupply(newTotalSupply);
 		setUpBuildingExpirableTxnRecord();
 
 		record = subject.recordSoFar();
@@ -628,19 +629,6 @@ class BasicTransactionContextTest {
 	}
 
 	@Test
-	void setsCreatedSerialNumbersInReceipt() {
-		// given:
-		List<Long> expected = List.of(1L, 2L, 3L, 4L, 5L, 6L);
-		var expectedArray = new long[]{1L, 2L, 3L, 4L, 5L, 6L};
-
-		// when:
-		subject.setCreated(expected);
-
-		// then:
-		assertArrayEquals(subject.receiptSoFar().build().getSerialNumbers(), expectedArray);
-	}
-
-	@Test
 	void throwsIfAccessorIsAlreadyTriggered() {
 		given(accessor.isTriggeredTxn()).willReturn(true);
 
@@ -674,7 +662,7 @@ class BasicTransactionContextTest {
 		assertEquals(123456789L, subject.getGasUsedForContractTxn());
 	}
 
-	private ExpirableTxnRecord.Builder buildRecord(
+	private ExpirableTxnRecord.Builder buildExpectedRecord(
 			long otherNonThresholdFees,
 			byte[] hash,
 			TxnAccessor accessor,
@@ -699,26 +687,23 @@ class BasicTransactionContextTest {
 
 		List<EntityId> tokens = new ArrayList<>();
 		List<CurrencyAdjustments> tokenAdjustments = new ArrayList<>();
-		if (tokenTransferList.size() > 0) {
-			for (TokenTransferList tokenTransfers : tokenTransferList) {
-				tokens.add(EntityId.fromGrpcTokenId(tokenTransfers.getToken()));
-				tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList()));
-			}
+		for (TokenTransferList tokenTransfers : tokenTransferList) {
+			tokens.add(EntityId.fromGrpcTokenId(tokenTransfers.getToken()));
+			tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList()));
 		}
 
-		builder.setTokens(tokens)
-				.setTokenAdjustments(tokenAdjustments);
+		builder.setTokens(tokens).setTokenAdjustments(tokenAdjustments);
 		return builder;
 	}
 
 	private ExpirableTxnRecord.Builder setUpBuildingExpirableTxnRecord() {
-		var expirableRecordBuilder = buildRecord(
+		var expirableRecordBuilder = buildExpectedRecord(
 				subject.getNonThresholdFeeChargedToPayer(),
 				accessor.getHash(),
 				accessor,
 				now,
 				subject.receiptSoFar().build());
-		when(creator.buildExpiringRecord(anyLong(), any(), any(), any(), any(), any(), any(), any()))
+		when(creator.createExpiringRecord(anyLong(), any(), any(), any(), any(), any(), any()))
 				.thenReturn(expirableRecordBuilder);
 		return expirableRecordBuilder;
 	}
