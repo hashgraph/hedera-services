@@ -141,8 +141,8 @@ class ServicesTxnManagerTest {
 		// then:
 		inOrder.verify(ledger).begin();
 		inOrder.verify(txnCtx).setStatus(ResponseCodeEnum.FAIL_INVALID);
-		inOrder.verify(ledger).commit();
-		inOrder.verify(recordStreaming).run();
+		inOrder.verify(ledger).rollback();
+		inOrder.verify(recordStreaming, never()).run();
 		// and:
 		assertThat(logCaptor.errorLogs(), contains(
 				Matchers.startsWith("Possibly CATASTROPHIC failure in txn processing")));

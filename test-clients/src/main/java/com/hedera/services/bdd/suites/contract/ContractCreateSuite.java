@@ -29,12 +29,13 @@ import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -109,6 +110,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 						canCallPendingContractSafely(),
 						revertedTryExtCallHasNoSideEffects(),
 						cannotSendToNonExistentAccount(),
+						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
 				}
 		);
 	}
@@ -130,7 +132,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 				);
 	}
 
-	HapiApiSpec canCallPendingContractSafely() {
+	private HapiApiSpec canCallPendingContractSafely() {
 		final int numSlots = 64;
 		final int createBurstSize = 500;
 		final int[] targets = { 19, 24 };
@@ -384,13 +386,43 @@ public class ContractCreateSuite extends HapiApiSuite {
 				);
 	}
 
+	private HapiApiSpec getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee() {
+		final var initcode = "initcode";
+		final var firstContract = "firstContract";
+		final var secondContract = "secondContract";
+		final var civilian = "civilian";
+		final var creation = "creation";
+		final AtomicLong baseCreationFee = new AtomicLong();
+
+		return defaultHapiSpec("GetsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee")
+				.given(
+						cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
+						fileCreate(initcode)
+								.path(ContractResources.MULTIPURPOSE_BYTECODE_PATH)
+				).when(
+						contractCreate(firstContract)
+								.bytecode(initcode)
+								.gas(300_000L)
+								.payingWith(civilian)
+								.balance(0L)
+								.via(creation),
+						getTxnRecord(creation).providingFeeTo(baseCreationFee::set)
+				).then(
+						sourcing(() -> contractCreate(secondContract)
+								.bytecode(initcode)
+								.gas(100_000L)
+								.payingWith(civilian)
+								.balance(ONE_HUNDRED_HBARS - 2 * baseCreationFee.get()))
+				);
+	}
+
 	private HapiApiSpec cannotCreateTooLargeContract() {
-		ByteString contents = ByteString.EMPTY;
+		ByteString contents;
 		try {
 			contents =
 					ByteString.copyFrom(Files.readAllBytes(Path.of(ContractResources.LARGE_CONTRACT_CRYPTO_KITTIES)));
-		} catch (Exception ignore) {
-
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
 		}
 		final var FILE_KEY = "fileKey";
 		final var KEY_LIST = "keyList";
@@ -399,7 +431,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 				.given(
 						newKeyNamed(FILE_KEY),
 						newKeyListNamed(KEY_LIST, List.of(FILE_KEY)),
-						cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(FILE_KEY),
+						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS * 10).key(FILE_KEY),
 						fileCreate("bytecode")
 								.path(ContractResources.LARGE_CONTRACT_CRYPTO_KITTIES)
 								.hasPrecheck(TRANSACTION_OVERSIZE)
@@ -462,7 +494,8 @@ public class ContractCreateSuite extends HapiApiSuite {
 						UtilVerbs.overriding("contracts.maxGas", "100"),
 						fileCreate("contractFile").path(ContractResources.VALID_BYTECODE_PATH)
 				).when().then(
-						contractCreate("testContract").bytecode("contractFile").gas(101L).hasPrecheck(MAX_GAS_LIMIT_EXCEEDED),
+						contractCreate("testContract").bytecode("contractFile").gas(101L).hasPrecheck(
+								MAX_GAS_LIMIT_EXCEEDED),
 						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}

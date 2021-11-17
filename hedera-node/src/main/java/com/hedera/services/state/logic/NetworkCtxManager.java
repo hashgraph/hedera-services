@@ -31,7 +31,6 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.annotations.HandleThrottle;
-import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -43,17 +42,18 @@ import javax.inject.Singleton;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.function.BiPredicate;
-import java.util.function.LongPredicate;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.domain.trackers.IssEventStatus.ONGOING_ISS;
+import static com.hedera.services.utils.MiscUtils.isGasThrottled;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.time.ZoneOffset.UTC;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
 @Singleton
 public class NetworkCtxManager {
 	private static final Logger log = LogManager.getLogger(NetworkCtxManager.class);
-	public static final LongPredicate IS_THROTTLE_EXEMPT = num -> num >= 1 && num <= 100L;
 
 	private final int issResetPeriod;
 
@@ -167,23 +167,19 @@ public class NetworkCtxManager {
 	 * {@link ResponseCodeEnum#CONSENSUS_GAS_EXHAUSTED} if the transaction should be throttled
 	 */
 	public ResponseCodeEnum prepareForIncorporating(TxnAccessor accessor) {
-		if (!IS_THROTTLE_EXEMPT.test(accessor.getPayer().getAccountNum()) &&
-				MiscUtils.isGasThrottled(accessor.getFunction()) &&
-				handleThrottling.shouldThrottleTxn(accessor)) {
-			return ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
+		final var shouldThrottle = handleThrottling.shouldThrottleTxn(accessor);
+		if (isGasThrottled(accessor.getFunction()) && shouldThrottle) {
+			return CONSENSUS_GAS_EXHAUSTED;
 		}
 
 		feeMultiplierSource.updateMultiplier(networkCtx.get().consensusTimeOfLastHandledTxn());
-		return ResponseCodeEnum.OK;
+		return OK;
 	}
 
 	public void finishIncorporating(HederaFunctionality op) {
 		opCounters.countHandled(op);
 
-		if (!IS_THROTTLE_EXEMPT.test(txnCtx.accessor().getPayer().getAccountNum()) &&
-				MiscUtils.isGasThrottled(op) &&
-				dynamicProperties.shouldThrottleByGas() &&
-				txnCtx.hasContractResult()) {
+		if (isGasThrottled(op) && dynamicProperties.shouldThrottleByGas() && txnCtx.hasContractResult()) {
 			handleThrottling.leakUnusedGasPreviouslyReserved(
 					txnCtx.accessor().getGasLimitForContractTx() - txnCtx.getGasUsedForContractTxn());
 		}
