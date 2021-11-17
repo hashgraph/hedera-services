@@ -992,7 +992,7 @@ workflows:
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/4N_2C/UpdateReconnectAbortPreUpdate
+          result_path: results/4N_2C/UpdateReconnectAbortDisPreUpdate
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Comp-Update-Reconnect-Abort-DisPreUpdate-4N-2C"
           requires:
