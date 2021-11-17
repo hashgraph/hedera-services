@@ -124,10 +124,11 @@ class PrecheckKeyReqsTest {
 	void usesBothOrderForQueryPayments() throws Exception {
 		final JKey key1 = new JEd25519Key("firstKey".getBytes());
 		final JKey key2 = new JEd25519Key("secondKey".getBytes());
+		final JKey key3 = new JEd25519Key("thirdKey".getBytes());
 		given(keyOrder.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY))
 				.willReturn(new SigningOrderResult<>(List.of(key1)));
 		given(keyOrderModuloRetry.keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY))
-				.willReturn(new SigningOrderResult<>(List.of(key1, key2, key2, key2, key1)));
+				.willReturn(new SigningOrderResult<>(List.of(key1, key2, key2, key3, key1)));
 		givenImpliedSubject(FOR_QUERY_PAYMENT);
 
 		// when:
@@ -138,9 +139,10 @@ class PrecheckKeyReqsTest {
 		verifyNoMoreInteractions(keyOrder);
 		verify(keyOrderModuloRetry).keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY);
 		verifyNoMoreInteractions(keyOrderModuloRetry);
-		assertEquals(2, keys.size());
+		assertEquals(3, keys.size());
 		assertTrue(keys.contains(key1));
 		assertTrue(keys.contains(key2));
+		assertTrue(keys.contains(key3));
 	}
 
 	private void givenImpliedSubject(Predicate<TransactionBody> isQueryPayment) {
