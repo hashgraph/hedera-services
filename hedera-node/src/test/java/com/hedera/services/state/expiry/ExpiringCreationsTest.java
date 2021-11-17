@@ -66,7 +66,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -170,60 +169,6 @@ class ExpiringCreationsTest {
 		Assertions.assertThrows(UnsupportedOperationException.class, () ->
 				NOOP_EXPIRING_CREATIONS.createExpiringRecord(0L, null, null, null,
 						null, null, null));
-	}
-
-	@Test
-	void validateBuildExpiringRecord() {
-		setUpForExpiringRecordBuilder();
-		given(narratedCharging.totalFeesChargedToPayer()).willReturn(10L);
-		given(ledger.netTransfersInTxn()).willReturn(transfers);
-		given(ledger.netTokenTransfersInTxn()).willReturn(List.of(tokenTransfers));
-		given(ledger.getNewTokenAssociations()).willReturn(newTokenAssociations);
-
-		final var builder = subject.buildExpiringRecord(
-				100L, hash, accessor, timestamp, receipt, null, customFeesCharged, null);
-		final var actualRecord = builder.build();
-
-		validateCommonFields(actualRecord, receipt);
-		assertEquals(110L, actualRecord.getFee());
-		validateTokensAndTokenAdjustments(actualRecord);
-		validateCustomFeesChargedAndNewTokenAssociations(actualRecord);
-	}
-
-	@Test
-	void validateBuildExpiringRecordWithNewTokenAssociationsFromCtx() {
-		setUpForExpiringRecordBuilder();
-		given(narratedCharging.totalFeesChargedToPayer()).willReturn(10L);
-		given(ledger.netTransfersInTxn()).willReturn(transfers);
-		given(ledger.netTokenTransfersInTxn()).willReturn(List.of(tokenTransfers));
-
-		final var builder = subject.buildExpiringRecord(
-				100L, hash, accessor, timestamp, receipt, null, customFeesCharged, newTokenAssociations);
-		final var actualRecord = builder.build();
-
-		validateTokensAndTokenAdjustments(actualRecord);
-		validateCustomFeesChargedAndNewTokenAssociations(actualRecord);
-	}
-
-	@Test
-	void canOverrideTokenTransfers() {
-		setUpForExpiringRecordBuilder();
-		given(narratedCharging.totalFeesChargedToPayer()).willReturn(123L);
-		given(ledger.netTransfersInTxn()).willReturn(transfers);
-		final var someTokenXfers = List.of(TokenTransferList.newBuilder()
-				.setToken(IdUtils.asToken("1.2.3"))
-				.addAllTransfers(
-						withAdjustments(payer, -100,
-								asAccount("0.0.3"), 10,
-								asAccount("0.0.98"), 90).getAccountAmountsList())
-				.build());
-
-		final var builder = subject.buildExpiringRecord(
-				100L, hash, accessor, timestamp, receipt, someTokenXfers, null, null);
-		final var actualRecord = builder.build();
-
-		verify(ledger, never()).netTokenTransfersInTxn();
-		assertEquals(someTokenXfers, actualRecord.asGrpc().getTokenTransferListsList());
 	}
 
 	@Test

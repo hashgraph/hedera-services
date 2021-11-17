@@ -40,7 +40,6 @@ import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
@@ -228,19 +227,6 @@ public class HederaLedger {
 		if (tokenViewsManager != null && tokenViewsManager.isInTransaction()) {
 			tokenViewsManager.commit();
 		}
-	}
-
-	public List<FcTokenAssociation> getNewTokenAssociations() {
-		return sideEffectsTracker.getTrackedAutoAssociations();
-	}
-
-	public TransferList netTransfersInTxn() {
-		accountsLedger.throwIfNotInTxn();
-		return sideEffectsTracker.getNetTrackedHbarChanges();
-	}
-
-	public List<TokenTransferList> netTokenTransfersInTxn() {
-		return sideEffectsTracker.getNetTrackedTokenUnitAndOwnershipChanges();
 	}
 
 	public String currentChangeSet() {
@@ -537,5 +523,15 @@ public class HederaLedger {
 				sideEffectsTracker.trackHbarChange(accountId, change.units());
 			}
 		}
+	}
+
+	/* -- Only used by unit tests --- */
+	TransferList netTransfersInTxn() {
+		accountsLedger.throwIfNotInTxn();
+		return sideEffectsTracker.getNetTrackedHbarChanges();
+	}
+
+	List<TokenTransferList> netTokenTransfersInTxn() {
+		return sideEffectsTracker.getNetTrackedTokenUnitAndOwnershipChanges();
 	}
 }

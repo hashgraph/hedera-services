@@ -31,7 +31,6 @@ import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
@@ -53,8 +52,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 @Singleton
 public class ExpiringCreations implements EntityCreator {
-	private HederaLedger ledger;
-
 	private final ExpiryManager expiries;
 	private final NarratedCharging narratedCharging;
 	private final GlobalDynamicProperties dynamicProperties;
@@ -75,8 +72,6 @@ public class ExpiringCreations implements EntityCreator {
 
 	@Override
 	public void setLedger(final HederaLedger ledger) {
-		this.ledger = ledger;
-
 		narratedCharging.setLedger(ledger);
 	}
 
@@ -126,45 +121,6 @@ public class ExpiringCreations implements EntityCreator {
 			setTokensAndTokenAdjustments(answer, tokenChanges);
 		}
 		return answer;
-	}
-
-	@Override
-	public ExpirableTxnRecord.Builder buildExpiringRecord(
-			final long otherNonThresholdFees,
-			final byte[] hash,
-			final TxnAccessor accessor,
-			final Instant consensusTime,
-			final TxnReceipt receipt,
-			final List<TokenTransferList> explicitTokenTransfers,
-			final List<FcAssessedCustomFee> customFeesCharged,
-			final List<FcTokenAssociation> newTokenAssociations
-	) {
-		final long amount = narratedCharging.totalFeesChargedToPayer() + otherNonThresholdFees;
-		final var transfersList = ledger.netTransfersInTxn();
-		final var tokenTransferList = explicitTokenTransfers != null
-				? explicitTokenTransfers
-				: ledger.netTokenTransfersInTxn();
-		final var currencyAdjustments = transfersList.getAccountAmountsCount() > 0
-				? CurrencyAdjustments.fromGrpc(transfersList) : null;
-
-		final var builder = ExpirableTxnRecord.newBuilder()
-				.setReceipt(receipt)
-				.setTxnHash(hash)
-				.setTxnId(TxnId.fromGrpc(accessor.getTxnId()))
-				.setConsensusTime(RichInstant.fromJava(consensusTime))
-				.setMemo(accessor.getMemo())
-				.setFee(amount)
-				.setTransferList(currencyAdjustments)
-				.setScheduleRef(accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null)
-				.setCustomFeesCharged(customFeesCharged)
-				.setNewTokenAssociations(newTokenAssociations != null ?
-						newTokenAssociations : ledger.getNewTokenAssociations());
-
-		if (!tokenTransferList.isEmpty()) {
-			setTokensAndTokenAdjustments(builder, tokenTransferList);
-		}
-
-		return builder;
 	}
 
 	@Override
