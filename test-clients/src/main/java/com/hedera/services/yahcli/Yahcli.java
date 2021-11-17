@@ -26,6 +26,7 @@ import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
+import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
 import com.hedera.services.yahcli.commands.accounts.AccountsCommand;
 import com.hedera.services.yahcli.commands.fees.FeesCommand;
 import com.hedera.services.yahcli.commands.files.SysFilesCommand;
@@ -149,7 +150,8 @@ public class Yahcli implements Callable<Integer> {
 				FeesAndRatesProvider.class,
 				HapiQueryOp.class,
 				HapiGetFileContents.class,
-				HapiApiSpec.class
+				HapiApiSpec.class,
+				VersionInfoSpec.class
 		).forEach(Yahcli::setToLessNoisy);
 	}
 

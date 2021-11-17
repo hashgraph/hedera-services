@@ -63,7 +63,9 @@ public class VersionInfoSpec extends HapiApiSuite {
 					.given()
 					.when()
 					.then(
-							getVersionInfo().logged()
+							getVersionInfo()
+									.withYahcliLogging()
+									.noLogging()
 					);
 		} else {
 			return defaultHapiSpec("getsExpectedVersions").given().when().then(
