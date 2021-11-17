@@ -98,7 +98,7 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.when;
 
-@ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
+@ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class BasicTransactionContextTest {
 	private final TransactionID scheduledTxnId = TransactionID.newBuilder()
 			.setAccountID(IdUtils.asAccount("0.0.2"))
@@ -158,6 +158,12 @@ class BasicTransactionContextTest {
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
 	private EntityCreator creator;
+	@Mock
+	private ExpirableTxnRecord expirableTxnRecord;
+	@Mock
+	private ExpirableTxnRecord.Builder expirableTxnRecordBuilder;
+	@Mock
+	private SolidityFnResult fnResult;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -629,7 +635,7 @@ class BasicTransactionContextTest {
 	void setsCreatedSerialNumbersInReceipt() {
 		// given:
 		List<Long> expected = List.of(1L, 2L, 3L, 4L, 5L, 6L);
-		var expectedArray = new long[] { 1L, 2L, 3L, 4L, 5L, 6L };
+		var expectedArray = new long[]{1L, 2L, 3L, 4L, 5L, 6L};
 
 		// when:
 		subject.setCreated(expected);
@@ -644,6 +650,32 @@ class BasicTransactionContextTest {
 
 		// when:
 		assertThrows(IllegalStateException.class, () -> subject.trigger(accessor));
+	}
+
+	@Test
+	void hasContractResultWorksForCreateWithResult() {
+		ContractFunctionResult result = ContractFunctionResult.newBuilder().build();
+		subject.setCreateResult(result);
+		assertTrue(subject.hasContractResult());
+	}
+
+	@Test
+	void hasContractResultWorksWithoutResult() {
+		assertFalse(subject.hasContractResult());
+	}
+
+	@Test
+	void getGasUsedForContractTXWorksForCreate() {
+		ContractFunctionResult result = ContractFunctionResult.newBuilder().setGasUsed(123456789L).build();
+		subject.setCreateResult(result);
+		assertEquals(123456789L, subject.getGasUsedForContractTxn());
+	}
+
+	@Test
+	void getGasUsedForContractTXWorksForCall() {
+		ContractFunctionResult result = ContractFunctionResult.newBuilder().setGasUsed(123456789L).build();
+		subject.setCallResult(result);
+		assertEquals(123456789L, subject.getGasUsedForContractTxn());
 	}
 
 	private ExpirableTxnRecord.Builder buildRecord(

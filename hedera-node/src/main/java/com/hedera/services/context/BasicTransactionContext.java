@@ -84,8 +84,10 @@ public class BasicTransactionContext implements TransactionContext {
 
 	private TxnAccessor triggeredTxn = null;
 
-	private static final Consumer<TxnReceipt.Builder> noopReceiptConfig = ignore -> { };
-	private static final Consumer<ExpirableTxnRecord.Builder> noopRecordConfig = ignore -> { };
+	private static final Consumer<TxnReceipt.Builder> noopReceiptConfig = ignore -> {
+	};
+	private static final Consumer<ExpirableTxnRecord.Builder> noopRecordConfig = ignore -> {
+	};
 
 	private long submittingMember;
 	private long otherNonThresholdFees;
@@ -103,6 +105,7 @@ public class BasicTransactionContext implements TransactionContext {
 
 	boolean hasComputedRecordSoFar;
 	ExpirableTxnRecord.Builder recordSoFar = ExpirableTxnRecord.newBuilder();
+	private ContractFunctionResult contractFunctionResult;
 
 	private final NodeInfo nodeInfo;
 	private final EntityCreator creator;
@@ -147,6 +150,7 @@ public class BasicTransactionContext implements TransactionContext {
 		narratedCharging.resetForTxn(accessor, submittingMember);
 
 		recordSoFar.clear();
+		contractFunctionResult = null;
 	}
 
 	@Override
@@ -300,11 +304,13 @@ public class BasicTransactionContext implements TransactionContext {
 
 	@Override
 	public void setCallResult(ContractFunctionResult result) {
+		this.contractFunctionResult = result;
 		recordConfig = expiringRecord -> expiringRecord.setContractCallResult(SolidityFnResult.fromGrpc(result));
 	}
 
 	@Override
 	public void setCreateResult(ContractFunctionResult result) {
+		this.contractFunctionResult = result;
 		recordConfig = expiringRecord -> expiringRecord.setContractCreateResult(SolidityFnResult.fromGrpc(result));
 	}
 
@@ -344,6 +350,16 @@ public class BasicTransactionContext implements TransactionContext {
 	@Override
 	public void setCreated(List<Long> serialNumbers) {
 		receiptConfig = receipt -> receipt.setSerialNumbers(serialNumbers.stream().mapToLong(l -> l).toArray());
+	}
+
+	@Override
+	public boolean hasContractResult() {
+		return contractFunctionResult != null;
+	}
+
+	@Override
+	public long getGasUsedForContractTxn() {
+		return contractFunctionResult.getGasUsed();
 	}
 
 	/* --- Used by unit tests --- */

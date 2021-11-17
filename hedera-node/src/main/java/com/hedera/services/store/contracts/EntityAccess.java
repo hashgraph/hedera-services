@@ -29,7 +29,19 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 
+import static com.hedera.services.store.contracts.WorldLedgers.NULL_WORLD_LEDGERS;
+
 public interface EntityAccess {
+	/**
+	 * Provides a {@link WorldLedgers} whose {@link com.hedera.services.ledger.TransactionalLedger} instances commit
+	 * directly to the Hedera world state. Only makes sense for a mutable {@link EntityAccess} implementation.
+	 *
+	 * @return the world state ledgers if this implementation is mutable (null ledgers otherwise)
+	 */
+	default WorldLedgers worldLedgers() {
+		return NULL_WORLD_LEDGERS;
+	}
+
 	/* --- Account access --- */
 	void spawn(AccountID id, long balance, HederaAccountCustomizer customizer);
 
@@ -51,15 +63,17 @@ public interface EntityAccess {
 
 	boolean isDeleted(AccountID id);
 
+	boolean isDetached(AccountID id);
+
 	boolean isExtant(AccountID id);
 
 	/* --- Storage access --- */
-	void put(AccountID id, UInt256 key, UInt256 value);
+	void putStorage(AccountID id, UInt256 key, UInt256 value);
 
-	UInt256 get(AccountID id, UInt256 key);
+	UInt256 getStorage(AccountID id, UInt256 key);
 
 	/* --- Bytecode access --- */
-	void store(AccountID id, Bytes code);
+	void storeCode(AccountID id, Bytes code);
 
-	Bytes fetch(AccountID id);
+	Bytes fetchCode(AccountID id);
 }

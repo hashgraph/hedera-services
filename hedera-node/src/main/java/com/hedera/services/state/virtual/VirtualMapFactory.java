@@ -43,7 +43,7 @@ public class VirtualMapFactory {
 
 	@FunctionalInterface
 	public interface JasperDbBuilderFactory {
-		<K extends VirtualKey, V extends VirtualValue> JasperDbBuilder<K, V> newJdbBuilder();
+		<K extends VirtualKey<K>, V extends VirtualValue> JasperDbBuilder<K, V> newJdbBuilder();
 	}
 
 	private final String jdbDataLoc;

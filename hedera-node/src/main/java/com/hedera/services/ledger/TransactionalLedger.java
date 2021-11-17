@@ -81,6 +81,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	final Map<K, EnumMap<P, Object>> changes = new HashMap<>();
 
 	private boolean isInTransaction = false;
+	private PropertyChangeObserver<K, P> commitInterceptor = null;
 	private Optional<Function<K, String>> keyToString = Optional.empty();
 
 	public TransactionalLedger(
@@ -119,6 +120,8 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	public static <K, P extends Enum<P> & BeanProperty<A>, A> TransactionalLedger<K, P, A> activeLedgerWrapping(
 			final TransactionalLedger<K, P, A> sourceLedger
 	) {
+		Objects.requireNonNull(sourceLedger);
+
 		final var wrapper = new TransactionalLedger<>(
 				sourceLedger.getPropertyType(),
 				sourceLedger.getNewEntity(),
@@ -128,11 +131,15 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		return wrapper;
 	}
 
-	public void setKeyToString(Function<K, String> keyToString) {
+	public void setKeyToString(final Function<K, String> keyToString) {
 		this.keyToString = Optional.of(keyToString);
 	}
 
-	void begin() {
+	public void setCommitInterceptor(final PropertyChangeObserver<K, P> commitInterceptor) {
+		this.commitInterceptor = commitInterceptor;
+	}
+
+	public void begin() {
 		if (isInTransaction) {
 			throw new IllegalStateException("A transaction is already active!");
 		}
@@ -155,7 +162,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		}
 	}
 
-	void rollback() {
+	public void rollback() {
 		if (!isInTransaction) {
 			throw new IllegalStateException("Cannot perform rollback, no transaction is active!");
 		}
@@ -169,7 +176,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		isInTransaction = false;
 	}
 
-	void commit() {
+	public void commit() {
 		if (!isInTransaction) {
 			throw new IllegalStateException("Cannot perform commit, no transaction is active!");
 		}
@@ -226,7 +233,11 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		final boolean hasPendingChanges = changeSet != null;
 		final A account = entities.contains(id) ? entities.getRef(id) : newEntity.get();
 		if (hasPendingChanges) {
-			changeManager.persist(changeSet, account);
+			if (commitInterceptor != null) {
+				changeManager.persistWithObserver(id, changeSet, account, commitInterceptor);
+			} else {
+				changeManager.persist(changeSet, account);
+			}
 		}
 
 		return account;
@@ -377,11 +388,11 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 				: newDefaultPropertySource();
 	}
 
-	boolean isInTransaction() {
+	public boolean isInTransaction() {
 		return isInTransaction;
 	}
 
-	String changeSetSoFar() {
+	public String changeSetSoFar() {
 		StringBuilder desc = new StringBuilder("{");
 		AtomicBoolean isFirstChange = new AtomicBoolean(true);
 		changes.entrySet().forEach(change -> {
@@ -426,9 +437,9 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		return changes;
 	}
 
-	private void flushListed(List<K> l) {
+	private void flushListed(final List<K> l) {
 		if (!l.isEmpty()) {
-			for (var key : l) {
+			for (final var key : l) {
 				if (!deadEntities.contains(key)) {
 					entities.put(key, getFinalized(key));
 				}
@@ -488,5 +499,10 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 
 	Class<P> getPropertyType() {
 		return propertyType;
+	}
+
+	/* --- Only used by unit tests --- */
+	public TransactionalLedger<K, P, A> getEntitiesLedger() {
+		return entitiesLedger;
 	}
 }

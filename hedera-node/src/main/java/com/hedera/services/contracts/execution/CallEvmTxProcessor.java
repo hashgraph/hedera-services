@@ -44,26 +44,27 @@ import org.hyperledger.besu.evm.operation.Operation;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
-import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 
 @Singleton
 public class CallEvmTxProcessor extends EvmTxProcessor {
 	private static final Logger logger = LogManager.getLogger(CallEvmTxProcessor.class);
 
-	private CodeCache codeCache;
+	private final CodeCache codeCache;
 
 	@Inject
 	public CallEvmTxProcessor(
-			HederaMutableWorldState worldState,
-			CodeCache codeCache,
-			HbarCentExchange exchange,
-			UsagePricesProvider usagePrices,
-			GlobalDynamicProperties dynamicProperties,
-			GasCalculator gasCalculator,
-			Set<Operation> hederaOperations
+			final HederaMutableWorldState worldState,
+			final LivePricesSource livePricesSource,
+			final CodeCache codeCache,
+			final HbarCentExchange exchange,
+			final UsagePricesProvider usagePrices,
+			final GlobalDynamicProperties dynamicProperties,
+			final GasCalculator gasCalculator,
+			final Set<Operation> hederaOperations
 	) {
-		super(worldState, exchange, usagePrices, dynamicProperties, gasCalculator, hederaOperations);
+		super(worldState, livePricesSource, dynamicProperties, gasCalculator, hederaOperations);
 		this.codeCache = codeCache;
 	}
 
@@ -86,7 +87,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 				false,
 				consensusTime,
 				false,
-				Optional.empty());
+				OptionalLong.empty());
 	}
 
 	@Override

@@ -21,6 +21,8 @@ package com.hedera.services.store.contracts;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -30,6 +32,7 @@ import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -45,14 +48,22 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigInteger;
 
+import static com.hedera.services.state.virtual.VirtualBlobKey.Type.CONTRACT_BYTECODE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willCallRealMethod;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class StaticEntityAccessTest {
+	@Mock
+	private OptionValidator validator;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private StateView stateView;
 	@Mock
@@ -66,25 +77,36 @@ class StaticEntityAccessTest {
 
 	private StaticEntityAccess subject;
 
-	private AccountID id = IdUtils.asAccount("0.0.1234");
-	private AccountID nonExtantId = IdUtils.asAccount("0.0.1235");
-	private UInt256 uint256Key = UInt256.ONE;
-	private Bytes bytesKey = uint256Key.toBytes();
-	private ContractKey contractKey = new ContractKey(id.getAccountNum(), uint256Key.toArray());
-	private VirtualBlobKey blobKey = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE,
-			(int) id.getAccountNum());
 	private static final JKey key = new JEd25519Key("aBcDeFgHiJkLmNoPqRsTuVwXyZ012345".getBytes());
-	private ContractValue contractVal = new ContractValue(BigInteger.ONE);
-	private VirtualBlobValue blobVal = new VirtualBlobValue("data".getBytes());
 
-	private MerkleAccount someAccount = new HederaAccountCustomizer()
+	private final AccountID id = IdUtils.asAccount("0.0.1234");
+	private final AccountID nonExtantId = IdUtils.asAccount("0.0.1235");
+	private final UInt256 uint256Key = UInt256.ONE;
+	private final Bytes bytesKey = uint256Key.toBytes();
+	private final ContractKey contractKey = new ContractKey(id.getAccountNum(), uint256Key.toArray());
+	private final VirtualBlobKey blobKey = new VirtualBlobKey(CONTRACT_BYTECODE, (int) id.getAccountNum());
+	private final ContractValue contractVal = new ContractValue(BigInteger.ONE);
+	private final VirtualBlobValue blobVal = new VirtualBlobValue("data".getBytes());
+
+	private final long someExpiry = 1_234_567L;
+	private final MerkleAccount someNonContractAccount = new HederaAccountCustomizer()
 			.isReceiverSigRequired(false)
 			.key(key)
 			.proxy(EntityId.MISSING_ENTITY_ID)
 			.isDeleted(false)
-			.expiry(1234L)
+			.expiry(someExpiry)
 			.memo("")
 			.isSmartContract(false)
+			.autoRenewPeriod(1234L)
+			.customizing(new MerkleAccount());
+	private final MerkleAccount someContractAccount = new HederaAccountCustomizer()
+			.isReceiverSigRequired(false)
+			.key(key)
+			.proxy(EntityId.MISSING_ENTITY_ID)
+			.isDeleted(false)
+			.expiry(someExpiry)
+			.memo("")
+			.isSmartContract(true)
 			.autoRenewPeriod(1234L)
 			.customizing(new MerkleAccount());
 
@@ -93,39 +115,76 @@ class StaticEntityAccessTest {
 		given(stateView.storage()).willReturn(blobs);
 		given(stateView.accounts()).willReturn(accounts);
 		given(stateView.contractStorage()).willReturn(storage);
-		subject = new StaticEntityAccess(stateView);
+		subject = new StaticEntityAccess(stateView, validator, dynamicProperties);
+	}
+
+	@Test
+	void notDetachedIfAutoRenewNotEnabled() {
+		assertFalse(subject.isDetached(id));
+	}
+
+	@Test
+	void notDetachedIfSmartContract() {
+		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
+		given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someContractAccount);
+		assertFalse(subject.isDetached(id));
+	}
+
+	@Test
+	void notDetachedIfNonZeroBalance() throws NegativeAccountBalanceException {
+		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
+		given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someNonContractAccount);
+		someNonContractAccount.setBalance(1L);
+		assertFalse(subject.isDetached(id));
+	}
+
+	@Test
+	void notDetachedIfNotExpired() throws NegativeAccountBalanceException {
+		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
+		given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someNonContractAccount);
+		someNonContractAccount.setBalance(0L);
+		given(validator.isAfterConsensusSecond(someNonContractAccount.getExpiry())).willReturn(true);
+		assertFalse(subject.isDetached(id));
+	}
+
+	@Test
+	void detachedIfExpiredWithZeroBalance() throws NegativeAccountBalanceException {
+		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
+		given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someNonContractAccount);
+		someNonContractAccount.setBalance(0L);
+		assertTrue(subject.isDetached(id));
 	}
 
 	@Test
 	void mutatorsThrows() {
-		assertThrows(UnsupportedOperationException.class, () -> subject.spawn(id, 0l, customizer));
+		assertThrows(UnsupportedOperationException.class, () -> subject.spawn(id, 0, customizer));
 		assertThrows(UnsupportedOperationException.class, () -> subject.customize(id, customizer));
 		assertThrows(UnsupportedOperationException.class, () -> subject.adjustBalance(id, 10L));
-		assertThrows(UnsupportedOperationException.class, () -> subject.put(id, uint256Key, uint256Key));
-		assertThrows(UnsupportedOperationException.class, () -> subject.store(id, bytesKey));
+		assertThrows(UnsupportedOperationException.class, () -> subject.putStorage(id, uint256Key, uint256Key));
+		assertThrows(UnsupportedOperationException.class, () -> subject.storeCode(id, bytesKey));
 	}
 
 	@Test
 	void nonMutatorsWork() {
-		given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someAccount);
+		given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someNonContractAccount);
 		given(accounts.get(EntityNum.fromAccountId(nonExtantId))).willReturn(null);
 
-		assertEquals(someAccount.getBalance(), subject.getBalance(id));
-		assertEquals(someAccount.isDeleted(), subject.isDeleted(id));
+		assertEquals(someNonContractAccount.getBalance(), subject.getBalance(id));
+		assertEquals(someNonContractAccount.isDeleted(), subject.isDeleted(id));
 		assertTrue(subject.isExtant(id));
 		assertFalse(subject.isExtant(nonExtantId));
-		assertEquals(someAccount.getMemo(), subject.getMemo(id));
-		assertEquals(someAccount.getExpiry(), subject.getExpiry(id));
-		assertEquals(someAccount.getAutoRenewSecs(), subject.getAutoRenew(id));
-		assertEquals(someAccount.getAccountKey(), subject.getKey(id));
-		assertEquals(someAccount.getProxy(), subject.getProxy(id));
+		assertEquals(someNonContractAccount.getMemo(), subject.getMemo(id));
+		assertEquals(someNonContractAccount.getExpiry(), subject.getExpiry(id));
+		assertEquals(someNonContractAccount.getAutoRenewSecs(), subject.getAutoRenew(id));
+		assertEquals(someNonContractAccount.getAccountKey(), subject.getKey(id));
+		assertEquals(someNonContractAccount.getProxy(), subject.getProxy(id));
 	}
 
 	@Test
 	void getWorks() {
 		given(storage.get(contractKey)).willReturn(contractVal);
 
-		final var unit256Val = subject.get(id, uint256Key);
+		final var unit256Val = subject.getStorage(id, uint256Key);
 
 		final var expectedVal = UInt256.fromBytes(Bytes.wrap(contractVal.getValue()));
 		assertEquals(expectedVal, unit256Val);
@@ -133,7 +192,7 @@ class StaticEntityAccessTest {
 
 	@Test
 	void getForUnknownReturnsZero() {
-		final var unit256Val = subject.get(id, UInt256.MAX_VALUE);
+		final var unit256Val = subject.getStorage(id, UInt256.MAX_VALUE);
 
 		assertEquals(UInt256.ZERO, unit256Val);
 	}
@@ -142,7 +201,7 @@ class StaticEntityAccessTest {
 	void fetchWithValueWorks() {
 		given(blobs.get(blobKey)).willReturn(blobVal);
 
-		final var blobBytes = subject.fetch(id);
+		final var blobBytes = subject.fetchCode(id);
 
 		final var expectedVal = Bytes.of(blobVal.getData());
 		assertEquals(expectedVal, blobBytes);
@@ -150,8 +209,16 @@ class StaticEntityAccessTest {
 
 	@Test
 	void fetchWithoutValueReturnsNull() {
-		final var blobBytes = subject.fetch(id);
+		final var blobBytes = subject.fetchCode(id);
 		assertEquals(Bytes.EMPTY, blobBytes);
 	}
 
+	@Test
+	void defaultLedgersAreNull() {
+		final var mockSubject = mock(EntityAccess.class);
+
+		willCallRealMethod().given(mockSubject).worldLedgers();
+
+		assertSame(WorldLedgers.NULL_WORLD_LEDGERS, mockSubject.worldLedgers());
+	}
 }

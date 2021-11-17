@@ -23,8 +23,6 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
@@ -41,7 +39,7 @@ import org.hyperledger.besu.evm.operation.Operation;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
-import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 
 /**
@@ -54,14 +52,14 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 
 	@Inject
 	public CreateEvmTxProcessor(
-			HederaMutableWorldState worldState,
-			CodeCache codeCache,
-			HbarCentExchange exchange,
-			UsagePricesProvider usagePrices,
-			GlobalDynamicProperties globalDynamicProperties,
-			GasCalculator gasCalculator,
-			Set<Operation> hederaOperations) {
-		super(worldState, exchange, usagePrices, globalDynamicProperties, gasCalculator, hederaOperations);
+			final HederaMutableWorldState worldState,
+			final LivePricesSource livePricesSource,
+			final CodeCache codeCache,
+			final GlobalDynamicProperties globalDynamicProperties,
+			final GasCalculator gasCalculator,
+			final Set<Operation> hederaOperations
+	) {
+		super(worldState, livePricesSource, globalDynamicProperties, gasCalculator, hederaOperations);
 		this.codeCache = codeCache;
 	}
 
@@ -72,10 +70,21 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 			final long value,
 			final Bytes code,
 			final Instant consensusTime,
-			final long expiry) {
+			final long expiry
+	) {
 		final long gasPrice = gasPriceTinyBarsGiven(consensusTime);
 
-		return super.execute(sender, receiver, gasPrice, providedGasLimit, value, code, true, consensusTime, false, Optional.of(expiry));
+		return super.execute(
+				sender,
+				receiver,
+				gasPrice,
+				providedGasLimit,
+				value,
+				code,
+				true,
+				consensusTime,
+				false,
+				OptionalLong.of(expiry));
 	}
 
 	@Override

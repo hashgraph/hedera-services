@@ -20,17 +20,19 @@ package com.hedera.services.state.virtual;
  * ‍
  */
 
+import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import static com.hedera.services.state.virtual.VirtualBlobKeySerializer.CLASS_ID;
-import static com.hedera.services.state.virtual.VirtualBlobKeySerializer.CURRENT_VERSION;
 import static com.hedera.services.state.virtual.VirtualBlobKey.BYTES_IN_SERIALIZED_FORM;
 import static com.hedera.services.state.virtual.VirtualBlobKey.Type.FILE_DATA;
+import static com.hedera.services.state.virtual.VirtualBlobKeySerializer.CLASS_ID;
+import static com.hedera.services.state.virtual.VirtualBlobKeySerializer.CURRENT_VERSION;
 import static com.hedera.services.state.virtual.VirtualBlobKeySerializer.DATA_VERSION;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -89,5 +91,12 @@ class VirtualBlobKeySerializerTest {
 		assertTrue(subject.equals(bin, 1, someKey));
 		assertFalse(subject.equals(bin, 1, sameTypeDiffNum));
 		assertFalse(subject.equals(bin, 1, diffTypeSameNum));
+	}
+
+	@Test
+	void serdesAreNoop() {
+		final var in = mock(SerializableDataInputStream.class);
+		assertDoesNotThrow(() -> subject.deserialize(in, 1));
+		assertDoesNotThrow(() -> subject.serialize(null));
 	}
 }

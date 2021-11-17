@@ -31,6 +31,7 @@ import com.hedera.services.queries.contract.ContractCallLocalAnswer;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -94,6 +95,8 @@ class ContractCallLocalResourceUsageTest {
 	private CallLocalEvmTxProcessor evmTxProcessor;
 	@Mock
 	private EntityIdSource ids;
+	@Mock
+	private OptionValidator validator;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -103,7 +106,8 @@ class ContractCallLocalResourceUsageTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new ContractCallLocalResourceUsage(usageEstimator, properties, accountStore, evmTxProcessor, ids);
+		subject = new ContractCallLocalResourceUsage(
+				usageEstimator, properties, accountStore, evmTxProcessor, ids, validator);
 	}
 
 	@Test

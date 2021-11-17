@@ -122,13 +122,14 @@ class HederaCallOperationTest {
 		given(acc.getBalance()).willReturn(Wei.of(100));
 		given(calc.gasAvailableForChildCall(any(), any(), anyBoolean())).willReturn(Gas.of(10));
 		given(acc.getAddress()).willReturn(accountAddr);
-		given(accountAddr.toArray()).willReturn(new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22});
+		given(accountAddr.toArrayUnsafe()).willReturn(
+				new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22 });
 		given(sigsVerifier.allRequiredKeysAreActive(anySet())).willReturn(true);
 
 		var opRes = subject.execute(evmMsgFrame, evm);
 		assertEquals(Optional.empty(), opRes.getHaltReason());
 		assertEquals(opRes.getGasCost().get(), cost);
-		
+
 		given(sigsVerifier.allRequiredKeysAreActive(anySet())).willReturn(false);
 		var invalidSignaturesRes = subject.execute(evmMsgFrame, evm);
 		assertEquals(Optional.of(HederaExceptionalHaltReason.INVALID_SIGNATURE), invalidSignaturesRes.getHaltReason());

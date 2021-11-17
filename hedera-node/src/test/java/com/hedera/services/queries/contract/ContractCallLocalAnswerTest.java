@@ -22,6 +22,7 @@ package com.hedera.services.queries.contract;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -47,6 +48,9 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -60,6 +64,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
@@ -70,48 +75,48 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+@ExtendWith(MockitoExtension.class)
 class ContractCallLocalAnswerTest {
-	private String node = "0.0.3";
-	private long gas = 123L;
-	private long fee = 1_234L;
-	private String payer = "0.0.12345";
+	private final long fee = 1_234L;
+	private final ContractID target = IdUtils.asContract("0.0.75231");
+	private final ByteString result = ByteString.copyFrom("Searching for images".getBytes());
+
+	private int gas = 123;
 	private Transaction paymentTxn;
-	private ContractID target = IdUtils.asContract("0.0.75231");
-	ByteString result = ByteString.copyFrom("Searching for images".getBytes());
 
-	StateView view;
+	@Mock
+	private StateView view;
+	@Mock
+	private AccountStore accountStore;
+	@Mock
+	private EntityIdSource ids;
+	@Mock
+	private OptionValidator validator;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private CallLocalEvmTxProcessor evmTxProcessor;
+	@Mock
+	private MerkleMap<EntityNum, MerkleAccount> contracts;
 
-	AccountStore accountStore;
-	ContractCallLocalAnswer subject;
-	EntityIdSource ids;
-	OptionValidator validator;
-	CallLocalEvmTxProcessor evmTxProcessor;
-	MerkleMap<EntityNum, MerkleAccount> contracts;
+	private ContractCallLocalAnswer subject;
 
 	@BeforeEach
 	private void setup() throws Throwable {
-		contracts = (MerkleMap<EntityNum, MerkleAccount>) mock(MerkleMap.class);
-		view = mock(StateView.class);
-
-		accountStore = mock(AccountStore.class);
-		evmTxProcessor = mock(CallLocalEvmTxProcessor.class);
-		validator = mock(OptionValidator.class);
-		ids = mock(EntityIdSource.class);
-
-		given(view.contracts()).willReturn(contracts);
-		given(validator.queryableContractStatus(target, contracts)).willReturn(OK);
-
-		subject = new ContractCallLocalAnswer(ids, accountStore, evmTxProcessor, validator);
+		subject = new ContractCallLocalAnswer(ids, accountStore, validator, dynamicProperties, evmTxProcessor);
 	}
 
 	@Test
 	void rejectsInvalidCid() throws Throwable {
+		given(view.contracts()).willReturn(contracts);
+
 		// given:
 		Query query = validQuery(COST_ANSWER, fee);
+		given(dynamicProperties.maxGas()).willReturn(gas);
+
 		// and:
 		given(validator.queryableContractStatus(target, contracts)).willReturn(CONTRACT_DELETED);
 
@@ -121,7 +126,6 @@ class ContractCallLocalAnswerTest {
 
 	@Test
 	void rejectsNegativeGas() throws Throwable {
-		// setup:
 		gas = -1;
 
 		// given:
@@ -129,6 +133,17 @@ class ContractCallLocalAnswerTest {
 
 		// expect:
 		assertEquals(CONTRACT_NEGATIVE_GAS, subject.checkValidity(query, view));
+	}
+
+	@Test
+	void rejectsGasLimitOverMaxGas() throws Throwable {
+
+		// given:
+		given(dynamicProperties.maxGas()).willReturn(gas-1);
+		Query query = validQuery(COST_ANSWER, fee);
+
+		// expect:
+		assertEquals(MAX_GAS_LIMIT_EXCEEDED, subject.checkValidity(query, view));
 	}
 
 	@Test
@@ -222,7 +237,6 @@ class ContractCallLocalAnswerTest {
 		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
 				.willReturn(transactionProcessingResult);
 
-		// when:
 		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
 
 		// then:
@@ -260,6 +274,8 @@ class ContractCallLocalAnswerTest {
 	}
 
 	private Query validQuery(ResponseType type, long payment) throws Throwable {
+		final var node = "0.0.3";
+		final var payer = "0.0.12345";
 		this.paymentTxn = payerSponsoredTransfer(payer, COMPLEX_KEY_ACCOUNT_KT, node, payment);
 
 		QueryHeader.Builder header = QueryHeader.newBuilder()
@@ -272,7 +288,7 @@ class ContractCallLocalAnswerTest {
 		return Query.newBuilder().setContractCallLocal(op).build();
 	}
 
-	private ContractCallLocalResponse response(ResponseCodeEnum status) {
+	private ContractCallLocalResponse response(final ResponseCodeEnum status) {
 		return ContractCallLocalResponse.newBuilder()
 				.setHeader(ResponseHeader.newBuilder().setNodeTransactionPrecheckCode(status))
 				.setFunctionResult(ContractFunctionResult.newBuilder()

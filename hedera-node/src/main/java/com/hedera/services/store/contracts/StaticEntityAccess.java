@@ -23,6 +23,7 @@ package com.hedera.services.store.contracts;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -31,6 +32,7 @@ import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
@@ -39,17 +41,28 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 
+import java.util.Objects;
+
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 
 public class StaticEntityAccess implements EntityAccess {
+	private final OptionValidator validator;
+	private final GlobalDynamicProperties dynamicProperties;
 	private final MerkleMap<EntityNum, MerkleAccount> accounts;
 	private final VirtualMap<ContractKey, ContractValue> storage;
 	private final VirtualMap<VirtualBlobKey, VirtualBlobValue> blobs;
 
-	public StaticEntityAccess(final StateView stateView) {
-		blobs = stateView.storage();
-		storage = stateView.contractStorage();
-		accounts = stateView.accounts();
+	public StaticEntityAccess(
+			final StateView stateView,
+			final OptionValidator validator,
+			final GlobalDynamicProperties dynamicProperties
+	) {
+		this.validator = validator;
+		this.dynamicProperties = dynamicProperties;
+
+		this.blobs = stateView.storage();
+		this.storage = stateView.contractStorage();
+		this.accounts = stateView.accounts();
 	}
 
 	@Override
@@ -58,7 +71,7 @@ public class StaticEntityAccess implements EntityAccess {
 	}
 
 	@Override
-	public void customize(AccountID id, HederaAccountCustomizer customizer) {
+	public void customize(final AccountID id, final HederaAccountCustomizer customizer) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -98,6 +111,18 @@ public class StaticEntityAccess implements EntityAccess {
 	}
 
 	@Override
+	public boolean isDetached(AccountID id) {
+		if (!dynamicProperties.autoRenewEnabled()) {
+			return false;
+		}
+		final var account = accounts.get(fromAccountId(id));
+		Objects.requireNonNull(account);
+		return !account.isSmartContract()
+				&& account.getBalance() == 0
+				&& !validator.isAfterConsensusSecond(account.getExpiry());
+	}
+
+	@Override
 	public boolean isDeleted(AccountID id) {
 		return accounts.get(fromAccountId(id)).isDeleted();
 	}
@@ -108,24 +133,24 @@ public class StaticEntityAccess implements EntityAccess {
 	}
 
 	@Override
-	public void put(AccountID id, UInt256 key, UInt256 value) {
+	public void putStorage(AccountID id, UInt256 key, UInt256 value) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public UInt256 get(AccountID id, UInt256 key) {
+	public UInt256 getStorage(AccountID id, UInt256 key) {
 		final var contractKey = new ContractKey(id.getAccountNum(), key.toArray());
 		ContractValue value = storage.get(contractKey);
 		return value == null ? UInt256.ZERO : UInt256.fromBytes(Bytes32.wrap(value.getValue()));
 	}
 
 	@Override
-	public void store(AccountID id, Bytes code) {
+	public void storeCode(AccountID id, Bytes code) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public Bytes fetch(AccountID id) {
+	public Bytes fetchCode(AccountID id) {
 		final var blobKey = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, (int) id.getAccountNum());
 		var bytes = blobs
 				.get(blobKey);

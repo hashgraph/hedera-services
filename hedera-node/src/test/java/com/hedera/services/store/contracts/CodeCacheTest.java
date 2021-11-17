@@ -60,7 +60,7 @@ class CodeCacheTest {
 
     @Test
     void getTriggeringLoad() {
-        given(entityAccess.fetch(any())).willReturn(Bytes.of("abc".getBytes()));
+        given(entityAccess.fetchCode(any())).willReturn(Bytes.of("abc".getBytes()));
         Code code = codeCache.get(Address.fromHexString("0xabc"));
 
         assertEquals(Hash.fromHexString("0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45"), code.getCodeHash());
@@ -68,7 +68,7 @@ class CodeCacheTest {
 
     @Test
     void getContractNotFound() {
-        given(entityAccess.fetch(any())).willReturn(Bytes.EMPTY);
+        given(entityAccess.fetchCode(any())).willReturn(Bytes.EMPTY);
         Code code = codeCache.get(Address.fromHexString("0xabc"));
 
         assertTrue(code.getBytes().isEmpty());
@@ -76,7 +76,7 @@ class CodeCacheTest {
 
     @Test
     void invalidateSuccess() {
-        given(entityAccess.fetch(any())).willReturn(Bytes.of("abc".getBytes()));
+        given(entityAccess.fetchCode(any())).willReturn(Bytes.of("abc".getBytes()));
         Code code = codeCache.get(Address.fromHexString("0xabc"));
 
         assertEquals(1L, codeCache.size());
