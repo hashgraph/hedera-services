@@ -83,6 +83,6 @@ public class JEd25519Key extends JKey {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(Arrays.hashCode(ed25519));
+		return Objects.hash(ed25519);
 	}
 }
