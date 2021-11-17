@@ -20,6 +20,7 @@ package com.hedera.services.sigs.verification;
  * ‍
  */
 
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.exception.InvalidAccountIDException;
@@ -42,6 +43,7 @@ import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_R
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
@@ -120,13 +122,12 @@ class PrecheckKeyReqsTest {
 
 	@Test
 	void usesBothOrderForQueryPayments() throws Exception {
-		final List<JKey> duplicateKeys = new ArrayList<>();
-		duplicateKeys.addAll(PAYER_KEYS);
-		duplicateKeys.addAll(OTHER_KEYS);
+		final var key1 = new JEd25519Key("firstKey".getBytes());
+		final var key2 = new JEd25519Key("secondKey".getBytes());
 		given(keyOrder.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY))
-				.willReturn(new SigningOrderResult<>(PAYER_KEYS));
+				.willReturn(new SigningOrderResult<>(List.of(key1)));
 		given(keyOrderModuloRetry.keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY))
-				.willReturn(new SigningOrderResult<>(duplicateKeys));
+				.willReturn(new SigningOrderResult<>(List.of(key1, key2, key2, key2, key1)));
 		givenImpliedSubject(FOR_QUERY_PAYMENT);
 
 		// when:
@@ -137,8 +138,9 @@ class PrecheckKeyReqsTest {
 		verifyNoMoreInteractions(keyOrder);
 		verify(keyOrderModuloRetry).keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY);
 		verifyNoMoreInteractions(keyOrderModuloRetry);
-		assertEquals(keys, ALL_KEYS);
-		assertEquals(3, keys.size());
+		assertEquals(2, keys.size());
+		assertTrue(keys.contains(key1));
+		assertTrue(keys.contains(key2));
 	}
 
 	private void givenImpliedSubject(Predicate<TransactionBody> isQueryPayment) {
