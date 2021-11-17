@@ -122,8 +122,8 @@ class PrecheckKeyReqsTest {
 
 	@Test
 	void usesBothOrderForQueryPayments() throws Exception {
-		final var key1 = new JEd25519Key("firstKey".getBytes());
-		final var key2 = new JEd25519Key("secondKey".getBytes());
+		final JKey key1 = new JEd25519Key("firstKey".getBytes());
+		final JKey key2 = new JEd25519Key("secondKey".getBytes());
 		given(keyOrder.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY))
 				.willReturn(new SigningOrderResult<>(List.of(key1)));
 		given(keyOrderModuloRetry.keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY))
