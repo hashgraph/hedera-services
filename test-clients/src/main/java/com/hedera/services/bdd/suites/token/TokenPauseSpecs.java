@@ -21,21 +21,28 @@ package com.hedera.services.bdd.suites.token;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.function.IntFunction;
+import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
@@ -54,7 +61,9 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fix
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -69,6 +78,8 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 public final class TokenPauseSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenPauseSpecs.class);
+
+	static final String defaultCiMinAutoRenewPeriod = "10";
 
 	private static final String tokenTreasury = "treasury";
 	private static final String pauseKey = "pauseKey";
@@ -99,7 +110,8 @@ public final class TokenPauseSpecs extends HapiApiSuite {
 				unpauseWorks(),
 				basePauseAndUnpauseHaveExpectedPrices(),
 				pausedTokenInCustomFeeCaseStudy(),
-				cannotAddPauseKeyViaTokenUpdate()
+				cannotAddPauseKeyViaTokenUpdate(),
+				canDissociateFromMultipleExpiredTokens(),
 		});
 	}
 
@@ -524,6 +536,46 @@ public final class TokenPauseSpecs extends HapiApiSuite {
 				.then(
 						validateChargedUsd(tokenPauseTransaction, expectedBaseFee),
 						validateChargedUsd(tokenUnpauseTransaction, expectedBaseFee)
+				);
+	}
+
+	public HapiApiSpec canDissociateFromMultipleExpiredTokens() {
+		final var civilian = "civilian";
+		final long initialSupply = 100L;
+		final long nonZeroXfer = 10L;
+		final var dissociateTxn = "dissociateTxn";
+		final var numTokens = 10;
+		final IntFunction<String> tokenNameFn = i -> "fungible" + i;
+		final String[] toDissoc = new String[numTokens];
+		Arrays.setAll(toDissoc, tokenNameFn);
+
+		return defaultHapiSpec("CanDissociateFromMultipleExpiredTokens")
+				.given(
+						fileUpdate(APP_PROPERTIES).payingWith(GENESIS).overridingProps(
+								Map.of("ledger.autoRenewPeriod.minDuration", "1")
+						),
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(civilian).balance(0L),
+						blockingOrder(IntStream.range(0, numTokens).mapToObj(i ->
+								tokenCreate(tokenNameFn.apply(i))
+										.autoRenewAccount(DEFAULT_PAYER)
+										.autoRenewPeriod(1L)
+										.initialSupply(initialSupply)
+										.treasury(TOKEN_TREASURY))
+								.toArray(HapiSpecOperation[]::new)),
+						tokenAssociate(civilian, List.of(toDissoc)),
+						blockingOrder(IntStream.range(0, numTokens).mapToObj(i ->
+								cryptoTransfer(moving(nonZeroXfer, tokenNameFn.apply(i))
+										.between(TOKEN_TREASURY, civilian)))
+								.toArray(HapiSpecOperation[]::new))
+				).when(
+						sleepFor(1_000L),
+						tokenDissociate(civilian, toDissoc).via(dissociateTxn)
+				).then(
+						getTxnRecord(dissociateTxn).logged(),
+						fileUpdate(APP_PROPERTIES).payingWith(GENESIS).overridingProps(
+								Map.of("ledger.autoRenewPeriod.minDuration", defaultCiMinAutoRenewPeriod)
+						)
 				);
 	}
 }

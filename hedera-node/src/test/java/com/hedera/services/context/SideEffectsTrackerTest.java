@@ -21,8 +21,13 @@ package com.hedera.services.context;
  */
 
 import com.hedera.services.state.submerkle.FcTokenAssociation;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.store.models.Token;
+import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.junit.jupiter.api.BeforeEach;
@@ -168,6 +173,24 @@ class SideEffectsTrackerTest {
 
 		subject.reset();
 		assertEquals(0, subject.getNetTrackedHbarChanges().getAccountAmountsCount());
+	}
+
+	@Test
+	void prioritizesExplicitTokenBalanceChanges() {
+		final var aaRelChange = new TokenRelationship(
+				new Token(Id.fromGrpcToken(aToken)), new Account(Id.fromGrpcAccount(aAccount)));
+		aaRelChange.setBalance(aFirstBalanceChange);
+		final var bbRelChange = new TokenRelationship(
+				new Token(Id.fromGrpcToken(bToken)), new Account(Id.fromGrpcAccount(bAccount)));
+		bbRelChange.setBalance(bOnlyBalanceChange);
+		final var ccRelChange = new TokenRelationship(
+				new Token(Id.fromGrpcToken(cToken)), new Account(Id.fromGrpcAccount(cAccount)));
+		bbRelChange.setBalance(bOnlyBalanceChange);
+
+	}
+
+	private AccountAmount.Builder aaBuilderWith(final AccountID account, final long amount) {
+		return AccountAmount.newBuilder().setAccountID(account).setAmount(amount);
 	}
 
 	private static final long aFirstBalanceChange = 1_000L;
