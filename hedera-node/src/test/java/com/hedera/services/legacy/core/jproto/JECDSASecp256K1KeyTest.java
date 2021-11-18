@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JECDSASecp256K1KeyTest {
@@ -97,5 +98,22 @@ class JECDSASecp256K1KeyTest {
 				"<JECDSASecp256k1Key: ecdsaSecp256k1Key " +
 						"hex=030000000000000000000000000000000000000000000000000000000000000000>",
 				subject.toString());
+	}
+
+	@Test
+	void equalsAndHashCodeWorks() {
+		JECDSASecp256k1Key key1 = new JECDSASecp256k1Key("firstKey".getBytes());
+		JECDSASecp256k1Key key2 = new JECDSASecp256k1Key("secondKey".getBytes());
+		JECDSASecp256k1Key key3 = new JECDSASecp256k1Key("firstKey".getBytes());
+
+		assertNotEquals(key1, key2);
+		assertNotEquals(key1.hashCode(), key2.hashCode());
+		assertEquals(key1, key3);
+		assertEquals(key1.hashCode(), key3.hashCode());
+		assertEquals(key1, key1);
+		boolean forceEquals = key2.equals("sampleText");
+		assertFalse(forceEquals);
+		forceEquals = key1.equals(null);
+		assertFalse(forceEquals);
 	}
 }
