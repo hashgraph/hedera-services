@@ -31,7 +31,6 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.EntityNum;
@@ -44,8 +43,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.merkle.map.MerkleMap;
@@ -99,11 +96,8 @@ public class BasicTransactionContext implements TransactionContext {
 	private List<ExpiringEntity> expiringEntities = new ArrayList<>();
 	private Consumer<TxnReceipt.Builder> receiptConfig = noopReceiptConfig;
 	private Consumer<ExpirableTxnRecord.Builder> recordConfig = noopRecordConfig;
-	private List<TokenTransferList> explicitTokenTransfers;
 	private List<FcAssessedCustomFee> assessedCustomFees;
-	private List<FcTokenAssociation> newTokenAssociations;
 
-	boolean hasComputedRecordSoFar;
 	ExpirableTxnRecord.Builder recordSoFar = ExpirableTxnRecord.newBuilder();
 	private ContractFunctionResult contractFunctionResult;
 
@@ -111,25 +105,28 @@ public class BasicTransactionContext implements TransactionContext {
 	private final EntityCreator creator;
 	private final NarratedCharging narratedCharging;
 	private final HbarCentExchange exchange;
+	private final SideEffectsTracker sideEffectsTracker;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
 	@Inject
 	BasicTransactionContext(
-			NarratedCharging narratedCharging,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-			NodeInfo nodeInfo,
-			HbarCentExchange exchange,
-			EntityCreator creator
+			final NarratedCharging narratedCharging,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final NodeInfo nodeInfo,
+			final HbarCentExchange exchange,
+			final EntityCreator creator,
+			final SideEffectsTracker sideEffectsTracker
 	) {
 		this.accounts = accounts;
 		this.narratedCharging = narratedCharging;
 		this.nodeInfo = nodeInfo;
 		this.exchange = exchange;
 		this.creator = creator;
+		this.sideEffectsTracker = sideEffectsTracker;
 	}
 
 	@Override
-	public void resetFor(TxnAccessor accessor, Instant consensusTime, long submittingMember) {
+	public void resetFor(final TxnAccessor accessor, final Instant consensusTime, final long submittingMember) {
 		this.accessor = accessor;
 		this.consensusTime = consensusTime;
 		this.submittingMember = submittingMember;
@@ -142,30 +139,18 @@ public class BasicTransactionContext implements TransactionContext {
 		recordConfig = noopRecordConfig;
 		receiptConfig = noopReceiptConfig;
 		isPayerSigKnownActive = false;
-		hasComputedRecordSoFar = false;
-		explicitTokenTransfers = null;
 		assessedCustomFees = null;
-		newTokenAssociations = null;
 
 		narratedCharging.resetForTxn(accessor, submittingMember);
 
 		recordSoFar.clear();
+		sideEffectsTracker.reset();
 		contractFunctionResult = null;
 	}
 
 	@Override
-	public void setTokenTransferLists(List<TokenTransferList> tokenTransfers) {
-		explicitTokenTransfers = tokenTransfers;
-	}
-
-	@Override
-	public void setAssessedCustomFees(List<FcAssessedCustomFee> assessedCustomFees) {
+	public void setAssessedCustomFees(final List<FcAssessedCustomFee> assessedCustomFees) {
 		this.assessedCustomFees = assessedCustomFees;
-	}
-
-	@Override
-	public void setNewTokenAssociations(List<FcTokenAssociation> newTokenAssociations) {
-		this.newTokenAssociations = newTokenAssociations;
 	}
 
 	@Override
@@ -202,18 +187,17 @@ public class BasicTransactionContext implements TransactionContext {
 	public ExpirableTxnRecord recordSoFar() {
 		final var receipt = receiptSoFar().build();
 
-		recordSoFar = creator.buildExpiringRecord(
-				otherNonThresholdFees,
+		final var totalFees = narratedCharging.totalFeesChargedToPayer() + otherNonThresholdFees;
+		recordSoFar = creator.createExpiringRecord(
+				totalFees,
 				hash,
 				accessor,
 				consensusTime,
 				receipt,
-				explicitTokenTransfers,
 				assessedCustomFees,
-				newTokenAssociations);
+				sideEffectsTracker);
 
 		recordConfig.accept(recordSoFar);
-		hasComputedRecordSoFar = true;
 		return recordSoFar.build();
 	}
 
@@ -221,6 +205,15 @@ public class BasicTransactionContext implements TransactionContext {
 		final var receipt = TxnReceipt.newBuilder()
 				.setExchangeRates(exchange.fcActiveRates())
 				.setStatus(statusSoFar.name());
+
+		if (sideEffectsTracker.hasTrackedNewTokenId()) {
+			receiptConfig = receiptConfig.andThen(r ->
+					r.setTokenId(EntityId.fromGrpcTokenId(sideEffectsTracker.getTrackedNewTokenId())));
+		}
+		if (sideEffectsTracker.hasTrackedTokenSupply()) {
+			receiptConfig = receiptConfig.andThen(r -> r.setNewTotalSupply(sideEffectsTracker.getTrackedTokenSupply()));
+		}
+
 		receiptConfig.accept(receipt);
 		return receipt;
 	}
@@ -241,52 +234,42 @@ public class BasicTransactionContext implements TransactionContext {
 	}
 
 	@Override
-	public void setStatus(ResponseCodeEnum status) {
+	public void setStatus(final ResponseCodeEnum status) {
 		statusSoFar = status;
 	}
 
 	@Override
-	public void setCreated(AccountID id) {
+	public void setCreated(final AccountID id) {
 		receiptConfig = receipt -> receipt.setAccountId(EntityId.fromGrpcAccountId(id));
 	}
 
 	@Override
-	public void setCreated(TokenID id) {
-		receiptConfig = receipt -> receipt.setTokenId(EntityId.fromGrpcTokenId(id));
-	}
-
-	@Override
-	public void setCreated(ScheduleID id) {
+	public void setCreated(final ScheduleID id) {
 		receiptConfig = receipt -> receipt.setScheduleId(EntityId.fromGrpcScheduleId(id));
 	}
 
 	@Override
-	public void setScheduledTxnId(TransactionID txnId) {
+	public void setScheduledTxnId(final TransactionID txnId) {
 		receiptConfig = receiptConfig.andThen(receipt -> receipt.setScheduledTxnId(TxnId.fromGrpc(txnId)));
 	}
 
 	@Override
-	public void setNewTotalSupply(long newTotalTokenSupply) {
-		receiptConfig = receipt -> receipt.setNewTotalSupply(newTotalTokenSupply);
-	}
-
-	@Override
-	public void setCreated(FileID id) {
+	public void setCreated(final FileID id) {
 		receiptConfig = receipt -> receipt.setFileId(EntityId.fromGrpcFileId(id));
 	}
 
 	@Override
-	public void setCreated(ContractID id) {
+	public void setCreated(final ContractID id) {
 		receiptConfig = receipt -> receipt.setContractId(EntityId.fromGrpcContractId(id));
 	}
 
 	@Override
-	public void setCreated(TopicID id) {
+	public void setCreated(final TopicID id) {
 		receiptConfig = receipt -> receipt.setTopicId(EntityId.fromGrpcTopicId(id));
 	}
 
 	@Override
-	public void setTopicRunningHash(byte[] topicRunningHash, long sequenceNumber) {
+	public void setTopicRunningHash(final byte[] topicRunningHash, final long sequenceNumber) {
 		receiptConfig = receipt -> receipt
 				.setTopicRunningHash(topicRunningHash)
 				.setTopicSequenceNumber(sequenceNumber)
@@ -294,22 +277,18 @@ public class BasicTransactionContext implements TransactionContext {
 	}
 
 	@Override
-	public void addNonThresholdFeeChargedToPayer(long amount) {
+	public void addNonThresholdFeeChargedToPayer(final long amount) {
 		otherNonThresholdFees += amount;
 	}
 
-	public long getNonThresholdFeeChargedToPayer() {
-		return otherNonThresholdFees;
-	}
-
 	@Override
-	public void setCallResult(ContractFunctionResult result) {
+	public void setCallResult(final ContractFunctionResult result) {
 		this.contractFunctionResult = result;
 		recordConfig = expiringRecord -> expiringRecord.setContractCallResult(SolidityFnResult.fromGrpc(result));
 	}
 
 	@Override
-	public void setCreateResult(ContractFunctionResult result) {
+	public void setCreateResult(final ContractFunctionResult result) {
 		this.contractFunctionResult = result;
 		recordConfig = expiringRecord -> expiringRecord.setContractCreateResult(SolidityFnResult.fromGrpc(result));
 	}
@@ -325,7 +304,7 @@ public class BasicTransactionContext implements TransactionContext {
 	}
 
 	@Override
-	public void trigger(TxnAccessor scopedAccessor) {
+	public void trigger(final TxnAccessor scopedAccessor) {
 		if (accessor().isTriggeredTxn()) {
 			throw new IllegalStateException("Unable to trigger txns in triggered txns");
 		}
@@ -338,18 +317,13 @@ public class BasicTransactionContext implements TransactionContext {
 	}
 
 	@Override
-	public void addExpiringEntities(Collection<ExpiringEntity> entities) {
+	public void addExpiringEntities(final Collection<ExpiringEntity> entities) {
 		expiringEntities.addAll(entities);
 	}
 
 	@Override
 	public List<ExpiringEntity> expiringEntities() {
 		return expiringEntities;
-	}
-
-	@Override
-	public void setCreated(List<Long> serialNumbers) {
-		receiptConfig = receipt -> receipt.setSerialNumbers(serialNumbers.stream().mapToLong(l -> l).toArray());
 	}
 
 	@Override
@@ -371,15 +345,11 @@ public class BasicTransactionContext implements TransactionContext {
 		return recordSoFar;
 	}
 
-	void setRecordSoFar(ExpirableTxnRecord.Builder recordSoFar) {
+	void setRecordSoFar(final ExpirableTxnRecord.Builder recordSoFar) {
 		this.recordSoFar = recordSoFar;
 	}
 
-	void setHasComputedRecordSoFar(boolean hasComputedRecordSoFar) {
-		this.hasComputedRecordSoFar = hasComputedRecordSoFar;
-	}
-
-	public boolean hasComputedRecordSoFar() {
-		return hasComputedRecordSoFar;
+	long getNonThresholdFeeChargedToPayer() {
+		return otherNonThresholdFees;
 	}
 }

@@ -354,7 +354,8 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 	}
 
 	public HapiApiSpec validAutoRenewWorks() {
-		long firstPeriod = 500_000, secondPeriod = 600_000;
+		final var firstPeriod = THREE_MONTHS_IN_SECONDS;
+		final var secondPeriod = THREE_MONTHS_IN_SECONDS + 1234;
 		return defaultHapiSpec("AutoRenewInfoChanges")
 				.given(
 						cryptoCreate("autoRenew").balance(0L),
@@ -548,7 +549,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.entityMemo(originalMemo)
 								.treasury(TOKEN_TREASURY)
 								.autoRenewAccount("autoRenewAccount")
-								.autoRenewPeriod(A_HUNDRED_SECONDS)
+								.autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
 								.initialSupply(500)
 								.decimals(1)
 								.adminKey("adminKey")
@@ -567,7 +568,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.entityMemo(updatedMemo)
 								.treasury("newTokenTreasury")
 								.autoRenewAccount("newAutoRenewAccount")
-								.autoRenewPeriod(101)
+								.autoRenewPeriod(THREE_MONTHS_IN_SECONDS + 1)
 								.freezeKey("newFreezeKey")
 								.kycKey("newKycKey")
 								.supplyKey("newSupplyKey")
@@ -604,7 +605,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.hasTotalSupply(500)
 								.hasAutoRenewAccount("newAutoRenewAccount")
 								.hasPauseStatus(TokenPauseStatus.Unpaused)
-								.hasAutoRenewPeriod(101L)
+								.hasAutoRenewPeriod(THREE_MONTHS_IN_SECONDS + 1)
 				);
 	}
 
