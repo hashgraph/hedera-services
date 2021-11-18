@@ -35,7 +35,6 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
@@ -87,7 +86,7 @@ public class PrecheckKeyReqs {
 			addQueryPaymentKeys(txn, keys);
 		}
 
-		return keys.stream().distinct().collect(Collectors.toList());
+		return keys;
 	}
 
 	private void addPayerKeys(TransactionBody txn, List<JKey> keys) throws Exception {
@@ -108,6 +107,11 @@ public class PrecheckKeyReqs {
 				throw new Exception();
 			}
 		}
-		keys.addAll(otherResult.getOrderedKeys());
+
+		for (var nonPayerKey : otherResult.getOrderedKeys()) {
+			if (!nonPayerKey.equals(keys.get(0))) {
+				keys.add(nonPayerKey);
+			}
+		}
 	}
 }

@@ -34,7 +34,6 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -125,11 +124,11 @@ class PrecheckKeyReqsTest {
 		final JKey key1 = new JEd25519Key("firstKey".getBytes());
 		final JKey key2 = new JEd25519Key("secondKey".getBytes());
 		final JKey key3 = new JEd25519Key("thirdKey".getBytes());
-		final JKey key4 = new JEd25519Key("secondKey".getBytes());
+		final JKey key4 = new JEd25519Key("firstKey".getBytes());
 		given(keyOrder.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY))
 				.willReturn(new SigningOrderResult<>(List.of(key1)));
 		given(keyOrderModuloRetry.keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY))
-				.willReturn(new SigningOrderResult<>(List.of(key1, key2, key2, key3, key4)));
+				.willReturn(new SigningOrderResult<>(List.of(key2, key3, key4)));
 		givenImpliedSubject(FOR_QUERY_PAYMENT);
 
 		// when:
