@@ -21,7 +21,6 @@ package com.hedera.services.legacy.unit.serialization;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.contracts.sources.BlobStorageSource;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -300,15 +299,12 @@ class JKeySerializerTest {
 	}
 
 	@Test
-	void jThresholdSerDes() {
+	void jThresholdSerDes() throws IOException {
 		final var threshold = getSpecificJKeysMade("JThresholdKey", 3, 3);
 		final var beforeKeyList = threshold.getThresholdKey().getKeys();
 		final var beforeJKeyListSize = beforeKeyList.getKeysList().size();
-		byte[] serializedThresholdKey = null;
-		try {
-			serializedThresholdKey = threshold.serialize();
-		} catch (IOException ignore) {
-		}
+		byte[] serializedThresholdKey = threshold.serialize();
+
 		assertNotNull(serializedThresholdKey);
 		// Now take the bytearray and build it back
 
@@ -332,20 +328,18 @@ class JKeySerializerTest {
 			final int afterJKeysListSize = afterJKeysList.getKeysList().size();
 			assertAll("JKeyRebornChecks2",
 					() -> assertEquals(beforeJKeyListSize, afterJKeysListSize));
-		} catch (Exception ignore) {
+		} catch (Exception e) {
+			throw new IllegalStateException(String.format("Failed to deserialize!", e));
 		}
 	}
 
 	@Test
-	void jKeyListSerDes() {
+	void jKeyListSerDes() throws IOException {
 		final var jKeyList = getSpecificJKeysMade("JKeyList", 3, 3);
 		final var beforeJKeyListSize = jKeyList.getKeyList().getKeysList().size();
 
-		byte[] serializedJKey = null;
-		try {
-			serializedJKey = jKeyList.serialize();
-		} catch (IOException ignore) {
-		}
+		byte[] serializedJKey = jKeyList.serialize();
+
 		assertNotNull(serializedJKey);
 
 		try (final var in = new ByteArrayInputStream(serializedJKey);
@@ -369,13 +363,14 @@ class JKeySerializerTest {
 			final var afterJKeysListSize = afterJKeysList.getKeysList().size();
 			assertAll("JKeyRebornChecks2",
 					() -> assertEquals(beforeJKeyListSize, afterJKeysListSize));
-		} catch (Exception ignore) {
+		} catch (Exception e) {
+			throw new IllegalStateException(String.format("Failed to deserialize!", e));
 		}
 	}
 
 
 	@Test
-	void jKeyProtoSerDes() {
+	void jKeyProtoSerDes() throws IOException {
 		final Map<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();
 		Key protoKey;
 		JKey jkey = null;
@@ -388,11 +383,8 @@ class JKeySerializerTest {
 
 		} catch (DecoderException ignore) {
 		}
-		byte[] serializedJKey = null;
-		try {
-			serializedJKey = jkey.serialize();
-		} catch (IOException ignore) {
-		}
+
+		byte[] serializedJKey = jkey.serialize();
 
 		try (final var in = new ByteArrayInputStream(serializedJKey);
 			 final var dis = new DataInputStream(in)
@@ -411,20 +403,17 @@ class JKeySerializerTest {
 			for (int i = 0; i < jListBefore.size(); i++) {
 				assertTrue(equalUpToDecodability(jListBefore.get(i), jListAfter.get(i)));
 			}
-		} catch (Exception ignore) {
+		} catch (Exception e) {
+			throw new IllegalStateException(String.format("Failed to deserialize!", e));
 		}
 	}
 
 	@Test
-	void jKeyECDSASecp256k1KeySerDes() {
+	void jKeyECDSASecp256k1KeySerDes() throws Exception {
 		final Map<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();
 		Key protoKey;
-		JKey jkey = null;
-		try {
-			protoKey = genSingleECDSASecp256k1Key(pubKey2privKeyMap);
-			jkey = JKey.mapKey(protoKey);
-		} catch (DecoderException ignore) {
-		}
+		protoKey = genSingleECDSASecp256k1Key(pubKey2privKeyMap);
+		JKey jkey = JKey.mapKey(protoKey);
 		byte[] serializedJKey = null;
 		try {
 			serializedJKey = jkey.serialize();
@@ -441,7 +430,8 @@ class JKeySerializerTest {
 					() -> assertFalse(jKeyReborn.hasKeyList()),
 					() -> assertFalse(jKeyReborn.hasThresholdKey())
 			);
-		} catch (Exception ignore) {
+		} catch (Exception e) {
+			throw new IllegalStateException(String.format("Failed to deserialize!", e));
 		}
 	}
 }
