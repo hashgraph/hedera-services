@@ -21,7 +21,7 @@ package com.hedera.services.stats;
  */
 
 import com.swirlds.common.Platform;
-import com.swirlds.platform.StatsRunningAverage;
+import com.swirlds.common.statistics.StatsRunningAverage;
 
 public class MiscRunningAvgs {
 	private final RunningAvgFactory runningAvg;

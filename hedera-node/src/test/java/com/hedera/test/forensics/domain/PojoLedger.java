@@ -39,7 +39,7 @@ public class PojoLedger {
 	private List<PojoAccount> accounts;
 
 	public static PojoLedger fromDisk(String dumpLoc) throws Exception {
-		try (MerkleDataInputStream in = new MerkleDataInputStream(Files.newInputStream(Path.of(dumpLoc)), false)) {
+		try (MerkleDataInputStream in = new MerkleDataInputStream(Files.newInputStream(Path.of(dumpLoc)))) {
 			MerkleMap<EntityNum, MerkleAccount> fcm = in.readMerkleTree(Integer.MAX_VALUE);
 			var pojo = from(fcm);
 			return pojo;

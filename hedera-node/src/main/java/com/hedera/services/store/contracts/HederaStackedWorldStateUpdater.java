@@ -24,25 +24,26 @@ package com.hedera.services.store.contracts;
 
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
-import org.hyperledger.besu.evm.worldstate.AbstractWorldUpdater;
-import org.hyperledger.besu.evm.worldstate.StackedUpdater;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class HederaStackedWorldStateUpdater
-		extends StackedUpdater<HederaWorldState, HederaWorldState.WorldStateAccount>
+		extends AbstractStackedLedgerUpdater<HederaMutableWorldState, HederaWorldState.WorldStateAccount>
 		implements HederaWorldUpdater {
 
-	final HederaMutableWorldState worldState;
-	final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
+	private final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
+	private final HederaMutableWorldState worldState;
+
 	private Gas sbhRefund = Gas.ZERO;
 
 	public HederaStackedWorldStateUpdater(
-			final AbstractWorldUpdater<HederaWorldState, HederaWorldState.WorldStateAccount> updater,
-			final HederaMutableWorldState worldState) {
-		super(updater);
+			final AbstractLedgerWorldUpdater<HederaMutableWorldState, HederaWorldState.WorldStateAccount> updater,
+			final HederaMutableWorldState worldState,
+			final WorldLedgers trackingLedgers
+	) {
+		super(updater, trackingLedgers);
 		this.worldState = worldState;
 	}
 
@@ -91,5 +92,11 @@ public class HederaStackedWorldStateUpdater
 	}
 
 	@Override
-	public WorldUpdater updater() { return new HederaStackedWorldStateUpdater((AbstractWorldUpdater) this, worldState); }
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	public WorldUpdater updater() {
+		return new HederaStackedWorldStateUpdater(
+				(AbstractLedgerWorldUpdater) this,
+				worldState,
+				trackingLedgers().wrapped());
+	}
 }

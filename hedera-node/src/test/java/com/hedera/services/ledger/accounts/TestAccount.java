@@ -23,7 +23,7 @@ package com.hedera.services.ledger.accounts;
 import com.google.common.base.MoreObjects;
 
 public class TestAccount {
-	private static final long DEFAULT_TOKEN_THING = 123L;
+	public static final long DEFAULT_TOKEN_THING = 123L;
 
 	public long value;
 	public long tokenThing;
@@ -44,7 +44,6 @@ public class TestAccount {
 	public TestAccount(long value, Object thing, boolean flag) {
 		this(value, thing, flag, DEFAULT_TOKEN_THING);
 	}
-
 
 	public Object getThing() {
 		return thing;

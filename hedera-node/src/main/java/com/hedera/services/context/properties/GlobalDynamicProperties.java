@@ -48,7 +48,6 @@ public class GlobalDynamicProperties {
 	private int maxTokenNameUtf8Bytes;
 	private int maxFileSizeKb;
 	private int cacheRecordsTtl;
-	private int maxContractStorageKb;
 	private int balancesExportPeriodSecs;
 	private int ratesIntradayChangeLimitPercent;
 	private long maxAccountNum;
@@ -86,6 +85,10 @@ public class GlobalDynamicProperties {
 	private int maxCustomFeeDepth;
 	private ThrottleReqOpsScaleFactor nftMintScaleFactor;
 	private String upgradeArtifactsLoc;
+	private boolean throttleByGas;
+	private int contractMaxRefundPercentOfGasLimit;
+	private long frontendThrottleMaxGasLimit;
+	private long consensusThrottleMaxGasLimit;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -115,7 +118,6 @@ public class GlobalDynamicProperties {
 				.setAccountNum(properties.getLongProperty("ledger.fundingAccount"))
 				.build();
 		cacheRecordsTtl = properties.getIntProperty("cache.records.ttl");
-		maxContractStorageKb = properties.getIntProperty("contracts.maxStorageKb");
 		ratesIntradayChangeLimitPercent = properties.getIntProperty("rates.intradayChangeLimitPercent");
 		balancesExportPeriodSecs = properties.getIntProperty("balances.exportPeriodSecs");
 		shouldExportBalances = properties.getBooleanProperty("balances.exportEnabled");
@@ -154,6 +156,10 @@ public class GlobalDynamicProperties {
 		maxCustomFeeDepth = properties.getIntProperty("tokens.maxCustomFeeDepth");
 		nftMintScaleFactor = properties.getThrottleScaleFactor("tokens.nfts.mintThrottleScaleFactor");
 		upgradeArtifactsLoc = properties.getStringProperty("upgrade.artifacts.path");
+		throttleByGas = properties.getBooleanProperty("contracts.throttle.throttleByGas");
+		contractMaxRefundPercentOfGasLimit = properties.getIntProperty("contracts.maxRefundPercentOfGasLimit");
+		frontendThrottleMaxGasLimit = properties.getLongProperty("contracts.frontendThrottleMaxGasLimit");
+		consensusThrottleMaxGasLimit = properties.getLongProperty("contracts.consensusThrottleMaxGasLimit");
 	}
 
 	public int maxTokensPerAccount() {
@@ -198,10 +204,6 @@ public class GlobalDynamicProperties {
 
 	public int cacheRecordsTtl() {
 		return cacheRecordsTtl;
-	}
-
-	public int maxContractStorageKb() {
-		return maxContractStorageKb;
 	}
 
 	public int ratesIntradayChangeLimitPercent() {
@@ -342,5 +344,21 @@ public class GlobalDynamicProperties {
 
 	public String upgradeArtifactsLoc() {
 		return upgradeArtifactsLoc;
+	}
+
+	public boolean shouldThrottleByGas() {
+		return throttleByGas;
+	}
+
+	public int maxGasRefundPercentage() {
+		return contractMaxRefundPercentOfGasLimit;
+	}
+
+	public long frontendThrottleGasLimit() {
+		return frontendThrottleMaxGasLimit;
+	}
+
+	public long consensusThrottleGasLimit() {
+		return consensusThrottleMaxGasLimit;
 	}
 }

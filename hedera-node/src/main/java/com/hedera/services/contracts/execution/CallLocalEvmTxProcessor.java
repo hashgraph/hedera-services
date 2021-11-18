@@ -23,14 +23,17 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.store.contracts.CodeCache;
+import com.hedera.services.store.contracts.HederaMutableWorldState;
+import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.store.models.Account;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -39,7 +42,7 @@ import org.hyperledger.besu.evm.operation.Operation;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
-import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 
 /**
@@ -48,15 +51,25 @@ import java.util.Set;
  */
 @Singleton
 public class CallLocalEvmTxProcessor extends EvmTxProcessor {
+	private static final Logger logger = LogManager.getLogger(CallLocalEvmTxProcessor.class);
+
+	private CodeCache codeCache;
+
 	@Inject
 	public CallLocalEvmTxProcessor(
-			HederaWorldState worldState,
-			HbarCentExchange exchange,
-			UsagePricesProvider usagePrices,
-			GlobalDynamicProperties dynamicProperties,
-			GasCalculator gasCalculator,
-			Set<Operation> hederaOperations) {
-		super(worldState, exchange, usagePrices, dynamicProperties, gasCalculator, hederaOperations);
+			final CodeCache codeCache,
+			final LivePricesSource livePricesSource,
+			final GlobalDynamicProperties dynamicProperties,
+			final GasCalculator gasCalculator,
+			final Set<Operation> hederaOperations
+	) {
+		super(livePricesSource, dynamicProperties, gasCalculator, hederaOperations);
+		this.codeCache = codeCache;
+	}
+
+	@Override
+	public void setWorldState(HederaMutableWorldState worldState) {
+		super.setWorldState(worldState);
 	}
 
 	@Override
@@ -83,18 +96,28 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 				false,
 				consensusTime,
 				true,
-				Optional.empty());
+				OptionalLong.empty());
 	}
 
 	@Override
-	protected MessageFrame buildInitialFrame(MessageFrame.Builder baseInitialFrame, HederaWorldState.Updater updater, Address to, Bytes payload) {
-		Bytes code = updater.get(to).getCode();
-		return baseInitialFrame
-				.type(MessageFrame.Type.MESSAGE_CALL)
-				.address(to)
-				.contract(to)
-				.inputData(payload)
-				.code(new Code(code, Hash.hash(code)))
-				.build();
+	protected MessageFrame buildInitialFrame(
+			final MessageFrame.Builder baseInitialFrame,
+			final HederaWorldUpdater updater,
+			final Address to,
+			final Bytes payload
+	) {
+		try {
+			Code code = codeCache.get(to);
+			return baseInitialFrame
+					.type(MessageFrame.Type.MESSAGE_CALL)
+					.address(to)
+					.contract(to)
+					.inputData(payload)
+					.code(code)
+					.build();
+		} catch (RuntimeException e) {
+			logger.warn("Error fetching code from cache", e);
+			throw new InvalidTransactionException(ResponseCodeEnum.FAIL_INVALID);
+		}
 	}
 }

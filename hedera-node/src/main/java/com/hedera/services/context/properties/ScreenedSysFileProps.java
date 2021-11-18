@@ -58,7 +58,6 @@ public final class ScreenedSysFileProps implements PropertySource {
 			entry("configAccountNum", "ledger.maxAccountNum"),
 			entry("defaultContractDurationSec", "contracts.defaultLifetime"),
 			entry("maxGasLimit", "contracts.maxGas"),
-			entry("maxContractStateSize", "contracts.maxStorageKb"),
 			entry("maxFileSize", "files.maxSizeKb"),
 			entry("defaultFeeCollectionAccount", "ledger.fundingAccount"),
 			entry("txReceiptTTL", "cache.records.ttl"),
@@ -99,7 +98,10 @@ public final class ScreenedSysFileProps implements PropertySource {
 					maxLen -> (int) maxLen >= 2),
 			entry(
 					"ledger.tokenTransfers.maxLen",
-					maxLen -> (int) maxLen >= 2)
+					maxLen -> (int) maxLen >= 2),
+			entry(
+					"contracts.maxRefundPercentOfGasLimit",
+					maxRefundPercentage -> (int) maxRefundPercentage >= 0 && (int) maxRefundPercentage <= 100)
 	);
 
 	Map<String, Object> from121 = Collections.emptyMap();

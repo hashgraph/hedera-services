@@ -23,6 +23,9 @@ package com.hedera.services.files.sysfiles;
 import com.hedera.services.context.domain.security.HapiOpPermissions;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySources;
+import com.hedera.services.throttling.FunctionalityThrottling;
+import com.hedera.services.throttling.annotations.HandleThrottle;
+import com.hedera.services.throttling.annotations.HapiThrottle;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 
 import javax.inject.Inject;
@@ -34,22 +37,30 @@ public class ConfigCallbacks {
 	private final PropertySources propertySources;
 	private final HapiOpPermissions hapiOpPermissions;
 	private final GlobalDynamicProperties dynamicProps;
+	private final FunctionalityThrottling hapiThrottling;
+	private final FunctionalityThrottling handleThrottling;
 
 	@Inject
 	public ConfigCallbacks(
 			HapiOpPermissions hapiOpPermissions,
 			GlobalDynamicProperties dynamicProps,
-			PropertySources propertySources
+			PropertySources propertySources,
+			@HapiThrottle FunctionalityThrottling hapiThrottling,
+			@HandleThrottle FunctionalityThrottling handleThrottling
 	) {
 		this.dynamicProps = dynamicProps;
 		this.propertySources = propertySources;
 		this.hapiOpPermissions = hapiOpPermissions;
+		this.hapiThrottling = hapiThrottling;
+		this.handleThrottling = handleThrottling;
 	}
 
 	public Consumer<ServicesConfigurationList> propertiesCb() {
 		return config -> {
 			propertySources.reloadFrom(config);
 			dynamicProps.reload();
+			hapiThrottling.applyGasConfig();
+			handleThrottling.applyGasConfig();
 		};
 	}
 

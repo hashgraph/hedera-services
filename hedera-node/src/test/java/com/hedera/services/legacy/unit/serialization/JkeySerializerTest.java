@@ -36,6 +36,7 @@ import com.swirlds.common.CommonUtils;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.apache.commons.codec.DecoderException;
+import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
@@ -182,7 +183,7 @@ class JKeySerializerTest {
 			final int size = computeNumOfExpandedKeys(rv, 1, new AtomicCounter());
 			assertEquals(2 + numKeys * 2, size);
 		} else {
-			throw new BlobStorageSource.CannotConstructKeysException("Not implemented yet.");
+			throw new NotImplementedException("Not implemented yet.");
 		}
 
 		return rv;

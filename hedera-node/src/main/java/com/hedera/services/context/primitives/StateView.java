@@ -22,7 +22,6 @@ package com.hedera.services.context.primitives;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.StateChildren;
-import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
 import com.hedera.services.files.DataMapFactory;
 import com.hedera.services.files.HFileMeta;
@@ -31,13 +30,16 @@ import com.hedera.services.files.store.FcBlobsBytesStore;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenView;
@@ -70,6 +72,9 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualKey;
+import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.VirtualValue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -79,7 +84,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
@@ -87,12 +91,12 @@ import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY;
-import static com.hedera.services.utils.EntityNum.fromAccountId;
-import static com.hedera.services.utils.EntityNum.fromContractId;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
+import static com.hedera.services.utils.EntityNum.fromAccountId;
+import static com.hedera.services.utils.EntityNum.fromContractId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static java.util.Collections.unmodifiableMap;
 
@@ -103,6 +107,7 @@ public class StateView {
 
 	static final byte[] EMPTY_BYTES = new byte[0];
 	static final MerkleMap<?, ?> EMPTY_FCM = new MerkleMap<>();
+	static final VirtualMap<?, ?> EMPTY_VM = new VirtualMap<>();
 	static final FCOneToManyRelation<?, ?> EMPTY_FCOTMR = new FCOneToManyRelation<>();
 
 	public static final JKey EMPTY_WACL = new JKeyList();
@@ -110,16 +115,14 @@ public class StateView {
 			0L, 0L, 0, "", "",
 			false, false, MISSING_ENTITY_ID);
 	public static final StateView EMPTY_VIEW = new StateView(
-					null, null, null, null,
+					null, null, null,
 					EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 
 	private final TokenStore tokenStore;
 	private final ScheduleStore scheduleStore;
 	private final UniqTokenView uniqTokenView;
-	private final NodeLocalProperties nodeLocalProperties;
 	private final StateChildren stateChildren;
 
-	Map<byte[], byte[]> contractStorage;
 	Map<byte[], byte[]> contractBytecode;
 	Map<FileID, byte[]> fileContents;
 	Map<FileID, HFileMeta> fileAttrs;
@@ -127,13 +130,11 @@ public class StateView {
 	public StateView(
 			@Nullable TokenStore tokenStore,
 			@Nullable ScheduleStore scheduleStore,
-			@Nullable NodeLocalProperties nodeLocalProperties,
 			@Nullable StateChildren stateChildren,
 			UniqTokenViewFactory uniqTokenViewFactory
 	) {
 		this.tokenStore = tokenStore;
 		this.scheduleStore = scheduleStore;
-		this.nodeLocalProperties = nodeLocalProperties;
 		this.stateChildren = stateChildren;
 
 		this.uniqTokenView = uniqTokenViewFactory.viewFor(
@@ -144,12 +145,10 @@ public class StateView {
 				this::nftsByOwner,
 				this::treasuryNftsByType);
 
-		final Map<String, byte[]> blobStore = unmodifiableMap(
-				new FcBlobsBytesStore(MerkleOptionalBlob::new, this::storage));
+		final Map<String, byte[]> blobStore = unmodifiableMap(new FcBlobsBytesStore(this::storage));
 
 		fileContents = DataMapFactory.dataMapFrom(blobStore);
 		fileAttrs = MetadataMapFactory.metaMapFrom(blobStore);
-		contractStorage = AddressKeyedMapFactory.storageMapFrom(blobStore);
 		contractBytecode = AddressKeyedMapFactory.bytecodeMapFrom(blobStore);
 	}
 
@@ -171,10 +170,6 @@ public class StateView {
 
 	public Optional<byte[]> bytecodeOf(ContractID id) {
 		return Optional.ofNullable(contractBytecode.get(asSolidityAddress(id)));
-	}
-
-	public Optional<byte[]> storageOf(ContractID id) {
-		return Optional.ofNullable(contractStorage.get(asSolidityAddress(id)));
 	}
 
 	public Optional<MerkleToken> tokenWith(TokenID id) {
@@ -356,29 +351,12 @@ public class StateView {
 	}
 
 	public Optional<FileGetInfoResponse.FileInfo> infoForFile(FileID id) {
-		int attemptsLeft = 1 + (nodeLocalProperties == null ? 0 : nodeLocalProperties.queryBlobLookupRetries());
-		while (attemptsLeft-- > 0) {
-			try {
-				return getFileInfo(id);
-			} catch (com.swirlds.blob.BinaryObjectNotFoundException | com.swirlds.blob.BinaryObjectDeletedException e) {
-				if (attemptsLeft > 0) {
-					log.debug("Retrying fetch of {} file meta {} more times", readableId(id), attemptsLeft);
-					try {
-						TimeUnit.MILLISECONDS.sleep(100);
-					} catch (InterruptedException ex) {
-						log.debug(
-								"Interrupted fetching meta for file {}, {} attempts left",
-								readableId(id),
-								attemptsLeft);
-						Thread.currentThread().interrupt();
-					}
-				}
-			} catch (com.swirlds.blob.BinaryObjectException e) {
-				log.warn("Unexpected error occurred when getting info for file {}", readableId(id), e);
-				break;
-			}
+		try {
+			return getFileInfo(id);
+		} catch (NullPointerException e) {
+			log.warn("View used without a properly initialized VirtualMap", e);
+			return Optional.empty();
 		}
-		return Optional.empty();
 	}
 
 	private Optional<FileGetInfoResponse.FileInfo> getFileInfo(FileID id) {
@@ -458,16 +436,13 @@ public class StateView {
 		}
 
 		var mirrorId = asAccount(id);
-
-		var storageSize = storageOf(id).orElse(EMPTY_BYTES).length;
 		var bytecodeSize = bytecodeOf(id).orElse(EMPTY_BYTES).length;
-		var totalBytesUsed = storageSize + bytecodeSize;
 		var info = ContractGetInfoResponse.ContractInfo.newBuilder()
 				.setAccountID(mirrorId)
 				.setDeleted(contract.isDeleted())
 				.setContractID(id)
 				.setMemo(contract.getMemo())
-				.setStorage(totalBytesUsed)
+				.setStorage(bytecodeSize)
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(contract.getAutoRenewSecs()))
 				.setBalance(contract.getBalance())
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(contract.getExpiry()))
@@ -506,8 +481,12 @@ public class StateView {
 		return stateChildren == null ? emptyMm() : stateChildren.getUniqueTokens();
 	}
 
-	MerkleMap<String, MerkleOptionalBlob> storage() {
-		return stateChildren == null ? emptyMm() : stateChildren.getStorage();
+	public VirtualMap<VirtualBlobKey, VirtualBlobValue> storage() {
+		return stateChildren == null ? emptyVm() : stateChildren.getStorage();
+	}
+
+	public VirtualMap<ContractKey, ContractValue> contractStorage() {
+		return stateChildren == null ? emptyVm() : stateChildren.getContractStorage();
 	}
 
 	MerkleMap<EntityNum, MerkleToken> tokens() {
@@ -566,6 +545,10 @@ public class StateView {
 
 	private static <K, V extends MerkleNode & Keyed<K>> MerkleMap<K, V> emptyMm() {
 		return (MerkleMap<K, V>) EMPTY_FCM;
+	}
+
+	private static <K extends VirtualKey<K>, V extends VirtualValue> VirtualMap<K, V> emptyVm() {
+		return (VirtualMap<K, V>) EMPTY_VM;
 	}
 
 	private static <K, V> FCOneToManyRelation<K, V> emptyFcotmr() {

@@ -81,7 +81,7 @@ class StateModuleTest {
 	void viewUsesWorkingStateChildren() {
 		// given:
 		final var viewFactory =
-				provideStateViews(tokenStore, scheduleStore, nodeLocalProperties, uniqTokenViewFactory, workingState);
+				provideStateViews(tokenStore, scheduleStore, uniqTokenViewFactory, workingState);
 
 		// when:
 		viewFactory.get();

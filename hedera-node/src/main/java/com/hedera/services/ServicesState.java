@@ -23,24 +23,24 @@ package com.hedera.services;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleBlobMeta;
-import com.hedera.services.state.merkle.MerkleEntityAssociation;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.MerkleUniqueTokenId;
-import com.hedera.services.state.migration.LegacyStateChildIndices;
+import com.hedera.services.state.migration.ReleaseTwentyMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
@@ -54,37 +54,33 @@ import com.swirlds.common.SwirldTransaction;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
-import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
-import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.fchashmap.FCOneToManyRelation;
-import com.swirlds.merkle.map.FCMapMigration;
+import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.state.DualStateImpl;
+import com.swirlds.virtualmap.VirtualMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
-import static com.hedera.services.state.migration.Release0170Migration.moveLargeFcmsToBinaryRoutePositions;
 import static com.hedera.services.state.migration.StateChildIndices.SPECIAL_FILES;
+import static com.hedera.services.state.migration.StateVersions.RELEASE_TWENTY_VERSION;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
-import static com.hedera.services.utils.EntityNumPair.fromLongs;
-import static java.util.concurrent.CompletableFuture.runAsync;
 
 /**
  * The Merkle tree root of the Hedera Services world state.
  */
 public class ServicesState extends AbstractNaryMerkleInternal implements SwirldState.SwirldState2 {
 	private static final Logger log = LogManager.getLogger(ServicesState.class);
+
+	public static final String CANONICAL_JDB_LOC = "data/jdb";
 
 	private static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
 	private static final ImmutableHash EMPTY_HASH = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
@@ -94,7 +90,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	/* All of the state that is not itself hashed or serialized, but only derived from such state */
 	private StateMetadata metadata;
 
-	/* Only needed for to support migration from a 0.17.x state */
+	/* Only needed for to support migration from a 0.19.x state */
 	private Platform platformForDeferredInit;
 	private AddressBook addressBookForDeferredInit;
 	private SwirldDualState dualStateForDeferredInit;
@@ -134,10 +130,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public int getMinimumChildCount(int version) {
-		if (version < StateVersions.RELEASE_0160_VERSION) {
-			return StateChildIndices.NUM_PRE_0160_CHILDREN;
-		} else if (version <= StateVersions.CURRENT_VERSION) {
-			return StateChildIndices.NUM_POST_0160_CHILDREN;
+		if (version < RELEASE_TWENTY_VERSION) {
+			return StateChildIndices.NUM_PRE_TWENTY_CHILDREN;
+		} else if (version == RELEASE_TWENTY_VERSION) {
+			return StateChildIndices.NUM_TWENTY_CHILDREN;
 		} else {
 			throw new IllegalArgumentException("Argument 'version='" + version + "' is invalid!");
 		}
@@ -150,12 +146,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public void initialize() {
-		if (deserializedVersion < StateVersions.RELEASE_0170_VERSION) {
-			if (deserializedVersion < StateVersions.RELEASE_0160_VERSION) {
-				setChild(LegacyStateChildIndices.UNIQUE_TOKENS, new MerkleMap<>());
-			}
-			moveLargeFcmsToBinaryRoutePositions(this, deserializedVersion);
-		}
 		if (deserializedVersion < StateVersions.RELEASE_0190_VERSION) {
 			final var specialFiles = new MerkleSpecialFiles();
 			setChild(SPECIAL_FILES, specialFiles);
@@ -170,71 +160,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public void migrate() {
-		if (getDeserializedVersion() < StateVersions.RELEASE_0180_VERSION) {
-			log.info("Beginning FCMap -> MerkleMap migrations");
-			blobMigrationFlag.accept(true);
-			CompletableFuture.allOf(
-					runAsync(() -> {
-						fcmMigrator.toMerkleMap(
-								this,
-								StateChildIndices.UNIQUE_TOKENS,
-								(MerkleUniqueTokenId uniqueTokenId) -> new EntityNumPair(uniqueTokenId.identityCode()),
-								(MerkleUniqueToken v) -> v);
-						log.info("  ↪ Migrated {} NFTs", uniqueTokens().size());
-					}),
-					runAsync(() -> {
-						fcmMigrator.toMerkleMap(
-								this,
-								StateChildIndices.TOKEN_ASSOCIATIONS,
-								(MerkleEntityAssociation tokenRel) -> fromLongs(tokenRel.getFromNum(),
-										tokenRel.getToNum()),
-								(MerkleTokenRelStatus v) -> v);
-						log.info("  ↪ Migrated {} token associations", tokenAssociations().size());
-					}),
-					runAsync(() -> {
-						fcmMigrator.toMerkleMap(
-								this,
-								StateChildIndices.TOPICS,
-								(MerkleEntityId id) -> EntityNum.fromLong(id.getNum()),
-								(MerkleTopic v) -> v);
-						log.info("  ↪ Migrated {} topics", topics().size());
-					}),
-					runAsync(() -> {
-						fcmMigrator.toMerkleMap(
-								this,
-								StateChildIndices.STORAGE,
-								MerkleBlobMeta::getPath,
-								(MerkleOptionalBlob v) -> v);
-						log.info("  ↪ Migrated {} blobs", storage().size());
-					}),
-					runAsync(() -> {
-						fcmMigrator.toMerkleMap(
-								this,
-								StateChildIndices.ACCOUNTS,
-								(MerkleEntityId id) -> EntityNum.fromLong(id.getNum()),
-								(MerkleAccount v) -> v);
-						log.info("  ↪ Migrated {} accounts", accounts().size());
-					}),
-					runAsync(() -> {
-						fcmMigrator.toMerkleMap(
-								this,
-								StateChildIndices.TOKENS,
-								(MerkleEntityId id) -> EntityNum.fromLong(id.getNum()),
-								(MerkleToken v) -> v);
-						log.info("  ↪ Migrated {} tokens", tokens().size());
-					}),
-					runAsync(() -> {
-						fcmMigrator.toMerkleMap(
-								this,
-								StateChildIndices.SCHEDULE_TXS,
-								(MerkleEntityId id) -> EntityNum.fromLong(id.getNum()),
-								(MerkleSchedule v) -> v);
-						log.info("  ↪ Migrated {} scheduled txns", scheduleTxs().size());
-					})
-			).join();
-			blobMigrationFlag.accept(false);
-			log.info("Finished with FCMap -> MerkleMap migrations, completing the deferred init");
-
+		int deserializedVersionFromState = getDeserializedVersion();
+		if (deserializedVersionFromState < RELEASE_TWENTY_VERSION) {
+			blobMigrator.migrateFromBinaryObjectStore(this, jdbLoc, deserializedVersionFromState);
 			init(getPlatformForDeferredInit(), getAddressBookForDeferredInit(), getDualStateForDeferredInit());
 		}
 	}
@@ -242,13 +170,13 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	/* --- SwirldState --- */
 	@Override
 	public void init(final Platform platform, final AddressBook addressBook, final SwirldDualState dualState) {
-		if (deserializedVersion < StateVersions.RELEASE_0180_VERSION && platform != platformForDeferredInit) {
+		if (deserializedVersion < RELEASE_TWENTY_VERSION && platform != platformForDeferredInit) {
 			/* Due to design issues with the BinaryObjectStore, which will not be finished
 			initializing here, we need to defer initialization until post-FCM migration. */
 			platformForDeferredInit = platform;
 			dualStateForDeferredInit = dualState;
 			addressBookForDeferredInit = addressBook;
-			log.info("Deferring init for 0.17.x -> 0.18.x upgrade on Services node {}", platform.getSelfId());
+			log.info("Deferring init for 0.19.x -> 0.20.x upgrade on Services node {}", platform.getSelfId());
 			return;
 		}
 
@@ -298,6 +226,12 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		try {
 			final var app = metadata.app();
 			final var accessor = app.expandHandleSpan().track(platformTxn);
+
+			// Submit the transaction for any prepare stage processing that can be performed
+			// such as pre-fetching of contract bytecode. This step is performed asynchronously
+			// so get this step started before synchronous signature expansion.
+			app.prefetchProcessor().offer(accessor);
+
 			app.expansionHelper().expandIn(accessor, app.retryingSigReqs(), accessor.getPkToSigsFn());
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("Method expandSignatures called with non-gRPC txn", e);
@@ -308,7 +242,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public void noMoreTransactions() {
-		/* No-op. */
+		// no-op
 	}
 
 	/* --- FastCopyable --- */
@@ -334,7 +268,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		topics().archive();
 		tokens().archive();
 		accounts().archive();
-		storage().archive();
 		scheduleTxs().archive();
 		uniqueTokens().archive();
 		tokenAssociations().archive();
@@ -371,7 +304,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return getChild(StateChildIndices.ACCOUNTS);
 	}
 
-	public MerkleMap<String, MerkleOptionalBlob> storage() {
+	public VirtualMap<VirtualBlobKey, VirtualBlobValue> storage() {
 		return getChild(StateChildIndices.STORAGE);
 	}
 
@@ -409,6 +342,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	public MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens() {
 		return getChild(StateChildIndices.UNIQUE_TOKENS);
+	}
+
+	public VirtualMap<ContractKey, ContractValue> contractStorage() {
+		return getChild(StateChildIndices.CONTRACT_STORAGE);
 	}
 
 	public FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations() {
@@ -470,6 +407,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			metadata = new StateMetadata(app);
 			app.initializationFlow().runWith(this);
 
+			// Ensure the prefetch queue is created and thread pool is active instead of waiting
+			// for lazy-initialization to take place.
+			app.prefetchProcessor();
+			log.info("Created prefetch processor");
+
 			logSummary();
 			log.info("  --> Context initialized accordingly on Services node {}", selfId);
 		}
@@ -492,10 +434,12 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	void createGenesisChildren(AddressBook addressBook, long seqStart) {
+		final var virtualMapFactory = new VirtualMapFactory(jdbLoc, JasperDbBuilder::new);
+
 		setChild(StateChildIndices.UNIQUE_TOKENS, new MerkleMap<>());
 		setChild(StateChildIndices.TOKEN_ASSOCIATIONS, new MerkleMap<>());
 		setChild(StateChildIndices.TOPICS, new MerkleMap<>());
-		setChild(StateChildIndices.STORAGE, new MerkleMap<>());
+		setChild(StateChildIndices.STORAGE, virtualMapFactory.newVirtualizedBlobs());
 		setChild(StateChildIndices.ACCOUNTS, new MerkleMap<>());
 		setChild(StateChildIndices.TOKENS, new MerkleMap<>());
 		setChild(StateChildIndices.NETWORK_CTX, genesisNetworkCtxWith(seqStart));
@@ -503,6 +447,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		setChild(StateChildIndices.SCHEDULE_TXS, new MerkleMap<>());
 		setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, genesisRunningHashLeaf());
 		setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
+		setChild(StateChildIndices.CONTRACT_STORAGE, virtualMapFactory.newVirtualizedStorage());
 	}
 
 	private RecordsRunningHashLeaf genesisRunningHashLeaf() {
@@ -520,16 +465,12 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	@FunctionalInterface
-	interface FcmMigrator {
-		<K1 extends MerkleNode, V1 extends MerkleNode, K2, V2 extends MerkleNode & Keyed<K2>> void toMerkleMap(
-				MerkleInternal parent,
-				int mapIndex,
-				Function<K1, K2> keyConverter,
-				Function<V1, V2> valueConverter);
+	interface BinaryObjectStoreMigrator {
+		void migrateFromBinaryObjectStore(ServicesState initializingState, String jdbcLoc, int deserializedVersion);
 	}
 
-	private static FcmMigrator fcmMigrator = FCMapMigration::FCMapToMerkleMap;
-	private static Consumer<Boolean> blobMigrationFlag = MerkleOptionalBlob::setInMigration;
+	private static String jdbLoc = CANONICAL_JDB_LOC;
+	private static BinaryObjectStoreMigrator blobMigrator = ReleaseTwentyMigration::migrateFromBinaryObjectStore;
 	private static Supplier<ServicesApp.Builder> appBuilder = DaggerServicesApp::builder;
 
 	/* --- Only used by unit tests --- */
@@ -549,11 +490,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		ServicesState.appBuilder = appBuilder;
 	}
 
-	static void setFcmMigrator(FcmMigrator fcmMigrator) {
-		ServicesState.fcmMigrator = fcmMigrator;
+	static void setBlobMigrator(BinaryObjectStoreMigrator blobMigrator) {
+		ServicesState.blobMigrator = blobMigrator;
 	}
 
-	static void setBlobMigrationFlag(Consumer<Boolean> blobMigrationFlag) {
-		ServicesState.blobMigrationFlag = blobMigrationFlag;
+	public static void setJdbLoc(String jdbLoc) {
+		ServicesState.jdbLoc = jdbLoc;
 	}
 }

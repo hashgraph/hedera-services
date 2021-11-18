@@ -492,7 +492,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.name(saltedName)
 								.treasury(TOKEN_TREASURY)
 								.autoRenewAccount("autoRenewAccount")
-								.autoRenewPeriod(A_HUNDRED_SECONDS)
+								.autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
 								.maxSupply(1000)
 								.initialSupply(500)
 								.decimals(1)
@@ -516,7 +516,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 							var createTxn = getTxnRecord("createTxn");
 							allRunFor(spec, createTxn);
 							var timestamp = createTxn.getResponseRecord().getConsensusTimestamp().getSeconds();
-							spec.registry().saveExpiry("primary", timestamp + A_HUNDRED_SECONDS);
+							spec.registry().saveExpiry("primary", timestamp + THREE_MONTHS_IN_SECONDS);
 						}),
 						getTokenInfo("primary")
 								.logged()
@@ -526,7 +526,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.hasEntityMemo(memo)
 								.hasName(saltedName)
 								.hasTreasury(TOKEN_TREASURY)
-								.hasAutoRenewPeriod(A_HUNDRED_SECONDS)
+								.hasAutoRenewPeriod(THREE_MONTHS_IN_SECONDS)
 								.hasValidExpiry()
 								.hasDecimals(1)
 								.hasAdminKey("primary")
@@ -573,7 +573,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 				).when(
 						tokenCreate("primary")
 								.autoRenewAccount("autoRenew")
-								.autoRenewPeriod(A_HUNDRED_SECONDS)
+								.autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
 								.treasury(TOKEN_TREASURY)
 								.via("createTxn")
 				).then(
@@ -581,7 +581,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 							var createTxn = getTxnRecord("createTxn");
 							allRunFor(spec, createTxn);
 							var timestamp = createTxn.getResponseRecord().getConsensusTimestamp().getSeconds();
-							spec.registry().saveExpiry("primary", timestamp + A_HUNDRED_SECONDS);
+							spec.registry().saveExpiry("primary", timestamp + THREE_MONTHS_IN_SECONDS);
 						}),
 						getTokenInfo("primary")
 								.logged()

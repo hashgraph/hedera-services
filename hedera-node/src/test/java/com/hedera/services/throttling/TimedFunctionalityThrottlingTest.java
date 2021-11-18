@@ -21,7 +21,9 @@ package com.hedera.services.throttling;
  */
 
 import com.hedera.services.utils.TxnAccessor;
+import com.hederahashgraph.api.proto.java.Query;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
@@ -31,6 +33,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 class TimedFunctionalityThrottlingTest {
+
+	@Mock
+	Query query;
+
 	@Test
 	void defaultImplsAsExpected() {
 		// setup:
@@ -39,11 +45,11 @@ class TimedFunctionalityThrottlingTest {
 		// given:
 		final var subject = mock(TimedFunctionalityThrottling.class);
 		// and:
-		Mockito.doCallRealMethod().when(subject).shouldThrottleQuery(FileGetInfo);
+		Mockito.doCallRealMethod().when(subject).shouldThrottleQuery(FileGetInfo, query);
 		Mockito.doCallRealMethod().when(subject).shouldThrottleTxn(accessor);
 
 		// when:
-		subject.shouldThrottleQuery(FileGetInfo);
+		subject.shouldThrottleQuery(FileGetInfo, query);
 		subject.shouldThrottleTxn(accessor);
 
 		// then:

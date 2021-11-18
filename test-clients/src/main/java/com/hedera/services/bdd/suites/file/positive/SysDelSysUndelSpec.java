@@ -67,7 +67,7 @@ public class SysDelSysUndelSpec extends HapiApiSuite {
 	}
 
 	private HapiApiSpec distinguishesAdminPrivileges() {
-		var lifetime = 100_000L;
+		final var lifetime = THREE_MONTHS_IN_SECONDS;
 
 		return defaultHapiSpec("DistinguishesAdminPrivileges")
 				.given(
@@ -89,7 +89,7 @@ public class SysDelSysUndelSpec extends HapiApiSuite {
 	}
 
 	private HapiApiSpec systemDeleteWithPastExpiryDestroysFile() {
-		var lifetime = 100_000L;
+		final var lifetime = THREE_MONTHS_IN_SECONDS;
 
 		return defaultHapiSpec("systemDeleteWithPastExpiryDestroysFile")
 				.given(
@@ -99,7 +99,7 @@ public class SysDelSysUndelSpec extends HapiApiSuite {
 				).when(
 						systemFileDelete("misc")
 								.payingWith(SYSTEM_DELETE_ADMIN)
-								.updatingExpiry(666),
+								.updatingExpiry(1L),
 						getFileInfo("misc")
 								.nodePayment(1_234L)
 								.hasAnswerOnlyPrecheck(INVALID_FILE_ID)
@@ -112,7 +112,7 @@ public class SysDelSysUndelSpec extends HapiApiSuite {
 
 	private HapiApiSpec systemDeleteThenUndeleteRestoresContentsAndExpiry() {
 		var now = Instant.now().getEpochSecond();
-		var lifetime = 100_000L;
+		var lifetime = THREE_MONTHS_IN_SECONDS;
 		AtomicLong initExpiry = new AtomicLong();
 
 		return defaultHapiSpec("happyPathFlows")
@@ -127,7 +127,7 @@ public class SysDelSysUndelSpec extends HapiApiSuite {
 						systemFileDelete("misc")
 								.payingWith(SYSTEM_DELETE_ADMIN)
 								.fee(0L)
-								.updatingExpiry(now + lifetime / 2),
+								.updatingExpiry(now + lifetime - 1_000),
 						getFileInfo("misc")
 								.nodePayment(1_234L)
 								.hasAnswerOnlyPrecheck(OK)
