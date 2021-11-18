@@ -29,6 +29,29 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class PojoSigMapTest {
 	@Test
+	void distinguishesBetweenFullAndPartialEd25519Prefixes() {
+		final var partialEd25519Prefix = "a";
+		final var fullEd25519Prefix = "01234567890123456789012345678901";
+		final var fakeSig = "012345678901234567890123456789012345678901234567";
+
+		final var sigMap = SignatureMap.newBuilder()
+				.addSigPair(SignaturePair.newBuilder()
+						.setPubKeyPrefix(ByteString.copyFromUtf8(partialEd25519Prefix))
+						.setEd25519(ByteString.copyFromUtf8(fakeSig)))
+				.addSigPair(SignaturePair.newBuilder()
+						.setPubKeyPrefix(ByteString.copyFromUtf8(fullEd25519Prefix))
+						.setEd25519(ByteString.copyFromUtf8(fakeSig)))
+				.build();
+
+		final var subject = PojoSigMap.fromGrpc(sigMap);
+
+		assertThrows(IllegalArgumentException.class, () -> subject.isFullPrefixAt(-1));
+		assertThrows(IllegalArgumentException.class, () -> subject.isFullPrefixAt(2));
+		assertFalse(subject.isFullPrefixAt(0));
+		assertTrue(subject.isFullPrefixAt(1));
+	}
+
+	@Test
 	void accessorsAsExpected() {
 		// setup:
 		final var fakePrefix = "a";

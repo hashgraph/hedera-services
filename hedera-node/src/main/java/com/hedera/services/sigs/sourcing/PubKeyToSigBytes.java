@@ -20,6 +20,8 @@ package com.hedera.services.sigs.sourcing;
  * ‍
  */
 
+import java.util.function.BiConsumer;
+
 /**
  * Defines a type that is a source of the cryptographic signatures associated to
  * given public keys. It is useful to define an explicit type for this simple behavior,
@@ -44,4 +46,8 @@ public interface PubKeyToSigBytes {
 	 * @throws Exception if the desired cryptographic signature is unavailable.
 	 */
 	byte[] sigBytesFor(byte[] pubKey) throws Exception;
+
+	default void forEachUnusedSigWithFullPrefix(BiConsumer<byte[], byte[]> keySigObs) {
+		throw new UnsupportedOperationException();
+	}
 }

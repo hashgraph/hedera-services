@@ -33,19 +33,25 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.SignatureType;
+import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
 import static com.hedera.test.factories.keys.NodeFactory.list;
+import static com.hedera.test.factories.sigs.SigMapGenerator.withAlternatingUniqueAndFullPrefixes;
 import static com.hedera.test.factories.txns.SystemDeleteFactory.newSignedSystemDelete;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.mock;
 
 class PojoSigMapPubKeyToSigBytesTest {
 	private final byte[] EMPTY_SIG = { };
@@ -54,6 +60,31 @@ class PojoSigMapPubKeyToSigBytesTest {
 	private final KeyTree otherKt =
 			KeyTree.withRoot(list(ed25519(true), ed25519(true), ed25519(true)));
 	private final KeyFactory defaultFactory = KeyFactory.getDefaultInstance();
+
+	@Test
+	void forEachUnusedThrowsUnsupportedByDefault() {
+		final var subject = mock(PubKeyToSigBytes.class);
+		doCallRealMethod().when(subject).forEachUnusedSigWithFullPrefix(any());
+		assertThrows(UnsupportedOperationException.class, () -> subject.forEachUnusedSigWithFullPrefix(null));
+	}
+
+	@Test
+	void getsUnusedFullKeysAndSigs() throws Throwable {
+		final var signedTxn = newSignedSystemDelete()
+				.payerKt(payerKt)
+				.nonPayerKts(otherKt)
+				.sigMapGen(withAlternatingUniqueAndFullPrefixes())
+				.get();
+		final var subject = new PojoSigMapPubKeyToSigBytes(SignedTxnAccessor.uncheckedFrom(signedTxn).getSigMap());
+		lookupsMatch(payerKt, defaultFactory, CommonUtils.extractTransactionBodyBytes(signedTxn), subject);
+
+		final var numUnusedFullPrefixSigs = new AtomicInteger(0);
+		subject.forEachUnusedSigWithFullPrefix((pubKey, sig) -> {
+			System.out.println(Hex.encodeHexString(pubKey) + " -> " + Hex.encodeHexString(sig));
+			numUnusedFullPrefixSigs.getAndIncrement();
+		});
+		assertEquals(2, numUnusedFullPrefixSigs.get());
+	}
 
 	@Test
 	void getsExpectedSigBytesForOtherParties() throws Throwable {
