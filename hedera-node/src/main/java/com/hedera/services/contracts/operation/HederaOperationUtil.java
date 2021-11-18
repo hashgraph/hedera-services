@@ -130,6 +130,7 @@ public final class HederaOperationUtil {
 	 * @param address             The target address
 	 * @param supplierHaltGasCost Supplier for the gas cost
 	 * @param supplierExecution   Supplier with the execution
+	 * @param addressValidator    Address validator predicate
 	 * @return The operation result of the execution
 	 */
 	public static Operation.OperationResult addressSignatureCheckExecution(
