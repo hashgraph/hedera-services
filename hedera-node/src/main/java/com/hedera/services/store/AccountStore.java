@@ -160,9 +160,7 @@ public class AccountStore {
 	}
 
 	/**
-	 * Persists the given account to the Swirlds state, inviting the injected {@link TransactionRecordService}
-	 * to update the {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} of the active transaction
-	 * with these changes.
+	 * Persists the given account to the Swirlds state.
 	 *
 	 * @param account
 	 * 		the account to save

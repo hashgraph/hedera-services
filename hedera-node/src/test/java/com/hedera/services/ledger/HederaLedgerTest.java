@@ -20,13 +20,14 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -75,13 +76,6 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		assertSame(nftsLedger, subject.getNftsLedger());
 		assertSame(accountsLedger, subject.getAccountsLedger());
 		assertSame(tokenRelsLedger, subject.getTokenRelsLedger());
-	}
-
-	@Test
-	void delegatesDestroy() {
-		subject.destroy(genesis);
-
-		verify(accountsLedger).destroy(genesis);
 	}
 
 	@Test
@@ -172,7 +166,8 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		validator = mock(OptionValidator.class);
 		given(validator.isAfterConsensusSecond(anyLong())).willReturn(false);
 		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
-		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger);
+		subject = new HederaLedger(tokenStore, ids, creator, validator,
+				new SideEffectsTracker(), historian, dynamicProps, accountsLedger);
 
 		assertTrue(subject.isDetached(genesis));
 	}
@@ -183,7 +178,8 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		given(validator.isAfterConsensusSecond(anyLong())).willReturn(false);
 		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
 		given(accountsLedger.get(genesis, IS_SMART_CONTRACT)).willReturn(true);
-		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger);
+		subject = new HederaLedger(tokenStore, ids, creator, validator,
+				new SideEffectsTracker(), historian, dynamicProps, accountsLedger);
 
 		assertFalse(subject.isDetached(genesis));
 	}
@@ -193,7 +189,8 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		validator = mock(OptionValidator.class);
 		given(validator.isAfterConsensusSecond(anyLong())).willReturn(false);
 		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
-		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger);
+		subject = new HederaLedger(tokenStore, ids, creator, validator,
+				new SideEffectsTracker(), historian, dynamicProps, accountsLedger);
 		dynamicProps.disableAutoRenew();
 
 		assertFalse(subject.isDetached(genesis));
@@ -349,6 +346,7 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 	void forwardsTransactionalSemantics() {
 		subject.setTokenRelsLedger(null);
 		final var inOrder = inOrder(accountsLedger);
+		given(sideEffectsTracker.getNetTrackedHbarChanges()).willReturn(TransferList.getDefaultInstance());
 
 		subject.begin();
 		subject.commit();
@@ -359,15 +357,5 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		inOrder.verify(accountsLedger).commit();
 		inOrder.verify(accountsLedger).begin();
 		inOrder.verify(accountsLedger).rollback();
-	}
-
-	@Test
-	void persistsNewTokenAssociationsAsExpected() {
-		final var tokenNum = 3;
-		final var accountNum = 4;
-		final var tokenAssociation = new FcTokenAssociation(tokenNum, accountNum);
-		subject.addNewAssociationToList(tokenAssociation);
-
-		assertEquals(tokenAssociation, subject.getNewTokenAssociations().get(0));
 	}
 }

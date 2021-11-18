@@ -20,6 +20,7 @@ package com.hedera.services.store;
  * ‍
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
@@ -86,8 +87,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
 @Singleton
 public class TypedTokenStore {
 	private final AccountStore accountStore;
+	private final SideEffectsTracker sideEffectsTracker;
 	private final UniqTokenViewsManager uniqTokenViewsManager;
-	private final TransactionRecordService transactionRecordService;
 	private final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
 	private final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> uniqueTokens;
 	private final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRels;
@@ -99,23 +100,23 @@ public class TypedTokenStore {
 
 	@Inject
 	public TypedTokenStore(
-			AccountStore accountStore,
-			TransactionRecordService transactionRecordService,
-			TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens,
-			TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> uniqueTokens,
-			TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRels,
-			BackingTokenRels backingTokenRels,
-			UniqTokenViewsManager uniqTokenViewsManager,
-			LegacyTreasuryAdder legacyStoreDelegate,
-			LegacyTreasuryRemover delegate
+			final AccountStore accountStore,
+			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens,
+			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> uniqueTokens,
+			final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRels,
+			final BackingTokenRels backingTokenRels,
+			final UniqTokenViewsManager uniqTokenViewsManager,
+			final LegacyTreasuryAdder legacyStoreDelegate,
+			final LegacyTreasuryRemover delegate,
+			final SideEffectsTracker sideEffectsTracker
 	) {
 		this.tokens = tokens;
 		this.uniqTokenViewsManager = uniqTokenViewsManager;
 		this.tokenRels = tokenRels;
 		this.uniqueTokens = uniqueTokens;
 		this.accountStore = accountStore;
-		this.transactionRecordService = transactionRecordService;
 		this.delegate = delegate;
+		this.sideEffectsTracker = sideEffectsTracker;
 		this.backingTokenRels = backingTokenRels;
 		this.addKnownTreasury = legacyStoreDelegate;
 	}
@@ -202,7 +203,7 @@ public class TypedTokenStore {
 	 *
 	 * @param tokenRelationships the token relationships to save
 	 */
-	public void commitTokenRelationships(List<TokenRelationship> tokenRelationships) {
+	public void commitTokenRelationships(final List<TokenRelationship> tokenRelationships) {
 		final var currentTokenRels = tokenRels;
 
 		for (var tokenRelationship : tokenRelationships) {
@@ -215,7 +216,7 @@ public class TypedTokenStore {
 				persistNonDestroyed(tokenRelationship, key, currentTokenRels);
 			}
 		}
-		transactionRecordService.includeChangesToTokenRels(tokenRelationships);
+		sideEffectsTracker.trackTokenBalanceChanges(tokenRelationships);
 	}
 
 	private MerkleTokenRelStatus getMerkleTokenRelationship(Token token, Account account) {
@@ -266,8 +267,8 @@ public class TypedTokenStore {
 	 *
 	 * @param ownershipTracker holds changes to {@link UniqueToken} ownership
 	 */
-	public void commitTrackers(OwnershipTracker ownershipTracker) {
-		transactionRecordService.includeOwnershipChanges(ownershipTracker);
+	public void commitTrackers(final OwnershipTracker ownershipTracker) {
+		sideEffectsTracker.trackTokenOwnershipChanges(ownershipTracker);
 	}
 
 	/**
@@ -299,7 +300,8 @@ public class TypedTokenStore {
 	 * This is only to be used when pausing/unpausing token as this method ignores the pause status
 	 * of the token.
 	 *
-	 * @param id the token to load
+	 * @param id
+	 * 		the token to load
 	 * @return a usable model of the token which is possibly paused.
 	 */
 	public Token loadPossiblyPausedToken(Id id) {
@@ -394,14 +396,14 @@ public class TypedTokenStore {
 			destroyRemoved(token.removedUniqueTokens(), treasury);
 		}
 
-		/* Only needed during HTS refactor.
-		Will be removed once all operations that refer to the knownTreasuries in-memory structure are refactored */
+		/* Only needed during HTS refactor. Will be removed once all operations that refer to the knownTreasuries
+		in-memory structure are refactored */
 		if (token.isDeleted()) {
 			final AccountID affectedTreasury = token.getTreasury().getId().asGrpcAccount();
 			final TokenID mutatedToken = token.getId().asGrpcToken();
 			delegate.removeKnownTreasuryForToken(affectedTreasury, mutatedToken);
 		}
-		transactionRecordService.includeChangesToToken(token);
+		sideEffectsTracker.trackTokenChanges(token);
 	}
 
 	/**
@@ -429,8 +431,7 @@ public class TypedTokenStore {
 
 		tokens.put(newMerkleTokenId.toGrpcTokenId(), newMerkleToken);
 		addKnownTreasury.perform(token.getTreasury().getId().asGrpcAccount(), token.getId().asGrpcToken());
-
-		transactionRecordService.includeChangesToToken(token);
+		sideEffectsTracker.trackTokenChanges(token);
 	}
 
 	private void destroyRemoved(List<UniqueToken> nfts, EntityId treasury) {

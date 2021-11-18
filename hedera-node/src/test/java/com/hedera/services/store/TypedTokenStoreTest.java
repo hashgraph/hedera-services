@@ -20,6 +20,7 @@ package com.hedera.services.store;
  * ‍
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
@@ -27,7 +28,6 @@ import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -84,6 +84,8 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class TypedTokenStoreTest {
 	@Mock
+	private SideEffectsTracker sideEffectsTracker;
+	@Mock
 	private AccountStore accountStore;
 	@Mock
 	private UniqTokenViewsManager uniqTokenViewsManager;
@@ -91,8 +93,6 @@ class TypedTokenStoreTest {
 	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
 	@Mock
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> uniqueTokens;
-	@Mock
-	private TransactionRecordService transactionRecordService;
 	@Mock
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRels;
 	@Mock
@@ -112,14 +112,14 @@ class TypedTokenStoreTest {
 
 		subject = new TypedTokenStore(
 				accountStore,
-				transactionRecordService,
 				tokens,
 				uniqueTokens,
 				tokenRels,
 				backingTokenRels,
 				uniqTokenViewsManager,
 				tokenStore::addKnownTreasury,
-				legacyStore::removeKnownTreasuryForToken);
+				legacyStore::removeKnownTreasuryForToken,
+				sideEffectsTracker);
 	}
 
 	/* --- Token relationship loading --- */
@@ -174,7 +174,7 @@ class TypedTokenStoreTest {
 		// then:
 		assertEquals(expectedReplacementTokenRel, miscTokenMerkleRel);
 		// and:
-		verify(transactionRecordService).includeChangesToTokenRels(List.of(modelTokenRel));
+		verify(sideEffectsTracker).trackTokenBalanceChanges(List.of(modelTokenRel));
 	}
 
 	@Test
@@ -191,14 +191,14 @@ class TypedTokenStoreTest {
 		verify(tokenRels).remove(Pair.of(STATIC_PROPERTIES.scopedAccountWith(miscAccountNum),
 				STATIC_PROPERTIES.scopedTokenWith(tokenNum)));
 		verify(backingTokenRels).removeFromExistingRels(legacyReprOf(destroyedRel));
-		verify(transactionRecordService).includeChangesToTokenRels(List.of(destroyedRel));
+		verify(sideEffectsTracker).trackTokenBalanceChanges(List.of(destroyedRel));
 	}
 
 	@Test
 	void persistTrackers() {
 		final var ot = new OwnershipTracker();
 		subject.commitTrackers(ot);
-		verify(transactionRecordService).includeOwnershipChanges(ot);
+		verify(sideEffectsTracker).trackTokenOwnershipChanges(ot);
 	}
 
 	@Test
@@ -219,7 +219,7 @@ class TypedTokenStoreTest {
 		verify(tokenRels).put(Pair.of(STATIC_PROPERTIES.scopedAccountWith(miscAccountNum),
 				STATIC_PROPERTIES.scopedTokenWith(tokenNum)), expectedNewTokenRel);
 		// and:
-		verify(transactionRecordService).includeChangesToTokenRels(List.of(newTokenRel));
+		verify(sideEffectsTracker).trackTokenBalanceChanges(List.of(newTokenRel));
 	}
 
 	/* --- Token loading --- */
@@ -444,7 +444,7 @@ class TypedTokenStoreTest {
 		// then:
 		assertEquals(expectedReplacementToken, merkleToken);
 		// and:
-		verify(transactionRecordService).includeChangesToToken(modelToken);
+		verify(sideEffectsTracker).trackTokenChanges(modelToken);
 		verify(uniqueTokens).put(expectedNewUniqTokenId, expectedNewUniqToken);
 		verify(uniqueTokens).put(new NftId(tokenEntityId.num(), mintedSerialNo), expectedNewUniqToken);
 		verify(uniqueTokens).remove(expectedPastUniqTokenId);
@@ -470,7 +470,7 @@ class TypedTokenStoreTest {
 		assertEquals(expectedReplacementToken2, merkleToken);
 //		verify(tokens, never()).replace(merkleTokenId, expectedReplacementToken2);
 		// and:
-		verify(transactionRecordService).includeChangesToToken(modelToken);
+		verify(sideEffectsTracker).trackTokenChanges(modelToken);
 		verify(uniqueTokens).put(expectedNewUniqTokenId2, expectedNewUniqToken);
 		verify(uniqueTokens).remove(expectedPastUniqTokenId2);
 		verify(uniqTokenViewsManager).mintNotice(EntityNumPair.fromNftId(expectedNewUniqTokenId2), treasuryId);
@@ -497,7 +497,7 @@ class TypedTokenStoreTest {
 
 		subject.persistNew(newToken);
 		verify(tokens).put(any(), any());
-		verify(transactionRecordService).includeChangesToToken(newToken);
+		verify(sideEffectsTracker).trackTokenChanges(newToken);
 	}
 
 	@Test
