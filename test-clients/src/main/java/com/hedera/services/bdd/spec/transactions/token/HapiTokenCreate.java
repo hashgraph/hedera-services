@@ -300,7 +300,9 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 								long secs = autoRenewPeriod.orElse(spec.setup().defaultAutoRenewPeriod().getSeconds());
 								b.setAutoRenewPeriod(Duration.newBuilder().setSeconds(secs).build());
 							}
-							expiry.ifPresent(t -> b.setExpiry(Timestamp.newBuilder().setSeconds(t).build()));
+							if (autoRenewPeriod.isEmpty()) {
+								expiry.ifPresent(t -> b.setExpiry(Timestamp.newBuilder().setSeconds(t).build()));
+							}
 							wipeKey.ifPresent(k -> b.setWipeKey(spec.registry().getKey(k)));
 							kycKey.ifPresent(k -> b.setKycKey(spec.registry().getKey(k)));
 							treasury.ifPresent(a -> {

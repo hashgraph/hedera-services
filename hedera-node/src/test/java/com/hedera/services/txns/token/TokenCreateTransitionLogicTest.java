@@ -21,6 +21,7 @@ package com.hedera.services.txns.token;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -47,7 +48,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 
 import static com.hedera.services.txns.token.TokenCreateTransitionLogic.MODEL_FACTORY;
@@ -78,7 +78,6 @@ import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-
 @ExtendWith(MockitoExtension.class)
 class TokenCreateTransitionLogicTest {
 	private final Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
@@ -93,6 +92,8 @@ class TokenCreateTransitionLogicTest {
 
 	private TransactionBody tokenCreateTxn;
 
+	@Mock
+	private SideEffectsTracker sideEffectsTracker;
 	@Mock
 	private Creation creation;
 	@Mock
@@ -117,12 +118,13 @@ class TokenCreateTransitionLogicTest {
 	@BeforeEach
 	private void setup() {
 		subject = new TokenCreateTransitionLogic(
-				validator, tokenStore, accountStore, txnCtx, dynamicProperties, ids);
+				validator, tokenStore, accountStore, txnCtx, dynamicProperties, ids, sideEffectsTracker);
 	}
 
 	@Test
 	void stateTransitionWorks() {
-		final List<FcTokenAssociation> mockAssociations = new ArrayList<>();
+		final List<FcTokenAssociation> mockAssociations = List.of(
+				new FcTokenAssociation(1L, 2L));
 		givenValidTxnCtx();
 		subject.setCreationFactory(creationFactory);
 
@@ -142,7 +144,7 @@ class TokenCreateTransitionLogicTest {
 		verify(creation).loadModelsWith(payer, ids, validator);
 		verify(creation).doProvisionallyWith(now.getEpochSecond(), MODEL_FACTORY, RELS_LISTING);
 		verify(creation).persist();
-		verify(txnCtx).setNewTokenAssociations(mockAssociations);
+		verify(sideEffectsTracker).trackExplicitAutoAssociation(mockAssociations.get(0));
 	}
 
 	@Test

@@ -21,7 +21,6 @@ package com.hedera.services.bdd.suites.contract;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
@@ -46,16 +45,13 @@ import org.junit.jupiter.api.Assertions;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.function.BiConsumer;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
-import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isContractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
-import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.APPROVE_ABI;
@@ -79,11 +75,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -102,8 +96,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 public class ContractCallSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCallSuite.class);
 	private static final long depositAmount = 1000;
-	private static final String defaultMaxGas =
-			HapiSpecSetup.getDefaultNodeProps().get("contracts.maxGas");
 
 	public static void main(String... args) {
 		new ContractCallSuite().runSuiteSync();
@@ -111,7 +103,7 @@ public class ContractCallSuite extends HapiApiSuite {
 
 	@Override
 	public boolean canRunAsync() {
-		return true;
+		return false;
 	}
 
 	@Override
@@ -137,7 +129,6 @@ public class ContractCallSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> positiveSpecs() {
 		return Arrays.asList(
-				vanillaSuccess(),
 				resultSizeAffectsFees(),
 				payableSuccess(),
 				depositSuccess(),
@@ -589,47 +580,6 @@ public class ContractCallSuite extends HapiApiSuite {
 								ContractResources.SIMPLE_UPDATE_ABI, 15, 434).gas(350_000L)
 								.hasKnownStatus(CONTRACT_DELETED),
 						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
-				);
-	}
-
-	HapiApiSpec vanillaSuccess() {
-		return defaultHapiSpec("VanillaSuccess")
-				.given(
-						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
-						contractCreate("parentDelegate").bytecode("parentDelegateBytecode").adminKey(THRESHOLD),
-						getContractInfo("parentDelegate").logged().saveToRegistry("parentInfo"),
-						upMaxGasTo(1_000_000L)
-				).when(
-						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI)
-								.gas(1_000_000L)
-								.via("createChildTxn"),
-						contractCall("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI)
-								.gas(1_000_000L)
-								.via("getChildResultTxn"),
-						contractCall("parentDelegate", ContractResources.GET_CHILD_ADDRESS_ABI)
-								.gas(1_000_000L)
-								.via("getChildAddressTxn")
-				).then(
-						getTxnRecord("createChildTxn")
-								.saveCreatedContractListToRegistry("createChild")
-								.logged(),
-						getTxnRecord("getChildResultTxn")
-								.hasPriority(recordWith().contractCallResult(
-										resultWith().resultThruAbi(
-												ContractResources.GET_CHILD_RESULT_ABI,
-												isLiteralResult(new Object[] { BigInteger.valueOf(7L) })))),
-						getTxnRecord("getChildAddressTxn")
-								.hasPriority(recordWith().contractCallResult(
-										resultWith()
-												.resultThruAbi(
-														ContractResources.GET_CHILD_ADDRESS_ABI,
-														isContractWith(contractWith()
-																.nonNullContractId()
-																.propertiesInheritedFrom("parentInfo")))
-												.logs(inOrder()))),
-						contractListWithPropertiesInheritedFrom(
-								"createChildCallResult", 1, "parentInfo"),
-						restoreDefaultMaxGas()
 				);
 	}
 
@@ -1273,23 +1223,5 @@ public class ContractCallSuite extends HapiApiSuite {
 	@Override
 	protected Logger getResultsLogger() {
 		return log;
-	}
-
-	private HapiSpecOperation upMaxGasTo(final long amount) {
-		return fileUpdate(APP_PROPERTIES)
-				.fee(ONE_HUNDRED_HBARS)
-				.payingWith(EXCHANGE_RATE_CONTROL)
-				.overridingProps(Map.of(
-						"contracts.maxGas", "" + amount
-				));
-	}
-
-	private HapiSpecOperation restoreDefaultMaxGas() {
-		return fileUpdate(APP_PROPERTIES)
-				.fee(ONE_HUNDRED_HBARS)
-				.payingWith(EXCHANGE_RATE_CONTROL)
-				.overridingProps(Map.of(
-						"contracts.maxGas", defaultMaxGas
-				));
 	}
 }
