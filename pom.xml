@@ -177,7 +177,7 @@
 
     <!-- SonarCloud properties -->
     <jacoco.version>0.8.7</jacoco.version>
-    <sonar.version>3.9.0.2155</sonar.version>
+    <sonar.version>3.9.1.2184</sonar.version>
 
     <sonar.organization>hashgraph</sonar.organization>
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
