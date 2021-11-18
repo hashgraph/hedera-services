@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.contract;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
@@ -36,14 +37,21 @@ import org.junit.jupiter.api.Assertions;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isContractWith;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ADD_NTH_FIB_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CONSPICUOUS_DONATION_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.EMPTY_CONSTRUCTOR;
@@ -66,7 +74,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -88,6 +98,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ContractCreateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCreateSuite.class);
+
+	private static final String defaultMaxGas =
+			HapiSpecSetup.getDefaultNodeProps().get("contracts.maxGas");
 
 	public static void main(String... args) {
 		new ContractCreateSuite().runSuiteSync();
@@ -498,6 +511,65 @@ public class ContractCreateSuite extends HapiApiSuite {
 								MAX_GAS_LIMIT_EXCEEDED),
 						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
+	}
+
+	HapiApiSpec vanillaSuccess() {
+		return defaultHapiSpec("VanillaSuccess")
+				.given(
+						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
+						contractCreate("parentDelegate").bytecode("parentDelegateBytecode").adminKey(THRESHOLD),
+						getContractInfo("parentDelegate").logged().saveToRegistry("parentInfo"),
+						upMaxGasTo(1_000_000L)
+				).when(
+						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI)
+								.gas(1_000_000L)
+								.via("createChildTxn"),
+						contractCall("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI)
+								.gas(1_000_000L)
+								.via("getChildResultTxn"),
+						contractCall("parentDelegate", ContractResources.GET_CHILD_ADDRESS_ABI)
+								.gas(1_000_000L)
+								.via("getChildAddressTxn")
+				).then(
+						getTxnRecord("createChildTxn")
+								.saveCreatedContractListToRegistry("createChild")
+								.logged(),
+						getTxnRecord("getChildResultTxn")
+								.hasPriority(recordWith().contractCallResult(
+										resultWith().resultThruAbi(
+												ContractResources.GET_CHILD_RESULT_ABI,
+												isLiteralResult(new Object[] { BigInteger.valueOf(7L) })))),
+						getTxnRecord("getChildAddressTxn")
+								.hasPriority(recordWith().contractCallResult(
+										resultWith()
+												.resultThruAbi(
+														ContractResources.GET_CHILD_ADDRESS_ABI,
+														isContractWith(contractWith()
+																.nonNullContractId()
+																.propertiesInheritedFrom("parentInfo")))
+												.logs(inOrder()))),
+						contractListWithPropertiesInheritedFrom(
+								"createChildCallResult", 1, "parentInfo"),
+						restoreDefaultMaxGas()
+				);
+	}
+
+	private HapiSpecOperation upMaxGasTo(final long amount) {
+		return fileUpdate(APP_PROPERTIES)
+				.fee(ONE_HUNDRED_HBARS)
+				.payingWith(EXCHANGE_RATE_CONTROL)
+				.overridingProps(Map.of(
+						"contracts.maxGas", "" + amount
+				));
+	}
+
+	private HapiSpecOperation restoreDefaultMaxGas() {
+		return fileUpdate(APP_PROPERTIES)
+				.fee(ONE_HUNDRED_HBARS)
+				.payingWith(EXCHANGE_RATE_CONTROL)
+				.overridingProps(Map.of(
+						"contracts.maxGas", defaultMaxGas
+				));
 	}
 
 	@Override
