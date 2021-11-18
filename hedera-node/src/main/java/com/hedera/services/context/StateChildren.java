@@ -22,19 +22,23 @@ package com.hedera.services.context;
 
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 
 import java.util.Objects;
 
@@ -49,7 +53,8 @@ public class StateChildren {
 	private MerkleMap<EntityNum, MerkleToken> tokens;
 	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
 	private MerkleMap<EntityNum, MerkleSchedule> schedules;
-	private MerkleMap<String, MerkleOptionalBlob> storage;
+	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
+	private VirtualMap<ContractKey, ContractValue> contractStorage;
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
 	private FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations;
 	private FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations;
@@ -95,13 +100,22 @@ public class StateChildren {
 		this.schedules = schedules;
 	}
 
-	public MerkleMap<String, MerkleOptionalBlob> getStorage() {
+	public VirtualMap<VirtualBlobKey, VirtualBlobValue> getStorage() {
 		Objects.requireNonNull(storage);
 		return storage;
 	}
 
-	public void setStorage(MerkleMap<String, MerkleOptionalBlob> storage) {
+	public void setStorage(VirtualMap<VirtualBlobKey, VirtualBlobValue> storage) {
 		this.storage = storage;
+	}
+
+	public void setContractStorage(VirtualMap<ContractKey, ContractValue> contractStorage) {
+		this.contractStorage = contractStorage;
+	}
+
+	public VirtualMap<ContractKey, ContractValue> getContractStorage() {
+		Objects.requireNonNull(contractStorage);
+		return contractStorage;
 	}
 
 	public MerkleMap<EntityNumPair, MerkleTokenRelStatus> getTokenAssociations() {

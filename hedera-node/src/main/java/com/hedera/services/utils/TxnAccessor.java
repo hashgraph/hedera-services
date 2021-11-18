@@ -85,6 +85,13 @@ public interface TxnAccessor {
     boolean isTriggeredTxn();
     ScheduleID getScheduleRef();
 
+    /**
+     * Extracts the gasLimit value from a {@link HederaFunctionality#ContractCall} or a
+     * {@link HederaFunctionality#ContractCreate} transaction
+     * @return - the gasLimit value of the transaction
+     */
+    long getGasLimitForContractTx();
+
     default SwirldTransaction getPlatformTxn() {
         throw new UnsupportedOperationException();
     }

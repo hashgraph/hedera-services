@@ -20,40 +20,50 @@ package com.hedera.services.files.store;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.swirlds.merkle.map.MerkleMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.hedera.services.state.merkle.internals.BlobKey;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.swirlds.virtualmap.VirtualMap;
 
 import java.util.AbstractMap;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static java.util.stream.Collectors.toSet;
+import static java.lang.Long.parseLong;
 
 public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
-	private static final Logger log = LogManager.getLogger(FcBlobsBytesStore.class);
+	private final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> blobSupplier;
 
-	private final Function<byte[], MerkleOptionalBlob> blobFactory;
-	private final Supplier<MerkleMap<String, MerkleOptionalBlob>> pathedBlobs;
+	public static final int LEGACY_BLOB_CODE_INDEX = 3;
 
-	public FcBlobsBytesStore(
-			Function<byte[], MerkleOptionalBlob> blobFactory,
-			Supplier<MerkleMap<String, MerkleOptionalBlob>> pathedBlobs
-	) {
-		this.blobFactory = blobFactory;
-		this.pathedBlobs = pathedBlobs;
+	public FcBlobsBytesStore(Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> blobSupplier) {
+		this.blobSupplier = blobSupplier;
 	}
 
-	private String at(Object key) {
-		return (String) key;
+	/**
+	 * The string we are parsing has one of five special forms:
+	 * <ul>
+	 *    <li>{@literal /0/f{num}} for file data; or,</li>
+	 *    <li>{@literal /0/k{num}} for file metadata; or,</li>
+	 *    <li>{@literal /0/s{num}} for contract bytecode; or,</li>
+	 *    <li>{@literal /0/d{num}} for contract storage; or,</li>
+	 *    <li>{@literal /0/e{num}} for prior expiration time of a system-deleted entity.</li>
+	 * </ul>
+	 * So we get the type from the character code at index 3, and parse the entity number
+	 * starting at index 4, to get the appropriate {@link BlobKey}.
+	 *
+	 * @param path
+	 * 		a string with one of the five forms above
+	 * @return a fixed-size map key with equivalent meaning
+	 */
+	VirtualBlobKey at(Object path) {
+		return VirtualBlobKey.fromPath((String) path);
 	}
 
 	@Override
 	public void clear() {
-		pathedBlobs.get().clear();
+		throw new UnsupportedOperationException();
 	}
 
 	/**
@@ -68,7 +78,7 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 	 */
 	@Override
 	public byte[] remove(Object path) {
-		pathedBlobs.get().remove(at(path));
+		blobSupplier.get().remove(at(path));
 		return null;
 	}
 
@@ -82,54 +92,58 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 	 * 		the path of the blob
 	 * @param value
 	 * 		the contents to be set
-	 * @return {@code null}
+	 * @return null, no matter if the path already had an associated value
 	 */
 	@Override
 	public byte[] put(String path, byte[] value) {
 		var meta = at(path);
-		if (pathedBlobs.get().containsKey(meta)) {
-			var blob = pathedBlobs.get().getForModify(meta);
-			blob.modify(value);
-			if (log.isDebugEnabled()) {
-				log.debug("Modifying to {} new bytes (hash = {}) @ '{}'", value.length, blob.getHash(), path);
-			}
+		if (blobSupplier.get().containsKey(meta)) {
+			final var blob = blobSupplier.get().getForModify(meta);
+			blob.setData(value);
 		} else {
-			var blob = blobFactory.apply(value);
-			if (log.isDebugEnabled()) {
-				log.debug("Putting {} new bytes (hash = {}) @ '{}'", value.length, blob.getHash(), path);
-			}
-			pathedBlobs.get().put(at(path), blob);
+			final VirtualBlobValue blob = new VirtualBlobValue(value);
+			blobSupplier.get().put(at(path), blob);
 		}
 		return null;
 	}
 
 	@Override
 	public byte[] get(Object path) {
-		return Optional.ofNullable(pathedBlobs.get().get(at(path)))
-				.map(MerkleOptionalBlob::getData)
+		return Optional.ofNullable(blobSupplier.get().get(at(path)))
+				.map(VirtualBlobValue::getData)
 				.orElse(null);
 	}
 
 	@Override
 	public boolean containsKey(Object path) {
-		return pathedBlobs.get().containsKey(at(path));
+		return blobSupplier.get().containsKey(at(path));
 	}
 
 	@Override
 	public boolean isEmpty() {
-		return pathedBlobs.get().isEmpty();
+		return blobSupplier.get().isEmpty();
 	}
 
 	@Override
 	public int size() {
-		return pathedBlobs.get().size();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public Set<Entry<String, byte[]>> entrySet() {
-		return pathedBlobs.get().entrySet()
-				.stream()
-				.map(entry -> new SimpleEntry<>(entry.getKey(), entry.getValue().getData()))
-				.collect(toSet());
+		throw new UnsupportedOperationException();
+	}
+
+	/**
+	 * As the string we are parsing matches /0/f{num} for file data, /0/k{num} for file metadata, /0/s{num} for contract
+	 * bytecode, and /0/e{num} for system deleted files, character at third position is used to recognize the type of
+	 * blob
+	 *
+	 * @param key
+	 * 		given blob key
+	 * @return the entity number from the path
+	 */
+	public static long getEntityNumFromPath(final String key) {
+		return parseLong(key.substring(LEGACY_BLOB_CODE_INDEX + 1));
 	}
 }

@@ -22,6 +22,8 @@ package com.hedera.services.legacy.core.jproto;
 
 import com.swirlds.common.CommonUtils;
 
+import java.util.Arrays;
+
 /**
  * Maps to proto Key of type ECDSA_secp256k1Key
  */
@@ -61,5 +63,22 @@ public class JECDSASecp256k1Key extends JKey {
 	@Override
 	public boolean hasECDSAsecp256k1Key() {
 		return true;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (o == this) {
+			return true;
+		}
+		if (o == null || JECDSASecp256k1Key.class != o.getClass()) {
+			return false;
+		}
+		final var that = (JECDSASecp256k1Key) o;
+		return Arrays.equals(this.ecdsaSecp256k1Key, that.ecdsaSecp256k1Key);
+	}
+
+	@Override
+	public int hashCode() {
+		return Arrays.hashCode(ecdsaSecp256k1Key);
 	}
 }

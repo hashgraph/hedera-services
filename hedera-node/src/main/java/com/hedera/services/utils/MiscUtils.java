@@ -53,6 +53,7 @@ import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -215,6 +216,12 @@ public final class MiscUtils {
 			TokenGetNftInfos,
 			TokenGetAccountNftInfos,
 			NetworkGetExecutionTime
+	);
+
+	private static final Set<HederaFunctionality> CONSENSUS_THROTTLED_FUNCTIONS = EnumSet.of(
+			ContractCallLocal,
+			ContractCall,
+			ContractCreate
 	);
 
 	static final String TOKEN_MINT_METRIC = "mintToken";
@@ -403,7 +410,7 @@ public final class MiscUtils {
 		if (o instanceof FCQueue) {
 			return ExpirableTxnRecord.allToGrpc(new ArrayList<>((FCQueue<ExpirableTxnRecord>) o)).toString();
 		} else {
-			return o.toString();
+			return Objects.toString(o);
 		}
 	}
 
@@ -736,8 +743,7 @@ public final class MiscUtils {
 	 * flipping bit j of perm64(x). For each possible pair (i,j), this function
 	 * achieves a probability between 49.8 and 50.2 percent.
 	 *
-	 * @param x
-	 * 		the value to permute
+	 * @param x the value to permute
 	 * @return the avalanche-optimized permutation
 	 */
 	public static long perm64(long x) {
@@ -770,5 +776,15 @@ public final class MiscUtils {
 		if (null != map) {
 			map.put(key, value);
 		}
+	}
+
+	/**
+	 * Verifies whether a {@link HederaFunctionality} should be throttled by the consensus throttle
+	 *
+	 * @param hederaFunctionality - the {@link HederaFunctionality} to verify
+	 * @return - whether this {@link HederaFunctionality} should be throttled by the consensus throttle
+	 */
+	public static boolean isGasThrottled(HederaFunctionality hederaFunctionality) {
+		return CONSENSUS_THROTTLED_FUNCTIONS.contains(hederaFunctionality);
 	}
 }

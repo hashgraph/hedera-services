@@ -36,7 +36,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 class TestAccountScopedCheck implements LedgerCheck<TestAccount, TestAccountProperty> {
-
 	@Override
 	public ResponseCodeEnum checkUsing(final TestAccount account, final Map<TestAccountProperty, Object> changeSet) {
 		Function<TestAccountProperty, Object> getter = prop -> {
@@ -46,18 +45,24 @@ class TestAccountScopedCheck implements LedgerCheck<TestAccount, TestAccountProp
 				return prop.getter().apply(account);
 			}
 		};
+		return checkUsing(getter, changeSet);
+	}
 
-		if ((boolean) getter.apply(FLAG)) {
+	@Override
+	public ResponseCodeEnum checkUsing(
+			final Function<TestAccountProperty, Object> extantProps,
+			final Map<TestAccountProperty, Object> changeSet
+	) {
+		if ((boolean) extantProps.apply(FLAG)) {
 			return ACCOUNT_IS_TREASURY;
 		}
-
-		if ((long)getter.apply(LONG) != 123L) {
+		if ((long) extantProps.apply(LONG) != 123L) {
 			return ACCOUNT_IS_NOT_GENESIS_ACCOUNT;
 		}
-
-		if (!getter.apply(OBJ).equals("DEFAULT")) {
+		if (!extantProps.apply(OBJ).equals("DEFAULT")) {
 			return ACCOUNT_STILL_OWNS_NFTS;
 		}
 		return OK;
 	}
+
 }

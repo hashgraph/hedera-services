@@ -23,9 +23,9 @@ package com.hedera.services.state.merkle;
 import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.ExternalSelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.common.merkle.MerkleExternalLeaf;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
@@ -63,7 +63,7 @@ import static com.swirlds.common.CommonUtils.hex;
  * Docker Compose network. Otherwise, updates to file 0.0.150 will be hopelessly interleaved and failure
  * is essentially guaranteed.
  */
-public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLeaf {
+public class MerkleDiskFs extends AbstractMerkleLeaf implements ExternalSelfSerializable {
 	private static final Logger log = LogManager.getLogger(MerkleDiskFs.class);
 
 	private static final long RUNTIME_CONSTRUCTABLE_ID = 0xd8a59882c746d0a3L;
@@ -148,13 +148,18 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 
 	/* --- MerkleExternalLeaf --- */
 	@Override
-	public void serializeAbbreviated(SerializableDataOutputStream out) throws IOException {
+	public void serializeExternal(final SerializableDataOutputStream out, final File ignored) throws IOException {
 		out.writeInt(fileHashes.size());
 		serializeFidInfo(out, fileHashes::get);
 	}
 
 	@Override
-	public void deserializeAbbreviated(SerializableDataInputStream in, Hash hash, int version) throws IOException {
+	public void deserializeExternal(
+			final SerializableDataInputStream in,
+			final File ignored,
+			final Hash hash,
+			final int version
+	) throws IOException {
 		int numSavedHashes = in.readInt();
 		for (int i = 0; i < numSavedHashes; i++) {
 			var fid = FileID.newBuilder()

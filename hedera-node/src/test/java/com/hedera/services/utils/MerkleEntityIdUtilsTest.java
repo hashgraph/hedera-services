@@ -42,6 +42,7 @@ import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityA
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
+import static com.hedera.services.utils.EntityIdUtils.asTypedSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.contractParsedFromSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -85,11 +86,13 @@ class MerkleEntityIdUtilsTest {
 		final var equivContract = asContract(String.format("%d.%d.%d", shard, realm, num));
 
 		final var actual = asSolidityAddress(shard, realm, num);
+		final var typedActual = asTypedSolidityAddress(equivAccount);
 		final var anotherActual = asSolidityAddress(equivContract);
 		final var actualHex = asSolidityAddressHex(equivAccount);
 
 		assertArrayEquals(expected, actual);
 		assertArrayEquals(expected, anotherActual);
+		assertArrayEquals(expected, typedActual.toArray());
 		assertEquals(CommonUtils.hex(expected), actualHex);
 		assertEquals(equivAccount, accountParsedFromSolidityAddress(actual));
 		assertEquals(equivContract, contractParsedFromSolidityAddress(actual));

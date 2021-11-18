@@ -20,8 +20,8 @@ package com.hedera.services.stats;
  * ‍
  */
 
-import com.swirlds.common.StatEntry;
-import com.swirlds.platform.StatsRunningAverage;
+import com.swirlds.common.statistics.StatEntry;
+import com.swirlds.common.statistics.StatsRunningAverage;
 
 public interface RunningAvgFactory {
 	default StatEntry from(String name, String desc, StatsRunningAverage runningAvg) {

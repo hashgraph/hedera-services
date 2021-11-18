@@ -44,7 +44,6 @@ public class SignatureScreen {
 	private final PayerSigValidity payerSigValidity;
 	private final MiscSpeedometers speedometers;
 	private final TransactionContext txnCtx;
-	private final NetworkCtxManager networkCtxManager;
 	private final BiPredicate<JKey, TransactionSignature> validityTest;
 
 	@Inject
@@ -52,7 +51,6 @@ public class SignatureScreen {
 			Rationalization rationalization,
 			PayerSigValidity payerSigValidity,
 			TransactionContext txnCtx,
-			NetworkCtxManager networkCtxManager,
 			MiscSpeedometers speedometers,
 			BiPredicate<JKey, TransactionSignature> validityTest
 	) {
@@ -61,7 +59,6 @@ public class SignatureScreen {
 		this.speedometers = speedometers;
 		this.rationalization = rationalization;
 		this.payerSigValidity = payerSigValidity;
-		this.networkCtxManager = networkCtxManager;
 	}
 
 	public ResponseCodeEnum applyTo(TxnAccessor accessor) {
@@ -78,7 +75,6 @@ public class SignatureScreen {
 
 		if (hasActivePayerSig(accessor)) {
 			txnCtx.payerSigIsKnownActive();
-			networkCtxManager.prepareForIncorporating(accessor);
 		}
 
 		return sigStatus;
