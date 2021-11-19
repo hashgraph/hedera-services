@@ -9,9 +9,9 @@ package com.hedera.services.ledger.accounts;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -53,10 +53,6 @@ class BackingNftsTest {
 			new EntityId(0, 0, 3),
 			"abcdefgh".getBytes(),
 			new RichInstant(1_234_567L, 1));
-	private MerkleUniqueToken bValue = new MerkleUniqueToken(
-			new EntityId(0, 0, 4),
-			"abcdefgh".getBytes(),
-			new RichInstant(1_234_568L, 2));
 	private MerkleUniqueToken theToken = new MerkleUniqueToken(
 			MISSING_ENTITY_ID,
 			"HI".getBytes(StandardCharsets.UTF_8),
@@ -91,7 +87,6 @@ class BackingNftsTest {
 
 	@Test
 	void containsWorks() {
-		subject.rebuildFromSources();
 		// expect:
 		assertTrue(subject.contains(aNftId));
 		assertTrue(subject.contains(bNftId));
@@ -121,10 +116,10 @@ class BackingNftsTest {
 	void putWorks() {
 		// when:
 		subject.put(aNftId, aValue);
-		subject.put(cNftId, bValue);
+		subject.put(cNftId, aValue);
 
 		// then:
-		assertEquals(aValue, subject.getImmutableRef(aNftId));
+		assertEquals(aValue, subject.getImmutableRef(cNftId));
 	}
 
 	@Test
