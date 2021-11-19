@@ -44,10 +44,7 @@ public class BackingNfts implements BackingStore<NftId, MerkleUniqueToken> {
 
 	@Override
 	public void rebuildFromSources() {
-
-		for (EntityNumPair entity : delegate.get().keySet()) {
-			var pair = entity.asTokenNumAndSerialPair();
-		}
+		/* No-op */
 	}
 
 	@Override
