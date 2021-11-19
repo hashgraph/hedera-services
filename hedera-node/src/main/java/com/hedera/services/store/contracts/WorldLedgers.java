@@ -23,8 +23,10 @@ package com.hedera.services.store.contracts;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.models.NftId;
@@ -36,20 +38,23 @@ import static com.hedera.services.ledger.TransactionalLedger.activeLedgerWrappin
 
 public class WorldLedgers {
 	public static final WorldLedgers NULL_WORLD_LEDGERS =
-			new WorldLedgers(null, null, null);
+			new WorldLedgers(null, null, null, null);
 
 	final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
+	final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 	final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 
 	public WorldLedgers(
 			final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
-			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger
+			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
+			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger
 	) {
 		this.tokenRelsLedger = tokenRelsLedger;
 		this.accountsLedger = accountsLedger;
 		this.nftsLedger = nftsLedger;
+		this.tokensLedger = tokensLedger;
 	}
 
 	public void commit() {
@@ -57,6 +62,7 @@ public class WorldLedgers {
 			tokenRelsLedger.commit();
 			accountsLedger.commit();
 			nftsLedger.commit();
+			tokensLedger.commit();
 		}
 	}
 
@@ -65,6 +71,7 @@ public class WorldLedgers {
 			tokenRelsLedger.rollback();
 			accountsLedger.rollback();
 			nftsLedger.rollback();
+			tokensLedger.rollback();
 
 			/* Since AbstractMessageProcessor.clearAccumulatedStateBesidesGasAndOutput() will make a
 			 * second token call to commit() after the initial revert(), we want to keep these ledgers
@@ -72,6 +79,7 @@ public class WorldLedgers {
 			tokenRelsLedger.begin();
 			accountsLedger.begin();
 			nftsLedger.begin();
+			tokensLedger.begin();
 		}
 	}
 
@@ -87,7 +95,8 @@ public class WorldLedgers {
 		return new WorldLedgers(
 				activeLedgerWrapping(tokenRelsLedger),
 				activeLedgerWrapping(accountsLedger),
-				activeLedgerWrapping(nftsLedger));
+				activeLedgerWrapping(nftsLedger),
+				activeLedgerWrapping(tokensLedger));
 	}
 
 	public TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRels() {
@@ -100,5 +109,9 @@ public class WorldLedgers {
 
 	public TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nfts() {
 		return nftsLedger;
+	}
+
+	public TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens() {
+		return tokensLedger;
 	}
 }

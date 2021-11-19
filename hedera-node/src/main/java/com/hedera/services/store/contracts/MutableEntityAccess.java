@@ -60,7 +60,8 @@ public class MutableEntityAccess implements EntityAccess {
 		this.worldLedgers = new WorldLedgers(
 				ledger.getTokenRelsLedger(),
 				ledger.getAccountsLedger(),
-				ledger.getNftsLedger());
+				ledger.getNftsLedger(),
+				ledger.getTokensLedger());
 	}
 
 	@Override

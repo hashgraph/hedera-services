@@ -236,11 +236,8 @@ public class BaseHederaLedgerTestHelper {
 		given(tokenStore.resolve(tokenId))
 				.willReturn(tokenId);
 		given(tokenStore.get(frozenId)).willReturn(frozenToken);
-		sideEffectsTracker = mock(SideEffectsTracker.class);
 
 		subject = new HederaLedger(tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProps, accountsLedger, tokensLedger);
-		subject.setTokenRelsLedger(tokenRelsLedger);
-		subject.setNftsLedger(nftsLedger);
 	}
 
 	protected void givenOkTokenXfers(AccountID misc, TokenID tokenId, long i) {

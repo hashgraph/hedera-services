@@ -25,7 +25,6 @@ import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.txns.crypto.SideEffectsTracker;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TransferList;

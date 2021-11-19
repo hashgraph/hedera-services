@@ -45,7 +45,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
-import com.hedera.services.txns.crypto.SideEffectsTracker;
+import com.hedera.services.txns.crypto.TransferLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -136,6 +136,7 @@ public class HederaLedger {
 			MerkleTokenRelStatus> tokenRelsLedger = null;
 
 	private final MerkleAccountScopedCheck scopedCheck;
+	private final TransferLogic transferLogic;
 
 	public HederaLedger(
 			final TokenStore tokenStore,
@@ -145,7 +146,7 @@ public class HederaLedger {
 			final SideEffectsTracker sideEffectsTracker,
 			final AccountRecordsHistorian historian,
 			final GlobalDynamicProperties dynamicProperties,
-			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger
+			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
 			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger
 	) {
 		this.ids = ids;
@@ -156,6 +157,8 @@ public class HederaLedger {
 		this.dynamicProperties = dynamicProperties;
 		this.sideEffectsTracker = sideEffectsTracker;
 		this.tokensLedger = tokensLedger;
+
+		this.transferLogic = new TransferLogic(accountsLedger, nftsLedger, tokenRelsLedger, tokenStore, sideEffectsTracker, tokenViewsManager, dynamicProperties, validator);
 
 		creator.setLedger(this);
 		historian.setCreator(creator);
@@ -349,6 +352,7 @@ public class HederaLedger {
 	}
 
 	public void doZeroSum(List<BalanceChange> changes) {
+		transferLogic.transfer(changes);
 		var validity = OK;
 		for (var change : changes) {
 			if (change.isForHbar()) {
@@ -527,5 +531,21 @@ public class HederaLedger {
 
 	List<TokenTransferList> netTokenTransfersInTxn() {
 		return sideEffectsTracker.getNetTrackedTokenUnitAndOwnershipChanges();
+	}
+
+	public TransactionalLedger<AccountID, AccountProperty, MerkleAccount> getAccountsLedger() {
+		return accountsLedger;
+	}
+
+	public TransactionalLedger<TokenID, TokenProperty, MerkleToken> getTokensLedger() {
+		return tokensLedger;
+	}
+
+	public TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> getNftsLedger() {
+		return nftsLedger;
+	}
+
+	public TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> getTokenRelsLedger() {
+		return tokenRelsLedger;
 	}
 }

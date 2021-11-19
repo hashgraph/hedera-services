@@ -146,7 +146,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		isInTransaction = true;
 	}
 
-	void undoChangesOfType(List<P> properties) {
+	public void undoChangesOfType(List<P> properties) {
 		if (!isInTransaction) {
 			throw new IllegalStateException("Cannot undo changes, no transaction is active");
 		}
@@ -349,7 +349,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	 */
 	@Override
 	public Set<K> idSet() {
-		throw new UnsupportedOperationException("Use of BackingStore.idSet() is an anti-pattern");
+		return entities.idSet();
 	}
 
 	/* --- Helpers --- */

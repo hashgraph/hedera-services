@@ -102,14 +102,6 @@ class CryptoTransferTransitionLogicTest {
 	private ExpandHandleSpanMapAccessor spanMapAccessor;
 	@Mock
 	private PlatformTxnAccessor accessor;
-	@Mock
-	private TransferLogic transferLogic;
-	@Mock
-	private OptionValidator validator;
-	@Mock
-	private MerkleAccountScopedCheck scopedCheck;
-	@Mock
-	private SideEffectsTracker sideEffectsTracker;
 
 	private TransactionBody cryptoTransferTxn;
 
@@ -118,7 +110,7 @@ class CryptoTransferTransitionLogicTest {
 	@BeforeEach
 	private void setup() {
 		subject = new CryptoTransferTransitionLogic(
-				ledger, txnCtx, dynamicProperties, impliedTransfersMarshal, transferSemanticChecks, spanMapAccessor, validator, sideEffectsTracker);
+				ledger, txnCtx, dynamicProperties, impliedTransfersMarshal, transferSemanticChecks, spanMapAccessor);
 	}
 
 	@Test
