@@ -24,8 +24,6 @@ package com.hedera.services.contracts.execution;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
@@ -58,8 +56,6 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 			final HederaMutableWorldState worldState,
 			final LivePricesSource livePricesSource,
 			final CodeCache codeCache,
-			final HbarCentExchange exchange,
-			final UsagePricesProvider usagePrices,
 			final GlobalDynamicProperties dynamicProperties,
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations

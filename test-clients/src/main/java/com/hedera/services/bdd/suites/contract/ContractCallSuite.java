@@ -43,7 +43,6 @@ import org.ethereum.core.CallTransaction;
 import org.junit.jupiter.api.Assertions;
 
 import java.math.BigInteger;
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiConsumer;
 
@@ -108,44 +107,33 @@ public class ContractCallSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return allOf(
-				positiveSpecs(),
-				negativeSpecs()
-		);
-	}
-
-	List<HapiApiSpec> negativeSpecs() {
-		return Arrays.asList(
-				insufficientGas(),
-				insufficientFee(),
-				nonPayable(),
-				invalidContract(),
-				smartContractFailFirst(),
-				contractTransferToSigReqAccountWithoutKeyFails(),
-				callingDestructedContractReturnsStatusDeleted(),
-				gasLimitOverMaxGasLimitFailsPrecheck()
-		);
-	}
-
-	List<HapiApiSpec> positiveSpecs() {
-		return Arrays.asList(
-				resultSizeAffectsFees(),
-				payableSuccess(),
-				depositSuccess(),
-				depositDeleteSuccess(),
-				multipleDepositSuccess(),
-				payTestSelfDestructCall(),
-				multipleSelfDestructsAreSafe(),
-				smartContractInlineAssemblyCheck(),
-				ocToken(),
-				contractTransferToSigReqAccountWithKeySucceeds(),
-				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
-				minChargeIsTXGasUsed(),
-				HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts(),
-				HSCS_EVM_006_ContractHBarTransferToAccount(),
-				HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts(),
-				HSCS_EVM_010_MultiSignatureAccounts(),
-				HSCS_EVM_010_ReceiverMustSignContractTx()
+		return List.of(new HapiApiSpec[] {
+						resultSizeAffectsFees(),
+						payableSuccess(),
+						depositSuccess(),
+						depositDeleteSuccess(),
+						multipleDepositSuccess(),
+						payTestSelfDestructCall(),
+						multipleSelfDestructsAreSafe(),
+						smartContractInlineAssemblyCheck(),
+						ocToken(),
+						contractTransferToSigReqAccountWithKeySucceeds(),
+						maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
+						minChargeIsTXGasUsed(),
+						HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts(),
+						HSCS_EVM_006_ContractHBarTransferToAccount(),
+						HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts(),
+						HSCS_EVM_010_MultiSignatureAccounts(),
+						HSCS_EVM_010_ReceiverMustSignContractTx(),
+						insufficientGas(),
+						insufficientFee(),
+						nonPayable(),
+						invalidContract(),
+						smartContractFailFirst(),
+						contractTransferToSigReqAccountWithoutKeyFails(),
+						callingDestructedContractReturnsStatusDeleted(),
+						gasLimitOverMaxGasLimitFailsPrecheck(),
+				}
 		);
 	}
 

@@ -58,6 +58,7 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FIBONACCI_PLUS_CONSTRUCTOR_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FIBONACCI_PLUS_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MULTIPURPOSE_BYTECODE_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SEND_REPEATEDLY_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SEND_THEN_REVERT_NESTED_SENDS_ABI;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
@@ -109,21 +110,22 @@ public class ContractCreateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						createEmptyConstructor(),
-						insufficientPayerBalanceUponCreation(),
-						rejectsInvalidMemo(),
-						rejectsInsufficientFee(),
-						rejectsInvalidBytecode(),
-						revertsNonzeroBalance(),
-						createFailsIfMissingSigs(),
-						rejectsInsufficientGas(),
-						createsVanillaContractAsExpectedWithOmittedAdminKey(),
-						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
-						cannotCreateTooLargeContract(),
-						canCallPendingContractSafely(),
-						revertedTryExtCallHasNoSideEffects(),
-						cannotSendToNonExistentAccount(),
-						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
+//						createEmptyConstructor(),
+//						insufficientPayerBalanceUponCreation(),
+//						rejectsInvalidMemo(),
+//						rejectsInsufficientFee(),
+//						rejectsInvalidBytecode(),
+//						revertsNonzeroBalance(),
+//						createFailsIfMissingSigs(),
+//						rejectsInsufficientGas(),
+//						createsVanillaContractAsExpectedWithOmittedAdminKey(),
+//						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
+//						cannotCreateTooLargeContract(),
+//						canCallPendingContractSafely(),
+//						revertedTryExtCallHasNoSideEffects(),
+//						cannotSendToNonExistentAccount(),
+//						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
+						contractIdKeyInsufficientPermissionsForDelegateCallTransfer(),
 				}
 		);
 	}
@@ -396,6 +398,47 @@ public class ContractCreateSuite extends HapiApiSuite {
 								.balance(1L)
 								.bytecode("contractFile")
 								.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+				);
+	}
+
+	private HapiApiSpec contractIdKeyInsufficientPermissionsForDelegateCallTransfer() {
+		final var justSendInitcode = "justSendInitcode";
+		final var sendInternalAndDelegateInitcode = "sendInternalAndDelegateInitcode";
+		final var justSend = "justSend";
+		final var sendInternalAndDelegate = "sendInternalAndDelegate";
+
+		final var beneficiary = "civilian";
+		final var balanceToDistribute = 1_000L;
+
+		final AtomicLong justSendContractNum = new AtomicLong();
+		final AtomicLong beneficiaryAccountNum = new AtomicLong();
+
+		return defaultHapiSpec("ContractIdKeyInsufficientPermissionsForDelegateCallTransfer")
+				.given(
+						cryptoCreate(beneficiary)
+								.balance(0L)
+								.exposingCreatedIdTo(id -> beneficiaryAccountNum.set(id.getAccountNum())),
+						fileCreate(justSendInitcode)
+								.path(ContractResources.JUST_SEND_BYTECODE_PATH),
+						fileCreate(sendInternalAndDelegateInitcode)
+								.path(ContractResources.SEND_INTERNAL_AND_DELEGATE_BYTECODE_PATH)
+				).when(
+						contractCreate(justSend)
+								.bytecode(justSendInitcode)
+								.gas(300_000L)
+								.exposingNumTo(justSendContractNum::set),
+						contractCreate(sendInternalAndDelegate)
+								.bytecode(sendInternalAndDelegateInitcode)
+								.gas(300_000L)
+								.balance(balanceToDistribute)
+				).then(
+						sourcing(() -> contractCall(
+								sendInternalAndDelegate,
+								SEND_REPEATEDLY_ABI,
+								justSendContractNum.get(),
+								beneficiaryAccountNum.get(),
+								balanceToDistribute / 2)),
+						getAccountBalance(beneficiary).logged()
 				);
 	}
 

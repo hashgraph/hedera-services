@@ -47,7 +47,37 @@ public interface PubKeyToSigBytes {
 	 */
 	byte[] sigBytesFor(byte[] pubKey) throws Exception;
 
+	/**
+	 * For each full-public-key-to-signature mapping that has not been used by
+	 * {@link PubKeyToSigBytes#sigBytesFor(byte[])} since the last call to
+	 * {@link PubKeyToSigBytes#resetAllSigsToUnused()} on this instance, invokes
+	 * the given observer with the key and signature of the mapping.
+	 *
+	 * Used to create {@link com.swirlds.common.crypto.TransactionSignature}
+	 * instances based on {@link com.hederahashgraph.api.proto.java.SignaturePair}s
+	 * with a full public key prefix, but <b>without</b> a matching public
+	 * key obviously linked to the parent transaction.
+	 *
+	 * A canonical example would the the supply key of a token that will be
+	 * minted through an HTS precompile run as part of a {@code ContractCall}
+	 * transaction. This key is not <b>obviously</b> linked to the top-level
+	 * {@code ContractCall}; but it will ultimately need to sign, hence requires
+	 * a signature supplied with full public key prefix.
+	 *
+	 * @param keySigObs an observer to be shown all the unused full-public-key-to-signature mappings
+	 */
 	default void forEachUnusedSigWithFullPrefix(BiConsumer<byte[], byte[]> keySigObs) {
-		throw new UnsupportedOperationException();
+		/* No-op */
+	}
+
+	default boolean hasAtLeastOneUnusedSigWithFullPrefix() {
+		return false;
+	}
+
+	/**
+	 * Resets all internal public-key-to-signature mappings to unused.
+	 */
+	default void resetAllSigsToUnused() {
+		/* No-op */
 	}
 }

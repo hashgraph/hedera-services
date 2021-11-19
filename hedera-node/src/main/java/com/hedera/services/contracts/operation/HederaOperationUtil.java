@@ -25,7 +25,6 @@ package com.hedera.services.contracts.operation;
 import com.hedera.services.contracts.sources.SoliditySigsVerifier;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
-import com.hedera.services.utils.EntityIdUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
@@ -38,8 +37,10 @@ import org.hyperledger.besu.evm.operation.Operation;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.OptionalLong;
-import java.util.Set;
 import java.util.function.Supplier;
+
+import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
+import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 
 /**
  * Utility methods used by Hedera adapted {@link org.hyperledger.besu.evm.operation.Operation}
@@ -140,8 +141,16 @@ public final class HederaOperationUtil {
 					Optional.of(supplierHaltGasCost.get()), Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
 		}
 
-		final var accountId = EntityIdUtils.accountParsedFromSolidityAddress(account.getAddress());
-		if (!sigsVerifier.allRequiredKeysAreActive(Set.of(accountId))) {
+		System.out.println("Signature check:"
+				+ "\n  Sender     -> " + asLiteralString(accountParsedFromSolidityAddress(frame.getSenderAddress()))
+				+ "\n  Originator -> " + asLiteralString(accountParsedFromSolidityAddress(frame.getOriginatorAddress()))
+				+ "\n  Contract   -> " + asLiteralString(accountParsedFromSolidityAddress(frame.getContractAddress()))
+				+ "\n  Recipient  -> " + asLiteralString(accountParsedFromSolidityAddress(frame.getRecipientAddress()))
+				+ "\n  TARGET     -> " + asLiteralString(accountParsedFromSolidityAddress(address)));
+
+		final var sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+				account.getAddress(), frame.getRecipientAddress(), frame.getContractAddress());
+		if (!sigReqIsMet) {
 			return new Operation.OperationResult(
 					Optional.of(supplierHaltGasCost.get()), Optional.of(HederaExceptionalHaltReason.INVALID_SIGNATURE)
 			);

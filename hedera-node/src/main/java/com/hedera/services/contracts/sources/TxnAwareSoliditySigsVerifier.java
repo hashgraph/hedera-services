@@ -28,19 +28,19 @@ import com.hedera.services.sigs.PlatformSigOps;
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
+import org.hyperledger.besu.datatypes.Address;
 
+import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
 import static com.hedera.services.keys.HederaKeyActivation.isActive;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
-import static java.util.stream.Collectors.toList;
 
 public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 	private final SyncVerifier syncVerifier;
@@ -61,18 +61,21 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 	}
 
 	@Override
-	public boolean allRequiredKeysAreActive(Set<AccountID> touched) {
-		var payer = txnCtx.activePayer();
-		var requiredKeys = touched.stream()
-				.filter(id -> !payer.equals(id))
-				.flatMap(this::keyRequirement)
-				.collect(toList());
-		if (requiredKeys.isEmpty()) {
+	public boolean hasActiveKeyOrNoReceiverSigReq(
+			final Address target,
+			final Address recipient,
+			final Address contract
+	) {
+		final var targetId = EntityIdUtils.accountParsedFromSolidityAddress(target);
+		final var payer = txnCtx.activePayer();
+		if (payer.equals(targetId)) {
 			return true;
-		} else {
+		}
+		final var requiredKey = receiverSigKey(targetId);
+		if (requiredKey.isPresent()) {
 			final var accessor = txnCtx.accessor();
 			return check.allKeysAreActive(
-					requiredKeys,
+					List.of(requiredKey.get()),
 					syncVerifier,
 					accessor,
 					PlatformSigOps::createEd25519PlatformSigsFrom,
@@ -80,14 +83,15 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 					BodySigningSigFactory::new,
 					(key, sigsFn) -> isActive(key, sigsFn, ONLY_IF_SIG_IS_VALID),
 					HederaKeyActivation::pkToSigMapFrom);
+		} else {
+			return true;
 		}
 	}
 
-	private Stream<JKey> keyRequirement(AccountID id) {
+	private Optional<JKey> receiverSigKey(final AccountID id) {
 		return Optional.ofNullable(accounts.get().get(fromAccountId(id)))
 				.filter(account -> !account.isSmartContract())
 				.filter(MerkleAccount::isReceiverSigRequired)
-				.map(MerkleAccount::getAccountKey)
-				.stream();
+				.map(MerkleAccount::getAccountKey);
 	}
 }

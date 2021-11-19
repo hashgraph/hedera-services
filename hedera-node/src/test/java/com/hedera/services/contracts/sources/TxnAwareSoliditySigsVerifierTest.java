@@ -33,20 +33,26 @@ import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
-import org.junit.jupiter.api.Assertions;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Set;
 
+import static com.hedera.services.utils.EntityIdUtils.asTypedSolidityAddress;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.never;
 
 class TxnAwareSoliditySigsVerifierTest {
+	private static final Address PRETEND_RECIPIENT_ADDR = Address.ALTBN128_ADD;
+	private static final Address PRETEND_CONTRACT_ADDR = Address.ALTBN128_MUL;
+
 	AccountID payer = IdUtils.asAccount("0.0.2");
 	AccountID sigRequired = IdUtils.asAccount("0.0.555");
 	AccountID smartContract = IdUtils.asAccount("0.0.666");
@@ -95,37 +101,13 @@ class TxnAwareSoliditySigsVerifierTest {
 	}
 
 	@Test
-	void respectsActivity() {
-		given(areActive.allKeysAreActive(
-				argThat(List.of(expectedKey)::equals),
-				any(), any(), any(), any(), any(), any(), any())).willReturn(false);
-		// and:
-		touched = Set.of(payer, sigRequired, smartContract);
-
-		// when:
-		boolean flag = subject.allRequiredKeysAreActive(touched);
-
-		// then:
-		Assertions.assertFalse(flag);
-		// and:
-		verify(areActive).allKeysAreActive(
-				argThat(List.of(expectedKey)::equals),
-				any(), any(), any(), any(), any(), any(), any());
-	}
-
-	@Test
 	void filtersContracts() {
-		given(areActive.allKeysAreActive(
-				argThat(List.of(expectedKey)::equals),
-				any(), any(), any(), any(), any(), any(), any())).willReturn(true);
-		// and:
-		touched = Set.of(payer, sigRequired, smartContract);
+		boolean contractFlag = subject.hasActiveKeyOrNoReceiverSigReq(
+				asTypedSolidityAddress(smartContract), PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR);
 
-		// when:
-		boolean flag = subject.allRequiredKeysAreActive(touched);
-
-		// then:
-		Assertions.assertTrue(flag);
+		assertTrue(contractFlag);
+		verify(areActive, never()).allKeysAreActive(
+				any(), any(), any(), any(), any(), any(), any(), any());
 	}
 
 	@Test
@@ -133,26 +115,21 @@ class TxnAwareSoliditySigsVerifierTest {
 		given(areActive.allKeysAreActive(
 				argThat(List.of(expectedKey)::equals),
 				any(), any(), any(), any(), any(), any(), any())).willReturn(true);
-		// and:
-		touched = Set.of(payer, noSigRequired, sigRequired);
 
-		// when:
-		boolean flag = subject.allRequiredKeysAreActive(touched);
+		boolean sigRequiredFlag = subject.hasActiveKeyOrNoReceiverSigReq(
+				asTypedSolidityAddress(sigRequired), PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR);
 
-		// then:
-		Assertions.assertTrue(flag);
-		// and:
+		assertTrue(sigRequiredFlag);
 		verify(areActive).allKeysAreActive(any(), any(), any(), any(), any(), any(), any(), any());
 	}
 
 	@Test
 	void filtersPayerSinceSigIsGuaranteed() {
-		touched = Set.of(payer, noSigRequired);
+		boolean payerFlag = subject.hasActiveKeyOrNoReceiverSigReq(
+				asTypedSolidityAddress(payer), PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR);
 
-		// when:
-		boolean flag = subject.allRequiredKeysAreActive(touched);
-
-		// then:
-		Assertions.assertTrue(flag);
+		assertTrue(payerFlag);
+		verify(areActive, never()).allKeysAreActive(
+				any(), any(), any(), any(), any(), any(), any(), any());
 	}
 }

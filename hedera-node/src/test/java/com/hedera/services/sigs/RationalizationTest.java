@@ -125,6 +125,7 @@ class RationalizationTest {
 		assertNull(subject.getLastOrderResult());
 		// and:
 		verify(sigFactory).resetFor(txnAccessor);
+		verify(pkToSigFn).resetAllSigsToUnused();
 	}
 
 	@Test

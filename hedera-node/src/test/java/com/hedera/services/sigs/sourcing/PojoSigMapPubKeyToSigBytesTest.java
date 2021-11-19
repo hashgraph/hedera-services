@@ -47,7 +47,9 @@ import static com.hedera.test.factories.sigs.SigMapGenerator.withAlternatingUniq
 import static com.hedera.test.factories.txns.SystemDeleteFactory.newSignedSystemDelete;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doCallRealMethod;
@@ -62,10 +64,14 @@ class PojoSigMapPubKeyToSigBytesTest {
 	private final KeyFactory defaultFactory = KeyFactory.getDefaultInstance();
 
 	@Test
-	void forEachUnusedThrowsUnsupportedByDefault() {
+	void defaultMethodsWorkAsExpected() {
 		final var subject = mock(PubKeyToSigBytes.class);
 		doCallRealMethod().when(subject).forEachUnusedSigWithFullPrefix(any());
-		assertThrows(UnsupportedOperationException.class, () -> subject.forEachUnusedSigWithFullPrefix(null));
+		doCallRealMethod().when(subject).resetAllSigsToUnused();
+		doCallRealMethod().when(subject).hasAtLeastOneUnusedSigWithFullPrefix();
+		assertDoesNotThrow(() -> subject.forEachUnusedSigWithFullPrefix(null));
+		assertDoesNotThrow(subject::resetAllSigsToUnused);
+		assertFalse(subject::hasAtLeastOneUnusedSigWithFullPrefix);
 	}
 
 	@Test
