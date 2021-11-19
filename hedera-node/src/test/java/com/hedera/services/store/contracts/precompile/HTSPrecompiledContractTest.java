@@ -59,7 +59,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-public class HTSPrecompiledContractTest {
+class HTSPrecompiledContractTest {
 
 	@Mock
 	private HederaLedger ledger;

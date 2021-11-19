@@ -104,7 +104,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@Override
 	public Gas gasRequirement(final Bytes input) {
-		return Gas.of(10_000); // FIXME revisit cost, this is arbitrary
+		return Gas.of(10_000); // revisit cost, this is arbitrary
 	}
 
 	@Override
@@ -168,7 +168,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		final var token = EntityIdUtils.tokenParsedFromSolidityAddress(tokenAddress.toArray());
 		final var to = EntityIdUtils.accountParsedFromSolidityAddress(toAddress.toArray());
 
-		// FIXME validate addresses, associations, etc
+		// validate addresses, associations, etc
 
 		final List<BalanceChange> changes = new ArrayList<>();
 		changes.add(
