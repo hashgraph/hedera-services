@@ -25,6 +25,7 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryptoTransfer;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_NODE_ID;
+import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
@@ -101,10 +102,10 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedCryptoTransfer()
-							.adjusting(FIRST_TOKEN_SENDER, KNOWN_TOKEN_NO_SPECIAL_KEYS, -1_000)
+							.adjusting(DEFAULT_PAYER, KNOWN_TOKEN_NO_SPECIAL_KEYS, -1_000)
 							.adjusting(SECOND_TOKEN_SENDER, KNOWN_TOKEN_NO_SPECIAL_KEYS, -1_000)
 							.adjusting(TOKEN_RECEIVER, KNOWN_TOKEN_NO_SPECIAL_KEYS, +2_000)
-							.nonPayerKts(FIRST_TOKEN_SENDER_KT, SECOND_TOKEN_SENDER_KT)
+							.nonPayerKts(SECOND_TOKEN_SENDER_KT)
 							.get()
 			));
 		}
@@ -178,6 +179,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 			return new PlatformTxnAccessor(from(
 					newSignedCryptoTransfer()
 							.changingOwner(KNOWN_TOKEN_NFT, FIRST_TOKEN_SENDER, RECEIVER_SIG)
+							.changingOwner(ROYALTY_TOKEN_NFT, SECOND_TOKEN_SENDER, DEFAULT_PAYER)
 							.get()
 			));
 		}
