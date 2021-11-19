@@ -63,17 +63,28 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final OptionValidator validator;
 
-	private static final int ABI_ID_CRYPTO_TRANSFER = 0x189a554c;    // "cryptoTransfer((address,(address,int64)[],(address,address,int64)[])[])"
-	private static final int ABI_ID_TRANSFER_TOKENS = 0x82bba493;    // "transerTokens(address,address[],int64[])"
-	private static final int ABI_ID_TRANSFER_TOKEN = 0xeca36917;    // "transferToken(address,address,address,int64)"
-	private static final int ABI_ID_TRANSFER_NFTS = 0x2c4ba191;        // "transferNFTs(address,address[],address[],int64[])"
-	private static final int ABI_ID_TRANSFER_NFT = 0x7c502795;        // "transferNFT(address,address,address,int64)"
-	private static final int ABI_ID_MINT_TOKEN = 0x36dcedf0;        // "mintToken(address,uint64,bytes)"
-	private static final int ABI_ID_BURN_TOKEN = 0xacb9cff9;        // "burnToken(address,uint64,int64[])"
-	private static final int ABI_ID_ASSOCIATE_TOKENS = 0x2e63879b;    // "associateTokens(address,address[])"
-	private static final int ABI_ID_ASSOCIATE_TOKEN = 0x49146bde;    // "associateToken(address,address[])"
-	private static final int ABI_ID_DISSOCIATE_TOKENS = 0x78b63918;    // "dissociateTokens(address,address[])"
-	private static final int ABI_ID_DISSOCIATE_TOKEN = 0x099794e8;    // "dissociateToken(address,address[])"
+	// "cryptoTransfer((address,(address,int64)[], (address,address,int64)[])[])"
+	protected static final int ABI_ID_CRYPTO_TRANSFER = 0x189a554c;
+	// "transerTokens(address,address[],int64[])"
+	protected static final int ABI_ID_TRANSFER_TOKENS = 0x82bba493;
+	// "transferToken(address,address,address,int64)"
+	protected static final int ABI_ID_TRANSFER_TOKEN = 0xeca36917;
+	// "transferNFTs(address,address[],address[],int64[])"
+	protected static final int ABI_ID_TRANSFER_NFTS = 0x2c4ba191;
+	// "transferNFT(address,address,address,int64)"
+	protected static final int ABI_ID_TRANSFER_NFT = 0x7c502795;
+	// "mintToken(address,uint64,bytes)"
+	protected static final int ABI_ID_MINT_TOKEN = 0x36dcedf0;
+	// "burnToken(address,uint64,int64[])"
+	protected static final int ABI_ID_BURN_TOKEN = 0xacb9cff9;
+	// "associateTokens(address,address[])"
+	protected static final int ABI_ID_ASSOCIATE_TOKENS = 0x2e63879b;
+	// "associateToken(address,address[])"
+	protected static final int ABI_ID_ASSOCIATE_TOKEN = 0x49146bde;
+	// "dissociateTokens(address,address[])"
+	protected static final int ABI_ID_DISSOCIATE_TOKENS = 0x78b63918;
+	// "dissociateToken(address,address[])"
+	protected static final int ABI_ID_DISSOCIATE_TOKEN = 0x099794e8;
 
 	@Inject
 	public HTSPrecompiledContract(
@@ -93,7 +104,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@Override
 	public Gas gasRequirement(final Bytes input) {
-		return Gas.of(10_000); // TODO revisit cost, this is arbitrary
+		return Gas.of(10_000); // FIXME revisit cost, this is arbitrary
 	}
 
 	@Override
@@ -136,17 +147,17 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	@SuppressWarnings("unused")
-	private Bytes computeCryptoTransfer(final Bytes input, final MessageFrame messageFrame) {
+	protected Bytes computeCryptoTransfer(final Bytes input, final MessageFrame messageFrame) {
 		return null;
 	}
 
 	@SuppressWarnings("unused")
-	private Bytes computeTransferTokens(final Bytes input, final MessageFrame messageFrame) {
+	protected Bytes computeTransferTokens(final Bytes input, final MessageFrame messageFrame) {
 		return null;
 	}
 
 	@SuppressWarnings("unused")
-	private Bytes computeTransferToken(final Bytes input, final MessageFrame messageFrame) {
+	protected Bytes computeTransferToken(final Bytes input, final MessageFrame messageFrame) {
 
 		final Bytes tokenAddress = Address.wrap(input.slice(16, 20));
 		final Bytes fromAddress = Address.wrap(input.slice(48, 20));
@@ -157,7 +168,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		final var token = EntityIdUtils.tokenParsedFromSolidityAddress(tokenAddress.toArray());
 		final var to = EntityIdUtils.accountParsedFromSolidityAddress(toAddress.toArray());
 
-		// TODO validate addresses, associations, etc
+		// FIXME validate addresses, associations, etc
 
 		final List<BalanceChange> changes = new ArrayList<>();
 		changes.add(
@@ -188,32 +199,32 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	@SuppressWarnings("unused")
-	private Bytes computeTransferNfts(final Bytes input, final MessageFrame messageFrame) {
+	protected Bytes computeTransferNfts(final Bytes input, final MessageFrame messageFrame) {
 		return null;
 	}
 
 	@SuppressWarnings("unused")
-	private Bytes computeTransferNft(final Bytes input, final MessageFrame messageFrame) {
+	protected Bytes computeTransferNft(final Bytes input, final MessageFrame messageFrame) {
 		return null;
 	}
 
 	@SuppressWarnings("unused")
-	private Bytes computeMintToken(final Bytes input, final MessageFrame messageFrame) {
+	protected Bytes computeMintToken(final Bytes input, final MessageFrame messageFrame) {
 		return null;
 	}
 
 	@SuppressWarnings("unused")
-	private Bytes computeBurnToken(final Bytes input, final MessageFrame messageFrame) {
+	protected Bytes computeBurnToken(final Bytes input, final MessageFrame messageFrame) {
 		return null;
 	}
 
 	@SuppressWarnings("unused")
-	private Bytes computeAssociateTokens(final Bytes input, final MessageFrame messageFrame) {
+	protected Bytes computeAssociateTokens(final Bytes input, final MessageFrame messageFrame) {
 		return null;
 	}
 
 	@SuppressWarnings("unused")
-	private Bytes computeAssociateToken(final Bytes input, final MessageFrame messageFrame) {
+	protected Bytes computeAssociateToken(final Bytes input, final MessageFrame messageFrame) {
 		final Bytes address = Address.wrap(input.slice(16, 20));
 		final Bytes tokenAddress = Address.wrap(input.slice(48, 20));
 
@@ -235,12 +246,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	@SuppressWarnings("unused")
-	private Bytes computeDissociateTokens(final Bytes input, final MessageFrame messageFrame) {
+	protected Bytes computeDissociateTokens(final Bytes input, final MessageFrame messageFrame) {
 		return null;
 	}
 
 	@SuppressWarnings("unused")
-	private Bytes computeDissociateToken(final Bytes input, final MessageFrame messageFrame) {
+	protected Bytes computeDissociateToken(final Bytes input, final MessageFrame messageFrame) {
 		final Bytes address = Address.wrap(input.slice(16, 20));
 		final Bytes tokenAddress = Address.wrap(input.slice(48, 20));
 		final var accountID = EntityIdUtils.accountParsedFromSolidityAddress(address.toArrayUnsafe());
