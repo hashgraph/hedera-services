@@ -27,16 +27,14 @@ import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static com.hedera.services.utils.EntityNumPair.fromNftId;
 
 @Singleton
 public class BackingNfts implements BackingStore<NftId, MerkleUniqueToken> {
-	Set<NftId> existingNfts = new HashSet<>();
-
 	private final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> delegate;
 
 	@Inject
@@ -46,10 +44,9 @@ public class BackingNfts implements BackingStore<NftId, MerkleUniqueToken> {
 
 	@Override
 	public void rebuildFromSources() {
-		existingNfts.clear();
+
 		for (EntityNumPair entity : delegate.get().keySet()) {
 			var pair = entity.asTokenNumAndSerialPair();
-			existingNfts.add(new NftId(pair.getLeft(), pair.getRight()));
 		}
 	}
 
@@ -65,25 +62,24 @@ public class BackingNfts implements BackingStore<NftId, MerkleUniqueToken> {
 
 	@Override
 	public void put(NftId id, MerkleUniqueToken nft) {
-		if (!existingNfts.contains(id)) {
+		if (!delegate.get().containsKey(EntityNumPair.fromNftId(id))) {
 			delegate.get().put(fromNftId(id), nft);
-			existingNfts.add(id);
 		}
 	}
 
 	@Override
 	public void remove(NftId id) {
-		existingNfts.remove(id);
 		delegate.get().remove(fromNftId(id));
 	}
 
 	@Override
 	public boolean contains(NftId id) {
-		return existingNfts.contains(id);
+		return delegate.get().containsKey(EntityNumPair.fromNftId(id));
 	}
 
 	@Override
 	public Set<NftId> idSet() {
-		return existingNfts;
+		return delegate.get().keySet().stream().map(EntityNumPair::asTokenNumAndSerialPair)
+				.map(pair -> new NftId(pair.getLeft(), pair.getRight())).collect(Collectors.toSet());
 	}
 }
