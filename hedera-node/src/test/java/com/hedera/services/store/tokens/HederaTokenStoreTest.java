@@ -28,6 +28,7 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
@@ -191,6 +192,7 @@ class HederaTokenStoreTest {
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
+	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 	private HederaLedger hederaLedger;
 
 	private MerkleToken token;
@@ -228,6 +230,8 @@ class HederaTokenStoreTest {
 
 		accountsLedger = (TransactionalLedger<AccountID, AccountProperty, MerkleAccount>) mock(
 				TransactionalLedger.class);
+
+		tokensLedger = (TransactionalLedger<TokenID, TokenProperty, MerkleToken>) mock(TransactionalLedger.class);
 		given(accountsLedger.exists(treasury)).willReturn(true);
 		given(accountsLedger.exists(anotherFeeCollector)).willReturn(true);
 		given(accountsLedger.exists(autoRenewAccount)).willReturn(true);
@@ -285,7 +289,7 @@ class HederaTokenStoreTest {
 		sideEffectsTracker = new SideEffectsTracker();
 		subject = new HederaTokenStore(
 				ids, TEST_VALIDATOR, sideEffectsTracker, uniqTokenViewsManager, properties,
-				() -> tokens, tokenRelsLedger, nftsLedger);
+				() -> tokens, tokenRelsLedger, nftsLedger, tokensLedger);
 		subject.setAccountsLedger(accountsLedger);
 		subject.setHederaLedger(hederaLedger);
 		subject.knownTreasuries.put(treasury, new HashSet<>() {{

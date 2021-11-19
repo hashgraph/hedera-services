@@ -28,10 +28,12 @@ import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.HashMapBackingAccounts;
 import com.hedera.services.ledger.accounts.HashMapBackingNfts;
 import com.hedera.services.ledger.accounts.HashMapBackingTokenRels;
+import com.hedera.services.ledger.accounts.HashMapBackingTokens;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.enums.TokenType;
@@ -85,7 +87,7 @@ class LedgerBalanceChangesTest {
 	private final BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
 	private final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingRels =
 			new HashMapBackingTokenRels();
-
+	private final BackingStore<TokenID, MerkleToken> backingTokens = new HashMapBackingTokens();
 	private TokenStore tokenStore;
 	private final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
 	private final FCOneToManyRelation<EntityNum, Long> uniqueTokenOwnerships = new FCOneToManyRelation<>();
@@ -97,6 +99,7 @@ class LedgerBalanceChangesTest {
 			TokenRelProperty,
 			MerkleTokenRelStatus> tokenRelsLedger;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 
 	@Mock
 	private EntityIdSource ids;
@@ -121,6 +124,12 @@ class LedgerBalanceChangesTest {
 				TokenRelProperty.class, MerkleTokenRelStatus::new, backingRels, new ChangeSummaryManager<>());
 		nftsLedger = new TransactionalLedger<>(
 				NftProperty.class, MerkleUniqueToken::new, backingNfts, new ChangeSummaryManager<>());
+		tokensLedger = new TransactionalLedger<>(
+				TokenProperty.class,
+				MerkleToken::new,
+				backingTokens,
+				new ChangeSummaryManager<>()
+		);
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 
 		tokens.put(tokenKey, fungibleTokenWithTreasury(aModel));
@@ -142,7 +151,8 @@ class LedgerBalanceChangesTest {
 				dynamicProperties,
 				() -> tokens,
 				tokenRelsLedger,
-				nftsLedger);
+				nftsLedger,
+				tokensLedger);
 		tokenStore.rebuildViews();
 
 		subject = new HederaLedger(
@@ -246,7 +256,8 @@ class LedgerBalanceChangesTest {
 				dynamicProperties,
 				() -> tokens,
 				tokenRelsLedger,
-				nftsLedger);
+				nftsLedger,
+				tokensLedger);
 
 		subject = new HederaLedger(
 				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProperties, accountsLedger);

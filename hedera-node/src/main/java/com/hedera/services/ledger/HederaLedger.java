@@ -31,12 +31,14 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
@@ -130,6 +132,7 @@ public class HederaLedger {
 			Pair<AccountID, TokenID>,
 			TokenRelProperty,
 			MerkleTokenRelStatus> tokenRelsLedger = null;
+	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger = null;
 
 	private final MerkleAccountScopedCheck scopedCheck;
 
@@ -173,6 +176,14 @@ public class HederaLedger {
 		this.tokenRelsLedger = tokenRelsLedger;
 	}
 
+	public TransactionalLedger<TokenID, TokenProperty, MerkleToken> getTokensLedger() {
+		return tokensLedger;
+	}
+
+	public void setTokensLedger(TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger) {
+		this.tokensLedger = tokensLedger;
+	}
+
 	public TransactionalLedger<AccountID, AccountProperty, MerkleAccount> getAccountsLedger() {
 		return accountsLedger;
 	}
@@ -197,6 +208,9 @@ public class HederaLedger {
 		if (tokenViewsManager != null) {
 			tokenViewsManager.begin();
 		}
+		if (tokensLedger != null) {
+			tokensLedger.begin();
+		}
 	}
 
 	public void rollback() {
@@ -209,6 +223,9 @@ public class HederaLedger {
 		}
 		if (tokenViewsManager != null && tokenViewsManager.isInTransaction()) {
 			tokenViewsManager.rollback();
+		}
+		if (tokensLedger != null && tokensLedger.isInTransaction()) {
+			tokensLedger.rollback();
 		}
 	}
 
@@ -227,6 +244,9 @@ public class HederaLedger {
 		if (tokenViewsManager != null && tokenViewsManager.isInTransaction()) {
 			tokenViewsManager.commit();
 		}
+		if (tokensLedger != null && tokensLedger.isInTransaction()) {
+			tokensLedger.commit();
+		}
 	}
 
 	public String currentChangeSet() {
@@ -240,6 +260,10 @@ public class HederaLedger {
 			if (nftsLedger != null) {
 				sb.append("\n--- NFTS ---\n")
 						.append(nftsLedger.changeSetSoFar());
+			}
+			if (tokensLedger != null) {
+				sb.append("\n--- Tokens ---\n")
+						.append(tokensLedger.changeSetSoFar());
 			}
 			return sb.toString();
 		} else {
@@ -331,6 +355,9 @@ public class HederaLedger {
 		}
 		if (tokenViewsManager.isInTransaction()) {
 			tokenViewsManager.rollback();
+		}
+		if (tokensLedger.isInTransaction()) {
+			tokensLedger.rollback();
 		}
 		accountsLedger.undoChangesOfType(TOKEN_TRANSFER_SIDE_EFFECTS);
 		sideEffectsTracker.resetTrackedTokenChanges();

@@ -26,6 +26,7 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.NftProperty;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
@@ -125,6 +126,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			Pair<AccountID, TokenID>,
 			TokenRelProperty,
 			MerkleTokenRelStatus> tokenRelsLedger;
+	private final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
+
 	Map<AccountID, Set<TokenID>> knownTreasuries = new HashMap<>();
 
 	TokenID pendingId = NO_PENDING_ID;
@@ -139,13 +142,15 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			final GlobalDynamicProperties properties,
 			final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
 			final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
-			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger
+			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
+			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger
 	) {
 		super(ids);
 		this.tokens = tokens;
 		this.validator = validator;
 		this.properties = properties;
 		this.nftsLedger = nftsLedger;
+		this.tokensLedger = tokensLedger;
 		this.tokenRelsLedger = tokenRelsLedger;
 		this.sideEffectsTracker = sideEffectsTracker;
 		this.uniqTokenViewsManager = uniqTokenViewsManager;
@@ -187,6 +192,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	public void setHederaLedger(final HederaLedger hederaLedger) {
 		hederaLedger.setNftsLedger(nftsLedger);
 		hederaLedger.setTokenRelsLedger(tokenRelsLedger);
+		hederaLedger.setTokensLedger(tokensLedger);
 		super.setHederaLedger(hederaLedger);
 	}
 
