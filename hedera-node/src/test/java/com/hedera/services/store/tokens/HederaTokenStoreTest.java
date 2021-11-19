@@ -28,6 +28,7 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
@@ -190,6 +191,7 @@ class HederaTokenStoreTest {
 	private MerkleMap<EntityNum, MerkleToken> tokens;
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
 	private HederaLedger hederaLedger;
 
@@ -263,6 +265,9 @@ class HederaTokenStoreTest {
 		given(tokenRelsLedger.get(counterpartyNft, IS_KYC_GRANTED)).willReturn(true);
 		given(tokenRelsLedger.get(newTreasuryNft, TOKEN_BALANCE)).willReturn(1L);
 
+		// TODO: adapt tests to use TransactionalLedger and not the MerkleMap
+		tokensLedger = (TransactionalLedger<TokenID, TokenProperty, MerkleToken>) mock(
+				TransactionalLedger.class);
 		tokens = (MerkleMap<EntityNum, MerkleToken>) mock(MerkleMap.class);
 		given(tokens.get(fromTokenId(created))).willReturn(token);
 		given(tokens.containsKey(fromTokenId(misc))).willReturn(true);
@@ -285,7 +290,7 @@ class HederaTokenStoreTest {
 		sideEffectsTracker = new SideEffectsTracker();
 		subject = new HederaTokenStore(
 				ids, TEST_VALIDATOR, sideEffectsTracker, uniqTokenViewsManager, properties,
-				() -> tokens, tokenRelsLedger, nftsLedger);
+				tokensLedger, tokenRelsLedger, nftsLedger);
 		subject.setAccountsLedger(accountsLedger);
 		subject.setHederaLedger(hederaLedger);
 		subject.knownTreasuries.put(treasury, new HashSet<>() {{

@@ -27,8 +27,10 @@ import com.hedera.services.ledger.accounts.HashMapBackingTokenRels;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.models.NftId;
@@ -49,6 +51,7 @@ class WorldLedgersTest {
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 
 	@Test
 	@SuppressWarnings("unchecked")
@@ -56,14 +59,16 @@ class WorldLedgersTest {
 		tokenRelsLedger = mock(TransactionalLedger.class);
 		accountsLedger = mock(TransactionalLedger.class);
 		nftsLedger = mock(TransactionalLedger.class);
+		tokensLedger = mock(TransactionalLedger.class);
 
-		final var source = new WorldLedgers(tokenRelsLedger, accountsLedger, nftsLedger);
+		final var source = new WorldLedgers(tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
 
 		source.commit();
 
 		verify(tokenRelsLedger).commit();
 		verify(accountsLedger).commit();
 		verify(nftsLedger).commit();
+		verify(tokensLedger).commit();
 	}
 
 	@Test
@@ -73,7 +78,7 @@ class WorldLedgersTest {
 		accountsLedger = mock(TransactionalLedger.class);
 		nftsLedger = mock(TransactionalLedger.class);
 
-		final var source = new WorldLedgers(tokenRelsLedger, accountsLedger, nftsLedger);
+		final var source = new WorldLedgers(tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
 
 		source.revert();
 
@@ -104,7 +109,7 @@ class WorldLedgersTest {
 				new HashMapBackingNfts(),
 				new ChangeSummaryManager<>());
 
-		final var source = new WorldLedgers(tokenRelsLedger, accountsLedger, nftsLedger);
+		final var source = new WorldLedgers(tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
 		assertTrue(source.areUsable());
 
 		final var wrappedSource = source.wrapped();

@@ -142,7 +142,7 @@ class LedgerBalanceChangesTest {
 				sideEffectsTracker,
 				viewManager,
 				dynamicProperties,
-				() -> tokens,
+				tokensLedger,
 				tokenRelsLedger,
 				nftsLedger);
 		tokenStore.rebuildViews();
@@ -245,7 +245,7 @@ class LedgerBalanceChangesTest {
 				sideEffectsTracker,
 				viewManager,
 				dynamicProperties,
-				() -> tokens,
+				tokensLedger,
 				tokenRelsLedger,
 				nftsLedger);
 
