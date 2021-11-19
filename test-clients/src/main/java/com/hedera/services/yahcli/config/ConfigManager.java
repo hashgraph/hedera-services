@@ -57,7 +57,7 @@ public class ConfigManager {
 		this.global = global;
 	}
 
-	public static ConfigManager from(Yahcli yahcli) throws IOException {
+	static ConfigManager from(Yahcli yahcli) throws IOException {
 		var yamlLoc = yahcli.getConfigLoc();
 		var yamlIn = new Yaml(new Constructor(GlobalConfig.class));
 		try (InputStream fin = Files.newInputStream(Paths.get(yamlLoc))) {
