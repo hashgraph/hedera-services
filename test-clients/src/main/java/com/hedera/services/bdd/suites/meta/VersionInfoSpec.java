@@ -26,12 +26,23 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Map;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
 
 public class VersionInfoSpec extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(VersionInfoSpec.class);
+	private final Map<String, String> specConfig;
+
+	public VersionInfoSpec(final Map<String, String> specConfig) {
+		this.specConfig = specConfig;
+	}
+
+	public VersionInfoSpec() {
+		specConfig = null;
+	}
 
 	public static void main(String... args) {
 		new VersionInfoSpec().runSuiteSync();
@@ -46,11 +57,23 @@ public class VersionInfoSpec extends HapiApiSuite {
 	}
 
 	private HapiApiSpec discoversExpectedVersions() {
-		return defaultHapiSpec("getsExpectedVersions").given().when().then(
-				getVersionInfo()
-						.logged()
-						.hasNoDegenerateSemvers()
-		);
+		if (specConfig != null) {
+			return customHapiSpec("getVersionInfo")
+					.withProperties(specConfig)
+					.given()
+					.when()
+					.then(
+							getVersionInfo()
+									.withYahcliLogging()
+									.noLogging()
+					);
+		} else {
+			return defaultHapiSpec("getsExpectedVersions").given().when().then(
+					getVersionInfo()
+							.logged()
+							.hasNoDegenerateSemvers()
+			);
+		}
 	}
 
 	@Override

@@ -37,6 +37,7 @@ import java.util.Optional;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
+import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
 public class HapiGetVersionInfo extends HapiQueryOp<HapiGetVersionInfo> {
 	private static final Logger log = LogManager.getLogger(HapiGetVersionInfo.class);
@@ -103,6 +104,15 @@ public class HapiGetVersionInfo extends HapiQueryOp<HapiGetVersionInfo> {
 					+ asReadable(info.getHapiProtoVersion())
 					+ ", Hedera Services @ "
 					+ asReadable(info.getHederaServicesVersion()));
+		}
+
+		if (yahcliLogger) {
+			COMMON_MESSAGES.info(
+					"Versions :: HAPI protobufs @ "
+							+ asReadable(info.getHapiProtoVersion())
+							+ ", Hedera Services @ "
+							+ asReadable(info.getHederaServicesVersion())
+			);
 		}
 	}
 

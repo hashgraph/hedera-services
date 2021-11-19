@@ -26,6 +26,7 @@ import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
+import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
 import com.hedera.services.yahcli.commands.accounts.AccountsCommand;
 import com.hedera.services.yahcli.commands.fees.FeesCommand;
 import com.hedera.services.yahcli.commands.files.SysFilesCommand;
@@ -34,6 +35,7 @@ import com.hedera.services.yahcli.commands.system.FreezeOnlyCommand;
 import com.hedera.services.yahcli.commands.system.FreezeUpgradeCommand;
 import com.hedera.services.yahcli.commands.system.PrepareUpgradeCommand;
 import com.hedera.services.yahcli.commands.system.TelemetryUpgradeCommand;
+import com.hedera.services.yahcli.commands.system.VersionInfoCommand;
 import com.hedera.services.yahcli.commands.validation.ValidationCommand;
 import com.hedera.services.yahcli.suites.BalanceSuite;
 import com.hedera.services.yahcli.suites.FreezeHelperSuite;
@@ -67,7 +69,8 @@ import java.util.concurrent.Callable;
 				FreezeOnlyCommand.class,
 				PrepareUpgradeCommand.class,
 				FreezeUpgradeCommand.class,
-				TelemetryUpgradeCommand.class
+				TelemetryUpgradeCommand.class,
+				VersionInfoCommand.class
 		},
 		description = "Performs DevOps-type actions against a Hedera Services network")
 public class Yahcli implements Callable<Integer> {
@@ -147,7 +150,8 @@ public class Yahcli implements Callable<Integer> {
 				FeesAndRatesProvider.class,
 				HapiQueryOp.class,
 				HapiGetFileContents.class,
-				HapiApiSpec.class
+				HapiApiSpec.class,
+				VersionInfoSpec.class
 		).forEach(Yahcli::setToLessNoisy);
 	}
 
