@@ -19,6 +19,7 @@ appear below.
 7. [Launching an NMT telemetry upgrade](#launching-an-nmt-telemetry-upgrade)
 8. [Scheduling a network freeze](#scheduling-a-network-freeze)
 9. [Re-keying an account](#updating-account-keys)
+10. [Get deployed version info of a network](#get-version-info)
 
 # Setting up the working directory
 
@@ -359,4 +360,9 @@ $ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.7 -p 57 -n 
 Targeting localhost, paying with 0.0.2
 .i. Exported key from new-account55 to localhost/keys/account57.pem
 .i. SUCCESS - account 0.0.57 has been re-keyed
+```
+
+# Get version info
+```
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.7 -n previewnet -p 2 version
 ```

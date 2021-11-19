@@ -27,6 +27,7 @@ import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
 import com.hedera.services.yahcli.Yahcli;
 import com.hedera.services.yahcli.suites.BalanceSuite;
 import com.hedera.services.yahcli.suites.CostOfEveryThingSuite;
@@ -166,7 +167,8 @@ public class ConfigUtils {
 				HapiQueryOp.class,
 				HapiTxnOp.class,
 				HapiGetFileContents.class,
-				HapiApiSpec.class
+				HapiApiSpec.class,
+				VersionInfoSpec.class
 		).forEach(cls -> setLogLevel(cls, logLevel));
 	}
 

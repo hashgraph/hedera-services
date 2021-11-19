@@ -23,6 +23,7 @@ package com.hedera.test.factories.scenarios;
 import com.hedera.services.utils.PlatformTxnAccessor;
 
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
+import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
 import static com.hedera.test.factories.txns.TokenDissociateFactory.newSignedTokenDissociate;
 
 public enum TokenDissociateScenarios implements TxnHandlingScenario {
@@ -35,6 +36,18 @@ public enum TokenDissociateScenarios implements TxnHandlingScenario {
 							.dissociating(KNOWN_TOKEN_WITH_KYC)
 							.dissociating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
 							.nonPayerKts(MISC_ACCOUNT_KT)
+							.get()
+			));
+		}
+	},
+	TOKEN_DISSOCIATE_WITH_SELF_PAID_KNOWN_TARGET {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedTokenDissociate()
+							.targeting(DEFAULT_PAYER)
+							.dissociating(KNOWN_TOKEN_WITH_KYC)
+							.dissociating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
 							.get()
 			));
 		}

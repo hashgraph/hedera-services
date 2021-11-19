@@ -28,6 +28,7 @@ import com.hedera.services.yahcli.commands.system.FreezeOnlyCommand;
 import com.hedera.services.yahcli.commands.system.FreezeUpgradeCommand;
 import com.hedera.services.yahcli.commands.system.PrepareUpgradeCommand;
 import com.hedera.services.yahcli.commands.system.TelemetryUpgradeCommand;
+import com.hedera.services.yahcli.commands.system.VersionInfoCommand;
 import com.hedera.services.yahcli.commands.validation.ValidationCommand;
 import org.apache.logging.log4j.Level;
 import picocli.CommandLine;
@@ -52,7 +53,8 @@ import java.util.concurrent.Callable;
 				FreezeOnlyCommand.class,
 				PrepareUpgradeCommand.class,
 				FreezeUpgradeCommand.class,
-				TelemetryUpgradeCommand.class
+				TelemetryUpgradeCommand.class,
+				VersionInfoCommand.class
 		},
 		description = "Performs DevOps-type actions against a Hedera Services network")
 public class Yahcli implements Callable<Integer> {

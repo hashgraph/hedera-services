@@ -29,6 +29,7 @@ import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.royaltyFee;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
+import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
 import static com.hedera.test.factories.txns.TokenCreateFactory.newSignedTokenCreate;
 
 public enum TokenCreateScenarios implements TxnHandlingScenario {
@@ -63,6 +64,16 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 					newSignedTokenCreate()
 							.missingAdmin()
 							.autoRenew(MISC_ACCOUNT)
+							.get()
+			));
+		}
+	},
+	TOKEN_CREATE_WITH_AUTO_RENEW_AS_PAYER {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedTokenCreate()
+							.missingAdmin()
+							.autoRenew(DEFAULT_PAYER)
 							.get()
 			));
 		}
@@ -102,6 +113,17 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 	TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			final var collector = EntityId.fromGrpcAccountId(RECEIVER_SIG);
+			return new PlatformTxnAccessor(from(
+					newSignedTokenCreate()
+							.missingAdmin()
+							.plusCustomFee(fixedFee(123L, null, collector))
+							.get()
+			));
+		}
+	},
+	TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			final var collector = EntityId.fromGrpcAccountId(DEFAULT_PAYER);
 			return new PlatformTxnAccessor(from(
 					newSignedTokenCreate()
 							.missingAdmin()
@@ -195,6 +217,16 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 					newSignedTokenCreate()
 							.missingAdmin()
 							.treasury(MISSING_ACCOUNT)
+							.get()
+			));
+		}
+	},
+	TOKEN_CREATE_WITH_TREASURY_AS_PAYER {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedTokenCreate()
+							.missingAdmin()
+							.treasury(DEFAULT_PAYER)
 							.get()
 			));
 		}
