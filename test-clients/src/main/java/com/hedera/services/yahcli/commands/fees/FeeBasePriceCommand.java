@@ -20,13 +20,12 @@ package com.hedera.services.yahcli.commands.fees;
  * ‍
  */
 
-import com.hedera.services.yahcli.config.ConfigManager;
 import com.hedera.services.yahcli.suites.CostOfEveryThingSuite;
 import picocli.CommandLine;
 
 import java.util.concurrent.Callable;
 
-import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
+import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
 
 @CommandLine.Command(
 		name = "list-base-prices",
@@ -45,9 +44,7 @@ public class FeeBasePriceCommand implements Callable<Integer> {
 
 	@Override
 	public Integer call() throws Exception {
-		var config = ConfigManager.from(feesCommand.getYahcli());
-		config.assertNoMissingDefaults();
-		COMMON_MESSAGES.printGlobalInfo(config);
+		var config = configFrom(feesCommand.getYahcli());
 
 		StringBuilder feeTableSB = new StringBuilder();
 		String serviceBorder = "-------------------------------|-----------------|\n";

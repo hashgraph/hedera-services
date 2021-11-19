@@ -20,7 +20,6 @@ package com.hedera.services.yahcli.commands.accounts;
  * ‍
  */
 
-import com.hedera.services.yahcli.config.ConfigManager;
 import com.hedera.services.yahcli.suites.BalanceSuite;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
@@ -29,7 +28,7 @@ import picocli.CommandLine.ParentCommand;
 
 import java.util.concurrent.Callable;
 
-import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
+import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
 
 @Command(
 		name = "balance",
@@ -47,9 +46,7 @@ public class BalanceCommand implements Callable<Integer> {
 
 	@Override
 	public Integer call() throws Exception {
-		var config = ConfigManager.from(accountsCommand.getYahcli());
-		config.assertNoMissingDefaults();
-		COMMON_MESSAGES.printGlobalInfo(config);
+		var config = configFrom(accountsCommand.getYahcli());
 
 		StringBuilder balanceRegister = new StringBuilder();
 		String serviceBorder = "---------------------|----------------------|";
