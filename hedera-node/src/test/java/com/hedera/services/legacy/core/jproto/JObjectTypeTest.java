@@ -20,38 +20,16 @@ package com.hedera.services.legacy.core.jproto;
  * ‍
  */
 
-import com.swirlds.common.CommonUtils;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-/**
- * Maps to proto Key of type RSA_3072.
- */
-public class JRSA_3072Key extends JKey {
-	private byte[] RSA_3072Key;
+import java.util.List;
 
-	public JRSA_3072Key(byte[] RSA_3072Key) {
-		this.RSA_3072Key = RSA_3072Key;
-	}
-
-	@Override
-	public String toString() {
-		return "<JRSA_3072Key: RSA_3072Key hex=" + CommonUtils.hex(RSA_3072Key) + ">";
-	}
-
-	public boolean hasRSA_3072Key() {
-		return true;
-	}
-
-	public byte[] getRSA3072() {
-		return RSA_3072Key;
-	}
-
-	@Override
-	public boolean isEmpty() {
-		return ((null == RSA_3072Key) || (0 == RSA_3072Key.length));
-	}
-
-	@Override
-	public boolean isValid() {
-		return !isEmpty();
+class JObjectTypeTest {
+	@Test
+	void lookupsWork() {
+		List.of(JObjectType.class.getEnumConstants()).forEach(type -> {
+			Assertions.assertSame(type, JObjectType.valueOf(type.longValue()));
+		});
 	}
 }

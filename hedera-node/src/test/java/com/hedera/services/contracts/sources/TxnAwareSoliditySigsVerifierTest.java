@@ -24,23 +24,30 @@ package com.hedera.services.contracts.sources;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.SyncActivationCheck;
+import com.hedera.services.legacy.core.jproto.JContractIDKey;
+import com.hedera.services.legacy.core.jproto.JDelegateContractIDKey;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.swirlds.common.crypto.TransactionSignature;
+import com.swirlds.common.crypto.VerificationStatus;
 import com.swirlds.merkle.map.MerkleMap;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.Set;
 
+import static com.hedera.services.keys.HederaKeyActivation.INVALID_MISSING_SIG;
 import static com.hedera.services.utils.EntityIdUtils.asTypedSolidityAddress;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
@@ -57,7 +64,6 @@ class TxnAwareSoliditySigsVerifierTest {
 	AccountID sigRequired = IdUtils.asAccount("0.0.555");
 	AccountID smartContract = IdUtils.asAccount("0.0.666");
 	AccountID noSigRequired = IdUtils.asAccount("0.0.777");
-	Set<AccountID> touched;
 	SyncVerifier syncVerifier;
 	PlatformTxnAccessor accessor;
 	JKey expectedKey;
@@ -98,6 +104,61 @@ class TxnAwareSoliditySigsVerifierTest {
 		areActive = mock(SyncActivationCheck.class);
 
 		subject = new TxnAwareSoliditySigsVerifier(syncVerifier, txnCtx, areActive, () -> accounts);
+	}
+
+	@Test
+	void createsValidityTestThatOnlyAcceptsContractIdKeyWhenBothRecipientAndContractAreActive() {
+		final var uncontrolledId = EntityIdUtils.contractParsedFromSolidityAddress(Address.BLS12_G1ADD);
+		final var controlledId = EntityIdUtils.contractParsedFromSolidityAddress(PRETEND_RECIPIENT_ADDR);
+		final var controlledKey = new JContractIDKey(controlledId);
+		final var uncontrolledKey = new JContractIDKey(uncontrolledId);
+
+		final var validityTestForNormalCall =
+				subject.validityTestFor(PRETEND_RECIPIENT_ADDR, PRETEND_RECIPIENT_ADDR);
+		final var validityTestForDelegateCall =
+				subject.validityTestFor(PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR);
+
+		assertTrue(validityTestForNormalCall.test(controlledKey, INVALID_MISSING_SIG));
+		assertFalse(validityTestForDelegateCall.test(controlledKey, INVALID_MISSING_SIG));
+		assertFalse(validityTestForNormalCall.test(uncontrolledKey, INVALID_MISSING_SIG));
+		assertFalse(validityTestForDelegateCall.test(uncontrolledKey, INVALID_MISSING_SIG));
+	}
+
+	@Test
+	void createsValidityTestThatAcceptsDelegateContractIdKeyWithJustRecipientActive() {
+		final var uncontrolledId = EntityIdUtils.contractParsedFromSolidityAddress(Address.BLS12_G1ADD);
+		final var controlledId = EntityIdUtils.contractParsedFromSolidityAddress(PRETEND_RECIPIENT_ADDR);
+		final var controlledKey = new JDelegateContractIDKey(controlledId);
+		final var uncontrolledKey = new JContractIDKey(uncontrolledId);
+
+		final var validityTestForNormalCall =
+				subject.validityTestFor(PRETEND_RECIPIENT_ADDR, PRETEND_RECIPIENT_ADDR);
+		final var validityTestForDelegateCall =
+				subject.validityTestFor(PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR);
+
+		assertTrue(validityTestForNormalCall.test(controlledKey, INVALID_MISSING_SIG));
+		assertTrue(validityTestForDelegateCall.test(controlledKey, INVALID_MISSING_SIG));
+		assertFalse(validityTestForNormalCall.test(uncontrolledKey, INVALID_MISSING_SIG));
+		assertFalse(validityTestForDelegateCall.test(uncontrolledKey, INVALID_MISSING_SIG));
+	}
+
+	@Test
+	void validityTestsRelyOnValidityOtherwise() {
+		final var mockSig = mock(TransactionSignature.class);
+		final var mockKey = new JEd25519Key("01234567890123456789012345678901".getBytes());
+
+		final var validityTestForNormalCall =
+				subject.validityTestFor(PRETEND_RECIPIENT_ADDR, PRETEND_RECIPIENT_ADDR);
+		final var validityTestForDelegateCall =
+				subject.validityTestFor(PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR);
+
+		given(mockSig.getSignatureStatus()).willReturn(VerificationStatus.VALID);
+		assertTrue(validityTestForNormalCall.test(mockKey, mockSig));
+		assertTrue(validityTestForDelegateCall.test(mockKey, mockSig));
+
+		given(mockSig.getSignatureStatus()).willReturn(VerificationStatus.UNKNOWN);
+		assertFalse(validityTestForNormalCall.test(mockKey, mockSig));
+		assertFalse(validityTestForDelegateCall.test(mockKey, mockSig));
 	}
 
 	@Test

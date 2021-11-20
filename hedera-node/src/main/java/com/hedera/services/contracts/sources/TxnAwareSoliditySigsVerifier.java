@@ -31,16 +31,20 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.merkle.map.MerkleMap;
 import org.hyperledger.besu.datatypes.Address;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 
 import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
 import static com.hedera.services.keys.HederaKeyActivation.isActive;
+import static com.hedera.services.utils.EntityIdUtils.contractParsedFromSolidityAddress;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
+import static com.swirlds.common.crypto.VerificationStatus.VALID;
 
 public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 	private final SyncVerifier syncVerifier;
@@ -86,6 +90,27 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 		} else {
 			return true;
 		}
+	}
+
+	BiPredicate<JKey, TransactionSignature> validityTestFor(final Address recipient, final Address contract) {
+		final var activeId = contractParsedFromSolidityAddress(recipient);
+		final var isDelegateCall = !contract.equals(recipient);
+
+		/* Note that when this observer is used directly above in isActive(), it will be called
+		 * with each primitive key in the top-level Hedera key of interest, along with that key's
+		 * verified cryptographic signature (if any was available in the sigMap). */
+		return (primitiveKey, verifiedSig) -> {
+			if (primitiveKey.hasDelegateContractID()) {
+				final var controllingId = primitiveKey.getDelegateContractIDKey().getContractID();
+				return controllingId.equals(activeId);
+			} else if (primitiveKey.hasContractID()) {
+				final var controllingId = primitiveKey.getContractIDKey().getContractID();
+				return controllingId.equals(activeId) && !isDelegateCall;
+			} else {
+				/* Here we can ignore the key; all that matters is whether its signature was valid. */
+				return 	verifiedSig.getSignatureStatus() == VALID;
+			}
+		};
 	}
 
 	private Optional<JKey> receiverSigKey(final AccountID id) {

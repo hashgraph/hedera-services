@@ -21,6 +21,7 @@ package com.hedera.services.legacy.core.jproto;
  */
 
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import org.apache.commons.codec.DecoderException;
@@ -29,8 +30,13 @@ import org.junit.jupiter.api.Test;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.mock;
 
 class JKeyTest {
 	@Test
@@ -64,6 +70,39 @@ class JKeyTest {
 				DecoderException.class,
 				() -> JKey.convertJKey(jKeyTooDeep, 1),
 				"Exceeding max expansion depth of " + JKey.MAX_KEY_DEPTH);
+	}
+
+	@Test
+	void byDefaultHasNoDelegateContractId() {
+		final var subject = mock(JKey.class);
+
+		doCallRealMethod().when(subject).hasDelegateContractID();
+		doCallRealMethod().when(subject).getDelegateContractIDKey();
+
+		assertFalse(subject.hasDelegateContractID());
+		assertNull(subject.getDelegateContractIDKey());
+	}
+
+	@Test
+	void canMapDelegateToGrpc() throws DecoderException {
+		final var id = IdUtils.asContract("1.2.3");
+		final var expected = Key.newBuilder().setDelegateContractID(id).build();
+
+		final var subject = new JDelegateContractIDKey(id);
+		final var result = JKey.mapJKey(subject);
+
+		assertEquals(expected, result);
+	}
+
+	@Test
+	void canMapDelegateFromGrpc() throws DecoderException {
+		final var id = IdUtils.asContract("1.2.3");
+		final var input = Key.newBuilder().setDelegateContractID(id).build();
+
+		final var subject = JKey.mapKey(input);
+
+		assertTrue(subject.hasDelegateContractID());
+		assertEquals(id, subject.getDelegateContractIDKey().getContractID());
 	}
 
 	@Test
