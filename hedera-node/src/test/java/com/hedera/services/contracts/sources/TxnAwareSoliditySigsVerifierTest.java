@@ -23,12 +23,11 @@ package com.hedera.services.contracts.sources;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.keys.SyncActivationCheck;
+import com.hedera.services.keys.ActivationTest;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JDelegateContractIDKey;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
@@ -37,74 +36,120 @@ import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.common.crypto.VerificationStatus;
 import com.swirlds.merkle.map.MerkleMap;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
+import java.util.function.BiPredicate;
+import java.util.function.Function;
 
 import static com.hedera.services.keys.HederaKeyActivation.INVALID_MISSING_SIG;
 import static com.hedera.services.utils.EntityIdUtils.asTypedSolidityAddress;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.argThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
+@ExtendWith(MockitoExtension.class)
 class TxnAwareSoliditySigsVerifierTest {
 	private static final Address PRETEND_RECIPIENT_ADDR = Address.ALTBN128_ADD;
 	private static final Address PRETEND_CONTRACT_ADDR = Address.ALTBN128_MUL;
+	private final AccountID payer = IdUtils.asAccount("0.0.2");
+	private final AccountID sigRequired = IdUtils.asAccount("0.0.555");
+	private final AccountID smartContract = IdUtils.asAccount("0.0.666");
+	private final AccountID noSigRequired = IdUtils.asAccount("0.0.777");
 
-	AccountID payer = IdUtils.asAccount("0.0.2");
-	AccountID sigRequired = IdUtils.asAccount("0.0.555");
-	AccountID smartContract = IdUtils.asAccount("0.0.666");
-	AccountID noSigRequired = IdUtils.asAccount("0.0.777");
-	SyncVerifier syncVerifier;
-	PlatformTxnAccessor accessor;
-	JKey expectedKey;
+	private JKey expectedKey;
 
-	MerkleAccount sigReqAccount, noSigReqAccount, contract;
+	@Mock
+	private MerkleAccount contract;
+	@Mock
+	private MerkleAccount sigReqAccount;
+	@Mock
+	private MerkleAccount noSigReqAccount;
+	@Mock
+	private BiPredicate<JKey, TransactionSignature> cryptoValidity;
+	@Mock
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
+	@Mock
+	private ActivationTest activationTest;
+	@Mock
+	private TransactionContext txnCtx;
+	@Mock
+	private PlatformTxnAccessor accessor;
+	@Mock
+	private Function<byte[], TransactionSignature> pkToCryptoSigsFn;
 
-	TransactionContext txnCtx;
-	SyncActivationCheck areActive;
-	MerkleMap<EntityNum, MerkleAccount> accounts;
-
-	TxnAwareSoliditySigsVerifier subject;
+	private TxnAwareSoliditySigsVerifier subject;
 
 	@BeforeEach
 	private void setup() throws Exception {
-		syncVerifier = mock(SyncVerifier.class);
 		expectedKey = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKey();
 
-		contract = mock(MerkleAccount.class);
-		given(contract.isSmartContract()).willReturn(true);
-		given(contract.isReceiverSigRequired()).willReturn(true);
-		sigReqAccount = mock(MerkleAccount.class);
-		given(sigReqAccount.isReceiverSigRequired()).willReturn(true);
-		given(sigReqAccount.getAccountKey()).willReturn(expectedKey);
-		noSigReqAccount = mock(MerkleAccount.class);
-		given(noSigReqAccount.isReceiverSigRequired()).willReturn(false);
+		subject = new TxnAwareSoliditySigsVerifier(activationTest, txnCtx, () -> accounts, cryptoValidity);
+	}
 
-		accessor = mock(PlatformTxnAccessor.class);
-		txnCtx = mock(TransactionContext.class);
-		given(txnCtx.accessor()).willReturn(accessor);
+	@Test
+	void filtersContracts() {
 		given(txnCtx.activePayer()).willReturn(payer);
-
-		accounts = mock(MerkleMap.class);
-		given(accounts.get(EntityNum.fromAccountId(payer))).willReturn(sigReqAccount);
-		given(accounts.get(EntityNum.fromAccountId(sigRequired))).willReturn(sigReqAccount);
-		given(accounts.get(EntityNum.fromAccountId(noSigRequired))).willReturn(noSigReqAccount);
+		given(contract.isSmartContract()).willReturn(true);
 		given(accounts.get(EntityNum.fromAccountId(smartContract))).willReturn(contract);
 
-		areActive = mock(SyncActivationCheck.class);
+		final var contractFlag = subject.hasActiveKeyOrNoReceiverSigReq(
+				asTypedSolidityAddress(smartContract), PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR);
 
-		subject = new TxnAwareSoliditySigsVerifier(syncVerifier, txnCtx, areActive, () -> accounts);
+		assertTrue(contractFlag);
+		verify(activationTest, never()).test(any(), any(), any());
 	}
+
+	@Test
+	void filtersNoSigRequired() {
+		given(txnCtx.activePayer()).willReturn(payer);
+		given(accounts.get(EntityNum.fromAccountId(noSigRequired))).willReturn(noSigReqAccount);
+
+		final var noSigRequiredFlag = subject.hasActiveKeyOrNoReceiverSigReq(
+				asTypedSolidityAddress(noSigRequired), PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR);
+
+		assertTrue(noSigRequiredFlag);
+		verify(activationTest, never()).test(any(), any(), any());
+	}
+
+	@Test
+	void testsWhenReceiverSigIsRequired() {
+		givenAccessorInCtx();
+		given(sigReqAccount.isReceiverSigRequired()).willReturn(true);
+		given(sigReqAccount.getAccountKey()).willReturn(expectedKey);
+		given(accounts.get(EntityNum.fromAccountId(sigRequired))).willReturn(sigReqAccount);
+		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
+
+		given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
+
+		boolean sigRequiredFlag = subject.hasActiveKeyOrNoReceiverSigReq(
+				asTypedSolidityAddress(sigRequired), PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR);
+
+		assertTrue(sigRequiredFlag);
+	}
+
+	@Test
+	void filtersPayerSinceSigIsGuaranteed() {
+		given(txnCtx.activePayer()).willReturn(payer);
+
+		boolean payerFlag = subject.hasActiveKeyOrNoReceiverSigReq(
+				asTypedSolidityAddress(payer), PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR);
+
+		assertTrue(payerFlag);
+
+		verify(activationTest, never()).test(any(), any(), any());
+	}
+
 
 	@Test
 	void createsValidityTestThatOnlyAcceptsContractIdKeyWhenBothRecipientAndContractAreActive() {
@@ -143,54 +188,22 @@ class TxnAwareSoliditySigsVerifierTest {
 	}
 
 	@Test
-	void validityTestsRelyOnValidityOtherwise() {
+	void validityTestsRelyOnCryptoValidityOtherwise() {
 		final var mockSig = mock(TransactionSignature.class);
 		final var mockKey = new JEd25519Key("01234567890123456789012345678901".getBytes());
+		given(cryptoValidity.test(mockKey, mockSig)).willReturn(true);
 
 		final var validityTestForNormalCall =
 				subject.validityTestFor(PRETEND_RECIPIENT_ADDR, PRETEND_RECIPIENT_ADDR);
 		final var validityTestForDelegateCall =
 				subject.validityTestFor(PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR);
 
-		given(mockSig.getSignatureStatus()).willReturn(VerificationStatus.VALID);
 		assertTrue(validityTestForNormalCall.test(mockKey, mockSig));
 		assertTrue(validityTestForDelegateCall.test(mockKey, mockSig));
-
-		given(mockSig.getSignatureStatus()).willReturn(VerificationStatus.UNKNOWN);
-		assertFalse(validityTestForNormalCall.test(mockKey, mockSig));
-		assertFalse(validityTestForDelegateCall.test(mockKey, mockSig));
 	}
 
-	@Test
-	void filtersContracts() {
-		boolean contractFlag = subject.hasActiveKeyOrNoReceiverSigReq(
-				asTypedSolidityAddress(smartContract), PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR);
-
-		assertTrue(contractFlag);
-		verify(areActive, never()).allKeysAreActive(
-				any(), any(), any(), any(), any(), any(), any(), any());
-	}
-
-	@Test
-	void filtersNoSigRequired() {
-		given(areActive.allKeysAreActive(
-				argThat(List.of(expectedKey)::equals),
-				any(), any(), any(), any(), any(), any(), any())).willReturn(true);
-
-		boolean sigRequiredFlag = subject.hasActiveKeyOrNoReceiverSigReq(
-				asTypedSolidityAddress(sigRequired), PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR);
-
-		assertTrue(sigRequiredFlag);
-		verify(areActive).allKeysAreActive(any(), any(), any(), any(), any(), any(), any(), any());
-	}
-
-	@Test
-	void filtersPayerSinceSigIsGuaranteed() {
-		boolean payerFlag = subject.hasActiveKeyOrNoReceiverSigReq(
-				asTypedSolidityAddress(payer), PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR);
-
-		assertTrue(payerFlag);
-		verify(areActive, never()).allKeysAreActive(
-				any(), any(), any(), any(), any(), any(), any(), any());
+	private void givenAccessorInCtx() {
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.activePayer()).willReturn(payer);
 	}
 }

@@ -21,12 +21,8 @@ package com.hedera.services.contracts.sources;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.keys.HederaKeyActivation;
-import com.hedera.services.keys.SyncActivationCheck;
+import com.hedera.services.keys.ActivationTest;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.sigs.PlatformSigOps;
-import com.hedera.services.sigs.factories.BodySigningSigFactory;
-import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
@@ -35,33 +31,33 @@ import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.merkle.map.MerkleMap;
 import org.hyperledger.besu.datatypes.Address;
 
-import java.util.List;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Optional;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 
-import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
-import static com.hedera.services.keys.HederaKeyActivation.isActive;
 import static com.hedera.services.utils.EntityIdUtils.contractParsedFromSolidityAddress;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
-import static com.swirlds.common.crypto.VerificationStatus.VALID;
 
+@Singleton
 public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
-	private final SyncVerifier syncVerifier;
+	private final ActivationTest activationTest;
 	private final TransactionContext txnCtx;
-	private final SyncActivationCheck check;
+	private final BiPredicate<JKey, TransactionSignature> cryptoValidity;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
+	@Inject
 	public TxnAwareSoliditySigsVerifier(
-			SyncVerifier syncVerifier,
-			TransactionContext txnCtx,
-			SyncActivationCheck check,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
+			final ActivationTest activationTest,
+			final TransactionContext txnCtx,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final BiPredicate<JKey, TransactionSignature> cryptoValidity
 	) {
 		this.txnCtx = txnCtx;
 		this.accounts = accounts;
-		this.syncVerifier = syncVerifier;
-		this.check = check;
+		this.activationTest = activationTest;
+		this.cryptoValidity = cryptoValidity;
 	}
 
 	@Override
@@ -75,18 +71,10 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 		if (payer.equals(targetId)) {
 			return true;
 		}
-		final var requiredKey = receiverSigKey(targetId);
+		final var requiredKey = receiverSigKeyIfAnyOf(targetId);
 		if (requiredKey.isPresent()) {
-			final var accessor = txnCtx.accessor();
-			return check.allKeysAreActive(
-					List.of(requiredKey.get()),
-					syncVerifier,
-					accessor,
-					PlatformSigOps::createEd25519PlatformSigsFrom,
-					accessor.getPkToSigsFn(),
-					BodySigningSigFactory::new,
-					(key, sigsFn) -> isActive(key, sigsFn, ONLY_IF_SIG_IS_VALID),
-					HederaKeyActivation::pkToSigMapFrom);
+			final var pkToCryptoSigsFn = txnCtx.accessor().getRationalizedPkToCryptoSigFn();
+			return activationTest.test(requiredKey.get(), pkToCryptoSigsFn, validityTestFor(recipient, contract));
 		} else {
 			return true;
 		}
@@ -99,21 +87,21 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 		/* Note that when this observer is used directly above in isActive(), it will be called
 		 * with each primitive key in the top-level Hedera key of interest, along with that key's
 		 * verified cryptographic signature (if any was available in the sigMap). */
-		return (primitiveKey, verifiedSig) -> {
-			if (primitiveKey.hasDelegateContractID()) {
-				final var controllingId = primitiveKey.getDelegateContractIDKey().getContractID();
+		return (key, sig) -> {
+			if (key.hasDelegateContractID()) {
+				final var controllingId = key.getDelegateContractIDKey().getContractID();
 				return controllingId.equals(activeId);
-			} else if (primitiveKey.hasContractID()) {
-				final var controllingId = primitiveKey.getContractIDKey().getContractID();
+			} else if (key.hasContractID()) {
+				final var controllingId = key.getContractIDKey().getContractID();
 				return controllingId.equals(activeId) && !isDelegateCall;
 			} else {
-				/* Here we can ignore the key; all that matters is whether its signature was valid. */
-				return 	verifiedSig.getSignatureStatus() == VALID;
+				/* Otherwise delegate to the cryptographic validity test */
+				return cryptoValidity.test(key, sig);
 			}
 		};
 	}
 
-	private Optional<JKey> receiverSigKey(final AccountID id) {
+	private Optional<JKey> receiverSigKeyIfAnyOf(final AccountID id) {
 		return Optional.ofNullable(accounts.get().get(fromAccountId(id)))
 				.filter(account -> !account.isSmartContract())
 				.filter(MerkleAccount::isReceiverSigRequired)
