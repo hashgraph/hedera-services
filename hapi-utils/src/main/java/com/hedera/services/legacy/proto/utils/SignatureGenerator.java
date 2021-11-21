@@ -45,16 +45,15 @@ public final class SignatureGenerator {
 	 * @throws SignatureException
 	 * 		if there is an error in the signature
 	 */
-	public static String signBytes(final byte[] msgBytes, final PrivateKey privateKey
+	public static byte[] signBytes(
+			final byte[] msgBytes,
+			final PrivateKey privateKey
 	) throws InvalidKeyException, SignatureException {
 		if (!(privateKey instanceof EdDSAPrivateKey)) {
 			throw new IllegalArgumentException("Only Ed25519 signatures are supported at this time!");
 		}
 		final var engine = new EdDSAEngine();
 		engine.initSign(privateKey);
-		final var sigBytes = engine.signOneShot(msgBytes);
-
-		return com.swirlds.common.CommonUtils.hex(sigBytes);
+		return engine.signOneShot(msgBytes);
 	}
-
 }

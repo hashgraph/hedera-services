@@ -112,7 +112,7 @@ public abstract class HapiSpecOperation {
 	protected boolean useRandomNode = false;
 	protected boolean unavailableNode = false;
 	protected Optional<Integer> hardcodedNumPayerKeys = Optional.empty();
-	protected Optional<SigMapGenerator.Nature> sigMapGen = Optional.empty();
+	protected Optional<SigMapGenerator> sigMapGen = Optional.empty();
 	protected Optional<List<Function<HapiApiSpec, Key>>> signers = Optional.empty();
 	protected Optional<ControlForKey[]> controlOverrides = Optional.empty();
 	protected Map<Key, SigControl> overrides = Collections.EMPTY_MAP;
@@ -353,8 +353,8 @@ public abstract class HapiSpecOperation {
 
 	private Transaction getSigned(HapiApiSpec spec, Transaction.Builder builder, List<Key> keys) throws Throwable {
 		return sigMapGen.isPresent()
-				? spec.keys().sign(builder, keys, overrides, sigMapGen.get())
-				: spec.keys().sign(builder, keys, overrides);
+				? spec.keys().sign(spec, builder, keys, overrides, sigMapGen.get())
+				: spec.keys().sign(spec, builder, keys, overrides);
 	}
 
 	private void setKeyControlOverrides(HapiApiSpec spec) {

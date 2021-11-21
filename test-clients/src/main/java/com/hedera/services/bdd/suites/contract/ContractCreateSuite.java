@@ -69,6 +69,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -125,7 +126,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 //						revertedTryExtCallHasNoSideEffects(),
 //						cannotSendToNonExistentAccount(),
 //						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
-						contractIdKeyInsufficientPermissionsForDelegateCallTransfer(),
+						receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
 				}
 		);
 	}
@@ -401,7 +402,71 @@ public class ContractCreateSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec contractIdKeyInsufficientPermissionsForDelegateCallTransfer() {
+	private HapiApiSpec delegateContractIdRequiredForTransferInDelegateCall() {
+		final var justSendInitcode = "justSendInitcode";
+		final var sendInternalAndDelegateInitcode = "sendInternalAndDelegateInitcode";
+
+		final var justSend = "justSend";
+		final var sendInternalAndDelegate = "sendInternalAndDelegate";
+
+		final var beneficiary = "civilian";
+		final var balanceToDistribute = 1_000L;
+		final var origKey = KeyShape.listOf(SIMPLE, KeyShape.CONTRACT);
+
+		final AtomicLong justSendContractNum = new AtomicLong();
+		final AtomicLong beneficiaryAccountNum = new AtomicLong();
+
+		return defaultHapiSpec("DelegateContractIdRequiredForTransferInDelegateCall")
+				.given(
+						fileCreate(justSendInitcode)
+								.path(ContractResources.JUST_SEND_BYTECODE_PATH),
+						fileCreate(sendInternalAndDelegateInitcode)
+								.path(ContractResources.SEND_INTERNAL_AND_DELEGATE_BYTECODE_PATH),
+						contractCreate(justSend)
+								.bytecode(justSendInitcode)
+								.gas(300_000L)
+								.exposingNumTo(justSendContractNum::set),
+						contractCreate(sendInternalAndDelegate)
+								.bytecode(sendInternalAndDelegateInitcode)
+								.gas(300_000L)
+								.balance(balanceToDistribute)
+				).when(
+						cryptoCreate(beneficiary)
+								.balance(0L)
+								.receiverSigRequired(true)
+								.exposingCreatedIdTo(id -> beneficiaryAccountNum.set(id.getAccountNum()))
+				).then(
+						/* Sending requires receiver signature */
+						sourcing(() -> contractCall(
+								sendInternalAndDelegate,
+								SEND_REPEATEDLY_ABI,
+								justSendContractNum.get(),
+								beneficiaryAccountNum.get(),
+								balanceToDistribute / 2)
+								.hasKnownStatus(INVALID_SIGNATURE)),
+						/* But it's not enough to just sign using an incomplete prefix */
+						sourcing(() -> contractCall(
+								sendInternalAndDelegate,
+								SEND_REPEATEDLY_ABI,
+								justSendContractNum.get(),
+								beneficiaryAccountNum.get(),
+								balanceToDistribute / 2)
+								.signedBy(DEFAULT_PAYER, beneficiary)
+								.hasKnownStatus(INVALID_SIGNATURE)),
+						/* We have to specify the full prefix so the sig can be verified async */
+						getAccountInfo(beneficiary).logged(),
+						sourcing(() -> contractCall(
+								sendInternalAndDelegate,
+								SEND_REPEATEDLY_ABI,
+								justSendContractNum.get(),
+								beneficiaryAccountNum.get(),
+								balanceToDistribute / 2)
+								.alsoSigningWithFullPrefix(beneficiary)),
+						getAccountBalance(beneficiary).logged()
+				);
+	}
+
+	private HapiApiSpec receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix() {
 		final var justSendInitcode = "justSendInitcode";
 		final var sendInternalAndDelegateInitcode = "sendInternalAndDelegateInitcode";
 		final var justSend = "justSend";
@@ -413,10 +478,11 @@ public class ContractCreateSuite extends HapiApiSuite {
 		final AtomicLong justSendContractNum = new AtomicLong();
 		final AtomicLong beneficiaryAccountNum = new AtomicLong();
 
-		return defaultHapiSpec("ContractIdKeyInsufficientPermissionsForDelegateCallTransfer")
+		return defaultHapiSpec("ReceiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix")
 				.given(
 						cryptoCreate(beneficiary)
 								.balance(0L)
+								.receiverSigRequired(true)
 								.exposingCreatedIdTo(id -> beneficiaryAccountNum.set(id.getAccountNum())),
 						fileCreate(justSendInitcode)
 								.path(ContractResources.JUST_SEND_BYTECODE_PATH),
@@ -432,12 +498,32 @@ public class ContractCreateSuite extends HapiApiSuite {
 								.gas(300_000L)
 								.balance(balanceToDistribute)
 				).then(
+						/* Sending requires receiver signature */
 						sourcing(() -> contractCall(
 								sendInternalAndDelegate,
 								SEND_REPEATEDLY_ABI,
 								justSendContractNum.get(),
 								beneficiaryAccountNum.get(),
-								balanceToDistribute / 2)),
+								balanceToDistribute / 2)
+								.hasKnownStatus(INVALID_SIGNATURE)),
+						/* But it's not enough to just sign using an incomplete prefix */
+						sourcing(() -> contractCall(
+								sendInternalAndDelegate,
+								SEND_REPEATEDLY_ABI,
+								justSendContractNum.get(),
+								beneficiaryAccountNum.get(),
+								balanceToDistribute / 2)
+								.signedBy(DEFAULT_PAYER, beneficiary)
+								.hasKnownStatus(INVALID_SIGNATURE)),
+						/* We have to specify the full prefix so the sig can be verified async */
+						getAccountInfo(beneficiary).logged(),
+						sourcing(() -> contractCall(
+								sendInternalAndDelegate,
+								SEND_REPEATEDLY_ABI,
+								justSendContractNum.get(),
+								beneficiaryAccountNum.get(),
+								balanceToDistribute / 2)
+								.alsoSigningWithFullPrefix(beneficiary)),
 						getAccountBalance(beneficiary).logged()
 				);
 	}

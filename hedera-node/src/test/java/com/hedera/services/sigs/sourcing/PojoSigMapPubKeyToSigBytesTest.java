@@ -33,7 +33,6 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.SignatureType;
-import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
@@ -51,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
@@ -85,11 +85,34 @@ class PojoSigMapPubKeyToSigBytesTest {
 		lookupsMatch(payerKt, defaultFactory, CommonUtils.extractTransactionBodyBytes(signedTxn), subject);
 
 		final var numUnusedFullPrefixSigs = new AtomicInteger(0);
+		assertTrue(subject.hasAtLeastOneUnusedSigWithFullPrefix());
 		subject.forEachUnusedSigWithFullPrefix((pubKey, sig) -> {
-			System.out.println(Hex.encodeHexString(pubKey) + " -> " + Hex.encodeHexString(sig));
 			numUnusedFullPrefixSigs.getAndIncrement();
 		});
 		assertEquals(2, numUnusedFullPrefixSigs.get());
+	}
+
+	@Test
+	void getsNoUnusedFullKeysAndSigs() throws Throwable {
+		final var signedTxn = newSignedSystemDelete()
+				.payerKt(payerKt)
+				.nonPayerKts(otherKt)
+				.sigMapGen(withAlternatingUniqueAndFullPrefixes())
+				.get();
+		final var subject = new PojoSigMapPubKeyToSigBytes(SignedTxnAccessor.uncheckedFrom(signedTxn).getSigMap());
+		lookupsMatch(payerKt, defaultFactory, CommonUtils.extractTransactionBodyBytes(signedTxn), subject);
+		lookupsMatch(otherKt, defaultFactory, CommonUtils.extractTransactionBodyBytes(signedTxn), subject);
+
+		assertFalse(subject.hasAtLeastOneUnusedSigWithFullPrefix());
+
+		subject.resetAllSigsToUnused();
+
+		assertTrue(subject.hasAtLeastOneUnusedSigWithFullPrefix());
+		final var numUnusedFullPrefixSigs = new AtomicInteger(0);
+		subject.forEachUnusedSigWithFullPrefix((pubKey, sig) -> {
+			numUnusedFullPrefixSigs.getAndIncrement();
+		});
+		assertEquals(4, numUnusedFullPrefixSigs.get());
 	}
 
 	@Test

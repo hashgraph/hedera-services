@@ -264,11 +264,10 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 							b.setFileID(bytecodeFileId);
 							autoRenewPeriodSecs.ifPresent(p ->
 									b.setAutoRenewPeriod(Duration.newBuilder().setSeconds(p).build()));
-							balance.ifPresent(a -> b.setInitialBalance(a));
-							memo.ifPresent(m -> b.setMemo(m));
+							balance.ifPresent(b::setInitialBalance);
+							memo.ifPresent(b::setMemo);
 							gas.ifPresent(b::setGas);
 							params.ifPresent(bytes -> b.setConstructorParameters(ByteString.copyFrom(bytes)));
-							gas.ifPresent(a -> b.setGas(a));
 						}
 				);
 		return b -> b.setContractCreateInstance(opBody);
@@ -279,10 +278,10 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 			adminKey = spec.registry().getKey(key.get());
 		} else {
 			KeyGenerator generator = effectiveKeyGen();
-			if (!adminKeyControl.isPresent()) {
-				adminKey = spec.keys().generate(adminKeyType.orElse(KeyFactory.KeyType.SIMPLE), generator);
+			if (adminKeyControl.isEmpty()) {
+				adminKey = spec.keys().generate(spec, adminKeyType.orElse(KeyFactory.KeyType.SIMPLE), generator);
 			} else {
-				adminKey = spec.keys().generateSubjectTo(adminKeyControl.get(), generator);
+				adminKey = spec.keys().generateSubjectTo(spec, adminKeyControl.get(), generator);
 			}
 		}
 	}

@@ -81,6 +81,23 @@ public class PojoSigMapPubKeyToSigBytes implements PubKeyToSigBytes {
 		}
 	}
 
+	@Override
+	public boolean hasAtLeastOneUnusedSigWithFullPrefix() {
+		for (int i = 0, n = pojoSigMap.numSigsPairs(); i < n; i++) {
+			if (!used[i] && pojoSigMap.isFullPrefixAt(i)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	@Override
+	public void resetAllSigsToUnused() {
+		for (int i = 0, n = pojoSigMap.numSigsPairs(); i < n; i++) {
+			used[i] = false;
+		}
+	}
+
 	public static boolean beginsWith(byte[] pubKey, byte[] prefix) {
 		int n = prefix.length;
 		return Arrays.equals(prefix, 0, n, pubKey, 0, n);

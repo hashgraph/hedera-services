@@ -20,6 +20,7 @@ package com.hedera.services.sigs;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.order.CodeOrderResultFactory;
 import com.hedera.services.sigs.order.SigRequirements;
@@ -82,8 +83,10 @@ class Expansion {
 		}
 
 		if (pkToSigFn.hasAtLeastOneUnusedSigWithFullPrefix()) {
-			pkToSigFn.forEachUnusedSigWithFullPrefix((pubKey, sig) ->
-					txnAccessor.getPlatformTxn().add(sigFactory.create(pubKey, sig)));
+			pkToSigFn.forEachUnusedSigWithFullPrefix((pubKey, sig) -> {
+				System.out.println("✅ Unused full-prefix pub key " + ByteString.copyFrom(pubKey) + " had sig " + ByteString.copyFrom(sig));
+				txnAccessor.getPlatformTxn().add(sigFactory.create(pubKey, sig));
+			});
 		}
 
 		return OK;

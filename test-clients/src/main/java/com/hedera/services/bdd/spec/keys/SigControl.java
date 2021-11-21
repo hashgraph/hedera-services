@@ -30,21 +30,39 @@ import java.util.EnumSet;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static com.hedera.services.bdd.spec.keys.SigControl.Nature.CONTRACT_ID;
+import static com.hedera.services.bdd.spec.keys.SigControl.Nature.DELEGATE_CONTRACT_ID;
 import static com.hedera.services.bdd.spec.keys.SigControl.Nature.SIG_OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.Nature.SIG_ON;
 
 public class SigControl implements Serializable {
 	private static final long serialVersionUID = 1L;
 
-	public enum Nature {SIG_ON, SIG_OFF, LIST, THRESHOLD}
+	private static boolean isContract(final Nature nature) {
+		return nature == CONTRACT_ID || nature == DELEGATE_CONTRACT_ID;
+	}
+
+	public enum Nature {
+		SIG_ON, SIG_OFF, LIST, THRESHOLD, CONTRACT_ID, DELEGATE_CONTRACT_ID
+	}
 
 	private final Nature nature;
 	private int threshold = -1;
+	private String contract;
+	private String delegateContract;
 	private SigControl[] childControls = new SigControl[0];
 
 	public static final SigControl ON = new SigControl(SIG_ON);
 	public static final SigControl OFF = new SigControl(SIG_OFF);
 	public static final SigControl ANY = new SigControl(SIG_ON);
+
+	public String contract() {
+		return contract;
+	}
+
+	public String delegateContract() {
+		return delegateContract;
+	}
 
 	public Nature getNature() {
 		return nature;
@@ -63,6 +81,10 @@ public class SigControl implements Serializable {
 	}
 
 	private int countSimpleKeys(SigControl controller) {
+		if (isContract(controller.nature)) {
+			return 0;
+		}
+
 		return (EnumSet.of(SIG_ON, SIG_OFF).contains(controller.nature))
 				? 1 : Stream.of(controller.childControls).mapToInt(this::countSimpleKeys).sum();
 	}
@@ -70,6 +92,10 @@ public class SigControl implements Serializable {
 	public boolean appliesTo(Key key) {
 		if (this == ON || this == OFF) {
 			return (!key.hasKeyList() && !key.hasThresholdKey());
+		} else if (nature == CONTRACT_ID) {
+			return key.hasContractID();
+		} else if (nature == DELEGATE_CONTRACT_ID) {
+			return key.hasDelegateContractID();
 		} else {
 			KeyList composite = KeyFactory.getCompositeList(key);
 			if (composite.getKeysCount() == childControls.length) {
@@ -94,6 +120,18 @@ public class SigControl implements Serializable {
 
 	protected SigControl(Nature nature) {
 		this.nature = nature;
+	}
+
+	protected SigControl(final Nature nature, final String id) {
+		if (!isContract(nature)) {
+			throw new IllegalArgumentException("Contract " + id + " n/a to nature " + nature);
+		}
+		this.nature = nature;
+		if (nature == CONTRACT_ID) {
+			this.contract = id;
+		} else {
+			this.delegateContract = id;
+		}
 	}
 
 	protected SigControl(SigControl... childControls) {
