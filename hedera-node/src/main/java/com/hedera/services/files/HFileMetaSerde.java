@@ -82,7 +82,7 @@ public class HFileMetaSerde {
 
 	private static HFileMeta readPreMemoMeta(DataInputStream in) throws IOException {
 		long objectType = in.readLong();
-		if (objectType != JObjectType.JFileInfo.longValue()) {
+		if (objectType != JObjectType.FC_FILE_INFO.longValue()) {
 			throw new IllegalStateException(String.format("Read illegal object type '%d'!", objectType));
 		}
 		/* Unused legacy length information. */

@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JDelegateContractIDKeyTest {
@@ -55,6 +56,13 @@ class JDelegateContractIDKeyTest {
 		final var subject = new JDelegateContractIDKey(id);
 
 		assertEquals(desired, subject.toString());
+	}
+
+	@Test
+	void isNotAPureContractIdKey() {
+		final var subject = new JDelegateContractIDKey(id);
+		assertFalse(subject.hasContractID());
+		assertNull(subject.getContractIDKey());
 	}
 
 	@Test

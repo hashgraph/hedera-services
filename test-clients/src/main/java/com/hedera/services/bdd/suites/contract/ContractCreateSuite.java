@@ -85,6 +85,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPro
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
@@ -94,6 +95,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_G
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
@@ -125,12 +127,12 @@ public class ContractCreateSuite extends HapiApiSuite {
 						createsVanillaContractAsExpectedWithOmittedAdminKey(),
 						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
 						cannotCreateTooLargeContract(),
-						canCallPendingContractSafely(),
 						revertedTryExtCallHasNoSideEffects(),
-						cannotSendToNonExistentAccount(),
 						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
 						receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
 						delegateContractIdRequiredForTransferInDelegateCall(),
+						cannotSendToNonExistentAccount(),
+//						canCallPendingContractSafely(),
 				}
 		);
 	}
@@ -160,8 +162,9 @@ public class ContractCreateSuite extends HapiApiSuite {
 		final var callTxn = "callTxn";
 		final var initcode = "initcode";
 
-		return defaultHapiSpec("CanCallPendingContract")
+		return defaultHapiSpec("CanCallPendingContractSafely")
 				.given(
+						upMaxGasTo(50_000_000),
 						fileCreate(initcode)
 								.path(FIBONACCI_PLUS_PATH)
 								.payingWith(GENESIS)
@@ -176,7 +179,8 @@ public class ContractCreateSuite extends HapiApiSuite {
 												.deferStatusResolution()
 												.bytecode(initcode)
 												.adminKey(THRESHOLD))
-								.toArray(HapiSpecOperation[]::new))
+								.toArray(HapiSpecOperation[]::new)),
+						sleepFor(5_000)
 				).when(
 						sourcing(() ->
 								contractCall(
@@ -187,7 +191,8 @@ public class ContractCreateSuite extends HapiApiSuite {
 										.gas(300_000L)
 										.via(callTxn))
 				).then(
-						getTxnRecord(callTxn).logged()
+						getTxnRecord(callTxn).logged(),
+						restoreDefaultMaxGas()
 				);
 	}
 
@@ -203,6 +208,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 						.balance(666)
 		).then(
 				contractCall("multi", CONSPICUOUS_DONATION_ABI, donationArgs)
+						.hasKnownStatus(INVALID_SOLIDITY_ADDRESS)
 		);
 	}
 
@@ -445,9 +451,9 @@ public class ContractCreateSuite extends HapiApiSuite {
 						getAccountInfo(beneficiary).logged()
 				).then(
 						/* Without delegateContractId permissions, the second send via delegate call will
-						* fail, so only half of totalToSend will make it to the beneficiary. (Note the entire
-						* call doesn't fail because exceptional halts in "raw calls" don't automatically
-						* propagate up the stack like a Solidity revert does.) */
+						 * fail, so only half of totalToSend will make it to the beneficiary. (Note the entire
+						 * call doesn't fail because exceptional halts in "raw calls" don't automatically
+						 * propagate up the stack like a Solidity revert does.) */
 						sourcing(() -> contractCall(
 								sendInternalAndDelegate,
 								SEND_REPEATEDLY_ABI,

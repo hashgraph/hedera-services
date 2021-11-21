@@ -25,21 +25,13 @@ import com.hederahashgraph.api.proto.java.ContractID;
 /**
  * Maps to proto Key of type contractID.
  */
-public class JDelegateContractIDKey extends JKey {
-	private final long shardNum;
-	private final long realmNum;
-	private final long contractNum;
-
+public class JDelegateContractIDKey extends JContractIDKey {
 	public JDelegateContractIDKey(final ContractID contractID) {
-		this.shardNum = contractID.getShardNum();
-		this.realmNum = contractID.getRealmNum();
-		this.contractNum = contractID.getContractNum();
+		super(contractID);
 	}
 
 	public JDelegateContractIDKey(final long shardNum, final long realmNum, final long contractNum) {
-		this.shardNum = shardNum;
-		this.realmNum = realmNum;
-		this.contractNum = contractNum;
+		super(shardNum, realmNum, contractNum);
 	}
 
 	@Override
@@ -52,38 +44,18 @@ public class JDelegateContractIDKey extends JKey {
 		return true;
 	}
 
-	public ContractID getContractID() {
-		return ContractID.newBuilder()
-				.setShardNum(shardNum)
-				.setRealmNum(realmNum)
-				.setContractNum(contractNum)
-				.build();
+	@Override
+	public boolean hasContractID() {
+		return false;
 	}
 
-	public long getShardNum() {
-		return shardNum;
-	}
-
-	public long getRealmNum() {
-		return realmNum;
-	}
-
-	public long getContractNum() {
-		return contractNum;
+	@Override
+	public JContractIDKey getContractIDKey() {
+		return null;
 	}
 
 	@Override
 	public String toString() {
-		return "<JDelegateContractID: " + shardNum + "." + realmNum + "." + contractNum + ">";
-	}
-
-	@Override
-	public boolean isEmpty() {
-		return (0 == contractNum);
-	}
-
-	@Override
-	public boolean isValid() {
-		return !isEmpty();
+		return "<JDelegateContractID: " + getShardNum() + "." + getRealmNum() + "." + getContractNum() + ">";
 	}
 }

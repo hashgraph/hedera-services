@@ -37,9 +37,6 @@ public class PojoSigMap {
 		}
 	}
 
-	/* Note that ECDSA_SECP256K1_COMPRESSED_LENGTH will be 33 */
-	private static final int ED25519_FULL_LENGTH = 32;
-
 	private final KeyType[] keyTypes;
 	private final byte[][][] rawMap;
 

@@ -22,7 +22,7 @@ public interface ActivationTest {
 	 * @return  whether the Hedera key is active
 	 */
 	boolean test(
-			final JKey key,
-			final Function<byte[], TransactionSignature> sigsFn,
-			final BiPredicate<JKey, TransactionSignature> validityTest);
+			JKey key,
+			Function<byte[], TransactionSignature> sigsFn,
+			BiPredicate<JKey, TransactionSignature> validityTest);
 }

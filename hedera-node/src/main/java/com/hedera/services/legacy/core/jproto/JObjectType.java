@@ -26,26 +26,26 @@ import java.util.HashMap;
  * Mapping of Class name and Object Id
  */
 public enum JObjectType {
-	JKey,
-	JKeyList, JThresholdKey,
-	JEd25519Key, JECDSA_384Key, JRSA_3072Key,
-	JContractIDKey, JDelegateContractIDKey,
-	JFileInfo;
+	FC_KEY,
+	FC_KEY_LIST, FC_THRESHOLD_KEY,
+	FC_ED25519_KEY, FC_ECDSA384_KEY, FC_RSA3072_KEY,
+	FC_CONTRACT_ID_KEY, FC_DELEGATE_CONTRACT_ID_KEY,
+	FC_FILE_INFO;
 
 	private static final HashMap<JObjectType, Long> LOOKUP_TABLE = new HashMap<>();
 	private static final HashMap<Long, JObjectType> REV_LOOKUP_TABLE = new HashMap<>();
 
 	static {
-		addLookup(JKey, 15503731);
-		addLookup(JKeyList, 15512048);
-		addLookup(JThresholdKey, 15520365);
-		addLookup(JEd25519Key, 15528682);
-		addLookup(JECDSA_384Key, 15536999);
-		addLookup(JRSA_3072Key, 15620169);
-		addLookup(JContractIDKey, 15545316);
-		addLookup(JFileInfo, 15636803);
-		addLookup(JContractIDKey, 15545316);
-		addLookup(JDelegateContractIDKey, 15577777);
+		addLookup(FC_KEY, 15503731);
+		addLookup(FC_KEY_LIST, 15512048);
+		addLookup(FC_THRESHOLD_KEY, 15520365);
+		addLookup(FC_ED25519_KEY, 15528682);
+		addLookup(FC_ECDSA384_KEY, 15536999);
+		addLookup(FC_RSA3072_KEY, 15620169);
+		addLookup(FC_CONTRACT_ID_KEY, 15545316);
+		addLookup(FC_FILE_INFO, 15636803);
+		addLookup(FC_CONTRACT_ID_KEY, 15545316);
+		addLookup(FC_DELEGATE_CONTRACT_ID_KEY, 15577777);
 	}
 
 	private static void addLookup(final JObjectType type, final long value) {
