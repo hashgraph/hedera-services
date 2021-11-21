@@ -47,15 +47,13 @@ public class HederaCallOperation extends CallOperation {
 	private final SoliditySigsVerifier sigsVerifier;
 
 	@Inject
-	public HederaCallOperation(
-			SoliditySigsVerifier sigsVerifier,
-			GasCalculator gasCalculator) {
+	public HederaCallOperation(final SoliditySigsVerifier sigsVerifier, final GasCalculator gasCalculator) {
 		super(gasCalculator);
 		this.sigsVerifier = sigsVerifier;
 	}
 
 	@Override
-	public OperationResult execute(MessageFrame frame, EVM evm) {
+	public OperationResult execute(final MessageFrame frame, final EVM evm) {
 		return HederaOperationUtil.addressSignatureCheckExecution(
 				sigsVerifier,
 				frame,
