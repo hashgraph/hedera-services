@@ -134,6 +134,7 @@ class RationalizationTest {
 		ArgumentCaptor<RationalizedSigMeta> captor = ArgumentCaptor.forClass(RationalizedSigMeta.class);
 
 		given(txnAccessor.getTxn()).willReturn(txn);
+		given(txnAccessor.getPkToSigsFn()).willReturn(pkToSigFn);
 		given(keyOrderer.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY)).willReturn(generalError);
 
 		// when:
@@ -152,6 +153,7 @@ class RationalizationTest {
 		ArgumentCaptor<RationalizedSigMeta> captor = ArgumentCaptor.forClass(RationalizedSigMeta.class);
 
 		given(txnAccessor.getTxn()).willReturn(txn);
+		given(txnAccessor.getPkToSigsFn()).willReturn(pkToSigFn);
 		given(mockOrderResult.getPayerKey()).willReturn(payerKey);
 		given(keyOrderer.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY)).willReturn(mockOrderResult);
 		given(keyOrderer.keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY)).willReturn(othersError);

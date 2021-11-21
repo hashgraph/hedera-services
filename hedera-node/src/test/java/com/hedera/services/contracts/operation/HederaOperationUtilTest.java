@@ -69,7 +69,6 @@ class HederaOperationUtilTest {
 	private final Optional<Gas> expectedHaltGas = Optional.of(Gas.of(10));
 	private final Optional<Gas> expectedSuccessfulGas = Optional.of(Gas.of(100));
 
-
 	@Test
 	void computeExpiryForNewContractHappyPath() {
 		final var expectedExpiry = 20L;
@@ -216,6 +215,8 @@ class HederaOperationUtilTest {
 	void haltsWithInvalidSignatureWhenAccountSignatureCheckExecution() {
 		// given:
 		final var mockTarget = Address.ZERO;
+		given(messageFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
+		given(messageFrame.getContractAddress()).willReturn(Address.ALTBN128_MUL);
 		given(messageFrame.getWorldUpdater()).willReturn(hederaWorldUpdater);
 		given(hederaWorldUpdater.get(Address.ZERO)).willReturn(worldStateAccount);
 		given(worldStateAccount.getAddress()).willReturn(Address.ZERO);

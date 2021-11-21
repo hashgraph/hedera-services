@@ -39,9 +39,6 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.Supplier;
 
-import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
-import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
-
 /**
  * Utility methods used by Hedera adapted {@link org.hyperledger.besu.evm.operation.Operation}
  */
@@ -140,13 +137,6 @@ public final class HederaOperationUtil {
 			return new Operation.OperationResult(
 					Optional.of(supplierHaltGasCost.get()), Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
 		}
-
-		System.out.println("Signature check:"
-				+ "\n  Sender     -> " + asLiteralString(accountParsedFromSolidityAddress(frame.getSenderAddress()))
-				+ "\n  Originator -> " + asLiteralString(accountParsedFromSolidityAddress(frame.getOriginatorAddress()))
-				+ "\n  Contract   -> " + asLiteralString(accountParsedFromSolidityAddress(frame.getContractAddress()))
-				+ "\n  Recipient  -> " + asLiteralString(accountParsedFromSolidityAddress(frame.getRecipientAddress()))
-				+ "\n  TARGET     -> " + asLiteralString(accountParsedFromSolidityAddress(address)));
 
 		final var sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
 				account.getAddress(), frame.getRecipientAddress(), frame.getContractAddress());
