@@ -62,7 +62,7 @@ public class PojoSigMapPubKeyToSigBytes implements PubKeyToSigBytes {
 							"Source signature map with prefix " + CommonUtils.hex(pubKeyPrefix) +
 									" is ambiguous for given public key! (" + CommonUtils.hex(pubKey) + ")");
 				}
-				sigBytes = pojoSigMap.ed25519Signature(i);
+				sigBytes = pojoSigMap.primitiveSignature(i);
 				chosenSigBytesIndex = i;
 			}
 		}
@@ -76,7 +76,7 @@ public class PojoSigMapPubKeyToSigBytes implements PubKeyToSigBytes {
 	public void forEachUnusedSigWithFullPrefix(BiConsumer<byte[], byte[]> keySigObs) {
 		for (int i = 0, n = pojoSigMap.numSigsPairs(); i < n; i++) {
 			if (!used[i] && pojoSigMap.isFullPrefixAt(i)) {
-				keySigObs.accept(pojoSigMap.pubKeyPrefix(i), pojoSigMap.ed25519Signature(i));
+				keySigObs.accept(pojoSigMap.pubKeyPrefix(i), pojoSigMap.primitiveSignature(i));
 			}
 		}
 	}

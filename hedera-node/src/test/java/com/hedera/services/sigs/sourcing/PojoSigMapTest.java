@@ -85,11 +85,11 @@ class PojoSigMapTest {
 
 		// then:
 		assertArrayEquals(expected[0][0], subject.pubKeyPrefix(0));
-		assertArrayEquals(expected[0][1], subject.ed25519Signature(0));
+		assertArrayEquals(expected[0][1], subject.primitiveSignature(0));
 		assertArrayEquals(expected[1][0], subject.pubKeyPrefix(1));
-		assertArrayEquals(expected[1][1], subject.ed25519Signature(1));
+		assertArrayEquals(expected[1][1], subject.primitiveSignature(1));
 		assertArrayEquals(expected[2][0], subject.pubKeyPrefix(2));
-		assertArrayEquals(expected[2][1], subject.ed25519Signature(2));
+		assertArrayEquals(expected[2][1], subject.primitiveSignature(2));
 		// and:
 		assertEquals(3, subject.numSigsPairs());
 	}

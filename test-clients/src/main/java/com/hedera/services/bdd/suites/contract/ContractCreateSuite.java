@@ -62,6 +62,8 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SEND_THEN_REVERT_NESTED_SENDS_ABI;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
+import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
+import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
@@ -75,6 +77,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -111,22 +114,23 @@ public class ContractCreateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						createEmptyConstructor(),
-//						insufficientPayerBalanceUponCreation(),
-//						rejectsInvalidMemo(),
-//						rejectsInsufficientFee(),
-//						rejectsInvalidBytecode(),
-//						revertsNonzeroBalance(),
-//						createFailsIfMissingSigs(),
-//						rejectsInsufficientGas(),
-//						createsVanillaContractAsExpectedWithOmittedAdminKey(),
-//						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
-//						cannotCreateTooLargeContract(),
-//						canCallPendingContractSafely(),
-//						revertedTryExtCallHasNoSideEffects(),
-//						cannotSendToNonExistentAccount(),
-//						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
+						createEmptyConstructor(),
+						insufficientPayerBalanceUponCreation(),
+						rejectsInvalidMemo(),
+						rejectsInsufficientFee(),
+						rejectsInvalidBytecode(),
+						revertsNonzeroBalance(),
+						createFailsIfMissingSigs(),
+						rejectsInsufficientGas(),
+						createsVanillaContractAsExpectedWithOmittedAdminKey(),
+						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
+						cannotCreateTooLargeContract(),
+						canCallPendingContractSafely(),
+						revertedTryExtCallHasNoSideEffects(),
+						cannotSendToNonExistentAccount(),
+						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
 						receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
+						delegateContractIdRequiredForTransferInDelegateCall(),
 				}
 		);
 	}
@@ -410,8 +414,10 @@ public class ContractCreateSuite extends HapiApiSuite {
 		final var sendInternalAndDelegate = "sendInternalAndDelegate";
 
 		final var beneficiary = "civilian";
-		final var balanceToDistribute = 1_000L;
-		final var origKey = KeyShape.listOf(SIMPLE, KeyShape.CONTRACT);
+		final var totalToSend = 1_000L;
+		final var origKey = KeyShape.threshOf(1, SIMPLE, CONTRACT);
+		final var revisedKey = KeyShape.threshOf(1, SIMPLE, DELEGATE_CONTRACT);
+		final var newKey = "delegateContractKey";
 
 		final AtomicLong justSendContractNum = new AtomicLong();
 		final AtomicLong beneficiaryAccountNum = new AtomicLong();
@@ -429,40 +435,36 @@ public class ContractCreateSuite extends HapiApiSuite {
 						contractCreate(sendInternalAndDelegate)
 								.bytecode(sendInternalAndDelegateInitcode)
 								.gas(300_000L)
-								.balance(balanceToDistribute)
+								.balance(2 * totalToSend)
 				).when(
 						cryptoCreate(beneficiary)
 								.balance(0L)
+								.keyShape(origKey.signedWith(sigs(ON, sendInternalAndDelegate)))
 								.receiverSigRequired(true)
-								.exposingCreatedIdTo(id -> beneficiaryAccountNum.set(id.getAccountNum()))
+								.exposingCreatedIdTo(id -> beneficiaryAccountNum.set(id.getAccountNum())),
+						getAccountInfo(beneficiary).logged()
 				).then(
-						/* Sending requires receiver signature */
+						/* Without delegateContractId permissions, the second send via delegate call will
+						* fail, so only half of totalToSend will make it to the beneficiary. (Note the entire
+						* call doesn't fail because exceptional halts in "raw calls" don't automatically
+						* propagate up the stack like a Solidity revert does.) */
 						sourcing(() -> contractCall(
 								sendInternalAndDelegate,
 								SEND_REPEATEDLY_ABI,
 								justSendContractNum.get(),
 								beneficiaryAccountNum.get(),
-								balanceToDistribute / 2)
-								.hasKnownStatus(INVALID_SIGNATURE)),
-						/* But it's not enough to just sign using an incomplete prefix */
+								totalToSend / 2)),
+						getAccountBalance(beneficiary).hasTinyBars(totalToSend / 2),
+						/* But now we update the beneficiary to have a delegateContractId */
+						newKeyNamed(newKey).shape(revisedKey.signedWith(sigs(ON, sendInternalAndDelegate))),
+						cryptoUpdate(beneficiary).key(newKey),
 						sourcing(() -> contractCall(
 								sendInternalAndDelegate,
 								SEND_REPEATEDLY_ABI,
 								justSendContractNum.get(),
 								beneficiaryAccountNum.get(),
-								balanceToDistribute / 2)
-								.signedBy(DEFAULT_PAYER, beneficiary)
-								.hasKnownStatus(INVALID_SIGNATURE)),
-						/* We have to specify the full prefix so the sig can be verified async */
-						getAccountInfo(beneficiary).logged(),
-						sourcing(() -> contractCall(
-								sendInternalAndDelegate,
-								SEND_REPEATEDLY_ABI,
-								justSendContractNum.get(),
-								beneficiaryAccountNum.get(),
-								balanceToDistribute / 2)
-								.alsoSigningWithFullPrefix(beneficiary)),
-						getAccountBalance(beneficiary).logged()
+								totalToSend / 2)),
+						getAccountBalance(beneficiary).hasTinyBars(3 * (totalToSend / 2))
 				);
 	}
 

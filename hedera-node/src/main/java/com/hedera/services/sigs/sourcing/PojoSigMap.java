@@ -70,11 +70,11 @@ public class PojoSigMap {
 	}
 
 	public byte[] pubKeyPrefix(int i) {
-		return rawMap[i][0];
+		return rawMap[i][PUB_KEY_PREFIX_INDEX];
 	}
 
-	public byte[] ed25519Signature(int i) {
-		return rawMap[i][1];
+	public byte[] primitiveSignature(int i) {
+		return rawMap[i][SIG_BYTES_INDEX];
 	}
 
 	public int numSigsPairs() {
