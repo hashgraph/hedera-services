@@ -25,7 +25,11 @@ import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.utils.EntityIdUtils;
 
+import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -55,7 +59,7 @@ public enum TokenProperty implements BeanProperty<MerkleToken> {
 	FREEZE_KEY {
 		@Override
 		public BiConsumer<MerkleToken, Object> setter() {
-			return (a, l) -> a.setFreezeKey((JKey) l);
+			return (a, l) -> a.setAdminKey((JKey) l);
 		}
 
 		@Override
@@ -165,7 +169,10 @@ public enum TokenProperty implements BeanProperty<MerkleToken> {
 	TREASURY {
 		@Override
 		public BiConsumer<MerkleToken, Object> setter() {
-			return (a, l) -> a.setTreasury((EntityId) l);
+			return (a, l) -> {
+				var acc = (Account) l;
+				a.setTreasury(new EntityId(acc.getId()));
+			};
 		}
 
 		@Override
@@ -275,12 +282,12 @@ public enum TokenProperty implements BeanProperty<MerkleToken> {
 	FEE_SCHEDULE {
 		@Override
 		public BiConsumer<MerkleToken, Object> setter() {
-			return (a, l) -> a.setTotalSupply((long) l);
+			return (a, l) -> a.setFeeSchedule((List<FcCustomFee>) l);
 		}
 
 		@Override
 		public Function<MerkleToken, Object> getter() {
-			return MerkleToken::totalSupply;
+			return MerkleToken::customFeeSchedule;
 		}
 	}
 }

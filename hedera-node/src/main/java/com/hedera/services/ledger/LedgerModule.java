@@ -66,14 +66,9 @@ public abstract class LedgerModule {
 			final UniqTokenViewsManager uniqTokenViewsManager,
 			final AccountRecordsHistorian recordsHistorian,
 			final GlobalDynamicProperties dynamicProperties,
-			final BackingStore<AccountID, MerkleAccount> backingAccounts
+			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger
 	) {
-		TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger =
-				new TransactionalLedger<>(
-						AccountProperty.class,
-						MerkleAccount::new,
-						backingAccounts,
-						new ChangeSummaryManager<>());
+
 		final var ledger = new HederaLedger(
 				tokenStore,
 				ids,

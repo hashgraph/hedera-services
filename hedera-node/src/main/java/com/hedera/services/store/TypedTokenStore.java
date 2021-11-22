@@ -54,6 +54,29 @@ import java.util.List;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.ledger.properties.TokenProperty.ACC_FROZEN_BY_DEFAULT;
+import static com.hedera.services.ledger.properties.TokenProperty.ADMIN_KEY;
+import static com.hedera.services.ledger.properties.TokenProperty.AUTO_RENEW_ACCOUNT;
+import static com.hedera.services.ledger.properties.TokenProperty.AUTO_RENEW_PERIOD;
+import static com.hedera.services.ledger.properties.TokenProperty.EXPIRY;
+import static com.hedera.services.ledger.properties.TokenProperty.FEE_SCHEDULE;
+import static com.hedera.services.ledger.properties.TokenProperty.FEE_SCHEDULE_KEY;
+import static com.hedera.services.ledger.properties.TokenProperty.FREEZE_KEY;
+import static com.hedera.services.ledger.properties.TokenProperty.IS_DELETED;
+import static com.hedera.services.ledger.properties.TokenProperty.IS_PAUSED;
+import static com.hedera.services.ledger.properties.TokenProperty.KYC_KEY;
+import static com.hedera.services.ledger.properties.TokenProperty.LAST_USED_SERIAL_NUMBER;
+import static com.hedera.services.ledger.properties.TokenProperty.MAX_SUPPLY;
+import static com.hedera.services.ledger.properties.TokenProperty.MEMO;
+import static com.hedera.services.ledger.properties.TokenProperty.NAME;
+import static com.hedera.services.ledger.properties.TokenProperty.PAUSE_KEY;
+import static com.hedera.services.ledger.properties.TokenProperty.SUPPLY_KEY;
+import static com.hedera.services.ledger.properties.TokenProperty.SUPPLY_TYPE;
+import static com.hedera.services.ledger.properties.TokenProperty.SYMBOL;
+import static com.hedera.services.ledger.properties.TokenProperty.TOKEN_TYPE;
+import static com.hedera.services.ledger.properties.TokenProperty.TOTAL_SUPPLY;
+import static com.hedera.services.ledger.properties.TokenProperty.TREASURY;
+import static com.hedera.services.ledger.properties.TokenProperty.WIPE_KEY;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -375,8 +398,9 @@ public class TypedTokenStore {
 	 * @param token the token to save
 	 */
 	public void commitToken(Token token) {
+
 		final var mutableToken = tokens.getFinalized(token.getId().asGrpcToken());
-		mapModelChangesToMutable(token, mutableToken);
+		mapModelChanges(token);
 
 		final var treasury = mutableToken.treasury();
 		if (token.hasMintedUniqueTokens()) {
@@ -416,10 +440,12 @@ public class TypedTokenStore {
 				!token.hasKycKey(),
 				token.getTreasury().getId().asEntityId()
 		);
-		/* map changes */
-		mapModelChangesToMutable(token, newMerkleToken);
 
 		tokens.put(newMerkleTokenId.toGrpcTokenId(), newMerkleToken);
+
+		/* map changes */
+		mapModelChanges(token);
+
 		addKnownTreasury.perform(token.getTreasury().getId().asGrpcAccount(), token.getId().asGrpcToken());
 		sideEffectsTracker.trackTokenChanges(token);
 	}
@@ -465,40 +491,33 @@ public class TypedTokenStore {
 		validateTrue(merkleUniqueToken != null, INVALID_NFT_ID);
 	}
 
-	private void mapModelChangesToMutable(Token token, MerkleToken mutableToken) {
-		final var newAutoRenewAccount = token.getAutoRenewAccount();
-		if (newAutoRenewAccount != null) {
-			mutableToken.setAutoRenewAccount(new EntityId(newAutoRenewAccount.getId()));
-			mutableToken.setAutoRenewPeriod(token.getAutoRenewPeriod());
-		}
-		mutableToken.setTreasury(new EntityId(token.getTreasury().getId()));
-		mutableToken.setTotalSupply(token.getTotalSupply());
-		mutableToken.setAccountsFrozenByDefault(token.isFrozenByDefault());
-		mutableToken.setLastUsedSerialNumber(token.getLastUsedSerialNumber());
-
-		mutableToken.setTokenType(token.getType());
-		mutableToken.setSupplyType(token.getSupplyType());
-
-		mutableToken.setMemo(token.getMemo());
-
-		mutableToken.setAdminKey(token.getAdminKey());
-		mutableToken.setSupplyKey(token.getSupplyKey());
-		mutableToken.setWipeKey(token.getWipeKey());
-		mutableToken.setFreezeKey(token.getFreezeKey());
-		mutableToken.setKycKey(token.getKycKey());
-		mutableToken.setFeeScheduleKey(token.getFeeScheduleKey());
-		mutableToken.setPauseKey(token.getPauseKey());
-
-		mutableToken.setMaxSupply(token.getMaxSupply());
-		mutableToken.setDeleted(token.isDeleted());
-		mutableToken.setPaused(token.isPaused());
-
-		if (token.getCustomFees() != null) {
-			mutableToken.setFeeSchedule(token.getCustomFees());
-		}
-
-		mutableToken.setExpiry(token.getExpiry());
+	private void mapModelChanges(Token token) {
+		TokenID tokenID = token.getId().asGrpcToken();
+		tokens.set(tokenID, ADMIN_KEY, token.getAdminKey());
+		tokens.set(tokenID, TOTAL_SUPPLY, token.getTotalSupply());
+		tokens.set(tokenID, FREEZE_KEY, token.getFreezeKey());
+		tokens.set(tokenID, KYC_KEY, token.getKycKey());
+		tokens.set(tokenID, PAUSE_KEY, token.getPauseKey());
+		tokens.set(tokenID, SUPPLY_KEY, token.getSupplyKey());
+		tokens.set(tokenID, FEE_SCHEDULE_KEY, token.getFeeScheduleKey());
+		tokens.set(tokenID, WIPE_KEY, token.getWipeKey());
+		tokens.set(tokenID, IS_DELETED, token.isDeleted());
+		tokens.set(tokenID, IS_PAUSED, token.isPaused());
+		tokens.set(tokenID, SYMBOL, token.getSymbol());
+		tokens.set(tokenID, NAME, token.getName());
+		tokens.set(tokenID, TREASURY, token.getTreasury());
+		tokens.set(tokenID, ACC_FROZEN_BY_DEFAULT, token.isFrozenByDefault());
+		tokens.set(tokenID, EXPIRY, token.getExpiry());
+		tokens.set(tokenID, AUTO_RENEW_PERIOD, token.getAutoRenewPeriod());
+		tokens.set(tokenID, AUTO_RENEW_ACCOUNT, token.getAutoRenewAccount());
+		tokens.set(tokenID, MEMO, token.getMemo());
+		tokens.set(tokenID, LAST_USED_SERIAL_NUMBER, token.getLastUsedSerialNumber());
+		tokens.set(tokenID, TOKEN_TYPE, token.getType());
+		tokens.set(tokenID, SUPPLY_TYPE, token.getSupplyType());
+		tokens.set(tokenID, MAX_SUPPLY, token.getMaxSupply());
+		tokens.set(tokenID, FEE_SCHEDULE, token.getCustomFees());
 	}
+
 
 	private void initModelAccounts(Token token, EntityId _treasuryId, @Nullable EntityId _autoRenewId) {
 		if (_autoRenewId != null) {

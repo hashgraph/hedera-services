@@ -23,7 +23,6 @@ package com.hedera.services.store;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
@@ -64,7 +63,6 @@ import java.util.Set;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.store.TypedTokenStore.legacyReprOf;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -96,8 +94,6 @@ class TypedTokenStoreTest {
 	@Mock
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRels;
 	@Mock
-	private BackingTokenRels backingTokenRels;
-	@Mock
 	private TokenStore legacyStore;
 
 	@Mock
@@ -115,7 +111,6 @@ class TypedTokenStoreTest {
 				tokens,
 				uniqueTokens,
 				tokenRels,
-				backingTokenRels,
 				uniqTokenViewsManager,
 				tokenStore::addKnownTreasury,
 				legacyStore::removeKnownTreasuryForToken,
@@ -190,7 +185,6 @@ class TypedTokenStoreTest {
 		// then:
 		verify(tokenRels).remove(Pair.of(STATIC_PROPERTIES.scopedAccountWith(miscAccountNum),
 				STATIC_PROPERTIES.scopedTokenWith(tokenNum)));
-		verify(backingTokenRels).removeFromExistingRels(legacyReprOf(destroyedRel));
 		verify(sideEffectsTracker).trackTokenBalanceChanges(List.of(destroyedRel));
 	}
 
