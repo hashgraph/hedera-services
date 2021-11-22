@@ -30,7 +30,6 @@ public enum TokenRelProperty implements BeanProperty<MerkleTokenRelStatus> {
 		@Override
 		public BiConsumer<MerkleTokenRelStatus, Object> setter() {
 			return (a, l) -> {
-				System.out.println("*** account " + a + " balance " + l);
 				a.setBalance((long)l);
 			};
 		}

@@ -231,16 +231,16 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 
 		final EnumMap<P, Object> changeSet = changes.get(id);
 		final boolean hasPendingChanges = changeSet != null;
-		final A account = entities.contains(id) ? entities.getRef(id) : newEntity.get();
+		final A entity = entities.contains(id) ? entities.getRef(id) : newEntity.get();
 		if (hasPendingChanges) {
 			if (commitInterceptor != null) {
-				changeManager.persistWithObserver(id, changeSet, account, commitInterceptor);
+				changeManager.persistWithObserver(id, changeSet, entity, commitInterceptor);
 			} else {
-				changeManager.persist(changeSet, account);
+				changeManager.persist(changeSet, entity);
 			}
 		}
 
-		return account;
+		return entity;
 	}
 
 	@Override

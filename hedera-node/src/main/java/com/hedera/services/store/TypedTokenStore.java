@@ -211,7 +211,6 @@ public class TypedTokenStore {
 			if (tokenRelationship.isDestroyed()) {
 				currentTokenRels.remove(Pair.of(tokenRelationship.getAccount().getId().asGrpcAccount()
 						, tokenRelationship.getToken().getId().asGrpcToken()));
-				backingTokenRels.removeFromExistingRels(legacyReprOf(tokenRelationship));
 			} else {
 				persistNonDestroyed(tokenRelationship, key, currentTokenRels);
 			}
@@ -255,7 +254,6 @@ public class TypedTokenStore {
 		mutableTokenRel.setAutomaticAssociation(modelRel.isAutomaticAssociation());
 		if (isNewRel) {
 			currentTokenRels.put(key.asAccountTokenRel(), mutableTokenRel);
-			alertTokenBackingStoreOfNew(modelRel);
 		}
 	}
 
@@ -545,10 +543,6 @@ public class TypedTokenStore {
 		uniqueToken.setCreationTime(immutableUniqueToken.getCreationTime());
 		uniqueToken.setMetadata(immutableUniqueToken.getMetadata());
 		uniqueToken.setOwner(immutableUniqueToken.getOwner().asId());
-	}
-
-	private void alertTokenBackingStoreOfNew(TokenRelationship newRel) {
-		backingTokenRels.addToExistingRels(legacyReprOf(newRel));
 	}
 
 	@FunctionalInterface
