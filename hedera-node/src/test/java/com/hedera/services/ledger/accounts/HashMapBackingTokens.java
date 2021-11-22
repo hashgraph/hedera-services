@@ -60,4 +60,9 @@ public class HashMapBackingTokens implements BackingStore<TokenID, MerkleToken> 
 	public Set<TokenID> idSet() {
 		return tokens.keySet();
 	}
+
+	@Override
+	public long size() {
+		return tokens.size();
+	}
 }

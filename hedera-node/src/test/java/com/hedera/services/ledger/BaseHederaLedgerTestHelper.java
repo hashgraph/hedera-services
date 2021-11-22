@@ -213,6 +213,7 @@ public class BaseHederaLedgerTestHelper {
 		nftsLedger = mock(TransactionalLedger.class);
 		accountsLedger = mock(TransactionalLedger.class);
 		tokenRelsLedger = mock(TransactionalLedger.class);
+		tokensLedger = mock(TransactionalLedger.class);
 		addToLedger(misc, MISC_BALANCE, Map.of(
 				frozenId,
 				new TokenInfo(miscFrozenTokenBalance, frozenToken)));

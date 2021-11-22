@@ -81,7 +81,7 @@ class MintLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new MintLogic(validator, tokenStore, accountStore);
+		subject = new MintLogic(validator, store, accountStore);
 	}
 
 	@Test
@@ -102,7 +102,8 @@ class MintLogicTest {
 		given(validator.isPermissibleTotalNfts(unacceptableTotal)).willReturn(false);
 
 		// expect:
-		assertFailsWith(() -> subject.mint(validator, accountStore, store, token, txnCtx.accessor().getTxn().getTokenMint(), txnCtx.consensusTime()), MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED);
+		assertFailsWith(() -> subject.mint(token.getId(), 0, 0, null, Instant.now()),
+				MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED);
 	}
 
 	@Test
@@ -118,7 +119,7 @@ class MintLogicTest {
 		given(token.getType()).willReturn(TokenType.FUNGIBLE_COMMON);
 
 		// when:
-		subject.mint(validator, accountStore, store, token, txnCtx.accessor().getTxn().getTokenMint(), txnCtx.consensusTime());
+		subject.mint(token.getId(), 0, 0, null, Instant.now());
 
 		// then:
 		verify(token).mint(treasuryRel, amount, false);
@@ -143,7 +144,7 @@ class MintLogicTest {
 		given(txnCtx.consensusTime()).willReturn(Instant.now());
 		given(validator.isPermissibleTotalNfts(acceptableTotal)).willReturn(true);
 		// when:
-		subject.mint(validator, accountStore, store, token, txnCtx.accessor().getTxn().getTokenMint(), txnCtx.consensusTime());
+		subject.mint(token.getId(), 0, 0, null, Instant.now());
 
 		// then:
 		verify(token).mint(any(OwnershipTracker.class), eq(treasuryRel), any(List.class), any(RichInstant.class));

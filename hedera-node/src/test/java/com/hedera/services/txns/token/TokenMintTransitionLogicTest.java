@@ -76,7 +76,7 @@ class TokenMintTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new TokenMintTransitionLogic(validator, accountStore, store, txnCtx, dynamicProperties, mintLogic);
+		subject = new TokenMintTransitionLogic(validator, accountStore, store, txnCtx, dynamicProperties);
 	}
 
 	@Test
