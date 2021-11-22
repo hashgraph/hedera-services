@@ -352,6 +352,11 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		throw new UnsupportedOperationException("Use of BackingStore.idSet() is an anti-pattern");
 	}
 
+	@Override
+	public long size() {
+		return entities.size();
+	}
+
 	/* --- Helpers --- */
 	ResponseCodeEnum validate(final K id, final LedgerCheck<A, P> ledgerCheck) {
 		if (!exists(id)) {
