@@ -24,7 +24,8 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.ActivationTest;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.crypto.TransactionSignature;
@@ -37,6 +38,7 @@ import java.util.Optional;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 
+import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.contractParsedFromSolidityAddress;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 
@@ -45,19 +47,47 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 	private final ActivationTest activationTest;
 	private final TransactionContext txnCtx;
 	private final BiPredicate<JKey, TransactionSignature> cryptoValidity;
+	private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
 	@Inject
 	public TxnAwareSoliditySigsVerifier(
 			final ActivationTest activationTest,
 			final TransactionContext txnCtx,
+			final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			final BiPredicate<JKey, TransactionSignature> cryptoValidity
 	) {
 		this.txnCtx = txnCtx;
+		this.tokens = tokens;
 		this.accounts = accounts;
 		this.activationTest = activationTest;
 		this.cryptoValidity = cryptoValidity;
+	}
+
+	@Override
+	public boolean hasActiveKey(final Id accountId, final Address recipient, final Address contract) {
+		final var entityNum = accountId.asEntityNum();
+		final var account = accounts.get().get(entityNum);
+		if (account == null) {
+			throw new IllegalArgumentException("Cannot test key activation for missing account " + accountId);
+		}
+		return isActiveInFrame(account.getAccountKey(), recipient, contract);
+	}
+
+	@Override
+	public boolean hasActiveSupplyKey(Id tokenId, Address recipient, Address contract) {
+		final var entityNum = tokenId.asEntityNum();
+		final var token = tokens.get().get(entityNum);
+		if (token == null) {
+			throw new IllegalArgumentException(
+					"Cannot test supply key activation for missing token " + tokenId);
+		}
+		if (!token.hasSupplyKey()) {
+			throw new IllegalArgumentException(
+					"Cannot test supply key activation, as token " + tokenId + " does not have one");
+		}
+		return isActiveInFrame(token.getSupplyKey(), recipient, contract);
 	}
 
 	@Override
@@ -66,15 +96,13 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 			final Address recipient,
 			final Address contract
 	) {
-		final var targetId = EntityIdUtils.accountParsedFromSolidityAddress(target);
-		final var payer = txnCtx.activePayer();
-		if (payer.equals(targetId)) {
+		final var accountId = accountParsedFromSolidityAddress(target);
+		if (txnCtx.activePayer().equals(accountId)) {
 			return true;
 		}
-		final var requiredKey = receiverSigKeyIfAnyOf(targetId);
+		final var requiredKey = receiverSigKeyIfAnyOf(accountId);
 		if (requiredKey.isPresent()) {
-			final var pkToCryptoSigsFn = txnCtx.accessor().getRationalizedPkToCryptoSigFn();
-			return activationTest.test(requiredKey.get(), pkToCryptoSigsFn, validityTestFor(recipient, contract));
+			return isActiveInFrame(requiredKey.get(), recipient, contract);
 		} else {
 			return true;
 		}
@@ -106,5 +134,10 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 				.filter(account -> !account.isSmartContract())
 				.filter(MerkleAccount::isReceiverSigRequired)
 				.map(MerkleAccount::getAccountKey);
+	}
+
+	private boolean isActiveInFrame(final JKey key, final Address recipient, final Address contract) {
+		final var pkToCryptoSigsFn = txnCtx.accessor().getRationalizedPkToCryptoSigFn();
+		return activationTest.test(key, pkToCryptoSigsFn, validityTestFor(recipient, contract));
 	}
 }

@@ -29,6 +29,8 @@ import com.hedera.services.legacy.core.jproto.JDelegateContractIDKey;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -50,6 +52,7 @@ import java.util.function.Function;
 import static com.hedera.services.keys.HederaKeyActivation.INVALID_MISSING_SIG;
 import static com.hedera.services.utils.EntityIdUtils.asTypedSolidityAddress;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -62,6 +65,8 @@ import static org.mockito.Mockito.verify;
 class TxnAwareSoliditySigsVerifierTest {
 	private static final Address PRETEND_RECIPIENT_ADDR = Address.ALTBN128_ADD;
 	private static final Address PRETEND_CONTRACT_ADDR = Address.ALTBN128_MUL;
+	private final Id tokenId = new Id(0, 0, 666);
+	private final Id accountId = new Id(0, 0, 1234);
 	private final AccountID payer = IdUtils.asAccount("0.0.2");
 	private final AccountID sigRequired = IdUtils.asAccount("0.0.555");
 	private final AccountID smartContract = IdUtils.asAccount("0.0.666");
@@ -77,6 +82,8 @@ class TxnAwareSoliditySigsVerifierTest {
 	private MerkleAccount noSigReqAccount;
 	@Mock
 	private BiPredicate<JKey, TransactionSignature> cryptoValidity;
+	@Mock
+	private MerkleMap<EntityNum, MerkleToken> tokens;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
@@ -94,7 +101,62 @@ class TxnAwareSoliditySigsVerifierTest {
 	private void setup() throws Exception {
 		expectedKey = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKey();
 
-		subject = new TxnAwareSoliditySigsVerifier(activationTest, txnCtx, () -> accounts, cryptoValidity);
+		subject = new TxnAwareSoliditySigsVerifier(activationTest, txnCtx, () -> tokens, () -> accounts, cryptoValidity);
+	}
+
+	@Test
+	void throwsIfAskedToVerifyMissingToken() {
+		given(tokens.get(tokenId.asEntityNum())).willReturn(null);
+
+		assertThrows(IllegalArgumentException.class, () ->
+				subject.hasActiveSupplyKey(tokenId, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR));
+	}
+
+	@Test
+	void throwsIfAskedToVerifyTokenWithoutSupplyKey() {
+		final var token = mock(MerkleToken.class);
+
+		given(tokens.get(tokenId.asEntityNum())).willReturn(token);
+		given(token.hasSupplyKey()).willReturn(false);
+
+		assertThrows(IllegalArgumentException.class, () ->
+				subject.hasActiveSupplyKey(tokenId, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR));
+	}
+
+	@Test
+	void testsSupplyKeyIfPresent() {
+		given(txnCtx.accessor()).willReturn(accessor);
+		final var token = mock(MerkleToken.class);
+		given(tokens.get(tokenId.asEntityNum())).willReturn(token);
+		given(token.hasSupplyKey()).willReturn(true);
+		given(token.getSupplyKey()).willReturn(expectedKey);
+		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
+		given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
+
+		final var verdict = subject.hasActiveSupplyKey(tokenId, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR);
+
+		assertTrue(verdict);
+	}
+
+	@Test
+	void throwsIfAskedToVerifyMissingAccount() {
+		given(accounts.get(accountId.asEntityNum())).willReturn(null);
+
+		assertThrows(IllegalArgumentException.class, () ->
+				subject.hasActiveKey(accountId, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR));
+	}
+
+	@Test
+	void testsAccountKeyIfPresent() {
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(accounts.get(accountId.asEntityNum())).willReturn(sigReqAccount);
+		given(sigReqAccount.getAccountKey()).willReturn(expectedKey);
+		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
+		given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
+
+		final var verdict = subject.hasActiveKey(accountId, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR);
+
+		assertTrue(verdict);
 	}
 
 	@Test
