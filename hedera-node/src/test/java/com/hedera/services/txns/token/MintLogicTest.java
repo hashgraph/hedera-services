@@ -81,7 +81,7 @@ class MintLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new MintLogic();
+		subject = new MintLogic(validator, tokenStore, accountStore);
 	}
 
 	@Test

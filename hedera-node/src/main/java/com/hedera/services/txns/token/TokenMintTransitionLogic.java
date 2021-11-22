@@ -60,15 +60,14 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 			AccountStore accountStore,
 			TypedTokenStore tokenStore,
 			TransactionContext txnCtx,
-			GlobalDynamicProperties dynamicProperties,
-			MintLogic mintLogic
+			GlobalDynamicProperties dynamicProperties
 	) {
 		this.validator = validator;
 		this.tokenStore = tokenStore;
 		this.txnCtx = txnCtx;
 		this.accountStore = accountStore;
 		this.dynamicProperties = dynamicProperties;
-		this.mintLogic = mintLogic;
+		this.mintLogic = new MintLogic(validator, tokenStore, accountStore);
 	}
 
 	@Override
@@ -78,14 +77,11 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 		final var grpcId = op.getToken();
 		final var targetId = Id.fromGrpcToken(grpcId);
 
-		/* --- Load the model objects --- */
-		final var token = tokenStore.loadToken(targetId);
-
-		mintLogic.mint(validator,
-				accountStore,
-				tokenStore,
-				token,
-				op,
+		mintLogic.mint(
+				targetId,
+				op.getMetadataCount(),
+				op.getAmount(),
+				op.getMetadataList(),
 				txnCtx.consensusTime());
 	}
 

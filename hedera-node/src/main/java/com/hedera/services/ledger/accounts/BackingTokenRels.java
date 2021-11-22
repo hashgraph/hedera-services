@@ -9,9 +9,9 @@ package com.hedera.services.ledger.accounts;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,7 +29,6 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -44,8 +43,6 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
  */
 @Singleton
 public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> {
-	Set<Pair<AccountID, TokenID>> existingRels = new HashSet<>();
-
 	private final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> delegate;
 
 	@Inject
@@ -56,15 +53,12 @@ public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, 
 
 	@Override
 	public void rebuildFromSources() {
-		existingRels.clear();
-		delegate.get().keySet().stream()
-				.map(EntityNumPair::asAccountTokenRel)
-				.forEach(existingRels::add);
+		/* No-op. */
 	}
 
 	@Override
 	public boolean contains(Pair<AccountID, TokenID> key) {
-		return existingRels.contains(key);
+		return delegate.get().containsKey(fromPairToEntityNumPair(key));
 	}
 
 	@Override
@@ -74,15 +68,13 @@ public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, 
 
 	@Override
 	public void put(Pair<AccountID, TokenID> key, MerkleTokenRelStatus status) {
-		if (!existingRels.contains(key)) {
+		if (!delegate.get().containsKey(fromPairToEntityNumPair(key))) {
 			delegate.get().put(fromAccountTokenRel(key), status);
-			existingRels.add(key);
 		}
 	}
 
 	@Override
 	public void remove(Pair<AccountID, TokenID> id) {
-		existingRels.remove(id);
 		delegate.get().remove(fromAccountTokenRel(id));
 	}
 
@@ -96,12 +88,9 @@ public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, 
 		throw new UnsupportedOperationException();
 	}
 
-	public void addToExistingRels(Pair<AccountID, TokenID> key)	{
-		existingRels.add(key);
-	}
-
-	public void removeFromExistingRels(Pair<AccountID, TokenID> key)	{
-		existingRels.remove(key);
+	@Override
+	public long size() {
+		return delegate.get().size();
 	}
 
 	public static Pair<AccountID, TokenID> asTokenRel(AccountID account, TokenID token) {
@@ -110,5 +99,10 @@ public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, 
 
 	public static String readableTokenRel(Pair<AccountID, TokenID> rel) {
 		return String.format("%s <-> %s", readableId(rel.getLeft()), readableId(rel.getRight()));
+	}
+
+	private EntityNumPair fromPairToEntityNumPair(Pair<AccountID, TokenID> key) {
+		return EntityNumPair.fromLongs(key.getLeft().getAccountNum(),
+				key.getRight().getTokenNum());
 	}
 }

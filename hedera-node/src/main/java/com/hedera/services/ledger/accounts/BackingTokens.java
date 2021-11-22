@@ -27,16 +27,14 @@ import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
 
 import static com.hedera.services.utils.EntityNum.fromTokenId;
+import static java.util.stream.Collectors.toSet;
 
 @Singleton
 public class BackingTokens implements BackingStore<TokenID, MerkleToken> {
-	Set<TokenID> existingTokens = new HashSet<>();
-
 	private final Supplier<MerkleMap<EntityNum, MerkleToken>> delegate;
 
 	@Inject
@@ -46,10 +44,7 @@ public class BackingTokens implements BackingStore<TokenID, MerkleToken> {
 
 	@Override
 	public void rebuildFromSources() {
-		existingTokens.clear();
-		delegate.get().keySet().stream()
-				.map(EntityNum::toGrpcTokenId)
-				.forEach(existingTokens::add);
+		/* No-op. */
 	}
 
 	@Override
@@ -58,27 +53,30 @@ public class BackingTokens implements BackingStore<TokenID, MerkleToken> {
 	}
 
 	@Override
-	public void put(TokenID id, MerkleToken Token) {
-		if (!existingTokens.contains(id)) {
-			delegate.get().put(fromTokenId(id), Token);
-			existingTokens.add(id);
+	public void put(TokenID id, MerkleToken token) {
+		if (!delegate.get().containsKey(fromTokenId(id))) {
+			delegate.get().put(fromTokenId(id), token);
 		}
 	}
 
 	@Override
 	public boolean contains(TokenID id) {
-		return existingTokens.contains(id);
+		return delegate.get().containsKey(fromTokenId(id));
 	}
 
 	@Override
 	public void remove(TokenID id) {
-		existingTokens.remove(id);
 		delegate.get().remove(fromTokenId(id));
 	}
 
 	@Override
 	public Set<TokenID> idSet() {
-		return existingTokens;
+		return delegate.get().keySet().stream().map(EntityNum::toGrpcTokenId).collect(toSet());
+	}
+
+	@Override
+	public long size() {
+		return delegate.get().size();
 	}
 
 	@Override

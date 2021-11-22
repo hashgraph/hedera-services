@@ -23,7 +23,6 @@ package com.hedera.services.store;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
@@ -94,7 +93,6 @@ public class TypedTokenStore {
 	private final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRels;
 
 	/* Only needed for interoperability with legacy HTS during refactor */
-	private final BackingTokenRels backingTokenRels;
 	private final LegacyTreasuryRemover delegate;
 	private final LegacyTreasuryAdder addKnownTreasury;
 
@@ -104,7 +102,6 @@ public class TypedTokenStore {
 			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens,
 			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> uniqueTokens,
 			final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRels,
-			final BackingTokenRels backingTokenRels,
 			final UniqTokenViewsManager uniqTokenViewsManager,
 			final LegacyTreasuryAdder legacyStoreDelegate,
 			final LegacyTreasuryRemover delegate,
@@ -117,7 +114,6 @@ public class TypedTokenStore {
 		this.accountStore = accountStore;
 		this.delegate = delegate;
 		this.sideEffectsTracker = sideEffectsTracker;
-		this.backingTokenRels = backingTokenRels;
 		this.addKnownTreasury = legacyStoreDelegate;
 	}
 
@@ -135,7 +131,7 @@ public class TypedTokenStore {
 	 * @return the current number of NFTs in the system
 	 */
 	public long currentMintedNfts() {
-		return uniqueTokens.idSet().size();
+		return uniqueTokens.size();
 	}
 
 	/**
@@ -204,23 +200,20 @@ public class TypedTokenStore {
 	 * @param tokenRelationships the token relationships to save
 	 */
 	public void commitTokenRelationships(final List<TokenRelationship> tokenRelationships) {
-		final var currentTokenRels = tokenRels;
-
 		for (var tokenRelationship : tokenRelationships) {
 			final var key = EntityNumPair.fromModelRel(tokenRelationship);
 			if (tokenRelationship.isDestroyed()) {
-				currentTokenRels.remove(Pair.of(tokenRelationship.getAccount().getId().asGrpcAccount()
-						, tokenRelationship.getToken().getId().asGrpcToken()));
+				tokenRels.remove(Pair.of(tokenRelationship.getAccount().getId().asGrpcAccount(),
+						tokenRelationship.getToken().getId().asGrpcToken()));
 			} else {
-				persistNonDestroyed(tokenRelationship, key, currentTokenRels);
+				persistNonDestroyed(tokenRelationship, key, tokenRels);
 			}
 		}
 		sideEffectsTracker.trackTokenBalanceChanges(tokenRelationships);
 	}
 
 	private MerkleTokenRelStatus getMerkleTokenRelationship(Token token, Account account) {
-		return tokenRels.getRef(Pair.of(account.getId().asGrpcAccount()
-				, token.getId().asGrpcToken()));
+		return tokenRels.getRef(Pair.of(account.getId().asGrpcAccount(), token.getId().asGrpcToken()));
 	}
 
 	private TokenRelationship buildTokenRelationship(
@@ -298,8 +291,7 @@ public class TypedTokenStore {
 	 * This is only to be used when pausing/unpausing token as this method ignores the pause status
 	 * of the token.
 	 *
-	 * @param id
-	 * 		the token to load
+	 * @param id the token to load
 	 * @return a usable model of the token which is possibly paused.
 	 */
 	public Token loadPossiblyPausedToken(Id id) {

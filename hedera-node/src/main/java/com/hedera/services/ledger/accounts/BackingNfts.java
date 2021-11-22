@@ -79,4 +79,9 @@ public class BackingNfts implements BackingStore<NftId, MerkleUniqueToken> {
 		return delegate.get().keySet().stream().map(EntityNumPair::asTokenNumAndSerialPair)
 				.map(pair -> new NftId(pair.getLeft(), pair.getRight())).collect(Collectors.toSet());
 	}
+
+	@Override
+	public long size() {
+		return delegate.get().size();
+	}
 }

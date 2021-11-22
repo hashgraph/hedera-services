@@ -20,13 +20,14 @@ package com.hedera.services.txns.token;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 
 import javax.inject.Inject;
 import java.time.Instant;
@@ -38,19 +39,26 @@ import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED;
 
 public class MintLogic {
+	private final OptionValidator validator;
+	private final TypedTokenStore tokenStore;
+	private final AccountStore accountStore;
 
 	@Inject
-	public MintLogic() {
+	public MintLogic(OptionValidator validator, TypedTokenStore tokenStore, AccountStore accountStore) {
+		this.validator = validator;
+		this.tokenStore = tokenStore;
+		this.accountStore = accountStore;
 	}
 
-	public void mint(OptionValidator validator,
-					 AccountStore accountStore,
-					 TypedTokenStore tokenStore,
-					 Token token,
-					 TokenMintTransactionBody op,
+	public void mint(final Id targetId,
+					 int metaDataCount,
+					 long amount,
+					 List<ByteString> metaDataList,
 					 Instant consensusTime) {
-		validateMinting(validator, token, op, tokenStore);
 
+		/* --- Load the model objects --- */
+		final var token = tokenStore.loadToken(targetId);
+		validateMinting(validator, token, metaDataCount, tokenStore);
 		final var treasuryRel = tokenStore.loadTokenRelationship(token, token.getTreasury());
 
 		/* --- Instantiate change trackers --- */
@@ -58,9 +66,9 @@ public class MintLogic {
 
 		/* --- Do the business logic --- */
 		if (token.getType() == TokenType.FUNGIBLE_COMMON) {
-			token.mint(treasuryRel, op.getAmount(), false);
+			token.mint(treasuryRel, amount, false);
 		} else {
-			token.mint(ownershipTracker, treasuryRel, op.getMetadataList(), fromJava(consensusTime));
+			token.mint(ownershipTracker, treasuryRel, metaDataList, fromJava(consensusTime));
 		}
 
 		/* --- Persist the updated models --- */
@@ -72,10 +80,10 @@ public class MintLogic {
 
 	private void validateMinting(OptionValidator validator,
 								 Token token,
-								 TokenMintTransactionBody op,
+								 int metaDataCount,
 								 TypedTokenStore tokenStore) {
 		if (token.getType() == NON_FUNGIBLE_UNIQUE) {
-			final var proposedTotal = tokenStore.currentMintedNfts() + op.getMetadataCount();
+			final var proposedTotal = tokenStore.currentMintedNfts() + metaDataCount;
 			validateTrue(validator.isPermissibleTotalNfts(proposedTotal), MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED);
 		}
 	}
