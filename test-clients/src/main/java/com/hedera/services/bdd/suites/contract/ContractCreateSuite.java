@@ -85,7 +85,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPro
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
@@ -132,7 +131,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 						receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
 						delegateContractIdRequiredForTransferInDelegateCall(),
 						cannotSendToNonExistentAccount(),
-//						canCallPendingContractSafely(),
+						canCallPendingContractSafely(),
 				}
 		);
 	}
@@ -164,7 +163,6 @@ public class ContractCreateSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("CanCallPendingContractSafely")
 				.given(
-						upMaxGasTo(50_000_000),
 						fileCreate(initcode)
 								.path(FIBONACCI_PLUS_PATH)
 								.payingWith(GENESIS)
@@ -179,9 +177,8 @@ public class ContractCreateSuite extends HapiApiSuite {
 												.deferStatusResolution()
 												.bytecode(initcode)
 												.adminKey(THRESHOLD))
-								.toArray(HapiSpecOperation[]::new)),
-						sleepFor(5_000)
-				).when(
+								.toArray(HapiSpecOperation[]::new))
+				).when( ).then(
 						sourcing(() ->
 								contractCall(
 										"0.0." + (createdFileNum.get() + createBurstSize),
@@ -190,9 +187,6 @@ public class ContractCreateSuite extends HapiApiSuite {
 										.payingWith(GENESIS)
 										.gas(300_000L)
 										.via(callTxn))
-				).then(
-						getTxnRecord(callTxn).logged(),
-						restoreDefaultMaxGas()
 				);
 	}
 

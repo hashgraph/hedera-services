@@ -58,6 +58,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCre
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -274,8 +275,12 @@ class DeterministicThrottlingTest {
 		given(dynamicProperties.consensusThrottleGasLimit()).willReturn(0L);
 		subject.setConsensusThrottled(true);
 		subject.applyGasConfig();
-		// expect:
 		assertTrue(subject.shouldThrottleTxn(accessor, consensusNow));
+		assertTrue(subject.wasLastTxnGasThrottled());
+
+		givenFunction(TokenBurn);
+		subject.shouldThrottleTxn(accessor, consensusNow.plusSeconds(1));
+		assertFalse(subject.wasLastTxnGasThrottled());
 	}
 
 	@Test

@@ -31,8 +31,10 @@ import java.time.Instant;
 import java.util.List;
 
 public class HapiThrottling implements FunctionalityThrottling {
+	private static final String STABLE_SOURCE_OF_THROTTLES_ERROR =
+			"HAPI throttling should not be treated as a stable source of throttles";
+
 	private final TimedFunctionalityThrottling delegate;
-	private static final String STABLE_SOURCE_OF_THROTTLES_ERROR = "HAPI throttling should not be treated as a stable source of throttles";
 
 	public HapiThrottling(TimedFunctionalityThrottling delegate) {
 		this.delegate = delegate;
@@ -76,5 +78,10 @@ public class HapiThrottling implements FunctionalityThrottling {
 	@Override
 	public void applyGasConfig() {
 		delegate.applyGasConfig();
+	}
+
+	@Override
+	public boolean wasLastTxnGasThrottled() {
+		throw new UnsupportedOperationException();
 	}
 }

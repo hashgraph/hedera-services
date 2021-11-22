@@ -53,10 +53,10 @@ public class JKeySerializer {
 				objectType = JObjectType.FC_ECDSA384_KEY;
 			} else if (rootObject instanceof JRSA_3072Key) {
 				objectType = JObjectType.FC_RSA3072_KEY;
-			} else if (rootObject instanceof JContractIDKey) {
-				objectType = JObjectType.FC_CONTRACT_ID_KEY;
 			} else if (rootObject instanceof JDelegateContractIDKey) {
 				objectType = JObjectType.FC_DELEGATE_CONTRACT_ID_KEY;
+			} else if (rootObject instanceof JContractIDKey) {
+				objectType = JObjectType.FC_CONTRACT_ID_KEY;
 			}
 
 			final JObjectType finalObjectType = objectType;

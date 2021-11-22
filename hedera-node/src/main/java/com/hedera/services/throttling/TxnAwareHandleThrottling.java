@@ -50,6 +50,11 @@ public class TxnAwareHandleThrottling implements FunctionalityThrottling {
 	}
 
 	@Override
+	public boolean wasLastTxnGasThrottled() {
+		return delegate.wasLastTxnGasThrottled();
+	}
+
+	@Override
 	public void leakUnusedGasPreviouslyReserved(long value) {
 		delegate.leakUnusedGasPreviouslyReserved(value);
 	}
