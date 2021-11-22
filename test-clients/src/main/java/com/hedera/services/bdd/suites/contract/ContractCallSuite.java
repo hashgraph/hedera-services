@@ -879,10 +879,15 @@ public class ContractCallSuite extends HapiApiSuite {
 							spec.registry().saveKey("receivableKey", receivableAccountKey);
 							spec.registry().saveKey("contractCallerKey", contractCallerKey);
 							/* if any of the keys are missing, INVALID_SIGNATURE is returned */
-							var call = contractCall("transferringContract",
+							var call = contractCall(
+									"transferringContract",
 									ContractResources.TRANSFERRING_CONTRACT_TRANSFERTOADDRESS,
-									accountAddress, 1).payingWith("contractCaller").gas(300_000)
-									.signedBy("receivableKey", "contractCallerKey").hasKnownStatus(SUCCESS);
+									accountAddress,
+									1
+							)
+									.payingWith("contractCaller")
+									.gas(300_000)
+									.alsoSigningWithFullPrefix("receivableKey");
 							/* calling with the receivableSigReqAccount should pass without adding keys */
 							var callWithReceivable = contractCall("transferringContract",
 									ContractResources.TRANSFERRING_CONTRACT_TRANSFERTOADDRESS,
