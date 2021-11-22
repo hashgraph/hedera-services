@@ -48,6 +48,7 @@ public class ConfigManager {
 	private final GlobalConfig global;
 
 	private String defaultPayer;
+	private String defaultNodeAccount;
 	private String targetName;
 	private NetConfig targetNet;
 
@@ -81,6 +82,7 @@ public class ConfigManager {
 		} else {
 			fail("Named accounts not yet supported!");
 		}
+		specConfig.put("default.node", defaultNodeAccount);
 		return specConfig;
 	}
 
@@ -151,6 +153,12 @@ public class ConfigManager {
 	public void assertNoMissingDefaults() {
 		assertTargetNetIsKnown();
 		assertDefaultPayerIsKnown();
+		assertDefaultNodeAccountIsKnown();
+	}
+
+	private void assertDefaultNodeAccountIsKnown() {
+		final var configDefault = "0.0." + targetNet.getDefaultNodeAccount();
+		defaultNodeAccount = Optional.ofNullable(yahcli.getNodeAccount()).orElse(configDefault);
 	}
 
 	private void assertDefaultPayerIsKnown() {

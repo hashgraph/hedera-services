@@ -23,6 +23,9 @@ package com.hedera.services.contracts.sources;
 import com.hedera.services.utils.EntityIdUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -36,10 +39,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
+@ExtendWith(MockitoExtension.class)
 class BlobStorageSourceTest {
+	@Mock
 	Map<byte[], byte[]> blobDelegate;
 
 	byte[] address = EntityIdUtils.asSolidityAddress(0, 0, 13257);
@@ -49,8 +53,6 @@ class BlobStorageSourceTest {
 
 	@BeforeEach
 	private void setup() {
-		blobDelegate = mock(Map.class);
-
 		subject = new BlobStorageSource(blobDelegate);
 	}
 

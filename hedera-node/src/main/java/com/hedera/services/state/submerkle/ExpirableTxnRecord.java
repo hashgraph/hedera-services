@@ -80,6 +80,12 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	private CurrencyAdjustments hbarAdjustments;
 	private SolidityFnResult contractCallResult;
 	private SolidityFnResult contractCreateResult;
+	/* IMPORTANT: This class depends on the invariant that if any of the
+	three token-related lists below (tokens, tokenAdjustments, and
+	nftTokenAdjustments) is non-null, then it has the same length as any
+	other non-null list. This would not be necessary if we provided the
+	class with information on the fungibility of the token types---and
+	this information is always available when the Builder is constructed. */
 	private List<EntityId> tokens = NO_TOKENS;
 	private List<CurrencyAdjustments> tokenAdjustments = NO_TOKEN_ADJUSTMENTS;
 	private List<NftAdjustments> nftTokenAdjustments = NO_NFT_TOKEN_ADJUSTMENTS;
@@ -138,7 +144,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 					.mapToObj(i -> String.format(
 							"%s(%s)",
 							tokens.get(i).toAbbrevString(),
-							tokenAdjustments.get(i)))
+							reprOfNonEmptyChange(i, tokenAdjustments, nftTokenAdjustments)))
 					.collect(joining(", "));
 			helper.add("tokenAdjustments", readable);
 		}
@@ -157,6 +163,15 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			helper.add("newTokenAssociations", readable);
 		}
 		return helper.toString();
+	}
+
+	private String reprOfNonEmptyChange(
+			final int i,
+			final List<CurrencyAdjustments> tokenAdjustments,
+			final List<NftAdjustments> nftTokenAdjustments
+	) {
+		final var fungibleAdjust = tokenAdjustments.get(i);
+		return fungibleAdjust.isEmpty() ? nftTokenAdjustments.get(i).toString() : fungibleAdjust.toString();
 	}
 
 	@Override
@@ -262,14 +277,31 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		submittingMember = in.readLong();
 		/* Tokens present since v0.7.0 */
 		tokens = in.readSerializableList(MAX_INVOLVED_TOKENS);
-		tokenAdjustments = in.readSerializableList(MAX_INVOLVED_TOKENS); /* Schedule references present since v0.8.0 */
+		tokenAdjustments = in.readSerializableList(MAX_INVOLVED_TOKENS);
+		/* Schedule references present since v0.8.0 */
 		scheduleRef = serdes.readNullableSerializable(in);
 		if (version >= RELEASE_0160_VERSION) {
 			nftTokenAdjustments = in.readSerializableList(MAX_INVOLVED_TOKENS);
 			assessedCustomFees = in.readSerializableList(MAX_ASSESSED_CUSTOM_FEES_CHANGES);
+		} else {
+			/* Can be removed once we triple-check no tests depend on a 0.16.x state */
+			nftTokenAdjustments = makeupNftAdjustsMatching(tokenAdjustments);
+			assessedCustomFees = NO_CUSTOM_FEES;
 		}
 		if (version >= RELEASE_0180_VERSION) {
 			newTokenAssociations = in.readSerializableList(Integer.MAX_VALUE);
+		}
+	}
+
+	List<NftAdjustments> makeupNftAdjustsMatching(final List<CurrencyAdjustments> fungibleAdjusts) {
+		if (fungibleAdjusts == null) {
+			return null;
+		} else {
+			final List<NftAdjustments> ans = new ArrayList<>();
+			for (int i = 0, n = fungibleAdjusts.size(); i < n; i++) {
+				ans.add(new NftAdjustments());
+			}
+			return ans;
 		}
 	}
 
@@ -429,7 +461,6 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		return grpc.build();
 	}
 
-
 	private static void setGrpcTokens(TransactionRecord.Builder grpcBuilder,
 			final List<EntityId> tokens,
 			final List<CurrencyAdjustments> tokenAdjustments,
@@ -565,5 +596,10 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			newTokenAssociations = NO_NEW_TOKEN_ASSOCIATIONS;
 			return this;
 		}
+	}
+
+	/* --- Only used by unit tests --- */
+	void setNewTokenAssociations(final List<FcTokenAssociation> newTokenAssociations) {
+		this.newTokenAssociations = newTokenAssociations;
 	}
 }

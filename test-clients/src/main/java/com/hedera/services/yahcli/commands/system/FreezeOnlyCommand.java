@@ -55,6 +55,9 @@ public class FreezeOnlyCommand implements Callable<Integer> {
 
 		if (delegate.getFinalSpecs().get(0).getStatus() == PASSED) {
 			COMMON_MESSAGES.info("SUCCESS - " + "freeze scheduled for " + startTime);
+		} else {
+			COMMON_MESSAGES.warn("FAILED - freeze is not scheduled for " + startTime);
+			return 1;
 		}
 
 		return 0;

@@ -887,10 +887,10 @@ workflows:
             - attach_workspace:
                 at: /
 
-  GCP-Daily-Services-Update-Reconnect-4N-1C:
+  GCP-Daily-Services-Update-4N-2C:
     triggers:
       - schedule:
-          cron: "15 7 * * *"
+          cron: "30 22 * * *"
           filters:
             branches:
               only:
@@ -900,9 +900,101 @@ workflows:
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/4N_1C/Update
+          result_path: results/4N_2C/Update
           config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Comp-Update-Reconnect-4N-1C"
+          workflow-name: "GCP-Daily-Services-Crypto-Update-4N-2C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+  GCP-Daily-Services-Comp-Update-DisPreUpdate-4N-2C:
+    triggers:
+      - schedule:
+          cron: "45 22 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_2C/UpdateDisPreUpdate
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Comp-Update-DisPreUpdate-4N-2C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+  GCP-Daily-Services-Update-Reconnect-4N-2C:
+    triggers:
+      - schedule:
+          cron: "15 22 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_2C/UpdateReconnect
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Comp-Update-Reconnect-4N-2C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+  GCP-Daily-Services-Comp-Update-Reconnect-Abort-4N-2C:
+    triggers:
+      - schedule:
+          cron: "15 23 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_2C/UpdateReconnectAbort
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Comp-Update-Reconnect-Abort-4N-2C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+  GCP-Daily-Services-Comp-Update-Reconnect-Abort-DisPreUpdate-4N-2C:
+    triggers:
+      - schedule:
+          cron: "30 23 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_2C/UpdateReconnectAbortDisPreUpdate
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Comp-Update-Reconnect-Abort-DisPreUpdate-4N-2C"
           requires:
             - build-platform-and-services
           pre-steps:
@@ -1143,7 +1235,7 @@ workflows:
             - attach_workspace:
                 at: /
 
-  GCP-Daily-Services-Comp-Reconnect-Correctness-6N-1C:
+  GCP-Daily-Services-Comp-NI-Reconnect-Correctness-6N-1C:
     triggers:
       - schedule:
           cron: "25 7 * * *"
@@ -1156,9 +1248,32 @@ workflows:
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/6N_1C/ReconnectCorrectness
+          result_path: results/6N_1C/NIReconnectCorrectness
           config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Comp-Reconnect-Correctness-6N-1C"
+          workflow-name: "GCP-Daily-Services-Comp-NI-Reconnect-Correctness-6N-1C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+  GCP-Daily-Services-Comp-ND-Reconnect-Correctness-6N-1C:
+    triggers:
+      - schedule:
+          cron: "25 8 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/6N_1C/NDReconnectCorrectness
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Comp-ND-Reconnect-Correctness-6N-1C"
           requires:
             - build-platform-and-services
           pre-steps:
@@ -1505,3 +1620,16 @@ jobs:
           result_path: << parameters.result_path >>
       - store_artifacts:
           path: /results.tar.gz
+      - run:
+          name: Check for CI test failures
+          command: |
+            set -x;
+            set +e;
+            cd /swirlds-platform/regression
+            CI_RESULTS_LOG=$(find results/4N_1C -name hapi-client-combined.log)
+            grep $CI_RESULTS_LOG -e 'status=ERROR' -e 'status=FAILED'
+            if [ "$?" -eq "0" ]; then
+              exit 1
+            else
+              exit 0
+            fi

@@ -22,9 +22,7 @@ package com.hedera.services.contracts.execution;
  *
  */
 
-import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.store.contracts.HederaWorldState;
@@ -59,7 +57,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -68,7 +65,6 @@ import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class CallLocalEvmTxProcessorTest {
-
 	private static final int MAX_STACK_SIZE = 1024;
 
 	@Mock
@@ -83,12 +79,8 @@ class CallLocalEvmTxProcessorTest {
 	private GasCalculator gasCalculator;
 	@Mock
 	private Set<Operation> operations;
-
 	@Mock
 	private Transaction transaction;
-	@Mock
-	private TransactionContext transactionContext;
-
 	@Mock
 	private ExchangeRate exchangeRate;
 	@Mock
@@ -106,17 +98,6 @@ class CallLocalEvmTxProcessorTest {
 
 		callLocalEvmTxProcessor = new CallLocalEvmTxProcessor(worldState, hbarCentExchange, usagePricesProvider,
 				globalDynamicProperties, gasCalculator, operations);
-	}
-
-	@Test
-	void assertThatExecuteMethodThrowsInvalidTransactionException() {
-		var consensusTime = Instant.ofEpochSecond(1631778674L);
-
-		//expect:
-		Address receiver = this.receiver.getId().asEvmAddress();
-		assertThrows(InvalidTransactionException.class, () ->
-				callLocalEvmTxProcessor.execute(sender, receiver, 1234L, 1_000_000, 15,
-						Bytes.EMPTY, false, consensusTime, false, Optional.empty()));
 	}
 
 	@Test

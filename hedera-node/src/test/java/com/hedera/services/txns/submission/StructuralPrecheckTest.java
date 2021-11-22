@@ -22,7 +22,11 @@ package com.hedera.services.txns.submission;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
+import com.hedera.services.stats.CounterFactory;
+import com.hedera.services.stats.HapiOpCounters;
+import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
@@ -30,6 +34,7 @@ import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -39,6 +44,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
@@ -50,15 +56,24 @@ import static java.util.stream.Collectors.joining;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.BDDMockito.willCallRealMethod;
+import static org.mockito.Mockito.mock;
 
 class StructuralPrecheckTest {
 	private static final int pretendSizeLimit = 1_000;
 	private static final int pretendMaxMessageDepth = 42;
 	private StructuralPrecheck subject;
 
+	private TransactionContext txnCtx = mock(TransactionContext.class);
+	private CounterFactory factory = mock(CounterFactory.class);
+	private Function<HederaFunctionality, String> statNameFn = HederaFunctionality::toString;
+	private MiscRunningAvgs runningAvgs = mock(MiscRunningAvgs.class);
+
+	private HapiOpCounters counters = new HapiOpCounters(factory, runningAvgs, txnCtx, statNameFn);
+
 	@BeforeEach
 	void setUp() {
-		subject = new StructuralPrecheck(pretendSizeLimit, pretendMaxMessageDepth);
+		subject = new StructuralPrecheck(pretendSizeLimit, pretendMaxMessageDepth, counters);
 	}
 
 	@Test
@@ -66,6 +81,7 @@ class StructuralPrecheckTest {
 		final var assess = subject.assess(Transaction.getDefaultInstance());
 
 		assertExpectedFail(INVALID_TRANSACTION_BODY, assess);
+		assertEquals(0, counters.receivedDeprecatedTxnSoFar());
 	}
 
 	@Test
@@ -76,6 +92,7 @@ class StructuralPrecheckTest {
 				.build());
 
 		assertExpectedFail(INVALID_TRANSACTION, assess);
+		assertEquals(1, counters.receivedDeprecatedTxnSoFar());
 	}
 
 	@Test
@@ -86,6 +103,7 @@ class StructuralPrecheckTest {
 				.build());
 
 		assertExpectedFail(INVALID_TRANSACTION, assess);
+		assertEquals(1, counters.receivedDeprecatedTxnSoFar());
 	}
 
 	@Test
@@ -97,6 +115,7 @@ class StructuralPrecheckTest {
 				.build());
 
 		assertExpectedFail(TRANSACTION_OVERSIZE, assess);
+		assertEquals(0, counters.receivedDeprecatedTxnSoFar());
 	}
 
 	@Test
@@ -106,6 +125,7 @@ class StructuralPrecheckTest {
 				.build());
 
 		assertExpectedFail(INVALID_TRANSACTION_BODY, assess);
+		assertEquals(0, counters.receivedDeprecatedTxnSoFar());
 	}
 
 	@Test
@@ -119,6 +139,7 @@ class StructuralPrecheckTest {
 		final var assess = subject.assess(signedTxn);
 
 		assertExpectedFail(TRANSACTION_TOO_MANY_LAYERS, assess);
+		assertEquals(1, counters.receivedDeprecatedTxnSoFar());
 	}
 
 	@Test
@@ -130,6 +151,8 @@ class StructuralPrecheckTest {
 		final var assess = subject.assess(signedTxn);
 
 		assertExpectedFail(INVALID_TRANSACTION_BODY, assess);
+
+		assertEquals(1, counters.receivedDeprecatedTxnSoFar());
 	}
 
 	@Test
@@ -145,6 +168,7 @@ class StructuralPrecheckTest {
 		assertEquals(OK, assess.getLeft().getValidity());
 		assertNotNull(assess.getRight());
 		assertEquals(HederaFunctionality.CryptoCreate, assess.getRight().getFunction());
+		assertEquals(1, counters.receivedDeprecatedTxnSoFar());
 	}
 
 	@Test
@@ -155,6 +179,36 @@ class StructuralPrecheckTest {
 		final var actualDepth = subject.protoDepthOf(weirdlyNestedKey);
 
 		assertEquals(expectedDepth, actualDepth);
+	}
+
+	@Test
+	void validateCounterForDeprecatedTransactions() {
+		final var hostTxn = TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder().setAccountID(IdUtils.asAccount("0.0.2")));
+		var signedTxn = Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
+		subject.assess(signedTxn);
+		assertEquals(1, counters.receivedDeprecatedTxnSoFar());
+
+		signedTxn = Transaction.newBuilder().setSigMap(SignatureMap.newBuilder().build()).build();
+		subject.assess(signedTxn);
+		assertEquals(2, counters.receivedDeprecatedTxnSoFar());
+
+		signedTxn = Transaction.newBuilder().setBody(TransactionBody.newBuilder().build()).build();
+		subject.assess(signedTxn);
+		assertEquals(3, counters.receivedDeprecatedTxnSoFar());
+
+		signedTxn = Transaction.newBuilder().setSigs(SignatureList.newBuilder().build()).build();
+		subject.assess(signedTxn);
+		assertEquals(4, counters.receivedDeprecatedTxnSoFar());
+	}
+
+	@Test
+	void txnWithNoDeprecatedFieldsDoesntIncrement(){
+		final var hostTxn = TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder().setAccountID(IdUtils.asAccount("0.0.2")));
+		var signedTxn = Transaction.newBuilder().setSignedTransactionBytes(hostTxn.build().toByteString()).build();
+		subject.assess(signedTxn);
+		assertEquals(0, counters.receivedDeprecatedTxnSoFar());
 	}
 
 	private int verboseCalc(final GeneratedMessageV3 msg) {

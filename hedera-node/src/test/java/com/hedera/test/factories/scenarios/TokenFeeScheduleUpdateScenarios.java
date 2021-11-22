@@ -26,6 +26,7 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
+import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
 import static com.hedera.test.factories.txns.TokenFeeScheduleUpdateFactory.newSignedTokenFeeScheduleUpdate;
 
 public enum TokenFeeScheduleUpdateScenarios implements TxnHandlingScenario {
@@ -68,6 +69,21 @@ public enum TokenFeeScheduleUpdateScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			final var feeCollectorNoSigReq = EntityId.fromGrpcAccountId(NO_RECEIVER_SIG);
 			final var feeCollectorWithSigReq = EntityId.fromGrpcAccountId(RECEIVER_SIG);
+			return new PlatformTxnAccessor(from(
+					newSignedTokenFeeScheduleUpdate()
+							.updating(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY)
+							.withCustom(fixedFee(1, null, feeCollectorNoSigReq))
+							.withCustom(fixedFee(2, null, feeCollectorWithSigReq))
+							.get()
+			));
+		}
+	},
+
+	UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			final var feeCollectorNoSigReq = EntityId.fromGrpcAccountId(NO_RECEIVER_SIG);
+			final var feeCollectorWithSigReq = EntityId.fromGrpcAccountId(DEFAULT_PAYER);
 			return new PlatformTxnAccessor(from(
 					newSignedTokenFeeScheduleUpdate()
 							.updating(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY)

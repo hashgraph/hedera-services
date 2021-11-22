@@ -52,6 +52,7 @@ public class ContractResources {
 	public static final String DOUBLE_SEND_BYTECODE_PATH = bytecodePath("DoubleSend");
 	public static final String EMPTY_CONSTRUCTOR = bytecodePath("EmptyConstructor");
 	public static final String PAYABLE_CONSTRUCTOR = bytecodePath("PayableConstructor");
+	public static final String ERC20_BYTECODE_PATH = bytecodePath("ERC20");
 	public static final String ERC_1155_BYTECODE_PATH = bytecodePath("erc1155");
 	public static final String BENCHMARK_CONTRACT = bytecodePath("Benchmark");
 	public static final String SIMPLE_UPDATE = bytecodePath("SimpleUpdate");
@@ -68,6 +69,27 @@ public class ContractResources {
 	public static final String FACTORY_SELF_DESTRUCT_CONSTRUCTOR_CONTRACT = bytecodePath("FactorySelfDestructConstructor");
 	public static final String FACTORY_QUICK_SELF_DESTRUCT_CONTRACT = bytecodePath("FactoryQuickSelfDestruct");
 	public static final String TEMPORARY_SSTORE_REFUND_CONTRACT = bytecodePath("TemporarySStoreRefund");
+	public static final String TOP_LEVEL_TRANSFERRING_CONTRACT = bytecodePath("TopLevelTransferringContract");
+	public static final String SUB_LEVEL_TRANSFERRING_CONTRACT = bytecodePath("SubLevelTransferringContract");
+	public static final String LARGE_CONTRACT_CRYPTO_KITTIES = bytecodePath("CryptoKitties");
+	public static final String SELF_DESTRUCT_CALLABLE = bytecodePath("SelfDestructCallable");
+
+	public static final String SELF_DESTRUCT_CALL_ABI = "{\"inputs\":[],\"name\":\"destroy\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"}";
+
+	public static final String CRYPTO_KITTIES_CREATE_PROMO_KITTY_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"_genes\",\"type\":\"uint256\"},{\"name\":\"_owner\",\"type\":\"address\"}],\"name\":\"createPromoKitty\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+
+	public static final String TOP_LEVEL_TRANSFERRING_CONTRACT_TRANSFER_CALL_PAYABLE_ABI = "{\"inputs\":[],\"name\":\"topLevelTransferCall\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"payable\",\"type\":\"function\"}";
+	public static final String TOP_LEVEL_TRANSFERRING_CONTRACT_NON_PAYABLE_ABI = "{\"inputs\":[],\"name\":\"topLevelNonPayableCall\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"pure\",\"type\":\"function\"}";
+
+	public static final String SUB_LEVEL_PAYABLE_ABI = "{\"inputs\":" +
+			"[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"}" +
+			",{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"subLevelPayableCall\"," +
+			"\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+
+	public static final String SUB_LEVEL_NON_PAYABLE_ABI = "{\"inputs\":" +
+			"[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"}," +
+			"{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}]," +
+			"\"name\":\"subLevelNonPayableCall\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
 	public static final String TWO_SSTORES = "{ \"inputs\": [ { \"internalType\": \"bytes32\", \"name\": \"_singleProp\", \"type\": \"bytes32\" } ], \"name\": \"twoSSTOREs\", \"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
@@ -457,6 +479,15 @@ public class ContractResources {
     public static final String FACTORY_QUICK_SELF_DESTRUCT_CREATE_AND_DELETE_ABI = "{" +
 			"\"inputs\":[],\"name\":\"createAndDeleteChild\"," +
 			"\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"}";
+
+	public static final String ERC20_ABI = "{ \"inputs\": [ { \"internalType\": \"uint256\", \"name\": \"initialSupply\", \"type\": \"uint256\" } ], \"stateMutability\": \"nonpayable\", \"type\": \"constructor\" }";
+	public static final String ERC20_APPROVE_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"spender\", \"type\": \"address\" }, { \"internalType\": \"uint256\", \"name\": \"amount\", \"type\": \"uint256\" } ]," +
+			" \"name\": \"approve\", \"outputs\": [ { \"internalType\": \"bool\", \"name\": \"\", \"type\": \"bool\" } ], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+	public static final String ERC20_TRANSFER_FROM_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", \"name\": \"recipient\", \"type\": \"address\" }," +
+			" { \"internalType\": \"uint256\", \"name\": \"amount\", \"type\": \"uint256\" } ], \"name\": \"transferFrom\", \"outputs\": [ { \"internalType\": \"bool\", \"name\": \"\", \"type\": \"bool\" } ], \"stateMutability\": \"nonpayable\"," +
+			" \"type\": \"function\" }";
+	public static final String ERC20_TRANSFER_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"recipient\", \"type\": \"address\" }, { \"internalType\": \"uint256\", \"name\": \"amount\", \"type\": \"uint256\" } ]," +
+			" \"name\": \"transfer\", \"outputs\": [ { \"internalType\": \"bool\", \"name\": \"\", \"type\": \"bool\" } ], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
 	/* ABI for FactoryContract.sol */
 	public static final String FACTORY_CONTRACT_SUCCESS = "{ \"constant\": false, \"inputs\": [], \"name\": \"deploymentSuccess\", \"outputs\": [], \"payable\": false, \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";

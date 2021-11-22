@@ -349,6 +349,22 @@ class QueryFeeCheckTest {
 	}
 
 	@Test
+	void paymentFailsWithInsufficientPayerBalance() {
+		final long amount = 5000L;
+		final var transList = TransferList.newBuilder()
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aBroke).setAmount(-1 * amount))
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount));
+		final var body = TransactionBody.newBuilder()
+				.setCryptoTransfer(CryptoTransferTransactionBody.newBuilder().setTransfers(transList))
+				.setTransactionID(TransactionID.newBuilder().setAccountID(aBroke))
+				.setNodeAccountID(aNode)
+				.setTransactionFee(Long.MAX_VALUE)
+				.build();
+
+		assertEquals(INSUFFICIENT_PAYER_BALANCE, subject.validateQueryPaymentTransfers(body));
+	}
+
+	@Test
 	void queryPaymentMultiPayerMultiNodeSucceeds() {
 		final long amount = 200L;
 		final var transList = TransferList.newBuilder()

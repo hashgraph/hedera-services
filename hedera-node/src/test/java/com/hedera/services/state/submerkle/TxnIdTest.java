@@ -64,6 +64,21 @@ class TxnIdTest {
 	TxnId subject;
 
 	@Test
+	void gettersWork() {
+		subject = scheduledSubject();
+		assertEquals(fcPayer, subject.getPayerAccount());
+		assertEquals(fcValidStart, subject.getValidStart());
+	}
+
+	@Test
+	void sameAndNullEqualsWork() {
+		subject = scheduledSubject();
+		final var same = subject;
+		assertEquals(subject, same);
+		assertNotEquals(null, subject);
+	}
+
+	@Test
 	void serializeWorksForScheduled() throws IOException {
 		// setup:
 		subject = scheduledSubject();

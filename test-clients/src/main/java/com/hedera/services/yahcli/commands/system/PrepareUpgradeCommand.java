@@ -36,7 +36,7 @@ import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 		name = "prepare-upgrade",
 		subcommands = { picocli.CommandLine.HelpCommand.class },
 		description = "Stages artifacts prior to an NMT software upgrade")
-public class StageUpgradeCommand implements Callable<Integer> {
+public class PrepareUpgradeCommand implements Callable<Integer> {
 	@CommandLine.ParentCommand
 	private Yahcli yahcli;
 
@@ -61,6 +61,9 @@ public class StageUpgradeCommand implements Callable<Integer> {
 
 		if (delegate.getFinalSpecs().get(0).getStatus() == PASSED) {
 			COMMON_MESSAGES.info("SUCCESS - NMT upgrade staged from " + upgradeFile + " artifacts ZIP");
+		} else {
+			COMMON_MESSAGES.warn("FAILED - NMT software upgrade is not in staged ");
+			return 1;
 		}
 
 		return 0;

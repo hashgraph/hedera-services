@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.apache.logging.log4j.LogManager;
@@ -41,10 +42,8 @@ import org.ethereum.core.CallTransaction;
 import org.junit.jupiter.api.Assertions;
 
 import java.math.BigInteger;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -75,13 +74,14 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -136,7 +136,11 @@ public class ContractCallSuite extends HapiApiSuite {
 				smartContractInlineAssemblyCheck(),
 				ocToken(),
 				contractTransferToSigReqAccountWithKeySucceeds(),
-				HSCS_EVM_004_GasRefund()
+				HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts(),
+				HSCS_EVM_006_ContractHBarTransferToAccount(),
+				HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts(),
+				HSCS_EVM_010_MultiSignatureAccounts(),
+				HSCS_EVM_010_ReceiverMustSignContractTx()
 		);
 	}
 
@@ -931,98 +935,229 @@ public class ContractCallSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec HSCS_EVM_004_GasRefund() {
-		final var GAS = 100_000;
-		long initialExpiry = Instant.now().plusSeconds(10_000_000L).getEpochSecond();
-		final AtomicLong lowExpiryGasCost = new AtomicLong(0);
-		final var ACCOUNT = "acc";
-		final var CONTRACT_NAME = "contract";
-		return defaultHapiSpec("HSCS_EVM_004_GasRefund")
+	private HapiApiSpec HSCS_EVM_006_ContractHBarTransferToAccount() {
+		final var ACCOUNT = "account";
+		final var CONTRACT_FROM = "contract1";
+		return defaultHapiSpec("HSCS_EVM_006_ContractHBarTransferToAccount")
 				.given(
-						fileCreate("parentDelegateBytecode")
-								.path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
-						contractCreate(CONTRACT_NAME)
-								.bytecode("parentDelegateBytecode")
-				).when(
-				).then(
-						cryptoCreate(ACCOUNT)
-								.balance(ONE_HUNDRED_HBARS),
-						/* warm-up call */
-						contractCall(CONTRACT_NAME, ContractResources.CREATE_CHILD_ABI)
-								.via("warmUp"),
-						/* initial call */
-						contractCall(CONTRACT_NAME, ContractResources.CREATE_CHILD_ABI)
-								.via("callTxn2")
+						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate("receiver").balance(10_000L),
+
+						fileCreate("contract1Bytecode").path(ContractResources.TRANSFERRING_CONTRACT).payingWith(ACCOUNT),
+						contractCreate(CONTRACT_FROM).bytecode("contract1Bytecode").balance(10_000L).payingWith(ACCOUNT),
+
+						getContractInfo(CONTRACT_FROM).saveToRegistry("contract_from"),
+						getAccountInfo(ACCOUNT).savingSnapshot("accountInfo"),
+						getAccountInfo("receiver").savingSnapshot("receiverInfo")
+				)
+				.when(
+						withOpContext((spec, log) -> {
+							var receiverAddr = spec.registry().getAccountInfo("receiverInfo").getContractAccountID();
+							var transferCall = contractCall(
+									CONTRACT_FROM,
+									ContractResources.TRANSFERRING_CONTRACT_TRANSFERTOADDRESS,
+									receiverAddr, 10)
+									.payingWith(ACCOUNT).logged();
+							allRunFor(spec, transferCall);
+						})
+				)
+				.then(
+						getAccountBalance("receiver").hasTinyBars(10_000 + 10)
+				);
+	}
+
+	private HapiApiSpec HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts() {
+		final var ACCOUNT = "account";
+		final var TOP_LEVEL_CONTRACT = "tlc";
+		final var SUB_LEVEL_CONTRACT = "slc";
+		final var INITIAL_CONTRACT_BALANCE = 100;
+
+		return defaultHapiSpec("HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts")
+				.given(
+						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
+						fileCreate(TOP_LEVEL_CONTRACT + "bytecode").path(ContractResources.TOP_LEVEL_TRANSFERRING_CONTRACT),
+						fileCreate(SUB_LEVEL_CONTRACT + "bytecode").path(ContractResources.SUB_LEVEL_TRANSFERRING_CONTRACT)
+				)
+				.when(
+						contractCreate(TOP_LEVEL_CONTRACT).bytecode(TOP_LEVEL_CONTRACT + "bytecode").payingWith(ACCOUNT).balance(INITIAL_CONTRACT_BALANCE),
+						contractCreate(SUB_LEVEL_CONTRACT).bytecode(SUB_LEVEL_CONTRACT + "bytecode").payingWith(ACCOUNT).balance(INITIAL_CONTRACT_BALANCE)
+				)
+				.then(
+						contractCall(TOP_LEVEL_CONTRACT).sending(10).payingWith(ACCOUNT),
+						getAccountBalance(TOP_LEVEL_CONTRACT).hasTinyBars(INITIAL_CONTRACT_BALANCE + 10),
+
+						contractCall(TOP_LEVEL_CONTRACT, ContractResources.TOP_LEVEL_TRANSFERRING_CONTRACT_TRANSFER_CALL_PAYABLE_ABI)
+								.sending(10)
+								.payingWith(ACCOUNT),
+						getAccountBalance(TOP_LEVEL_CONTRACT).hasTinyBars(INITIAL_CONTRACT_BALANCE + 20),
+
+						contractCall(TOP_LEVEL_CONTRACT, ContractResources.TOP_LEVEL_TRANSFERRING_CONTRACT_NON_PAYABLE_ABI)
+								.sending(10)
 								.payingWith(ACCOUNT)
-								.gas(GAS),
+								.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED),
+						getAccountBalance(TOP_LEVEL_CONTRACT).hasTinyBars(INITIAL_CONTRACT_BALANCE + 20),
+
+						getContractInfo(TOP_LEVEL_CONTRACT).saveToRegistry("tcinfo"),
+						getContractInfo(SUB_LEVEL_CONTRACT).saveToRegistry("scinfo"),
+
+						/* sub-level non-payable contract call */
 						assertionsHold((spec, log) -> {
-							var record = getTxnRecord("callTxn2");
-							allRunFor(spec, record);
-							var gasUsed = record
-									.getResponseRecord()
-									.getContractCallResult()
-									.getGasUsed();
-							var allTransfers = record
-									.getResponseRecord()
-									.getTransferList()
-									.getAccountAmountsList();
-							var expectedRefund = GAS - gasUsed;
-							log.info("Gas used {}; Gas sent {}; Expected gas refund {};", gasUsed, GAS, expectedRefund);
-							// coinbase transfer is representing the gas paid
-							var coinbaseReceiveTransfer = allTransfers
-									.stream()
-									.filter(aa -> aa.getAccountID().getAccountNum() == 98)
-									.findAny()
-									.get();
-							// node transfer is the network fee + some other tx fees
-							var nodeTransfer = allTransfers
-									.stream()
-									.filter(aa -> aa.getAccountID().getAccountNum() == 3)
-									.findAny()
-									.get();
-							/* hedera gas cost */
-							double oneGasInTinybars = getGasToTinybarsRatio(gasUsed, coinbaseReceiveTransfer.getAmount());
-							var expectedRefundInTinybars = oneGasInTinybars * expectedRefund;
-							var usedGasInTinybars = oneGasInTinybars * gasUsed;
-							var gasSentInTinybars = GAS * oneGasInTinybars;
-							assert gasSentInTinybars == expectedRefundInTinybars + usedGasInTinybars;
-							// total charge in tinybars includes the used gas and the network fee
-							var totalCharge = (usedGasInTinybars + nodeTransfer.getAmount());
-							/* asserting hbar to gas ratio calculation works as expected + the refund amount */
-							var expectedBalance = ONE_HUNDRED_HBARS - (long) totalCharge;
-							var assertion = getAccountBalance(ACCOUNT)
-									.hasTinyBars(expectedBalance);
-							allRunFor(spec, assertion);
-							lowExpiryGasCost.set(gasUsed);
+							final var subLevelSolidityAddr = spec.registry().getContractInfo("scinfo").getContractAccountID();
+							final var cc = contractCall(
+									SUB_LEVEL_CONTRACT,
+									ContractResources.SUB_LEVEL_NON_PAYABLE_ABI,
+									subLevelSolidityAddr, 20L)
+									.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED);
+							allRunFor(spec, cc);
 						}),
-						contractUpdate(CONTRACT_NAME)
-								.newExpiryTime(initialExpiry*4)
-								.via("updateTx")
-								.payingWith("acc"),
+						getAccountBalance(TOP_LEVEL_CONTRACT).hasTinyBars(20 + INITIAL_CONTRACT_BALANCE),
+						getAccountBalance(SUB_LEVEL_CONTRACT).hasTinyBars(INITIAL_CONTRACT_BALANCE),
 
-						contractCall(CONTRACT_NAME, ContractResources.CREATE_CHILD_ABI)
-								.via("warmUp2")
-								.gas(GAS),
-
-						contractCall(CONTRACT_NAME, ContractResources.CREATE_CHILD_ABI)
-								.via("callTxn3")
-								.payingWith(ACCOUNT)
-								.gas(GAS)
-								.hasKnownStatus(SUCCESS),
-
+						/* sub-level payable contract call */
 						assertionsHold((spec, log) -> {
-								var record = getTxnRecord("callTxn3");
-								allRunFor(spec, record);
-								var gasUsed = record.getResponseRecord().getContractCallResult().getGasUsed();
-								log.info("Before {}; Now {}", lowExpiryGasCost.get(), gasUsed);
-								// equal
-								Assertions.assertTrue(gasUsed >= lowExpiryGasCost.get());
+							final var subLevelSolidityAddr = spec.registry().getContractInfo("scinfo").getContractAccountID();
+							final var cc = contractCall(
+									TOP_LEVEL_CONTRACT,
+									ContractResources.SUB_LEVEL_PAYABLE_ABI,
+									subLevelSolidityAddr, 20);
+							allRunFor(spec, cc);
+						}),
+						getAccountBalance(TOP_LEVEL_CONTRACT).hasTinyBars(INITIAL_CONTRACT_BALANCE),
+						getAccountBalance(SUB_LEVEL_CONTRACT).hasTinyBars(20 + INITIAL_CONTRACT_BALANCE)
+
+				);
+	}
+
+	private HapiApiSpec HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts() {
+		final var ACCOUNT = "account";
+		final var CONTRACT_FROM = "contract1";
+		final var CONTRACT_TO = "contract2";
+		return defaultHapiSpec("HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts")
+				.given(
+						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
+
+						fileCreate("contract1Bytecode").path(ContractResources.TRANSFERRING_CONTRACT).payingWith(ACCOUNT),
+						contractCreate(CONTRACT_FROM).bytecode("contract1Bytecode").balance(10_000L).payingWith(ACCOUNT),
+
+						contractCreate(CONTRACT_TO).bytecode("contract1Bytecode").balance(10_000L).payingWith(ACCOUNT),
+
+						getContractInfo(CONTRACT_FROM).saveToRegistry("contract_from"),
+						getContractInfo(CONTRACT_TO).saveToRegistry("contract_to"),
+						getAccountInfo(ACCOUNT).savingSnapshot("accountInfo")
+				)
+				.when(
+						withOpContext((spec, log) -> {
+							var cto = spec.registry().getContractInfo("contract_to").getContractAccountID();
+
+							var transferCall = contractCall(
+									CONTRACT_FROM,
+									ContractResources.TRANSFERRING_CONTRACT_TRANSFERTOADDRESS,
+									cto, 10)
+									.payingWith(ACCOUNT).logged();
+							allRunFor(spec, transferCall);
+						})
+				)
+				.then(
+						getAccountBalance(CONTRACT_FROM).hasTinyBars(10_000 - 10),
+						getAccountBalance(CONTRACT_TO).hasTinyBars(10_000 + 10)
+				);
+	}
+
+	private HapiApiSpec HSCS_EVM_010_ReceiverMustSignContractTx() {
+		final var ACCOUNT = "acc";
+		final var RECEIVER_KEY = "receiverKey";
+		return defaultHapiSpec("HSCS_EVM_010_ReceiverMustSignContractTx")
+				.given(
+						newKeyNamed(RECEIVER_KEY),
+						cryptoCreate(ACCOUNT)
+								.balance(5*ONE_HUNDRED_HBARS)
+								.receiverSigRequired(true)
+								.key(RECEIVER_KEY)
+				)
+				.when(
+						getAccountInfo(ACCOUNT).savingSnapshot("accInfo"),
+						fileCreate("bytecode")
+								.path(ContractResources.TRANSFERRING_CONTRACT),
+						contractCreate("contract")
+								.bytecode("bytecode")
+								.payingWith(ACCOUNT)
+								.balance(ONE_HUNDRED_HBARS)
+				)
+				.then(
+						withOpContext((spec, log) -> {
+							var acc = spec.registry().getAccountInfo("accInfo").getContractAccountID();
+							var withoutReceiverSignature = contractCall(
+									"contract",
+									ContractResources.TRANSFERRING_CONTRACT_TRANSFERTOADDRESS,
+									acc, ONE_HUNDRED_HBARS/2)
+									.hasKnownStatus(INVALID_SIGNATURE);
+							allRunFor(spec, withoutReceiverSignature);
+
+							var withSignature = contractCall(
+									"contract",
+									ContractResources.TRANSFERRING_CONTRACT_TRANSFERTOADDRESS,
+									acc, ONE_HUNDRED_HBARS/2)
+									.payingWith(ACCOUNT)
+									.signedBy(RECEIVER_KEY)
+									.hasKnownStatus(SUCCESS);
+							allRunFor(spec, withSignature);
 						})
 				);
 	}
 
-	private Double getGasToTinybarsRatio(long gas, long tinybars) {
-		return Double.valueOf(tinybars)/Double.valueOf(gas);
+	private HapiApiSpec HSCS_EVM_010_MultiSignatureAccounts() {
+		final var ACCOUNT = "acc";
+		final var PAYER_KEY = "pkey";
+		final var OTHER_KEY = "okey";
+		final var KEY_LIST = "klist";
+		return defaultHapiSpec("HSCS_EVM_010_MultiSignatureAccounts")
+				.given(
+						newKeyNamed(PAYER_KEY),
+						newKeyNamed(OTHER_KEY),
+						newKeyListNamed(KEY_LIST, List.of(PAYER_KEY, OTHER_KEY)),
+						cryptoCreate(ACCOUNT)
+								.balance(ONE_HUNDRED_HBARS)
+								.key(KEY_LIST)
+								.keyType(THRESHOLD)
+				)
+				.when(
+						fileCreate("bytecode")
+								.path(ContractResources.TRANSFERRING_CONTRACT),
+						getAccountInfo(ACCOUNT).savingSnapshot("accInfo"),
+
+						contractCreate("contract").bytecode("bytecode")
+								.payingWith(ACCOUNT)
+								.signedBy(PAYER_KEY)
+								.adminKey(KEY_LIST).hasPrecheck(INVALID_SIGNATURE),
+
+						contractCreate("contract").bytecode("bytecode")
+								.payingWith(ACCOUNT)
+								.signedBy(PAYER_KEY, OTHER_KEY)
+								.balance(10)
+								.adminKey(KEY_LIST)
+				)
+				.then(
+						withOpContext((spec, log) -> {
+							var acc = spec.registry().getAccountInfo("accInfo").getContractAccountID();
+							var assertionWithOnlyOneKey = contractCall(
+									"contract",
+									ContractResources.TRANSFERRING_CONTRACT_TRANSFERTOADDRESS,
+									acc, 10)
+									.payingWith(ACCOUNT)
+									.signedBy(PAYER_KEY)
+									.hasPrecheck(INVALID_SIGNATURE);
+							allRunFor(spec, assertionWithOnlyOneKey);
+
+							var assertionWithBothKeys = contractCall(
+									"contract",
+									ContractResources.TRANSFERRING_CONTRACT_TRANSFERTOADDRESS,
+									acc, 10)
+									.payingWith(ACCOUNT)
+									.signedBy(PAYER_KEY, OTHER_KEY)
+									.hasKnownStatus(SUCCESS);
+							allRunFor(spec, assertionWithBothKeys);
+						})
+				);
 	}
 
 	@Override
