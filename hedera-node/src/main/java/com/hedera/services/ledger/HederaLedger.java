@@ -26,7 +26,6 @@ import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.DetachedAccountException;
 import com.hedera.services.exceptions.InconsistentAdjustmentsException;
 import com.hedera.services.exceptions.InsufficientFundsException;
-import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -59,7 +58,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.util.Comparator;
 import java.util.List;
 
-import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
+import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
@@ -353,24 +352,6 @@ public class HederaLedger {
 
 	public void doZeroSum(List<BalanceChange> changes) {
 		transferLogic.transfer(changes);
-		var validity = OK;
-		for (var change : changes) {
-			if (change.isForHbar()) {
-				validity = accountsLedger.validate(change.accountId(), scopedCheck.setBalanceChange(change));
-			} else {
-				validity = tokenStore.tryTokenChange(change);
-			}
-			if (validity != OK) {
-				break;
-			}
-		}
-
-		if (validity == OK) {
-			adjustHbarUnchecked(changes);
-		} else {
-			dropPendingTokenChanges();
-			throw new InvalidTransactionException(validity);
-		}
 	}
 
 	/* -- ACCOUNT META MANIPULATION -- */

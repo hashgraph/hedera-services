@@ -1,4 +1,4 @@
-package com.hedera.services.ledger.accounts;
+package com.hedera.services.ledger.backing;
 
 /*-
  * ‌
@@ -25,46 +25,64 @@ import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
 
 import static com.hedera.services.utils.EntityNum.fromAccountId;
-import static java.util.stream.Collectors.toSet;
 
-public class PureBackingAccounts implements BackingStore<AccountID, MerkleAccount> {
+@Singleton
+public class BackingAccounts implements BackingStore<AccountID, MerkleAccount> {
+	Set<AccountID> existingAccounts = new HashSet<>();
+
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> delegate;
 
-	public PureBackingAccounts(Supplier<MerkleMap<EntityNum, MerkleAccount>> delegate) {
+	@Inject
+	public BackingAccounts(Supplier<MerkleMap<EntityNum, MerkleAccount>> delegate) {
 		this.delegate = delegate;
 	}
 
 	@Override
+	public void rebuildFromSources() {
+		existingAccounts.clear();
+		delegate.get().keySet().stream()
+				.map(EntityNum::toGrpcAccountId)
+				.forEach(existingAccounts::add);
+	}
+
+	@Override
 	public MerkleAccount getRef(AccountID id) {
-		return delegate.get().get(fromAccountId(id));
+		return delegate.get().getForModify(fromAccountId(id));
+	}
+
+	@Override
+	public void put(AccountID id, MerkleAccount account) {
+		if (!existingAccounts.contains(id)) {
+			delegate.get().put(fromAccountId(id), account);
+			existingAccounts.add(id);
+		}
+	}
+
+	@Override
+	public boolean contains(AccountID id) {
+		return existingAccounts.contains(id);
+	}
+
+	@Override
+	public void remove(AccountID id) {
+		existingAccounts.remove(id);
+		delegate.get().remove(fromAccountId(id));
+	}
+
+	@Override
+	public Set<AccountID> idSet() {
+		return existingAccounts;
 	}
 
 	@Override
 	public MerkleAccount getImmutableRef(AccountID id) {
 		return delegate.get().get(fromAccountId(id));
-	}
-
-	@Override
-	public void put(AccountID id, MerkleAccount account) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void remove(AccountID id) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public boolean contains(AccountID id) {
-		return delegate.get().containsKey(fromAccountId(id));
-	}
-
-	@Override
-	public Set<AccountID> idSet() {
-		return delegate.get().keySet().stream().map(EntityNum::toGrpcAccountId).collect(toSet());
 	}
 }

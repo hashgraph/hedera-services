@@ -22,7 +22,7 @@ package com.hedera.services.ledger;
 
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.ledger.accounts.BackingTokenRels;
+import com.hedera.services.ledger.backing.BackingTokenRels;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;

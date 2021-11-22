@@ -21,7 +21,7 @@ package com.hedera.services.ledger;
  */
 
 import com.hedera.services.exceptions.MissingAccountException;
-import com.hedera.services.ledger.accounts.BackingStore;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.properties.BeanProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.utils.EntityIdUtils;

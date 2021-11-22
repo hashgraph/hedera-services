@@ -21,6 +21,8 @@ package com.hedera.services.ledger;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.ledger.backing.BackingAccounts;
+import com.hedera.services.ledger.backing.BackingTokenRels;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -44,8 +46,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NO
  * (This field is helpful to simplify work done in {@link HederaLedger}.)
  *
  * The {@code tokenId} and {@code accountId} fields are
- * temporary, needed to interact with the {@link com.hedera.services.ledger.accounts.BackingAccounts}
- * and {@link com.hedera.services.ledger.accounts.BackingTokenRels} components
+ * temporary, needed to interact with the {@link BackingAccounts}
+ * and {@link BackingTokenRels} components
  * whose APIs still use gRPC types.
  */
 public class BalanceChange {

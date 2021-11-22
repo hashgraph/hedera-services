@@ -1,4 +1,4 @@
-package com.hedera.services.ledger.accounts;
+package com.hedera.services.ledger.backing.pure;
 
 /*-
  * ‌
@@ -20,64 +20,52 @@ package com.hedera.services.ledger.accounts;
  * ‍
  */
 
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static com.hedera.services.utils.EntityNum.fromTokenId;
+import static java.util.stream.Collectors.toSet;
 
-@Singleton
-public class BackingTokens implements BackingStore<TokenID, MerkleToken> {
+public class PureBackingTokens implements BackingStore<TokenID, MerkleToken> {
     private final Supplier<MerkleMap<EntityNum, MerkleToken>> delegate;
 
-    @Inject
-    public BackingTokens(Supplier<MerkleMap<EntityNum, MerkleToken>> delegate) {
+    public PureBackingTokens(Supplier<MerkleMap<EntityNum, MerkleToken>> delegate) {
         this.delegate = delegate;
     }
 
     @Override
-    public void rebuildFromSources() {
-        // no operation
-    }
-
-    @Override
     public MerkleToken getRef(TokenID id) {
-        return delegate.get().getForModify(fromTokenId(id));
-    }
-
-    @Override
-    public void put(TokenID id, MerkleToken token) {
-        if (!delegate.get().containsKey(EntityNum.fromTokenId(id))) {
-            delegate.get().put(fromTokenId(id), token);
-        }
-    }
-
-    @Override
-    public boolean contains(TokenID id) {
-        return delegate.get().containsKey(EntityNum.fromTokenId(id));
-    }
-
-    @Override
-    public void remove(TokenID id) {
-        delegate.get().remove(fromTokenId(id));
-    }
-
-    @Override
-    public Set<TokenID> idSet() {
-        return delegate.get().keySet().stream()
-                .map(EntityNum::toGrpcTokenId)
-        .collect(Collectors.toSet());
+        return delegate.get().get(fromTokenId(id));
     }
 
     @Override
     public MerkleToken getImmutableRef(TokenID id) {
         return delegate.get().get(fromTokenId(id));
+    }
+
+    @Override
+    public void put(TokenID id, MerkleToken Token) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void remove(TokenID id) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean contains(TokenID id) {
+        return delegate.get().containsKey(fromTokenId(id));
+    }
+
+    @Override
+    public Set<TokenID> idSet() {
+        return delegate.get().keySet().stream().map(EntityNum::toGrpcTokenId).collect(toSet());
     }
 }

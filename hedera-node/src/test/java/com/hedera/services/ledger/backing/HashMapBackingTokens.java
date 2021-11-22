@@ -1,4 +1,4 @@
-package com.hedera.services.ledger.accounts;
+package com.hedera.services.ledger.backing;
 
 /*-
  * ‌
@@ -20,40 +20,43 @@ package com.hedera.services.ledger.accounts;
  * ‍
  */
 
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hederahashgraph.api.proto.java.TokenID;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class HashMapTestAccounts implements BackingStore<Long, TestAccount> {
-	private Map<Long, TestAccount> testAccounts = new HashMap<>();
+public class HashMapBackingTokens implements BackingStore<TokenID, MerkleToken> {
+	private Map<TokenID, MerkleToken> tokens = new HashMap<>();
 
 	@Override
-	public TestAccount getRef(Long id) {
-		return testAccounts.get(id);
+	public MerkleToken getRef(TokenID id) {
+		return tokens.get(id);
 	}
 
 	@Override
-	public TestAccount getImmutableRef(Long id) {
-		return testAccounts.get(id);
+	public void put(TokenID id, MerkleToken Token) {
+		tokens.put(id, Token);
 	}
 
 	@Override
-	public void put(Long id, TestAccount testAccount) {
-		testAccounts.put(id, testAccount);
+	public boolean contains(TokenID id) {
+		return tokens.containsKey(id);
 	}
 
 	@Override
-	public void remove(Long id) {
-		testAccounts.remove(id);
+	public void remove(TokenID id) {
+		tokens.remove(id);
 	}
 
 	@Override
-	public boolean contains(Long id) {
-		return testAccounts.containsKey(id);
+	public Set<TokenID> idSet() {
+		return tokens.keySet();
 	}
 
 	@Override
-	public Set<Long> idSet() {
-		return testAccounts.keySet();
+	public MerkleToken getImmutableRef(TokenID id) {
+		return tokens.get(id);
 	}
 }
