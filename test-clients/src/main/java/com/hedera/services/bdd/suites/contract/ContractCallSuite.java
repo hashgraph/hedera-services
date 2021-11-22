@@ -42,8 +42,10 @@ import org.ethereum.core.CallTransaction;
 import org.junit.jupiter.api.Assertions;
 
 import java.math.BigInteger;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -74,6 +76,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -82,6 +85,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -140,7 +144,8 @@ public class ContractCallSuite extends HapiApiSuite {
 				HSCS_EVM_006_ContractHBarTransferToAccount(),
 				HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts(),
 				HSCS_EVM_010_MultiSignatureAccounts(),
-				HSCS_EVM_010_ReceiverMustSignContractTx()
+				HSCS_EVM_010_ReceiverMustSignContractTx(),
+				HSCS_EVM_004_GasRefund()
 		);
 	}
 
@@ -1158,6 +1163,102 @@ public class ContractCallSuite extends HapiApiSuite {
 							allRunFor(spec, assertionWithBothKeys);
 						})
 				);
+	}
+
+	private HapiApiSpec HSCS_EVM_004_GasRefund() {
+		final var GAS = 100_000;
+		long initialExpiry = Instant.now().plusSeconds(10_000_000L).getEpochSecond();
+		final AtomicLong lowExpiryGasCost = new AtomicLong(0);
+		final var ACCOUNT = "acc";
+		final var CONTRACT_NAME = "contract";
+		return defaultHapiSpec("HSCS_EVM_004_GasRefund")
+				.given(
+						fileCreate("parentDelegateBytecode")
+								.path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
+						contractCreate(CONTRACT_NAME)
+								.bytecode("parentDelegateBytecode")
+				).when(
+				).then(
+						cryptoCreate(ACCOUNT)
+								.balance(ONE_HUNDRED_HBARS),
+						/* warm-up call */
+						contractCall(CONTRACT_NAME, ContractResources.CREATE_CHILD_ABI)
+								.via("warmUp"),
+						sleepFor(10000),
+						/* initial call */
+						contractCall(CONTRACT_NAME, ContractResources.CREATE_CHILD_ABI)
+								.via("callTxn2")
+								.payingWith(ACCOUNT)
+								.gas(GAS),
+						sleepFor(10000),
+						assertionsHold((spec, log) -> {
+							var record = getTxnRecord("callTxn2");
+							allRunFor(spec, record);
+							var gasUsed = record
+									.getResponseRecord()
+									.getContractCallResult()
+									.getGasUsed();
+							var allTransfers = record
+									.getResponseRecord()
+									.getTransferList()
+									.getAccountAmountsList();
+							var expectedRefund = GAS - gasUsed;
+							log.info("Gas used {}; Gas sent {}; Expected gas refund {};", gasUsed, GAS, expectedRefund);
+							// coinbase transfer is representing the gas paid
+							var coinbaseReceiveTransfer = allTransfers
+									.stream()
+									.filter(aa -> aa.getAccountID().getAccountNum() == 98)
+									.findAny()
+									.get();
+							// node transfer is the network fee + some other tx fees
+							var nodeTransfer = allTransfers
+									.stream()
+									.filter(aa -> aa.getAccountID().getAccountNum() == 3)
+									.findAny()
+									.get();
+							/* hedera gas cost */
+							double oneGasInTinybars = getGasToTinybarsRatio(gasUsed, coinbaseReceiveTransfer.getAmount());
+							var expectedRefundInTinybars = oneGasInTinybars * expectedRefund;
+							var usedGasInTinybars = oneGasInTinybars * gasUsed;
+							var gasSentInTinybars = GAS * oneGasInTinybars;
+							assert gasSentInTinybars == expectedRefundInTinybars + usedGasInTinybars;
+							// total charge in tinybars includes the used gas and the network fee
+							var totalCharge = (usedGasInTinybars + nodeTransfer.getAmount());
+							/* asserting hbar to gas ratio calculation works as expected + the refund amount */
+							var expectedBalance = ONE_HUNDRED_HBARS - (long) totalCharge;
+							var assertion = getAccountBalance(ACCOUNT)
+									.hasTinyBars(expectedBalance);
+							allRunFor(spec, assertion);
+							lowExpiryGasCost.set(gasUsed);
+						}),
+						contractUpdate(CONTRACT_NAME)
+								.newExpiryTime(initialExpiry*4)
+								.via("updateTx")
+								.payingWith("acc"),
+						sleepFor(10000),
+						contractCall(CONTRACT_NAME, ContractResources.CREATE_CHILD_ABI)
+								.via("warmUp2")
+								.gas(GAS),
+						sleepFor(10000),
+						contractCall(CONTRACT_NAME, ContractResources.CREATE_CHILD_ABI)
+								.via("callTxn3")
+								.payingWith(ACCOUNT)
+								.gas(GAS)
+								.hasKnownStatus(SUCCESS),
+
+						assertionsHold((spec, log) -> {
+							var record = getTxnRecord("callTxn3");
+							allRunFor(spec, record);
+							var gasUsed = record.getResponseRecord().getContractCallResult().getGasUsed();
+							log.info("Before {}; Now {}", lowExpiryGasCost.get(), gasUsed);
+							// equal
+							Assertions.assertTrue(gasUsed >= lowExpiryGasCost.get());
+						})
+				);
+	}
+
+	private Double getGasToTinybarsRatio(long gas, long tinybars) {
+		return Double.valueOf(tinybars)/Double.valueOf(gas);
 	}
 
 	@Override
