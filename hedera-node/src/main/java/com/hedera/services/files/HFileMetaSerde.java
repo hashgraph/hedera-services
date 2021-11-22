@@ -20,14 +20,12 @@ package com.hedera.services.files;
  * ‍
  */
 
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.hedera.services.legacy.core.jproto.JKeySerializer.StreamConsumer;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 
-import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -77,13 +75,5 @@ public class HFileMetaSerde {
 		var memo = serIn.readNormalisedString(MAX_CONCEIVABLE_MEMO_UTF8_BYTES);
 		var wacl = serdes.readNullable(serIn, serdes::deserializeKey);
 		return new HFileMeta(isDeleted, wacl, expiry, memo);
-	}
-
-	private static HFileMeta unpack(DataInputStream stream) throws IOException {
-		boolean deleted = stream.readBoolean();
-		long expirationTime = stream.readLong();
-		byte[] key = stream.readAllBytes();
-		JKey wacl = JKeySerializer.deserialize(new DataInputStream(new ByteArrayInputStream(key)));
-		return new HFileMeta(deleted, wacl, expirationTime);
 	}
 }

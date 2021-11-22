@@ -89,7 +89,7 @@ public class JKeySerializer {
 		return unpack(stream, type, length);
 	}
 
-	private static void pack(DataOutputStream stream, JObjectType type, Object object) throws IOException {
+	static void pack(final DataOutputStream stream, final JObjectType type, final Object object) throws IOException {
 		if (JObjectType.FC_ED25519_KEY.equals(type) || JObjectType.FC_ECDSA384_KEY.equals(type)) {
 			JKey jKey = (JKey) object;
 			byte[] key = (jKey.hasEd25519Key()) ? jKey.getEd25519() : jKey.getECDSA384();
@@ -130,7 +130,7 @@ public class JKeySerializer {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static <T> T unpack(DataInputStream stream, JObjectType type, long length) throws IOException {
+	static <T> T unpack(DataInputStream stream, JObjectType type, long length) throws IOException {
 		if (JObjectType.FC_ED25519_KEY.equals(type) || JObjectType.FC_ECDSA384_KEY.equals(type)) {
 			byte[] key = new byte[(int) length];
 			stream.readFully(key);
