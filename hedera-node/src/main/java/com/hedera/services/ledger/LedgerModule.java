@@ -36,6 +36,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.txns.crypto.TransferLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -67,21 +68,10 @@ public abstract class LedgerModule {
 			final UniqTokenViewsManager uniqTokenViewsManager,
 			final AccountRecordsHistorian recordsHistorian,
 			final GlobalDynamicProperties dynamicProperties,
-			final BackingStore<AccountID, MerkleAccount> backingAccounts,
-			final BackingStore<TokenID, MerkleToken> backingTokens
-	) {
-		TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger =
-				new TransactionalLedger<>(
-						AccountProperty.class,
-						MerkleAccount::new,
-						backingAccounts,
-						new ChangeSummaryManager<>());
-		TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger =
-				new TransactionalLedger<>(
-						TokenProperty.class,
-						MerkleToken::new,
-						backingTokens,
-						new ChangeSummaryManager<>());
+			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
+			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
+			final TransferLogic transferLogic
+			) {
 		final var ledger = new HederaLedger(
 				tokenStore,
 				ids,
@@ -91,7 +81,8 @@ public abstract class LedgerModule {
 				recordsHistorian,
 				dynamicProperties,
 				accountsLedger,
-				tokensLedger);
+				tokensLedger,
+				transferLogic);
 		ledger.setTokenViewsManager(uniqTokenViewsManager);
 		scheduleStore.setAccountsLedger(accountsLedger);
 		scheduleStore.setHederaLedger(ledger);

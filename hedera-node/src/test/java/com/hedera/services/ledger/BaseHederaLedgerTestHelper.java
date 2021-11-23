@@ -41,6 +41,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.txns.crypto.TransferLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -88,6 +89,7 @@ public class BaseHederaLedgerTestHelper {
 	protected EntityIdSource ids;
 	protected ExpiringCreations creator;
 	protected AccountRecordsHistorian historian;
+	protected TransferLogic transferLogic;
 	protected TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 	protected TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	protected TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
@@ -237,7 +239,8 @@ public class BaseHederaLedgerTestHelper {
 				.willReturn(tokenId);
 		given(tokenStore.get(frozenId)).willReturn(frozenToken);
 
-		subject = new HederaLedger(tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProps, accountsLedger, tokensLedger);
+		subject = new HederaLedger(tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProps,
+				accountsLedger, tokensLedger, transferLogic);
 	}
 
 	protected void givenOkTokenXfers(AccountID misc, TokenID tokenId, long i) {

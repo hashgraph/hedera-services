@@ -43,20 +43,15 @@ public class BackingTokens implements BackingStore<TokenID, MerkleToken> {
     }
 
     @Override
-    public void rebuildFromSources() {
-        // no operation
-    }
-
-    @Override
     public MerkleToken getRef(TokenID id) {
         return delegate.get().getForModify(fromTokenId(id));
     }
 
     @Override
     public void put(TokenID id, MerkleToken token) {
-        if (!delegate.get().containsKey(EntityNum.fromTokenId(id))) {
-            delegate.get().put(fromTokenId(id), token);
-        }
+        final var tokens = delegate.get();
+        final var eId = fromTokenId(id);
+        tokens.computeIfAbsent(eId, a -> tokens.put(a, token));
     }
 
     @Override

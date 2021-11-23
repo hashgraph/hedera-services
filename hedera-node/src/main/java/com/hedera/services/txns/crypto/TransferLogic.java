@@ -40,6 +40,8 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.List;
 
 import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
@@ -48,6 +50,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWN
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+@Singleton
 public class TransferLogic {
     private static final List<AccountProperty> TOKEN_TRANSFER_SIDE_EFFECTS =
             List.of(TOKENS, NUM_NFTS_OWNED, ALREADY_USED_AUTOMATIC_ASSOCIATIONS);
@@ -57,10 +60,9 @@ public class TransferLogic {
     private final SideEffectsTracker sideEffectsTracker;
     private final TokenStore tokenStore;
     private final MerkleAccountScopedCheck scopedCheck;
-    private final GlobalDynamicProperties dynamicProperties;
-    private final OptionValidator validator;
     private final UniqTokenViewsManager tokenViewsManager;
 
+    @Inject
     public TransferLogic(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
                          TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
                          TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
@@ -74,11 +76,9 @@ public class TransferLogic {
         this.tokenRelsLedger = tokenRelsLedger;
         this.sideEffectsTracker = sideEffectsTracker;
         this.tokenStore = tokenStore;
-        this.dynamicProperties = dynamicProperties;
-        this.validator = validator;
         this.tokenViewsManager = tokenViewsManager;
 
-        scopedCheck = new MerkleAccountScopedCheck(this.dynamicProperties, this.validator);
+        scopedCheck = new MerkleAccountScopedCheck(dynamicProperties, validator);
     }
 
     public void transfer(List<BalanceChange> changes) {
@@ -114,6 +114,7 @@ public class TransferLogic {
     }
 
     public void dropPendingTokenChanges() {
+        // TODO: Should we add rollback for tokensLedger (which comes from tokenStore)
         if (tokenRelsLedger.isInTransaction()) {
             tokenRelsLedger.rollback();
         }

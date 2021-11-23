@@ -82,6 +82,8 @@ public interface BackingStore<K, A> {
 
 	/**
 	 * Returns the set of extant account ids.
+	 * <b>This is a very computation-intensive operation. <i>idSet</i> should only be called at state initialisation
+	 * Avoid using this method in a normal handleTransaction flow.</b>
 	 *
 	 * @return the set of extant account ids
 	 */

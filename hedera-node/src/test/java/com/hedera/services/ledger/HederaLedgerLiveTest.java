@@ -98,7 +98,8 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 				tokensLedger,
 				tokenRelsLedger,
 				nftsLedger);
-		subject = new HederaLedger(tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProps, accountsLedger, tokensLedger);
+		subject = new HederaLedger(tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProps,
+				accountsLedger, tokensLedger, transferLogic);
 	}
 
 	@Test

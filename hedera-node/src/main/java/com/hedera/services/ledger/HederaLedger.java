@@ -134,8 +134,7 @@ public class HederaLedger {
 			TokenRelProperty,
 			MerkleTokenRelStatus> tokenRelsLedger = null;
 
-	private final MerkleAccountScopedCheck scopedCheck;
-	private final TransferLogic transferLogic;
+	private TransferLogic transferLogic;
 
 	public HederaLedger(
 			final TokenStore tokenStore,
@@ -146,7 +145,8 @@ public class HederaLedger {
 			final AccountRecordsHistorian historian,
 			final GlobalDynamicProperties dynamicProperties,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
-			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger
+			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
+			final TransferLogic transferLogic
 	) {
 		this.ids = ids;
 		this.validator = validator;
@@ -156,15 +156,12 @@ public class HederaLedger {
 		this.dynamicProperties = dynamicProperties;
 		this.sideEffectsTracker = sideEffectsTracker;
 		this.tokensLedger = tokensLedger;
-
-		this.transferLogic = new TransferLogic(accountsLedger, nftsLedger, tokenRelsLedger, tokenStore, sideEffectsTracker, tokenViewsManager, dynamicProperties, validator);
+		this.transferLogic = transferLogic;
 
 		creator.setLedger(this);
 		historian.setCreator(creator);
 		tokenStore.setAccountsLedger(accountsLedger);
 		tokenStore.setHederaLedger(this);
-
-		scopedCheck = new MerkleAccountScopedCheck(dynamicProperties, validator);
 	}
 
 	public void setTokenViewsManager(UniqTokenViewsManager tokenViewsManager) {
@@ -187,6 +184,9 @@ public class HederaLedger {
 		if (tokenRelsLedger != null) {
 			tokenRelsLedger.begin();
 		}
+		if (tokensLedger != null) {
+			tokensLedger.begin();
+		}
 		if (nftsLedger != null) {
 			nftsLedger.begin();
 		}
@@ -199,6 +199,9 @@ public class HederaLedger {
 		accountsLedger.rollback();
 		if (tokenRelsLedger != null && tokenRelsLedger.isInTransaction()) {
 			tokenRelsLedger.rollback();
+		}
+		if (tokensLedger != null && tokensLedger.isInTransaction()) {
+			tokensLedger.rollback();
 		}
 		if (nftsLedger != null && nftsLedger.isInTransaction()) {
 			nftsLedger.rollback();
@@ -216,6 +219,9 @@ public class HederaLedger {
 		historian.noteNewExpirationEvents();
 		if (tokenRelsLedger != null && tokenRelsLedger.isInTransaction()) {
 			tokenRelsLedger.commit();
+		}
+		if (tokensLedger != null && tokensLedger.isInTransaction()) {
+			tokensLedger.commit();
 		}
 		if (nftsLedger != null && nftsLedger.isInTransaction()) {
 			nftsLedger.commit();
