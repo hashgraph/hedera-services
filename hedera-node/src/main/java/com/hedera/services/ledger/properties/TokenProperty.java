@@ -26,8 +26,6 @@ import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
-import com.hedera.services.store.models.Account;
-import com.hedera.services.utils.EntityIdUtils;
 
 import java.util.List;
 import java.util.Optional;
