@@ -22,8 +22,6 @@ package com.hedera.services.txns.token;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -48,26 +46,21 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
 	private final OptionValidator validator;
-	private final TypedTokenStore tokenStore;
 	private final TransactionContext txnCtx;
-	private final AccountStore accountStore;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final MintLogic mintLogic;
 
 	@Inject
 	public TokenMintTransitionLogic(
-			OptionValidator validator,
-			AccountStore accountStore,
-			TypedTokenStore tokenStore,
-			TransactionContext txnCtx,
-			GlobalDynamicProperties dynamicProperties
+			final OptionValidator validator,
+			final TransactionContext txnCtx,
+			final GlobalDynamicProperties dynamicProperties,
+			final MintLogic mintLogic
 	) {
 		this.validator = validator;
-		this.tokenStore = tokenStore;
 		this.txnCtx = txnCtx;
-		this.accountStore = accountStore;
 		this.dynamicProperties = dynamicProperties;
-		this.mintLogic = new MintLogic(validator, tokenStore, accountStore);
+		this.mintLogic = mintLogic;
 	}
 
 	@Override

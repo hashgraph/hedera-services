@@ -57,14 +57,9 @@ class TokenMintTransitionLogicTest {
 	private final TokenID grpcId = IdUtils.asToken("1.2.3");
 
 	@Mock
-	private TypedTokenStore store;
-	@Mock
 	private TransactionContext txnCtx;
-
 	@Mock
 	private OptionValidator validator;
-	@Mock
-	private AccountStore accountStore;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
@@ -76,7 +71,7 @@ class TokenMintTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new TokenMintTransitionLogic(validator, accountStore, store, txnCtx, dynamicProperties);
+		subject = new TokenMintTransitionLogic(validator, txnCtx, dynamicProperties, mintLogic);
 	}
 
 	@Test

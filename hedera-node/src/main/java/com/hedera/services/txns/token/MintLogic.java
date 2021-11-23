@@ -30,6 +30,7 @@ import com.hedera.services.store.models.Token;
 import com.hedera.services.txns.validation.OptionValidator;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.List;
 
@@ -38,6 +39,7 @@ import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED;
 
+@Singleton
 public class MintLogic {
 	private final OptionValidator validator;
 	private final TypedTokenStore tokenStore;
