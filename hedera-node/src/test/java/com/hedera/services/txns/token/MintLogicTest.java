@@ -85,10 +85,6 @@ class MintLogicTest {
 	}
 
 	@Test
-	void mint() {
-	}
-
-	@Test
 	void validatesMintCap() {
 		// setup:
 		final long curTotal = 100L;
@@ -99,10 +95,17 @@ class MintLogicTest {
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 		given(store.currentMintedNfts()).willReturn(curTotal);
+		given(token.getId()).willReturn(id);
+		given(store.loadToken(id)).willReturn(token);
 		given(validator.isPermissibleTotalNfts(unacceptableTotal)).willReturn(false);
 
 		// expect:
-		assertFailsWith(() -> subject.mint(token.getId(), 0, 0, null, Instant.now()),
+		assertFailsWith(() -> subject.mint(
+						token.getId(),
+						txnCtx.accessor().getTxn().getTokenMint().getMetadataCount(),
+						txnCtx.accessor().getTxn().getTokenMint().getAmount(),
+						txnCtx.accessor().getTxn().getTokenMint().getMetadataList(),
+						Instant.now()),
 				MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED);
 	}
 
@@ -114,12 +117,18 @@ class MintLogicTest {
 		givenValidTxnCtx();
 		given(accessor.getTxn()).willReturn(tokenMintTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
+		given(store.loadToken(id)).willReturn(token);
 		given(token.getTreasury()).willReturn(treasury);
 		given(store.loadTokenRelationship(token, treasury)).willReturn(treasuryRel);
 		given(token.getType()).willReturn(TokenType.FUNGIBLE_COMMON);
+		given(token.getId()).willReturn(id);
 
 		// when:
-		subject.mint(token.getId(), 0, 0, null, Instant.now());
+		subject.mint(token.getId(),
+				txnCtx.accessor().getTxn().getTokenMint().getMetadataCount(),
+				txnCtx.accessor().getTxn().getTokenMint().getAmount(),
+				txnCtx.accessor().getTxn().getTokenMint().getMetadataList(),
+				Instant.now());
 
 		// then:
 		verify(token).mint(treasuryRel, amount, false);
@@ -138,13 +147,18 @@ class MintLogicTest {
 		given(accessor.getTxn()).willReturn(tokenMintTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(token.getTreasury()).willReturn(treasury);
+		given(store.loadToken(id)).willReturn(token);
+		given(token.getId()).willReturn(id);
 		given(store.loadTokenRelationship(token, treasury)).willReturn(treasuryRel);
 		given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 		given(store.currentMintedNfts()).willReturn(curTotal);
-		given(txnCtx.consensusTime()).willReturn(Instant.now());
 		given(validator.isPermissibleTotalNfts(acceptableTotal)).willReturn(true);
 		// when:
-		subject.mint(token.getId(), 0, 0, null, Instant.now());
+		subject.mint(token.getId(),
+				txnCtx.accessor().getTxn().getTokenMint().getMetadataCount(),
+				txnCtx.accessor().getTxn().getTokenMint().getAmount(),
+				txnCtx.accessor().getTxn().getTokenMint().getMetadataList(),
+				Instant.now());
 
 		// then:
 		verify(token).mint(any(OwnershipTracker.class), eq(treasuryRel), any(List.class), any(RichInstant.class));

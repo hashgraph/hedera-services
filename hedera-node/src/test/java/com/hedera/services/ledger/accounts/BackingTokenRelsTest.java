@@ -24,9 +24,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.merkle.map.MerkleMap;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -49,23 +47,29 @@ import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
 
 class BackingTokenRelsTest {
-	private long aBalance = 100, bBalance = 200, cBalance = 300;
-	private boolean aFrozen = true, bFrozen = false, cFrozen = true;
-	private boolean aKyc = false, bKyc = true, cKyc = false;
-	private boolean automaticAssociation = false;
-	private AccountID a = asAccount("0.0.3");
-	private AccountID b = asAccount("0.0.1");
-	private AccountID c = asAccount("0.0.0");
-	private TokenID at = asToken("0.0.7");
-	private TokenID bt = asToken("0.0.6");
-	private TokenID ct = asToken("0.0.5");
+	private final long aBalance = 100;
+	private final long bBalance = 200;
+	private final long cBalance = 300;
+	private final boolean aFrozen = true;
+	private final boolean bFrozen = false;
+	private final boolean cFrozen = true;
+	private final boolean aKyc = false;
+	private final boolean bKyc = true;
+	private final boolean cKyc = false;
+	private final boolean automaticAssociation = false;
+	private final AccountID a = asAccount("0.0.3");
+	private final AccountID b = asAccount("0.0.1");
+	private final AccountID c = asAccount("0.0.0");
+	private final TokenID at = asToken("0.0.7");
+	private final TokenID bt = asToken("0.0.6");
+	private final TokenID ct = asToken("0.0.5");
 
-	private EntityNumPair aKey = fromAccountTokenRel(a, at);
-	private EntityNumPair bKey = fromAccountTokenRel(b, bt);
-	private EntityNumPair cKey = fromAccountTokenRel(c, ct);
-	private MerkleTokenRelStatus aValue = new MerkleTokenRelStatus(aBalance, aFrozen, aKyc, automaticAssociation);
-	private MerkleTokenRelStatus bValue = new MerkleTokenRelStatus(bBalance, bFrozen, bKyc, automaticAssociation);
-	private MerkleTokenRelStatus cValue = new MerkleTokenRelStatus(cBalance, cFrozen, cKyc, automaticAssociation);
+	private final EntityNumPair aKey = fromAccountTokenRel(a, at);
+	private final EntityNumPair bKey = fromAccountTokenRel(b, bt);
+	private final EntityNumPair cKey = fromAccountTokenRel(c, ct);
+	private final MerkleTokenRelStatus aValue = new MerkleTokenRelStatus(aBalance, aFrozen, aKyc, automaticAssociation);
+	private final MerkleTokenRelStatus bValue = new MerkleTokenRelStatus(bBalance, bFrozen, bKyc, automaticAssociation);
+	private final MerkleTokenRelStatus cValue = new MerkleTokenRelStatus(cBalance, cFrozen, cKyc, automaticAssociation);
 
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> rels;
 
@@ -81,44 +85,18 @@ class BackingTokenRelsTest {
 	}
 
 	@Test
-	void manualAddToExistingWorks() {
-		// given:
-		final var aNewPair = Pair.of(c, ct);
-
-		// when:
-//		subject.addToExistingRels(aNewPair);
-
-		// then:
-		assertTrue(subject.contains(aNewPair));
-	}
-
-	@Test
-	void manualRemoveFromExistingWorks() {
-		// given:
-		final var destroyedPair = Pair.of(a, at);
-
-		// when:
-//		subject.removeFromExistingRels(destroyedPair);
-
-		// then:
-		assertFalse(subject.contains(destroyedPair));
-	}
-
-	@Test
 	void relToStringWorks() {
 		// expect:
 		assertEquals("0.0.3 <-> 0.0.7", readableTokenRel(asTokenRel(a, at)));
 	}
 
 	@Test
-	void delegatesPutForNewRelIfMissing() throws ConstructableRegistryException {
+	void delegatesPutForNewRelIfMissing() {
 		// when:
 		subject.put(asTokenRel(c, ct), cValue);
 
 		// then:
 		assertEquals(cValue, rels.get(fromAccountTokenRel(c, ct)));
-		// and:
-//		assertTrue(subject.existingRels.contains(asTokenRel(c, ct)));
 	}
 
 	@Test
@@ -131,29 +109,12 @@ class BackingTokenRelsTest {
 	}
 
 	@Test
-	void removeUpdatesBothCacheAndDelegate() {
+	void removeUpdatesDelegate() {
 		// when:
 		subject.remove(asTokenRel(a, at));
 
 		// then:
 		assertFalse(rels.containsKey(fromAccountTokenRel(a, at)));
-		// and:
-//		assertFalse(subject.existingRels.contains(asTokenRel(a, at)));
-	}
-
-	@Test
-	void rebuildsFromChangedSources() {
-		// when:
-		rels.clear();
-		rels.put(cKey, cValue);
-		// and:
-		subject.rebuildFromSources();
-
-		// then:
-//		assertFalse(subject.existingRels.contains(asTokenRel(a, at)));
-//		assertFalse(subject.existingRels.contains(asTokenRel(b, bt)));
-//		 and:
-//		assertTrue(subject.existingRels.contains(asTokenRel(c, ct)));
 	}
 
 	@Test
