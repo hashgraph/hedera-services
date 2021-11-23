@@ -149,7 +149,6 @@ class LedgerBalanceChangesTest {
 				sideEffectsTracker,
 				viewManager,
 				dynamicProperties,
-				() -> tokens,
 				tokenRelsLedger,
 				nftsLedger,
 				tokensLedger);
@@ -254,7 +253,6 @@ class LedgerBalanceChangesTest {
 				sideEffectsTracker,
 				viewManager,
 				dynamicProperties,
-				() -> tokens,
 				tokenRelsLedger,
 				nftsLedger,
 				tokensLedger);

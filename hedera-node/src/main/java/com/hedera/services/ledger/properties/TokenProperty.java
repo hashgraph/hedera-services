@@ -59,7 +59,7 @@ public enum TokenProperty implements BeanProperty<MerkleToken> {
 	FREEZE_KEY {
 		@Override
 		public BiConsumer<MerkleToken, Object> setter() {
-			return (a, l) -> a.setAdminKey((JKey) l);
+			return (a, l) -> a.setFreezeKey((JKey) l);
 		}
 
 		@Override

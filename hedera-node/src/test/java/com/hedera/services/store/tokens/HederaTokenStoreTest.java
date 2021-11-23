@@ -288,7 +288,7 @@ class HederaTokenStoreTest {
 
 		sideEffectsTracker = new SideEffectsTracker();
 		subject = new HederaTokenStore(
-				ids, TEST_VALIDATOR, sideEffectsTracker, uniqTokenViewsManager, properties, () -> tokens,
+				ids, TEST_VALIDATOR, sideEffectsTracker, uniqTokenViewsManager, properties,
 				tokenRelsLedger, nftsLedger, tokensLedger);
 		subject.setAccountsLedger(accountsLedger);
 		subject.setHederaLedger(hederaLedger);

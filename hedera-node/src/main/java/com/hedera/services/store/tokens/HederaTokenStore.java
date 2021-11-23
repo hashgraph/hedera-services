@@ -24,6 +24,7 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
@@ -117,6 +118,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	private final UniqTokenViewsManager uniqTokenViewsManager;
 	private final GlobalDynamicProperties properties;
 	private final SideEffectsTracker sideEffectsTracker;
+
 	private final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 	private final TransactionalLedger<
 			Pair<AccountID, TokenID>,
@@ -159,7 +161,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 	private void rebuildViewOfKnownTreasuries() {
 		for (TokenID key : tokensLedger.idSet()) {
-			final var token = tokensLedger.getFinalized(key);
+			final var token = tokensLedger.getImmutableRef(key);
 			/* A deleted token's treasury is no longer bound by ACCOUNT_IS_TREASURY restrictions. */
 			if (!token.isDeleted()) {
 				addKnownTreasury(token.treasury().toGrpcAccountId(), key);
