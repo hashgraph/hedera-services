@@ -112,6 +112,7 @@ public class TypedTokenStore {
 		this.delegate = delegate;
 		this.sideEffectsTracker = sideEffectsTracker;
 		this.addKnownTreasury = legacyStoreDelegate;
+
 	}
 
 	/**
