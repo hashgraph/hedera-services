@@ -45,8 +45,10 @@ import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
 import static com.hedera.services.utils.EntityIdUtils.asTypedSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.contractParsedFromSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
+import static com.hedera.services.utils.EntityIdUtils.tokenParsedFromSolidityAddress;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
+import static com.hedera.test.utils.IdUtils.asToken;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -84,6 +86,7 @@ class MerkleEntityIdUtilsTest {
 		};
 		final var equivAccount = asAccount(String.format("%d.%d.%d", shard, realm, num));
 		final var equivContract = asContract(String.format("%d.%d.%d", shard, realm, num));
+		final var equivToken = asToken(String.format("%d.%d.%d", shard, realm, num));
 
 		final var actual = asSolidityAddress(shard, realm, num);
 		final var typedActual = asTypedSolidityAddress(equivAccount);
@@ -96,6 +99,7 @@ class MerkleEntityIdUtilsTest {
 		assertEquals(CommonUtils.hex(expected), actualHex);
 		assertEquals(equivAccount, accountParsedFromSolidityAddress(actual));
 		assertEquals(equivContract, contractParsedFromSolidityAddress(actual));
+		assertEquals(equivToken, tokenParsedFromSolidityAddress(actual));
 	}
 
 	@ParameterizedTest

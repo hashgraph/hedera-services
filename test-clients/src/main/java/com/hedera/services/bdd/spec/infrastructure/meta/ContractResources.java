@@ -77,6 +77,8 @@ public class ContractResources {
 	public static final String LARGE_CONTRACT_CRYPTO_KITTIES = bytecodePath("CryptoKitties");
 	public static final String SELF_DESTRUCT_CALLABLE = bytecodePath("SelfDestructCallable");
 	public static final String REVERTING_SEND_TRY = bytecodePath("RevertingSendTry");
+	public static final String ZENOS_BANK_CONTRACT = bytecodePath("ZenosBank");
+	public static final String MUSICAL_CHAIRS_CONTRACT = bytecodePath("MusicalChairs");
 
 	public static final String SEND_REPEATEDLY_ABI = "{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"just_send_" +
 			"num\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"account_num\",\"type\":\"uint64\"}," +
@@ -554,6 +556,33 @@ public class ContractResources {
 	public static final String ERC_1155_ABI_MINT = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"tokenType\",\"type\":\"uint256\"}" +
 			",{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"recipient\",\"type\":\"address\"}]" +
 			",\"name\":\"mintToken\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+
+	public static final String ZENOS_BANK_WITHDRAW_TOKENS = "{\"constant\": false," +
+			"\"inputs\": [],\"name\": \"withdrawTokens\"," +
+			"\"outputs\": [],\"payable\": false,\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String ZENOS_BANK_DEPOSIT_TOKENS = "{\"constant\": false," +
+			"\"inputs\": [{\"name\": \"amount\",\"type\": \"int64\"}],\"name\": \"depositTokens\"," +
+			"\"outputs\": [],\"payable\": false,\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String ZENOS_BANK_CONSTRUCTOR = "{" +
+			"\"inputs\": [{\"name\": \"_tokenAddress\",\"type\": \"address\"}]," +
+			"\"payable\": false,\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
+
+	public static final String MUSICAL_CHAIRS_CONSTRUCTOR = "{" +
+			"\"inputs\": [{\"internalType\": \"address\",\"name\": \"_dj\",\"type\": \"address\"}]," +
+			"\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
+	public static final String MUSICAL_CHAIRS_SIT_DOWN ="{" +
+			"\"inputs\": [],\"name\": \"sitDown\"," +
+			"\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String MUSICAL_CHAIRS_START_MUSIC = "{" +
+			"\"inputs\": [],\"name\": \"startMusic\"," +
+			"\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String MUSICAL_CHAIRS_STOP_MUSIC = "{" +
+			"\"inputs\": [],\"name\": \"stopMusic\"," +
+			"\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String MUSICAL_CHAIRS_WHO_IS_ON_THE_BUBBLE = "{" +
+			"\"inputs\": [],\"name\": \"whoIsOnTheBubble\"," +
+			"\"outputs\": [{\"internalType\": \"address\",\"name\": \"hotSeatAddress\",\"type\": \"address\"}]," +
+			"\"stateMutability\": \"view\",\"type\": \"function\"}";
 
 
 	public static String bytecodePath(String bytecode) {

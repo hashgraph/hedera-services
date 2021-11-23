@@ -248,6 +248,14 @@ public final class EntityIdUtils {
 				.build();
 	}
 
+	public static TokenID tokenParsedFromSolidityAddress(byte[] solidityAddress) {
+		return TokenID.newBuilder()
+				.setShardNum(Ints.fromByteArray(Arrays.copyOfRange(solidityAddress, 0, 4)))
+				.setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(solidityAddress, 4, 12)))
+				.setTokenNum(Longs.fromByteArray(Arrays.copyOfRange(solidityAddress, 12, 20)))
+				.build();
+	}
+
 	public static String asLiteralString(final AccountID id) {
 		return String.format(
 				ENTITY_ID_FORMAT,

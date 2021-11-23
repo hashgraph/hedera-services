@@ -40,6 +40,7 @@ import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.Operation;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.hyperledger.besu.plugin.data.Transaction;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,6 +51,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.Deque;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -83,6 +85,8 @@ class CallEvmTxProcessorTest {
 	private Transaction transaction;
 	@Mock
 	private HederaWorldState.Updater updater;
+	@Mock
+	Map<String, PrecompiledContract> precompiledContractMap;
 
 	private final Account sender = new Account(new Id(0, 0, 1002));
 	private final Account receiver = new Account(new Id(0, 0, 1006));
@@ -100,7 +104,8 @@ class CallEvmTxProcessorTest {
 		CommonProcessorSetup.setup(gasCalculator);
 
 		callEvmTxProcessor = new CallEvmTxProcessor(
-				worldState, livePricesSource, codeCache, globalDynamicProperties, gasCalculator, operations);
+				worldState, livePricesSource, codeCache, globalDynamicProperties, gasCalculator, 
+                                operations, precompiledContractMap);
 	}
 
 	@Test

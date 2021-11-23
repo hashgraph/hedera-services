@@ -38,10 +38,12 @@ import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.Operation;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
+import java.util.Map;
 import java.util.OptionalLong;
 import java.util.Set;
 
@@ -61,9 +63,10 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 			final LivePricesSource livePricesSource,
 			final GlobalDynamicProperties dynamicProperties,
 			final GasCalculator gasCalculator,
-			final Set<Operation> hederaOperations
+			final Set<Operation> hederaOperations,
+			final Map<String, PrecompiledContract> precompiledContractMap
 	) {
-		super(livePricesSource, dynamicProperties, gasCalculator, hederaOperations);
+		super(livePricesSource, dynamicProperties, gasCalculator, hederaOperations, precompiledContractMap);
 		this.codeCache = codeCache;
 	}
 

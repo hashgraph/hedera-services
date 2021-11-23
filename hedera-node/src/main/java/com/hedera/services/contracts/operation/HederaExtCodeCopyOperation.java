@@ -29,6 +29,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.ExtCodeCopyOperation;
 
 import javax.inject.Inject;
+import java.util.function.BiPredicate;
 
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
@@ -42,9 +43,13 @@ import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
  */
 public class HederaExtCodeCopyOperation extends ExtCodeCopyOperation {
 
+	private final BiPredicate<Address, MessageFrame> addressValidator;
+
 	@Inject
-	public HederaExtCodeCopyOperation(GasCalculator gasCalculator) {
+	public HederaExtCodeCopyOperation(GasCalculator gasCalculator,
+									  BiPredicate<Address, MessageFrame> addressValidator) {
 		super(gasCalculator);
+		this.addressValidator = addressValidator;
 	}
 
 	@Override
@@ -56,7 +61,8 @@ public class HederaExtCodeCopyOperation extends ExtCodeCopyOperation {
 				frame,
 				() -> frame.getStackItem(0),
 				() -> cost(frame, memOffset, numBytes, true),
-				() -> super.execute(frame, evm)
+				() -> super.execute(frame, evm),
+				addressValidator
 		);
 	}
 }

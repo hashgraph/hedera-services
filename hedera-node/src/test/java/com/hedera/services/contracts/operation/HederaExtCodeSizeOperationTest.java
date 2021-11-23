@@ -37,9 +37,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.util.function.BiPredicate;
 
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -59,6 +61,12 @@ class HederaExtCodeSizeOperationTest {
 
 	@Mock
 	EVM evm;
+	@Mock
+	private Account acc;
+	@Mock
+	private Address accountAddr;
+	@Mock
+	private BiPredicate<Address, MessageFrame> addressValidator;
 
 	HederaExtCodeSizeOperation subject;
 
@@ -67,13 +75,13 @@ class HederaExtCodeSizeOperationTest {
 		given(gasCalculator.getExtCodeSizeOperationGasCost()).willReturn(Gas.of(10L));
 		given(gasCalculator.getWarmStorageReadCost()).willReturn(Gas.of(2L));
 
-		subject = new HederaExtCodeSizeOperation(gasCalculator);
+		subject = new HederaExtCodeSizeOperation(gasCalculator, addressValidator);
 	}
 
 	@Test
 	void executeWorldUpdaterResolvesToNull() {
 		given(mf.getStackItem(0)).willReturn(ethAddressInstance);
-		given(mf.getWorldUpdater()).willReturn(worldUpdater);
+		given(addressValidator.test(any(), any())).willReturn(false);
 
 		var opResult = subject.execute(mf, evm);
 
@@ -102,6 +110,7 @@ class HederaExtCodeSizeOperationTest {
 		given(mf.popStackItem()).willReturn(ethAddressInstance);
 		given(mf.warmUpAddress(ethAddressInstance)).willReturn(true);
 		given(mf.getRemainingGas()).willReturn(Gas.of(100));
+		given(addressValidator.test(any(), any())).willReturn(true);
 
 		// when:
 		var opResult = subject.execute(mf, evm);

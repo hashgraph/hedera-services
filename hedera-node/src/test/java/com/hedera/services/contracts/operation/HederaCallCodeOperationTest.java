@@ -39,6 +39,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.util.function.BiPredicate;
 
 import static com.hedera.services.contracts.operation.CommonCallSetup.commonSetup;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -66,12 +67,14 @@ class HederaCallCodeOperationTest {
 	private Gas cost;
 	@Mock
 	private SoliditySigsVerifier sigsVerifier;
+	@Mock
+	private BiPredicate<Address, MessageFrame> addressValidator;
 
 	private HederaCallCodeOperation subject;
 
 	@BeforeEach
 	void setup() {
-		subject = new HederaCallCodeOperation(sigsVerifier, calc);
+		subject = new HederaCallCodeOperation(sigsVerifier, calc, addressValidator);
 		commonSetup(evmMsgFrame, worldUpdater, acc, accountAddr);
 	}
 
@@ -90,6 +93,7 @@ class HederaCallCodeOperationTest {
 		given(evmMsgFrame.getStackItem(4)).willReturn(Bytes.EMPTY);
 		given(evmMsgFrame.getStackItem(5)).willReturn(Bytes.EMPTY);
 		given(evmMsgFrame.getStackItem(6)).willReturn(Bytes.EMPTY);
+		given(addressValidator.test(any(), any())).willReturn(false);
 
 		var opRes = subject.execute(evmMsgFrame, evm);
 
@@ -121,6 +125,7 @@ class HederaCallCodeOperationTest {
 		given(calc.gasAvailableForChildCall(any(), any(), anyBoolean())).willReturn(Gas.of(10));
 		given(acc.getAddress()).willReturn(accountAddr);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
+		given(addressValidator.test(any(), any())).willReturn(true);
 
 		var opRes = subject.execute(evmMsgFrame, evm);
 		assertEquals(Optional.empty(), opRes.getHaltReason());
@@ -151,6 +156,7 @@ class HederaCallCodeOperationTest {
 		given(worldUpdater.get(any())).willReturn(acc);
 		given(acc.getAddress()).willReturn(accountAddr);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(false);
+		given(addressValidator.test(any(), any())).willReturn(true);
 
 		var opRes = subject.execute(evmMsgFrame, evm);
 		assertEquals(Optional.of(HederaExceptionalHaltReason.INVALID_SIGNATURE), opRes.getHaltReason());
