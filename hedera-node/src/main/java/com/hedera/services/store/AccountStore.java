@@ -52,9 +52,9 @@ public class AccountStore {
 
 	@Inject
 	public AccountStore(
-			OptionValidator validator,
-			GlobalDynamicProperties dynamicProperties,
-			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
+			final OptionValidator validator,
+			final GlobalDynamicProperties dynamicProperties,
+			final BackingStore<AccountID, MerkleAccount> accounts) {
 		this.validator = validator;
 		this.dynamicProperties = dynamicProperties;
 		this.accounts = accounts;
@@ -160,6 +160,7 @@ public class AccountStore {
 		final var mutableAccount = accounts.getImmutableRef(id.asGrpcAccount());
 		mapModelToMutable(account, mutableAccount);
 		mutableAccount.tokens().updateAssociationsFrom(account.getAssociatedTokens());
+		accounts.put(id.asGrpcAccount(), mutableAccount);
 	}
 
 	private void mapModelToMutable(Account model, MerkleAccount mutableAccount) {
