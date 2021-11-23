@@ -243,6 +243,7 @@ public class BaseHederaLedgerTestHelper {
 				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProps, accountsLedger);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setNftsLedger(nftsLedger);
+		subject.setTokensLedger(tokensLedger);
 	}
 
 	protected void givenOkTokenXfers(AccountID misc, TokenID tokenId, long i) {
