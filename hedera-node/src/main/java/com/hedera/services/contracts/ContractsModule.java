@@ -101,9 +101,11 @@ public abstract class ContractsModule {
 
 	@Provides
 	@Singleton
-	public static EntityAccess provideMutableEntityAccess(HederaLedger ledger,
-														  Supplier<VirtualMap<ContractKey, ContractValue>> storage,
-														  Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode) {
+	public static EntityAccess provideMutableEntityAccess(
+			final HederaLedger ledger,
+			final Supplier<VirtualMap<ContractKey, ContractValue>> storage,
+			final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode
+	) {
 		return new MutableEntityAccess(ledger, storage, bytecode);
 	}
 
