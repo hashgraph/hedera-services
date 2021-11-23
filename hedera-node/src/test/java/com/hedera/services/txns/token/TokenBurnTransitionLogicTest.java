@@ -83,6 +83,8 @@ class TokenBurnTransitionLogicTest {
 	private AccountStore accountStore;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private BurnLogic burnLogic;
 
 	private TokenRelationship treasuryRel;
 	private TransactionBody tokenBurnTxn;
@@ -91,7 +93,7 @@ class TokenBurnTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new TokenBurnTransitionLogic(validator, accountStore, store, txnCtx, dynamicProperties);
+		subject = new TokenBurnTransitionLogic(validator, txnCtx, dynamicProperties, burnLogic);
 	}
 
 	@Test
