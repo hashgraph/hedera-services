@@ -87,7 +87,7 @@ class LedgerBalanceChangesTest {
 	private final BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
 	private final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingRels =
 			new HashMapBackingTokenRels();
-	private final BackingStore<TokenID, MerkleToken> backingTokens = new HashMapBackingTokens();
+	private BackingStore<TokenID, MerkleToken> backingTokens = new HashMapBackingTokens();
 	private TokenStore tokenStore;
 	private final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
 	private final FCOneToManyRelation<EntityNum, Long> uniqueTokenOwnerships = new FCOneToManyRelation<>();
@@ -137,6 +137,13 @@ class LedgerBalanceChangesTest {
 		tokens.put(yetAnotherTokenKey, fungibleTokenWithTreasury(aModel));
 		tokens.put(aNftKey, nonFungibleTokenWithTreasury(aModel));
 		tokens.put(bNftKey, nonFungibleTokenWithTreasury(bModel));
+
+		backingTokens.put(tokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
+		backingTokens.put(anotherTokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
+		backingTokens.put(yetAnotherTokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
+		backingTokens.put(aNftKey.toGrpcTokenId(), nonFungibleTokenWithTreasury(aModel));
+		backingTokens.put(bNftKey.toGrpcTokenId(), nonFungibleTokenWithTreasury(bModel));
+
 		final var sideEffectsTracker = new SideEffectsTracker();
 		final var viewManager = new UniqTokenViewsManager(
 				() -> uniqueTokenOwnerships,
@@ -238,9 +245,15 @@ class LedgerBalanceChangesTest {
 	@Test
 	void rejectsMissingToken() {
 		// setup:
-		tokens.clear();
-		tokens.put(anotherTokenKey, fungibleTokenWithTreasury(aModel));
-		tokens.put(yetAnotherTokenKey, fungibleTokenWithTreasury(aModel));
+		backingTokens = new HashMapBackingTokens();
+		backingTokens.put(anotherTokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
+		backingTokens.put(yetAnotherTokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
+		tokensLedger = new TransactionalLedger<>(
+				TokenProperty.class,
+				MerkleToken::new,
+				backingTokens,
+				new ChangeSummaryManager<>()
+		);
 		final var sideEffectsTracker = new SideEffectsTracker();
 		final var viewManager = new UniqTokenViewsManager(
 				() -> uniqueTokenOwnerships,

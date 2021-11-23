@@ -30,6 +30,7 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.utils.EntityIdUtils;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -48,7 +49,7 @@ public enum TokenProperty implements BeanProperty<MerkleToken> {
 	ADMIN_KEY {
 		@Override
 		public BiConsumer<MerkleToken, Object> setter() {
-			return (a, l) -> a.setAdminKey((JKey) l);
+			return (a, l) -> a.setAdminKey(((Optional<JKey>) l).orElse(null));
 		}
 
 		@Override
@@ -59,7 +60,7 @@ public enum TokenProperty implements BeanProperty<MerkleToken> {
 	FREEZE_KEY {
 		@Override
 		public BiConsumer<MerkleToken, Object> setter() {
-			return (a, l) -> a.setFreezeKey((JKey) l);
+			return (a, l) -> a.setFreezeKey(((Optional<JKey>) l).orElse(null));
 		}
 
 		@Override
@@ -169,10 +170,7 @@ public enum TokenProperty implements BeanProperty<MerkleToken> {
 	TREASURY {
 		@Override
 		public BiConsumer<MerkleToken, Object> setter() {
-			return (a, l) -> {
-				var acc = (Account) l;
-				a.setTreasury(new EntityId(acc.getId()));
-			};
+			return (a, l) -> a.setTreasury((EntityId) l);
 		}
 
 		@Override
