@@ -9,9 +9,9 @@ package com.hedera.services.ledger.accounts;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,7 +34,6 @@ import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Collections;
 import java.util.Set;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -43,11 +42,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
-import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
 
 class BackingAccountsTest {
@@ -64,51 +60,23 @@ class BackingAccountsTest {
 	private final MerkleAccount cValue = MerkleAccountFactory.newAccount().balance(121L).get();
 	private final MerkleAccount dValue = MerkleAccountFactory.newAccount().balance(120L).get();
 
-	private MerkleMap<EntityNum, MerkleAccount> map;
+	private MerkleMap<EntityNum, MerkleAccount> delegate;
 	private BackingAccounts subject;
 
 	@BeforeEach
 	private void setup() {
-		map = mock(MerkleMap.class);
-		given(map.keySet()).willReturn(Collections.emptySet());
+		delegate = new MerkleMap<>();
+		delegate.put(aKey, aValue);
+		delegate.put(bKey, bValue);
 
-		subject = new BackingAccounts(() -> map);
-	}
-
-	@Test
-	void rebuildsFromChangedSources() {
-		// setup:
-		map = new MerkleMap<>();
-		map.put(aKey, aValue);
-		map.put(bKey, bValue);
-		// and:
-		subject = new BackingAccounts(() -> map);
-
-		// when:
-		map.clear();
-		map.put(cKey, cValue);
-		map.put(dKey, dValue);
-		// and:
-		subject.rebuildFromSources();
-
-		// then:
-//		assertFalse(subject.existingAccounts.contains(a));
-//		assertFalse(subject.existingAccounts.contains(b));
-		// and:
-//		assertTrue(subject.existingAccounts.contains(c));
-//		assertTrue(subject.existingAccounts.contains(d));
+		subject = new BackingAccounts(() -> delegate);
 	}
 
 	@Test
 	void containsDelegatesToKnownActive() {
-		// setup:
-//		subject.existingAccounts = Set.of(a, b);
-
 		// expect:
 		assertTrue(subject.contains(a));
 		assertTrue(subject.contains(b));
-		// and:
-		verify(map, never()).containsKey(any());
 	}
 
 	@Test
@@ -117,88 +85,49 @@ class BackingAccountsTest {
 		subject.put(a, aValue);
 
 		// then:
-//		assertTrue(subject.existingAccounts.contains(a));
-		// and:
-		verify(map, never()).containsKey(any());
+		assertTrue(subject.contains(a));
 	}
 
 	@Test
 	void getRefIsReadThrough() {
-		given(map.getForModify(aKey)).willReturn(aValue);
-
 		// expect:
 		assertEquals(aValue, subject.getRef(a));
-		assertEquals(aValue, subject.getRef(a));
-		// and:
-		verify(map, times(2)).getForModify(aKey);
+		assertEquals(bValue, subject.getRef(b));
 	}
 
 	@Test
-	void removeUpdatesBothCacheAndDelegate() {
-		// given:
-//		subject.existingAccounts.add(a);
-
+	void removeUpdatesDelegate() {
 		// when:
-		subject.remove(a);
+		subject.remove(b);
 
 		// then:
-		verify(map).remove(aKey);
-		// and:
-//		assertFalse(subject.existingAccounts.contains(a));
+		assertFalse(subject.contains(b));
 	}
 
 	@Test
 	void returnsMutableRef() {
-		given(map.getForModify(aKey)).willReturn(aValue);
+		final var mutable = subject.getRef(b);
 
-		// when:
-		MerkleAccount v = subject.getRef(a);
-
-		// then:
-		assertSame(aValue, v);
+		assertEquals(bValue, mutable);
+		assertFalse(mutable.isImmutable());
 	}
 
 	@Test
-	void usesPutForMissing() {
-		// given:
-		subject.put(a, bValue);
-
-		// expect:
-		verify(map).put(aKey, bValue);
-	}
-
-	@Test
-	void putDoesNothingIfPresent() {
-		// setup:
-//		subject.existingAccounts.add(a);
-
-		given(map.getForModify(aKey)).willReturn(aValue);
-
+	void getImmutableRefDelegatesToGet() {
 		// when:
-		subject.getRef(a);
-		subject.put(a, aValue);
+		final var immutable = subject.getImmutableRef(b);
 
 		// then:
-		verify(map, never()).replace(aKey, aValue);
+		assertEquals(bValue, immutable);
 	}
 
 	@Test
 	void returnsExpectedIds() {
 		// setup:
-		var s = Set.of(a, b, c, d);
-		// given:
-//		subject.existingAccounts = s;
+		final var s = Set.of(a, b);
 
 		// expect:
-		assertSame(s, subject.idSet());
-	}
-
-	@Test
-	void delegatesUnsafeRef() {
-		given(map.get(aKey)).willReturn(aValue);
-
-		// expect:
-		assertEquals(aValue, subject.getImmutableRef(a));
+		assertEquals(s, subject.idSet());
 	}
 
 	@Test

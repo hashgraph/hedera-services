@@ -23,8 +23,7 @@ package com.hedera.services.store;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
-import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
@@ -61,7 +60,7 @@ class AccountStoreTest {
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
-	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
+	private BackingStore<AccountID, MerkleAccount> accounts;
 
 	private AccountStore subject;
 
@@ -218,11 +217,11 @@ class AccountStoreTest {
 	}
 
 	private void setupWithAccount(EntityNum anId, MerkleAccount anAccount) {
-		given(accounts.getFinalized(anId.toGrpcAccountId())).willReturn(anAccount);
+		given(accounts.getImmutableRef(anId.toGrpcAccountId())).willReturn(anAccount);
 	}
 
 	private void setupWithMutableAccount(EntityNum anId, MerkleAccount anAccount) {
-		given(accounts.getFinalized(anId.toGrpcAccountId())).willReturn(anAccount);
+		given(accounts.getImmutableRef(anId.toGrpcAccountId())).willReturn(anAccount);
 	}
 
 	private void assertMiscAccountLoadFailsWith(ResponseCodeEnum status) {
@@ -263,7 +262,7 @@ class AccountStoreTest {
 	private final Id autoRenewId = new Id(0, 0, autoRenewAccountNum);
 	private final Id firstAssocTokenId = new Id(0, 0, firstAssocTokenNum);
 	private final Id secondAssocTokenId = new Id(0, 0, secondAssocTokenNum);
-	private final Id proxy = new Id(0,0, miscProxyAccount);
+	private final Id proxy = new Id(0, 0, miscProxyAccount);
 	private final EntityNum miscMerkleId = EntityNum.fromLong(miscAccountNum);
 	private final Account miscAccount = new Account(miscId);
 	private final Account autoRenewAccount = new Account(autoRenewId);

@@ -22,10 +22,7 @@ package com.hedera.services.store;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.properties.NftProperty;
-import com.hedera.services.ledger.properties.TokenProperty;
-import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
@@ -88,11 +85,11 @@ class TypedTokenStoreTest {
 	@Mock
 	private UniqTokenViewsManager uniqTokenViewsManager;
 	@Mock
-	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
+	private BackingStore<TokenID, MerkleToken> tokens;
 	@Mock
-	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> uniqueTokens;
+	private BackingStore<NftId, MerkleUniqueToken> uniqueTokens;
 	@Mock
-	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRels;
+	private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels;
 	@Mock
 	private TokenStore legacyStore;
 
@@ -219,10 +216,7 @@ class TypedTokenStoreTest {
 	/* --- Token loading --- */
 	@Test
 	void reportsExpectedNftsMinted() {
-		final var setMock = mock(Set.class);
-		given(uniqueTokens.idSet()).willReturn(setMock);
-		given(setMock.size()).willReturn(123);
-
+		given(uniqueTokens.size()).willReturn(123L);
 		// expect:
 		assertEquals(123L, subject.currentMintedNfts());
 	}
@@ -337,20 +331,20 @@ class TypedTokenStoreTest {
 		final var merkleUniqueToken = mock(MerkleUniqueToken.class);
 		final var serialNumbers = List.of(1L, 2L);
 		given(merkleUniqueToken.getOwner()).willReturn(new EntityId(Id.DEFAULT));
-		given(uniqueTokens.getFinalized(any())).willReturn(merkleUniqueToken);
+		given(uniqueTokens.getImmutableRef(any())).willReturn(merkleUniqueToken);
 
 		subject.loadUniqueTokens(aToken, serialNumbers);
 
 		assertEquals(2, aToken.getLoadedUniqueTokens().size());
 
-		given(uniqueTokens.getFinalized(any())).willReturn(null);
+		given(uniqueTokens.getImmutableRef(any())).willReturn(null);
 		assertThrows(InvalidTransactionException.class, () -> subject.loadUniqueTokens(aToken, serialNumbers));
 	}
 
 	@Test
 	void persistsDeletedTokenAsExpected() {
 		setupToken();
-		given(tokens.getFinalized(any())).willReturn(merkleToken);
+		given(tokens.getImmutableRef(any())).willReturn(merkleToken);
 
 		token.setIsDeleted(true);
 		token.setAutoRenewAccount(null);
@@ -497,7 +491,7 @@ class TypedTokenStoreTest {
 	@Test
 	void loadOrFailsWorksAsExpected() {
 		assertFailsWith(() -> subject.loadTokenOrFailWith(Id.DEFAULT, FAIL_INVALID), FAIL_INVALID);
-		given(tokens.getFinalized(any())).willReturn(merkleToken);
+		given(tokens.getImmutableRef(any())).willReturn(merkleToken);
 		assertNotNull(subject.loadTokenOrFailWith(IdUtils.asModelId("0.0.3"), FAIL_INVALID));
 	}
 
@@ -515,7 +509,7 @@ class TypedTokenStoreTest {
 	}
 
 	private void givenToken(final EntityNum anId, final MerkleToken aToken) {
-		given(tokens.getFinalized(anId.toGrpcTokenId())).willReturn(aToken);
+		given(tokens.getImmutableRef(anId.toGrpcTokenId())).willReturn(aToken);
 	}
 
 	private void givenModifiableToken(final EntityNum anId, final MerkleToken aToken) {

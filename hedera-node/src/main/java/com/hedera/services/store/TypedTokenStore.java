@@ -466,6 +466,7 @@ public class TypedTokenStore {
 		mutableToken.setTotalSupply(token.getTotalSupply());
 		mutableToken.setAccountsFrozenByDefault(token.isFrozenByDefault());
 		mutableToken.setLastUsedSerialNumber(token.getLastUsedSerialNumber());
+		mutableToken.setDeleted(token.isDeleted());
 
 		mutableToken.setTokenType(token.getType());
 		mutableToken.setSupplyType(token.getSupplyType());
