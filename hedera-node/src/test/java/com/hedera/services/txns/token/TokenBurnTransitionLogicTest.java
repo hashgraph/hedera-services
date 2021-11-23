@@ -22,16 +22,9 @@ package com.hedera.services.txns.token;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.OwnershipTracker;
-import com.hedera.services.store.models.Token;
-import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -46,20 +39,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class TokenBurnTransitionLogicTest {
@@ -70,76 +52,22 @@ class TokenBurnTransitionLogicTest {
 	private final Account treasury = new Account(treasuryId);
 
 	@Mock
-	private Token token;
-	@Mock
-	private TypedTokenStore store;
-	@Mock
 	private TransactionContext txnCtx;
-	@Mock
-	private PlatformTxnAccessor accessor;
+
 	@Mock
 	private OptionValidator validator;
 	@Mock
-	private AccountStore accountStore;
-	@Mock
 	private GlobalDynamicProperties dynamicProperties;
-	@Mock
-	private BurnLogic burnLogic;
 
-	private TokenRelationship treasuryRel;
 	private TransactionBody tokenBurnTxn;
 
 	private TokenBurnTransitionLogic subject;
+	@Mock
+	private BurnLogic burnLogic;
 
 	@BeforeEach
 	private void setup() {
 		subject = new TokenBurnTransitionLogic(validator, txnCtx, dynamicProperties, burnLogic);
-	}
-
-	@Test
-	void followsHappyPathForCommon() {
-		// setup:
-		treasuryRel = new TokenRelationship(token, treasury);
-
-		givenValidTxnCtx();
-		given(accessor.getTxn()).willReturn(tokenBurnTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(store.loadToken(id)).willReturn(token);
-		given(token.getTreasury()).willReturn(treasury);
-		given(store.loadTokenRelationship(token, treasury)).willReturn(treasuryRel);
-		given(token.getType()).willReturn(TokenType.FUNGIBLE_COMMON);
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(token).burn(treasuryRel, amount);
-		verify(store).commitToken(token);
-		verify(store).commitTokenRelationships(List.of(treasuryRel));
-	}
-
-	@Test
-	void followsHappyPathForUnique() {
-		// setup:
-		treasuryRel = new TokenRelationship(token, treasury);
-
-		givenValidUniqueTxnCtx();
-		given(accessor.getTxn()).willReturn(tokenBurnTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(store.loadToken(id)).willReturn(token);
-		given(token.getTreasury()).willReturn(treasury);
-		given(store.loadTokenRelationship(token, treasury)).willReturn(treasuryRel);
-		given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(token).getType();
-		verify(store).loadUniqueTokens(token, tokenBurnTxn.getTokenBurn().getSerialNumbersList());
-		verify(token).burn(any(OwnershipTracker.class), eq(treasuryRel), any(List.class));
-		verify(store).commitToken(token);
-		verify(store).commitTokenRelationships(List.of(treasuryRel));
-		verify(store).commitTrackers(any(OwnershipTracker.class));
-		verify(accountStore).commitAccount(any(Account.class));
 	}
 
 	@Test
