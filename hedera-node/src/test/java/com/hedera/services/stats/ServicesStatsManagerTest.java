@@ -21,55 +21,71 @@ package com.hedera.services.stats;
  */
 
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SleepingPause;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.function.Function;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
 
+
+@ExtendWith(MockitoExtension.class)
 class ServicesStatsManagerTest {
-	long updateIntervalMs = 1_234;
+	private final long updateIntervalMs = 1_234;
 
-	Pause pause;
-	Function<Runnable, Thread> threads;
-	Platform platform;
-
-	HapiOpCounters counters;
-	MiscRunningAvgs runningAvgs;
-	MiscSpeedometers miscSpeedometers;
-	HapiOpSpeedometers speedometers;
-	NodeLocalProperties properties;
+	@Mock
+	private Pause pause;
+	@Mock
+	private Platform platform;
+	@Mock
+	private Function<Runnable, Thread> threads;
+	@Mock
+	private HapiOpCounters counters;
+	@Mock
+	private MiscRunningAvgs runningAvgs;
+	@Mock
+	private MiscSpeedometers miscSpeedometers;
+	@Mock
+	private HapiOpSpeedometers speedometers;
+	@Mock
+	private NodeLocalProperties properties;
+	@Mock
+	private VirtualMap<ContractKey, ContractValue> storage;
+	@Mock
+	private VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode;
 
 	ServicesStatsManager subject;
 
 	@BeforeEach
-	void setup() throws Exception {
-		pause = mock(Pause.class);
-		threads = mock(Function.class);
-
+	void setup() {
 		ServicesStatsManager.loopFactory = threads;
 		ServicesStatsManager.pause = pause;
 
-		platform = mock(Platform.class);
 		given(platform.getSelfId()).willReturn(new NodeId(false, 123L));
-		counters = mock(HapiOpCounters.class);
-		runningAvgs = mock(MiscRunningAvgs.class);
-		speedometers = mock(HapiOpSpeedometers.class);
-		miscSpeedometers = mock(MiscSpeedometers.class);
-		properties = mock(NodeLocalProperties.class);
 		given(properties.statsHapiOpsSpeedometerUpdateIntervalMs()).willReturn(updateIntervalMs);
 
-		subject = new ServicesStatsManager(counters, runningAvgs, miscSpeedometers, speedometers, properties);
+		subject = new ServicesStatsManager(
+				counters, runningAvgs, miscSpeedometers, speedometers,
+				properties,
+				() -> storage, () -> bytecode);
 	}
 
 
@@ -109,5 +125,7 @@ class ServicesStatsManagerTest {
 		// then:
 		verify(pause).forMs(updateIntervalMs);
 		verify(speedometers).updateAll();
+		verify(storage).registerStatistics(any());
+		verify(bytecode).registerStatistics(any());
 	}
 }
