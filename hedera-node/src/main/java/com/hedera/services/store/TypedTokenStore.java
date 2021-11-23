@@ -22,10 +22,7 @@ package com.hedera.services.store;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.properties.NftProperty;
-import com.hedera.services.ledger.properties.TokenProperty;
-import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -54,29 +51,6 @@ import java.util.List;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.ledger.properties.TokenProperty.ACC_FROZEN_BY_DEFAULT;
-import static com.hedera.services.ledger.properties.TokenProperty.ADMIN_KEY;
-import static com.hedera.services.ledger.properties.TokenProperty.AUTO_RENEW_ACCOUNT;
-import static com.hedera.services.ledger.properties.TokenProperty.AUTO_RENEW_PERIOD;
-import static com.hedera.services.ledger.properties.TokenProperty.EXPIRY;
-import static com.hedera.services.ledger.properties.TokenProperty.FEE_SCHEDULE;
-import static com.hedera.services.ledger.properties.TokenProperty.FEE_SCHEDULE_KEY;
-import static com.hedera.services.ledger.properties.TokenProperty.FREEZE_KEY;
-import static com.hedera.services.ledger.properties.TokenProperty.IS_DELETED;
-import static com.hedera.services.ledger.properties.TokenProperty.IS_PAUSED;
-import static com.hedera.services.ledger.properties.TokenProperty.KYC_KEY;
-import static com.hedera.services.ledger.properties.TokenProperty.LAST_USED_SERIAL_NUMBER;
-import static com.hedera.services.ledger.properties.TokenProperty.MAX_SUPPLY;
-import static com.hedera.services.ledger.properties.TokenProperty.MEMO;
-import static com.hedera.services.ledger.properties.TokenProperty.NAME;
-import static com.hedera.services.ledger.properties.TokenProperty.PAUSE_KEY;
-import static com.hedera.services.ledger.properties.TokenProperty.SUPPLY_KEY;
-import static com.hedera.services.ledger.properties.TokenProperty.SUPPLY_TYPE;
-import static com.hedera.services.ledger.properties.TokenProperty.SYMBOL;
-import static com.hedera.services.ledger.properties.TokenProperty.TOKEN_TYPE;
-import static com.hedera.services.ledger.properties.TokenProperty.TOTAL_SUPPLY;
-import static com.hedera.services.ledger.properties.TokenProperty.TREASURY;
-import static com.hedera.services.ledger.properties.TokenProperty.WIPE_KEY;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -111,9 +85,9 @@ public class TypedTokenStore {
 	private final AccountStore accountStore;
 	private final SideEffectsTracker sideEffectsTracker;
 	private final UniqTokenViewsManager uniqTokenViewsManager;
-	private final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
-	private final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> uniqueTokens;
-	private final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRels;
+	private final BackingStore<TokenID, MerkleToken> tokens;
+	private final BackingStore<NftId, MerkleUniqueToken> uniqueTokens;
+	private final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels;
 
 	/* Only needed for interoperability with legacy HTS during refactor */
 	private final LegacyTreasuryRemover delegate;
@@ -122,9 +96,9 @@ public class TypedTokenStore {
 	@Inject
 	public TypedTokenStore(
 			final AccountStore accountStore,
-			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens,
-			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> uniqueTokens,
-			final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRels,
+			final BackingStore<TokenID, MerkleToken> tokens,
+			final BackingStore<NftId, MerkleUniqueToken> uniqueTokens,
+			final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels,
 			final UniqTokenViewsManager uniqTokenViewsManager,
 			final LegacyTreasuryAdder legacyStoreDelegate,
 			final LegacyTreasuryRemover delegate,
@@ -138,12 +112,6 @@ public class TypedTokenStore {
 		this.delegate = delegate;
 		this.sideEffectsTracker = sideEffectsTracker;
 		this.addKnownTreasury = legacyStoreDelegate;
-	}
-
-	static Pair<AccountID, TokenID> legacyReprOf(TokenRelationship rel) {
-		final var tokenId = rel.getToken().getId();
-		final var accountId = rel.getAccount().getId();
-		return Pair.of(accountId.asGrpcAccount(), tokenId.asGrpcToken());
 	}
 
 	/**
@@ -255,10 +223,7 @@ public class TypedTokenStore {
 	private void persistNonDestroyed(
 			TokenRelationship modelRel,
 			EntityNumPair key,
-			TransactionalLedger<
-					Pair<AccountID, TokenID>,
-					TokenRelProperty,
-					MerkleTokenRelStatus> currentTokenRels
+			BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> currentTokenRels
 	) {
 		final var isNewRel = modelRel.isNotYetPersisted();
 		final var mutableTokenRel = isNewRel
@@ -299,7 +264,7 @@ public class TypedTokenStore {
 	 * @throws InvalidTransactionException if the requested token is missing, deleted, or expired and pending removal
 	 */
 	public Token loadToken(Id id) {
-		final var merkleToken = tokens.getFinalized(id.asGrpcToken());
+		final var merkleToken = tokens.getImmutableRef(id.asGrpcToken());
 
 		validateUsable(merkleToken);
 
@@ -318,7 +283,7 @@ public class TypedTokenStore {
 	 * @return a usable model of the token which is possibly paused.
 	 */
 	public Token loadPossiblyPausedToken(Id id) {
-		final var merkleToken = tokens.getFinalized(id.asGrpcToken());
+		final var merkleToken = tokens.getImmutableRef(id.asGrpcToken());
 
 		validateTrue(merkleToken != null, INVALID_TOKEN_ID);
 		validateFalse(merkleToken.isDeleted(), TOKEN_WAS_DELETED);
@@ -341,7 +306,7 @@ public class TypedTokenStore {
 	public void loadUniqueTokens(Token token, List<Long> serialNumbers) {
 		final var loadedUniqueTokens = new HashMap<Long, UniqueToken>();
 		for (long serialNumber : serialNumbers) {
-			final var merkleUniqueToken = uniqueTokens.getFinalized(new NftId(token.getId().getNum(), serialNumber));
+			final var merkleUniqueToken = uniqueTokens.getImmutableRef(new NftId(token.getId().getNum(), serialNumber));
 			validateUsable(merkleUniqueToken);
 			final var uniqueToken = new UniqueToken(token.getId(), serialNumber);
 			initModelFields(uniqueToken, merkleUniqueToken);
@@ -358,7 +323,7 @@ public class TypedTokenStore {
 	 * @return a usable model of the token
 	 */
 	public Token loadPossiblyDeletedOrAutoRemovedToken(Id id) {
-		final var merkleToken = tokens.getFinalized(id.asGrpcToken());
+		final var merkleToken = tokens.getImmutableRef(id.asGrpcToken());
 
 		final var token = new Token(id);
 		if (merkleToken != null) {
@@ -380,7 +345,7 @@ public class TypedTokenStore {
 	 * @return - the loaded token
 	 */
 	public Token loadTokenOrFailWith(Id id, ResponseCodeEnum code) {
-		final var merkleToken = tokens.getFinalized(id.asGrpcToken());
+		final var merkleToken = tokens.getImmutableRef(id.asGrpcToken());
 
 		validateUsable(merkleToken, code);
 
@@ -399,8 +364,9 @@ public class TypedTokenStore {
 	 */
 	public void commitToken(Token token) {
 
-		final var mutableToken = tokens.getFinalized(token.getId().asGrpcToken());
-		mapModelChanges(token);
+		final var mutableToken = tokens.getRef(token.getId().asGrpcToken());
+		mapModelChanges(token, mutableToken);
+		tokens.put(token.getId().asGrpcToken(), mutableToken);
 
 		final var treasury = mutableToken.treasury();
 		if (token.hasMintedUniqueTokens()) {
@@ -441,10 +407,9 @@ public class TypedTokenStore {
 				token.getTreasury().getId().asEntityId()
 		);
 
-		tokens.put(newMerkleTokenId.toGrpcTokenId(), newMerkleToken);
-
 		/* map changes */
-		mapModelChanges(token);
+		mapModelChanges(token, newMerkleToken);
+		tokens.put(newMerkleTokenId.toGrpcTokenId(), newMerkleToken);
 
 		addKnownTreasury.perform(token.getTreasury().getId().asGrpcAccount(), token.getId().asGrpcToken());
 		sideEffectsTracker.trackTokenChanges(token);
@@ -491,31 +456,29 @@ public class TypedTokenStore {
 		validateTrue(merkleUniqueToken != null, INVALID_NFT_ID);
 	}
 
-	private void mapModelChanges(Token token) {
-		TokenID tokenID = token.getId().asGrpcToken();
-		tokens.set(tokenID, ADMIN_KEY, token.getAdminKey());
-		tokens.set(tokenID, TOTAL_SUPPLY, token.getTotalSupply());
-		tokens.set(tokenID, FREEZE_KEY, token.getFreezeKey());
-		tokens.set(tokenID, KYC_KEY, token.getKycKey());
-		tokens.set(tokenID, PAUSE_KEY, token.getPauseKey());
-		tokens.set(tokenID, SUPPLY_KEY, token.getSupplyKey());
-		tokens.set(tokenID, FEE_SCHEDULE_KEY, token.getFeeScheduleKey());
-		tokens.set(tokenID, WIPE_KEY, token.getWipeKey());
-		tokens.set(tokenID, IS_DELETED, token.isDeleted());
-		tokens.set(tokenID, IS_PAUSED, token.isPaused());
-		tokens.set(tokenID, SYMBOL, token.getSymbol());
-		tokens.set(tokenID, NAME, token.getName());
-		tokens.set(tokenID, TREASURY, token.getTreasury());
-		tokens.set(tokenID, ACC_FROZEN_BY_DEFAULT, token.isFrozenByDefault());
-		tokens.set(tokenID, EXPIRY, token.getExpiry());
-		tokens.set(tokenID, AUTO_RENEW_PERIOD, token.getAutoRenewPeriod());
-		tokens.set(tokenID, AUTO_RENEW_ACCOUNT, token.getAutoRenewAccount());
-		tokens.set(tokenID, MEMO, token.getMemo());
-		tokens.set(tokenID, LAST_USED_SERIAL_NUMBER, token.getLastUsedSerialNumber());
-		tokens.set(tokenID, TOKEN_TYPE, token.getType());
-		tokens.set(tokenID, SUPPLY_TYPE, token.getSupplyType());
-		tokens.set(tokenID, MAX_SUPPLY, token.getMaxSupply());
-		tokens.set(tokenID, FEE_SCHEDULE, token.getCustomFees());
+	private void mapModelChanges(Token token, MerkleToken mutableToken) {
+		final var newAutoRenewAccount = token.getAutoRenewAccount();
+		if (newAutoRenewAccount != null) {
+			mutableToken.setAutoRenewAccount(new EntityId(newAutoRenewAccount.getId()));
+			mutableToken.setAutoRenewPeriod(token.getAutoRenewPeriod());
+		}
+		mutableToken.setTreasury(new EntityId(token.getTreasury().getId()));
+		mutableToken.setTotalSupply(token.getTotalSupply());
+		mutableToken.setAccountsFrozenByDefault(token.isFrozenByDefault());
+		mutableToken.setLastUsedSerialNumber(token.getLastUsedSerialNumber());
+
+		mutableToken.setTokenType(token.getType());
+		mutableToken.setSupplyType(token.getSupplyType());
+
+		mutableToken.setMemo(token.getMemo());
+
+		mutableToken.setAdminKey(token.getAdminKey());
+		mutableToken.setSupplyKey(token.getSupplyKey());
+		mutableToken.setWipeKey(token.getWipeKey());
+		mutableToken.setFreezeKey(token.getFreezeKey());
+		mutableToken.setKycKey(token.getKycKey());
+		mutableToken.setFeeScheduleKey(token.getFeeScheduleKey());
+		mutableToken.setPauseKey(token.getPauseKey());
 	}
 
 
