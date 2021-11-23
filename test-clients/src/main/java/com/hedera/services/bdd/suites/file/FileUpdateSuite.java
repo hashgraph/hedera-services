@@ -47,10 +47,15 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -80,6 +85,10 @@ public class FileUpdateSuite extends HapiApiSuite {
 
 	private static final long defaultMaxLifetime =
 			Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
+	private static final String defaultMaxCustomFees =
+			HapiSpecSetup.getDefaultNodeProps().get("tokens.maxCustomFeesAllowed");
+	private static final String defaultMaxTokenPerAccount =
+			HapiSpecSetup.getDefaultNodeProps().get("tokens.maxPerAccount");
 
 	public static void main(String... args) {
 		new FileUpdateSuite().runSuiteSync();
@@ -94,7 +103,63 @@ public class FileUpdateSuite extends HapiApiSuite {
 				cannotUpdateExpirationPastMaxLifetime(),
 				optimisticSpecialFileUpdate(),
 				associateHasExpectedSemantics(),
+				notTooManyFeeScheduleCanBeCreated(),
+				numAccountsAllowedIsDynamic(),
 		});
+	}
+
+	public HapiApiSpec numAccountsAllowedIsDynamic() {
+		final int MONOGAMOUS_NETWORK = 1;
+
+		return defaultHapiSpec("NumAccountsAllowedIsDynamic")
+				.given(
+						newKeyNamed("admin"),
+						cryptoCreate(TOKEN_TREASURY).balance(0L)
+				).when(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of("tokens.maxPerAccount", "" + MONOGAMOUS_NETWORK)),
+						tokenCreate("primary")
+								.adminKey("admin")
+								.treasury(TOKEN_TREASURY),
+						tokenCreate("secondaryFails")
+								.treasury(TOKEN_TREASURY)
+								.hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED),
+						tokenDelete("primary"),
+						/* Deleted tokens still count against your max allowed associations. */
+						tokenCreate("secondaryFailsAgain")
+								.treasury(TOKEN_TREASURY)
+								.hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)
+				).then(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
+										"tokens.maxPerAccount", defaultMaxTokenPerAccount
+								)),
+						tokenCreate("secondary").treasury(TOKEN_TREASURY)
+				);
+	}
+
+	public HapiApiSpec notTooManyFeeScheduleCanBeCreated() {
+		final var denom = "fungible";
+		final var token = "token";
+		return defaultHapiSpec("OnlyValidCustomFeeScheduleCanBeCreated")
+				.given(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(GENESIS)
+								.overridingProps(Map.of("tokens.maxCustomFeesAllowed", "1"))
+				).when(
+						tokenCreate(denom),
+						tokenCreate(token)
+								.treasury(DEFAULT_PAYER)
+								.withCustom(fixedHbarFee(1, DEFAULT_PAYER))
+								.withCustom(fixedHtsFee(1, denom, DEFAULT_PAYER))
+								.hasKnownStatus(CUSTOM_FEES_LIST_TOO_LONG)
+				).then(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(GENESIS)
+								.overridingProps(Map.of("tokens.maxCustomFeesAllowed", defaultMaxCustomFees))
+				);
 	}
 
 	private HapiApiSpec optimisticSpecialFileUpdate() {

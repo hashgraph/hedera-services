@@ -129,9 +129,9 @@ public class ContractCreateSuite extends HapiApiSuite {
 						revertedTryExtCallHasNoSideEffects(),
 						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
 						receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
-						delegateContractIdRequiredForTransferInDelegateCall(),
 						cannotSendToNonExistentAccount(),
 						canCallPendingContractSafely(),
+						delegateContractIdRequiredForTransferInDelegateCall(),
 				}
 		);
 	}
