@@ -234,9 +234,7 @@ public class TypedTokenStore {
 		mutableTokenRel.setFrozen(modelRel.isFrozen());
 		mutableTokenRel.setKycGranted(modelRel.isKycGranted());
 		mutableTokenRel.setAutomaticAssociation(modelRel.isAutomaticAssociation());
-		if (isNewRel) {
-			currentTokenRels.put(key.asAccountTokenRel(), mutableTokenRel);
-		}
+		currentTokenRels.put(key.asAccountTokenRel(), mutableTokenRel);
 	}
 
 	/**
