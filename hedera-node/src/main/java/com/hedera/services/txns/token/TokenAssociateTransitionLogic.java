@@ -66,11 +66,9 @@ public class TokenAssociateTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		/* --- Translate from gRPC types --- */
 		final var op = txnCtx.accessor().getTxn().getTokenAssociate();
-		final var grpcId = op.getAccount();
-		final var accountId = new Id(grpcId.getShardNum(), grpcId.getRealmNum(), grpcId.getAccountNum());
-		final var tokensList = op.getTokensList();
+		final var accountId = Id.fromGrpcAccount(op.getAccount());
 
-		associateLogic.associate(accountId, tokensList);
+		associateLogic.associate(accountId, op.getTokensList());
 	}
 
 	@Override

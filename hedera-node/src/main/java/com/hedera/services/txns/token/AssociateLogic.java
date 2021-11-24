@@ -14,7 +14,6 @@ import static java.util.stream.Collectors.toList;
 
 @Singleton
 public class AssociateLogic {
-
 	private final TypedTokenStore tokenStore;
 	private final AccountStore accountStore;
 	private final GlobalDynamicProperties dynamicProperties;
