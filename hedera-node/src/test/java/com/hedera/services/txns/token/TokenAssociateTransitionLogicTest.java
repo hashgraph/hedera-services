@@ -87,7 +87,7 @@ class TokenAssociateTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new TokenAssociateTransitionLogic(accountStore, tokenStore, txnCtx, dynamicProperties);
+//		subject = new TokenAssociateTransitionLogic(accountStore, tokenStore, txnCtx, dynamicProperties);
 	}
 
 	@Test
