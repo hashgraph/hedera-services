@@ -356,7 +356,7 @@ public class HederaLedger {
 		if (tokenViewsManager.isInTransaction()) {
 			tokenViewsManager.rollback();
 		}
-		if (tokensLedger.isInTransaction()) {
+		if (tokensLedger != null && tokensLedger.isInTransaction()) {
 			tokensLedger.rollback();
 		}
 		accountsLedger.undoChangesOfType(TOKEN_TRANSFER_SIDE_EFFECTS);
