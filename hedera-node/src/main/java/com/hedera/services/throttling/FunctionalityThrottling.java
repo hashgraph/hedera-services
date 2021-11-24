@@ -30,21 +30,22 @@ import com.hederahashgraph.api.proto.java.Query;
 import java.util.List;
 
 public interface FunctionalityThrottling {
-
 	/**
-	 * Verifies if the frontend/consensus throttle has enough capacity to handle the transaction
+	 * Verifies if this throttle has enough capacity to accept the given transaction.
 	 *
-	 * @param accessor - the transaction accessor
-	 * @return true if the transaction should be throttled, false if the system can handle the TX execution
+	 * @param accessor
+	 * 		the transaction accessor
+	 * @return true if the transaction should be throttled, false otherwise
 	 */
 	boolean shouldThrottleTxn(TxnAccessor accessor);
 
 	boolean shouldThrottleQuery(HederaFunctionality queryFunction, Query query);
 
 	/**
-	 * Releases previously reserved gas from the consensus throttle
+	 * Leaks the given amount previously reserved in this throttle's "gas bucket".
 	 *
-	 * @param value - the amount of gas to release
+	 * @param value
+	 * 		the amount of gas to release
 	 */
 	void leakUnusedGasPreviouslyReserved(long value);
 
@@ -57,4 +58,13 @@ public interface FunctionalityThrottling {
 	List<DeterministicThrottle> allActiveThrottles();
 
 	GasLimitDeterministicThrottle gasLimitThrottle();
+
+	/**
+	 * Indicates if the last transaction passed to {@link FunctionalityThrottling#shouldThrottleTxn(TxnAccessor)}
+	 * was throttled because of insufficient capacity in the gas limit throttle.
+	 *
+	 * @return whether the last transaction was throttled by the gas limit
+	 * @throws UnsupportedOperationException if this throttle cannot provide a meaningful answer
+	 */
+	boolean wasLastTxnGasThrottled();
 }

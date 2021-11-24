@@ -64,7 +64,7 @@ public final class PlatformSigOps {
 	}
 
 	private static void createPlatformSigFor(
-			final JKey ed25519Key,
+			final JKey primitiveKey,
 			final PubKeyToSigBytes sigBytesFn,
 			final TxnScopedPlatformSigFactory factory,
 			final PlatformSigsCreationResult result
@@ -74,14 +74,20 @@ public final class PlatformSigOps {
 		}
 
 		try {
-			final var keyBytes = ed25519Key.getEd25519();
+			byte[] keyBytes = null;
+			if (primitiveKey.hasEd25519Key()) {
+				keyBytes = 	primitiveKey.getEd25519();
+			}
+			if (keyBytes == null) {
+				return;
+			}
 			final var sigBytes = sigBytesFn.sigBytesFor(keyBytes);
 			if (sigBytes.length > 0) {
 				result.getPlatformSigs().add(factory.create(keyBytes, sigBytes));
 			}
 		} catch (KeyPrefixMismatchException kmpe) {
 			/* Nbd if a signature map is ambiguous for a key linked to a scheduled transaction. */
-			if (!ed25519Key.isForScheduledTxn()) {
+			if (!primitiveKey.isForScheduledTxn()) {
 				result.setTerminatingEx(kmpe);
 			}
 		} catch (Exception e) {

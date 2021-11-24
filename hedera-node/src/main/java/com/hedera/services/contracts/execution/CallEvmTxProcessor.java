@@ -24,8 +24,6 @@ package com.hedera.services.contracts.execution;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
@@ -40,10 +38,12 @@ import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.Operation;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
+import java.util.Map;
 import java.util.OptionalLong;
 import java.util.Set;
 
@@ -58,13 +58,12 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 			final HederaMutableWorldState worldState,
 			final LivePricesSource livePricesSource,
 			final CodeCache codeCache,
-			final HbarCentExchange exchange,
-			final UsagePricesProvider usagePrices,
 			final GlobalDynamicProperties dynamicProperties,
 			final GasCalculator gasCalculator,
-			final Set<Operation> hederaOperations
+			final Set<Operation> hederaOperations,
+			final Map<String, PrecompiledContract> precompiledContractMap
 	) {
-		super(worldState, livePricesSource, dynamicProperties, gasCalculator, hederaOperations);
+		super(worldState, livePricesSource, dynamicProperties, gasCalculator, hederaOperations, precompiledContractMap);
 		this.codeCache = codeCache;
 	}
 

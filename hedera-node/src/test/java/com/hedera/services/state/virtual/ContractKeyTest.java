@@ -58,6 +58,17 @@ class ContractKeyTest {
 	private ContractKey subject;
 
 	@Test
+	void orderingPrioritizesIdThenKey() {
+		final var base = new ContractKey(contractNum, key);
+		final var sameButDiff = base;
+		assertEquals(0, base.compareTo(sameButDiff));
+		final var largerNum = new ContractKey(contractNum + 1, key);
+		assertEquals(-1, base.compareTo(largerNum));
+		final var smallerKey = new ContractKey(contractNum, 1);
+		assertEquals(+1, base.compareTo(smallerKey));
+	}
+
+	@Test
 	void equalsWork() {
 		var testSubject1 = new ContractKey(contractNum, key);
 		var testSubject2 = new ContractKey(contractNum, key_array);

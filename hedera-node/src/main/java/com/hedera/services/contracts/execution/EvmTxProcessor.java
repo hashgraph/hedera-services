@@ -44,6 +44,7 @@ import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.operation.OperationRegistry;
 import org.hyperledger.besu.evm.precompile.MainnetPrecompiledContracts;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.processor.AbstractMessageProcessor;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
@@ -86,9 +87,10 @@ abstract class EvmTxProcessor {
 			final LivePricesSource livePricesSource,
 			final GlobalDynamicProperties dynamicProperties,
 			final GasCalculator gasCalculator,
-			final Set<Operation> hederaOperations
+			final Set<Operation> hederaOperations,
+			final Map<String, PrecompiledContract> precompiledContractMap
 	) {
-		this(null, livePricesSource, dynamicProperties, gasCalculator, hederaOperations);
+		this(null, livePricesSource, dynamicProperties, gasCalculator, hederaOperations, precompiledContractMap);
 	}
 
 	protected void setWorldState(HederaMutableWorldState worldState) {
@@ -100,7 +102,8 @@ abstract class EvmTxProcessor {
 			final LivePricesSource livePricesSource,
 			final GlobalDynamicProperties dynamicProperties,
 			final GasCalculator gasCalculator,
-			final Set<Operation> hederaOperations
+			final Set<Operation> hederaOperations,
+			final Map<String, PrecompiledContract> precompiledContractMap
 	) {
 		this.worldState = worldState;
 		this.livePricesSource = livePricesSource;
@@ -115,6 +118,8 @@ abstract class EvmTxProcessor {
 
 		final PrecompileContractRegistry precompileContractRegistry = new PrecompileContractRegistry();
 		MainnetPrecompiledContracts.populateForIstanbul(precompileContractRegistry, this.gasCalculator);
+
+		precompiledContractMap.forEach((k, v) -> precompileContractRegistry.put(Address.fromHexString(k), v));
 
 		this.messageCallProcessor = new MessageCallProcessor(evm, precompileContractRegistry);
 		this.contractCreationProcessor = new ContractCreationProcessor(

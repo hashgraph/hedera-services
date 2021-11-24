@@ -78,13 +78,20 @@ class Expansion {
 						txnAccessor.getTxnId(),
 						otherStatus);
 			}
+			return otherStatus;
 		}
-		return otherStatus;
+
+		if (pkToSigFn.hasAtLeastOneUnusedSigWithFullPrefix()) {
+			pkToSigFn.forEachUnusedSigWithFullPrefix((pubKey, sig) ->
+					txnAccessor.getPlatformTxn().add(sigFactory.create(pubKey, sig)));
+		}
+
+		return OK;
 	}
 
 	private ResponseCodeEnum expand(
-			PubKeyToSigBytes pkToSigFn,
-			BiFunction<TransactionBody, CodeOrderResultFactory, SigningOrderResult<ResponseCodeEnum>> keysFn
+			final PubKeyToSigBytes pkToSigFn,
+			final BiFunction<TransactionBody, CodeOrderResultFactory, SigningOrderResult<ResponseCodeEnum>> keysFn
 	) {
 		var orderResult = keysFn.apply(txnAccessor.getTxn(), CODE_ORDER_RESULT_FACTORY);
 		if (orderResult.hasErrorReport()) {

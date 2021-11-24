@@ -34,8 +34,6 @@ import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -50,8 +48,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSig
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
-	private static final Logger log = LogManager.getLogger(HapiScheduleSign.class);
-
 	private final String schedule;
 	private List<String> signatories = Collections.emptyList();
 	private boolean ignoreMissing = false;
@@ -136,8 +132,8 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
 
 	@Override
 	protected List<Function<HapiApiSpec, Key>> defaultSigners() {
-		List<Function<HapiApiSpec, Key>> signers =
-				new ArrayList<>(List.of(spec -> spec.registry().getKey(effectivePayer(spec))));
+		final var signers = new ArrayList<Function<HapiApiSpec, Key>>();
+		signers.add(spec -> spec.registry().getKey(effectivePayer(spec)));
 		for (String added : signatories) {
 			signers.add(spec -> spec.registry().getKey(added));
 		}

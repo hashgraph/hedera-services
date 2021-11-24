@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -47,6 +48,16 @@ public class SigMapGenerator {
 
 	public static SigMapGenerator withUniquePrefixes() {
 		return new SigMapGenerator(trie -> key -> trie.shortestPrefix(key, 1));
+	}
+
+	public static SigMapGenerator withAlternatingUniqueAndFullPrefixes() {
+		final var isUnique = new AtomicBoolean(true);
+		final Function<ByteTrie, Function<byte[], byte[]>> prefixCalcFn = trie -> key -> {
+			final var goUnique = isUnique.get();
+			isUnique.set(!goUnique);
+			return goUnique ? trie.shortestPrefix(key, 1) : key;
+		};
+		return new SigMapGenerator(prefixCalcFn);
 	}
 
 	public static SigMapGenerator withAmbiguousPrefixes() {

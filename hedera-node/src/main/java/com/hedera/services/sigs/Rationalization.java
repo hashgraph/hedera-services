@@ -91,6 +91,7 @@ public class Rationalization {
 		this.pkToSigFn = txnAccessor.getPkToSigsFn();
 		this.txnAccessor = txnAccessor;
 
+		pkToSigFn.resetAllSigsToUnused();
 		bodySigningFactory.resetFor(txnAccessor);
 
 		txnSigs = txnAccessor.getPlatformTxn().getSignatures();
@@ -121,6 +122,10 @@ public class Rationalization {
 			otherFailure = otherPartiesStatus;
 		} else {
 			reqOthersSigs = lastOrderResult.getOrderedKeys();
+			if (pkToSigFn.hasAtLeastOneUnusedSigWithFullPrefix()) {
+				pkToSigFn.forEachUnusedSigWithFullPrefix((pubKey, sig) ->
+						realOtherPartySigs.add(bodySigningFactory.create(pubKey, sig)));
+			}
 		}
 
 		final var rationalizedPayerSigs = rationalize(realPayerSigs, 0);

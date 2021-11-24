@@ -228,6 +228,10 @@ public final class EntityIdUtils {
 		return accountParsedFromSolidityAddress(address.toArrayUnsafe());
 	}
 
+	public static ContractID contractParsedFromSolidityAddress(final Address address) {
+		return contractParsedFromSolidityAddress(address.toArrayUnsafe());
+	}
+
 	public static AccountID accountParsedFromSolidityAddress(final byte[] solidityAddress) {
 		return AccountID.newBuilder()
 				.setShardNum(Ints.fromByteArray(Arrays.copyOfRange(solidityAddress, 0, 4)))
@@ -241,6 +245,14 @@ public final class EntityIdUtils {
 				.setShardNum(Ints.fromByteArray(Arrays.copyOfRange(solidityAddress, 0, 4)))
 				.setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(solidityAddress, 4, 12)))
 				.setContractNum(Longs.fromByteArray(Arrays.copyOfRange(solidityAddress, 12, 20)))
+				.build();
+	}
+
+	public static TokenID tokenParsedFromSolidityAddress(byte[] solidityAddress) {
+		return TokenID.newBuilder()
+				.setShardNum(Ints.fromByteArray(Arrays.copyOfRange(solidityAddress, 0, 4)))
+				.setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(solidityAddress, 4, 12)))
+				.setTokenNum(Longs.fromByteArray(Arrays.copyOfRange(solidityAddress, 12, 20)))
 				.build();
 	}
 

@@ -85,7 +85,6 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenUpdateSpecs.class);
 	private static final int MAX_NAME_LENGTH = 100;
 	private static final int MAX_SYMBOL_LENGTH = 100;
-	private static final long A_HUNDRED_SECONDS = 100;
 
 	private static String TOKEN_TREASURY = "treasury";
 	private static final long defaultMaxLifetime =
@@ -527,8 +526,10 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 		String updatedMemo = "Nothing left to do";
 		String saltedName = salted("primary");
 		String newSaltedName = salted("primary");
+		final var civilian = "civilian";
 		return defaultHapiSpec("UpdateHappyPath")
 				.given(
+						cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY).balance(0L),
 						cryptoCreate("newTokenTreasury").balance(0L),
 						cryptoCreate("autoRenewAccount").balance(0L),
@@ -558,6 +559,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.supplyKey("supplyKey")
 								.wipeKey("wipeKey")
 								.pauseKey("pauseKey")
+								.payingWith(civilian)
 				).when(
 						tokenAssociate("newTokenTreasury", "primary"),
 						tokenUpdate("primary")
@@ -574,6 +576,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.supplyKey("newSupplyKey")
 								.wipeKey("newWipeKey")
 								.pauseKey("newPauseKey")
+								.payingWith(civilian)
 				).then(
 						getAccountBalance(TOKEN_TREASURY)
 								.hasTokenBalance("primary", 0),

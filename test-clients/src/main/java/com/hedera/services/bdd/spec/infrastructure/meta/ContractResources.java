@@ -40,6 +40,8 @@ public class ContractResources {
 	public static final String FUSE_BYTECODE_PATH = bytecodePath("Fuse");
 	public static final String LAST_TRACKING_SENDER_BYTECODE_PATH = bytecodePath("LastTrackingSender");
 	public static final String MULTIPURPOSE_BYTECODE_PATH = bytecodePath("Multipurpose");
+	public static final String JUST_SEND_BYTECODE_PATH = bytecodePath("JustSend");
+	public static final String SEND_INTERNAL_AND_DELEGATE_BYTECODE_PATH = bytecodePath("SendInternalAndDelegate");
 	public static final String CHILD_STORAGE_BYTECODE_PATH = bytecodePath("ChildStorage");
 	public static final String ABANDONING_PARENT_BYTECODE_PATH = bytecodePath("AbandoningParent");
 	public static final String PAY_TEST_SELF_DESTRUCT_BYTECODE_PATH = bytecodePath("PayTestSelfDestruct");
@@ -75,19 +77,28 @@ public class ContractResources {
 	public static final String LARGE_CONTRACT_CRYPTO_KITTIES = bytecodePath("CryptoKitties");
 	public static final String SELF_DESTRUCT_CALLABLE = bytecodePath("SelfDestructCallable");
 	public static final String REVERTING_SEND_TRY = bytecodePath("RevertingSendTry");
+	public static final String ZENOS_BANK_CONTRACT = bytecodePath("ZenosBank");
+	public static final String MUSICAL_CHAIRS_CONTRACT = bytecodePath("MusicalChairs");
 
-	public static final String SELF_DESTRUCT_CALL_ABI = "{\"inputs\":[],\"name\":\"destroy\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"}";
-
-	public static final String CRYPTO_KITTIES_CREATE_PROMO_KITTY_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"_genes\",\"type\":\"uint256\"},{\"name\":\"_owner\",\"type\":\"address\"}],\"name\":\"createPromoKitty\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-
-	public static final String TOP_LEVEL_TRANSFERRING_CONTRACT_TRANSFER_CALL_PAYABLE_ABI = "{\"inputs\":[],\"name\":\"topLevelTransferCall\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"payable\",\"type\":\"function\"}";
-	public static final String TOP_LEVEL_TRANSFERRING_CONTRACT_NON_PAYABLE_ABI = "{\"inputs\":[],\"name\":\"topLevelNonPayableCall\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"pure\",\"type\":\"function\"}";
-
+	public static final String SEND_REPEATEDLY_ABI = "{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"just_send_" +
+			"num\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"account_num\",\"type\":\"uint64\"}," +
+			"{\"internalType\":\"uint64\",\"name\":\"value\",\"type\":\"uint64\"}],\"name\":\"sendRepeatedlyTo\"," +
+			"\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"}";
+	public static final String SELF_DESTRUCT_CALL_ABI = "{\"inputs\":[],\"name\":\"destroy\",\"outputs\":[]," +
+			"\"stateMutability\":\"payable\",\"type\":\"function\"}";
+	public static final String CRYPTO_KITTIES_CREATE_PROMO_KITTY_ABI = "{\"constant\":false,\"inputs\":[{\"name\":" +
+			"\"_genes\",\"type\":\"uint256\"},{\"name\":\"_owner\",\"type\":\"address\"}],\"name\":\"createPromoKitty\"," +
+			"\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String TOP_LEVEL_TRANSFERRING_CONTRACT_TRANSFER_CALL_PAYABLE_ABI = "{\"inputs\":[],\"name\":" +
+			"\"topLevelTransferCall\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}]," +
+			"\"stateMutability\":\"payable\",\"type\":\"function\"}";
+	public static final String TOP_LEVEL_TRANSFERRING_CONTRACT_NON_PAYABLE_ABI = "{\"inputs\":[],\"name\":" +
+			"\"topLevelNonPayableCall\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}]," +
+			"\"stateMutability\":\"pure\",\"type\":\"function\"}";
 	public static final String SEND_THEN_REVERT_NESTED_SENDS_ABI = "{\"inputs\":[{\"internalType\":\"uint32\"," +
 			"\"name\":\"amount\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"numA\"," +
 			"\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"numB\",\"type\":\"uint32\"}]," +
 			"\"name\":\"sendTo\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"}";
-
 	public static final String SUB_LEVEL_PAYABLE_ABI = "{\"inputs\":" +
 			"[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"}" +
 			",{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"subLevelPayableCall\"," +
@@ -545,6 +556,33 @@ public class ContractResources {
 	public static final String ERC_1155_ABI_MINT = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"tokenType\",\"type\":\"uint256\"}" +
 			",{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"recipient\",\"type\":\"address\"}]" +
 			",\"name\":\"mintToken\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+
+	public static final String ZENOS_BANK_WITHDRAW_TOKENS = "{\"constant\": false," +
+			"\"inputs\": [],\"name\": \"withdrawTokens\"," +
+			"\"outputs\": [],\"payable\": false,\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String ZENOS_BANK_DEPOSIT_TOKENS = "{\"constant\": false," +
+			"\"inputs\": [{\"name\": \"amount\",\"type\": \"int64\"}],\"name\": \"depositTokens\"," +
+			"\"outputs\": [],\"payable\": false,\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String ZENOS_BANK_CONSTRUCTOR = "{" +
+			"\"inputs\": [{\"name\": \"_tokenAddress\",\"type\": \"address\"}]," +
+			"\"payable\": false,\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
+
+	public static final String MUSICAL_CHAIRS_CONSTRUCTOR = "{" +
+			"\"inputs\": [{\"internalType\": \"address\",\"name\": \"_dj\",\"type\": \"address\"}]," +
+			"\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
+	public static final String MUSICAL_CHAIRS_SIT_DOWN ="{" +
+			"\"inputs\": [],\"name\": \"sitDown\"," +
+			"\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String MUSICAL_CHAIRS_START_MUSIC = "{" +
+			"\"inputs\": [],\"name\": \"startMusic\"," +
+			"\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String MUSICAL_CHAIRS_STOP_MUSIC = "{" +
+			"\"inputs\": [],\"name\": \"stopMusic\"," +
+			"\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String MUSICAL_CHAIRS_WHO_IS_ON_THE_BUBBLE = "{" +
+			"\"inputs\": [],\"name\": \"whoIsOnTheBubble\"," +
+			"\"outputs\": [{\"internalType\": \"address\",\"name\": \"hotSeatAddress\",\"type\": \"address\"}]," +
+			"\"stateMutability\": \"view\",\"type\": \"function\"}";
 
 
 	public static String bytecodePath(String bytecode) {

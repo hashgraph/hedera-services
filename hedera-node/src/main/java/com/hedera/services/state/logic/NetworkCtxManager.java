@@ -160,20 +160,20 @@ public class NetworkCtxManager {
 
 	/**
 	 * Used to monitor the current network usage for automated congestion pricing
-	 * and to throttle ContractCreate and ContractCall TXs by the transaction gas limit.
+	 * and to throttle ContractCreate and ContractCall transactions by the transaction gas limit.
 	 *
-	 * @param accessor - the accessor for the transaction
-	 * @return - {@link ResponseCodeEnum#OK} if the system has enough capacity to handle the transaction
-	 * {@link ResponseCodeEnum#CONSENSUS_GAS_EXHAUSTED} if the transaction should be throttled
+	 * @param accessor
+	 * 		the accessor for the transaction
+	 * @return whether processing can continue for this transaction
 	 */
 	public ResponseCodeEnum prepareForIncorporating(TxnAccessor accessor) {
-		final var shouldThrottle = handleThrottling.shouldThrottleTxn(accessor);
-		if (isGasThrottled(accessor.getFunction()) && shouldThrottle) {
-			return CONSENSUS_GAS_EXHAUSTED;
-		}
-
+		/* We unconditionally evaluate the throttle to track network usage for congestion pricing
+		 * purposes. (Note that since a gas-throttled transaction does not take up any capacity
+		 * in the "normal" throttle buckets, it actually reduces congestion by a tiny amount.)  */
+		handleThrottling.shouldThrottleTxn(accessor);
 		feeMultiplierSource.updateMultiplier(networkCtx.get().consensusTimeOfLastHandledTxn());
-		return OK;
+
+		return handleThrottling.wasLastTxnGasThrottled() ? CONSENSUS_GAS_EXHAUSTED : OK;
 	}
 
 	public void finishIncorporating(HederaFunctionality op) {

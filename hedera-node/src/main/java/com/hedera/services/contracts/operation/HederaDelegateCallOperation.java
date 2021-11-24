@@ -29,6 +29,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.DelegateCallOperation;
 
 import javax.inject.Inject;
+import java.util.function.BiPredicate;
 
 /**
  * Hedera adapted version of the {@link DelegateCallOperation}.
@@ -39,9 +40,13 @@ import javax.inject.Inject;
  */
 public class HederaDelegateCallOperation extends DelegateCallOperation {
 
+	private final BiPredicate<Address, MessageFrame> addressValidator;
+
 	@Inject
-	public HederaDelegateCallOperation(GasCalculator gasCalculator) {
+	public HederaDelegateCallOperation(GasCalculator gasCalculator,
+									   BiPredicate<Address, MessageFrame> addressValidator) {
 		super(gasCalculator);
+		this.addressValidator = addressValidator;
 	}
 
 	@Override
@@ -50,6 +55,7 @@ public class HederaDelegateCallOperation extends DelegateCallOperation {
 				frame,
 				() -> to(frame),
 				() -> cost(frame),
-				() -> super.execute(frame, evm));
+				() -> super.execute(frame, evm),
+				addressValidator);
 	}
 }

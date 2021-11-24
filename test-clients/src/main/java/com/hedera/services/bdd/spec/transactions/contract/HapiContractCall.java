@@ -25,26 +25,31 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import org.ethereum.core.CallTransaction;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.ObjLongConsumer;
 
+import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 	private static final String FALLBACK_ABI = "<empty>";
@@ -52,6 +57,7 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 	private Object[] params;
 	private String abi;
 	private String contract;
+	private List<String> otherSigs = Collections.emptyList();
 	private Optional<Long> gas = Optional.empty();
 	private Optional<Long> sentTinyHbars = Optional.of(0L);
 	private Optional<String> details = Optional.empty();
@@ -104,6 +110,11 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 		return this;
 	}
 
+	public HapiContractCall alsoSigningWithFullPrefix(String... keys) {
+		otherSigs = List.of(keys);
+		return sigMapPrefixes(uniqueWithFullPrefixesFor(keys));
+	}
+
 	public HapiContractCall sending(long amount) {
 		sentTinyHbars = Optional.of(amount);
 		return this;
@@ -134,11 +145,12 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 		byte[] callData = (abi != FALLBACK_ABI)
 				? CallTransaction.Function.fromJsonInterface(abi).encode(params) : new byte[] { };
 
+		final var id = TxnUtils.asContractId(contract, spec);
 		ContractCallTransactionBody opBody = spec
 				.txns()
 				.<ContractCallTransactionBody, ContractCallTransactionBody.Builder>body(
 						ContractCallTransactionBody.class, builder -> {
-							builder.setContractID(spec.registry().getContractId(contract));
+							builder.setContractID(id);
 							builder.setFunctionParameters(ByteString.copyFrom(callData));
 							sentTinyHbars.ifPresent(a -> builder.setAmount(a));
 							gas.ifPresent(a -> builder.setGas(a));
@@ -152,9 +164,16 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 		if (gasObserver.isPresent()) {
 			doGasLookup(gas -> gasObserver.get().accept(actualStatus, gas), spec, txnSubmitted, false);
 		}
-		if (actualStatus != SUCCESS) {
-			return;
+	}
+
+	@Override
+	protected List<Function<HapiApiSpec, Key>> defaultSigners() {
+		final var signers = new ArrayList<Function<HapiApiSpec, Key>>();
+		signers.add(spec -> spec.registry().getKey(effectivePayer(spec)));
+		for (final var added : otherSigs) {
+			signers.add(spec -> spec.registry().getKey(added));
 		}
+		return signers;
 	}
 
 	static void doGasLookup(

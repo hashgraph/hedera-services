@@ -141,18 +141,18 @@ public class TxnUtils {
 	}
 
 	public static Key netOf(
-			HapiApiSpec spec,
-			Optional<String> keyName,
-			Optional<? extends SigControl> keyShape,
-			Optional<KeyFactory.KeyType> keyType,
-			Optional<Supplier<KeyGenerator>> keyGenSupplier
+			final HapiApiSpec spec,
+			final Optional<String> keyName,
+			final Optional<? extends SigControl> keyShape,
+			final Optional<KeyFactory.KeyType> keyType,
+			final Optional<Supplier<KeyGenerator>> keyGenSupplier
 	) {
 		if (!keyName.isPresent()) {
 			KeyGenerator generator = keyGenSupplier.get().get();
 			if (keyShape.isPresent()) {
-				return spec.keys().generateSubjectTo(keyShape.get(), generator);
+				return spec.keys().generateSubjectTo(spec, keyShape.get(), generator);
 			} else {
-				return spec.keys().generate(keyType.orElse(spec.setup().defaultKeyType()), generator);
+				return spec.keys().generate(spec, keyType.orElse(spec.setup().defaultKeyType()), generator);
 			}
 		} else {
 			return spec.registry().getKey(keyName.get());

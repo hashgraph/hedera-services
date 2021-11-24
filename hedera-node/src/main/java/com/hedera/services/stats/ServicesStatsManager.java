@@ -21,12 +21,18 @@ package com.hedera.services.stats;
  */
 
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.utils.Pause;
 import com.swirlds.common.Platform;
+import com.swirlds.virtualmap.VirtualMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static com.hedera.services.utils.SleepingPause.SLEEPING_PAUSE;
 
@@ -46,15 +52,21 @@ public class ServicesStatsManager {
 	private final MiscSpeedometers speedometers;
 	private final HapiOpSpeedometers opSpeedometers;
 	private final NodeLocalProperties properties;
+	private final Supplier<VirtualMap<ContractKey, ContractValue>> storage;
+	private final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode;
 
 	@Inject
 	public ServicesStatsManager(
-			HapiOpCounters opCounters,
-			MiscRunningAvgs runningAvgs,
-			MiscSpeedometers speedometers,
-			HapiOpSpeedometers opSpeedometers,
-			NodeLocalProperties properties
+			final HapiOpCounters opCounters,
+			final MiscRunningAvgs runningAvgs,
+			final MiscSpeedometers speedometers,
+			final HapiOpSpeedometers opSpeedometers,
+			final NodeLocalProperties properties,
+			final Supplier<VirtualMap<ContractKey, ContractValue>> storage,
+			final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode
 	) {
+		this.storage = storage;
+		this.bytecode = bytecode;
 		this.properties = properties;
 		this.opCounters = opCounters;
 		this.runningAvgs = runningAvgs;
@@ -62,11 +74,13 @@ public class ServicesStatsManager {
 		this.opSpeedometers = opSpeedometers;
 	}
 
-	public void initializeFor(Platform platform) {
+	public void initializeFor(final Platform platform) {
 		opCounters.registerWith(platform);
 		runningAvgs.registerWith(platform);
 		speedometers.registerWith(platform);
 		opSpeedometers.registerWith(platform);
+		storage.get().registerStatistics(platform::addAppStatEntry);
+		bytecode.get().registerStatistics(platform::addAppStatEntry);
 
 		platform.appStatInit();
 
