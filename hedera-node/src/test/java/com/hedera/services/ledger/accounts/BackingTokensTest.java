@@ -9,9 +9,9 @@ package com.hedera.services.ledger.accounts;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,17 +20,16 @@ package com.hedera.services.ledger.accounts;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.test.factories.accounts.MerkleAccountFactory;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Set;
 
-import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asToken;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -42,75 +41,66 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-class PureBackingAccountsTest {
-	private final AccountID a = asAccount("0.0.3");
-	private final AccountID b = asAccount("0.0.1");
-	private final EntityNum aKey = EntityNum.fromAccountId(a);
-	private final EntityNum bKey = EntityNum.fromAccountId(b);
-	private final MerkleAccount aValue = MerkleAccountFactory.newAccount().balance(123L).get();
+class BackingTokensTest {
+	private final TokenID a = asToken("0.0.3");
+	private final TokenID b = asToken("0.0.1");
+	private final EntityNum aKey = EntityNum.fromTokenId(a);
+	private final MerkleToken aValue = new MerkleToken();
 
-	private MerkleMap<EntityNum, MerkleAccount> map;
-	private PureBackingAccounts subject;
+	private MerkleMap<EntityNum, MerkleToken> map;
+	private BackingTokens subject;
 
 	@BeforeEach
 	private void setup() {
-		map = mock(MerkleMap.class);
+		map = new MerkleMap<>();
 
-		subject = new PureBackingAccounts(() -> map);
-	}
+		map.put(aKey, aValue);
 
-	@Test
-	void mutationsNotSupported() {
-		// expect:
-		assertThrows(UnsupportedOperationException.class, () -> subject.remove(null));
-		assertThrows(UnsupportedOperationException.class, () -> subject.put(null, null));
-	}
-
-	@Test
-	void delegatesGet() {
-		given(map.get(aKey)).willReturn(aValue);
-
-		// then:
-		assertSame(aValue, subject.getRef(a));
+		subject = new BackingTokens(() -> map);
 	}
 
 	@Test
 	void delegatesContains() {
-		given(map.containsKey(aKey)).willReturn(false);
-		given(map.containsKey(bKey)).willReturn(true);
-
 		// then:
-		assertFalse(subject.contains(a));
-		assertTrue(subject.contains(b));
+		assertTrue(subject.contains(a));
+		assertFalse(subject.contains(b));
 		// and:
-		verify(map, times(2)).containsKey(any());
 	}
 
 	@Test
 	void delegatesIdSet() {
-		var ids = Set.of(aKey, bKey);
-		var expectedIds = Set.of(a, b);
-
-		given(map.keySet()).willReturn(ids);
-
+		var expectedIds = Set.of(a);
 		// expect:
 		assertEquals(expectedIds, subject.idSet());
 	}
 
 	@Test
 	void delegatesUnsafeGet() {
-		given(map.get(aKey)).willReturn(aValue);
-
 		// expect:
 		assertEquals(aValue, subject.getImmutableRef(a));
 	}
 
 	@Test
 	void delegatesSize() {
-		var size = 123;
-		given(map.size()).willReturn(size);
-
 		// expect:
-		assertEquals(size, subject.size());
+		assertEquals(1, subject.size());
+	}
+
+	@Test
+	void putWorks() {
+		// when:
+		subject.put(a, aValue);
+
+		// then:
+		assertEquals(aValue, subject.getImmutableRef(a));
+	}
+
+	@Test
+	void removeWorks() {
+		// when:
+		subject.remove(a);
+
+		// then:
+		assertFalse(subject.contains(a));
 	}
 }

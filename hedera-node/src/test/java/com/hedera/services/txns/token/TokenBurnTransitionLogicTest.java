@@ -20,14 +20,17 @@ package com.hedera.services.txns.token;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,6 +38,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
@@ -42,6 +46,7 @@ import java.util.stream.LongStream;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class TokenBurnTransitionLogicTest {
@@ -53,17 +58,22 @@ class TokenBurnTransitionLogicTest {
 
 	@Mock
 	private TransactionContext txnCtx;
-
+	@Mock
+	private TxnAccessor accessor;
+	@Mock
+	private TransactionBody transactionBody;
+	@Mock
+	private TokenBurnTransactionBody burnTransactionBody;
 	@Mock
 	private OptionValidator validator;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private BurnLogic burnLogic;
 
 	private TransactionBody tokenBurnTxn;
 
 	private TokenBurnTransitionLogic subject;
-	@Mock
-	private BurnLogic burnLogic;
 
 	@BeforeEach
 	private void setup() {
@@ -174,6 +184,23 @@ class TokenBurnTransitionLogicTest {
 		given(validator.maxBatchSizeBurnCheck(tokenBurnTxn.getTokenBurn().getSerialNumbersCount())).willReturn(
 				BATCH_SIZE_LIMIT_EXCEEDED);
 		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.semanticCheck().apply(tokenBurnTxn));
+	}
+
+	@Test
+	void callsBurnLogicWithCorrectParams() {
+		var consensus = Instant.now();
+		var grpcId = IdUtils.asToken("0.0.1");
+		var amount = 4321L;
+		List<Long> serialNumbersList = List.of(1L, 2L, 3L);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(accessor.getTxn()).willReturn(transactionBody);
+		given(transactionBody.getTokenBurn()).willReturn(burnTransactionBody);
+		given(burnTransactionBody.getToken()).willReturn(grpcId);
+		given(burnTransactionBody.getAmount()).willReturn(amount);
+		given(burnTransactionBody.getSerialNumbersList()).willReturn(serialNumbersList);
+		subject.doStateTransition();
+
+		verify(burnLogic).burn(Id.fromGrpcToken(grpcId), amount, serialNumbersList);
 	}
 
 	private void givenValidTxnCtx() {
