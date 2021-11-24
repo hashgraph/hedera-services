@@ -73,7 +73,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordSystemPropert
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE;
@@ -101,7 +100,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_F
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -674,11 +672,6 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.hasKnownStatus(FRACTION_DIVIDES_BY_ZERO),
 						tokenCreate(token)
 								.treasury(tokenCollector)
-								.withCustom(fixedHbarFee(hbarAmount, hbarCollector))
-								.withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
-								.hasKnownStatus(CUSTOM_FEES_LIST_TOO_LONG),
-						tokenCreate(token)
-								.treasury(tokenCollector)
 								.withCustom(fixedHbarFee(hbarAmount, invalidEntityId))
 								.hasKnownStatus(INVALID_CUSTOM_FEE_COLLECTOR),
 						tokenCreate(token)
@@ -1033,12 +1026,6 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								moving(1, A_TOKEN)
 										.between(TOKEN_TREASURY, FIRST_USER)
 						).hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
-						cryptoTransfer(
-								moving(1, A_TOKEN)
-										.between(TOKEN_TREASURY, FIRST_USER),
-								moving(1, B_TOKEN)
-										.between(TOKEN_TREASURY, FIRST_USER)
-						).hasPrecheck(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED),
 						cryptoTransfer(
 								movingHbar(1)
 										.between(TOKEN_TREASURY, FIRST_USER),
