@@ -41,7 +41,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.txns.crypto.TransferLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -111,6 +110,7 @@ public class BaseHederaLedgerTestHelper {
 	protected AccountID detached = AccountID.newBuilder().setAccountNum(4_567).build();
 
 	protected void commonSetup() {
+		sideEffectsTracker = mock(SideEffectsTracker.class);
 		creator = mock(ExpiringCreations.class);
 		historian = mock(AccountRecordsHistorian.class);
 
@@ -241,6 +241,8 @@ public class BaseHederaLedgerTestHelper {
 
 		subject = new HederaLedger(tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProps,
 				accountsLedger, tokensLedger, transferLogic);
+		subject.setTokenRelsLedger(tokenRelsLedger);
+		subject.setNftsLedger(nftsLedger);
 	}
 
 	protected void givenOkTokenXfers(AccountID misc, TokenID tokenId, long i) {

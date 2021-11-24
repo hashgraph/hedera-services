@@ -28,6 +28,7 @@ import com.hedera.services.ledger.backing.BackingTokenRels;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.backing.HashMapBackingNfts;
 import com.hedera.services.ledger.backing.HashMapBackingTokenRels;
+import com.hedera.services.ledger.backing.HashMapBackingTokens;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
@@ -47,7 +48,6 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
-import com.hedera.services.txns.crypto.TransferLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -87,19 +87,20 @@ class LedgerBalanceChangesTest {
 	private final BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
 	private final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingRels =
 			new HashMapBackingTokenRels();
-
+	private BackingStore<TokenID, MerkleToken> backingTokens = new HashMapBackingTokens();
 	private TokenStore tokenStore;
 	private final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
 	private final FCOneToManyRelation<EntityNum, Long> uniqueTokenOwnerships = new FCOneToManyRelation<>();
 	private final FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations = new FCOneToManyRelation<>();
 	private final FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations = new FCOneToManyRelation<>();
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
-	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 	private TransactionalLedger<
 			Pair<AccountID, TokenID>,
 			TokenRelProperty,
 			MerkleTokenRelStatus> tokenRelsLedger;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
+	private TransferLogic transferLogic;
 
 	@Mock
 	private EntityIdSource ids;
@@ -113,8 +114,6 @@ class LedgerBalanceChangesTest {
 	private AccountRecordsHistorian historian;
 	@Mock
 	private UniqTokenViewsManager tokenViewsManager;
-	@Mock
-	private TransferLogic transferLogic;
 
 	private HederaLedger subject;
 
@@ -126,6 +125,12 @@ class LedgerBalanceChangesTest {
 				TokenRelProperty.class, MerkleTokenRelStatus::new, backingRels, new ChangeSummaryManager<>());
 		nftsLedger = new TransactionalLedger<>(
 				NftProperty.class, MerkleUniqueToken::new, backingNfts, new ChangeSummaryManager<>());
+		tokensLedger = new TransactionalLedger<>(
+				TokenProperty.class,
+				MerkleToken::new,
+				backingTokens,
+				new ChangeSummaryManager<>()
+		);
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 
 		tokens.put(tokenKey, fungibleTokenWithTreasury(aModel));
@@ -133,6 +138,13 @@ class LedgerBalanceChangesTest {
 		tokens.put(yetAnotherTokenKey, fungibleTokenWithTreasury(aModel));
 		tokens.put(aNftKey, nonFungibleTokenWithTreasury(aModel));
 		tokens.put(bNftKey, nonFungibleTokenWithTreasury(bModel));
+
+		backingTokens.put(tokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
+		backingTokens.put(anotherTokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
+		backingTokens.put(yetAnotherTokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
+		backingTokens.put(aNftKey.toGrpcTokenId(), nonFungibleTokenWithTreasury(aModel));
+		backingTokens.put(bNftKey.toGrpcTokenId(), nonFungibleTokenWithTreasury(bModel));
+
 		final var sideEffectsTracker = new SideEffectsTracker();
 		final var viewManager = new UniqTokenViewsManager(
 				() -> uniqueTokenOwnerships,
@@ -148,10 +160,13 @@ class LedgerBalanceChangesTest {
 				tokensLedger,
 				tokenRelsLedger,
 				nftsLedger);
+		transferLogic = new TransferLogic(accountsLedger, nftsLedger, tokenRelsLedger, tokenStore, sideEffectsTracker
+				, tokenViewsManager, dynamicProperties, validator);
 		tokenStore.rebuildViews();
 
-		subject = new HederaLedger(tokenStore, ids, creator, validator, sideEffectsTracker, historian,
-				dynamicProperties, accountsLedger, tokensLedger, transferLogic);
+		subject = new HederaLedger(
+				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProperties, accountsLedger
+				, tokensLedger, transferLogic);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setTokenViewsManager(tokenViewsManager);
 	}
@@ -234,9 +249,15 @@ class LedgerBalanceChangesTest {
 	@Test
 	void rejectsMissingToken() {
 		// setup:
-		tokens.clear();
-		tokens.put(anotherTokenKey, fungibleTokenWithTreasury(aModel));
-		tokens.put(yetAnotherTokenKey, fungibleTokenWithTreasury(aModel));
+		backingTokens = new HashMapBackingTokens();
+		backingTokens.put(anotherTokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
+		backingTokens.put(yetAnotherTokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
+		tokensLedger = new TransactionalLedger<>(
+				TokenProperty.class,
+				MerkleToken::new,
+				backingTokens,
+				new ChangeSummaryManager<>()
+		);
 		final var sideEffectsTracker = new SideEffectsTracker();
 		final var viewManager = new UniqTokenViewsManager(
 				() -> uniqueTokenOwnerships,
@@ -253,8 +274,11 @@ class LedgerBalanceChangesTest {
 				tokenRelsLedger,
 				nftsLedger);
 
-		subject = new HederaLedger(tokenStore, ids, creator, validator, sideEffectsTracker, historian,
-				dynamicProperties, accountsLedger, tokensLedger, transferLogic);
+		transferLogic = new TransferLogic(accountsLedger, nftsLedger, tokenRelsLedger, tokenStore, sideEffectsTracker
+				, tokenViewsManager, dynamicProperties, validator);
+		subject = new HederaLedger(
+				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProperties, accountsLedger
+				, tokensLedger, transferLogic);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setTokenViewsManager(viewManager);
 		tokenStore.rebuildViews();

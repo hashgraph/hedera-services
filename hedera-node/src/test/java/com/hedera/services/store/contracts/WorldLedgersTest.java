@@ -24,6 +24,7 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.backing.HashMapBackingNfts;
 import com.hedera.services.ledger.backing.HashMapBackingTokenRels;
+import com.hedera.services.ledger.backing.HashMapBackingTokens;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
@@ -77,6 +78,7 @@ class WorldLedgersTest {
 		tokenRelsLedger = mock(TransactionalLedger.class);
 		accountsLedger = mock(TransactionalLedger.class);
 		nftsLedger = mock(TransactionalLedger.class);
+		tokensLedger = mock(TransactionalLedger.class);
 
 		final var source = new WorldLedgers(tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
 
@@ -85,10 +87,12 @@ class WorldLedgersTest {
 		verify(tokenRelsLedger).rollback();
 		verify(accountsLedger).rollback();
 		verify(nftsLedger).rollback();
+		verify(tokensLedger).rollback();
 
 		verify(tokenRelsLedger).begin();
 		verify(accountsLedger).begin();
 		verify(nftsLedger).begin();
+		verify(tokensLedger).begin();
 	}
 
 	@Test
@@ -108,6 +112,11 @@ class WorldLedgersTest {
 				MerkleUniqueToken::new,
 				new HashMapBackingNfts(),
 				new ChangeSummaryManager<>());
+		tokensLedger = new TransactionalLedger<>(
+				TokenProperty.class,
+				MerkleToken::new,
+				new HashMapBackingTokens(),
+				new ChangeSummaryManager<>());
 
 		final var source = new WorldLedgers(tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
 		assertTrue(source.areUsable());
@@ -117,6 +126,7 @@ class WorldLedgersTest {
 		assertSame(tokenRelsLedger, wrappedSource.tokenRels().getEntitiesLedger());
 		assertSame(accountsLedger, wrappedSource.accounts().getEntitiesLedger());
 		assertSame(nftsLedger, wrappedSource.nfts().getEntitiesLedger());
+		assertSame(tokensLedger, wrappedSource.tokens().getEntitiesLedger());
 	}
 
 	@Test
