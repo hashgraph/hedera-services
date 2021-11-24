@@ -398,8 +398,7 @@ public final class ContractKey implements VirtualKey<ContractKey> {
 		if (this == that) {
 			return 0;
 		}
-		int order = Long.compare(this.contractId, that.contractId);
-
+		final var order = Long.compare(this.contractId, that.contractId);
 		if (order != 0) {
 			return order;
 		}

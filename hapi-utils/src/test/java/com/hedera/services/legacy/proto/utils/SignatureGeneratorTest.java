@@ -35,7 +35,7 @@ class SignatureGeneratorTest {
 	@Test
 	void signsBytesCorrectly() throws Exception {
 		final var pair = new KeyPairGenerator().generateKeyPair();
-		final var sigHex = SignatureGenerator.signBytes("abc".getBytes(), pair.getPrivate());
-		Assertions.assertEquals(128, sigHex.length());
+		final var sig = SignatureGenerator.signBytes("abc".getBytes(), pair.getPrivate());
+		Assertions.assertEquals(64, sig.length);
 	}
 }

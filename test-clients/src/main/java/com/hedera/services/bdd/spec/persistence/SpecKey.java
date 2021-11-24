@@ -168,7 +168,7 @@ public class SpecKey {
 			if (!generateIfMissing) {
 				throw new IllegalStateException(String.format("File missing at PEM loc '%s'!", qPemLoc));
 			}
-			Key simpleKey = spec.keys().generate(KeyFactory.KeyType.SIMPLE);
+			Key simpleKey = spec.keys().generate(spec, KeyFactory.KeyType.SIMPLE);
 			forms.completeIntake(spec.registry(), simpleKey);
 			try {
 				spec.keys().exportSimpleKey(qPemLoc, forms.name(), passphrase);

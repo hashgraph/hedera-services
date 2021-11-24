@@ -51,9 +51,15 @@ public enum NoopExpiringCreations implements EntityCreator {
 	}
 
 	@Override
-	public ExpirableTxnRecord.Builder createExpiringRecord(long fee, byte[] hash, TxnAccessor accessor,
-			Instant consensusTime, TxnReceipt receipt, List<FcAssessedCustomFee> assessedCustomFees,
-			SideEffectsTracker sideEffectsTracker) {
+	public ExpirableTxnRecord.Builder createExpiringRecord(
+			final long fee,
+			final byte[] hash,
+			final TxnAccessor accessor,
+			final Instant consensusTime,
+			final TxnReceipt.Builder receiptBuilder,
+			final List<FcAssessedCustomFee> assessedCustomFees,
+			final SideEffectsTracker sideEffectsTracker
+	) {
 		throw new UnsupportedOperationException();
 	}
 

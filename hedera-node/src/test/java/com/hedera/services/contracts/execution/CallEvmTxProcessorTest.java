@@ -23,13 +23,10 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
@@ -43,6 +40,7 @@ import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.Operation;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.hyperledger.besu.plugin.data.Transaction;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,6 +51,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.Deque;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -77,10 +76,6 @@ class CallEvmTxProcessorTest {
 	@Mock
 	private CodeCache codeCache;
 	@Mock
-	private HbarCentExchange hbarCentExchange;
-	@Mock
-	private UsagePricesProvider usagePricesProvider;
-	@Mock
 	private GlobalDynamicProperties globalDynamicProperties;
 	@Mock
 	private GasCalculator gasCalculator;
@@ -91,7 +86,7 @@ class CallEvmTxProcessorTest {
 	@Mock
 	private HederaWorldState.Updater updater;
 	@Mock
-	private ExchangeRate exchangeRate;
+	Map<String, PrecompiledContract> precompiledContractMap;
 
 	private final Account sender = new Account(new Id(0, 0, 1002));
 	private final Account receiver = new Account(new Id(0, 0, 1006));
@@ -109,8 +104,8 @@ class CallEvmTxProcessorTest {
 		CommonProcessorSetup.setup(gasCalculator);
 
 		callEvmTxProcessor = new CallEvmTxProcessor(
-				worldState, livePricesSource, codeCache, hbarCentExchange,
-				usagePricesProvider, globalDynamicProperties, gasCalculator, operations);
+				worldState, livePricesSource, codeCache, globalDynamicProperties, gasCalculator, 
+                                operations, precompiledContractMap);
 	}
 
 	@Test

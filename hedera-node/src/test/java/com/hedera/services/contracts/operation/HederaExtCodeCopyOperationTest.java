@@ -37,9 +37,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.util.function.BiPredicate;
 
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -56,6 +58,8 @@ class HederaExtCodeCopyOperationTest {
 
 	@Mock
 	private EVM evm;
+	@Mock
+	private BiPredicate<Address, MessageFrame> addressValidator;
 
 	private HederaExtCodeCopyOperation subject;
 
@@ -70,7 +74,7 @@ class HederaExtCodeCopyOperationTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new HederaExtCodeCopyOperation(gasCalculator);
+		subject = new HederaExtCodeCopyOperation(gasCalculator, addressValidator);
 	}
 
 	@Test
@@ -79,9 +83,9 @@ class HederaExtCodeCopyOperationTest {
 		given(mf.getStackItem(0)).willReturn(ETH_ADDRESS_INSTANCE);
 		given(mf.getStackItem(1)).willReturn(MEM_OFFSET);
 		given(mf.getStackItem(3)).willReturn(NUM_BYTES);
-		given(mf.getWorldUpdater()).willReturn(worldUpdater);
 		given(gasCalculator.extCodeCopyOperationGasCost(mf, clampedToLong(MEM_OFFSET), clampedToLong(NUM_BYTES))).willReturn(OPERATION_COST);
 		given(gasCalculator.getWarmStorageReadCost()).willReturn(WARM_READ_COST);
+		given(addressValidator.test(any(), any())).willReturn(false);
 
 		// when:
 		var opResult = subject.execute(mf, evm);
@@ -114,6 +118,7 @@ class HederaExtCodeCopyOperationTest {
 		// and:
 		given(gasCalculator.extCodeCopyOperationGasCost(mf, clampedToLong(MEM_OFFSET), clampedToLong(NUM_BYTES))).willReturn(OPERATION_COST);
 		given(gasCalculator.getWarmStorageReadCost()).willReturn(WARM_READ_COST);
+		given(addressValidator.test(any(), any())).willReturn(true);
 
 		// when:
 		var opResult = subject.execute(mf, evm);

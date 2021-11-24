@@ -29,7 +29,6 @@ import com.hedera.test.factories.keys.KeyTreeListNode;
 import com.hedera.test.factories.keys.KeyTreeNode;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.swirlds.common.CommonUtils;
 import com.swirlds.common.crypto.SignatureType;
 
 import java.security.PrivateKey;
@@ -58,7 +57,7 @@ public class SigFactory {
 
 	public static byte[] signUnchecked(byte[] data, PrivateKey pk) {
 		try {
-			return CommonUtils.unhex(signBytes(data, pk));
+			return signBytes(data, pk);
 		} catch (Exception e) {
 			throw new IllegalStateException("Impossible signing error!");
 		}
@@ -131,7 +130,7 @@ public class SigFactory {
 			SignatureType sigType = sigTypeOf(key);
 			if (sigType == SignatureType.ED25519) {
 				PrivateKey signer = factory.lookupPrivateKey(pubKeyHex);
-				byte[] sig = CommonUtils.unhex(SignatureGenerator.signBytes(data, signer));
+				byte[] sig = SignatureGenerator.signBytes(data, signer);
 				keySigs.add(new AbstractMap.SimpleEntry<>(key.getEd25519().toByteArray(), sig));
 			} else if (sigType == SignatureType.ECDSA) {
 				keySigs.add(new AbstractMap.SimpleEntry<>(key.getECDSA384().toByteArray(), NONSENSE_ECDSA_SIG));

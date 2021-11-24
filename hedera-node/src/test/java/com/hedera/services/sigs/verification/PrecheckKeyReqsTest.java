@@ -26,10 +26,7 @@ import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.sigs.order.CodeOrderResultFactory;
 import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.order.SigningOrderResult;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -55,8 +52,6 @@ class PrecheckKeyReqsTest {
 	private final List<JKey> PAYER_KEYS = List.of(new JKeyList());
 	private final List<JKey> OTHER_KEYS = List.of(new JKeyList(), new JKeyList());
 	private final List<JKey> ALL_KEYS = Stream.of(PAYER_KEYS, OTHER_KEYS).flatMap(List::stream).collect(toList());
-	private final AccountID invalidAccount = IdUtils.asAccount("1.2.3");
-	private final TransactionID txnId = TransactionID.getDefaultInstance();
 	private final TransactionBody txn = TransactionBody.getDefaultInstance();
 	private final Predicate<TransactionBody> FOR_QUERY_PAYMENT = ignore -> true;
 	private final Predicate<TransactionBody> FOR_NON_QUERY_PAYMENT = ignore -> false;

@@ -219,9 +219,9 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 		if (waclControl.isPresent()) {
 			SigControl control = waclControl.get();
 			Assertions.assertEquals(SigControl.Nature.LIST, control.getNature(), "WACL must be a KeyList!");
-			waclKey = spec.keys().generateSubjectTo(control, generator);
+			waclKey = spec.keys().generateSubjectTo(spec, control, generator);
 		} else {
-			waclKey = spec.keys().generate(KeyFactory.KeyType.LIST, generator);
+			waclKey = spec.keys().generate(spec, KeyFactory.KeyType.LIST, generator);
 		}
 	}
 
