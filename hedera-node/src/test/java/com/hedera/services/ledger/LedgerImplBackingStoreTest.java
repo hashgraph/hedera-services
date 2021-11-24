@@ -70,13 +70,6 @@ class LedgerImplBackingStoreTest {
 	}
 
 	@Test
-	void doesntSupportIdSet() {
-		givenFirstOrderSubject();
-
-		assertThrows(UnsupportedOperationException.class, subject::idSet);
-	}
-
-	@Test
 	void doesntSupportGettingImmutableRefs() {
 		givenFirstOrderSubject();
 
