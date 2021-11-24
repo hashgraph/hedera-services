@@ -56,7 +56,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
-import java.util.Set;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
@@ -501,7 +500,7 @@ class TypedTokenStoreTest {
 	}
 
 	private void givenRelationship(final EntityNumPair anAssoc, MerkleTokenRelStatus aRelationship) {
-		given(tokenRels.getRef(anAssoc.asAccountTokenRel())).willReturn(aRelationship);
+		given(tokenRels.getImmutableRef(anAssoc.asAccountTokenRel())).willReturn(aRelationship);
 	}
 
 	private void givenModifiableRelationship(final EntityNumPair anAssoc, final MerkleTokenRelStatus aRelationship) {

@@ -205,7 +205,7 @@ public class TypedTokenStore {
 	}
 
 	private MerkleTokenRelStatus getMerkleTokenRelationship(Token token, Account account) {
-		return tokenRels.getRef(Pair.of(account.getId().asGrpcAccount(), token.getId().asGrpcToken()));
+		return tokenRels.getImmutableRef(Pair.of(account.getId().asGrpcAccount(), token.getId().asGrpcToken()));
 	}
 
 	private TokenRelationship buildTokenRelationship(
@@ -467,13 +467,9 @@ public class TypedTokenStore {
 		mutableToken.setTotalSupply(token.getTotalSupply());
 		mutableToken.setAccountsFrozenByDefault(token.isFrozenByDefault());
 		mutableToken.setLastUsedSerialNumber(token.getLastUsedSerialNumber());
-		mutableToken.setDeleted(token.isDeleted());
-
 		mutableToken.setTokenType(token.getType());
 		mutableToken.setSupplyType(token.getSupplyType());
-
 		mutableToken.setMemo(token.getMemo());
-
 		mutableToken.setAdminKey(token.getAdminKey());
 		mutableToken.setSupplyKey(token.getSupplyKey());
 		mutableToken.setWipeKey(token.getWipeKey());
@@ -481,8 +477,16 @@ public class TypedTokenStore {
 		mutableToken.setKycKey(token.getKycKey());
 		mutableToken.setFeeScheduleKey(token.getFeeScheduleKey());
 		mutableToken.setPauseKey(token.getPauseKey());
-	}
+		mutableToken.setMaxSupply(token.getMaxSupply());
+		mutableToken.setDeleted(token.isDeleted());
+		mutableToken.setPaused(token.isPaused());
 
+		if (token.getCustomFees() != null) {
+			mutableToken.setFeeSchedule(token.getCustomFees());
+		}
+
+		mutableToken.setExpiry(token.getExpiry());
+	}
 
 	private void initModelAccounts(Token token, EntityId _treasuryId, @Nullable EntityId _autoRenewId) {
 		if (_autoRenewId != null) {

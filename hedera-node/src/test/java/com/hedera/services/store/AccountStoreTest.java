@@ -221,7 +221,7 @@ class AccountStoreTest {
 	}
 
 	private void setupWithMutableAccount(EntityNum anId, MerkleAccount anAccount) {
-		given(accounts.getImmutableRef(anId.toGrpcAccountId())).willReturn(anAccount);
+		given(accounts.getRef(anId.toGrpcAccountId())).willReturn(anAccount);
 	}
 
 	private void assertMiscAccountLoadFailsWith(ResponseCodeEnum status) {

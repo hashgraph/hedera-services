@@ -155,7 +155,7 @@ public class AccountStore {
 	public void commitAccount(Account account) {
 		final var id = account.getId();
 
-		final var mutableAccount = accounts.getImmutableRef(id.asGrpcAccount());
+		final var mutableAccount = accounts.getRef(id.asGrpcAccount());
 		mapModelToMutable(account, mutableAccount);
 		mutableAccount.tokens().updateAssociationsFrom(account.getAssociatedTokens());
 		accounts.put(id.asGrpcAccount(), mutableAccount);
