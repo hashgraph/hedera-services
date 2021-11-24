@@ -50,53 +50,27 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEA
 public class TokenAssociateTransitionLogic implements TransitionLogic {
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
-	private final AccountStore accountStore;
-	private final TypedTokenStore tokenStore;
-	private final TransactionContext txnCtx;
-	private final GlobalDynamicProperties dynamicProperties;
 
+	private final TransactionContext txnCtx;
+	private final AssociateLogic associateLogic;
+
+	// TODO: Global dynamic properties are not being used in the transition logic itself and is being moved to the
+	//  	 Associate logic. Confirm, that this solution is appropriate.
 	@Inject
-	public TokenAssociateTransitionLogic(
-			AccountStore accountStore,
-			TypedTokenStore tokenStore,
-			TransactionContext txnCtx,
-			GlobalDynamicProperties dynamicProperties
-	) {
-		this.dynamicProperties = dynamicProperties;
-		this.accountStore = accountStore;
-		this.tokenStore = tokenStore;
+	public TokenAssociateTransitionLogic(final TransactionContext txnCtx, final AssociateLogic associateLogic) {
 		this.txnCtx = txnCtx;
+		this.associateLogic = associateLogic;
 	}
 
 	@Override
 	public void doStateTransition() {
 		/* --- Translate from gRPC types --- */
 		final var op = txnCtx.accessor().getTxn().getTokenAssociate();
-		/* First the account */
 		final var grpcId = op.getAccount();
 		final var accountId = new Id(grpcId.getShardNum(), grpcId.getRealmNum(), grpcId.getAccountNum());
-		/* And then the tokens */
-		final List<Id> tokenIds = new ArrayList<>();
-		for (final var _grpcId : op.getTokensList()) {
-			tokenIds.add(new Id(_grpcId.getShardNum(), _grpcId.getRealmNum(), _grpcId.getTokenNum()));
-		}
+		final var tokensList = op.getTokensList();
 
-		/* --- Load the model objects --- */
-		final var account = accountStore.loadAccount(accountId);
-		final List<Token> tokens = new ArrayList<>();
-		for (final var tokenId : tokenIds) {
-			final var token = tokenStore.loadToken(tokenId);
-			tokens.add(token);
-		}
-
-		/* --- Do the business logic --- */
-		account.associateWith(tokens, dynamicProperties.maxTokensPerAccount(), false);
-
-		/* --- Persist the updated models --- */
-		accountStore.commitAccount(account);
-		for (final var token : tokens) {
-			tokenStore.commitTokenRelationships(List.of(token.newRelationshipWith(account, false)));
-		}
+		associateLogic.associate(accountId, tokensList);
 	}
 
 	@Override
