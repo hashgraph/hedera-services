@@ -41,7 +41,6 @@ import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.HederaKeyTraversal;
 import com.hedera.services.keys.KeysModule;
 import com.hedera.services.keys.RevocationServiceCharacteristics;
-import com.hedera.services.keys.StandardSyncActivationCheck;
 import com.hedera.services.queries.QueriesModule;
 import com.hedera.services.sigs.HederaToPlatformSigOps;
 import com.hedera.services.sigs.PlatformSigOps;
@@ -97,7 +96,6 @@ class UtilsConstructorTest {
 			HederaKeyActivation.class,
 			HederaKeyTraversal.class,
 			RevocationServiceCharacteristics.class,
-			StandardSyncActivationCheck.class,
 			HederaToPlatformSigOps.class,
 			PlatformSigOps.class,
 			PlatformSigFactory.class,

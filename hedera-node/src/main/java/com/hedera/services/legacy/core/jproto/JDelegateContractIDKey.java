@@ -9,9 +9,9 @@ package com.hedera.services.legacy.core.jproto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,38 +20,42 @@ package com.hedera.services.legacy.core.jproto;
  * ‍
  */
 
-import com.swirlds.common.CommonUtils;
+import com.hederahashgraph.api.proto.java.ContractID;
 
 /**
- * Maps to proto Key of type RSA_3072.
+ * Maps to proto Key of type contractID.
  */
-public class JRSA_3072Key extends JKey {
-	private byte[] rsa3072;
+public class JDelegateContractIDKey extends JContractIDKey {
+	public JDelegateContractIDKey(final ContractID contractID) {
+		super(contractID);
+	}
 
-	public JRSA_3072Key(byte[] rsa3072) {
-		this.rsa3072 = rsa3072;
+	public JDelegateContractIDKey(final long shardNum, final long realmNum, final long contractNum) {
+		super(shardNum, realmNum, contractNum);
+	}
+
+	@Override
+	public JDelegateContractIDKey getDelegateContractIDKey() {
+		return this;
+	}
+
+	@Override
+	public boolean hasDelegateContractID() {
+		return true;
+	}
+
+	@Override
+	public boolean hasContractID() {
+		return false;
+	}
+
+	@Override
+	public JContractIDKey getContractIDKey() {
+		return null;
 	}
 
 	@Override
 	public String toString() {
-		return "<JRSA_3072Key: RSA_3072Key hex=" + CommonUtils.hex(rsa3072) + ">";
-	}
-
-	public boolean hasRSA_3072Key() {
-		return true;
-	}
-
-	public byte[] getRSA3072() {
-		return rsa3072;
-	}
-
-	@Override
-	public boolean isEmpty() {
-		return ((null == rsa3072) || (0 == rsa3072.length));
-	}
-
-	@Override
-	public boolean isValid() {
-		return !isEmpty();
+		return "<JDelegateContractID: " + getShardNum() + "." + getRealmNum() + "." + getContractNum() + ">";
 	}
 }

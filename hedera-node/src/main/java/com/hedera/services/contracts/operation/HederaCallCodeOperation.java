@@ -49,16 +49,18 @@ public class HederaCallCodeOperation extends CallCodeOperation {
 	private final BiPredicate<Address, MessageFrame> addressValidator;
 
 	@Inject
-	public HederaCallCodeOperation(SoliditySigsVerifier sigsVerifier,
-			GasCalculator gasCalculator,
-								   BiPredicate<Address, MessageFrame> addressValidator) {
+	public HederaCallCodeOperation(
+            final SoliditySigsVerifier sigsVerifier, 
+            final GasCalculator gasCalculator, 
+            final BiPredicate<Address, MessageFrame> addressValidator
+        ) {
 		super(gasCalculator);
 		this.sigsVerifier = sigsVerifier;
 		this.addressValidator = addressValidator;
 	}
 
 	@Override
-	public OperationResult execute(MessageFrame frame, EVM evm) {
+	public OperationResult execute(final MessageFrame frame, final EVM evm) {
 		return HederaOperationUtil.addressSignatureCheckExecution(
 				sigsVerifier,
 				frame,

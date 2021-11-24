@@ -58,9 +58,12 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FIBONACCI_PLUS_CONSTRUCTOR_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FIBONACCI_PLUS_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MULTIPURPOSE_BYTECODE_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SEND_REPEATEDLY_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SEND_THEN_REVERT_NESTED_SENDS_ABI;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
+import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
+import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
@@ -68,11 +71,13 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -89,6 +94,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_G
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
@@ -120,10 +126,12 @@ public class ContractCreateSuite extends HapiApiSuite {
 						createsVanillaContractAsExpectedWithOmittedAdminKey(),
 						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
 						cannotCreateTooLargeContract(),
-						canCallPendingContractSafely(),
 						revertedTryExtCallHasNoSideEffects(),
-						cannotSendToNonExistentAccount(),
 						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
+						receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
+						cannotSendToNonExistentAccount(),
+						canCallPendingContractSafely(),
+						delegateContractIdRequiredForTransferInDelegateCall(),
 				}
 		);
 	}
@@ -153,7 +161,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 		final var callTxn = "callTxn";
 		final var initcode = "initcode";
 
-		return defaultHapiSpec("CanCallPendingContract")
+		return defaultHapiSpec("CanCallPendingContractSafely")
 				.given(
 						fileCreate(initcode)
 								.path(FIBONACCI_PLUS_PATH)
@@ -170,7 +178,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 												.bytecode(initcode)
 												.adminKey(THRESHOLD))
 								.toArray(HapiSpecOperation[]::new))
-				).when(
+				).when( ).then(
 						sourcing(() ->
 								contractCall(
 										"0.0." + (createdFileNum.get() + createBurstSize),
@@ -179,8 +187,6 @@ public class ContractCreateSuite extends HapiApiSuite {
 										.payingWith(GENESIS)
 										.gas(300_000L)
 										.via(callTxn))
-				).then(
-						getTxnRecord(callTxn).logged()
 				);
 	}
 
@@ -196,6 +202,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 						.balance(666)
 		).then(
 				contractCall("multi", CONSPICUOUS_DONATION_ABI, donationArgs)
+						.hasKnownStatus(INVALID_SOLIDITY_ADDRESS)
 		);
 	}
 
@@ -396,6 +403,130 @@ public class ContractCreateSuite extends HapiApiSuite {
 								.balance(1L)
 								.bytecode("contractFile")
 								.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+				);
+	}
+
+	private HapiApiSpec delegateContractIdRequiredForTransferInDelegateCall() {
+		final var justSendInitcode = "justSendInitcode";
+		final var sendInternalAndDelegateInitcode = "sendInternalAndDelegateInitcode";
+
+		final var justSend = "justSend";
+		final var sendInternalAndDelegate = "sendInternalAndDelegate";
+
+		final var beneficiary = "civilian";
+		final var totalToSend = 1_000L;
+		final var origKey = KeyShape.threshOf(1, SIMPLE, CONTRACT);
+		final var revisedKey = KeyShape.threshOf(1, SIMPLE, DELEGATE_CONTRACT);
+		final var newKey = "delegateContractKey";
+
+		final AtomicLong justSendContractNum = new AtomicLong();
+		final AtomicLong beneficiaryAccountNum = new AtomicLong();
+
+		return defaultHapiSpec("DelegateContractIdRequiredForTransferInDelegateCall")
+				.given(
+						fileCreate(justSendInitcode)
+								.path(ContractResources.JUST_SEND_BYTECODE_PATH),
+						fileCreate(sendInternalAndDelegateInitcode)
+								.path(ContractResources.SEND_INTERNAL_AND_DELEGATE_BYTECODE_PATH),
+						contractCreate(justSend)
+								.bytecode(justSendInitcode)
+								.gas(300_000L)
+								.exposingNumTo(justSendContractNum::set),
+						contractCreate(sendInternalAndDelegate)
+								.bytecode(sendInternalAndDelegateInitcode)
+								.gas(300_000L)
+								.balance(2 * totalToSend)
+				).when(
+						cryptoCreate(beneficiary)
+								.balance(0L)
+								.keyShape(origKey.signedWith(sigs(ON, sendInternalAndDelegate)))
+								.receiverSigRequired(true)
+								.exposingCreatedIdTo(id -> beneficiaryAccountNum.set(id.getAccountNum())),
+						getAccountInfo(beneficiary).logged()
+				).then(
+						/* Without delegateContractId permissions, the second send via delegate call will
+						 * fail, so only half of totalToSend will make it to the beneficiary. (Note the entire
+						 * call doesn't fail because exceptional halts in "raw calls" don't automatically
+						 * propagate up the stack like a Solidity revert does.) */
+						sourcing(() -> contractCall(
+								sendInternalAndDelegate,
+								SEND_REPEATEDLY_ABI,
+								justSendContractNum.get(),
+								beneficiaryAccountNum.get(),
+								totalToSend / 2)),
+						getAccountBalance(beneficiary).hasTinyBars(totalToSend / 2),
+						/* But now we update the beneficiary to have a delegateContractId */
+						newKeyNamed(newKey).shape(revisedKey.signedWith(sigs(ON, sendInternalAndDelegate))),
+						cryptoUpdate(beneficiary).key(newKey),
+						sourcing(() -> contractCall(
+								sendInternalAndDelegate,
+								SEND_REPEATEDLY_ABI,
+								justSendContractNum.get(),
+								beneficiaryAccountNum.get(),
+								totalToSend / 2)),
+						getAccountBalance(beneficiary).hasTinyBars(3 * (totalToSend / 2))
+				);
+	}
+
+	private HapiApiSpec receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix() {
+		final var justSendInitcode = "justSendInitcode";
+		final var sendInternalAndDelegateInitcode = "sendInternalAndDelegateInitcode";
+		final var justSend = "justSend";
+		final var sendInternalAndDelegate = "sendInternalAndDelegate";
+
+		final var beneficiary = "civilian";
+		final var balanceToDistribute = 1_000L;
+
+		final AtomicLong justSendContractNum = new AtomicLong();
+		final AtomicLong beneficiaryAccountNum = new AtomicLong();
+
+		return defaultHapiSpec("ReceiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix")
+				.given(
+						cryptoCreate(beneficiary)
+								.balance(0L)
+								.receiverSigRequired(true)
+								.exposingCreatedIdTo(id -> beneficiaryAccountNum.set(id.getAccountNum())),
+						fileCreate(justSendInitcode)
+								.path(ContractResources.JUST_SEND_BYTECODE_PATH),
+						fileCreate(sendInternalAndDelegateInitcode)
+								.path(ContractResources.SEND_INTERNAL_AND_DELEGATE_BYTECODE_PATH)
+				).when(
+						contractCreate(justSend)
+								.bytecode(justSendInitcode)
+								.gas(300_000L)
+								.exposingNumTo(justSendContractNum::set),
+						contractCreate(sendInternalAndDelegate)
+								.bytecode(sendInternalAndDelegateInitcode)
+								.gas(300_000L)
+								.balance(balanceToDistribute)
+				).then(
+						/* Sending requires receiver signature */
+						sourcing(() -> contractCall(
+								sendInternalAndDelegate,
+								SEND_REPEATEDLY_ABI,
+								justSendContractNum.get(),
+								beneficiaryAccountNum.get(),
+								balanceToDistribute / 2)
+								.hasKnownStatus(INVALID_SIGNATURE)),
+						/* But it's not enough to just sign using an incomplete prefix */
+						sourcing(() -> contractCall(
+								sendInternalAndDelegate,
+								SEND_REPEATEDLY_ABI,
+								justSendContractNum.get(),
+								beneficiaryAccountNum.get(),
+								balanceToDistribute / 2)
+								.signedBy(DEFAULT_PAYER, beneficiary)
+								.hasKnownStatus(INVALID_SIGNATURE)),
+						/* We have to specify the full prefix so the sig can be verified async */
+						getAccountInfo(beneficiary).logged(),
+						sourcing(() -> contractCall(
+								sendInternalAndDelegate,
+								SEND_REPEATEDLY_ABI,
+								justSendContractNum.get(),
+								beneficiaryAccountNum.get(),
+								balanceToDistribute / 2)
+								.alsoSigningWithFullPrefix(beneficiary)),
+						getAccountBalance(beneficiary).logged()
 				);
 	}
 

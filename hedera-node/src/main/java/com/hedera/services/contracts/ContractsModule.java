@@ -20,7 +20,6 @@ package com.hedera.services.contracts;
  * ‍
  */
 
-import com.hedera.services.context.TransactionContext;
 import com.hedera.services.contracts.annotations.BytecodeSource;
 import com.hedera.services.contracts.annotations.StorageSource;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV19;
@@ -35,12 +34,7 @@ import com.hedera.services.contracts.operation.HederaExtCodeSizeOperation;
 import com.hedera.services.contracts.operation.HederaSStoreOperation;
 import com.hedera.services.contracts.operation.HederaSelfDestructOperation;
 import com.hedera.services.contracts.operation.HederaStaticCallOperation;
-import com.hedera.services.contracts.sources.SoliditySigsVerifier;
-import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
-import com.hedera.services.keys.StandardSyncActivationCheck;
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.sigs.verification.SyncVerifier;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
@@ -52,8 +46,6 @@ import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
-import com.hedera.services.utils.EntityNum;
-import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import dagger.Binds;
 import dagger.Module;
@@ -89,20 +81,6 @@ public abstract class ContractsModule {
 
 	@Provides
 	@Singleton
-	public static SoliditySigsVerifier provideSoliditySigsVerifier(
-			SyncVerifier syncVerifier,
-			TransactionContext txnCtx,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
-	) {
-		return new TxnAwareSoliditySigsVerifier(
-				syncVerifier,
-				txnCtx,
-				StandardSyncActivationCheck::allKeysAreActive,
-				accounts);
-	}
-
-	@Provides
-	@Singleton
 	@BytecodeSource
 	public static Map<byte[], byte[]> provideBytecodeSource(Map<String, byte[]> blobStore) {
 		return bytecodeMapFrom(blobStore);
@@ -123,9 +101,11 @@ public abstract class ContractsModule {
 
 	@Provides
 	@Singleton
-	public static EntityAccess provideMutableEntityAccess(HederaLedger ledger,
-														  Supplier<VirtualMap<ContractKey, ContractValue>> storage,
-														  Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode) {
+	public static EntityAccess provideMutableEntityAccess(
+			final HederaLedger ledger,
+			final Supplier<VirtualMap<ContractKey, ContractValue>> storage,
+			final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode
+	) {
 		return new MutableEntityAccess(ledger, storage, bytecode);
 	}
 

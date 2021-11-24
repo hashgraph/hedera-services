@@ -101,12 +101,12 @@ public class NewSpecKey extends UtilOp {
 		Key key;
 		if (shape.isPresent()) {
 			if (labels.isPresent()) {
-				key = spec.keys().generateSubjectTo(shape.get(), keyGen, labels.get());
+				key = spec.keys().generateSubjectTo(spec, shape.get(), keyGen, labels.get());
 			} else {
-				key = spec.keys().generateSubjectTo(shape.get(), keyGen);
+				key = spec.keys().generateSubjectTo(spec, shape.get(), keyGen);
 			}
 		} else {
-			key = spec.keys().generate(type.orElse(KeyType.SIMPLE), keyGen);
+			key = spec.keys().generate(spec, type.orElse(KeyType.SIMPLE), keyGen);
 		}
 		spec.registry().saveKey(name, key);
 		if (immediateExportLoc.isPresent() && immediateExportPass.isPresent()) {

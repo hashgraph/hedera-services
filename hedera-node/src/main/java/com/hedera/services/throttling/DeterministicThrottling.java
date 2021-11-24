@@ -45,8 +45,9 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 
 public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	private static final Logger log = LogManager.getLogger(DeterministicThrottling.class);
-	private static final String GAS_THROTTLE_AT_ZERO_WARNING_TPL = "{} gas throttling enabled, but limited to 0 " +
-			"gas/sec";
+
+	private static final String GAS_THROTTLE_AT_ZERO_WARNING_TPL =
+			"{} gas throttling enabled, but limited to 0 gas/sec";
 
 	private final IntSupplier capacitySplitSource;
 	private final GlobalDynamicProperties dynamicProperties;
@@ -54,13 +55,14 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	private List<DeterministicThrottle> activeThrottles = Collections.emptyList();
 	private EnumMap<HederaFunctionality, ThrottleReqsManager> functionReqs = new EnumMap<>(HederaFunctionality.class);
 
-	private GasLimitDeterministicThrottle gasThrottle;
 	private boolean consensusThrottled;
+	private boolean lastTxnWasGasThrottled;
+	private GasLimitDeterministicThrottle gasThrottle;
 
 	public DeterministicThrottling(
-			IntSupplier capacitySplitSource,
-			GlobalDynamicProperties dynamicProperties,
-			boolean consensusThrottled
+			final IntSupplier capacitySplitSource,
+			final GlobalDynamicProperties dynamicProperties,
+			final boolean consensusThrottled
 	) {
 		this.capacitySplitSource = capacitySplitSource;
 		this.dynamicProperties = dynamicProperties;
@@ -79,7 +81,10 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
 	@Override
 	public boolean shouldThrottleTxn(final TxnAccessor accessor, final Instant now) {
+		lastTxnWasGasThrottled = false;
+
 		if (isGasExhausted(accessor, now)) {
+			lastTxnWasGasThrottled = true;
 			return true;
 		}
 
@@ -95,18 +100,14 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		}
 	}
 
-	private boolean isGasExhausted(final TxnAccessor accessor, final Instant now) {
-		return dynamicProperties.shouldThrottleByGas() &&
-				isGasThrottled(accessor.getFunction()) &&
-				(gasThrottle == null || !gasThrottle.allow(now, accessor.getGasLimitForContractTx()));
+	@Override
+	public boolean wasLastTxnGasThrottled() {
+		return lastTxnWasGasThrottled;
 	}
 
+	@Override
 	public void leakUnusedGasPreviouslyReserved(long value) {
 		gasThrottle.leakUnusedGasPreviouslyReserved(value);
-	}
-
-	public void setConsensusThrottled(boolean consensusThrottled) {
-		this.consensusThrottled = consensusThrottled;
 	}
 
 	@Override
@@ -216,10 +217,6 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		log.info(sb.toString().trim());
 	}
 
-	void setFunctionReqs(EnumMap<HederaFunctionality, ThrottleReqsManager> functionReqs) {
-		this.functionReqs = functionReqs;
-	}
-
 	private boolean shouldThrottleMint(ThrottleReqsManager manager, TokenMintTransactionBody op, Instant now) {
 		final var numNfts = op.getMetadataCount();
 		if (numNfts == 0) {
@@ -227,5 +224,20 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		} else {
 			return !manager.allReqsMetAt(now, numNfts, dynamicProperties.nftMintScaleFactor());
 		}
+	}
+
+	private boolean isGasExhausted(final TxnAccessor accessor, final Instant now) {
+		return dynamicProperties.shouldThrottleByGas() &&
+				isGasThrottled(accessor.getFunction()) &&
+				(gasThrottle == null || !gasThrottle.allow(now, accessor.getGasLimitForContractTx()));
+	}
+
+	/* --- Only used by unit tests --- */
+	void setConsensusThrottled(boolean consensusThrottled) {
+		this.consensusThrottled = consensusThrottled;
+	}
+
+	void setFunctionReqs(EnumMap<HederaFunctionality, ThrottleReqsManager> functionReqs) {
+		this.functionReqs = functionReqs;
 	}
 }

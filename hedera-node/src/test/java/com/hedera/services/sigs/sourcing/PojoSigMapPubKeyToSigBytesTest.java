@@ -37,15 +37,23 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
 import static com.hedera.test.factories.keys.NodeFactory.list;
+import static com.hedera.test.factories.sigs.SigMapGenerator.withAlternatingUniqueAndFullPrefixes;
 import static com.hedera.test.factories.txns.SystemDeleteFactory.newSignedSystemDelete;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.mock;
 
 class PojoSigMapPubKeyToSigBytesTest {
 	private final byte[] EMPTY_SIG = { };
@@ -54,6 +62,58 @@ class PojoSigMapPubKeyToSigBytesTest {
 	private final KeyTree otherKt =
 			KeyTree.withRoot(list(ed25519(true), ed25519(true), ed25519(true)));
 	private final KeyFactory defaultFactory = KeyFactory.getDefaultInstance();
+
+	@Test
+	void defaultMethodsWorkAsExpected() {
+		final var subject = mock(PubKeyToSigBytes.class);
+		doCallRealMethod().when(subject).forEachUnusedSigWithFullPrefix(any());
+		doCallRealMethod().when(subject).resetAllSigsToUnused();
+		doCallRealMethod().when(subject).hasAtLeastOneUnusedSigWithFullPrefix();
+		assertDoesNotThrow(() -> subject.forEachUnusedSigWithFullPrefix(null));
+		assertDoesNotThrow(subject::resetAllSigsToUnused);
+		assertFalse(subject::hasAtLeastOneUnusedSigWithFullPrefix);
+	}
+
+	@Test
+	void getsUnusedFullKeysAndSigs() throws Throwable {
+		final var signedTxn = newSignedSystemDelete()
+				.payerKt(payerKt)
+				.nonPayerKts(otherKt)
+				.sigMapGen(withAlternatingUniqueAndFullPrefixes())
+				.get();
+		final var subject = new PojoSigMapPubKeyToSigBytes(SignedTxnAccessor.uncheckedFrom(signedTxn).getSigMap());
+		lookupsMatch(payerKt, defaultFactory, CommonUtils.extractTransactionBodyBytes(signedTxn), subject);
+
+		final var numUnusedFullPrefixSigs = new AtomicInteger(0);
+		assertTrue(subject.hasAtLeastOneUnusedSigWithFullPrefix());
+		subject.forEachUnusedSigWithFullPrefix((pubKey, sig) -> {
+			numUnusedFullPrefixSigs.getAndIncrement();
+		});
+		assertEquals(2, numUnusedFullPrefixSigs.get());
+	}
+
+	@Test
+	void getsNoUnusedFullKeysAndSigs() throws Throwable {
+		final var signedTxn = newSignedSystemDelete()
+				.payerKt(payerKt)
+				.nonPayerKts(otherKt)
+				.sigMapGen(withAlternatingUniqueAndFullPrefixes())
+				.get();
+		final var subject = new PojoSigMapPubKeyToSigBytes(SignedTxnAccessor.uncheckedFrom(signedTxn).getSigMap());
+		lookupsMatch(payerKt, defaultFactory, CommonUtils.extractTransactionBodyBytes(signedTxn), subject);
+		lookupsMatch(otherKt, defaultFactory, CommonUtils.extractTransactionBodyBytes(signedTxn), subject);
+
+		assertFalse(subject.hasAtLeastOneUnusedSigWithFullPrefix());
+
+		subject.resetAllSigsToUnused();
+
+		assertTrue(subject.hasAtLeastOneUnusedSigWithFullPrefix());
+		final var numUnusedFullPrefixSigs = new AtomicInteger(0);
+		subject.forEachUnusedSigWithFullPrefix((pubKey, sig) -> {
+			numUnusedFullPrefixSigs.getAndIncrement();
+		});
+		assertEquals(4, numUnusedFullPrefixSigs.get());
+	}
 
 	@Test
 	void getsExpectedSigBytesForOtherParties() throws Throwable {

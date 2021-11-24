@@ -99,12 +99,19 @@ public class ExpiringCreations implements EntityCreator {
 			final byte[] hash,
 			final TxnAccessor accessor,
 			final Instant consensusTime,
-			final TxnReceipt receipt,
+			final TxnReceipt.Builder receiptBuilder,
 			final List<FcAssessedCustomFee> customFeesCharged,
 			final SideEffectsTracker sideEffectsTracker
 	) {
+		if (sideEffectsTracker.hasTrackedNewTokenId()) {
+			receiptBuilder.setTokenId(EntityId.fromGrpcTokenId(sideEffectsTracker.getTrackedNewTokenId()));
+		}
+		if (sideEffectsTracker.hasTrackedTokenSupply()) {
+			receiptBuilder.setNewTotalSupply(sideEffectsTracker.getTrackedTokenSupply());
+		}
+
 		final var answer = ExpirableTxnRecord.newBuilder()
-				.setReceipt(receipt)
+				.setReceipt(receiptBuilder.build())
 				.setTxnHash(hash)
 				.setTxnId(TxnId.fromGrpc(accessor.getTxnId()))
 				.setConsensusTime(RichInstant.fromJava(consensusTime))
@@ -113,13 +120,16 @@ public class ExpiringCreations implements EntityCreator {
 				.setTransferList(CurrencyAdjustments.fromGrpc(sideEffectsTracker.getNetTrackedHbarChanges()))
 				.setCustomFeesCharged(customFeesCharged)
 				.setNewTokenAssociations(sideEffectsTracker.getTrackedAutoAssociations());
+
 		if (accessor.isTriggeredTxn()) {
 			answer.setScheduleRef(fromGrpcScheduleId(accessor.getScheduleRef()));
 		}
+
 		final var tokenChanges = sideEffectsTracker.getNetTrackedTokenUnitAndOwnershipChanges();
 		if (!tokenChanges.isEmpty()) {
 			setTokensAndTokenAdjustments(answer, tokenChanges);
 		}
+
 		return answer;
 	}
 

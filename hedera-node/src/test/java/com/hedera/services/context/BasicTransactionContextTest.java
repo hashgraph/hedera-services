@@ -449,44 +449,6 @@ class BasicTransactionContextTest {
 	}
 
 	@Test
-	void getsExpectedReceiptForTokenCreation() {
-		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
-		given(accessor.getTxnId()).willReturn(txnId);
-		given(accessor.getTxn()).willReturn(txn);
-		given(sideEffectsTracker.hasTrackedNewTokenId()).willReturn(true);
-		given(sideEffectsTracker.getTrackedNewTokenId()).willReturn(tokenCreated);
-
-		// when:
-		setUpBuildingExpirableTxnRecord();
-
-		record = subject.recordSoFar();
-
-		// then:
-		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
-		assertEquals(tokenCreated, record.getReceipt().toGrpc().getTokenID());
-	}
-
-	@Test
-	void getsExpectedReceiptForTokenMintBurnWipe() {
-		final var newTotalSupply = 1000L;
-
-		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
-		given(accessor.getTxnId()).willReturn(txnId);
-		given(accessor.getTxn()).willReturn(txn);
-		given(sideEffectsTracker.hasTrackedTokenSupply()).willReturn(true);
-		given(sideEffectsTracker.getTrackedTokenSupply()).willReturn(newTotalSupply);
-
-		setUpBuildingExpirableTxnRecord();
-
-		record = subject.recordSoFar();
-
-		// then:
-		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
-		assertEquals(newTotalSupply, record.getReceipt().getNewTotalSupply());
-	}
-
-
-	@Test
 	void getsExpectedReceiptForFileCreation() {
 		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
 		given(accessor.getTxnId()).willReturn(txnId);
