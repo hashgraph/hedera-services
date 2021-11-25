@@ -27,6 +27,7 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import javax.annotation.Nullable;
+import javax.inject.Inject;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -43,7 +44,7 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 
 	private BalanceChange balanceChange;
 
-	MerkleAccountScopedCheck(final GlobalDynamicProperties dynamicProperties, final OptionValidator validator) {
+	public MerkleAccountScopedCheck(final GlobalDynamicProperties dynamicProperties, final OptionValidator validator) {
 		this.dynamicProperties = dynamicProperties;
 		this.validator = validator;
 	}

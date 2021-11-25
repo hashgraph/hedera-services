@@ -25,10 +25,12 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
@@ -80,6 +82,8 @@ class MutableEntityAccessTest {
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	@Mock
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+	@Mock
+	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 
 	private MutableEntityAccess subject;
 
@@ -108,7 +112,7 @@ class MutableEntityAccessTest {
 		given(ledger.getAccountsLedger()).willReturn(accountsLedger);
 		given(ledger.getNftsLedger()).willReturn(nftsLedger);
 
-		subject = new MutableEntityAccess(ledger, supplierContractStorage, supplierBytecode);
+		subject = new MutableEntityAccess(ledger, tokensLedger, supplierContractStorage, supplierBytecode);
 	}
 
 	@Test

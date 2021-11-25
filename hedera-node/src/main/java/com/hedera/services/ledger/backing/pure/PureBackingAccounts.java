@@ -1,4 +1,4 @@
-package com.hedera.services.ledger.accounts;
+package com.hedera.services.ledger.backing.pure;
 
 /*-
  * ‌
@@ -20,6 +20,7 @@ package com.hedera.services.ledger.accounts;
  * ‍
  */
 
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;

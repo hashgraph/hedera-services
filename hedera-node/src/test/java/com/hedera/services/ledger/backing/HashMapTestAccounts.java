@@ -1,4 +1,4 @@
-package com.hedera.services.ledger.accounts;
+package com.hedera.services.ledger.backing;
 
 /*-
  * ‌
@@ -19,6 +19,8 @@ package com.hedera.services.ledger.accounts;
  * limitations under the License.
  * ‍
  */
+
+import com.hedera.services.ledger.accounts.TestAccount;
 
 import java.util.HashMap;
 import java.util.Map;

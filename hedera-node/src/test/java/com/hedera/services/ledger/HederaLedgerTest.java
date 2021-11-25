@@ -166,8 +166,8 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		validator = mock(OptionValidator.class);
 		given(validator.isAfterConsensusSecond(anyLong())).willReturn(false);
 		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
-		subject = new HederaLedger(tokenStore, ids, creator, validator,
-				new SideEffectsTracker(), historian, dynamicProps, accountsLedger);
+		subject = new HederaLedger(tokenStore, ids, creator, validator, new SideEffectsTracker(), historian,
+				dynamicProps, accountsLedger, transferLogic);
 
 		assertTrue(subject.isDetached(genesis));
 	}
@@ -178,8 +178,8 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		given(validator.isAfterConsensusSecond(anyLong())).willReturn(false);
 		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
 		given(accountsLedger.get(genesis, IS_SMART_CONTRACT)).willReturn(true);
-		subject = new HederaLedger(tokenStore, ids, creator, validator,
-				new SideEffectsTracker(), historian, dynamicProps, accountsLedger);
+		subject = new HederaLedger(tokenStore, ids, creator, validator, new SideEffectsTracker(), historian,
+				dynamicProps, accountsLedger, transferLogic);
 
 		assertFalse(subject.isDetached(genesis));
 	}
@@ -189,8 +189,8 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		validator = mock(OptionValidator.class);
 		given(validator.isAfterConsensusSecond(anyLong())).willReturn(false);
 		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
-		subject = new HederaLedger(tokenStore, ids, creator, validator,
-				new SideEffectsTracker(), historian, dynamicProps, accountsLedger);
+		subject = new HederaLedger(tokenStore, ids, creator, validator, new SideEffectsTracker(), historian,
+				dynamicProps, accountsLedger, transferLogic);
 		dynamicProps.disableAutoRenew();
 
 		assertFalse(subject.isDetached(genesis));

@@ -22,12 +22,14 @@ package com.hedera.services.ledger;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ledger.accounts.BackingAccounts;
-import com.hedera.services.ledger.accounts.BackingStore;
-import com.hedera.services.ledger.accounts.BackingTokens;
+import com.hedera.services.ledger.backing.BackingAccounts;
+import com.hedera.services.ledger.backing.BackingStore;
+import com.hedera.services.ledger.backing.BackingTokens;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -66,14 +68,16 @@ public abstract class LedgerModule {
 			final UniqTokenViewsManager uniqTokenViewsManager,
 			final AccountRecordsHistorian recordsHistorian,
 			final GlobalDynamicProperties dynamicProperties,
-			final BackingStore<AccountID, MerkleAccount> backingAccounts
-	) {
+			final BackingStore<AccountID, MerkleAccount> backingAccounts,
+			final TransferLogic transferLogic
+			) {
 		TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger =
 				new TransactionalLedger<>(
 						AccountProperty.class,
 						MerkleAccount::new,
 						backingAccounts,
 						new ChangeSummaryManager<>());
+
 		final var ledger = new HederaLedger(
 				tokenStore,
 				ids,
@@ -82,7 +86,8 @@ public abstract class LedgerModule {
 				sideEffectsTracker,
 				recordsHistorian,
 				dynamicProperties,
-				accountsLedger);
+				accountsLedger,
+				transferLogic);
 		ledger.setTokenViewsManager(uniqTokenViewsManager);
 		scheduleStore.setAccountsLedger(accountsLedger);
 		scheduleStore.setHederaLedger(ledger);

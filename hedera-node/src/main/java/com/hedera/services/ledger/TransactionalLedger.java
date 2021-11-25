@@ -21,7 +21,7 @@ package com.hedera.services.ledger;
  */
 
 import com.hedera.services.exceptions.MissingAccountException;
-import com.hedera.services.ledger.accounts.BackingStore;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.properties.BeanProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.utils.EntityIdUtils;
@@ -139,7 +139,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		isInTransaction = true;
 	}
 
-	void undoChangesOfType(List<P> properties) {
+	public void undoChangesOfType(List<P> properties) {
 		if (!isInTransaction) {
 			throw new IllegalStateException("Cannot undo changes, no transaction is active");
 		}
@@ -351,7 +351,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	}
 
 	/* --- Helpers --- */
-	ResponseCodeEnum validate(final K id, final LedgerCheck<A, P> ledgerCheck) {
+	public ResponseCodeEnum validate(final K id, final LedgerCheck<A, P> ledgerCheck) {
 		if (!exists(id)) {
 			return INVALID_ACCOUNT_ID;
 		}

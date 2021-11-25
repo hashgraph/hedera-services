@@ -63,8 +63,7 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 			GlobalDynamicProperties dynamicProperties,
 			ImpliedTransfersMarshal impliedTransfersMarshal,
 			PureTransferSemanticChecks transferSemanticChecks,
-			ExpandHandleSpanMapAccessor spanMapAccessor
-	) {
+			ExpandHandleSpanMapAccessor spanMapAccessor) {
 		this.txnCtx = txnCtx;
 		this.ledger = ledger;
 		this.spanMapAccessor = spanMapAccessor;
@@ -82,6 +81,7 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 		validateTrue(outcome == OK, outcome);
 
 		final var changes = impliedTransfers.getAllBalanceChanges();
+
 		ledger.doZeroSum(changes);
 
 		txnCtx.setAssessedCustomFees(impliedTransfers.getAssessedCustomFees());

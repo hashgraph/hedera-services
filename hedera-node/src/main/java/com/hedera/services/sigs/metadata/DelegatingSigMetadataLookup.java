@@ -21,7 +21,7 @@ package com.hedera.services.sigs.metadata;
  */
 
 import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.ledger.accounts.BackingStore;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.sigs.metadata.lookups.AccountSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.BackedAccountLookup;
 import com.hedera.services.sigs.metadata.lookups.ContractSigMetaLookup;

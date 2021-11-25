@@ -23,14 +23,18 @@ package com.hedera.services.store.contracts;
  */
 
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -50,6 +54,7 @@ public class MutableEntityAccess implements EntityAccess {
 	@Inject
 	public MutableEntityAccess(
 			final HederaLedger ledger,
+			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
 			final Supplier<VirtualMap<ContractKey, ContractValue>> storage,
 			final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode
 	) {
@@ -60,7 +65,8 @@ public class MutableEntityAccess implements EntityAccess {
 		this.worldLedgers = new WorldLedgers(
 				ledger.getTokenRelsLedger(),
 				ledger.getAccountsLedger(),
-				ledger.getNftsLedger());
+				ledger.getNftsLedger(),
+				tokensLedger);
 	}
 
 	@Override
