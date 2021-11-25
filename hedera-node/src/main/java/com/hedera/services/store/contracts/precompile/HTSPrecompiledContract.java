@@ -26,15 +26,29 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.BackingStore;
+import com.hedera.services.ledger.properties.NftProperty;
+import com.hedera.services.ledger.properties.TokenProperty;
+import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.txns.token.AssociateLogic;
 import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
@@ -225,24 +239,27 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@SuppressWarnings("unused")
 	protected Bytes computeAssociateToken(final Bytes input, final MessageFrame messageFrame) {
-		final Bytes address = Address.wrap(input.slice(16, 20));
+		/* Extract from Bytes input */
+		final Bytes accountAddress = Address.wrap(input.slice(16, 20));
 		final Bytes tokenAddress = Address.wrap(input.slice(48, 20));
 
-		final var accountID = EntityIdUtils.accountParsedFromSolidityAddress(address.toArrayUnsafe());
-		var account = accountStore.loadAccount(Id.fromGrpcAccount(accountID));
+		/* Translate to gRPC types */
+		final var accountID = EntityIdUtils.accountParsedFromSolidityAddress(accountAddress.toArrayUnsafe());
 		final var tokenID = EntityIdUtils.tokenParsedFromSolidityAddress(tokenAddress.toArrayUnsafe());
-		var token = tokenStore.loadToken(Id.fromGrpcToken(tokenID));
-		tokenStore.commitTokenRelationships(List.of(token.newRelationshipWith(account, false)));
 
-		try {
-			account.associateWith(List.of(token), dynamicProperties.maxTokensPerAccount(), false);
-			accountStore.commitAccount(account); // this is bad, no easy rollback
-			return UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
-		} catch (InvalidTransactionException ite) {
-			return UInt256.valueOf(ite.getResponseCode().getNumber());
-		} catch (Exception e) {
-			return UInt256.valueOf(ResponseCodeEnum.UNKNOWN_VALUE);
-		}
+		/* Get ledgers */
+		TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger =
+				((HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater()).wrappedTrackingLedgers().nfts();
+
+		TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger =
+				((HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater()).wrappedTrackingLedgers().tokenRels();
+
+//		TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger =
+//				((HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater()).wrappedTrackingLedgers().tokens();
+
+//		AssociateLogic logic = new AssociateLogic();
+
+		return null;
 	}
 
 	@SuppressWarnings("unused")
