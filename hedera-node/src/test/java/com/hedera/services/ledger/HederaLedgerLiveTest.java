@@ -32,7 +32,6 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
-import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -85,12 +84,6 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 				MerkleTokenRelStatus::new,
 				new HashMapBackingTokenRels(),
 				new ChangeSummaryManager<>());
-		tokensLedger = new TransactionalLedger<>(
-				TokenProperty.class,
-				MerkleToken::new,
-				new HashMapBackingTokens(),
-				new ChangeSummaryManager<>()
-		);
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 		final var viewManager = new UniqTokenViewsManager(
 				() -> uniqueTokenOwnerships,
@@ -105,7 +98,7 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 				new MockGlobalDynamicProps(),
 				tokenRelsLedger,
 				nftsLedger,
-				tokensLedger);
+				new HashMapBackingTokens());
 		subject = new HederaLedger(
 				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProps, accountsLedger);
 	}

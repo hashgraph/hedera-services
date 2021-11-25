@@ -131,6 +131,12 @@ class BackingAccountsTest {
 	}
 
 	@Test
+	void returnsExpectedSize() {
+		// expect:
+		assertEquals(2, subject.size());
+	}
+
+	@Test
 	void twoPutsChangesG4M() throws ConstructableRegistryException {
 		// setup:
 		ConstructableRegistry.registerConstructable(

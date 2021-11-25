@@ -363,7 +363,7 @@ public class TypedTokenStore {
 	 */
 	public void commitToken(Token token) {
 
-		final var mutableToken = tokens.getImmutableRef(token.getId().asGrpcToken());
+		final var mutableToken = tokens.getRef(token.getId().asGrpcToken());
 		mapModelChanges(token, mutableToken);
 		tokens.put(token.getId().asGrpcToken(), mutableToken);
 
