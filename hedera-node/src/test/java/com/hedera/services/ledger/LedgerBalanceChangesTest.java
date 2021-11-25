@@ -33,7 +33,6 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
-import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.enums.TokenType;
@@ -59,7 +58,6 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fchashmap.FCOneToManyRelation;
-import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -89,7 +87,6 @@ class LedgerBalanceChangesTest {
 			new HashMapBackingTokenRels();
 	private BackingStore<TokenID, MerkleToken> backingTokens = new HashMapBackingTokens();
 	private TokenStore tokenStore;
-	private final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
 	private final FCOneToManyRelation<EntityNum, Long> uniqueTokenOwnerships = new FCOneToManyRelation<>();
 	private final FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations = new FCOneToManyRelation<>();
 	private final FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations = new FCOneToManyRelation<>();
@@ -99,7 +96,6 @@ class LedgerBalanceChangesTest {
 			TokenRelProperty,
 			MerkleTokenRelStatus> tokenRelsLedger;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
-	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 
 	@Mock
 	private EntityIdSource ids;
@@ -124,19 +120,8 @@ class LedgerBalanceChangesTest {
 				TokenRelProperty.class, MerkleTokenRelStatus::new, backingRels, new ChangeSummaryManager<>());
 		nftsLedger = new TransactionalLedger<>(
 				NftProperty.class, MerkleUniqueToken::new, backingNfts, new ChangeSummaryManager<>());
-		tokensLedger = new TransactionalLedger<>(
-				TokenProperty.class,
-				MerkleToken::new,
-				backingTokens,
-				new ChangeSummaryManager<>()
-		);
-		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 
-		tokens.put(tokenKey, fungibleTokenWithTreasury(aModel));
-		tokens.put(anotherTokenKey, fungibleTokenWithTreasury(aModel));
-		tokens.put(yetAnotherTokenKey, fungibleTokenWithTreasury(aModel));
-		tokens.put(aNftKey, nonFungibleTokenWithTreasury(aModel));
-		tokens.put(bNftKey, nonFungibleTokenWithTreasury(bModel));
+		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 
 		backingTokens.put(tokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
 		backingTokens.put(anotherTokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
@@ -158,7 +143,7 @@ class LedgerBalanceChangesTest {
 				dynamicProperties,
 				tokenRelsLedger,
 				nftsLedger,
-				tokensLedger);
+				backingTokens);
 		tokenStore.rebuildViews();
 
 		subject = new HederaLedger(
@@ -248,12 +233,7 @@ class LedgerBalanceChangesTest {
 		backingTokens = new HashMapBackingTokens();
 		backingTokens.put(anotherTokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
 		backingTokens.put(yetAnotherTokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
-		tokensLedger = new TransactionalLedger<>(
-				TokenProperty.class,
-				MerkleToken::new,
-				backingTokens,
-				new ChangeSummaryManager<>()
-		);
+
 		final var sideEffectsTracker = new SideEffectsTracker();
 		final var viewManager = new UniqTokenViewsManager(
 				() -> uniqueTokenOwnerships,
@@ -268,7 +248,7 @@ class LedgerBalanceChangesTest {
 				dynamicProperties,
 				tokenRelsLedger,
 				nftsLedger,
-				tokensLedger);
+				backingTokens);
 
 		subject = new HederaLedger(
 				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProperties, accountsLedger);

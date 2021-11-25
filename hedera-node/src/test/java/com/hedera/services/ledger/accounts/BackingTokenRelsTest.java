@@ -153,6 +153,11 @@ class BackingTokenRelsTest {
 		assertThrows(UnsupportedOperationException.class, subject::idSet);
 	}
 
+	@Test
+	void sizeWorks() {
+		assertEquals(2, subject.size());
+	}
+
 	private void setupMocked() {
 		rels = mock(MerkleMap.class);
 		given(rels.keySet()).willReturn(Collections.emptySet());
