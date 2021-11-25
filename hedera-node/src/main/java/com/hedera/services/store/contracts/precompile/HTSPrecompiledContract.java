@@ -22,37 +22,19 @@ package com.hedera.services.store.contracts.precompile;
  *
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.ledger.BalanceChange;
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.accounts.BackingStore;
-import com.hedera.services.ledger.properties.NftProperty;
-import com.hedera.services.ledger.properties.TokenProperty;
-import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.NftId;
-import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.services.txns.token.AssociateLogic;
-import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenID;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -63,19 +45,16 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import java.util.Collections;
 
 @Singleton
 public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private static final Logger LOG = LogManager.getLogger(HTSPrecompiledContract.class);
-	private final HederaLedger ledger;
-	private final AccountStore accountStore;
-	private final TypedTokenStore tokenStore;
-	private final GlobalDynamicProperties dynamicProperties;
 	private final OptionValidator validator;
+	private final GlobalDynamicProperties dynamicProperties;
+	private final UniqTokenViewsManager uniqTokenViewsManager;
+	private final TypedTokenStore.LegacyTreasuryAdder addKnownTreasury;
+	private final TypedTokenStore.LegacyTreasuryRemover delegate;
 
 	// "cryptoTransfer((address,(address,int64)[], (address,address,int64)[])[])"
 	protected static final int ABI_ID_CRYPTO_TRANSFER = 0x189a554c;
@@ -101,19 +80,18 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	protected static final int ABI_ID_DISSOCIATE_TOKEN = 0x099794e8;
 
 	@Inject
-	public HTSPrecompiledContract(
-			final HederaLedger ledger,
-			final AccountStore accountStore,
-			final OptionValidator validator,
-			final TypedTokenStore tokenStore,
-			GlobalDynamicProperties dynamicProperties,
-			final GasCalculator gasCalculator) {
+	public HTSPrecompiledContract(final GasCalculator gasCalculator,
+								  final OptionValidator validator,
+								  final GlobalDynamicProperties dynamicProperties,
+								  final UniqTokenViewsManager uniqTokenViewsManager,
+								  final TypedTokenStore.LegacyTreasuryAdder legacyStoreDelegate,
+								  final TypedTokenStore.LegacyTreasuryRemover delegate) {
 		super("HTS", gasCalculator);
-		this.ledger = ledger;
 		this.validator = validator;
-		this.tokenStore = tokenStore;
-		this.accountStore = accountStore;
 		this.dynamicProperties = dynamicProperties;
+		this.uniqTokenViewsManager = uniqTokenViewsManager;
+		this.addKnownTreasury = legacyStoreDelegate;
+		this.delegate = delegate;
 	}
 
 	@Override
@@ -172,7 +150,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@SuppressWarnings("unused")
 	protected Bytes computeTransferToken(final Bytes input, final MessageFrame messageFrame) {
-
 		final Bytes tokenAddress = Address.wrap(input.slice(16, 20));
 		final Bytes fromAddress = Address.wrap(input.slice(48, 20));
 		final Bytes toAddress = Address.wrap(input.slice(80, 20));
@@ -182,34 +159,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		final var token = EntityIdUtils.tokenParsedFromSolidityAddress(tokenAddress.toArray());
 		final var to = EntityIdUtils.accountParsedFromSolidityAddress(toAddress.toArray());
 
-		// validate addresses, associations, etc
-
-		final List<BalanceChange> changes = new ArrayList<>();
-		changes.add(
-				BalanceChange.changingFtUnits(
-						Id.fromGrpcToken(token),
-						token,
-						AccountAmount.newBuilder().setAccountID(from).setAmount(-amount.longValue()).build()
-				));
-		changes.add(
-				BalanceChange.changingFtUnits(
-						Id.fromGrpcToken(token),
-						token,
-						AccountAmount.newBuilder().setAccountID(to).setAmount(amount.longValue()).build()
-				));
-
-		ResponseCodeEnum responseCode;
-		try {
-			ledger.doZeroSum(changes);
-			responseCode = ResponseCodeEnum.SUCCESS;
-		} catch (InvalidTransactionException ite) {
-			responseCode = ite.getResponseCode();
-			if (responseCode == FAIL_INVALID) {
-				LOG.warn("HTS Precompiled Contract failed, status {} ", responseCode);
-			}
-		}
-
-		return UInt256.valueOf(responseCode.getNumber());
+		return null;
 	}
 
 	@SuppressWarnings("unused")
@@ -237,27 +187,35 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		return null;
 	}
 
-	@SuppressWarnings("unused")
 	protected Bytes computeAssociateToken(final Bytes input, final MessageFrame messageFrame) {
 		/* Extract from Bytes input */
 		final Bytes accountAddress = Address.wrap(input.slice(16, 20));
 		final Bytes tokenAddress = Address.wrap(input.slice(48, 20));
 
 		/* Translate to gRPC types */
-		final var accountID = EntityIdUtils.accountParsedFromSolidityAddress(accountAddress.toArrayUnsafe());
+		final var accountId = EntityIdUtils.accountParsedFromSolidityAddress(accountAddress.toArrayUnsafe());
 		final var tokenID = EntityIdUtils.tokenParsedFromSolidityAddress(tokenAddress.toArrayUnsafe());
 
-		/* Get ledgers */
-		TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger =
+		/* Get the ledgers */
+		final var nftsLedger =
 				((HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater()).wrappedTrackingLedgers().nfts();
-
-		TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger =
+		final var tokenRelsLedger =
 				((HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater()).wrappedTrackingLedgers().tokenRels();
+		final var tokensLedger =
+				((HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater()).wrappedTrackingLedgers().tokens();
+		final var accountsLedger
+				= ((HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater()).wrappedTrackingLedgers().accounts();
 
-//		TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger =
-//				((HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater()).wrappedTrackingLedgers().tokens();
+		/* Initialize the stores */
+		final var accountStore = new AccountStore(validator, dynamicProperties, accountsLedger);
+		//	TODO: Pass an instance of the SideEffectTracker from the messageFrame object
+		//	TODO: The addKnownTreasury and delegate arguments are potentially problematic
+		final var tokenStore = new TypedTokenStore(accountStore, tokensLedger, nftsLedger, tokenRelsLedger,
+				uniqTokenViewsManager, addKnownTreasury, delegate, new SideEffectsTracker());
 
-//		AssociateLogic logic = new AssociateLogic();
+		AssociateLogic logic = new AssociateLogic(tokenStore, accountStore, dynamicProperties);
+
+		logic.associate(Id.fromGrpcAccount(accountId), Collections.singletonList(tokenID));
 
 		return null;
 	}
@@ -272,30 +230,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		final Bytes address = Address.wrap(input.slice(16, 20));
 		final Bytes tokenAddress = Address.wrap(input.slice(48, 20));
 		final var accountID = EntityIdUtils.accountParsedFromSolidityAddress(address.toArrayUnsafe());
-		var account = accountStore.loadAccount(Id.fromGrpcAccount(accountID));
 		final var tokenID =
 				Id.fromGrpcToken(EntityIdUtils.tokenParsedFromSolidityAddress(tokenAddress.toArrayUnsafe()));
-//		var token = tokenStore.loadToken(Id.fromGrpcToken(tokenID));
-
-
-		final List<Dissociation> dissociations = List.of(Dissociation.loadFrom(tokenStore, account, tokenID));
-
-		try {
-			/* --- Do the business logic --- */
-			account.dissociateUsing(dissociations, validator);
-
-			/* --- Persist the updated models --- */
-			accountStore.commitAccount(account);
-			final List<TokenRelationship> allUpdatedRels = new ArrayList<>();
-			for (var dissociation : dissociations) {
-				dissociation.addUpdatedModelRelsTo(allUpdatedRels);
-			}
-			tokenStore.commitTokenRelationships(allUpdatedRels);
-			return UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
-		} catch (InvalidTransactionException ite) {
-			return UInt256.valueOf(ite.getResponseCode().getNumber());
-		} catch (Exception e) {
-			return UInt256.valueOf(ResponseCodeEnum.UNKNOWN_VALUE);
-		}
+		return null;
 	}
 }
