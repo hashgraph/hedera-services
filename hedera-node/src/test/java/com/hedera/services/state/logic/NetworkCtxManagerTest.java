@@ -167,69 +167,23 @@ class NetworkCtxManagerTest {
 	@Test
 	void preparesContextAsExpected() {
 		// setup:
-		given(txnAccessor.getFunction()).willReturn(ContractCall);
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
 
 		// when:
-		subject.prepareForIncorporating(txnAccessor);
+		assertEquals(OK, subject.prepareForIncorporating(txnAccessor));
 
 		// then:
 		verify(handleThrottling).shouldThrottleTxn(txnAccessor);
-		verify(feeMultiplierSource).updateMultiplier(sometime);
-	}
-
-	@Test
-	void preparesContextWithNonThrottledFunctionalityAsExpected() {
-		// setup:
-		given(txnAccessor.getFunction()).willReturn(TokenMint);
-		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
-
-		// when:
-		subject.prepareForIncorporating(txnAccessor);
-
-		// then:
 		verify(feeMultiplierSource).updateMultiplier(sometime);
 	}
 
 	@Test
 	void whenContractCallThrottledPrepareReturnsCorrectStatus() {
 		given(handleThrottling.shouldThrottleTxn(txnAccessor)).willReturn(true);
-		given(txnAccessor.getFunction()).willReturn(ContractCall);
+		given(handleThrottling.wasLastTxnGasThrottled()).willReturn(true);
 
 		// then:
 		assertEquals(CONSENSUS_GAS_EXHAUSTED, subject.prepareForIncorporating(txnAccessor));
-		verify(handleThrottling).shouldThrottleTxn(txnAccessor);
-		verify(feeMultiplierSource, never()).updateMultiplier(any());
-	}
-
-	@Test
-	void whenContractCreateThrottledPrepareReturnsCorrectStatus() {
-		given(handleThrottling.shouldThrottleTxn(txnAccessor)).willReturn(true);
-		given(txnAccessor.getFunction()).willReturn(ContractCall);
-		// then:
-		assertEquals(CONSENSUS_GAS_EXHAUSTED, subject.prepareForIncorporating(txnAccessor));
-		verify(handleThrottling).shouldThrottleTxn(txnAccessor);
-		verify(feeMultiplierSource, never()).updateMultiplier(any());
-	}
-
-	@Test
-	void whenContractCallNonThrottledPrepareReturnsOKStatus() {
-		given(handleThrottling.shouldThrottleTxn(txnAccessor)).willReturn(false);
-		given(txnAccessor.getFunction()).willReturn(ContractCall);
-
-		// then:
-		assertEquals(OK, subject.prepareForIncorporating(txnAccessor));
-		verify(handleThrottling).shouldThrottleTxn(txnAccessor);
-		verify(feeMultiplierSource).updateMultiplier(any());
-	}
-
-	@Test
-	void whenContractCreateNonThrottledPrepareReturnsOk() {
-		given(handleThrottling.shouldThrottleTxn(txnAccessor)).willReturn(false);
-		given(txnAccessor.getFunction()).willReturn(ContractCall);
-
-		// then:
-		assertEquals(OK, subject.prepareForIncorporating(txnAccessor));
 		verify(handleThrottling).shouldThrottleTxn(txnAccessor);
 		verify(feeMultiplierSource).updateMultiplier(any());
 	}

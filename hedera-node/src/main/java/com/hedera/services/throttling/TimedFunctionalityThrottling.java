@@ -27,7 +27,6 @@ import com.hederahashgraph.api.proto.java.Query;
 import java.time.Instant;
 
 public interface TimedFunctionalityThrottling extends FunctionalityThrottling {
-
 	/**
 	 * Verifies if the frontend throttle has enough capacity to handle the transaction
 	 * @param accessor - the transaction accessor

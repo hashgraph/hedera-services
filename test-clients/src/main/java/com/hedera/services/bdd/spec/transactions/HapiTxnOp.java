@@ -587,8 +587,8 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		return self();
 	}
 
-	public T sigMapPrefixes(SigMapGenerator.Nature nature) {
-		sigMapGen = Optional.of(nature);
+	public T sigMapPrefixes(SigMapGenerator gen) {
+		sigMapGen = Optional.of(gen);
 		return self();
 	}
 

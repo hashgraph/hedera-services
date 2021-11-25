@@ -24,6 +24,8 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.BackingStore;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
@@ -117,12 +119,14 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	private final UniqTokenViewsManager uniqTokenViewsManager;
 	private final GlobalDynamicProperties properties;
 	private final SideEffectsTracker sideEffectsTracker;
-	private final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
+
 	private final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 	private final TransactionalLedger<
 			Pair<AccountID, TokenID>,
 			TokenRelProperty,
 			MerkleTokenRelStatus> tokenRelsLedger;
+	private final BackingStore<TokenID, MerkleToken> backingTokens;
+
 	Map<AccountID, Set<TokenID>> knownTreasuries = new HashMap<>();
 
 	TokenID pendingId = NO_PENDING_ID;
@@ -135,15 +139,15 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			final SideEffectsTracker sideEffectsTracker,
 			final UniqTokenViewsManager uniqTokenViewsManager,
 			final GlobalDynamicProperties properties,
-			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens,
 			final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
-			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger
+			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
+			final BackingStore<TokenID, MerkleToken> backingTokens
 	) {
 		super(ids);
-		this.tokens = tokens;
 		this.validator = validator;
 		this.properties = properties;
 		this.nftsLedger = nftsLedger;
+		this.backingTokens = backingTokens;
 		this.tokenRelsLedger = tokenRelsLedger;
 		this.sideEffectsTracker = sideEffectsTracker;
 		this.uniqTokenViewsManager = uniqTokenViewsManager;
@@ -157,8 +161,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	private void rebuildViewOfKnownTreasuries() {
-		for (TokenID key : tokens.idSet()) {
-			final var token = tokens.getFinalized(key);
+		for (TokenID key : backingTokens.idSet()) {
+			final var token = backingTokens.getImmutableRef(key);
 			/* A deleted token's treasury is no longer bound by ACCOUNT_IS_TREASURY restrictions. */
 			if (!token.isDeleted()) {
 				addKnownTreasury(token.treasury().toGrpcAccountId(), key);
@@ -247,14 +251,14 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 	@Override
 	public boolean exists(final TokenID id) {
-		return (isCreationPending() && pendingId.equals(id)) || tokens.contains(id);
+		return (isCreationPending() && pendingId.equals(id)) || backingTokens.contains(id);
 	}
 
 	@Override
 	public MerkleToken get(final TokenID id) {
 		throwIfMissing(id);
 
-		return pendingId.equals(id) ? pendingCreation : tokens.getFinalized(id);
+		return pendingId.equals(id) ? pendingCreation : backingTokens.getImmutableRef(id);
 	}
 
 	@Override
@@ -262,7 +266,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		throwIfMissing(id);
 
 		final var key = fromTokenId(id);
-		final var token = tokens.getFinalized(key.toGrpcTokenId());
+		final var token = backingTokens.getRef(key.toGrpcTokenId());
 		try {
 			change.accept(token);
 		} catch (Exception internal) {
@@ -335,7 +339,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			var owner = (EntityId) nftsLedger.get(nftId, OWNER);
 			if (owner.equals(fromGrpcAccountId(AccountID.getDefaultInstance()))) {
 				final var tid = nftId.tokenId();
-				owner = (EntityId) this.tokens.get(tid, TokenProperty.TREASURY);
+				owner = this.backingTokens.getImmutableRef(tid).treasury();
 			}
 			if (!owner.matches(from)) {
 				return SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
@@ -478,7 +482,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	public void commitCreation() {
 		throwIfNoCreationPending();
 
-		tokens.put(pendingId, pendingCreation);
+		backingTokens.put(pendingId, pendingCreation);
 		addKnownTreasury(pendingCreation.treasury().toGrpcAccountId(), pendingId);
 
 		resetPendingCreation();
@@ -640,7 +644,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	private void updateAutoRenewAccountIfAppropriate(final MerkleToken token,
-			final TokenUpdateTransactionBody changes) {
+													 final TokenUpdateTransactionBody changes) {
 		if (changes.hasAutoRenewAccount()) {
 			token.setAutoRenewAccount(fromGrpcAccountId(changes.getAutoRenewAccount()));
 		}
@@ -681,8 +685,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	private void updateTreasuryIfAppropriate(final MerkleToken token,
-			final TokenUpdateTransactionBody changes,
-			final TokenID tId) {
+											 final TokenUpdateTransactionBody changes,
+											 final TokenID tId) {
 		if (changes.hasTreasury() && !changes.getTreasury().equals(token.treasury().toGrpcAccountId())) {
 			final var treasuryId = fromGrpcAccountId(changes.getTreasury());
 			removeKnownTreasuryForToken(token.treasury().toGrpcAccountId(), tId);

@@ -58,4 +58,9 @@ public class HashMapTestAccounts implements BackingStore<Long, TestAccount> {
 	public Set<Long> idSet() {
 		return testAccounts.keySet();
 	}
+
+	@Override
+	public long size() {
+		return testAccounts.size();
+	}
 }

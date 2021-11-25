@@ -1,4 +1,4 @@
-package com.hedera.services.legacy.unit.serialization;
+package com.hedera.services.legacy.core.jproto;
 
 /*-
  * ‌
@@ -21,12 +21,8 @@ package com.hedera.services.legacy.unit.serialization;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.legacy.core.jproto.JKeySerializer;
-import com.hedera.services.legacy.core.jproto.JThresholdKey;
 import com.hedera.services.legacy.proto.utils.AtomicCounter;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
@@ -38,6 +34,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.security.PrivateKey;
@@ -48,12 +45,59 @@ import java.util.Map;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JKeySerializerTest {
+	@Test
+	void throwsOnNullObjectType() {
+		assertThrows(IllegalStateException.class,
+				() -> JKeySerializer.pack(null, null, null));
+		assertThrows(IllegalStateException.class,
+				() -> JKeySerializer.unpack(null, null, 0));
+	}
+
+	@Test
+	void canSerializeAndDeserializeJEcdsa384Key() throws IOException {
+		final var mockPk = "NONSENSE".getBytes();
+		final var subject = new JECDSA_384Key(mockPk);
+		final var baos = new ByteArrayOutputStream();
+		baos.write(JKeySerializer.serialize(subject));
+		baos.flush();
+
+		final var in = new ByteArrayInputStream(baos.toByteArray());
+		final JECDSA_384Key result = JKeySerializer.deserialize(new DataInputStream(in));
+		assertArrayEquals(subject.getECDSA384(), result.getECDSA384());
+	}
+
+	@Test
+	void canSerializeAndDeserializeJDelegateContractIdKey() throws IOException {
+		final var subject = new JDelegateContractIDKey(IdUtils.asContract("1.2.3"));
+		final var baos = new ByteArrayOutputStream();
+		baos.write(JKeySerializer.serialize(subject));
+		baos.flush();
+
+		final var in = new ByteArrayInputStream(baos.toByteArray());
+		final JDelegateContractIDKey result = JKeySerializer.deserialize(new DataInputStream(in));
+		assertEquals(subject.getContractID(), result.getContractID());
+	}
+
+	@Test
+	void canSerializeAndDeserializeJContractIdKey() throws IOException {
+		final var subject = new JDelegateContractIDKey(IdUtils.asContract("1.2.3"));
+		final var baos = new ByteArrayOutputStream();
+		baos.write(JKeySerializer.serialize(subject));
+		baos.flush();
+
+		final var in = new ByteArrayInputStream(baos.toByteArray());
+		final JDelegateContractIDKey result = JKeySerializer.deserialize(new DataInputStream(in));
+		assertEquals(subject.getContractID(), result.getContractID());
+	}
+
 	private JKey getSpecificJKeysMade(final String action, final int numKeys, final int depth) {
 		final List<JKey> keyList = new ArrayList<>();
 		final List<PrivateKey> privKeyList = new ArrayList<>();

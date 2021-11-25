@@ -68,6 +68,11 @@ public class HashMapBackingAccounts implements BackingStore<AccountID, MerkleAcc
 	}
 
 	@Override
+	public long size() {
+		return accounts.size();
+	}
+
+	@Override
 	public MerkleAccount getImmutableRef(AccountID id) {
 		return accounts.get(id);
 	}

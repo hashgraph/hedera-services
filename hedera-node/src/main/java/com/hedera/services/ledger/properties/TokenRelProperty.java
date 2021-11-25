@@ -29,7 +29,7 @@ public enum TokenRelProperty implements BeanProperty<MerkleTokenRelStatus> {
 	TOKEN_BALANCE {
 		@Override
 		public BiConsumer<MerkleTokenRelStatus, Object> setter() {
-			return (a, l) -> a.setBalance((long)l);
+			return (a, l) -> a.setBalance((long) l);
 		}
 
 		@Override
@@ -40,7 +40,7 @@ public enum TokenRelProperty implements BeanProperty<MerkleTokenRelStatus> {
 	IS_FROZEN {
 		@Override
 		public BiConsumer<MerkleTokenRelStatus, Object> setter() {
-			return (a, f) -> a.setFrozen((boolean)f);
+			return (a, f) -> a.setFrozen((boolean) f);
 		}
 
 		@Override
@@ -51,7 +51,7 @@ public enum TokenRelProperty implements BeanProperty<MerkleTokenRelStatus> {
 	IS_KYC_GRANTED {
 		@Override
 		public BiConsumer<MerkleTokenRelStatus, Object> setter() {
-			return (a, f) -> a.setKycGranted((boolean)f);
+			return (a, f) -> a.setKycGranted((boolean) f);
 		}
 
 		@Override
@@ -62,7 +62,7 @@ public enum TokenRelProperty implements BeanProperty<MerkleTokenRelStatus> {
 	IS_AUTOMATIC_ASSOCIATION {
 		@Override
 		public BiConsumer<MerkleTokenRelStatus, Object> setter() {
-			return (a, f) -> a.setAutomaticAssociation((boolean)f);
+			return (a, f) -> a.setAutomaticAssociation((boolean) f);
 		}
 
 		@Override

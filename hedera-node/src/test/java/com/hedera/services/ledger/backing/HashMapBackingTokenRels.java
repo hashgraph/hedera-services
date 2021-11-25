@@ -58,6 +58,11 @@ public class HashMapBackingTokenRels implements BackingStore<Pair<AccountID, Tok
 	}
 
 	@Override
+	public long size() {
+		return rels.size();
+	}
+
+	@Override
 	public MerkleTokenRelStatus getImmutableRef(Pair<AccountID, TokenID> id) {
 		return rels.get(id);
 	}

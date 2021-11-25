@@ -90,12 +90,12 @@ public class TokenDissociateTransitionLogic implements TransitionLogic {
 		account.dissociateUsing(dissociations, validator);
 
 		/* --- Persist the updated models --- */
-		accountStore.persistAccount(account);
+		accountStore.commitAccount(account);
 		final List<TokenRelationship> allUpdatedRels = new ArrayList<>();
 		for (var dissociation : dissociations) {
 			dissociation.addUpdatedModelRelsTo(allUpdatedRels);
 		}
-		tokenStore.persistTokenRelationships(allUpdatedRels);
+		tokenStore.commitTokenRelationships(allUpdatedRels);
 	}
 
 	@Override

@@ -61,6 +61,8 @@ class StoreInitializationFlowTest {
 	@Mock
 	private BackingStore<NftId, MerkleUniqueToken> backingNfts;
 	@Mock
+	private BackingStore<TokenID, MerkleToken> backingTokens;
+	@Mock
 	private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels;
 	@Mock
 	private MerkleMap<EntityNum, MerkleToken> tokens;
@@ -77,6 +79,7 @@ class StoreInitializationFlowTest {
 				stateAccessor,
 				uniqTokenViewsManager,
 				backingAccounts,
+				backingTokens,
 				backingNfts,
 				backingTokenRels);
 	}

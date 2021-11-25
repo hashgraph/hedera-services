@@ -42,7 +42,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 
@@ -68,6 +67,13 @@ class TxnAwareHandleThrottlingTest {
 	void txnHandlingDoesntSupportQueries() {
 		// expect:
 		assertThrows(UnsupportedOperationException.class, () -> subject.shouldThrottleQuery(CryptoGetAccountBalance, query));
+	}
+
+	@Test
+	void delegatesWasLastTxnGasThrottled() {
+		given(delegate.wasLastTxnGasThrottled()).willReturn(true);
+
+		assertTrue(subject.wasLastTxnGasThrottled());
 	}
 
 	@Test

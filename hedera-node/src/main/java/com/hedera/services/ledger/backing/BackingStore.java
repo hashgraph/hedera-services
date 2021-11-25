@@ -88,4 +88,11 @@ public interface BackingStore<K, A> {
 	 * @return the set of extant account ids
 	 */
 	Set<K> idSet();
+
+	/**
+	 * Returns the count of extant entities stored in the correspondent collection
+	 *
+	 * @return the count of extant entities stored in the correspondent collection
+	 */
+	long size();
 }

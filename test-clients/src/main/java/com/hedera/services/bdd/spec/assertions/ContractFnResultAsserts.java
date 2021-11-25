@@ -136,15 +136,24 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 		return ignore -> actualObjs -> matchErrors(objs, (Object[]) actualObjs[0]);
 	}
 
-	private static Optional<Throwable> matchErrors(Object[] expected, Object[] actual) {
-		System.out.println("Expected (#" + expected.length + "): " + Arrays.toString(expected));
-		System.out.println("Actual (#" + actual.length + "): " + Arrays.toString(actual));
+	private static Optional<Throwable> matchErrors(Object[] expecteds, Object[] actuals) {
 		try {
-			for (int i = 0; i < Math.max(expected.length, actual.length); i++) {
+			for (int i = 0; i < Math.max(expecteds.length, actuals.length); i++) {
+				System.out.println("Expected (#" + expecteds.length + "): " + Arrays.toString(expecteds));
+				System.out.println("Actual (#" + actuals.length + "): " + Arrays.toString(actuals));
 				try {
-					Assertions.assertEquals(expected[i], actual[i]);
-				} catch (Throwable t) {
-					return Optional.of(t);
+					Object expected = expecteds[i];
+					Object actual = actuals[i];
+					Assertions.assertNotNull(expected);
+					Assertions.assertNotNull(actual);
+					Assertions.assertEquals(expected.getClass(), actual.getClass());
+					if (expected instanceof byte[]) {
+						Assertions.assertArrayEquals((byte[]) expected, (byte[]) actual);
+					} else {
+						Assertions.assertEquals(expected, actual);
+					}
+				} catch (Throwable T) {
+					return Optional.of(T);
 				}
 			}
 		} catch (Throwable T) {

@@ -27,29 +27,30 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * Screens transactions based on the capacity of the system to handle the gasLimit of the transaction
+ * Screens transactions based on the capacity of the system to handle the gasLimit of the transaction.
  */
 @Singleton
 public class ThrottleScreen {
-
 	private final NetworkCtxManager networkCtxManager;
 
 	@Inject
-	public ThrottleScreen(
-			NetworkCtxManager networkCtxManager
-	) {
+	public ThrottleScreen(final NetworkCtxManager networkCtxManager) {
 		this.networkCtxManager = networkCtxManager;
 	}
 
 	/**
-	 * Applies screening to the transaction accessor
+	 * Applies a consensus-time throttle screen to the given transaction, returning
+	 * {@link ResponseCodeEnum#OK} if transaction processing can continue.
 	 *
-	 * @param accessor - the transaction accessor
-	 * @return - 	{@link ResponseCodeEnum#OK} if the system has enough capacity to handle the transaction
-	 * {@link ResponseCodeEnum#CONSENSUS_GAS_EXHAUSTED} if the transaction is a ContractCall
-	 * or ContractCreate that reached consensus without network capacity to execute it
+	 * At this time, processing can always continue <i>unless</i> the transaction is
+	 * a {@code ContractCreate} or {@code ContractCall} that reached consensus without
+	 * sufficient capacity remaining in the "gas bucket".
+	 *
+	 * @param accessor
+	 * 		the transaction accessor
+	 * @return ok if processing can continue, a terminal status otherwise
 	 */
-	public ResponseCodeEnum applyTo(TxnAccessor accessor) {
+	public ResponseCodeEnum applyTo(final TxnAccessor accessor) {
 		return networkCtxManager.prepareForIncorporating(accessor);
 	}
 }

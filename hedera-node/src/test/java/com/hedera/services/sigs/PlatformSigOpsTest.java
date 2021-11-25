@@ -20,6 +20,8 @@ package com.hedera.services.sigs;
  * ‍
  */
 
+import com.hedera.services.legacy.core.jproto.JContractIDKey;
+import com.hedera.services.legacy.core.jproto.JDelegateContractIDKey;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
@@ -75,6 +77,8 @@ class PlatformSigOpsTest {
 		for (final var kt : kts) {
 			pubKeys.add(kt.asJKey());
 		}
+		pubKeys.add(new JContractIDKey(0, 0, 1234));
+		pubKeys.add(new JDelegateContractIDKey(0, 0, 12345));
 	}
 
 	@Test
@@ -84,6 +88,7 @@ class PlatformSigOpsTest {
 		final var result = createEd25519PlatformSigsFrom(pubKeys, sigBytes, sigFactory);
 
 		final var nextSigIndex = new AtomicInteger(0);
+		verify(sigBytes, never()).sigBytesFor(null);
 		for (final var kt : kts) {
 			kt.traverseLeaves(leaf -> {
 				final var pk = leaf.asKey().getEd25519().toByteArray();

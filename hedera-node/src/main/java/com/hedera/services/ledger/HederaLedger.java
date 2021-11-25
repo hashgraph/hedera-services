@@ -79,16 +79,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * Provides a ledger for Hedera Services crypto and smart contract
  * accounts with transactional semantics. Changes to the ledger are
  * <b>only</b> allowed in the scope of a transaction.
- *
+ * <p>
  * All changes that are made during a transaction are summarized as
  * per-account changesets. These changesets are committed to a
  * wrapped {@link TransactionalLedger}; or dropped entirely in case
  * of a rollback.
- *
+ * <p>
  * The ledger delegates history of each transaction to an injected
  * {@link AccountRecordsHistorian} by invoking its {@code addNewRecords}
  * immediately before the final {@link TransactionalLedger#commit()}.
- *
+ * <p>
  * We should think of the ledger as using double-booked accounting,
  * (e.g., via the {@link HederaLedger#doTransfer(AccountID, AccountID, long)}
  * method); but it is necessary to provide "unsafe" single-booked
@@ -390,7 +390,8 @@ public class HederaLedger {
 	/**
 	 * Updates the provided {@link AccountID} with the {@link HederaAccountCustomizer}. All properties from the
 	 * customizer are applied to the {@link MerkleAccount} provisionally
-	 * @param id target account
+	 *
+	 * @param id         target account
 	 * @param customizer properties to update
 	 */
 	public void customizePotentiallyDeleted(AccountID id, HederaAccountCustomizer customizer) {

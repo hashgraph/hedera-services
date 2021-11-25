@@ -73,8 +73,8 @@ public interface EntityCreator {
 	 * 		the accessor for the id, memo, and schedule reference (if any) for the transaction
 	 * @param consensusTime
 	 * 		the consensus time of the transaction
-	 * @param receipt
-	 * 		the receipt for the record
+	 * @param receiptBuilder
+	 * 		the in-progress builder for the receipt for the record
 	 * @param assessedCustomFees
 	 * 		the custom fees assessed during the transaction
 	 * @param sideEffectsTracker
@@ -86,7 +86,7 @@ public interface EntityCreator {
 			byte[] hash,
 			TxnAccessor accessor,
 			Instant consensusTime,
-			TxnReceipt receipt,
+			TxnReceipt.Builder receiptBuilder,
 			List<FcAssessedCustomFee> assessedCustomFees,
 			SideEffectsTracker sideEffectsTracker);
 

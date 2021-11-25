@@ -78,7 +78,7 @@ class TokenPauseTransitionLogicTest {
 				.when(token).changePauseStatus(true);
 
 		assertFailsWith(() -> subject.doStateTransition(), TOKEN_HAS_NO_PAUSE_KEY);
-		verify(tokenStore, never()).persistToken(token);
+		verify(tokenStore, never()).commitToken(token);
 	}
 
 	@Test
@@ -89,7 +89,7 @@ class TokenPauseTransitionLogicTest {
 		subject.doStateTransition();
 
 		verify(token).changePauseStatus(true);
-		verify(tokenStore).persistToken(token);
+		verify(tokenStore).commitToken(token);
 	}
 
 	@Test

@@ -59,7 +59,6 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fchashmap.FCOneToManyRelation;
-import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -89,7 +88,6 @@ class LedgerBalanceChangesTest {
 			new HashMapBackingTokenRels();
 	private BackingStore<TokenID, MerkleToken> backingTokens = new HashMapBackingTokens();
 	private TokenStore tokenStore;
-	private final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
 	private final FCOneToManyRelation<EntityNum, Long> uniqueTokenOwnerships = new FCOneToManyRelation<>();
 	private final FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations = new FCOneToManyRelation<>();
 	private final FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations = new FCOneToManyRelation<>();
@@ -125,6 +123,7 @@ class LedgerBalanceChangesTest {
 				TokenRelProperty.class, MerkleTokenRelStatus::new, backingRels, new ChangeSummaryManager<>());
 		nftsLedger = new TransactionalLedger<>(
 				NftProperty.class, MerkleUniqueToken::new, backingNfts, new ChangeSummaryManager<>());
+
 		tokensLedger = new TransactionalLedger<>(
 				TokenProperty.class,
 				MerkleToken::new,
@@ -132,12 +131,6 @@ class LedgerBalanceChangesTest {
 				new ChangeSummaryManager<>()
 		);
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
-
-		tokens.put(tokenKey, fungibleTokenWithTreasury(aModel));
-		tokens.put(anotherTokenKey, fungibleTokenWithTreasury(aModel));
-		tokens.put(yetAnotherTokenKey, fungibleTokenWithTreasury(aModel));
-		tokens.put(aNftKey, nonFungibleTokenWithTreasury(aModel));
-		tokens.put(bNftKey, nonFungibleTokenWithTreasury(bModel));
 
 		backingTokens.put(tokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
 		backingTokens.put(anotherTokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
@@ -157,9 +150,9 @@ class LedgerBalanceChangesTest {
 				sideEffectsTracker,
 				viewManager,
 				dynamicProperties,
-				tokensLedger,
 				tokenRelsLedger,
-				nftsLedger);
+				nftsLedger,
+				backingTokens);
 		transferLogic = new TransferLogic(accountsLedger, nftsLedger, tokenRelsLedger, tokenStore, sideEffectsTracker
 				, tokenViewsManager, dynamicProperties, validator);
 		tokenStore.rebuildViews();
@@ -270,9 +263,9 @@ class LedgerBalanceChangesTest {
 				sideEffectsTracker,
 				viewManager,
 				dynamicProperties,
-				tokensLedger,
 				tokenRelsLedger,
-				nftsLedger);
+				nftsLedger,
+				backingTokens);
 
 		transferLogic = new TransferLogic(accountsLedger, nftsLedger, tokenRelsLedger, tokenStore, sideEffectsTracker
 				, tokenViewsManager, dynamicProperties, validator);

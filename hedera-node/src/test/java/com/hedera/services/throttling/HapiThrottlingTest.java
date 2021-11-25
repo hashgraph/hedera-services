@@ -25,7 +25,6 @@ import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -42,11 +41,11 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class HapiThrottlingTest {
 	@Mock
-	TimedFunctionalityThrottling delegate;
+	private TimedFunctionalityThrottling delegate;
 	@Mock
-	Query query;
+	private Query query;
 
-	HapiThrottling subject;
+	private HapiThrottling subject;
 
 	@BeforeEach
 	void setUp() {
@@ -103,6 +102,7 @@ class HapiThrottlingTest {
 		// expect:
 		assertThrows(UnsupportedOperationException.class, () -> subject.activeThrottlesFor(null));
 		assertThrows(UnsupportedOperationException.class, () -> subject.allActiveThrottles());
+		assertThrows(UnsupportedOperationException.class, () -> subject.wasLastTxnGasThrottled());
 	}
 
 	@Test

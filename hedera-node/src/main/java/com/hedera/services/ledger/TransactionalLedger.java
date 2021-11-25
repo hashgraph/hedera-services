@@ -53,12 +53,9 @@ import static java.util.stream.Collectors.joining;
  * backing store when the transaction is committed; or dropped with no effects
  * upon a rollback.
  *
- * @param <K>
- * 		the type of id used by the ledger
- * @param <P>
- * 		the family of properties associated to entities in the ledger
- * @param <A>
- * 		the type of a ledger entity
+ * @param <K> the type of id used by the ledger
+ * @param <P> the family of properties associated to entities in the ledger
+ * @param <A> the type of a ledger entity
  */
 public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		implements Ledger<K, P, A>, BackingStore<K, A> {
@@ -107,14 +104,10 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	/**
 	 * Constructs an active ledger backed by the given source ledger.
 	 *
-	 * @param sourceLedger
-	 * 		the ledger to wrap
-	 * @param <K>
-	 * 		the type of id used by the ledger
-	 * @param <P>
-	 * 		the family of properties associated to entities in the ledger
-	 * @param <A>
-	 * 		the type of a ledger entity
+	 * @param sourceLedger the ledger to wrap
+	 * @param <K>          the type of id used by the ledger
+	 * @param <P>          the family of properties associated to entities in the ledger
+	 * @param <A>          the type of a ledger entity
 	 * @return an active ledger wrapping the source
 	 */
 	public static <K, P extends Enum<P> & BeanProperty<A>, A> TransactionalLedger<K, P, A> activeLedgerWrapping(
@@ -231,16 +224,16 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 
 		final EnumMap<P, Object> changeSet = changes.get(id);
 		final boolean hasPendingChanges = changeSet != null;
-		final A account = entities.contains(id) ? entities.getRef(id) : newEntity.get();
+		final A entity = entities.contains(id) ? entities.getRef(id) : newEntity.get();
 		if (hasPendingChanges) {
 			if (commitInterceptor != null) {
-				changeManager.persistWithObserver(id, changeSet, account, commitInterceptor);
+				changeManager.persistWithObserver(id, changeSet, entity, commitInterceptor);
 			} else {
-				changeManager.persist(changeSet, account);
+				changeManager.persist(changeSet, entity);
 			}
 		}
 
-		return account;
+		return entity;
 	}
 
 	@Override
@@ -308,7 +301,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	 */
 	@Override
 	public A getImmutableRef(K id) {
-		throw new UnsupportedOperationException("This BackingStore implementation only support getRef()");
+		return getRef(id);
 	}
 
 	/**
@@ -350,6 +343,11 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	@Override
 	public Set<K> idSet() {
 		return entities.idSet();
+	}
+
+	@Override
+	public long size() {
+		return entities.size();
 	}
 
 	/* --- Helpers --- */

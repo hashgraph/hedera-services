@@ -59,4 +59,9 @@ public class HashMapBackingNfts implements BackingStore<NftId, MerkleUniqueToken
 	public Set<NftId> idSet() {
 		return nfts.keySet();
 	}
+
+	@Override
+	public long size() {
+		return nfts.size();
+	}
 }

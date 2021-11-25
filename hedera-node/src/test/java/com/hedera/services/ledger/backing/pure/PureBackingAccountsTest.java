@@ -104,4 +104,13 @@ class PureBackingAccountsTest {
 		// expect:
 		assertEquals(aValue, subject.getImmutableRef(a));
 	}
+
+	@Test
+	void delegatesSize() {
+		var size = 123;
+		given(map.size()).willReturn(size);
+
+		// expect:
+		assertEquals(size, subject.size());
+	}
 }

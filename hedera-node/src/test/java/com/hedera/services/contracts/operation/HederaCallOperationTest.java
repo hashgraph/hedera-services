@@ -22,7 +22,6 @@ package com.hedera.services.contracts.operation;
  *
  */
 
-
 import com.hedera.services.contracts.sources.SoliditySigsVerifier;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -40,18 +39,17 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.util.function.BiPredicate;
 
 import static com.hedera.services.contracts.operation.CommonCallSetup.commonSetup;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class HederaCallOperationTest {
-
 	@Mock
 	private GasCalculator calc;
 	@Mock
@@ -68,12 +66,14 @@ class HederaCallOperationTest {
 	private Gas cost;
 	@Mock
 	private SoliditySigsVerifier sigsVerifier;
+	@Mock
+	private BiPredicate<Address, MessageFrame> addressValidator;
 
 	private HederaCallOperation subject;
 
 	@BeforeEach
 	void setup() {
-		subject = new HederaCallOperation(sigsVerifier, calc);
+		subject = new HederaCallOperation(sigsVerifier, calc, addressValidator);
 		commonSetup(evmMsgFrame, worldUpdater, acc, accountAddr);
 	}
 
@@ -92,6 +92,7 @@ class HederaCallOperationTest {
 		given(evmMsgFrame.getStackItem(4)).willReturn(Bytes.EMPTY);
 		given(evmMsgFrame.getStackItem(5)).willReturn(Bytes.EMPTY);
 		given(evmMsgFrame.getStackItem(6)).willReturn(Bytes.EMPTY);
+		given(addressValidator.test(any(), any())).willReturn(false);
 
 		var opRes = subject.execute(evmMsgFrame, evm);
 
@@ -122,17 +123,15 @@ class HederaCallOperationTest {
 		given(acc.getBalance()).willReturn(Wei.of(100));
 		given(calc.gasAvailableForChildCall(any(), any(), anyBoolean())).willReturn(Gas.of(10));
 		given(acc.getAddress()).willReturn(accountAddr);
-		given(accountAddr.toArrayUnsafe()).willReturn(
-				new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22 });
-		given(sigsVerifier.allRequiredKeysAreActive(anySet())).willReturn(true);
+		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
+		given(addressValidator.test(any(), any())).willReturn(true);
 
 		var opRes = subject.execute(evmMsgFrame, evm);
 		assertEquals(Optional.empty(), opRes.getHaltReason());
 		assertEquals(opRes.getGasCost().get(), cost);
 
-		given(sigsVerifier.allRequiredKeysAreActive(anySet())).willReturn(false);
+		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(false);
 		var invalidSignaturesRes = subject.execute(evmMsgFrame, evm);
 		assertEquals(Optional.of(HederaExceptionalHaltReason.INVALID_SIGNATURE), invalidSignaturesRes.getHaltReason());
 	}
-
 }

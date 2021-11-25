@@ -9,9 +9,9 @@ package com.hedera.services.ledger.backing;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,7 +25,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityNumPair;
-import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,26 +37,26 @@ import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
 class BackingNftsTest {
-	private NftId aNftId = new NftId(0, 0, 3, 4);
-	private NftId bNftId = new NftId(0, 0, 4, 5);
-	private NftId cNftId = new NftId(0, 0, 5, 6);
-	private EntityNumPair aKey = EntityNumPair.fromLongs(3, 4);
-	private EntityNumPair bKey = EntityNumPair.fromLongs(4, 5);
-	private EntityNumPair cKey = EntityNumPair.fromLongs(5, 6);
-	private MerkleUniqueToken aValue = new MerkleUniqueToken(
+	private final NftId aNftId = new NftId(0, 0, 3, 4);
+	private final NftId bNftId = new NftId(0, 0, 4, 5);
+	private final NftId cNftId = new NftId(0, 0, 5, 6);
+	private final EntityNumPair aKey = EntityNumPair.fromLongs(3, 4);
+	private final EntityNumPair bKey = EntityNumPair.fromLongs(4, 5);
+	private final EntityNumPair cKey = EntityNumPair.fromLongs(5, 6);
+	private final MerkleUniqueToken aValue = new MerkleUniqueToken(
 			new EntityId(0, 0, 3),
 			"abcdefgh".getBytes(),
 			new RichInstant(1_234_567L, 1));
-	private MerkleUniqueToken theToken = new MerkleUniqueToken(
+	private final MerkleUniqueToken theToken = new MerkleUniqueToken(
 			MISSING_ENTITY_ID,
 			"HI".getBytes(StandardCharsets.UTF_8),
 			MISSING_INSTANT);
-	private MerkleUniqueToken notTheToken = new MerkleUniqueToken(
+	private final MerkleUniqueToken notTheToken = new MerkleUniqueToken(
 			MISSING_ENTITY_ID,
 			"IH".getBytes(StandardCharsets.UTF_8),
 			MISSING_INSTANT);
@@ -67,7 +66,7 @@ class BackingNftsTest {
 	private BackingNfts subject;
 
 	@BeforeEach
-	void setUp() throws ConstructableRegistryException {
+	void setUp() {
 		delegate = new MerkleMap<>();
 
 		delegate.put(aKey, theToken);
@@ -77,12 +76,12 @@ class BackingNftsTest {
 	}
 
 	@Test
-	void doesntSupportGettingIdSet() {
+	void doSupportGettingIdSet() {
 		// when:
 		subject = new BackingNfts(() -> delegate);
 
 		// expect:
-		assertThrows(UnsupportedOperationException.class, subject::idSet);
+		assertNotNull(subject.idSet());
 	}
 
 	@Test
