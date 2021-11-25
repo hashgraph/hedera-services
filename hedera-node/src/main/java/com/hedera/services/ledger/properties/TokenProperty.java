@@ -28,7 +28,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -47,7 +46,7 @@ public enum TokenProperty implements BeanProperty<MerkleToken> {
 	ADMIN_KEY {
 		@Override
 		public BiConsumer<MerkleToken, Object> setter() {
-			return (a, l) -> a.setAdminKey(((Optional<JKey>) l).orElse(null));
+			return (a, l) -> a.setAdminKey(((JKey) l));
 		}
 
 		@Override
@@ -58,7 +57,7 @@ public enum TokenProperty implements BeanProperty<MerkleToken> {
 	FREEZE_KEY {
 		@Override
 		public BiConsumer<MerkleToken, Object> setter() {
-			return (a, l) -> a.setFreezeKey(((Optional<JKey>) l).orElse(null));
+			return (a, l) -> a.setFreezeKey(((JKey) l));
 		}
 
 		@Override
