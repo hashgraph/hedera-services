@@ -343,7 +343,7 @@ class TypedTokenStoreTest {
 	@Test
 	void persistsDeletedTokenAsExpected() {
 		setupToken();
-		given(tokens.getImmutableRef(any())).willReturn(merkleToken);
+		givenModifiableToken(merkleTokenId, merkleToken);
 
 		token.setIsDeleted(true);
 		token.setAutoRenewAccount(null);
@@ -353,7 +353,6 @@ class TypedTokenStoreTest {
 		assertTrue(merkleToken.isDeleted());
 		verify(legacyStore).removeKnownTreasuryForToken(any(), any());
 	}
-
 
 	/* --- Token saving --- */
 	@Test
@@ -408,6 +407,7 @@ class TypedTokenStoreTest {
 		final var expectedPastUniqTokenId = new NftId(tokenEntityId.num(), wipedSerialNo);
 		final var expectedPastUniqTokenId2 = new NftId(tokenEntityId.num(), burnedSerialNo);
 
+		givenModifiableToken(merkleTokenId, merkleToken);
 		givenToken(merkleTokenId, merkleToken);
 
 		// when:

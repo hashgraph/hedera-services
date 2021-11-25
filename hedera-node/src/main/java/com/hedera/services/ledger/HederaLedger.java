@@ -31,14 +31,12 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
-import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
-import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
@@ -80,16 +78,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * Provides a ledger for Hedera Services crypto and smart contract
  * accounts with transactional semantics. Changes to the ledger are
  * <b>only</b> allowed in the scope of a transaction.
- *
+ * <p>
  * All changes that are made during a transaction are summarized as
  * per-account changesets. These changesets are committed to a
  * wrapped {@link TransactionalLedger}; or dropped entirely in case
  * of a rollback.
- *
+ * <p>
  * The ledger delegates history of each transaction to an injected
  * {@link AccountRecordsHistorian} by invoking its {@code addNewRecords}
  * immediately before the final {@link TransactionalLedger#commit()}.
- *
+ * <p>
  * We should think of the ledger as using double-booked accounting,
  * (e.g., via the {@link HederaLedger#doTransfer(AccountID, AccountID, long)}
  * method); but it is necessary to provide "unsafe" single-booked
@@ -132,7 +130,6 @@ public class HederaLedger {
 			Pair<AccountID, TokenID>,
 			TokenRelProperty,
 			MerkleTokenRelStatus> tokenRelsLedger = null;
-	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger = null;
 
 	private final MerkleAccountScopedCheck scopedCheck;
 
@@ -176,14 +173,6 @@ public class HederaLedger {
 		this.tokenRelsLedger = tokenRelsLedger;
 	}
 
-	public TransactionalLedger<TokenID, TokenProperty, MerkleToken> getTokensLedger() {
-		return tokensLedger;
-	}
-
-	public void setTokensLedger(TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger) {
-		this.tokensLedger = tokensLedger;
-	}
-
 	public TransactionalLedger<AccountID, AccountProperty, MerkleAccount> getAccountsLedger() {
 		return accountsLedger;
 	}
@@ -208,9 +197,6 @@ public class HederaLedger {
 		if (tokenViewsManager != null) {
 			tokenViewsManager.begin();
 		}
-		if (tokensLedger != null) {
-			tokensLedger.begin();
-		}
 	}
 
 	public void rollback() {
@@ -223,9 +209,6 @@ public class HederaLedger {
 		}
 		if (tokenViewsManager != null && tokenViewsManager.isInTransaction()) {
 			tokenViewsManager.rollback();
-		}
-		if (tokensLedger != null && tokensLedger.isInTransaction()) {
-			tokensLedger.rollback();
 		}
 	}
 
@@ -244,9 +227,6 @@ public class HederaLedger {
 		if (tokenViewsManager != null && tokenViewsManager.isInTransaction()) {
 			tokenViewsManager.commit();
 		}
-		if (tokensLedger != null && tokensLedger.isInTransaction()) {
-			tokensLedger.commit();
-		}
 	}
 
 	public String currentChangeSet() {
@@ -260,10 +240,6 @@ public class HederaLedger {
 			if (nftsLedger != null) {
 				sb.append("\n--- NFTS ---\n")
 						.append(nftsLedger.changeSetSoFar());
-			}
-			if (tokensLedger != null) {
-				sb.append("\n--- Tokens ---\n")
-						.append(tokensLedger.changeSetSoFar());
 			}
 			return sb.toString();
 		} else {
@@ -356,9 +332,6 @@ public class HederaLedger {
 		if (tokenViewsManager.isInTransaction()) {
 			tokenViewsManager.rollback();
 		}
-		if (tokensLedger != null && tokensLedger.isInTransaction()) {
-			tokensLedger.rollback();
-		}
 		accountsLedger.undoChangesOfType(TOKEN_TRANSFER_SIDE_EFFECTS);
 		sideEffectsTracker.resetTrackedTokenChanges();
 	}
@@ -433,7 +406,8 @@ public class HederaLedger {
 	/**
 	 * Updates the provided {@link AccountID} with the {@link HederaAccountCustomizer}. All properties from the
 	 * customizer are applied to the {@link MerkleAccount} provisionally
-	 * @param id target account
+	 *
+	 * @param id         target account
 	 * @param customizer properties to update
 	 */
 	public void customizePotentiallyDeleted(AccountID id, HederaAccountCustomizer customizer) {
