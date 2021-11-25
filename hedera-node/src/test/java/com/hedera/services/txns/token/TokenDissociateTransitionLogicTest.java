@@ -21,6 +21,8 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
@@ -38,6 +40,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEA
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class TokenDissociateTransitionLogicTest {
@@ -48,6 +52,8 @@ class TokenDissociateTransitionLogicTest {
 	private TransactionContext txnCtx;
 	@Mock
 	private DissociateLogic dissociateLogic;
+	@Mock
+	private TxnAccessor accessor;
 
 	private TokenDissociateTransitionLogic subject;
 
@@ -85,6 +91,18 @@ class TokenDissociateTransitionLogicTest {
 
 		// expect:
 		assertEquals(TOKEN_ID_REPEATED_IN_TOKEN_LIST, check.apply(dissociateTxnWith(repeatedTokenIdOp())));
+	}
+
+	@Test
+	void callsDissociateLogicWithCorrectParams() {
+		final var accountId = new Id(1, 2, 3);
+
+		given(accessor.getTxn()).willReturn(validDissociateTxn());
+		given(txnCtx.accessor()).willReturn(accessor);
+
+		subject.doStateTransition();
+
+		verify(dissociateLogic).dissociate(accountId, txnCtx.accessor().getTxn().getTokenDissociate().getTokensList());
 	}
 
 	private TransactionBody validDissociateTxn() {
