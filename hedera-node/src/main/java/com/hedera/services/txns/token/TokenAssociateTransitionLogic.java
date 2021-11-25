@@ -54,8 +54,6 @@ public class TokenAssociateTransitionLogic implements TransitionLogic {
 	private final TransactionContext txnCtx;
 	private final AssociateLogic associateLogic;
 
-	// TODO: Global dynamic properties are not being used in the transition logic itself and is being moved to the
-	//  	 Associate logic. Confirm, that this solution is appropriate.
 	@Inject
 	public TokenAssociateTransitionLogic(final TransactionContext txnCtx, final AssociateLogic associateLogic) {
 		this.txnCtx = txnCtx;
