@@ -21,11 +21,7 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.Token;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
@@ -33,15 +29,11 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.txns.validation.TokenListChecks.repeatsItself;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 /**
  * Provides the state transition for associating tokens to an account.
@@ -49,13 +41,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEA
 @Singleton
 public class TokenAssociateTransitionLogic implements TransitionLogic {
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
-
-
 	private final TransactionContext txnCtx;
 	private final AssociateLogic associateLogic;
 
-	// TODO: Global dynamic properties are not being used in the transition logic itself and is being moved to the
-	//  	 Associate logic. Confirm, that this solution is appropriate.
 	@Inject
 	public TokenAssociateTransitionLogic(final TransactionContext txnCtx, final AssociateLogic associateLogic) {
 		this.txnCtx = txnCtx;
@@ -68,6 +56,7 @@ public class TokenAssociateTransitionLogic implements TransitionLogic {
 		final var op = txnCtx.accessor().getTxn().getTokenAssociate();
 		final var accountId = Id.fromGrpcAccount(op.getAccount());
 
+		/* --- Do the business logic --- */
 		associateLogic.associate(accountId, op.getTokensList());
 	}
 
