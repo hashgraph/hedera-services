@@ -56,6 +56,11 @@ public class HashMapBackingTokens implements BackingStore<TokenID, MerkleToken> 
 	}
 
 	@Override
+	public long size() {
+		return tokens.size();
+	}
+
+	@Override
 	public MerkleToken getImmutableRef(TokenID id) {
 		return tokens.get(id);
 	}

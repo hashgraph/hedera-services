@@ -68,4 +68,9 @@ public class PureBackingTokens implements BackingStore<TokenID, MerkleToken> {
     public Set<TokenID> idSet() {
         return delegate.get().keySet().stream().map(EntityNum::toGrpcTokenId).collect(toSet());
     }
+
+    @Override
+    public long size() {
+        return delegate.get().size();
+    }
 }

@@ -215,6 +215,7 @@ public class BaseHederaLedgerTestHelper {
 		nftsLedger = mock(TransactionalLedger.class);
 		accountsLedger = mock(TransactionalLedger.class);
 		tokenRelsLedger = mock(TransactionalLedger.class);
+		tokensLedger = mock(TransactionalLedger.class);
 		addToLedger(misc, MISC_BALANCE, Map.of(
 				frozenId,
 				new TokenInfo(miscFrozenTokenBalance, frozenToken)));
@@ -240,7 +241,7 @@ public class BaseHederaLedgerTestHelper {
 		given(tokenStore.get(frozenId)).willReturn(frozenToken);
 
 		subject = new HederaLedger(tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProps,
-				accountsLedger, tokensLedger, transferLogic);
+				accountsLedger, transferLogic);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setNftsLedger(nftsLedger);
 	}

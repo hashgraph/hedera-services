@@ -23,9 +23,6 @@ package com.hedera.services.ledger;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.ledger.BalanceChange;
-import com.hedera.services.ledger.MerkleAccountScopedCheck;
-import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
@@ -114,7 +111,6 @@ public class TransferLogic {
     }
 
     public void dropPendingTokenChanges() {
-        // TODO: Should we add rollback for tokensLedger (which comes from tokenStore)
         if (tokenRelsLedger.isInTransaction()) {
             tokenRelsLedger.rollback();
         }

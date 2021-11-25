@@ -159,7 +159,7 @@ class LedgerBalanceChangesTest {
 
 		subject = new HederaLedger(
 				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProperties, accountsLedger
-				, tokensLedger, transferLogic);
+				, transferLogic);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setTokenViewsManager(tokenViewsManager);
 	}
@@ -271,7 +271,7 @@ class LedgerBalanceChangesTest {
 				, tokenViewsManager, dynamicProperties, validator);
 		subject = new HederaLedger(
 				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProperties, accountsLedger
-				, tokensLedger, transferLogic);
+				, transferLogic);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setTokenViewsManager(viewManager);
 		tokenStore.rebuildViews();

@@ -35,6 +35,9 @@ import com.hedera.services.contracts.operation.HederaSStoreOperation;
 import com.hedera.services.contracts.operation.HederaSelfDestructOperation;
 import com.hedera.services.contracts.operation.HederaStaticCallOperation;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.properties.TokenProperty;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
@@ -46,6 +49,7 @@ import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.virtualmap.VirtualMap;
 import dagger.Binds;
 import dagger.Module;
@@ -103,10 +107,11 @@ public abstract class ContractsModule {
 	@Singleton
 	public static EntityAccess provideMutableEntityAccess(
 			final HederaLedger ledger,
+			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
 			final Supplier<VirtualMap<ContractKey, ContractValue>> storage,
 			final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode
 	) {
-		return new MutableEntityAccess(ledger, storage, bytecode);
+		return new MutableEntityAccess(ledger, tokensLedger, storage, bytecode);
 	}
 
 	@Provides

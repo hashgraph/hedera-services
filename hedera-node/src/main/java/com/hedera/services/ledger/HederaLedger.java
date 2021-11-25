@@ -124,7 +124,6 @@ public class HederaLedger {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final AccountRecordsHistorian historian;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
-	private final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 
 	private UniqTokenViewsManager tokenViewsManager = null;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger = null;
@@ -144,7 +143,6 @@ public class HederaLedger {
 			final AccountRecordsHistorian historian,
 			final GlobalDynamicProperties dynamicProperties,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
-			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
 			final TransferLogic transferLogic
 	) {
 		this.ids = ids;
@@ -154,7 +152,6 @@ public class HederaLedger {
 		this.accountsLedger = accountsLedger;
 		this.dynamicProperties = dynamicProperties;
 		this.sideEffectsTracker = sideEffectsTracker;
-		this.tokensLedger = tokensLedger;
 		this.transferLogic = transferLogic;
 
 		creator.setLedger(this);
@@ -183,9 +180,6 @@ public class HederaLedger {
 		if (tokenRelsLedger != null) {
 			tokenRelsLedger.begin();
 		}
-		if (tokensLedger != null) {
-			tokensLedger.begin();
-		}
 		if (nftsLedger != null) {
 			nftsLedger.begin();
 		}
@@ -198,9 +192,6 @@ public class HederaLedger {
 		accountsLedger.rollback();
 		if (tokenRelsLedger != null && tokenRelsLedger.isInTransaction()) {
 			tokenRelsLedger.rollback();
-		}
-		if (tokensLedger != null && tokensLedger.isInTransaction()) {
-			tokensLedger.rollback();
 		}
 		if (nftsLedger != null && nftsLedger.isInTransaction()) {
 			nftsLedger.rollback();
@@ -218,9 +209,6 @@ public class HederaLedger {
 		historian.noteNewExpirationEvents();
 		if (tokenRelsLedger != null && tokenRelsLedger.isInTransaction()) {
 			tokenRelsLedger.commit();
-		}
-		if (tokensLedger != null && tokensLedger.isInTransaction()) {
-			tokensLedger.commit();
 		}
 		if (nftsLedger != null && nftsLedger.isInTransaction()) {
 			nftsLedger.commit();
@@ -500,16 +488,6 @@ public class HederaLedger {
 		accountsLedger.set(id, BALANCE, newBalance);
 	}
 
-	private void adjustHbarUnchecked(List<BalanceChange> changes) {
-		for (var change : changes) {
-			if (change.isForHbar()) {
-				final var accountId = change.accountId();
-				setBalance(accountId, change.getNewBalance());
-				sideEffectsTracker.trackHbarChange(accountId, change.units());
-			}
-		}
-	}
-
 	/* -- Only used by unit tests --- */
 	TransferList netTransfersInTxn() {
 		accountsLedger.throwIfNotInTxn();
@@ -522,10 +500,6 @@ public class HederaLedger {
 
 	public TransactionalLedger<AccountID, AccountProperty, MerkleAccount> getAccountsLedger() {
 		return accountsLedger;
-	}
-
-	public TransactionalLedger<TokenID, TokenProperty, MerkleToken> getTokensLedger() {
-		return tokensLedger;
 	}
 
 	public TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> getNftsLedger() {

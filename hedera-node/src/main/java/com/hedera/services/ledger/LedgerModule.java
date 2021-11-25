@@ -28,6 +28,7 @@ import com.hedera.services.ledger.backing.BackingTokens;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
@@ -68,9 +69,15 @@ public abstract class LedgerModule {
 			final AccountRecordsHistorian recordsHistorian,
 			final GlobalDynamicProperties dynamicProperties,
 			final BackingStore<AccountID, MerkleAccount> backingAccounts,
-			final BackingStore<TokenID, MerkleToken> backingTokens,
 			final TransferLogic transferLogic
 			) {
+		TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger =
+				new TransactionalLedger<>(
+						AccountProperty.class,
+						MerkleAccount::new,
+						backingAccounts,
+						new ChangeSummaryManager<>());
+
 		final var ledger = new HederaLedger(
 				tokenStore,
 				ids,
@@ -79,8 +86,7 @@ public abstract class LedgerModule {
 				sideEffectsTracker,
 				recordsHistorian,
 				dynamicProperties,
-				backingAccounts,
-				backingTokens,
+				accountsLedger,
 				transferLogic);
 		ledger.setTokenViewsManager(uniqTokenViewsManager);
 		scheduleStore.setAccountsLedger(accountsLedger);

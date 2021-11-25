@@ -72,6 +72,11 @@ public class BackingTokens implements BackingStore<TokenID, MerkleToken> {
     }
 
     @Override
+    public long size() {
+        return delegate.get().size();
+    }
+
+    @Override
     public MerkleToken getImmutableRef(TokenID id) {
         return delegate.get().get(fromTokenId(id));
     }

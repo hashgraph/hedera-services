@@ -178,6 +178,7 @@ class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
 		final var manager = mock(UniqTokenViewsManager.class);
 		final var inOrder = inOrder(tokenRelsLedger, nftsLedger, manager);
 		given(tokenRelsLedger.isInTransaction()).willReturn(true);
+		given(tokensLedger.isInTransaction()).willReturn(true);
 		given(nftsLedger.isInTransaction()).willReturn(true);
 		given(manager.isInTransaction()).willReturn(true);
 		subject.setTokenViewsManager(manager);
