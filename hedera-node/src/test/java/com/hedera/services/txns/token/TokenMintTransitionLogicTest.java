@@ -23,9 +23,9 @@ package com.hedera.services.txns.token;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
@@ -36,6 +36,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
@@ -50,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class TokenMintTransitionLogicTest {
@@ -58,6 +60,12 @@ class TokenMintTransitionLogicTest {
 
 	@Mock
 	private TransactionContext txnCtx;
+	@Mock
+	private TxnAccessor accessor;
+	@Mock
+	private TransactionBody transactionBody;
+	@Mock
+	private TokenMintTransactionBody mintTransactionBody;
 	@Mock
 	private OptionValidator validator;
 	@Mock
@@ -176,6 +184,26 @@ class TokenMintTransitionLogicTest {
 		given(validator.maxBatchSizeMintCheck(tokenMintTxn.getTokenMint().getMetadataCount())).willReturn(
 				BATCH_SIZE_LIMIT_EXCEEDED);
 		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.semanticCheck().apply(tokenMintTxn));
+	}
+
+	@Test
+	void callsMintLogicWithCorrectParams() {
+		var consensus = Instant.now();
+		var grpcId = IdUtils.asToken("0.0.1");
+		var amount = 4321L;
+		var count = 3;
+		List<ByteString> metadataList = List.of(ByteString.copyFromUtf8("test"), ByteString.copyFromUtf8("test test"));
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.consensusTime()).willReturn(consensus);
+		given(accessor.getTxn()).willReturn(transactionBody);
+		given(transactionBody.getTokenMint()).willReturn(mintTransactionBody);
+		given(mintTransactionBody.getToken()).willReturn(grpcId);
+		given(mintTransactionBody.getAmount()).willReturn(amount);
+		given(mintTransactionBody.getMetadataCount()).willReturn(count);
+		given(mintTransactionBody.getMetadataList()).willReturn(metadataList);
+		subject.doStateTransition();
+
+		verify(mintLogic).mint(Id.fromGrpcToken(grpcId), count, amount, metadataList, consensus);
 	}
 
 	private void givenValidTxnCtx() {

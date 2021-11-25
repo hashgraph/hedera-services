@@ -188,7 +188,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	public void setHederaLedger(final HederaLedger hederaLedger) {
 		hederaLedger.setNftsLedger(nftsLedger);
 		hederaLedger.setTokenRelsLedger(tokenRelsLedger);
-//		hederaLedger.setTokensLedger(tokensLedger);
 		super.setHederaLedger(hederaLedger);
 	}
 
