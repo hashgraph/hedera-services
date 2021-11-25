@@ -32,13 +32,8 @@ import java.util.Set;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 class BackingTokensTest {
@@ -48,6 +43,7 @@ class BackingTokensTest {
 	private final MerkleToken aValue = new MerkleToken();
 
 	private MerkleMap<EntityNum, MerkleToken> map;
+	MerkleMap<EntityNum, MerkleToken> mockedMap;
 	private BackingTokens subject;
 
 	@BeforeEach
@@ -81,6 +77,26 @@ class BackingTokensTest {
 	}
 
 	@Test
+	void getRefWorks() {
+		// given:
+		setupMocked();
+		// when:
+		subject.getRef(a);
+		// then:
+		verify(mockedMap).getForModify(EntityNum.fromTokenId(a));
+	}
+
+	@Test
+	void getImmutableRefWorks() {
+		// given:
+		setupMocked();
+		// when:
+		subject.getImmutableRef(a);
+		// then:
+		verify(mockedMap).get(EntityNum.fromTokenId(a));
+	}
+
+	@Test
 	void delegatesSize() {
 		// expect:
 		assertEquals(1, subject.size());
@@ -102,5 +118,10 @@ class BackingTokensTest {
 
 		// then:
 		assertFalse(subject.contains(a));
+	}
+
+	void setupMocked() {
+		mockedMap = mock(MerkleMap.class);
+		subject = new BackingTokens(() -> mockedMap);
 	}
 }
