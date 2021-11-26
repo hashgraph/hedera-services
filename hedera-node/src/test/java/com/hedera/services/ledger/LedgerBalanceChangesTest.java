@@ -97,7 +97,6 @@ class LedgerBalanceChangesTest {
 			TokenRelProperty,
 			MerkleTokenRelStatus> tokenRelsLedger;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
-	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 	private TransferLogic transferLogic;
 
 	@Mock
@@ -124,12 +123,6 @@ class LedgerBalanceChangesTest {
 		nftsLedger = new TransactionalLedger<>(
 				NftProperty.class, MerkleUniqueToken::new, backingNfts, new ChangeSummaryManager<>());
 
-		tokensLedger = new TransactionalLedger<>(
-				TokenProperty.class,
-				MerkleToken::new,
-				backingTokens,
-				new ChangeSummaryManager<>()
-		);
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 
 		backingTokens.put(tokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
@@ -245,12 +238,6 @@ class LedgerBalanceChangesTest {
 		backingTokens = new HashMapBackingTokens();
 		backingTokens.put(anotherTokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
 		backingTokens.put(yetAnotherTokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
-		tokensLedger = new TransactionalLedger<>(
-				TokenProperty.class,
-				MerkleToken::new,
-				backingTokens,
-				new ChangeSummaryManager<>()
-		);
 		final var sideEffectsTracker = new SideEffectsTracker();
 		final var viewManager = new UniqTokenViewsManager(
 				() -> uniqueTokenOwnerships,
@@ -268,7 +255,7 @@ class LedgerBalanceChangesTest {
 				backingTokens);
 
 		transferLogic = new TransferLogic(accountsLedger, nftsLedger, tokenRelsLedger, tokenStore, sideEffectsTracker
-				, tokenViewsManager, dynamicProperties, validator);
+				, viewManager, dynamicProperties, validator);
 		subject = new HederaLedger(
 				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProperties, accountsLedger
 				, transferLogic);

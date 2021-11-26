@@ -82,6 +82,7 @@ class BackingNftsTest {
 
 		// expect:
 		assertNotNull(subject.idSet());
+		assertEquals(2, subject.size());
 	}
 
 	@Test
