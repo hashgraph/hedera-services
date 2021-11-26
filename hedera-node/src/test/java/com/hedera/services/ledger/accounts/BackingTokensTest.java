@@ -113,6 +113,18 @@ class BackingTokensTest {
 	}
 
 	@Test
+	void putWorksWithDelegate() {
+		// given:
+		setupMocked();
+		// when:
+		subject.put(a, aValue);
+
+		// then:
+		verify(mockedMap).containsKey(EntityNum.fromTokenId(a));
+		verify(mockedMap).put(EntityNum.fromTokenId(a), aValue);
+	}
+
+	@Test
 	void removeWorks() {
 		// when:
 		subject.remove(a);
