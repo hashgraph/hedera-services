@@ -74,10 +74,10 @@ public class EntityNumPair {
 				STATIC_PROPERTIES.scopedTokenWith(unsignedLowOrder32From(value)));
 	}
 
-	public Pair<Long, Long> asTokenNumAndSerialPair() {
+	public Pair<Long, TokenID> asTokenAndSerialPair() {
 		return Pair.of(
-				unsignedHighOrder32From(value),
-				unsignedLowOrder32From(value));
+				unsignedLowOrder32From(value),
+				STATIC_PROPERTIES.scopedTokenWith(unsignedLowOrder32From(value)));
 	}
 
 	@Override

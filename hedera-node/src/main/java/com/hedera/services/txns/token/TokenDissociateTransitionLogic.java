@@ -52,7 +52,6 @@ public class TokenDissociateTransitionLogic implements TransitionLogic {
 			TransactionContext txnCtx,
 			DissociateLogic dissociateLogic) {
 		this.txnCtx = txnCtx;
-
 		this.dissociateLogic = dissociateLogic;
 	}
 

@@ -24,6 +24,7 @@ import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -92,11 +93,9 @@ public final class EntityIdUtils {
 	/**
 	 * Returns the {@code AccountID} represented by a literal of the form {@code <shard>.<realm>.<num>}.
 	 *
-	 * @param literal
-	 * 		the account literal
+	 * @param literal the account literal
 	 * @return the corresponding id
-	 * @throws IllegalArgumentException
-	 * 		if the literal is not formatted correctly
+	 * @throws IllegalArgumentException if the literal is not formatted correctly
 	 */
 	public static AccountID parseAccount(final String literal) {
 		try {
@@ -287,5 +286,9 @@ public final class EntityIdUtils {
 		final var leftNum = unsignedHighOrder32From(scopedSerialNo);
 		final var rightNum = unsignedLowOrder32From(scopedSerialNo);
 		return STATIC_PROPERTIES.scopedIdLiteralWith(leftNum) + "." + rightNum;
+	}
+
+	public static NftId asNftId(Id tokenId, long serial) {
+		return new NftId(tokenId.getShard(), tokenId.getRealm(), tokenId.getNum(), serial);
 	}
 }

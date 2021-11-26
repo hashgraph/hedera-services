@@ -36,13 +36,6 @@ public class NftId {
 		this.serialNo = serialNo;
 	}
 
-	public NftId(long num, long serialNo) {
-		this.shard = 0L;
-		this.realm = 0L;
-		this.num = num;
-		this.serialNo = serialNo;
-	}
-
 	public long shard() {
 		return shard;
 	}
