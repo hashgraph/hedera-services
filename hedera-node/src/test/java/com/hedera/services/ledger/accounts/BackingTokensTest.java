@@ -34,6 +34,8 @@ import static com.hedera.test.utils.IdUtils.asToken;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -120,8 +122,7 @@ class BackingTokensTest {
 		subject.put(a, aValue);
 
 		// then:
-		verify(mockedMap).containsKey(EntityNum.fromTokenId(a));
-		verify(mockedMap).put(EntityNum.fromTokenId(a), aValue);
+		verify(mockedMap).computeIfAbsent(eq(EntityNum.fromTokenId(a)), any());
 	}
 
 	@Test
