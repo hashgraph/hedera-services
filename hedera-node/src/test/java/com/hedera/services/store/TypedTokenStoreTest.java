@@ -59,7 +59,6 @@ import java.util.List;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.utils.EntityIdUtils.asNftId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -402,11 +401,11 @@ class TypedTokenStoreTest {
 		expectedReplacementToken2.setMemo(memo);
 		expectedReplacementToken2.setAutoRenewPeriod(autoRenewPeriod);
 		// and:
-		final var expectedNewUniqTokenId = asNftId(tokenEntityId.asId(), mintedSerialNo);
-		final var expectedNewUniqTokenId2 = asNftId(tokenEntityId.asId(), mintedSerialNo2);
+		final var expectedNewUniqTokenId = new NftId(tokenEntityId.num(), mintedSerialNo);
+		final var expectedNewUniqTokenId2 = new NftId(tokenEntityId.num(), mintedSerialNo2);
 		final var expectedNewUniqToken = new MerkleUniqueToken(MISSING_ENTITY_ID, nftMeta, creationTime);
-		final var expectedPastUniqTokenId = asNftId(tokenEntityId.asId(), wipedSerialNo);
-		final var expectedPastUniqTokenId2 = asNftId(tokenEntityId.asId(), burnedSerialNo);
+		final var expectedPastUniqTokenId = new NftId(tokenEntityId.num(), wipedSerialNo);
+		final var expectedPastUniqTokenId2 = new NftId(tokenEntityId.num(), burnedSerialNo);
 
 		givenModifiableToken(merkleTokenId, merkleToken);
 		givenToken(merkleTokenId, merkleToken);
@@ -434,7 +433,7 @@ class TypedTokenStoreTest {
 		// and:
 		verify(sideEffectsTracker).trackTokenChanges(modelToken);
 		verify(uniqueTokens).put(expectedNewUniqTokenId, expectedNewUniqToken);
-		verify(uniqueTokens).put(asNftId(tokenEntityId.asId(), mintedSerialNo), expectedNewUniqToken);
+		verify(uniqueTokens).put(new NftId(tokenEntityId.num(), mintedSerialNo), expectedNewUniqToken);
 		verify(uniqueTokens).remove(expectedPastUniqTokenId);
 		verify(uniqTokenViewsManager).mintNotice(EntityNumPair.fromNftId(expectedNewUniqTokenId), autoRenewId.asEntityId());
 		verify(uniqTokenViewsManager).wipeNotice(EntityNumPair.fromNftId(expectedPastUniqTokenId), treasuryId);
@@ -456,7 +455,6 @@ class TypedTokenStoreTest {
 
 		// then:
 		assertEquals(expectedReplacementToken2, merkleToken);
-//		verify(tokens, never()).replace(merkleTokenId, expectedReplacementToken2);
 		// and:
 		verify(sideEffectsTracker).trackTokenChanges(modelToken);
 		verify(uniqueTokens).put(expectedNewUniqTokenId2, expectedNewUniqToken);

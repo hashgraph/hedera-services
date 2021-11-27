@@ -52,7 +52,6 @@ import java.util.List;
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.utils.EntityIdUtils.asNftId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
@@ -305,7 +304,7 @@ public class TypedTokenStore {
 	public void loadUniqueTokens(Token token, List<Long> serialNumbers) {
 		final var loadedUniqueTokens = new HashMap<Long, UniqueToken>();
 		for (long serialNumber : serialNumbers) {
-			final var merkleUniqueToken = uniqueTokens.getImmutableRef(asNftId(token.getId(), serialNumber));
+			final var merkleUniqueToken = uniqueTokens.getImmutableRef(new NftId(token.getId().getNum(), serialNumber));
 			validateUsable(merkleUniqueToken);
 			final var uniqueToken = new UniqueToken(token.getId(), serialNumber);
 			initModelFields(uniqueToken, merkleUniqueToken);
@@ -417,7 +416,7 @@ public class TypedTokenStore {
 	private void destroyRemoved(List<UniqueToken> nfts, EntityId treasury) {
 		for (var nft : nfts) {
 			final var merkleNftId = EntityNumPair.fromLongs(nft.getTokenId().getNum(), nft.getSerialNumber());
-			uniqueTokens.remove(asNftId(nft.getTokenId(), nft.getSerialNumber()));
+			uniqueTokens.remove(new NftId(nft.getTokenId().getNum(), nft.getSerialNumber()));
 			if (treasury.matches(nft.getOwner())) {
 				uniqTokenViewsManager.burnNotice(merkleNftId, treasury);
 			} else {
@@ -430,7 +429,7 @@ public class TypedTokenStore {
 		for (var nft : nfts) {
 			final var merkleNftId = EntityNumPair.fromLongs(nft.getTokenId().getNum(), nft.getSerialNumber());
 			final var merkleNft = new MerkleUniqueToken(MISSING_ENTITY_ID, nft.getMetadata(), nft.getCreationTime());
-			uniqueTokens.put(asNftId(nft.getTokenId(), nft.getSerialNumber()), merkleNft);
+			uniqueTokens.put(new NftId(nft.getTokenId().getNum(), nft.getSerialNumber()), merkleNft);
 			uniqTokenViewsManager.mintNotice(merkleNftId, treasury);
 		}
 	}
