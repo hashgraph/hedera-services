@@ -27,6 +27,7 @@ import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.HashMapBackingAccounts;
 import com.hedera.services.ledger.accounts.HashMapBackingNfts;
 import com.hedera.services.ledger.accounts.HashMapBackingTokenRels;
+import com.hedera.services.ledger.accounts.HashMapBackingTokens;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
@@ -95,9 +96,9 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 				sideEffectsTracker,
 				viewManager,
 				new MockGlobalDynamicProps(),
-				() -> tokens,
 				tokenRelsLedger,
-				nftsLedger);
+				nftsLedger,
+				new HashMapBackingTokens());
 		subject = new HederaLedger(
 				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProps, accountsLedger);
 	}

@@ -232,11 +232,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		var account = accountStore.loadAccount(Id.fromGrpcAccount(accountID));
 		final var tokenID = EntityIdUtils.tokenParsedFromSolidityAddress(tokenAddress.toArrayUnsafe());
 		var token = tokenStore.loadToken(Id.fromGrpcToken(tokenID));
-		tokenStore.persistTokenRelationships(List.of(token.newRelationshipWith(account, false)));
+		tokenStore.commitTokenRelationships(List.of(token.newRelationshipWith(account, false)));
 
 		try {
 			account.associateWith(List.of(token), dynamicProperties.maxTokensPerAccount(), false);
-			accountStore.persistAccount(account); // this is bad, no easy rollback
+			accountStore.commitAccount(account); // this is bad, no easy rollback
 			return UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
 		} catch (InvalidTransactionException ite) {
 			return UInt256.valueOf(ite.getResponseCode().getNumber());
@@ -268,12 +268,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			account.dissociateUsing(dissociations, validator);
 
 			/* --- Persist the updated models --- */
-			accountStore.persistAccount(account);
+			accountStore.commitAccount(account);
 			final List<TokenRelationship> allUpdatedRels = new ArrayList<>();
 			for (var dissociation : dissociations) {
 				dissociation.addUpdatedModelRelsTo(allUpdatedRels);
 			}
-			tokenStore.persistTokenRelationships(allUpdatedRels);
+			tokenStore.commitTokenRelationships(allUpdatedRels);
 			return UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
 		} catch (InvalidTransactionException ite) {
 			return UInt256.valueOf(ite.getResponseCode().getNumber());

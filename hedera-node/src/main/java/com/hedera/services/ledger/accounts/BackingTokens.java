@@ -3,9 +3,9 @@ package com.hedera.services.ledger.accounts;
 /*-
  * ‌
  * Hedera Services Node
- * ​
+ *
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,25 +20,25 @@ package com.hedera.services.ledger.accounts;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.utils.EntityNum;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
-import static com.hedera.services.utils.EntityNum.fromAccountId;
+import static com.hedera.services.utils.EntityNum.fromTokenId;
+import static java.util.stream.Collectors.toSet;
 
 @Singleton
-public class BackingAccounts implements BackingStore<AccountID, MerkleAccount> {
-	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> delegate;
+public class BackingTokens implements BackingStore<TokenID, MerkleToken> {
+	private final Supplier<MerkleMap<EntityNum, MerkleToken>> delegate;
 
 	@Inject
-	public BackingAccounts(Supplier<MerkleMap<EntityNum, MerkleAccount>> delegate) {
+	public BackingTokens(Supplier<MerkleMap<EntityNum, MerkleToken>> delegate) {
 		this.delegate = delegate;
 	}
 
@@ -48,30 +48,30 @@ public class BackingAccounts implements BackingStore<AccountID, MerkleAccount> {
 	}
 
 	@Override
-	public MerkleAccount getRef(AccountID id) {
-		return delegate.get().getForModify(fromAccountId(id));
+	public MerkleToken getRef(TokenID id) {
+		return delegate.get().getForModify(fromTokenId(id));
 	}
 
 	@Override
-	public void put(AccountID id, MerkleAccount account) {
-		if (!delegate.get().containsKey(EntityNum.fromAccountId(id))) {
-			delegate.get().put(fromAccountId(id), account);
+	public void put(TokenID id, MerkleToken token) {
+		if (!delegate.get().containsKey(fromTokenId(id))) {
+			delegate.get().put(fromTokenId(id), token);
 		}
 	}
 
 	@Override
-	public boolean contains(AccountID id) {
-		return delegate.get().containsKey(EntityNum.fromAccountId(id));
+	public boolean contains(TokenID id) {
+		return delegate.get().containsKey(fromTokenId(id));
 	}
 
 	@Override
-	public void remove(AccountID id) {
-		delegate.get().remove(fromAccountId(id));
+	public void remove(TokenID id) {
+		delegate.get().remove(fromTokenId(id));
 	}
 
 	@Override
-	public Set<AccountID> idSet() {
-		return delegate.get().keySet().stream().map(EntityNum::toGrpcAccountId).collect(Collectors.toSet());
+	public Set<TokenID> idSet() {
+		return delegate.get().keySet().stream().map(EntityNum::toGrpcTokenId).collect(toSet());
 	}
 
 	@Override
@@ -80,7 +80,7 @@ public class BackingAccounts implements BackingStore<AccountID, MerkleAccount> {
 	}
 
 	@Override
-	public MerkleAccount getImmutableRef(AccountID id) {
-		return delegate.get().get(fromAccountId(id));
+	public MerkleToken getImmutableRef(TokenID id) {
+		return delegate.get().get(fromTokenId(id));
 	}
 }

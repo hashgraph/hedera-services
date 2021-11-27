@@ -20,48 +20,49 @@ package com.hedera.services.ledger.accounts;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.store.models.NftId;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hederahashgraph.api.proto.java.TokenID;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class HashMapBackingNfts implements BackingStore<NftId, MerkleUniqueToken> {
-	private Map<NftId, MerkleUniqueToken> nfts = new HashMap<>();
+public class HashMapBackingTokens implements BackingStore<TokenID, MerkleToken> {
+	private Map<TokenID, MerkleToken> tokens = new HashMap<>();
+
 
 	@Override
-	public MerkleUniqueToken getRef(NftId id) {
-		return nfts.get(id);
+	public MerkleToken getRef(TokenID id) {
+		return tokens.get(id);
 	}
 
 	@Override
-	public MerkleUniqueToken getImmutableRef(NftId id) {
-		return nfts.get(id);
+	public MerkleToken getImmutableRef(TokenID id) {
+		return tokens.get(id);
 	}
 
 	@Override
-	public void put(NftId id, MerkleUniqueToken nft) {
-		nfts.put(id, nft);
+	public void put(TokenID id, MerkleToken token) {
+		tokens.put(id, token);
 	}
 
 	@Override
-	public void remove(NftId id) {
-		nfts.remove(id);
+	public void remove(TokenID id) {
+		tokens.remove(id);
 	}
 
 	@Override
-	public boolean contains(NftId id) {
-		return nfts.containsKey(id);
+	public boolean contains(TokenID id) {
+		return tokens.containsKey(id);
 	}
 
 	@Override
-	public Set<NftId> idSet() {
-		return nfts.keySet();
+	public Set<TokenID> idSet() {
+		return tokens.keySet();
 	}
 
 	@Override
 	public long size() {
-		return nfts.size();
+		return tokens.size();
 	}
 }

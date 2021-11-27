@@ -24,6 +24,7 @@ import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.annotations.WorkingState;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.models.NftId;
@@ -48,6 +49,7 @@ public class StoreInitializationFlow {
 	private final StateAccessor stateAccessor;
 	private final UniqTokenViewsManager uniqTokenViewsManager;
 	private final BackingStore<AccountID, MerkleAccount> backingAccounts;
+	private final BackingStore<TokenID, MerkleToken> backingTokens;
 	private final BackingStore<NftId, MerkleUniqueToken> backingNfts;
 	private final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels;
 
@@ -58,12 +60,14 @@ public class StoreInitializationFlow {
 			@WorkingState StateAccessor stateAccessor,
 			UniqTokenViewsManager uniqTokenViewsManager,
 			BackingStore<AccountID, MerkleAccount> backingAccounts,
+			BackingStore<TokenID, MerkleToken> backingTokens,
 			BackingStore<NftId, MerkleUniqueToken> backingNfts,
 			BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels
 	) {
 		this.tokenStore = tokenStore;
 		this.scheduleStore = scheduleStore;
 		this.backingAccounts = backingAccounts;
+		this.backingTokens = backingTokens;
 		this.stateAccessor = stateAccessor;
 		this.backingNfts = backingNfts;
 		this.backingTokenRels = backingTokenRels;
@@ -73,6 +77,7 @@ public class StoreInitializationFlow {
 	public void run() {
 		backingTokenRels.rebuildFromSources();
 		backingAccounts.rebuildFromSources();
+		backingTokens.rebuildFromSources();
 		backingNfts.rebuildFromSources();
 		log.info("Backing stores rebuilt");
 

@@ -105,8 +105,8 @@ class TokenDissociateTransitionLogicTest {
 		// then:
 		verify(account).dissociateUsing(List.of(dissociation), validator);
 		// and:
-		verify(accountStore).persistAccount(account);
-		verify(tokenStore).persistTokenRelationships(List.of(tokenRelationship));
+		verify(accountStore).commitAccount(account);
+		verify(tokenStore).commitTokenRelationships(List.of(tokenRelationship));
 	}
 
 	@Test

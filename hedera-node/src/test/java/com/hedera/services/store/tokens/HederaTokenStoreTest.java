@@ -25,6 +25,8 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.BackingStore;
+import com.hedera.services.ledger.accounts.BackingTokens;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
@@ -53,9 +55,9 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
-import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -74,7 +76,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWN
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
-import static com.hedera.services.utils.EntityNum.fromTokenId;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
@@ -187,10 +188,10 @@ class HederaTokenStoreTest {
 	private SideEffectsTracker sideEffectsTracker;
 	private GlobalDynamicProperties properties;
 	private UniqTokenViewsManager uniqTokenViewsManager;
-	private MerkleMap<EntityNum, MerkleToken> tokens;
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
+	private BackingTokens backingTokens;
 	private HederaLedger hederaLedger;
 
 	private MerkleToken token;
@@ -239,6 +240,18 @@ class HederaTokenStoreTest {
 		given(accountsLedger.get(autoRenewAccount, IS_DELETED)).willReturn(false);
 		given(accountsLedger.get(newAutoRenewAccount, IS_DELETED)).willReturn(false);
 
+		backingTokens = mock(BackingTokens.class);
+		given(backingTokens.contains(misc)).willReturn(true);
+		given(backingTokens.contains(nonfungible)).willReturn(true);
+		given(backingTokens.getRef(created)).willReturn(token);
+		given(backingTokens.getImmutableRef(created)).willReturn(token);
+		given(backingTokens.getRef(misc)).willReturn(token);
+		given(backingTokens.getImmutableRef(misc)).willReturn(token);
+		given(backingTokens.getRef(nonfungible)).willReturn(nonfungibleToken);
+		given(backingTokens.getImmutableRef(tNft.tokenId())).willReturn(nonfungibleToken);
+		given(backingTokens.getImmutableRef(tNft.tokenId()).treasury()).willReturn(EntityId.fromGrpcAccountId(primaryTreasury));
+		given(backingTokens.idSet()).willReturn(Set.of(created));
+
 		tokenRelsLedger = mock(TransactionalLedger.class);
 		given(tokenRelsLedger.exists(sponsorMisc)).willReturn(true);
 		given(tokenRelsLedger.exists(treasuryNft)).willReturn(true);
@@ -263,17 +276,6 @@ class HederaTokenStoreTest {
 		given(tokenRelsLedger.get(counterpartyNft, IS_KYC_GRANTED)).willReturn(true);
 		given(tokenRelsLedger.get(newTreasuryNft, TOKEN_BALANCE)).willReturn(1L);
 
-		tokens = (MerkleMap<EntityNum, MerkleToken>) mock(MerkleMap.class);
-		given(tokens.get(fromTokenId(created))).willReturn(token);
-		given(tokens.containsKey(fromTokenId(misc))).willReturn(true);
-		given(tokens.containsKey(fromTokenId(nonfungible))).willReturn(true);
-		given(tokens.get(fromTokenId(misc))).willReturn(token);
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
-		given(tokens.get(fromTokenId(nonfungible))).willReturn(nonfungibleToken);
-		given(tokens.getForModify(fromTokenId(nonfungible))).willReturn(nonfungibleToken);
-		given(tokens.get(fromTokenId(tNft.tokenId())).treasury()).willReturn(
-				EntityId.fromGrpcAccountId(primaryTreasury));
-
 		properties = mock(GlobalDynamicProperties.class);
 		given(properties.maxTokensPerAccount()).willReturn(MAX_TOKENS_PER_ACCOUNT);
 		given(properties.maxTokenSymbolUtf8Bytes()).willReturn(MAX_TOKEN_SYMBOL_UTF8_BYTES);
@@ -285,7 +287,7 @@ class HederaTokenStoreTest {
 		sideEffectsTracker = new SideEffectsTracker();
 		subject = new HederaTokenStore(
 				ids, TEST_VALIDATOR, sideEffectsTracker, uniqTokenViewsManager, properties,
-				() -> tokens, tokenRelsLedger, nftsLedger);
+				tokenRelsLedger, nftsLedger, backingTokens);
 		subject.setAccountsLedger(accountsLedger);
 		subject.setHederaLedger(hederaLedger);
 		subject.knownTreasuries.put(treasury, new HashSet<>() {{
@@ -295,7 +297,6 @@ class HederaTokenStoreTest {
 
 	@Test
 	void rebuildsAsExpected() {
-		final var captor = forClass(Consumer.class);
 		subject.getKnownTreasuries().put(treasury, Set.of(anotherMisc));
 		token.setKey(EntityNum.fromLong(1L));
 		final var deletedToken = new MerkleToken();
@@ -304,19 +305,15 @@ class HederaTokenStoreTest {
 		deletedToken.setTreasury(EntityId.fromGrpcAccountId(newTreasury));
 		given(token.cast()).willReturn(token);
 		given(token.getKey()).willReturn(EntityNum.fromLong(1L));
-
+		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
 		subject.rebuildViews();
 
-		verify(tokens).forEachNode(captor.capture());
-
-		final var visitor = captor.getValue();
-		visitor.accept(token);
-		visitor.accept(deletedToken);
+		verify(backingTokens).idSet();
 
 		final var extant = subject.getKnownTreasuries();
 		assertEquals(1, extant.size());
 		assertTrue(extant.containsKey(treasury));
-		assertEquals(extant.get(treasury), Set.of(misc));
+		assertEquals(Set.of(created), extant.get(treasury));
 	}
 
 	@Test
@@ -329,7 +326,7 @@ class HederaTokenStoreTest {
 	void applicationRejectsMissing() {
 		final var change = mock(Consumer.class);
 
-		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
+		given(backingTokens.contains(misc)).willReturn(false);
 
 		assertThrows(IllegalArgumentException.class, () -> subject.apply(misc, change));
 	}
@@ -338,7 +335,7 @@ class HederaTokenStoreTest {
 	void applicationAlwaysReplacesModifiableToken() {
 		final var change = mock(Consumer.class);
 		final var modifiableToken = mock(MerkleToken.class);
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(modifiableToken);
+		given(backingTokens.getRef(misc)).willReturn(modifiableToken);
 		willThrow(IllegalStateException.class).given(change).accept(modifiableToken);
 
 		assertThrows(IllegalArgumentException.class, () -> subject.apply(misc, change));
@@ -347,11 +344,11 @@ class HederaTokenStoreTest {
 	@Test
 	void applicationWorks() {
 		final var change = mock(Consumer.class);
-		final var inOrder = Mockito.inOrder(change, tokens);
+		final var inOrder = Mockito.inOrder(change, backingTokens);
 
 		subject.apply(misc, change);
 
-		inOrder.verify(tokens).getForModify(fromTokenId(misc));
+		inOrder.verify(backingTokens).getRef(misc);
 		inOrder.verify(change).accept(token);
 	}
 
@@ -399,7 +396,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void getThrowsIseOnMissing() {
-		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
+		given(backingTokens.contains(misc)).willReturn(false);
 
 		assertThrows(IllegalArgumentException.class, () -> subject.get(misc));
 	}
@@ -444,7 +441,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void associatingRejectsMissingToken() {
-		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
+		given(backingTokens.contains(misc)).willReturn(false);
 
 		final var status = subject.associate(sponsor, List.of(misc), false);
 
@@ -727,6 +724,7 @@ class HederaTokenStoreTest {
 		given(accountsLedger.get(counterparty, NUM_NFTS_OWNED)).willReturn(startCounterpartyNfts);
 		given(tokenRelsLedger.get(treasuryNft, TOKEN_BALANCE)).willReturn(startTreasuryTNfts);
 		given(tokenRelsLedger.get(counterpartyNft, TOKEN_BALANCE)).willReturn(startCounterpartyTNfts);
+		given(backingTokens.getImmutableRef(tNft.tokenId()).treasury()).willReturn(sender);
 
 		final var status = subject.changeOwner(tNft, primaryTreasury, counterparty);
 
@@ -901,7 +899,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void updateRejectsMissingToken() {
-		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
+		given(backingTokens.contains(misc)).willReturn(false);
 		givenUpdateTarget(ALL_KEYS, token);
 		final var op = updateWith(ALL_KEYS, misc, true, true, true);
 
@@ -1283,7 +1281,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void adjustingRejectsMissingToken() {
-		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
+		given(backingTokens.contains(misc)).willReturn(false);
 
 		final var status = subject.adjustBalance(sponsor, misc, 1);
 
@@ -1452,7 +1450,7 @@ class HederaTokenStoreTest {
 
 		subject.rollbackCreation();
 
-		verify(tokens, never()).put(fromTokenId(created), token);
+		verify(backingTokens, never()).put(created, token);
 		verify(ids).reclaimLastId();
 		assertSame(HederaTokenStore.NO_PENDING_ID, subject.pendingId);
 		assertNull(subject.pendingCreation);
@@ -1471,7 +1469,7 @@ class HederaTokenStoreTest {
 
 		subject.commitCreation();
 
-		verify(tokens).put(fromTokenId(created), token);
+		verify(backingTokens).put(created, token);
 		assertSame(HederaTokenStore.NO_PENDING_ID, subject.pendingId);
 		assertNull(subject.pendingCreation);
 		assertTrue(subject.isKnownTreasury(treasury));

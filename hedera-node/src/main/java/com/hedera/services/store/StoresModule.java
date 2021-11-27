@@ -27,9 +27,11 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.BackingNfts;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.contracts.CodeCache;
@@ -99,6 +101,18 @@ public abstract class StoresModule {
 				new ChangeSummaryManager<>());
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 		return tokenRelsLedger;
+	}
+
+	@Provides
+	@Singleton
+	public static TransactionalLedger<AccountID, AccountProperty, MerkleAccount> provideAccountsLedger(
+			BackingStore<AccountID, MerkleAccount> backingAccounts
+	) {
+		return new TransactionalLedger<>(
+				AccountProperty.class,
+				MerkleAccount::new,
+				backingAccounts,
+				new ChangeSummaryManager<>());
 	}
 
 	@Provides
