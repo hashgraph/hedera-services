@@ -22,9 +22,13 @@ package com.hedera.services.store.contracts;
 
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Transaction;
+import org.apache.commons.lang3.tuple.Pair;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
@@ -77,8 +81,13 @@ import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
  * 		the most specialized world updater to be used
  */
 public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends Account> implements WorldUpdater {
+	private static final int UNKNOWN_RECORD_SOURCE_ID = -1;
+
 	private final W world;
 	private final WorldLedgers trackingLedgers;
+
+	private int thisRecordSourceId = UNKNOWN_RECORD_SOURCE_ID;
+	private AccountRecordsHistorian recordsHistorian = null;
 
 	protected Set<Address> deletedAccounts = new HashSet<>();
 	protected Map<Address, UpdateTrackingLedgerAccount<A>> updatedAccounts = new HashMap<>();
@@ -167,6 +176,21 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 		getDeletedAccounts().clear();
 		getUpdatedAccounts().clear();
 		trackingLedgers().revert();
+
+		if (recordsHistorian != null) {
+			recordsHistorian.revertChildRecordsFromSource(thisRecordSourceId);
+		}
+	}
+
+	public void manageInProgressRecord(
+			final AccountRecordsHistorian recordsHistorian,
+			final Pair<ExpirableTxnRecord.Builder, Transaction> recordSoFar
+	) {
+		if (thisRecordSourceId == UNKNOWN_RECORD_SOURCE_ID) {
+			thisRecordSourceId = recordsHistorian.nextChildRecordSourceId();
+			this.recordsHistorian =  recordsHistorian;
+		}
+		recordsHistorian.trackChildRecord(thisRecordSourceId, recordSoFar);
 	}
 
 	public WorldLedgers wrappedTrackingLedgers() {
@@ -176,7 +200,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 	}
 
 	private void onAccountPropertyChange(final AccountID id, final AccountProperty property, final Object newValue) {
-		/* HTS precompiles cannot create/delete accounts, and the only property we need to keep consistent is BALANCE */
+		/* HTS precompiles cannot create/delete accounts, so the only property we need to keep consistent is BALANCE */
 		if (property == BALANCE) {
 			final var address = EntityIdUtils.asTypedSolidityAddress(id);
 			/* Impossible with a well-behaved precompile, as our wrapped accounts should also show this as deleted */

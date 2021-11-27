@@ -27,7 +27,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Defines a type able to manage the history of transactions
@@ -64,11 +63,11 @@ public interface AccountRecordsHistorian {
 	void saveExpirableTransactionRecords();
 
 	/**
-	 * Returns the last record created, if it exists.
+	 * Returns the last record created by this historian, if it is known, and null otherwise.
 	 *
-	 * @return an optional record.
+	 * @return the last-created record, or null if none is known
 	 */
-	Optional<ExpirableTxnRecord> lastCreatedTopLevelRecord();
+	ExpirableTxnRecord lastCreatedTopLevelRecord();
 
 	/**
 	 * Indicates if the active transaction created child records.
@@ -98,6 +97,13 @@ public interface AccountRecordsHistorian {
 	 * @param recordSoFar the in-progress child record
 	 */
 	void trackChildRecord(int sourceId, Pair<ExpirableTxnRecord.Builder, Transaction> recordSoFar);
+
+	/**
+	 * Reverts all records created by the given source.
+	 *
+	 * @param sourceId the id of the source whose records should be reverted
+	 */
+	void revertChildRecordsFromSource(int sourceId);
 
 	/**
 	 * At the moment before committing the active transaction, takes the opportunity to track

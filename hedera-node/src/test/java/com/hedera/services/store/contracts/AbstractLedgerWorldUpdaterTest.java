@@ -28,15 +28,18 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -61,6 +64,8 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 @ExtendWith(MockitoExtension.class)
 class AbstractLedgerWorldUpdaterTest {
@@ -83,6 +88,8 @@ class AbstractLedgerWorldUpdaterTest {
 
 	@Mock
 	private HederaWorldState worldState;
+	@Mock
+	private AccountRecordsHistorian recordsHistorian;
 
 	private WorldLedgers ledgers;
 	private MockLedgerWorldUpdater subject;
@@ -92,6 +99,35 @@ class AbstractLedgerWorldUpdaterTest {
 		setupLedgers();
 
 		subject = new MockLedgerWorldUpdater(worldState, ledgers);
+	}
+
+	@Test
+	void usesSameSourceIdAcrossMultipleManagedRecords() {
+		final var sourceId = 123;
+		final var firstRecord = Pair.of(ExpirableTxnRecord.newBuilder(), Transaction.getDefaultInstance());
+		final var secondRecord = Pair.of(ExpirableTxnRecord.newBuilder(), Transaction.getDefaultInstance());
+
+		given(recordsHistorian.nextChildRecordSourceId()).willReturn(sourceId);
+
+		subject.manageInProgressRecord(recordsHistorian, firstRecord);
+		subject.manageInProgressRecord(recordsHistorian, secondRecord);
+
+		verify(recordsHistorian, times(1)).nextChildRecordSourceId();
+		verify(recordsHistorian).trackChildRecord(sourceId, firstRecord);
+		verify(recordsHistorian).trackChildRecord(sourceId, secondRecord);
+	}
+
+	@Test
+	void revertsSourceIdsIfCreated() {
+		final var sourceId = 123;
+		final var aRecord = Pair.of(ExpirableTxnRecord.newBuilder(), Transaction.getDefaultInstance());
+
+		given(recordsHistorian.nextChildRecordSourceId()).willReturn(sourceId);
+
+		subject.manageInProgressRecord(recordsHistorian, aRecord);
+		subject.revert();
+
+		verify(recordsHistorian).revertChildRecordsFromSource(sourceId);
 	}
 
 	@Test

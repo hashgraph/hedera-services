@@ -32,7 +32,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Provides a {@link AccountRecordsHistorian} using the natural collaborators.
@@ -55,8 +54,8 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	}
 
 	@Override
-	public Optional<ExpirableTxnRecord> lastCreatedTopLevelRecord() {
-		return Optional.ofNullable(lastExpirableRecord);
+	public ExpirableTxnRecord lastCreatedTopLevelRecord() {
+		return lastExpirableRecord;
 	}
 
 	@Override
@@ -96,7 +95,7 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 
 	@Override
 	public boolean hasChildRecords() {
-		throw new AssertionError("Not implemented");
+		return false;
 	}
 
 	@Override
@@ -110,7 +109,12 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	}
 
 	@Override
-	public void trackChildRecord(int sourceId, Pair<ExpirableTxnRecord.Builder, Transaction> recordSoFar) {
+	public void trackChildRecord(final int sourceId, final Pair<ExpirableTxnRecord.Builder, Transaction> recordSoFar) {
+		throw new AssertionError("Not implemented");
+	}
+
+	@Override
+	public void revertChildRecordsFromSource(final int sourceId) {
 		throw new AssertionError("Not implemented");
 	}
 }

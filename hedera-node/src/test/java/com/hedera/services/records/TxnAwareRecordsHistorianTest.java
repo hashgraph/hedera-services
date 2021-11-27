@@ -49,7 +49,7 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
@@ -105,7 +105,7 @@ class TxnAwareRecordsHistorianTest {
 		setupForAdd();
 
 		// expect:
-		assertFalse(subject.lastCreatedTopLevelRecord().isPresent());
+		assertNull(subject.lastCreatedTopLevelRecord());
 	}
 
 	@Test
@@ -124,7 +124,7 @@ class TxnAwareRecordsHistorianTest {
 				payerRecord);
 		verify(creator).saveExpiringRecord(effPayer, finalRecord, nows, submittingMember);
 		// and:
-		assertEquals(finalRecord, subject.lastCreatedTopLevelRecord().get());
+		assertEquals(finalRecord, subject.lastCreatedTopLevelRecord());
 	}
 
 	@Test

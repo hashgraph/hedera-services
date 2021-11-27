@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.IntStream;
@@ -603,6 +604,59 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			receiptBuilder.revert();
 			nullOutSideEffectFields();
 		}
+
+		public void excludeHbarChangesFrom(final ExpirableTxnRecord.Builder that) {
+			final var adjustsHere = this.transferList.hbars.length;
+			final var adjustsThere = that.transferList.hbars.length;
+			final var maxAdjusts = adjustsHere + adjustsThere;
+			final var changedHere = this.transferList.accountIds;
+			final var changedThere = that.transferList.accountIds;
+
+			final var netAdjustsHere = new long[maxAdjusts];
+			final List<EntityId> netChanged = new ArrayList<>();
+
+			var i = 0;
+			var j = 0;
+			var k = 0;
+			while (i < adjustsHere && j < adjustsThere) {
+				final var iId = changedHere.get(i);
+				final var jId = changedThere.get(j);
+				final var cmp = ID_CMP.compare(iId, jId);
+				if (cmp == 0) {
+					final var net = this.transferList.hbars[i++] - that.transferList.hbars[j++];
+					if (net != 0) {
+						netAdjustsHere[k++] = net;
+						netChanged.add(iId);
+					}
+				} else if (cmp < 0) {
+					netAdjustsHere[k++] = this.transferList.hbars[i++];
+					netChanged.add(iId);
+				} else {
+					netAdjustsHere[k++] = -that.transferList.hbars[j++];
+					netChanged.add(jId);
+				}
+			}
+			/* Note that at most one of these loops can iterate a non-zero number of times,
+			* since if both did we could not have exited the prior loop. */
+			while (i < adjustsHere) {
+				final var iId = changedHere.get(i);
+				netAdjustsHere[k++] = this.transferList.hbars[i++];
+				netChanged.add(iId);
+			}
+			while (j < adjustsThere) {
+				final var jId = changedThere.get(j);
+				netAdjustsHere[k++] = -that.transferList.hbars[j++];
+				netChanged.add(jId);
+			}
+
+			this.transferList.hbars = Arrays.copyOfRange(netAdjustsHere, 0, k);
+			this.transferList.accountIds = netChanged;
+		}
+
+		public static final Comparator<EntityId> ID_CMP = Comparator
+				.comparingLong(EntityId::num)
+				.thenComparingLong(EntityId::shard)
+				.thenComparingLong(EntityId::realm);
 
 		private void nullOutSideEffectFields() {
 			transferList = null;

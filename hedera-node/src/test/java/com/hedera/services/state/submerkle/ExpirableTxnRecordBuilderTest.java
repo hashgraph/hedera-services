@@ -10,6 +10,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -25,6 +27,87 @@ class ExpirableTxnRecordBuilderTest {
 	@BeforeEach
 	void setUp() {
 		subject = ExpirableTxnRecord.newBuilder();
+	}
+
+	@Test
+	void canSubtractOffExcludedHbarAdjustmentsWithSameStop() {
+		final var inThisButNotThat = new EntityId(0, 0, 2);
+		final var firstInBoth = new EntityId(0, 0, 3);
+		final var secondInBoth = new EntityId(0, 0, 4);
+		final var inThatButNotThis = new EntityId(0, 0, 5);
+		final var thirdInBoth = new EntityId(0, 0, 6);
+
+		final var thisAdjusts = new CurrencyAdjustments(new long[] {
+				-10, +6, +3, +1
+		}, List.of(inThisButNotThat, firstInBoth, secondInBoth, thirdInBoth));
+		final var thatAdjusts = new CurrencyAdjustments(new long[] {
+				-2, -4, +5, +1
+		}, List.of(firstInBoth, secondInBoth, inThatButNotThis, thirdInBoth));
+
+		final var that = ExpirableTxnRecord.newBuilder();
+		that.setTransferList(thatAdjusts);
+
+		subject.setTransferList(thisAdjusts);
+		subject.excludeHbarChangesFrom(that);
+
+		final var expectedChanges = new long[] { -10, +8, +7, -5 };
+		final var expectedAccounts = List.of(
+				inThisButNotThat, firstInBoth, secondInBoth, inThatButNotThis);
+		assertArrayEquals(expectedChanges, subject.getTransferList().hbars);
+		assertEquals(expectedAccounts, subject.getTransferList().accountIds);
+	}
+
+	@Test
+	void canSubtractOffExcludedHbarAdjustmentsWithThisEarlyStop() {
+		final var firstInBoth = new EntityId(0, 0, 3);
+		final var secondInBoth = new EntityId(0, 0, 4);
+		final var inThatButNotThis = new EntityId(0, 0, 5);
+
+		final var thisAdjusts = new CurrencyAdjustments(new long[] {
+				+6, +3
+		}, List.of(firstInBoth, secondInBoth));
+		final var thatAdjusts = new CurrencyAdjustments(new long[] {
+				-2, -4, +5
+		}, List.of(firstInBoth, secondInBoth, inThatButNotThis));
+
+		final var that = ExpirableTxnRecord.newBuilder();
+		that.setTransferList(thatAdjusts);
+
+		subject.setTransferList(thisAdjusts);
+		subject.excludeHbarChangesFrom(that);
+
+		final var expectedChanges = new long[] { +8, +7, -5 };
+		final var expectedAccounts = List.of(
+				firstInBoth, secondInBoth, inThatButNotThis);
+		assertArrayEquals(expectedChanges, subject.getTransferList().hbars);
+		assertEquals(expectedAccounts, subject.getTransferList().accountIds);
+	}
+
+	@Test
+	void canSubtractOffExcludedHbarAdjustmentsWithThatEarlyStop() {
+		final var firstInThisButNotThat = new EntityId(0, 0, 2);
+		final var firstInBoth = new EntityId(0, 0, 3);
+		final var secondInBoth = new EntityId(0, 0, 4);
+		final var secondInThisButNotThat = new EntityId(0, 0, 6);
+
+		final var thisAdjusts = new CurrencyAdjustments(new long[] {
+				+10, +6, +3, -19
+		}, List.of(firstInThisButNotThat, firstInBoth, secondInBoth, secondInThisButNotThat));
+		final var thatAdjusts = new CurrencyAdjustments(new long[] {
+				+2, +4
+		}, List.of(firstInBoth, secondInBoth));
+
+		final var that = ExpirableTxnRecord.newBuilder();
+		that.setTransferList(thatAdjusts);
+
+		subject.setTransferList(thisAdjusts);
+		subject.excludeHbarChangesFrom(that);
+
+		final var expectedChanges = new long[] { +10, +4, -1, -19 };
+		final var expectedAccounts = List.of(
+				firstInThisButNotThat, firstInBoth, secondInBoth, secondInThisButNotThat);
+		assertArrayEquals(expectedChanges, subject.getTransferList().hbars);
+		assertEquals(expectedAccounts, subject.getTransferList().accountIds);
 	}
 
 	@Test

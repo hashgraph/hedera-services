@@ -126,10 +126,7 @@ public class HederaLedger {
 
 	private UniqTokenViewsManager tokenViewsManager = null;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger = null;
-	private TransactionalLedger<
-			Pair<AccountID, TokenID>,
-			TokenRelProperty,
-			MerkleTokenRelStatus> tokenRelsLedger = null;
+	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger = null;
 
 	private final MerkleAccountScopedCheck scopedCheck;
 
