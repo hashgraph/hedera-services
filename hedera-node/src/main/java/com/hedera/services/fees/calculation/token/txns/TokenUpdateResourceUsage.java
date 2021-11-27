@@ -58,11 +58,20 @@ public class TokenUpdateResourceUsage implements TxnResourceUsageEstimator {
 			var info = optionalInfo.get();
 			var estimate = factory.apply(txn, sigUsage)
 					.givenCurrentExpiry(info.getExpiry().getSeconds())
-					.givenCurrentAdminKey(ifPresent(info, TokenInfo::hasAdminKey, TokenInfo::getAdminKey))
-					.givenCurrentFreezeKey(ifPresent(info, TokenInfo::hasFreezeKey, TokenInfo::getFreezeKey))
-					.givenCurrentWipeKey(ifPresent(info, TokenInfo::hasWipeKey, TokenInfo::getWipeKey))
-					.givenCurrentSupplyKey(ifPresent(info, TokenInfo::hasSupplyKey, TokenInfo::getSupplyKey))
-					.givenCurrentKycKey(ifPresent(info, TokenInfo::hasKycKey, TokenInfo::getKycKey))
+					.givenCurrentAdminKey(
+							ifPresent(info, TokenInfo::hasAdminKey, TokenInfo::getAdminKey))
+					.givenCurrentFreezeKey(
+							ifPresent(info, TokenInfo::hasFreezeKey, TokenInfo::getFreezeKey))
+					.givenCurrentWipeKey(
+							ifPresent(info, TokenInfo::hasWipeKey, TokenInfo::getWipeKey))
+					.givenCurrentSupplyKey(
+							ifPresent(info, TokenInfo::hasSupplyKey, TokenInfo::getSupplyKey))
+					.givenCurrentKycKey(
+							ifPresent(info, TokenInfo::hasKycKey, TokenInfo::getKycKey))
+					.givenCurrentFeeScheduleKey(
+							ifPresent(info, TokenInfo::hasFeeScheduleKey, TokenInfo::getFeeScheduleKey))
+					.givenCurrentPauseKey(
+							ifPresent(info, TokenInfo::hasPauseKey, TokenInfo::getPauseKey))
 					.givenCurrentMemo(info.getMemo())
 					.givenCurrentName(info.getName())
 					.givenCurrentSymbol(info.getSymbol());
