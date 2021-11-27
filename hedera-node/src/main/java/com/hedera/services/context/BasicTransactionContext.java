@@ -143,7 +143,7 @@ public class BasicTransactionContext implements TransactionContext {
 
 		narratedCharging.resetForTxn(accessor, submittingMember);
 
-		recordSoFar.clear();
+		recordSoFar.reset();
 		sideEffectsTracker.reset();
 		contractFunctionResult = null;
 	}

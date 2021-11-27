@@ -11,6 +11,7 @@ import static com.hedera.services.legacy.core.jproto.TxnReceipt.REVERTED_SUCCESS
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 class TxnReceiptBuilderTest {
 	private TxnReceipt.Builder subject;
@@ -22,12 +23,13 @@ class TxnReceiptBuilderTest {
 
 	@Test
 	void doesntOverrideStatusForUnsuccessful() {
-		final var failureStatus =
-		subject.setStatus("INVALID_ACCOUNT_ID");
+		final var failureStatus = "INVALID_ACCOUNT_ID";
+
+		subject.setStatus(failureStatus);
 
 		subject.revert();
 
-		assertEquals();
+		assertSame(failureStatus, subject.getStatus());
 	}
 
 	@Test

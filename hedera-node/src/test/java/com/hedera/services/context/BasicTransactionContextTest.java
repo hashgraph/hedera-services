@@ -241,7 +241,7 @@ class BasicTransactionContextTest {
 		subject.resetFor(accessor, now, anotherMemberId);
 
 		// then:
-		verify(subject.getRecordSoFar()).clear();
+		verify(subject.getRecordSoFar()).reset();
 	}
 
 	@Test

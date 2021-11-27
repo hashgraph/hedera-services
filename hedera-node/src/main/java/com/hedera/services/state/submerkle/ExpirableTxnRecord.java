@@ -583,13 +583,28 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			return new ExpirableTxnRecord(this);
 		}
 
-		public Builder clear() {
+		public Builder reset() {
 			fee = 0;
 			txnId = null;
 			txnHash = MISSING_TXN_HASH;
 			memo = null;
 			receipt = null;
 			consensusTime = null;
+
+			nullOutSideEffectFields();
+
+			return this;
+		}
+
+		public void revert() {
+			if (receiptBuilder == null) {
+				throw new IllegalStateException("Cannot revert a record with a built receipt");
+			}
+			receiptBuilder.revert();
+			nullOutSideEffectFields();
+		}
+
+		private void nullOutSideEffectFields() {
 			transferList = null;
 			contractCallResult = null;
 			contractCreateResult = null;
@@ -599,7 +614,42 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			scheduleRef = NO_SCHEDULE_REF;
 			assessedCustomFees = NO_CUSTOM_FEES;
 			newTokenAssociations = NO_NEW_TOKEN_ASSOCIATIONS;
-			return this;
+		}
+
+		public CurrencyAdjustments getTransferList() {
+			return transferList;
+		}
+
+		public SolidityFnResult getContractCallResult() {
+			return contractCallResult;
+		}
+
+		public SolidityFnResult getContractCreateResult() {
+			return contractCreateResult;
+		}
+
+		public List<EntityId> getTokens() {
+			return tokens;
+		}
+
+		public List<CurrencyAdjustments> getTokenAdjustments() {
+			return tokenAdjustments;
+		}
+
+		public List<NftAdjustments> getNftTokenAdjustments() {
+			return nftTokenAdjustments;
+		}
+
+		public EntityId getScheduleRef() {
+			return scheduleRef;
+		}
+
+		public List<FcAssessedCustomFee> getAssessedCustomFees() {
+			return assessedCustomFees;
+		}
+
+		public List<FcTokenAssociation> getNewTokenAssociations() {
+			return newTokenAssociations;
 		}
 	}
 
