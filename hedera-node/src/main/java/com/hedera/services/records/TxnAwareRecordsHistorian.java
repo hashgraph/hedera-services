@@ -24,11 +24,14 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.stream.RecordStreamObject;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -52,7 +55,7 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	}
 
 	@Override
-	public Optional<ExpirableTxnRecord> lastCreatedRecord() {
+	public Optional<ExpirableTxnRecord> lastCreatedTopLevelRecord() {
 		return Optional.ofNullable(lastExpirableRecord);
 	}
 
@@ -62,12 +65,12 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	}
 
 	@Override
-	public void finalizeExpirableTransactionRecord() {
+	public void finalizeExpirableTransactionRecords() {
 		lastExpirableRecord = txnCtx.recordSoFar();
 	}
 
 	@Override
-	public void saveExpirableTransactionRecord() {
+	public void saveExpirableTransactionRecords() {
 		long now = txnCtx.consensusTime().getEpochSecond();
 		long submittingMember = txnCtx.submittingSwirldsMember();
 		var accessor = txnCtx.accessor();
@@ -89,5 +92,25 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 					Pair.of(expiringEntity.id().num(), expiringEntity.consumer()),
 					expiringEntity.expiry());
 		}
+	}
+
+	@Override
+	public boolean hasChildRecords() {
+		throw new AssertionError("Not implemented");
+	}
+
+	@Override
+	public List<RecordStreamObject> getChildRecords() {
+		throw new AssertionError("Not implemented");
+	}
+
+	@Override
+	public int nextChildRecordSourceId() {
+		throw new AssertionError("Not implemented");
+	}
+
+	@Override
+	public void trackChildRecord(int sourceId, Pair<ExpirableTxnRecord.Builder, Transaction> recordSoFar) {
+		throw new AssertionError("Not implemented");
 	}
 }

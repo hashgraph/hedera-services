@@ -55,7 +55,7 @@ public class RecordStreaming implements Runnable {
 
 	@Override
 	public void run() {
-		recordsHistorian.lastCreatedRecord().ifPresent(expiringRecord ->
+		recordsHistorian.lastCreatedTopLevelRecord().ifPresent(expiringRecord ->
 				stream(txnCtx.accessor().getSignedTxnWrapper(), expiringRecord, txnCtx.consensusTime()));
 	}
 

@@ -214,9 +214,9 @@ public class HederaLedger {
 
 	public void commit() {
 		throwIfPendingStateIsInconsistent();
-		historian.finalizeExpirableTransactionRecord();
+		historian.finalizeExpirableTransactionRecords();
 		accountsLedger.commit();
-		historian.saveExpirableTransactionRecord();
+		historian.saveExpirableTransactionRecords();
 		historian.noteNewExpirationEvents();
 		if (tokenRelsLedger != null && tokenRelsLedger.isInTransaction()) {
 			tokenRelsLedger.commit();

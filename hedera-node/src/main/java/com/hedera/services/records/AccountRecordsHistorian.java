@@ -22,7 +22,11 @@ package com.hedera.services.records;
 
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.stream.RecordStreamObject;
+import com.hederahashgraph.api.proto.java.Transaction;
+import org.apache.commons.lang3.tuple.Pair;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -41,37 +45,63 @@ import java.util.Optional;
  */
 public interface AccountRecordsHistorian {
 	/**
-	 * Injects the expiring entity creator which the historian
-	 * should use to create records.
+	 * Injects the expiring entity creator which the historian should use to create records.
 	 *
 	 * @param creator the creator of expiring entities.
 	 */
 	void setCreator(EntityCreator creator);
 
 	/**
-	 * Called immediately before committing the active transaction
-	 * to finalize the record of the executed business logic.
+	 * Called immediately before committing the active transaction to finalize its record(s)
+	 * of the executed business logic.
 	 */
-	void finalizeExpirableTransactionRecord();
+	void finalizeExpirableTransactionRecords();
 
 	/**
-	 * Called immediately after committing the active transaction, to
-	 * save the record (e.g. in the payer account of the committed
-	 * transaction.)
+	 * Called immediately after committing the active transaction, to save its record(s) in
+	 * the account of the effective payer account of the committed transaction.
 	 */
-	void saveExpirableTransactionRecord();
+	void saveExpirableTransactionRecords();
 
 	/**
 	 * Returns the last record created, if it exists.
 	 *
 	 * @return an optional record.
 	 */
-	Optional<ExpirableTxnRecord> lastCreatedRecord();
+	Optional<ExpirableTxnRecord> lastCreatedTopLevelRecord();
 
 	/**
-	 * At the moment before committing the active transaction,
-	 * checks if Transaction Context has any existing expiring entities
-	 * and if so, tracks them using {@link com.hedera.services.state.expiry.ExpiryManager}
+	 * Indicates if the active transaction created child records.
+	 *
+	 * @return whether child records were created
+	 */
+	boolean hasChildRecords();
+
+	/**
+	 * Returns all the child records created by the active transaction.
+	 *
+	 * @return the created child records
+	 */
+	List<RecordStreamObject> getChildRecords();
+
+	/**
+	 * Returns a non-negative "source id" to be used to create a group of in-progress child transactions.
+	 *
+	 * @return the next source id
+	 */
+	int nextChildRecordSourceId();
+
+	/**
+	 * Adds the given in-progress child record to the active transaction.
+	 *
+	 * @param sourceId the id of the child record source
+	 * @param recordSoFar the in-progress child record
+	 */
+	void trackChildRecord(int sourceId, Pair<ExpirableTxnRecord.Builder, Transaction> recordSoFar);
+
+	/**
+	 * At the moment before committing the active transaction, takes the opportunity to track
+	 * any new expiring entities with the {@link com.hedera.services.state.expiry.ExpiryManager}.
 	 */
 	void noteNewExpirationEvents();
 }

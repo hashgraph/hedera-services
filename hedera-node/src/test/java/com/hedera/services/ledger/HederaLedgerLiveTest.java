@@ -139,7 +139,7 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 		subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
 		subject.commit();
 
-		verify(historian).finalizeExpirableTransactionRecord();
+		verify(historian).finalizeExpirableTransactionRecords();
 		verify(historian).noteNewExpirationEvents();
 	}
 

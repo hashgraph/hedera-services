@@ -82,7 +82,7 @@ class RecordStreamingTest {
 		given(accessor.getSignedTxnWrapper()).willReturn(txn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(consensusNow);
-		given(recordsHistorian.lastCreatedRecord()).willReturn(Optional.of(lastRecord));
+		given(recordsHistorian.lastCreatedTopLevelRecord()).willReturn(Optional.of(lastRecord));
 		given(nonBlockingHandoff.offer(expectedRso))
 				.willReturn(false)
 				.willReturn(true);

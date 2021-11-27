@@ -72,6 +72,8 @@ class TokenUpdateResourceUsageTest {
 			.setWipeKey(TxnHandlingScenario.TOKEN_WIPE_KT.asKey())
 			.setSupplyKey(TxnHandlingScenario.TOKEN_SUPPLY_KT.asKey())
 			.setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asKey())
+			.setFeeScheduleKey(TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT.asKey())
+			.setPauseKey(TxnHandlingScenario.TOKEN_PAUSE_KT.asKey())
 			.setSymbol(symbol)
 			.setName(name)
 			.setMemo(memo)
@@ -97,11 +99,20 @@ class TokenUpdateResourceUsageTest {
 		given(factory.apply(tokenUpdateTxn, sigUsage)).willReturn(usage);
 
 		usage = mock(TokenUpdateUsage.class);
-		given(usage.givenCurrentAdminKey(Optional.of(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey()))).willReturn(usage);
-		given(usage.givenCurrentWipeKey(Optional.of(TxnHandlingScenario.TOKEN_WIPE_KT.asKey()))).willReturn(usage);
-		given(usage.givenCurrentKycKey(Optional.of(TxnHandlingScenario.TOKEN_KYC_KT.asKey()))).willReturn(usage);
-		given(usage.givenCurrentSupplyKey(Optional.of(TxnHandlingScenario.TOKEN_SUPPLY_KT.asKey()))).willReturn(usage);
-		given(usage.givenCurrentFreezeKey(Optional.of(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey()))).willReturn(usage);
+		given(usage.givenCurrentAdminKey(Optional.of(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey())))
+				.willReturn(usage);
+		given(usage.givenCurrentWipeKey(Optional.of(TxnHandlingScenario.TOKEN_WIPE_KT.asKey())))
+				.willReturn(usage);
+		given(usage.givenCurrentKycKey(Optional.of(TxnHandlingScenario.TOKEN_KYC_KT.asKey())))
+				.willReturn(usage);
+		given(usage.givenCurrentSupplyKey(Optional.of(TxnHandlingScenario.TOKEN_SUPPLY_KT.asKey())))
+				.willReturn(usage);
+		given(usage.givenCurrentFreezeKey(Optional.of(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey())))
+				.willReturn(usage);
+		given(usage.givenCurrentFeeScheduleKey(Optional.of(TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT.asKey())))
+				.willReturn(usage);
+		given(usage.givenCurrentPauseKey(Optional.of(TxnHandlingScenario.TOKEN_PAUSE_KT.asKey())))
+				.willReturn(usage);
 		given(usage.givenCurrentSymbol(symbol)).willReturn(usage);
 		given(usage.givenCurrentName(name)).willReturn(usage);
 		given(usage.givenCurrentExpiry(expiry)).willReturn(usage);

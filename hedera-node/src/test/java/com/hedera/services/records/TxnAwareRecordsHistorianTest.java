@@ -105,7 +105,7 @@ class TxnAwareRecordsHistorianTest {
 		setupForAdd();
 
 		// expect:
-		assertFalse(subject.lastCreatedRecord().isPresent());
+		assertFalse(subject.lastCreatedTopLevelRecord().isPresent());
 	}
 
 	@Test
@@ -113,8 +113,8 @@ class TxnAwareRecordsHistorianTest {
 		setupForAdd();
 
 		// when:
-		subject.finalizeExpirableTransactionRecord();
-		subject.saveExpirableTransactionRecord();
+		subject.finalizeExpirableTransactionRecords();
+		subject.saveExpirableTransactionRecords();
 
 		// then:
 		verify(txnCtx).recordSoFar();
@@ -124,7 +124,7 @@ class TxnAwareRecordsHistorianTest {
 				payerRecord);
 		verify(creator).saveExpiringRecord(effPayer, finalRecord, nows, submittingMember);
 		// and:
-		assertEquals(finalRecord, subject.lastCreatedRecord().get());
+		assertEquals(finalRecord, subject.lastCreatedTopLevelRecord().get());
 	}
 
 	@Test
