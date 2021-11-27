@@ -41,8 +41,8 @@ import java.time.Instant;
  * Contains a TransactionRecord, its related Transaction, and consensus Timestamp of the Transaction.
  * Is used for record streaming
  */
-public class RecordStreamObject extends AbstractSerializableHashable implements Timestamped,
-		SerializableRunningHashable {
+public class RecordStreamObject
+		extends AbstractSerializableHashable implements Timestamped, SerializableRunningHashable {
 	private static final long CLASS_ID = 0xe370929ba5429d8bL;
 	static final int CLASS_VERSION = 1;
 
