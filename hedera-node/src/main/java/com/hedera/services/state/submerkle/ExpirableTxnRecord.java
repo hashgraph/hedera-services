@@ -316,7 +316,6 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	}
 
 	/* --- Object --- */
-
 	public EntityId getScheduleRef() {
 		return scheduleRef;
 	}
@@ -394,7 +393,6 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	}
 
 	/* --- FastCopyable --- */
-
 	@Override
 	public boolean isImmutable() {
 		return true;
@@ -484,6 +482,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 	public static class Builder {
 		private TxnReceipt receipt;
+		private TxnReceipt.Builder receiptBuilder;
+
 		private byte[] txnHash;
 		private TxnId txnId;
 		private RichInstant consensusTime;
@@ -521,6 +521,11 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 		public Builder setReceipt(TxnReceipt receipt) {
 			this.receipt = receipt;
+			return this;
+		}
+
+		public Builder setReceiptBuilder(TxnReceipt.Builder receiptBuilder) {
+			this.receiptBuilder = receiptBuilder;
 			return this;
 		}
 

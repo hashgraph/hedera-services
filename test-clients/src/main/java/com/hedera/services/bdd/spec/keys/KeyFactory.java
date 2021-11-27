@@ -291,7 +291,7 @@ public class KeyFactory implements Serializable {
 			switch (controller.getNature()) {
 				case SIG_OFF:
 				case CONTRACT_ID:
-				case DELEGATE_CONTRACT_ID:
+				case DELEGATABLE_CONTRACT_ID:
 					break;
 				case SIG_ON:
 					signIfNecessary(key);
@@ -414,9 +414,9 @@ public class KeyFactory implements Serializable {
 					final var cid = asContractId(sc.contract(), spec);
 					generated = Key.newBuilder().setContractID(cid).build();
 					break;
-				case DELEGATE_CONTRACT_ID:
-					final var dcid = asContractId(sc.delegateContract(), spec);
-					generated = Key.newBuilder().setDelegateContractID(dcid).build();
+				case DELEGATABLE_CONTRACT_ID:
+					final var dcid = asContractId(sc.delegatableContract(), spec);
+					generated = Key.newBuilder().setDelegatableContractId(dcid).build();
 					break;
 				case LIST:
 					generated = Key.newBuilder()

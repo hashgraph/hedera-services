@@ -221,8 +221,8 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 				return estimate.get();
 			};
 			return spec.fees().forActivityBasedOp(HederaFunctionality.TokenUpdate, metricsCalc, txn, numPayerKeys);
-		} catch (Throwable ignore) {
-			ignore.printStackTrace();
+		} catch (Throwable t) {
+			log.warn("Couldn't estimate usage", t);
 			return HapiApiSuite.ONE_HBAR;
 		}
 	}

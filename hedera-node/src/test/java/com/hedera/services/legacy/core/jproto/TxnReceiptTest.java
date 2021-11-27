@@ -94,7 +94,6 @@ class TxnReceiptTest {
 		TxnReceipt.serdes = serdes;
 	}
 
-
 	@Test
 	void constructorPostConsensusCreateTopic() {
 		final var topicId = getTopicJAccountId(1L, 22L, 333L);
