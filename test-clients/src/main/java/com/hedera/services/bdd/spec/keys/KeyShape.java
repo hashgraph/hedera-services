@@ -31,7 +31,7 @@ import static com.hedera.services.bdd.spec.keys.SigControl.Nature.CONTRACT_ID;
 public class KeyShape extends SigControl {
 	public static final KeyShape SIMPLE = new KeyShape(Nature.SIG_ON);
 	public static final KeyShape CONTRACT = new KeyShape(CONTRACT_ID);
-	public static final KeyShape DELEGATE_CONTRACT = new KeyShape(Nature.DELEGATE_CONTRACT_ID);
+	public static final KeyShape DELEGATE_CONTRACT = new KeyShape(Nature.DELEGATABLE_CONTRACT_ID);
 
 	protected KeyShape(SigControl.Nature nature) {
 		super(nature);
