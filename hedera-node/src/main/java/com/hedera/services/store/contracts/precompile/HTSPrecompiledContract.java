@@ -65,7 +65,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	// "cryptoTransfer((address,(address,int64)[], (address,address,int64)[])[])"
 	protected static final int ABI_ID_CRYPTO_TRANSFER = 0x189a554c;
-	// "transerTokens(address,address[],int64[])"
+	// "transferTokens(address,address[],int64[])"
 	protected static final int ABI_ID_TRANSFER_TOKENS = 0x82bba493;
 	// "transferToken(address,address,address,int64)"
 	protected static final int ABI_ID_TRANSFER_TOKEN = 0xeca36917;

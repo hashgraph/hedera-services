@@ -455,7 +455,6 @@ class TypedTokenStoreTest {
 
 		// then:
 		assertEquals(expectedReplacementToken2, merkleToken);
-//		verify(tokens, never()).replace(merkleTokenId, expectedReplacementToken2);
 		// and:
 		verify(sideEffectsTracker).trackTokenChanges(modelToken);
 		verify(uniqueTokens).put(expectedNewUniqTokenId2, expectedNewUniqToken);

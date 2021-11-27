@@ -279,7 +279,7 @@ public class FeeBuilder {
    */
   public static int getSignatureSize(Transaction transaction) {
     try {
-      return CommonUtils.extractSignatureMap(transaction).toByteArray().length;
+      return CommonUtils.extractSignatureMap(transaction).getSerializedSize();
     } catch (InvalidProtocolBufferException ignored) { }
     return 0;
   }
