@@ -44,7 +44,6 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.merkle.map.MerkleMap;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,7 +54,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 
-import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRING_CREATIONS;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
@@ -155,18 +153,6 @@ class ExpiringCreationsTest {
 		assertEquals(expectedRecord, actual);
 		verify(expiries).trackRecordInState(effPayer, expectedExpiry);
 		assertEquals(expectedRecord, payerAccount.records().peek());
-	}
-
-	@Test
-	void noopFormDoesNothing() {
-		Assertions.assertThrows(UnsupportedOperationException.class, () ->
-				NOOP_EXPIRING_CREATIONS.saveExpiringRecord(
-						null, null, 0L, submittingMember));
-		Assertions.assertThrows(UnsupportedOperationException.class, () ->
-				NOOP_EXPIRING_CREATIONS.buildFailedExpiringRecord(null, null));
-		Assertions.assertThrows(UnsupportedOperationException.class, () ->
-				NOOP_EXPIRING_CREATIONS.createExpiringRecord(0L, null, null, null,
-						null, null, null));
 	}
 
 	@Test

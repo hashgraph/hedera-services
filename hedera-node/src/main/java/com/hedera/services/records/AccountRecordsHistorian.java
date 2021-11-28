@@ -94,6 +94,7 @@ public interface AccountRecordsHistorian {
 	 *
 	 * @param sourceId the id of the child record source
 	 * @param recordSoFar the in-progress child record
+	 * @param syntheticTxn the synthetic transaction for the child record
 	 */
 	void trackChildRecord(int sourceId, ExpirableTxnRecord.Builder recordSoFar, Transaction syntheticTxn);
 

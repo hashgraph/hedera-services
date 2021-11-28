@@ -24,10 +24,13 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordCache;
+import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Transaction;
 
 import java.time.Instant;
 import java.util.List;
@@ -63,7 +66,7 @@ public interface EntityCreator {
 			long submittingMember);
 
 	/**
-	 * Build {@link ExpirableTxnRecord.Builder} when the record is finalized before committing the active transaction.
+	 * Returns a {@link ExpirableTxnRecord.Builder} summarizing the information for the given top-level transaction.
 	 *
 	 * @param fee
 	 * 		the fee to include the record
@@ -79,7 +82,7 @@ public interface EntityCreator {
 	 * 		the custom fees assessed during the transaction
 	 * @param sideEffectsTracker
 	 * 		the side effects tracked throughout the transaction
-	 * @return a {@link ExpirableTxnRecord.Builder} for the finalized record
+	 * @return a {@link ExpirableTxnRecord.Builder} summarizing the input
 	 */
 	ExpirableTxnRecord.Builder createExpiringRecord(
 			long fee,
@@ -87,6 +90,25 @@ public interface EntityCreator {
 			TxnAccessor accessor,
 			Instant consensusTime,
 			TxnReceipt.Builder receiptBuilder,
+			List<FcAssessedCustomFee> assessedCustomFees,
+			SideEffectsTracker sideEffectsTracker);
+
+	/**
+	 * Returns a {@link ExpirableTxnRecord.Builder} summarizing the information for the given synthetic transaction.
+	 *
+	 * @param txn the synthetic transaction
+	 * @param consensusTime the consensus time of the transaction
+	 * @param exchangeRates the active exchanges rates for the transaction
+	 * @param status the final status of the transaction
+	 * @param assessedCustomFees the custom fees assessed during the transaction
+	 * @param sideEffectsTracker the side effects tracked throughout the transaction
+	 * @return a {@link ExpirableTxnRecord.Builder} summarizing the input
+	 */
+	ExpirableTxnRecord.Builder createExpiringRecordForSynthetic(
+			Transaction txn,
+			Instant consensusTime,
+			ExchangeRates exchangeRates,
+			ResponseCodeEnum status,
 			List<FcAssessedCustomFee> assessedCustomFees,
 			SideEffectsTracker sideEffectsTracker);
 
