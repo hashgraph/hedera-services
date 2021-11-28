@@ -76,19 +76,19 @@ class JKeyTest {
 	void byDefaultHasNoDelegateContractId() {
 		final var subject = mock(JKey.class);
 
-		doCallRealMethod().when(subject).hasDelegateContractID();
-		doCallRealMethod().when(subject).getDelegateContractIDKey();
+		doCallRealMethod().when(subject).hasDelegatableContractId();
+		doCallRealMethod().when(subject).getDelegatableContractIdKey();
 
-		assertFalse(subject.hasDelegateContractID());
-		assertNull(subject.getDelegateContractIDKey());
+		assertFalse(subject.hasDelegatableContractId());
+		assertNull(subject.getDelegatableContractIdKey());
 	}
 
 	@Test
 	void canMapDelegateToGrpc() throws DecoderException {
 		final var id = IdUtils.asContract("1.2.3");
-		final var expected = Key.newBuilder().setDelegateContractID(id).build();
+		final var expected = Key.newBuilder().setDelegatableContractId(id).build();
 
-		final var subject = new JDelegateContractIDKey(id);
+		final var subject = new JDelegatableContractIDKey(id);
 		final var result = JKey.mapJKey(subject);
 
 		assertEquals(expected, result);
@@ -97,12 +97,12 @@ class JKeyTest {
 	@Test
 	void canMapDelegateFromGrpc() throws DecoderException {
 		final var id = IdUtils.asContract("1.2.3");
-		final var input = Key.newBuilder().setDelegateContractID(id).build();
+		final var input = Key.newBuilder().setDelegatableContractId(id).build();
 
 		final var subject = JKey.mapKey(input);
 
-		assertTrue(subject.hasDelegateContractID());
-		assertEquals(id, subject.getDelegateContractIDKey().getContractID());
+		assertTrue(subject.hasDelegatableContractId());
+		assertEquals(id, subject.getDelegatableContractIdKey().getContractID());
 	}
 
 	@Test

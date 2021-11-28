@@ -31,7 +31,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static com.hedera.services.bdd.spec.keys.SigControl.Nature.CONTRACT_ID;
-import static com.hedera.services.bdd.spec.keys.SigControl.Nature.DELEGATE_CONTRACT_ID;
+import static com.hedera.services.bdd.spec.keys.SigControl.Nature.DELEGATABLE_CONTRACT_ID;
 import static com.hedera.services.bdd.spec.keys.SigControl.Nature.SIG_OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.Nature.SIG_ON;
 
@@ -39,17 +39,17 @@ public class SigControl implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	private static boolean isContract(final Nature nature) {
-		return nature == CONTRACT_ID || nature == DELEGATE_CONTRACT_ID;
+		return nature == CONTRACT_ID || nature == DELEGATABLE_CONTRACT_ID;
 	}
 
 	public enum Nature {
-		SIG_ON, SIG_OFF, LIST, THRESHOLD, CONTRACT_ID, DELEGATE_CONTRACT_ID
+		SIG_ON, SIG_OFF, LIST, THRESHOLD, CONTRACT_ID, DELEGATABLE_CONTRACT_ID
 	}
 
 	private final Nature nature;
 	private int threshold = -1;
 	private String contract;
-	private String delegateContract;
+	private String delegatableContract;
 	private SigControl[] childControls = new SigControl[0];
 
 	public static final SigControl ON = new SigControl(SIG_ON);
@@ -60,8 +60,8 @@ public class SigControl implements Serializable {
 		return contract;
 	}
 
-	public String delegateContract() {
-		return delegateContract;
+	public String delegatableContract() {
+		return delegatableContract;
 	}
 
 	public Nature getNature() {
@@ -94,8 +94,8 @@ public class SigControl implements Serializable {
 			return (!key.hasKeyList() && !key.hasThresholdKey());
 		} else if (nature == CONTRACT_ID) {
 			return key.hasContractID();
-		} else if (nature == DELEGATE_CONTRACT_ID) {
-			return key.hasDelegateContractID();
+		} else if (nature == DELEGATABLE_CONTRACT_ID) {
+			return key.hasDelegatableContractId();
 		} else {
 			KeyList composite = KeyFactory.getCompositeList(key);
 			if (composite.getKeysCount() == childControls.length) {
@@ -130,7 +130,7 @@ public class SigControl implements Serializable {
 		if (nature == CONTRACT_ID) {
 			this.contract = id;
 		} else {
-			this.delegateContract = id;
+			this.delegatableContract = id;
 		}
 	}
 

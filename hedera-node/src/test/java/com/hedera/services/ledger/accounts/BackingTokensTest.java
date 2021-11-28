@@ -122,7 +122,8 @@ class BackingTokensTest {
 		subject.put(a, aValue);
 
 		// then:
-		verify(mockedMap).computeIfAbsent(eq(EntityNum.fromTokenId(a)), any());
+		verify(mockedMap).containsKey(EntityNum.fromTokenId(a));
+		verify(mockedMap).put(EntityNum.fromTokenId(a), aValue);
 	}
 
 	@Test

@@ -285,5 +285,4 @@ public enum TokenProperty implements BeanProperty<MerkleToken> {
 			return MerkleToken::customFeeSchedule;
 		}
 	}
-
 }

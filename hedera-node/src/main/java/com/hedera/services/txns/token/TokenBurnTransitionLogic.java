@@ -46,7 +46,7 @@ public class TokenBurnTransitionLogic implements TransitionLogic {
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
 	private final GlobalDynamicProperties dynamicProperties;
-	private final com.hedera.services.txns.token.BurnLogic burnLogic;
+	private final BurnLogic burnLogic;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 

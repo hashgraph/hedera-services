@@ -116,8 +116,8 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 		 * with each primitive key in the top-level Hedera key of interest, along with that key's
 		 * verified cryptographic signature (if any was available in the sigMap). */
 		return (key, sig) -> {
-			if (key.hasDelegateContractID()) {
-				final var controllingId = key.getDelegateContractIDKey().getContractID();
+			if (key.hasDelegatableContractId()) {
+				final var controllingId = key.getDelegatableContractIdKey().getContractID();
 				return controllingId.equals(activeId);
 			} else if (key.hasContractID()) {
 				final var controllingId = key.getContractIDKey().getContractID();
