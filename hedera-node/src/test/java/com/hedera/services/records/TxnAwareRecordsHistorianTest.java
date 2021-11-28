@@ -117,6 +117,18 @@ class TxnAwareRecordsHistorianTest {
 		assertNull(subject.lastCreatedTopLevelRecord());
 	}
 
+	@Test
+	void revertsRecordsFromGivenSourceOnly() {
+		final var childRecordFrom1 = mock(ExpirableTxnRecord.Builder.class);
+		final var childRecordFrom2 = mock(ExpirableTxnRecord.Builder.class);
+
+		subject.trackChildRecord(1, childRecordFrom1, Transaction.getDefaultInstance());
+		subject.trackChildRecord(2, childRecordFrom2, Transaction.getDefaultInstance());
+		subject.revertChildRecordsFromSource(2);
+
+		verify(childRecordFrom1, never()).revert();
+		verify(childRecordFrom2).revert();
+	}
 
 	@Test
 	void incorporatesChildRecordsIfPresent() {
@@ -195,6 +207,16 @@ class TxnAwareRecordsHistorianTest {
 		subject.clearHistory();
 
 		assertFalse(subject.hasChildRecords());
+	}
+
+	@Test
+	void childRecordIdsIncrementThenReset() {
+		assertEquals(1, subject.nextChildRecordSourceId());
+		assertEquals(2, subject.nextChildRecordSourceId());
+
+		subject.clearHistory();
+
+		assertEquals(1, subject.nextChildRecordSourceId());
 	}
 
 	@Test

@@ -32,6 +32,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -62,6 +63,7 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	private final List<RecordStreamObject> childStreamObjs = new ArrayList<>();
 	private final List<InProgressChildRecord> childRecords = new ArrayList<>();
 
+	private int nextSourceId = 1;
 	private EntityCreator creator;
 
 	private ExpirableTxnRecord topLevelRecord;
@@ -93,15 +95,7 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 		final var txnId = accessor.getTxnId();
 
 		final var topLevel = txnCtx.recordSoFar();
-		/* Finalize any child records, excluding their ℏ balance changes from the top-level record */
-		for (int i = 0, n = childRecords.size(); i < n; i++) {
-			final var inProgress = childRecords.get(i);
-			final var child = inProgress.recordBuilder;
-			topLevel.excludeHbarChangesFrom(child);
-			final var childConsTime = consensusNow.plusNanos(i + 1);
-			child.setConsensusTime(RichInstant.fromJava(childConsTime));
-			childStreamObjs.add(new RecordStreamObject(child.build(), inProgress.syntheticTxn, childConsTime));
-		}
+		finalizeChildRecords(consensusNow, topLevel);
 
 		final var effPayer = txnCtx.effectivePayer();
 		topLevelRecord = topLevel.build();
@@ -137,7 +131,7 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 
 	@Override
 	public int nextChildRecordSourceId() {
-		throw new AssertionError("Not implemented");
+		return nextSourceId++;
 	}
 
 	@Override
@@ -146,18 +140,35 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 			final ExpirableTxnRecord.Builder recordSoFar,
 			final Transaction syntheticTxn
 	) {
-		final var tracker = new InProgressChildRecord(sourceId, syntheticTxn, recordSoFar);
-		childRecords.add(tracker);
+		final var inProgress = new InProgressChildRecord(sourceId, syntheticTxn, recordSoFar);
+		childRecords.add(inProgress);
 	}
 
 	@Override
 	public void revertChildRecordsFromSource(final int sourceId) {
-		throw new AssertionError("Not implemented");
+		for (final var inProgress : childRecords) {
+			if (inProgress.sourceId == sourceId) {
+				inProgress.recordBuilder.revert();
+			}
+		}
 	}
 
 	@Override
 	public void clearHistory() {
 		childRecords.clear();
 		childStreamObjs.clear();
+
+		nextSourceId = 1;
+	}
+
+	private void finalizeChildRecords(final Instant consensusNow, final ExpirableTxnRecord.Builder topLevel) {
+		for (int i = 0, n = childRecords.size(); i < n; i++) {
+			final var inProgress = childRecords.get(i);
+			final var child = inProgress.recordBuilder;
+			topLevel.excludeHbarChangesFrom(child);
+			final var childConsTime = consensusNow.plusNanos(i + 1);
+			child.setConsensusTime(RichInstant.fromJava(childConsTime));
+			childStreamObjs.add(new RecordStreamObject(child.build(), inProgress.syntheticTxn, childConsTime));
+		}
 	}
 }

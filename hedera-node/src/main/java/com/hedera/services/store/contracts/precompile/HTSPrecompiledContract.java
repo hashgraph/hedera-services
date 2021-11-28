@@ -92,9 +92,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final AccountStore accountStore,
 			final OptionValidator validator,
 			final TypedTokenStore tokenStore,
-			GlobalDynamicProperties dynamicProperties,
-			final GasCalculator gasCalculator) {
+			final GlobalDynamicProperties dynamicProperties,
+			final GasCalculator gasCalculator
+	) {
 		super("HTS", gasCalculator);
+
 		this.ledger = ledger;
 		this.validator = validator;
 		this.tokenStore = tokenStore;
