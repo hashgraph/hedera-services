@@ -267,7 +267,7 @@ class BasicTransactionContextTest {
 		assertNull(subject.getAssessedCustomFees());
 		// and:
 		setUpBuildingExpirableTxnRecord();
-		record = subject.recordSoFar();
+		record = subject.recordSoFar().build();
 
 		// then:
 		assertEquals(ResponseCodeEnum.UNKNOWN, ResponseCodeEnum.valueOf(record.getReceipt().getStatus()));
@@ -317,7 +317,7 @@ class BasicTransactionContextTest {
 		subject.addNonThresholdFeeChargedToPayer(other);
 
 		setUpBuildingExpirableTxnRecord();
-		record = subject.recordSoFar();
+		record = subject.recordSoFar().build();
 
 		// then:
 		assertEquals(std + other, record.asGrpc().getTransactionFee());
@@ -331,7 +331,7 @@ class BasicTransactionContextTest {
 
 		// when:
 		setUpBuildingExpirableTxnRecord();
-		record = subject.recordSoFar();
+		record = subject.recordSoFar().build();
 
 		// then:
 		assertEquals(tokenTransfers, record.asGrpc().getTokenTransferLists(0));
@@ -346,7 +346,7 @@ class BasicTransactionContextTest {
 		// when:
 		subject.setCallResult(result);
 		setUpBuildingExpirableTxnRecord();
-		record = subject.recordSoFar();
+		record = subject.recordSoFar().build();
 
 		// expect:
 		assertEquals(SolidityFnResult.fromGrpc(result), record.getContractCallResult());
@@ -361,7 +361,7 @@ class BasicTransactionContextTest {
 		// when:
 		setUpBuildingExpirableTxnRecord();
 		subject.setCreateResult(result);
-		record = subject.recordSoFar();
+		record = subject.recordSoFar().build();
 
 		// expect:
 		assertEquals(SolidityFnResult.fromGrpc(result), record.getContractCreateResult());
@@ -375,7 +375,7 @@ class BasicTransactionContextTest {
 
 		setUpBuildingExpirableTxnRecord();
 		// expect:
-		assertEquals(transfers, subject.recordSoFar().asGrpc().getTransferList());
+		assertEquals(transfers, subject.recordSoFar().build().asGrpc().getTransferList());
 	}
 
 	@Test
@@ -388,7 +388,7 @@ class BasicTransactionContextTest {
 
 		setUpBuildingExpirableTxnRecord();
 		// when:
-		ExpirableTxnRecord record = subject.recordSoFar();
+		ExpirableTxnRecord record = subject.recordSoFar().build();
 
 		// expect:
 		assertEquals(memo, record.getMemo());
@@ -425,7 +425,7 @@ class BasicTransactionContextTest {
 		// when:
 		subject.setStatus(ResponseCodeEnum.INVALID_PAYER_SIGNATURE);
 		setUpBuildingExpirableTxnRecord();
-		record = subject.recordSoFar();
+		record = subject.recordSoFar().build();
 
 		// then:
 		assertEquals(ResponseCodeEnum.INVALID_PAYER_SIGNATURE,
@@ -441,7 +441,7 @@ class BasicTransactionContextTest {
 		// when:
 		subject.setCreated(created);
 		setUpBuildingExpirableTxnRecord();
-		record = subject.recordSoFar();
+		record = subject.recordSoFar().build();
 
 		// then:
 		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
@@ -458,7 +458,7 @@ class BasicTransactionContextTest {
 		subject.setCreated(fileCreated);
 		setUpBuildingExpirableTxnRecord();
 
-		record = subject.recordSoFar();
+		record = subject.recordSoFar().build();
 
 		// then:
 		assertEquals(ratesNow, TxnReceipt.convert(record.getReceipt()).getExchangeRate());
@@ -474,7 +474,7 @@ class BasicTransactionContextTest {
 		// when:
 		subject.setCreated(contractCreated);
 		setUpBuildingExpirableTxnRecord();
-		record = subject.recordSoFar();
+		record = subject.recordSoFar().build();
 
 		// then:
 		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
@@ -490,7 +490,7 @@ class BasicTransactionContextTest {
 		// when:
 		subject.setCreated(topicCreated);
 		setUpBuildingExpirableTxnRecord();
-		record = subject.recordSoFar();
+		record = subject.recordSoFar().build();
 
 		// then:
 		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
@@ -509,7 +509,7 @@ class BasicTransactionContextTest {
 		// when:
 		subject.setTopicRunningHash(runningHash, sequenceNumber);
 		setUpBuildingExpirableTxnRecord();
-		record = subject.recordSoFar();
+		record = subject.recordSoFar().build();
 
 		// then:
 		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
@@ -529,7 +529,7 @@ class BasicTransactionContextTest {
 		subject.setScheduledTxnId(scheduledTxnId);
 		setUpBuildingExpirableTxnRecord();
 		// and:
-		record = subject.recordSoFar();
+		record = subject.recordSoFar().build();
 
 		// then:
 		assertEquals(scheduleCreated, record.getReceipt().toGrpc().getScheduleID());
@@ -572,7 +572,7 @@ class BasicTransactionContextTest {
 		setUpBuildingExpirableTxnRecord();
 
 		// when:
-		record = subject.recordSoFar();
+		record = subject.recordSoFar().build();
 
 		// then:
 		assertEquals(fromGrpcScheduleId(scheduleCreated), record.getScheduleRef());

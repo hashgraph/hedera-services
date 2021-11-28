@@ -28,7 +28,6 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
-import org.apache.commons.lang3.tuple.Pair;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
@@ -184,13 +183,14 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 
 	public void manageInProgressRecord(
 			final AccountRecordsHistorian recordsHistorian,
-			final Pair<ExpirableTxnRecord.Builder, Transaction> recordSoFar
+			final ExpirableTxnRecord.Builder recordSoFar,
+			final Transaction syntheticTxn
 	) {
 		if (thisRecordSourceId == UNKNOWN_RECORD_SOURCE_ID) {
 			thisRecordSourceId = recordsHistorian.nextChildRecordSourceId();
 			this.recordsHistorian =  recordsHistorian;
 		}
-		recordsHistorian.trackChildRecord(thisRecordSourceId, recordSoFar);
+		recordsHistorian.trackChildRecord(thisRecordSourceId, recordSoFar, syntheticTxn);
 	}
 
 	public WorldLedgers wrappedTrackingLedgers() {

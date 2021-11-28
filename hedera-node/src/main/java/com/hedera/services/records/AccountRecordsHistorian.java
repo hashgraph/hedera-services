@@ -24,7 +24,6 @@ import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hederahashgraph.api.proto.java.Transaction;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
 
@@ -44,17 +43,17 @@ import java.util.List;
  */
 public interface AccountRecordsHistorian {
 	/**
+	 * For safety, a method to notify the historian that a new transaction is beginning
+	 * so any residual history can be cleared (e.g., in-progress child records).
+	 */
+	void clearHistory();
+
+	/**
 	 * Injects the expiring entity creator which the historian should use to create records.
 	 *
 	 * @param creator the creator of expiring entities.
 	 */
 	void setCreator(EntityCreator creator);
-
-	/**
-	 * Called immediately before committing the active transaction to finalize its record(s)
-	 * of the executed business logic.
-	 */
-	void finalizeExpirableTransactionRecords();
 
 	/**
 	 * Called immediately after committing the active transaction, to save its record(s) in
@@ -96,7 +95,7 @@ public interface AccountRecordsHistorian {
 	 * @param sourceId the id of the child record source
 	 * @param recordSoFar the in-progress child record
 	 */
-	void trackChildRecord(int sourceId, Pair<ExpirableTxnRecord.Builder, Transaction> recordSoFar);
+	void trackChildRecord(int sourceId, ExpirableTxnRecord.Builder recordSoFar, Transaction syntheticTxn);
 
 	/**
 	 * Reverts all records created by the given source.

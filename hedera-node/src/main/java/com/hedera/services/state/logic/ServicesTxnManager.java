@@ -22,6 +22,7 @@ package com.hedera.services.state.logic;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.annotations.RunRecordStreaming;
 import com.hedera.services.state.annotations.RunTopLevelTransition;
@@ -48,19 +49,22 @@ public class ServicesTxnManager {
 	private final RecordCache recordCache;
 	private final HederaLedger ledger;
 	private final TransactionContext txnCtx;
+	private final AccountRecordsHistorian recordsHistorian;
 
 	@Inject
 	public ServicesTxnManager(
-			@RunTopLevelTransition Runnable scopedProcessing,
-			@RunRecordStreaming Runnable scopedRecordStreaming,
-			@RunTriggeredTransition Runnable scopedTriggeredProcessing,
-			RecordCache recordCache,
-			HederaLedger ledger,
-			TransactionContext txnCtx
+			final @RunTopLevelTransition Runnable scopedProcessing,
+			final @RunRecordStreaming Runnable scopedRecordStreaming,
+			final @RunTriggeredTransition Runnable scopedTriggeredProcessing,
+			final RecordCache recordCache,
+			final HederaLedger ledger,
+			final TransactionContext txnCtx,
+			final AccountRecordsHistorian recordsHistorian
 	) {
 		this.txnCtx = txnCtx;
 		this.ledger = ledger;
 		this.recordCache = recordCache;
+		this.recordsHistorian = recordsHistorian;
 		this.scopedProcessing = scopedProcessing;
 		this.scopedRecordStreaming = scopedRecordStreaming;
 		this.scopedTriggeredProcessing = scopedTriggeredProcessing;
@@ -74,6 +78,7 @@ public class ServicesTxnManager {
 
 		try {
 			ledger.begin();
+			recordsHistorian.clearHistory();
 			txnCtx.resetFor(accessor, consensusTime, submittingMember);
 			if (accessor.isTriggeredTxn()) {
 				scopedTriggeredProcessing.run();

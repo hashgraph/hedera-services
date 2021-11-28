@@ -104,27 +104,27 @@ class AbstractLedgerWorldUpdaterTest {
 	@Test
 	void usesSameSourceIdAcrossMultipleManagedRecords() {
 		final var sourceId = 123;
-		final var firstRecord = Pair.of(ExpirableTxnRecord.newBuilder(), Transaction.getDefaultInstance());
-		final var secondRecord = Pair.of(ExpirableTxnRecord.newBuilder(), Transaction.getDefaultInstance());
+		final var firstRecord = ExpirableTxnRecord.newBuilder();
+		final var secondRecord = ExpirableTxnRecord.newBuilder();
 
 		given(recordsHistorian.nextChildRecordSourceId()).willReturn(sourceId);
 
-		subject.manageInProgressRecord(recordsHistorian, firstRecord);
-		subject.manageInProgressRecord(recordsHistorian, secondRecord);
+		subject.manageInProgressRecord(recordsHistorian, firstRecord, Transaction.getDefaultInstance());
+		subject.manageInProgressRecord(recordsHistorian, secondRecord, Transaction.getDefaultInstance());
 
 		verify(recordsHistorian, times(1)).nextChildRecordSourceId();
-		verify(recordsHistorian).trackChildRecord(sourceId, firstRecord);
-		verify(recordsHistorian).trackChildRecord(sourceId, secondRecord);
+		verify(recordsHistorian).trackChildRecord(sourceId, firstRecord, Transaction.getDefaultInstance());
+		verify(recordsHistorian).trackChildRecord(sourceId, secondRecord, Transaction.getDefaultInstance());
 	}
 
 	@Test
 	void revertsSourceIdsIfCreated() {
 		final var sourceId = 123;
-		final var aRecord = Pair.of(ExpirableTxnRecord.newBuilder(), Transaction.getDefaultInstance());
+		final var aRecord = ExpirableTxnRecord.newBuilder();
 
 		given(recordsHistorian.nextChildRecordSourceId()).willReturn(sourceId);
 
-		subject.manageInProgressRecord(recordsHistorian, aRecord);
+		subject.manageInProgressRecord(recordsHistorian, aRecord, Transaction.getDefaultInstance());
 		subject.revert();
 
 		verify(recordsHistorian).revertChildRecordsFromSource(sourceId);

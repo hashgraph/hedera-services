@@ -211,7 +211,6 @@ public class HederaLedger {
 
 	public void commit() {
 		throwIfPendingStateIsInconsistent();
-		historian.finalizeExpirableTransactionRecords();
 		accountsLedger.commit();
 		historian.saveExpirableTransactionRecords();
 		historian.noteNewExpirationEvents();

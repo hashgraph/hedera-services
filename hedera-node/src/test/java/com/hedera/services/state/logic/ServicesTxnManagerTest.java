@@ -22,6 +22,7 @@ package com.hedera.services.state.logic;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
@@ -71,6 +72,8 @@ class ServicesTxnManagerTest {
 	private RecordCache recordCache;
 	@Mock
 	private TransactionContext txnCtx;
+	@Mock
+	private AccountRecordsHistorian recordsHistorian;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -80,19 +83,20 @@ class ServicesTxnManagerTest {
 	@BeforeEach
 	void setup() {
 		subject = new ServicesTxnManager(
-				processLogic, recordStreaming, triggeredProcessLogic, recordCache, ledger, txnCtx);
+				processLogic, recordStreaming, triggeredProcessLogic, recordCache, ledger, txnCtx, recordsHistorian);
 	}
 
 	@Test
 	void managesHappyPath() {
 		// setup:
-		InOrder inOrder = inOrder(ledger, txnCtx, processLogic, recordStreaming);
+		InOrder inOrder = inOrder(ledger, txnCtx, processLogic, recordStreaming, recordsHistorian);
 
 		// when:
 		subject.process(accessor, consensusTime, submittingMember);
 
 		// then:
 		inOrder.verify(ledger).begin();
+		inOrder.verify(recordsHistorian).clearHistory();
 		inOrder.verify(txnCtx).resetFor(accessor, consensusTime, submittingMember);
 		inOrder.verify(processLogic).run();
 		inOrder.verify(ledger).commit();
