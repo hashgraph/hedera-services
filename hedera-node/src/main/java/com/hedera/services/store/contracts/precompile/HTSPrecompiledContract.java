@@ -24,17 +24,26 @@ package com.hedera.services.store.contracts.precompile;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.contracts.sources.SoliditySigsVerifier;
+import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
+import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.state.expiry.ExpiringCreations;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
-import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.Token;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.services.txns.token.AssociateLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -47,6 +56,9 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+
 @Singleton
 public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private static final Logger LOG = LogManager.getLogger(HTSPrecompiledContract.class);
@@ -55,6 +67,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private final UniqTokenViewsManager uniqTokenViewsManager;
 	private final TypedTokenStore.LegacyTreasuryAdder addKnownTreasury;
 	private final TypedTokenStore.LegacyTreasuryRemover delegate;
+	private final SoliditySigsVerifier sigsVerifier;
+	private final ExpiringCreations creator;
+	private final AccountRecordsHistorian recordsHistorian;
 
 	// "cryptoTransfer((address,(address,int64)[], (address,address,int64)[])[])"
 	protected static final int ABI_ID_CRYPTO_TRANSFER = 0x189a554c;
@@ -85,13 +100,19 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 								  final GlobalDynamicProperties dynamicProperties,
 								  final UniqTokenViewsManager uniqTokenViewsManager,
 								  final TypedTokenStore.LegacyTreasuryAdder legacyStoreDelegate,
-								  final TypedTokenStore.LegacyTreasuryRemover delegate) {
+								  final TypedTokenStore.LegacyTreasuryRemover delegate,
+								  final TxnAwareSoliditySigsVerifier sigsVerifier,
+								  final ExpiringCreations creator,
+								  final AccountRecordsHistorian recordsHistorian) {
 		super("HTS", gasCalculator);
 		this.validator = validator;
 		this.dynamicProperties = dynamicProperties;
 		this.uniqTokenViewsManager = uniqTokenViewsManager;
 		this.addKnownTreasury = legacyStoreDelegate;
 		this.delegate = delegate;
+		this.sigsVerifier = sigsVerifier;
+		this.creator = creator;
+		this.recordsHistorian = recordsHistorian;
 	}
 
 	@Override
@@ -187,37 +208,64 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		return null;
 	}
 
+	//	TODO: Abstract out the invocation of the ledgers as a helper method to avoid duplication
+	//	TODO: Properly instantiate syntheticTxn after Mr.Thinker provides implementation
+	//	TODO: It seems that the ledgers.commit() call duplicates commit calls in the logic.associate() method.
+	//	TODO: Clarify - are the customFees those, contained in the Token's List<FcCustomFee> customFees property.
+	//		  If true - should the respective logic return a list of custom fees?
+	//	TODO: Clarify the types of necessary validations.
 	protected Bytes computeAssociateToken(final Bytes input, final MessageFrame messageFrame) {
-		/* Extract from Bytes input */
-		final Bytes accountAddress = Address.wrap(input.slice(16, 20));
-		final Bytes tokenAddress = Address.wrap(input.slice(48, 20));
+		/* Get context from the Message frame */
+		final var contract = messageFrame.getContractAddress();
+		final var recipient = messageFrame.getRecipientAddress();
+		final var updater = (AbstractLedgerWorldUpdater) messageFrame.getWorldUpdater();
+		final var ledgers = updater.wrappedTrackingLedgers();
 
-		/* Translate to gRPC types */
-		final var accountId = EntityIdUtils.accountParsedFromSolidityAddress(accountAddress.toArrayUnsafe());
-		final var tokenID = EntityIdUtils.tokenParsedFromSolidityAddress(tokenAddress.toArrayUnsafe());
+		/* Parse Bytes input as typed arguments */
+		final var accountAddress = Address.wrap(input.slice(16, 20));
+		final var tokenAddress = Address.wrap(input.slice(48, 20));
 
-		/* Get the ledgers */
-		final var nftsLedger =
-				((HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater()).wrappedTrackingLedgers().nfts();
-		final var tokenRelsLedger =
-				((HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater()).wrappedTrackingLedgers().tokenRels();
-		final var tokensLedger =
-				((HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater()).wrappedTrackingLedgers().tokens();
-		final var accountsLedger
-				= ((HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater()).wrappedTrackingLedgers().accounts();
+		ExpirableTxnRecord.Builder childRecord;
+		Bytes result;
 
-		/* Initialize the stores */
-		final var accountStore = new AccountStore(validator, dynamicProperties, accountsLedger);
-		//	TODO: Pass an instance of the SideEffectTracker from the messageFrame object
-		//	TODO: The addKnownTreasury and delegate arguments are potentially problematic
-		final var tokenStore = new TypedTokenStore(accountStore, tokensLedger, nftsLedger, tokenRelsLedger,
-				uniqTokenViewsManager, addKnownTreasury, delegate, new SideEffectsTracker());
+		try {
+			/* Translate to gRPC types */
+			final var accountID = EntityIdUtils.accountParsedFromSolidityAddress(accountAddress.toArrayUnsafe());
+			final var tokenID = EntityIdUtils.tokenParsedFromSolidityAddress(tokenAddress.toArrayUnsafe());
 
-		AssociateLogic logic = new AssociateLogic(tokenStore, accountStore, dynamicProperties);
+			/* Perform validations */
+			final var hasRequiredSigs = sigsVerifier.hasActiveKey(Id.fromGrpcAccount(accountID), recipient, contract);
+			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
-		logic.associate(Id.fromGrpcAccount(accountId), Collections.singletonList(tokenID));
+			/* Get the ledgers */
+			final var nftsLedger = ledgers.nfts();
+			final var tokenRelsLedger = ledgers.tokenRels();
+			final var tokensLedger = ledgers.tokens();
+			final var accountsLedger = ledgers.accounts();
 
-		return null;
+			/* Initialize the stores */
+			final var sideEffectsTracker = new SideEffectsTracker();
+			final var accountStore = new AccountStore(validator, dynamicProperties, accountsLedger);
+			final var tokenStore = new TypedTokenStore(accountStore, tokensLedger, nftsLedger, tokenRelsLedger,
+					uniqTokenViewsManager, addKnownTreasury, delegate, sideEffectsTracker);
+
+			/* Do the business logic */
+			final var logic = new AssociateLogic(tokenStore, accountStore, dynamicProperties);
+			logic.associate(Id.fromGrpcAccount(accountID), Collections.singletonList(tokenID));
+			ledgers.commit();
+
+			/* Summarize the happy results of the execution */
+//			childRecord = creator.createSuccessfulSyntheticRecord(syntheticTxn, customFees, sideEffectsTracker);
+			result = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
+		} catch (InvalidTransactionException e) {
+			/* Summarize the unhappy results of the execution */
+//			childRecord = creator.createFailedSyntheticRecord(syntheticTxn, e.getResponseCode());
+			result = UInt256.valueOf(e.getResponseCode().getNumber());
+		}
+
+		/* Track the child record and return */
+//		updater.manageInProgressRecord(recordsHistorian, childRecord, syntheticTxn);
+		return result;
 	}
 
 	@SuppressWarnings("unused")
