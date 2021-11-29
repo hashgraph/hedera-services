@@ -24,8 +24,16 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 
 import static com.hedera.test.factories.txns.CryptoDeleteFactory.newSignedCryptoDelete;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
+import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_ID;
 
 public enum CryptoDeleteScenarios implements TxnHandlingScenario {
+	CRYPTO_DELETE_NO_TARGET_RECEIVER_SIG_SELF_PAID_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoDelete(DEFAULT_PAYER_ID, NO_RECEIVER_SIG_ID).get()
+			));
+		}
+	},
 	CRYPTO_DELETE_NO_TARGET_RECEIVER_SIG_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
@@ -37,6 +45,20 @@ public enum CryptoDeleteScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedCryptoDelete(MISC_ACCOUNT_ID, RECEIVER_SIG_ID).get()
+			));
+		}
+	},
+	CRYPTO_DELETE_TARGET_RECEIVER_SIG_RECEIVER_PAID_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoDelete(MISC_ACCOUNT_ID, DEFAULT_PAYER_ID).get()
+			));
+		}
+	},
+	CRYPTO_DELETE_TARGET_RECEIVER_SIG_SELF_PAID_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoDelete(DEFAULT_PAYER_ID, RECEIVER_SIG_ID).get()
 			));
 		}
 	},

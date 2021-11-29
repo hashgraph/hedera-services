@@ -107,6 +107,11 @@ public class PrecheckKeyReqs {
 				throw new Exception();
 			}
 		}
-		keys.addAll(otherResult.getOrderedKeys());
+
+		for (var nonPayerKey : otherResult.getOrderedKeys()) {
+			if (!nonPayerKey.equals(keys.get(0))) {
+				keys.add(nonPayerKey);
+			}
+		}
 	}
 }

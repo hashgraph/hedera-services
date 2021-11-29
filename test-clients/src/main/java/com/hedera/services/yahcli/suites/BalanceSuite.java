@@ -64,7 +64,7 @@ public class BalanceSuite extends HapiApiSuite {
 				.then(
 						getAccountBalance(accountID)
 								.noLogging()
-								.yahcliLogging()
+								.withYahcliLogging()
 				);
 	}
 

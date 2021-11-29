@@ -26,6 +26,7 @@ import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryp
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.ScheduleCreateFactory.newSignedScheduleCreate;
 import static com.hedera.test.factories.txns.ScheduleSignFactory.newSignedScheduleSign;
+import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
 import static com.hedera.test.factories.txns.TokenMintFactory.newSignedTokenMint;
 
@@ -102,6 +103,19 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
 			return new PlatformTxnAccessor(from(
 					newSignedScheduleCreate()
 							.designatingPayer(DILIGENT_SIGNING_PAYER)
+							.creating(newSignedCryptoTransfer()
+									.skipPayerSig()
+									.transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1_000L))
+									.get())
+							.get()
+			));
+		}
+	},
+	SCHEDULE_CREATE_XFER_WITH_ADMIN_AND_PAYER_AS_SELF {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedScheduleCreate()
+							.designatingPayer(DEFAULT_PAYER)
 							.creating(newSignedCryptoTransfer()
 									.skipPayerSig()
 									.transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1_000L))
