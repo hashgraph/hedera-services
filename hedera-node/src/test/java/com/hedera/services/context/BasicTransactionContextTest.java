@@ -665,7 +665,7 @@ class BasicTransactionContextTest {
 				accessor,
 				now,
 				subject.receiptSoFar().build());
-		when(creator.createExpiringRecord(anyLong(), any(), any(), any(), any(), any(), any()))
+		when(creator.createTopLevelRecord(anyLong(), any(), any(), any(), any(), any(), any()))
 				.thenReturn(expirableRecordBuilder);
 		return expirableRecordBuilder;
 	}

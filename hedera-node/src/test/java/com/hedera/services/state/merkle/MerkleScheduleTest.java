@@ -223,7 +223,7 @@ public class MerkleScheduleTest {
 		given(fin.readLong()).willReturn(subject.expiry());
 		given(fin.readInt()).willReturn(2);
 		given(fin.readByteArray(Integer.MAX_VALUE)).willReturn(bodyBytes);
-		given(fin.readByteArray(MerkleSchedule.NUM_ED25519_PUBKEY_BYTES))
+		given(fin.readByteArray(MerkleSchedule.MAX_NUM_PUBKEY_BYTES))
 				.willReturn(fpk)
 				.willReturn(spk);
 		given(serdes.readNullableInstant(fin)).willReturn(RichInstant.fromJava(resolutionTime));
@@ -253,7 +253,7 @@ public class MerkleScheduleTest {
 		given(fin.readLong()).willReturn(subject.expiry());
 		given(fin.readInt()).willReturn(2).willReturn(number);
 		given(fin.readByteArray(Integer.MAX_VALUE)).willReturn(bodyBytes);
-		given(fin.readByteArray(MerkleSchedule.NUM_ED25519_PUBKEY_BYTES))
+		given(fin.readByteArray(MerkleSchedule.MAX_NUM_PUBKEY_BYTES))
 				.willReturn(fpk)
 				.willReturn(spk);
 		given(serdes.readNullableInstant(fin)).willReturn(RichInstant.fromJava(resolutionTime));

@@ -85,7 +85,7 @@ public class RecordCache {
 			final Instant consensusTimestamp,
 			final long submittingMember
 	) {
-		final var recordBuilder = creator.buildFailedExpiringRecord(accessor, consensusTimestamp);
+		final var recordBuilder = creator.createInvalidFailureRecord(accessor, consensusTimestamp);
 		final var expiringRecord = creator.saveExpiringRecord(
 				effectivePayer,
 				recordBuilder.build(),

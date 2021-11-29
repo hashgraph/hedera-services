@@ -166,7 +166,7 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 			final var inProgress = childRecords.get(i);
 			final var child = inProgress.recordBuilder;
 			topLevel.excludeHbarChangesFrom(child);
-			final var childConsTime = consensusNow.plusNanos(i + 1);
+			final var childConsTime = consensusNow.plusNanos(i + 1L);
 			child.setConsensusTime(RichInstant.fromJava(childConsTime));
 			childStreamObjs.add(new RecordStreamObject(child.build(), inProgress.syntheticTxn, childConsTime));
 		}

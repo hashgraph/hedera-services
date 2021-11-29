@@ -219,7 +219,7 @@ class RecordCacheTest {
 		expectedRecord.setExpiry(consensusTime.getEpochSecond() + 180);
 		expectedRecord.setSubmittingMember(submittingMember);
 
-		given(creator.buildFailedExpiringRecord(any(), any())).willReturn(expirableTxnRecordBuilder);
+		given(creator.createInvalidFailureRecord(any(), any())).willReturn(expirableTxnRecordBuilder);
 		given(creator.saveExpiringRecord(any(), any(), anyLong(), anyLong())).willReturn(
 				expectedRecord);
 
@@ -253,7 +253,7 @@ class RecordCacheTest {
 				.setConsensusTime(RichInstant.fromJava(consensusTime))
 				.setScheduleRef(fromGrpcScheduleId(effectiveScheduleID));
 		final var expirableTxnRecord = expirableTxnRecordBuilder.build();
-		given(creator.buildFailedExpiringRecord(any(), any())).willReturn(expirableTxnRecordBuilder);
+		given(creator.createInvalidFailureRecord(any(), any())).willReturn(expirableTxnRecordBuilder);
 		given(creator.saveExpiringRecord(any(), any(), anyLong(), anyLong())).willReturn(expirableTxnRecord);
 
 		// when:

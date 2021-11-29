@@ -50,6 +50,15 @@ class ExpirableTxnRecordBuilderTest {
 	}
 
 	@Test
+	void usesRecieptBuilderIfPresent() {
+		final var status = "INVALID_ACCOUNT_ID";
+		final var statusReceipt = TxnReceipt.newBuilder().setStatus(status);
+		subject.setReceiptBuilder(statusReceipt);
+		final var record = subject.build();
+		assertEquals(status, record.getReceipt().getStatus());
+	}
+
+	@Test
 	void canSubtractOffExcludedHbarAdjustmentsWithSameStop() {
 		final var inThisButNotThat = new EntityId(0, 0, 2);
 		final var firstInBoth = new EntityId(0, 0, 3);

@@ -187,7 +187,7 @@ public class BasicTransactionContext implements TransactionContext {
 	public ExpirableTxnRecord.Builder recordSoFar() {
 		final var receiptBuilder = receiptSoFar();
 		final var totalFees = narratedCharging.totalFeesChargedToPayer() + otherNonThresholdFees;
-		recordSoFar = creator.createExpiringRecord(
+		recordSoFar = creator.createTopLevelRecord(
 				totalFees,
 				hash,
 				accessor,

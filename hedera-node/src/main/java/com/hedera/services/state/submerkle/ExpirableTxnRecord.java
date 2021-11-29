@@ -103,7 +103,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	}
 
 	public ExpirableTxnRecord(Builder builder) {
-		this.receipt = builder.receipt;
+		this.receipt = (builder.receiptBuilder != null) ? builder.receiptBuilder.build() : builder.receipt;
 		this.txnHash = builder.txnHash;
 		this.txnId = builder.txnId;
 		this.consensusTimestamp = builder.consensusTime;
@@ -704,6 +704,14 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 		public List<FcTokenAssociation> getNewTokenAssociations() {
 			return newTokenAssociations;
+		}
+
+		public TxnReceipt.Builder getReceiptBuilder() {
+			return receiptBuilder;
+		}
+
+		public byte[] getTxnHash() {
+			return txnHash;
 		}
 	}
 

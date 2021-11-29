@@ -100,14 +100,6 @@ public class SyntheticTxnFactory {
 			this.denomination = denomination;
 		}
 
-		public AccountAmount senderAdjustment() {
-			return AccountAmount.newBuilder().setAccountID(sender).setAmount(-amount).build();
-		}
-
-		public AccountAmount receiverAdjustment() {
-			return AccountAmount.newBuilder().setAccountID(receiver).setAmount(+amount).build();
-		}
-
 		public TokenID getDenomination() {
 			return denomination;
 		}
