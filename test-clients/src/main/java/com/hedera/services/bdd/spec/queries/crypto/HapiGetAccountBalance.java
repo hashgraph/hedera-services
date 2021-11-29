@@ -58,6 +58,7 @@ import java.util.stream.Collectors;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
+import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
 public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 	private static final Logger log = LogManager.getLogger(HapiGetAccountBalance.class);
@@ -212,7 +213,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 				log.info(spec.logPrefix() + "balance for '" + entity + "': " + balance + " tinyBars (" + hBars + "ħ)");
 			}
 			if (yahcliLogger) {
-				System.out.println(String.format("%20s | %20d |", entity, balance));
+				COMMON_MESSAGES.info(String.format("%20s | %20d |", entity, balance));
 			}
 		}
 	}

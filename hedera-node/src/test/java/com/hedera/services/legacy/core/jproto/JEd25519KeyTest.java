@@ -22,7 +22,9 @@ package com.hedera.services.legacy.core.jproto;
 
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JEd25519KeyTest {
@@ -52,6 +54,22 @@ class JEd25519KeyTest {
   void validJEd25519KeyTest() {
     JEd25519Key key = new JEd25519Key(new byte[JEd25519Key.ED25519_BYTE_LENGTH]);
     assertTrue(key.isValid());
+  }
+  @Test
+  void equalsWorks() {
+    JEd25519Key key1 = new JEd25519Key("firstKey".getBytes());
+    JEd25519Key key2 = new JEd25519Key("secondKey".getBytes());
+    JEd25519Key key3 = new JEd25519Key("firstKey".getBytes());
+
+    assertNotEquals(key1, key2);
+    assertNotEquals(key1.hashCode(), key2.hashCode());
+    assertEquals(key1, key3);
+    assertEquals(key1.hashCode(), key3.hashCode());
+    assertEquals(key1, key1);
+    boolean forceEquals = key2.equals("sampleText");
+    assertFalse(forceEquals);
+    forceEquals = key1.equals(null);
+    assertFalse(forceEquals);
   }
 
 }

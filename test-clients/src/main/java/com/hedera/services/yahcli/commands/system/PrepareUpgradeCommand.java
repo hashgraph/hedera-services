@@ -36,7 +36,7 @@ import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 		name = "prepare-upgrade",
 		subcommands = { picocli.CommandLine.HelpCommand.class },
 		description = "Stages artifacts prior to an NMT software upgrade")
-public class StageUpgradeCommand implements Callable<Integer> {
+public class PrepareUpgradeCommand implements Callable<Integer> {
 	@CommandLine.ParentCommand
 	private Yahcli yahcli;
 
