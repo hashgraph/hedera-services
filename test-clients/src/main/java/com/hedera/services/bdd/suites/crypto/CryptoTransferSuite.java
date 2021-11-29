@@ -392,7 +392,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 		final var multipurpose = "multi";
 		final var hodlXfer = "hodlXfer";
 
-		return defaultHapiSpec("RoyaltyCollectorsCanUseAutoAssociation")
+		return defaultHapiSpec("RoyaltyCollectorsCanUseAutoAssociationWithoutOpenSlots")
 				.given(
 						cryptoCreate(TOKEN_TREASURY),
 						cryptoCreate(royaltyCollectorNoSlots),

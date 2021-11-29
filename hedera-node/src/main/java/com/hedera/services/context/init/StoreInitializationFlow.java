@@ -20,7 +20,7 @@ package com.hedera.services.context.init;
  * ‍
  */
 
-import com.hedera.services.ledger.accounts.BackingStore;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.annotations.WorkingState;
 import com.hedera.services.state.merkle.MerkleAccount;

@@ -31,7 +31,7 @@ import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.context.properties.ScreenedNodeFileProps;
 import com.hedera.services.grpc.GrpcStarter;
 import com.hedera.services.grpc.NettyGrpcServerManager;
-import com.hedera.services.ledger.accounts.BackingAccounts;
+import com.hedera.services.ledger.backing.BackingAccounts;
 import com.hedera.services.sigs.ExpansionHelper;
 import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.state.DualStateAccessor;

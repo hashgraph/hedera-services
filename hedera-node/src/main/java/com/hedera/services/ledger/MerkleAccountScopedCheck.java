@@ -43,7 +43,7 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 
 	private BalanceChange balanceChange;
 
-	MerkleAccountScopedCheck(final GlobalDynamicProperties dynamicProperties, final OptionValidator validator) {
+	public MerkleAccountScopedCheck(final GlobalDynamicProperties dynamicProperties, final OptionValidator validator) {
 		this.dynamicProperties = dynamicProperties;
 		this.validator = validator;
 	}

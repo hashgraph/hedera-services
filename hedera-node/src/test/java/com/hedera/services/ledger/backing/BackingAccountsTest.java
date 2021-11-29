@@ -1,4 +1,4 @@
-package com.hedera.services.ledger.accounts;
+package com.hedera.services.ledger.backing;
 
 /*-
  * ‌
@@ -20,6 +20,7 @@ package com.hedera.services.ledger.accounts;
  * ‍
  */
 
+import com.hedera.services.ledger.backing.BackingAccounts;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.FcLong;

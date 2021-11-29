@@ -26,7 +26,6 @@ import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.DetachedAccountException;
 import com.hedera.services.exceptions.InconsistentAdjustmentsException;
 import com.hedera.services.exceptions.InsufficientFundsException;
-import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -56,7 +55,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.util.Comparator;
 import java.util.List;
 
-import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
+import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
@@ -128,7 +127,7 @@ public class HederaLedger {
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger = null;
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger = null;
 
-	private final MerkleAccountScopedCheck scopedCheck;
+	private TransferLogic transferLogic;
 
 	public HederaLedger(
 			final TokenStore tokenStore,
@@ -138,7 +137,8 @@ public class HederaLedger {
 			final SideEffectsTracker sideEffectsTracker,
 			final AccountRecordsHistorian historian,
 			final GlobalDynamicProperties dynamicProperties,
-			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger
+			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
+			final TransferLogic transferLogic
 	) {
 		this.ids = ids;
 		this.validator = validator;
@@ -147,13 +147,12 @@ public class HederaLedger {
 		this.accountsLedger = accountsLedger;
 		this.dynamicProperties = dynamicProperties;
 		this.sideEffectsTracker = sideEffectsTracker;
+		this.transferLogic = transferLogic;
 
 		creator.setLedger(this);
 		historian.setCreator(creator);
 		tokenStore.setAccountsLedger(accountsLedger);
 		tokenStore.setHederaLedger(this);
-
-		scopedCheck = new MerkleAccountScopedCheck(dynamicProperties, validator);
 	}
 
 	public void setTokenViewsManager(UniqTokenViewsManager tokenViewsManager) {
@@ -168,18 +167,6 @@ public class HederaLedger {
 			TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger
 	) {
 		this.tokenRelsLedger = tokenRelsLedger;
-	}
-
-	public TransactionalLedger<AccountID, AccountProperty, MerkleAccount> getAccountsLedger() {
-		return accountsLedger;
-	}
-
-	public TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> getNftsLedger() {
-		return nftsLedger;
-	}
-
-	public TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> getTokenRelsLedger() {
-		return tokenRelsLedger;
 	}
 
 	/* -- TRANSACTIONAL SEMANTICS -- */
@@ -351,24 +338,7 @@ public class HederaLedger {
 	}
 
 	public void doZeroSum(List<BalanceChange> changes) {
-		var validity = OK;
-		for (var change : changes) {
-			if (change.isForHbar()) {
-				validity = accountsLedger.validate(change.accountId(), scopedCheck.setBalanceChange(change));
-			} else {
-				validity = tokenStore.tryTokenChange(change);
-			}
-			if (validity != OK) {
-				break;
-			}
-		}
-
-		if (validity == OK) {
-			adjustHbarUnchecked(changes);
-		} else {
-			dropPendingTokenChanges();
-			throw new InvalidTransactionException(validity);
-		}
+		transferLogic.transfer(changes);
 	}
 
 	/* -- ACCOUNT META MANIPULATION -- */
@@ -512,16 +482,6 @@ public class HederaLedger {
 		accountsLedger.set(id, BALANCE, newBalance);
 	}
 
-	private void adjustHbarUnchecked(List<BalanceChange> changes) {
-		for (var change : changes) {
-			if (change.isForHbar()) {
-				final var accountId = change.accountId();
-				setBalance(accountId, change.getNewBalance());
-				sideEffectsTracker.trackHbarChange(accountId, change.units());
-			}
-		}
-	}
-
 	/* -- Only used by unit tests --- */
 	TransferList netTransfersInTxn() {
 		accountsLedger.throwIfNotInTxn();
@@ -530,5 +490,17 @@ public class HederaLedger {
 
 	List<TokenTransferList> netTokenTransfersInTxn() {
 		return sideEffectsTracker.getNetTrackedTokenUnitAndOwnershipChanges();
+	}
+
+	public TransactionalLedger<AccountID, AccountProperty, MerkleAccount> getAccountsLedger() {
+		return accountsLedger;
+	}
+
+	public TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> getNftsLedger() {
+		return nftsLedger;
+	}
+
+	public TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> getTokenRelsLedger() {
+		return tokenRelsLedger;
 	}
 }
