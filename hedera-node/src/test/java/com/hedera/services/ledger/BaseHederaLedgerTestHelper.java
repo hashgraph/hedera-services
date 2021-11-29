@@ -22,11 +22,12 @@ package com.hedera.services.ledger;
 
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.ledger.accounts.BackingTokenRels;
+import com.hedera.services.ledger.backing.BackingTokenRels;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.records.AccountRecordsHistorian;
@@ -87,8 +88,10 @@ public class BaseHederaLedgerTestHelper {
 	protected EntityIdSource ids;
 	protected ExpiringCreations creator;
 	protected AccountRecordsHistorian historian;
+	protected TransferLogic transferLogic;
 	protected TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 	protected TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	protected TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 	protected TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
 	protected AccountID misc = AccountID.newBuilder().setAccountNum(1_234).build();
 	protected long MISC_BALANCE = 1_234L;
@@ -107,6 +110,7 @@ public class BaseHederaLedgerTestHelper {
 	protected AccountID detached = AccountID.newBuilder().setAccountNum(4_567).build();
 
 	protected void commonSetup() {
+		sideEffectsTracker = mock(SideEffectsTracker.class);
 		creator = mock(ExpiringCreations.class);
 		historian = mock(AccountRecordsHistorian.class);
 
@@ -211,6 +215,7 @@ public class BaseHederaLedgerTestHelper {
 		nftsLedger = mock(TransactionalLedger.class);
 		accountsLedger = mock(TransactionalLedger.class);
 		tokenRelsLedger = mock(TransactionalLedger.class);
+		tokensLedger = mock(TransactionalLedger.class);
 		addToLedger(misc, MISC_BALANCE, Map.of(
 				frozenId,
 				new TokenInfo(miscFrozenTokenBalance, frozenToken)));
@@ -234,10 +239,9 @@ public class BaseHederaLedgerTestHelper {
 		given(tokenStore.resolve(tokenId))
 				.willReturn(tokenId);
 		given(tokenStore.get(frozenId)).willReturn(frozenToken);
-		sideEffectsTracker = mock(SideEffectsTracker.class);
 
-		subject = new HederaLedger(
-				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProps, accountsLedger);
+		subject = new HederaLedger(tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProps,
+				accountsLedger, transferLogic);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setNftsLedger(nftsLedger);
 	}

@@ -41,7 +41,7 @@ import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-class HederLedgerTokenXfersTest extends BaseHederaLedgerTestHelper {
+class HederaLedgerTokenXfersTest extends BaseHederaLedgerTestHelper {
 	@BeforeEach
 	private void setup() {
 		commonSetup();
@@ -77,6 +77,7 @@ class HederLedgerTokenXfersTest extends BaseHederaLedgerTestHelper {
 		// and:
 		verify(tokenStore, times(1)).adjustBalance(any(), any(), anyLong());
 		verify(tokenRelsLedger).rollback();
+		verify(sideEffectsTracker).resetTrackedTokenChanges();
 	}
 
 	@Test
@@ -95,6 +96,7 @@ class HederLedgerTokenXfersTest extends BaseHederaLedgerTestHelper {
 		// and:
 		verify(tokenStore).adjustBalance(misc, tokenId, -555);
 		verify(tokenStore).adjustBalance(rand, tokenId, 555);
+		verify(sideEffectsTracker).resetTrackedTokenChanges();
 		verify(tokenRelsLedger).rollback();
 	}
 }

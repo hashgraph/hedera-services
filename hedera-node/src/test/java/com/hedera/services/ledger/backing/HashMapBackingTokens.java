@@ -1,4 +1,4 @@
-package com.hedera.services.ledger.accounts;
+package com.hedera.services.ledger.backing;
 
 /*-
  * ‌
@@ -9,9 +9,9 @@ package com.hedera.services.ledger.accounts;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,30 +30,24 @@ import java.util.Set;
 public class HashMapBackingTokens implements BackingStore<TokenID, MerkleToken> {
 	private Map<TokenID, MerkleToken> tokens = new HashMap<>();
 
-
 	@Override
 	public MerkleToken getRef(TokenID id) {
 		return tokens.get(id);
 	}
 
 	@Override
-	public MerkleToken getImmutableRef(TokenID id) {
-		return tokens.get(id);
-	}
-
-	@Override
-	public void put(TokenID id, MerkleToken token) {
-		tokens.put(id, token);
-	}
-
-	@Override
-	public void remove(TokenID id) {
-		tokens.remove(id);
+	public void put(TokenID id, MerkleToken Token) {
+		tokens.put(id, Token);
 	}
 
 	@Override
 	public boolean contains(TokenID id) {
 		return tokens.containsKey(id);
+	}
+
+	@Override
+	public void remove(TokenID id) {
+		tokens.remove(id);
 	}
 
 	@Override
@@ -64,5 +58,10 @@ public class HashMapBackingTokens implements BackingStore<TokenID, MerkleToken> 
 	@Override
 	public long size() {
 		return tokens.size();
+	}
+
+	@Override
+	public MerkleToken getImmutableRef(TokenID id) {
+		return tokens.get(id);
 	}
 }

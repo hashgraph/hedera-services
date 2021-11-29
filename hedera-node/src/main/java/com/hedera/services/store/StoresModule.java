@@ -24,14 +24,16 @@ import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.accounts.BackingNfts;
-import com.hedera.services.ledger.accounts.BackingStore;
-import com.hedera.services.ledger.accounts.BackingTokenRels;
+import com.hedera.services.ledger.backing.BackingNfts;
+import com.hedera.services.ledger.backing.BackingStore;
+import com.hedera.services.ledger.backing.BackingTokenRels;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.contracts.CodeCache;
@@ -86,6 +88,18 @@ public abstract class StoresModule {
 				NftProperty.class,
 				MerkleUniqueToken::new,
 				backingNfts,
+				new ChangeSummaryManager<>());
+	}
+
+	@Provides
+	@Singleton
+	public static TransactionalLedger<TokenID, TokenProperty, MerkleToken> provideTokensLedger(
+			BackingStore<TokenID, MerkleToken> backingTokens
+	) {
+		return new TransactionalLedger<>(
+				TokenProperty.class,
+				MerkleToken::new,
+				backingTokens,
 				new ChangeSummaryManager<>());
 	}
 

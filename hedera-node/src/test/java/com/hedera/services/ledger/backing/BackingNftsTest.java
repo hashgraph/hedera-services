@@ -1,4 +1,4 @@
-package com.hedera.services.ledger.accounts;
+package com.hedera.services.ledger.backing;
 
 /*-
  * ‌
@@ -84,6 +84,7 @@ class BackingNftsTest {
 
 		// expect:
 		assertNotNull(subject.idSet());
+		assertEquals(2, subject.size());
 	}
 
 	@Test

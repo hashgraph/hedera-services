@@ -47,7 +47,7 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 
-class HederLedgerTokensTest extends BaseHederaLedgerTestHelper {
+class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
 	@BeforeEach
 	private void setup() {
 		commonSetup();
@@ -178,6 +178,7 @@ class HederLedgerTokensTest extends BaseHederaLedgerTestHelper {
 		final var manager = mock(UniqTokenViewsManager.class);
 		final var inOrder = inOrder(tokenRelsLedger, nftsLedger, manager);
 		given(tokenRelsLedger.isInTransaction()).willReturn(true);
+		given(tokensLedger.isInTransaction()).willReturn(true);
 		given(nftsLedger.isInTransaction()).willReturn(true);
 		given(manager.isInTransaction()).willReturn(true);
 		subject.setTokenViewsManager(manager);
