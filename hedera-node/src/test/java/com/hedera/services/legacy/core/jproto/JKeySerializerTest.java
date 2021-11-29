@@ -76,25 +76,25 @@ class JKeySerializerTest {
 
 	@Test
 	void canSerializeAndDeserializeJDelegateContractIdKey() throws IOException {
-		final var subject = new JDelegateContractIDKey(IdUtils.asContract("1.2.3"));
+		final var subject = new JDelegatableContractIDKey(IdUtils.asContract("1.2.3"));
 		final var baos = new ByteArrayOutputStream();
 		baos.write(JKeySerializer.serialize(subject));
 		baos.flush();
 
 		final var in = new ByteArrayInputStream(baos.toByteArray());
-		final JDelegateContractIDKey result = JKeySerializer.deserialize(new DataInputStream(in));
+		final JDelegatableContractIDKey result = JKeySerializer.deserialize(new DataInputStream(in));
 		assertEquals(subject.getContractID(), result.getContractID());
 	}
 
 	@Test
 	void canSerializeAndDeserializeJContractIdKey() throws IOException {
-		final var subject = new JDelegateContractIDKey(IdUtils.asContract("1.2.3"));
+		final var subject = new JDelegatableContractIDKey(IdUtils.asContract("1.2.3"));
 		final var baos = new ByteArrayOutputStream();
 		baos.write(JKeySerializer.serialize(subject));
 		baos.flush();
 
 		final var in = new ByteArrayInputStream(baos.toByteArray());
-		final JDelegateContractIDKey result = JKeySerializer.deserialize(new DataInputStream(in));
+		final JDelegatableContractIDKey result = JKeySerializer.deserialize(new DataInputStream(in));
 		assertEquals(subject.getContractID(), result.getContractID());
 	}
 

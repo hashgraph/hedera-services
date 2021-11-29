@@ -25,7 +25,7 @@ package com.hedera.services.contracts.sources;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.ActivationTest;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
-import com.hedera.services.legacy.core.jproto.JDelegateContractIDKey;
+import com.hedera.services.legacy.core.jproto.JDelegatableContractIDKey;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -235,7 +235,7 @@ class TxnAwareSoliditySigsVerifierTest {
 	void createsValidityTestThatAcceptsDelegateContractIdKeyWithJustRecipientActive() {
 		final var uncontrolledId = EntityIdUtils.contractParsedFromSolidityAddress(Address.BLS12_G1ADD);
 		final var controlledId = EntityIdUtils.contractParsedFromSolidityAddress(PRETEND_RECIPIENT_ADDR);
-		final var controlledKey = new JDelegateContractIDKey(controlledId);
+		final var controlledKey = new JDelegatableContractIDKey(controlledId);
 		final var uncontrolledKey = new JContractIDKey(uncontrolledId);
 
 		final var validityTestForNormalCall =

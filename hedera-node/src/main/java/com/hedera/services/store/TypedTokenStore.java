@@ -199,7 +199,7 @@ public class TypedTokenStore {
 				tokenRels.remove(Pair.of(tokenRelationship.getAccount().getId().asGrpcAccount(),
 						tokenRelationship.getToken().getId().asGrpcToken()));
 			} else {
-				persistNonDestroyed(tokenRelationship, key, tokenRels);
+				persistNonDestroyed(tokenRelationship, key);
 			}
 		}
 		sideEffectsTracker.trackTokenBalanceChanges(tokenRelationships);
@@ -224,18 +224,17 @@ public class TypedTokenStore {
 
 	private void persistNonDestroyed(
 			TokenRelationship modelRel,
-			EntityNumPair key,
-			BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> currentTokenRels
+			EntityNumPair key
 	) {
 		final var isNewRel = modelRel.isNotYetPersisted();
 		final var mutableTokenRel = isNewRel
 				? new MerkleTokenRelStatus()
-				: currentTokenRels.getRef(key.asAccountTokenRel());
+				: tokenRels.getRef(key.asAccountTokenRel());
 		mutableTokenRel.setBalance(modelRel.getBalance());
 		mutableTokenRel.setFrozen(modelRel.isFrozen());
 		mutableTokenRel.setKycGranted(modelRel.isKycGranted());
 		mutableTokenRel.setAutomaticAssociation(modelRel.isAutomaticAssociation());
-		currentTokenRels.put(key.asAccountTokenRel(), mutableTokenRel);
+		tokenRels.put(key.asAccountTokenRel(), mutableTokenRel);
 	}
 
 	/**

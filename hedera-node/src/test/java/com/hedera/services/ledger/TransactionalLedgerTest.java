@@ -34,6 +34,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.LongStream;
 
 import static com.hedera.services.ledger.properties.TestAccountProperty.FLAG;
@@ -516,5 +517,23 @@ class TransactionalLedgerTest {
 		assertEquals(ACCOUNT_IS_NOT_GENESIS_ACCOUNT, subject.validate(2L, scopedCheck));
 		assertEquals(ACCOUNT_IS_TREASURY, subject.validate(3L, scopedCheck));
 		assertEquals(ACCOUNT_STILL_OWNS_NFTS, subject.validate(4L, scopedCheck));
+	}
+
+	@Test
+	void idSetPropagatesCallToEntities() {
+		Set<Long> idSet = Set.of(1L, 2L, 3L);
+		given(backingAccounts.idSet()).willReturn(idSet);
+
+		assertEquals(idSet, subject.idSet());
+		verify(backingAccounts).idSet();
+	}
+
+	@Test
+	void sizePropagatesCallToEntities() {
+		var size = 23L;
+		given(backingAccounts.size()).willReturn(size);
+
+		assertEquals(size, subject.size());
+		verify(backingAccounts).size();
 	}
 }

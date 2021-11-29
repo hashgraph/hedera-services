@@ -348,13 +348,10 @@ public class HederaWorldState implements HederaMutableWorldState {
 			final HederaWorldState wrapped = (HederaWorldState) wrappedWorldView();
 			final var entityAccess = wrapped.entityAccess;
 
-			/* ⚠️ Note that both the adjustBalance() and spawn() calls in the blocks below are ONLY
+			/* Note that both the adjustBalance() and spawn() calls in the blocks below are ONLY
 			 * needed to make sure the record's ℏ transfer list is constructed properly---the
 			 * finishing call to trackingLedgers().commits() at the end of this method will persist
-			 * all the same information.
-			 *
-			 * Once record-keeping logic is property extracted from HederaLedger, we can probably
-			 * drop these spawn() and adjustBalance() calls.*/
+			 * all the same information. */
 			final var deletedAddresses = getDeletedAccountAddresses();
 			deletedAddresses.forEach(address -> {
 				final var accountId = accountParsedFromSolidityAddress(address);

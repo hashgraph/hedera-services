@@ -32,6 +32,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.utils.IdUtils;
@@ -44,7 +45,6 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.merkle.map.MerkleMap;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,13 +53,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 
-import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRING_CREATIONS;
+import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -129,7 +131,7 @@ class ExpiringCreationsTest {
 			new FcAssessedCustomFee(customFeeCollector, customFeeToken, 123L, new long[] { 123L }));
 	private static final List<FcTokenAssociation> newTokenAssociations = List.of(
 			new FcTokenAssociation(customFeeToken.num(), customFeeCollector.num()));
-
+	
 	@BeforeEach
 	void setup() {
 		subject = new ExpiringCreations(expiries, narratedCharging, dynamicProperties, () -> accounts);
@@ -140,6 +142,46 @@ class ExpiringCreationsTest {
 		expectedRecord.setSubmittingMember(submittingMember);
 
 		verify(narratedCharging).setLedger(ledger);
+	}
+
+	@Test
+	void createsSuccessfulSyntheticRecordAsExpected() {
+		setupTracker();
+		final var tokensExpected = List.of(EntityId.fromGrpcTokenId(tokenCreated));
+		final var tokenAdjustmentsExpected = List.of(CurrencyAdjustments.fromGrpc(adjustments));
+
+		final var factory = new SyntheticTxnFactory();
+		final var syntheticTxn = factory.createCryptoTransfer(
+				Collections.emptyList(),
+				List.of(new SyntheticTxnFactory.HbarTransfer(1234L, payer, another)),
+				Collections.emptyList());
+		final var expectedHash = noThrowSha384HashOf(syntheticTxn.getSignedTransactionBytes().toByteArray());
+
+		final var record = subject.createSuccessfulSyntheticRecord(
+				syntheticTxn,
+				customFeesCharged,
+				sideEffectsTracker);
+
+		assertEquals(SUCCESS.toString(), record.getReceiptBuilder().getStatus());
+		assertArrayEquals(expectedHash, record.getTxnHash());
+		assertEquals(tokensExpected, record.getTokens());
+		assertEquals(tokenAdjustmentsExpected, record.getTokenAdjustments());
+		assertEquals(customFeesCharged, record.getAssessedCustomFees());
+	}
+
+	@Test
+	void createsFailedSyntheticRecordAsExpected() {
+		final var factory = new SyntheticTxnFactory();
+		final var syntheticTxn = factory.createCryptoTransfer(
+				Collections.emptyList(),
+				List.of(new SyntheticTxnFactory.HbarTransfer(1234L, payer, another)),
+				Collections.emptyList());
+		final var expectedHash = noThrowSha384HashOf(syntheticTxn.getSignedTransactionBytes().toByteArray());
+
+		final var record = subject.createFailedSyntheticRecord(
+				syntheticTxn, INSUFFICIENT_ACCOUNT_BALANCE);
+		assertEquals(INSUFFICIENT_ACCOUNT_BALANCE.toString(), record.getReceiptBuilder().getStatus());
+		assertArrayEquals(expectedHash, record.getTxnHash());
 	}
 
 	@Test
@@ -158,23 +200,11 @@ class ExpiringCreationsTest {
 	}
 
 	@Test
-	void noopFormDoesNothing() {
-		Assertions.assertThrows(UnsupportedOperationException.class, () ->
-				NOOP_EXPIRING_CREATIONS.saveExpiringRecord(
-						null, null, 0L, submittingMember));
-		Assertions.assertThrows(UnsupportedOperationException.class, () ->
-				NOOP_EXPIRING_CREATIONS.buildFailedExpiringRecord(null, null));
-		Assertions.assertThrows(UnsupportedOperationException.class, () ->
-				NOOP_EXPIRING_CREATIONS.createExpiringRecord(0L, null, null, null,
-						null, null, null));
-	}
-
-	@Test
 	void validateBuildFailedExpiringRecord() {
 		setUpForExpiringRecordBuilder();
 		given(accessor.getHash()).willReturn(hash);
 
-		final var builder = subject.buildFailedExpiringRecord(accessor, timestamp);
+		final var builder = subject.createInvalidFailureRecord(accessor, timestamp);
 		final var actualRecord = builder.build();
 
 		validateCommonFields(actualRecord, receiptBuilderWith(FAIL_INVALID));
@@ -185,7 +215,7 @@ class ExpiringCreationsTest {
 		setupTrackerNoTokenChanges();
 		setUpForExpiringRecordBuilder();
 
-		final var created = subject.createExpiringRecord(
+		final var created = subject.createTopLevelRecord(
 				totalFee,
 				hash,
 				accessor,
@@ -217,7 +247,7 @@ class ExpiringCreationsTest {
 		given(sideEffectsTracker.hasTrackedTokenSupply()).willReturn(true);
 		given(sideEffectsTracker.getTrackedTokenSupply()).willReturn(newTokenSupply);
 
-		final var created = subject.createExpiringRecord(
+		final var created = subject.createTopLevelRecord(
 				totalFee,
 				hash,
 				accessor,

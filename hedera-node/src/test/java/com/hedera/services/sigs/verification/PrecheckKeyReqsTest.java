@@ -20,6 +20,7 @@ package com.hedera.services.sigs.verification;
  * ‍
  */
 
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.exception.InvalidAccountIDException;
@@ -38,6 +39,7 @@ import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_R
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
@@ -114,10 +116,14 @@ class PrecheckKeyReqsTest {
 
 	@Test
 	void usesBothOrderForQueryPayments() throws Exception {
+		final JKey key1 = new JEd25519Key("firstKey".getBytes());
+		final JKey key2 = new JEd25519Key("secondKey".getBytes());
+		final JKey key3 = new JEd25519Key("thirdKey".getBytes());
+		final JKey key4 = new JEd25519Key("firstKey".getBytes());
 		given(keyOrder.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY))
-				.willReturn(new SigningOrderResult<>(PAYER_KEYS));
+				.willReturn(new SigningOrderResult<>(List.of(key1)));
 		given(keyOrderModuloRetry.keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY))
-				.willReturn(new SigningOrderResult<>(OTHER_KEYS));
+				.willReturn(new SigningOrderResult<>(List.of(key2, key3, key4)));
 		givenImpliedSubject(FOR_QUERY_PAYMENT);
 
 		// when:
@@ -128,7 +134,10 @@ class PrecheckKeyReqsTest {
 		verifyNoMoreInteractions(keyOrder);
 		verify(keyOrderModuloRetry).keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY);
 		verifyNoMoreInteractions(keyOrderModuloRetry);
-		assertEquals(keys, ALL_KEYS);
+		assertEquals(3, keys.size());
+		assertTrue(keys.contains(key1));
+		assertTrue(keys.contains(key2));
+		assertTrue(keys.contains(key3));
 	}
 
 	private void givenImpliedSubject(Predicate<TransactionBody> isQueryPayment) {

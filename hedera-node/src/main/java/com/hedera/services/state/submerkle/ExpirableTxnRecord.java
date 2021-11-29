@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.IntStream;
@@ -102,7 +103,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	}
 
 	public ExpirableTxnRecord(Builder builder) {
-		this.receipt = builder.receipt;
+		this.receipt = (builder.receiptBuilder != null) ? builder.receiptBuilder.build() : builder.receipt;
 		this.txnHash = builder.txnHash;
 		this.txnId = builder.txnId;
 		this.consensusTimestamp = builder.consensusTime;
@@ -316,7 +317,6 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	}
 
 	/* --- Object --- */
-
 	public EntityId getScheduleRef() {
 		return scheduleRef;
 	}
@@ -394,7 +394,6 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	}
 
 	/* --- FastCopyable --- */
-
 	@Override
 	public boolean isImmutable() {
 		return true;
@@ -484,6 +483,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 	public static class Builder {
 		private TxnReceipt receipt;
+		private TxnReceipt.Builder receiptBuilder;
+
 		private byte[] txnHash;
 		private TxnId txnId;
 		private RichInstant consensusTime;
@@ -521,6 +522,11 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 		public Builder setReceipt(TxnReceipt receipt) {
 			this.receipt = receipt;
+			return this;
+		}
+
+		public Builder setReceiptBuilder(TxnReceipt.Builder receiptBuilder) {
+			this.receiptBuilder = receiptBuilder;
 			return this;
 		}
 
@@ -578,13 +584,81 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			return new ExpirableTxnRecord(this);
 		}
 
-		public Builder clear() {
+		public Builder reset() {
 			fee = 0;
 			txnId = null;
 			txnHash = MISSING_TXN_HASH;
 			memo = null;
 			receipt = null;
 			consensusTime = null;
+
+			nullOutSideEffectFields();
+
+			return this;
+		}
+
+		public void revert() {
+			if (receiptBuilder == null) {
+				throw new IllegalStateException("Cannot revert a record with a built receipt");
+			}
+			receiptBuilder.revert();
+			nullOutSideEffectFields();
+		}
+
+		public void excludeHbarChangesFrom(final ExpirableTxnRecord.Builder that) {
+			final var adjustsHere = this.transferList.hbars.length;
+			final var adjustsThere = that.transferList.hbars.length;
+			final var maxAdjusts = adjustsHere + adjustsThere;
+			final var changedHere = this.transferList.accountIds;
+			final var changedThere = that.transferList.accountIds;
+
+			final var netAdjustsHere = new long[maxAdjusts];
+			final List<EntityId> netChanged = new ArrayList<>();
+
+			var i = 0;
+			var j = 0;
+			var k = 0;
+			while (i < adjustsHere && j < adjustsThere) {
+				final var iId = changedHere.get(i);
+				final var jId = changedThere.get(j);
+				final var cmp = ID_CMP.compare(iId, jId);
+				if (cmp == 0) {
+					final var net = this.transferList.hbars[i++] - that.transferList.hbars[j++];
+					if (net != 0) {
+						netAdjustsHere[k++] = net;
+						netChanged.add(iId);
+					}
+				} else if (cmp < 0) {
+					netAdjustsHere[k++] = this.transferList.hbars[i++];
+					netChanged.add(iId);
+				} else {
+					netAdjustsHere[k++] = -that.transferList.hbars[j++];
+					netChanged.add(jId);
+				}
+			}
+			/* Note that at most one of these loops can iterate a non-zero number of times,
+			* since if both did we could not have exited the prior loop. */
+			while (i < adjustsHere) {
+				final var iId = changedHere.get(i);
+				netAdjustsHere[k++] = this.transferList.hbars[i++];
+				netChanged.add(iId);
+			}
+			while (j < adjustsThere) {
+				final var jId = changedThere.get(j);
+				netAdjustsHere[k++] = -that.transferList.hbars[j++];
+				netChanged.add(jId);
+			}
+
+			this.transferList.hbars = Arrays.copyOfRange(netAdjustsHere, 0, k);
+			this.transferList.accountIds = netChanged;
+		}
+
+		public static final Comparator<EntityId> ID_CMP = Comparator
+				.comparingLong(EntityId::num)
+				.thenComparingLong(EntityId::shard)
+				.thenComparingLong(EntityId::realm);
+
+		private void nullOutSideEffectFields() {
 			transferList = null;
 			contractCallResult = null;
 			contractCreateResult = null;
@@ -594,7 +668,50 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			scheduleRef = NO_SCHEDULE_REF;
 			assessedCustomFees = NO_CUSTOM_FEES;
 			newTokenAssociations = NO_NEW_TOKEN_ASSOCIATIONS;
-			return this;
+		}
+
+		public CurrencyAdjustments getTransferList() {
+			return transferList;
+		}
+
+		public SolidityFnResult getContractCallResult() {
+			return contractCallResult;
+		}
+
+		public SolidityFnResult getContractCreateResult() {
+			return contractCreateResult;
+		}
+
+		public List<EntityId> getTokens() {
+			return tokens;
+		}
+
+		public List<CurrencyAdjustments> getTokenAdjustments() {
+			return tokenAdjustments;
+		}
+
+		public List<NftAdjustments> getNftTokenAdjustments() {
+			return nftTokenAdjustments;
+		}
+
+		public EntityId getScheduleRef() {
+			return scheduleRef;
+		}
+
+		public List<FcAssessedCustomFee> getAssessedCustomFees() {
+			return assessedCustomFees;
+		}
+
+		public List<FcTokenAssociation> getNewTokenAssociations() {
+			return newTokenAssociations;
+		}
+
+		public TxnReceipt.Builder getReceiptBuilder() {
+			return receiptBuilder;
+		}
+
+		public byte[] getTxnHash() {
+			return txnHash;
 		}
 	}
 

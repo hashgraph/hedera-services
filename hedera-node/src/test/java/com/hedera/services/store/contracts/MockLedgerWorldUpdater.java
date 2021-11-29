@@ -20,7 +20,6 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
@@ -34,11 +33,6 @@ public class MockLedgerWorldUpdater
 	@Override
 	protected HederaWorldState.WorldStateAccount getForMutation(Address address) {
 		return wrappedWorldView().get(address);
-	}
-
-	@Override
-	public void revert() {
-		throw new NotImplementedException("This is just a mock!");
 	}
 
 	@Override

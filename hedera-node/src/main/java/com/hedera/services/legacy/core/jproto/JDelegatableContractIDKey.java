@@ -25,22 +25,22 @@ import com.hederahashgraph.api.proto.java.ContractID;
 /**
  * Maps to proto Key of type contractID.
  */
-public class JDelegateContractIDKey extends JContractIDKey {
-	public JDelegateContractIDKey(final ContractID contractID) {
+public class JDelegatableContractIDKey extends JContractIDKey {
+	public JDelegatableContractIDKey(final ContractID contractID) {
 		super(contractID);
 	}
 
-	public JDelegateContractIDKey(final long shardNum, final long realmNum, final long contractNum) {
+	public JDelegatableContractIDKey(final long shardNum, final long realmNum, final long contractNum) {
 		super(shardNum, realmNum, contractNum);
 	}
 
 	@Override
-	public JDelegateContractIDKey getDelegateContractIDKey() {
+	public JDelegatableContractIDKey getDelegatableContractIdKey() {
 		return this;
 	}
 
 	@Override
-	public boolean hasDelegateContractID() {
+	public boolean hasDelegatableContractId() {
 		return true;
 	}
 
@@ -56,6 +56,6 @@ public class JDelegateContractIDKey extends JContractIDKey {
 
 	@Override
 	public String toString() {
-		return "<JDelegateContractID: " + getShardNum() + "." + getRealmNum() + "." + getContractNum() + ">";
+		return "<JDelegatableContractId: " + getShardNum() + "." + getRealmNum() + "." + getContractNum() + ">";
 	}
 }

@@ -29,13 +29,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class JDelegateContractIDKeyTest {
+class JDelegatableContractIDKeyTest {
 	private final ContractID id = IdUtils.asContract("0.0.1234");
 
 	@Test
 	void constructorsWork() {
-		final var subject1 = new JDelegateContractIDKey(id);
-		final var subject2 = new JDelegateContractIDKey(id.getShardNum(), id.getRealmNum(), id.getContractNum());
+		final var subject1 = new JDelegatableContractIDKey(id);
+		final var subject2 = new JDelegatableContractIDKey(id.getShardNum(), id.getRealmNum(), id.getContractNum());
 
 		assertEquals(id, subject1.getContractID());
 		assertEquals(id, subject2.getContractID());
@@ -46,29 +46,29 @@ class JDelegateContractIDKeyTest {
 		assertEquals(1234, subject1.getContractNum());
 		assertEquals(1234, subject2.getContractNum());
 
-		assertTrue(subject1.hasDelegateContractID());
-		assertTrue(subject2.hasDelegateContractID());
+		assertTrue(subject1.hasDelegatableContractId());
+		assertTrue(subject2.hasDelegatableContractId());
 	}
 
 	@Test
 	void toStringWorks() {
-		final var desired = "<JDelegateContractID: 0.0.1234>";
-		final var subject = new JDelegateContractIDKey(id);
+		final var desired = "<JDelegatableContractId: 0.0.1234>";
+		final var subject = new JDelegatableContractIDKey(id);
 
 		assertEquals(desired, subject.toString());
 	}
 
 	@Test
 	void isNotAPureContractIdKey() {
-		final var subject = new JDelegateContractIDKey(id);
+		final var subject = new JDelegatableContractIDKey(id);
 		assertFalse(subject.hasContractID());
 		assertNull(subject.getContractIDKey());
 	}
 
 	@Test
 	void isEmptyAndValidAreOpposites() {
-		final var nonEmptySubject = new JDelegateContractIDKey(0, 0, 1);
-		final var emptySubject = new JDelegateContractIDKey(0, 0, 0);
+		final var nonEmptySubject = new JDelegatableContractIDKey(0, 0, 1);
+		final var emptySubject = new JDelegatableContractIDKey(0, 0, 0);
 		assertTrue(emptySubject.isEmpty());
 		assertFalse(nonEmptySubject.isEmpty());
 		assertFalse(emptySubject.isValid());

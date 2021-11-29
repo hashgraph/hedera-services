@@ -32,7 +32,7 @@ public interface SoliditySigsVerifier {
 	 * the given recipient and contract of the current {@link org.hyperledger.besu.evm.frame.MessageFrame}.
 	 *
 	 * If the account's key includes a {@code contractID} key matching the contract address, or a
-	 * {@code delegateContractID} key matching the recipient address, then those keys must be treated
+	 * {@code delegatableContractId} key matching the recipient address, then those keys must be treated
 	 * as active for the purposes of this test.
 	 *
 	 * Does <b>not</b> perform any synchronous signature verification.
@@ -50,7 +50,7 @@ public interface SoliditySigsVerifier {
 	 * given recipient and contract of the current {@link org.hyperledger.besu.evm.frame.MessageFrame}.
 	 *
 	 * If the account's key includes a {@code contractID} key matching the contract address, or a
-	 * {@code delegateContractID} key matching the recipient address, then those keys must be treated
+	 * {@code delegatableContractId} key matching the recipient address, then those keys must be treated
 	 * as active for the purposes of this test.
 	 *
 	 * Does <b>not</b> perform any synchronous signature verification.
@@ -68,7 +68,7 @@ public interface SoliditySigsVerifier {
 	 * the given recipient and contract of the current {@link org.hyperledger.besu.evm.frame.MessageFrame}.
 	 *
 	 * If the supply key includes a {@code contractID} key matching the contract address, or a
-	 * {@code delegateContractID} key matching the recipient address, then those keys must be treated
+	 * {@code delegatableContractId} key matching the recipient address, then those keys must be treated
 	 * as active for the purposes of this test.
 	 *
 	 * Does <b>not</b> perform any synchronous signature verification.

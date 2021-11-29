@@ -127,10 +127,7 @@ public class HederaLedger {
 
 	private UniqTokenViewsManager tokenViewsManager = null;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger = null;
-	private TransactionalLedger<
-			Pair<AccountID, TokenID>,
-			TokenRelProperty,
-			MerkleTokenRelStatus> tokenRelsLedger = null;
+	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger = null;
 
 	private TransferLogic transferLogic;
 
@@ -203,9 +200,8 @@ public class HederaLedger {
 
 	public void commit() {
 		throwIfPendingStateIsInconsistent();
-		historian.finalizeExpirableTransactionRecord();
 		accountsLedger.commit();
-		historian.saveExpirableTransactionRecord();
+		historian.saveExpirableTransactionRecords();
 		historian.noteNewExpirationEvents();
 		if (tokenRelsLedger != null && tokenRelsLedger.isInTransaction()) {
 			tokenRelsLedger.commit();

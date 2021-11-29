@@ -39,6 +39,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class BackingNftsTest {
@@ -128,5 +130,10 @@ class BackingNftsTest {
 
 		// then:
 		assertFalse(subject.contains(aNftId));
+	}
+
+	@Test
+	void sizePropagatesCallToDelegate() {
+		assertEquals(delegate.size(), subject.size());
 	}
 }
