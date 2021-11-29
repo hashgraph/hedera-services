@@ -24,7 +24,6 @@ package com.hedera.services.store.contracts.precompile;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.contracts.sources.SoliditySigsVerifier;
 import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.records.AccountRecordsHistorian;
@@ -33,10 +32,12 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
+import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.Token;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.services.txns.token.AssociateLogic;
+import com.hedera.services.txns.token.DissociateLogic;
+import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -67,7 +68,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private final UniqTokenViewsManager uniqTokenViewsManager;
 	private final TypedTokenStore.LegacyTreasuryAdder addKnownTreasury;
 	private final TypedTokenStore.LegacyTreasuryRemover delegate;
-	private final SoliditySigsVerifier sigsVerifier;
+	private final DissociationFactory dissociationFactory;
+	private final SyntheticTxnFactory syntheticTxnFactory;
+	private final TxnAwareSoliditySigsVerifier sigsVerifier;
 	private final ExpiringCreations creator;
 	private final AccountRecordsHistorian recordsHistorian;
 
@@ -101,6 +104,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 								  final UniqTokenViewsManager uniqTokenViewsManager,
 								  final TypedTokenStore.LegacyTreasuryAdder legacyStoreDelegate,
 								  final TypedTokenStore.LegacyTreasuryRemover delegate,
+								  final DissociationFactory dissociationFactory,
+								  final SyntheticTxnFactory syntheticTxnFactory,
 								  final TxnAwareSoliditySigsVerifier sigsVerifier,
 								  final ExpiringCreations creator,
 								  final AccountRecordsHistorian recordsHistorian) {
@@ -110,6 +115,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.uniqTokenViewsManager = uniqTokenViewsManager;
 		this.addKnownTreasury = legacyStoreDelegate;
 		this.delegate = delegate;
+		this.dissociationFactory = dissociationFactory;
+		this.syntheticTxnFactory = syntheticTxnFactory;
 		this.sigsVerifier = sigsVerifier;
 		this.creator = creator;
 		this.recordsHistorian = recordsHistorian;
@@ -275,11 +282,57 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@SuppressWarnings("unused")
 	protected Bytes computeDissociateToken(final Bytes input, final MessageFrame messageFrame) {
+		/* Step 1 */
 		final Bytes address = Address.wrap(input.slice(16, 20));
 		final Bytes tokenAddress = Address.wrap(input.slice(48, 20));
-		final var accountID = EntityIdUtils.accountParsedFromSolidityAddress(address.toArrayUnsafe());
-		final var tokenID =
-				Id.fromGrpcToken(EntityIdUtils.tokenParsedFromSolidityAddress(tokenAddress.toArrayUnsafe()));
-		return null;
+//		final var contract = messageFrame.getContractAddress();
+//		final var recipient = messageFrame.getRecipientAddress();
+		final var updater = (AbstractLedgerWorldUpdater) messageFrame.getWorldUpdater();
+
+		final var accountID = Id.fromGrpcAccount(EntityIdUtils.accountParsedFromSolidityAddress(address.toArrayUnsafe()));
+		final var tokenID = EntityIdUtils.tokenParsedFromSolidityAddress(tokenAddress.toArrayUnsafe());
+
+		final var nftsLedger =
+				((HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater()).wrappedTrackingLedgers().nfts();
+		final var tokenRelsLedger =
+				((HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater()).wrappedTrackingLedgers().tokenRels();
+		final var tokensLedger =
+				((HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater()).wrappedTrackingLedgers().tokens();
+		final var accountsLedger
+				= ((HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater()).wrappedTrackingLedgers().accounts();
+
+		final var accountStore = new AccountStore(validator, dynamicProperties, accountsLedger);
+
+		/* Step 2 */
+//		final var syntheticTxn = syntheticTxnFactory.createCryptoTransfer();
+		Bytes result;
+		ExpirableTxnRecord.Builder childRecord;
+
+		try {
+
+			/* Step 3 */
+			// E.g., if this is a tokenAssociate for account "associatingId":
+//			final var hasRequiredSigs = sigsVerifier.hasActiveKey(associatingId, recipient, contract);
+//			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
+
+			/* Step 4 */
+			final var sideEffects = new SideEffectsTracker();
+			final var tokenStore = new TypedTokenStore(accountStore, tokensLedger, nftsLedger, tokenRelsLedger,
+					uniqTokenViewsManager, addKnownTreasury, delegate, sideEffects);
+
+			DissociateLogic dissociateLogic = new DissociateLogic(validator, tokenStore, accountStore, dissociationFactory);
+			dissociateLogic.dissociate(accountID, Collections.singletonList(tokenID));
+
+			/* STEP 5: Summarize the results of the execution */
+//			childRecord = creator.createSuccessfulSyntheticRecord(syntheticTxn, customFees, sideEffects);
+			result = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
+		} catch (InvalidTransactionException e) {
+//			childRecord = creator.createFailedSyntheticRecord(syntheticTxn, e.getResponseCode());
+			result = UInt256.valueOf(e.getResponseCode().getNumber());
+		}
+		/* --- STEP 6: Track the child record and return --- */
+//		updater.manageInProgressRecord(recordsHistorian, childRecord, syntheticTxn);
+
+		return result;
 	}
 }
