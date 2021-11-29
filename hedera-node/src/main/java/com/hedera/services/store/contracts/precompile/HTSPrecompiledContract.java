@@ -63,27 +63,27 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final OptionValidator validator;
 
-	// "cryptoTransfer((address,(address,int64)[], (address,address,int64)[])[])"
+	//cryptoTransfer(TokenTransferList[] calldata tokenTransfers)
 	protected static final int ABI_ID_CRYPTO_TRANSFER = 0x189a554c;
-	// "transferTokens(address,address[],int64[])"
+	//transferTokens(address token, address[] calldata accountId, int64[] calldata amount)
 	protected static final int ABI_ID_TRANSFER_TOKENS = 0x82bba493;
-	// "transferToken(address,address,address,int64)"
+	//transferToken(address token, address sender, address recipient, int64 amount)
 	protected static final int ABI_ID_TRANSFER_TOKEN = 0xeca36917;
-	// "transferNFTs(address,address[],address[],int64[])"
+	//transferNFTs(address token, address[] calldata sender, address[] calldata receiver, int64[] calldata serialNumber)
 	protected static final int ABI_ID_TRANSFER_NFTS = 0x2c4ba191;
-	// "transferNFT(address,address,address,int64)"
+	//transferNFT(address token,  address sender, address recipient, int64 serialNum)
 	protected static final int ABI_ID_TRANSFER_NFT = 0x7c502795;
-	// "mintToken(address,uint64,bytes)"
+	//mintToken(address token, uint64 amount, bytes calldata metadata)
 	protected static final int ABI_ID_MINT_TOKEN = 0x36dcedf0;
-	// "burnToken(address,uint64,int64[])"
+	//burnToken(address token, uint64 amount, int64[] calldata serialNumbers)
 	protected static final int ABI_ID_BURN_TOKEN = 0xacb9cff9;
-	// "associateTokens(address,address[])"
+	//associateTokens(address account, address[] calldata tokens)
 	protected static final int ABI_ID_ASSOCIATE_TOKENS = 0x2e63879b;
-	// "associateToken(address,address[])"
+	//associateToken(address account, address token)
 	protected static final int ABI_ID_ASSOCIATE_TOKEN = 0x49146bde;
-	// "dissociateTokens(address,address[])"
+	//dissociateTokens(address account, address[] calldata tokens)
 	protected static final int ABI_ID_DISSOCIATE_TOKENS = 0x78b63918;
-	// "dissociateToken(address,address[])"
+	//dissociateToken(address account, address token)
 	protected static final int ABI_ID_DISSOCIATE_TOKEN = 0x099794e8;
 
 	@Inject
