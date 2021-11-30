@@ -50,7 +50,6 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
-import com.hedera.test.utils.TestFileUtils;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.NodeId;
@@ -76,7 +75,6 @@ import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.function.Consumer;
 
-import static com.hedera.services.ServicesState.CANONICAL_JDB_LOC;
 import static com.hedera.services.context.AppsManager.APPS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -99,7 +97,6 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 @ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class ServicesStateTest {
-	private static final String TEST_JDB_LOC = "ServicesState-test-jdb";
 	private final Instant creationTime = Instant.ofEpochSecond(1_234_567L, 8);
 	private final Instant consensusTime = Instant.ofEpochSecond(2_345_678L, 9);
 	private final NodeId selfId = new NodeId(false, 1L);
@@ -444,7 +441,7 @@ class ServicesStateTest {
 		subject.migrate();
 
 		verify(blobMigrator).migrateFromBinaryObjectStore(
-				subject, CANONICAL_JDB_LOC, StateVersions.RELEASE_0190_VERSION);
+				subject, StateVersions.RELEASE_0190_VERSION);
 		verify(subject).init(platform, addressBook, dualState);
 		ServicesState.setBlobMigrator(ReleaseTwentyMigration::migrateFromBinaryObjectStore);
 	}
@@ -452,8 +449,6 @@ class ServicesStateTest {
 	@Test
 	void genesisInitCreatesChildren() throws IOException {
 		// setup:
-		TestFileUtils.blowAwayDirIfPresent(TEST_JDB_LOC);
-		ServicesState.setJdbLoc(TEST_JDB_LOC);
 		ServicesState.setAppBuilder(() -> appBuilder);
 
 		given(appBuilder.bootstrapProps(any())).willReturn(appBuilder);
@@ -498,9 +493,7 @@ class ServicesStateTest {
 		assertTrue(APPS.includes(selfId.getId()));
 
 		// cleanup:
-		ServicesState.setJdbLoc(CANONICAL_JDB_LOC);
 		ServicesState.setAppBuilder(DaggerServicesApp::builder);
-		TestFileUtils.blowAwayDirIfPresent(TEST_JDB_LOC);
 	}
 
 	@Test

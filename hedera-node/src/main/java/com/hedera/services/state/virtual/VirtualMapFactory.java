@@ -28,9 +28,6 @@ import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
 
-import java.io.File;
-import java.nio.file.Paths;
-
 public class VirtualMapFactory {
 	private static final short CURRENT_SERIALIZATION_VERSION = 1;
 
@@ -38,22 +35,17 @@ public class VirtualMapFactory {
 	private static final long MAX_STORAGE_ENTRIES = 500_000_000;
 	private static final long MAX_IN_MEMORY_INTERNAL_HASHES = 0;
 
-	private static final String BLOBS_VM_NAME = "blobs";
-	private static final String STORAGE_VM_NAME = "storage";
+	private static final String BLOBS_VM_NAME = "fileStore";
+	private static final String STORAGE_VM_NAME = "smartContractKvStore";
 
 	@FunctionalInterface
 	public interface JasperDbBuilderFactory {
 		<K extends VirtualKey<K>, V extends VirtualValue> JasperDbBuilder<K, V> newJdbBuilder();
 	}
 
-	private final String jdbDataLoc;
 	private final JasperDbBuilderFactory jdbBuilderFactory;
 
-	public VirtualMapFactory(
-			final String jdbDataLoc,
-			final JasperDbBuilderFactory jdbBuilderFactory
-	) {
-		this.jdbDataLoc = jdbDataLoc;
+	public VirtualMapFactory(final JasperDbBuilderFactory jdbBuilderFactory) {
 		this.jdbBuilderFactory = jdbBuilderFactory;
 	}
 
@@ -76,7 +68,6 @@ public class VirtualMapFactory {
 				.virtualLeafRecordSerializer(blobLeafRecordSerializer)
 				.virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
 				.keySerializer(blobKeySerializer)
-				.storageDir(Paths.get(blobsLoc()))
 				.maxNumOfKeys(MAX_BLOBS)
 				.preferDiskBasedIndexes(false)
 				.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES)
@@ -103,19 +94,10 @@ public class VirtualMapFactory {
 				.virtualLeafRecordSerializer(storageLeafRecordSerializer)
 				.virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
 				.keySerializer(storageKeySerializer)
-				.storageDir(Paths.get(storageLoc()))
 				.maxNumOfKeys(MAX_STORAGE_ENTRIES)
 				.preferDiskBasedIndexes(false)
 				.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES)
 				.mergingEnabled(true);
 		return new VirtualMap<>(STORAGE_VM_NAME, dsBuilder);
-	}
-
-	private String blobsLoc() {
-		return jdbDataLoc + File.separator + BLOBS_VM_NAME;
-	}
-
-	private String storageLoc() {
-		return jdbDataLoc + File.separator + STORAGE_VM_NAME;
 	}
 }

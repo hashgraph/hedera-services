@@ -25,6 +25,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -133,12 +134,12 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 
 		byte[] callData = (abi != FALLBACK_ABI)
 				? CallTransaction.Function.fromJsonInterface(abi).encode(params) : new byte[] { };
-
+		final var id = TxnUtils.asContractId(contract, spec);
 		ContractCallTransactionBody opBody = spec
 				.txns()
 				.<ContractCallTransactionBody, ContractCallTransactionBody.Builder>body(
 						ContractCallTransactionBody.class, builder -> {
-							builder.setContractID(spec.registry().getContractId(contract));
+							builder.setContractID(id);
 							builder.setFunctionParameters(ByteString.copyFrom(callData));
 							sentTinyHbars.ifPresent(a -> builder.setAmount(a));
 							gas.ifPresent(a -> builder.setGas(a));

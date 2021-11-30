@@ -103,8 +103,8 @@ public class ContractCreateSuite extends HapiApiSuite {
 						createsVanillaContractAsExpectedWithOmittedAdminKey(),
 						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
 						cannotCreateTooLargeContract(),
-						canCallPendingContractSafely(),
 						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
+						canCallPendingContractSafely(),
 				}
 		);
 	}
