@@ -735,13 +735,9 @@ workflows:
           filters:
             branches:
               only:
-                - 2515-M-kill-instances-every-6hrs
-    jobs:
-      - build-platform-and-services:
-          filters:
-            branches:
-              only:
                 - master
+    jobs:
+      - build-platform-and-services
       - jrs_gcp_machine_cleanup:
           name: GCP-Machine-Cleanup
           context: Slack
