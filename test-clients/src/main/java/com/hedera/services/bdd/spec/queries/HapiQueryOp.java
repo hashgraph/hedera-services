@@ -452,7 +452,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 		return self();
 	}
 
-	public T yahcliLogging() {
+	public T withYahcliLogging() {
 		yahcliLogger = true;
 		return self();
 	}

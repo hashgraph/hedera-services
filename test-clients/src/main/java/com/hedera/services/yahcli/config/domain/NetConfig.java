@@ -30,10 +30,10 @@ import java.util.Map;
 import static java.util.stream.Collectors.joining;
 
 public class NetConfig {
-	public static final Integer TRAD_DEFAULT_NODE_ACCOUNT = 3;
+	public static final Integer TRADITIONAL_DEFAULT_NODE_ACCOUNT = 3;
 
 	private String defaultPayer;
-	private Integer defaultNodeAccount = TRAD_DEFAULT_NODE_ACCOUNT;
+	private Integer defaultNodeAccount = TRADITIONAL_DEFAULT_NODE_ACCOUNT;
 	private List<NodeConfig> nodes;
 
 	public String getDefaultPayer() {

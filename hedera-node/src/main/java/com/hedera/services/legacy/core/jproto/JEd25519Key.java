@@ -22,6 +22,8 @@ package com.hedera.services.legacy.core.jproto;
 
 import com.swirlds.common.CommonUtils;
 
+import java.util.Arrays;
+
 /**
  * Maps to proto Key of type ed25519.
  */
@@ -63,5 +65,22 @@ public class JEd25519Key extends JKey {
 				return true;
 			}
 		}
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (o == this) {
+			return true;
+		}
+		if (o == null || JEd25519Key.class != o.getClass()) {
+			return false;
+		}
+		final var that = (JEd25519Key) o;
+		return Arrays.equals(this.ed25519, that.ed25519);
+	}
+
+	@Override
+	public int hashCode() {
+		return Arrays.hashCode(ed25519);
 	}
 }

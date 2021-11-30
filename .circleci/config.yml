@@ -956,6 +956,52 @@ workflows:
             - attach_workspace:
                 at: /
 
+  GCP-Daily-Services-Comp-Update-Reconnect-Abort-4N-2C:
+    triggers:
+      - schedule:
+          cron: "15 23 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_2C/UpdateReconnectAbort
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Comp-Update-Reconnect-Abort-4N-2C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+  GCP-Daily-Services-Comp-Update-Reconnect-Abort-DisPreUpdate-4N-2C:
+    triggers:
+      - schedule:
+          cron: "30 23 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_2C/UpdateReconnectAbortDisPreUpdate
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Comp-Update-Reconnect-Abort-DisPreUpdate-4N-2C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
   GCP-Daily-Services-Account-Balances-client-validation-6N-1C:
     triggers:
       - schedule:
@@ -1189,7 +1235,7 @@ workflows:
             - attach_workspace:
                 at: /
 
-  GCP-Daily-Services-Comp-Reconnect-Correctness-6N-1C:
+  GCP-Daily-Services-Comp-NI-Reconnect-Correctness-6N-1C:
     triggers:
       - schedule:
           cron: "25 11 * * *"
@@ -1202,9 +1248,32 @@ workflows:
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/6N_1C/ReconnectCorrectness
+          result_path: results/6N_1C/NIReconnectCorrectness
           config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Comp-Reconnect-Correctness-6N-1C"
+          workflow-name: "GCP-Daily-Services-Comp-NI-Reconnect-Correctness-6N-1C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+  GCP-Daily-Services-Comp-ND-Reconnect-Correctness-6N-1C:
+    triggers:
+      - schedule:
+          cron: "25 8 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/6N_1C/NDReconnectCorrectness
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Comp-ND-Reconnect-Correctness-6N-1C"
           requires:
             - build-platform-and-services
           pre-steps:

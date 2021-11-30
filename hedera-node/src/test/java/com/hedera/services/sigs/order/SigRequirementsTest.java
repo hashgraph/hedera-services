@@ -42,8 +42,8 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.auth.SystemOpPolicies;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -61,6 +61,7 @@ import java.util.function.Function;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static com.hedera.test.factories.scenarios.BadPayerScenarios.INVALID_PAYER_ID_SCENARIO;
+import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_PAYER_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_ADMIN_KEY_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO;
@@ -86,15 +87,16 @@ import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenario
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.TOKEN_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.TOKEN_FREEZE_KT;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.TOKEN_KYC_KT;
+import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.TOKEN_PAUSE_KT;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.TOKEN_REPLACE_KT;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.TOKEN_SUPPLY_KT;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.TOKEN_TREASURY_KT;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.TOKEN_WIPE_KT;
-import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.TOKEN_PAUSE_KT;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.UPDATE_TOPIC_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.ConsensusUpdateTopicScenarios.CONSENSUS_UPDATE_TOPIC_EXPIRY_ONLY_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusUpdateTopicScenarios.CONSENSUS_UPDATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusUpdateTopicScenarios.CONSENSUS_UPDATE_TOPIC_MISSING_TOPIC_SCENARIO;
+import static com.hedera.test.factories.scenarios.ConsensusUpdateTopicScenarios.CONSENSUS_UPDATE_TOPIC_NEW_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_PAYER_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusUpdateTopicScenarios.CONSENSUS_UPDATE_TOPIC_NEW_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusUpdateTopicScenarios.CONSENSUS_UPDATE_TOPIC_NEW_ADMIN_KEY_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusUpdateTopicScenarios.CONSENSUS_UPDATE_TOPIC_SCENARIO;
@@ -119,7 +121,10 @@ import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_C
 import static com.hedera.test.factories.scenarios.CryptoDeleteScenarios.CRYPTO_DELETE_MISSING_RECEIVER_SIG_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoDeleteScenarios.CRYPTO_DELETE_MISSING_TARGET;
 import static com.hedera.test.factories.scenarios.CryptoDeleteScenarios.CRYPTO_DELETE_NO_TARGET_RECEIVER_SIG_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoDeleteScenarios.CRYPTO_DELETE_NO_TARGET_RECEIVER_SIG_SELF_PAID_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoDeleteScenarios.CRYPTO_DELETE_TARGET_RECEIVER_SIG_RECEIVER_PAID_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoDeleteScenarios.CRYPTO_DELETE_TARGET_RECEIVER_SIG_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoDeleteScenarios.CRYPTO_DELETE_TARGET_RECEIVER_SIG_SELF_PAID_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_MISSING_ACCOUNT_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_NO_RECEIVER_SIG_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO;
@@ -140,12 +145,14 @@ import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDERS;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_MISSING_ACCOUNT_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_NO_NEW_KEY_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_NO_NEW_KEY_SELF_PAID_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_SYS_ACCOUNT_WITH_NEW_KEY_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_SYS_ACCOUNT_WITH_NO_NEW_KEY_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_SYS_ACCOUNT_WITH_PRIVILEGED_PAYER;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_TREASURY_ACCOUNT_WITH_TREASURY_AND_NEW_KEY;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_TREASURY_ACCOUNT_WITH_TREASURY_AND_NO_NEW_KEY;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_WITH_NEW_KEY_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_WITH_NEW_KEY_SELF_PAID_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileAppendScenarios.FILE_APPEND_MISSING_TARGET_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileAppendScenarios.IMMUTABLE_FILE_APPEND_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileAppendScenarios.MASTER_SYS_FILE_APPEND_SCENARIO;
@@ -168,6 +175,7 @@ import static com.hedera.test.factories.scenarios.ScheduleCreateScenarios.SCHEDU
 import static com.hedera.test.factories.scenarios.ScheduleCreateScenarios.SCHEDULE_CREATE_XFER_NO_ADMIN;
 import static com.hedera.test.factories.scenarios.ScheduleCreateScenarios.SCHEDULE_CREATE_XFER_WITH_ADMIN;
 import static com.hedera.test.factories.scenarios.ScheduleCreateScenarios.SCHEDULE_CREATE_XFER_WITH_ADMIN_AND_PAYER;
+import static com.hedera.test.factories.scenarios.ScheduleCreateScenarios.SCHEDULE_CREATE_XFER_WITH_ADMIN_AND_PAYER_AS_SELF;
 import static com.hedera.test.factories.scenarios.ScheduleCreateScenarios.SCHEDULE_CREATE_XFER_WITH_MISSING_PAYER;
 import static com.hedera.test.factories.scenarios.ScheduleDeleteScenarios.SCHEDULE_DELETE_WITH_KNOWN_SCHEDULE;
 import static com.hedera.test.factories.scenarios.ScheduleDeleteScenarios.SCHEDULE_DELETE_WITH_MISSING_SCHEDULE;
@@ -180,12 +188,15 @@ import static com.hedera.test.factories.scenarios.SystemDeleteScenarios.SYSTEM_D
 import static com.hedera.test.factories.scenarios.SystemUndeleteScenarios.SYSTEM_UNDELETE_FILE_SCENARIO;
 import static com.hedera.test.factories.scenarios.TokenAssociateScenarios.TOKEN_ASSOCIATE_WITH_KNOWN_TARGET;
 import static com.hedera.test.factories.scenarios.TokenAssociateScenarios.TOKEN_ASSOCIATE_WITH_MISSING_TARGET;
+import static com.hedera.test.factories.scenarios.TokenAssociateScenarios.TOKEN_ASSOCIATE_WITH_SELF_PAID_KNOWN_TARGET;
 import static com.hedera.test.factories.scenarios.TokenBurnScenarios.BURN_WITH_SUPPLY_KEYED_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_MISSING_ADMIN;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_ADMIN_AND_FREEZE;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_ADMIN_ONLY;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_AUTO_RENEW;
+import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_AUTO_RENEW_AS_PAYER;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ;
+import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ_BUT_USING_WILDCARD_DENOM;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FRACTIONAL_FEE_COLLECTOR_NO_SIG_REQ;
@@ -196,13 +207,17 @@ import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CRE
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_WILDCARD_AND_NO_SIG_REQ;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_NO_SIG_REQ_NO_FALLBACK;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_SIG_REQ_NO_FALLBACK;
+import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_TREASURY_AS_PAYER;
 import static com.hedera.test.factories.scenarios.TokenDeleteScenarios.DELETE_WITH_KNOWN_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenDeleteScenarios.DELETE_WITH_MISSING_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenDeleteScenarios.DELETE_WITH_MISSING_TOKEN_ADMIN_KEY;
 import static com.hedera.test.factories.scenarios.TokenDissociateScenarios.TOKEN_DISSOCIATE_WITH_KNOWN_TARGET;
 import static com.hedera.test.factories.scenarios.TokenDissociateScenarios.TOKEN_DISSOCIATE_WITH_MISSING_TARGET;
+import static com.hedera.test.factories.scenarios.TokenDissociateScenarios.TOKEN_DISSOCIATE_WITH_SELF_PAID_KNOWN_TARGET;
 import static com.hedera.test.factories.scenarios.TokenFeeScheduleUpdateScenarios.UPDATE_TOKEN_FEE_SCHEDULE_BUT_TOKEN_DOESNT_EXIST;
 import static com.hedera.test.factories.scenarios.TokenFeeScheduleUpdateScenarios.UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_NO_FEE_COLLECTOR_SIG_REQ;
+import static com.hedera.test.factories.scenarios.TokenFeeScheduleUpdateScenarios.UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_SIG_REQ;
+import static com.hedera.test.factories.scenarios.TokenFeeScheduleUpdateScenarios.UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER;
 import static com.hedera.test.factories.scenarios.TokenFeeScheduleUpdateScenarios.UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_MISSING_FEE_COLLECTOR;
 import static com.hedera.test.factories.scenarios.TokenFeeScheduleUpdateScenarios.UPDATE_TOKEN_WITH_NO_FEE_SCHEDULE_KEY;
 import static com.hedera.test.factories.scenarios.TokenFreezeScenarios.VALID_FREEZE_WITH_EXTANT_TOKEN;
@@ -216,8 +231,10 @@ import static com.hedera.test.factories.scenarios.TokenUnfreezeScenarios.VALID_U
 import static com.hedera.test.factories.scenarios.TokenUnpauseScenarios.VALID_UNPAUSE_WITH_EXTANT_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.TOKEN_UPDATE_WITH_MISSING_AUTO_RENEW_ACCOUNT;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.TOKEN_UPDATE_WITH_NEW_AUTO_RENEW_ACCOUNT;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.TOKEN_UPDATE_WITH_NEW_AUTO_RENEW_ACCOUNT_AS_PAYER;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_REPLACING_ADMIN_KEY;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_REPLACING_TREASURY;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_REPLACING_TREASURY_AS_PAYER;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_REPLACING_WITH_MISSING_TREASURY;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_FREEZE_KEYED_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_KYC_KEYED_TOKEN;
@@ -392,7 +409,7 @@ class SigRequirementsTest {
 
 		// then:
 		assertThat(sanityRestored(payerSummary.getOrderedKeys()), contains(DEFAULT_PAYER_KT.asKey()));
-		assertThat(sanityRestored(nonPayerSummary.getOrderedKeys()), contains(DEFAULT_PAYER_KT.asKey()));
+		assertTrue(sanityRestored(nonPayerSummary.getOrderedKeys()).isEmpty());
 	}
 
 	@Test
@@ -404,9 +421,8 @@ class SigRequirementsTest {
 		final var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
-		assertThat(
-				sanityRestored(summary.getOrderedKeys()),
-				contains(DEFAULT_PAYER_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+		assertThat(sanityRestored(summary.getOrderedKeys()), contains(RECEIVER_SIG_KT.asKey()));
+		assertFalse(sanityRestored(summary.getOrderedKeys()).contains(DEFAULT_PAYER_KT.asKey()));
 	}
 
 	@Test
@@ -458,9 +474,10 @@ class SigRequirementsTest {
 		final var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
-		assertThat(
-				sanityRestored(summary.getOrderedKeys()),
-				contains(FIRST_TOKEN_SENDER_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+		assertTrue(sanityRestored(summary.getOrderedKeys()).contains(SECOND_TOKEN_SENDER_KT.asKey()));
+		assertTrue(sanityRestored(summary.getOrderedKeys()).contains(RECEIVER_SIG_KT.asKey()));
+		assertTrue(sanityRestored(summary.getOrderedKeys()).contains(FIRST_TOKEN_SENDER_KT.asKey()));
+		assertFalse(sanityRestored(summary.getOrderedKeys()).contains(DEFAULT_PAYER_KT.asKey()));
 	}
 
 	@Test
@@ -603,6 +620,19 @@ class SigRequirementsTest {
 	}
 
 	@Test
+	void getsCryptoUpdateNewKeySelfPaidReturnsJustTheNewKey() throws Throwable {
+		// given:
+		setupFor(CRYPTO_UPDATE_WITH_NEW_KEY_SELF_PAID_SCENARIO);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(sanityRestored(summary.getOrderedKeys()), contains(NEW_ACCOUNT_KT.asKey()));
+		assertFalse(sanityRestored(summary.getOrderedKeys()).contains(DEFAULT_PAYER_KT.asKey()));
+	}
+
+	@Test
 	void getsCryptoUpdateProtectedSysAccountNewKey() throws Throwable {
 		setupFor(CRYPTO_UPDATE_SYS_ACCOUNT_WITH_NEW_KEY_SCENARIO);
 
@@ -671,6 +701,17 @@ class SigRequirementsTest {
 	}
 
 	@Test
+	void getsCryptoUpdateNoNewKeySelfPaidReturnsEmptyKeyList() throws Throwable {
+		setupFor(CRYPTO_UPDATE_NO_NEW_KEY_SELF_PAID_SCENARIO);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
+	}
+
+	@Test
 	void reportsCryptoUpdateMissingAccount() throws Throwable {
 		setupFor(CRYPTO_UPDATE_MISSING_ACCOUNT_SCENARIO);
 		// and:
@@ -697,6 +738,18 @@ class SigRequirementsTest {
 
 		// then:
 		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_ACCOUNT_KT.asKey()));
+	}
+
+	@Test
+	void getsCryptoDeleteNoTransferSigRequiredSelfPaidWillReturnEmptyKeyList() throws Throwable {
+		// given:
+		setupFor(CRYPTO_DELETE_NO_TARGET_RECEIVER_SIG_SELF_PAID_SCENARIO);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
 	}
 
 	@Test
@@ -737,6 +790,32 @@ class SigRequirementsTest {
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
 				contains(MISC_ACCOUNT_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+	}
+
+	@Test
+	void getsCryptoDeleteTransferSigRequiredPaidByReceiverReturnsJustAccountKey() throws Throwable {
+		// given:
+		setupFor(CRYPTO_DELETE_TARGET_RECEIVER_SIG_RECEIVER_PAID_SCENARIO);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_ACCOUNT_KT.asKey()));
+		assertFalse(sanityRestored(summary.getOrderedKeys()).contains(RECEIVER_SIG_KT.asKey()));
+	}
+
+	@Test
+	void getsCryptoDeleteTransferSigRequiredSelfPaidReturnsJustReceiverKey() throws Throwable {
+		// given:
+		setupFor(CRYPTO_DELETE_TARGET_RECEIVER_SIG_SELF_PAID_SCENARIO);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(sanityRestored(summary.getOrderedKeys()), contains(RECEIVER_SIG_KT.asKey()));
+		assertFalse(sanityRestored(summary.getOrderedKeys()).contains(DEFAULT_PAYER_KT.asKey()));
 	}
 
 	@Test
@@ -1275,6 +1354,19 @@ class SigRequirementsTest {
 	}
 
 	@Test
+	void getsConsensusCreateTopicAdminKeyAndAutoRenewAccountAsPayer() throws Throwable {
+		// given:
+		setupFor(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_PAYER_SCENARIO);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(sanityRestored(summary.getOrderedKeys()), contains(SIMPLE_TOPIC_ADMIN_KEY.asKey()));
+		assertFalse(sanityRestored(summary.getOrderedKeys()).contains(DEFAULT_PAYER_KT.asKey()));
+	}
+
+	@Test
 	void invalidAutoRenewAccountOnConsensusCreateTopicThrows() throws Throwable {
 		// given:
 		setupFor(CONSENSUS_CREATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO);
@@ -1476,6 +1568,21 @@ class SigRequirementsTest {
 	}
 
 	@Test
+	void getsConsensusUpdateTopicNewAdminKeyAndAutoRenewAccountAsPayer() throws Throwable {
+		// given:
+		setupForNonStdLookup(CONSENSUS_UPDATE_TOPIC_NEW_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_PAYER_SCENARIO,
+				hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_TOPIC_ADMIN_KT.asKey(),
+				UPDATE_TOPIC_ADMIN_KT.asKey()));
+		assertFalse(sanityRestored(summary.getOrderedKeys()).contains(DEFAULT_PAYER_KT.asKey()));
+	}
+
+	@Test
 	void getsTokenCreateAdminKeyOnly() throws Throwable {
 		// given:
 		setupFor(TOKEN_CREATE_WITH_ADMIN_ONLY);
@@ -1500,6 +1607,18 @@ class SigRequirementsTest {
 		// then:
 		assertTrue(summary.hasErrorReport());
 		assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, summary.getErrorReport());
+	}
+
+	@Test
+	void getsTokenCreateTreasuryAsPayer() throws Throwable {
+		// given:
+		setupFor(TOKEN_CREATE_WITH_TREASURY_AS_PAYER);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
 	}
 
 	@Test
@@ -1569,6 +1688,19 @@ class SigRequirementsTest {
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
 				contains(TOKEN_TREASURY_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+	}
+
+	@Test
+	void getsTokenCreateCustomFixedFeeAndCollectorSigReqAndAsPayer() throws Throwable {
+		// given:
+		setupFor(TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(sanityRestored(summary.getOrderedKeys()), contains(TOKEN_TREASURY_KT.asKey()));
+		assertFalse(sanityRestored(summary.getOrderedKeys()).contains(DEFAULT_PAYER_KT.asKey()));
 	}
 
 	@Test
@@ -1677,9 +1809,8 @@ class SigRequirementsTest {
 		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
-		assertThat(
-				sanityRestored(summary.getOrderedKeys()),
-				contains(FIRST_TOKEN_SENDER_KT.asKey(), SECOND_TOKEN_SENDER_KT.asKey()));
+		assertThat(sanityRestored(summary.getOrderedKeys()), contains(SECOND_TOKEN_SENDER_KT.asKey()));
+		assertFalse(sanityRestored(summary.getOrderedKeys()).contains(DEFAULT_PAYER_KT.asKey()));
 	}
 
 	@Test
@@ -1754,6 +1885,18 @@ class SigRequirementsTest {
 	}
 
 	@Test
+	void getsAssociateWithSelfPaidKnownTargetGivesEmptyKeyList() throws Throwable {
+		// given:
+		setupFor(TOKEN_ASSOCIATE_WITH_SELF_PAID_KNOWN_TARGET);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
+	}
+
+	@Test
 	void getsAssociateWithMissingTarget() throws Throwable {
 		// given:
 		setupFor(TOKEN_ASSOCIATE_WITH_MISSING_TARGET);
@@ -1777,6 +1920,18 @@ class SigRequirementsTest {
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
 				contains(MISC_ACCOUNT_KT.asKey()));
+	}
+
+	@Test
+	void getsDissociateWithSelfPaidKnownTargetGivesEmptyKeyList() throws Throwable {
+		// given:
+		setupFor(TOKEN_DISSOCIATE_WITH_SELF_PAID_KNOWN_TARGET);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
 	}
 
 	@Test
@@ -2059,6 +2214,19 @@ class SigRequirementsTest {
 	}
 
 	@Test
+	void getsUpdateWithNewTreasuryAsPayer() throws Throwable {
+		// given:
+		setupFor(UPDATE_REPLACING_TREASURY_AS_PAYER);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(sanityRestored(summary.getOrderedKeys()), contains(TOKEN_ADMIN_KT.asKey()));
+		assertFalse(sanityRestored(summary.getOrderedKeys()).contains(DEFAULT_PAYER_KT.asKey()));
+	}
+
+	@Test
 	void getsUpdateWithFreeze() throws Throwable {
 		// given:
 		setupFor(UPDATE_WITH_FREEZE_KEYED_TOKEN);
@@ -2126,6 +2294,19 @@ class SigRequirementsTest {
 	}
 
 	@Test
+	void getsTokenCreateWithAutoRenewAsPayer() throws Throwable {
+		// given:
+		setupFor(TOKEN_CREATE_WITH_AUTO_RENEW_AS_PAYER);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(sanityRestored(summary.getOrderedKeys()), contains(TOKEN_TREASURY_KT.asKey()));
+		assertFalse(sanityRestored(summary.getOrderedKeys()).contains(DEFAULT_PAYER_KT.asKey()));
+	}
+
+	@Test
 	void getsTokenCreateWithMissingAutoRenew() throws Throwable {
 		// given:
 		setupFor(TOKEN_CREATE_WITH_MISSING_AUTO_RENEW);
@@ -2151,6 +2332,19 @@ class SigRequirementsTest {
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
 				contains(TOKEN_ADMIN_KT.asKey(), MISC_ACCOUNT_KT.asKey()));
+	}
+
+	@Test
+	void getsTokenUpdateWithAutoRenewAsPayer() throws Throwable {
+		// given:
+		setupFor(TOKEN_UPDATE_WITH_NEW_AUTO_RENEW_ACCOUNT_AS_PAYER);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(sanityRestored(summary.getOrderedKeys()), contains(TOKEN_ADMIN_KT.asKey()));
+		assertFalse(sanityRestored(summary.getOrderedKeys()).contains(DEFAULT_PAYER_KT.asKey()));
 	}
 
 	@Test
@@ -2192,7 +2386,7 @@ class SigRequirementsTest {
 	}
 
 	@Test
-	void getsTokenFeeScheduleUpdateWithFeeScheduleKey() throws Throwable {
+	void getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorWithReceiverSigReqOff() throws Throwable {
 		// given:
 		setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_NO_FEE_COLLECTOR_SIG_REQ);
 
@@ -2203,6 +2397,33 @@ class SigRequirementsTest {
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
 				contains(TOKEN_FEE_SCHEDULE_KT.asKey()));
+	}
+
+	@Test
+	void getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorWithReceiverSigReqON() throws Throwable {
+		// given:
+		setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_SIG_REQ);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_FEE_SCHEDULE_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+	}
+
+	@Test
+	void getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorAsPayer() throws Throwable {
+		// given:
+		setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(sanityRestored(summary.getOrderedKeys()), contains(TOKEN_FEE_SCHEDULE_KT.asKey()));
+		assertFalse(sanityRestored(summary.getOrderedKeys()).contains(DEFAULT_PAYER_KT.asKey()));
 	}
 
 	@Test
@@ -2329,6 +2550,28 @@ class SigRequirementsTest {
 		assertTrue(summary.getOrderedKeys().get(1).isForScheduledTxn());
 		assertTrue(summary.getOrderedKeys().get(2).isForScheduledTxn());
 		assertTrue(summary.getOrderedKeys().get(3).isForScheduledTxn());
+	}
+
+	@Test
+	void getsScheduleCreateWithAdminAndDesignatedPayerAsSelf() throws Throwable {
+		// given:
+		setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN_AND_PAYER_AS_SELF);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(
+						SCHEDULE_ADMIN_KT.asKey(),
+						MISC_ACCOUNT_KT.asKey(),
+						RECEIVER_SIG_KT.asKey()));
+		assertFalse(sanityRestored(summary.getOrderedKeys()).contains(DEFAULT_PAYER_KT.asKey()));
+		// and:
+		assertFalse(summary.getOrderedKeys().get(0).isForScheduledTxn());
+		assertTrue(summary.getOrderedKeys().get(1).isForScheduledTxn());
+		assertTrue(summary.getOrderedKeys().get(2).isForScheduledTxn());
 	}
 
 	@Test
