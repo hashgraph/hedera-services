@@ -69,7 +69,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private final TypedTokenStore.LegacyTreasuryAdder addKnownTreasury;
 	private final TypedTokenStore.LegacyTreasuryRemover delegate;
 	private final DissociationFactory dissociationFactory;
-	private final SyntheticTxnFactory syntheticTxnFactory;
+	//	TODO: Comment out as soon as the dependency is being properly managed by Dagger
+//	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final TxnAwareSoliditySigsVerifier sigsVerifier;
 	private final ExpiringCreations creator;
 	private final AccountRecordsHistorian recordsHistorian;
@@ -105,7 +106,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 								  final TypedTokenStore.LegacyTreasuryAdder legacyStoreDelegate,
 								  final TypedTokenStore.LegacyTreasuryRemover delegate,
 								  final DissociationFactory dissociationFactory,
-								  final SyntheticTxnFactory syntheticTxnFactory,
+//								  final SyntheticTxnFactory syntheticTxnFactory,
 								  final TxnAwareSoliditySigsVerifier sigsVerifier,
 								  final ExpiringCreations creator,
 								  final AccountRecordsHistorian recordsHistorian) {
@@ -116,7 +117,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.addKnownTreasury = legacyStoreDelegate;
 		this.delegate = delegate;
 		this.dissociationFactory = dissociationFactory;
-		this.syntheticTxnFactory = syntheticTxnFactory;
+//		this.syntheticTxnFactory = syntheticTxnFactory;
 		this.sigsVerifier = sigsVerifier;
 		this.creator = creator;
 		this.recordsHistorian = recordsHistorian;
