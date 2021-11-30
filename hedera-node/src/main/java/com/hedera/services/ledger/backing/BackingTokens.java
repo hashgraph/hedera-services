@@ -51,7 +51,9 @@ public class BackingTokens implements BackingStore<TokenID, MerkleToken> {
     public void put(TokenID id, MerkleToken token) {
         final var tokens = delegate.get();
         final var eId = fromTokenId(id);
-        tokens.computeIfAbsent(eId, a -> tokens.put(a, token));
+        if (!tokens.containsKey(eId)) {
+            tokens.put(eId, token);
+        }
     }
 
     @Override

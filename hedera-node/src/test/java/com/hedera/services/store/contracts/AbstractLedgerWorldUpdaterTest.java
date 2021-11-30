@@ -341,6 +341,7 @@ class AbstractLedgerWorldUpdaterTest {
 		tokenRelsLedger.begin();
 		accountsLedger.begin();
 		nftsLedger.begin();
+		tokensLedger.begin();
 
 		ledgers = new WorldLedgers(tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
 	}
