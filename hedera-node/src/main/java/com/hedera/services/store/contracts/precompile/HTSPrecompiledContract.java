@@ -222,7 +222,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				impliedTransfersMarshal.currentProps()
 		);
 
-		///--- STEP 2: Parse Bytes input as typed arguments, use them to create the "synthetic" transaction --- */
 		SyntheticTxnFactory.FungibleTokenTransfer tokenTransfer =
 				new SyntheticTxnFactory.FungibleTokenTransfer(amount.longValue(), token, from, to);
 		final var syntheticTxn = syntheticTxnFactory.createCryptoTransfer(List.of(), List.of(), List.of(tokenTransfer));
@@ -248,7 +247,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		ResponseCodeEnum responseCode;
 		ExpirableTxnRecord.Builder childRecord = null;
 		try {
-			/* --- STEP 3: Check any required signing keys --- */
 			var solidityAddressFrom = EntityIdUtils.asTypedSolidityAddress(from);
 			var solidityAddressTo = EntityIdUtils.asTypedSolidityAddress(to);
 
@@ -262,7 +260,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			transferLogic.transfer(validated.getAllBalanceChanges());
 			ledgers.commit();
 
-			/* --- STEP 5: Summarize the results of the execution */
 			childRecord = creator.createSuccessfulSyntheticRecord(syntheticTxn, validated.getAssessedCustomFees(),
 					sideEffects);
 
