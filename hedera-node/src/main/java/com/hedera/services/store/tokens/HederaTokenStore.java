@@ -162,21 +162,23 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	@Override
 	protected ResponseCodeEnum checkAccountUsability(AccountID aId) {
 		var accountDoesNotExist = !accountsLedger.exists(aId);
+		if (accountDoesNotExist) {
+			return INVALID_ACCOUNT_ID;
+		}
+
 		var deleted = (boolean) accountsLedger.get(aId, IS_DELETED);
+		if (deleted) {
+			return ACCOUNT_DELETED;
+		}
+
 		var detached = properties.autoRenewEnabled()
 				&& !(boolean) accountsLedger.get(aId, IS_SMART_CONTRACT)
 				&& (long) accountsLedger.get(aId, BALANCE) == 0L
 				&& !validator.isAfterConsensusSecond((long) accountsLedger.get(aId, EXPIRY));
-
-		if (accountDoesNotExist) {
-			return INVALID_ACCOUNT_ID;
-		} else if (deleted) {
-			return ACCOUNT_DELETED;
-		} else if (detached) {
+		if (detached) {
 			return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-		} else {
-			return OK;
 		}
+		return OK;
 	}
 
 	@Override
