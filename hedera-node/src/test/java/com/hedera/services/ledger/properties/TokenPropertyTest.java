@@ -1,5 +1,4 @@
 package com.hedera.services.ledger.properties;
-
 /*-
  * ‌
  * Hedera Services Node
@@ -9,9 +8,9 @@ package com.hedera.services.ledger.properties;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -59,8 +58,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class TokenPropertyTest {
 	final long totalSupply = 2L;
-	final JKey adminKey = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012345".getBytes());
-	final JKey freezeKey = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012346".getBytes());
+	final Optional<JKey> adminKey = Optional.of(new JEd25519Key("abcdefghijklmnopqrstuvwxyz012345".getBytes()));
+	final Optional<JKey> freezeKey = Optional.of(new JEd25519Key("abcdefghijklmnopqrstuvwxyz012346".getBytes()));
 	final JKey kycKey = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012347".getBytes());
 	final JKey pauseKey = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012348".getBytes());
 	final JKey supplyKey = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012349".getBytes());
@@ -86,7 +85,6 @@ class TokenPropertyTest {
 	void gettersWork() {
 		// given:
 		final MerkleToken target = new MerkleToken();
-
 		TOTAL_SUPPLY.setter().accept(target, totalSupply);
 		ADMIN_KEY.setter().accept(target, adminKey);
 		FREEZE_KEY.setter().accept(target, freezeKey);
@@ -110,7 +108,6 @@ class TokenPropertyTest {
 		SUPPLY_TYPE.setter().accept(target, supplyType);
 		MAX_SUPPLY.setter().accept(target, maxSupply);
 		FEE_SCHEDULE.setter().accept(target, feeSchedule);
-
 		// and:
 		final var totalSupplyGetter = TOTAL_SUPPLY.getter();
 		final var adminKeyGetter = ADMIN_KEY.getter();
@@ -135,11 +132,10 @@ class TokenPropertyTest {
 		final var supplyTypeGetter = SUPPLY_TYPE.getter();
 		final var maxSupplyGetter = MAX_SUPPLY.getter();
 		final var feeScheduleGetter = FEE_SCHEDULE.getter();
-
 		// expect:
 		assertEquals(totalSupply, totalSupplyGetter.apply(target));
-		assertEquals(Optional.of(adminKey), adminKeyGetter.apply(target));
-		assertEquals(Optional.of(freezeKey), freezeKeyGetter.apply(target));
+		assertEquals(adminKey, adminKeyGetter.apply(target));
+		assertEquals(freezeKey, freezeKeyGetter.apply(target));
 		assertEquals(kycKey, kycKeyGetter.apply(target));
 		assertEquals(pauseKey, pauseKeyGetter.apply(target));
 		assertEquals(supplyKey, supplyKeyGetter.apply(target));
@@ -190,7 +186,6 @@ class TokenPropertyTest {
 		final var supplyTypeSetter = SUPPLY_TYPE.setter();
 		final var maxSupplySetter = MAX_SUPPLY.setter();
 		final var feeScheduleSetter = FEE_SCHEDULE.setter();
-
 		// when:
 		totalSupplySetter.accept(target, totalSupply);
 		adminKeySetter.accept(target, adminKey);
@@ -215,11 +210,10 @@ class TokenPropertyTest {
 		supplyTypeSetter.accept(target, supplyType);
 		maxSupplySetter.accept(target, maxSupply);
 		feeScheduleSetter.accept(target, feeSchedule);
-
 		// expect:
 		assertEquals(totalSupply, target.totalSupply());
-		assertEquals(adminKey, target.getAdminKey());
-		assertEquals(freezeKey, target.getFreezeKey());
+		assertEquals(adminKey.get(), target.getAdminKey());
+		assertEquals(freezeKey.get(), target.getFreezeKey());
 		assertEquals(kycKey, target.getKycKey());
 		assertEquals(pauseKey, target.getPauseKey());
 		assertEquals(supplyKey, target.getSupplyKey());
