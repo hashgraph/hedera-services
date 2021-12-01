@@ -215,8 +215,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		return null;
 	}
 
-	//	TODO: Properly instantiate syntheticTxn after Mr.Thinker provides implementation
-	//	TODO: Clarify the types of necessary validations.
 	protected Bytes computeAssociateToken(final Bytes input, final MessageFrame messageFrame) {
 		/* Get context from the Message frame */
 		final var updater = (AbstractLedgerWorldUpdater) messageFrame.getWorldUpdater();
