@@ -592,6 +592,8 @@ public class ContractResources {
 
 	public static final String ASSOCIATE_TOKEN = "{ \"inputs\": [], \"name\": \"associateToken\", \"outputs\": [], " +
 			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+	public static final String DISSOCIATE_TOKEN = "{ \"inputs\": [], \"name\": \"dissociateToken\", \"outputs\": [], " +
+			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
 
 	public static String bytecodePath(String bytecode) {
