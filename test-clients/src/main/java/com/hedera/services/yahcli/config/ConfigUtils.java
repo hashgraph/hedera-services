@@ -20,13 +20,32 @@ package com.hedera.services.yahcli.config;
  * ‍
  */
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.fees.FeesAndRatesProvider;
+import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
+import com.hedera.services.bdd.spec.props.MapPropertySource;
+import com.hedera.services.bdd.spec.queries.HapiQueryOp;
+import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
+import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
 import com.hedera.services.yahcli.Yahcli;
+import com.hedera.services.yahcli.suites.BalanceSuite;
+import com.hedera.services.yahcli.suites.CostOfEveryThingSuite;
+import com.hedera.services.yahcli.suites.FreezeHelperSuite;
+import com.hedera.services.yahcli.suites.RekeySuite;
+import com.hedera.services.yahcli.suites.SchedulesValidationSuite;
+import com.hedera.services.yahcli.suites.SysFileDownloadSuite;
+import com.hedera.services.yahcli.suites.SysFileUploadSuite;
+import com.hedera.services.yahcli.suites.UpgradeHelperSuite;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Optional;
 
 import static com.hedera.services.bdd.spec.persistence.SpecKey.readFirstKpFromPem;
@@ -124,9 +143,36 @@ public class ConfigUtils {
 	}
 
 	public static ConfigManager configFrom(Yahcli yahcli) throws IOException {
+		System.out.println("setting loglevel to : " + yahcli.getLogLevel());
+		setLogLevels(yahcli.getLogLevel());
 		var config = ConfigManager.from(yahcli);
 		config.assertNoMissingDefaults();
 		COMMON_MESSAGES.printGlobalInfo(config);
 		return config;
+	}
+
+	private static void setLogLevels(Level logLevel) {
+		List.of(
+				BalanceSuite.class,
+				RekeySuite.class,
+				SysFileUploadSuite.class,
+				SysFileDownloadSuite.class,
+				SchedulesValidationSuite.class,
+				FreezeHelperSuite.class,
+				UpgradeHelperSuite.class,
+				CostOfEveryThingSuite.class,
+				MapPropertySource.class,
+				HapiApiClients.class,
+				FeesAndRatesProvider.class,
+				HapiQueryOp.class,
+				HapiTxnOp.class,
+				HapiGetFileContents.class,
+				HapiApiSpec.class,
+				VersionInfoSpec.class
+		).forEach(cls -> setLogLevel(cls, logLevel));
+	}
+
+	private static void setLogLevel(Class<?> cls, Level logLevel) {
+		((org.apache.logging.log4j.core.Logger) LogManager.getLogger(cls)).setLevel(logLevel);
 	}
 }
