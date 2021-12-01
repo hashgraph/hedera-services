@@ -289,18 +289,19 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 //		final var contract = messageFrame.getContractAddress();
 //		final var recipient = messageFrame.getRecipientAddress();
 		final var updater = (AbstractLedgerWorldUpdater) messageFrame.getWorldUpdater();
+		final var ledgers = updater.wrappedTrackingLedgers();
 
 		final var accountID = Id.fromGrpcAccount(EntityIdUtils.accountParsedFromSolidityAddress(address.toArrayUnsafe()));
 		final var tokenID = EntityIdUtils.tokenParsedFromSolidityAddress(tokenAddress.toArrayUnsafe());
 
 		final var nftsLedger =
-				((HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater()).wrappedTrackingLedgers().nfts();
+				ledgers.nfts();
 		final var tokenRelsLedger =
-				((HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater()).wrappedTrackingLedgers().tokenRels();
+				ledgers.tokenRels();
 		final var tokensLedger =
-				((HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater()).wrappedTrackingLedgers().tokens();
+				ledgers.tokens();
 		final var accountsLedger
-				= ((HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater()).wrappedTrackingLedgers().accounts();
+				= ledgers.accounts();
 
 		final var accountStore = new AccountStore(validator, dynamicProperties, accountsLedger);
 
@@ -323,6 +324,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			DissociateLogic dissociateLogic = new DissociateLogic(validator, tokenStore, accountStore, dissociationFactory);
 			dissociateLogic.dissociate(accountID, Collections.singletonList(tokenID));
+			ledgers.commit();
 
 			/* STEP 5: Summarize the results of the execution */
 //			childRecord = creator.createSuccessfulSyntheticRecord(syntheticTxn, customFees, sideEffects);
