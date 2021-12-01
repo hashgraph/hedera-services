@@ -20,7 +20,7 @@ package com.hedera.services.ledger;
  * ‍
  */
 
-import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,7 +46,7 @@ class HederaLedgerTokenXfersTest extends BaseHederaLedgerTestHelper {
 	private void setup() {
 		commonSetup();
 		setupWithMockLedger();
-		subject.setTokenViewsManager(mock(UniqTokenViewsManager.class));
+		subject.setTokenViewsManager(mock(UniqueTokenViewsManager.class));
 	}
 
 	@Test

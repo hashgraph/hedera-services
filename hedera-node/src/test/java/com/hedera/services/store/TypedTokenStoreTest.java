@@ -23,7 +23,6 @@ package com.hedera.services.store;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.backing.BackingStore;
-import com.hedera.services.ledger.backing.BackingTokenRels;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
@@ -40,7 +39,7 @@ import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -83,7 +82,7 @@ class TypedTokenStoreTest {
 	@Mock
 	private AccountStore accountStore;
 	@Mock
-	private UniqTokenViewsManager uniqTokenViewsManager;
+	private UniqueTokenViewsManager uniqueTokenViewsManager;
 	@Mock
 	private BackingStore<TokenID, MerkleToken> tokens;
 	@Mock
@@ -108,7 +107,7 @@ class TypedTokenStoreTest {
 				tokens,
 				uniqueTokens,
 				tokenRels,
-				uniqTokenViewsManager,
+				uniqueTokenViewsManager,
 				tokenStore::addKnownTreasury,
 				legacyStore::removeKnownTreasuryForToken,
 				sideEffectsTracker);
@@ -436,8 +435,8 @@ class TypedTokenStoreTest {
 		verify(uniqueTokens).put(expectedNewUniqTokenId, expectedNewUniqToken);
 		verify(uniqueTokens).put(new NftId(tokenEntityId.num(), mintedSerialNo), expectedNewUniqToken);
 		verify(uniqueTokens).remove(expectedPastUniqTokenId);
-		verify(uniqTokenViewsManager).mintNotice(EntityNumPair.fromNftId(expectedNewUniqTokenId), autoRenewId.asEntityId());
-		verify(uniqTokenViewsManager).wipeNotice(EntityNumPair.fromNftId(expectedPastUniqTokenId), treasuryId);
+		verify(uniqueTokenViewsManager).mintNotice(EntityNumPair.fromNftId(expectedNewUniqTokenId), autoRenewId.asEntityId());
+		verify(uniqueTokenViewsManager).wipeNotice(EntityNumPair.fromNftId(expectedPastUniqTokenId), treasuryId);
 
 		// when:
 		modelToken = subject.loadToken(tokenId);
@@ -460,8 +459,8 @@ class TypedTokenStoreTest {
 		verify(sideEffectsTracker).trackTokenChanges(modelToken);
 		verify(uniqueTokens).put(expectedNewUniqTokenId2, expectedNewUniqToken);
 		verify(uniqueTokens).remove(expectedPastUniqTokenId2);
-		verify(uniqTokenViewsManager).mintNotice(EntityNumPair.fromNftId(expectedNewUniqTokenId2), treasuryId);
-		verify(uniqTokenViewsManager).burnNotice(EntityNumPair.fromNftId(expectedPastUniqTokenId2), treasuryId);
+		verify(uniqueTokenViewsManager).mintNotice(EntityNumPair.fromNftId(expectedNewUniqTokenId2), treasuryId);
+		verify(uniqueTokenViewsManager).burnNotice(EntityNumPair.fromNftId(expectedPastUniqTokenId2), treasuryId);
 	}
 
 	@Test

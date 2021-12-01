@@ -26,7 +26,6 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.backing.BackingTokens;
-import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
@@ -43,7 +42,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -58,7 +57,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -187,7 +185,7 @@ class HederaTokenStoreTest {
 	private EntityIdSource ids;
 	private SideEffectsTracker sideEffectsTracker;
 	private GlobalDynamicProperties properties;
-	private UniqTokenViewsManager uniqTokenViewsManager;
+	private UniqueTokenViewsManager uniqueTokenViewsManager;
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
@@ -283,11 +281,11 @@ class HederaTokenStoreTest {
 		given(properties.maxTokenNameUtf8Bytes()).willReturn(MAX_TOKEN_NAME_UTF8_BYTES);
 		given(properties.maxCustomFeesAllowed()).willReturn(maxCustomFees);
 
-		uniqTokenViewsManager = mock(UniqTokenViewsManager.class);
+		uniqueTokenViewsManager = mock(UniqueTokenViewsManager.class);
 
 		sideEffectsTracker = new SideEffectsTracker();
 		subject = new HederaTokenStore(
-				ids, TEST_VALIDATOR, sideEffectsTracker, uniqTokenViewsManager, properties,
+				ids, TEST_VALIDATOR, sideEffectsTracker, uniqueTokenViewsManager, properties,
 				tokenRelsLedger, nftsLedger, backingTokens);
 		subject.setAccountsLedger(accountsLedger);
 		subject.setHederaLedger(hederaLedger);
@@ -675,7 +673,7 @@ class HederaTokenStoreTest {
 		verify(accountsLedger).set(counterparty, NUM_NFTS_OWNED, startCounterpartyNfts + 1);
 		verify(tokenRelsLedger).set(sponsorNft, TOKEN_BALANCE, startSponsorANfts - 1);
 		verify(tokenRelsLedger).set(counterpartyNft, TOKEN_BALANCE, startCounterpartyANfts + 1);
-		verify(uniqTokenViewsManager).exchangeNotice(muti, sender, receiver);
+		verify(uniqueTokenViewsManager).exchangeNotice(muti, sender, receiver);
 		assertSoleTokenChangesAreForNftTransfer(aNft, sponsor, counterparty);
 	}
 
@@ -705,7 +703,7 @@ class HederaTokenStoreTest {
 		verify(accountsLedger).set(counterparty, NUM_NFTS_OWNED, startCounterpartyNfts - 1);
 		verify(tokenRelsLedger).set(treasuryNft, TOKEN_BALANCE, startTreasuryTNfts + 1);
 		verify(tokenRelsLedger).set(counterpartyNft, TOKEN_BALANCE, startCounterpartyTNfts - 1);
-		verify(uniqTokenViewsManager).treasuryReturnNotice(muti, sender, receiver);
+		verify(uniqueTokenViewsManager).treasuryReturnNotice(muti, sender, receiver);
 		assertSoleTokenChangesAreForNftTransfer(tNft, counterparty, primaryTreasury);
 	}
 
@@ -736,7 +734,7 @@ class HederaTokenStoreTest {
 		verify(accountsLedger).set(counterparty, NUM_NFTS_OWNED, startCounterpartyNfts + 1);
 		verify(tokenRelsLedger).set(treasuryNft, TOKEN_BALANCE, startTreasuryTNfts - 1);
 		verify(tokenRelsLedger).set(counterpartyNft, TOKEN_BALANCE, startCounterpartyTNfts + 1);
-		verify(uniqTokenViewsManager).treasuryExitNotice(muti, sender, receiver);
+		verify(uniqueTokenViewsManager).treasuryExitNotice(muti, sender, receiver);
 		assertSoleTokenChangesAreForNftTransfer(tNft, primaryTreasury, counterparty);
 	}
 

@@ -33,7 +33,6 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
-import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.enums.TokenType;
@@ -47,7 +46,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -87,7 +86,7 @@ class LedgerBalanceChangesTest {
 	private final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingRels =
 			new HashMapBackingTokenRels();
 	private BackingStore<TokenID, MerkleToken> backingTokens = new HashMapBackingTokens();
-	private TokenStore tokenStore;
+	private HederaTokenStore tokenStore;
 	private final FCOneToManyRelation<EntityNum, Long> uniqueTokenOwnerships = new FCOneToManyRelation<>();
 	private final FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations = new FCOneToManyRelation<>();
 	private final FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations = new FCOneToManyRelation<>();
@@ -110,7 +109,7 @@ class LedgerBalanceChangesTest {
 	@Mock
 	private AccountRecordsHistorian historian;
 	@Mock
-	private UniqTokenViewsManager tokenViewsManager;
+	private UniqueTokenViewsManager tokenViewsManager;
 
 	private HederaLedger subject;
 
@@ -132,7 +131,7 @@ class LedgerBalanceChangesTest {
 		backingTokens.put(bNftKey.toGrpcTokenId(), nonFungibleTokenWithTreasury(bModel));
 
 		final var sideEffectsTracker = new SideEffectsTracker();
-		final var viewManager = new UniqTokenViewsManager(
+		final var viewManager = new UniqueTokenViewsManager(
 				() -> uniqueTokenOwnerships,
 				() -> uniqueOwnershipAssociations,
 				() -> uniqueOwnershipTreasuryAssociations,
@@ -239,7 +238,7 @@ class LedgerBalanceChangesTest {
 		backingTokens.put(anotherTokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
 		backingTokens.put(yetAnotherTokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
 		final var sideEffectsTracker = new SideEffectsTracker();
-		final var viewManager = new UniqTokenViewsManager(
+		final var viewManager = new UniqueTokenViewsManager(
 				() -> uniqueTokenOwnerships,
 				() -> uniqueOwnershipAssociations,
 				() -> uniqueOwnershipTreasuryAssociations,

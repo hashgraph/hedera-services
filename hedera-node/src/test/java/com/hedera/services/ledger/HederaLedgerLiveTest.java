@@ -38,7 +38,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.tokens.HederaTokenStore;
-import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.mocks.TestContextValidator;
@@ -85,7 +85,7 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 				new HashMapBackingTokenRels(),
 				new ChangeSummaryManager<>());
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
-		final var viewManager = new UniqTokenViewsManager(
+		final var viewManager = new UniqueTokenViewsManager(
 				() -> uniqueTokenOwnerships,
 				() -> uniqueTokenAccountOwnerships,
 				() -> uniqueTokenTreasuryOwnerships,

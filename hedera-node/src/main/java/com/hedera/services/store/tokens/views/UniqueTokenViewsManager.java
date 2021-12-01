@@ -43,8 +43,8 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
-import static com.hedera.services.store.tokens.views.UniqTokenViewsManager.TargetFcotmr.NFTS_BY_OWNER;
-import static com.hedera.services.store.tokens.views.UniqTokenViewsManager.TargetFcotmr.TREASURY_NFTS_BY_TYPE;
+import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.TargetFcotmr.NFTS_BY_OWNER;
+import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.TargetFcotmr.TREASURY_NFTS_BY_TYPE;
 import static com.hedera.services.utils.EntityNum.fromInt;
 import static com.hedera.services.utils.MiscUtils.forEach;
 import static java.util.concurrent.CompletableFuture.allOf;
@@ -64,8 +64,8 @@ import static java.util.concurrent.CompletableFuture.runAsync;
  * and an account owning an NFT because it is the designated treasury for the NFT's token type.
  */
 @Singleton
-public class UniqTokenViewsManager {
-	private static final Logger log = LogManager.getLogger(UniqTokenViewsManager.class);
+public class UniqueTokenViewsManager {
+	private static final Logger log = LogManager.getLogger(UniqueTokenViewsManager.class);
 
 	private final boolean doNoops;
 	private final Supplier<FCOneToManyRelation<EntityNum, Long>> nftsByType;
@@ -80,7 +80,7 @@ public class UniqTokenViewsManager {
 	private List<PendingChange> changesInTxn = new ArrayList<>();
 
 	@Inject
-	public UniqTokenViewsManager(
+	public UniqueTokenViewsManager(
 			@NftsByType Supplier<FCOneToManyRelation<EntityNum, Long>> nftsByType,
 			@NftsByOwner Supplier<FCOneToManyRelation<EntityNum, Long>> nftsByOwner,
 			@TreasuryNftsByType Supplier<FCOneToManyRelation<EntityNum, Long>> treasuryNftsByType,

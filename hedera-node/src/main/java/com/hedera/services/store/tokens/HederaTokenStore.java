@@ -37,7 +37,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.HederaStore;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -65,6 +65,10 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
+import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
@@ -78,9 +82,12 @@ import static com.hedera.services.utils.EntityNum.fromTokenId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
@@ -114,7 +121,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	private static final Predicate<Key> REMOVES_ADMIN_KEY = ImmutableKeyUtils::signalsKeyRemoval;
 
 	private final OptionValidator validator;
-	private final UniqTokenViewsManager uniqTokenViewsManager;
+	private final UniqueTokenViewsManager uniqueTokenViewsManager;
 	private final GlobalDynamicProperties properties;
 	private final SideEffectsTracker sideEffectsTracker;
 
@@ -135,7 +142,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			final EntityIdSource ids,
 			final OptionValidator validator,
 			final SideEffectsTracker sideEffectsTracker,
-			final UniqTokenViewsManager uniqTokenViewsManager,
+			final UniqueTokenViewsManager uniqueTokenViewsManager,
 			final GlobalDynamicProperties properties,
 			final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
 			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
@@ -148,8 +155,28 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		this.backingTokens = backingTokens;
 		this.tokenRelsLedger = tokenRelsLedger;
 		this.sideEffectsTracker = sideEffectsTracker;
-		this.uniqTokenViewsManager = uniqTokenViewsManager;
+		this.uniqueTokenViewsManager = uniqueTokenViewsManager;
 		/* Known-treasuries view is re-built on restart or reconnect */
+	}
+
+	@Override
+	protected ResponseCodeEnum checkAccountUsability(AccountID aId) {
+		var accountDoesNotExist = !accountsLedger.exists(aId);
+		var deleted = (boolean) accountsLedger.get(aId, IS_DELETED);
+		var detached = properties.autoRenewEnabled()
+				&& !(boolean) accountsLedger.get(aId, IS_SMART_CONTRACT)
+				&& (long) accountsLedger.get(aId, BALANCE) == 0L
+				&& !validator.isAfterConsensusSecond((long) accountsLedger.get(aId, EXPIRY));
+
+		if (accountDoesNotExist) {
+			return INVALID_ACCOUNT_ID;
+		} else if (deleted) {
+			return ACCOUNT_DELETED;
+		} else if (detached) {
+			return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+		} else {
+			return OK;
+		}
 	}
 
 	@Override
@@ -379,13 +406,13 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		final var merkleNftId = EntityNumPair.fromLongs(nftId.tokenId().getTokenNum(), nftId.serialNo());
 		final var receiver = fromGrpcAccountId(to);
 		if (isTreasuryReturn) {
-			uniqTokenViewsManager.treasuryReturnNotice(merkleNftId, owner, receiver);
+			uniqueTokenViewsManager.treasuryReturnNotice(merkleNftId, owner, receiver);
 		} else {
 			final var isTreasuryExit = isTreasuryForToken(from, tId);
 			if (isTreasuryExit) {
-				uniqTokenViewsManager.treasuryExitNotice(merkleNftId, owner, receiver);
+				uniqueTokenViewsManager.treasuryExitNotice(merkleNftId, owner, receiver);
 			} else {
-				uniqTokenViewsManager.exchangeNotice(merkleNftId, owner, receiver);
+				uniqueTokenViewsManager.exchangeNotice(merkleNftId, owner, receiver);
 			}
 		}
 		sideEffectsTracker.trackNftOwnerChange(nftId, from, to);

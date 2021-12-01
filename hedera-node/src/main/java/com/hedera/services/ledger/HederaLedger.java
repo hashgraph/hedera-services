@@ -41,7 +41,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -123,7 +123,7 @@ public class HederaLedger {
 	private final AccountRecordsHistorian historian;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
-	private UniqTokenViewsManager tokenViewsManager = null;
+	private UniqueTokenViewsManager tokenViewsManager = null;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger = null;
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger = null;
 
@@ -155,7 +155,7 @@ public class HederaLedger {
 		tokenStore.setHederaLedger(this);
 	}
 
-	public void setTokenViewsManager(UniqTokenViewsManager tokenViewsManager) {
+	public void setTokenViewsManager(UniqueTokenViewsManager tokenViewsManager) {
 		this.tokenViewsManager = tokenViewsManager;
 	}
 
