@@ -204,7 +204,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@SuppressWarnings("unused")
 	protected Bytes computeTransferToken(final Bytes input, final MessageFrame messageFrame) {
-
 		final Bytes tokenAddress = Address.wrap(input.slice(16, 20));
 		final Bytes fromAddress = Address.wrap(input.slice(48, 20));
 		final Bytes toAddress = Address.wrap(input.slice(80, 20));
