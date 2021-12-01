@@ -80,6 +80,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(
 //				depositAndWithdraw(),
+				associateToken(),
 				dissociateToken()
 		);
 	}
@@ -126,7 +127,6 @@ public class ContractHTSSuite extends HapiApiSuite {
 
 	private HapiApiSpec associateToken() {
 		final var theAccount = "anybody";
-		final var theReceiver = "somebody";
 		final var theKey = "multipurpose";
 		final var theContract = "associateDissociateContract";
 		return defaultHapiSpec("associateHappyPath")
@@ -165,7 +165,6 @@ public class ContractHTSSuite extends HapiApiSuite {
 				).then();
 
 	}
-
 
 	private HapiApiSpec dissociateToken() {
 		final var theAccount = "anybody";

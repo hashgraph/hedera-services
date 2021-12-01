@@ -32,7 +32,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
-import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.services.txns.token.AssociateLogic;
@@ -55,10 +55,10 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static java.util.Collections.singletonList;
 
 @Singleton
 public class HTSPrecompiledContract extends AbstractPrecompiledContract {
@@ -69,8 +69,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private final TypedTokenStore.LegacyTreasuryAdder addKnownTreasury;
 	private final TypedTokenStore.LegacyTreasuryRemover delegate;
 	private final DissociationFactory dissociationFactory;
-	//	TODO: Comment out as soon as the dependency is being properly managed by Dagger
-//	private final SyntheticTxnFactory syntheticTxnFactory;
+	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final TxnAwareSoliditySigsVerifier sigsVerifier;
 	private final ExpiringCreations creator;
 	private final AccountRecordsHistorian recordsHistorian;
@@ -106,7 +105,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 								  final TypedTokenStore.LegacyTreasuryAdder legacyStoreDelegate,
 								  final TypedTokenStore.LegacyTreasuryRemover delegate,
 								  final DissociationFactory dissociationFactory,
-//								  final SyntheticTxnFactory syntheticTxnFactory,
+								  final SyntheticTxnFactory syntheticTxnFactory,
 								  final TxnAwareSoliditySigsVerifier sigsVerifier,
 								  final ExpiringCreations creator,
 								  final AccountRecordsHistorian recordsHistorian) {
@@ -117,7 +116,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.addKnownTreasury = legacyStoreDelegate;
 		this.delegate = delegate;
 		this.dissociationFactory = dissociationFactory;
-//		this.syntheticTxnFactory = syntheticTxnFactory;
+		this.syntheticTxnFactory = syntheticTxnFactory;
 		this.sigsVerifier = sigsVerifier;
 		this.creator = creator;
 		this.recordsHistorian = recordsHistorian;
@@ -216,11 +215,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		return null;
 	}
 
-	//	TODO: Abstract out the invocation of the ledgers as a helper method to avoid duplication
 	//	TODO: Properly instantiate syntheticTxn after Mr.Thinker provides implementation
-	//	TODO: It seems that the ledgers.commit() call duplicates commit calls in the logic.associate() method.
-	//	TODO: Clarify - are the customFees those, contained in the Token's List<FcCustomFee> customFees property.
-	//		  If true - should the respective logic return a list of custom fees?
 	//	TODO: Clarify the types of necessary validations.
 	protected Bytes computeAssociateToken(final Bytes input, final MessageFrame messageFrame) {
 		/* Get context from the Message frame */
@@ -245,25 +240,18 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var hasRequiredSigs = sigsVerifier.hasActiveKey(Id.fromGrpcAccount(accountID), recipient, contract);
 			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
-			/* Get the ledgers */
-			final var nftsLedger = ledgers.nfts();
-			final var tokenRelsLedger = ledgers.tokenRels();
-			final var tokensLedger = ledgers.tokens();
-			final var accountsLedger = ledgers.accounts();
-
 			/* Initialize the stores */
 			final var sideEffectsTracker = new SideEffectsTracker();
-			final var accountStore = new AccountStore(validator, dynamicProperties, accountsLedger);
-			final var tokenStore = new TypedTokenStore(accountStore, tokensLedger, nftsLedger, tokenRelsLedger,
-					uniqTokenViewsManager, addKnownTreasury, delegate, sideEffectsTracker);
+			final var accountStore = createAccountStore(ledgers);
+			final var tokenStore = createTokenStore(ledgers, accountStore, sideEffectsTracker);
 
 			/* Do the business logic */
 			final var logic = new AssociateLogic(tokenStore, accountStore, dynamicProperties);
-			logic.associate(Id.fromGrpcAccount(accountID), Collections.singletonList(tokenID));
+			logic.associate(Id.fromGrpcAccount(accountID), singletonList(tokenID));
 			ledgers.commit();
 
 			/* Summarize the happy results of the execution */
-//			childRecord = creator.createSuccessfulSyntheticRecord(syntheticTxn, customFees, sideEffectsTracker);
+//			childRecord = creator.createSuccessfulSyntheticRecord(syntheticTxn, emptyList(), sideEffectsTracker);
 			result = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
 		} catch (InvalidTransactionException e) {
 			/* Summarize the unhappy results of the execution */
@@ -294,16 +282,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		final var accountID = Id.fromGrpcAccount(EntityIdUtils.accountParsedFromSolidityAddress(address.toArrayUnsafe()));
 		final var tokenID = EntityIdUtils.tokenParsedFromSolidityAddress(tokenAddress.toArrayUnsafe());
 
-		final var nftsLedger =
-				ledgers.nfts();
-		final var tokenRelsLedger =
-				ledgers.tokenRels();
-		final var tokensLedger =
-				ledgers.tokens();
-		final var accountsLedger
-				= ledgers.accounts();
-
-		final var accountStore = new AccountStore(validator, dynamicProperties, accountsLedger);
+		final var accountStore = createAccountStore(ledgers);
 
 		/* Step 2 */
 //		final var syntheticTxn = syntheticTxnFactory.createCryptoTransfer();
@@ -319,15 +298,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			/* Step 4 */
 			final var sideEffects = new SideEffectsTracker();
-			final var tokenStore = new TypedTokenStore(accountStore, tokensLedger, nftsLedger, tokenRelsLedger,
-					uniqTokenViewsManager, addKnownTreasury, delegate, sideEffects);
+			final var tokenStore = createTokenStore(ledgers, accountStore, sideEffects);
 
 			DissociateLogic dissociateLogic = new DissociateLogic(validator, tokenStore, accountStore, dissociationFactory);
-			dissociateLogic.dissociate(accountID, Collections.singletonList(tokenID));
+			dissociateLogic.dissociate(accountID, singletonList(tokenID));
 			ledgers.commit();
 
 			/* STEP 5: Summarize the results of the execution */
-//			childRecord = creator.createSuccessfulSyntheticRecord(syntheticTxn, customFees, sideEffects);
+//			childRecord = creator.createSuccessfulSyntheticRecord(syntheticTxn, emptyList(), sideEffects);
 			result = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
 		} catch (InvalidTransactionException e) {
 //			childRecord = creator.createFailedSyntheticRecord(syntheticTxn, e.getResponseCode());
@@ -337,5 +315,18 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 //		updater.manageInProgressRecord(recordsHistorian, childRecord, syntheticTxn);
 
 		return result;
+	}
+
+	/* Helpers */
+	private AccountStore createAccountStore(final WorldLedgers ledgers) {
+		return new AccountStore(validator, dynamicProperties, ledgers.accounts());
+	}
+
+	private TypedTokenStore createTokenStore(
+			final WorldLedgers ledgers,
+			final AccountStore accountStore,
+			final SideEffectsTracker sideEffectsTracker) {
+		return new TypedTokenStore(accountStore, ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels(),
+				uniqTokenViewsManager, addKnownTreasury, delegate, sideEffectsTracker);
 	}
 }

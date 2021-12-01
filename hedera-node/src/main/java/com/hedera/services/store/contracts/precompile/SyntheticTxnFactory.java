@@ -20,19 +20,12 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
-import com.hederahashgraph.api.proto.java.NftTransfer;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransferList;
+import com.hederahashgraph.api.proto.java.*;
 
+import javax.inject.Singleton;
 import java.util.List;
 
+@Singleton
 public class SyntheticTxnFactory {
 	public Transaction createCryptoTransfer(
 			final List<NftExchange> nftExchanges,
