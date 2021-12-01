@@ -219,15 +219,17 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	//	TODO: Clarify the types of necessary validations.
 	protected Bytes computeAssociateToken(final Bytes input, final MessageFrame messageFrame) {
 		/* Get context from the Message frame */
-		final var contract = messageFrame.getContractAddress();
-		final var recipient = messageFrame.getRecipientAddress();
 		final var updater = (AbstractLedgerWorldUpdater) messageFrame.getWorldUpdater();
 		final var ledgers = updater.wrappedTrackingLedgers();
+		final var contract = messageFrame.getContractAddress();
+		final var recipient = messageFrame.getRecipientAddress();
 
 		/* Parse Bytes input as typed arguments */
 		final var accountAddress = Address.wrap(input.slice(16, 20));
 		final var tokenAddress = Address.wrap(input.slice(48, 20));
 
+		/* Step 2 */
+//		TODO: Initialize synthetic transaction
 		ExpirableTxnRecord.Builder childRecord;
 		Bytes result;
 
@@ -271,47 +273,43 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@SuppressWarnings("unused")
 	protected Bytes computeDissociateToken(final Bytes input, final MessageFrame messageFrame) {
-		/* Step 1 */
-		final Bytes address = Address.wrap(input.slice(16, 20));
-		final Bytes tokenAddress = Address.wrap(input.slice(48, 20));
-//		final var contract = messageFrame.getContractAddress();
-//		final var recipient = messageFrame.getRecipientAddress();
+		/* Get context from the Message frame */
 		final var updater = (AbstractLedgerWorldUpdater) messageFrame.getWorldUpdater();
 		final var ledgers = updater.wrappedTrackingLedgers();
 
-		final var accountID = Id.fromGrpcAccount(EntityIdUtils.accountParsedFromSolidityAddress(address.toArrayUnsafe()));
-		final var tokenID = EntityIdUtils.tokenParsedFromSolidityAddress(tokenAddress.toArrayUnsafe());
-
-		final var accountStore = createAccountStore(ledgers);
+		/* Parse Bytes input as typed arguments */
+		final Bytes address = Address.wrap(input.slice(16, 20));
+		final Bytes tokenAddress = Address.wrap(input.slice(48, 20));
 
 		/* Step 2 */
-//		final var syntheticTxn = syntheticTxnFactory.createCryptoTransfer();
-		Bytes result;
+//		TODO: Initialize synthetic transaction
 		ExpirableTxnRecord.Builder childRecord;
+		Bytes result;
 
 		try {
+			/* Translate to gRPC types */
+			final var accountID = Id.fromGrpcAccount(EntityIdUtils.accountParsedFromSolidityAddress(address.toArrayUnsafe()));
+			final var tokenID = EntityIdUtils.tokenParsedFromSolidityAddress(tokenAddress.toArrayUnsafe());
 
-			/* Step 3 */
-			// E.g., if this is a tokenAssociate for account "associatingId":
-//			final var hasRequiredSigs = sigsVerifier.hasActiveKey(associatingId, recipient, contract);
-//			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
-
-			/* Step 4 */
+			/* Initialize the stores */
 			final var sideEffects = new SideEffectsTracker();
+			final var accountStore = createAccountStore(ledgers);
 			final var tokenStore = createTokenStore(ledgers, accountStore, sideEffects);
 
+			/* Do the business logic */
 			DissociateLogic dissociateLogic = new DissociateLogic(validator, tokenStore, accountStore, dissociationFactory);
 			dissociateLogic.dissociate(accountID, singletonList(tokenID));
 			ledgers.commit();
 
-			/* STEP 5: Summarize the results of the execution */
+			/* Summarize the happy results of the execution */
 //			childRecord = creator.createSuccessfulSyntheticRecord(syntheticTxn, emptyList(), sideEffects);
 			result = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
 		} catch (InvalidTransactionException e) {
+			/* Summarize the unhappy results of the execution */
 //			childRecord = creator.createFailedSyntheticRecord(syntheticTxn, e.getResponseCode());
 			result = UInt256.valueOf(e.getResponseCode().getNumber());
 		}
-		/* --- STEP 6: Track the child record and return --- */
+		/* Track the child record and return */
 //		updater.manageInProgressRecord(recordsHistorian, childRecord, syntheticTxn);
 
 		return result;
