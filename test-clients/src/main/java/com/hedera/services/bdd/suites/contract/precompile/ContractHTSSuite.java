@@ -129,11 +129,9 @@ public class ContractHTSSuite extends HapiApiSuite {
 
 	private HapiApiSpec associateToken() {
 		final var theAccount = "anybody";
-		final var theKey = "multipurpose";
 		final var theContract = "associateDissociateContract";
 		return defaultHapiSpec("associateHappyPath")
 				.given(
-						newKeyNamed(theKey),
 						cryptoCreate(theAccount).balance(10 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(A_TOKEN)
@@ -153,14 +151,12 @@ public class ContractHTSSuite extends HapiApiSuite {
 														.bytecode("associateDissociateContractByteCode")
 														.via("associateTxn")
 														.gas(100000),
-												getTxnRecord("associateTxn").logged(),
 												cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, theAccount))
 														.hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
 										)
 						)
 				).when(
-						contractCall(theContract, ContractResources.ASSOCIATE_TOKEN).payingWith(theAccount).via("associateMethodCall"),
-						getTxnRecord("associateMethodCall").logged()
+						contractCall(theContract, ContractResources.ASSOCIATE_TOKEN).payingWith(theAccount).via("associateMethodCall")
 				).then(
 						cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, theAccount))
 								.hasKnownStatus(ResponseCodeEnum.SUCCESS)
@@ -169,11 +165,9 @@ public class ContractHTSSuite extends HapiApiSuite {
 
 	private HapiApiSpec dissociateToken() {
 		final var theAccount = "anybody";
-		final var theKey = "multipurpose";
 		final var theContract = "associateDissociateContract";
 		return defaultHapiSpec("dissociateHappyPath")
 				.given(
-						newKeyNamed(theKey),
 						cryptoCreate(theAccount).balance(10 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(A_TOKEN)
@@ -193,9 +187,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 														.bytecode("associateDissociateContractByteCode")
 														.via("associateTxn")
 														.gas(100000),
-												getTxnRecord("associateTxn").logged(),
 												contractCall(theContract, ContractResources.ASSOCIATE_TOKEN).payingWith(theAccount).via("associateMethodCall"),
-												getTxnRecord("associateMethodCall").logged(),
 												cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, theAccount))
 														.hasKnownStatus(SUCCESS),
 												cryptoTransfer(moving(200, A_TOKEN).between(theAccount, TOKEN_TREASURY))
@@ -203,8 +195,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 										)
 						)
 				).when(
-						contractCall(theContract, DISSOCIATE_TOKEN).payingWith(theAccount).via("dissociateMethodCall"),
-						getTxnRecord("dissociateMethodCall").logged()
+						contractCall(theContract, DISSOCIATE_TOKEN).payingWith(theAccount).via("dissociateMethodCall")
 				).then(
 						cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, theAccount))
 								.hasKnownStatus(ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
@@ -215,5 +206,4 @@ public class ContractHTSSuite extends HapiApiSuite {
 	protected Logger getResultsLogger() {
 		return log;
 	}
-
 }
