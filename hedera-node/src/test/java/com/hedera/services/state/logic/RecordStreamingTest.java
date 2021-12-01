@@ -71,8 +71,8 @@ class RecordStreamingTest {
 
 	@Test
 	void streamsChildRecordsAtExpectedTimes() {
-		given(recordsHistorian.hasChildRecords()).willReturn(true);
-		given(recordsHistorian.getChildRecords()).willReturn(List.of(firstChildRso, secondChildRso));
+		given(recordsHistorian.hasFollowingChildRecords()).willReturn(true);
+		given(recordsHistorian.getFollowingChildRecords()).willReturn(List.of(firstChildRso, secondChildRso));
 		given(nonBlockingHandoff.offer(firstChildRso)).willReturn(true);
 		given(nonBlockingHandoff.offer(secondChildRso)).willReturn(true);
 

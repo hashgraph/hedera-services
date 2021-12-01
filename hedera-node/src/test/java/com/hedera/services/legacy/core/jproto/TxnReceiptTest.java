@@ -44,6 +44,7 @@ import java.util.List;
 import static com.hedera.services.legacy.core.jproto.TxnReceipt.MISSING_RUNNING_HASH;
 import static com.hedera.services.legacy.core.jproto.TxnReceipt.MISSING_RUNNING_HASH_VERSION;
 import static com.hedera.services.legacy.core.jproto.TxnReceipt.MISSING_SCHEDULED_TXN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -92,6 +93,12 @@ class TxnReceiptTest {
 		mockRates = mock(ExchangeRates.class);
 
 		TxnReceipt.serdes = serdes;
+	}
+
+	@Test
+	void canGetStatusAsEnum() {
+		final var subject = TxnReceipt.newBuilder().setStatus("INVALID_ACCOUNT_ID").build();
+		assertEquals(INVALID_ACCOUNT_ID, subject.getEnumStatus());
 	}
 
 	@Test

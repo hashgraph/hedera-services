@@ -190,7 +190,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 			thisRecordSourceId = recordsHistorian.nextChildRecordSourceId();
 			this.recordsHistorian =  recordsHistorian;
 		}
-		recordsHistorian.trackChildRecord(thisRecordSourceId, recordSoFar, syntheticTxn);
+		recordsHistorian.trackFollowingChildRecord(thisRecordSourceId, recordSoFar, syntheticTxn);
 	}
 
 	public WorldLedgers wrappedTrackingLedgers() {

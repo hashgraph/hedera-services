@@ -35,30 +35,39 @@ import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 
 public class TxnId implements SelfSerializable {
-	static final int PRE_RELEASE_0120_VERSION = 1;
-	static final int RELEASE_0120_VERSION = 2;
+	public static final int USER_TRANSACTION_NONCE = 0;
+
 	static final int RELEASE_0130_VERSION = 3;
-	private static final int MERKLE_VERSION = RELEASE_0130_VERSION;
+	static final int RELEASE_0210_VERSION = 4;
+	private static final int MERKLE_VERSION = RELEASE_0210_VERSION;
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x61a52dfb3a18d9bL;
 
 	static DomainSerdes serdes = new DomainSerdes();
 
+	private int nonce = USER_TRANSACTION_NONCE;
 	private boolean scheduled = false;
 	private EntityId payerAccount = MISSING_ENTITY_ID;
 	private RichInstant validStart = MISSING_INSTANT;
 
 	public TxnId() {
+		/* RuntimeConstructable */
 	}
 
 	public TxnId(
-			EntityId payerAccount,
-			RichInstant validStart,
-			boolean scheduled
+			final EntityId payerAccount,
+			final RichInstant validStart,
+			final boolean scheduled,
+			final int nonce
 	) {
 		this.scheduled = scheduled;
 		this.validStart = validStart;
 		this.payerAccount = payerAccount;
+		this.nonce = nonce;
+	}
+
+	public TxnId withNonce(final int nonce) {
+		return new TxnId(payerAccount, validStart, scheduled, nonce);
 	}
 
 	public EntityId getPayerAccount() {
@@ -84,14 +93,13 @@ public class TxnId implements SelfSerializable {
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
 		payerAccount = in.readSerializable(true, EntityId::new);
 		validStart = serdes.deserializeTimestamp(in);
-		if (version >= RELEASE_0120_VERSION) {
-			scheduled = in.readBoolean();
-		}
-		if (version == RELEASE_0120_VERSION) {
-			var hasNonce = in.readBoolean();
-			if (hasNonce) {
-				/* The 0.12.0 release only included a nonce field in the transaction id */
-				in.readByteArray(Integer.MAX_VALUE);
+		scheduled = in.readBoolean();
+		if (version >= RELEASE_0210_VERSION) {
+			final var hasNonUserNonce = in.readBoolean();
+			if (hasNonUserNonce) {
+				nonce = in.readInt();
+			} else {
+				nonce = USER_TRANSACTION_NONCE;
 			}
 		}
 	}
@@ -101,6 +109,12 @@ public class TxnId implements SelfSerializable {
 		out.writeSerializable(payerAccount, true);
 		serdes.serializeTimestamp(validStart, out);
 		out.writeBoolean(scheduled);
+		if (nonce != USER_TRANSACTION_NONCE) {
+			out.writeBoolean(true);
+			out.writeInt(nonce);
+		} else {
+			out.writeBoolean(false);
+		}
 	}
 
 	/* --- Objects --- */
@@ -115,17 +129,13 @@ public class TxnId implements SelfSerializable {
 		var that = (TxnId) o;
 		return this.scheduled == that.scheduled &&
 				Objects.equals(payerAccount, that.payerAccount) &&
-				Objects.equals(validStart, that.validStart);
+				Objects.equals(validStart, that.validStart) &&
+				this.nonce == that.nonce;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(
-				MERKLE_VERSION,
-				RUNTIME_CONSTRUCTABLE_ID,
-				payerAccount,
-				validStart,
-				scheduled);
+		return Objects.hash(payerAccount, validStart, scheduled, nonce);
 	}
 
 	@Override
@@ -134,6 +144,7 @@ public class TxnId implements SelfSerializable {
 				.add("payer", payerAccount)
 				.add("validStart", validStart)
 				.add("scheduled", scheduled)
+				.add("nonce", nonce)
 				.toString();
 	}
 
@@ -142,7 +153,8 @@ public class TxnId implements SelfSerializable {
 		return new TxnId(
 				EntityId.fromGrpcAccountId(grpc.getAccountID()),
 				RichInstant.fromGrpc(grpc.getTransactionValidStart()),
-				grpc.getScheduled());
+				grpc.getScheduled(),
+				grpc.getNonce());
 	}
 
 	public TransactionID toGrpc() {
@@ -152,6 +164,7 @@ public class TxnId implements SelfSerializable {
 			grpc.setTransactionValidStart(validStart.toGrpc());
 		}
 		grpc.setScheduled(scheduled);
+		grpc.setNonce(nonce);
 
 		return grpc.build();
 	}

@@ -169,7 +169,7 @@ public class ExpiringCreations implements EntityCreator {
 				.setTxnHash(hash)
 				.setMemo(memo)
 				.setTransferList(CurrencyAdjustments.fromGrpc(sideEffectsTracker.getNetTrackedHbarChanges()))
-				.setCustomFeesCharged(customFeesCharged)
+				.setAssessedCustomFees(customFeesCharged)
 				.setNewTokenAssociations(sideEffectsTracker.getTrackedAutoAssociations());
 
 		final var tokenChanges = sideEffectsTracker.getNetTrackedTokenUnitAndOwnershipChanges();

@@ -60,8 +60,8 @@ public class RecordStreaming implements Runnable {
 					txnCtx.consensusTime());
 			stream(topLevelRso);
 		}
-		if (recordsHistorian.hasChildRecords()) {
-			for (final var childRso : recordsHistorian.getChildRecords()) {
+		if (recordsHistorian.hasFollowingChildRecords()) {
+			for (final var childRso : recordsHistorian.getFollowingChildRecords()) {
 				stream(childRso);
 			}
 		}

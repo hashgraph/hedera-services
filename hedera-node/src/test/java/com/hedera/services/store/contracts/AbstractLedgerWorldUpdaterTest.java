@@ -116,8 +116,8 @@ class AbstractLedgerWorldUpdaterTest {
 		subject.manageInProgressRecord(recordsHistorian, secondRecord, Transaction.getDefaultInstance());
 
 		verify(recordsHistorian, times(1)).nextChildRecordSourceId();
-		verify(recordsHistorian).trackChildRecord(sourceId, firstRecord, Transaction.getDefaultInstance());
-		verify(recordsHistorian).trackChildRecord(sourceId, secondRecord, Transaction.getDefaultInstance());
+		verify(recordsHistorian).trackFollowingChildRecord(sourceId, firstRecord, Transaction.getDefaultInstance());
+		verify(recordsHistorian).trackFollowingChildRecord(sourceId, secondRecord, Transaction.getDefaultInstance());
 	}
 
 	@Test
