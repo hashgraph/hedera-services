@@ -59,8 +59,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class TokenPropertyTest {
 	final long totalSupply = 2L;
-	final JKey adminKey = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012345".getBytes());
-	final JKey freezeKey = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012346".getBytes());
+	final Optional<JEd25519Key> adminKey = Optional.of(new JEd25519Key("abcdefghijklmnopqrstuvwxyz012345".getBytes()));
+	final Optional<JEd25519Key> freezeKey = Optional.of(new JEd25519Key("abcdefghijklmnopqrstuvwxyz012346".getBytes()));
 	final JKey kycKey = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012347".getBytes());
 	final JKey pauseKey = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012348".getBytes());
 	final JKey supplyKey = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012349".getBytes());
@@ -138,8 +138,8 @@ class TokenPropertyTest {
 
 		// expect:
 		assertEquals(totalSupply, totalSupplyGetter.apply(target));
-		assertEquals(Optional.of(adminKey), adminKeyGetter.apply(target));
-		assertEquals(Optional.of(freezeKey), freezeKeyGetter.apply(target));
+		assertEquals(adminKey, adminKeyGetter.apply(target));
+		assertEquals(freezeKey, freezeKeyGetter.apply(target));
 		assertEquals(kycKey, kycKeyGetter.apply(target));
 		assertEquals(pauseKey, pauseKeyGetter.apply(target));
 		assertEquals(supplyKey, supplyKeyGetter.apply(target));
@@ -218,8 +218,8 @@ class TokenPropertyTest {
 
 		// expect:
 		assertEquals(totalSupply, target.totalSupply());
-		assertEquals(adminKey, target.getAdminKey());
-		assertEquals(freezeKey, target.getFreezeKey());
+		assertEquals(adminKey.get(), target.getAdminKey());
+		assertEquals(freezeKey.get(), target.getFreezeKey());
 		assertEquals(kycKey, target.getKycKey());
 		assertEquals(pauseKey, target.getPauseKey());
 		assertEquals(supplyKey, target.getSupplyKey());
