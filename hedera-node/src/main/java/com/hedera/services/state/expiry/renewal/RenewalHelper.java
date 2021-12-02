@@ -20,8 +20,11 @@ package com.hedera.services.state.expiry.renewal;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.BackingStore;
+import com.hedera.services.ledger.backing.BackingStore;
+import com.hedera.services.state.AutoAccountCreationsManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -41,6 +44,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
@@ -71,6 +75,8 @@ public class RenewalHelper {
 	private MerkleAccount lastClassifiedAccount = null;
 	private EntityNum lastClassifiedEntityId;
 
+	private AutoAccountCreationsManager autoAccounts;
+
 	@Inject
 	public RenewalHelper(
 			TokenStore tokenStore,
@@ -78,7 +84,8 @@ public class RenewalHelper {
 			Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
 			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels,
-			BackingStore<AccountID, MerkleAccount> backingAccounts
+			BackingStore<AccountID, MerkleAccount> backingAccounts,
+			AutoAccountCreationsManager autoAccounts
 	) {
 		this.tokens = tokens;
 		this.tokenStore = tokenStore;
@@ -86,6 +93,7 @@ public class RenewalHelper {
 		this.tokenRels = tokenRels;
 		this.dynamicProperties = dynamicProperties;
 		this.backingAccounts = backingAccounts;
+		this.autoAccounts = autoAccounts;
 	}
 
 	public ExpiredEntityClassification classify(long candidateNum, long now) {
@@ -146,7 +154,20 @@ public class RenewalHelper {
 
 		log.debug("Removed {}, displacing {}", lastClassifiedEntityId, displacements);
 
+		/* Remove the entry from auto created accounts map if there is an entry in the map */
+		removeFromAutoAccountsMapIfExists(lastClassifiedEntityId);
+
 		return displacements;
+	}
+
+	void removeFromAutoAccountsMapIfExists(final EntityNum lastClassifiedEntityId) {
+		/* get the alias from the account */
+		final var currentAccounts = accounts.get();
+		ByteString alias = currentAccounts.get(lastClassifiedEntityId).getAlias();
+
+		if (autoAccounts.getAutoAccountsMap().containsKey(alias)) {
+			autoAccounts.getAutoAccountsMap().remove(alias);
+		}
 	}
 
 	void renewLastClassifiedWith(long fee, long renewalPeriod) {

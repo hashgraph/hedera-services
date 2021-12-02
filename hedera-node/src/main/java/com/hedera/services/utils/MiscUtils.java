@@ -799,23 +799,4 @@ public final class MiscUtils {
 	public static boolean isGasThrottled(HederaFunctionality hederaFunctionality) {
 		return CONSENSUS_THROTTLED_FUNCTIONS.contains(hederaFunctionality);
 	}
-
-	/**
-	 * From given MerkleMap of accounts, populate the auto accounts creations map. Iterate through
-	 * each account in accountsMap and add an entry to autoAccountsMap if {@code alias} exists on the account.
-	 *
-	 * @param accountsMap
-	 * 		accounts MerkleMap
-	 */
-	public static Map<ByteString, EntityNum> constructAccountAliasRels(MerkleMap<EntityNum, MerkleAccount> accountsMap) {
-		Map<ByteString, EntityNum> autoAccountsMap = new HashMap<>();
-		for (Map.Entry entry : accountsMap.entrySet()) {
-			MerkleAccount value = (MerkleAccount) entry.getValue();
-			EntityNum number = (EntityNum) entry.getKey();
-			if (!value.state().getAlias().isEmpty()) {
-				autoAccountsMap.put(value.state().getAlias(), number);
-			}
-		}
-		return autoAccountsMap;
-	}
 }

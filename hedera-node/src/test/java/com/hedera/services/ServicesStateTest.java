@@ -51,7 +51,6 @@ import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.SystemExits;
 import com.hedera.test.extensions.LogCaptor;
@@ -170,6 +169,12 @@ class ServicesStateTest {
 	private ServicesState.FcmMigrator fcmMigrator;
 	@Mock
 	private Consumer<Boolean> blobMigrationFlag;
+	@Mock
+	private PrefetchProcessor prefetchProcessor;
+	@Mock
+	private CodeCache codeCache;
+	@Mock
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -427,6 +432,7 @@ class ServicesStateTest {
 	void doesntThrowWhenDualStateIsNull() {
 		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
@@ -551,6 +557,7 @@ class ServicesStateTest {
 	void nonGenesisInitReusesContextIfPresent() {
 		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
@@ -577,6 +584,7 @@ class ServicesStateTest {
 
 		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 		given(networkContext.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION + 1);
 
 		given(platform.getSelfId()).willReturn(selfId);
@@ -595,6 +603,7 @@ class ServicesStateTest {
 	void nonGenesisInitClearsPreparedUpgradeIfNonNullLastFrozenMatchesFreezeTime() {
 		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 
 		final var when = Instant.ofEpochSecond(1_234_567L, 890);
 		given(dualState.getFreezeTime()).willReturn(when);
@@ -619,6 +628,7 @@ class ServicesStateTest {
 	void nonGenesisInitDoesntClearPreparedUpgradeIfBothFreezeAndLastFrozenAreNull() {
 		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 
 		given(networkContext.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
 
@@ -654,11 +664,11 @@ class ServicesStateTest {
 		given(platform.getSelfId()).willReturn(selfId);
 
 		// when:
-		assertEquals(null, subject.getAutoAccountsMap());
+		assertEquals(null, subject.getAutoAccountsManager());
 		subject.genesisInit(platform, addressBook, dualState);
 
 		// then:
-		assertTrue(subject.getAutoAccountsMap().isEmpty());
+		assertTrue(subject.getAutoAccountsManager().getAutoAccountsMap().isEmpty());
 	}
 
 	@Test
@@ -687,7 +697,7 @@ class ServicesStateTest {
 		// when:
 		subject.init(platform, addressBook, dualState);
 
-		assertEquals(1, subject.getAutoAccountsMap().size());
+		assertEquals(1, subject.getAutoAccountsManager().getAutoAccountsMap().size());
 	}
 
 	@Test
