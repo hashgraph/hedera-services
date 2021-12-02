@@ -174,7 +174,7 @@ public final class RequestBuilder {
         .setShardNum(shardNum).build();
   }
 
-  public static AccountID getAccountIdBuild(Key alias, Long realmNum, Long shardNum) {
+  public static AccountID getAccountIdBuild(ByteString alias, Long realmNum, Long shardNum) {
     return AccountID.newBuilder().setAlias(alias).setRealmNum(realmNum).setShardNum(shardNum).build();
   }
 
@@ -581,7 +581,7 @@ public final class RequestBuilder {
           long transactionFee, Timestamp timestamp,
           Duration transactionDuration, boolean generateRecord, String memo,
           Long senderActNum, Long amountSend,
-          Key receivingAlias, Long amountReceived) {
+          ByteString receivingAlias, Long amountReceived) {
 
     AccountAmount a1 = AccountAmount.newBuilder()
             .setAccountID(getAccountIdBuild(senderActNum, 0l, 0l))
@@ -590,7 +590,8 @@ public final class RequestBuilder {
             .setAccountID(getAccountIdBuild(receivingAlias, 0l, 0l))
             .setAmount(amountReceived).build();
     TransferList transferList = TransferList.newBuilder().addAccountAmounts(a1)
-            .addAccountAmounts(a2).build();
+            .addAccountAmounts(a2)
+            .build();
     return getCryptoTransferRequest(payerAccountNum, payerRealmNum, payerShardNum,
             nodeAccountNum, nodeRealmNum, nodeShardNum,
             transactionFee, timestamp, transactionDuration, generateRecord, memo,
@@ -603,7 +604,7 @@ public final class RequestBuilder {
           long transactionFee, Timestamp timestamp,
           Duration transactionDuration, boolean generateRecord, String memo,
           Long senderActNum, Long tokenNum, Long amountSend,
-          Key receivingAlias, Long amountReceived) {
+          ByteString receivingAlias, Long amountReceived) {
 
     AccountAmount a1 = AccountAmount.newBuilder()
             .setAccountID(getAccountIdBuild(senderActNum, 0l, 0l))
