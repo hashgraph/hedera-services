@@ -85,6 +85,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 	private int sigMapSize;
 	private int numSigPairs;
+	private int autoAccountCreationCount;
 	private byte[] hash;
 	private byte[] txnBytes;
 	private byte[] utf8MemoBytes;
@@ -144,6 +145,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 		memoHasZeroByte = Arrays.contains(utf8MemoBytes, (byte) 0);
 
 		getFunction();
+		countAutoAccountCreations();
 		setBaseUsageMeta();
 		setOpUsageMeta();
 	}
@@ -155,6 +157,31 @@ public class SignedTxnAccessor implements TxnAccessor {
 	@Override
 	public SignatureMap getSigMap() {
 		return sigMap;
+	}
+
+	private void countAutoAccountCreations() {
+		if (getFunction() == CryptoTransfer) {
+			final var cryptoTransfer = getTxn().getCryptoTransfer();
+			for ( var accountAmount : cryptoTransfer.getTransfers().getAccountAmountsList()) {
+				if (accountAmount.getAccountID().hasAlias()) {
+					autoAccountCreationCount++;
+				}
+			}
+
+			for ( var tokenAmounts : cryptoTransfer.getTokenTransfersList()) {
+				for (var nftTransfer : tokenAmounts.getNftTransfersList()) {
+					if (nftTransfer.getReceiverAccountID().hasAlias()) {
+						autoAccountCreationCount++;
+					}
+				}
+
+				for (var fungibleTransfer : tokenAmounts.getTransfersList()) {
+					if (fungibleTransfer.getAccountID().hasAlias()) {
+						autoAccountCreationCount++;
+					}
+				}
+			}
+		}
 	}
 
 	@Override
@@ -235,6 +262,11 @@ public class SignedTxnAccessor implements TxnAccessor {
 	@Override
 	public String getMemo() {
 		return memo;
+	}
+
+	@Override
+	public int getAutoAccountCreationsCount() {
+		return autoAccountCreationCount;
 	}
 
 	@Override

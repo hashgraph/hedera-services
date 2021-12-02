@@ -66,6 +66,7 @@ public interface TxnAccessor {
     }
 
     long getOfferedFee();
+    int getAutoAccountCreationsCount();
     AccountID getPayer();
     TransactionID getTxnId();
     HederaFunctionality getFunction();

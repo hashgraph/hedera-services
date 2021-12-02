@@ -9,9 +9,9 @@ package com.hedera.services.throttling;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,6 +22,7 @@ package com.hedera.services.throttling;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
+import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -38,6 +39,9 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.function.IntSupplier;
 
+import static com.hedera.services.utils.MiscUtils.isGasThrottled;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 
 public class DeterministicThrottling implements TimedFunctionalityThrottling {
@@ -73,11 +77,22 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		ThrottleReqsManager manager;
 		if ((manager = functionReqs.get(function)) == null) {
 			return true;
-		}
-		if (function == TokenMint) {
+		} else if (function == CryptoTransfer) {
+			return shouldThrottleTransfer(manager, accessor.getAutoAccountCreationsCount(), now);
+		} else if (function == TokenMint) {
 			return shouldThrottleMint(manager, accessor.getTxn().getTokenMint(), now);
 		} else {
 			return !manager.allReqsMetAt(now);
+		}
+	}
+
+	private boolean shouldThrottleTransfer(
+			final ThrottleReqsManager manager, final int autoAccountCreationCount, final Instant now) {
+		if (autoAccountCreationCount == 0) {
+			return !manager.allReqsMetAt(now);
+		} else {
+			return !functionReqs.get(CryptoCreate).allReqsMetAt(
+					now, autoAccountCreationCount, ThrottleReqOpsScaleFactor.from("1:1"));
 		}
 	}
 
