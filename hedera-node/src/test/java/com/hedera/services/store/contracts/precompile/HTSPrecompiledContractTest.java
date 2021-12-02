@@ -24,6 +24,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.SoliditySigsVerifier;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
@@ -92,6 +93,9 @@ class HTSPrecompiledContractTest {
 	private DecodingFacade decoder;
 	@Mock
 	private SyntheticTxnFactory syntheticTxnFactory;
+	@Mock
+	private EntityCreator creator;
+
 
 	private HTSPrecompiledContract subject;
 
@@ -101,7 +105,7 @@ class HTSPrecompiledContractTest {
 				ledger, accountStore, validator,
 				tokenStore, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory);
+				syntheticTxnFactory, creator);
 	}
 
 	@Test
@@ -133,7 +137,7 @@ class HTSPrecompiledContractTest {
 				ledger, accountStore, validator,
 				tokenStore, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory));
+				syntheticTxnFactory, creator));
 		given(input.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
 
 		// when
@@ -150,7 +154,7 @@ class HTSPrecompiledContractTest {
 				ledger, accountStore, validator,
 				tokenStore, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory));
+				syntheticTxnFactory, creator));
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
 
 		// when
@@ -167,7 +171,7 @@ class HTSPrecompiledContractTest {
 				ledger, accountStore, validator,
 				tokenStore, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory));
+				syntheticTxnFactory, creator));
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKEN);
 		given(input.slice(16, 20)).willReturn(Bytes.of("0x000000000000000001".getBytes()));
 		given(input.slice(48, 20)).willReturn(Bytes.of("0x000000000000000002".getBytes()));
@@ -188,7 +192,7 @@ class HTSPrecompiledContractTest {
 				ledger, accountStore, validator,
 				tokenStore, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory));
+				syntheticTxnFactory, creator));
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_NFTS);
 
 		// when
@@ -205,7 +209,7 @@ class HTSPrecompiledContractTest {
 				ledger, accountStore, validator,
 				tokenStore, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory));
+				syntheticTxnFactory, creator));
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_NFT);
 
 		// when
@@ -222,7 +226,7 @@ class HTSPrecompiledContractTest {
 				ledger, accountStore, validator,
 				tokenStore, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory));
+				syntheticTxnFactory, creator));
 		given(input.getInt(0)).willReturn(ABI_ID_MINT_TOKEN);
 
 		// when
@@ -239,7 +243,7 @@ class HTSPrecompiledContractTest {
 				ledger, accountStore, validator,
 				tokenStore, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory));
+				syntheticTxnFactory, creator));
 		given(input.getInt(0)).willReturn(ABI_ID_BURN_TOKEN);
 
 		// when
@@ -256,7 +260,7 @@ class HTSPrecompiledContractTest {
 				ledger, accountStore, validator,
 				tokenStore, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory));
+				syntheticTxnFactory, creator));
 		given(input.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKENS);
 
 		// when
@@ -273,7 +277,7 @@ class HTSPrecompiledContractTest {
 				ledger, accountStore, validator,
 				tokenStore, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory));
+				syntheticTxnFactory, creator));
 		given(input.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKEN);
 		given(input.slice(16, 20)).willReturn(Bytes.of("0x000000000000000001".getBytes()));
 		given(input.slice(48, 20)).willReturn(Bytes.of("0x000000000000000002".getBytes()));
@@ -295,7 +299,7 @@ class HTSPrecompiledContractTest {
 				ledger, accountStore, validator,
 				tokenStore, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory));
+				syntheticTxnFactory, creator));
 		given(input.getInt(0)).willReturn(ABI_ID_DISSOCIATE_TOKENS);
 
 		// when
@@ -317,7 +321,7 @@ class HTSPrecompiledContractTest {
 				ledger, accountStore, validator,
 				tokenStore, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory));
+				syntheticTxnFactory, creator));
 		given(input.getInt(0)).willReturn(ABI_ID_DISSOCIATE_TOKEN);
 
 		// when

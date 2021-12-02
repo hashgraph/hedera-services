@@ -31,9 +31,16 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.List;
 
+@Singleton
 public class SyntheticTxnFactory {
+	@Inject
+	public SyntheticTxnFactory() {
+	}
+
 	public TransactionBody.Builder createNonFungibleMint(
 			final NftMint nftMint
 	) {

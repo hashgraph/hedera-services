@@ -689,6 +689,10 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		}
 
 		public void excludeHbarChangesFrom(final ExpirableTxnRecord.Builder that) {
+			if (that.transferList == null) {
+				return;
+			}
+
 			final var adjustsHere = this.transferList.hbars.length;
 			final var adjustsThere = that.transferList.hbars.length;
 			final var maxAdjusts = adjustsHere + adjustsThere;
