@@ -91,6 +91,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	};
 
 	private MintLogicFactory mintLogicFactory = MintLogic::new;
+	private AssociateLogicFactory associateLogicFactory = AssociateLogic::new;
+	private DissociateLogicFactory dissociateLogicFactory = DissociateLogic::new;
 	private TokenStoreFactory tokenStoreFactory = TypedTokenStore::new;
 	private AccountStoreFactory accountStoreFactory = AccountStore::new;
 	private Supplier<SideEffectsTracker> sideEffectsFactory = SideEffectsTracker::new;
@@ -233,6 +235,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		return null;
 	}
 
+	// TODO: HERE
 	@SuppressWarnings("unused")
 	protected Bytes computeMintToken(final Bytes input, final MessageFrame frame) {
 		/* --- Get the frame context --- */
@@ -294,21 +297,16 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		final var recipient = messageFrame.getRecipientAddress();
 
 		/* Parse Bytes input as typed arguments */
-		final var accountAddress = Address.wrap(input.slice(16, 20));
-		final var tokenAddress = Address.wrap(input.slice(48, 20));
+		final var associateOp = decoder.decodeAssociate(input);
+		final var synthBody = syntheticTxnFactory.createAssociate(associateOp);
 
-		/* Step 2 */
-//		TODO: Initialize synthetic transaction
 		ExpirableTxnRecord.Builder childRecord;
 		Bytes result;
 
 		try {
-			/* Translate to gRPC types */
-			final var accountID = EntityIdUtils.accountParsedFromSolidityAddress(accountAddress.toArrayUnsafe());
-			final var tokenID = EntityIdUtils.tokenParsedFromSolidityAddress(tokenAddress.toArrayUnsafe());
-
 			/* Perform validations */
-			final var hasRequiredSigs = sigsVerifier.hasActiveKey(Id.fromGrpcAccount(accountID), recipient, contract);
+			final var hasRequiredSigs =
+					sigsVerifier.hasActiveKey(Id.fromGrpcAccount(associateOp.getAccountID()), recipient, contract);
 			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
 			/* Initialize the stores */
@@ -317,21 +315,22 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var tokenStore = createTokenStore(ledgers, accountStore, sideEffects);
 
 			/* Do the business logic */
-			final var logic = new AssociateLogic(tokenStore, accountStore, dynamicProperties);
-			logic.associate(Id.fromGrpcAccount(accountID), singletonList(tokenID));
+			final var associateLogic =
+					associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties);
+			associateLogic.associate(Id.fromGrpcAccount(associateOp.getAccountID()), singletonList(associateOp.getTokenID()));
 			ledgers.commit();
 
 			/* Summarize the happy results of the execution */
-//			childRecord = creator.createSuccessfulSyntheticRecord(syntheticTxn, emptyList(), sideEffects);
+			childRecord = creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects);
 			result = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
 		} catch (InvalidTransactionException e) {
 			/* Summarize the unhappy results of the execution */
-//			childRecord = creator.createFailedSyntheticRecord(syntheticTxn, e.getResponseCode());
+			childRecord = creator.createFailedSyntheticRecord(e.getResponseCode());
 			result = UInt256.valueOf(e.getResponseCode().getNumber());
 		}
 
 		/* Track the child record and return */
-//		updater.manageInProgressRecord(recordsHistorian, childRecord, syntheticTxn);
+		updater.manageInProgressRecord(recordsHistorian, childRecord, synthBody);
 		return result;
 	}
 
@@ -350,8 +349,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		final Bytes address = Address.wrap(input.slice(16, 20));
 		final Bytes tokenAddress = Address.wrap(input.slice(48, 20));
 
-		/* Step 2 */
-//		TODO: Initialize synthetic transaction
+		final var dissociateOp = decoder.decodeDissociate(input);
+		final var synthBody = syntheticTxnFactory.createDissociate(dissociateOp);
+
 		ExpirableTxnRecord.Builder childRecord;
 		Bytes result;
 
@@ -366,21 +366,21 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var tokenStore = createTokenStore(ledgers, accountStore, sideEffects);
 
 			/* Do the business logic */
-			DissociateLogic dissociateLogic = new DissociateLogic(validator, tokenStore, accountStore, dissociationFactory);
+			DissociateLogic dissociateLogic =
+					dissociateLogicFactory.newDissociateLogic(validator, tokenStore, accountStore, dissociationFactory);
 			dissociateLogic.dissociate(accountID, singletonList(tokenID));
 			ledgers.commit();
 
 			/* Summarize the happy results of the execution */
-//			childRecord = creator.createSuccessfulSyntheticRecord(syntheticTxn, emptyList(), sideEffects);
+			childRecord = creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects);
 			result = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
 		} catch (InvalidTransactionException e) {
 			/* Summarize the unhappy results of the execution */
-//			childRecord = creator.createFailedSyntheticRecord(syntheticTxn, e.getResponseCode());
+			childRecord = creator.createFailedSyntheticRecord(e.getResponseCode());
 			result = UInt256.valueOf(e.getResponseCode().getNumber());
 		}
 		/* Track the child record and return */
-//		updater.manageInProgressRecord(recordsHistorian, childRecord, syntheticTxn);
-
+		updater.manageInProgressRecord(recordsHistorian, childRecord, synthBody);
 		return result;
 	}
 
@@ -406,6 +406,21 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	@FunctionalInterface
+	interface AssociateLogicFactory {
+		AssociateLogic newAssociateLogic(final TypedTokenStore tokenStore,
+										 final AccountStore accountStore,
+										 final GlobalDynamicProperties dynamicProperties);
+	}
+
+	@FunctionalInterface
+	interface DissociateLogicFactory {
+		DissociateLogic newDissociateLogic(final OptionValidator validator,
+										   final TypedTokenStore tokenStore,
+										   final AccountStore accountStore,
+										   final DissociationFactory dissociationFactory);
+	}
+
+	@FunctionalInterface
 	interface AccountStoreFactory {
 		AccountStore newAccountStore(
 				final OptionValidator validator,
@@ -425,7 +440,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				TypedTokenStore.LegacyTreasuryRemover treasuryRemover,
 				SideEffectsTracker sideEffects);
 	}
-
 
 	/* --- Only used by unit tests --- */
 	void setMintLogicFactory(final MintLogicFactory mintLogicFactory) {

@@ -8,6 +8,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.List;
 
+import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.tokenParsedFromSolidityAddress;
 
 @Singleton
@@ -29,5 +30,23 @@ public class DecodingFacade {
 		return new SyntheticTxnFactory.NftMint(
 				tokenParsedFromSolidityAddress(tokenAddress),
 				List.of(ByteString.copyFromUtf8("Hello World!")));
+	}
+
+	public SyntheticTxnFactory.AssociateToken decodeAssociate(final Bytes input) {
+		Address accountAddress = Address.wrap(input.slice(16, 20));
+		Address tokenAddress = Address.wrap(input.slice(48, 20));
+
+		return new SyntheticTxnFactory.AssociateToken(
+				accountParsedFromSolidityAddress(accountAddress),
+				tokenParsedFromSolidityAddress(tokenAddress));
+	}
+
+	public SyntheticTxnFactory.DissociateToken decodeDissociate(final Bytes input) {
+		Address accountAddress = Address.wrap(input.slice(16, 20));
+		Address tokenAddress = Address.wrap(input.slice(48, 20));
+
+		return new SyntheticTxnFactory.DissociateToken(
+				accountParsedFromSolidityAddress(accountAddress),
+				tokenParsedFromSolidityAddress(tokenAddress));
 	}
 }

@@ -187,12 +187,6 @@ public final class TokenLogicModule {
 		return Dissociation::loadFrom;
 	}
 
-	@Provides
-	@Singleton
-	public static SyntheticTxnFactory provideSyntheticTxnFactory() {
-		return new SyntheticTxnFactory();
-	}
-
 	private TokenLogicModule() {
 		throw new UnsupportedOperationException("Dagger2 module");
 	}

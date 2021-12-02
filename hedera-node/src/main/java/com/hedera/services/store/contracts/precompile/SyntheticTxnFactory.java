@@ -25,6 +25,8 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -79,6 +81,24 @@ public class SyntheticTxnFactory {
 		}
 
 		return TransactionBody.newBuilder().setCryptoTransfer(builder);
+	}
+
+	public TransactionBody.Builder createAssociate(final AssociateToken associateToken) {
+		final var builder = TokenAssociateTransactionBody.newBuilder();
+
+		builder.setAccount(associateToken.getAccountID());
+		builder.setTokens(0, associateToken.getTokenID());
+
+		return TransactionBody.newBuilder().setTokenAssociate(builder);
+	}
+
+	public TransactionBody.Builder createDissociate(final DissociateToken dissociateToken) {
+		final var builder = TokenDissociateTransactionBody.newBuilder();
+
+		builder.setAccount(dissociateToken.getAccountID());
+		builder.setTokens(0, dissociateToken.getTokenID());
+
+		return TransactionBody.newBuilder().setTokenDissociate(builder);
 	}
 
 	public static class HbarTransfer {
@@ -155,6 +175,42 @@ public class SyntheticTxnFactory {
 
 		public List<ByteString> getMetadata() {
 			return metadata;
+		}
+	}
+
+	public static class AssociateToken {
+		private final AccountID accountID;
+		private final TokenID tokenID;
+
+		public AssociateToken(final AccountID accountID, final TokenID tokenID) {
+			this.accountID  =accountID;
+			this.tokenID = tokenID;
+		}
+
+		public AccountID getAccountID() {
+			return accountID;
+		}
+
+		public TokenID getTokenID() {
+			return tokenID;
+		}
+	}
+
+	public static class DissociateToken {
+		private final AccountID accountID;
+		private final TokenID tokenID;
+
+		public DissociateToken(final AccountID accountID, final TokenID tokenID) {
+			this.accountID  =accountID;
+			this.tokenID = tokenID;
+		}
+
+		public AccountID getAccountID() {
+			return accountID;
+		}
+
+		public TokenID getTokenID() {
+			return tokenID;
 		}
 	}
 }
