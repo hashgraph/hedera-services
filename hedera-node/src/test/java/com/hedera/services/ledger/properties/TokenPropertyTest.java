@@ -30,7 +30,6 @@ import com.hedera.services.state.submerkle.FcCustomFee;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.Optional;
 
 import static com.hedera.services.ledger.properties.TokenProperty.ACC_FROZEN_BY_DEFAULT;
 import static com.hedera.services.ledger.properties.TokenProperty.ADMIN_KEY;
@@ -138,8 +137,8 @@ class TokenPropertyTest {
 
 		// expect:
 		assertEquals(totalSupply, totalSupplyGetter.apply(target));
-		assertEquals(Optional.of(adminKey), adminKeyGetter.apply(target));
-		assertEquals(Optional.of(freezeKey), freezeKeyGetter.apply(target));
+		assertEquals(adminKey, adminKeyGetter.apply(target));
+		assertEquals(freezeKey, freezeKeyGetter.apply(target));
 		assertEquals(kycKey, kycKeyGetter.apply(target));
 		assertEquals(pauseKey, pauseKeyGetter.apply(target));
 		assertEquals(supplyKey, supplyKeyGetter.apply(target));

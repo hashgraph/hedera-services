@@ -299,6 +299,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			mintLogic.mint(tokenId, newMeta.size(), 0, newMeta, Instant.EPOCH);
 			childRecord = creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects);
 			result = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
+			ledgers.commit();
 		} catch (InvalidTransactionException e) {
 			e.printStackTrace();
 			childRecord = creator.createFailedSyntheticRecord(e.getResponseCode());

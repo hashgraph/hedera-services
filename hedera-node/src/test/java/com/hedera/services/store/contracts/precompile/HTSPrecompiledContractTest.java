@@ -59,6 +59,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willCallRealMethod;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -222,17 +224,13 @@ class HTSPrecompiledContractTest {
 	@Test
 	void computeCallsCorrectImplementationForMintToken() {
 		// given
-		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(
-				ledger, accountStore, validator,
-				tokenStore, dynamicProperties, gasCalculator,
-				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory, creator));
+		HTSPrecompiledContract contract = mock(HTSPrecompiledContract.class);
+
+		willCallRealMethod().given(contract).compute(input, messageFrame);
 		given(input.getInt(0)).willReturn(ABI_ID_MINT_TOKEN);
 
-		// when
 		contract.compute(input, messageFrame);
 
-		// then
 		verify(contract).computeMintToken(input, messageFrame);
 	}
 
@@ -382,17 +380,6 @@ class HTSPrecompiledContractTest {
 
 		// when
 		var result = subject.computeTransferNft(input, messageFrame);
-
-		// then
-		assertNull(result);
-	}
-
-	@Test
-	void verifyComputeMintToken() {
-		// given
-
-		// when
-		var result = subject.computeMintToken(input, messageFrame);
 
 		// then
 		assertNull(result);
