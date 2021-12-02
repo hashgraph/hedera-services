@@ -28,6 +28,11 @@ public class AutoAccountCreationsManager {
 		return autoAccountsMap;
 	}
 
+	/* Only for unit tests */
+	public void setAutoAccountsMap(Map<ByteString, EntityNum> map) {
+		this.autoAccountsMap = map;
+	}
+
 	/**
 	 * From given MerkleMap of accounts, populate the auto accounts creations map. Iterate through
 	 * each account in accountsMap and add an entry to autoAccountsMap if {@code alias} exists on the account.
@@ -42,6 +47,21 @@ public class AutoAccountCreationsManager {
 			if (!value.state().getAlias().isEmpty()) {
 				this.autoAccountsMap.put(value.state().getAlias(), number);
 			}
+		}
+	}
+
+	/**
+	 * Removes an entry from the autoAccountsMap when an entity is expired and deleted from the ledger.
+	 * @param lastClassifiedEntityId entity id that is expired
+	 * @param currentAccounts current accounts map
+	 */
+	public void remove(final EntityNum lastClassifiedEntityId,
+			final MerkleMap<EntityNum, MerkleAccount> currentAccounts) {
+		/* get the alias from the account */
+		ByteString alias = currentAccounts.get(lastClassifiedEntityId).getAlias();
+
+		if (autoAccountsMap.containsKey(alias)) {
+			autoAccountsMap.remove(alias);
 		}
 	}
 

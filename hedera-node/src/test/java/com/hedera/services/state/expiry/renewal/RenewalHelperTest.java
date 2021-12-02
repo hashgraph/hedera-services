@@ -9,9 +9,9 @@ package com.hedera.services.state.expiry.renewal;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -60,9 +60,13 @@ import static com.hedera.services.state.expiry.renewal.RenewalRecordsHelperTest.
 import static com.hedera.services.state.expiry.renewal.RenewalRecordsHelperTest.tokensFrom;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willCallRealMethod;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -74,31 +78,32 @@ class RenewalHelperTest {
 
 	private final MerkleAccount nonExpiredAccount = MerkleAccountFactory.newAccount()
 			.balance(0).expirationTime(now + 1)
-			.alias(ByteString.copyFromUtf8("bbbbbbbbbb"))
+			.alias(ByteString.copyFromUtf8("aaaa"))
 			.get();
 	private final MerkleAccount expiredAccountZeroBalance = MerkleAccountFactory.newAccount()
 			.balance(0).expirationTime(now - 1)
-			.alias(ByteString.copyFromUtf8("bbbbbbbbbb"))
+			.alias(ByteString.copyFromUtf8("bbbb"))
 			.get();
 	private final MerkleAccount expiredDeletedAccount = MerkleAccountFactory.newAccount()
 			.balance(0)
 			.deleted(true)
-			.alias(ByteString.copyFromUtf8("bbbbbbbbbb"))
+			.alias(ByteString.copyFromUtf8("cccc"))
 			.expirationTime(now - 1)
 			.get();
 	private final MerkleAccount expiredAccountNonZeroBalance = MerkleAccountFactory.newAccount()
 			.balance(nonZeroBalance).expirationTime(now - 1)
-			.alias(ByteString.copyFromUtf8("bbbbbbbbbb"))
+			.alias(ByteString.copyFromUtf8("dddd"))
 			.get();
 	private final MerkleAccount fundingAccount = MerkleAccountFactory.newAccount()
 			.balance(0)
-			.alias(ByteString.copyFromUtf8("bbbbbbbbbb"))
+			.alias(ByteString.copyFromUtf8("eeee"))
 			.get();
 	private final MerkleAccount contractAccount = MerkleAccountFactory.newAccount()
 			.isSmartContract(true)
 			.balance(0).expirationTime(now - 1)
 			.get();
-	private final long nonExpiredAccountNum = 1L, brokeExpiredAccountNum = 2L, fundedExpiredAccountNum = 3L;
+	private final long nonExpiredAccountNum = 1L, brokeExpiredAccountNum = 2L, fundedExpiredAccountNum = 3L,
+			expiredAccountNum = 4L;
 	private final EntityId expiredTreasuryId = new EntityId(0, 0, brokeExpiredAccountNum);
 	private final EntityId treasuryId = new EntityId(0, 0, 666L);
 	private final AccountID treasuryGrpcId = treasuryId.toGrpcAccountId();
@@ -144,12 +149,18 @@ class RenewalHelperTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new RenewalHelper(tokenStore, dynamicProps, () -> tokens, () -> accounts, () -> tokenRels, backingAccounts, autoAccounts);
+		subject = new RenewalHelper(tokenStore, dynamicProps, () -> tokens, () -> accounts, () -> tokenRels,
+				backingAccounts, autoAccounts);
+		addEntitiesToAutoAccountsMap();
+	}
+
+	private void addEntitiesToAutoAccountsMap() {
 		autoAccountsMap.put(nonExpiredAccount.getAlias(), EntityNum.fromLong(nonExpiredAccountNum));
 		autoAccountsMap.put(expiredAccountZeroBalance.getAlias(), EntityNum.fromLong(brokeExpiredAccountNum));
-		autoAccountsMap.put(expiredDeletedAccount.getAlias(), EntityNum.fromLong(brokeExpiredAccountNum));
+		autoAccountsMap.put(expiredDeletedAccount.getAlias(), EntityNum.fromLong(expiredAccountNum));
 		autoAccountsMap.put(expiredAccountNonZeroBalance.getAlias(), EntityNum.fromLong(fundedExpiredAccountNum));
 		autoAccountsMap.put(fundingAccount.getAlias(), EntityNum.fromLong(98));
+		autoAccounts.setAutoAccountsMap(autoAccountsMap);
 	}
 
 	@Test
@@ -253,7 +264,6 @@ class RenewalHelperTest {
 		givenRelPresent(expiredKey, deletedTokenId, 0);
 		givenRelPresent(expiredKey, survivedTokenId, 0);
 		givenRelPresent(expiredKey, EntityNum.fromTokenId(missingTokenGrpcId), 0);
-		given(autoAccounts.getAutoAccountsMap()).willReturn(autoAccountsMap);
 
 		// when:
 		subject.classify(brokeExpiredAccountNum, now);
@@ -265,6 +275,7 @@ class RenewalHelperTest {
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), deletedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), missingTokenGrpcId));
+		verify(autoAccounts).remove(expiredKey, accounts);
 		// and:
 		assertTrue(displacedTokens.getLeft().isEmpty());
 	}
@@ -281,10 +292,11 @@ class RenewalHelperTest {
 		givenRelPresent(expiredKey, survivedTokenId, tokenBalance);
 		givenRelPresent(expiredKey, EntityNum.fromTokenId(missingTokenGrpcId), 0);
 		givenModifiableRelPresent(EntityNum.fromAccountId(treasuryGrpcId), survivedTokenId, 0L);
-		given(autoAccounts.getAutoAccountsMap()).willReturn(autoAccountsMap);
+		given(accounts.get(expiredKey)).willReturn(expiredAccountZeroBalance);
 
 		// when:
 		subject.classify(brokeExpiredAccountNum, now);
+		assertTrue(autoAccountsMap.containsKey(expiredAccountZeroBalance.getAlias()));
 		// and:
 		var displacedTokens = subject.removeLastClassifiedAccount();
 
@@ -293,12 +305,42 @@ class RenewalHelperTest {
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), deletedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));
-		verify(autoAccounts).getAutoAccountsMap().remove(expiredKey);
+		verify(autoAccounts).remove(expiredKey, accounts);
 		// and:
 		final var ttls = List.of(
 				ttlOf(survivedTokenGrpcId, grpcIdWith(brokeExpiredAccountNum), treasuryGrpcId, tokenBalance));
 		assertEquals(tokensFrom(ttls), displacedTokens.getLeft());
 		assertEquals(adjustmentsFrom(ttls), displacedTokens.getRight());
+	}
+
+	@Test
+	void removesAutoAccountEntityWhenExpired() {
+		MerkleMap<EntityNum, MerkleAccount> accountsMap = new MerkleMap<>();
+		accountsMap.put(EntityNum.fromLong(nonExpiredAccountNum), nonExpiredAccount);
+		accountsMap.put(EntityNum.fromLong(brokeExpiredAccountNum), expiredAccountZeroBalance);
+
+		AutoAccountCreationsManager autoAccounts = new AutoAccountCreationsManager();
+		autoAccounts.setAutoAccountsMap(autoAccountsMap);
+
+		subject = new RenewalHelper(tokenStore, dynamicProps, () -> tokens, () -> accountsMap, () -> tokenRels,
+				backingAccounts, autoAccounts);
+
+		final var expiredKey = EntityNum.fromLong(brokeExpiredAccountNum);
+
+		givenTokenPresent(deletedTokenId, deletedToken);
+		givenTokenPresent(survivedTokenId, longLivedToken);
+		givenRelPresent(expiredKey, deletedTokenId, Long.MAX_VALUE);
+		givenRelPresent(expiredKey, survivedTokenId, tokenBalance);
+		givenRelPresent(expiredKey, EntityNum.fromTokenId(missingTokenGrpcId), 0);
+		givenModifiableRelPresent(EntityNum.fromAccountId(treasuryGrpcId), survivedTokenId, 0L);
+
+		assertTrue(autoAccountsMap.containsKey(expiredAccountZeroBalance.getAlias()));
+
+		subject.classify(brokeExpiredAccountNum, now);
+		subject.removeLastClassifiedAccount();
+
+		verify(backingAccounts).remove(expiredKey.toGrpcAccountId());
+		assertFalse(autoAccountsMap.containsKey(expiredAccountZeroBalance.getAlias()));
 	}
 
 	@Test
@@ -318,6 +360,7 @@ class RenewalHelperTest {
 		// then:
 		verify(accounts).getForModify(key);
 		verify(accounts).getForModify(fundingKey);
+		verify(autoAccounts, never()).remove(fundingKey, accounts);
 	}
 
 	@Test
@@ -347,7 +390,7 @@ class RenewalHelperTest {
 	}
 
 	private void givenPresent(long num, MerkleAccount account) {
-		givenPresent(num, account,false);
+		givenPresent(num, account, false);
 	}
 
 	private void givenTokenPresent(EntityNum id, MerkleToken token) {

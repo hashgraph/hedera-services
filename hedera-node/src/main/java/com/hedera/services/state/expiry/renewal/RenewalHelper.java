@@ -155,19 +155,9 @@ public class RenewalHelper {
 		log.debug("Removed {}, displacing {}", lastClassifiedEntityId, displacements);
 
 		/* Remove the entry from auto created accounts map if there is an entry in the map */
-		removeFromAutoAccountsMapIfExists(lastClassifiedEntityId);
+		autoAccounts.remove(lastClassifiedEntityId, accounts.get());
 
 		return displacements;
-	}
-
-	void removeFromAutoAccountsMapIfExists(final EntityNum lastClassifiedEntityId) {
-		/* get the alias from the account */
-		final var currentAccounts = accounts.get();
-		ByteString alias = currentAccounts.get(lastClassifiedEntityId).getAlias();
-
-		if (autoAccounts.getAutoAccountsMap().containsKey(alias)) {
-			autoAccounts.getAutoAccountsMap().remove(alias);
-		}
 	}
 
 	void renewLastClassifiedWith(long fee, long renewalPeriod) {
