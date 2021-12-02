@@ -58,6 +58,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	static DomainSerdes serdes = new DomainSerdes();
 
 	public static final String DEFAULT_MEMO = "";
+	private static final ByteString DEFAULT_ALIAS = ByteString.EMPTY;
 
 	private JKey key;
 	private long expiry;
@@ -70,7 +71,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private EntityId proxy;
 	private long nftsOwned;
 	private int number;
-	private ByteString alias;
+	private ByteString alias = DEFAULT_ALIAS;
 	private int autoAssociationMetadata;
 
 	public MerkleAccountState() {
@@ -102,7 +103,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.proxy = proxy;
 		this.number = number;
 		this.autoAssociationMetadata = autoAssociationMetadata;
-		this.alias = alias;
+		this.alias = Optional.ofNullable(alias).orElse(DEFAULT_ALIAS);
 	}
 
 	/* --- MerkleLeaf --- */
@@ -138,7 +139,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			number = in.readInt();
 		}
 		if (version >= RELEASE_0210_VERSION) {
-			alias = ByteString.copyFromUtf8(in.readNormalisedString(Integer.MAX_VALUE));
+			alias = ByteString.copyFrom(in.readByteArray(Integer.MAX_VALUE));
 		}
 	}
 
@@ -156,7 +157,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		out.writeLong(nftsOwned);
 		out.writeInt(autoAssociationMetadata);
 		out.writeInt(number);
-		out.writeNormalisedString(String.valueOf(alias));
+		out.writeByteArray(alias.toByteArray());
 	}
 
 	/* --- Copyable --- */

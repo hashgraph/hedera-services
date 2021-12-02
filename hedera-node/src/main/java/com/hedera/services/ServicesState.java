@@ -172,12 +172,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			blobMigrator.migrateFromBinaryObjectStore(this, jdbLoc, deserializedVersionFromState);
 			init(getPlatformForDeferredInit(), getAddressBookForDeferredInit(), getDualStateForDeferredInit());
 		}
-
-//		if (deserializedVersionFromState < RELEASE_0210_VERSION) {
-//			this.autoAccountsMap = new HashMap<>();
-//		} else {
-//			loadAccountAliasRelations(accounts());
-//		}
 	}
 
 	/* --- SwirldState --- */
@@ -191,6 +185,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			addressBookForDeferredInit = addressBook;
 			log.info("Deferring init for 0.19.x -> 0.20.x upgrade on Services node {}", platform.getSelfId());
 			return;
+		}
+
+		autoAccountsMap = new HashMap<>();
+		if (deserializedVersion >= RELEASE_0210_VERSION) {
+			loadAccountAliasRelations(accounts());
 		}
 
 		log.info("Init called on Services node {} WITH Merkle saved state", platform.getSelfId());
@@ -209,6 +208,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		final var bootstrapProps = new BootstrapProperties();
 		final var seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
 		createGenesisChildren(addressBook, seqStart);
+		autoAccountsMap = new HashMap<>();
 
 		internalInit(platform, bootstrapProps, dualState);
 	}
@@ -403,7 +403,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				dualState.getLastFrozenTime());
 
 		final var stateVersion = networkCtx().getStateVersion();
-		autoAccountsMap = new HashMap<>();
 		if (stateVersion > StateVersions.CURRENT_VERSION) {
 			log.error("Fatal error, network state version {} > node software version {}",
 					networkCtx().getStateVersion(),
@@ -520,7 +519,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		for (Map.Entry entry : accountsMap.entrySet()) {
 			MerkleAccount value = (MerkleAccount) entry.getValue();
 			EntityNum number = (EntityNum) entry.getKey();
-			if (value.state().getAlias() != null) {
+			if (!value.state().getAlias().isEmpty()) {
 				autoAccountsMap.put(value.state().getAlias(), number);
 			}
 		}
