@@ -7,7 +7,7 @@ import "./IHederaTokenService.sol";
 
 contract HederaTokenService {
 
-    address constant precompileAddress = address(0x127);
+    address constant precompileAddress = address(0x167);
 
     /// Initiates a Token Transfer
     /// @param tokenTransfers the list of transfers to do

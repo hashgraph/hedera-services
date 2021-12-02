@@ -6,6 +6,8 @@ import "./HederaResponseCodes.sol";
 
 contract ZenosBank {
 
+    address constant precompileAddress = address(0x167);
+
     address tokenAddress;
 
     uint256 lastWithdrawalTime;
@@ -17,17 +19,21 @@ contract ZenosBank {
     }
 
     function depositTokens(int64 amount) public {
-        int response = HederaTokenService.transferToken(tokenAddress, msg.sender, address(this), amount);
-        if (response == 22) {//FIXME HederaResponseCodes.SUCCESS) {
+        (bool success, bytes memory result) = precompileAddress.delegatecall(
+            abi.encodeWithSelector(IHederaTokenService.transferToken.selector,
+            tokenAddress, msg.sender, address(this), amount));
+        if (success) {
             deposited += amount;
         } else {
-            revert (int2str(response));
+            revert();
         }
     }
 
     function withdrawTokens() external {
         if (block.timestamp > lastWithdrawalTime) {
-            HederaTokenService.associateToken(msg.sender, tokenAddress);
+            precompileAddress.delegatecall(
+                abi.encodeWithSelector(IHederaTokenService.associateToken.selector,
+                msg.sender, tokenAddress));
             depositTokens(- deposited / 2);
             lastWithdrawalTime = block.timestamp;
         } else {
