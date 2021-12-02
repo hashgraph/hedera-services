@@ -42,7 +42,7 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -112,12 +112,12 @@ class AbstractLedgerWorldUpdaterTest {
 
 		given(recordsHistorian.nextChildRecordSourceId()).willReturn(sourceId);
 
-		subject.manageInProgressRecord(recordsHistorian, firstRecord, Transaction.getDefaultInstance());
-		subject.manageInProgressRecord(recordsHistorian, secondRecord, Transaction.getDefaultInstance());
+		subject.manageInProgressRecord(recordsHistorian, firstRecord, TransactionBody.newBuilder());
+		subject.manageInProgressRecord(recordsHistorian, secondRecord, TransactionBody.newBuilder());
 
 		verify(recordsHistorian, times(1)).nextChildRecordSourceId();
-		verify(recordsHistorian).trackFollowingChildRecord(sourceId, firstRecord, Transaction.getDefaultInstance());
-		verify(recordsHistorian).trackFollowingChildRecord(sourceId, secondRecord, Transaction.getDefaultInstance());
+		verify(recordsHistorian).trackFollowingChildRecord(sourceId, TransactionBody.newBuilder(), firstRecord);
+		verify(recordsHistorian).trackFollowingChildRecord(sourceId, TransactionBody.newBuilder(), secondRecord);
 	}
 
 	@Test
@@ -127,7 +127,7 @@ class AbstractLedgerWorldUpdaterTest {
 
 		given(recordsHistorian.nextChildRecordSourceId()).willReturn(sourceId);
 
-		subject.manageInProgressRecord(recordsHistorian, aRecord, Transaction.getDefaultInstance());
+		subject.manageInProgressRecord(recordsHistorian, aRecord, TransactionBody.newBuilder());
 		subject.revert();
 
 		verify(recordsHistorian).revertChildRecordsFromSource(sourceId);

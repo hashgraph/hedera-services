@@ -24,17 +24,15 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.NftTransfer;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
 
 import java.util.List;
 
 public class SyntheticTxnFactory {
-	public Transaction createCryptoTransfer(
+	public TransactionBody.Builder createCryptoTransfer(
 			final List<NftExchange> nftExchanges,
 			final List<HbarTransfer> hbarTransfers,
 			final List<FungibleTokenTransfer> fungibleTransfers
@@ -60,16 +58,7 @@ public class SyntheticTxnFactory {
 					.addTransfers(fungibleTransfer.receiverAdjustment()));
 		}
 
-		return fromBody(TransactionBody.newBuilder().setCryptoTransfer(builder).build());
-	}
-
-	private Transaction fromBody(final TransactionBody txnBody) {
-		final var signedTxn = SignedTransaction.newBuilder()
-				.setBodyBytes(txnBody.toByteString())
-				.build();
-		return Transaction.newBuilder()
-				.setSignedTransactionBytes(signedTxn.toByteString())
-				.build();
+		return TransactionBody.newBuilder().setCryptoTransfer(builder);
 	}
 
 	public static class HbarTransfer {

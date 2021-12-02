@@ -33,8 +33,10 @@ import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -49,6 +51,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.function.Consumer;
 
+import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -131,10 +134,10 @@ class TxnAwareRecordsHistorianTest {
 		final var precedingRecordFrom1 = mock(ExpirableTxnRecord.Builder.class);
 		final var precedingRecordFrom2 = mock(ExpirableTxnRecord.Builder.class);
 
-		subject.trackFollowingChildRecord(1, followingRecordFrom1, Transaction.getDefaultInstance());
-		subject.trackFollowingChildRecord(2, followingRecordFrom2, Transaction.getDefaultInstance());
-		subject.trackPrecedingChildRecord(1, precedingRecordFrom2, Transaction.getDefaultInstance());
-		subject.trackPrecedingChildRecord(2, precedingRecordFrom2, Transaction.getDefaultInstance());
+		subject.trackFollowingChildRecord(1, TransactionBody.newBuilder(), followingRecordFrom1);
+		subject.trackFollowingChildRecord(2, TransactionBody.newBuilder(), followingRecordFrom2);
+		subject.trackPrecedingChildRecord(1, TransactionBody.newBuilder(), precedingRecordFrom2);
+		subject.trackPrecedingChildRecord(2, TransactionBody.newBuilder(), precedingRecordFrom2);
 		subject.revertChildRecordsFromSource(2);
 
 		verify(followingRecordFrom1, never()).revert();
@@ -154,6 +157,9 @@ class TxnAwareRecordsHistorianTest {
 		final var precedingChildNows = nows - 1;
 		given(mockPrecedingRecord.getConsensusSecond()).willReturn(precedingChildNows);
 
+		final var expPrecedeId = txnIdA.toBuilder().setNonce(1);
+		final var expFollowId = txnIdA.toBuilder().setNonce(2);
+
 		final var expectedPrecedingChildId = new TxnId(
 				aEntity, new RichInstant(nows, nanos), false, 1);
 		final var expectedFollowingChildId = new TxnId(
@@ -165,7 +171,9 @@ class TxnAwareRecordsHistorianTest {
 		final var topLevelRecord = mock(ExpirableTxnRecord.Builder.class);
 		given(topLevelRecord.getTxnId()).willReturn(TxnId.fromGrpc(txnIdA));
 		final var followingBuilder = mock(ExpirableTxnRecord.Builder.class);
+		given(followingBuilder.getTxnId()).willReturn(expectedFollowingChildId);
 		final var precedingBuilder = mock(ExpirableTxnRecord.Builder.class);
+		given(precedingBuilder.getTxnId()).willReturn(expectedPrecedingChildId);
 		final var expectedFollowTime = topLevelNow.plusNanos(1);
 		final var expectedPrecedingTime = topLevelNow.minusNanos(1);
 
@@ -194,8 +202,10 @@ class TxnAwareRecordsHistorianTest {
 				precedingChildNows,
 				submittingMember)).willReturn(mockPrecedingRecord);
 
-		subject.trackFollowingChildRecord(1, followingBuilder, Transaction.getDefaultInstance());
-		subject.trackPrecedingChildRecord(1, precedingBuilder, Transaction.getDefaultInstance());
+		final var followSynthBody = aBuilderWith("FOLLOW");
+		final var precedeSynthBody = aBuilderWith("PRECEDE");
+		subject.trackFollowingChildRecord(1, followSynthBody, followingBuilder);
+		subject.trackPrecedingChildRecord(1, precedeSynthBody, precedingBuilder);
 
 		subject.saveExpirableTransactionRecords();
 		final var followingRsos = subject.getFollowingChildRecords();
@@ -214,16 +224,32 @@ class TxnAwareRecordsHistorianTest {
 		final var precedeRso = precedingRsos.get(0);
 		assertSame(TransactionRecord.getDefaultInstance(), precedeRso.getTransactionRecord());
 		assertEquals(expectedPrecedingTime, precedeRso.getTimestamp());
-		assertSame(Transaction.getDefaultInstance(), precedeRso.getTransaction());
+		final var precedeSynth = precedeRso.getTransaction();
+		final var expectedPrecedeSynth = synthFromBody(
+				precedeSynthBody
+						.setTransactionID(expPrecedeId)
+						.build());
+		assertEquals(expectedPrecedeSynth, precedeSynth);
 
 		final var followRso = followingRsos.get(0);
 		assertSame(TransactionRecord.getDefaultInstance(), followRso.getTransactionRecord());
 		assertEquals(expectedFollowTime, followRso.getTimestamp());
-		assertSame(Transaction.getDefaultInstance(), followRso.getTransaction());
+		final var followSynth = followRso.getTransaction();
+		final var expectedFollowSynth = synthFromBody(
+				followSynthBody
+						.setTransactionID(expFollowId)
+						.build());
+		assertEquals(expectedFollowSynth, followSynth);
 
 		verify(creator).saveExpiringRecord(effPayer, mockPrecedingRecord, precedingChildNows, submittingMember);
 		verify(creator).saveExpiringRecord(effPayer, mockTopLevelRecord, nows, submittingMember);
 		verify(creator).saveExpiringRecord(effPayer, mockFollowingRecord, followingChildNows, submittingMember);
+		verify(precedingBuilder).setTxnId(expectedPrecedingChildId);
+		verify(followingBuilder).setTxnId(expectedFollowingChildId);
+		verify(precedingBuilder).setTxnHash(
+				noThrowSha384HashOf(expectedPrecedeSynth.getSignedTransactionBytes().toByteArray()));
+		verify(followingBuilder).setTxnHash(
+				noThrowSha384HashOf(expectedFollowSynth.getSignedTransactionBytes().toByteArray()));
 	}
 
 	@Test
@@ -254,8 +280,8 @@ class TxnAwareRecordsHistorianTest {
 		assertFalse(subject.hasPrecedingChildRecords());
 		assertFalse(subject.hasFollowingChildRecords());
 
-		subject.trackFollowingChildRecord(1, ExpirableTxnRecord.newBuilder(), Transaction.getDefaultInstance());
-		subject.trackPrecedingChildRecord(1, ExpirableTxnRecord.newBuilder(), Transaction.getDefaultInstance());
+		subject.trackFollowingChildRecord(1, TransactionBody.newBuilder(), ExpirableTxnRecord.newBuilder());
+		subject.trackPrecedingChildRecord(1, TransactionBody.newBuilder(), ExpirableTxnRecord.newBuilder());
 
 		assertFalse(subject.hasFollowingChildRecords());
 		assertFalse(subject.hasPrecedingChildRecords());
@@ -319,5 +345,18 @@ class TxnAwareRecordsHistorianTest {
 		given(txnCtx.consensusTime()).willReturn(topLevelNow);
 		given(txnCtx.submittingSwirldsMember()).willReturn(submittingMember);
 		given(txnCtx.effectivePayer()).willReturn(effPayer);
+	}
+
+	private Transaction synthFromBody(final TransactionBody txnBody) {
+		final var signedTxn = SignedTransaction.newBuilder()
+				.setBodyBytes(txnBody.toByteString())
+				.build();
+		return Transaction.newBuilder()
+				.setSignedTransactionBytes(signedTxn.toByteString())
+				.build();
+	}
+
+	private TransactionBody.Builder aBuilderWith(final String memo) {
+		return TransactionBody.newBuilder().setMemo(memo);
 	}
 }

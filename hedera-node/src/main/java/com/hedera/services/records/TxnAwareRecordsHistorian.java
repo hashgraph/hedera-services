@@ -27,7 +27,9 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -37,6 +39,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
 import static com.hedera.services.utils.MiscUtils.nonNegativeNanosOffset;
 
@@ -49,16 +52,16 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 
 	private static class InProgressChildRecord {
 		private final int sourceId;
-		private final Transaction syntheticTxn;
+		private final TransactionBody.Builder syntheticBody;
 		private final ExpirableTxnRecord.Builder recordBuilder;
 
 		public InProgressChildRecord(
 				final int sourceId,
-				final Transaction syntheticTxn,
+				final TransactionBody.Builder syntheticBody,
 				final ExpirableTxnRecord.Builder recordBuilder
 		) {
 			this.sourceId = sourceId;
-			this.syntheticTxn = syntheticTxn;
+			this.syntheticBody = syntheticBody;
 			this.recordBuilder = recordBuilder;
 		}
 	}
@@ -149,18 +152,18 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	@Override
 	public void trackFollowingChildRecord(
 			final int sourceId,
-			final ExpirableTxnRecord.Builder recordSoFar,
-			final Transaction syntheticTxn
+			final TransactionBody.Builder syntheticBody,
+			final ExpirableTxnRecord.Builder recordSoFar
 	) {
-		final var inProgress = new InProgressChildRecord(sourceId, syntheticTxn, recordSoFar);
+		final var inProgress = new InProgressChildRecord(sourceId, syntheticBody, recordSoFar);
 		followingChildRecords.add(inProgress);
 	}
 
 	@Override
 	public void trackPrecedingChildRecord(
 			final int sourceId,
-			final ExpirableTxnRecord.Builder recordSoFar,
-			final Transaction syntheticTxn
+			final TransactionBody.Builder syntheticTxn,
+			final ExpirableTxnRecord.Builder recordSoFar
 	) {
 		final var inProgress = new InProgressChildRecord(sourceId, syntheticTxn, recordSoFar);
 		precedingChildRecords.add(inProgress);
@@ -205,12 +208,30 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 		for (int i = 0, n = childRecords.size(); i < n; i++) {
 			final var inProgress = childRecords.get(i);
 			final var child = inProgress.recordBuilder;
-			child.setTxnId(parentId.withNonce(nextNonce++));
 			topLevel.excludeHbarChangesFrom(child);
+
+			child.setTxnId(parentId.withNonce(nextNonce++));
 			final var childConsTime = nonNegativeNanosOffset(consensusNow, sigNum * (i + 1));
 			child.setConsensusTime(RichInstant.fromJava(childConsTime));
-			recordObjs.add(new RecordStreamObject(child.build(), inProgress.syntheticTxn, childConsTime));
+
+			final var synthTxn = synthFrom(inProgress.syntheticBody, child);
+			final var synthHash = noThrowSha384HashOf(synthTxn.getSignedTransactionBytes().toByteArray());
+			child.setTxnHash(synthHash);
+			recordObjs.add(new RecordStreamObject(child.build(), synthTxn, childConsTime));
 		}
+	}
+
+	private Transaction synthFrom(final TransactionBody.Builder txnBody, final ExpirableTxnRecord.Builder inProgress) {
+		return synthFromBody(txnBody.setTransactionID(inProgress.getTxnId().toGrpc()).build());
+	}
+
+	private Transaction synthFromBody(final TransactionBody txnBody) {
+		final var signedTxn = SignedTransaction.newBuilder()
+				.setBodyBytes(txnBody.toByteString())
+				.build();
+		return Transaction.newBuilder()
+				.setSignedTransactionBytes(signedTxn.toByteString())
+				.build();
 	}
 
 	private void save(

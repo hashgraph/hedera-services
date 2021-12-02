@@ -20,12 +20,9 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -36,7 +33,7 @@ class SyntheticTxnFactoryTest {
 	private final SyntheticTxnFactory subject = new SyntheticTxnFactory();
 
 	@Test
-	void createsExpectedCryptoTransfer() throws InvalidProtocolBufferException {
+	void createsExpectedCryptoTransfer() {
 		final var nftExchange = new SyntheticTxnFactory.NftExchange(serialNo, nonFungible, a, d);
 		final var firstHbarTransfer = new SyntheticTxnFactory.HbarTransfer(firstAmount, a, b);
 		final var secondHbarTransfer = new SyntheticTxnFactory.HbarTransfer(secondAmount, b, c);
@@ -47,8 +44,7 @@ class SyntheticTxnFactoryTest {
 				List.of(firstHbarTransfer, secondHbarTransfer),
 				List.of(fungibleTransfer));
 
-		final var signedTxn = SignedTransaction.parseFrom(result.getSignedTransactionBytes());
-		final var txnBody = TransactionBody.parseFrom(signedTxn.getBodyBytes());
+		final var txnBody = result.build();
 
 		final var hbarTransfers = txnBody.getCryptoTransfer().getTransfers().getAccountAmountsList();
 		assertEquals(List.of(

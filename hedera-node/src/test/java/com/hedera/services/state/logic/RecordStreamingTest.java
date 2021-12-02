@@ -58,9 +58,11 @@ class RecordStreamingTest {
 	@Mock
 	private TxnAccessor accessor;
 	@Mock
-	private RecordStreamObject firstChildRso;
+	private RecordStreamObject firstFollowingChildRso;
 	@Mock
-	private RecordStreamObject secondChildRso;
+	private RecordStreamObject secondFollowingChildRso;
+	@Mock
+	private RecordStreamObject firstPrecedingChildRso;
 
 	private RecordStreaming subject;
 
@@ -71,15 +73,21 @@ class RecordStreamingTest {
 
 	@Test
 	void streamsChildRecordsAtExpectedTimes() {
+		given(recordsHistorian.hasPrecedingChildRecords()).willReturn(true);
+		given(recordsHistorian.getPrecedingChildRecords()).willReturn(List.of(
+				firstPrecedingChildRso));
 		given(recordsHistorian.hasFollowingChildRecords()).willReturn(true);
-		given(recordsHistorian.getFollowingChildRecords()).willReturn(List.of(firstChildRso, secondChildRso));
-		given(nonBlockingHandoff.offer(firstChildRso)).willReturn(true);
-		given(nonBlockingHandoff.offer(secondChildRso)).willReturn(true);
+		given(recordsHistorian.getFollowingChildRecords()).willReturn(List.of(
+				firstFollowingChildRso, secondFollowingChildRso));
+		given(nonBlockingHandoff.offer(firstPrecedingChildRso)).willReturn(true);
+		given(nonBlockingHandoff.offer(firstFollowingChildRso)).willReturn(true);
+		given(nonBlockingHandoff.offer(secondFollowingChildRso)).willReturn(true);
 
 		subject.run();
 
-		verify(nonBlockingHandoff).offer(firstChildRso);
-		verify(nonBlockingHandoff).offer(secondChildRso);
+		verify(nonBlockingHandoff).offer(firstPrecedingChildRso);
+		verify(nonBlockingHandoff).offer(firstFollowingChildRso);
+		verify(nonBlockingHandoff).offer(secondFollowingChildRso);
 	}
 
 	@Test
