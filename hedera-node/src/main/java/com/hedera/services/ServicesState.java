@@ -46,7 +46,6 @@ import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
@@ -68,7 +67,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -102,6 +103,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	private Platform platformForDeferredInit;
 	private AddressBook addressBookForDeferredInit;
 	private SwirldDualState dualStateForDeferredInit;
+
+	/* Alias Accounts Map that will be rebuilt after restart, reconnect*/
+	private HashMap<ByteString, EntityNum> autoAccountsMap;
 
 	public ServicesState() {
 		/* RuntimeConstructable */
@@ -457,6 +461,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				dualState.getLastFrozenTime());
 
 		final var stateVersion = networkCtx().getStateVersion();
+		autoAccountsMap = new HashMap<>();
 		if (stateVersion > StateVersions.CURRENT_VERSION) {
 			log.error("Fatal error, network state version {} > node software version {}",
 					networkCtx().getStateVersion(),
@@ -493,6 +498,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	SwirldDualState getDualStateForDeferredInit() {
 		return dualStateForDeferredInit;
+	}
+
+	HashMap<ByteString, EntityNum> getAutoAccountsMap() {
+		return autoAccountsMap;
 	}
 
 	void createGenesisChildren(AddressBook addressBook, long seqStart) {
@@ -560,4 +569,15 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	static void setBlobMigrationFlag(Consumer<Boolean> blobMigrationFlag) {
 		ServicesState.blobMigrationFlag = blobMigrationFlag;
 	}
+
+	private void loadAccountAliasRelations(MerkleMap<EntityNum, MerkleAccount> accountsMap) {
+		for (Map.Entry entry : accountsMap.entrySet()) {
+			MerkleAccount value = (MerkleAccount) entry.getValue();
+			EntityNum number = (EntityNum) entry.getKey();
+			if (value.state().getAlias() != null) {
+				autoAccountsMap.put(value.state().getAlias(), number);
+			}
+		}
+	}
+
 }

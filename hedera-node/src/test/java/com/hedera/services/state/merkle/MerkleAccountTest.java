@@ -104,7 +104,7 @@ class MerkleAccountTest {
 				memo,
 				deleted, smartContract, receiverSigRequired,
 				proxy,
-				number, 
+				number,
 				autoAssociationMetadata,
 				alias);
 

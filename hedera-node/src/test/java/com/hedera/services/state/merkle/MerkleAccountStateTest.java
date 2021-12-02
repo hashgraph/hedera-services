@@ -365,7 +365,7 @@ class MerkleAccountStateTest {
 				memo,
 				deleted, smartContract, receiverSigRequired,
 				proxy,
-				number, 
+				number,
                                 autoAssociationMetadata,
 				alias);
 
@@ -380,7 +380,7 @@ class MerkleAccountStateTest {
 				memo,
 				deleted, smartContract, receiverSigRequired,
 				proxy,
-				number, 
+				number,
                                 autoAssociationMetadata,
 				alias);
 
@@ -395,7 +395,7 @@ class MerkleAccountStateTest {
 				memo,
 				deleted, smartContract, receiverSigRequired,
 				proxy,
-				number, 
+				number,
                                 autoAssociationMetadata,
 				alias);
 
@@ -410,7 +410,7 @@ class MerkleAccountStateTest {
 				otherMemo,
 				deleted, smartContract, receiverSigRequired,
 				proxy,
-				number, 
+				number,
                                 autoAssociationMetadata,
 				alias);
 
@@ -440,7 +440,7 @@ class MerkleAccountStateTest {
 				memo,
 				deleted, otherSmartContract, receiverSigRequired,
 				proxy,
-				number, 
+				number,
                                 autoAssociationMetadata,
 				alias);
 
@@ -455,7 +455,7 @@ class MerkleAccountStateTest {
 				memo,
 				deleted, smartContract, otherReceiverSigRequired,
 				proxy,
-				number, 
+				number,
                                 autoAssociationMetadata,
 				alias);
 
@@ -470,7 +470,7 @@ class MerkleAccountStateTest {
 				memo,
 				deleted, smartContract, receiverSigRequired,
 				proxy,
-				otherNumber, 
+				otherNumber,
                                 autoAssociationMetadata,
 				alias);
 
@@ -507,7 +507,7 @@ class MerkleAccountStateTest {
 				memo,
 				deleted, smartContract, receiverSigRequired,
 				proxy,
-				number, 
+				number,
                                 autoAssociationMetadata,
 				alias);
 
@@ -517,7 +517,7 @@ class MerkleAccountStateTest {
 				otherMemo,
 				otherDeleted, otherSmartContract, otherReceiverSigRequired,
 				otherProxy,
-				otherNumber, 
+				otherNumber,
                                 autoAssociationMetadata,
 				alias);
 

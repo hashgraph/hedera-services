@@ -138,7 +138,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			number = in.readInt();
 		}
 		if (version >= RELEASE_0210_VERSION) {
-			alias = ByteString.copyFrom(in.readByteArray(Integer.MAX_VALUE));
+			alias = ByteString.copyFromUtf8(in.readNormalisedString(Integer.MAX_VALUE));
 		}
 	}
 
@@ -156,7 +156,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		out.writeLong(nftsOwned);
 		out.writeInt(autoAssociationMetadata);
 		out.writeInt(number);
-		out.writeByteArray(alias.toByteArray());
+		out.writeNormalisedString(String.valueOf(alias));
 	}
 
 	/* --- Copyable --- */
