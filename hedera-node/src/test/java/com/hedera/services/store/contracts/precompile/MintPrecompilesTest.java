@@ -4,6 +4,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.SoliditySigsVerifier;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -49,6 +50,7 @@ import java.util.List;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_ADDER;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_REMOVER;
 import static com.hedera.services.store.tokens.views.UniqTokenViewsManager.NOOP_VIEWS_MANAGER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -124,12 +126,28 @@ class MintPrecompilesTest {
 	}
 
 	@Test
-	void nftMintHappyPathWorks() {
+	void nftMintFailurePathWorks() {
 		givenFrameContext();
 
-		given(decoder.decodeMint(pretendArguments)).willReturn(nftMint);
-		given(syntheticTxnFactory.createNonFungibleMint(nftMint)).willReturn(mockSynthBodyBuilder);
-		given(sigsVerifier.hasActiveSupplyKey(Id.fromGrpcToken(nonFungible), recipientAddr, contractAddr)).willReturn(true);
+		given(sigsVerifier.hasActiveSupplyKey(nonFungibleId, recipientAddr, contractAddr))
+				.willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
+		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
+
+		// when:
+		final var result = subject.computeMintToken(pretendArguments, frame);
+
+		// then:
+		assertEquals(invalidSigResult, result);
+
+		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+	}
+
+	@Test
+	void nftMintHappyPathWorks() {
+		givenFrameContext();
+		givenLedgers();
+
+		given(sigsVerifier.hasActiveSupplyKey(nonFungibleId, recipientAddr, contractAddr)).willReturn(true);
 		given(accountStoreFactory.newAccountStore(
 				validator, dynamicProperties, accounts
 		)).willReturn(accountStore);
@@ -138,6 +156,7 @@ class MintPrecompilesTest {
 		)).willReturn(tokenStore);
 		given(mintLogicFactory.newLogic(validator, tokenStore, accountStore)).willReturn(mintLogic);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects)).willReturn(mockRecordBuilder);
+		given(recordsHistorian.nextFollowingChildConsensusTime()).willReturn(pendingChildConsTime);
 
 		// when:
 		final var result = subject.computeMintToken(pretendArguments, frame);
@@ -145,7 +164,7 @@ class MintPrecompilesTest {
 		// then:
 		assertEquals(successResult, result);
 		// and:
-		verify(mintLogic).mint(nonFungibleId, 3, 0, newMetadata, Instant.EPOCH);
+		verify(mintLogic).mint(nonFungibleId, 3, 0, newMetadata, pendingChildConsTime);
 		verify(wrappedLedgers).commit();
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}
@@ -155,6 +174,11 @@ class MintPrecompilesTest {
 		given(frame.getRecipientAddress()).willReturn(recipientAddr);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
+		given(decoder.decodeMint(pretendArguments)).willReturn(nftMint);
+		given(syntheticTxnFactory.createNonFungibleMint(nftMint)).willReturn(mockSynthBodyBuilder);
+	}
+
+	private void givenLedgers() {
 		given(wrappedLedgers.accounts()).willReturn(accounts);
 		given(wrappedLedgers.tokenRels()).willReturn(tokenRels);
 		given(wrappedLedgers.nfts()).willReturn(nfts);
@@ -169,4 +193,6 @@ class MintPrecompilesTest {
 	private static final Address recipientAddr = Address.ALTBN128_ADD;
 	private static final Address contractAddr = Address.ALTBN128_MUL;
 	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
+	private static final Bytes invalidSigResult = UInt256.valueOf(ResponseCodeEnum.INVALID_SIGNATURE_VALUE);
+	private static final Instant pendingChildConsTime = Instant.ofEpochSecond(1_234_567L, 890);
 }

@@ -35,6 +35,7 @@ import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
@@ -73,6 +74,19 @@ class ExpirableTxnRecordBuilderTest {
 		subject.setReceiptBuilder(statusReceipt);
 		final var record = subject.build();
 		assertEquals(status, record.getReceipt().getStatus());
+	}
+
+	@Test
+	void subtractingOffNoHbarAdjustsIsNoop() {
+		final var that = ExpirableTxnRecord.newBuilder();
+
+		final var someAdjusts = new CurrencyAdjustments(new long[] { +1, -1
+		}, List.of(new EntityId(0, 0, 1), new EntityId(0, 0, 2)));
+		subject.setTransferList(someAdjusts);
+
+		subject.excludeHbarChangesFrom(that);
+
+		assertSame(someAdjusts, subject.getTransferList());
 	}
 
 	@Test

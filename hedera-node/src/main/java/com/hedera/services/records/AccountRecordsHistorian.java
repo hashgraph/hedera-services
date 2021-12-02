@@ -25,6 +25,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -137,4 +138,12 @@ public interface AccountRecordsHistorian {
 	 * any new expiring entities with the {@link com.hedera.services.state.expiry.ExpiryManager}.
 	 */
 	void noteNewExpirationEvents();
+
+	/**
+	 * Provides the next consensus timestamp that will be used; needed for assigning creation
+	 * times to minted NFTs as part of a HTS precompiled contract.
+	 *
+	 * @return the consensus time that will be used for the next following child record
+	 */
+	Instant nextFollowingChildConsensusTime();
 }

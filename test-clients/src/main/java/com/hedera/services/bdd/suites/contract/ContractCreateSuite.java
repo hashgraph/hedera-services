@@ -78,6 +78,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -122,23 +123,23 @@ public class ContractCreateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						createEmptyConstructor(),
-//						insufficientPayerBalanceUponCreation(),
-//						rejectsInvalidMemo(),
-//						rejectsInsufficientFee(),
-//						rejectsInvalidBytecode(),
-//						revertsNonzeroBalance(),
-//						createFailsIfMissingSigs(),
-//						rejectsInsufficientGas(),
-//						createsVanillaContractAsExpectedWithOmittedAdminKey(),
-//						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
-//						cannotCreateTooLargeContract(),
-//						revertedTryExtCallHasNoSideEffects(),
-//						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
-//						receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
-//						cannotSendToNonExistentAccount(),
-//						canCallPendingContractSafely(),
-//						delegateContractIdRequiredForTransferInDelegateCall(),
+						createEmptyConstructor(),
+						insufficientPayerBalanceUponCreation(),
+						rejectsInvalidMemo(),
+						rejectsInsufficientFee(),
+						rejectsInvalidBytecode(),
+						revertsNonzeroBalance(),
+						createFailsIfMissingSigs(),
+						rejectsInsufficientGas(),
+						createsVanillaContractAsExpectedWithOmittedAdminKey(),
+						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
+						cannotCreateTooLargeContract(),
+						revertedTryExtCallHasNoSideEffects(),
+						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
+						receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
+						cannotSendToNonExistentAccount(),
+						canCallPendingContractSafely(),
+						delegateContractIdRequiredForTransferInDelegateCall(),
 						helloWorldMint(),
 				}
 		);
@@ -519,7 +520,8 @@ public class ContractCreateSuite extends HapiApiSuite {
 						contractCall(hwMint, HW_MINT_CALL_ABI)
 								.via(secondMintTxn),
 						getTxnRecord(secondMintTxn).andAllChildRecords().logged(),
-						getTokenInfo(nonfungibleToken).hasTotalSupply(2)
+						getTokenInfo(nonfungibleToken).hasTotalSupply(2),
+						getTokenNftInfo(nonfungibleToken, 2L).logged()
 				);
 	}
 

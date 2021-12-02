@@ -107,7 +107,7 @@ public class ExpiringCreations implements EntityCreator {
 	}
 
 	@Override
-	public ExpirableTxnRecord.Builder createFailedSyntheticRecord(final ResponseCodeEnum failureStatus) {
+	public ExpirableTxnRecord.Builder createUnsuccessfulSyntheticRecord(final ResponseCodeEnum failureStatus) {
 		final var receiptBuilder = TxnReceipt.newBuilder().setStatus(failureStatus.name());
 		return ExpirableTxnRecord.newBuilder().setReceiptBuilder(receiptBuilder);
 	}

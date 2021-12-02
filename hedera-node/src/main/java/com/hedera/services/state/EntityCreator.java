@@ -108,7 +108,7 @@ public interface EntityCreator {
 	 * @param failureReason the cause of the failure
 	 * @return a {@link ExpirableTxnRecord.Builder} summarizing the input
 	 */
-	ExpirableTxnRecord.Builder createFailedSyntheticRecord(ResponseCodeEnum failureReason);
+	ExpirableTxnRecord.Builder createUnsuccessfulSyntheticRecord(ResponseCodeEnum failureReason);
 
 	/**
 	 * Returns a {@link ExpirableTxnRecord.Builder} for a transaction that failed due to an internal error.

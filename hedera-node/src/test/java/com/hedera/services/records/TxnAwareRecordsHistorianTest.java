@@ -208,7 +208,9 @@ class TxnAwareRecordsHistorianTest {
 
 		final var followSynthBody = aBuilderWith("FOLLOW");
 		final var precedeSynthBody = aBuilderWith("PRECEDE");
+		assertEquals(topLevelNow.plusNanos(1), subject.nextFollowingChildConsensusTime());
 		subject.trackFollowingChildRecord(1, followSynthBody, followingBuilder);
+		assertEquals(topLevelNow.plusNanos(2), subject.nextFollowingChildConsensusTime());
 		subject.trackPrecedingChildRecord(1, precedeSynthBody, precedingBuilder);
 
 		subject.saveExpirableTransactionRecords();

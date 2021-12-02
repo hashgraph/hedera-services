@@ -67,7 +67,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -296,13 +295,13 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var mintLogic = mintLogicFactory.newLogic(validator, tokenStore, accountStore);
 
 			/* --- Execute the transaction and capture its results --- */
-			mintLogic.mint(tokenId, newMeta.size(), 0, newMeta, Instant.EPOCH);
+			final var creationTime = recordsHistorian.nextFollowingChildConsensusTime();
+			mintLogic.mint(tokenId, newMeta.size(), 0, newMeta, creationTime);
 			childRecord = creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects);
 			result = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
 			ledgers.commit();
 		} catch (InvalidTransactionException e) {
-			e.printStackTrace();
-			childRecord = creator.createFailedSyntheticRecord(e.getResponseCode());
+			childRecord = creator.createUnsuccessfulSyntheticRecord(e.getResponseCode());
 			result = UInt256.valueOf(e.getResponseCode().getNumber());
 		}
 

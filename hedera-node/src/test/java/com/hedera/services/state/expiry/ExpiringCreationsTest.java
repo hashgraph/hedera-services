@@ -159,7 +159,7 @@ class ExpiringCreationsTest {
 
 	@Test
 	void createsFailedSyntheticRecordAsExpected() {
-		final var record = subject.createFailedSyntheticRecord(INSUFFICIENT_ACCOUNT_BALANCE);
+		final var record = subject.createUnsuccessfulSyntheticRecord(INSUFFICIENT_ACCOUNT_BALANCE);
 		assertEquals(INSUFFICIENT_ACCOUNT_BALANCE.toString(), record.getReceiptBuilder().getStatus());
 	}
 
