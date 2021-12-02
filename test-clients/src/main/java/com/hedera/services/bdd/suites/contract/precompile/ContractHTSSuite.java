@@ -113,15 +113,21 @@ public class ContractHTSSuite extends HapiApiSuite {
 														.payingWith(theAccount)
 														.bytecode("bytecode")
 														.via("creationTx")
-														.gas(1_000_000))),
+														.gas(28_000))),
 						getTxnRecord("creationTx").logged(),
 						tokenAssociate(theAccount, List.of(A_TOKEN)),
 						tokenAssociate(theContract, List.of(A_TOKEN)),
 						cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, theAccount))
 				).when(
-						contractCall(theContract, ZENOS_BANK_DEPOSIT_TOKENS, 50).payingWith(theAccount).via("zeno"),
+						contractCall(theContract, ZENOS_BANK_DEPOSIT_TOKENS, 50)
+								.payingWith(theAccount)
+								.gas(48_000)
+								.via("zeno"),
 						getTxnRecord("zeno").logged(),
-						contractCall(theContract, ZENOS_BANK_WITHDRAW_TOKENS).payingWith(theReceiver).via("receiver"),
+						contractCall(theContract, ZENOS_BANK_WITHDRAW_TOKENS)
+								.payingWith(theReceiver)
+								.gas(70_000)
+								.via("receiver"),
 						getTxnRecord("receiver").logged()
 				).then(
 				);

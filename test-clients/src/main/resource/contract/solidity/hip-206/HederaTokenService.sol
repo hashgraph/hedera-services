@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 import "./HederaResponseCodes.sol";
 import "./IHederaTokenService.sol";
 
-contract HederaTokenService {
+abstract contract HederaTokenService is HederaResponseCodes {
 
     address constant precompileAddress = address(0x167);
 
