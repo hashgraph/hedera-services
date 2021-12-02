@@ -20,6 +20,7 @@ package com.hedera.services;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.init.ServicesInitFlow;
 import com.hedera.services.sigs.ExpansionHelper;
@@ -28,6 +29,9 @@ import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.forensics.HashLogger;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleAccountState;
+import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
@@ -43,6 +47,7 @@ import com.hedera.services.txns.prefetch.PrefetchProcessor;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
+import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.SystemExits;
 import com.hedera.test.extensions.LogCaptor;
@@ -51,6 +56,7 @@ import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TestFileUtils;
+import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.NodeId;
@@ -59,6 +65,7 @@ import com.swirlds.common.SwirldDualState;
 import com.swirlds.common.SwirldTransaction;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.fchashmap.FCOneToManyRelation;
+import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -78,6 +85,7 @@ import java.util.function.Consumer;
 
 import static com.hedera.services.ServicesState.CANONICAL_JDB_LOC;
 import static com.hedera.services.context.AppsManager.APPS;
+import static com.hedera.services.utils.MiscUtils.constructAccountAliasRels;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -589,6 +597,61 @@ class ServicesStateTest {
 		subject.init(platform, addressBook, dualState);
 
 		verify(networkContext, never()).discardPreparedUpgradeMeta();
+	}
+
+	@Test
+	void genesisInitCreatesAnEmptyAutoAccountsMap() throws IOException {
+		// setup:
+		TestFileUtils.blowAwayDirIfPresent(TEST_JDB_LOC);
+		ServicesState.setJdbLoc(TEST_JDB_LOC);
+		ServicesState.setAppBuilder(() -> appBuilder);
+
+		given(appBuilder.bootstrapProps(any())).willReturn(appBuilder);
+		given(appBuilder.initialState(subject)).willReturn(appBuilder);
+		given(appBuilder.platform(platform)).willReturn(appBuilder);
+		given(appBuilder.selfId(1L)).willReturn(appBuilder);
+		given(appBuilder.build()).willReturn(app);
+		// and:
+		given(app.hashLogger()).willReturn(hashLogger);
+		given(app.initializationFlow()).willReturn(initFlow);
+		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+		given(platform.getSelfId()).willReturn(selfId);
+
+		// when:
+		assertEquals(null, subject.getAutoAccountsMap());
+		subject.genesisInit(platform, addressBook, dualState);
+
+		// then:
+		assertTrue(subject.getAutoAccountsMap().isEmpty());
+	}
+
+	@Test
+	void nonGenesisInitLoadsAutoAccountsMap() {
+		MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
+		final Key aliasKey = Key.newBuilder()
+				.setECDSASecp256K1(ByteString.copyFromUtf8("bbbbbbbbbbbbbbbbbbbbb")).build();
+		final ByteString alias = aliasKey.getECDSASecp256K1();
+		MerkleAccountState state = new MerkleAccountState(null, 10, 10, 10, null, false, false, false, null, 2, 0,
+				alias);
+		accounts.put(new EntityNum(2),
+				new MerkleAccount(List.of(state, mock(FCQueue.class), mock(MerkleAccountTokens.class))));
+
+		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
+
+		given(networkContext.getStateVersion()).willReturn(StateVersions.RELEASE_0210_VERSION);
+
+		given(app.hashLogger()).willReturn(hashLogger);
+		given(app.initializationFlow()).willReturn(initFlow);
+		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+		given(platform.getSelfId()).willReturn(selfId);
+		// and:
+		APPS.save(selfId.getId(), app);
+
+		// when:
+		subject.init(platform, addressBook, dualState);
+
+		assertEquals(1, subject.getAutoAccountsMap().size());
 	}
 
 	@Test

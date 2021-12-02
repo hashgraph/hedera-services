@@ -20,6 +20,7 @@ package com.hedera.services;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -65,14 +66,18 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
 import static com.hedera.services.state.migration.StateChildIndices.SPECIAL_FILES;
+import static com.hedera.services.state.migration.StateVersions.RELEASE_0210_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_TWENTY_VERSION;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
+import static com.hedera.services.utils.MiscUtils.constructAccountAliasRels;
 
 /**
  * The Merkle tree root of the Hedera Services world state.
@@ -94,6 +99,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	private Platform platformForDeferredInit;
 	private AddressBook addressBookForDeferredInit;
 	private SwirldDualState dualStateForDeferredInit;
+
+	/* Alias Accounts Map that will be rebuilt after restart, reconnect*/
+	private Map<ByteString, EntityNum> autoAccountsMap;
 
 	public ServicesState() {
 		/* RuntimeConstructable */
@@ -132,7 +140,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	public int getMinimumChildCount(int version) {
 		if (version < RELEASE_TWENTY_VERSION) {
 			return StateChildIndices.NUM_PRE_TWENTY_CHILDREN;
-		} else if (version == RELEASE_TWENTY_VERSION) {
+		} else if (version <= RELEASE_0210_VERSION) {
 			return StateChildIndices.NUM_TWENTY_CHILDREN;
 		} else {
 			throw new IllegalArgumentException("Argument 'version='" + version + "' is invalid!");
@@ -180,6 +188,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			return;
 		}
 
+		autoAccountsMap = new HashMap<>();
+		if (deserializedVersion >= RELEASE_0210_VERSION) {
+			autoAccountsMap = constructAccountAliasRels(accounts());
+		}
+
 		log.info("Init called on Services node {} WITH Merkle saved state", platform.getSelfId());
 
 		/* Immediately override the address book from the saved state */
@@ -196,6 +209,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		final var bootstrapProps = new BootstrapProperties();
 		final var seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
 		createGenesisChildren(addressBook, seqStart);
+		autoAccountsMap = new HashMap<>();
 
 		internalInit(platform, bootstrapProps, dualState);
 	}
@@ -431,6 +445,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	SwirldDualState getDualStateForDeferredInit() {
 		return dualStateForDeferredInit;
+	}
+
+	Map<ByteString, EntityNum> getAutoAccountsMap() {
+		return autoAccountsMap;
 	}
 
 	void createGenesisChildren(AddressBook addressBook, long seqStart) {

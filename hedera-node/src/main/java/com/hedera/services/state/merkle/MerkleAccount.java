@@ -21,6 +21,7 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
@@ -214,6 +215,15 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setSmartContract(smartContract);
 	}
 
+	public ByteString getAlias() {
+		return state().getAlias();
+	}
+
+	public void setAlias(ByteString alias) {
+		throwIfImmutable("Cannot change this account's alias if it's immutable.");
+		state().setAlias(alias);
+	}
+
 	public long getBalance() {
 		return state().balance();
 	}
@@ -302,7 +312,8 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 
 	public void setAlreadyUsedAutomaticAssociations(int alreadyUsedAutoAssociations) {
 		if (alreadyUsedAutoAssociations < 0 || alreadyUsedAutoAssociations > getMaxAutomaticAssociations()) {
-			throw new IllegalArgumentException("Cannot set alreadyUsedAutoAssociations to " + alreadyUsedAutoAssociations);
+			throw new IllegalArgumentException(
+					"Cannot set alreadyUsedAutoAssociations to " + alreadyUsedAutoAssociations);
 		}
 		state().setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations);
 	}
