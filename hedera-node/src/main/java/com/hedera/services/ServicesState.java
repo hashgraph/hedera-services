@@ -260,6 +260,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			return;
 		}
 
+		autoAccountsMap = new HashMap<>();
+		if (deserializedVersion >= RELEASE_0210_VERSION) {
+			loadAccountAliasRelations(accounts());
+		}
+
 		log.info("Init called on Services node {} WITH Merkle saved state", platform.getSelfId());
 
 		/* Immediately override the address book from the saved state */
@@ -276,6 +281,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		final var bootstrapProps = new BootstrapProperties();
 		final var seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
 		createGenesisChildren(addressBook, seqStart);
+		autoAccountsMap = new HashMap<>();
 
 		internalInit(platform, bootstrapProps, dualState);
 	}
@@ -461,7 +467,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				dualState.getLastFrozenTime());
 
 		final var stateVersion = networkCtx().getStateVersion();
-		autoAccountsMap = new HashMap<>();
 		if (stateVersion > StateVersions.CURRENT_VERSION) {
 			log.error("Fatal error, network state version {} > node software version {}",
 					networkCtx().getStateVersion(),
@@ -574,7 +579,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		for (Map.Entry entry : accountsMap.entrySet()) {
 			MerkleAccount value = (MerkleAccount) entry.getValue();
 			EntityNum number = (EntityNum) entry.getKey();
-			if (value.state().getAlias() != null) {
+			if (!value.state().getAlias().isEmpty()) {
 				autoAccountsMap.put(value.state().getAlias(), number);
 			}
 		}
