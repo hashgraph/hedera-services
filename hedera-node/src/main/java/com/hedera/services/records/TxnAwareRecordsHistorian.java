@@ -48,8 +48,6 @@ import static com.hedera.services.utils.MiscUtils.nonNegativeNanosOffset;
  */
 @Singleton
 public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
-	public static final int DEFAULT_SOURCE_ID = 0;
-
 	private static class InProgressChildRecord {
 		private final int sourceId;
 		private final TransactionBody.Builder syntheticBody;
@@ -241,7 +239,12 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	) {
 		for (final var baseRecord : baseRecords) {
 			final var childRecord = baseRecord.getExpirableTransactionRecord();
-			creator.saveExpiringRecord(effPayer, childRecord, childRecord.getConsensusSecond(), submittingMember);
+			save(
+					childRecord,
+					effPayer,
+					childRecord.getTxnId().toGrpc(),
+					submittingMember,
+					childRecord.getConsensusSecond());
 		}
 	}
 
@@ -252,8 +255,7 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 			final long submittingMember,
 			final long expiry
 	) {
-		final var expiringRecord = creator.saveExpiringRecord(
-				effPayer, baseRecord, expiry, submittingMember);
-		recordCache.setPostConsensus(txnId, topLevelRecord.getReceipt().getEnumStatus(), expiringRecord);
+		final var expiringRecord = creator.saveExpiringRecord(effPayer, baseRecord, expiry, submittingMember);
+		recordCache.setPostConsensus(txnId, baseRecord.getEnumStatus(), expiringRecord);
 	}
 }

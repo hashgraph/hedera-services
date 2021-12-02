@@ -25,6 +25,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.serdes.DomainSerdes;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.CommonUtils;
@@ -381,6 +382,10 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 	public TxnReceipt getReceipt() {
 		return receipt;
+	}
+
+	public ResponseCodeEnum getEnumStatus() {
+		return receipt.getEnumStatus();
 	}
 
 	public byte[] getTxnHash() {

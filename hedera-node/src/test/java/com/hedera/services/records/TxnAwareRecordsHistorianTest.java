@@ -54,6 +54,8 @@ import java.util.function.Consumer;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -148,17 +150,17 @@ class TxnAwareRecordsHistorianTest {
 
 	@Test
 	void incorporatesChildRecordsIfPresent() {
-		final var successfulReceipt = TxnReceipt.newBuilder().setStatus("SUCCESS").build();
-
 		final var mockFollowingRecord = mock(ExpirableTxnRecord.class);
 		final var followingChildNows = nows + 1;
 		given(mockFollowingRecord.getConsensusSecond()).willReturn(followingChildNows);
 		final var mockPrecedingRecord = mock(ExpirableTxnRecord.class);
 		final var precedingChildNows = nows - 1;
 		given(mockPrecedingRecord.getConsensusSecond()).willReturn(precedingChildNows);
+		given(mockPrecedingRecord.getEnumStatus()).willReturn(INVALID_ACCOUNT_ID);
+		given(mockFollowingRecord.getEnumStatus()).willReturn(INVALID_CHUNK_NUMBER);
 
-		final var expPrecedeId = txnIdA.toBuilder().setNonce(1);
-		final var expFollowId = txnIdA.toBuilder().setNonce(2);
+		final var expPrecedeId = txnIdA.toBuilder().setNonce(1).build();
+		final var expFollowId = txnIdA.toBuilder().setNonce(2).build();
 
 		final var expectedPrecedingChildId = new TxnId(
 				aEntity, new RichInstant(nows, nanos), false, 1);
@@ -166,14 +168,16 @@ class TxnAwareRecordsHistorianTest {
 				aEntity, new RichInstant(nows, nanos), false, 2);
 
 		final var mockTopLevelRecord = mock(ExpirableTxnRecord.class);
-		given(mockTopLevelRecord.getReceipt()).willReturn(successfulReceipt);
+		given(mockTopLevelRecord.getEnumStatus()).willReturn(SUCCESS);
 
 		final var topLevelRecord = mock(ExpirableTxnRecord.Builder.class);
 		given(topLevelRecord.getTxnId()).willReturn(TxnId.fromGrpc(txnIdA));
 		final var followingBuilder = mock(ExpirableTxnRecord.Builder.class);
 		given(followingBuilder.getTxnId()).willReturn(expectedFollowingChildId);
+		given(mockFollowingRecord.getTxnId()).willReturn(expectedFollowingChildId);
 		final var precedingBuilder = mock(ExpirableTxnRecord.Builder.class);
 		given(precedingBuilder.getTxnId()).willReturn(expectedPrecedingChildId);
+		given(mockPrecedingRecord.getTxnId()).willReturn(expectedPrecedingChildId);
 		final var expectedFollowTime = topLevelNow.plusNanos(1);
 		final var expectedPrecedingTime = topLevelNow.minusNanos(1);
 
@@ -250,6 +254,8 @@ class TxnAwareRecordsHistorianTest {
 				noThrowSha384HashOf(expectedPrecedeSynth.getSignedTransactionBytes().toByteArray()));
 		verify(followingBuilder).setTxnHash(
 				noThrowSha384HashOf(expectedFollowSynth.getSignedTransactionBytes().toByteArray()));
+		verify(recordCache).setPostConsensus(expPrecedeId, INVALID_ACCOUNT_ID, mockPrecedingRecord);
+		verify(recordCache).setPostConsensus(expFollowId, INVALID_CHUNK_NUMBER, mockFollowingRecord);
 	}
 
 	@Test

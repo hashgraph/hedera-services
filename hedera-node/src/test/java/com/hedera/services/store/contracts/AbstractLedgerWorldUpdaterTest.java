@@ -109,15 +109,17 @@ class AbstractLedgerWorldUpdaterTest {
 		final var sourceId = 123;
 		final var firstRecord = ExpirableTxnRecord.newBuilder();
 		final var secondRecord = ExpirableTxnRecord.newBuilder();
+		final var firstSynthBuilder = TransactionBody.newBuilder();
+		final var secondSynthBuilder = TransactionBody.newBuilder();
 
 		given(recordsHistorian.nextChildRecordSourceId()).willReturn(sourceId);
 
-		subject.manageInProgressRecord(recordsHistorian, firstRecord, TransactionBody.newBuilder());
-		subject.manageInProgressRecord(recordsHistorian, secondRecord, TransactionBody.newBuilder());
+		subject.manageInProgressRecord(recordsHistorian, firstRecord, firstSynthBuilder);
+		subject.manageInProgressRecord(recordsHistorian, secondRecord, secondSynthBuilder);
 
 		verify(recordsHistorian, times(1)).nextChildRecordSourceId();
-		verify(recordsHistorian).trackFollowingChildRecord(sourceId, TransactionBody.newBuilder(), firstRecord);
-		verify(recordsHistorian).trackFollowingChildRecord(sourceId, TransactionBody.newBuilder(), secondRecord);
+		verify(recordsHistorian).trackFollowingChildRecord(sourceId, firstSynthBuilder, firstRecord);
+		verify(recordsHistorian).trackFollowingChildRecord(sourceId, secondSynthBuilder, secondRecord);
 	}
 
 	@Test
