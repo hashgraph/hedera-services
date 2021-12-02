@@ -20,11 +20,13 @@ package com.hedera.services.utils;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -51,6 +53,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -743,7 +746,8 @@ public final class MiscUtils {
 	 * flipping bit j of perm64(x). For each possible pair (i,j), this function
 	 * achieves a probability between 49.8 and 50.2 percent.
 	 *
-	 * @param x the value to permute
+	 * @param x
+	 * 		the value to permute
 	 * @return the avalanche-optimized permutation
 	 */
 	public static long perm64(long x) {
@@ -781,10 +785,30 @@ public final class MiscUtils {
 	/**
 	 * Verifies whether a {@link HederaFunctionality} should be throttled by the consensus throttle
 	 *
-	 * @param hederaFunctionality - the {@link HederaFunctionality} to verify
+	 * @param hederaFunctionality
+	 * 		- the {@link HederaFunctionality} to verify
 	 * @return - whether this {@link HederaFunctionality} should be throttled by the consensus throttle
 	 */
 	public static boolean isGasThrottled(HederaFunctionality hederaFunctionality) {
 		return CONSENSUS_THROTTLED_FUNCTIONS.contains(hederaFunctionality);
+	}
+
+	/**
+	 * From given MerkleMap of accounts, populate the auto accounts creations map. Iterate through
+	 * each account in accountsMap and add an entry to autoAccountsMap if {@code alias} exists on the account.
+	 *
+	 * @param accountsMap
+	 * 		accounts MerkleMap
+	 */
+	public static Map<ByteString, EntityNum> constructAccountAliasRels(MerkleMap<EntityNum, MerkleAccount> accountsMap) {
+		Map<ByteString, EntityNum> autoAccountsMap = new HashMap<>();
+		for (Map.Entry entry : accountsMap.entrySet()) {
+			MerkleAccount value = (MerkleAccount) entry.getValue();
+			EntityNum number = (EntityNum) entry.getKey();
+			if (!value.state().getAlias().isEmpty()) {
+				autoAccountsMap.put(value.state().getAlias(), number);
+			}
+		}
+		return autoAccountsMap;
 	}
 }

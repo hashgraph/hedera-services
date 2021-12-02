@@ -77,6 +77,7 @@ import static com.hedera.services.state.migration.StateChildIndices.SPECIAL_FILE
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0210_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_TWENTY_VERSION;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
+import static com.hedera.services.utils.MiscUtils.constructAccountAliasRels;
 
 /**
  * The Merkle tree root of the Hedera Services world state.
@@ -100,7 +101,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	private SwirldDualState dualStateForDeferredInit;
 
 	/* Alias Accounts Map that will be rebuilt after restart, reconnect*/
-	private HashMap<ByteString, EntityNum> autoAccountsMap;
+	private Map<ByteString, EntityNum> autoAccountsMap;
 
 	public ServicesState() {
 		/* RuntimeConstructable */
@@ -189,7 +190,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 		autoAccountsMap = new HashMap<>();
 		if (deserializedVersion >= RELEASE_0210_VERSION) {
-			loadAccountAliasRelations(accounts());
+			autoAccountsMap = constructAccountAliasRels(accounts());
 		}
 
 		log.info("Init called on Services node {} WITH Merkle saved state", platform.getSelfId());
@@ -446,7 +447,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return dualStateForDeferredInit;
 	}
 
-	HashMap<ByteString, EntityNum> getAutoAccountsMap() {
+	Map<ByteString, EntityNum> getAutoAccountsMap() {
 		return autoAccountsMap;
 	}
 
@@ -514,15 +515,4 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	public static void setJdbLoc(String jdbLoc) {
 		ServicesState.jdbLoc = jdbLoc;
 	}
-
-	private void loadAccountAliasRelations(MerkleMap<EntityNum, MerkleAccount> accountsMap) {
-		for (Map.Entry entry : accountsMap.entrySet()) {
-			MerkleAccount value = (MerkleAccount) entry.getValue();
-			EntityNum number = (EntityNum) entry.getKey();
-			if (!value.state().getAlias().isEmpty()) {
-				autoAccountsMap.put(value.state().getAlias(), number);
-			}
-		}
-	}
-
 }
