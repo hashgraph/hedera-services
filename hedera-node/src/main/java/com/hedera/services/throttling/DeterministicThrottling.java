@@ -22,6 +22,7 @@ package com.hedera.services.throttling;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
+import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttles.GasLimitDeterministicThrottle;
 import com.hedera.services.utils.TxnAccessor;
@@ -41,6 +42,8 @@ import java.util.List;
 import java.util.function.IntSupplier;
 
 import static com.hedera.services.utils.MiscUtils.isGasThrottled;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 
 public class DeterministicThrottling implements TimedFunctionalityThrottling {
@@ -93,10 +96,22 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
 		if ((manager = functionReqs.get(function)) == null) {
 			return true;
+		} else if (function == CryptoTransfer) {
+			return shouldThrottleTransfer(manager, accessor.getAutoAccountCreationsCount(), now);
 		} else if (function == TokenMint) {
 			return shouldThrottleMint(manager, accessor.getTxn().getTokenMint(), now);
 		} else {
 			return !manager.allReqsMetAt(now);
+		}
+	}
+
+	private boolean shouldThrottleTransfer(
+			final ThrottleReqsManager manager, final int autoAccountCreationCount, final Instant now) {
+		if (autoAccountCreationCount == 0) {
+			return !manager.allReqsMetAt(now);
+		} else {
+			return !functionReqs.get(CryptoCreate).allReqsMetAt(
+					now, autoAccountCreationCount, ThrottleReqOpsScaleFactor.from("1:1"));
 		}
 	}
 
