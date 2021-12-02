@@ -345,7 +345,7 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 	@Test
 	void forwardsTransactionalSemantics() {
 		subject.setTokenRelsLedger(null);
-		final var inOrder = inOrder(accountsLedger);
+		final var inOrder = inOrder(accountsLedger, mutableEntityAccess);
 		given(sideEffectsTracker.getNetTrackedHbarChanges()).willReturn(TransferList.getDefaultInstance());
 
 		subject.begin();
@@ -354,8 +354,12 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		subject.rollback();
 
 		inOrder.verify(accountsLedger).begin();
+		inOrder.verify(mutableEntityAccess).begin();
 		inOrder.verify(accountsLedger).commit();
+		inOrder.verify(mutableEntityAccess).commit();
 		inOrder.verify(accountsLedger).begin();
+		inOrder.verify(mutableEntityAccess).begin();
 		inOrder.verify(accountsLedger).rollback();
+		inOrder.verify(mutableEntityAccess).rollback();
 	}
 }

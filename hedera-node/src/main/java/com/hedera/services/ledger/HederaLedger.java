@@ -39,6 +39,7 @@ import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
@@ -97,7 +98,8 @@ public class HederaLedger {
 	private static final List<AccountProperty> TOKEN_TRANSFER_SIDE_EFFECTS =
 			List.of(TOKENS, NUM_NFTS_OWNED, ALREADY_USED_AUTOMATIC_ASSOCIATIONS);
 
-	static final String NO_ACTIVE_TXN_CHANGE_SET = "{*NO ACTIVE TXN*}";
+	public static final String NO_ACTIVE_TXN_CHANGE_SET = "{*NO ACTIVE TXN*}";
+
 	public static final Comparator<AccountID> ACCOUNT_ID_COMPARATOR = Comparator
 			.comparingLong(AccountID::getAccountNum)
 			.thenComparingLong(AccountID::getShardNum)
@@ -123,6 +125,7 @@ public class HederaLedger {
 	private final AccountRecordsHistorian historian;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
+	private MutableEntityAccess mutableEntityAccess;
 	private UniqTokenViewsManager tokenViewsManager = null;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger = null;
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger = null;
@@ -155,16 +158,20 @@ public class HederaLedger {
 		tokenStore.setHederaLedger(this);
 	}
 
-	public void setTokenViewsManager(UniqTokenViewsManager tokenViewsManager) {
+	public void setMutableEntityAccess(final MutableEntityAccess mutableEntityAccess) {
+		this.mutableEntityAccess = mutableEntityAccess;
+	}
+
+	public void setTokenViewsManager(final UniqTokenViewsManager tokenViewsManager) {
 		this.tokenViewsManager = tokenViewsManager;
 	}
 
-	public void setNftsLedger(TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger) {
+	public void setNftsLedger(final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger) {
 		this.nftsLedger = nftsLedger;
 	}
 
 	public void setTokenRelsLedger(
-			TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger
+			final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger
 	) {
 		this.tokenRelsLedger = tokenRelsLedger;
 	}
@@ -172,6 +179,7 @@ public class HederaLedger {
 	/* -- TRANSACTIONAL SEMANTICS -- */
 	public void begin() {
 		accountsLedger.begin();
+		mutableEntityAccess.begin();
 		if (tokenRelsLedger != null) {
 			tokenRelsLedger.begin();
 		}
@@ -185,6 +193,7 @@ public class HederaLedger {
 
 	public void rollback() {
 		accountsLedger.rollback();
+		mutableEntityAccess.rollback();
 		if (tokenRelsLedger != null && tokenRelsLedger.isInTransaction()) {
 			tokenRelsLedger.rollback();
 		}
@@ -198,9 +207,12 @@ public class HederaLedger {
 
 	public void commit() {
 		throwIfPendingStateIsInconsistent();
-		accountsLedger.commit();
+
 		historian.saveExpirableTransactionRecords();
 		historian.noteNewExpirationEvents();
+
+		accountsLedger.commit();
+		mutableEntityAccess.commit();
 		if (tokenRelsLedger != null && tokenRelsLedger.isInTransaction()) {
 			tokenRelsLedger.commit();
 		}

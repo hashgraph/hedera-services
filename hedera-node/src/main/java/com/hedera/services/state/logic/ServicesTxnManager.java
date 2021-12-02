@@ -77,9 +77,10 @@ public class ServicesTxnManager {
 		createdStreamableRecord = false;
 
 		try {
-			ledger.begin();
-			recordsHistorian.clearHistory();
 			txnCtx.resetFor(accessor, consensusTime, submittingMember);
+			recordsHistorian.clearHistory();
+			ledger.begin();
+
 			if (accessor.isTriggeredTxn()) {
 				scopedTriggeredProcessing.run();
 			} else {

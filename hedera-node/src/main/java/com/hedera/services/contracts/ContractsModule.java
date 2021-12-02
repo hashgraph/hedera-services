@@ -20,6 +20,7 @@ package com.hedera.services.contracts;
  * ‍
  */
 
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.contracts.annotations.BytecodeSource;
 import com.hedera.services.contracts.annotations.StorageSource;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV19;
@@ -107,11 +108,12 @@ public abstract class ContractsModule {
 	@Singleton
 	public static EntityAccess provideMutableEntityAccess(
 			final HederaLedger ledger,
+			final TransactionContext txnCtx,
 			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
 			final Supplier<VirtualMap<ContractKey, ContractValue>> storage,
 			final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode
 	) {
-		return new MutableEntityAccess(ledger, tokensLedger, storage, bytecode);
+		return new MutableEntityAccess(ledger, txnCtx, tokensLedger, storage, bytecode);
 	}
 
 	@Provides
