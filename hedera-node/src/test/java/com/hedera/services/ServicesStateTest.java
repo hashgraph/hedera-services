@@ -20,6 +20,7 @@ package com.hedera.services;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.init.ServicesInitFlow;
 import com.hedera.services.sigs.ExpansionHelper;
@@ -29,6 +30,8 @@ import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.forensics.HashLogger;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleAccountState;
+import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
@@ -48,6 +51,7 @@ import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
+import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.SystemExits;
 import com.hedera.test.extensions.LogCaptor;
@@ -55,6 +59,8 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
+import com.hedera.test.utils.TestFileUtils;
+import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.NodeId;
@@ -66,6 +72,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.fchashmap.FCOneToManyRelation;
+import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.FCMapMigration;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkle.tree.MerkleBinaryTree;
@@ -89,6 +96,7 @@ import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0160_VERSION;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
+import static com.hedera.services.utils.MiscUtils.constructAccountAliasRels;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -628,92 +636,58 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void migratesFromRelease0160AsExpected() throws ConstructableRegistryException {
+	void genesisInitCreatesAnEmptyAutoAccountsMap() throws IOException {
 		// setup:
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
-		// and:
-		final var addressBook = new AddressBook();
-		final var networkContext = new MerkleNetworkContext();
-		networkContext.setSeqNo(new SequenceNumber(1234L));
-		networkContext.setMidnightRates(new ExchangeRates(1, 2, 3, 4, 5, 6));
-		final MerkleMap<EntityNumPair, MerkleUniqueToken> nfts = new MerkleMap<>();
-		final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels = new MerkleMap<>();
-		final var nftKey = EntityNumPair.fromLongs(MISSING_ENTITY_ID.num(), 1L);
-		final var nftVal = new MerkleUniqueToken(MISSING_ENTITY_ID, "TBD".getBytes(), MISSING_INSTANT);
-		final var tokenRelsKey = EntityNumPair.fromLongs(2, 3);
-		final var tokenRelsVal = new MerkleTokenRelStatus(1_234L, true, false, true);
-		// and:
-		nfts.put(nftKey, nftVal);
-		tokenRels.put(tokenRelsKey, tokenRelsVal);
-		// and:
-		final List<MerkleNode> legacyChildren = legacyChildrenWith(addressBook, networkContext, nfts, tokenRels, true);
+		TestFileUtils.blowAwayDirIfPresent(TEST_JDB_LOC);
+		ServicesState.setJdbLoc(TEST_JDB_LOC);
+		ServicesState.setAppBuilder(() -> appBuilder);
 
-		// given:
-		subject.addDeserializedChildren(legacyChildren, RELEASE_0160_VERSION);
+		given(appBuilder.bootstrapProps(any())).willReturn(appBuilder);
+		given(appBuilder.initialState(subject)).willReturn(appBuilder);
+		given(appBuilder.platform(platform)).willReturn(appBuilder);
+		given(appBuilder.selfId(1L)).willReturn(appBuilder);
+		given(appBuilder.build()).willReturn(app);
+		// and:
+		given(app.hashLogger()).willReturn(hashLogger);
+		given(app.initializationFlow()).willReturn(initFlow);
+		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+		given(platform.getSelfId()).willReturn(selfId);
 
 		// when:
-		subject.initialize();
+		assertEquals(null, subject.getAutoAccountsMap());
+		subject.genesisInit(platform, addressBook, dualState);
 
 		// then:
-		assertEquals(addressBook, subject.getChild(StateChildIndices.ADDRESS_BOOK));
-		assertEquals(addressBook, subject.addressBook());
-		assertEquals(
-				networkContext.midnightRates(),
-				((MerkleNetworkContext) subject.getChild(StateChildIndices.NETWORK_CTX)).midnightRates());
-		assertEquals(networkContext.midnightRates(), subject.networkCtx().midnightRates());
-		assertEquals(
-				nftVal,
-				((MerkleMap<EntityNumPair, MerkleUniqueToken>) subject.getChild(StateChildIndices.UNIQUE_TOKENS))
-						.get(nftKey));
-		assertEquals(nftVal, subject.uniqueTokens().get(nftKey));
-		assertEquals(
-				tokenRelsVal,
-				((MerkleMap<EntityNumPair, MerkleTokenRelStatus>) subject.getChild(
-						StateChildIndices.TOKEN_ASSOCIATIONS))
-						.get(tokenRelsKey));
-		assertEquals(tokenRelsVal, subject.tokenAssociations().get(tokenRelsKey));
+		assertTrue(subject.getAutoAccountsMap().isEmpty());
 	}
 
 	@Test
-	void migratesFromPreRelease0160AsExpected() throws ConstructableRegistryException {
-		// and:
-		final var addressBook = new AddressBook();
-		final var networkContext = new MerkleNetworkContext();
-		networkContext.setSeqNo(new SequenceNumber(1234L));
-		networkContext.setMidnightRates(new ExchangeRates(1, 2, 3, 4, 5, 6));
-		final MerkleMap<EntityNumPair, MerkleUniqueToken> nfts = new MerkleMap<>();
-		final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels = new MerkleMap<>();
-		final var tokenRelsKey = EntityNumPair.fromLongs(2, 3);
-		final var tokenRelsVal = new MerkleTokenRelStatus(1_234L, true, false, true);
-		// and:
-		tokenRels.put(tokenRelsKey, tokenRelsVal);
-		// and:
-		final List<MerkleNode> legacyChildren = legacyChildrenWith(addressBook, networkContext, nfts, tokenRels, false);
+	void nonGenesisInitLoadsAutoAccountsMap() {
+		MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
+		final Key aliasKey = Key.newBuilder()
+				.setECDSASecp256K1(ByteString.copyFromUtf8("bbbbbbbbbbbbbbbbbbbbb")).build();
+		final ByteString alias = aliasKey.getECDSASecp256K1();
+		MerkleAccountState state = new MerkleAccountState(null, 10, 10, 10, null, false, false, false, null, 2, 0,
+				alias);
+		accounts.put(new EntityNum(2),
+				new MerkleAccount(List.of(state, mock(FCQueue.class), mock(MerkleAccountTokens.class))));
 
-		// given:
-		subject.addDeserializedChildren(legacyChildren, RELEASE_0160_VERSION);
+		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
+
+		given(networkContext.getStateVersion()).willReturn(StateVersions.RELEASE_0210_VERSION);
+
+		given(app.hashLogger()).willReturn(hashLogger);
+		given(app.initializationFlow()).willReturn(initFlow);
+		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+		given(platform.getSelfId()).willReturn(selfId);
+		// and:
+		APPS.save(selfId.getId(), app);
 
 		// when:
-		subject.initialize();
+		subject.init(platform, addressBook, dualState);
 
-		// then:
-		assertEquals(addressBook, subject.getChild(StateChildIndices.ADDRESS_BOOK));
-		assertEquals(addressBook, subject.addressBook());
-		assertEquals(
-				networkContext.midnightRates(),
-				((MerkleNetworkContext) subject.getChild(StateChildIndices.NETWORK_CTX)).midnightRates());
-		assertEquals(networkContext.midnightRates(), subject.networkCtx().midnightRates());
-		assertEquals(
-				tokenRelsVal,
-				((MerkleMap<EntityNumPair, MerkleTokenRelStatus>) subject.getChild(
-						StateChildIndices.TOKEN_ASSOCIATIONS))
-						.get(tokenRelsKey));
-		assertEquals(tokenRelsVal, subject.tokenAssociations().get(tokenRelsKey));
+		assertEquals(1, subject.getAutoAccountsMap().size());
 	}
 
 	@Test
