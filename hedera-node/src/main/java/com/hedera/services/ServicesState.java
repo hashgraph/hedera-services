@@ -20,6 +20,7 @@ package com.hedera.services;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -45,6 +46,7 @@ import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
@@ -76,6 +78,8 @@ import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
 import static com.hedera.services.state.migration.Release0170Migration.moveLargeFcmsToBinaryRoutePositions;
 import static com.hedera.services.state.migration.StateChildIndices.SPECIAL_FILES;
+import static com.hedera.services.state.migration.StateVersions.RELEASE_0210_VERSION;
+import static com.hedera.services.state.migration.StateVersions.RELEASE_TWENTY_VERSION;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static com.hedera.services.utils.EntityNumPair.fromLongs;
 import static java.util.concurrent.CompletableFuture.runAsync;
@@ -134,10 +138,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public int getMinimumChildCount(int version) {
-		if (version < StateVersions.RELEASE_0160_VERSION) {
-			return StateChildIndices.NUM_PRE_0160_CHILDREN;
-		} else if (version <= StateVersions.CURRENT_VERSION) {
-			return StateChildIndices.NUM_POST_0160_CHILDREN;
+		if (version < RELEASE_TWENTY_VERSION) {
+			return StateChildIndices.NUM_PRE_TWENTY_CHILDREN;
+		} else if (version <= RELEASE_0210_VERSION) {
+			return StateChildIndices.NUM_TWENTY_CHILDREN;
 		} else {
 			throw new IllegalArgumentException("Argument 'version='" + version + "' is invalid!");
 		}
@@ -242,13 +246,13 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	/* --- SwirldState --- */
 	@Override
 	public void init(final Platform platform, final AddressBook addressBook, final SwirldDualState dualState) {
-		if (deserializedVersion < StateVersions.RELEASE_0180_VERSION && platform != platformForDeferredInit) {
+		if (deserializedVersion < RELEASE_TWENTY_VERSION && platform != platformForDeferredInit) {
 			/* Due to design issues with the BinaryObjectStore, which will not be finished
 			initializing here, we need to defer initialization until post-FCM migration. */
 			platformForDeferredInit = platform;
 			dualStateForDeferredInit = dualState;
 			addressBookForDeferredInit = addressBook;
-			log.info("Deferring init for 0.17.x -> 0.18.x upgrade on Services node {}", platform.getSelfId());
+			log.info("Deferring init for 0.19.x -> 0.20.x upgrade on Services node {}", platform.getSelfId());
 			return;
 		}
 
