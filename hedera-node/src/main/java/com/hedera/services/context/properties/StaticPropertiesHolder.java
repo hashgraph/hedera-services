@@ -20,6 +20,7 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -60,7 +61,7 @@ public class StaticPropertiesHolder {
 				.build();
 	}
 
-	public AccountID scopedAccountWith(final long num, final Key alias) {
+	public AccountID scopedAccountWith(final long num, final ByteString alias) {
 		return AccountID.newBuilder()
 				.setShardNum(shard)
 				.setRealmNum(realm)
