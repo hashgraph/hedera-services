@@ -22,7 +22,6 @@ package com.hedera.services.txns.token;
 
 import com.hedera.services.fees.annotations.FunctionKey;
 import com.hedera.services.store.TypedTokenStore;
-import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.TransitionLogic;

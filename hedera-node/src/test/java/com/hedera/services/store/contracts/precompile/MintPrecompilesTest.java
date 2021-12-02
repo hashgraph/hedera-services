@@ -115,7 +115,7 @@ class MintPrecompilesTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new HTSPrecompiledContract(ledger,
+		subject = new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder,
 				syntheticTxnFactory, creator, dissociationFactory);

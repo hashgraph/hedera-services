@@ -58,8 +58,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class TokenPropertyTest {
 	final long totalSupply = 2L;
-	final Optional<JKey> adminKey = Optional.of(new JEd25519Key("abcdefghijklmnopqrstuvwxyz012345".getBytes()));
-	final Optional<JKey> freezeKey = Optional.of(new JEd25519Key("abcdefghijklmnopqrstuvwxyz012346".getBytes()));
+	final JKey adminKey = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012345".getBytes());
+	final JKey freezeKey = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012346".getBytes());
 	final JKey kycKey = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012347".getBytes());
 	final JKey pauseKey = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012348".getBytes());
 	final JKey supplyKey = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012349".getBytes());
@@ -212,8 +212,8 @@ class TokenPropertyTest {
 		feeScheduleSetter.accept(target, feeSchedule);
 		// expect:
 		assertEquals(totalSupply, target.totalSupply());
-		assertEquals(adminKey.get(), target.getAdminKey());
-		assertEquals(freezeKey.get(), target.getFreezeKey());
+		assertEquals(adminKey, target.getAdminKey());
+		assertEquals(freezeKey, target.getFreezeKey());
 		assertEquals(kycKey, target.getKycKey());
 		assertEquals(pauseKey, target.getPauseKey());
 		assertEquals(supplyKey, target.getSupplyKey());

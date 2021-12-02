@@ -87,7 +87,7 @@ public class SyntheticTxnFactory {
 		final var builder = TokenAssociateTransactionBody.newBuilder();
 
 		builder.setAccount(associateToken.getAccountID());
-		builder.setTokens(0, associateToken.getTokenID());
+		builder.addTokens(associateToken.getTokenID());
 
 		return TransactionBody.newBuilder().setTokenAssociate(builder);
 	}
@@ -96,7 +96,7 @@ public class SyntheticTxnFactory {
 		final var builder = TokenDissociateTransactionBody.newBuilder();
 
 		builder.setAccount(dissociateToken.getAccountID());
-		builder.setTokens(0, dissociateToken.getTokenID());
+		builder.addTokens(dissociateToken.getTokenID());
 
 		return TransactionBody.newBuilder().setTokenDissociate(builder);
 	}

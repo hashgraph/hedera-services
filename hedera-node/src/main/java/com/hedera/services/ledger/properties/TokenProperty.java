@@ -47,7 +47,7 @@ public enum TokenProperty implements BeanProperty<MerkleToken> {
 	ADMIN_KEY {
 		@Override
 		public BiConsumer<MerkleToken, Object> setter() {
-			return (a, l) -> a.setAdminKey(((Optional<JKey>) l).orElse(null));
+			return (a, l) -> a.setAdminKey((JKey) l);
 		}
 
 		@Override
@@ -58,7 +58,7 @@ public enum TokenProperty implements BeanProperty<MerkleToken> {
 	FREEZE_KEY {
 		@Override
 		public BiConsumer<MerkleToken, Object> setter() {
-			return (a, l) -> a.setFreezeKey(((Optional<JKey>) l).orElse(null));
+			return (a, l) -> a.setFreezeKey((JKey) l);
 		}
 
 		@Override

@@ -26,7 +26,6 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.SoliditySigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
@@ -97,7 +96,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private AccountStoreFactory accountStoreFactory = AccountStore::new;
 	private Supplier<SideEffectsTracker> sideEffectsFactory = SideEffectsTracker::new;
 
-	private final HederaLedger ledger;
 	private final EntityCreator creator;
 	private final DecodingFacade decoder;
 	private final GlobalDynamicProperties dynamicProperties;
@@ -132,7 +130,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@Inject
 	public HTSPrecompiledContract(
-			final HederaLedger ledger,
 			final OptionValidator validator,
 			final GlobalDynamicProperties dynamicProperties,
 			final GasCalculator gasCalculator,
@@ -145,7 +142,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	) {
 		super("HTS", gasCalculator);
 
-		this.ledger = ledger;
 		this.decoder = decoder;
 		this.validator = validator;
 		this.creator = creator;
@@ -235,7 +231,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		return null;
 	}
 
-	// TODO: HERE
 	@SuppressWarnings("unused")
 	protected Bytes computeMintToken(final Bytes input, final MessageFrame frame) {
 		/* --- Get the frame context --- */
