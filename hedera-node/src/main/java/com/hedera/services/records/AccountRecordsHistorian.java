@@ -23,7 +23,7 @@ package com.hedera.services.records;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.RecordStreamObject;
-import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import java.util.List;
 
@@ -69,18 +69,34 @@ public interface AccountRecordsHistorian {
 	ExpirableTxnRecord lastCreatedTopLevelRecord();
 
 	/**
-	 * Indicates if the active transaction created child records.
+	 * Indicates if the active transaction created child records that follow the top-level transaction.
 	 *
-	 * @return whether child records were created
+	 * @return whether following child records were created
 	 */
-	boolean hasChildRecords();
+	boolean hasFollowingChildRecords();
 
 	/**
-	 * Returns all the child records created by the active transaction.
+	 * Indicates if the active transaction created child records that precede the top-level transaction.
 	 *
-	 * @return the created child records
+	 * @return whether preceding child records were created
 	 */
-	List<RecordStreamObject> getChildRecords();
+	boolean hasPrecedingChildRecords();
+
+	/**
+	 * Returns all the child records created by the active transaction with consensus time <i>after</i>
+	 * that of the top-level user transaction.
+	 *
+	 * @return the created following child records
+	 */
+	List<RecordStreamObject> getFollowingChildRecords();
+
+	/**
+	 * Returns all the child records created by the active transaction with consensus time <i>before</i>
+	 * that of the top-level user transaction.
+	 *
+	 * @return the created preceding child records
+	 */
+	List<RecordStreamObject> getPrecedingChildRecords();
 
 	/**
 	 * Returns a non-negative "source id" to be used to create a group of in-progress child transactions.
@@ -90,13 +106,24 @@ public interface AccountRecordsHistorian {
 	int nextChildRecordSourceId();
 
 	/**
-	 * Adds the given in-progress child record to the active transaction.
+	 * Adds the given in-progress child record to the active transaction, where its synthetic consensus
+	 * timestamp will come <i>after</i> that of the parent user transaction.
 	 *
 	 * @param sourceId the id of the child record source
 	 * @param recordSoFar the in-progress child record
-	 * @param syntheticTxn the synthetic transaction for the child record
+	 * @param syntheticBody the synthetic body for the child record
 	 */
-	void trackChildRecord(int sourceId, ExpirableTxnRecord.Builder recordSoFar, Transaction syntheticTxn);
+	void trackFollowingChildRecord(int sourceId, TransactionBody.Builder syntheticBody, ExpirableTxnRecord.Builder recordSoFar);
+
+	/**
+	 * Adds the given in-progress child record to the active transaction, where its synthetic consensus
+	 * timestamp will come <i>before</i> that of the parent user transaction.
+	 *
+	 * @param sourceId the id of the child record source
+	 * @param syntheticBody the synthetic body for the child record
+	 * @param recordSoFar the in-progress child record
+	 */
+	void trackPrecedingChildRecord(int sourceId, TransactionBody.Builder syntheticBody, ExpirableTxnRecord.Builder recordSoFar);
 
 	/**
 	 * Reverts all records created by the given source.

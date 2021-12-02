@@ -29,7 +29,6 @@ import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Transaction;
 
 import java.time.Instant;
 import java.util.List;
@@ -95,24 +94,21 @@ public interface EntityCreator {
 	/**
 	 * Returns a {@link ExpirableTxnRecord.Builder} summarizing the information for the given synthetic transaction.
 	 *
-	 * @param txn the synthetic transaction
 	 * @param assessedCustomFees the custom fees assessed during the transaction
 	 * @param sideEffectsTracker the side effects tracked throughout the transaction
 	 * @return a {@link ExpirableTxnRecord.Builder} summarizing the input
 	 */
 	ExpirableTxnRecord.Builder createSuccessfulSyntheticRecord(
-			Transaction txn,
 			List<FcAssessedCustomFee> assessedCustomFees,
 			SideEffectsTracker sideEffectsTracker);
 
 	/**
 	 * Returns a {@link ExpirableTxnRecord.Builder} summarizing a failed synthetic transaction.
 	 *
-	 * @param txn the synthetic transaction
 	 * @param failureReason the cause of the failure
 	 * @return a {@link ExpirableTxnRecord.Builder} summarizing the input
 	 */
-	ExpirableTxnRecord.Builder createFailedSyntheticRecord(Transaction txn, ResponseCodeEnum failureReason);
+	ExpirableTxnRecord.Builder createFailedSyntheticRecord(ResponseCodeEnum failureReason);
 
 	/**
 	 * Returns a {@link ExpirableTxnRecord.Builder} for a transaction that failed due to an internal error.

@@ -184,6 +184,10 @@ public class TxnReceipt implements SelfSerializable {
 		return status;
 	}
 
+	public ResponseCodeEnum getEnumStatus() {
+		return ResponseCodeEnum.valueOf(status);
+	}
+
 	public EntityId getAccountId() {
 		return accountId;
 	}

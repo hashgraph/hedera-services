@@ -231,6 +231,10 @@ public final class EntityIdUtils {
 		return contractParsedFromSolidityAddress(address.toArrayUnsafe());
 	}
 
+	public static TokenID tokenParsedFromSolidityAddress(final Address address) {
+		return tokenParsedFromSolidityAddress(address.toArrayUnsafe());
+	}
+
 	public static AccountID accountParsedFromSolidityAddress(final byte[] solidityAddress) {
 		return AccountID.newBuilder()
 				.setShardNum(Ints.fromByteArray(Arrays.copyOfRange(solidityAddress, 0, 4)))

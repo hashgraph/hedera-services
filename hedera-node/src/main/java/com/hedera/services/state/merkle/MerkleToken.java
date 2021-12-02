@@ -400,6 +400,10 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 		return Optional.ofNullable(freezeKey);
 	}
 
+	public JKey freezeKeyUnsafe() {
+		return freezeKey;
+	}
+
 	public boolean hasFreezeKey() {
 		return freezeKey != UNUSED_KEY;
 	}
@@ -584,6 +588,10 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 
 	public JKey getKycKey() {
 		return kycKey;
+	}
+
+	public JKey getAdminKeyUnsafe() {
+		return adminKey;
 	}
 
 	public JKey getFreezeKey() {

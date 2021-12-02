@@ -9,9 +9,9 @@ package com.hedera.services.store.contracts.precompile;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,23 +20,39 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.NftTransfer;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
 
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.List;
 
 @Singleton
 public class SyntheticTxnFactory {
-	public Transaction createCryptoTransfer(
+	@Inject
+	public SyntheticTxnFactory() {
+	}
+
+	public TransactionBody.Builder createNonFungibleMint(
+			final NftMint nftMint
+	) {
+		final var builder = TokenMintTransactionBody.newBuilder();
+
+		builder.setToken(nftMint.getTokenType());
+		builder.addAllMetadata(nftMint.getMetadata());
+
+		return TransactionBody.newBuilder().setTokenMint(builder);
+	}
+
+	public TransactionBody.Builder createCryptoTransfer(
 			final List<NftExchange> nftExchanges,
 			final List<HbarTransfer> hbarTransfers,
 			final List<FungibleTokenTransfer> fungibleTransfers
@@ -62,16 +78,7 @@ public class SyntheticTxnFactory {
 					.addTransfers(fungibleTransfer.receiverAdjustment()));
 		}
 
-		return fromBody(TransactionBody.newBuilder().setCryptoTransfer(builder).build());
-	}
-
-	private Transaction fromBody(final TransactionBody txnBody) {
-		final var signedTxn = SignedTransaction.newBuilder()
-				.setBodyBytes(txnBody.toByteString())
-				.build();
-		return Transaction.newBuilder()
-				.setSignedTransactionBytes(signedTxn.toByteString())
-				.build();
+		return TransactionBody.newBuilder().setCryptoTransfer(builder);
 	}
 
 	public static class HbarTransfer {
@@ -130,6 +137,24 @@ public class SyntheticTxnFactory {
 
 		public TokenID getTokenType() {
 			return tokenType;
+		}
+	}
+
+	public static class NftMint {
+		private final TokenID tokenType;
+		private final List<ByteString> metadata;
+
+		public NftMint(final TokenID tokenType, final List<ByteString> metadata) {
+			this.tokenType = tokenType;
+			this.metadata = metadata;
+		}
+
+		public TokenID getTokenType() {
+			return tokenType;
+		}
+
+		public List<ByteString> getMetadata() {
+			return metadata;
 		}
 	}
 }

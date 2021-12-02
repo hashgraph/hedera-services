@@ -52,7 +52,8 @@ public class AccountStore {
 	public AccountStore(
 			final OptionValidator validator,
 			final GlobalDynamicProperties dynamicProperties,
-			final BackingStore<AccountID, MerkleAccount> accounts) {
+			final BackingStore<AccountID, MerkleAccount> accounts
+	) {
 		this.validator = validator;
 		this.dynamicProperties = dynamicProperties;
 		this.accounts = accounts;

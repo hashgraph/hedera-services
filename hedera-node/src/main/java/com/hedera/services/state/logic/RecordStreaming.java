@@ -52,6 +52,12 @@ public class RecordStreaming implements Runnable {
 
 	@Override
 	public void run() {
+		if (recordsHistorian.hasPrecedingChildRecords()) {
+			for (final var childRso : recordsHistorian.getPrecedingChildRecords()) {
+				stream(childRso);
+			}
+		}
+
 		final var topLevelRecord = recordsHistorian.lastCreatedTopLevelRecord();
 		if (topLevelRecord != null) {
 			final var topLevelRso = new RecordStreamObject(
@@ -60,8 +66,9 @@ public class RecordStreaming implements Runnable {
 					txnCtx.consensusTime());
 			stream(topLevelRso);
 		}
-		if (recordsHistorian.hasChildRecords()) {
-			for (final var childRso : recordsHistorian.getChildRecords()) {
+
+		if (recordsHistorian.hasFollowingChildRecords()) {
+			for (final var childRso : recordsHistorian.getFollowingChildRecords()) {
 				stream(childRso);
 			}
 		}

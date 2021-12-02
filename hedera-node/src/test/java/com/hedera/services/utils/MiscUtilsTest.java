@@ -179,6 +179,7 @@ import static com.hedera.services.utils.MiscUtils.functionalityOfQuery;
 import static com.hedera.services.utils.MiscUtils.getTxnStat;
 import static com.hedera.services.utils.MiscUtils.isGasThrottled;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
+import static com.hedera.services.utils.MiscUtils.nonNegativeNanosOffset;
 import static com.hedera.services.utils.MiscUtils.perm64;
 import static com.hedera.services.utils.MiscUtils.readableNftTransferList;
 import static com.hedera.services.utils.MiscUtils.readableProperty;
@@ -253,10 +254,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -793,6 +792,21 @@ class MiscUtilsTest {
 	}
 
 	@Test
+	void managesOffsetsAsExpected() {
+		final var sec = 1_234_567L;
+		final Instant wellBeforeBoundary = Instant.ofEpochSecond(sec - 1, 500_000_000);
+		final Instant beforeBoundary = Instant.ofEpochSecond(sec - 1, 999_999_999);
+		final Instant onBoundary = Instant.ofEpochSecond(sec, 0);
+		final Instant inTheMiddle = Instant.ofEpochSecond(sec, 500_000_000);
+
+		assertEquals(beforeBoundary, nonNegativeNanosOffset(onBoundary, -1));
+		assertEquals(wellBeforeBoundary, nonNegativeNanosOffset(onBoundary, -500_000_000));
+		assertEquals(onBoundary, nonNegativeNanosOffset(beforeBoundary, +1));
+		assertEquals(inTheMiddle.minusNanos(1), nonNegativeNanosOffset(inTheMiddle, -1));
+		assertEquals(inTheMiddle.plusNanos(1), nonNegativeNanosOffset(inTheMiddle, +1));
+	}
+
+	@Test
 	void contractCallIsConsensusThrottled() {
 		assertTrue(isGasThrottled(ContractCall));
 	}
@@ -802,6 +816,7 @@ class MiscUtilsTest {
 		assertTrue(isGasThrottled(ContractCreate));
 	}
 
+	@SuppressWarnings("unchecked")
 	public static class BodySetter<T, B> {
 		private final Class<T> type;
 
