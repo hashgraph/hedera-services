@@ -47,7 +47,6 @@ import com.hedera.services.txns.prefetch.PrefetchProcessor;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.SystemExits;
 import com.hedera.test.extensions.LogCaptor;
@@ -85,7 +84,6 @@ import java.util.function.Consumer;
 
 import static com.hedera.services.ServicesState.CANONICAL_JDB_LOC;
 import static com.hedera.services.context.AppsManager.APPS;
-import static com.hedera.services.utils.MiscUtils.constructAccountAliasRels;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -162,6 +160,8 @@ class ServicesStateTest {
 	private PrefetchProcessor prefetchProcessor;
 	@Mock
 	private CodeCache codeCache;
+	@Mock
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -418,6 +418,7 @@ class ServicesStateTest {
 	void doesntThrowWhenDualStateIsNull() {
 		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
@@ -515,6 +516,7 @@ class ServicesStateTest {
 	void nonGenesisInitReusesContextIfPresent() {
 		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
@@ -541,6 +543,7 @@ class ServicesStateTest {
 
 		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 		given(networkContext.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION + 1);
 
 		given(platform.getSelfId()).willReturn(selfId);
@@ -559,6 +562,7 @@ class ServicesStateTest {
 	void nonGenesisInitClearsPreparedUpgradeIfNonNullLastFrozenMatchesFreezeTime() {
 		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 
 		final var when = Instant.ofEpochSecond(1_234_567L, 890);
 		given(dualState.getFreezeTime()).willReturn(when);
@@ -583,6 +587,7 @@ class ServicesStateTest {
 	void nonGenesisInitDoesntClearPreparedUpgradeIfBothFreezeAndLastFrozenAreNull() {
 		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 
 		given(networkContext.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
 
@@ -618,11 +623,11 @@ class ServicesStateTest {
 		given(platform.getSelfId()).willReturn(selfId);
 
 		// when:
-		assertEquals(null, subject.getAutoAccountsMap());
+		assertEquals(null, subject.getAutoAccountsManager());
 		subject.genesisInit(platform, addressBook, dualState);
 
 		// then:
-		assertTrue(subject.getAutoAccountsMap().isEmpty());
+		assertTrue(subject.getAutoAccountsManager().getAutoAccountsMap().isEmpty());
 	}
 
 	@Test
@@ -651,7 +656,7 @@ class ServicesStateTest {
 		// when:
 		subject.init(platform, addressBook, dualState);
 
-		assertEquals(1, subject.getAutoAccountsMap().size());
+		assertEquals(1, subject.getAutoAccountsManager().getAutoAccountsMap().size());
 	}
 
 	@Test

@@ -219,7 +219,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		return state().getAlias();
 	}
 
-	public void setAlias(ByteString alias) {
+	public void setAlias(final ByteString alias) {
 		throwIfImmutable("Cannot change this account's alias if it's immutable.");
 		state().setAlias(alias);
 	}
