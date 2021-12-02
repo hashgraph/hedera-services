@@ -147,7 +147,7 @@ class SignedTxnAccessorTest {
 				false,
 				zeroByteMemo,
 				5678l, -70000l,
-				Key.getDefaultInstance(), 70000l);
+				Key.getDefaultInstance().getECDSASecp256K1(), 70000l);
 		transaction2 = transaction2.toBuilder()
 				.setSigMap(expectedMap)
 				.build();
@@ -159,7 +159,7 @@ class SignedTxnAccessorTest {
 				false,
 				zeroByteMemo,
 				5678l, 5555l,-70000l,
-				Key.getDefaultInstance(), 70000l);
+				Key.getDefaultInstance().getEd25519(), 70000l);
 		transaction3 = transaction3.toBuilder()
 				.setSigMap(expectedMap)
 				.build();
