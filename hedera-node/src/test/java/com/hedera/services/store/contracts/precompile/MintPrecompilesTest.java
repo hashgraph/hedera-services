@@ -24,6 +24,7 @@ import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.token.MintLogic;
+import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -107,16 +108,17 @@ class MintPrecompilesTest {
 	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
 	@Mock
 	private EntityCreator creator;
+	@Mock
+	private DissociationFactory dissociationFactory;
 
 	private HTSPrecompiledContract subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new HTSPrecompiledContract(
-				ledger, accountStore, validator,
-				tokenStore, dynamicProperties, gasCalculator,
+		subject = new HTSPrecompiledContract(ledger,
+				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory, creator);
+				syntheticTxnFactory, creator, dissociationFactory);
 		subject.setMintLogicFactory(mintLogicFactory);
 		subject.setTokenStoreFactory(tokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);
