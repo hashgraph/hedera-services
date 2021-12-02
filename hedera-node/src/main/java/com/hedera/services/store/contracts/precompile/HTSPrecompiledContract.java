@@ -23,13 +23,16 @@ package com.hedera.services.store.contracts.precompile;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.contracts.sources.SoliditySigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.txns.token.MintLogic;
 import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
@@ -57,11 +60,23 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 @Singleton
 public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private static final Logger LOG = LogManager.getLogger(HTSPrecompiledContract.class);
+
+	@FunctionalInterface
+	interface MintLogicFactory {
+		MintLogic newLogic(OptionValidator validator, TypedTokenStore tokenStore, AccountStore accountStore);
+	}
+
+	private MintLogicFactory mintLogicFactory = MintLogic::new;
+
 	private final HederaLedger ledger;
+	private final DecodingFacade decoder;
 	private final AccountStore accountStore;
 	private final TypedTokenStore tokenStore;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final OptionValidator validator;
+	private final SoliditySigsVerifier sigsVerifier;
+	private final AccountRecordsHistorian recordsHistorian;
+	private final SyntheticTxnFactory syntheticTxnFactory;
 
 	//cryptoTransfer(TokenTransferList[] calldata tokenTransfers)
 	protected static final int ABI_ID_CRYPTO_TRANSFER = 0x189a554c;
@@ -93,15 +108,23 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final OptionValidator validator,
 			final TypedTokenStore tokenStore,
 			final GlobalDynamicProperties dynamicProperties,
-			final GasCalculator gasCalculator
+			final GasCalculator gasCalculator,
+			final AccountRecordsHistorian recordsHistorian,
+			final SoliditySigsVerifier sigsVerifier,
+			final DecodingFacade decoder,
+			final SyntheticTxnFactory syntheticTxnFactory
 	) {
 		super("HTS", gasCalculator);
 
 		this.ledger = ledger;
+		this.decoder = decoder;
 		this.validator = validator;
 		this.tokenStore = tokenStore;
 		this.accountStore = accountStore;
+		this.sigsVerifier = sigsVerifier;
 		this.dynamicProperties = dynamicProperties;
+		this.recordsHistorian = recordsHistorian;
+		this.syntheticTxnFactory = syntheticTxnFactory;
 	}
 
 	@Override
@@ -282,5 +305,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		} catch (Exception e) {
 			return UInt256.valueOf(ResponseCodeEnum.UNKNOWN_VALUE);
 		}
+	}
+
+	/* --- Only used by unit tests --- */
+	void setMintLogicFactory(final MintLogicFactory mintLogicFactory) {
+		this.mintLogicFactory = mintLogicFactory;
 	}
 }

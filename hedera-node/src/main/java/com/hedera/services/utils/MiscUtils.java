@@ -514,7 +514,7 @@ public final class MiscUtils {
 		}
 	}
 
-	private static final int ONE_SEC_IN_NANOS = 1_000_000_000;
+	private static final long ONE_SEC_IN_NANOS = 1_000_000_000;
 
 	public static Instant nonNegativeNanosOffset(final Instant start, final int nanosOff) {
 		final var oldSecs = start.getEpochSecond();

@@ -20,11 +20,13 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -32,6 +34,17 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.List;
 
 public class SyntheticTxnFactory {
+	public TransactionBody.Builder createNonFungibleMint(
+			final NftMint nftMint
+	) {
+		final var builder = TokenMintTransactionBody.newBuilder();
+
+		builder.setToken(nftMint.getTokenType());
+		builder.addAllMetadata(nftMint.getMetadata());
+
+		return TransactionBody.newBuilder().setTokenMint(builder);
+	}
+
 	public TransactionBody.Builder createCryptoTransfer(
 			final List<NftExchange> nftExchanges,
 			final List<HbarTransfer> hbarTransfers,
@@ -117,6 +130,24 @@ public class SyntheticTxnFactory {
 
 		public TokenID getTokenType() {
 			return tokenType;
+		}
+	}
+
+	public static class NftMint {
+		private final TokenID tokenType;
+		private final List<ByteString> metadata;
+
+		public NftMint(final TokenID tokenType, final List<ByteString> metadata) {
+			this.tokenType = tokenType;
+			this.metadata = metadata;
+		}
+
+		public TokenID getTokenType() {
+			return tokenType;
+		}
+
+		public List<ByteString> getMetadata() {
+			return metadata;
 		}
 	}
 }

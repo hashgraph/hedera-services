@@ -21,7 +21,9 @@ package com.hedera.services.store.contracts.precompile;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.contracts.sources.SoliditySigsVerifier;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
@@ -60,46 +62,46 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class HTSPrecompiledContractTest {
-
 	@Mock
 	private HederaLedger ledger;
-
 	@Mock
 	private AccountStore accountStore;
-
 	@Mock
 	private TypedTokenStore tokenStore;
-
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
-
 	@Mock
 	private OptionValidator validator;
-
 	@Mock
 	private GasCalculator gasCalculator;
-
 	@Mock
 	private Bytes input;
-
 	@Mock
 	private MessageFrame messageFrame;
-
 	@Mock
 	private Account account;
-
 	@Mock
 	private Token token;
-
 	@Mock
-	private TokenRelationship tokenRelashionship;
+	private TokenRelationship tokenRelationship;
+	@Mock
+	private SoliditySigsVerifier sigsVerifier;
+	@Mock
+	private AccountRecordsHistorian recordsHistorian;
+	@Mock
+	private DecodingFacade decoder;
+	@Mock
+	private SyntheticTxnFactory syntheticTxnFactory;
 
 	private HTSPrecompiledContract subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new HTSPrecompiledContract(ledger, accountStore, validator, tokenStore, dynamicProperties,
-				gasCalculator);
+		subject = new HTSPrecompiledContract(
+				ledger, accountStore, validator,
+				tokenStore, dynamicProperties, gasCalculator,
+				recordsHistorian, sigsVerifier, decoder,
+				syntheticTxnFactory);
 	}
 
 	@Test
@@ -127,8 +129,11 @@ class HTSPrecompiledContractTest {
 	@Test
 	void computeCallsCorrectImplementationForCryptoTransfer() {
 		// given
-		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(ledger, accountStore, validator, tokenStore, dynamicProperties,
-				gasCalculator));
+		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(
+				ledger, accountStore, validator,
+				tokenStore, dynamicProperties, gasCalculator,
+				recordsHistorian, sigsVerifier, decoder,
+				syntheticTxnFactory));
 		given(input.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
 
 		// when
@@ -141,8 +146,11 @@ class HTSPrecompiledContractTest {
 	@Test
 	void computeCallsCorrectImplementationForTransferTokens() {
 		// given
-		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(ledger, accountStore, validator, tokenStore, dynamicProperties,
-				gasCalculator));
+		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(
+				ledger, accountStore, validator,
+				tokenStore, dynamicProperties, gasCalculator,
+				recordsHistorian, sigsVerifier, decoder,
+				syntheticTxnFactory));
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
 
 		// when
@@ -155,8 +163,11 @@ class HTSPrecompiledContractTest {
 	@Test
 	void computeCallsCorrectImplementationForTransferToken() {
 		// given
-		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(ledger, accountStore, validator, tokenStore, dynamicProperties,
-				gasCalculator));
+		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(
+				ledger, accountStore, validator,
+				tokenStore, dynamicProperties, gasCalculator,
+				recordsHistorian, sigsVerifier, decoder,
+				syntheticTxnFactory));
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKEN);
 		given(input.slice(16, 20)).willReturn(Bytes.of("0x000000000000000001".getBytes()));
 		given(input.slice(48, 20)).willReturn(Bytes.of("0x000000000000000002".getBytes()));
@@ -173,8 +184,11 @@ class HTSPrecompiledContractTest {
 	@Test
 	void computeCallsCorrectImplementationForTransferNfts() {
 		// given
-		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(ledger, accountStore, validator, tokenStore, dynamicProperties,
-				gasCalculator));
+		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(
+				ledger, accountStore, validator,
+				tokenStore, dynamicProperties, gasCalculator,
+				recordsHistorian, sigsVerifier, decoder,
+				syntheticTxnFactory));
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_NFTS);
 
 		// when
@@ -187,8 +201,11 @@ class HTSPrecompiledContractTest {
 	@Test
 	void computeCallsCorrectImplementationForTransferNft() {
 		// given
-		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(ledger, accountStore, validator, tokenStore, dynamicProperties,
-				gasCalculator));
+		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(
+				ledger, accountStore, validator,
+				tokenStore, dynamicProperties, gasCalculator,
+				recordsHistorian, sigsVerifier, decoder,
+				syntheticTxnFactory));
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_NFT);
 
 		// when
@@ -201,8 +218,11 @@ class HTSPrecompiledContractTest {
 	@Test
 	void computeCallsCorrectImplementationForMintToken() {
 		// given
-		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(ledger, accountStore, validator, tokenStore, dynamicProperties,
-				gasCalculator));
+		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(
+				ledger, accountStore, validator,
+				tokenStore, dynamicProperties, gasCalculator,
+				recordsHistorian, sigsVerifier, decoder,
+				syntheticTxnFactory));
 		given(input.getInt(0)).willReturn(ABI_ID_MINT_TOKEN);
 
 		// when
@@ -215,8 +235,11 @@ class HTSPrecompiledContractTest {
 	@Test
 	void computeCallsCorrectImplementationForBurnToken() {
 		// given
-		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(ledger, accountStore, validator, tokenStore, dynamicProperties,
-				gasCalculator));
+		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(
+				ledger, accountStore, validator,
+				tokenStore, dynamicProperties, gasCalculator,
+				recordsHistorian, sigsVerifier, decoder,
+				syntheticTxnFactory));
 		given(input.getInt(0)).willReturn(ABI_ID_BURN_TOKEN);
 
 		// when
@@ -229,8 +252,11 @@ class HTSPrecompiledContractTest {
 	@Test
 	void computeCallsCorrectImplementationForAssociateTokens() {
 		// given
-		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(ledger, accountStore, validator, tokenStore, dynamicProperties,
-				gasCalculator));
+		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(
+				ledger, accountStore, validator,
+				tokenStore, dynamicProperties, gasCalculator,
+				recordsHistorian, sigsVerifier, decoder,
+				syntheticTxnFactory));
 		given(input.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKENS);
 
 		// when
@@ -243,14 +269,17 @@ class HTSPrecompiledContractTest {
 	@Test
 	void computeCallsCorrectImplementationForAssociateToken() {
 		// given
-		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(ledger, accountStore, validator, tokenStore, dynamicProperties,
-				gasCalculator));
+		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(
+				ledger, accountStore, validator,
+				tokenStore, dynamicProperties, gasCalculator,
+				recordsHistorian, sigsVerifier, decoder,
+				syntheticTxnFactory));
 		given(input.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKEN);
 		given(input.slice(16, 20)).willReturn(Bytes.of("0x000000000000000001".getBytes()));
 		given(input.slice(48, 20)).willReturn(Bytes.of("0x000000000000000002".getBytes()));
 		given(accountStore.loadAccount(any())).willReturn(account);
 		given(tokenStore.loadToken(any())).willReturn(token);
-		given(token.newRelationshipWith(account, false)).willReturn(tokenRelashionship);
+		given(token.newRelationshipWith(account, false)).willReturn(tokenRelationship);
 
 		// when
 		contract.compute(input, messageFrame);
@@ -262,8 +291,11 @@ class HTSPrecompiledContractTest {
 	@Test
 	void computeCallsCorrectImplementationForDissociateTokens() {
 		// given
-		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(ledger, accountStore, validator, tokenStore, dynamicProperties,
-				gasCalculator));
+		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(
+				ledger, accountStore, validator,
+				tokenStore, dynamicProperties, gasCalculator,
+				recordsHistorian, sigsVerifier, decoder,
+				syntheticTxnFactory));
 		given(input.getInt(0)).willReturn(ABI_ID_DISSOCIATE_TOKENS);
 
 		// when
@@ -280,9 +312,12 @@ class HTSPrecompiledContractTest {
 		given(input.slice(48, 20)).willReturn(Bytes.of("0x000000000000000002".getBytes()));
 		given(accountStore.loadAccount(any())).willReturn(account);
 		given(tokenStore.loadPossiblyDeletedOrAutoRemovedToken(any())).willReturn(token);
-		given(tokenStore.loadTokenRelationship(token, account)).willReturn(tokenRelashionship);
-		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(ledger, accountStore, validator, tokenStore, dynamicProperties,
-				gasCalculator));
+		given(tokenStore.loadTokenRelationship(token, account)).willReturn(tokenRelationship);
+		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(
+				ledger, accountStore, validator,
+				tokenStore, dynamicProperties, gasCalculator,
+				recordsHistorian, sigsVerifier, decoder,
+				syntheticTxnFactory));
 		given(input.getInt(0)).willReturn(ABI_ID_DISSOCIATE_TOKEN);
 
 		// when
