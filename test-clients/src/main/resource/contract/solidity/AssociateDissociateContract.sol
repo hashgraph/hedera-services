@@ -2,9 +2,8 @@
 pragma solidity ^0.6.12;
 
 import "./HederaTokenService.sol";
-import "./HederaResponseCodes.sol";
 
-contract AssociateDissociateContract {
+contract AssociateDissociateContract is HederaTokenService {
 
     address tokenAddress;
 
