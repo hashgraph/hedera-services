@@ -76,6 +76,9 @@ public class GetTxnReceiptAnswer implements AnswerService {
 				if (op.getIncludeDuplicates()) {
 					opResponse.addAllDuplicateTransactionReceipts(recordCache.getDuplicateReceipts(txnId));
 				}
+				if (op.getIncludeChildReceipts()) {
+					opResponse.addAllChildTransactionReceipts(recordCache.getChildReceipts(txnId));
+				}
 			}
 		}
 		opResponse.setHeader(answerOnlyHeader(validity));

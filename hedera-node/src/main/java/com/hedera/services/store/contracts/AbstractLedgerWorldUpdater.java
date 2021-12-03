@@ -22,9 +22,12 @@ package com.hedera.services.store.contracts;
 
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
@@ -49,10 +52,10 @@ import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 /**
  * Provides implementation help for both "base" and "stacked" {@link WorldUpdater}s.
  *
- * The key internal invariant of the class is that it makes consistent use of ts (1) {@code deletedAccounts} set
+ * The key internal invariant of the class is that it makes consistent use of its (1) {@code deletedAccounts} set
  * and {@code updatedAccounts} map; and (2) the {@code accounts} tracking ledger from its {@code trackingLedgers}.
  *
- * In the absence of HTS precompiles, the "internal" information flow is one-way, from (1) to (2).
+ * Without running an HTS precompile, the "internal" information flow is one-way, from (1) to (2).
  * There are three cases:
  * <ol>
  *     <li>When an address is added to the {@code deletedAccounts}, it is also marked deleted in the
@@ -63,8 +66,8 @@ import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
  *     <li>When {@link UpdateTrackingLedgerAccount#setBalance(Wei)} is called on a (mutable) tracking
  *     account, the same balance change is made in the {@code accounts} ledger.</li>
  * </ol>
- *
- * 📝 (FUTURE WORK) When an HTS precompile is executed, reflect ℏ balance changes in the {@code updatedAccounts} map.
+ * When an HTS precompile is run, the commit to the {@code acccounts} ledger is then intercepted so
+ * that balance changes are reflected in the {@code updatedAccounts} map.
  *
  * Concrete subclasses must then manage the "external" information flow from these data structures to their
  * wrapped {@link WorldView} in a {@link HederaWorldUpdater#commit()} implementation. This will certainly
@@ -77,8 +80,13 @@ import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
  * 		the most specialized world updater to be used
  */
 public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends Account> implements WorldUpdater {
+	private static final int UNKNOWN_RECORD_SOURCE_ID = -1;
+
 	private final W world;
 	private final WorldLedgers trackingLedgers;
+
+	private int thisRecordSourceId = UNKNOWN_RECORD_SOURCE_ID;
+	private AccountRecordsHistorian recordsHistorian = null;
 
 	protected Set<Address> deletedAccounts = new HashSet<>();
 	protected Map<Address, UpdateTrackingLedgerAccount<A>> updatedAccounts = new HashMap<>();
@@ -167,6 +175,22 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 		getDeletedAccounts().clear();
 		getUpdatedAccounts().clear();
 		trackingLedgers().revert();
+
+		if (recordsHistorian != null) {
+			recordsHistorian.revertChildRecordsFromSource(thisRecordSourceId);
+		}
+	}
+
+	public void manageInProgressRecord(
+			final AccountRecordsHistorian recordsHistorian,
+			final ExpirableTxnRecord.Builder recordSoFar,
+			final TransactionBody.Builder syntheticBody
+	) {
+		if (thisRecordSourceId == UNKNOWN_RECORD_SOURCE_ID) {
+			thisRecordSourceId = recordsHistorian.nextChildRecordSourceId();
+			this.recordsHistorian =  recordsHistorian;
+		}
+		recordsHistorian.trackFollowingChildRecord(thisRecordSourceId, syntheticBody, recordSoFar);
 	}
 
 	public WorldLedgers wrappedTrackingLedgers() {
@@ -176,7 +200,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 	}
 
 	private void onAccountPropertyChange(final AccountID id, final AccountProperty property, final Object newValue) {
-		/* HTS precompiles cannot create/delete accounts, and the only property we need to keep consistent is BALANCE */
+		/* HTS precompiles cannot create/delete accounts, so the only property we need to keep consistent is BALANCE */
 		if (property == BALANCE) {
 			final var address = EntityIdUtils.asTypedSolidityAddress(id);
 			/* Impossible with a well-behaved precompile, as our wrapped accounts should also show this as deleted */

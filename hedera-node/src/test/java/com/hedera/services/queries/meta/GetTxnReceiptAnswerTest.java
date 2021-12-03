@@ -140,6 +140,27 @@ class GetTxnReceiptAnswerTest {
 	}
 
 	@Test
+	void returnsChildrenIfRequested() {
+		// setup:
+		Query sensibleQuery = queryWith(validTxnId, ANSWER_ONLY, false, true);
+		var childReceipts = List.of(duplicateReceipt.toGrpc(), unclassifiableReceipt.toGrpc());
+
+		given(recordCache.getPriorityReceipt(validTxnId)).willReturn(receipt);
+		given(recordCache.getChildReceipts(validTxnId)).willReturn(childReceipts);
+
+		// when:
+		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
+
+		// then:
+		TransactionGetReceiptResponse opResponse = response.getTransactionGetReceipt();
+		assertTrue(opResponse.hasHeader(), "Missing response header!");
+		assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
+		assertEquals(ANSWER_ONLY, opResponse.getHeader().getResponseType());
+		assertEquals(receipt.toGrpc(), opResponse.getReceipt());
+		assertEquals(childReceipts, opResponse.getChildTransactionReceiptsList());
+	}
+
+	@Test
 	void shortCircuitsToAnswerOnly() {
 		// setup:
 		Query sensibleQuery = queryWith(validTxnId, ResponseType.COST_ANSWER);
@@ -209,10 +230,15 @@ class GetTxnReceiptAnswerTest {
 	}
 
 	private Query queryWith(TransactionID txnId, ResponseType type, boolean duplicates) {
+		return queryWith(txnId, type, duplicates, false);
+	}
+
+	private Query queryWith(TransactionID txnId, ResponseType type, boolean duplicates, boolean children) {
 		TransactionGetReceiptQuery.Builder op = TransactionGetReceiptQuery.newBuilder()
 				.setHeader(QueryHeader.newBuilder().setResponseType(type))
 				.setTransactionID(txnId)
-				.setIncludeDuplicates(duplicates);
+				.setIncludeDuplicates(duplicates)
+				.setIncludeChildReceipts(children);
 		return Query.newBuilder().setTransactionGetReceipt(op).build();
 	}
 

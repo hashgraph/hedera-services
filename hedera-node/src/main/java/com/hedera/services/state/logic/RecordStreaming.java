@@ -22,15 +22,12 @@ package com.hedera.services.state.logic;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.records.AccountRecordsHistorian;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamObject;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.RunningHash;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.time.Instant;
 import java.util.function.Consumer;
 
 @Singleton
@@ -55,12 +52,29 @@ public class RecordStreaming implements Runnable {
 
 	@Override
 	public void run() {
-		recordsHistorian.lastCreatedRecord().ifPresent(expiringRecord ->
-				stream(txnCtx.accessor().getSignedTxnWrapper(), expiringRecord, txnCtx.consensusTime()));
+		if (recordsHistorian.hasPrecedingChildRecords()) {
+			for (final var childRso : recordsHistorian.getPrecedingChildRecords()) {
+				stream(childRso);
+			}
+		}
+
+		final var topLevelRecord = recordsHistorian.lastCreatedTopLevelRecord();
+		if (topLevelRecord != null) {
+			final var topLevelRso = new RecordStreamObject(
+					topLevelRecord,
+					txnCtx.accessor().getSignedTxnWrapper(),
+					txnCtx.consensusTime());
+			stream(topLevelRso);
+		}
+
+		if (recordsHistorian.hasFollowingChildRecords()) {
+			for (final var childRso : recordsHistorian.getFollowingChildRecords()) {
+				stream(childRso);
+			}
+		}
 	}
 
-	private void stream(final Transaction txn, final ExpirableTxnRecord expiringRecord, final Instant consensusTime) {
-		final var rso = new RecordStreamObject(expiringRecord, txn, consensusTime);
+	private void stream(final RecordStreamObject rso) {
 		runningHashUpdate.accept(rso.getRunningHash());
 		while (!nonBlockingHandoff.offer(rso)) {
 			/* Cannot proceed until we have handed off the record. */
