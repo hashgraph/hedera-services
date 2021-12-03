@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -30,6 +31,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.DISSOCIATE_TOKEN;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ZENOS_BANK_DEPOSIT_TOKENS;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ZENOS_BANK_WITHDRAW_TOKENS;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -47,6 +49,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 
 public class ContractHTSSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractHTSSuite.class);
@@ -77,7 +81,9 @@ public class ContractHTSSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(
-				depositAndWithdraw()
+//				depositAndWithdraw(),
+				associateToken(),
+				dissociateToken()
 		);
 	}
 
@@ -107,17 +113,98 @@ public class ContractHTSSuite extends HapiApiSuite {
 														.payingWith(theAccount)
 														.bytecode("bytecode")
 														.via("creationTx")
-														.gas(1_000_000))),
+														.gas(28_000))),
 						getTxnRecord("creationTx").logged(),
 						tokenAssociate(theAccount, List.of(A_TOKEN)),
 						tokenAssociate(theContract, List.of(A_TOKEN)),
 						cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, theAccount))
 				).when(
-						contractCall(theContract, ZENOS_BANK_DEPOSIT_TOKENS, 50).payingWith(theAccount).via("zeno"),
+						contractCall(theContract, ZENOS_BANK_DEPOSIT_TOKENS, 50)
+								.payingWith(theAccount)
+								.gas(48_000)
+								.via("zeno"),
 						getTxnRecord("zeno").logged(),
-						contractCall(theContract, ZENOS_BANK_WITHDRAW_TOKENS).payingWith(theReceiver).via("receiver"),
+						contractCall(theContract, ZENOS_BANK_WITHDRAW_TOKENS)
+								.payingWith(theReceiver)
+								.gas(70_000)
+								.via("receiver"),
 						getTxnRecord("receiver").logged()
 				).then(
+				);
+	}
+
+	private HapiApiSpec associateToken() {
+		final var theAccount = "anybody";
+		final var theContract = "associateDissociateContract";
+		return defaultHapiSpec("associateHappyPath")
+				.given(
+						cryptoCreate(theAccount).balance(10 * ONE_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(A_TOKEN)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(TOTAL_SUPPLY)
+								.treasury(TOKEN_TREASURY),
+						fileCreate("associateDissociateContractByteCode").payingWith(theAccount),
+						updateLargeFile(theAccount, "associateDissociateContractByteCode",
+								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCreate(theContract, ContractResources.ASSOCIATE_DISSOCIATE_CONSTRUCTOR,
+														asAddress(spec.registry().getTokenID(A_TOKEN)))
+														.payingWith(theAccount)
+														.bytecode("associateDissociateContractByteCode")
+														.via("associateTxn")
+														.gas(100000),
+												cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, theAccount))
+														.hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
+										)
+						)
+				).when(
+						contractCall(theContract, ContractResources.ASSOCIATE_TOKEN).payingWith(theAccount).via("associateMethodCall")
+				).then(
+						cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, theAccount))
+								.hasKnownStatus(ResponseCodeEnum.SUCCESS)
+				);
+	}
+
+	private HapiApiSpec dissociateToken() {
+		final var theAccount = "anybody";
+		final var theContract = "associateDissociateContract";
+		return defaultHapiSpec("dissociateHappyPath")
+				.given(
+						cryptoCreate(theAccount).balance(10 * ONE_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(A_TOKEN)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(TOTAL_SUPPLY)
+								.treasury(TOKEN_TREASURY),
+						fileCreate("associateDissociateContractByteCode").payingWith(theAccount),
+						updateLargeFile(theAccount, "associateDissociateContractByteCode",
+								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCreate(theContract, ContractResources.ASSOCIATE_DISSOCIATE_CONSTRUCTOR,
+														asAddress(spec.registry().getTokenID(A_TOKEN)))
+														.payingWith(theAccount)
+														.bytecode("associateDissociateContractByteCode")
+														.via("associateTxn")
+														.gas(100000),
+												contractCall(theContract, ContractResources.ASSOCIATE_TOKEN).payingWith(theAccount).via("associateMethodCall"),
+												cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, theAccount))
+														.hasKnownStatus(SUCCESS),
+												cryptoTransfer(moving(200, A_TOKEN).between(theAccount, TOKEN_TREASURY))
+														.hasKnownStatus(SUCCESS)
+										)
+						)
+				).when(
+						contractCall(theContract, DISSOCIATE_TOKEN).payingWith(theAccount).via("dissociateMethodCall")
+				).then(
+						cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, theAccount))
+								.hasKnownStatus(ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
 				);
 	}
 
@@ -125,5 +212,4 @@ public class ContractHTSSuite extends HapiApiSuite {
 	protected Logger getResultsLogger() {
 		return log;
 	}
-
 }

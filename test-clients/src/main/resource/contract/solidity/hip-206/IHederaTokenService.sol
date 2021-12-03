@@ -69,7 +69,7 @@ interface IHederaTokenService {
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     function mintToken(address token, uint64 amount, bytes calldata metadata) external returns (int responseCode);
 
-    /// Burns an amount fo teh token from the define treasury account
+    /// Burns an amount of the token from the defined treasury account
     /// @param token The token for which to burn tokens. If token does not exist, transaction results in
     ///              INVALID_TOKEN_ID
     /// @param amount  Applicable to tokens of type FUNGIBLE_COMMON. The amount to burn from the Treasury Account.
