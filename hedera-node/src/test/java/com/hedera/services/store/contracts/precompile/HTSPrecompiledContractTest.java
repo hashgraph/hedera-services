@@ -24,11 +24,6 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.SoliditySigsVerifier;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
-import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.TypedTokenStore;
-import com.hedera.services.store.models.Account;
-import com.hedera.services.store.models.Token;
-import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import org.apache.tuweni.bytes.Bytes;
@@ -57,7 +52,6 @@ import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContr
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TRANSFER_TOKENS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.mock;
@@ -65,10 +59,6 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class HTSPrecompiledContractTest {
-	@Mock
-	private AccountStore accountStore;
-	@Mock
-	private TypedTokenStore tokenStore;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
@@ -79,12 +69,6 @@ class HTSPrecompiledContractTest {
 	private Bytes input;
 	@Mock
 	private MessageFrame messageFrame;
-	@Mock
-	private Account account;
-	@Mock
-	private Token token;
-	@Mock
-	private TokenRelationship tokenRelationship;
 	@Mock
 	private SoliditySigsVerifier sigsVerifier;
 	@Mock
@@ -269,17 +253,10 @@ class HTSPrecompiledContractTest {
 	@Test
 	void computeCallsCorrectImplementationForAssociateToken() {
 		// given
-		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(
-				validator, dynamicProperties, gasCalculator,
-				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory, creator, dissociationFactory));
-		given(input.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
+		HTSPrecompiledContract contract = mock(HTSPrecompiledContract.class);
+
+		willCallRealMethod().given(contract).compute(input, messageFrame);
 		given(input.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKEN);
-		given(input.slice(16, 20)).willReturn(Bytes.of("0x000000000000000001".getBytes()));
-		given(input.slice(48, 20)).willReturn(Bytes.of("0x000000000000000002".getBytes()));
-		given(accountStore.loadAccount(any())).willReturn(account);
-		given(tokenStore.loadToken(any())).willReturn(token);
-		given(token.newRelationshipWith(account, false)).willReturn(tokenRelationship);
 
 		// when
 		contract.compute(input, messageFrame);
@@ -308,16 +285,9 @@ class HTSPrecompiledContractTest {
 	@Test
 	void computeCallsCorrectImplementationForDissociateToken() {
 		// given
-		given(input.slice(16, 20)).willReturn(Bytes.of("0x000000000000000001".getBytes()));
-		given(input.slice(48, 20)).willReturn(Bytes.of("0x000000000000000002".getBytes()));
-		given(accountStore.loadAccount(any())).willReturn(account);
-		given(tokenStore.loadPossiblyDeletedOrAutoRemovedToken(any())).willReturn(token);
-		given(tokenStore.loadTokenRelationship(token, account)).willReturn(tokenRelationship);
-		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(
-				validator, dynamicProperties, gasCalculator,
-				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory, creator, dissociationFactory));
-		given(input.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
+		HTSPrecompiledContract contract = mock(HTSPrecompiledContract.class);
+
+		willCallRealMethod().given(contract).compute(input, messageFrame);
 		given(input.getInt(0)).willReturn(ABI_ID_DISSOCIATE_TOKEN);
 
 		// when
