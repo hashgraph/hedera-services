@@ -29,6 +29,7 @@ import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.files.store.FcBlobsBytesStore;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
+import com.hedera.services.state.AutoAccountCreationsManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -377,7 +378,9 @@ public class StateView {
 	}
 
 	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(AccountID id) {
-		var account = accounts().get(fromAccountId(id));
+		var account = accounts().get(
+				id.getAlias().isEmpty() ? fromAccountId(id) :
+				AutoAccountCreationsManager.getInstance().fetchEntityNumFor(id.getAlias()));
 		if (account == null) {
 			return Optional.empty();
 		}
@@ -385,6 +388,7 @@ public class StateView {
 		var info = CryptoGetInfoResponse.AccountInfo.newBuilder()
 				.setKey(asKeyUnchecked(account.getAccountKey()))
 				.setAccountID(id)
+				.setAlias(account.getAlias())
 				.setReceiverSigRequired(account.isReceiverSigRequired())
 				.setDeleted(account.isDeleted())
 				.setMemo(account.getMemo())

@@ -25,6 +25,7 @@ import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.AutoAccountCreationsManager;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -80,6 +81,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -111,6 +114,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREE
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_PAUSE_KT;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asAccountWithAlias;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.asFile;
 import static com.hedera.test.utils.IdUtils.asSchedule;
@@ -144,6 +148,7 @@ class StateViewTest {
 	private final TokenID missingTokenId = asToken("0.0.5555");
 	private final AccountID payerAccountId = asAccount("0.0.9");
 	private final AccountID tokenAccountId = asAccount("0.0.10");
+	private final AccountID accountWithAlias = asAccountWithAlias("aaaa");
 	private final AccountID treasuryOwnerId = asAccount("0.0.0");
 	private final AccountID nftOwnerId = asAccount("0.0.44");
 	private final ScheduleID scheduleId = asSchedule("0.0.8");
@@ -228,6 +233,7 @@ class StateViewTest {
 				.get();
 		tokenAccount.setNftsOwned(10);
 		tokenAccount.setMaxAutomaticAssociations(123);
+		tokenAccount.setAlias(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey().getEd25519());
 		contract = MerkleAccountFactory.newAccount()
 				.memo("Stay cold...")
 				.isSmartContract(true)
@@ -605,6 +611,7 @@ class StateViewTest {
 		final var expectedResponse = CryptoGetInfoResponse.AccountInfo.newBuilder()
 				.setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
 				.setAccountID(tokenAccountId)
+				.setAlias(tokenAccount.getAlias())
 				.setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
 				.setDeleted(tokenAccount.isDeleted())
 				.setMemo(tokenAccount.getMemo())
@@ -622,17 +629,64 @@ class StateViewTest {
 	}
 
 	@Test
+	void infoForAccountWithAlias() {
+		AutoAccountCreationsManager mockedAutoAccountCreations = mock(AutoAccountCreationsManager.class);
+		given(mockedAutoAccountCreations.fetchEntityNumFor(any())).willReturn(EntityNum.fromAccountId(tokenAccountId));
+
+		final var expectedResponse = CryptoGetInfoResponse.AccountInfo.newBuilder()
+				.setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
+				.setAccountID(accountWithAlias)
+				.setAlias(tokenAccount.getAlias())
+				.setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
+				.setDeleted(tokenAccount.isDeleted())
+				.setMemo(tokenAccount.getMemo())
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(tokenAccount.getAutoRenewSecs()))
+				.setBalance(tokenAccount.getBalance())
+				.setExpirationTime(Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
+				.setContractAccountID(asSolidityAddressHex(accountWithAlias))
+				.setOwnedNfts(tokenAccount.getNftsOwned())
+				.setMaxAutomaticTokenAssociations(tokenAccount.getMaxAutomaticAssociations())
+				.build();
+
+		try (MockedStatic<AutoAccountCreationsManager> theMock = Mockito.mockStatic(AutoAccountCreationsManager.class)){
+			theMock.when(AutoAccountCreationsManager::getInstance)
+					.thenReturn(mockedAutoAccountCreations);
+
+			final var actualResponse = subject.infoForAccount(accountWithAlias);
+
+			assertEquals(expectedResponse, actualResponse.get());
+		}
+	}
+
+	@Test
 	void numNftsOwnedWorksForExisting() {
 		assertEquals(tokenAccount.getNftsOwned(), subject.numNftsOwnedBy(tokenAccountId));
 	}
 
 	@Test
-	void infoForAccountEmpty() {
+	void infoForMissingAccount() {
 		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(null);
 
 		final var actualResponse = subject.infoForAccount(tokenAccountId);
 
 		assertEquals(Optional.empty(), actualResponse);
+	}
+
+	@Test
+	void infoForMissingAccountWithAlias() {
+		EntityNum mockedEntityNum = mock(EntityNum.class);
+		AutoAccountCreationsManager mockedAutoAccountCreations = mock(AutoAccountCreationsManager.class);
+		given(mockedAutoAccountCreations.fetchEntityNumFor(any())).willReturn(mockedEntityNum);
+		given(contracts.get(mockedEntityNum)).willReturn(null);
+
+		try (MockedStatic<AutoAccountCreationsManager> theMock = Mockito.mockStatic(AutoAccountCreationsManager.class)){
+			theMock.when(AutoAccountCreationsManager::getInstance)
+					.thenReturn(mockedAutoAccountCreations);
+
+			final var actualResponse = subject.infoForAccount(accountWithAlias);
+
+			assertEquals(Optional.empty(), actualResponse);
+		}
 	}
 
 	@Test

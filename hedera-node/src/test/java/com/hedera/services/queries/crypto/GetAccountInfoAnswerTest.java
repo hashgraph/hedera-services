@@ -25,6 +25,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.AutoAccountCreationsManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -34,9 +35,9 @@ import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -53,6 +54,8 @@ import com.swirlds.common.CommonUtils;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
 import java.util.List;
 import java.util.Optional;
@@ -63,11 +66,13 @@ import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccou
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asAccountWithAlias;
 import static com.hedera.test.utils.IdUtils.tokenWith;
 import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
@@ -78,7 +83,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
 
 class GetAccountInfoAnswerTest {
 	private StateView view;
@@ -289,15 +293,31 @@ class GetAccountInfoAnswerTest {
 		// setup:
 		Query query = validQuery(COST_ANSWER, fee, target);
 
-		given(optionValidator.queryableAccountStatus(asAccount(target), accounts)).willReturn(ACCOUNT_DELETED);
+		given(optionValidator.queryableAccountStatus(EntityNum.fromAccountId(payerId), accounts)).willReturn(ACCOUNT_DELETED);
 
 		// when:
 		ResponseCodeEnum validity = subject.checkValidity(query, view);
 
 		// then:
 		assertEquals(ACCOUNT_DELETED, validity);
-		// and:
-		verify(optionValidator).queryableAccountStatus(any(), any());
+	}
+
+	@Test
+	void usesValidatorOnAccountWithAlias() throws Throwable {
+		EntityNum entityNum = EntityNum.fromAccountId(payerId);
+		Query query = validQueryWithAlias(COST_ANSWER, fee, "aaaa");
+		AutoAccountCreationsManager mockedAutoAccountCreations = mock(AutoAccountCreationsManager.class);
+		given(mockedAutoAccountCreations.fetchEntityNumFor(any())).willReturn(entityNum);
+
+		given(optionValidator.queryableAccountStatus(entityNum, accounts)).willReturn(INVALID_ACCOUNT_ID);
+
+		try (MockedStatic<AutoAccountCreationsManager> theMock = Mockito.mockStatic(AutoAccountCreationsManager.class)) {
+			theMock.when(AutoAccountCreationsManager::getInstance)
+					.thenReturn(mockedAutoAccountCreations);
+			ResponseCodeEnum validity = subject.checkValidity(query, view);
+
+			assertEquals(INVALID_ACCOUNT_ID, validity);
+		}
 	}
 
 	@Test
@@ -348,6 +368,17 @@ class GetAccountInfoAnswerTest {
 		CryptoGetInfoQuery.Builder op = CryptoGetInfoQuery.newBuilder()
 				.setHeader(header)
 				.setAccountID(asAccount(idLit));
+		return Query.newBuilder().setCryptoGetInfo(op).build();
+	}
+
+	private Query validQueryWithAlias(ResponseType type, long payment, String alias) throws Throwable {
+		this.paymentTxn = payerSponsoredTransfer(payer, COMPLEX_KEY_ACCOUNT_KT, node, payment);
+		QueryHeader.Builder header = QueryHeader.newBuilder()
+				.setPayment(this.paymentTxn)
+				.setResponseType(type);
+		CryptoGetInfoQuery.Builder op = CryptoGetInfoQuery.newBuilder()
+				.setHeader(header)
+				.setAccountID(asAccountWithAlias(alias));
 		return Query.newBuilder().setCryptoGetInfo(op).build();
 	}
 }
