@@ -62,8 +62,6 @@ class MintPrecompilesTest {
 	private static final Bytes pretendArguments = Bytes.fromBase64String("ABCDEF");
 
 	@Mock
-	private HederaLedger ledger;
-	@Mock
 	private AccountStore accountStore;
 	@Mock
 	private TypedTokenStore tokenStore;

@@ -195,6 +195,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@SuppressWarnings("unused")
 	protected Bytes computeCryptoTransfer(final Bytes input, final MessageFrame messageFrame) {
+		final Map<Integer, Object> decodedArguments =
+				PrecompileArgumentsDecoder.decodeArgumentsForCryptoTransfer(input);
 		return null;
 	}
 
