@@ -20,6 +20,7 @@ package com.hedera.services.queries.crypto;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
@@ -66,7 +67,7 @@ import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccou
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.IdUtils.asAccountWithAlias;
+import static com.hedera.test.utils.IdUtils.asAliasAccount;
 import static com.hedera.test.utils.IdUtils.tokenWith;
 import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetInfo;
@@ -378,7 +379,7 @@ class GetAccountInfoAnswerTest {
 				.setResponseType(type);
 		CryptoGetInfoQuery.Builder op = CryptoGetInfoQuery.newBuilder()
 				.setHeader(header)
-				.setAccountID(asAccountWithAlias(alias));
+				.setAccountID(asAliasAccount(ByteString.copyFromUtf8(alias));
 		return Query.newBuilder().setCryptoGetInfo(op).build();
 	}
 }

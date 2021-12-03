@@ -114,7 +114,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREE
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_PAUSE_KT;
 import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.IdUtils.asAccountWithAlias;
+import static com.hedera.test.utils.IdUtils.asAliasAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.asFile;
 import static com.hedera.test.utils.IdUtils.asSchedule;
@@ -148,7 +148,7 @@ class StateViewTest {
 	private final TokenID missingTokenId = asToken("0.0.5555");
 	private final AccountID payerAccountId = asAccount("0.0.9");
 	private final AccountID tokenAccountId = asAccount("0.0.10");
-	private final AccountID accountWithAlias = asAccountWithAlias("aaaa");
+	private final AccountID accountWithAlias = asAliasAccount(ByteString.copyFromUtf8("aaaa"));
 	private final AccountID treasuryOwnerId = asAccount("0.0.0");
 	private final AccountID nftOwnerId = asAccount("0.0.44");
 	private final ScheduleID scheduleId = asSchedule("0.0.8");

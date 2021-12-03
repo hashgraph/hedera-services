@@ -144,6 +144,7 @@ public class AccountStore {
 		account.setAutoRenewSecs(merkleAccount.getAutoRenewSecs());
 		account.setDeleted(merkleAccount.isDeleted());
 		account.setSmartContract(merkleAccount.isSmartContract());
+		account.setAlias(merkleAccount.getAlias());
 
 		return account;
 	}

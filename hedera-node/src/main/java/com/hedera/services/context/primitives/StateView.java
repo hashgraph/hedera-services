@@ -380,7 +380,8 @@ public class StateView {
 	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(AccountID id) {
 		var account = accounts().get(
 				id.getAlias().isEmpty() ? fromAccountId(id) :
-				AutoAccountCreationsManager.getInstance().fetchEntityNumFor(id.getAlias()));
+				AutoAccountCreationsManager.getInstance().fetchEntityNumFor(id.getAlias())
+		);
 		if (account == null) {
 			return Optional.empty();
 		}

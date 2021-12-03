@@ -68,8 +68,12 @@ public class IdUtils {
 				.build();
 	}
 
-	public static AccountID asAccountWithAlias(String alias) {
-		return AccountID.newBuilder().setAlias(ByteString.copyFromUtf8(alias)).build();
+	public static AccountID asAliasAccount(ByteString alias) {
+		return AccountID.newBuilder()
+				.setShardNum(0)
+				.setRealmNum(0)
+				.setAlias(alias)
+				.build();
 	}
 
 	public static AccountID fromKey(EntityNum mk) {
