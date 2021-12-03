@@ -40,6 +40,7 @@ import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
+import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.TokenRelationship;
@@ -52,6 +53,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -66,21 +68,24 @@ import org.hyperledger.besu.evm.precompile.AbstractPrecompiledContract;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.store.tokens.views.UniqTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 @Singleton
 public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private static final Logger LOG = LogManager.getLogger(HTSPrecompiledContract.class);
 
+	private static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
+	private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
 	private static final List<FcAssessedCustomFee> NO_CUSTOM_FEES = Collections.emptyList();
 
 	public static final TypedTokenStore.LegacyTreasuryAdder NOOP_TREASURY_ADDER = (aId, tId) -> {
@@ -165,12 +170,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	@Override
 	public Bytes compute(final Bytes input, final MessageFrame messageFrame) {
 		if (messageFrame.isStatic()) {
-			messageFrame.setRevertReason(
-					Bytes.of("Cannot interact with HTS in a static call".getBytes(StandardCharsets.UTF_8)));
+			messageFrame.setRevertReason(STATIC_CALL_REVERT_REASON);
 			return null;
 		}
 
-		int functionId = input.getInt(0);
+		final  var functionId = input.getInt(0);
 		switch (functionId) {
 			case ABI_ID_CRYPTO_TRANSFER:
 				return computeCryptoTransfer(input, messageFrame);
@@ -194,10 +198,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				return computeDissociateTokens(input, messageFrame);
 			case ABI_ID_DISSOCIATE_TOKEN:
 				return computeDissociateToken(input, messageFrame);
-			default: {
-				// Null is the "Precompile Failed" signal
+			default:
 				return null;
-			}
 		}
 	}
 
@@ -265,50 +267,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@SuppressWarnings("unused")
 	protected Bytes computeMintToken(final Bytes input, final MessageFrame frame) {
-		/* --- Get the frame context --- */
-		final var contract = frame.getContractAddress();
-		final var recipient = frame.getRecipientAddress();
-		final var updater = (AbstractLedgerWorldUpdater) frame.getWorldUpdater();
-		final var ledgers = updater.wrappedTrackingLedgers();
-
-		/* --- Parse the input --- */
-		final var mintOp = decoder.decodeMint(input);
-		final var synthBody = syntheticTxnFactory.createNonFungibleMint(mintOp);
-		final var newMeta = mintOp.getMetadata();
-
-		Bytes result;
-		ExpirableTxnRecord.Builder childRecord;
-		try {
-			/* --- Check the required supply key has an active signature --- */
-			final var tokenId = Id.fromGrpcToken(mintOp.getTokenType());
-			final var hasRequiredSigs = sigsVerifier.hasActiveSupplyKey(tokenId, recipient, contract);
-			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
-
-			/* --- Build the necessary infrastructure to execute the transaction --- */
-			final var sideEffects = sideEffectsFactory.get();
-			final var scopedAccountStore = accountStoreFactory.newAccountStore(
-					validator, dynamicProperties, ledgers.accounts());
-			final var scopedTokenStore = tokenStoreFactory.newTokenStore(
-					scopedAccountStore, ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels(),
-					NOOP_VIEWS_MANAGER, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER,
-					sideEffects);
-			final var mintLogic = mintLogicFactory.newLogic(validator, scopedTokenStore, scopedAccountStore);
-
-			/* --- Execute the transaction and capture its results --- */
-			final var creationTime = recordsHistorian.nextFollowingChildConsensusTime();
-			mintLogic.mint(tokenId, newMeta.size(), 0, newMeta, creationTime);
-			childRecord = creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects);
-			result = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
-			ledgers.commit();
-		} catch (InvalidTransactionException e) {
-			childRecord = creator.createUnsuccessfulSyntheticRecord(e.getResponseCode());
-			result = UInt256.valueOf(e.getResponseCode().getNumber());
-		}
-
-		/* --- And track the created child record --- */
-		updater.manageInProgressRecord(recordsHistorian, childRecord, synthBody);
-
-		return result;
+		return computeInternal(frame, input, new MintPrecompile());
 	}
 
 	@SuppressWarnings("unused")
@@ -358,7 +317,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				Id.fromGrpcToken(EntityIdUtils.tokenParsedFromSolidityAddress(tokenAddress.toArrayUnsafe()));
 //		var token = tokenStore.loadToken(Id.fromGrpcToken(tokenID));
 
-
 		final List<Dissociation> dissociations = List.of(Dissociation.loadFrom(tokenStore, account, tokenID));
 
 		try {
@@ -378,6 +336,38 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		} catch (Exception e) {
 			return UInt256.valueOf(ResponseCodeEnum.UNKNOWN_VALUE);
 		}
+	}
+
+	/* --- Helpers --- */
+	private static Bytes resultFrom(final ResponseCodeEnum status) {
+		return UInt256.valueOf(status.getNumber());
+	}
+
+	private Bytes computeInternal(
+			final MessageFrame frame,
+			final Bytes input,
+			final Precompile precompile
+	) {
+		final var contract = frame.getContractAddress();
+		final var recipient = frame.getRecipientAddress();
+		@SuppressWarnings("raw") final var updater = (AbstractLedgerWorldUpdater) frame.getWorldUpdater();
+		final var ledgers = updater.wrappedTrackingLedgers();
+
+		final var synthBody = precompile.body(input);
+		Bytes result = SUCCESS_RESULT;
+		ExpirableTxnRecord.Builder childRecord;
+		try {
+			childRecord = precompile.run(recipient, contract, ledgers);
+			ledgers.commit();
+		} catch (InvalidTransactionException e) {
+			final var status = e.getResponseCode();
+			childRecord = creator.createUnsuccessfulSyntheticRecord(status);
+			result = resultFrom(status);
+		}
+
+		updater.manageInProgressRecord(recordsHistorian, childRecord, synthBody);
+
+		return result;
 	}
 
 	/* --- Constructor functional interfaces for mocking --- */
@@ -407,6 +397,49 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				SideEffectsTracker sideEffectsTracker);
 	}
 
+	/* --- The precompile implementations --- */
+	interface Precompile {
+		TransactionBody.Builder body(final Bytes input);
+
+		ExpirableTxnRecord.Builder run(final Address recipient, final Address contract, final WorldLedgers ledgers);
+	}
+
+	private class MintPrecompile implements Precompile {
+		private SyntheticTxnFactory.NftMint mintOp;
+
+		@Override
+		public TransactionBody.Builder body(final Bytes input) {
+			mintOp = decoder.decodeMint(input);
+			return syntheticTxnFactory.createNonFungibleMint(mintOp);
+		}
+
+		@Override
+		public ExpirableTxnRecord.Builder run(
+				final Address recipient,
+				final Address contract,
+				final WorldLedgers ledgers
+		) {
+			Objects.requireNonNull(mintOp);
+
+			final var tokenId = Id.fromGrpcToken(mintOp.getTokenType());
+			final var newMeta = mintOp.getMetadata();
+			final var hasRequiredSigs = sigsVerifier.hasActiveSupplyKey(tokenId, recipient, contract);
+			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
+
+			final var sideEffects = sideEffectsFactory.get();
+			final var scopedAccountStore = accountStoreFactory.newAccountStore(
+					validator, dynamicProperties, ledgers.accounts());
+			final var scopedTokenStore = tokenStoreFactory.newTokenStore(
+					scopedAccountStore, ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels(),
+					NOOP_VIEWS_MANAGER, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER,
+					sideEffects);
+			final var mintLogic = mintLogicFactory.newLogic(validator, scopedTokenStore, scopedAccountStore);
+
+			final var creationTime = recordsHistorian.nextFollowingChildConsensusTime();
+			mintLogic.mint(tokenId, newMeta.size(), 0, newMeta, creationTime);
+			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects);
+		}
+	}
 
 	/* --- Only used by unit tests --- */
 	void setMintLogicFactory(final MintLogicFactory mintLogicFactory) {
