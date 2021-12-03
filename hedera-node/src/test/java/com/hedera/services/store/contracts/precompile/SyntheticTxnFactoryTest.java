@@ -34,6 +34,30 @@ class SyntheticTxnFactoryTest {
 	private final SyntheticTxnFactory subject = new SyntheticTxnFactory();
 
 	@Test
+	void createsExpectedAssociations() {
+		final var tokens = List.of(fungible, nonFungible);
+		final var associations = SyntheticTxnFactory.Association.multiAssociation(a, tokens);
+
+		final var result = subject.createAssociate(associations);
+		final var txnBody = result.build();
+
+		assertEquals(a, txnBody.getTokenAssociate().getAccount());
+		assertEquals(tokens, txnBody.getTokenAssociate().getTokensList());
+	}
+
+	@Test
+	void createsExpectedDissociations() {
+		final var tokens = List.of(fungible, nonFungible);
+		final var associations = SyntheticTxnFactory.Dissociation.multiDissociation(a, tokens);
+
+		final var result = subject.createDissociate(associations);
+		final var txnBody = result.build();
+
+		assertEquals(a, txnBody.getTokenDissociate().getAccount());
+		assertEquals(tokens, txnBody.getTokenDissociate().getTokensList());
+	}
+
+	@Test
 	void createsExpectedNftMint() {
 		final var nftMints = SyntheticTxnFactory.MintWrapper.forNonFungible(nonFungible, newMetadata);
 
@@ -42,6 +66,41 @@ class SyntheticTxnFactoryTest {
 
 		assertEquals(nonFungible, txnBody.getTokenMint().getToken());
 		assertEquals(newMetadata, txnBody.getTokenMint().getMetadataList());
+	}
+
+	@Test
+	void createsExpectedNftBurn() {
+		final var nftBurns = SyntheticTxnFactory.BurnWrapper.forNonFungible(nonFungible, targetSerialNos);
+
+		final var result = subject.createBurn(nftBurns);
+		final var txnBody = result.build();
+
+		assertEquals(nonFungible, txnBody.getTokenBurn().getToken());
+		assertEquals(targetSerialNos, txnBody.getTokenBurn().getSerialNumbersList());
+	}
+
+	@Test
+	void createsExpectedFungibleMint() {
+		final var amount = 1234L;
+		final var funMints = SyntheticTxnFactory.MintWrapper.forFungible(fungible, amount);
+
+		final var result = subject.createMint(funMints);
+		final var txnBody = result.build();
+
+		assertEquals(fungible, txnBody.getTokenMint().getToken());
+		assertEquals(amount, txnBody.getTokenMint().getAmount());
+	}
+
+	@Test
+	void createsExpectedFungibleBurn() {
+		final var amount = 1234L;
+		final var funBurns = SyntheticTxnFactory.BurnWrapper.forFungible(fungible, amount);
+
+		final var result = subject.createBurn(funBurns);
+		final var txnBody = result.build();
+
+		assertEquals(fungible, txnBody.getTokenBurn().getToken());
+		assertEquals(amount, txnBody.getTokenBurn().getAmount());
 	}
 
 	@Test
@@ -84,6 +143,7 @@ class SyntheticTxnFactoryTest {
 	private static final AccountID d = IdUtils.asAccount("0.0.5");
 	private static final TokenID fungible = IdUtils.asToken("0.0.666");
 	private static final TokenID nonFungible = IdUtils.asToken("0.0.777");
+	private static final List<Long> targetSerialNos = List.of(1L, 2L, 3L);
 	private static final List<ByteString> newMetadata = List.of(
 			ByteString.copyFromUtf8("AAA"), ByteString.copyFromUtf8("BBB"), ByteString.copyFromUtf8("CCC"));
 }

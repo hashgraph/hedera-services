@@ -49,11 +49,15 @@ public class SyntheticTxnFactory {
 	public SyntheticTxnFactory() {
 	}
 
-	public TransactionBody.Builder createNonFungibleBurn(final BurnWrapper burnWrapper) {
+	public TransactionBody.Builder createBurn(final BurnWrapper burnWrapper) {
 		final var builder = TokenBurnTransactionBody.newBuilder();
 
 		builder.setToken(burnWrapper.getTokenType());
-		builder.addAllSerialNumbers(burnWrapper.getSerialNos());
+		if (burnWrapper.type() == NON_FUNGIBLE_UNIQUE) {
+			builder.addAllSerialNumbers(burnWrapper.getSerialNos());
+		} else {
+			builder.setAmount(burnWrapper.getAmount());
+		}
 
 		return TransactionBody.newBuilder().setTokenBurn(builder);
 	}
@@ -62,7 +66,11 @@ public class SyntheticTxnFactory {
 		final var builder = TokenMintTransactionBody.newBuilder();
 
 		builder.setToken(mintWrapper.getTokenType());
-		builder.addAllMetadata(mintWrapper.getMetadata());
+		if (mintWrapper.type() == NON_FUNGIBLE_UNIQUE) {
+			builder.addAllMetadata(mintWrapper.getMetadata());
+		} else {
+			builder.setAmount(mintWrapper.getAmount());
+		}
 
 		return TransactionBody.newBuilder().setTokenMint(builder);
 	}
@@ -96,20 +104,20 @@ public class SyntheticTxnFactory {
 		return TransactionBody.newBuilder().setCryptoTransfer(builder);
 	}
 
-	public TransactionBody.Builder createAssociate(final AssociateToken associateToken) {
+	public TransactionBody.Builder createAssociate(final Association association) {
 		final var builder = TokenAssociateTransactionBody.newBuilder();
 
-		builder.setAccount(associateToken.getAccountID());
-		builder.addTokens(associateToken.getTokenID());
+		builder.setAccount(association.getAccountId());
+		builder.addAllTokens(association.getTokenIds());
 
 		return TransactionBody.newBuilder().setTokenAssociate(builder);
 	}
 
-	public TransactionBody.Builder createDissociate(final DissociateToken dissociateToken) {
+	public TransactionBody.Builder createDissociate(final Dissociation dissociation) {
 		final var builder = TokenDissociateTransactionBody.newBuilder();
 
-		builder.setAccount(dissociateToken.getAccountID());
-		builder.addTokens(dissociateToken.getTokenID());
+		builder.setAccount(dissociation.getAccountId());
+		builder.addAllTokens(dissociation.getTokenIds());
 
 		return TransactionBody.newBuilder().setTokenDissociate(builder);
 	}
@@ -174,8 +182,8 @@ public class SyntheticTxnFactory {
 	}
 
 	public static class MintWrapper {
-		private static long NONFUNGIBLE_MINT_AMOUNT = -1;
-		private static List<ByteString> FUNGIBLE_MINT_METADATA = Collections.emptyList();
+		private static final long NONFUNGIBLE_MINT_AMOUNT = -1;
+		private static final List<ByteString> FUNGIBLE_MINT_METADATA = Collections.emptyList();
 
 		private final long amount;
 		private final TokenID tokenType;
@@ -213,8 +221,8 @@ public class SyntheticTxnFactory {
 	}
 
 	public static class BurnWrapper {
-		private static long NONFUNGIBLE_BURN_AMOUNT = -1;
-		private static List<Long> FUNGIBLE_BURN_SERIAL_NOS = Collections.emptyList();
+		private static final long NONFUNGIBLE_BURN_AMOUNT = -1;
+		private static final List<Long> FUNGIBLE_BURN_SERIAL_NOS = Collections.emptyList();
 
 		private final long amount;
 		private final TokenID tokenType;
@@ -251,39 +259,48 @@ public class SyntheticTxnFactory {
 		}
 	}
 
-	public static class AssociateToken {
-		private final AccountID accountID;
-		private final TokenID tokenID;
+	public static class TokenRelChange {
+		private final AccountID accountId;
+		private final List<TokenID> tokenIds;
 
-		public AssociateToken(final AccountID accountID, final TokenID tokenID) {
-			this.accountID = accountID;
-			this.tokenID = tokenID;
+		TokenRelChange(final AccountID accountId, final List<TokenID> tokenIds) {
+			this.tokenIds = tokenIds;
+			this.accountId = accountId;
 		}
 
-		public AccountID getAccountID() {
-			return accountID;
+		public AccountID getAccountId() {
+			return accountId;
 		}
 
-		public TokenID getTokenID() {
-			return tokenID;
+		public List<TokenID> getTokenIds() {
+			return tokenIds;
 		}
 	}
 
-	public static class DissociateToken {
-		private final AccountID accountID;
-		private final TokenID tokenID;
-
-		public DissociateToken(final AccountID accountID, final TokenID tokenID) {
-			this.accountID = accountID;
-			this.tokenID = tokenID;
+	public static class Association extends TokenRelChange {
+		private Association(final AccountID accountId, final List<TokenID> tokenIds) {
+			super(accountId, tokenIds);
+		}
+		public static Association singleAssociation(final AccountID accountId, final TokenID tokenId) {
+			return new Association(accountId, List.of(tokenId));
 		}
 
-		public AccountID getAccountID() {
-			return accountID;
+		public static Association multiAssociation(final AccountID accountId, final List<TokenID> tokenIds) {
+			return new Association(accountId, tokenIds);
+		}
+	}
+
+	public static class Dissociation extends TokenRelChange {
+		private Dissociation(final AccountID accountId, final List<TokenID> tokenIds) {
+			super(accountId, tokenIds);
 		}
 
-		public TokenID getTokenID() {
-			return tokenID;
+		public static Dissociation singleDissociation(final AccountID accountId, final TokenID tokenId) {
+			return new Dissociation(accountId, List.of(tokenId));
+		}
+
+		public static Dissociation multiDissociation(final AccountID accountId, final List<TokenID> tokenIds) {
+			return new Dissociation(accountId, tokenIds);
 		}
 	}
 }

@@ -153,6 +153,8 @@ class DissociatePrecompilesTest {
 		given(sigsVerifier.hasActiveKey(accountId, recipientAddr, contractAddr))
 				.willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
+		given(decoder.decodeDissociate(pretendArguments)).willReturn(dissociateToken);
+		given(syntheticTxnFactory.createDissociate(dissociateToken)).willReturn(mockSynthBodyBuilder);
 
 		// when:
 		final var result = subject.computeDissociateToken(pretendArguments, frame);
@@ -177,6 +179,8 @@ class DissociatePrecompilesTest {
 		)).willReturn(tokenStore);
 		given(dissociateLogicFactory.newDissociateLogic(validator, tokenStore, accountStore, dissociationFactory)).willReturn(dissociateLogic);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects)).willReturn(mockRecordBuilder);
+		given(decoder.decodeDissociate(pretendArguments)).willReturn(dissociateToken);
+		given(syntheticTxnFactory.createDissociate(dissociateToken)).willReturn(mockSynthBodyBuilder);
 
 		// when:
 		final var result = subject.computeDissociateToken(pretendArguments, frame);
@@ -189,13 +193,41 @@ class DissociatePrecompilesTest {
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}
 
+	@Test
+	void computeMultiDissociateTokenHappyPathWorks() {
+		givenFrameContext();
+		givenLedgers();
+		given(decoder.decodeMultipleDissociations(pretendArguments))
+				.willReturn(multiDissociateOp);
+		given(syntheticTxnFactory.createDissociate(multiDissociateOp))
+				.willReturn(mockSynthBodyBuilder);
+		given(sigsVerifier.hasActiveKey(accountId, recipientAddr, contractAddr))
+				.willReturn(true);
+		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
+				.willReturn(accountStore);
+		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER,
+				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects))
+				.willReturn(tokenStore);
+		given(dissociateLogicFactory.newDissociateLogic(validator, tokenStore, accountStore, dissociationFactory))
+				.willReturn(dissociateLogic);
+		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects))
+				.willReturn(mockRecordBuilder);
+
+		// when:
+		final var result = subject.computeDissociateTokens(pretendArguments, frame);
+
+		// then:
+		assertEquals(successResult, result);
+		verify(dissociateLogic).dissociate(accountId, multiDissociateOp.getTokenIds());
+		verify(wrappedLedgers).commit();
+		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+	}
+
 	private void givenFrameContext() {
 		given(frame.getContractAddress()).willReturn(contractAddr);
 		given(frame.getRecipientAddress()).willReturn(recipientAddr);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
-		given(decoder.decodeDissociate(pretendArguments)).willReturn(dissociateToken);
-		given(syntheticTxnFactory.createDissociate(dissociateToken)).willReturn(mockSynthBodyBuilder);
 	}
 
 	private void givenLedgers() {
@@ -206,9 +238,12 @@ class DissociatePrecompilesTest {
 	}
 
 	private static final TokenID nonFungible = IdUtils.asToken("0.0.777");
-	private static final AccountID account = IdUtils.asAccount("1.2.3");
+	private static final AccountID account = IdUtils.asAccount("0.0.3");
 	private static final Id accountId = Id.fromGrpcAccount(account);
-	private static final SyntheticTxnFactory.DissociateToken dissociateToken = new SyntheticTxnFactory.DissociateToken(account, nonFungible);
+	private static final SyntheticTxnFactory.Dissociation dissociateToken =
+			SyntheticTxnFactory.Dissociation.singleDissociation(account, nonFungible);
+	private static final SyntheticTxnFactory.Dissociation multiDissociateOp =
+			SyntheticTxnFactory.Dissociation.singleDissociation(account, nonFungible);
 	private static final Address recipientAddr = Address.ALTBN128_ADD;
 	private static final Address contractAddr = Address.ALTBN128_MUL;
 	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);

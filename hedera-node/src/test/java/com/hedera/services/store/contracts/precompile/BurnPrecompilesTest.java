@@ -206,13 +206,13 @@ class BurnPrecompilesTest {
 	private void givenNonfungibleFrameContext() {
 		givenFrameContext();
 		given(decoder.decodeBurn(pretendArguments)).willReturn(nonFungibleBurn);
-		given(syntheticTxnFactory.createNonFungibleBurn(nonFungibleBurn)).willReturn(mockSynthBodyBuilder);
+		given(syntheticTxnFactory.createBurn(nonFungibleBurn)).willReturn(mockSynthBodyBuilder);
 	}
 
 	private void givenFungibleFrameContext() {
 		givenFrameContext();
 		given(decoder.decodeBurn(pretendArguments)).willReturn(fungibleBurn);
-		given(syntheticTxnFactory.createNonFungibleBurn(fungibleBurn)).willReturn(mockSynthBodyBuilder);
+		given(syntheticTxnFactory.createBurn(fungibleBurn)).willReturn(mockSynthBodyBuilder);
 	}
 
 	private void givenFrameContext() {

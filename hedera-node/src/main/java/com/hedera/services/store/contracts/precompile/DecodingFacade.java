@@ -79,21 +79,43 @@ public class DecodingFacade {
 		}
 	}
 
-	public SyntheticTxnFactory.AssociateToken decodeAssociate(final Bytes input) {
+	/* NOT A REAL IMPLEMENTATION */
+	public SyntheticTxnFactory.Association decodeAssociation(final Bytes input) {
 		Address accountAddress = Address.wrap(input.slice(16, 20));
 		Address tokenAddress = Address.wrap(input.slice(48, 20));
 
-		return new SyntheticTxnFactory.AssociateToken(
+		return SyntheticTxnFactory.Association.singleAssociation(
 				accountParsedFromSolidityAddress(accountAddress),
 				tokenParsedFromSolidityAddress(tokenAddress));
 	}
 
-	public SyntheticTxnFactory.DissociateToken decodeDissociate(final Bytes input) {
+	/* NOT A REAL IMPLEMENTATION */
+	public SyntheticTxnFactory.Association decodeMultipleAssociations(final Bytes input) {
 		Address accountAddress = Address.wrap(input.slice(16, 20));
 		Address tokenAddress = Address.wrap(input.slice(48, 20));
 
-		return new SyntheticTxnFactory.DissociateToken(
+		return SyntheticTxnFactory.Association.multiAssociation(
+				accountParsedFromSolidityAddress(accountAddress),
+				List.of(tokenParsedFromSolidityAddress(tokenAddress)));
+	}
+
+	/* NOT A REAL IMPLEMENTATION */
+	public SyntheticTxnFactory.Dissociation decodeDissociate(final Bytes input) {
+		Address accountAddress = Address.wrap(input.slice(16, 20));
+		Address tokenAddress = Address.wrap(input.slice(48, 20));
+
+		return SyntheticTxnFactory.Dissociation.singleDissociation(
 				accountParsedFromSolidityAddress(accountAddress),
 				tokenParsedFromSolidityAddress(tokenAddress));
+	}
+
+	/* NOT A REAL IMPLEMENTATION */
+	public SyntheticTxnFactory.Dissociation decodeMultipleDissociations(final Bytes input) {
+		Address accountAddress = Address.wrap(input.slice(16, 20));
+		Address tokenAddress = Address.wrap(input.slice(48, 20));
+
+		return SyntheticTxnFactory.Dissociation.multiDissociation(
+				accountParsedFromSolidityAddress(accountAddress),
+				List.of(tokenParsedFromSolidityAddress(tokenAddress)));
 	}
 }

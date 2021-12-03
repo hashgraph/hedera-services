@@ -77,7 +77,6 @@ import static com.hedera.services.store.tokens.views.UniqTokenViewsManager.NOOP_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
-import static java.util.Collections.singletonList;
 
 @Singleton
 public class HTSPrecompiledContract extends AbstractPrecompiledContract {
@@ -244,24 +243,22 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@SuppressWarnings("unused")
 	protected Bytes computeAssociateTokens(final Bytes input, final MessageFrame frame) {
-		return null;
+		return computeInternal(frame, input, new MultiAssociatePrecompile());
 	}
 
 	protected Bytes computeAssociateToken(final Bytes input, final MessageFrame frame) {
 		return computeInternal(frame, input, new AssociatePrecompile());
 	}
 
-	@SuppressWarnings("unused")
 	protected Bytes computeDissociateTokens(final Bytes input, final MessageFrame frame) {
-		return null;
+		return computeInternal(frame, input, new MultiDissociatePrecompile());
 	}
 
-	@SuppressWarnings("unused")
 	protected Bytes computeDissociateToken(final Bytes input, final MessageFrame frame) {
 		return computeInternal(frame, input, new DissociatePrecompile());
 	}
 
-	/* Helpers */
+	/* --- Helpers --- */
 	private AccountStore createAccountStore(final WorldLedgers ledgers) {
 		return accountStoreFactory.newAccountStore(validator, dynamicProperties, ledgers.accounts());
 	}
@@ -300,7 +297,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			childRecord = precompile.run(recipient, contract, ledgers);
 			ledgers.commit();
 		} catch (InvalidTransactionException e) {
-			e.printStackTrace();
 			final var status = e.getResponseCode();
 			childRecord = creator.createUnsuccessfulSyntheticRecord(status);
 			result = resultFrom(status);
@@ -367,14 +363,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		ExpirableTxnRecord.Builder run(final Address recipient, final Address contract, final WorldLedgers ledgers);
 	}
 
-	private class AssociatePrecompile implements Precompile {
-		private SyntheticTxnFactory.AssociateToken associateOp;
-
-		@Override
-		public TransactionBody.Builder body(final Bytes input) {
-			associateOp = decoder.decodeAssociate(input);
-			return syntheticTxnFactory.createAssociate(associateOp);
-		}
+	private abstract class AbstractAssociatePrecompile implements Precompile {
+		protected SyntheticTxnFactory.Association associateOp;
 
 		@Override
 		public ExpirableTxnRecord.Builder run(
@@ -385,7 +375,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			Objects.requireNonNull(associateOp);
 
 			/* --- Check required signatures --- */
-			final var accountId = Id.fromGrpcAccount(associateOp.getAccountID());
+			final var accountId = Id.fromGrpcAccount(associateOp.getAccountId());
 			final var hasRequiredSigs = sigsVerifier.hasActiveKey(accountId, recipient, contract);
 			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
@@ -395,21 +385,31 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var tokenStore = createTokenStore(ledgers, accountStore, sideEffects);
 
 			/* --- Execute the transaction and capture its results --- */
-			final var associateLogic = associateLogicFactory.newAssociateLogic(tokenStore, accountStore,
-					dynamicProperties);
-			associateLogic.associate(accountId, singletonList(associateOp.getTokenID()));
+			final var associateLogic = associateLogicFactory.newAssociateLogic(
+					tokenStore, accountStore, dynamicProperties);
+			associateLogic.associate(accountId, associateOp.getTokenIds());
 			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects);
 		}
 	}
 
-	private class DissociatePrecompile implements Precompile {
-		private SyntheticTxnFactory.DissociateToken dissociateOp;
-
+	private class AssociatePrecompile extends AbstractAssociatePrecompile {
 		@Override
 		public TransactionBody.Builder body(final Bytes input) {
-			dissociateOp = decoder.decodeDissociate(input);
-			return syntheticTxnFactory.createDissociate(dissociateOp);
+			associateOp = decoder.decodeAssociation(input);
+			return syntheticTxnFactory.createAssociate(associateOp);
 		}
+	}
+
+	private class MultiAssociatePrecompile extends AbstractAssociatePrecompile {
+		@Override
+		public TransactionBody.Builder body(final Bytes input) {
+			associateOp = decoder.decodeMultipleAssociations(input);
+			return syntheticTxnFactory.createAssociate(associateOp);
+		}
+	}
+
+	private abstract class AbstractDissociatePrecompile implements Precompile {
+		protected SyntheticTxnFactory.Dissociation dissociateOp;
 
 		@Override
 		public ExpirableTxnRecord.Builder run(
@@ -420,7 +420,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			Objects.requireNonNull(dissociateOp);
 
 			/* --- Check required signatures --- */
-			final var accountId = Id.fromGrpcAccount(dissociateOp.getAccountID());
+			final var accountId = Id.fromGrpcAccount(dissociateOp.getAccountId());
 			final var hasRequiredSigs = sigsVerifier.hasActiveKey(accountId, recipient, contract);
 			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
@@ -432,8 +432,24 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			/* --- Execute the transaction and capture its results --- */
 			final var dissociateLogic = dissociateLogicFactory.newDissociateLogic(
 					validator, tokenStore, accountStore, dissociationFactory);
-			dissociateLogic.dissociate(accountId, singletonList(dissociateOp.getTokenID()));
+			dissociateLogic.dissociate(accountId, dissociateOp.getTokenIds());
 			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects);
+		}
+	}
+
+	private class DissociatePrecompile extends AbstractDissociatePrecompile {
+		@Override
+		public TransactionBody.Builder body(final Bytes input) {
+			dissociateOp = decoder.decodeDissociate(input);
+			return syntheticTxnFactory.createDissociate(dissociateOp);
+		}
+	}
+
+	private class MultiDissociatePrecompile extends AbstractDissociatePrecompile {
+		@Override
+		public TransactionBody.Builder body(final Bytes input) {
+			dissociateOp = decoder.decodeMultipleDissociations(input);
+			return syntheticTxnFactory.createDissociate(dissociateOp);
 		}
 	}
 
@@ -483,7 +499,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public TransactionBody.Builder body(final Bytes input) {
 			burnOp = decoder.decodeBurn(input);
-			return syntheticTxnFactory.createNonFungibleBurn(burnOp);
+			return syntheticTxnFactory.createBurn(burnOp);
 		}
 
 		@Override
