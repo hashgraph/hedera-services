@@ -238,6 +238,9 @@ public class EntityId implements SelfSerializable {
 	}
 
 	public AccountID toGrpcAccountId() {
+		if (shard == 0 && realm == 0 && num == 0) {
+			return AccountID.getDefaultInstance();
+		}
 		return AccountID.newBuilder()
 				.setShardNum(shard)
 				.setRealmNum(realm)
