@@ -286,13 +286,13 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
 			final var sideEffects = sideEffectsFactory.get();
-			final var _accountStore = accountStoreFactory.newAccountStore(
+			final var scopedAccountStore = accountStoreFactory.newAccountStore(
 					validator, dynamicProperties, ledgers.accounts());
-			final var _tokenStore = tokenStoreFactory.newTokenStore(
-					_accountStore, ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels(),
+			final var scopedTokenStore = tokenStoreFactory.newTokenStore(
+					scopedAccountStore, ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels(),
 					NOOP_VIEWS_MANAGER, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER,
 					sideEffects);
-			final var mintLogic = mintLogicFactory.newLogic(validator, _tokenStore, _accountStore);
+			final var mintLogic = mintLogicFactory.newLogic(validator, scopedTokenStore, scopedAccountStore);
 
 			/* --- Execute the transaction and capture its results --- */
 			final var creationTime = recordsHistorian.nextFollowingChildConsensusTime();

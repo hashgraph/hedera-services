@@ -87,7 +87,7 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 
 	@Override
 	public Instant nextFollowingChildConsensusTime() {
-		return txnCtx.consensusTime().plusNanos(1 + followingChildRecords.size());
+		return txnCtx.consensusTime().plusNanos(1L + followingChildRecords.size());
 	}
 
 	@Override
