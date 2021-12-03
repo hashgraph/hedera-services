@@ -76,6 +76,10 @@ public class IdUtils {
 				.build();
 	}
 
+	public static AccountID asAccountWithAlias(String alias) {
+		return AccountID.newBuilder().setAlias(ByteString.copyFromUtf8(alias)).build();
+	}
+
 	public static AccountID fromKey(EntityNum mk) {
 		return asAccount(String.format("0.0.%d", mk.longValue()));
 	}

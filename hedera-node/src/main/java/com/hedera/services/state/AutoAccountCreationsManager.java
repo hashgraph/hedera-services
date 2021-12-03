@@ -1,5 +1,25 @@
 package com.hedera.services.state;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.google.protobuf.ByteString;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
@@ -16,8 +36,17 @@ import java.util.Map;
  */
 @Singleton
 public class AutoAccountCreationsManager {
+	private static AutoAccountCreationsManager autoAccountCreations = null;
+
 	/* Alias Accounts Map that will be rebuilt after restart, reconnect*/
 	private Map<ByteString, EntityNum> autoAccountsMap;
+
+	public static AutoAccountCreationsManager getInstance() {
+		if (autoAccountCreations == null) {
+			autoAccountCreations = new AutoAccountCreationsManager();
+		}
+		return autoAccountCreations;
+	}
 
 	@Inject
 	public AutoAccountCreationsManager() {
@@ -65,5 +94,13 @@ public class AutoAccountCreationsManager {
 		}
 	}
 
+	/**
+	 * Returns the entityNum for the given alias
+	 * @param alias alias of the accountId
+	 * @return EntityNum mapped to the given alias.
+	 */
+	public EntityNum fetchEntityNumFor(ByteString alias) {
+		return  autoAccountsMap.get(alias);
+	}
 
 }

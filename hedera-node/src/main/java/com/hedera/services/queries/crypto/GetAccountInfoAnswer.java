@@ -22,7 +22,9 @@ package com.hedera.services.queries.crypto;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.queries.AnswerService;
+import com.hedera.services.state.AutoAccountCreationsManager;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
@@ -55,8 +57,10 @@ public class GetAccountInfoAnswer implements AnswerService {
 	@Override
 	public ResponseCodeEnum checkValidity(Query query, StateView view) {
 		AccountID id = query.getCryptoGetInfo().getAccountID();
-
-		return optionValidator.queryableAccountStatus(id, view.accounts());
+		var entityNum = id.getAlias().isEmpty() ?
+				EntityNum.fromAccountId(id) :
+				AutoAccountCreationsManager.getInstance().fetchEntityNumFor(id.getAlias());
+		return optionValidator.queryableAccountStatus(entityNum, view.accounts());
 	}
 
 	@Override

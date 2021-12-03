@@ -25,6 +25,7 @@ import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.AutoAccountCreationsManager;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -76,6 +77,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -108,6 +111,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREE
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_PAUSE_KT;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asAccountWithAlias;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.asFile;
 import static com.hedera.test.utils.IdUtils.asSchedule;
@@ -128,33 +132,33 @@ import static org.mockito.BDDMockito.mock;
 
 @ExtendWith(LogCaptureExtension.class)
 class StateViewTest {
-	private Instant resolutionTime = Instant.ofEpochSecond(123L);
-	private RichInstant now = RichInstant.fromGrpc(Timestamp.newBuilder().setNanos(123123213).build());
-	private long expiry = 2_000_000L;
-	private byte[] data = "SOMETHING".getBytes();
-	private byte[] expectedBytecode = "A Supermarket in California".getBytes();
-	private byte[] expectedStorage = "The Ecstasy".getBytes();
-	private String tokenMemo = "Goodbye and keep cold";
+	private final Instant resolutionTime = Instant.ofEpochSecond(123L);
+	private final RichInstant now = RichInstant.fromGrpc(Timestamp.newBuilder().setNanos(123123213).build());
+	private final long expiry = 2_000_000L;
+	private final byte[] data = "SOMETHING".getBytes();
+	private final byte[] expectedBytecode = "A Supermarket in California".getBytes();
+	private final String tokenMemo = "Goodbye and keep cold";
 	private HFileMeta metadata;
 	private HFileMeta immutableMetadata;
-	private FileID target = asFile("0.0.123");
-	private TokenID tokenId = asToken("0.0.5");
-	private TokenID nftTokenId = asToken("0.0.3");
-	private TokenID missingTokenId = asToken("0.0.5555");
-	private AccountID payerAccountId = asAccount("0.0.9");
-	private AccountID tokenAccountId = asAccount("0.0.10");
-	private AccountID treasuryOwnerId = asAccount("0.0.0");
-	private AccountID nftOwnerId = asAccount("0.0.44");
-	private ScheduleID scheduleId = asSchedule("0.0.8");
-	private ScheduleID missingScheduleId = asSchedule("0.0.9");
-	private ContractID cid = asContract("0.0.1");
-	private byte[] cidAddress = asSolidityAddress((int) cid.getShardNum(), cid.getRealmNum(), cid.getContractNum());
-	private ContractID notCid = asContract("0.0.3");
-	private AccountID autoRenew = asAccount("0.0.6");
-	private AccountID creatorAccountID = asAccount("0.0.7");
-	private long autoRenewPeriod = 1_234_567;
-	private String fileMemo = "Originally she thought";
-	private String scheduleMemo = "For what but eye and ear";
+	private final FileID target = asFile("0.0.123");
+	private final TokenID tokenId = asToken("0.0.5");
+	private final TokenID nftTokenId = asToken("0.0.3");
+	private final TokenID missingTokenId = asToken("0.0.5555");
+	private final AccountID payerAccountId = asAccount("0.0.9");
+	private final AccountID tokenAccountId = asAccount("0.0.10");
+	private final AccountID accountWithAlias = asAccountWithAlias("aaaa");
+	private final AccountID treasuryOwnerId = asAccount("0.0.0");
+	private final AccountID nftOwnerId = asAccount("0.0.44");
+	private final ScheduleID scheduleId = asSchedule("0.0.8");
+	private final ScheduleID missingScheduleId = asSchedule("0.0.9");
+	private final ContractID cid = asContract("0.0.1");
+	private final byte[] cidAddress = asSolidityAddress((int) cid.getShardNum(), cid.getRealmNum(), cid.getContractNum());
+	private final ContractID notCid = asContract("0.0.3");
+	private final AccountID autoRenew = asAccount("0.0.6");
+	private final AccountID creatorAccountID = asAccount("0.0.7");
+	private final long autoRenewPeriod = 1_234_567;
+	private final String fileMemo = "Originally she thought";
+	private final String scheduleMemo = "For what but eye and ear";
 
 	private FileGetInfoResponse.FileInfo expected;
 	private FileGetInfoResponse.FileInfo expectedImmutable;
@@ -226,6 +230,7 @@ class StateViewTest {
 				.get();
 		tokenAccount.setNftsOwned(10);
 		tokenAccount.setMaxAutomaticAssociations(123);
+		tokenAccount.setAlias(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey().getEd25519());
 		contract = MerkleAccountFactory.newAccount()
 				.memo("Stay cold...")
 				.isSmartContract(true)
@@ -605,6 +610,7 @@ class StateViewTest {
 		final var expectedResponse = CryptoGetInfoResponse.AccountInfo.newBuilder()
 				.setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
 				.setAccountID(tokenAccountId)
+				.setAlias(tokenAccount.getAlias())
 				.setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
 				.setDeleted(tokenAccount.isDeleted())
 				.setMemo(tokenAccount.getMemo())
@@ -622,17 +628,64 @@ class StateViewTest {
 	}
 
 	@Test
+	void infoForAccountWithAlias() {
+		AutoAccountCreationsManager mockedAutoAccountCreations = mock(AutoAccountCreationsManager.class);
+		given(mockedAutoAccountCreations.fetchEntityNumFor(any())).willReturn(EntityNum.fromAccountId(tokenAccountId));
+
+		final var expectedResponse = CryptoGetInfoResponse.AccountInfo.newBuilder()
+				.setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
+				.setAccountID(accountWithAlias)
+				.setAlias(tokenAccount.getAlias())
+				.setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
+				.setDeleted(tokenAccount.isDeleted())
+				.setMemo(tokenAccount.getMemo())
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(tokenAccount.getAutoRenewSecs()))
+				.setBalance(tokenAccount.getBalance())
+				.setExpirationTime(Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
+				.setContractAccountID(asSolidityAddressHex(accountWithAlias))
+				.setOwnedNfts(tokenAccount.getNftsOwned())
+				.setMaxAutomaticTokenAssociations(tokenAccount.getMaxAutomaticAssociations())
+				.build();
+
+		try (MockedStatic<AutoAccountCreationsManager> theMock = Mockito.mockStatic(AutoAccountCreationsManager.class)){
+			theMock.when(AutoAccountCreationsManager::getInstance)
+					.thenReturn(mockedAutoAccountCreations);
+
+			final var actualResponse = subject.infoForAccount(accountWithAlias);
+
+			assertEquals(expectedResponse, actualResponse.get());
+		}
+	}
+
+	@Test
 	void numNftsOwnedWorksForExisting() {
 		assertEquals(tokenAccount.getNftsOwned(), subject.numNftsOwnedBy(tokenAccountId));
 	}
 
 	@Test
-	void infoForAccountEmpty() {
+	void infoForMissingAccount() {
 		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(null);
 
 		final var actualResponse = subject.infoForAccount(tokenAccountId);
 
 		assertEquals(Optional.empty(), actualResponse);
+	}
+
+	@Test
+	void infoForMissingAccountWithAlias() {
+		EntityNum mockedEntityNum = mock(EntityNum.class);
+		AutoAccountCreationsManager mockedAutoAccountCreations = mock(AutoAccountCreationsManager.class);
+		given(mockedAutoAccountCreations.fetchEntityNumFor(any())).willReturn(mockedEntityNum);
+		given(contracts.get(mockedEntityNum)).willReturn(null);
+
+		try (MockedStatic<AutoAccountCreationsManager> theMock = Mockito.mockStatic(AutoAccountCreationsManager.class)){
+			theMock.when(AutoAccountCreationsManager::getInstance)
+					.thenReturn(mockedAutoAccountCreations);
+
+			final var actualResponse = subject.infoForAccount(accountWithAlias);
+
+			assertEquals(Optional.empty(), actualResponse);
+		}
 	}
 
 	@Test
