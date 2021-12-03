@@ -647,9 +647,6 @@ class ServicesStateTest {
 
 	@Test
 	void genesisInitCreatesAnEmptyAutoAccountsMap() throws IOException {
-		// setup:
-		TestFileUtils.blowAwayDirIfPresent(TEST_JDB_LOC);
-		ServicesState.setJdbLoc(TEST_JDB_LOC);
 		ServicesState.setAppBuilder(() -> appBuilder);
 
 		given(appBuilder.bootstrapProps(any())).willReturn(appBuilder);
