@@ -51,7 +51,7 @@ public enum TokenProperty implements BeanProperty<MerkleToken> {
 
 		@Override
 		public Function<MerkleToken, Object> getter() {
-			return MerkleToken::getAdminKeyUnsafe;
+			return MerkleToken::getAdminKey;
 		}
 	},
 	FREEZE_KEY {

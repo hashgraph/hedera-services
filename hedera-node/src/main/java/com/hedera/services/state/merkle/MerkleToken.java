@@ -590,10 +590,6 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 		return kycKey;
 	}
 
-	public JKey getAdminKeyUnsafe() {
-		return adminKey;
-	}
-
 	public JKey getFreezeKey() {
 		return freezeKey;
 	}

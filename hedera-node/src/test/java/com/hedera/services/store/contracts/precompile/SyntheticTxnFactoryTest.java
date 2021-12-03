@@ -40,8 +40,8 @@ class SyntheticTxnFactoryTest {
 		final var result = subject.createNonFungibleMint(nftMints);
 		final var txnBody = result.build();
 
-		assertEquals(txnBody.getTokenMint().getToken(), nonFungible);
-		assertEquals(txnBody.getTokenMint().getMetadataList(), newMetadata);
+		assertEquals(nonFungible, txnBody.getTokenMint().getToken());
+		assertEquals(newMetadata, txnBody.getTokenMint().getMetadataList());
 	}
 
 	@Test

@@ -60,7 +60,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyShort;
 import static org.mockito.BDDMockito.any;
@@ -228,7 +227,6 @@ class TxnAwareRecordsHistorianTest {
 		assertEquals(1, precedingRsos.size());
 
 		final var precedeRso = precedingRsos.get(0);
-		assertSame(TransactionRecord.getDefaultInstance(), precedeRso.getTransactionRecord());
 		assertEquals(expectedPrecedingTime, precedeRso.getTimestamp());
 		final var precedeSynth = precedeRso.getTransaction();
 		final var expectedPrecedeSynth = synthFromBody(
@@ -238,7 +236,6 @@ class TxnAwareRecordsHistorianTest {
 		assertEquals(expectedPrecedeSynth, precedeSynth);
 
 		final var followRso = followingRsos.get(0);
-		assertSame(TransactionRecord.getDefaultInstance(), followRso.getTransactionRecord());
 		assertEquals(expectedFollowTime, followRso.getTimestamp());
 		final var followSynth = followRso.getTransaction();
 		final var expectedFollowSynth = synthFromBody(
