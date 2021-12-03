@@ -25,6 +25,7 @@ import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.token.MintLogic;
+import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -109,16 +110,17 @@ class MintPrecompilesTest {
 	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
 	@Mock
 	private EntityCreator creator;
+	@Mock
+	private DissociationFactory dissociationFactory;
 
 	private HTSPrecompiledContract subject;
 
 	@BeforeEach
 	void setUp() {
 		subject = new HTSPrecompiledContract(
-				ledger, accountStore, validator,
-				tokenStore, dynamicProperties, gasCalculator,
+				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory, creator);
+				syntheticTxnFactory, creator, dissociationFactory);
 		subject.setMintLogicFactory(mintLogicFactory);
 		subject.setTokenStoreFactory(tokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);
@@ -152,7 +154,7 @@ class MintPrecompilesTest {
 				validator, dynamicProperties, accounts
 		)).willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(
-			accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects
+				accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects
 		)).willReturn(tokenStore);
 		given(mintLogicFactory.newLogic(validator, tokenStore, accountStore)).willReturn(mintLogic);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects)).willReturn(mockRecordBuilder);
