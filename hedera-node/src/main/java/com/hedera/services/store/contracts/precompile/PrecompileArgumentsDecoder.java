@@ -1,334 +1,320 @@
 package com.hedera.services.store.contracts.precompile;
 
+import com.esaulpaugh.headlong.abi.Function;
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.web3j.abi.FunctionReturnDecoder;
-import org.web3j.abi.TypeReference;
-import org.web3j.abi.datatypes.StaticArray;
-import org.web3j.abi.datatypes.Type;
-import org.web3j.abi.datatypes.generated.Bytes32;
-import org.web3j.abi.datatypes.generated.Int64;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public final class PrecompileArgumentsDecoder {
 
-	private static final int INPUT_ENTRY_BYTES_LENGTH = 32;
+	private static final Function CRYPTO_TRANSFER_FUNCTION = new Function("cryptoTransfer((bytes32,(bytes32,int64)[],(bytes32,bytes32,int64)[])[])",
+			"((bytes32,(bytes32,int64)[],(bytes32,bytes32,int64)[])[])");
+	private static final Function TRANSFER_TOKENS_FUNCTION = new Function("transferTokens(address,address[],int64[])",
+			"(bytes32," +
+					"bytes32[],int64[])");
+	private static final Function TRANSFER_TOKEN_FUNCTION = new Function("transferToken(address,address,address,int64)",
+			"(bytes32," +
+					"bytes32,bytes32,int64)");
+	private static final Function TRANSFER_NFTS_FUNCTION = new Function("transferNFTs(address,address[],address[],int64[])",
+			"(bytes32," +
+					"bytes32[],bytes32[],int64[])");
+	private static final Function TRANSFER_NFT_FUNCTION = new Function("transferNFT(address,address,address,int64)",
+			"(bytes32," +
+					"bytes32,bytes32,int64)");
+	private static final Function MINT_TOKEN_FUNCTION = new Function("mintToken(address,uint64,bytes)",
+			"(bytes32," +
+					"int64,string)");
+	private static final Function BURN_TOKEN_FUNCTION = new Function("burnToken(address,uint64,int64[])",
+			"(bytes32," +
+					"int64,int64[])");
+	private static final Function ASSOCIATE_TOKENS_FUNCTION = new Function("associateTokens(address,address[])",
+			"(bytes32," +
+					"bytes32[])");
+	private static final Function ASSOCIATE_TOKEN_FUNCTION = new Function("associateToken(address,address)",
+			"(bytes32," +
+					"bytes32)");
+	private static final Function DISSOCIATE_TOKENS_FUNCTION = new Function("dissociateTokens(address,address[])",
+			"(bytes32," +
+					"bytes32[])");
+	private static final Function DISSOCIATE_TOKEN_FUNCTION = new Function("associateToken(address,address)",
+			"(bytes32," +
+					"bytes32)");
 	private static final int ADDRESS_BYTES_LENGTH = 20;
 	private static final int ADDRESS_SKIP_BYTES_LENGTH = 12;
 	private static final int FUNCTION_SELECTOR_BYTES_LENGTH = 4;
-	private static final int MAX_STATIC_ARRAY_LENGTH = 32;
 
 	private PrecompileArgumentsDecoder() {
 	}
 
-	public static Map<Integer, Object> decodeArgumentsForTransferTokens(final Bytes input) {
+	public static Map<Integer, Object> decodeArgumentsForCryptoTransfer(final Bytes input) {
+		final Tuple decodedTuples =
+				CRYPTO_TRANSFER_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
+						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
+		final List<TokenTransferList> tokenTransferLists = new ArrayList<>();
+		for(final var tuple: decodedTuples) {
+			for(final var tupleNested: (Tuple[]) tuple) {
+				final List<AccountAmount> accountAmounts = new ArrayList<>();
+				final var transfers = (Tuple[]) tupleNested.get(1);
+				for(final var transfer: transfers) {
+					final var accountAmount = new AccountAmount((byte[]) transfer.get(0),
+							(long) transfer.get(1));
+					accountAmounts.add(accountAmount);
+				}
 
-		// PARSING TOKEN ADDRESS
-		final var tokenAddress = Address.wrap(input.slice(ADDRESS_SKIP_BYTES_LENGTH + FUNCTION_SELECTOR_BYTES_LENGTH, ADDRESS_BYTES_LENGTH));
-		final var tokenID = EntityIdUtils.tokenParsedFromSolidityAddress(tokenAddress.toArray());
+				final List<NftTransfer> nftTransfers =new ArrayList<>();
+				final var nftTransfersDecoded = (Tuple[]) tupleNested.get(2);
+				for(final var nftTransferDecoded: nftTransfersDecoded) {
+					final var nftTransfer = new NftTransfer((byte[]) nftTransferDecoded.get(0),
+							(byte[]) nftTransferDecoded.get(1),
+							(long) nftTransferDecoded.get(2));
+					nftTransfers.add(nftTransfer);
+				}
 
-		// PARSING ACCOUNT ADDRESS ARRAY
-		final var addressArrayStartPositionStartIndex =
-				ADDRESS_SKIP_BYTES_LENGTH + FUNCTION_SELECTOR_BYTES_LENGTH + ADDRESS_BYTES_LENGTH;
-		final var addressArrayStartPositionBytes = input.slice(addressArrayStartPositionStartIndex, INPUT_ENTRY_BYTES_LENGTH);
-		final var addressArrayStartPosition =
-				addressArrayStartPositionBytes.toBigInteger().intValue() + FUNCTION_SELECTOR_BYTES_LENGTH;
-		final var addressArraySize = input.slice(addressArrayStartPosition, INPUT_ENTRY_BYTES_LENGTH).toBigInteger();
-		final var addressArraySizeInt = addressArraySize.intValue();
-		final var addressArrayByteLength = addressArraySizeInt * INPUT_ENTRY_BYTES_LENGTH;
-		final var addressArrayByteLengthWithHeader = addressArrayByteLength + INPUT_ENTRY_BYTES_LENGTH;
+				final TokenTransferList tokenTransferList = new TokenTransferList((byte[]) tupleNested.get(0), accountAmounts, nftTransfers);
+				tokenTransferLists.add(tokenTransferList);
+			}
+		}
 
-		final var addresses = decodeAddressArray(addressArraySizeInt,
-				addressArrayStartPosition + INPUT_ENTRY_BYTES_LENGTH,
-				input);
-		final var accountIDs = addresses.stream().map(a -> convertAddressToAccountID(a)).collect(Collectors.toList());
-
-		// PARSING AMOUNT ARRAY
-		final var amountArrayStartPosition = addressArrayStartPositionBytes.toBigInteger().intValue() + FUNCTION_SELECTOR_BYTES_LENGTH + addressArrayByteLengthWithHeader;
-		final var amountArraySize = input.slice(amountArrayStartPosition, INPUT_ENTRY_BYTES_LENGTH).toBigInteger();
-		final var amountArraySizeInt = amountArraySize.intValue();
-
-		final var amounts = decodeAmountsArray(amountArraySizeInt, amountArrayStartPosition, input);
-
-		final Map<Integer, Object> decodedArguments = new HashMap<>();
-		decodedArguments.put(1, tokenID);
-		decodedArguments.put(2, accountIDs);
-		decodedArguments.put(3, amounts);
-		return decodedArguments;
+		final Map<Integer, Object> result = new HashMap<>();
+		return result;
 	}
 
+	public static Map<Integer, Object> decodeArgumentsForTransferTokens(final Bytes input) {
+		final Tuple decodedArguments =
+				TRANSFER_TOKENS_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
+				input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
+
+		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
+		final var accountIDs = decodeAccountIDsFromBytesArray((byte[][]) decodedArguments.get(1));
+		final var amountsConverted = convertLongArrayToBigIntegerArray((long[]) decodedArguments.get(2));
+
+		final Map<Integer, Object> result = new HashMap<>();
+		result.put(1, tokenID);
+		result.put(2, accountIDs);
+		result.put(3, amountsConverted);
+		return result;
+	}
 
 	public static Map<Integer, Object> decodeArgumentsForTransferToken(final Bytes input) {
-		final Bytes tokenAddress = Address.wrap(input.slice(16, ADDRESS_BYTES_LENGTH));
-		final Bytes fromAddress = Address.wrap(input.slice(48, ADDRESS_BYTES_LENGTH));
-		final Bytes toAddress = Address.wrap(input.slice(80, ADDRESS_BYTES_LENGTH));
-		final BigInteger amount = input.slice(100, INPUT_ENTRY_BYTES_LENGTH).toBigInteger();
+		final Tuple decodedArguments =
+				TRANSFER_TOKEN_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
+				input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
 
-		final var token = EntityIdUtils.tokenParsedFromSolidityAddress(tokenAddress.toArray());
-		final var from = EntityIdUtils.accountParsedFromSolidityAddress(fromAddress.toArray());
-		final var to = EntityIdUtils.accountParsedFromSolidityAddress(toAddress.toArray());
+		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
+		final var fromAccountId = convertAddressBytesToAccountID((byte[]) decodedArguments.get(1));
+		final var toAccountId = convertAddressBytesToAccountID((byte[]) decodedArguments.get(2));
+		final var amountConverted = BigInteger.valueOf((long) decodedArguments.get(3));
 
-		final Map<Integer, Object> decodedArguments = new HashMap<>();
-		decodedArguments.put(1, token);
-		decodedArguments.put(2, from);
-		decodedArguments.put(3, to);
-		decodedArguments.put(4, amount);
-		return decodedArguments;
+		final Map<Integer, Object> result = new HashMap<>();
+		result.put(1, tokenID);
+		result.put(2, fromAccountId);
+		result.put(3, toAccountId);
+		result.put(4, amountConverted);
+		return result;
 	}
 
 	public static Map<Integer, Object> decodeArgumentsForTransferNFTs(final Bytes input) {
-		// PARSING TOKEN ADDRESS
-		final var tokenAddress = Address.wrap(input.slice(ADDRESS_SKIP_BYTES_LENGTH + FUNCTION_SELECTOR_BYTES_LENGTH, ADDRESS_BYTES_LENGTH));
-		final var tokenID = EntityIdUtils.tokenParsedFromSolidityAddress(tokenAddress.toArray());
+		final Tuple decodedArguments =
+				TRANSFER_NFTS_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
+						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
 
-		// PARSING ACCOUNT ADDRESS ARRAY - SENDERS
-		final var senderArrayStartPositionStartIndex =
-				ADDRESS_SKIP_BYTES_LENGTH + FUNCTION_SELECTOR_BYTES_LENGTH + ADDRESS_BYTES_LENGTH;
-		final var senderArrayStartPositionBytes = input.slice(senderArrayStartPositionStartIndex,
-				INPUT_ENTRY_BYTES_LENGTH);
-		final var senderArrayStartPosition =
-				senderArrayStartPositionBytes.toBigInteger().intValue() + FUNCTION_SELECTOR_BYTES_LENGTH;
-		final var senderArraySizeInt = input.slice(senderArrayStartPosition, INPUT_ENTRY_BYTES_LENGTH).toBigInteger().intValue();
-		final var senderArrayByteLength = senderArraySizeInt * INPUT_ENTRY_BYTES_LENGTH;
-		final var senderArrayByteLengthWithHeader = senderArrayByteLength + INPUT_ENTRY_BYTES_LENGTH;
+		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
+		final var senderIDs = decodeAccountIDsFromBytesArray((byte[][]) decodedArguments.get(1));
+		final var receiverIDs = decodeAccountIDsFromBytesArray((byte[][]) decodedArguments.get(2));
+		final var serialNumbers = convertLongArrayToBigIntegerArray((long[]) decodedArguments.get(3));
 
-		final var senderAddresses = decodeAddressArray(senderArraySizeInt, senderArrayByteLengthWithHeader,
-				input);
-		final var sendersIDs = senderAddresses.stream().map(a -> convertAddressToAccountID(a)).collect(Collectors.toList());
-
-		// PARSING ACCOUNT ADDRESS ARRAY - RECEIVERS
-		final var receiverArrayStartPositionStartIndex =
-				senderArrayStartPositionStartIndex + INPUT_ENTRY_BYTES_LENGTH;
-		final var receiverArrayStartPositionBytes = input.slice(receiverArrayStartPositionStartIndex,
-				INPUT_ENTRY_BYTES_LENGTH);
-		final var receiverArrayStartPosition =
-				senderArrayStartPosition + FUNCTION_SELECTOR_BYTES_LENGTH + senderArrayByteLengthWithHeader;
-		final var receiverArraySizeInt = input.slice(receiverArrayStartPosition, INPUT_ENTRY_BYTES_LENGTH).toBigInteger().intValue();
-		final var receiverArrayByteLength = receiverArraySizeInt * INPUT_ENTRY_BYTES_LENGTH;
-		final var receiverArrayByteLengthWithHeader = receiverArrayByteLength + INPUT_ENTRY_BYTES_LENGTH;
-
-		final var receiverAddresses = decodeAddressArray(receiverArraySizeInt, receiverArrayStartPosition,
-				input);
-		final var receiversIDs = receiverAddresses.stream().map(a -> convertAddressToAccountID(a)).collect(Collectors.toList());
-
-		// PARSING SERIAL NUMBERS ARRAY
-		final var sNumberArrayStartPosition =
-				senderArrayStartPosition + FUNCTION_SELECTOR_BYTES_LENGTH + senderArrayByteLengthWithHeader + receiverArrayByteLengthWithHeader;
-		final var sNumberArraySizeInt =
-				input.slice(sNumberArrayStartPosition, INPUT_ENTRY_BYTES_LENGTH).toBigInteger().intValue();
-		final var serialNumbers = decodeAmountsArray(sNumberArraySizeInt, sNumberArrayStartPosition,
-				input);
-
-		final Map<Integer, Object> decodedArguments = new HashMap<>();
-		decodedArguments.put(1, tokenID);
-		decodedArguments.put(2, sendersIDs);
-		decodedArguments.put(3, receiversIDs);
-		decodedArguments.put(4, serialNumbers);
-		return decodedArguments;
+		final Map<Integer, Object> result = new HashMap<>();
+		result.put(1, tokenID);
+		result.put(2, senderIDs);
+		result.put(3, receiverIDs);
+		result.put(4, serialNumbers);
+		return result;
 	}
 
 	public static Map<Integer, Object> decodeArgumentsForTransferNFT(final Bytes input) {
-		final Bytes tokenAddress = Address.wrap(input.slice(16, ADDRESS_BYTES_LENGTH));
-		final Bytes fromAddress = Address.wrap(input.slice(48, ADDRESS_BYTES_LENGTH));
-		final Bytes toAddress = Address.wrap(input.slice(80, ADDRESS_BYTES_LENGTH));
-		final BigInteger sNumber = input.slice(100, INPUT_ENTRY_BYTES_LENGTH).toBigInteger();
+		final Tuple decodedArguments =
+				TRANSFER_NFTS_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
+						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
 
-		final var token = EntityIdUtils.tokenParsedFromSolidityAddress(tokenAddress.toArray());
-		final var from = EntityIdUtils.accountParsedFromSolidityAddress(fromAddress.toArray());
-		final var to = EntityIdUtils.accountParsedFromSolidityAddress(toAddress.toArray());
+		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
+		final var senderID = convertAddressBytesToAccountID((byte[]) decodedArguments.get(1));
+		final var recipientID = convertAddressBytesToAccountID((byte[]) decodedArguments.get(2));
+		final var serialNumber = BigInteger.valueOf((long) decodedArguments.get(3));
 
-		final Map<Integer, Object> decodedArguments = new HashMap<>();
-		decodedArguments.put(1, token);
-		decodedArguments.put(2, from);
-		decodedArguments.put(3, to);
-		decodedArguments.put(4, sNumber);
-		return decodedArguments;
+		final Map<Integer, Object> result = new HashMap<>();
+		result.put(1, tokenID);
+		result.put(2, senderID);
+		result.put(3, recipientID);
+		result.put(4, serialNumber);
+		return result;
 	}
 
 	public static Map<Integer, Object> decodeArgumentsForMintToken(final Bytes input) {
-		final Bytes tokenAddress = Address.wrap(input.slice(16, ADDRESS_BYTES_LENGTH));
-		final BigInteger amount = input.slice(36, INPUT_ENTRY_BYTES_LENGTH).toBigInteger();
+		final Tuple decodedArguments =
+				MINT_TOKEN_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
+						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
 
-		final var token = EntityIdUtils.tokenParsedFromSolidityAddress(tokenAddress.toArray());
+		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
+		final var amount = BigInteger.valueOf((long) decodedArguments.get(1));
+		final var metadata = String.valueOf(decodedArguments.get(2));
 
-		// PARSING BYTES - METADATA
-		final var bytesSize = input.slice(68,
-				INPUT_ENTRY_BYTES_LENGTH).toBigInteger().intValue();
-		final var bytesStartPosition = 132;
-		final var bytes = input.slice(bytesStartPosition, bytesSize + INPUT_ENTRY_BYTES_LENGTH);
-		final var bytesStringified = new String(bytes.toArray());
-
-		final Map<Integer, Object> decodedArguments = new HashMap<>();
-		decodedArguments.put(1, token);
-		decodedArguments.put(2, amount);
-		decodedArguments.put(3, bytesStringified);
-		return decodedArguments;
+		final Map<Integer, Object> result = new HashMap<>();
+		result.put(1, tokenID);
+		result.put(2, amount);
+		result.put(3, metadata);
+		return result;
 	}
 
 	public static Map<Integer, Object> decodeArgumentsForBurnToken(final Bytes input) {
-		final var tokenAddress = Address.wrap(input.slice(16, ADDRESS_BYTES_LENGTH));
-		final var amount = input.slice(48, INPUT_ENTRY_BYTES_LENGTH).toBigInteger();
+		final Tuple decodedArguments =
+				BURN_TOKEN_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
+						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
 
-		final var token = EntityIdUtils.tokenParsedFromSolidityAddress(tokenAddress.toArray());
+		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
+		final var amount = BigInteger.valueOf((long) decodedArguments.get(1));
+		final var serialNumbers = convertLongArrayToBigIntegerArray((long[]) decodedArguments.get(2));
 
-		// PARSING SERIAL NUMBERS ARRAY
-		final var sNumberArrayStartPosition = 80;
-		final var sNumberArraySizeInt =
-				input.slice(sNumberArrayStartPosition, INPUT_ENTRY_BYTES_LENGTH).toBigInteger().intValue();
-		final var serialNumbers = decodeAmountsArray(sNumberArraySizeInt, sNumberArrayStartPosition + INPUT_ENTRY_BYTES_LENGTH,
-				input);
-
-		final Map<Integer, Object> decodedArguments = new HashMap<>();
-		decodedArguments.put(1, token);
-		decodedArguments.put(2, amount);
-		decodedArguments.put(3, serialNumbers);
-		return decodedArguments;
+		final Map<Integer, Object> result = new HashMap<>();
+		result.put(1, tokenID);
+		result.put(2, amount);
+		result.put(3, serialNumbers);
+		return result;
 	}
 
-	public static Map<Integer, Object> decodeArgumentsForAssociateDissociateToken(final Bytes input) {
-		final Bytes accountAddress = Address.wrap(input.slice(16, ADDRESS_BYTES_LENGTH));
-		final Bytes tokenAddress = Address.wrap(input.slice(48, ADDRESS_BYTES_LENGTH));
+	public static Map<Integer, Object> decodeArgumentsForAssociateToken(final Bytes input) {
+		final Tuple decodedArguments =
+				ASSOCIATE_TOKEN_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
+						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
 
-		final var accountID = EntityIdUtils.accountParsedFromSolidityAddress(accountAddress.toArray());
-		final var tokenID = EntityIdUtils.tokenParsedFromSolidityAddress(tokenAddress.toArrayUnsafe());
+		final var accountID = convertAddressBytesToAccountID((byte[]) decodedArguments.get(0));
+		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(1));
 
-		final Map<Integer, Object> decodedArguments = new HashMap<>();
-		decodedArguments.put(1, accountID);
-		decodedArguments.put(2, tokenID);
-		return decodedArguments;
+		final Map<Integer, Object> result = new HashMap<>();
+		result.put(1, accountID);
+		result.put(2, tokenID);
+		return result;
 	}
 
-	public static Map<Integer, Object> decodeArgumentsForAssociateDissociateTokens(final Bytes input) {
-		final Bytes accountAddress = Address.wrap(input.slice(16, ADDRESS_BYTES_LENGTH));
-		final var accountID = EntityIdUtils.accountParsedFromSolidityAddress(accountAddress.toArray());
+	public static Map<Integer, Object> decodeArgumentsForDissociateToken(final Bytes input) {
+		final Tuple decodedArguments =
+				DISSOCIATE_TOKEN_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
+						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
 
-		// PARSING TOKEN ADDRESS ARRAY
-		final var tokenArrayStartPositionStartIndex =
-				ADDRESS_SKIP_BYTES_LENGTH + FUNCTION_SELECTOR_BYTES_LENGTH + ADDRESS_BYTES_LENGTH;
-		final var tokenArrayStartPositionBytes = input.slice(tokenArrayStartPositionStartIndex,
-				INPUT_ENTRY_BYTES_LENGTH);
-		final var tokenArrayStartPosition =
-				tokenArrayStartPositionBytes.toBigInteger().intValue() + FUNCTION_SELECTOR_BYTES_LENGTH;
-		final var tokenArraySizeInt = input.slice(tokenArrayStartPosition, INPUT_ENTRY_BYTES_LENGTH).toBigInteger().intValue();
+		final var accountID = convertAddressBytesToAccountID((byte[]) decodedArguments.get(0));
+		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(1));
 
-		final var tokenAddresses = decodeAddressArray(tokenArraySizeInt,
-				tokenArrayStartPosition + INPUT_ENTRY_BYTES_LENGTH,
-				input);
-		final var tokenIDs =
-				tokenAddresses.stream().map(a -> convertAddressToTokenID(a)).collect(Collectors.toList());
-
-		final Map<Integer, Object> decodedArguments = new HashMap<>();
-		decodedArguments.put(1, accountID);
-		decodedArguments.put(2, tokenIDs);
-		return decodedArguments;
+		final Map<Integer, Object> result = new HashMap<>();
+		result.put(1, accountID);
+		result.put(2, tokenID);
+		return result;
 	}
 
-	private static List<BigInteger> decodeAmountsArray(int arraySizeWhole, int arrayStartPosition,
-													   final Bytes input) {
-		final List<BigInteger> amounts = new ArrayList<>();
-		var arraySizeChunk = Math.min(arraySizeWhole, MAX_STATIC_ARRAY_LENGTH);
-		do {
-			amounts.addAll(decodeAmountsArrayLimitBySize(arraySizeChunk, arrayStartPosition, arraySizeChunk * INPUT_ENTRY_BYTES_LENGTH,
-					input));
-			final var amountsSize = amounts.size();
-			final var amountsLeft = arraySizeWhole - amountsSize;
-			if (amountsLeft != 0 && amountsLeft % MAX_STATIC_ARRAY_LENGTH == 0) {
-				arraySizeChunk = MAX_STATIC_ARRAY_LENGTH;
-			} else {
-				arraySizeChunk = amountsLeft % MAX_STATIC_ARRAY_LENGTH;
-			}
-			arrayStartPosition += MAX_STATIC_ARRAY_LENGTH * INPUT_ENTRY_BYTES_LENGTH;
-		} while (amounts.size() != arraySizeWhole);
+	public static Map<Integer, Object> decodeArgumentsForAssociateTokens(final Bytes input) {
+		final Tuple decodedArguments =
+				ASSOCIATE_TOKENS_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
+						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
 
-		return amounts;
+		final var accountID = convertAddressBytesToAccountID((byte[]) decodedArguments.get(0));
+		final var tokenIDs = decodeTokenIDsFromBytesArray((byte[][]) decodedArguments.get(1));
+
+		final Map<Integer, Object> result = new HashMap<>();
+		result.put(1, accountID);
+		result.put(2, tokenIDs);
+		return result;
 	}
 
-	private static List<BigInteger> decodeAmountsArrayLimitBySize(int amountArraySizeInt, int amountArrayStartPosition,
-																  int amountArrayByteLength, final Bytes input) {
-		final List<TypeReference<Type>> amountOutputParameters = new ArrayList<>(1);
-		amountOutputParameters.add(
-				(TypeReference)
-						new TypeReference.StaticArrayTypeReference<StaticArray<org.web3j.abi.datatypes.generated.Int64>>(amountArraySizeInt) {
-						});
+	public static Map<Integer, Object> decodeArgumentsForDissociateTokens(final Bytes input) {
+		final Tuple decodedArguments =
+				DISSOCIATE_TOKENS_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
+						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
 
-		final var amountsArray = FunctionReturnDecoder.decode(
-				input.slice(amountArrayStartPosition + INPUT_ENTRY_BYTES_LENGTH,
-						amountArrayByteLength).toString(),
-				amountOutputParameters);
+		final var accountID = convertAddressBytesToAccountID((byte[]) decodedArguments.get(0));
+		final var tokenIDs = decodeTokenIDsFromBytesArray((byte[][]) decodedArguments.get(1));
 
-		return convertInt64ArrayToBigInteger(amountsArray);
+		final Map<Integer, Object> result = new HashMap<>();
+		result.put(1, accountID);
+		result.put(2, tokenIDs);
+		return result;
 	}
 
-	private static List<Address> decodeAddressArray(int arraySizeWhole, int arrayStartPosition,
-													final Bytes input) {
-		final List<Address> addresses = new ArrayList<>();
-		var arraySizeChunk = Math.min(arraySizeWhole, MAX_STATIC_ARRAY_LENGTH);
-		do {
-			addresses.addAll(decodeAddressArrayLimitBySize(arraySizeChunk,
-					arrayStartPosition,
-					arraySizeChunk * INPUT_ENTRY_BYTES_LENGTH, input));
-			final var accountIDsSize = addresses.size();
-			final var accountsLeft = arraySizeWhole - accountIDsSize;
-			if (accountsLeft != 0 && accountsLeft % MAX_STATIC_ARRAY_LENGTH == 0) {
-				arraySizeChunk = MAX_STATIC_ARRAY_LENGTH;
-			} else {
-				arraySizeChunk = accountsLeft % MAX_STATIC_ARRAY_LENGTH;
-			}
-			arrayStartPosition += MAX_STATIC_ARRAY_LENGTH * INPUT_ENTRY_BYTES_LENGTH;
-		} while (addresses.size() != arraySizeWhole);
-
-		return addresses;
-	}
-
-	private static List<Address> decodeAddressArrayLimitBySize(int arraySizeLimit,
-															   int arrayStartPosition,
-															   int addressArrayByteLength,
-															   final Bytes input) {
-		final List<TypeReference<Type>> outputParameters = new ArrayList<>(1);
-		outputParameters.add(
-				(TypeReference)
-						new TypeReference.StaticArrayTypeReference<StaticArray<Bytes32>>(arraySizeLimit) {
-						});
-
-		final var addressArray = FunctionReturnDecoder.decode(
-				input.slice(arrayStartPosition,
-						addressArrayByteLength).toString(),
-				outputParameters);
-
-		final List<Address> addresses = new ArrayList<>();
-		for (final var address : ((StaticArray) addressArray.get(0)).getValue()) {
-			final var addressBytes32 = ((Bytes32) address);
-			final var addressBytes = Bytes.wrap(addressBytes32.getValue());
-			final var addressSliced = Address.wrap(addressBytes.slice(ADDRESS_SKIP_BYTES_LENGTH, ADDRESS_BYTES_LENGTH));
-			addresses.add(addressSliced);
+	private static List<BigInteger> convertLongArrayToBigIntegerArray(final long[] longArray) {
+		final List<BigInteger> bigIntegers = new ArrayList<>();
+		for(final var longValue: longArray) {
+			bigIntegers.add(BigInteger.valueOf(longValue));
 		}
 
-		return addresses;
+		return bigIntegers;
 	}
 
-	private static List<BigInteger> convertInt64ArrayToBigInteger(final List<Type> amounts) {
-		final List<BigInteger> amountsConverted = new ArrayList<>();
-		for (final var amount : ((StaticArray) amounts.get(0)).getValue()) {
-			amountsConverted.add(((Int64) amount).getValue());
+	private static List<AccountID> decodeAccountIDsFromBytesArray(final byte[][] accountBytesArray) {
+		final List<AccountID> accountIDs = new ArrayList<>();
+		for(final var account: accountBytesArray) {
+			accountIDs.add(convertAddressBytesToAccountID(account));
 		}
-
-		return amountsConverted;
+		return accountIDs;
 	}
 
-	private static AccountID convertAddressToAccountID(final Address address) {
+	private static List<TokenID> decodeTokenIDsFromBytesArray(final byte[][] accountBytesArray) {
+		final List<TokenID> accountIDs = new ArrayList<>();
+		for(final var account: accountBytesArray) {
+			accountIDs.add(convertAddressBytesToTokenID(account));
+		}
+		return accountIDs;
+	}
+
+	private static AccountID convertAddressBytesToAccountID(final byte[] addressBytes) {
+		final var address = Address.wrap(Bytes.wrap(addressBytes).slice(ADDRESS_SKIP_BYTES_LENGTH, ADDRESS_BYTES_LENGTH));
 		return EntityIdUtils.accountParsedFromSolidityAddress(address.toArray());
 	}
 
-	private static TokenID convertAddressToTokenID(final Address address) {
+	private static TokenID convertAddressBytesToTokenID(final byte[] addressBytes) {
+		final var address = Address.wrap(Bytes.wrap(addressBytes).slice(ADDRESS_SKIP_BYTES_LENGTH, ADDRESS_BYTES_LENGTH));
 		return EntityIdUtils.tokenParsedFromSolidityAddress(address.toArray());
+	}
+
+	public static class AccountAmount {
+		private AccountID accountId;
+		private BigInteger amount;
+
+		public AccountAmount(final byte[] accountId, final long amount) {
+			this.accountId = convertAddressBytesToAccountID(accountId);
+			this.amount = BigInteger.valueOf(amount);
+		}
+	}
+
+	public static class NftTransfer {
+		private AccountID sender;
+		private AccountID receiver;
+		private BigInteger serialNumber;
+
+		public NftTransfer(final byte[] sender, final byte[] receiver, final long serialNumber) {
+			this.sender = convertAddressBytesToAccountID(sender);
+			this.receiver = convertAddressBytesToAccountID(receiver);
+			this.serialNumber = BigInteger.valueOf(serialNumber);
+		}
+	}
+
+	public static class TokenTransferList {
+		private TokenID token;
+		private List<AccountAmount> transfers;
+		private List<NftTransfer> nftTransfers;
+
+		public TokenTransferList(final byte[] token, final List<AccountAmount> transfers,
+								 final List<NftTransfer> nftTransfers) {
+			this.token = convertAddressBytesToTokenID(token);
+			this.transfers = transfers;
+			this.nftTransfers = nftTransfers;
+		}
+
+
 	}
 }
