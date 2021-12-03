@@ -66,6 +66,7 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
@@ -194,6 +195,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@SuppressWarnings("unused")
 	protected Bytes computeCryptoTransfer(final Bytes input, final MessageFrame messageFrame) {
+		final Map<Integer, Object> decodedArguments =
+				PrecompileArgumentsDecoder.decodeArgumentsForCryptoTransfer(input);
 		return null;
 	}
 
