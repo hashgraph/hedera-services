@@ -61,8 +61,6 @@ class MintPrecompilesTest {
 	private static final Bytes pretendArguments = Bytes.fromBase64String("ABCDEF");
 
 	@Mock
-	private HederaLedger ledger;
-	@Mock
 	private AccountStore accountStore;
 	@Mock
 	private TypedTokenStore tokenStore;
@@ -117,14 +115,14 @@ class MintPrecompilesTest {
 
 	@BeforeEach
 	void setUp() {
-//		subject = new HTSPrecompiledContract(
-//				validator, dynamicProperties, gasCalculator,
-//				recordsHistorian, sigsVerifier, decoder,
-//				syntheticTxnFactory, creator, dissociationFactory);
-//		subject.setMintLogicFactory(mintLogicFactory);
-//		subject.setTokenStoreFactory(tokenStoreFactory);
-//		subject.setAccountStoreFactory(accountStoreFactory);
-//		subject.setSideEffectsFactory(() -> sideEffects);
+		subject = new HTSPrecompiledContract(
+				validator, dynamicProperties, gasCalculator,
+				recordsHistorian, sigsVerifier, decoder,
+				syntheticTxnFactory, creator, dissociationFactory);
+		subject.setMintLogicFactory(mintLogicFactory);
+		subject.setTokenStoreFactory(tokenStoreFactory);
+		subject.setAccountStoreFactory(accountStoreFactory);
+		subject.setSideEffectsFactory(() -> sideEffects);
 	}
 
 	@Test
