@@ -379,7 +379,7 @@ class GetAccountInfoAnswerTest {
 				.setResponseType(type);
 		CryptoGetInfoQuery.Builder op = CryptoGetInfoQuery.newBuilder()
 				.setHeader(header)
-				.setAccountID(asAliasAccount(ByteString.copyFromUtf8(alias));
+				.setAccountID(asAliasAccount(ByteString.copyFromUtf8(alias)));
 		return Query.newBuilder().setCryptoGetInfo(op).build();
 	}
 }
