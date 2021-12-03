@@ -66,6 +66,26 @@ public class StaticEntityAccess implements EntityAccess {
 	}
 
 	@Override
+	public void begin() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void commit() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void rollback() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public String currentManagedChangeSet() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public void spawn(AccountID id, long balance, HederaAccountCustomizer customizer) {
 		throw new UnsupportedOperationException();
 	}

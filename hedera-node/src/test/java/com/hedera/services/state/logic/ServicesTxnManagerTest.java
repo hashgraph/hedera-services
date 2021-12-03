@@ -95,8 +95,9 @@ class ServicesTxnManagerTest {
 		subject.process(accessor, consensusTime, submittingMember);
 
 		// then:
-		inOrder.verify(ledger).begin();
+		inOrder.verify(txnCtx).resetFor(accessor, consensusTime, submittingMember);
 		inOrder.verify(recordsHistorian).clearHistory();
+		inOrder.verify(ledger).begin();
 		inOrder.verify(txnCtx).resetFor(accessor, consensusTime, submittingMember);
 		inOrder.verify(processLogic).run();
 		inOrder.verify(ledger).commit();
@@ -167,8 +168,8 @@ class ServicesTxnManagerTest {
 		subject.process(accessor, consensusTime, submittingMember);
 
 		// then:
-		inOrder.verify(ledger).begin();
 		inOrder.verify(txnCtx).resetFor(accessor, consensusTime, submittingMember);
+		inOrder.verify(ledger).begin();
 		inOrder.verify(processLogic).run();
 		inOrder.verify(ledger).commit();
 		inOrder.verify(recordCache).setFailInvalid(effectivePayer, accessor, consensusTime, submittingMember);
@@ -195,8 +196,8 @@ class ServicesTxnManagerTest {
 		subject.process(accessor, consensusTime, submittingMember);
 
 		// then:
-		inOrder.verify(ledger).begin();
 		inOrder.verify(txnCtx).resetFor(accessor, consensusTime, submittingMember);
+		inOrder.verify(ledger).begin();
 		inOrder.verify(processLogic).run();
 		inOrder.verify(ledger).commit();
 		inOrder.verify(recordCache).setFailInvalid(effectivePayer, accessor, consensusTime, submittingMember);
@@ -224,8 +225,8 @@ class ServicesTxnManagerTest {
 		subject.process(accessor, consensusTime, submittingMember);
 
 		// then:
-		inOrder.verify(ledger).begin();
 		inOrder.verify(txnCtx).resetFor(accessor, consensusTime, submittingMember);
+		inOrder.verify(ledger).begin();
 		inOrder.verify(processLogic).run();
 		inOrder.verify(ledger).commit();
 		inOrder.verify(recordCache).setFailInvalid(effectivePayer, accessor, consensusTime, submittingMember);

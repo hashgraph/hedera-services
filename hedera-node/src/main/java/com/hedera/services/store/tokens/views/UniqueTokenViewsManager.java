@@ -79,6 +79,9 @@ public class UniqueTokenViewsManager {
 	private boolean inTxn = false;
 	private List<PendingChange> changesInTxn = new ArrayList<>();
 
+	public static final UniqTokenViewsManager NOOP_VIEWS_MANAGER =
+			new UniqTokenViewsManager(null, null, null, true, false);
+
 	@Inject
 	public UniqueTokenViewsManager(
 			@NftsByType Supplier<FCOneToManyRelation<EntityNum, Long>> nftsByType,

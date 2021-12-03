@@ -514,6 +514,20 @@ public final class MiscUtils {
 		}
 	}
 
+	private static final long ONE_SEC_IN_NANOS = 1_000_000_000;
+
+	public static Instant nonNegativeNanosOffset(final Instant start, final int nanosOff) {
+		final var oldSecs = start.getEpochSecond();
+		final var newNanos = start.getNano() + nanosOff;
+		if (newNanos < 0) {
+			return Instant.ofEpochSecond(oldSecs - 1, ONE_SEC_IN_NANOS + newNanos);
+		} else if (newNanos >= ONE_SEC_IN_NANOS) {
+			return Instant.ofEpochSecond(oldSecs + 1, newNanos - ONE_SEC_IN_NANOS);
+		} else {
+			return Instant.ofEpochSecond(oldSecs, newNanos);
+		}
+	}
+
 	public static HederaFunctionality functionOf(final TransactionBody txn) throws UnknownHederaFunctionality {
 		if (txn.hasSystemDelete()) {
 			return SystemDelete;

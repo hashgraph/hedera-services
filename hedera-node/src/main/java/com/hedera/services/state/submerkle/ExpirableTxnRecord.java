@@ -23,7 +23,9 @@ package com.hedera.services.state.submerkle;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.serdes.DomainSerdes;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.CommonUtils;
@@ -33,6 +35,7 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.fcqueue.FCQueueElement;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -41,11 +44,15 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.IntStream;
 
+import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
 public class ExpirableTxnRecord implements FCQueueElement {
 	public static final long UNKNOWN_SUBMITTING_MEMBER = -1;
+	public static final long MISSING_PARENT_CONSENSUS_TIMESTAMP = -1;
+	public static final short NO_CHILD_TRANSACTIONS = 0;
+
 	static final List<EntityId> NO_TOKENS = null;
 	static final List<CurrencyAdjustments> NO_TOKEN_ADJUSTMENTS = null;
 	static final List<NftAdjustments> NO_NFT_TOKEN_ADJUSTMENTS = null;
@@ -58,7 +65,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	static final int RELEASE_0120_VERSION = 3;
 	static final int RELEASE_0160_VERSION = 4;
 	static final int RELEASE_0180_VERSION = 5;
-	static final int MERKLE_VERSION = RELEASE_0180_VERSION;
+	static final int RELEASE_0210_VERSION = 6;
+	static final int MERKLE_VERSION = RELEASE_0210_VERSION;
 
 	static final int MAX_MEMO_BYTES = 32 * 1_024;
 	static final int MAX_TXN_HASH_BYTES = 1_024;
@@ -72,6 +80,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	private long submittingMember = UNKNOWN_SUBMITTING_MEMBER;
 
 	private long fee;
+	private long packedParentConsensusTime = MISSING_PARENT_CONSENSUS_TIMESTAMP;
+	private short numChildRecords = NO_CHILD_TRANSACTIONS;
 	private Hash hash;
 	private TxnId txnId;
 	private byte[] txnHash = MISSING_TXN_HASH;
@@ -100,6 +110,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	}
 
 	public ExpirableTxnRecord() {
+		/* RuntimeConstructable */
 	}
 
 	public ExpirableTxnRecord(Builder builder) {
@@ -115,10 +126,11 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		this.tokens = builder.tokens;
 		this.tokenAdjustments = builder.tokenAdjustments;
 		this.nftTokenAdjustments = builder.nftTokenAdjustments;
-
 		this.scheduleRef = builder.scheduleRef;
 		this.assessedCustomFees = builder.assessedCustomFees;
 		this.newTokenAssociations = new ArrayList<>(builder.newTokenAssociations);
+		this.packedParentConsensusTime = builder.packedParentConsensusTime;
+		this.numChildRecords = builder.numChildRecords;
 	}
 
 	/* --- Object --- */
@@ -126,6 +138,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	public String toString() {
 		var helper = MoreObjects.toStringHelper(this)
 				.omitNullValues()
+				.add("numChildRecords", numChildRecords)
 				.add("receipt", receipt)
 				.add("fee", fee)
 				.add("txnHash", CommonUtils.hex(txnHash))
@@ -138,6 +151,12 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				.add("contractCall", contractCallResult)
 				.add("hbarAdjustments", hbarAdjustments)
 				.add("scheduleRef", scheduleRef);
+
+		if (packedParentConsensusTime != MISSING_PARENT_CONSENSUS_TIMESTAMP) {
+			helper.add("parentConsensusTime", Instant.ofEpochSecond(
+					BitPackUtils.unsignedHighOrder32From(packedParentConsensusTime),
+					BitPackUtils.signedLowOrder32From(packedParentConsensusTime)));
+		}
 
 		if (tokens != NO_TOKENS) {
 			int n = tokens.size();
@@ -184,7 +203,9 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			return false;
 		}
 		var that = (ExpirableTxnRecord) o;
-		return fee == that.fee &&
+		return this.fee == that.fee &&
+				this.numChildRecords == that.numChildRecords &&
+				this.packedParentConsensusTime == that.packedParentConsensusTime &&
 				this.expiry == that.expiry &&
 				this.submittingMember == that.submittingMember &&
 				Objects.equals(this.receipt, that.receipt) &&
@@ -220,7 +241,9 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				nftTokenAdjustments,
 				scheduleRef,
 				assessedCustomFees,
-				newTokenAssociations);
+				newTokenAssociations,
+				numChildRecords,
+				packedParentConsensusTime);
 		return result * 31 + Arrays.hashCode(txnHash);
 	}
 
@@ -261,6 +284,20 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		out.writeSerializableList(nftTokenAdjustments, true, true);
 		out.writeSerializableList(assessedCustomFees, true, true);
 		out.writeSerializableList(newTokenAssociations, true, true);
+
+		if (numChildRecords != NO_CHILD_TRANSACTIONS) {
+			out.writeBoolean(true);
+			out.writeShort(numChildRecords);
+		} else {
+			out.writeBoolean(false);
+		}
+
+		if (packedParentConsensusTime != MISSING_PARENT_CONSENSUS_TIMESTAMP) {
+			out.writeBoolean(true);
+			out.writeLong(packedParentConsensusTime);
+		} else {
+			out.writeBoolean(false);
+		}
 	}
 
 	@Override
@@ -291,6 +328,16 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		}
 		if (version >= RELEASE_0180_VERSION) {
 			newTokenAssociations = in.readSerializableList(Integer.MAX_VALUE);
+		}
+		if (version >= RELEASE_0210_VERSION) {
+			final var hasChildRecords = in.readBoolean();
+			if (hasChildRecords) {
+				numChildRecords = in.readShort();
+			}
+			final var hasParentConsensusTime = in.readBoolean();
+			if (hasParentConsensusTime) {
+				packedParentConsensusTime = in.readLong();
+			}
 		}
 	}
 
@@ -337,6 +384,10 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		return receipt;
 	}
 
+	public ResponseCodeEnum getEnumStatus() {
+		return receipt.getEnumStatus();
+	}
+
 	public byte[] getTxnHash() {
 		return txnHash;
 	}
@@ -347,6 +398,10 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 	public RichInstant getConsensusTimestamp() {
 		return consensusTimestamp;
+	}
+
+	public long getConsensusSecond() {
+		return consensusTimestamp.getSeconds();
 	}
 
 	public String getMemo() {
@@ -391,6 +446,22 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 	public List<FcTokenAssociation> getNewTokenAssociations() {
 		return newTokenAssociations;
+	}
+
+	public short getNumChildRecords() {
+		return numChildRecords;
+	}
+
+	public void setNumChildRecords(final short numChildRecords) {
+		this.numChildRecords = numChildRecords;
+	}
+
+	public long getPackedParentConsensusTime() {
+		return packedParentConsensusTime;
+	}
+
+	public void setPackedParentConsensusTime(final long packedParentConsensusTime) {
+		this.packedParentConsensusTime = packedParentConsensusTime;
 	}
 
 	/* --- FastCopyable --- */
@@ -490,6 +561,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		private RichInstant consensusTime;
 		private String memo;
 		private long fee;
+		private long packedParentConsensusTime = MISSING_PARENT_CONSENSUS_TIMESTAMP;
+		private short numChildRecords = NO_CHILD_TRANSACTIONS;
 		private CurrencyAdjustments transferList;
 		private SolidityFnResult contractCallResult;
 		private SolidityFnResult contractCreateResult;
@@ -570,13 +643,23 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			return this;
 		}
 
-		public Builder setCustomFeesCharged(List<FcAssessedCustomFee> assessedCustomFees) {
+		public Builder setAssessedCustomFees(List<FcAssessedCustomFee> assessedCustomFees) {
 			this.assessedCustomFees = assessedCustomFees;
 			return this;
 		}
 
 		public Builder setNewTokenAssociations(List<FcTokenAssociation> newTokenAssociations) {
 			this.newTokenAssociations = newTokenAssociations;
+			return this;
+		}
+
+		public Builder setParentConsensusTime(final Instant consTime) {
+			this.packedParentConsensusTime = packedTime(consTime.getEpochSecond(), consTime.getNano());
+			return this;
+		}
+
+		public Builder setNumChildRecords(final short numChildRecords) {
+			this.numChildRecords = numChildRecords;
 			return this;
 		}
 
@@ -606,6 +689,10 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		}
 
 		public void excludeHbarChangesFrom(final ExpirableTxnRecord.Builder that) {
+			if (that.transferList == null) {
+				return;
+			}
+
 			final var adjustsHere = this.transferList.hbars.length;
 			final var adjustsThere = that.transferList.hbars.length;
 			final var maxAdjusts = adjustsHere + adjustsThere;
@@ -712,6 +799,10 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 		public byte[] getTxnHash() {
 			return txnHash;
+		}
+
+		public TxnId getTxnId() {
+			return txnId;
 		}
 	}
 

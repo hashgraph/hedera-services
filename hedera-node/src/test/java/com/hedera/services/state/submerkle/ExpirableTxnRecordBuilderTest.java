@@ -27,18 +27,26 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.util.List;
 
+import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class ExpirableTxnRecordBuilderTest {
+	private static final long parentConsSec = 1_234_567L;
+	private static final int parentConsNanos = 890;
+	private static final long packedParentConsTime = packedTime(parentConsSec, parentConsNanos);
+	private static final Instant parentConsTime = Instant.ofEpochSecond(parentConsSec, parentConsNanos);
+
 	@Mock
 	private TxnReceipt.Builder receiptBuilder;
 
@@ -50,12 +58,35 @@ class ExpirableTxnRecordBuilderTest {
 	}
 
 	@Test
-	void usesRecieptBuilderIfPresent() {
+	void builderPropagatesChildTxnMeta() {
+		subject.setNumChildRecords((short) 12);
+		subject.setParentConsensusTime(parentConsTime);
+
+		final var result = subject.build();
+		assertEquals(12, result.getNumChildRecords());
+		assertEquals(packedParentConsTime, result.getPackedParentConsensusTime());
+	}
+
+	@Test
+	void usesReceiptBuilderIfPresent() {
 		final var status = "INVALID_ACCOUNT_ID";
 		final var statusReceipt = TxnReceipt.newBuilder().setStatus(status);
 		subject.setReceiptBuilder(statusReceipt);
 		final var record = subject.build();
 		assertEquals(status, record.getReceipt().getStatus());
+	}
+
+	@Test
+	void subtractingOffNoHbarAdjustsIsNoop() {
+		final var that = ExpirableTxnRecord.newBuilder();
+
+		final var someAdjusts = new CurrencyAdjustments(new long[] { +1, -1
+		}, List.of(new EntityId(0, 0, 1), new EntityId(0, 0, 2)));
+		subject.setTransferList(someAdjusts);
+
+		subject.excludeHbarChangesFrom(that);
+
+		assertSame(someAdjusts, subject.getTransferList());
 	}
 
 	@Test
@@ -149,7 +180,7 @@ class ExpirableTxnRecordBuilderTest {
 		subject.setNftTokenAdjustments(List.of(new NftAdjustments()));
 		subject.setContractCreateResult(new SolidityFnResult());
 		subject.setNewTokenAssociations(List.of(new FcTokenAssociation(1, 2)));
-		subject.setCustomFeesCharged(List.of(new FcAssessedCustomFee(MISSING_ENTITY_ID, 1, new long[] { 1L })));
+		subject.setAssessedCustomFees(List.of(new FcAssessedCustomFee(MISSING_ENTITY_ID, 1, new long[] { 1L })));
 
 		subject.revert();
 

@@ -106,7 +106,7 @@ class ReleaseTwentyMigrationTest {
 
 		given(state.getChild(STORAGE)).willReturn(legacyBlobs);
 
-		migrateFromBinaryObjectStore(state, TEST_JDB_LOC, StateVersions.RELEASE_0190_VERSION);
+		migrateFromBinaryObjectStore(state, TEST_JDB_LOC, StateVersions.RELEASE_0190_AND_020_VERSION);
 
 		verify(state).setChild(eq(STORAGE), blobCaptor.capture());
 		verify(state).setChild(eq(CONTRACT_STORAGE), storageCaptor.capture());

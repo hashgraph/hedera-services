@@ -42,6 +42,15 @@ public interface EntityAccess {
 		return NULL_WORLD_LEDGERS;
 	}
 
+	/* --- Transactional semantics for mutable entity access --- */
+	void begin();
+
+	void commit();
+
+	void rollback();
+
+	String currentManagedChangeSet();
+
 	/* --- Account access --- */
 	void spawn(AccountID id, long balance, HederaAccountCustomizer customizer);
 

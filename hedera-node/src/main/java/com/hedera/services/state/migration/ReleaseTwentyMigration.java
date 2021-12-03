@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
 import static com.hedera.services.files.store.FcBlobsBytesStore.LEGACY_BLOB_CODE_INDEX;
-import static com.hedera.services.state.migration.StateVersions.RELEASE_TWENTY_VERSION;
+import static com.hedera.services.state.migration.StateVersions.RELEASE_0210_VERSION;
 import static com.hedera.services.utils.MiscUtils.forEach;
 import static java.lang.Long.parseLong;
 import static org.apache.tuweni.units.bigints.UInt256.SIZE;
@@ -73,7 +73,7 @@ public class ReleaseTwentyMigration {
 			final String jdbDataLoc,
 			final int deserializedVersion
 	) {
-		log.info("Migrating state from version {} to {}", deserializedVersion, RELEASE_TWENTY_VERSION);
+		log.info("Migrating state from version {} to {}", deserializedVersion, RELEASE_0210_VERSION);
 
 		final var virtualMapFactory = new VirtualMapFactory(jdbDataLoc, JasperDbBuilder::new);
 		final MerkleMap<String, MerkleOptionalBlob> legacyBlobs = initializingState.getChild(StateChildIndices.STORAGE);

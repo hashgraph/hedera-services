@@ -42,6 +42,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
@@ -110,6 +111,8 @@ class LedgerBalanceChangesTest {
 	private AccountRecordsHistorian historian;
 	@Mock
 	private UniqueTokenViewsManager tokenViewsManager;
+	@Mock
+	private MutableEntityAccess mutableEntityAccess;
 
 	private HederaLedger subject;
 
@@ -152,6 +155,7 @@ class LedgerBalanceChangesTest {
 		subject = new HederaLedger(
 				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProperties, accountsLedger
 				, transferLogic);
+		subject.setMutableEntityAccess(mutableEntityAccess);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setTokenViewsManager(tokenViewsManager);
 	}
@@ -260,6 +264,7 @@ class LedgerBalanceChangesTest {
 				, transferLogic);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setTokenViewsManager(viewManager);
+		subject.setMutableEntityAccess(mutableEntityAccess);
 		tokenStore.rebuildViews();
 
 		givenInitialBalancesAndOwnership();

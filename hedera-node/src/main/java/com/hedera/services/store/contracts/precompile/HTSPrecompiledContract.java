@@ -24,10 +24,21 @@ package com.hedera.services.store.contracts.precompile;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.contracts.sources.SoliditySigsVerifier;
 import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.backing.BackingStore;
+import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.state.EntityCreator;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.records.AccountRecordsHistorian;
@@ -37,14 +48,20 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.txns.token.MintLogic;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
@@ -60,8 +77,12 @@ import javax.inject.Singleton;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.function.Supplier;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.store.tokens.views.UniqTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -69,10 +90,31 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 @Singleton
 public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private static final Logger LOG = LogManager.getLogger(HTSPrecompiledContract.class);
+
+	private static final List<FcAssessedCustomFee> NO_CUSTOM_FEES = Collections.emptyList();
+
+	public static final TypedTokenStore.LegacyTreasuryAdder NOOP_TREASURY_ADDER = (aId, tId) -> {
+		/* Precompiles cannot change treasury accounts */
+	};
+	public static final TypedTokenStore.LegacyTreasuryRemover NOOP_TREASURY_REMOVER = (aId, tId) -> {
+		/* Precompiles cannot change treasury accounts */
+	};
+
+	private MintLogicFactory mintLogicFactory = MintLogic::new;
+	private TokenStoreFactory tokenStoreFactory = TypedTokenStore::new;
+	private AccountStoreFactory accountStoreFactory = AccountStore::new;
+	private Supplier<SideEffectsTracker> sideEffectsFactory = SideEffectsTracker::new;
+
+	private final HederaLedger ledger;
+	private final EntityCreator creator;
+	private final DecodingFacade decoder;
 	private final AccountStore accountStore;
 	private final TypedTokenStore tokenStore;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final OptionValidator validator;
+	private final SoliditySigsVerifier sigsVerifier;
+	private final AccountRecordsHistorian recordsHistorian;
+	private final SyntheticTxnFactory syntheticTxnFactory;
 
 	private final UniqueTokenViewsManager tokenViewsManager;
 	private final EntityIdSource ids;
@@ -118,21 +160,33 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final TypedTokenStore tokenStore,
 			final GlobalDynamicProperties dynamicProperties,
 			final GasCalculator gasCalculator,
+			final AccountRecordsHistorian recordsHistorian,
+			final SoliditySigsVerifier sigsVerifier,
+			final DecodingFacade decoder,
+			final SyntheticTxnFactory syntheticTxnFactory,
+			final EntityCreator creator,
 			final ImpliedTransfersMarshal impliedTransfersMarshal
-			) {
+	) {
 		super("HTS", gasCalculator);
+
+		this.ledger = ledger;
+		this.decoder = decoder;
 
 		this.sigsVerifier = sigsVerifier;
 		this.recordsHistorian = recordsHistorian;
 		this.syntheticTxnFactory = new SyntheticTxnFactory();
 		this.creator = creator;
 		this.validator = validator;
+		this.creator = creator;
 		this.tokenStore = tokenStore;
 		this.accountStore = accountStore;
+		this.sigsVerifier = sigsVerifier;
 		this.dynamicProperties = dynamicProperties;
 		this.tokenViewsManager = tokenViewsManager;
 		this.ids = ids;
 		this.impliedTransfersMarshal = impliedTransfersMarshal;
+		this.recordsHistorian = recordsHistorian;
+		this.syntheticTxnFactory = syntheticTxnFactory;
 	}
 
 	@Override
@@ -286,8 +340,51 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	@SuppressWarnings("unused")
-	protected Bytes computeMintToken(final Bytes input, final MessageFrame messageFrame) {
-		return null;
+	protected Bytes computeMintToken(final Bytes input, final MessageFrame frame) {
+		/* --- Get the frame context --- */
+		final var contract = frame.getContractAddress();
+		final var recipient = frame.getRecipientAddress();
+		final var updater = (AbstractLedgerWorldUpdater) frame.getWorldUpdater();
+		final var ledgers = updater.wrappedTrackingLedgers();
+
+		/* --- Parse the input --- */
+		final var mintOp = decoder.decodeMint(input);
+		final var synthBody = syntheticTxnFactory.createNonFungibleMint(mintOp);
+		final var newMeta = mintOp.getMetadata();
+
+		Bytes result;
+		ExpirableTxnRecord.Builder childRecord;
+		try {
+			/* --- Check the required supply key has an active signature --- */
+			final var tokenId = Id.fromGrpcToken(mintOp.getTokenType());
+			final var hasRequiredSigs = sigsVerifier.hasActiveSupplyKey(tokenId, recipient, contract);
+			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
+
+			/* --- Build the necessary infrastructure to execute the transaction --- */
+			final var sideEffects = sideEffectsFactory.get();
+			final var scopedAccountStore = accountStoreFactory.newAccountStore(
+					validator, dynamicProperties, ledgers.accounts());
+			final var scopedTokenStore = tokenStoreFactory.newTokenStore(
+					scopedAccountStore, ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels(),
+					NOOP_VIEWS_MANAGER, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER,
+					sideEffects);
+			final var mintLogic = mintLogicFactory.newLogic(validator, scopedTokenStore, scopedAccountStore);
+
+			/* --- Execute the transaction and capture its results --- */
+			final var creationTime = recordsHistorian.nextFollowingChildConsensusTime();
+			mintLogic.mint(tokenId, newMeta.size(), 0, newMeta, creationTime);
+			childRecord = creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects);
+			result = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
+			ledgers.commit();
+		} catch (InvalidTransactionException e) {
+			childRecord = creator.createUnsuccessfulSyntheticRecord(e.getResponseCode());
+			result = UInt256.valueOf(e.getResponseCode().getNumber());
+		}
+
+		/* --- And track the created child record --- */
+		updater.manageInProgressRecord(recordsHistorian, childRecord, synthBody);
+
+		return result;
 	}
 
 	@SuppressWarnings("unused")
@@ -357,5 +454,50 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		} catch (Exception e) {
 			return UInt256.valueOf(ResponseCodeEnum.UNKNOWN_VALUE);
 		}
+	}
+
+	/* --- Constructor functional interfaces for mocking --- */
+	@FunctionalInterface
+	interface MintLogicFactory {
+		MintLogic newLogic(OptionValidator validator, TypedTokenStore tokenStore, AccountStore accountStore);
+	}
+
+	@FunctionalInterface
+	interface AccountStoreFactory {
+		AccountStore newAccountStore(
+				final OptionValidator validator,
+				final GlobalDynamicProperties dynamicProperties,
+				final BackingStore<AccountID, MerkleAccount> accounts);
+	}
+
+	@FunctionalInterface
+	interface TokenStoreFactory {
+		TypedTokenStore newTokenStore(
+				AccountStore accountStore,
+				BackingStore<TokenID, MerkleToken> tokens,
+				BackingStore<NftId, MerkleUniqueToken> uniqueTokens,
+				BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels,
+				UniqTokenViewsManager uniqTokenViewsManager,
+				TypedTokenStore.LegacyTreasuryAdder treasuryAdder,
+				TypedTokenStore.LegacyTreasuryRemover treasuryRemover,
+				SideEffectsTracker sideEffectsTracker);
+	}
+
+
+	/* --- Only used by unit tests --- */
+	void setMintLogicFactory(final MintLogicFactory mintLogicFactory) {
+		this.mintLogicFactory = mintLogicFactory;
+	}
+
+	void setTokenStoreFactory(final TokenStoreFactory tokenStoreFactory) {
+		this.tokenStoreFactory = tokenStoreFactory;
+	}
+
+	void setAccountStoreFactory(final AccountStoreFactory accountStoreFactory) {
+		this.accountStoreFactory = accountStoreFactory;
+	}
+
+	void setSideEffectsFactory(final Supplier<SideEffectsTracker> sideEffectsFactory) {
+		this.sideEffectsFactory = sideEffectsFactory;
 	}
 }
