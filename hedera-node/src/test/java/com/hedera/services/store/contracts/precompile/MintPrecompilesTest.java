@@ -146,8 +146,8 @@ class MintPrecompilesTest {
 	}
 
 	@Test
-	void nftMintFailurePathWorks() {
-		givenFrameContext();
+	void mintFailurePathWorks() {
+		givenNonFungibleFrameContext();
 
 		given(sigsVerifier.hasActiveSupplyKey(nonFungibleId, recipientAddr, contractAddr))
 				.willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
@@ -164,7 +164,7 @@ class MintPrecompilesTest {
 
 	@Test
 	void nftMintHappyPathWorks() {
-		givenFrameContext();
+		givenNonFungibleFrameContext();
 		givenLedgers();
 
 		given(sigsVerifier.hasActiveSupplyKey(nonFungibleId, recipientAddr, contractAddr)).willReturn(true);
@@ -189,13 +189,49 @@ class MintPrecompilesTest {
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}
 
+	@Test
+	void fungibleMintHappyPathWorks() {
+		givenFungibleFrameContext();
+		givenLedgers();
+
+		given(sigsVerifier.hasActiveSupplyKey(fungibleId, recipientAddr, contractAddr)).willReturn(true);
+		given(accountStoreFactory.newAccountStore(
+				validator, dynamicProperties, accounts
+		)).willReturn(accountStore);
+		given(tokenStoreFactory.newTokenStore(
+				accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects
+		)).willReturn(tokenStore);
+		given(mintLogicFactory.newMintLogic(validator, tokenStore, accountStore)).willReturn(mintLogic);
+		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects)).willReturn(mockRecordBuilder);
+
+		// when:
+		final var result = subject.computeMintToken(pretendArguments, frame);
+
+		// then:
+		assertEquals(successResult, result);
+		// and:
+		verify(mintLogic).mint(fungibleId, 0, amount, Collections.emptyList(), Instant.EPOCH);
+		verify(wrappedLedgers).commit();
+		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+	}
+
+	private void givenNonFungibleFrameContext() {
+		givenFrameContext();
+		given(decoder.decodeMint(pretendArguments)).willReturn(nftMint);
+		given(syntheticTxnFactory.createMint(nftMint)).willReturn(mockSynthBodyBuilder);
+	}
+
+	private void givenFungibleFrameContext() {
+		givenFrameContext();
+		given(decoder.decodeMint(pretendArguments)).willReturn(fungibleMint);
+		given(syntheticTxnFactory.createMint(fungibleMint)).willReturn(mockSynthBodyBuilder);
+	}
+
 	private void givenFrameContext() {
 		given(frame.getContractAddress()).willReturn(contractAddr);
 		given(frame.getRecipientAddress()).willReturn(recipientAddr);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
-		given(decoder.decodeMint(pretendArguments)).willReturn(nftMint);
-		given(syntheticTxnFactory.createNonFungibleMint(nftMint)).willReturn(mockSynthBodyBuilder);
 	}
 
 	private void givenLedgers() {
@@ -205,11 +241,17 @@ class MintPrecompilesTest {
 		given(wrappedLedgers.tokens()).willReturn(tokens);
 	}
 
+	private static final long amount = 1_234_567;
 	private static final TokenID nonFungible = IdUtils.asToken("0.0.777");
+	private static final TokenID fungible = IdUtils.asToken("0.0.888");
 	private static final Id nonFungibleId = Id.fromGrpcToken(nonFungible);
+	private static final Id fungibleId = Id.fromGrpcToken(fungible);
 	private static final List<ByteString> newMetadata = List.of(
 			ByteString.copyFromUtf8("AAA"), ByteString.copyFromUtf8("BBB"), ByteString.copyFromUtf8("CCC"));
-	private static final SyntheticTxnFactory.NftMint nftMint = new SyntheticTxnFactory.NftMint(nonFungible, newMetadata);
+	private static final SyntheticTxnFactory.MintWrapper nftMint =
+			SyntheticTxnFactory.MintWrapper.forNonFungible(nonFungible, newMetadata);
+	private static final SyntheticTxnFactory.MintWrapper fungibleMint =
+			SyntheticTxnFactory.MintWrapper.forFungible(fungible, amount);
 	private static final Address recipientAddr = Address.ALTBN128_ADD;
 	private static final Address contractAddr = Address.ALTBN128_MUL;
 	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);

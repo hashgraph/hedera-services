@@ -145,24 +145,21 @@ class BurnPrecompilesTest {
 
 	@Test
 	void nftBurnFailurePathWorks() {
-		givenFrameContext();
+		givenNonfungibleFrameContext();
 
 		given(sigsVerifier.hasActiveSupplyKey(nonFungibleId, recipientAddr, contractAddr))
 				.willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
 
-		// when:
 		final var result = subject.computeBurnToken(pretendArguments, frame);
 
-		// then:
 		assertEquals(invalidSigResult, result);
-
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}
 
 	@Test
 	void nftBurnHappyPathWorks() {
-		givenFrameContext();
+		givenNonfungibleFrameContext();
 		givenLedgers();
 
 		given(sigsVerifier.hasActiveSupplyKey(nonFungibleId, recipientAddr, contractAddr)).willReturn(true);
@@ -175,15 +172,47 @@ class BurnPrecompilesTest {
 		given(burnLogicFactory.newBurnLogic(tokenStore, accountStore)).willReturn(burnLogic);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects)).willReturn(mockRecordBuilder);
 
-		// when:
 		final var result = subject.computeBurnToken(pretendArguments, frame);
 
-		// then:
 		assertEquals(successResult, result);
-		// and:
 		verify(burnLogic).burn(nonFungibleId, 0, targetSerialNos);
 		verify(wrappedLedgers).commit();
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+	}
+
+	@Test
+	void fungibleBurnHappyPathWorks() {
+		givenFungibleFrameContext();
+		givenLedgers();
+
+		given(sigsVerifier.hasActiveSupplyKey(fungibleId, recipientAddr, contractAddr)).willReturn(true);
+		given(accountStoreFactory.newAccountStore(
+				validator, dynamicProperties, accounts
+		)).willReturn(accountStore);
+		given(tokenStoreFactory.newTokenStore(
+				accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects
+		)).willReturn(tokenStore);
+		given(burnLogicFactory.newBurnLogic(tokenStore, accountStore)).willReturn(burnLogic);
+		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects)).willReturn(mockRecordBuilder);
+
+		final var result = subject.computeBurnToken(pretendArguments, frame);
+
+		assertEquals(successResult, result);
+		verify(burnLogic).burn(fungibleId, amount, List.of());
+		verify(wrappedLedgers).commit();
+		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+	}
+
+	private void givenNonfungibleFrameContext() {
+		givenFrameContext();
+		given(decoder.decodeBurn(pretendArguments)).willReturn(nonFungibleBurn);
+		given(syntheticTxnFactory.createNonFungibleBurn(nonFungibleBurn)).willReturn(mockSynthBodyBuilder);
+	}
+
+	private void givenFungibleFrameContext() {
+		givenFrameContext();
+		given(decoder.decodeBurn(pretendArguments)).willReturn(fungibleBurn);
+		given(syntheticTxnFactory.createNonFungibleBurn(fungibleBurn)).willReturn(mockSynthBodyBuilder);
 	}
 
 	private void givenFrameContext() {
@@ -191,8 +220,6 @@ class BurnPrecompilesTest {
 		given(frame.getRecipientAddress()).willReturn(recipientAddr);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
-		given(decoder.decodeBurn(pretendArguments)).willReturn(nftBurn);
-		given(syntheticTxnFactory.createNonFungibleBurn(nftBurn)).willReturn(mockSynthBodyBuilder);
 	}
 
 	private void givenLedgers() {
@@ -202,10 +229,16 @@ class BurnPrecompilesTest {
 		given(wrappedLedgers.tokens()).willReturn(tokens);
 	}
 
+	private static final long amount = 1_234_567L;
 	private static final TokenID nonFungible = IdUtils.asToken("0.0.777");
+	private static final TokenID fungible = IdUtils.asToken("0.0.888");
 	private static final Id nonFungibleId = Id.fromGrpcToken(nonFungible);
+	private static final Id fungibleId = Id.fromGrpcToken(fungible);
 	private static final List<Long> targetSerialNos = List.of(1L, 2L, 3L);
-	private static final SyntheticTxnFactory.NftBurn nftBurn = new SyntheticTxnFactory.NftBurn(nonFungible, targetSerialNos);
+	private static final SyntheticTxnFactory.BurnWrapper fungibleBurn =
+			SyntheticTxnFactory.BurnWrapper.forFungible(fungible, amount);
+	private static final SyntheticTxnFactory.BurnWrapper nonFungibleBurn =
+			SyntheticTxnFactory.BurnWrapper.forNonFungible(nonFungible, targetSerialNos);
 	private static final Address recipientAddr = Address.ALTBN128_ADD;
 	private static final Address contractAddr = Address.ALTBN128_MUL;
 	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);

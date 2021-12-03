@@ -80,7 +80,6 @@ class HTSPrecompiledContractTest {
 	@Mock
 	private DissociationFactory dissociationFactory;
 
-
 	private HTSPrecompiledContract subject;
 
 	@BeforeEach

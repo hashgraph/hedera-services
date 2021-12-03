@@ -35,9 +35,9 @@ class SyntheticTxnFactoryTest {
 
 	@Test
 	void createsExpectedNftMint() {
-		final var nftMints = new SyntheticTxnFactory.NftMint(nonFungible, newMetadata);
+		final var nftMints = SyntheticTxnFactory.MintWrapper.forNonFungible(nonFungible, newMetadata);
 
-		final var result = subject.createNonFungibleMint(nftMints);
+		final var result = subject.createMint(nftMints);
 		final var txnBody = result.build();
 
 		assertEquals(nonFungible, txnBody.getTokenMint().getToken());

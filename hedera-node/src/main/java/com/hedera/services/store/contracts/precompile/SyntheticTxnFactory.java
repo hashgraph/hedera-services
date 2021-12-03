@@ -9,9 +9,9 @@ package com.hedera.services.store.contracts.precompile;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,12 +31,17 @@ import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Collections;
 import java.util.List;
+
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 @Singleton
 public class SyntheticTxnFactory {
@@ -44,20 +49,20 @@ public class SyntheticTxnFactory {
 	public SyntheticTxnFactory() {
 	}
 
-	public TransactionBody.Builder createNonFungibleBurn(final NftBurn nftBurn) {
+	public TransactionBody.Builder createNonFungibleBurn(final BurnWrapper burnWrapper) {
 		final var builder = TokenBurnTransactionBody.newBuilder();
 
-		builder.setToken(nftBurn.getTokenType());
-		builder.addAllSerialNumbers(nftBurn.getSerialNos());
+		builder.setToken(burnWrapper.getTokenType());
+		builder.addAllSerialNumbers(burnWrapper.getSerialNos());
 
 		return TransactionBody.newBuilder().setTokenBurn(builder);
 	}
 
-	public TransactionBody.Builder createNonFungibleMint(final NftMint nftMint) {
+	public TransactionBody.Builder createMint(final MintWrapper mintWrapper) {
 		final var builder = TokenMintTransactionBody.newBuilder();
 
-		builder.setToken(nftMint.getTokenType());
-		builder.addAllMetadata(nftMint.getMetadata());
+		builder.setToken(mintWrapper.getTokenType());
+		builder.addAllMetadata(mintWrapper.getMetadata());
 
 		return TransactionBody.newBuilder().setTokenMint(builder);
 	}
@@ -168,13 +173,30 @@ public class SyntheticTxnFactory {
 		}
 	}
 
-	public static class NftMint {
+	public static class MintWrapper {
+		private static long NONFUNGIBLE_MINT_AMOUNT = -1;
+		private static List<ByteString> FUNGIBLE_MINT_METADATA = Collections.emptyList();
+
+		private final long amount;
 		private final TokenID tokenType;
 		private final List<ByteString> metadata;
 
-		public NftMint(final TokenID tokenType, final List<ByteString> metadata) {
+		public static MintWrapper forNonFungible(final TokenID tokenType, final List<ByteString> metadata) {
+			return new MintWrapper(NONFUNGIBLE_MINT_AMOUNT, tokenType, metadata);
+		}
+
+		public static MintWrapper forFungible(final TokenID tokenType, final long amount) {
+			return new MintWrapper(amount, tokenType, FUNGIBLE_MINT_METADATA);
+		}
+
+		public MintWrapper(long amount, TokenID tokenType, List<ByteString> metadata) {
+			this.amount = amount;
 			this.tokenType = tokenType;
 			this.metadata = metadata;
+		}
+
+		public TokenType type() {
+			return (amount == NONFUNGIBLE_MINT_AMOUNT) ? NON_FUNGIBLE_UNIQUE : FUNGIBLE_COMMON;
 		}
 
 		public TokenID getTokenType() {
@@ -184,15 +206,40 @@ public class SyntheticTxnFactory {
 		public List<ByteString> getMetadata() {
 			return metadata;
 		}
+
+		public long getAmount() {
+			return amount;
+		}
 	}
 
-	public static class NftBurn {
+	public static class BurnWrapper {
+		private static long NONFUNGIBLE_BURN_AMOUNT = -1;
+		private static List<Long> FUNGIBLE_BURN_SERIAL_NOS = Collections.emptyList();
+
+		private final long amount;
 		private final TokenID tokenType;
 		private final List<Long> serialNos;
 
-		public NftBurn(TokenID tokenType, List<Long> serialNos) {
+		public static BurnWrapper forNonFungible(final TokenID tokenType, final List<Long> serialNos) {
+			return new BurnWrapper(NONFUNGIBLE_BURN_AMOUNT, tokenType, serialNos);
+		}
+
+		public static BurnWrapper forFungible(final TokenID tokenType, final long amount) {
+			return new BurnWrapper(amount, tokenType, FUNGIBLE_BURN_SERIAL_NOS);
+		}
+
+		public BurnWrapper(long amount, TokenID tokenType, List<Long> serialNos) {
+			this.amount = amount;
 			this.tokenType = tokenType;
 			this.serialNos = serialNos;
+		}
+
+		public TokenType type() {
+			return (amount == NONFUNGIBLE_BURN_AMOUNT) ? NON_FUNGIBLE_UNIQUE : FUNGIBLE_COMMON;
+		}
+
+		public long getAmount() {
+			return amount;
 		}
 
 		public TokenID getTokenType() {
@@ -209,7 +256,7 @@ public class SyntheticTxnFactory {
 		private final TokenID tokenID;
 
 		public AssociateToken(final AccountID accountID, final TokenID tokenID) {
-			this.accountID  =accountID;
+			this.accountID = accountID;
 			this.tokenID = tokenID;
 		}
 
@@ -227,7 +274,7 @@ public class SyntheticTxnFactory {
 		private final TokenID tokenID;
 
 		public DissociateToken(final AccountID accountID, final TokenID tokenID) {
-			this.accountID  =accountID;
+			this.accountID = accountID;
 			this.tokenID = tokenID;
 		}
 

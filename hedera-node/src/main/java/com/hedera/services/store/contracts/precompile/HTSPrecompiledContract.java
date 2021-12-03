@@ -22,6 +22,7 @@ package com.hedera.services.store.contracts.precompile;
  *
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.SoliditySigsVerifier;
@@ -65,6 +66,7 @@ import org.hyperledger.besu.evm.precompile.AbstractPrecompiledContract;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.math.BigInteger;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -74,12 +76,15 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.store.tokens.views.UniqTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static java.util.Collections.singletonList;
 
 @Singleton
 public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
 	private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
+	private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
+	private static final List<ByteString> NO_METADATA = Collections.emptyList();
 	private static final List<FcAssessedCustomFee> NO_CUSTOM_FEES = Collections.emptyList();
 
 	/* Precompiles cannot change treasury accounts */
@@ -295,6 +300,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			childRecord = precompile.run(recipient, contract, ledgers);
 			ledgers.commit();
 		} catch (InvalidTransactionException e) {
+			e.printStackTrace();
 			final var status = e.getResponseCode();
 			childRecord = creator.createUnsuccessfulSyntheticRecord(status);
 			result = resultFrom(status);
@@ -432,12 +438,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	private class MintPrecompile implements Precompile {
-		private SyntheticTxnFactory.NftMint mintOp;
+		private SyntheticTxnFactory.MintWrapper mintOp;
 
 		@Override
 		public TransactionBody.Builder body(final Bytes input) {
 			mintOp = decoder.decodeMint(input);
-			return syntheticTxnFactory.createNonFungibleMint(mintOp);
+			return syntheticTxnFactory.createMint(mintOp);
 		}
 
 		@Override
@@ -460,15 +466,19 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var mintLogic = mintLogicFactory.newMintLogic(validator, scopedTokenStore, scopedAccountStore);
 
 			/* --- Execute the transaction and capture its results --- */
-			final var creationTime = recordsHistorian.nextFollowingChildConsensusTime();
-			final var newMeta = mintOp.getMetadata();
-			mintLogic.mint(tokenId, newMeta.size(), 0, newMeta, creationTime);
+			if (mintOp.type() == NON_FUNGIBLE_UNIQUE) {
+				final var newMeta = mintOp.getMetadata();
+				final var creationTime = recordsHistorian.nextFollowingChildConsensusTime();
+				mintLogic.mint(tokenId, newMeta.size(), 0, newMeta, creationTime);
+			} else {
+				mintLogic.mint(tokenId, 0, mintOp.getAmount(), NO_METADATA, Instant.EPOCH);
+			}
 			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects);
 		}
 	}
 
 	private class BurnPrecompile implements Precompile {
-		private SyntheticTxnFactory.NftBurn burnOp;
+		private SyntheticTxnFactory.BurnWrapper burnOp;
 
 		@Override
 		public TransactionBody.Builder body(final Bytes input) {
@@ -496,8 +506,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var burnLogic = burnLogicFactory.newBurnLogic(scopedTokenStore, scopedAccountStore);
 
 			/* --- Execute the transaction and capture its results --- */
-			final var targetSerialNos = burnOp.getSerialNos();
-			burnLogic.burn(tokenId, 0, targetSerialNos);
+			if (burnOp.type() == NON_FUNGIBLE_UNIQUE) {
+				final var targetSerialNos = burnOp.getSerialNos();
+				burnLogic.burn(tokenId, 0, targetSerialNos);
+			} else {
+				burnLogic.burn(tokenId, burnOp.getAmount(), NO_SERIAL_NOS);
+			}
 			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects);
 		}
 	}
