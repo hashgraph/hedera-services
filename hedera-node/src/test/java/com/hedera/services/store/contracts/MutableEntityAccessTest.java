@@ -20,6 +20,7 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
@@ -39,13 +40,21 @@ import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.utils.TxnAccessor;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,16 +64,22 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.function.Supplier;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class MutableEntityAccessTest {
 	@Mock
 	private HederaLedger ledger;
@@ -84,14 +99,19 @@ class MutableEntityAccessTest {
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 	@Mock
 	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
+	@Mock
+	private TransactionContext txnCtx;
+	@Mock
+	private TxnAccessor accessor;
 
+	@LoggingTarget
+	private LogCaptor logCaptor;
+	@LoggingSubject
 	private MutableEntityAccess subject;
 
 	private final long autoRenewSecs = Instant.now().getEpochSecond();
 	private final AccountID id = IdUtils.asAccount("0.0.1234");
 	private final long balance = 1234L;
-	private final long expiry = 5678L;
-	private final String memo = "memo";
 	private final EntityId proxy = EntityId.MISSING_ENTITY_ID;
 	private static final JKey key = new JEd25519Key("aBcDeFgHiJkLmNoPqRsTuVwXyZ012345".getBytes());
 
@@ -105,14 +125,89 @@ class MutableEntityAccessTest {
 			(int) id.getAccountNum());
 	private final VirtualBlobValue expectedBytecodeValue = new VirtualBlobValue(bytecode.toArray());
 
-
 	@BeforeEach
 	void setUp() {
 		given(ledger.getTokenRelsLedger()).willReturn(tokenRelsLedger);
 		given(ledger.getAccountsLedger()).willReturn(accountsLedger);
 		given(ledger.getNftsLedger()).willReturn(nftsLedger);
 
-		subject = new MutableEntityAccess(ledger, tokensLedger, supplierContractStorage, supplierBytecode);
+		subject = new MutableEntityAccess(ledger, txnCtx, tokensLedger, supplierContractStorage, supplierBytecode);
+	}
+
+	@Test
+	void setsSelfInLedger() {
+		verify(ledger).setMutableEntityAccess(subject);
+	}
+
+	@Test
+	void returnsTokensLedgerChangeSetForManagedChanges() {
+		final var mockChanges = "N?A";
+		given(tokensLedger.changeSetSoFar()).willReturn(mockChanges);
+		assertEquals(mockChanges, subject.currentManagedChangeSet());
+	}
+
+	@Test
+	void commitsIfContractOpActive() {
+		givenActive(ContractCall);
+		subject.commit();
+		verify(tokensLedger).commit();
+	}
+
+	@Test
+	void doesntCommitIfNonContractOpActive() {
+		givenActive(TokenMint);
+		subject.commit();
+		verify(tokensLedger, never()).commit();
+	}
+
+	@Test
+	void rollbackIfNonContractOpActive() {
+		givenActive(TokenMint);
+		subject.rollback();
+		verify(tokensLedger, never()).rollback();
+	}
+
+	@Test
+	void doesntRollbackIfNonContractOpActive() {
+		givenActive(TokenMint);
+		subject.rollback();
+		verify(tokensLedger, never()).rollback();
+	}
+
+	@Test
+	void warnsIfTokensLedgerMustBeRolledBackBeforeBeginning() {
+		given(accessor.getSignedTxnWrapper()).willReturn(Transaction.getDefaultInstance());
+		givenActive(ContractCreate);
+		given(tokensLedger.isInTransaction()).willReturn(true);
+
+		subject.begin();
+
+		verify(tokensLedger).rollback();
+		verify(tokensLedger).begin();
+		assertThat(
+				logCaptor.warnLogs(),
+				contains(Matchers.startsWith("Tokens ledger had to be rolled back")));
+	}
+
+	@Test
+	void beginsLedgerTxnIfContractCreateIsActive() {
+		givenActive(ContractCreate);
+		subject.begin();
+		verify(tokensLedger).begin();
+	}
+
+	@Test
+	void beginsLedgerTxnIfContractCallIsActive() {
+		givenActive(ContractCall);
+		subject.begin();
+		verify(tokensLedger).begin();
+	}
+
+	@Test
+	void doesntBeginLedgerTxnIfNonContractOpIsActive() {
+		givenActive(HederaFunctionality.TokenMint);
+		subject.begin();
+		verify(tokensLedger, never()).begin();
 	}
 
 	@Test
@@ -203,7 +298,8 @@ class MutableEntityAccessTest {
 
 	@Test
 	void getsMemo() {
-		// given:
+		final var memo = "memo";
+
 		given(ledger.memo(id)).willReturn(memo);
 
 		// when:
@@ -217,13 +313,12 @@ class MutableEntityAccessTest {
 
 	@Test
 	void getsExpiry() {
-		// given:
+		final var expiry = 5678L;
+
 		given(ledger.expiry(id)).willReturn(expiry);
 
-		// when:
 		final var result = subject.getExpiry(id);
 
-		// then:
 		assertEquals(expiry, result);
 		// and:
 		verify(ledger).expiry(id);
@@ -339,17 +434,17 @@ class MutableEntityAccessTest {
 
 	@Test
 	void fetchesBytecode() {
-		// given:
 		given(supplierBytecode.get()).willReturn(bytecodeStorage);
-		// and:
 		given(bytecodeStorage.get(expectedBytecodeKey)).willReturn(expectedBytecodeValue);
 
-		// when:
 		final var result = subject.fetchCode(id);
 
-		// then:
 		assertEquals(bytecode, result);
-		// and:
 		verify(bytecodeStorage).get(expectedBytecodeKey);
+	}
+
+	private void givenActive(final HederaFunctionality function) {
+		given(accessor.getFunction()).willReturn(function);
+		given(txnCtx.accessor()).willReturn(accessor);
 	}
 }

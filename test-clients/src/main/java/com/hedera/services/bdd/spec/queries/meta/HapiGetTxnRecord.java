@@ -86,6 +86,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private boolean assertNothing = false;
 	private boolean useDefaultTxnId = false;
 	private boolean requestDuplicates = false;
+	private boolean requestChildRecords = false;
 	private boolean shouldBeTransferFree = false;
 	private boolean assertOnlyPriority = false;
 	private boolean assertNothingAboutHashes = false;
@@ -158,6 +159,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	public HapiGetTxnRecord andAnyDuplicates() {
 		requestDuplicates = true;
+		return this;
+	}
+
+	public HapiGetTxnRecord andAllChildRecords() {
+		requestChildRecords = true;
 		return this;
 	}
 
@@ -531,6 +537,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 				var rates = spec.ratesProvider();
 				var priceInUsd = sdec(rates.toUsdWithActiveRates(fee), 5);
 				log.info(spec.logPrefix() + "Record (charged ${}): {}", priceInUsd, record);
+				final var children = response.getTransactionGetRecord().getChildTransactionRecordsList();
+				log.info(spec.logPrefix() + "  And {} child record{}: {}",
+						children.size(),
+						children.size() > 1 ? "s" : "",
+						children);
 				log.info("Duplicates: {}",
 						response.getTransactionGetRecord().getDuplicateTransactionRecordsList());
 			}
@@ -582,6 +593,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 				.setHeader(header)
 				.setTransactionID(txnId)
 				.setIncludeDuplicates(requestDuplicates)
+				.setIncludeChildRecords(requestChildRecords)
 				.build();
 		return Query.newBuilder().setTransactionGetRecord(getRecordQuery).build();
 	}

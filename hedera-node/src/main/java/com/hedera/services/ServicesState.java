@@ -66,7 +66,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -74,7 +73,6 @@ import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
 import static com.hedera.services.state.migration.StateChildIndices.SPECIAL_FILES;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0210_VERSION;
-import static com.hedera.services.state.migration.StateVersions.RELEASE_TWENTY_VERSION;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 
 /**
@@ -134,10 +132,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public int getMinimumChildCount(int version) {
-		if (version < RELEASE_TWENTY_VERSION) {
-			return StateChildIndices.NUM_PRE_TWENTY_CHILDREN;
-		} else if (version <= RELEASE_0210_VERSION) {
-			return StateChildIndices.NUM_TWENTY_CHILDREN;
+		if (version < RELEASE_0210_VERSION) {
+			return StateChildIndices.NUM_PRE_0210_CHILDREN;
+		} else if (version == RELEASE_0210_VERSION) {
+			return StateChildIndices.NUM_0210_CHILDREN;
 		} else {
 			throw new IllegalArgumentException("Argument 'version='" + version + "' is invalid!");
 		}
@@ -150,7 +148,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public void initialize() {
-		if (deserializedVersion < StateVersions.RELEASE_0190_VERSION) {
+		if (deserializedVersion < StateVersions.RELEASE_0190_AND_020_VERSION) {
 			final var specialFiles = new MerkleSpecialFiles();
 			setChild(SPECIAL_FILES, specialFiles);
 		}
@@ -165,7 +163,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	@Override
 	public void migrate() {
 		int deserializedVersionFromState = getDeserializedVersion();
-		if (deserializedVersionFromState < RELEASE_TWENTY_VERSION) {
+		if (deserializedVersionFromState < RELEASE_0210_VERSION) {
 			blobMigrator.migrateFromBinaryObjectStore(this, jdbLoc, deserializedVersionFromState);
 			init(getPlatformForDeferredInit(), getAddressBookForDeferredInit(), getDualStateForDeferredInit());
 		}
@@ -174,7 +172,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	/* --- SwirldState --- */
 	@Override
 	public void init(final Platform platform, final AddressBook addressBook, final SwirldDualState dualState) {
-		if (deserializedVersion < RELEASE_TWENTY_VERSION && platform != platformForDeferredInit) {
+		if (deserializedVersion < RELEASE_0210_VERSION && platform != platformForDeferredInit) {
 			/* Due to design issues with the BinaryObjectStore, which will not be finished
 			initializing here, we need to defer initialization until post-FCM migration. */
 			platformForDeferredInit = platform;

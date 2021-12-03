@@ -23,6 +23,7 @@ package com.hedera.services.bdd.spec.infrastructure.meta;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 
 public class ContractResources {
+	public static final String HW_MINT_PATH = bytecodePath("HelloWorldMint");
 	public static final String SIMPLE_STORAGE_BYTECODE_PATH = bytecodePath("simpleStorage");
 	public static final String PAYABLE_CONTRACT_BYTECODE_PATH = bytecodePath("PayReceivable");
 	public static final String DELEGATING_CONTRACT_BYTECODE_PATH = bytecodePath("CreateTrivial");
@@ -80,6 +81,11 @@ public class ContractResources {
 	public static final String ZENOS_BANK_CONTRACT = bytecodePath("ZenosBank");
 	public static final String MUSICAL_CHAIRS_CONTRACT = bytecodePath("MusicalChairs");
 
+	public static final String HW_MINT_CONS_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"_tokenAddress\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\"," +
+			"\"type\":\"constructor\"}";
+	public static final String HW_MINT_CALL_ABI = "{\"inputs\":[],\"name\":\"mint\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	public static final String SEND_REPEATEDLY_ABI = "{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"just_send_" +
 			"num\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"account_num\",\"type\":\"uint64\"}," +
 			"{\"internalType\":\"uint64\",\"name\":\"value\",\"type\":\"uint64\"}],\"name\":\"sendRepeatedlyTo\"," +
