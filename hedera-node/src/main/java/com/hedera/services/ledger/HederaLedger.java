@@ -128,7 +128,8 @@ public class HederaLedger {
 	private MutableEntityAccess mutableEntityAccess;
 	private UniqTokenViewsManager tokenViewsManager = null;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger = null;
-	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger = null;
+	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger =
+			null;
 
 	private TransferLogic transferLogic;
 
@@ -236,6 +237,8 @@ public class HederaLedger {
 				sb.append("\n--- NFTS ---\n")
 						.append(nftsLedger.changeSetSoFar());
 			}
+			sb.append("\n--- TOKENS ---\n")
+					.append(mutableEntityAccess.currentManagedChangeSet());
 			return sb.toString();
 		} else {
 			return NO_ACTIVE_TXN_CHANGE_SET;
@@ -385,8 +388,10 @@ public class HederaLedger {
 	 * Updates the provided {@link AccountID} with the {@link HederaAccountCustomizer}. All properties from the
 	 * customizer are applied to the {@link MerkleAccount} provisionally
 	 *
-	 * @param id         target account
-	 * @param customizer properties to update
+	 * @param id
+	 * 		target account
+	 * @param customizer
+	 * 		properties to update
 	 */
 	public void customizePotentiallyDeleted(AccountID id, HederaAccountCustomizer customizer) {
 		customizer.customize(id, accountsLedger);

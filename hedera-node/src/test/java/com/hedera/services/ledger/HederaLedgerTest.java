@@ -102,6 +102,7 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		given(accountsLedger.changeSetSoFar()).willReturn(zeroingGenesis);
 		given(tokenRelsLedger.changeSetSoFar()).willReturn(creatingTreasury);
 		given(nftsLedger.changeSetSoFar()).willReturn(changingOwner);
+		given(mutableEntityAccess.currentManagedChangeSet()).willReturn("NONSENSE");
 
 		final var summary = subject.currentChangeSet();
 
@@ -111,7 +112,9 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 				"--- TOKEN RELATIONSHIPS ---\n" +
 				"{0.0.2 <-> 0.0.1001: [TOKEN_BALANCE -> 1_000_000]}\n" +
 				"--- NFTS ---\n" +
-				"{NftId{shard=0, realm=0, num=10000, serialNo=1234}: [OWNER -> EntityId{shard=3, realm=4, num=5}]}";
+				"{NftId{shard=0, realm=0, num=10000, serialNo=1234}: [OWNER -> EntityId{shard=3, realm=4, num=5}]}\n" +
+				"--- TOKENS ---\n" +
+				"NONSENSE";
 		assertEquals(desired, summary);
 	}
 
