@@ -117,14 +117,14 @@ class MintPrecompilesTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new HTSPrecompiledContract(
-				validator, dynamicProperties, gasCalculator,
-				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory, creator, dissociationFactory);
-		subject.setMintLogicFactory(mintLogicFactory);
-		subject.setTokenStoreFactory(tokenStoreFactory);
-		subject.setAccountStoreFactory(accountStoreFactory);
-		subject.setSideEffectsFactory(() -> sideEffects);
+//		subject = new HTSPrecompiledContract(
+//				validator, dynamicProperties, gasCalculator,
+//				recordsHistorian, sigsVerifier, decoder,
+//				syntheticTxnFactory, creator, dissociationFactory);
+//		subject.setMintLogicFactory(mintLogicFactory);
+//		subject.setTokenStoreFactory(tokenStoreFactory);
+//		subject.setAccountStoreFactory(accountStoreFactory);
+//		subject.setSideEffectsFactory(() -> sideEffects);
 	}
 
 	@Test
