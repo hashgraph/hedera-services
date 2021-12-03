@@ -52,8 +52,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -77,7 +75,6 @@ import static java.util.Collections.singletonList;
 
 @Singleton
 public class HTSPrecompiledContract extends AbstractPrecompiledContract {
-	private static final Logger LOG = LogManager.getLogger(HTSPrecompiledContract.class);
 
 	private static final List<FcAssessedCustomFee> NO_CUSTOM_FEES = Collections.emptyList();
 
@@ -341,9 +338,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		final var ledgers = updater.wrappedTrackingLedgers();
 
 		/* Parse Bytes input as typed arguments */
-		final Bytes address = Address.wrap(input.slice(16, 20));
-		final Bytes tokenAddress = Address.wrap(input.slice(48, 20));
-
 		final var dissociateOp = decoder.decodeDissociate(input);
 		final var synthBody = syntheticTxnFactory.createDissociate(dissociateOp);
 
@@ -351,10 +345,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		Bytes result;
 
 		try {
-			/* Translate to gRPC types */
-			final var accountID = Id.fromGrpcAccount(EntityIdUtils.accountParsedFromSolidityAddress(address.toArrayUnsafe()));
-			final var tokenID = EntityIdUtils.tokenParsedFromSolidityAddress(tokenAddress.toArrayUnsafe());
-
 			/* Initialize the stores */
 			final var sideEffects = new SideEffectsTracker();
 			final var accountStore = createAccountStore(ledgers);
@@ -363,7 +353,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			/* Do the business logic */
 			DissociateLogic dissociateLogic =
 					dissociateLogicFactory.newDissociateLogic(validator, tokenStore, accountStore, dissociationFactory);
-			dissociateLogic.dissociate(accountID, singletonList(tokenID));
+			dissociateLogic.dissociate(Id.fromGrpcAccount(dissociateOp.getAccountID()), singletonList(dissociateOp.getTokenID()));
 			ledgers.commit();
 
 			/* Summarize the happy results of the execution */
