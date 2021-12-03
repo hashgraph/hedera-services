@@ -100,7 +100,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private final SoliditySigsVerifier sigsVerifier;
 	private final AccountRecordsHistorian recordsHistorian;
 	private final SyntheticTxnFactory syntheticTxnFactory;
-	private final DissociationFactory dissociationFactory;
+	private DissociationFactory dissociationFactory;
 
 	//cryptoTransfer(TokenTransferList[] calldata tokenTransfers)
 	protected static final int ABI_ID_CRYPTO_TRANSFER = 0x189a554c;
@@ -433,10 +433,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				SideEffectsTracker sideEffectsTracker);
 	}
 
-
 	/* --- Only used by unit tests --- */
 	void setMintLogicFactory(final MintLogicFactory mintLogicFactory) {
 		this.mintLogicFactory = mintLogicFactory;
+	}
+
+	/* --- Only used by unit tests --- */
+	void setDissociateLogicFactory(final DissociateLogicFactory dissociateLogicFactory) {
+		this.dissociateLogicFactory = dissociateLogicFactory;
 	}
 
 	void setTokenStoreFactory(final TokenStoreFactory tokenStoreFactory) {
