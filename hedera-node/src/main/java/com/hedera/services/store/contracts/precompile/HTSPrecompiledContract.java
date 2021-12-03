@@ -336,6 +336,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		/* Get context from the Message frame */
 		final var updater = (AbstractLedgerWorldUpdater) messageFrame.getWorldUpdater();
 		final var ledgers = updater.wrappedTrackingLedgers();
+		final var contract = messageFrame.getContractAddress();
+		final var recipient = messageFrame.getRecipientAddress();
 
 		/* Parse Bytes input as typed arguments */
 		final var dissociateOp = decoder.decodeDissociate(input);
@@ -345,6 +347,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		Bytes result;
 
 		try {
+			/* Perform validations */
+			final var hasRequiredSigs =
+					sigsVerifier.hasActiveKey(Id.fromGrpcAccount(dissociateOp.getAccountID()), recipient, contract);
+			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
+
 			/* Initialize the stores */
 			final var sideEffects = new SideEffectsTracker();
 			final var accountStore = createAccountStore(ledgers);
