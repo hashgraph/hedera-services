@@ -95,7 +95,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	private Platform platformForDeferredInit;
 	private AddressBook addressBookForDeferredInit;
 	private SwirldDualState dualStateForDeferredInit;
-	private AutoAccountCreationsManager autoAccountCreations;
+	private static AutoAccountCreationsManager autoAccountCreations;
 
 	public ServicesState() {
 		/* RuntimeConstructable */
@@ -508,5 +508,12 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	public static void setJdbLoc(String jdbLoc) {
 		ServicesState.jdbLoc = jdbLoc;
+	}
+
+	public static AutoAccountCreationsManager getAutoAccountsInstance() {
+		if (autoAccountCreations == null) {
+			autoAccountCreations = new AutoAccountCreationsManager();
+		}
+		return autoAccountCreations;
 	}
 }

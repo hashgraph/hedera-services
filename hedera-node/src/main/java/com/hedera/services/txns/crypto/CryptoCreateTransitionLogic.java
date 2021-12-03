@@ -27,6 +27,7 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -72,30 +73,31 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
 	private final GlobalDynamicProperties dynamicProperties;
+	private final CreateLogic createLogic;
 
 	@Inject
 	public CryptoCreateTransitionLogic(
 			HederaLedger ledger,
 			OptionValidator validator,
 			TransactionContext txnCtx,
-			GlobalDynamicProperties dynamicProperties
+			GlobalDynamicProperties dynamicProperties,
+			CreateLogic createLogic
 	) {
 		this.ledger = ledger;
 		this.txnCtx = txnCtx;
 		this.validator = validator;
 		this.dynamicProperties = dynamicProperties;
+		this.createLogic = createLogic;
 	}
 
 	@Override
 	public void doStateTransition() {
 		try {
 			TransactionBody cryptoCreateTxn = txnCtx.accessor().getTxn();
+			final var op = cryptoCreateTxn.getCryptoCreateAccount();
 			AccountID sponsor = cryptoCreateTxn.getTransactionID().getAccountID();
-
-			CryptoCreateTransactionBody op = cryptoCreateTxn.getCryptoCreateAccount();
-			long balance = op.getInitialBalance();
-			AccountID created = ledger.create(sponsor, balance, asCustomizer(op));
-
+			final var  consensusTime = txnCtx.consensusTime().getEpochSecond();
+			AccountID created = createLogic.create(ledger, op, sponsor, op.getInitialBalance(), consensusTime);
 			txnCtx.setCreated(created);
 			txnCtx.setStatus(SUCCESS);
 		} catch (InsufficientFundsException ife) {
@@ -104,25 +106,6 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 			log.warn("Avoidable exception!", e);
 			txnCtx.setStatus(FAIL_INVALID);
 		}
-	}
-
-	private HederaAccountCustomizer asCustomizer(CryptoCreateTransactionBody op) {
-		long autoRenewPeriod = op.getAutoRenewPeriod().getSeconds();
-		long expiry = txnCtx.consensusTime().getEpochSecond() + autoRenewPeriod;
-
-		/* Note that {@code this.validate(TransactionBody)} will have rejected any txn with an invalid key. */
-		JKey key = asFcKeyUnchecked(op.getKey());
-		HederaAccountCustomizer customizer = new HederaAccountCustomizer()
-				.key(key)
-				.memo(op.getMemo())
-				.expiry(expiry)
-				.autoRenewPeriod(autoRenewPeriod)
-				.isReceiverSigRequired(op.getReceiverSigRequired())
-				.maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations());
-		if (op.hasProxyAccountID()) {
-			customizer.proxy(EntityId.fromGrpcAccountId(op.getProxyAccountID()));
-		}
-		return customizer;
 	}
 
 	@Override
@@ -137,43 +120,6 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 
 	public ResponseCodeEnum validate(TransactionBody cryptoCreateTxn) {
 		CryptoCreateTransactionBody op = cryptoCreateTxn.getCryptoCreateAccount();
-
-		var memoValidity = validator.memoCheck(op.getMemo());
-		if (memoValidity != OK) {
-			return memoValidity;
-		}
-		if (!op.hasKey()) {
-			return KEY_REQUIRED;
-		}
-		if (!validator.hasGoodEncoding(op.getKey())) {
-			return BAD_ENCODING;
-		}
-		var fcKey = asFcKeyUnchecked(op.getKey());
-		if (fcKey.isEmpty()) {
-			return KEY_REQUIRED;
-		}
-		if (!fcKey.isValid()) {
-			return BAD_ENCODING;
-		}
-		if (op.getInitialBalance() < 0L) {
-			return INVALID_INITIAL_BALANCE;
-		}
-		if (!op.hasAutoRenewPeriod()) {
-			return INVALID_RENEWAL_PERIOD;
-		}
-		if (!validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod())) {
-			return AUTORENEW_DURATION_NOT_IN_RANGE;
-		}
-		if (op.getSendRecordThreshold() < 0L) {
-			return INVALID_SEND_RECORD_THRESHOLD;
-		}
-		if (op.getReceiveRecordThreshold() < 0L) {
-			return INVALID_RECEIVE_RECORD_THRESHOLD;
-		}
-		if (op.getMaxAutomaticTokenAssociations() > dynamicProperties.maxTokensPerAccount()) {
-			return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
-		}
-
-		return OK;
+		return createLogic.validate(op);
 	}
 }
