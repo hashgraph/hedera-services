@@ -282,13 +282,13 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	protected Bytes computeAssociateToken(final Bytes input, final MessageFrame messageFrame) {
-		/* Get context from the Message frame */
+		/* --- Get the frame context --- */
 		final var updater = (AbstractLedgerWorldUpdater) messageFrame.getWorldUpdater();
 		final var ledgers = updater.wrappedTrackingLedgers();
 		final var contract = messageFrame.getContractAddress();
 		final var recipient = messageFrame.getRecipientAddress();
 
-		/* Parse Bytes input as typed arguments */
+		/* --- Parse the input --- */
 		final var associateOp = decoder.decodeAssociate(input);
 		final var synthBody = syntheticTxnFactory.createAssociate(associateOp);
 
@@ -296,32 +296,32 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		Bytes result;
 
 		try {
-			/* Perform validations */
+			/* --- Check the required key has an active signature --- */
 			final var hasRequiredSigs =
-					sigsVerifier.hasActiveKey(Id.fromGrpcAccount(associateOp.getAccountID()), recipient, contract);
+					sigsVerifier.hasActiveKey(Id.fromGrpcAccount(associateOp.getAccountID()),
+							recipient, contract);
 			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
-			/* Initialize the stores */
-			final var sideEffects = new SideEffectsTracker();
+			/* --- Build the necessary infrastructure to execute the transaction --- */
+			final var sideEffects = sideEffectsFactory.get();
 			final var accountStore = createAccountStore(ledgers);
 			final var tokenStore = createTokenStore(ledgers, accountStore, sideEffects);
 
-			/* Do the business logic */
+			/* --- Execute the transaction and capture its results --- */
 			final var associateLogic =
 					associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties);
-			associateLogic.associate(Id.fromGrpcAccount(associateOp.getAccountID()), singletonList(associateOp.getTokenID()));
+			associateLogic.associate(Id.fromGrpcAccount(associateOp.getAccountID()),
+					singletonList(associateOp.getTokenID()));
 			ledgers.commit();
 
-			/* Summarize the happy results of the execution */
 			childRecord = creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects);
 			result = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
 		} catch (InvalidTransactionException e) {
-			/* Summarize the unhappy results of the execution */
 			childRecord = creator.createUnsuccessfulSyntheticRecord(e.getResponseCode());
 			result = UInt256.valueOf(e.getResponseCode().getNumber());
 		}
 
-		/* Track the child record and return */
+		/* --- And track the created child record --- */
 		updater.manageInProgressRecord(recordsHistorian, childRecord, synthBody);
 		return result;
 	}
@@ -333,13 +333,13 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@SuppressWarnings("unused")
 	protected Bytes computeDissociateToken(final Bytes input, final MessageFrame messageFrame) {
-		/* Get context from the Message frame */
+		/* --- Get the frame context --- */
 		final var updater = (AbstractLedgerWorldUpdater) messageFrame.getWorldUpdater();
 		final var ledgers = updater.wrappedTrackingLedgers();
 		final var contract = messageFrame.getContractAddress();
 		final var recipient = messageFrame.getRecipientAddress();
 
-		/* Parse Bytes input as typed arguments */
+		/* --- Parse the input --- */
 		final var dissociateOp = decoder.decodeDissociate(input);
 		final var synthBody = syntheticTxnFactory.createDissociate(dissociateOp);
 
@@ -347,31 +347,29 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		Bytes result;
 
 		try {
-			/* Perform validations */
+			/* --- Check the required key has an active signature --- */
 			final var hasRequiredSigs =
 					sigsVerifier.hasActiveKey(Id.fromGrpcAccount(dissociateOp.getAccountID()), recipient, contract);
 			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
-			/* Initialize the stores */
-			final var sideEffects = new SideEffectsTracker();
+			/* --- Build the necessary infrastructure to execute the transaction --- */
+			final var sideEffects =  sideEffectsFactory.get();
 			final var accountStore = createAccountStore(ledgers);
 			final var tokenStore = createTokenStore(ledgers, accountStore, sideEffects);
 
-			/* Do the business logic */
+			/* --- Execute the transaction and capture its results --- */
 			DissociateLogic dissociateLogic =
 					dissociateLogicFactory.newDissociateLogic(validator, tokenStore, accountStore, dissociationFactory);
 			dissociateLogic.dissociate(Id.fromGrpcAccount(dissociateOp.getAccountID()), singletonList(dissociateOp.getTokenID()));
 			ledgers.commit();
 
-			/* Summarize the happy results of the execution */
 			childRecord = creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects);
 			result = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
 		} catch (InvalidTransactionException e) {
-			/* Summarize the unhappy results of the execution */
 			childRecord = creator.createUnsuccessfulSyntheticRecord(e.getResponseCode());
 			result = UInt256.valueOf(e.getResponseCode().getNumber());
 		}
-		/* Track the child record and return */
+		/* --- And track the created child record --- */
 		updater.manageInProgressRecord(recordsHistorian, childRecord, synthBody);
 		return result;
 	}
