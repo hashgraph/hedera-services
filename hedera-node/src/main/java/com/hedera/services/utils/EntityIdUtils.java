@@ -178,15 +178,14 @@ public final class EntityIdUtils {
 	}
 
 	public static AccountID asAccount(final EntityId jId) {
-		return Optional
-				.ofNullable(jId)
-				.map(id ->
-						AccountID.newBuilder()
-								.setRealmNum(id.realm())
-								.setShardNum(id.shard())
-								.setAccountNum(id.num())
-								.build())
-				.orElse(AccountID.getDefaultInstance());
+		if (jId == null || jId.equals(EntityId.MISSING_ENTITY_ID)) {
+			return AccountID.getDefaultInstance();
+		}
+		return AccountID.newBuilder()
+				.setRealmNum(jId.realm())
+				.setShardNum(jId.shard())
+				.setAccountNum(jId.num())
+				.build();
 	}
 
 	public static String asSolidityAddressHex(final AccountID id) {
