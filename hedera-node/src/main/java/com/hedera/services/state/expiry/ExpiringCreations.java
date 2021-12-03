@@ -37,6 +37,7 @@ import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.swirlds.merkle.map.MerkleMap;
 
@@ -47,11 +48,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
+import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcScheduleId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 @Singleton
 public class ExpiringCreations implements EntityCreator {
+	private static final String EMPTY_MEMO = "";
+
 	private final ExpiryManager expiries;
 	private final NarratedCharging narratedCharging;
 	private final GlobalDynamicProperties dynamicProperties;
@@ -94,11 +98,50 @@ public class ExpiringCreations implements EntityCreator {
 	}
 
 	@Override
-	public ExpirableTxnRecord.Builder createExpiringRecord(
+	public ExpirableTxnRecord.Builder createSuccessfulSyntheticRecord(
+			final List<FcAssessedCustomFee> assessedCustomFees,
+			final SideEffectsTracker sideEffectsTracker
+	) {
+		final var receiptBuilder = TxnReceipt.newBuilder().setStatus(SUCCESS_LITERAL);
+		return createBaseRecord(EMPTY_MEMO, receiptBuilder, assessedCustomFees, sideEffectsTracker);
+	}
+
+	@Override
+	public ExpirableTxnRecord.Builder createUnsuccessfulSyntheticRecord(final ResponseCodeEnum failureStatus) {
+		final var receiptBuilder = TxnReceipt.newBuilder().setStatus(failureStatus.name());
+		return ExpirableTxnRecord.newBuilder().setReceiptBuilder(receiptBuilder);
+	}
+
+	@Override
+	public ExpirableTxnRecord.Builder createTopLevelRecord(
 			final long fee,
 			final byte[] hash,
 			final TxnAccessor accessor,
 			final Instant consensusTime,
+			final TxnReceipt.Builder receiptBuilder,
+			final List<FcAssessedCustomFee> customFeesCharged,
+			final SideEffectsTracker sideEffectsTracker
+	) {
+		final var expiringRecord = createBaseRecord(
+				accessor.getMemo(),
+				receiptBuilder,
+				customFeesCharged,
+				sideEffectsTracker);
+		expiringRecord
+				.setFee(fee)
+				.setTxnHash(hash)
+				.setTxnId(TxnId.fromGrpc(accessor.getTxnId()))
+				.setConsensusTime(RichInstant.fromJava(consensusTime));
+
+		if (accessor.isTriggeredTxn()) {
+			expiringRecord.setScheduleRef(fromGrpcScheduleId(accessor.getScheduleRef()));
+		}
+
+		return expiringRecord;
+	}
+
+	private ExpirableTxnRecord.Builder createBaseRecord(
+			final String memo,
 			final TxnReceipt.Builder receiptBuilder,
 			final List<FcAssessedCustomFee> customFeesCharged,
 			final SideEffectsTracker sideEffectsTracker
@@ -110,31 +153,23 @@ public class ExpiringCreations implements EntityCreator {
 			receiptBuilder.setNewTotalSupply(sideEffectsTracker.getTrackedTokenSupply());
 		}
 
-		final var answer = ExpirableTxnRecord.newBuilder()
-				.setReceipt(receiptBuilder.build())
-				.setTxnHash(hash)
-				.setTxnId(TxnId.fromGrpc(accessor.getTxnId()))
-				.setConsensusTime(RichInstant.fromJava(consensusTime))
-				.setMemo(accessor.getMemo())
-				.setFee(fee)
+		final var expiringRecord = ExpirableTxnRecord.newBuilder()
+				.setReceiptBuilder(receiptBuilder)
+				.setMemo(memo)
 				.setTransferList(CurrencyAdjustments.fromGrpc(sideEffectsTracker.getNetTrackedHbarChanges()))
-				.setCustomFeesCharged(customFeesCharged)
+				.setAssessedCustomFees(customFeesCharged)
 				.setNewTokenAssociations(sideEffectsTracker.getTrackedAutoAssociations());
-
-		if (accessor.isTriggeredTxn()) {
-			answer.setScheduleRef(fromGrpcScheduleId(accessor.getScheduleRef()));
-		}
 
 		final var tokenChanges = sideEffectsTracker.getNetTrackedTokenUnitAndOwnershipChanges();
 		if (!tokenChanges.isEmpty()) {
-			setTokensAndTokenAdjustments(answer, tokenChanges);
+			setTokensAndTokenAdjustments(expiringRecord, tokenChanges);
 		}
 
-		return answer;
+		return expiringRecord;
 	}
 
 	@Override
-	public ExpirableTxnRecord.Builder buildFailedExpiringRecord(
+	public ExpirableTxnRecord.Builder createInvalidFailureRecord(
 			final TxnAccessor accessor,
 			final Instant consensusTime
 	) {

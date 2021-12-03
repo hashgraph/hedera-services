@@ -22,8 +22,8 @@ package com.hedera.services.ledger;
 
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.ledger.backing.BackingTokenRels;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.ledger.backing.BackingTokenRels;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
@@ -38,6 +38,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
@@ -83,6 +84,7 @@ public class BaseHederaLedgerTestHelper {
 
 	protected HederaLedger subject;
 
+	protected MutableEntityAccess mutableEntityAccess;
 	protected SideEffectsTracker sideEffectsTracker;
 	protected HederaTokenStore tokenStore;
 	protected EntityIdSource ids;
@@ -240,10 +242,14 @@ public class BaseHederaLedgerTestHelper {
 				.willReturn(tokenId);
 		given(tokenStore.get(frozenId)).willReturn(frozenToken);
 
-		subject = new HederaLedger(tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProps,
-				accountsLedger, transferLogic);
-		subject.setTokenRelsLedger(tokenRelsLedger);
+		mutableEntityAccess = mock(MutableEntityAccess.class);
+		subject = new HederaLedger(
+				tokenStore, ids, creator,
+				validator, sideEffectsTracker, historian,
+				dynamicProps, accountsLedger, transferLogic);
 		subject.setNftsLedger(nftsLedger);
+		subject.setTokenRelsLedger(tokenRelsLedger);
+		subject.setMutableEntityAccess(mutableEntityAccess);
 	}
 
 	protected void givenOkTokenXfers(AccountID misc, TokenID tokenId, long i) {

@@ -22,6 +22,7 @@ package com.hedera.services.store.contracts;
  *
  */
 
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
@@ -36,6 +37,8 @@ import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.virtualmap.VirtualMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -44,34 +47,77 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.function.Supplier;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
+
 @Singleton
 public class MutableEntityAccess implements EntityAccess {
+	private static final Logger log = LogManager.getLogger(MutableEntityAccess.class);
+
 	private final HederaLedger ledger;
 	private final WorldLedgers worldLedgers;
+	private final TransactionContext txnCtx;
 	private final Supplier<VirtualMap<ContractKey, ContractValue>> storage;
 	private final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode;
+	private final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 
 	@Inject
 	public MutableEntityAccess(
 			final HederaLedger ledger,
+			final TransactionContext txnCtx,
 			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
 			final Supplier<VirtualMap<ContractKey, ContractValue>> storage,
 			final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode
 	) {
+		this.txnCtx = txnCtx;
 		this.ledger = ledger;
 		this.storage = storage;
 		this.bytecode = bytecode;
+		this.tokensLedger = tokensLedger;
 
 		this.worldLedgers = new WorldLedgers(
 				ledger.getTokenRelsLedger(),
 				ledger.getAccountsLedger(),
 				ledger.getNftsLedger(),
 				tokensLedger);
+
+		ledger.setMutableEntityAccess(this);
 	}
 
 	@Override
 	public WorldLedgers worldLedgers() {
 		return worldLedgers;
+	}
+
+	@Override
+	public void begin() {
+		if (isActiveContractOp()) {
+			if (tokensLedger.isInTransaction()) {
+				tokensLedger.rollback();
+				log.warn("Tokens ledger had to be rolled back before beginning contract op; " +
+						"full transaction is {}", txnCtx.accessor().getSignedTxnWrapper());
+			}
+			tokensLedger.begin();
+		}
+	}
+
+	@Override
+	public void commit() {
+		if (isActiveContractOp()) {
+			tokensLedger.commit();
+		}
+	}
+
+	@Override
+	public void rollback() {
+		if (isActiveContractOp()) {
+			tokensLedger.rollback();
+		}
+	}
+
+	@Override
+	public String currentManagedChangeSet() {
+		return tokensLedger.changeSetSoFar();
 	}
 
 	@Override
@@ -163,5 +209,11 @@ public class MutableEntityAccess implements EntityAccess {
 		final var blobKey = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, (int) id.getAccountNum());
 		final var bytes = bytecode.get().get(blobKey);
 		return bytes == null ? Bytes.EMPTY : Bytes.of(bytes.getData());
+	}
+
+	private boolean isActiveContractOp() {
+		final var accessor = txnCtx.accessor();
+		final var activeFunction = accessor.getFunction();
+		return activeFunction == ContractCreate || activeFunction == ContractCall;
 	}
 }
