@@ -448,4 +448,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	void setSideEffectsFactory(final Supplier<SideEffectsTracker> sideEffectsFactory) {
 		this.sideEffectsFactory = sideEffectsFactory;
 	}
+
+	void setAssociateLogicFactory(final AssociateLogicFactory associateLogicFactory) {
+		this.associateLogicFactory = associateLogicFactory;
+	}
 }
