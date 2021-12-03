@@ -74,8 +74,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings("rawtypes")
 class DissociatePrecompilesTest {
-
 	private static final Bytes pretendArguments = Bytes.fromBase64String("ABCDEF");
 
 	@Mock

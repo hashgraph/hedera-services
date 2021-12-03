@@ -9,9 +9,9 @@ package com.hedera.services.store.contracts.precompile;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,6 +23,7 @@ package com.hedera.services.store.contracts.precompile;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.SoliditySigsVerifier;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
@@ -41,7 +42,7 @@ import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.txns.token.AssociateLogic;
+import com.hedera.services.txns.token.BurnLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
@@ -62,6 +63,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
+import java.util.List;
 
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_ADDER;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_REMOVER;
@@ -73,70 +75,61 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("rawtypes")
-class AssociatePrecompileTest {
+class BurnPrecompilesTest {
 	private static final Bytes pretendArguments = Bytes.fromBase64String("ABCDEF");
-	private static final TokenID tokenMerkleId = IdUtils.asToken("0.0.777");
-	private static final AccountID accountMerkleId = IdUtils.asAccount("0.0.999");
-	private static final SyntheticTxnFactory.AssociateToken associateOp = new SyntheticTxnFactory.AssociateToken(
-			accountMerkleId, tokenMerkleId);
-	private static final Address recipientAddress = Address.ALTBN128_ADD;
-	private static final Address contractAddress = Address.ALTBN128_MUL;
-	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
-	private static final Bytes invalidSigResult = UInt256.valueOf(ResponseCodeEnum.INVALID_SIGNATURE_VALUE);
 
-	@Mock
-	private OptionValidator validator;
-	@Mock
-	private GlobalDynamicProperties dynamicProperties;
-	@Mock
-	private GasCalculator gasCalculator;
-	@Mock
-	private AccountRecordsHistorian recordsHistorian;
-	@Mock
-	private SoliditySigsVerifier sigsVerifier;
-	@Mock
-	private DecodingFacade decoder;
-	@Mock
-	private SyntheticTxnFactory syntheticTxnFactory;
-	@Mock
-	private EntityCreator creator;
-	@Mock
-	private DissociationFactory dissociationFactory;
 	@Mock
 	private AccountStore accountStore;
 	@Mock
 	private TypedTokenStore tokenStore;
 	@Mock
-	private AssociateLogic associateLogic;
+	private GlobalDynamicProperties dynamicProperties;
 	@Mock
-	private HTSPrecompiledContract.AssociateLogicFactory associateLogicFactory;
+	private OptionValidator validator;
+	@Mock
+	private GasCalculator gasCalculator;
+	@Mock
+	private MessageFrame frame;
+	@Mock
+	private SoliditySigsVerifier sigsVerifier;
+	@Mock
+	private AccountRecordsHistorian recordsHistorian;
+	@Mock
+	private DecodingFacade decoder;
+	@Mock
+	private HTSPrecompiledContract.BurnLogicFactory burnLogicFactory;
 	@Mock
 	private HTSPrecompiledContract.TokenStoreFactory tokenStoreFactory;
 	@Mock
 	private HTSPrecompiledContract.AccountStoreFactory accountStoreFactory;
 	@Mock
+	private BurnLogic burnLogic;
+	@Mock
 	private SideEffectsTracker sideEffects;
 	@Mock
-	private MessageFrame frame;
+	private TransactionBody.Builder mockSynthBodyBuilder;
+	@Mock
+	private ExpirableTxnRecord.Builder mockRecordBuilder;
+	@Mock
+	private SyntheticTxnFactory syntheticTxnFactory;
 	@Mock
 	private AbstractLedgerWorldUpdater worldUpdater;
 	@Mock
 	private WorldLedgers wrappedLedgers;
 	@Mock
-	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
+	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nfts;
 	@Mock
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRels;
 	@Mock
-	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nfts;
+	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
 	@Mock
 	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
 	@Mock
-	private TransactionBody.Builder mockSynthBodyBuilder;
+	private EntityCreator creator;
 	@Mock
-	private ExpirableTxnRecord.Builder mockRecordBuilder;
+	private DissociationFactory dissociationFactory;
 
 	private HTSPrecompiledContract subject;
-
 
 	@BeforeEach
 	void setUp() {
@@ -144,66 +137,62 @@ class AssociatePrecompileTest {
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder,
 				syntheticTxnFactory, creator, dissociationFactory);
-
-		subject.setAssociateLogicFactory(associateLogicFactory);
+		subject.setBurnLogicFactory(burnLogicFactory);
 		subject.setTokenStoreFactory(tokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);
 		subject.setSideEffectsFactory(() -> sideEffects);
 	}
 
 	@Test
-	void computeAssociateTokenFailurePathWorks() {
-		// given:
+	void nftBurnFailurePathWorks() {
 		givenFrameContext();
-		given(decoder.decodeAssociate(pretendArguments)).willReturn(associateOp);
-		given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
-		given(sigsVerifier.hasActiveKey(Id.fromGrpcAccount(accountMerkleId), recipientAddress, contractAddress))
-				.willReturn(false);
+
+		given(sigsVerifier.hasActiveSupplyKey(nonFungibleId, recipientAddr, contractAddr))
+				.willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
 
 		// when:
-		final var result = subject.computeAssociateToken(pretendArguments, frame);
+		final var result = subject.computeBurnToken(pretendArguments, frame);
 
 		// then:
 		assertEquals(invalidSigResult, result);
+
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}
 
 	@Test
-	void computeAssociateTokenHappyPathWorks() {
+	void nftBurnHappyPathWorks() {
 		givenFrameContext();
 		givenLedgers();
-		given(decoder.decodeAssociate(pretendArguments))
-				.willReturn(associateOp);
-		given(syntheticTxnFactory.createAssociate(associateOp))
-				.willReturn(mockSynthBodyBuilder);
-		given(sigsVerifier.hasActiveKey(Id.fromGrpcAccount(accountMerkleId), recipientAddress, contractAddress))
-				.willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
-				.willReturn(accountStore);
-		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER,
-				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects))
-				.willReturn(tokenStore);
-		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties))
-				.willReturn(associateLogic);
-		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects))
-				.willReturn(mockRecordBuilder);
+
+		given(sigsVerifier.hasActiveSupplyKey(nonFungibleId, recipientAddr, contractAddr)).willReturn(true);
+		given(accountStoreFactory.newAccountStore(
+				validator, dynamicProperties, accounts
+		)).willReturn(accountStore);
+		given(tokenStoreFactory.newTokenStore(
+				accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects
+		)).willReturn(tokenStore);
+		given(burnLogicFactory.newBurnLogic(tokenStore, accountStore)).willReturn(burnLogic);
+		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects)).willReturn(mockRecordBuilder);
 
 		// when:
-		final var result = subject.computeAssociateToken(pretendArguments, frame);
+		final var result = subject.computeBurnToken(pretendArguments, frame);
 
 		// then:
 		assertEquals(successResult, result);
-		verify(associateLogic).associate(Id.fromGrpcAccount(accountMerkleId), Collections.singletonList(tokenMerkleId));
+		// and:
+		verify(burnLogic).burn(nonFungibleId, 0, targetSerialNos);
 		verify(wrappedLedgers).commit();
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}
 
 	private void givenFrameContext() {
-		given(frame.getContractAddress()).willReturn(contractAddress);
-		given(frame.getRecipientAddress()).willReturn(recipientAddress);
+		given(frame.getContractAddress()).willReturn(contractAddr);
+		given(frame.getRecipientAddress()).willReturn(recipientAddr);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
+		given(decoder.decodeBurn(pretendArguments)).willReturn(nftBurn);
+		given(syntheticTxnFactory.createNonFungibleBurn(nftBurn)).willReturn(mockSynthBodyBuilder);
 	}
 
 	private void givenLedgers() {
@@ -212,4 +201,13 @@ class AssociatePrecompileTest {
 		given(wrappedLedgers.nfts()).willReturn(nfts);
 		given(wrappedLedgers.tokens()).willReturn(tokens);
 	}
+
+	private static final TokenID nonFungible = IdUtils.asToken("0.0.777");
+	private static final Id nonFungibleId = Id.fromGrpcToken(nonFungible);
+	private static final List<Long> targetSerialNos = List.of(1L, 2L, 3L);
+	private static final SyntheticTxnFactory.NftBurn nftBurn = new SyntheticTxnFactory.NftBurn(nonFungible, targetSerialNos);
+	private static final Address recipientAddr = Address.ALTBN128_ADD;
+	private static final Address contractAddr = Address.ALTBN128_MUL;
+	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
+	private static final Bytes invalidSigResult = UInt256.valueOf(ResponseCodeEnum.INVALID_SIGNATURE_VALUE);
 }

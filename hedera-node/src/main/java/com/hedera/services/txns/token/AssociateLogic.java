@@ -47,7 +47,7 @@ public class AssociateLogic {
 		this.dynamicProperties = dynamicProperties;
 	}
 
-	public void associate(Id accountId, List<TokenID> tokensList) {
+	public void associate(final Id accountId, final List<TokenID> tokensList) {
 		final var tokenIds = tokensList
 				.stream()
 				.map(id -> new Id(id.getShardNum(), id.getRealmNum(), id.getTokenNum()))

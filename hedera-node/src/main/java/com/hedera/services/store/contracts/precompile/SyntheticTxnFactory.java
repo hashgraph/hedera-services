@@ -26,6 +26,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
@@ -43,9 +44,16 @@ public class SyntheticTxnFactory {
 	public SyntheticTxnFactory() {
 	}
 
-	public TransactionBody.Builder createNonFungibleMint(
-			final NftMint nftMint
-	) {
+	public TransactionBody.Builder createNonFungibleBurn(final NftBurn nftBurn) {
+		final var builder = TokenBurnTransactionBody.newBuilder();
+
+		builder.setToken(nftBurn.getTokenType());
+		builder.addAllSerialNumbers(nftBurn.getSerialNos());
+
+		return TransactionBody.newBuilder().setTokenBurn(builder);
+	}
+
+	public TransactionBody.Builder createNonFungibleMint(final NftMint nftMint) {
 		final var builder = TokenMintTransactionBody.newBuilder();
 
 		builder.setToken(nftMint.getTokenType());
@@ -175,6 +183,24 @@ public class SyntheticTxnFactory {
 
 		public List<ByteString> getMetadata() {
 			return metadata;
+		}
+	}
+
+	public static class NftBurn {
+		private final TokenID tokenType;
+		private final List<Long> serialNos;
+
+		public NftBurn(TokenID tokenType, List<Long> serialNos) {
+			this.tokenType = tokenType;
+			this.serialNos = serialNos;
+		}
+
+		public TokenID getTokenType() {
+			return tokenType;
+		}
+
+		public List<Long> getSerialNos() {
+			return serialNos;
 		}
 	}
 
