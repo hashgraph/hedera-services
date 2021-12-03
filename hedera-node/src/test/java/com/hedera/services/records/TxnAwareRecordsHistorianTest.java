@@ -38,7 +38,6 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
@@ -184,9 +183,7 @@ class TxnAwareRecordsHistorianTest {
 		given(topLevelRecord.setNumChildRecords(anyShort())).willReturn(topLevelRecord);
 		given(topLevelRecord.build()).willReturn(mockTopLevelRecord);
 		given(followingBuilder.build()).willReturn(mockFollowingRecord);
-		given(mockFollowingRecord.asGrpc()).willReturn(TransactionRecord.getDefaultInstance());
 		given(precedingBuilder.build()).willReturn(mockPrecedingRecord);
-		given(mockPrecedingRecord.asGrpc()).willReturn(TransactionRecord.getDefaultInstance());
 
 		given(txnCtx.recordSoFar()).willReturn(topLevelRecord);
 		given(creator.saveExpiringRecord(
