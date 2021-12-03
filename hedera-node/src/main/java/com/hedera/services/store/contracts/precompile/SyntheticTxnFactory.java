@@ -45,7 +45,7 @@ public class SyntheticTxnFactory {
 	}
 
 	public TransactionBody.Builder createNonFungibleMint(
-			final NftMint nftMint
+			final MintInput nftMint
 	) {
 		final var builder = TokenMintTransactionBody.newBuilder();
 
@@ -161,12 +161,14 @@ public class SyntheticTxnFactory {
 		}
 	}
 
-	public static class NftMint {
+	public static class MintInput {
 		private final TokenID tokenType;
+		private final long amount;
 		private final List<ByteString> metadata;
 
-		public NftMint(final TokenID tokenType, final List<ByteString> metadata) {
+		public MintInput(final TokenID tokenType, final long amount, final List<ByteString> metadata) {
 			this.tokenType = tokenType;
+			this.amount = amount;
 			this.metadata = metadata;
 		}
 
@@ -176,6 +178,10 @@ public class SyntheticTxnFactory {
 
 		public List<ByteString> getMetadata() {
 			return metadata;
+		}
+
+		public long getAmount() {
+			return amount;
 		}
 	}
 

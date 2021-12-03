@@ -1,5 +1,25 @@
 package com.hedera.services.store.contracts.precompile;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
@@ -25,44 +45,36 @@ public class DecodingFacade {
 	private static final int ADDRESS_BYTES_LENGTH = 20;
 	private static final int ADDRESS_SKIP_BYTES_LENGTH = 12;
 	private static final int FUNCTION_SELECTOR_BYTES_LENGTH = 4;
+	private static final String BYTES_32_FIRST_RETURN_TYPE = "(bytes32,";
 
 	private static final Function CRYPTO_TRANSFER_FUNCTION = new Function("cryptoTransfer((bytes32,(bytes32,int64)[],(bytes32,bytes32,int64)[])[])",
 			"((bytes32,(bytes32,int64)[],(bytes32,bytes32,int64)[])[])");
 	private static final Function TRANSFER_TOKENS_FUNCTION = new Function("transferTokens(address,address[],int64[])",
-			"(bytes32," +
-					"bytes32[],int64[])");
+			"(bytes32,bytes32[],int64[])");
 	private static final Function TRANSFER_TOKEN_FUNCTION = new Function("transferToken(address,address,address,int64)",
-			"(bytes32," +
-					"bytes32,bytes32,int64)");
+			"(bytes32,bytes32,bytes32,int64)");
 	private static final Function TRANSFER_NFTS_FUNCTION = new Function("transferNFTs(address,address[],address[],int64[])",
-			"(bytes32," +
-					"bytes32[],bytes32[],int64[])");
+			"(bytes32,bytes32[],bytes32[],int64[])");
 	private static final Function TRANSFER_NFT_FUNCTION = new Function("transferNFT(address,address,address,int64)",
-			"(bytes32," +
-					"bytes32,bytes32,int64)");
+			"(bytes32,bytes32,bytes32,int64)");
 	private static final Function MINT_TOKEN_FUNCTION = new Function("mintToken(address,uint64,bytes)",
-			"(bytes32," +
-					"int64,string)");
+			"(bytes32,int64,string)");
 	private static final Function BURN_TOKEN_FUNCTION = new Function("burnToken(address,uint64,int64[])",
-			"(bytes32," +
-					"int64,int64[])");
+			"(bytes32,int64,int64[])");
 	private static final Function ASSOCIATE_TOKENS_FUNCTION = new Function("associateTokens(address,address[])",
-			"(bytes32," +
-					"bytes32[])");
+			"(bytes32,bytes32[])");
 	private static final Function ASSOCIATE_TOKEN_FUNCTION = new Function("associateToken(address,address)",
-			"(bytes32," +
-					"bytes32)");
+			"(bytes32,bytes32)");
 	private static final Function DISSOCIATE_TOKENS_FUNCTION = new Function("dissociateTokens(address,address[])",
-			"(bytes32," +
-					"bytes32[])");
+			"(bytes32,bytes32[])");
 	private static final Function DISSOCIATE_TOKEN_FUNCTION = new Function("associateToken(address,address)",
-			"(bytes32," +
-					"bytes32)");
+			"(bytes32,bytes32)");
 
 	@Inject
 	public DecodingFacade() {
 	}
 
+	@SuppressWarnings("unused")
 	public static void decodeCryptoTransfer(final Bytes input) {
 		final Tuple decodedTuples =
 				CRYPTO_TRANSFER_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
@@ -81,7 +93,6 @@ public class DecodingFacade {
 					tokenTransferBuilder.addTransfers(accountAmountBuilder.build());
 				}
 
-				final List<PrecompileArgumentsDecoder.NftTransfer> nftTransfers =new ArrayList<>();
 				final var nftTransfersDecoded = (Tuple[]) tupleNested.get(2);
 				for(final var nftTransferDecoded: nftTransfersDecoded) {
 					final var nftTransferBuilder = NftTransfer.newBuilder();
@@ -96,6 +107,7 @@ public class DecodingFacade {
 		}
 	}
 
+	@SuppressWarnings("unused")
 	public static void decodeTransferTokens(final Bytes input) {
 		final Tuple decodedArguments =
 				TRANSFER_TOKENS_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
@@ -106,6 +118,7 @@ public class DecodingFacade {
 		final var amountsConverted = convertLongArrayToBigIntegerArray((long[]) decodedArguments.get(2));
 	}
 
+	@SuppressWarnings("unused")
 	public static void decodeTransferToken(final Bytes input) {
 		final Tuple decodedArguments =
 				TRANSFER_TOKEN_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
@@ -117,6 +130,7 @@ public class DecodingFacade {
 		final var amountConverted = BigInteger.valueOf((long) decodedArguments.get(3));
 	}
 
+	@SuppressWarnings("unused")
 	public static void decodeTransferNFTs(final Bytes input) {
 		final Tuple decodedArguments =
 				TRANSFER_NFTS_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
@@ -128,9 +142,10 @@ public class DecodingFacade {
 		final var serialNumbers = convertLongArrayToBigIntegerArray((long[]) decodedArguments.get(3));
 	}
 
+	@SuppressWarnings("unused")
 	public static void decodeTransferNFT(final Bytes input) {
 		final Tuple decodedArguments =
-				TRANSFER_NFTS_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
+				TRANSFER_NFT_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
 						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
 
 		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
@@ -139,16 +154,7 @@ public class DecodingFacade {
 		final var serialNumber = BigInteger.valueOf((long) decodedArguments.get(3));
 	}
 
-	public static void decodeMintToken(final Bytes input) {
-		final Tuple decodedArguments =
-				MINT_TOKEN_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
-						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
-
-		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
-		final var amount = BigInteger.valueOf((long) decodedArguments.get(1));
-		final var metadata = String.valueOf(decodedArguments.get(2));
-	}
-
+	@SuppressWarnings("unused")
 	public static void decodeBurnToken(final Bytes input) {
 		final Tuple decodedArguments =
 				BURN_TOKEN_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
@@ -159,6 +165,7 @@ public class DecodingFacade {
 		final var serialNumbers = convertLongArrayToBigIntegerArray((long[]) decodedArguments.get(2));
 	}
 
+	@SuppressWarnings("unused")
 	public static void decodeAAssociateTokens(final Bytes input) {
 		final Tuple decodedArguments =
 				ASSOCIATE_TOKENS_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
@@ -168,6 +175,7 @@ public class DecodingFacade {
 		final var tokenIDs = decodeTokenIDsFromBytesArray((byte[][]) decodedArguments.get(1));
 	}
 
+	@SuppressWarnings("unused")
 	public static void decodeDissociateTokens(final Bytes input) {
 		final Tuple decodedArguments =
 				DISSOCIATE_TOKENS_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
@@ -177,18 +185,17 @@ public class DecodingFacade {
 		final var tokenIDs = decodeTokenIDsFromBytesArray((byte[][]) decodedArguments.get(1));
 	}
 
-	/* NOT A REAL IMPLEMENTATION */
-	public SyntheticTxnFactory.NftMint decodeMint(final Bytes input) {
+	public SyntheticTxnFactory.MintInput decodeMint(final Bytes input) {
 		final Tuple decodedArguments =
 				MINT_TOKEN_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
 						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
 
 		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
-		final var amount = BigInteger.valueOf((long) decodedArguments.get(1));
+		final var amount = (long) decodedArguments.get(1);
 		final var metadata = String.valueOf(decodedArguments.get(2));
 
-		return new SyntheticTxnFactory.NftMint(
-				tokenID,
+		return new SyntheticTxnFactory.MintInput(
+				tokenID, amount,
 				Collections.singletonList(ByteString.copyFrom(metadata.getBytes())));
 	}
 

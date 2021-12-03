@@ -195,8 +195,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@SuppressWarnings("unused")
 	protected Bytes computeCryptoTransfer(final Bytes input, final MessageFrame messageFrame) {
-		final Map<Integer, Object> decodedArguments =
-				PrecompileArgumentsDecoder.decodeArgumentsForCryptoTransfer(input);
 		return null;
 	}
 
@@ -240,6 +238,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		/* --- Parse the input --- */
 		final var mintOp = decoder.decodeMint(input);
 		final var synthBody = syntheticTxnFactory.createNonFungibleMint(mintOp);
+		final var amount = mintOp.getAmount();
 		final var newMeta = mintOp.getMetadata();
 
 		Bytes result;
@@ -258,7 +257,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			/* --- Execute the transaction and capture its results --- */
 			final var creationTime = recordsHistorian.nextFollowingChildConsensusTime();
-			mintLogic.mint(tokenId, newMeta.size(), 0, newMeta, creationTime);
+			mintLogic.mint(tokenId, newMeta.size(), amount, newMeta, creationTime);
 			childRecord = creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects);
 			result = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
 			ledgers.commit();

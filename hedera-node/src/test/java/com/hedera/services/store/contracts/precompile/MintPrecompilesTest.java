@@ -44,6 +44,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -191,7 +192,8 @@ class MintPrecompilesTest {
 	private static final Id nonFungibleId = Id.fromGrpcToken(nonFungible);
 	private static final List<ByteString> newMetadata = List.of(
 			ByteString.copyFromUtf8("AAA"), ByteString.copyFromUtf8("BBB"), ByteString.copyFromUtf8("CCC"));
-	private static final SyntheticTxnFactory.NftMint nftMint = new SyntheticTxnFactory.NftMint(nonFungible, newMetadata);
+	private static final SyntheticTxnFactory.MintInput nftMint = new SyntheticTxnFactory.MintInput(nonFungible,
+			0l, newMetadata);
 	private static final Address recipientAddr = Address.ALTBN128_ADD;
 	private static final Address contractAddr = Address.ALTBN128_MUL;
 	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);

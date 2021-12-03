@@ -26,6 +26,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigInteger;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,7 +36,7 @@ class SyntheticTxnFactoryTest {
 
 	@Test
 	void createsExpectedNftMint() {
-		final var nftMints = new SyntheticTxnFactory.NftMint(nonFungible, newMetadata);
+		final var nftMints = new SyntheticTxnFactory.MintInput(nonFungible, 0l, newMetadata);
 
 		final var result = subject.createNonFungibleMint(nftMints);
 		final var txnBody = result.build();

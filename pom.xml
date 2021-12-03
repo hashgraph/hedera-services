@@ -605,11 +605,6 @@ ${git.signoff}
       <version>2.0.0</version>
     </dependency>
     <dependency>
-      <groupId>org.web3j</groupId>
-      <artifactId>core</artifactId>
-      <version>4.8.7</version>
-    </dependency>
-    <dependency>
       <groupId>com.esaulpaugh</groupId>
       <artifactId>headlong</artifactId>
       <version>5.5.0</version>
