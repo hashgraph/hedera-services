@@ -26,6 +26,17 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.SoliditySigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.backing.BackingStore;
+import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.state.EntityCreator;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
@@ -38,8 +49,14 @@ import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
+import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.NftId;
+import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.txns.token.MintLogic;
+import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.services.txns.token.AssociateLogic;
@@ -48,6 +65,8 @@ import com.hedera.services.txns.token.MintLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -68,9 +87,15 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.store.tokens.views.UniqTokenViewsManager.NOOP_VIEWS_MANAGER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.store.tokens.views.UniqTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -96,8 +121,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private AccountStoreFactory accountStoreFactory = AccountStore::new;
 	private Supplier<SideEffectsTracker> sideEffectsFactory = SideEffectsTracker::new;
 
+	private final HederaLedger ledger;
 	private final EntityCreator creator;
 	private final DecodingFacade decoder;
+	private final AccountStore accountStore;
+	private final TypedTokenStore tokenStore;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final OptionValidator validator;
 	private final SoliditySigsVerifier sigsVerifier;
@@ -130,7 +158,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@Inject
 	public HTSPrecompiledContract(
+			final HederaLedger ledger,
+			final AccountStore accountStore,
 			final OptionValidator validator,
+			final TypedTokenStore tokenStore,
 			final GlobalDynamicProperties dynamicProperties,
 			final GasCalculator gasCalculator,
 			final AccountRecordsHistorian recordsHistorian,
@@ -142,9 +173,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	) {
 		super("HTS", gasCalculator);
 
+		this.ledger = ledger;
 		this.decoder = decoder;
 		this.validator = validator;
 		this.creator = creator;
+		this.tokenStore = tokenStore;
+		this.accountStore = accountStore;
 		this.sigsVerifier = sigsVerifier;
 		this.dynamicProperties = dynamicProperties;
 		this.recordsHistorian = recordsHistorian;
@@ -254,17 +288,22 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
 			final var sideEffects = sideEffectsFactory.get();
-			final var accountStore = createAccountStore(ledgers);
-			final var tokenStore = createTokenStore(ledgers, accountStore, sideEffects);
-			final var mintLogic = mintLogicFactory.newLogic(validator, tokenStore, accountStore);
+			final var scopedAccountStore = accountStoreFactory.newAccountStore(
+					validator, dynamicProperties, ledgers.accounts());
+			final var scopedTokenStore = tokenStoreFactory.newTokenStore(
+					scopedAccountStore, ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels(),
+					NOOP_VIEWS_MANAGER, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER,
+					sideEffects);
+			final var mintLogic = mintLogicFactory.newLogic(validator, scopedTokenStore, scopedAccountStore);
 
 			/* --- Execute the transaction and capture its results --- */
-			mintLogic.mint(tokenId, newMeta.size(), 0, newMeta, Instant.EPOCH);
+			final var creationTime = recordsHistorian.nextFollowingChildConsensusTime();
+			mintLogic.mint(tokenId, newMeta.size(), 0, newMeta, creationTime);
 			childRecord = creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects);
 			result = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
+			ledgers.commit();
 		} catch (InvalidTransactionException e) {
-			e.printStackTrace();
-			childRecord = creator.createFailedSyntheticRecord(e.getResponseCode());
+			childRecord = creator.createUnsuccessfulSyntheticRecord(e.getResponseCode());
 			result = UInt256.valueOf(e.getResponseCode().getNumber());
 		}
 
@@ -433,8 +472,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				UniqTokenViewsManager uniqTokenViewsManager,
 				TypedTokenStore.LegacyTreasuryAdder treasuryAdder,
 				TypedTokenStore.LegacyTreasuryRemover treasuryRemover,
-				SideEffectsTracker sideEffects);
+				SideEffectsTracker sideEffectsTracker);
 	}
+
 
 	/* --- Only used by unit tests --- */
 	void setMintLogicFactory(final MintLogicFactory mintLogicFactory) {

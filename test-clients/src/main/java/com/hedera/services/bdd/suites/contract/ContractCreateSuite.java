@@ -77,6 +77,8 @@ import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -85,6 +87,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
@@ -479,8 +482,11 @@ public class ContractCreateSuite extends HapiApiSuite {
 
 		final var nonfungibleToken = "nonfungibleToken";
 		final var multiKey = "purpose";
+		final var contractKey = "meaning";
 		final var hwMint = "hwMint";
-		final var mintTxn = "mintTxn";
+		final var firstMintTxn = "firstMintTxn";
+		final var secondMintTxn = "secondMintTxn";
+		final var contractKeyShape = DELEGATE_CONTRACT;
 
 		final AtomicLong nonFungibleNum = new AtomicLong();
 
@@ -492,6 +498,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 						tokenCreate(nonfungibleToken)
 								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
 								.initialSupply(0)
+								.adminKey(multiKey)
 								.supplyKey(multiKey)
 								.exposingCreatedIdTo(idLit -> nonFungibleNum.set(asDotDelimitedLongArray(idLit)[2]))
 				).when(
@@ -500,9 +507,21 @@ public class ContractCreateSuite extends HapiApiSuite {
 								.gas(300_000L))
 				).then(
 						contractCall(hwMint, HW_MINT_CALL_ABI)
-								.via(mintTxn)
+								.via(firstMintTxn)
 								.alsoSigningWithFullPrefix(multiKey),
-						getTxnRecord(mintTxn).andAllChildRecords().logged()
+						getTxnRecord(firstMintTxn).andAllChildRecords().logged(),
+						getTokenInfo(nonfungibleToken).hasTotalSupply(1),
+						/* And now make the token contract-controlled so no explicit supply sig is required */
+						newKeyNamed(contractKey)
+								.shape(contractKeyShape.signedWith(hwMint)),
+						tokenUpdate(nonfungibleToken)
+								.supplyKey(contractKey),
+						getTokenInfo(nonfungibleToken).logged(),
+						contractCall(hwMint, HW_MINT_CALL_ABI)
+								.via(secondMintTxn),
+						getTxnRecord(secondMintTxn).andAllChildRecords().logged(),
+						getTokenInfo(nonfungibleToken).hasTotalSupply(2),
+						getTokenNftInfo(nonfungibleToken, 2L).logged()
 				);
 	}
 

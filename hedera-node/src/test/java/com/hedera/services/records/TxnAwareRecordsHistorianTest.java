@@ -38,7 +38,6 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,7 +59,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyShort;
 import static org.mockito.BDDMockito.any;
@@ -185,9 +183,7 @@ class TxnAwareRecordsHistorianTest {
 		given(topLevelRecord.setNumChildRecords(anyShort())).willReturn(topLevelRecord);
 		given(topLevelRecord.build()).willReturn(mockTopLevelRecord);
 		given(followingBuilder.build()).willReturn(mockFollowingRecord);
-		given(mockFollowingRecord.asGrpc()).willReturn(TransactionRecord.getDefaultInstance());
 		given(precedingBuilder.build()).willReturn(mockPrecedingRecord);
-		given(mockPrecedingRecord.asGrpc()).willReturn(TransactionRecord.getDefaultInstance());
 
 		given(txnCtx.recordSoFar()).willReturn(topLevelRecord);
 		given(creator.saveExpiringRecord(
@@ -208,7 +204,9 @@ class TxnAwareRecordsHistorianTest {
 
 		final var followSynthBody = aBuilderWith("FOLLOW");
 		final var precedeSynthBody = aBuilderWith("PRECEDE");
+		assertEquals(topLevelNow.plusNanos(1), subject.nextFollowingChildConsensusTime());
 		subject.trackFollowingChildRecord(1, followSynthBody, followingBuilder);
+		assertEquals(topLevelNow.plusNanos(2), subject.nextFollowingChildConsensusTime());
 		subject.trackPrecedingChildRecord(1, precedeSynthBody, precedingBuilder);
 
 		subject.saveExpirableTransactionRecords();
@@ -226,7 +224,6 @@ class TxnAwareRecordsHistorianTest {
 		assertEquals(1, precedingRsos.size());
 
 		final var precedeRso = precedingRsos.get(0);
-		assertSame(TransactionRecord.getDefaultInstance(), precedeRso.getTransactionRecord());
 		assertEquals(expectedPrecedingTime, precedeRso.getTimestamp());
 		final var precedeSynth = precedeRso.getTransaction();
 		final var expectedPrecedeSynth = synthFromBody(
@@ -236,7 +233,6 @@ class TxnAwareRecordsHistorianTest {
 		assertEquals(expectedPrecedeSynth, precedeSynth);
 
 		final var followRso = followingRsos.get(0);
-		assertSame(TransactionRecord.getDefaultInstance(), followRso.getTransactionRecord());
 		assertEquals(expectedFollowTime, followRso.getTimestamp());
 		final var followSynth = followRso.getTransaction();
 		final var expectedFollowSynth = synthFromBody(
