@@ -72,7 +72,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-public class AssociatePrecompileTest {
+class AssociatePrecompileTest {
 
 	private static final Bytes pretendArguments = Bytes.fromBase64String("ABCDEF");
 	private static final TokenID tokenMerkleId = IdUtils.asToken("0.0.777");
