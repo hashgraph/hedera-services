@@ -368,13 +368,13 @@ class ServicesStateTest {
 	void minimumChildCountsAsExpected() {
 		// expect:
 		assertEquals(
-				StateChildIndices.NUM_PRE_TWENTY_CHILDREN,
+				StateChildIndices.NUM_PRE_0210_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_0180_VERSION));
 		assertEquals(
-				StateChildIndices.NUM_PRE_TWENTY_CHILDREN,
+				StateChildIndices.NUM_PRE_0210_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_0180_VERSION));
 		assertEquals(
-				StateChildIndices.NUM_TWENTY_CHILDREN,
+				StateChildIndices.NUM_0210_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_0210_VERSION));
 		assertThrows(IllegalArgumentException.class,
 				() -> subject.getMinimumChildCount(StateVersions.CURRENT_VERSION + 1));
