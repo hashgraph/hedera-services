@@ -368,14 +368,14 @@ class ServicesStateTest {
 	void minimumChildCountsAsExpected() {
 		// expect:
 		assertEquals(
-				StateChildIndices.NUM_PRE_TWENTY_CHILDREN,
+				StateChildIndices.NUM_PRE_0210_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_0180_VERSION));
 		assertEquals(
-				StateChildIndices.NUM_PRE_TWENTY_CHILDREN,
+				StateChildIndices.NUM_PRE_0210_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_0180_VERSION));
 		assertEquals(
-				StateChildIndices.NUM_TWENTY_CHILDREN,
-				subject.getMinimumChildCount(StateVersions.RELEASE_TWENTY_VERSION));
+				StateChildIndices.NUM_0210_CHILDREN,
+				subject.getMinimumChildCount(StateVersions.RELEASE_0210_VERSION));
 		assertThrows(IllegalArgumentException.class,
 				() -> subject.getMinimumChildCount(StateVersions.CURRENT_VERSION + 1));
 	}
@@ -397,7 +397,7 @@ class ServicesStateTest {
 
 	@Test
 	void defersInitWhenInitializingFromRelease0190() {
-		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0190_VERSION);
+		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0190_AND_020_VERSION);
 
 		subject.init(platform, addressBook, dualState);
 
@@ -424,7 +424,7 @@ class ServicesStateTest {
 	@Test
 	void doesntMigrateWhenInitializingFromRelease0200() {
 		// given:
-		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_TWENTY_VERSION);
+		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0210_VERSION);
 
 		// expect:
 		assertDoesNotThrow(subject::migrate);
@@ -436,7 +436,7 @@ class ServicesStateTest {
 
 		subject = mock(ServicesState.class);
 		willCallRealMethod().given(subject).migrate();
-		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0190_VERSION);
+		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0190_AND_020_VERSION);
 		given(subject.getPlatformForDeferredInit()).willReturn(platform);
 		given(subject.getAddressBookForDeferredInit()).willReturn(addressBook);
 		given(subject.getDualStateForDeferredInit()).willReturn(dualState);
@@ -444,7 +444,7 @@ class ServicesStateTest {
 		subject.migrate();
 
 		verify(blobMigrator).migrateFromBinaryObjectStore(
-				subject, CANONICAL_JDB_LOC, StateVersions.RELEASE_0190_VERSION);
+				subject, CANONICAL_JDB_LOC, StateVersions.RELEASE_0190_AND_020_VERSION);
 		verify(subject).init(platform, addressBook, dualState);
 		ServicesState.setBlobMigrator(ReleaseTwentyMigration::migrateFromBinaryObjectStore);
 	}

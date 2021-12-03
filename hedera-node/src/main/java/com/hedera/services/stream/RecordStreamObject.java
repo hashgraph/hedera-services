@@ -67,18 +67,6 @@ public class RecordStreamObject
 	}
 
 	public RecordStreamObject(
-			final TransactionRecord transactionRecord,
-			final Transaction transaction,
-			final Instant consensusTimestamp
-	) {
-		this.transaction = transaction;
-		this.consensusTimestamp = consensusTimestamp;
-		this.transactionRecord = transactionRecord;
-
-		runningHash = new RunningHash();
-	}
-
-	public RecordStreamObject(
 			final ExpirableTxnRecord fcTransactionRecord,
 			final Transaction transaction,
 			final Instant consensusTimestamp
@@ -187,6 +175,10 @@ public class RecordStreamObject
 		return transaction;
 	}
 
+	public ExpirableTxnRecord getExpirableTransactionRecord() {
+		return fcTransactionRecord;
+	}
+
 	public TransactionRecord getTransactionRecord() {
 		ensureNonNullGrpcRecord();
 		return transactionRecord;
@@ -196,5 +188,18 @@ public class RecordStreamObject
 		if (transactionRecord == null) {
 			transactionRecord = fcTransactionRecord.asGrpc();
 		}
+	}
+
+	/* --- Only used by unit tests --- */
+	RecordStreamObject(
+			final TransactionRecord transactionRecord,
+			final Transaction transaction,
+			final Instant consensusTimestamp
+	) {
+		this.transaction = transaction;
+		this.consensusTimestamp = consensusTimestamp;
+		this.transactionRecord = transactionRecord;
+
+		runningHash = new RunningHash();
 	}
 }

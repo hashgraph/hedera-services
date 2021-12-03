@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
+import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
 
 @Singleton
 public class RenewalRecordsHelper {
@@ -140,8 +141,10 @@ public class RenewalRecordsHelper {
 		final var receipt = new TxnReceipt();
 		receipt.setAccountId(id);
 
+		/* FUTURE WORK - determine if, and how, the nonce should be altered here. */
+		final var txnId = new TxnId(EntityId.fromGrpcAccountId(accountId), MISSING_INSTANT, false, USER_TRANSACTION_NONCE);
 		return ExpirableTxnRecord.newBuilder()
-				.setTxnId(new TxnId(EntityId.fromGrpcAccountId(accountId), MISSING_INSTANT, false))
+				.setTxnId(txnId)
 				.setReceipt(receipt)
 				.setConsensusTime(at);
 	}

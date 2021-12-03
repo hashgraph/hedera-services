@@ -143,7 +143,7 @@ public class BasicTransactionContext implements TransactionContext {
 
 		narratedCharging.resetForTxn(accessor, submittingMember);
 
-		recordSoFar.clear();
+		recordSoFar.reset();
 		sideEffectsTracker.reset();
 		contractFunctionResult = null;
 	}
@@ -184,10 +184,10 @@ public class BasicTransactionContext implements TransactionContext {
 	}
 
 	@Override
-	public ExpirableTxnRecord recordSoFar() {
+	public ExpirableTxnRecord.Builder recordSoFar() {
 		final var receiptBuilder = receiptSoFar();
 		final var totalFees = narratedCharging.totalFeesChargedToPayer() + otherNonThresholdFees;
-		recordSoFar = creator.createExpiringRecord(
+		recordSoFar = creator.createTopLevelRecord(
 				totalFees,
 				hash,
 				accessor,
@@ -197,7 +197,7 @@ public class BasicTransactionContext implements TransactionContext {
 				sideEffectsTracker);
 
 		recordConfig.accept(recordSoFar);
-		return recordSoFar.build();
+		return recordSoFar;
 	}
 
 	TxnReceipt.Builder receiptSoFar() {

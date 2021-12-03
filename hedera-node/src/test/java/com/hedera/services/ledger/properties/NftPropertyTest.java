@@ -25,36 +25,38 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class NftPropertyTest {
 	private final byte[] aMeta = "abcdefgh".getBytes();
+	private final byte[] bMeta = "hgfedcba".getBytes();
 	private final EntityId aEntity = new EntityId(0, 0, 3);
 	private final EntityId bEntity = new EntityId(0, 0, 4);
 	private final RichInstant aInstant = new RichInstant(1_234_567L, 1);
+	private final RichInstant bInstant = new RichInstant(1_234_567L, 2);
 
 	@Test
-	void getterWorks() {
+	void gettersWork() {
 		// given:
 		final var aSubject = new MerkleUniqueToken(aEntity, aMeta, aInstant);
-		// and:
-		final var getter = NftProperty.OWNER.getter();
 
 		// expect:
-		assertEquals(aEntity, getter.apply(aSubject));
+		assertEquals(aEntity, NftProperty.OWNER.getter().apply(aSubject));
+		assertEquals(aMeta, NftProperty.METADATA.getter().apply(aSubject));
+		assertEquals(aSubject.getPackedCreationTime(), NftProperty.CREATION_TIME.getter().apply(aSubject));
 	}
 
 	@Test
 	void setterWorks() {
-		// given:
 		final var aSubject = new MerkleUniqueToken(aEntity, aMeta, aInstant);
-		// and:
-		final var setter = NftProperty.OWNER.setter();
+		final var bSubject = new MerkleUniqueToken(bEntity, bMeta, bInstant);
 
-		// when:
-		setter.accept(aSubject, bEntity);
+		NftProperty.OWNER.setter().accept(aSubject, bEntity);
+		NftProperty.CREATION_TIME.setter().accept(aSubject, packedTime(bInstant.getSeconds(), bInstant.getNanos()));
+		NftProperty.METADATA.setter().accept(aSubject, bMeta);
 
 		// expect:
-		assertEquals(bEntity, aSubject.getOwner());
+		assertEquals(bSubject, aSubject);
 	}
 }
