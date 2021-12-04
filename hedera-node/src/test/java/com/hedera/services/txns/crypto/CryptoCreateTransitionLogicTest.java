@@ -94,7 +94,6 @@ class CryptoCreateTransitionLogicTest {
 	private PlatformTxnAccessor accessor;
 	private CryptoCreateTransitionLogic subject;
 	private GlobalDynamicProperties dynamicProperties;
-	private CreateLogic createLogic;
 
 	@BeforeEach
 	private void setup() {
@@ -104,11 +103,10 @@ class CryptoCreateTransitionLogicTest {
 		accessor = mock(PlatformTxnAccessor.class);
 		validator = mock(OptionValidator.class);
 		dynamicProperties = mock(GlobalDynamicProperties.class);
-		createLogic = new CreateLogic(validator, dynamicProperties);
 		given(dynamicProperties.maxTokensPerAccount()).willReturn(MAX_TOKEN_ASSOCIATIONS);
 		withRubberstampingValidator();
 
-		subject = new CryptoCreateTransitionLogic(ledger, validator, txnCtx, dynamicProperties, createLogic);
+		subject = new CryptoCreateTransitionLogic(ledger, validator, txnCtx, dynamicProperties);
 	}
 
 	@Test

@@ -114,7 +114,7 @@ class LedgerBalanceChangesTest {
 	@Mock
 	private MutableEntityAccess mutableEntityAccess;
 	@Mock
-	private TransferCreationsFactory transferCreations;
+	private AutoAccountCreator transferCreations;
 
 	private HederaLedger subject;
 
@@ -337,6 +337,23 @@ class LedgerBalanceChangesTest {
 		// and:
 		assertEquals(expectedXfers(), inProgress);
 		assertEquals(expectedTokenXfers(), inProgressTokens);
+	}
+
+	@Test
+	void happyPathAutoTransfer() {
+		givenInitialBalancesAndOwnership();
+
+		// when:
+		TransferList inProgress;
+		List<TokenTransferList> inProgressTokens;
+		subject.begin();
+		// and:
+		assertDoesNotThrow(() -> subject.doZeroSum(fixtureChanges()));
+
+		inProgress = subject.netTransfersInTxn();
+		inProgressTokens = subject.netTokenTransfersInTxn();
+		// and:
+		subject.commit();
 	}
 
 	@Test

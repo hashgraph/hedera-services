@@ -60,7 +60,7 @@ public class TransferLogic {
 	private final TokenStore tokenStore;
 	private final MerkleAccountScopedCheck scopedCheck;
 	private final UniqTokenViewsManager tokenViewsManager;
-	private final AutoAccountCreationsFactory transferCreations;
+	private final AutoAccountCreator autoAccountCreator;
 
 	@Inject
 	public TransferLogic(final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
@@ -71,14 +71,14 @@ public class TransferLogic {
 			final UniqTokenViewsManager tokenViewsManager,
 			final GlobalDynamicProperties dynamicProperties,
 			final OptionValidator validator,
-			final AutoAccountCreationsFactory transferCreations) {
+			final AutoAccountCreator autoAccountCreator) {
 		this.accountsLedger = accountsLedger;
 		this.nftsLedger = nftsLedger;
 		this.tokenRelsLedger = tokenRelsLedger;
 		this.sideEffectsTracker = sideEffectsTracker;
 		this.tokenStore = tokenStore;
 		this.tokenViewsManager = tokenViewsManager;
-		this.transferCreations = transferCreations;
+		this.autoAccountCreator = autoAccountCreator;
 
 		scopedCheck = new MerkleAccountScopedCheck(dynamicProperties, validator);
 	}
@@ -100,7 +100,7 @@ public class TransferLogic {
 			}
 		}
 
-		validity = transferCreations.autoCreateForAliasTransfers(autoCreateAliases, accountsLedger);
+		validity = autoAccountCreator.autoCreateForAliasTransfers(autoCreateAliases, accountsLedger);
 
 		if (validity == OK) {
 			adjustHbarUnchecked(changes);
@@ -124,7 +124,7 @@ public class TransferLogic {
 
 	private void dropPendingAutoCreations() {
 		accountsLedger.undoCreations();
-		transferCreations.clearTempCreations();
+		autoAccountCreator.clearTempCreations();
 		sideEffectsTracker.resetTrackedAutoCreatedAccount();
 	}
 

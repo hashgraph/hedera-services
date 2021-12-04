@@ -24,7 +24,7 @@ import java.util.function.Supplier;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KEY_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-public class AutoAccountCreationsFactory {
+public class AutoAccountCreator {
 	private AccountRecordsHistorian recordsHistorian = null;
 	private EntityIdSource ids;
 	private Supplier<SideEffectsTracker> sideEffectsFactory = SideEffectsTracker::new;
@@ -36,7 +36,7 @@ public class AutoAccountCreationsFactory {
 	public static final String AUTO_CREATED_ACCOUNT_MEMO = "auto-created account";
 
 	@Inject
-	public AutoAccountCreationsFactory(
+	public AutoAccountCreator(
 			SyntheticTxnFactory syntheticTxnFactory,
 			EntityCreator creator,
 			EntityIdSource ids) {

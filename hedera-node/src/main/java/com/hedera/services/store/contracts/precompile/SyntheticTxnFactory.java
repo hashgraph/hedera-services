@@ -38,8 +38,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.List;
 
-import static com.hedera.services.ledger.AutoAccountCreationsFactory.AUTO_CREATED_ACCOUNT_MEMO;
-import static com.hedera.services.ledger.AutoAccountCreationsFactory.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.ledger.AutoAccountCreator.AUTO_CREATED_ACCOUNT_MEMO;
+import static com.hedera.services.ledger.AutoAccountCreator.THREE_MONTHS_IN_SECONDS;
 
 @Singleton
 public class SyntheticTxnFactory {
