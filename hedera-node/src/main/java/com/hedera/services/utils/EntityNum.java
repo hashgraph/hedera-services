@@ -40,7 +40,7 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCod
  * when compared to the {@code java.lang.Integer} boxed type.
  */
 public class EntityNum {
-	static final EntityNum MISSING_NUM = new EntityNum(0);
+	public static final EntityNum MISSING_NUM = new EntityNum(0);
 
 	private final int value;
 
