@@ -37,8 +37,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.nio.charset.StandardCharsets;
-
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_ASSOCIATE_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_ASSOCIATE_TOKENS;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_BURN_TOKEN;
@@ -82,7 +80,6 @@ class HTSPrecompiledContractTest {
 	@Mock
 	private DissociationFactory dissociationFactory;
 
-
 	private HTSPrecompiledContract subject;
 
 	@BeforeEach
@@ -104,14 +101,11 @@ class HTSPrecompiledContractTest {
 
 	@Test
 	void computeRevertsTheFrameIfTheFrameIsStatic() {
-		// given
 		given(messageFrame.isStatic()).willReturn(true);
 
-		// when
 		var result = subject.compute(input, messageFrame);
 
-		// then
-		verify(messageFrame).setRevertReason(Bytes.of("Cannot interact with HTS in a static call".getBytes(StandardCharsets.UTF_8)));
+		verify(messageFrame).setRevertReason(Bytes.of("HTS precompiles are not static".getBytes()));
 		assertNull(result);
 	}
 
@@ -218,35 +212,25 @@ class HTSPrecompiledContractTest {
 
 	@Test
 	void computeCallsCorrectImplementationForBurnToken() {
-		// given
-		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(
-				validator, dynamicProperties, gasCalculator,
-				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory, creator, dissociationFactory));
+		HTSPrecompiledContract contract = mock(HTSPrecompiledContract.class);
+		willCallRealMethod().given(contract).compute(input, messageFrame);
 		given(input.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
 		given(input.getInt(0)).willReturn(ABI_ID_BURN_TOKEN);
 
-		// when
 		contract.compute(input, messageFrame);
 
-		// then
 		verify(contract).computeBurnToken(input, messageFrame);
 	}
 
 	@Test
 	void computeCallsCorrectImplementationForAssociateTokens() {
-		// given
-		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(
-				validator, dynamicProperties, gasCalculator,
-				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory, creator, dissociationFactory));
+		HTSPrecompiledContract contract = mock(HTSPrecompiledContract.class);
+		willCallRealMethod().given(contract).compute(input, messageFrame);
 		given(input.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
 		given(input.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKENS);
 
-		// when
 		contract.compute(input, messageFrame);
 
-		// then
 		verify(contract).computeAssociateTokens(input, messageFrame);
 	}
 
@@ -267,18 +251,13 @@ class HTSPrecompiledContractTest {
 
 	@Test
 	void computeCallsCorrectImplementationForDissociateTokens() {
-		// given
-		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(
-				validator, dynamicProperties, gasCalculator,
-				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory, creator, dissociationFactory));
+		final var contract = mock(HTSPrecompiledContract.class);
+		willCallRealMethod().given(contract).compute(input, messageFrame);
 		given(input.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
 		given(input.getInt(0)).willReturn(ABI_ID_DISSOCIATE_TOKENS);
 
-		// when
 		contract.compute(input, messageFrame);
 
-		// then
 		verify(contract).computeDissociateTokens(input, messageFrame);
 	}
 
@@ -348,39 +327,6 @@ class HTSPrecompiledContractTest {
 
 		// when
 		var result = subject.computeTransferNft(input, messageFrame);
-
-		// then
-		assertNull(result);
-	}
-
-	@Test
-	void verifyComputeBurnToken() {
-		// given
-
-		// when
-		var result = subject.computeBurnToken(input, messageFrame);
-
-		// then
-		assertNull(result);
-	}
-
-	@Test
-	void verifyComputeAssociateTokens() {
-		// given
-
-		// when
-		var result = subject.computeAssociateTokens(input, messageFrame);
-
-		// then
-		assertNull(result);
-	}
-
-	@Test
-	void verifyComputeDissociateTokens() {
-		// given
-
-		// when
-		var result = subject.computeDissociateTokens(input, messageFrame);
 
 		// then
 		assertNull(result);

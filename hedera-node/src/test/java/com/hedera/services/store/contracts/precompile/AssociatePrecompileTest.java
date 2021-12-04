@@ -72,42 +72,58 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings("rawtypes")
 class AssociatePrecompileTest {
-
-	private static final Bytes pretendArguments = Bytes.fromBase64String("ABCDEF");
-	private static final TokenID tokenMerkleId = IdUtils.asToken("0.0.777");
-	private static final AccountID accountMerkleId = IdUtils.asAccount("0.0.999");
-	private static final SyntheticTxnFactory.AssociateToken associateOp = new SyntheticTxnFactory.AssociateToken(accountMerkleId, tokenMerkleId);
-	private static final Address recipientAddress = Address.ALTBN128_ADD;
-	private static final Address contractAddress = Address.ALTBN128_MUL;
-	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
-	private static final Bytes invalidSigResult = UInt256.valueOf(ResponseCodeEnum.INVALID_SIGNATURE_VALUE);
-
-	@Mock private OptionValidator validator;
-	@Mock private GlobalDynamicProperties dynamicProperties;
-	@Mock private GasCalculator gasCalculator;
-	@Mock private AccountRecordsHistorian recordsHistorian;
-	@Mock private SoliditySigsVerifier sigsVerifier;
-	@Mock private DecodingFacade decoder;
-	@Mock private SyntheticTxnFactory syntheticTxnFactory;
-	@Mock private EntityCreator creator;
-	@Mock private DissociationFactory dissociationFactory;
-	@Mock private AccountStore accountStore;
-	@Mock private TypedTokenStore tokenStore;
-	@Mock private AssociateLogic associateLogic;
-	@Mock private HTSPrecompiledContract.AssociateLogicFactory associateLogicFactory;
-	@Mock private HTSPrecompiledContract.TokenStoreFactory tokenStoreFactory;
-	@Mock private HTSPrecompiledContract.AccountStoreFactory accountStoreFactory;
-	@Mock private SideEffectsTracker sideEffects;
-	@Mock private MessageFrame frame;
-	@Mock private AbstractLedgerWorldUpdater worldUpdater;
-	@Mock private WorldLedgers wrappedLedgers;
-	@Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
-	@Mock private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRels;
-	@Mock private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nfts;
-	@Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
-	@Mock private TransactionBody.Builder mockSynthBodyBuilder;
-	@Mock private ExpirableTxnRecord.Builder mockRecordBuilder;
+	@Mock
+	private OptionValidator validator;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private GasCalculator gasCalculator;
+	@Mock
+	private AccountRecordsHistorian recordsHistorian;
+	@Mock
+	private SoliditySigsVerifier sigsVerifier;
+	@Mock
+	private DecodingFacade decoder;
+	@Mock
+	private SyntheticTxnFactory syntheticTxnFactory;
+	@Mock
+	private EntityCreator creator;
+	@Mock
+	private DissociationFactory dissociationFactory;
+	@Mock
+	private AccountStore accountStore;
+	@Mock
+	private TypedTokenStore tokenStore;
+	@Mock
+	private AssociateLogic associateLogic;
+	@Mock
+	private HTSPrecompiledContract.AssociateLogicFactory associateLogicFactory;
+	@Mock
+	private HTSPrecompiledContract.TokenStoreFactory tokenStoreFactory;
+	@Mock
+	private HTSPrecompiledContract.AccountStoreFactory accountStoreFactory;
+	@Mock
+	private SideEffectsTracker sideEffects;
+	@Mock
+	private MessageFrame frame;
+	@Mock
+	private AbstractLedgerWorldUpdater worldUpdater;
+	@Mock
+	private WorldLedgers wrappedLedgers;
+	@Mock
+	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
+	@Mock
+	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRels;
+	@Mock
+	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nfts;
+	@Mock
+	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
+	@Mock
+	private TransactionBody.Builder mockSynthBodyBuilder;
+	@Mock
+	private ExpirableTxnRecord.Builder mockRecordBuilder;
 
 	private HTSPrecompiledContract subject;
 
@@ -129,7 +145,7 @@ class AssociatePrecompileTest {
 	void computeAssociateTokenFailurePathWorks() {
 		// given:
 		givenFrameContext();
-		given(decoder.decodeAssociate(pretendArguments)).willReturn(associateOp);
+		given(decoder.decodeAssociation(pretendArguments)).willReturn(associateOp);
 		given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
 		given(sigsVerifier.hasActiveKey(Id.fromGrpcAccount(accountMerkleId), recipientAddress, contractAddress))
 				.willReturn(false);
@@ -147,7 +163,7 @@ class AssociatePrecompileTest {
 	void computeAssociateTokenHappyPathWorks() {
 		givenFrameContext();
 		givenLedgers();
-		given(decoder.decodeAssociate(pretendArguments))
+		given(decoder.decodeAssociation(pretendArguments))
 				.willReturn(associateOp);
 		given(syntheticTxnFactory.createAssociate(associateOp))
 				.willReturn(mockSynthBodyBuilder);
@@ -158,7 +174,7 @@ class AssociatePrecompileTest {
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER,
 				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects))
 				.willReturn(tokenStore);
-		given(associateLogicFactory.newAssociateLogic(tokenStore ,accountStore, dynamicProperties))
+		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties))
 				.willReturn(associateLogic);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects))
 				.willReturn(mockRecordBuilder);
@@ -173,12 +189,41 @@ class AssociatePrecompileTest {
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}
 
+	@Test
+	void computeMultiAssociateTokenHappyPathWorks() {
+		givenFrameContext();
+		givenLedgers();
+		given(decoder.decodeMultipleAssociations(pretendArguments))
+				.willReturn(multiAssociateOp);
+		given(syntheticTxnFactory.createAssociate(multiAssociateOp))
+				.willReturn(mockSynthBodyBuilder);
+		given(sigsVerifier.hasActiveKey(Id.fromGrpcAccount(accountMerkleId), recipientAddress, contractAddress))
+				.willReturn(true);
+		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
+				.willReturn(accountStore);
+		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER,
+				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects))
+				.willReturn(tokenStore);
+		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties))
+				.willReturn(associateLogic);
+		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects))
+				.willReturn(mockRecordBuilder);
+
+		// when:
+		final var result = subject.computeAssociateTokens(pretendArguments, frame);
+
+		// then:
+		assertEquals(successResult, result);
+		verify(associateLogic).associate(Id.fromGrpcAccount(accountMerkleId), multiAssociateOp.getTokenIds());
+		verify(wrappedLedgers).commit();
+		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+	}
+
 	private void givenFrameContext() {
 		given(frame.getContractAddress()).willReturn(contractAddress);
 		given(frame.getRecipientAddress()).willReturn(recipientAddress);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
-
 	}
 
 	private void givenLedgers() {
@@ -187,4 +232,17 @@ class AssociatePrecompileTest {
 		given(wrappedLedgers.nfts()).willReturn(nfts);
 		given(wrappedLedgers.tokens()).willReturn(tokens);
 	}
+
+	private static final Bytes pretendArguments = Bytes.fromBase64String("ABCDEF");
+	private static final TokenID tokenMerkleId = IdUtils.asToken("0.0.777");
+	private static final AccountID accountMerkleId = IdUtils.asAccount("0.0.999");
+	private static final SyntheticTxnFactory.Association associateOp =
+			SyntheticTxnFactory.Association.singleAssociation(accountMerkleId, tokenMerkleId);
+	private static final SyntheticTxnFactory.Association multiAssociateOp =
+			SyntheticTxnFactory.Association.singleAssociation(accountMerkleId, tokenMerkleId);
+	private static final Address recipientAddress = Address.ALTBN128_ADD;
+	private static final Address contractAddress = Address.ALTBN128_MUL;
+	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
+	private static final Bytes invalidSigResult = UInt256.valueOf(ResponseCodeEnum.INVALID_SIGNATURE_VALUE);
+
 }
