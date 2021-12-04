@@ -100,7 +100,8 @@ public interface EntityCreator {
 	 */
 	ExpirableTxnRecord.Builder createSuccessfulSyntheticRecord(
 			List<FcAssessedCustomFee> assessedCustomFees,
-			SideEffectsTracker sideEffectsTracker);
+			SideEffectsTracker sideEffectsTracker,
+			String memo);
 
 	/**
 	 * Returns a {@link ExpirableTxnRecord.Builder} summarizing a failed synthetic transaction.

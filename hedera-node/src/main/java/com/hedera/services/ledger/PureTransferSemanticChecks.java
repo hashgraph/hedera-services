@@ -20,6 +20,7 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -40,6 +41,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIM
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KEY_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -84,6 +86,9 @@ public class PureTransferSemanticChecks {
 		if (!isAcceptableSize(hbarAdjusts, maxHbarAdjusts)) {
 			return TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 		}
+		if(!isValidAlias(hbarAdjusts)){
+			return INVALID_KEY_ENCODING; // need to change response code to INVALID_ALIAS_KEY
+		}
 
 		final var tokenValidity = validateTokenTransferSyntax(
 				tokenAdjustsList, maxTokenAdjusts, maxOwnershipChanges, areNftsEnabled);
@@ -91,6 +96,20 @@ public class PureTransferSemanticChecks {
 			return tokenValidity;
 		}
 		return validateTokenTransferSemantics(tokenAdjustsList);
+	}
+
+	boolean isValidAlias(final List<AccountAmount> hbarAdjusts) {
+		for (AccountAmount aa : hbarAdjusts) {
+			final var alias = aa.getAccountID().getAlias();
+			if (!alias.equals(ByteString.EMPTY) && isValidPrimitiveKey(alias)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private boolean isValidPrimitiveKey(final ByteString alias) {
+		return alias.toStringUtf8().length() == 33 || alias.toStringUtf8().length() == 32;
 	}
 
 	ResponseCodeEnum validateTokenTransferSyntax(

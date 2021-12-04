@@ -21,8 +21,11 @@ package com.hedera.services.ledger;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
+import com.hedera.services.ServicesState;
 import com.hedera.services.ledger.backing.BackingAccounts;
 import com.hedera.services.ledger.backing.BackingTokenRels;
+import com.hedera.services.state.AutoAccountCreationsManager;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -33,6 +36,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+import static com.hedera.services.ServicesState.getAutoAccountsInstance;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
@@ -65,6 +69,7 @@ public class BalanceChange {
 	private AccountID accountId;
 	private AccountID counterPartyAccountId = null;
 	private ResponseCodeEnum codeForInsufficientBalance;
+	private ByteString alias = ByteString.EMPTY;
 
 	public static BalanceChange changingHbar(AccountAmount aa) {
 		return new BalanceChange(null, aa, INSUFFICIENT_ACCOUNT_BALANCE);
@@ -114,6 +119,7 @@ public class BalanceChange {
 	private BalanceChange(Id token, AccountAmount aa, ResponseCodeEnum code) {
 		this.token = token;
 		this.accountId = aa.getAccountID();
+		this.alias = aa.getAccountID().getAlias();
 		this.account = Id.fromGrpcAccount(accountId);
 		this.units = aa.getAmount();
 		this.originalUnits = units;
@@ -127,6 +133,14 @@ public class BalanceChange {
 		this.counterPartyAccountId = receiver;
 		this.account = Id.fromGrpcAccount(accountId);
 		this.units = serialNo;
+		this.codeForInsufficientBalance = code;
+	}
+
+	/* AutoAccount creation constructor */
+	private BalanceChange(AccountID sender, AccountID receiver, ResponseCodeEnum code) {
+		this.accountId = sender;
+		this.counterPartyAccountId = receiver;
+		this.account = Id.fromGrpcAccount(accountId);
 		this.codeForInsufficientBalance = code;
 	}
 
@@ -172,6 +186,10 @@ public class BalanceChange {
 
 	public AccountID accountId() {
 		return accountId;
+	}
+
+	public ByteString alias() {
+		return alias;
 	}
 
 	public AccountID counterPartyAccountId() {
@@ -232,5 +250,12 @@ public class BalanceChange {
 
 	public boolean isExemptFromCustomFees() {
 		return exemptFromCustomFees;
+	}
+
+	public boolean createsAccount() {
+		AutoAccountCreationsManager autoAccounts = getAutoAccountsInstance();
+		return !alias.equals(ByteString.EMPTY)
+				&& accountId.getAccountNum() == 0
+				&& !autoAccounts.getAutoAccountsMap().containsKey(alias);
 	}
 }

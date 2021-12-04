@@ -26,6 +26,7 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
@@ -65,11 +66,16 @@ public class SideEffectsTracker {
 	private int numTouches = 0;
 	private long newSupply = INAPPLICABLE_NEW_SUPPLY;
 	private TokenID newTokenId = null;
+	private AccountID autoCreatedAccount = null;
 	private List<TokenTransferList> explicitNetTokenUnitOrOwnershipChanges = null;
 
 	@Inject
 	public SideEffectsTracker() {
 		/* For Dagger2 */
+	}
+
+	public void trackAutoCreatedAccount(final AccountID accountID){
+		this.autoCreatedAccount = accountID;
 	}
 
 	/**
@@ -173,6 +179,14 @@ public class SideEffectsTracker {
 	 */
 	public TokenID getTrackedNewTokenId() {
 		return newTokenId;
+	}
+
+	public boolean hasTrackedNewAccountId() {
+		return autoCreatedAccount != null;
+	}
+
+	public AccountID getTrackedNewAccountId() {
+		return autoCreatedAccount;
 	}
 
 	/**

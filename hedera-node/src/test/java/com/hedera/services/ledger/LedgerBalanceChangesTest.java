@@ -113,6 +113,8 @@ class LedgerBalanceChangesTest {
 	private UniqTokenViewsManager tokenViewsManager;
 	@Mock
 	private MutableEntityAccess mutableEntityAccess;
+	@Mock
+	private TransferCreationsFactory transferCreations;
 
 	private HederaLedger subject;
 
@@ -149,7 +151,7 @@ class LedgerBalanceChangesTest {
 				nftsLedger,
 				backingTokens);
 		transferLogic = new TransferLogic(accountsLedger, nftsLedger, tokenRelsLedger, tokenStore, sideEffectsTracker
-				, tokenViewsManager, dynamicProperties, validator);
+				, tokenViewsManager, dynamicProperties, validator, transferCreations);
 		tokenStore.rebuildViews();
 
 		subject = new HederaLedger(
@@ -258,7 +260,7 @@ class LedgerBalanceChangesTest {
 				backingTokens);
 
 		transferLogic = new TransferLogic(accountsLedger, nftsLedger, tokenRelsLedger, tokenStore, sideEffectsTracker
-				, viewManager, dynamicProperties, validator);
+				, viewManager, dynamicProperties, validator, transferCreations);
 		subject = new HederaLedger(
 				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProperties, accountsLedger
 				, transferLogic);

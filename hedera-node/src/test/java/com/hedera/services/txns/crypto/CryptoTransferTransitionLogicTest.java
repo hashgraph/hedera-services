@@ -20,6 +20,7 @@ package com.hedera.services.txns.crypto;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
@@ -30,6 +31,7 @@ import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.MerkleAccountScopedCheck;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
+import com.hedera.services.state.AutoAccountCreationsManager;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
@@ -56,6 +58,7 @@ import java.util.List;
 
 import static com.hedera.test.utils.IdUtils.adjustFrom;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asAliasAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.IdUtils.hbarChange;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
@@ -102,6 +105,8 @@ class CryptoTransferTransitionLogicTest {
 	private ExpandHandleSpanMapAccessor spanMapAccessor;
 	@Mock
 	private PlatformTxnAccessor accessor;
+	@Mock
+	private AutoAccountCreationsManager autoAccounts;
 
 	private TransactionBody cryptoTransferTxn;
 
@@ -110,7 +115,8 @@ class CryptoTransferTransitionLogicTest {
 	@BeforeEach
 	private void setup() {
 		subject = new CryptoTransferTransitionLogic(
-				ledger, txnCtx, dynamicProperties, impliedTransfersMarshal, transferSemanticChecks, spanMapAccessor);
+				ledger, txnCtx, dynamicProperties, impliedTransfersMarshal, transferSemanticChecks,
+				spanMapAccessor);
 	}
 
 	@Test
@@ -139,7 +145,10 @@ class CryptoTransferTransitionLogicTest {
 
 	@Test
 	void recomputesImpliedTransfersIfNotAvailableInSpan() {
-		final var a = asAccount("1.2.3");
+		final var a = AccountID.newBuilder()
+				.setShardNum(0)
+				.setRealmNum(0)
+				.setAlias(ByteString.copyFromUtf8("aaaa")).build();
 		final var b = asAccount("2.3.4");
 		final var impliedTransfers = ImpliedTransfers.valid(
 				validationProps, List.of(
@@ -299,13 +308,13 @@ class CryptoTransferTransitionLogicTest {
 	CryptoTransferTransactionBody xfers = CryptoTransferTransactionBody.newBuilder()
 			.setTransfers(TransferList.newBuilder()
 					.addAccountAmounts(adjustFrom(asAccount("0.0.75231"), -1_000))
-					.addAccountAmounts(adjustFrom(asAccount("0.0.2"), +1_000))
+					.addAccountAmounts(adjustFrom(asAliasAccount(ByteString.copyFromUtf8("aaaa")), +1_000))
 					.build())
 			.addTokenTransfers(TokenTransferList.newBuilder()
 					.setToken(asToken("0.0.12345"))
 					.addAllTransfers(List.of(
 							adjustFrom(asAccount("0.0.2"), -1_000),
-							adjustFrom(asAccount("0.0.3"), +1_000)
+							adjustFrom(asAliasAccount(ByteString.copyFromUtf8("bbb")), +1_000)
 					)))
 			.build();
 

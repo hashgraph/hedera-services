@@ -23,7 +23,10 @@ package com.hedera.services.store.contracts.precompile;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
@@ -34,6 +37,9 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.List;
+
+import static com.hedera.services.ledger.TransferCreationsFactory.AUTO_CREATED_ACCOUNT_MEMO;
+import static com.hedera.services.ledger.TransferCreationsFactory.THREE_MONTHS_IN_SECONDS;
 
 @Singleton
 public class SyntheticTxnFactory {
@@ -79,6 +85,17 @@ public class SyntheticTxnFactory {
 		}
 
 		return TransactionBody.newBuilder().setCryptoTransfer(builder);
+	}
+
+	public TransactionBody.Builder autoAccountCreate(Key alias, long balance){
+		final var txnBody = CryptoCreateTransactionBody.newBuilder()
+				.setKey(alias)
+				.setMemo(AUTO_CREATED_ACCOUNT_MEMO)
+				.setInitialBalance(balance)
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS))
+				.build();
+
+		return TransactionBody.newBuilder().setCryptoCreateAccount(txnBody);
 	}
 
 	public static class HbarTransfer {
