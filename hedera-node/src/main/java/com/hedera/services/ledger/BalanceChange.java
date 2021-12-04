@@ -22,7 +22,6 @@ package com.hedera.services.ledger;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.hedera.services.ServicesState;
 import com.hedera.services.ledger.backing.BackingAccounts;
 import com.hedera.services.ledger.backing.BackingTokenRels;
 import com.hedera.services.state.AutoAccountCreationsManager;

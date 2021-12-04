@@ -79,6 +79,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -605,7 +606,7 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void genesisInitCreatesAnEmptyAutoAccountsMap() throws IOException {
+	void genesisInitCreatesAnEmptyAutoAccountsMap() {
 		ServicesState.setAppBuilder(() -> appBuilder);
 
 		given(appBuilder.bootstrapProps(any())).willReturn(appBuilder);
@@ -620,7 +621,6 @@ class ServicesStateTest {
 		given(platform.getSelfId()).willReturn(selfId);
 
 		// when:
-		assertEquals(null, subject.getAutoAccountsManager());
 		subject.genesisInit(platform, addressBook, dualState);
 
 		// then:

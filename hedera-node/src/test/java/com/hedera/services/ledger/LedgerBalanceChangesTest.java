@@ -114,7 +114,7 @@ class LedgerBalanceChangesTest {
 	@Mock
 	private MutableEntityAccess mutableEntityAccess;
 	@Mock
-	private AutoAccountCreator transferCreations;
+	private AutoAccountCreator autoAccountCreator;
 
 	private HederaLedger subject;
 
@@ -151,7 +151,7 @@ class LedgerBalanceChangesTest {
 				nftsLedger,
 				backingTokens);
 		transferLogic = new TransferLogic(accountsLedger, nftsLedger, tokenRelsLedger, tokenStore, sideEffectsTracker
-				, tokenViewsManager, dynamicProperties, validator, transferCreations);
+				, tokenViewsManager, dynamicProperties, validator, autoAccountCreator);
 		tokenStore.rebuildViews();
 
 		subject = new HederaLedger(
@@ -260,7 +260,7 @@ class LedgerBalanceChangesTest {
 				backingTokens);
 
 		transferLogic = new TransferLogic(accountsLedger, nftsLedger, tokenRelsLedger, tokenStore, sideEffectsTracker
-				, viewManager, dynamicProperties, validator, transferCreations);
+				, viewManager, dynamicProperties, validator, autoAccountCreator);
 		subject = new HederaLedger(
 				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProperties, accountsLedger
 				, transferLogic);
@@ -337,23 +337,6 @@ class LedgerBalanceChangesTest {
 		// and:
 		assertEquals(expectedXfers(), inProgress);
 		assertEquals(expectedTokenXfers(), inProgressTokens);
-	}
-
-	@Test
-	void happyPathAutoTransfer() {
-		givenInitialBalancesAndOwnership();
-
-		// when:
-		TransferList inProgress;
-		List<TokenTransferList> inProgressTokens;
-		subject.begin();
-		// and:
-		assertDoesNotThrow(() -> subject.doZeroSum(fixtureChanges()));
-
-		inProgress = subject.netTransfersInTxn();
-		inProgressTokens = subject.netTokenTransfersInTxn();
-		// and:
-		subject.commit();
 	}
 
 	@Test

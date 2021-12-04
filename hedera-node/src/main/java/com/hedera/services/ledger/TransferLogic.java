@@ -100,7 +100,9 @@ public class TransferLogic {
 			}
 		}
 
-		validity = autoAccountCreator.autoCreateForAliasTransfers(autoCreateAliases, accountsLedger);
+		if(autoCreateAliases.size() > 0){
+			validity = autoAccountCreator.autoCreateForAliasTransfers(autoCreateAliases, accountsLedger);
+		}
 
 		if (validity == OK) {
 			adjustHbarUnchecked(changes);
