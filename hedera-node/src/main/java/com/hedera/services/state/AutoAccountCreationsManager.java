@@ -90,7 +90,10 @@ public class AutoAccountCreationsManager {
 			final MerkleMap<EntityNum, MerkleAccount> currentAccounts) {
 		/* get the alias from the account */
 		ByteString alias = currentAccounts.get(lastClassifiedEntityId).getAlias();
+		remove(alias);
+	}
 
+	public void remove(final ByteString alias){
 		if (autoAccountsMap.containsKey(alias)) {
 			autoAccountsMap.remove(alias);
 		}
