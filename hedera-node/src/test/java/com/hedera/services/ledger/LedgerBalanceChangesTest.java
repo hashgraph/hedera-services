@@ -46,7 +46,6 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.models.Id;
@@ -138,10 +137,6 @@ class LedgerBalanceChangesTest {
 	private EntityIdSource entityIdSource;
 	@Mock
 	EntityCreator entityCreator;
-	@Mock
-	private SideEffectsTracker sideEffects;
-	@Mock
-	private ExpirableTxnRecord.Builder mockRecordBuilder;
 	@Mock
 	private TxnAwareRecordsHistorian recordsHistorian;
 
@@ -422,7 +417,7 @@ class LedgerBalanceChangesTest {
 						.setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS))
 						.build());
 
-		given(syntheticTxnFactory.autoAccountCreate(any(), anyLong())).willReturn(mockCreateTxn);
+		given(syntheticTxnFactory.cryptoCreate(any(), anyLong())).willReturn(mockCreateTxn);
 		given(entityIdSource.newAccountId(any()))
 				.willReturn(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(99).build());
 		given(recordsHistorian.nextChildRecordSourceId()).willReturn(123);

@@ -16,7 +16,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Supplier;
@@ -53,7 +52,7 @@ public class AutoAccountCreator {
 		final var sideEffects = sideEffectsFactory.get();
 		for (ByteString alias : accountsToBeCreated) {
 			try {
-				var syntheticCreateTxn = syntheticTxnFactory.autoAccountCreate(alias, 0L);
+				var syntheticCreateTxn = syntheticTxnFactory.cryptoCreate(alias, 0L);
 				var newAccountId = ids.newAccountId(syntheticCreateTxn.getTransactionID().getAccountID());
 				accountsLedger.create(newAccountId);
 				sideEffects.trackAutoCreatedAccount(newAccountId);
@@ -89,7 +88,7 @@ public class AutoAccountCreator {
 		tempCreations.clear();
 	}
 
-	public void getTempCreations() {
-		tempCreations.clear();
+	public HashMap<ByteString, AccountID> getTempCreations() {
+		return tempCreations;
 	}
 }

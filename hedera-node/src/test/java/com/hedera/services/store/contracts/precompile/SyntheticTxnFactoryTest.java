@@ -21,6 +21,8 @@ package com.hedera.services.store.contracts.precompile;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -28,7 +30,11 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static com.hedera.services.ledger.AutoAccountCreator.AUTO_CREATED_ACCOUNT_MEMO;
+import static com.hedera.services.ledger.AutoAccountCreator.THREE_MONTHS_IN_SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SyntheticTxnFactoryTest {
 	private final SyntheticTxnFactory subject = new SyntheticTxnFactory();
@@ -73,6 +79,30 @@ class SyntheticTxnFactoryTest {
 		assertEquals(
 				List.of(fungibleTransfer.senderAdjustment(), fungibleTransfer.receiverAdjustment()),
 				expFungibleTransfer.getTransfersList());
+	}
+
+	@Test
+	void createsExpectedCryptoCreate() throws InvalidProtocolBufferException {
+		final var balance = 10L;
+		final var alias = KeyFactory.getDefaultInstance().newEd25519().toByteString();
+		final var result = subject.cryptoCreate(alias, balance);
+		final var txnBody = result.build();
+
+		assertTrue(txnBody.hasCryptoCreateAccount());
+		assertEquals(AUTO_CREATED_ACCOUNT_MEMO, txnBody.getCryptoCreateAccount().getMemo());
+		assertEquals(THREE_MONTHS_IN_SECONDS,
+				txnBody.getCryptoCreateAccount().getAutoRenewPeriod().getSeconds());
+		assertEquals(10L,
+				txnBody.getCryptoCreateAccount().getInitialBalance());
+		assertEquals(alias,
+				txnBody.getCryptoCreateAccount().getKey().toByteString());
+	}
+
+	@Test
+	void failsCreateIfInvalidAlias() {
+		final var balance = 10L;
+		final var alias = ByteString.copyFromUtf8("aaa");
+		assertThrows(InvalidProtocolBufferException.class, () -> subject.cryptoCreate(alias, balance));
 	}
 
 	private static final long serialNo = 100;

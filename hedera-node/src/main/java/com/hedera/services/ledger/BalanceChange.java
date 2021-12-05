@@ -35,7 +35,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-import static com.hedera.services.ServicesState.getAutoAccountsInstance;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
@@ -249,7 +248,7 @@ public class BalanceChange {
 	}
 
 	public boolean createsAccount() {
-		AutoAccountCreationsManager autoAccounts = getAutoAccountsInstance();
+		AutoAccountCreationsManager autoAccounts = AutoAccountCreationsManager.getInstance();
 		return !alias.equals(ByteString.EMPTY)
 				&& accountId.getAccountNum() == 0
 				&& !autoAccounts.getAutoAccountsMap().containsKey(alias);

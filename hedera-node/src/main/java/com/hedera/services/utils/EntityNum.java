@@ -21,6 +21,7 @@ package com.hedera.services.utils;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.state.AutoAccountCreationsManager;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -28,7 +29,6 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 
-import static com.hedera.services.ServicesState.getAutoAccountsInstance;
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.isValidNum;
@@ -71,7 +71,7 @@ public class EntityNum {
 		if (!areValidNums(grpc.getShardNum(), grpc.getRealmNum())) {
 			return MISSING_NUM;
 		}
-		final var autoAccountsMap = getAutoAccountsInstance().getAutoAccountsMap();
+		final var autoAccountsMap = AutoAccountCreationsManager.getInstance().getAutoAccountsMap();
 		if (!grpc.getAlias().equals(ByteString.EMPTY)
 				&& autoAccountsMap.containsKey(grpc.getAlias())) {
 			return autoAccountsMap.get(grpc.getAlias());

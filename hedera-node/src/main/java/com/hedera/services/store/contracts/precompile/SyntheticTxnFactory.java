@@ -88,7 +88,7 @@ public class SyntheticTxnFactory {
 		return TransactionBody.newBuilder().setCryptoTransfer(builder);
 	}
 
-	public TransactionBody.Builder autoAccountCreate(ByteString alias, long balance)
+	public TransactionBody.Builder cryptoCreate(ByteString alias, long balance)
 			throws InvalidProtocolBufferException {
 		Key key = Key.parseFrom(alias);
 		final var txnBody = CryptoCreateTransactionBody.newBuilder()
