@@ -102,7 +102,7 @@ public class TransferLogic {
 			}
 		}
 
-		if (autoCreateAliases.size() > 0) {
+		if (!autoCreateAliases.isEmpty()) {
 			validity = autoAccountCreator.createAutoAccounts(autoCreateAliases, accountsLedger);
 		}
 

@@ -96,6 +96,7 @@ public interface EntityCreator {
 	 *
 	 * @param assessedCustomFees the custom fees assessed during the transaction
 	 * @param sideEffectsTracker the side effects tracked throughout the transaction
+	 * @param memo memo to be used for transaction
 	 * @return a {@link ExpirableTxnRecord.Builder} summarizing the input
 	 */
 	ExpirableTxnRecord.Builder createSuccessfulSyntheticRecord(

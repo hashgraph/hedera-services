@@ -20,7 +20,6 @@ package com.hedera.services.state.expiry.renewal;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.AutoAccountCreationsManager;
@@ -43,7 +42,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;

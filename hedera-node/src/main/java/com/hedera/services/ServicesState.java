@@ -95,7 +95,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	private Platform platformForDeferredInit;
 	private AddressBook addressBookForDeferredInit;
 	private SwirldDualState dualStateForDeferredInit;
-	private static AutoAccountCreationsManager autoAccountCreations;
+	private AutoAccountCreationsManager autoAccountCreations;
 
 	public ServicesState() {
 		/* RuntimeConstructable */

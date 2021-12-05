@@ -66,7 +66,7 @@ public class AutoAccountCreationsManager {
 	 * @param accountsMap
 	 * 		accounts MerkleMap
 	 */
-	public void constructAccountAliasRels(MerkleMap<EntityNum, MerkleAccount> accountsMap) {
+	public void constructAccountAliasRels(MerkleMap<? extends EntityNum, ? extends MerkleAccount> accountsMap) {
 		for (Map.Entry entry : accountsMap.entrySet()) {
 			MerkleAccount value = (MerkleAccount) entry.getValue();
 			EntityNum number = (EntityNum) entry.getKey();

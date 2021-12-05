@@ -18,18 +18,22 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import javax.inject.Inject;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+/**
+ * Responsible for creating auto accounts from cryptoTransfer, when hbar is transferred from an account to an alias.
+ */
 public class AutoAccountCreator {
 	private final AccountRecordsHistorian recordsHistorian;
 	private final EntityIdSource ids;
 	private final Supplier<SideEffectsTracker> sideEffectsFactory;
 	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final EntityCreator creator;
-	private final HashMap<ByteString, AccountID> tempCreations = new HashMap<>();
+	private final Map<ByteString, AccountID> tempCreations = new HashMap<>();
 
 	public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 	public static final String AUTO_CREATED_ACCOUNT_MEMO = "auto-created account";
@@ -88,7 +92,7 @@ public class AutoAccountCreator {
 		tempCreations.clear();
 	}
 
-	public HashMap<ByteString, AccountID> getTempCreations() {
+	public Map<ByteString, AccountID> getTempCreations() {
 		return tempCreations;
 	}
 }

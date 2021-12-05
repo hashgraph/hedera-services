@@ -67,8 +67,7 @@ public class BalanceChange {
 	private AccountID accountId;
 	private AccountID counterPartyAccountId = null;
 	private ResponseCodeEnum codeForInsufficientBalance;
-	private ByteString alias = ByteString.EMPTY;
-	private ByteString counterPartyAlias = ByteString.EMPTY;
+	private ByteString alias;
 
 	public static BalanceChange changingHbar(AccountAmount aa) {
 		return new BalanceChange(null, aa, INSUFFICIENT_ACCOUNT_BALANCE);
@@ -133,7 +132,6 @@ public class BalanceChange {
 		this.counterPartyAccountId = receiver;
 		this.account = Id.fromGrpcAccount(accountId);
 		this.alias = accountId.getAlias();
-		this.counterPartyAlias = counterPartyAccountId.getAlias();
 		this.units = serialNo;
 		this.codeForInsufficientBalance = code;
 	}
