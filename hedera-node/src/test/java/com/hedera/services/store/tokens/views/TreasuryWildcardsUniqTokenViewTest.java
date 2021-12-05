@@ -86,7 +86,7 @@ class TreasuryWildcardsUniqTokenViewTest {
 		given(nfts.get(someExplicitNftId)).willReturn(someExplicitNft);
 		given(nfts.get(wildcardNftId)).willReturn(wildcardNft);
 
-		final var actual = subject.ownedAssociations(grpcOwnerId, start, end);
+		final var actual = subject.ownedAssociations(owner, start, end);
 
 		Assertions.assertEquals(List.of(explicitInfo, interpolatedInfo), actual);
 	}
@@ -103,10 +103,11 @@ class TreasuryWildcardsUniqTokenViewTest {
 		given(nfts.get(someExplicitNftId)).willReturn(someExplicitNft);
 		given(nfts.get(wildcardNftId)).willReturn(wildcardNft);
 		given(nfts.get(otherWildcardNftId)).willReturn(otherWildNft);
-		given(tokenStore.listOfTokensServed(grpcOwnerId))
+		final var owner = EntityNum.fromEntityId(ownerId);
+		given(tokenStore.listOfTokensServed(owner))
 				.willReturn(List.of(treasuryTokenId.toGrpcTokenId(), yTreasuryTokenId.toGrpcTokenId()));
 
-		final var actual = subject.ownedAssociations(grpcOwnerId, start, end);
+		final var actual = subject.ownedAssociations(owner, start, end);
 
 		Assertions.assertEquals(List.of(explicitInfo, interpolatedInfo, treasuryInfo), actual);
 	}
@@ -123,11 +124,10 @@ class TreasuryWildcardsUniqTokenViewTest {
 		given(nfts.get(wildcardNftId)).willReturn(wildcardNft);
 		given(nfts.get(otherWildcardNftId)).willReturn(otherWildNft);
 		// and:
-		given(tokenStore.listOfTokensServed(grpcOwnerId))
-				.willReturn(List.of(treasuryTokenId.toGrpcTokenId()));
+		given(tokenStore.listOfTokensServed(owner)).willReturn(List.of(treasuryTokenId.toGrpcTokenId()));
 
 		// when:
-		final var actual = subject.ownedAssociations(grpcOwnerId, start, end+1);
+		final var actual = subject.ownedAssociations(owner, start, end + 1);
 
 		// then:
 		Assertions.assertEquals(List.of(explicitInfo, interpolatedInfo, treasuryInfo), actual);
@@ -165,6 +165,7 @@ class TreasuryWildcardsUniqTokenViewTest {
 	private final EntityId yTreasuryTokenId = new EntityId(0, 0, 9);
 	private final EntityId ownerId = new EntityId(0, 0, 3);
 	private final AccountID grpcOwnerId = ownerId.toGrpcAccountId();
+	private final EntityNum owner = EntityNum.fromEntityId(ownerId);
 	private final MerkleUniqueToken someExplicitNft = new MerkleUniqueToken(ownerId, someMeta, someCreationTime);
 	private final MerkleUniqueToken wildcardNft = new MerkleUniqueToken(MISSING_ENTITY_ID, wildMeta, someCreationTime);
 	private final MerkleUniqueToken otherWildNft = new MerkleUniqueToken(MISSING_ENTITY_ID, om, someCreationTime);
@@ -174,7 +175,7 @@ class TreasuryWildcardsUniqTokenViewTest {
 	private final TokenNftInfo explicitInfo =
 			GrpcUtils.reprOf(tokenId.toGrpcTokenId(), someSerial, someExplicitNft, null);
 	private final TokenNftInfo interpolatedInfo =
-			GrpcUtils.reprOf(otherTokenId.toGrpcTokenId(), wildcardSerial, wildcardNft, grpcOwnerId);
+			GrpcUtils.reprOf(otherTokenId.toGrpcTokenId(), wildcardSerial, wildcardNft, owner);
 	private final TokenNftInfo treasuryInfo =
-			GrpcUtils.reprOf(treasuryTokenId.toGrpcTokenId(), treasurySerial, otherWildNft, grpcOwnerId);
+			GrpcUtils.reprOf(treasuryTokenId.toGrpcTokenId(), treasurySerial, otherWildNft, owner);
 }

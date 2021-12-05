@@ -203,13 +203,13 @@ public class UniqTokenViewsManager {
 	 * @param newOwner
 	 * 		the new owner
 	 */
-	public void exchangeNotice(EntityNumPair nftId, EntityId prevOwner, EntityId newOwner) {
+	public void exchangeNotice(EntityNumPair nftId, EntityId prevOwner, EntityNum newOwner) {
 		if (doNoops) {
 			return;
 		}
 
 		changeOrStage(NFTS_BY_OWNER, prevOwner.identityCode(), nftId.getValue(), false);
-		changeOrStage(NFTS_BY_OWNER, newOwner.identityCode(), nftId.getValue(), true);
+		changeOrStage(NFTS_BY_OWNER, newOwner.intValue(), nftId.getValue(), true);
 	}
 
 	/**
@@ -224,7 +224,7 @@ public class UniqTokenViewsManager {
 	 * @param newOwner
 	 * 		the new owner
 	 */
-	public void treasuryExitNotice(EntityNumPair nftId, EntityId treasury, EntityId newOwner) {
+	public void treasuryExitNotice(EntityNumPair nftId, EntityId treasury, EntityNum newOwner) {
 		if (doNoops) {
 			return;
 		}
@@ -234,7 +234,7 @@ public class UniqTokenViewsManager {
 		} else {
 			changeOrStage(NFTS_BY_OWNER, treasury.identityCode(), nftId.getValue(), false);
 		}
-		changeOrStage(NFTS_BY_OWNER, newOwner.identityCode(), nftId.getValue(), true);
+		changeOrStage(NFTS_BY_OWNER, newOwner.intValue(), nftId.getValue(), true);
 	}
 
 	/**
@@ -249,7 +249,7 @@ public class UniqTokenViewsManager {
 	 * @param treasury
 	 * 		the relevant treasury
 	 */
-	public void treasuryReturnNotice(EntityNumPair nftId, EntityId prevOwner, EntityId treasury) {
+	public void treasuryReturnNotice(final EntityNumPair nftId, final EntityId prevOwner, final EntityNum treasury) {
 		if (doNoops) {
 			return;
 		}
@@ -258,7 +258,7 @@ public class UniqTokenViewsManager {
 		if (isUsingTreasuryWildcards()) {
 			changeOrStage(TREASURY_NFTS_BY_TYPE, nftId.getHiPhi().intValue(), nftId.getValue(), true);
 		} else {
-			changeOrStage(NFTS_BY_OWNER, treasury.identityCode(), nftId.getValue(), true);
+			changeOrStage(NFTS_BY_OWNER, treasury.intValue(), nftId.getValue(), true);
 		}
 	}
 

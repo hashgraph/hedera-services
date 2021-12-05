@@ -22,6 +22,7 @@ package com.hedera.services.state.submerkle;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -130,6 +131,10 @@ public class EntityId implements SelfSerializable {
 
 	public boolean matches(Id id) {
 		return shard == id.getShard() && realm == id.getRealm() && num == id.getNum();
+	}
+
+	public boolean matches(EntityNum num) {
+		return this.num == num.longValue();
 	}
 
 	@Override

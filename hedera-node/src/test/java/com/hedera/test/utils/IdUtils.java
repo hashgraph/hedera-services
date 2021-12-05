@@ -135,14 +135,14 @@ public class IdUtils {
 		return BalanceChange.changingHbar(adjustFrom(account, amount));
 	}
 
-	public static BalanceChange tokenChange(final Id token, final AccountID account, final long amount) {
-		return BalanceChange.changingFtUnits(token, token.asGrpcToken(), adjustFrom(account, amount));
+	public static BalanceChange tokenChange(final Id token, final EntityNum account, final long amount) {
+		return BalanceChange.changingFtUnits(token, token.asGrpcToken(), adjustFrom(account.toGrpcAccountId(), amount));
 	}
 
-	public static NftTransfer nftXfer(AccountID from, AccountID to, long serialNo) {
+	public static NftTransfer nftXfer(final EntityNum from, final EntityNum to, final long serialNo) {
 		return NftTransfer.newBuilder()
-				.setSenderAccountID(from)
-				.setReceiverAccountID(to)
+				.setSenderAccountID(from.toGrpcAccountId())
+				.setReceiverAccountID(to.toGrpcAccountId())
 				.setSerialNumber(serialNo)
 				.build();
 	}

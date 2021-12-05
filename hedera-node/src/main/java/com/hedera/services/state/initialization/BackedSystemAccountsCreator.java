@@ -26,12 +26,11 @@ import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
-import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.swirlds.common.AddressBook;
@@ -43,7 +42,6 @@ import org.apache.logging.log4j.Logger;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 
@@ -76,15 +74,15 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 
 	@Override
 	public void ensureSystemAccounts(
-			BackingStore<AccountID, MerkleAccount> accounts,
-			AddressBook addressBook
+			final BackingStore<EntityNum, MerkleAccount> accounts,
+			final AddressBook addressBook
 	) {
 		long N = properties.getIntProperty("ledger.numSystemAccounts");
 		long expiry = properties.getLongProperty("bootstrap.system.entityExpiry");
 		long tinyBarFloat = properties.getLongProperty("ledger.totalTinyBarFloat");
 
 		for (long num = 1; num <= N; num++) {
-			var id = STATIC_PROPERTIES.scopedAccountWith(num);
+			var id = EntityNum.fromLong(num);
 			if (accounts.contains(id)) {
 				continue;
 			}
@@ -96,7 +94,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 		}
 
 		for (long num = 900; num <= 1000; num++) {
-			var id = STATIC_PROPERTIES.scopedAccountWith(num);
+			var id = EntityNum.fromLong(num);
 			if (!accounts.contains(id)) {
 				accounts.put(id, accountWith(0, expiry));
 			}

@@ -26,7 +26,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.test.utils.IdUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -55,15 +55,15 @@ class UpdateTrackingLedgerAccountTest {
 	private static final long newBalance = 200_000L;
 	private static final long initialBalance = 100_000L;
 	private static final EntityId proxyId = new EntityId(0, 0, 54321);
-	private static final AccountID targetId = IdUtils.asAccount("0.0.12345");
-	private static final Address targetAddress = EntityIdUtils.asTypedSolidityAddress(targetId);
+	private static final EntityNum targetId = EntityNum.fromLong(12345);
+	private static final Address targetAddress = targetId.toTypedSolidityAddress();
 
 	@Mock
 	private EntityIdSource ids;
 	@Mock
 	private EntityAccess entityAccess;
 	@Mock
-	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> trackingAccounts;
+	private TransactionalLedger<EntityNum, AccountProperty, MerkleAccount> trackingAccounts;
 
 	private HederaWorldState parentState;
 

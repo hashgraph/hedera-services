@@ -25,8 +25,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.utils.EntityIdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -46,8 +45,6 @@ import java.util.Set;
 
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
-import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
-import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 
 /**
  * Provides implementation help for both "base" and "stacked" {@link WorldUpdater}s.
@@ -146,7 +143,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 		deletedAccounts.add(address);
 		updatedAccounts.remove(address);
 		if (trackingLedgers.areUsable()) {
-			final var accountId = accountParsedFromSolidityAddress(address);
+			final var accountId = EntityNum.fromAddress(address);
 			trackingLedgers.accounts().set(accountId, IS_DELETED, true);
 		}
 	}
@@ -199,15 +196,15 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 		return wrappedLedgers;
 	}
 
-	private void onAccountPropertyChange(final AccountID id, final AccountProperty property, final Object newValue) {
+	private void onAccountPropertyChange(final EntityNum id, final AccountProperty property, final Object newValue) {
 		/* HTS precompiles cannot create/delete accounts, so the only property we need to keep consistent is BALANCE */
 		if (property == BALANCE) {
-			final var address = EntityIdUtils.asTypedSolidityAddress(id);
+			final var address = id.toTypedSolidityAddress();
 			/* Impossible with a well-behaved precompile, as our wrapped accounts should also show this as deleted */
 			if (deletedAccounts.contains(address)) {
 				throw new IllegalArgumentException(
 						"A wrapped tracking ledger tried to change the " +
-								"balance of deleted account " + asLiteralString(id) + " to " + newValue);
+								"balance of deleted account " + id.toIdString() + " to " + newValue);
 			}
 			var updatedAccount = updatedAccounts.get(address);
 			if (updatedAccount == null) {
@@ -217,7 +214,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 				if (origin == null) {
 					throw new IllegalArgumentException(
 							"A wrapped tracking ledger tried to create/change the " +
-									"balance of missing account " + asLiteralString(id) + " to " + newValue);
+									"balance of missing account " + id.toIdString() + " to " + newValue);
 				}
 				updatedAccount = new UpdateTrackingLedgerAccount<>(origin, trackingLedgers.accounts());
 				track(updatedAccount);
@@ -251,7 +248,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 		return updatedAccounts.values();
 	}
 
-	protected TransactionalLedger<AccountID, AccountProperty, MerkleAccount> trackingAccounts() {
+	protected TransactionalLedger<EntityNum, AccountProperty, MerkleAccount> trackingAccounts() {
 		return trackingLedgers.accounts();
 	}
 }

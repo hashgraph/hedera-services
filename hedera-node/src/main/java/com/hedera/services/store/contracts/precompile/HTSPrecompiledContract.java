@@ -50,6 +50,7 @@ import com.hedera.services.txns.token.MintLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -340,7 +341,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		AccountStore newAccountStore(
 				OptionValidator validator,
 				GlobalDynamicProperties dynamicProperties,
-				BackingStore<AccountID, MerkleAccount> accounts);
+				BackingStore<EntityNum, MerkleAccount> accounts);
 	}
 
 	@FunctionalInterface

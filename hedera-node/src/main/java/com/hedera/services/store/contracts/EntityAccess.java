@@ -25,7 +25,7 @@ package com.hedera.services.store.contracts;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.services.utils.EntityNum;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 
@@ -52,37 +52,37 @@ public interface EntityAccess {
 	String currentManagedChangeSet();
 
 	/* --- Account access --- */
-	void spawn(AccountID id, long balance, HederaAccountCustomizer customizer);
+	void spawn(EntityNum id, long balance, HederaAccountCustomizer customizer);
 
-	void customize(AccountID id, HederaAccountCustomizer customizer);
+	void customize(EntityNum id, HederaAccountCustomizer customizer);
 
-	void adjustBalance(AccountID id, long adjustment);
+	void adjustBalance(EntityNum id, long adjustment);
 
-	long getAutoRenew(AccountID id);
+	long getAutoRenew(EntityNum id);
 
-	long getBalance(AccountID id);
+	long getBalance(EntityNum id);
 
-	long getExpiry(AccountID id);
+	long getExpiry(EntityNum id);
 
-	JKey getKey(AccountID id);
+	JKey getKey(EntityNum id);
 
-	String getMemo(AccountID id);
+	String getMemo(EntityNum id);
 
-	EntityId getProxy(AccountID id);
+	EntityId getProxy(EntityNum id);
 
-	boolean isDeleted(AccountID id);
+	boolean isDeleted(EntityNum id);
 
-	boolean isDetached(AccountID id);
+	boolean isDetached(EntityNum id);
 
-	boolean isExtant(AccountID id);
+	boolean isExtant(EntityNum id);
 
 	/* --- Storage access --- */
-	void putStorage(AccountID id, UInt256 key, UInt256 value);
+	void putStorage(EntityNum id, UInt256 key, UInt256 value);
 
-	UInt256 getStorage(AccountID id, UInt256 key);
+	UInt256 getStorage(EntityNum id, UInt256 key);
 
 	/* --- Bytecode access --- */
-	void storeCode(AccountID id, Bytes code);
+	void storeCode(EntityNum id, Bytes code);
 
-	Bytes fetchCode(AccountID id);
+	Bytes fetchCode(EntityNum id);
 }

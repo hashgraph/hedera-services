@@ -55,7 +55,6 @@ import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.fees.CustomFeeBuilder;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.CustomFee;
@@ -142,17 +141,17 @@ class StateViewTest {
 	private final TokenID tokenId = asToken("0.0.5");
 	private final TokenID nftTokenId = asToken("0.0.3");
 	private final TokenID missingTokenId = asToken("0.0.5555");
-	private final AccountID payerAccountId = asAccount("0.0.9");
-	private final AccountID tokenAccountId = asAccount("0.0.10");
-	private final AccountID treasuryOwnerId = asAccount("0.0.0");
-	private final AccountID nftOwnerId = asAccount("0.0.44");
+	private final EntityNum payerAccountId = EntityNum.fromLong(9);
+	private final EntityNum tokenAccountId = EntityNum.fromLong(10);
+	private final EntityNum treasuryOwnerId = EntityNum.fromLong(0);
+	private final EntityNum nftOwnerId = EntityNum.fromLong(44);
 	private final ScheduleID scheduleId = asSchedule("0.0.8");
 	private final ScheduleID missingScheduleId = asSchedule("0.0.9");
 	private final ContractID cid = asContract("0.0.1");
 	private final byte[] cidAddress = asSolidityAddress((int) cid.getShardNum(), cid.getRealmNum(), cid.getContractNum());
 	private final ContractID notCid = asContract("0.0.3");
-	private final AccountID autoRenew = asAccount("0.0.6");
-	private final AccountID creatorAccountID = asAccount("0.0.7");
+	private final EntityNum autoRenew = EntityNum.fromLong(6);
+	private final EntityNum creatorAccountID = EntityNum.fromLong(7);
 	private final long autoRenewPeriod = 1_234_567;
 	private final String fileMemo = "Originally she thought";
 	private final String scheduleMemo = "For what but eye and ear";
@@ -163,7 +162,7 @@ class StateViewTest {
 	private Map<byte[], byte[]> bytecode;
 	private Map<FileID, byte[]> contents;
 	private Map<FileID, HFileMeta> attrs;
-	private BiFunction<StateView, AccountID, List<TokenRelationship>> mockTokenRelsFn;
+	private BiFunction<StateView, EntityNum, List<TokenRelationship>> mockTokenRelsFn;
 
 	private MerkleMap<EntityNum, MerkleToken> tokens;
 	private MerkleMap<EntityNum, MerkleTopic> topics;
@@ -244,16 +243,16 @@ class StateViewTest {
 		nftOwner = MerkleAccountFactory.newAccount()
 				.get();
 		contracts = (MerkleMap<EntityNum, MerkleAccount>) mock(MerkleMap.class);
-		given(contracts.get(EntityNum.fromContractId(cid))).willReturn(contract);
-		given(contracts.get(EntityNum.fromAccountId(nftOwnerId))).willReturn(nftOwner);
-		given(contracts.get(EntityNum.fromContractId(notCid))).willReturn(notContract);
-		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
+		given(contracts.get(cid)).willReturn(contract);
+		given(contracts.get(nftOwnerId)).willReturn(nftOwner);
+		given(contracts.get(notCid)).willReturn(notContract);
+		given(contracts.get(tokenAccountId)).willReturn(tokenAccount);
 
 		topics = (MerkleMap<EntityNum, MerkleTopic>) mock(MerkleMap.class);
 
 		tokenRels = new MerkleMap<>();
 		tokenRels.put(
-				EntityNumPair.fromLongs(tokenAccountId.getAccountNum(), tokenId.getTokenNum()),
+				EntityNumPair.fromLongs(tokenAccountId.longValue(), tokenId.getTokenNum()),
 				new MerkleTokenRelStatus(123L, false, true, true));
 
 		tokenStore = mock(TokenStore.class);
@@ -269,7 +268,7 @@ class StateViewTest {
 		token.setWipeKey(MISC_ACCOUNT_KT.asJKey());
 		token.setFeeScheduleKey(MISC_ACCOUNT_KT.asJKey());
 		token.setPauseKey(TxnHandlingScenario.TOKEN_PAUSE_KT.asJKey());
-		token.setAutoRenewAccount(EntityId.fromGrpcAccountId(autoRenew));
+		token.setAutoRenewAccount(autoRenew.toEntityId());
 		token.setExpiry(expiry);
 		token.setAutoRenewPeriod(autoRenewPeriod);
 		token.setDeleted(true);
@@ -290,8 +289,8 @@ class StateViewTest {
 				scheduleCreateTxnWith(
 						SCHEDULE_ADMIN_KT.asKey(),
 						scheduleMemo,
-						payerAccountId,
-						creatorAccountID,
+						payerAccountId.toGrpcAccountId(),
+						creatorAccountID.toGrpcAccountId(),
 						MiscUtils.asTimestamp(now.toJava())
 				);
 		schedule = MerkleSchedule.from(parentScheduleCreate.toByteArray(), expiry);
@@ -310,7 +309,7 @@ class StateViewTest {
 		nodeProps = mock(NodeLocalProperties.class);
 		specialFiles = mock(MerkleSpecialFiles.class);
 
-		mockTokenRelsFn = (BiFunction<StateView, AccountID, List<TokenRelationship>>) mock(BiFunction.class);
+		mockTokenRelsFn = (BiFunction<StateView, EntityNum, List<TokenRelationship>>) mock(BiFunction.class);
 
 		StateView.tokenRelsFn = mockTokenRelsFn;
 		given(mockTokenRelsFn.apply(any(), any())).willReturn(Collections.emptyList());
@@ -528,7 +527,7 @@ class StateViewTest {
 						.setKycStatus(TokenKycStatus.KycNotApplicable)
 						.setBalance(321L)
 						.build());
-		given(mockTokenRelsFn.apply(subject, asAccount(cid))).willReturn(rels);
+		given(mockTokenRelsFn.apply(subject, EntityNum.fromContractId(cid))).willReturn(rels);
 
 		final var info = subject.infoForContract(cid).get();
 
@@ -604,14 +603,14 @@ class StateViewTest {
 	void infoForAccount() {
 		final var expectedResponse = CryptoGetInfoResponse.AccountInfo.newBuilder()
 				.setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
-				.setAccountID(tokenAccountId)
+				.setAccountID(tokenAccountId.toGrpcAccountId())
 				.setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
 				.setDeleted(tokenAccount.isDeleted())
 				.setMemo(tokenAccount.getMemo())
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(tokenAccount.getAutoRenewSecs()))
 				.setBalance(tokenAccount.getBalance())
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
-				.setContractAccountID(asSolidityAddressHex(tokenAccountId))
+				.setContractAccountID(asSolidityAddressHex(tokenAccountId.toGrpcAccountId()))
 				.setOwnedNfts(tokenAccount.getNftsOwned())
 				.setMaxAutomaticTokenAssociations(tokenAccount.getMaxAutomaticAssociations())
 				.build();
@@ -628,7 +627,7 @@ class StateViewTest {
 
 	@Test
 	void infoForAccountEmpty() {
-		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(null);
+		given(contracts.get(tokenAccountId)).willReturn(null);
 
 		final var actualResponse = subject.infoForAccount(tokenAccountId);
 
@@ -802,7 +801,7 @@ class StateViewTest {
 		targetNft.setOwner(MISSING_ENTITY_ID);
 
 		final var token = new MerkleToken();
-		token.setTreasury(EntityId.fromGrpcAccountId(tokenAccountId));
+		token.setTreasury(tokenAccountId.toEntityId());
 		given(tokens.get(targetNftKey.getHiPhi())).willReturn(token);
 
 		final var optionalNftInfo = subject.infoForNft(targetNftId);
@@ -907,13 +906,12 @@ class StateViewTest {
 			.build();
 	private final EntityNumPair targetNftKey = EntityNumPair.fromLongs(3, 4);
 	private final EntityNumPair treasuryNftKey = EntityNumPair.fromLongs(3, 5);
-	private final MerkleUniqueToken targetNft = new MerkleUniqueToken(EntityId.fromGrpcAccountId(nftOwnerId), nftMeta,
-			fromJava(nftCreation));
-	private final MerkleUniqueToken treasuryNft = new MerkleUniqueToken(EntityId.fromGrpcAccountId(treasuryOwnerId),
-			nftMeta,
-			fromJava(nftCreation));
+	private final MerkleUniqueToken targetNft = new MerkleUniqueToken(
+			nftOwnerId.toEntityId(), nftMeta, fromJava(nftCreation));
+	private final MerkleUniqueToken treasuryNft = new MerkleUniqueToken(
+			treasuryOwnerId.toEntityId(), nftMeta, fromJava(nftCreation));
 
-	private final CustomFeeBuilder builder = new CustomFeeBuilder(payerAccountId);
+	private final CustomFeeBuilder builder = new CustomFeeBuilder(payerAccountId.toGrpcAccountId());
 	private final CustomFee customFixedFeeInHbar = builder.withFixedFee(fixedHbar(100L));
 	private final CustomFee customFixedFeeInHts = builder.withFixedFee(fixedHts(tokenId, 100L));
 	private final CustomFee customFixedFeeSameToken = builder.withFixedFee(fixedHts(50L));

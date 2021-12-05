@@ -95,7 +95,6 @@ import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
-import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.EntityNum.fromContractId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static java.util.Collections.unmodifiableMap;
@@ -103,7 +102,7 @@ import static java.util.Collections.unmodifiableMap;
 public class StateView {
 	private static final Logger log = LogManager.getLogger(StateView.class);
 
-	static BiFunction<StateView, AccountID, List<TokenRelationship>> tokenRelsFn = StateView::tokenRels;
+	static BiFunction<StateView, EntityNum, List<TokenRelationship>> tokenRelsFn = StateView::tokenRels;
 
 	static final byte[] EMPTY_BYTES = new byte[0];
 	static final MerkleMap<?, ?> EMPTY_FCM = new MerkleMap<>();
@@ -376,22 +375,23 @@ public class StateView {
 		return Optional.of(info.build());
 	}
 
-	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(AccountID id) {
-		var account = accounts().get(fromAccountId(id));
+	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(final EntityNum id) {
+		var account = accounts().get(id);
 		if (account == null) {
 			return Optional.empty();
 		}
 
+		final var grpcId = id.toGrpcAccountId();
 		var info = CryptoGetInfoResponse.AccountInfo.newBuilder()
 				.setKey(asKeyUnchecked(account.getAccountKey()))
-				.setAccountID(id)
+				.setAccountID(grpcId)
 				.setReceiverSigRequired(account.isReceiverSigRequired())
 				.setDeleted(account.isDeleted())
 				.setMemo(account.getMemo())
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(account.getAutoRenewSecs()))
 				.setBalance(account.getBalance())
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(account.getExpiry()))
-				.setContractAccountID(asSolidityAddressHex(id))
+				.setContractAccountID(asSolidityAddressHex(grpcId))
 				.setOwnedNfts(account.getNftsOwned())
 				.setMaxAutomaticTokenAssociations(account.getMaxAutomaticAssociations());
 		Optional.ofNullable(account.getProxy())
@@ -404,20 +404,20 @@ public class StateView {
 		return Optional.of(info.build());
 	}
 
-	public long numNftsOwnedBy(AccountID target) {
-		var account = accounts().get(fromAccountId(target));
+	public long numNftsOwnedBy(final EntityNum target) {
+		var account = accounts().get(target);
 		if (account == null) {
 			return 0L;
 		}
 		return account.getNftsOwned();
 	}
 
-	public Optional<List<TokenNftInfo>> infoForAccountNfts(@Nonnull AccountID aid, long start, long end) {
-		var account = accounts().get(fromAccountId(aid));
+	public Optional<List<TokenNftInfo>> infoForAccountNfts(@Nonnull EntityNum aId, long start, long end) {
+		var account = accounts().get(aId);
 		if (account == null) {
 			return Optional.empty();
 		}
-		final var answer = uniqTokenView.ownedAssociations(aid, start, end);
+		final var answer = uniqTokenView.ownedAssociations(aId, start, end);
 		return Optional.of(answer);
 	}
 
@@ -447,7 +447,7 @@ public class StateView {
 				.setBalance(contract.getBalance())
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(contract.getExpiry()))
 				.setContractAccountID(asSolidityAddressHex(mirrorId));
-		var tokenRels = tokenRelsFn.apply(this, mirrorId);
+		var tokenRels = tokenRelsFn.apply(this, EntityNum.fromAccountId(mirrorId));
 		if (!tokenRels.isEmpty()) {
 			info.addAllTokenRelationships(tokenRels);
 		}
@@ -521,8 +521,8 @@ public class StateView {
 		return flag ? TokenPauseStatus.Paused : TokenPauseStatus.Unpaused;
 	}
 
-	static List<TokenRelationship> tokenRels(StateView view, AccountID id) {
-		var account = view.accounts().get(fromAccountId(id));
+	static List<TokenRelationship> tokenRels(final StateView view, final EntityNum id) {
+		var account = view.accounts().get(id);
 		List<TokenRelationship> relationships = new ArrayList<>();
 		var tokenIds = account.tokens().asTokenIds();
 		for (TokenID tId : tokenIds) {

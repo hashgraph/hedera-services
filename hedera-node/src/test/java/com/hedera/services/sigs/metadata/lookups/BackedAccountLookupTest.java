@@ -22,6 +22,7 @@ package com.hedera.services.sigs.metadata.lookups;
 
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
@@ -41,13 +42,14 @@ import static org.mockito.BDDMockito.given;
 @ExtendWith(MockitoExtension.class)
 class BackedAccountLookupTest {
 	private final AccountID id = IdUtils.asAccount("1.2.3");
+	private final EntityNum accountId = EntityNum.fromAccountId(id);
 	private final MerkleAccount account = MerkleAccountFactory.newAccount()
 			.receiverSigRequired(true)
 			.accountKeys(TxnHandlingScenario.MISC_ADMIN_KT.asJKeyUnchecked())
 			.get();
 
 	@Mock
-	private BackingStore<AccountID, MerkleAccount> accounts;
+	private BackingStore<EntityNum, MerkleAccount> accounts;
 
 	private BackedAccountLookup subject;
 
@@ -58,8 +60,8 @@ class BackedAccountLookupTest {
 
 	@Test
 	void usesRefForImpureLookup() {
-		given(accounts.contains(id)).willReturn(true);
-		given(accounts.getImmutableRef(id)).willReturn(account);
+		given(accounts.contains(accountId)).willReturn(true);
+		given(accounts.getImmutableRef(accountId)).willReturn(account);
 
 		// when:
 		final var result = subject.safeLookup(id);
@@ -71,8 +73,8 @@ class BackedAccountLookupTest {
 
 	@Test
 	void asserSafelookupToString() {
-		given(accounts.contains(id)).willReturn(true);
-		given(accounts.getImmutableRef(id)).willReturn(account);
+		given(accounts.contains(accountId)).willReturn(true);
+		given(accounts.getImmutableRef(accountId)).willReturn(account);
 
 		// when:
 		final var result = subject.safeLookup(id);
@@ -83,7 +85,7 @@ class BackedAccountLookupTest {
 
 	@Test
 	void assertFailledSafeLookup() {
-		given(accounts.contains(id)).willReturn(false);
+		given(accounts.contains(EntityNum.fromAccountId(id))).willReturn(false);
 
 		// when:
 		final var result = subject.safeLookup(id);

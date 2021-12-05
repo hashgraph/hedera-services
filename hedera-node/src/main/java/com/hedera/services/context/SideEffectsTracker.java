@@ -26,6 +26,7 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
@@ -42,7 +43,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.ledger.HederaLedger.TOKEN_ID_COMPARATOR;
 
 /**
@@ -221,8 +221,8 @@ public class SideEffectsTracker {
 	 * @param account
 	 * 		the account involved in the auto-association
 	 */
-	public void trackAutoAssociation(final TokenID token, final AccountID account) {
-		final var association = new FcTokenAssociation(token.getTokenNum(), account.getAccountNum());
+	public void trackAutoAssociation(final TokenID token, final EntityNum account) {
+		final var association = new FcTokenAssociation(token.getTokenNum(), account.longValue());
 		autoAssociations.add(association);
 	}
 
@@ -257,7 +257,7 @@ public class SideEffectsTracker {
 	 * @param amount
 	 * 		the incremental ℏ change to track
 	 */
-	public void trackHbarChange(final AccountID account, final long amount) {
+	public void trackHbarChange(final EntityNum account, final long amount) {
 		updateFungibleChanges(account, amount, netHbarChanges);
 	}
 
@@ -274,7 +274,7 @@ public class SideEffectsTracker {
 	 * @param amount
 	 * 		the incremental unit change to track
 	 */
-	public void trackTokenUnitsChange(final TokenID token, final AccountID account, final long amount) {
+	public void trackTokenUnitsChange(final TokenID token, final EntityNum account, final long amount) {
 		tokensTouched[numTouches++] = token;
 		final var unitChanges = netTokenChanges.computeIfAbsent(token, ignore -> TransferList.newBuilder());
 		updateFungibleChanges(account, amount, unitChanges);
@@ -295,11 +295,11 @@ public class SideEffectsTracker {
 	 * @param to
 	 * 		the receiver of the NFT
 	 */
-	public void trackNftOwnerChange(final NftId nftId, final AccountID from, AccountID to) {
+	public void trackNftOwnerChange(final NftId nftId, final EntityNum from, final EntityNum to) {
 		final var token = nftId.tokenId();
 		tokensTouched[numTouches++] = token;
 		var xfers = nftOwnerChanges.computeIfAbsent(token, ignore -> TokenTransferList.newBuilder());
-		xfers.addNftTransfers(nftTransferBuilderWith(from, to, nftId.serialNo()));
+		xfers.addNftTransfers(nftTransferBuilderWith(from.toGrpcAccountId(), to.toGrpcAccountId(), nftId.serialNo()));
 	}
 
 	/**
@@ -394,12 +394,14 @@ public class SideEffectsTracker {
 	}
 
 	/* --- Internal helpers --- */
-	private void updateFungibleChanges(final AccountID account, final long amount, final TransferList.Builder builder) {
+	private void updateFungibleChanges(final EntityNum account, final long amount, final TransferList.Builder builder) {
+		final var grpcAccountId = account.toGrpcAccountId();
+
 		int loc = 0;
 		int diff = -1;
 		final var changes = builder.getAccountAmountsBuilderList();
 		for (; loc < changes.size(); loc++) {
-			diff = ACCOUNT_ID_COMPARATOR.compare(account, changes.get(loc).getAccountID());
+			diff = Long.compare(account.longValue(), changes.get(loc).getAccountID().getAccountNum());
 			if (diff <= 0) {
 				break;
 			}
@@ -410,9 +412,9 @@ public class SideEffectsTracker {
 			change.setAmount(current + amount);
 		} else {
 			if (loc == changes.size()) {
-				builder.addAccountAmounts(aaBuilderWith(account, amount));
+				builder.addAccountAmounts(aaBuilderWith(grpcAccountId, amount));
 			} else {
-				builder.addAccountAmounts(loc, aaBuilderWith(account, amount));
+				builder.addAccountAmounts(loc, aaBuilderWith(grpcAccountId, amount));
 			}
 		}
 	}

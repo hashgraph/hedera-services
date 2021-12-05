@@ -23,16 +23,13 @@ package com.hedera.services.ledger.backing.pure;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import static com.hedera.services.utils.EntityNum.fromAccountId;
-import static java.util.stream.Collectors.toSet;
-
-public class PureBackingAccounts implements BackingStore<AccountID, MerkleAccount> {
+public class PureBackingAccounts implements BackingStore<EntityNum, MerkleAccount> {
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> delegate;
 
 	public PureBackingAccounts(Supplier<MerkleMap<EntityNum, MerkleAccount>> delegate) {
@@ -40,33 +37,33 @@ public class PureBackingAccounts implements BackingStore<AccountID, MerkleAccoun
 	}
 
 	@Override
-	public MerkleAccount getRef(AccountID id) {
-		return delegate.get().get(fromAccountId(id));
+	public MerkleAccount getRef(final EntityNum id) {
+		return delegate.get().get(id);
 	}
 
 	@Override
-	public MerkleAccount getImmutableRef(AccountID id) {
-		return delegate.get().get(fromAccountId(id));
+	public MerkleAccount getImmutableRef(EntityNum id) {
+		return delegate.get().get(id);
 	}
 
 	@Override
-	public void put(AccountID id, MerkleAccount account) {
+	public void put(final EntityNum id, final MerkleAccount account) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void remove(AccountID id) {
+	public void remove(final EntityNum id) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public boolean contains(AccountID id) {
-		return delegate.get().containsKey(fromAccountId(id));
+	public boolean contains(final EntityNum id) {
+		return delegate.get().containsKey(id);
 	}
 
 	@Override
-	public Set<AccountID> idSet() {
-		return delegate.get().keySet().stream().map(EntityNum::toGrpcAccountId).collect(toSet());
+	public Set<EntityNum> idSet() {
+		return new HashSet<>(delegate.get().keySet());
 	}
 
 	@Override

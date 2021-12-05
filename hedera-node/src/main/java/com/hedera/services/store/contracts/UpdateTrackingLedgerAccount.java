@@ -24,7 +24,7 @@ import com.google.common.base.Preconditions;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.services.utils.EntityNum;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -43,15 +43,14 @@ import java.util.NavigableMap;
 import java.util.TreeMap;
 
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
-import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 
 public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAccount, EvmAccount {
 	private final Hash addressHash;
 	private final Address address;
-	private final AccountID accountId;
+	private final EntityNum accountId;
 	private final NavigableMap<UInt256, UInt256> updatedStorage;
 
-	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> trackingAccounts;
+	private TransactionalLedger<EntityNum, AccountProperty, MerkleAccount> trackingAccounts;
 
 	@Nullable
 	private A account;
@@ -65,11 +64,11 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
 
 	public UpdateTrackingLedgerAccount(
 			final Address address,
-			@Nullable final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> trackingAccounts
+			@Nullable final TransactionalLedger<EntityNum, AccountProperty, MerkleAccount> trackingAccounts
 	) {
 		Preconditions.checkNotNull(address);
 		this.address = address;
-		this.accountId = accountParsedFromSolidityAddress(address);
+		this.accountId = EntityNum.fromAddress(address);
 		this.addressHash = Hash.hash(this.address);
 		this.account = null;
 		this.nonce = 0L;
@@ -82,11 +81,11 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
 	@SuppressWarnings("unchecked")
 	public UpdateTrackingLedgerAccount(
 			final A account,
-			@Nullable final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> trackingAccounts
+			@Nullable final TransactionalLedger<EntityNum, AccountProperty, MerkleAccount> trackingAccounts
 	) {
 		Preconditions.checkNotNull(account);
 		this.address = account.getAddress();
-		this.accountId = accountParsedFromSolidityAddress(address);
+		this.accountId = EntityNum.fromAddress(address);
 		this.addressHash = account instanceof UpdateTrackingLedgerAccount
 				? ((UpdateTrackingLedgerAccount<A>) account).addressHash
 				: Hash.hash(this.address);
@@ -254,12 +253,12 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
 		return this;
 	}
 
-	public AccountID getAccountId() {
+	public EntityNum getAccountId() {
 		return accountId;
 	}
 
 	public void updateTrackingAccounts(
-			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> trackingAccounts
+			final TransactionalLedger<EntityNum, AccountProperty, MerkleAccount> trackingAccounts
 	) {
 		this.trackingAccounts = trackingAccounts;
 	}

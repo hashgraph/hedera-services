@@ -26,7 +26,6 @@ import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.utils.MultiSourceRange;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
@@ -76,15 +75,14 @@ public class TreasuryWildcardsUniqTokenView extends AbstractUniqTokenView {
 	}
 
 	@Override
-	public List<TokenNftInfo> ownedAssociations(@Nonnull AccountID owner, long start, long end) {
-		final var accountNum = EntityNum.fromAccountId(owner);
+	public List<TokenNftInfo> ownedAssociations(@Nonnull EntityNum owner, long start, long end) {
 		final var curNftsByOwner = nftsByOwner.get();
-		final var numOwnedViaTransfer = curNftsByOwner.getCount(fromInt(accountNum.intValue()));
+		final var numOwnedViaTransfer = curNftsByOwner.getCount(owner);
 		final var multiSourceRange = new MultiSourceRange((int) start, (int) end, numOwnedViaTransfer);
 
 		final var range = multiSourceRange.rangeForCurrentSource();
 		final var answer =
-				accumulatedInfo(nftsByOwner.get(), accountNum, range.getLeft(), range.getRight(), null, owner);
+				accumulatedInfo(nftsByOwner.get(), owner, range.getLeft(), range.getRight(), null, owner);
 		if (!multiSourceRange.isRequestedRangeExhausted()) {
 			tryToCompleteWithTreasuryOwned(owner, multiSourceRange, answer);
 		}
@@ -92,9 +90,9 @@ public class TreasuryWildcardsUniqTokenView extends AbstractUniqTokenView {
 	}
 
 	private void tryToCompleteWithTreasuryOwned(
-			AccountID owner,
-			MultiSourceRange multiSourceRange,
-			List<TokenNftInfo> answer
+			final EntityNum owner,
+			final MultiSourceRange multiSourceRange,
+			final List<TokenNftInfo> answer
 	) {
 		final var curTreasuryNftsByType = treasuryNftsByType.get();
 		final var allServed = tokenStore.listOfTokensServed(owner);

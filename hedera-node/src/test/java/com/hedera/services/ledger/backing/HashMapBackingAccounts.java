@@ -21,18 +21,17 @@ package com.hedera.services.ledger.backing;
  */
 
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.services.utils.EntityNum;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class HashMapBackingAccounts implements BackingStore<AccountID, MerkleAccount> {
-	final AccountID GENESIS = IdUtils.asAccount("0.0.2");
+public class HashMapBackingAccounts implements BackingStore<EntityNum, MerkleAccount> {
+	final EntityNum GENESIS = EntityNum.fromLong(2);
 	final long GENESIS_BALANCE = 50_000_000_000L;
 
-	private Map<AccountID, MerkleAccount> accounts = new HashMap<>();
+	private Map<EntityNum, MerkleAccount> accounts = new HashMap<>();
 
 	{
 		MerkleAccount genesisAccount = new MerkleAccount();
@@ -43,27 +42,27 @@ public class HashMapBackingAccounts implements BackingStore<AccountID, MerkleAcc
 	}
 
 	@Override
-	public MerkleAccount getRef(AccountID id) {
+	public MerkleAccount getRef(EntityNum id) {
 		return accounts.get(id);
 	}
 
 	@Override
-	public void put(AccountID id, MerkleAccount account) {
+	public void put(EntityNum id, MerkleAccount account) {
 		accounts.put(id, account);
 	}
 
 	@Override
-	public boolean contains(AccountID id) {
+	public boolean contains(EntityNum id) {
 		return accounts.containsKey(id);
 	}
 
 	@Override
-	public void remove(AccountID id) {
+	public void remove(EntityNum id) {
 		accounts.remove(id);
 	}
 
 	@Override
-	public Set<AccountID> idSet() {
+	public Set<EntityNum> idSet() {
 		return accounts.keySet();
 	}
 
@@ -73,7 +72,7 @@ public class HashMapBackingAccounts implements BackingStore<AccountID, MerkleAcc
 	}
 
 	@Override
-	public MerkleAccount getImmutableRef(AccountID id) {
+	public MerkleAccount getImmutableRef(EntityNum id) {
 		return accounts.get(id);
 	}
 }

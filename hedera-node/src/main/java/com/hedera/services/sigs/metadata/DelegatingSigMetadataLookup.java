@@ -66,7 +66,7 @@ public final class DelegatingSigMetadataLookup implements SigMetadataLookup {
 
 	public static DelegatingSigMetadataLookup backedLookupsFor(
 			final HfsSigMetaLookup hfsSigMetaLookup,
-			final BackingStore<AccountID, MerkleAccount> backingAccounts,
+			final BackingStore<EntityNum, MerkleAccount> backingAccounts,
 			final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			final Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup,

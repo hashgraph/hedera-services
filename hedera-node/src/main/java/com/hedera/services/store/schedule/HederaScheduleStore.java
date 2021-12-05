@@ -121,16 +121,16 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 
 		var validity = OK;
 		if (schedule.hasExplicitPayer()) {
-			validity = usableOrElse(schedule.payer().toGrpcAccountId(), INVALID_SCHEDULE_PAYER_ID);
+			validity = usableOrElse(EntityNum.fromEntityId(schedule.payer()), INVALID_SCHEDULE_PAYER_ID);
 		}
 		if (validity == OK) {
-			validity = usableOrElse(schedule.schedulingAccount().toGrpcAccountId(), INVALID_SCHEDULE_ACCOUNT_ID);
+			validity = usableOrElse(EntityNum.fromEntityId(schedule.schedulingAccount()), INVALID_SCHEDULE_ACCOUNT_ID);
 		}
 		if (validity != OK) {
 			return failure(validity);
 		}
 
-		pendingId = ids.newScheduleId(schedule.schedulingAccount().toGrpcAccountId());
+		pendingId = ids.newScheduleId();
 		pendingCreation = schedule;
 
 		return success(pendingId);

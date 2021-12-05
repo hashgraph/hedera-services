@@ -26,11 +26,9 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.backing.BackingTokens;
-import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
-import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
@@ -58,7 +56,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -161,36 +158,42 @@ class HederaTokenStoreTest {
 	private static final int alreadyUsedAutoAssocitaions = 123;
 	private static final boolean freezeDefault = true;
 	private static final long newAutoRenewPeriod = 2_000_000L;
-	private static final AccountID autoRenewAccount = IdUtils.asAccount("0.0.5");
-	private static final AccountID newAutoRenewAccount = IdUtils.asAccount("0.0.6");
-	private static final AccountID primaryTreasury = IdUtils.asAccount("0.0.0");
-	private static final AccountID treasury = IdUtils.asAccount("0.0.3");
-	private static final AccountID newTreasury = IdUtils.asAccount("0.0.1");
-	private static final AccountID sponsor = IdUtils.asAccount("0.0.666");
-	private static final AccountID counterparty = IdUtils.asAccount("0.0.777");
-	private static final AccountID anotherFeeCollector = IdUtils.asAccount("0.0.777");
+	private static final EntityNum autoRenewAccount = EntityNum.fromLong(5);
+	private static final EntityNum newAutoRenewAccount = EntityNum.fromLong(6);
+	private static final EntityNum primaryTreasury = EntityNum.fromLong(0);
+	private static final EntityNum treasury = EntityNum.fromLong(3);
+	private static final EntityNum newTreasury = EntityNum.fromLong(1);
+	private static final EntityNum sponsor = EntityNum.fromLong(666);
+	private static final EntityNum counterparty = EntityNum.fromLong(777);
+	private static final EntityNum anotherFeeCollector = EntityNum.fromLong(777);
 	private static final TokenID created = IdUtils.asToken("0.0.666666");
 	private static final TokenID pending = IdUtils.asToken("0.0.555555");
 	private static final int MAX_TOKENS_PER_ACCOUNT = 100;
 	private static final int MAX_TOKEN_SYMBOL_UTF8_BYTES = 10;
 	private static final int MAX_TOKEN_NAME_UTF8_BYTES = 100;
-	private static final Pair<AccountID, TokenID> sponsorMisc = asTokenRel(sponsor, misc);
-	private static final Pair<AccountID, TokenID> treasuryNft = asTokenRel(primaryTreasury, nonfungible);
-	private static final Pair<AccountID, TokenID> newTreasuryNft = asTokenRel(newTreasury, nonfungible);
-	private static final Pair<AccountID, TokenID> sponsorNft = asTokenRel(sponsor, nonfungible);
-	private static final Pair<AccountID, TokenID> counterpartyNft = asTokenRel(counterparty, nonfungible);
-	private static final Pair<AccountID, TokenID> treasuryMisc = asTokenRel(treasury, misc);
+	private static final Pair<AccountID, TokenID> sponsorMisc =
+			asTokenRel(sponsor.toGrpcAccountId(), misc);
+	private static final Pair<AccountID, TokenID> treasuryNft =
+			asTokenRel(primaryTreasury.toGrpcAccountId(), nonfungible);
+	private static final Pair<AccountID, TokenID> newTreasuryNft =
+			asTokenRel(newTreasury.toGrpcAccountId(), nonfungible);
+	private static final Pair<AccountID, TokenID> sponsorNft =
+			asTokenRel(sponsor.toGrpcAccountId(), nonfungible);
+	private static final Pair<AccountID, TokenID> counterpartyNft =
+			asTokenRel(counterparty.toGrpcAccountId(), nonfungible);
+	private static final Pair<AccountID, TokenID> treasuryMisc =
+			asTokenRel(treasury.toGrpcAccountId(), misc);
 	private static final NftId aNft = new NftId(0, 0, 2, 1234);
 	private static final NftId tNft = new NftId(0, 0, 2, 12345);
-	private static final Pair<AccountID, TokenID> anotherFeeCollectorMisc = asTokenRel(anotherFeeCollector, misc);
+	private static final Pair<AccountID, TokenID> anotherFeeCollectorMisc =
+			asTokenRel(anotherFeeCollector.toGrpcAccountId(), misc);
 
 	private EntityIdSource ids;
 	private SideEffectsTracker sideEffectsTracker;
 	private GlobalDynamicProperties properties;
 	private UniqTokenViewsManager uniqTokenViewsManager;
-	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	private TransactionalLedger<EntityNum, AccountProperty, MerkleAccount> accountsLedger;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
-	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
 	private BackingTokens backingTokens;
 	private HederaLedger hederaLedger;
@@ -210,7 +213,7 @@ class HederaTokenStoreTest {
 		given(token.name()).willReturn(name);
 		given(token.hasAdminKey()).willReturn(true);
 		given(token.hasFeeScheduleKey()).willReturn(true);
-		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
+		given(token.treasury()).willReturn(treasury.toEntityId());
 		given(token.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
 
 		nonfungibleToken = mock(MerkleToken.class);
@@ -218,18 +221,17 @@ class HederaTokenStoreTest {
 		given(nonfungibleToken.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 
 		ids = mock(EntityIdSource.class);
-		given(ids.newTokenId(sponsor)).willReturn(created);
+		given(ids.newTokenId(sponsor.toGrpcAccountId())).willReturn(created);
 
 		hederaLedger = mock(HederaLedger.class);
 
 		nftsLedger = (TransactionalLedger<NftId, NftProperty, MerkleUniqueToken>) mock(TransactionalLedger.class);
-		given(nftsLedger.get(aNft, NftProperty.OWNER)).willReturn(EntityId.fromGrpcAccountId(sponsor));
-		given(nftsLedger.get(tNft, NftProperty.OWNER)).willReturn(EntityId.fromGrpcAccountId(primaryTreasury));
+		given(nftsLedger.get(aNft, NftProperty.OWNER)).willReturn(sponsor.toEntityId());
+		given(nftsLedger.get(tNft, NftProperty.OWNER)).willReturn(primaryTreasury.toEntityId());
 		given(nftsLedger.exists(aNft)).willReturn(true);
 		given(nftsLedger.exists(tNft)).willReturn(true);
 
-		accountsLedger = (TransactionalLedger<AccountID, AccountProperty, MerkleAccount>) mock(
-				TransactionalLedger.class);
+		accountsLedger = (TransactionalLedger<EntityNum, AccountProperty, MerkleAccount>) mock(TransactionalLedger.class);
 		given(accountsLedger.exists(treasury)).willReturn(true);
 		given(accountsLedger.exists(anotherFeeCollector)).willReturn(true);
 		given(accountsLedger.exists(autoRenewAccount)).willReturn(true);
@@ -250,7 +252,7 @@ class HederaTokenStoreTest {
 		given(backingTokens.getImmutableRef(misc)).willReturn(token);
 		given(backingTokens.getRef(nonfungible)).willReturn(nonfungibleToken);
 		given(backingTokens.getImmutableRef(tNft.tokenId())).willReturn(nonfungibleToken);
-		given(backingTokens.getImmutableRef(tNft.tokenId()).treasury()).willReturn(EntityId.fromGrpcAccountId(primaryTreasury));
+		given(backingTokens.getImmutableRef(tNft.tokenId()).treasury()).willReturn(primaryTreasury.toEntityId());
 		given(backingTokens.idSet()).willReturn(Set.of(created));
 
 		tokenRelsLedger = mock(TransactionalLedger.class);
@@ -303,10 +305,10 @@ class HederaTokenStoreTest {
 		final var deletedToken = new MerkleToken();
 		deletedToken.setKey(EntityNum.fromLong(2L));
 		deletedToken.setDeleted(true);
-		deletedToken.setTreasury(EntityId.fromGrpcAccountId(newTreasury));
+		deletedToken.setTreasury(newTreasury.toEntityId());
 		given(token.cast()).willReturn(token);
 		given(token.getKey()).willReturn(EntityNum.fromLong(1L));
-		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
+		given(token.treasury()).willReturn(treasury.toEntityId());
 		subject.rebuildViews();
 
 		verify(backingTokens).idSet();
@@ -498,7 +500,7 @@ class HederaTokenStoreTest {
 	@Test
 	void associatingHappyPathWorks() {
 		final var tokens = mock(MerkleAccountTokens.class);
-		final var key = asTokenRel(sponsor, misc);
+		final var key = asTokenRel(sponsor.toGrpcAccountId(), misc);
 		given(tokens.includes(misc)).willReturn(false);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
 		given(hederaLedger.maxAutomaticAssociations(sponsor)).willReturn(maxAutoAssociations);
@@ -511,7 +513,7 @@ class HederaTokenStoreTest {
 
 		assertEquals(OK, status);
 		assertEquals(
-				List.of(new FcTokenAssociation(misc.getTokenNum(), sponsor.getAccountNum())),
+				List.of(new FcTokenAssociation(misc.getTokenNum(), sponsor.longValue())),
 				sideEffectsTracker.getTrackedAutoAssociations());
 		verify(tokens).associateAll(Set.of(misc));
 		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
@@ -646,7 +648,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void changingOwnerRejectsIllegitimateOwner() {
-		given(nftsLedger.get(aNft, NftProperty.OWNER)).willReturn(EntityId.fromGrpcAccountId(counterparty));
+		given(nftsLedger.get(aNft, NftProperty.OWNER)).willReturn(counterparty.toEntityId());
 
 		final var status = subject.changeOwner(aNft, sponsor, counterparty);
 
@@ -659,8 +661,8 @@ class HederaTokenStoreTest {
 		final long startCounterpartyNfts = 8;
 		final long startSponsorANfts = 4;
 		final long startCounterpartyANfts = 1;
-		final var sender = EntityId.fromGrpcAccountId(sponsor);
-		final var receiver = EntityId.fromGrpcAccountId(counterparty);
+		final var sender = sponsor.toEntityId();
+		final var receiver = counterparty.toEntityId();
 		final var muti = EntityNumPair.fromLongs(aNft.tokenId().getTokenNum(), aNft.serialNo());
 		given(accountsLedger.get(sponsor, NUM_NFTS_OWNED)).willReturn(startSponsorNfts);
 		given(accountsLedger.get(counterparty, NUM_NFTS_OWNED)).willReturn(startCounterpartyNfts);
@@ -675,7 +677,7 @@ class HederaTokenStoreTest {
 		verify(accountsLedger).set(counterparty, NUM_NFTS_OWNED, startCounterpartyNfts + 1);
 		verify(tokenRelsLedger).set(sponsorNft, TOKEN_BALANCE, startSponsorANfts - 1);
 		verify(tokenRelsLedger).set(counterpartyNft, TOKEN_BALANCE, startCounterpartyANfts + 1);
-		verify(uniqTokenViewsManager).exchangeNotice(muti, sender, receiver);
+		verify(uniqTokenViewsManager).exchangeNotice(muti, sender, counterparty);
 		assertSoleTokenChangesAreForNftTransfer(aNft, sponsor, counterparty);
 	}
 
@@ -685,8 +687,7 @@ class HederaTokenStoreTest {
 		final long startCounterpartyNfts = 8;
 		final long startTreasuryTNfts = 4;
 		final long startCounterpartyTNfts = 1;
-		final var sender = EntityId.fromGrpcAccountId(counterparty);
-		final var receiver = EntityId.fromGrpcAccountId(primaryTreasury);
+		final var sender = counterparty.toEntityId();
 		final var muti = EntityNumPair.fromLongs(tNft.tokenId().getTokenNum(), tNft.serialNo());
 		subject.knownTreasuries.put(primaryTreasury, new HashSet<>() {{
 			add(nonfungible);
@@ -695,7 +696,7 @@ class HederaTokenStoreTest {
 		given(accountsLedger.get(counterparty, NUM_NFTS_OWNED)).willReturn(startCounterpartyNfts);
 		given(tokenRelsLedger.get(treasuryNft, TOKEN_BALANCE)).willReturn(startTreasuryTNfts);
 		given(tokenRelsLedger.get(counterpartyNft, TOKEN_BALANCE)).willReturn(startCounterpartyTNfts);
-		given(nftsLedger.get(tNft, NftProperty.OWNER)).willReturn(EntityId.fromGrpcAccountId(counterparty));
+		given(nftsLedger.get(tNft, NftProperty.OWNER)).willReturn(counterparty.toEntityId());
 
 		final var status = subject.changeOwner(tNft, counterparty, primaryTreasury);
 
@@ -705,7 +706,7 @@ class HederaTokenStoreTest {
 		verify(accountsLedger).set(counterparty, NUM_NFTS_OWNED, startCounterpartyNfts - 1);
 		verify(tokenRelsLedger).set(treasuryNft, TOKEN_BALANCE, startTreasuryTNfts + 1);
 		verify(tokenRelsLedger).set(counterpartyNft, TOKEN_BALANCE, startCounterpartyTNfts - 1);
-		verify(uniqTokenViewsManager).treasuryReturnNotice(muti, sender, receiver);
+		verify(uniqTokenViewsManager).treasuryReturnNotice(muti, sender, primaryTreasury);
 		assertSoleTokenChangesAreForNftTransfer(tNft, counterparty, primaryTreasury);
 	}
 
@@ -715,8 +716,8 @@ class HederaTokenStoreTest {
 		final long startCounterpartyNfts = 8;
 		final long startTreasuryTNfts = 4;
 		final long startCounterpartyTNfts = 1;
-		final var sender = EntityId.fromGrpcAccountId(primaryTreasury);
-		final var receiver = EntityId.fromGrpcAccountId(counterparty);
+		final var sender = primaryTreasury.toEntityId();
+		final var receiver = counterparty.toEntityId();
 		final var muti = EntityNumPair.fromLongs(tNft.tokenId().getTokenNum(), tNft.serialNo());
 		subject.knownTreasuries.put(primaryTreasury, new HashSet<>() {{
 			add(nonfungible);
@@ -736,7 +737,7 @@ class HederaTokenStoreTest {
 		verify(accountsLedger).set(counterparty, NUM_NFTS_OWNED, startCounterpartyNfts + 1);
 		verify(tokenRelsLedger).set(treasuryNft, TOKEN_BALANCE, startTreasuryTNfts - 1);
 		verify(tokenRelsLedger).set(counterpartyNft, TOKEN_BALANCE, startCounterpartyTNfts + 1);
-		verify(uniqTokenViewsManager).treasuryExitNotice(muti, sender, receiver);
+		verify(uniqTokenViewsManager).treasuryExitNotice(muti, sender, counterparty);
 		assertSoleTokenChangesAreForNftTransfer(tNft, primaryTreasury, counterparty);
 	}
 
@@ -1092,7 +1093,7 @@ class HederaTokenStoreTest {
 		verify(token).setSymbol(newSymbol);
 		verify(token).setName(newName);
 		verify(token).setExpiry(newExpiry);
-		verify(token).setTreasury(EntityId.fromGrpcAccountId(newTreasury));
+		verify(token).setTreasury(newTreasury.toEntityId());
 		verify(token).setAdminKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
 		verify(token).setFreezeKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
 		verify(token).setKycKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
@@ -1153,7 +1154,7 @@ class HederaTokenStoreTest {
 		final var outcome = subject.update(op, CONSENSUS_NOW);
 
 		assertEquals(OK, outcome);
-		verify(token).setAutoRenewAccount(EntityId.fromGrpcAccountId(newAutoRenewAccount));
+		verify(token).setAutoRenewAccount(newAutoRenewAccount.toEntityId());
 		verify(token).setAutoRenewPeriod(newAutoRenewPeriod);
 	}
 
@@ -1218,10 +1219,10 @@ class HederaTokenStoreTest {
 			op.setMemo(StringValue.newBuilder().setValue(newMemo).build());
 		}
 		if (useNewTreasury) {
-			op.setTreasury(newTreasury);
+			op.setTreasury(newTreasury.toGrpcAccountId());
 		}
 		if (useNewAutoRenewAccount) {
-			op.setAutoRenewAccount(newAutoRenewAccount);
+			op.setAutoRenewAccount(newAutoRenewAccount.toGrpcAccountId());
 		}
 		if (useNewAutoRenewPeriod) {
 			op.setAutoRenewPeriod(enduring(newAutoRenewPeriod));
@@ -1490,19 +1491,19 @@ class HederaTokenStoreTest {
 				.setSymbol(symbol)
 				.setName(name)
 				.setInitialSupply(totalSupply)
-				.setTreasury(treasury)
+				.setTreasury(treasury.toGrpcAccountId())
 				.setDecimals(decimals)
 				.setFreezeDefault(freezeDefault);
 	}
 
-	private void assertSoleTokenChangesAreForNftTransfer(final NftId nft, final AccountID from, final AccountID to) {
+	private void assertSoleTokenChangesAreForNftTransfer(final NftId nft, final EntityNum from, final EntityNum to) {
 		final var tokenChanges = sideEffectsTracker.getNetTrackedTokenUnitAndOwnershipChanges();
 		final var ownershipChange = tokenChanges.get(0);
 		assertEquals(nft.tokenId(), ownershipChange.getToken());
 		final var nftTransfer = ownershipChange.getNftTransfers(0);
 		assertEquals(nft.serialNo(), nftTransfer.getSerialNumber());
-		assertEquals(from, nftTransfer.getSenderAccountID());
-		assertEquals(to, nftTransfer.getReceiverAccountID());
+		assertEquals(from.toGrpcAccountId(), nftTransfer.getSenderAccountID());
+		assertEquals(to.toGrpcAccountId(), nftTransfer.getReceiverAccountID());
 	}
 
 

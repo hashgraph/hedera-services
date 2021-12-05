@@ -47,6 +47,7 @@ import com.hedera.services.store.tokens.annotations.AreFcotmrQueriesDisabled;
 import com.hedera.services.store.tokens.annotations.AreTreasuryWildcardsEnabled;
 import com.hedera.services.store.tokens.views.ConfigDrivenUniqTokenViewFactory;
 import com.hedera.services.store.tokens.views.UniqTokenViewFactory;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import dagger.Binds;
@@ -119,8 +120,8 @@ public abstract class StoresModule {
 
 	@Provides
 	@Singleton
-	public static TransactionalLedger<AccountID, AccountProperty, MerkleAccount> provideAccountsLedger(
-			BackingStore<AccountID, MerkleAccount> backingAccounts
+	public static TransactionalLedger<EntityNum, AccountProperty, MerkleAccount> provideAccountsLedger(
+			BackingStore<EntityNum, MerkleAccount> backingAccounts
 	) {
 		return new TransactionalLedger<>(
 				AccountProperty.class,

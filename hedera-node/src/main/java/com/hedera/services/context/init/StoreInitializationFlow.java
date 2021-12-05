@@ -31,6 +31,7 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
@@ -48,7 +49,7 @@ public class StoreInitializationFlow {
 	private final ScheduleStore scheduleStore;
 	private final StateAccessor stateAccessor;
 	private final UniqTokenViewsManager uniqTokenViewsManager;
-	private final BackingStore<AccountID, MerkleAccount> backingAccounts;
+	private final BackingStore<EntityNum, MerkleAccount> backingAccounts;
 	private final BackingStore<TokenID, MerkleToken> backingTokens;
 	private final BackingStore<NftId, MerkleUniqueToken> backingNfts;
 	private final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels;
@@ -59,7 +60,7 @@ public class StoreInitializationFlow {
 			ScheduleStore scheduleStore,
 			@WorkingState StateAccessor stateAccessor,
 			UniqTokenViewsManager uniqTokenViewsManager,
-			BackingStore<AccountID, MerkleAccount> backingAccounts,
+			BackingStore<EntityNum, MerkleAccount> backingAccounts,
 			BackingStore<TokenID, MerkleToken> backingTokens,
 			BackingStore<NftId, MerkleUniqueToken> backingNfts,
 			BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels

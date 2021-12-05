@@ -65,13 +65,12 @@ public class MerkleEntityAssociation extends AbstractMerkleLeaf {
 	}
 
 	public static EntityNumPair fromAccountTokenRel(Pair<AccountID, TokenID> rel) {
-		return fromAccountTokenRel(rel.getLeft(), rel.getRight());
+		return fromAccountTokenRel(EntityNum.fromAccountId(rel.getLeft()), rel.getRight());
 	}
 
-	public static EntityNumPair fromAccountTokenRel(AccountID account, TokenID token) {
-		final var accountNum = EntityNum.fromAccountId(account);
+	public static EntityNumPair fromAccountTokenRel(EntityNum account, TokenID token) {
 		final var tokenNum = EntityNum.fromTokenId(token);
-		return EntityNumPair.fromLongs(accountNum.longValue(), tokenNum.longValue());
+		return EntityNumPair.fromLongs(account.longValue(), tokenNum.longValue());
 	}
 
 	/* --- MerkleLeaf --- */

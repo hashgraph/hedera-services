@@ -25,6 +25,7 @@ import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -211,9 +212,9 @@ class ImpliedTransfersMarshalTest {
 
 	private void setupFixtureOp(boolean incTokens) {
 		var hbarAdjusts = TransferList.newBuilder()
-				.addAccountAmounts(adjustFrom(a, -100))
-				.addAccountAmounts(adjustFrom(b, 50))
-				.addAccountAmounts(adjustFrom(c, 50))
+				.addAccountAmounts(adjustFrom(a.toGrpcAccountId(), -100))
+				.addAccountAmounts(adjustFrom(b.toGrpcAccountId(), 50))
+				.addAccountAmounts(adjustFrom(c.toGrpcAccountId(), 50))
 				.build();
 		final var builder = CryptoTransferTransactionBody.newBuilder()
 				.setTransfers(hbarAdjusts);
@@ -222,15 +223,15 @@ class ImpliedTransfersMarshalTest {
 					.addTokenTransfers(TokenTransferList.newBuilder()
 							.setToken(anotherId)
 							.addAllTransfers(List.of(
-									adjustFrom(a, -50),
-									adjustFrom(b, 25),
-									adjustFrom(c, 25)
+									adjustFrom(a.toGrpcAccountId(), -50),
+									adjustFrom(b.toGrpcAccountId(), 25),
+									adjustFrom(c.toGrpcAccountId(), 25)
 							)))
 					.addTokenTransfers(TokenTransferList.newBuilder()
 							.setToken(anId)
 							.addAllTransfers(List.of(
-									adjustFrom(b, -100),
-									adjustFrom(c, 100)
+									adjustFrom(b.toGrpcAccountId(), -100),
+									adjustFrom(c.toGrpcAccountId(), 100)
 							)))
 					.addTokenTransfers(TokenTransferList.newBuilder()
 							.setToken(yetAnotherId)
@@ -284,9 +285,9 @@ class ImpliedTransfersMarshalTest {
 	private final Id aAccount = new Id(1, 2, 3);
 	private final Id bAccount = new Id(2, 3, 4);
 	private final Id cAccount = new Id(3, 4, 5);
-	private final AccountID a = asAccount("1.2.3");
-	private final AccountID b = asAccount("2.3.4");
-	private final AccountID c = asAccount("3.4.5");
+	private final EntityNum a = EntityNum.fromLong(3);
+	private final EntityNum b = EntityNum.fromLong(4);
+	private final EntityNum c = EntityNum.fromLong(5);
 
 	private final BalanceChange aTrigger = BalanceChange.tokenAdjust(aAccount, Id.fromGrpcToken(anId), -1);
 	private final BalanceChange bTrigger = BalanceChange.tokenAdjust(bAccount, Id.fromGrpcToken(anotherId), -2);

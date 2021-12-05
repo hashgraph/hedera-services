@@ -23,7 +23,7 @@ package com.hedera.services.store.tokens.views.utils;
 import com.google.protobuf.ByteString;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
@@ -59,13 +59,13 @@ public final class GrpcUtils {
 			final TokenID type,
 			final long serialNo,
 			final MerkleUniqueToken nft,
-			@Nullable final AccountID treasury
+			@Nullable final EntityNum treasury
 	) {
 		final var nftId = NftID.newBuilder()
 				.setTokenID(type)
 				.setSerialNumber(serialNo);
 
-		AccountID effectiveOwner;
+		EntityNum effectiveOwner;
 		if (nft.isTreasuryOwned()) {
 			if (treasury == null) {
 				throw new IllegalArgumentException(EntityIdUtils.readableId(type)
@@ -74,12 +74,12 @@ public final class GrpcUtils {
 			}
 			effectiveOwner = treasury;
 		} else {
-			effectiveOwner = nft.getOwner().toGrpcAccountId();
+			effectiveOwner = EntityNum.fromEntityId(nft.getOwner());
 		}
 
 		return TokenNftInfo.newBuilder()
 				.setNftID(nftId)
-				.setAccountID(effectiveOwner)
+				.setAccountID(effectiveOwner.toGrpcAccountId())
 				.setCreationTime(nft.getCreationTime().toGrpc())
 				.setMetadata(ByteString.copyFrom(nft.getMetadata()))
 				.build();

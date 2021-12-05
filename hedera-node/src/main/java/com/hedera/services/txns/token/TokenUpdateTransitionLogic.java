@@ -29,6 +29,7 @@ import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.annotations.AreTreasuryWildcardsEnabled;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -139,7 +140,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 
 		Optional<AccountID> replacedTreasury = Optional.empty();
 		if (op.hasTreasury()) {
-			var newTreasury = op.getTreasury();
+			var newTreasury = EntityNum.fromAccountId(op.getTreasury());
 			if (ledger.isDetached(newTreasury)) {
 				txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 				return;
@@ -148,7 +149,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 				txnCtx.setStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 				return;
 			}
-			var existingTreasury = token.treasury().toGrpcAccountId();
+			var existingTreasury = EntityNum.fromEntityId(token.treasury());
 			if (!allowChangedTreasuryToOwnNfts && token.tokenType() == NON_FUNGIBLE_UNIQUE) {
 				var existingTreasuryBalance = ledger.getTokenBalance(existingTreasury, id);
 				if (existingTreasuryBalance > 0L) {
@@ -172,18 +173,21 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 
 		outcome = store.update(op, txnCtx.consensusTime().getEpochSecond());
 		if (outcome == OK && replacedTreasury.isPresent()) {
-			final var oldTreasury = replacedTreasury.get();
+			final var oldTreasury = EntityNum.fromAccountId(replacedTreasury.get());
 			long replacedTreasuryBalance = ledger.getTokenBalance(oldTreasury, id);
 			if (replacedTreasuryBalance > 0) {
+				final var newTreasury = EntityNum.fromAccountId(op.getTreasury());
 				if (token.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
 					outcome = ledger.doTokenTransfer(
 							id,
 							oldTreasury,
-							op.getTreasury(),
+							newTreasury,
 							replacedTreasuryBalance);
 				} else {
 					outcome = store.changeOwnerWildCard(
-							new NftId(id.getShardNum(), id.getRealmNum(), id.getTokenNum(), -1), oldTreasury, op.getTreasury());
+							new NftId(id.getShardNum(), id.getRealmNum(), id.getTokenNum(), -1),
+							oldTreasury,
+							newTreasury);
 				}
 			}
 		}
@@ -251,12 +255,12 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 
 	private ResponseCodeEnum autoRenewAttachmentCheck(TokenUpdateTransactionBody op, MerkleToken token) {
 		if (op.hasAutoRenewAccount()) {
-			final var newAutoRenew = op.getAutoRenewAccount();
+			final var newAutoRenew = EntityNum.fromAccountId(op.getAutoRenewAccount());
 			if (ledger.isDetached(newAutoRenew)) {
 				return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 			}
 			if (token.hasAutoRenewAccount()) {
-				final var existingAutoRenew = token.autoRenewAccount().toGrpcAccountId();
+				final var existingAutoRenew = EntityNum.fromEntityId(token.autoRenewAccount());
 				if (ledger.isDetached(existingAutoRenew)) {
 					return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 				}
@@ -265,7 +269,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 		return OK;
 	}
 
-	private ResponseCodeEnum prepNewTreasury(TokenID id, MerkleToken token, AccountID newTreasury) {
+	private ResponseCodeEnum prepNewTreasury(TokenID id, MerkleToken token, EntityNum newTreasury) {
 		var status = OK;
 		if (token.hasFreezeKey()) {
 			status = ledger.unfreeze(newTreasury, id);

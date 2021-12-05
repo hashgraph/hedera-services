@@ -98,7 +98,7 @@ public abstract class SigsModule {
 			SignatureWaivers signatureWaivers,
 			HfsSigMetaLookup hfsSigMetaLookup,
 			GlobalDynamicProperties dynamicProperties,
-			BackingStore<AccountID, MerkleAccount> backingAccounts,
+			BackingStore<EntityNum, MerkleAccount> backingAccounts,
 			Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
 			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {

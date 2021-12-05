@@ -23,7 +23,6 @@ package com.hedera.services.sigs.metadata.lookups;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 
 import java.util.function.Supplier;
@@ -42,7 +41,7 @@ public class DefaultAccountLookup implements AccountSigMetaLookup {
 	}
 
 	@Override
-	public SafeLookupResult<AccountSigningMetadata> safeLookup(AccountID id) {
+	public SafeLookupResult<AccountSigningMetadata> safeLookup(EntityNum id) {
 		var account = accounts.get().get(fromAccountId(id));
 		return (account == null)
 				? SafeLookupResult.failure(MISSING_ACCOUNT)

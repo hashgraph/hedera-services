@@ -30,6 +30,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
@@ -42,12 +43,12 @@ public class WorldLedgers {
 
 	final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
 	final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
-	final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	final TransactionalLedger<EntityNum, AccountProperty, MerkleAccount> accountsLedger;
 	final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 
 	public WorldLedgers(
 			final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
-			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
+			final TransactionalLedger<EntityNum, AccountProperty, MerkleAccount> accountsLedger,
 			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
 			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger
 	) {
@@ -103,7 +104,7 @@ public class WorldLedgers {
 		return tokenRelsLedger;
 	}
 
-	public TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts() {
+	public TransactionalLedger<EntityNum, AccountProperty, MerkleAccount> accounts() {
 		return accountsLedger;
 	}
 

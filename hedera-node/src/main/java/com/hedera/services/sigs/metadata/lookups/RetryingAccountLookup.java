@@ -87,7 +87,7 @@ public class RetryingAccountLookup extends DefaultAccountLookup {
 	}
 
 	@Override
-	public SafeLookupResult<AccountSigningMetadata> safeLookup(final AccountID id) {
+	public SafeLookupResult<AccountSigningMetadata> safeLookup(final EntityNum id) {
 		maxRetries = properties
 				.map(NodeLocalProperties::precheckLookupRetries)
 				.orElse(maxRetries);

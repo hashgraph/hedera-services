@@ -27,13 +27,12 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -66,9 +65,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.anyLong;
@@ -82,10 +81,10 @@ class TokenUpdateTransitionLogicTest {
 	private Instant now = Instant.ofEpochSecond(thisSecond);
 	private TokenID target = IdUtils.asToken("1.2.666");
 	private NftId nftId = new NftId(target.getShardNum(), target.getRealmNum(), target.getTokenNum(), -1);
-	private AccountID oldTreasury = IdUtils.asAccount("1.2.4");
-	private AccountID newTreasury = IdUtils.asAccount("1.2.5");
-	private AccountID newAutoRenew = IdUtils.asAccount("5.2.1");
-	private AccountID oldAutoRenew = IdUtils.asAccount("4.2.1");
+	private EntityNum oldTreasury = EntityNum.fromLong(4);
+	private EntityNum newTreasury = EntityNum.fromLong(5);
+	private EntityNum newAutoRenew = EntityNum.fromLong(1);
+	private EntityNum oldAutoRenew = EntityNum.fromLong(9);
 	private String symbol = "SYMBOL";
 	private String name = "Name";
 	private JKey adminKey = new JEd25519Key("w/e".getBytes());
@@ -110,8 +109,8 @@ class TokenUpdateTransitionLogicTest {
 
 		token = mock(MerkleToken.class);
 		given(token.adminKey()).willReturn(Optional.of(adminKey));
-		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(oldTreasury));
-		given(token.autoRenewAccount()).willReturn(EntityId.fromGrpcAccountId(oldAutoRenew));
+		given(token.treasury()).willReturn(oldTreasury.toEntityId());
+		given(token.autoRenewAccount()).willReturn(oldAutoRenew.toEntityId());
 		given(token.hasAutoRenewAccount()).willReturn(true);
 		given(token.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
 		given(store.resolve(target)).willReturn(target);
@@ -541,13 +540,13 @@ class TokenUpdateTransitionLogicTest {
 		final var builder = TransactionBody.newBuilder()
 				.setTokenUpdate(TokenUpdateTransactionBody.newBuilder()
 						.setSymbol(symbol)
-						.setAutoRenewAccount(newAutoRenew)
+						.setAutoRenewAccount(newAutoRenew.toGrpcAccountId())
 						.setName(name)
 						.setMemo(StringValue.newBuilder().setValue("FATALITY").build())
 						.setToken(target));
 		if (withNewTreasury) {
 			builder.getTokenUpdateBuilder()
-					.setTreasury(useDuplicateTreasury ? oldTreasury : newTreasury);
+					.setTreasury(useDuplicateTreasury ? oldTreasury.toGrpcAccountId() : newTreasury.toGrpcAccountId());
 		}
 		tokenUpdateTxn = builder.build();
 		given(accessor.getTxn()).willReturn(tokenUpdateTxn);

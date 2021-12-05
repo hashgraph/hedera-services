@@ -361,7 +361,6 @@ public class TypedTokenStore {
 	 * @param token the token to save
 	 */
 	public void commitToken(Token token) {
-
 		final var mutableToken = tokens.getRef(token.getId().asGrpcToken());
 		mapModelChanges(token, mutableToken);
 		tokens.put(token.getId().asGrpcToken(), mutableToken);
@@ -377,7 +376,7 @@ public class TypedTokenStore {
 		/* Only needed during HTS refactor. Will be removed once all operations that refer to the knownTreasuries
 		in-memory structure are refactored */
 		if (token.isDeleted()) {
-			final AccountID affectedTreasury = token.getTreasury().getId().asGrpcAccount();
+			final var affectedTreasury = EntityNum.fromModel(token.getTreasury().getId());
 			final TokenID mutatedToken = token.getId().asGrpcToken();
 			delegate.removeKnownTreasuryForToken(affectedTreasury, mutatedToken);
 		}
@@ -409,7 +408,7 @@ public class TypedTokenStore {
 		mapModelChanges(token, newMerkleToken);
 		tokens.put(newMerkleTokenId.toGrpcTokenId(), newMerkleToken);
 
-		addKnownTreasury.perform(token.getTreasury().getId().asGrpcAccount(), token.getId().asGrpcToken());
+		addKnownTreasury.perform(EntityNum.fromModel(token.getTreasury().getId()), token.getId().asGrpcToken());
 		sideEffectsTracker.trackTokenChanges(token);
 	}
 
@@ -524,11 +523,11 @@ public class TypedTokenStore {
 
 	@FunctionalInterface
 	public interface LegacyTreasuryAdder {
-		void perform(final AccountID aId, final TokenID tId);
+		void perform(final EntityNum aId, final TokenID tId);
 	}
 
 	@FunctionalInterface
 	public interface LegacyTreasuryRemover {
-		void removeKnownTreasuryForToken(final AccountID aId, final TokenID tId);
+		void removeKnownTreasuryForToken(final EntityNum aId, final TokenID tId);
 	}
 }

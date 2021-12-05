@@ -84,10 +84,10 @@ class SeqNoEntityIdSourceTest {
 		given(seqNo.getAndIncrement()).willReturn(555L);
 
 		// when:
-		AccountID newId = subject.newAccountId(sponsor);
+		final var newId = subject.newAccountId();
 
 		// then:
-		assertEquals(asAccount("1.2.555"), newId);
+		assertEquals(asAccount("0.0.555"), newId.toGrpcAccountId());
 	}
 
 	@Test
@@ -132,8 +132,7 @@ class SeqNoEntityIdSourceTest {
 	void exceptionalSourceAlwaysThrows() {
 		var defaultAccountId = AccountID.getDefaultInstance();
 		// expect:
-		assertThrows(UnsupportedOperationException.class,
-				() -> NOOP_ID_SOURCE.newAccountId(defaultAccountId));
+		assertThrows(UnsupportedOperationException.class, NOOP_ID_SOURCE::newAccountId);
 		assertThrows(UnsupportedOperationException.class,
 				() -> NOOP_ID_SOURCE.newFileId(defaultAccountId));
 		assertThrows(UnsupportedOperationException.class,

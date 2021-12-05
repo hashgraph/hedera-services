@@ -24,7 +24,7 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import java.util.function.Consumer;
@@ -39,7 +39,7 @@ public interface Store<T, K> {
     void apply(T id, Consumer<K> change);
 
     void setHederaLedger(HederaLedger ledger);
-    void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger);
+    void setAccountsLedger(TransactionalLedger<EntityNum, AccountProperty, MerkleAccount> accountsLedger);
 
     default void rebuildViews() {
         /* No-op. */

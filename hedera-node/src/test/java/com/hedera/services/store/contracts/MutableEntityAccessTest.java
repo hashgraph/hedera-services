@@ -40,12 +40,12 @@ import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
-import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -94,7 +94,7 @@ class MutableEntityAccessTest {
 	@Mock
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
 	@Mock
-	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	private TransactionalLedger<EntityNum, AccountProperty, MerkleAccount> accountsLedger;
 	@Mock
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 	@Mock
@@ -110,19 +110,19 @@ class MutableEntityAccessTest {
 	private MutableEntityAccess subject;
 
 	private final long autoRenewSecs = Instant.now().getEpochSecond();
-	private final AccountID id = IdUtils.asAccount("0.0.1234");
+	private final EntityNum id = EntityNum.fromLong(1234);
 	private final long balance = 1234L;
 	private final EntityId proxy = EntityId.MISSING_ENTITY_ID;
 	private static final JKey key = new JEd25519Key("aBcDeFgHiJkLmNoPqRsTuVwXyZ012345".getBytes());
 
 	private final UInt256 contractStorageKey = UInt256.ONE;
-	private final ContractKey expectedContractKey = new ContractKey(id.getAccountNum(), contractStorageKey.toArray());
+	private final ContractKey expectedContractKey = new ContractKey(id.longValue(), contractStorageKey.toArray());
 	private final UInt256 contractStorageValue = UInt256.MAX_VALUE;
 	private final ContractValue expectedContractValue = new ContractValue(contractStorageValue.toArray());
 
 	private final Bytes bytecode = Bytes.of("contract-code".getBytes());
-	private final VirtualBlobKey expectedBytecodeKey = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE,
-			(int) id.getAccountNum());
+	private final VirtualBlobKey expectedBytecodeKey = new VirtualBlobKey(
+			VirtualBlobKey.Type.CONTRACT_BYTECODE, id.intValue());
 	private final VirtualBlobValue expectedBytecodeValue = new VirtualBlobValue(bytecode.toArray());
 
 	@BeforeEach

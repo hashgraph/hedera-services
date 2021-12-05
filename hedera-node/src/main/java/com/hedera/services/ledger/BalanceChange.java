@@ -25,6 +25,7 @@ import com.hedera.services.ledger.backing.BackingAccounts;
 import com.hedera.services.ledger.backing.BackingTokenRels;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
@@ -62,8 +63,8 @@ public class BalanceChange {
 	private boolean exemptFromCustomFees = false;
 	private NftId nftId = null;
 	private TokenID tokenId = null;
-	private AccountID accountId;
-	private AccountID counterPartyAccountId = null;
+	private EntityNum accountId;
+	private EntityNum counterPartyAccountId = null;
 	private ResponseCodeEnum codeForInsufficientBalance;
 
 	public static BalanceChange changingHbar(AccountAmount aa) {
@@ -104,7 +105,7 @@ public class BalanceChange {
 	private BalanceChange(Id account, long amount, ResponseCodeEnum code) {
 		this.token = null;
 		this.account = account;
-		this.accountId = account.asGrpcAccount();
+		this.accountId = EntityNum.fromModel(account);
 		this.units = amount;
 		this.originalUnits = amount;
 		this.codeForInsufficientBalance = code;
@@ -113,8 +114,8 @@ public class BalanceChange {
 	/* HTS constructor */
 	private BalanceChange(Id token, AccountAmount aa, ResponseCodeEnum code) {
 		this.token = token;
-		this.accountId = aa.getAccountID();
-		this.account = Id.fromGrpcAccount(accountId);
+		this.accountId = EntityNum.fromAccountId(aa.getAccountID());
+		this.account = accountId.toModelId();
 		this.units = aa.getAmount();
 		this.originalUnits = units;
 		this.codeForInsufficientBalance = code;
@@ -123,9 +124,9 @@ public class BalanceChange {
 	/* NFT constructor */
 	private BalanceChange(Id token, AccountID sender, AccountID receiver, long serialNo, ResponseCodeEnum code) {
 		this.token = token;
-		this.accountId = sender;
-		this.counterPartyAccountId = receiver;
-		this.account = Id.fromGrpcAccount(accountId);
+		this.accountId = EntityNum.fromAccountId(sender);
+		this.counterPartyAccountId = EntityNum.fromAccountId(receiver);
+		this.account = accountId.toModelId();
 		this.units = serialNo;
 		this.codeForInsufficientBalance = code;
 	}
@@ -170,11 +171,11 @@ public class BalanceChange {
 		return (tokenId != null) ? tokenId : NO_TOKEN_FOR_HBAR_ADJUST;
 	}
 
-	public AccountID accountId() {
+	public EntityNum accountId() {
 		return accountId;
 	}
 
-	public AccountID counterPartyAccountId() {
+	public EntityNum counterPartyAccountId() {
 		return counterPartyAccountId;
 	}
 
@@ -217,7 +218,7 @@ public class BalanceChange {
 					.add("nft", token)
 					.add("serialNo", units)
 					.add("from", account)
-					.add("to", Id.fromGrpcAccount(counterPartyAccountId))
+					.add("to", counterPartyAccountId.toIdString())
 					.toString();
 		}
 	}

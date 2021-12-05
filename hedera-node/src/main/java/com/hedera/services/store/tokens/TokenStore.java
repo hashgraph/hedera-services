@@ -24,7 +24,7 @@ import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.Store;
 import com.hedera.services.store.models.NftId;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
@@ -45,35 +45,35 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 	TokenID MISSING_TOKEN = TokenID.getDefaultInstance();
 	Consumer<MerkleToken> DELETION = token -> token.setDeleted(true);
 
-	boolean isKnownTreasury(AccountID id);
+	boolean isKnownTreasury(EntityNum id);
 
-	void addKnownTreasury(AccountID aId, TokenID tId);
+	void addKnownTreasury(EntityNum aId, TokenID tId);
 
-	void removeKnownTreasuryForToken(AccountID aId, TokenID tId);
+	void removeKnownTreasuryForToken(EntityNum aId, TokenID tId);
 
-	boolean associationExists(AccountID aId, TokenID tId);
+	boolean associationExists(EntityNum aId, TokenID tId);
 
-	boolean isTreasuryForToken(AccountID aId, TokenID tId);
+	boolean isTreasuryForToken(EntityNum aId, TokenID tId);
 
-	List<TokenID> listOfTokensServed(AccountID treasury);
+	List<TokenID> listOfTokensServed(EntityNum treasury);
 
-	ResponseCodeEnum freeze(AccountID aId, TokenID tId);
+	ResponseCodeEnum freeze(EntityNum aId, TokenID tId);
 
 	ResponseCodeEnum update(TokenUpdateTransactionBody changes, long now);
 
-	ResponseCodeEnum unfreeze(AccountID aId, TokenID tId);
+	ResponseCodeEnum unfreeze(EntityNum aId, TokenID tId);
 
-	ResponseCodeEnum grantKyc(AccountID aId, TokenID tId);
+	ResponseCodeEnum grantKyc(EntityNum aId, TokenID tId);
 
-	ResponseCodeEnum revokeKyc(AccountID aId, TokenID tId);
+	ResponseCodeEnum revokeKyc(EntityNum aId, TokenID tId);
 
-	ResponseCodeEnum associate(AccountID aId, List<TokenID> tokens, boolean automaticAssociation);
+	ResponseCodeEnum associate(EntityNum aId, List<TokenID> tokens, boolean automaticAssociation);
 
-	ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment);
+	ResponseCodeEnum adjustBalance(EntityNum aId, TokenID tId, long adjustment);
 
-	ResponseCodeEnum changeOwner(NftId nftId, AccountID from, AccountID to);
+	ResponseCodeEnum changeOwner(NftId nftId, EntityNum from, EntityNum to);
 
-	ResponseCodeEnum changeOwnerWildCard(NftId nftId, AccountID from, AccountID to);
+	ResponseCodeEnum changeOwnerWildCard(NftId nftId, EntityNum from, EntityNum to);
 
 	default TokenID resolve(TokenID id) {
 		return exists(id) ? id : MISSING_TOKEN;
@@ -103,11 +103,13 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 		if (tokenId == MISSING_TOKEN) {
 			validity = INVALID_TOKEN_ID;
 		}
+		final var aId = change.accountId();
 		if (validity == OK) {
 			if (change.isForNft()) {
-				validity = changeOwner(change.nftId(), change.accountId(), change.counterPartyAccountId());
+				final var cId = change.counterPartyAccountId();
+				validity = changeOwner(change.nftId(), aId, cId);
 			} else {
-				validity = adjustBalance(change.accountId(), tokenId, change.units());
+				validity = adjustBalance(aId, tokenId, change.units());
 				if (validity == INSUFFICIENT_TOKEN_BALANCE) {
 					validity = change.codeForInsufficientBalance();
 				}

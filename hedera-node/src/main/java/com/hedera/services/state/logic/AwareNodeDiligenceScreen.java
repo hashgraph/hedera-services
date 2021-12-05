@@ -25,6 +25,7 @@ import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.diligence.DuplicateClassification;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.logging.log4j.LogManager;
@@ -54,13 +55,13 @@ public final class AwareNodeDiligenceScreen {
 
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
-	private final BackingStore<AccountID, MerkleAccount> backingAccounts;
+	private final BackingStore<EntityNum, MerkleAccount> backingAccounts;
 
 	@Inject
 	public AwareNodeDiligenceScreen(
 			final OptionValidator validator,
 			final TransactionContext txnCtx,
-			final BackingStore<AccountID, MerkleAccount> backingAccounts
+			final BackingStore<EntityNum, MerkleAccount> backingAccounts
 	) {
 		this.txnCtx = txnCtx;
 		this.validator = validator;
@@ -71,8 +72,9 @@ public final class AwareNodeDiligenceScreen {
 		final var accessor = txnCtx.accessor();
 
 		final var submittingAccount = txnCtx.submittingNodeAccount();
-		final var designatedAccount = accessor.getTxn().getNodeAccountID();
-		final var designatedNodeExists = backingAccounts.contains(designatedAccount);
+		final var designatedAccount= accessor.getTxn().getNodeAccountID();
+		final var designatedAccountId = EntityNum.fromAccountId(designatedAccount);
+		final var designatedNodeExists = backingAccounts.contains(designatedAccountId);
 		if (!designatedNodeExists) {
 			logAccountWarning(
 					MISSING_NODE_LOG_TPL,
@@ -84,7 +86,7 @@ public final class AwareNodeDiligenceScreen {
 			return true;
 		}
 
-		final var payerAccountId = accessor.getPayer();
+		final var payerAccountId = EntityNum.fromAccountId(accessor.getPayer());
 		final var payerAccountExists = backingAccounts.contains(payerAccountId);
 
 		if (!payerAccountExists) {
@@ -99,7 +101,7 @@ public final class AwareNodeDiligenceScreen {
 			return true;
 		}
 
-		if (!submittingAccount.equals(designatedAccount)) {
+		if (!submittingAccount.equals(designatedAccountId)) {
 			logAccountWarning(
 					WRONG_NODE_LOG_TPL,
 					submittingAccount,

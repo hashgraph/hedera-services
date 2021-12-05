@@ -43,8 +43,8 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -80,7 +80,7 @@ public class BaseHederaLedgerTestHelper {
 
 	protected long GENESIS_BALANCE = 50_000_000_000L;
 	protected long NEXT_ID = 1_000_000L;
-	protected AccountID genesis = AccountID.newBuilder().setAccountNum(2).build();
+	protected EntityNum genesis = EntityNum.fromLong(2);
 
 	protected HederaLedger subject;
 
@@ -92,10 +92,10 @@ public class BaseHederaLedgerTestHelper {
 	protected AccountRecordsHistorian historian;
 	protected TransferLogic transferLogic;
 	protected TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
-	protected TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	protected TransactionalLedger<EntityNum, AccountProperty, MerkleAccount> accountsLedger;
 	protected TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 	protected TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
-	protected AccountID misc = AccountID.newBuilder().setAccountNum(1_234).build();
+	protected EntityNum misc = EntityNum.fromLong(1_234);
 	protected long MISC_BALANCE = 1_234L;
 	protected long RAND_BALANCE = 2_345L;
 	protected long miscFrozenTokenBalance = 500L;
@@ -106,10 +106,10 @@ public class BaseHederaLedgerTestHelper {
 	protected TokenID tokenId = IdUtils.tokenWith(222);
 	protected TokenID frozenId = IdUtils.tokenWith(111);
 	protected HederaAccountCustomizer noopCustomizer = new HederaAccountCustomizer();
-	protected AccountID deletable = AccountID.newBuilder().setAccountNum(666).build();
-	protected AccountID rand = AccountID.newBuilder().setAccountNum(2_345).build();
-	protected AccountID deleted = AccountID.newBuilder().setAccountNum(3_456).build();
-	protected AccountID detached = AccountID.newBuilder().setAccountNum(4_567).build();
+	protected EntityNum deletable = EntityNum.fromLong(666);
+	protected EntityNum rand = EntityNum.fromLong(2_345);
+	protected EntityNum deleted = EntityNum.fromLong(3_456);
+	protected EntityNum detached = EntityNum.fromLong(4_567);
 
 	protected void commonSetup() {
 		sideEffectsTracker = mock(SideEffectsTracker.class);
@@ -125,12 +125,12 @@ public class BaseHederaLedgerTestHelper {
 			}
 
 			@Override
-			public AccountID newAccountId(AccountID newAccountSponsor) {
-				return AccountID.newBuilder().setAccountNum(nextId++).build();
+			public EntityNum newAccountId() {
+				return EntityNum.fromLong(nextId++);
 			}
 
 			@Override
-			public ContractID newContractId(AccountID newContractSponsor) {
+			public ContractID newContractId() {
 				return ContractID.newBuilder().setContractNum(nextId++).build();
 			}
 
@@ -145,7 +145,7 @@ public class BaseHederaLedgerTestHelper {
 			}
 
 			@Override
-			public ScheduleID newScheduleId(AccountID sponsor) { return ScheduleID.newBuilder().setScheduleNum(nextId++).build(); }
+			public ScheduleID newScheduleId() { return ScheduleID.newBuilder().setScheduleNum(nextId++).build(); }
 
 			@Override
 			public void reclaimLastId() {
@@ -160,14 +160,10 @@ public class BaseHederaLedgerTestHelper {
 		};
 	}
 
-	protected AccountAmount aa(AccountID account, long amount) {
-		return AccountAmount.newBuilder().setAccountID(account).setAmount(amount).build();
-	}
-
 	protected void addToLedger(
-			AccountID id,
-			long balance,
-			Map<TokenID, TokenInfo> tokenInfo
+			final EntityNum id,
+			final long balance,
+			final Map<TokenID, TokenInfo> tokenInfo
 	) {
 		when(accountsLedger.get(id, EXPIRY)).thenReturn(1_234_567_890L);
 		when(accountsLedger.get(id, PROXY)).thenReturn(new EntityId(0, 0, 1_234L));
@@ -185,20 +181,20 @@ public class BaseHederaLedgerTestHelper {
 		// and:
 		for (TokenID tId : tokenInfo.keySet()) {
 			var info = tokenInfo.get(tId);
-			var relationship = BackingTokenRels.asTokenRel(id, tId);
+			var relationship = BackingTokenRels.asTokenRel(id.toGrpcAccountId(), tId);
 			when(tokenRelsLedger.get(relationship, TOKEN_BALANCE)).thenReturn(info.balance);
 		}
 	}
 
-	protected void addDeletedAccountToLedger(AccountID id) {
+	protected void addDeletedAccountToLedger(final EntityNum id) {
 		when(accountsLedger.get(id, BALANCE)).thenReturn(0L);
 		when(accountsLedger.get(id, IS_DELETED)).thenReturn(true);
 	}
 
 	protected void addToLedger(
-			AccountID id,
-			long balance,
-			HederaAccountCustomizer customizer
+			final EntityNum id,
+			final long balance,
+			final HederaAccountCustomizer customizer
 	) {
 		addToLedger(id, balance, Collections.emptyMap());
 	}
@@ -252,7 +248,7 @@ public class BaseHederaLedgerTestHelper {
 		subject.setMutableEntityAccess(mutableEntityAccess);
 	}
 
-	protected void givenOkTokenXfers(AccountID misc, TokenID tokenId, long i) {
+	protected void givenOkTokenXfers(final EntityNum misc, final TokenID tokenId, final long i) {
 		given(tokenStore.adjustBalance(misc, tokenId, i)).willReturn(OK);
 	}
 

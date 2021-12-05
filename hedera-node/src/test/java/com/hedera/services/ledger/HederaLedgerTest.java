@@ -26,7 +26,7 @@ import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.test.utils.IdUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,7 +47,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
-import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -128,7 +127,7 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 
 	@Test
 	void delegatesExists() {
-		final var missing = asAccount("55.66.77");
+		final var missing = EntityNum.fromLong(77);
 
 		final var hasMissing = subject.exists(missing);
 		final var hasGenesis = subject.exists(genesis);
@@ -261,11 +260,11 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 	@Test
 	void performsFundedCreate() {
 		final var customizer = mock(HederaAccountCustomizer.class);
-		given(accountsLedger.existsPending(IdUtils.asAccount(String.format("0.0.%d", NEXT_ID)))).willReturn(true);
+		given(accountsLedger.existsPending(EntityNum.fromLong(NEXT_ID))).willReturn(true);
 
 		final var created = subject.create(rand, 1_000L, customizer);
 
-		assertEquals(NEXT_ID, created.getAccountNum());
+		assertEquals(NEXT_ID, created);
 		verify(accountsLedger).set(rand, BALANCE, RAND_BALANCE - 1_000L);
 		verify(accountsLedger).create(created);
 		verify(accountsLedger).set(created, BALANCE, 1_000L);
@@ -275,7 +274,7 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 	@Test
 	void performsUnconditionalSpawn() {
 		final var customizer = mock(HederaAccountCustomizer.class);
-		final var contract = asAccount("1.2.3");
+		final var contract = EntityNum.fromLong(3);
 		final var balance = 1_234L;
 		given(accountsLedger.existsPending(contract)).willReturn(true);
 

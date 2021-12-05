@@ -34,8 +34,6 @@ import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.tuweni.bytes.Bytes;
@@ -79,12 +77,12 @@ class StaticEntityAccessTest {
 
 	private static final JKey key = new JEd25519Key("aBcDeFgHiJkLmNoPqRsTuVwXyZ012345".getBytes());
 
-	private final AccountID id = IdUtils.asAccount("0.0.1234");
-	private final AccountID nonExtantId = IdUtils.asAccount("0.0.1235");
+	private final EntityNum id = EntityNum.fromLong(1234);
+	private final EntityNum nonExtantId = EntityNum.fromLong(1235);
 	private final UInt256 uint256Key = UInt256.ONE;
 	private final Bytes bytesKey = uint256Key.toBytes();
-	private final ContractKey contractKey = new ContractKey(id.getAccountNum(), uint256Key.toArray());
-	private final VirtualBlobKey blobKey = new VirtualBlobKey(CONTRACT_BYTECODE, (int) id.getAccountNum());
+	private final ContractKey contractKey = new ContractKey(id.longValue(), uint256Key.toArray());
+	private final VirtualBlobKey blobKey = new VirtualBlobKey(CONTRACT_BYTECODE, id.intValue());
 	private final ContractValue contractVal = new ContractValue(BigInteger.ONE);
 	private final VirtualBlobValue blobVal = new VirtualBlobValue("data".getBytes());
 
@@ -126,14 +124,14 @@ class StaticEntityAccessTest {
 	@Test
 	void notDetachedIfSmartContract() {
 		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
-		given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someContractAccount);
+		given(accounts.get(id)).willReturn(someContractAccount);
 		assertFalse(subject.isDetached(id));
 	}
 
 	@Test
 	void notDetachedIfNonZeroBalance() throws NegativeAccountBalanceException {
 		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
-		given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someNonContractAccount);
+		given(accounts.get(id)).willReturn(someNonContractAccount);
 		someNonContractAccount.setBalance(1L);
 		assertFalse(subject.isDetached(id));
 	}
@@ -141,7 +139,7 @@ class StaticEntityAccessTest {
 	@Test
 	void notDetachedIfNotExpired() throws NegativeAccountBalanceException {
 		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
-		given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someNonContractAccount);
+		given(accounts.get(id)).willReturn(someNonContractAccount);
 		someNonContractAccount.setBalance(0L);
 		given(validator.isAfterConsensusSecond(someNonContractAccount.getExpiry())).willReturn(true);
 		assertFalse(subject.isDetached(id));
@@ -150,7 +148,7 @@ class StaticEntityAccessTest {
 	@Test
 	void detachedIfExpiredWithZeroBalance() throws NegativeAccountBalanceException {
 		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
-		given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someNonContractAccount);
+		given(accounts.get(id)).willReturn(someNonContractAccount);
 		someNonContractAccount.setBalance(0L);
 		assertTrue(subject.isDetached(id));
 	}
@@ -170,8 +168,8 @@ class StaticEntityAccessTest {
 
 	@Test
 	void nonMutatorsWork() {
-		given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someNonContractAccount);
-		given(accounts.get(EntityNum.fromAccountId(nonExtantId))).willReturn(null);
+		given(accounts.get(id)).willReturn(someNonContractAccount);
+		given(accounts.get(nonExtantId)).willReturn(null);
 
 		assertEquals(someNonContractAccount.getBalance(), subject.getBalance(id));
 		assertEquals(someNonContractAccount.isDeleted(), subject.isDeleted(id));

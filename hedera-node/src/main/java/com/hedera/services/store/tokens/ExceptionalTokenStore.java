@@ -26,7 +26,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.models.NftId;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
@@ -38,52 +38,52 @@ public enum ExceptionalTokenStore implements TokenStore {
 	NOOP_TOKEN_STORE;
 
 	@Override
-	public ResponseCodeEnum unfreeze(AccountID aId, TokenID tId) {
+	public ResponseCodeEnum unfreeze(EntityNum aId, TokenID tId) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public ResponseCodeEnum grantKyc(AccountID aId, TokenID tId) {
+	public ResponseCodeEnum grantKyc(EntityNum aId, TokenID tId) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public ResponseCodeEnum revokeKyc(AccountID aId, TokenID tId) {
+	public ResponseCodeEnum revokeKyc(EntityNum aId, TokenID tId) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public ResponseCodeEnum associate(AccountID aId, List<TokenID> tokens, boolean automaticAssociation) {
+	public ResponseCodeEnum associate(EntityNum aId, List<TokenID> tokens, boolean automaticAssociation) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public ResponseCodeEnum freeze(AccountID aId, TokenID tId) {
+	public ResponseCodeEnum freeze(EntityNum aId, TokenID tId) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public boolean isKnownTreasury(AccountID aId) {
+	public boolean isKnownTreasury(EntityNum aId) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void removeKnownTreasuryForToken(AccountID aId, TokenID tId) {
+	public void removeKnownTreasuryForToken(EntityNum aId, TokenID tId) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public boolean isTreasuryForToken(AccountID aId, TokenID tId) {
+	public boolean isTreasuryForToken(EntityNum aId, TokenID tId) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public List<TokenID> listOfTokensServed(AccountID treasury) {
+	public List<TokenID> listOfTokensServed(EntityNum treasury) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public boolean associationExists(AccountID aId, TokenID tId) {
+	public boolean associationExists(EntityNum aId, TokenID tId) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -93,22 +93,22 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
-	public ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment) {
+	public ResponseCodeEnum adjustBalance(EntityNum aId, TokenID tId, long adjustment) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public ResponseCodeEnum changeOwner(NftId nftId, AccountID from, AccountID to) {
+	public ResponseCodeEnum changeOwner(NftId nftId, EntityNum from, EntityNum to) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public ResponseCodeEnum changeOwnerWildCard(NftId nftId, AccountID from, AccountID to) {
+	public ResponseCodeEnum changeOwnerWildCard(NftId nftId, EntityNum from, EntityNum to) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void addKnownTreasury(final AccountID aId, final TokenID tId) {
+	public void addKnownTreasury(final EntityNum aId, final TokenID tId) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -128,7 +128,7 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
-	public void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+	public void setAccountsLedger(TransactionalLedger<EntityNum, AccountProperty, MerkleAccount> accountsLedger) {
 		/* No-op */
 	}
 

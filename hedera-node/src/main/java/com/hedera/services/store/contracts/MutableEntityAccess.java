@@ -34,7 +34,7 @@ import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.logging.log4j.LogManager;
@@ -121,68 +121,68 @@ public class MutableEntityAccess implements EntityAccess {
 	}
 
 	@Override
-	public void spawn(final AccountID id, final long balance, final HederaAccountCustomizer customizer) {
+	public void spawn(final EntityNum id, final long balance, final HederaAccountCustomizer customizer) {
 		ledger.spawn(id, balance, customizer);
 	}
 
 	@Override
-	public void customize(final AccountID id, final HederaAccountCustomizer customizer) {
+	public void customize(final EntityNum id, final HederaAccountCustomizer customizer) {
 		ledger.customizePotentiallyDeleted(id, customizer);
 	}
 
 	@Override
-	public void adjustBalance(final AccountID id, final long adjustment) {
+	public void adjustBalance(final EntityNum id, final long adjustment) {
 		ledger.adjustBalance(id, adjustment);
 	}
 
 	@Override
-	public long getAutoRenew(final AccountID id) {
+	public long getAutoRenew(final EntityNum id) {
 		return ledger.autoRenewPeriod(id);
 	}
 
 	@Override
-	public long getBalance(final AccountID id) {
+	public long getBalance(final EntityNum id) {
 		return ledger.getBalance(id);
 	}
 
 	@Override
-	public long getExpiry(final AccountID id) {
+	public long getExpiry(final EntityNum id) {
 		return ledger.expiry(id);
 	}
 
 	@Override
-	public JKey getKey(final AccountID id) {
+	public JKey getKey(final EntityNum id) {
 		return ledger.key(id);
 	}
 
 	@Override
-	public String getMemo(final AccountID id) {
+	public String getMemo(final EntityNum id) {
 		return ledger.memo(id);
 	}
 
 	@Override
-	public EntityId getProxy(final AccountID id) {
+	public EntityId getProxy(final EntityNum id) {
 		return ledger.proxy(id);
 	}
 
 	@Override
-	public boolean isDeleted(final AccountID id) {
+	public boolean isDeleted(final EntityNum id) {
 		return ledger.isDeleted(id);
 	}
 
 	@Override
-	public boolean isDetached(final AccountID id) {
+	public boolean isDetached(final EntityNum id) {
 		return ledger.isDetached(id);
 	}
 
 	@Override
-	public boolean isExtant(final AccountID id) {
+	public boolean isExtant(final EntityNum id) {
 		return ledger.exists(id);
 	}
 
 	@Override
-	public void putStorage(final AccountID id, final UInt256 key, final UInt256 value) {
-		final var contractKey = new ContractKey(id.getAccountNum(), key.toArray());
+	public void putStorage(final EntityNum id, final UInt256 key, final UInt256 value) {
+		final var contractKey = new ContractKey(id.longValue(), key.toArray());
 		if (value.isZero()) {
 			storage.get().put(contractKey, new ContractValue());
 		} else {
@@ -191,22 +191,22 @@ public class MutableEntityAccess implements EntityAccess {
 	}
 
 	@Override
-	public UInt256 getStorage(final AccountID id, final UInt256 key) {
-		final var contractKey = new ContractKey(id.getAccountNum(), key.toArray());
+	public UInt256 getStorage(final EntityNum id, final UInt256 key) {
+		final var contractKey = new ContractKey(id.longValue(), key.toArray());
 		final var contractValue = storage.get().get(contractKey);
 		return contractValue == null ? UInt256.ZERO : UInt256.fromBytes(Bytes32.wrap(contractValue.getValue()));
 	}
 
 	@Override
-	public void storeCode(final AccountID id, final Bytes code) {
-		final var key = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, (int) id.getAccountNum());
+	public void storeCode(final EntityNum id, final Bytes code) {
+		final var key = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, id.intValue());
 		final var value = new VirtualBlobValue(code.toArray());
 		bytecode.get().put(key, value);
 	}
 
 	@Override
-	public Bytes fetchCode(final AccountID id) {
-		final var blobKey = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, (int) id.getAccountNum());
+	public Bytes fetchCode(final EntityNum id) {
+		final var blobKey = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, id.intValue());
 		final var bytes = bytecode.get().get(blobKey);
 		return bytes == null ? Bytes.EMPTY : Bytes.of(bytes.getData());
 	}

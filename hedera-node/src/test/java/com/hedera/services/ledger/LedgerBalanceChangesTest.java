@@ -41,7 +41,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -71,7 +70,6 @@ import java.util.List;
 
 import static com.hedera.services.ledger.BalanceChange.changingNftOwnership;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
-import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.hbarChange;
 import static com.hedera.test.utils.IdUtils.nftXfer;
 import static com.hedera.test.utils.IdUtils.tokenChange;
@@ -83,7 +81,7 @@ import static org.mockito.BDDMockito.given;
 @ExtendWith(MockitoExtension.class)
 class LedgerBalanceChangesTest {
 	private final BackingStore<NftId, MerkleUniqueToken> backingNfts = new HashMapBackingNfts();
-	private final BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
+	private final BackingStore<EntityNum, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
 	private final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingRels =
 			new HashMapBackingTokenRels();
 	private BackingStore<TokenID, MerkleToken> backingTokens = new HashMapBackingTokens();
@@ -91,7 +89,7 @@ class LedgerBalanceChangesTest {
 	private final FCOneToManyRelation<EntityNum, Long> uniqueTokenOwnerships = new FCOneToManyRelation<>();
 	private final FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations = new FCOneToManyRelation<>();
 	private final FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations = new FCOneToManyRelation<>();
-	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	private TransactionalLedger<EntityNum, AccountProperty, MerkleAccount> accountsLedger;
 	private TransactionalLedger<
 			Pair<AccountID, TokenID>,
 			TokenRelProperty,
@@ -384,19 +382,19 @@ class LedgerBalanceChangesTest {
 		);
 	}
 
-	private AccountAmount.Builder aaBuilderWith(AccountID account, long amount) {
-		return AccountAmount.newBuilder().setAccountID(account).setAmount(amount);
+	private AccountAmount.Builder aaBuilderWith(final EntityNum account, final long amount) {
+		return AccountAmount.newBuilder().setAccountID(account.toGrpcAccountId()).setAmount(amount);
 	}
 
 	private void assertInitialBalanceUnchanged() {
 		assertInitialBalanceUnchanged(aStartBalance, bTokenStartBalance);
 	}
 
-	private void assertInitialBalanceUnchanged(long modifiedABalance) {
+	private void assertInitialBalanceUnchanged(final long modifiedABalance) {
 		assertInitialBalanceUnchanged(modifiedABalance, bTokenStartBalance);
 	}
 
-	private void assertInitialBalanceUnchanged(long modifiedABalance, long modifiedBTokenBalance) {
+	private void assertInitialBalanceUnchanged(final long modifiedABalance, final long modifiedBTokenBalance) {
 		if (modifiedABalance >= 0L) {
 			assertEquals(
 					modifiedABalance,
@@ -485,13 +483,13 @@ class LedgerBalanceChangesTest {
 
 		backingNfts.put(
 				aaNft,
-				new MerkleUniqueToken(EntityId.fromGrpcAccountId(aModel), "aa".getBytes(), MISSING_INSTANT));
+				new MerkleUniqueToken(aModel.toEntityId(), "aa".getBytes(), MISSING_INSTANT));
 		backingNfts.put(
 				baNft,
-				new MerkleUniqueToken(EntityId.fromGrpcAccountId(bModel), "ba".getBytes(), MISSING_INSTANT));
+				new MerkleUniqueToken(bModel.toEntityId(), "ba".getBytes(), MISSING_INSTANT));
 		backingNfts.put(
 				bbNft,
-				new MerkleUniqueToken(EntityId.fromGrpcAccountId(cModel), "bb".getBytes(), MISSING_INSTANT));
+				new MerkleUniqueToken(cModel.toEntityId(), "bb".getBytes(), MISSING_INSTANT));
 
 		backingRels.rebuildFromSources();
 	}
@@ -499,11 +497,11 @@ class LedgerBalanceChangesTest {
 	private List<BalanceChange> fixtureChanges() {
 		return List.of(
 				tokenChange(yetAnotherToken, aModel, aYetAnotherTokenChange),
-				hbarChange(aModel, aHbarChange),
-				hbarChange(bModel, bHbarChange),
+				hbarChange(aModel.toGrpcAccountId(), aHbarChange),
+				hbarChange(bModel.toGrpcAccountId(), bHbarChange),
 				tokenChange(anotherToken, aModel, aAnotherTokenChange),
 				tokenChange(anotherToken, cModel, cAnotherTokenChange),
-				hbarChange(cModel, cHbarChange),
+				hbarChange(cModel.toGrpcAccountId(), cHbarChange),
 				tokenChange(token, bModel, bTokenChange),
 				tokenChange(token, cModel, cTokenChange),
 				tokenChange(anotherToken, bModel, bAnotherTokenChange),
@@ -513,8 +511,8 @@ class LedgerBalanceChangesTest {
 				changingNftOwnership(bNft, bNft.asGrpcToken(), nftXfer(cModel, aModel, bSerialNo)));
 	}
 
-	private Pair<AccountID, TokenID> rel(AccountID account, Id token) {
-		return Pair.of(account, token.asGrpcToken());
+	private Pair<AccountID, TokenID> rel(EntityNum account, Id token) {
+		return Pair.of(account.toGrpcAccountId(), token.asGrpcToken());
 	}
 
 	private TokenID asGprcToken(Id id) {
@@ -525,16 +523,16 @@ class LedgerBalanceChangesTest {
 				.build();
 	}
 
-	private MerkleToken fungibleTokenWithTreasury(AccountID treasury) {
+	private MerkleToken fungibleTokenWithTreasury(EntityNum treasury) {
 		final var token = new MerkleToken();
-		token.setTreasury(new EntityId(treasury.getShardNum(), treasury.getRealmNum(), treasury.getAccountNum()));
+		token.setTreasury(treasury.toEntityId());
 		token.setTokenType(TokenType.FUNGIBLE_COMMON);
 		return token;
 	}
 
-	private MerkleToken nonFungibleTokenWithTreasury(AccountID treasury) {
+	private MerkleToken nonFungibleTokenWithTreasury(final EntityNum treasury) {
 		final var token = new MerkleToken();
-		token.setTreasury(new EntityId(treasury.getShardNum(), treasury.getRealmNum(), treasury.getAccountNum()));
+		token.setTreasury(treasury.toEntityId());
 		token.setTokenType(TokenType.NON_FUNGIBLE_UNIQUE);
 		return token;
 	}
@@ -546,9 +544,9 @@ class LedgerBalanceChangesTest {
 
 	private final long aSerialNo = 1_234L;
 	private final long bSerialNo = 2_234L;
-	private final AccountID aModel = asAccount("0.0.3");
-	private final AccountID bModel = asAccount("0.0.4");
-	private final AccountID cModel = asAccount("0.0.5");
+	private final EntityNum aModel = EntityNum.fromLong(3);
+	private final EntityNum bModel = EntityNum.fromLong(4);
+	private final EntityNum cModel = EntityNum.fromLong(5);
 	private final Id token = new Id(0, 0, 75231);
 	private final Id anotherToken = new Id(0, 0, 75232);
 	private final Id yetAnotherToken = new Id(0, 0, 75233);

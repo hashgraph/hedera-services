@@ -23,11 +23,10 @@ package com.hedera.services.state.initialization;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
 
 public interface SystemAccountsCreator {
 	void createSystemAccounts(MerkleMap<EntityNum, MerkleAccount> accounts, AddressBook addressBook) throws Exception;
-	void ensureSystemAccounts(BackingStore<AccountID, MerkleAccount> backingAccounts, AddressBook addressBook);
+	void ensureSystemAccounts(BackingStore<EntityNum, MerkleAccount> backingAccounts, AddressBook addressBook);
 }

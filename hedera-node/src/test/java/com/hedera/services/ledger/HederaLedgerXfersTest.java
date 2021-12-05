@@ -79,7 +79,8 @@ class HederaLedgerXfersTest extends BaseHederaLedgerTestHelper {
 	@Test
 	void throwsOnImpossibleTransferWithBrokerPayer() {
 		final var amount = GENESIS_BALANCE + 1;
-		final var e = assertThrows(InsufficientFundsException.class, () -> subject.doTransfer(genesis, misc, amount));
+		final var e = assertThrows(InsufficientFundsException.class, () -> subject.doTransfer(
+				genesis, misc, amount));
 
 		assertEquals(messageFor(genesis, -1 * amount), e.getMessage());
 		verify(accountsLedger, never()).set(any(), any(), any());

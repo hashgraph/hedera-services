@@ -27,7 +27,7 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -54,7 +54,6 @@ import static com.hedera.services.context.properties.StaticPropertiesHolder.STAT
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.HederaLedger.CONTRACT_ID_COMPARATOR;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
-import static com.hedera.services.utils.EntityIdUtils.asContract;
 import static com.hedera.services.utils.EntityIdUtils.asTypedSolidityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
@@ -85,14 +84,14 @@ public class HederaWorldState implements HederaMutableWorldState {
 	@Override
 	public void customizeSponsoredAccounts() {
 		sponsorMap.forEach((contract, sponsorAddress) -> {
-			final var createdId = accountParsedFromSolidityAddress(contract);
-			final var sponsorId = accountParsedFromSolidityAddress(sponsorAddress);
+			final var createdId = EntityNum.fromAddress(contract);
+			final var sponsorId = EntityNum.fromAddress(sponsorAddress);
 			validateTrue(entityAccess.isExtant(createdId), FAIL_INVALID);
 			validateTrue(entityAccess.isExtant(sponsorId), FAIL_INVALID);
 
 			final var sponsorKey = entityAccess.getKey(sponsorId);
 			final var createdKey = (sponsorKey instanceof JContractIDKey)
-					? STATIC_PROPERTIES.scopedContractKeyWith(createdId.getAccountNum())
+					? STATIC_PROPERTIES.scopedContractKeyWith(createdId.longValue())
 					: sponsorKey;
 			final var customizer = new HederaAccountCustomizer()
 					.key(createdKey)
@@ -139,26 +138,26 @@ public class HederaWorldState implements HederaMutableWorldState {
 	}
 
 	@Override
-	public WorldStateAccount get(Address address) {
-		final var accountID = accountParsedFromSolidityAddress(address);
-		if (!isGettable(accountID)) {
+	public WorldStateAccount get(final Address address) {
+		final var accountId = EntityNum.fromAddress(address);
+		if (!isGettable(accountId)) {
 			return null;
 		}
 
-		final long expiry = entityAccess.getExpiry(accountID);
-		final long balance = entityAccess.getBalance(accountID);
-		final long autoRenewPeriod = entityAccess.getAutoRenew(accountID);
+		final long expiry = entityAccess.getExpiry(accountId);
+		final long balance = entityAccess.getBalance(accountId);
+		final long autoRenewPeriod = entityAccess.getAutoRenew(accountId);
 		return new WorldStateAccount(address, Wei.of(balance), expiry, autoRenewPeriod,
-				entityAccess.getProxy(accountID));
+				entityAccess.getProxy(accountId));
 	}
 
-	private boolean isGettable(final AccountID id) {
+	private boolean isGettable(final EntityNum id) {
 		return entityAccess.isExtant(id) && !entityAccess.isDeleted(id) && !entityAccess.isDetached(id);
 	}
 
 	public class WorldStateAccount implements Account {
 		private final Wei balance;
-		private final AccountID account;
+		private final EntityNum account;
 		private final Address address;
 
 		private JKey key;
@@ -179,7 +178,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 			this.balance = balance;
 			this.autoRenew = autoRenew;
 			this.proxyAccount = proxyAccount;
-			this.account = accountParsedFromSolidityAddress(address);
+			this.account = EntityNum.fromAddress(address);
 		}
 
 		@Override
@@ -285,7 +284,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 			this.expiry = expiry;
 		}
 
-		public AccountID getAccount() {
+		public EntityNum getAccount() {
 			return account;
 		}
 	}
@@ -354,19 +353,19 @@ public class HederaWorldState implements HederaMutableWorldState {
 			 * all the same information. */
 			final var deletedAddresses = getDeletedAccountAddresses();
 			deletedAddresses.forEach(address -> {
-				final var accountId = accountParsedFromSolidityAddress(address);
+				final var accountId = EntityNum.fromAddress(address);
 				final var deletedBalance= entityAccess.getBalance(accountId);
 				entityAccess.adjustBalance(accountId, -deletedBalance);
 			});
 			for (final var updatedAccount : getUpdatedAccounts()) {
-				final var accountId = accountParsedFromSolidityAddress(updatedAccount.getAddress());
+				final var accountNum = EntityNum.fromAddress(updatedAccount.getAddress());
 
-				if (!entityAccess.isExtant(accountId)) {
-					wrapped.provisionalContractCreations.add(asContract(accountId));
-					entityAccess.spawn(accountId, 0L, CONTRACT_CUSTOMIZER);
+				if (!entityAccess.isExtant(accountNum)) {
+					wrapped.provisionalContractCreations.add(accountNum.toGrpcContractId());
+					entityAccess.spawn(accountNum, 0L, CONTRACT_CUSTOMIZER);
 				}
-				final var balanceChange = updatedAccount.getBalance().toLong() - entityAccess.getBalance(accountId);
-				entityAccess.adjustBalance(accountId, balanceChange);
+				final var balanceChange = updatedAccount.getBalance().toLong() - entityAccess.getBalance(accountNum);
+				entityAccess.adjustBalance(accountNum, balanceChange);
 
 				/* Note that we don't have the equivalent of an account-scoped storage  trie, so we can't
 				 * do anything in particular when updated.getStorageWasCleared() is true. (We will address
@@ -376,11 +375,11 @@ public class HederaWorldState implements HederaMutableWorldState {
 					final TreeSet<Map.Entry<UInt256, UInt256>> entries = new TreeSet<>(Map.Entry.comparingByKey());
 					entries.addAll(updatedStorage.entrySet());
 					for (final var entry : entries) {
-						entityAccess.putStorage(accountId, entry.getKey(), entry.getValue());
+						entityAccess.putStorage(accountNum, entry.getKey(), entry.getValue());
 					}
 				}
 				if (updatedAccount.codeWasUpdated()) {
-					entityAccess.storeCode(accountId, updatedAccount.getCode());
+					entityAccess.storeCode(accountNum, updatedAccount.getCode());
 				}
 			}
 

@@ -26,7 +26,6 @@ import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.store.tokens.views.utils.GrpcUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.swirlds.fchashmap.FCOneToManyRelation;
@@ -100,7 +99,7 @@ public abstract class AbstractUniqTokenView implements UniqTokenView {
 			int start,
 			int end,
 			@Nullable TokenID fixedType,
-			@Nonnull AccountID fixedTreasury
+			@Nonnull EntityNum fixedTreasury
 	) {
 		final var curNfts = nfts.get();
 		final List<TokenNftInfo> answer = new ArrayList<>();
@@ -115,19 +114,19 @@ public abstract class AbstractUniqTokenView implements UniqTokenView {
 					: TokenID.newBuilder().setTokenNum(tokenTypeNum).build();
 
 			final var seriallNum = BitPackUtils.unsignedLowOrder32From(nftIdCode);
-			AccountID treasury = nft.isTreasuryOwned() ? fixedTreasury : null;
+			final var treasury = nft.isTreasuryOwned() ? fixedTreasury : null;
 			final var info = GrpcUtils.reprOf(type, seriallNum, nft, treasury);
 			answer.add(info);
 		});
 		return answer;
 	}
 
-	private AccountID treasuryOf(MerkleMap<EntityNum, MerkleToken> curTokens, EntityNum tokenNum) {
+	private EntityNum treasuryOf(MerkleMap<EntityNum, MerkleToken> curTokens, EntityNum tokenNum) {
 		final var token = curTokens.get(tokenNum);
 		if (token == null) {
 			throw new ConcurrentModificationException(
 					"Token #" + tokenNum.longValue() + " was removed during query answering");
 		}
-		return token.treasury().toGrpcAccountId();
+		return EntityNum.fromEntityId(token.treasury());
 	}
 }

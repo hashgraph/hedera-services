@@ -9,9 +9,9 @@ package com.hedera.services.ledger;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,7 +35,7 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import dagger.Binds;
 import dagger.Module;
@@ -47,7 +47,7 @@ import javax.inject.Singleton;
 public abstract class LedgerModule {
 	@Binds
 	@Singleton
-	public abstract BackingStore<AccountID, MerkleAccount> bindBackingAccounts(BackingAccounts backingAccounts);
+	public abstract BackingStore<EntityNum, MerkleAccount> bindBackingAccounts(final BackingAccounts backingAccounts);
 
 	@Binds
 	@Singleton
@@ -65,9 +65,9 @@ public abstract class LedgerModule {
 			final UniqTokenViewsManager uniqTokenViewsManager,
 			final AccountRecordsHistorian recordsHistorian,
 			final GlobalDynamicProperties dynamicProperties,
-			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
+			final TransactionalLedger<EntityNum, AccountProperty, MerkleAccount> accountsLedger,
 			final TransferLogic transferLogic
-			) {
+	) {
 
 		final var ledger = new HederaLedger(
 				tokenStore,

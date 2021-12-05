@@ -44,6 +44,7 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -89,9 +90,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * immediately before the final {@link TransactionalLedger#commit()}.
  * <p>
  * We should think of the ledger as using double-booked accounting,
- * (e.g., via the {@link HederaLedger#doTransfer(AccountID, AccountID, long)}
+ * (e.g., via the {@link HederaLedger#doTransfer(EntityNum, EntityNum, long)}
  * method); but it is necessary to provide "unsafe" single-booked
- * methods like {@link HederaLedger#adjustBalance(AccountID, long)} in
+ * methods like {@link HederaLedger#adjustBalance(EntityNum, long)} in
  * order to match transfer semantics the EVM expects.
  */
 public class HederaLedger {
@@ -123,7 +124,7 @@ public class HederaLedger {
 	private final SideEffectsTracker sideEffectsTracker;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final AccountRecordsHistorian historian;
-	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	private final TransactionalLedger<EntityNum, AccountProperty, MerkleAccount> accountsLedger;
 
 	private MutableEntityAccess mutableEntityAccess;
 	private UniqTokenViewsManager tokenViewsManager = null;
@@ -141,7 +142,7 @@ public class HederaLedger {
 			final SideEffectsTracker sideEffectsTracker,
 			final AccountRecordsHistorian historian,
 			final GlobalDynamicProperties dynamicProperties,
-			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
+			final TransactionalLedger<EntityNum, AccountProperty, MerkleAccount> accountsLedger,
 			final TransferLogic transferLogic
 	) {
 		this.ids = ids;
@@ -246,17 +247,17 @@ public class HederaLedger {
 	}
 
 	/* -- CURRENCY MANIPULATION -- */
-	public long getBalance(AccountID id) {
+	public long getBalance(final EntityNum id) {
 		return (long) accountsLedger.get(id, BALANCE);
 	}
 
-	public void adjustBalance(final AccountID id, final long adjustment) {
+	public void adjustBalance(final EntityNum id, final long adjustment) {
 		long newBalance = computeNewBalance(id, adjustment);
 		setBalance(id, newBalance);
 		sideEffectsTracker.trackHbarChange(id, adjustment);
 	}
 
-	void doTransfer(AccountID from, AccountID to, long adjustment) {
+	void doTransfer(final EntityNum from, final EntityNum to, final long adjustment) {
 		long newFromBalance = computeNewBalance(from, -1 * adjustment);
 		long newToBalance = computeNewBalance(to, adjustment);
 
@@ -268,30 +269,31 @@ public class HederaLedger {
 	}
 
 	/* --- TOKEN MANIPULATION --- */
-	public MerkleAccountTokens getAssociatedTokens(AccountID aId) {
+	public MerkleAccountTokens getAssociatedTokens(final EntityNum aId) {
 		return (MerkleAccountTokens) accountsLedger.get(aId, TOKENS);
 	}
 
-	public void setAssociatedTokens(AccountID aId, MerkleAccountTokens tokens) {
+	public void setAssociatedTokens(final EntityNum aId, final MerkleAccountTokens tokens) {
 		accountsLedger.set(aId, TOKENS, tokens);
 	}
 
-	public long getTokenBalance(AccountID aId, TokenID tId) {
-		var relationship = asTokenRel(aId, tId);
+	public long getTokenBalance(final EntityNum aId, final TokenID tId) {
+		var relationship = asTokenRel(aId.toGrpcAccountId(), tId);
 		return (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
 	}
 
-	public boolean allTokenBalancesVanish(AccountID aId) {
+	public boolean allTokenBalancesVanish(final EntityNum aId) {
 		if (tokenRelsLedger == null) {
 			throw new IllegalStateException("Ledger has no manageable token relationships!");
 		}
 
 		var tokens = (MerkleAccountTokens) accountsLedger.get(aId, TOKENS);
+		final var grpcAccountId = aId.toGrpcAccountId();
 		for (TokenID tId : tokens.asTokenIds()) {
 			if (tokenStore.get(tId).isDeleted()) {
 				continue;
 			}
-			var relationship = asTokenRel(aId, tId);
+			var relationship = asTokenRel(grpcAccountId, tId);
 			var balance = (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
 			if (balance > 0) {
 				return false;
@@ -300,23 +302,23 @@ public class HederaLedger {
 		return true;
 	}
 
-	public boolean isKnownTreasury(AccountID aId) {
+	public boolean isKnownTreasury(final EntityNum aId) {
 		return tokenStore.isKnownTreasury(aId);
 	}
 
-	public ResponseCodeEnum adjustTokenBalance(AccountID aId, TokenID tId, long adjustment) {
+	public ResponseCodeEnum adjustTokenBalance(EntityNum aId, TokenID tId, long adjustment) {
 		return tokenStore.adjustBalance(aId, tId, adjustment);
 	}
 
-	public ResponseCodeEnum grantKyc(AccountID aId, TokenID tId) {
+	public ResponseCodeEnum grantKyc(final EntityNum aId, final TokenID tId) {
 		return tokenStore.grantKyc(aId, tId);
 	}
 
-	public ResponseCodeEnum freeze(AccountID aId, TokenID tId) {
+	public ResponseCodeEnum freeze(final EntityNum aId, final TokenID tId) {
 		return tokenStore.freeze(aId, tId);
 	}
 
-	public ResponseCodeEnum unfreeze(AccountID aId, TokenID tId) {
+	public ResponseCodeEnum unfreeze(final EntityNum aId, final TokenID tId) {
 		return tokenStore.unfreeze(aId, tId);
 	}
 
@@ -335,10 +337,10 @@ public class HederaLedger {
 	}
 
 	public ResponseCodeEnum doTokenTransfer(
-			TokenID tId,
-			AccountID from,
-			AccountID to,
-			long adjustment
+			final TokenID tId,
+			final EntityNum from,
+			final EntityNum to,
+			final long adjustment
 	) {
 		var validity = OK;
 		validity = adjustTokenBalance(from, tId, -adjustment);
@@ -357,11 +359,11 @@ public class HederaLedger {
 	}
 
 	/* -- ACCOUNT META MANIPULATION -- */
-	public AccountID create(AccountID sponsor, long balance, HederaAccountCustomizer customizer) {
+	public EntityNum create(EntityNum sponsor, long balance, HederaAccountCustomizer customizer) {
 		long newSponsorBalance = computeNewBalance(sponsor, -1 * balance);
 		setBalance(sponsor, newSponsorBalance);
 
-		var id = ids.newAccountId(sponsor);
+		var id = ids.newAccountId();
 		spawn(id, balance, customizer);
 
 		sideEffectsTracker.trackHbarChange(sponsor, -balance);
@@ -369,7 +371,7 @@ public class HederaLedger {
 		return id;
 	}
 
-	public void spawn(AccountID id, long balance, HederaAccountCustomizer customizer) {
+	public void spawn(final EntityNum id, final long balance, final HederaAccountCustomizer customizer) {
 		accountsLedger.create(id);
 		setBalance(id, balance);
 		customizer.customize(id, accountsLedger);
@@ -377,7 +379,7 @@ public class HederaLedger {
 		sideEffectsTracker.trackHbarChange(id, balance);
 	}
 
-	public void customize(AccountID id, HederaAccountCustomizer customizer) {
+	public void customize(final EntityNum id, final HederaAccountCustomizer customizer) {
 		if ((boolean) accountsLedger.get(id, IS_DELETED)) {
 			throw new DeletedAccountException(id);
 		}
@@ -393,80 +395,80 @@ public class HederaLedger {
 	 * @param customizer
 	 * 		properties to update
 	 */
-	public void customizePotentiallyDeleted(AccountID id, HederaAccountCustomizer customizer) {
+	public void customizePotentiallyDeleted(final EntityNum id, final HederaAccountCustomizer customizer) {
 		customizer.customize(id, accountsLedger);
 	}
 
-	public void delete(AccountID id, AccountID beneficiary) {
+	public void delete(final EntityNum id, final EntityNum beneficiary) {
 		doTransfer(id, beneficiary, getBalance(id));
 		accountsLedger.set(id, IS_DELETED, true);
 	}
 
 	/* -- ACCOUNT PROPERTY ACCESS -- */
-	public boolean exists(AccountID id) {
+	public boolean exists(final EntityNum id) {
 		return accountsLedger.exists(id);
 	}
 
-	public long expiry(AccountID id) {
+	public long expiry(final EntityNum id) {
 		return (long) accountsLedger.get(id, EXPIRY);
 	}
 
-	public long autoRenewPeriod(AccountID id) {
+	public long autoRenewPeriod(final EntityNum id) {
 		return (long) accountsLedger.get(id, AUTO_RENEW_PERIOD);
 	}
 
-	public EntityId proxy(AccountID id) {
+	public EntityId proxy(final EntityNum id) {
 		return (EntityId) accountsLedger.get(id, PROXY);
 	}
 
-	public boolean isSmartContract(AccountID id) {
+	public boolean isSmartContract(final EntityNum id) {
 		return (boolean) accountsLedger.get(id, IS_SMART_CONTRACT);
 	}
 
-	public boolean isReceiverSigRequired(AccountID id) {
+	public boolean isReceiverSigRequired(final EntityNum id) {
 		return (boolean) accountsLedger.get(id, IS_RECEIVER_SIG_REQUIRED);
 	}
 
-	public int maxAutomaticAssociations(AccountID id) {
+	public int maxAutomaticAssociations(final EntityNum id) {
 		return (int) accountsLedger.get(id, MAX_AUTOMATIC_ASSOCIATIONS);
 	}
 
-	public int alreadyUsedAutomaticAssociations(AccountID id) {
+	public int alreadyUsedAutomaticAssociations(final EntityNum id) {
 		return (int) accountsLedger.get(id, ALREADY_USED_AUTOMATIC_ASSOCIATIONS);
 	}
 
-	public void setMaxAutomaticAssociations(AccountID id, int max) {
+	public void setMaxAutomaticAssociations(final EntityNum id, final int max) {
 		accountsLedger.set(id, MAX_AUTOMATIC_ASSOCIATIONS, max);
 	}
 
-	public void setAlreadyUsedAutomaticAssociations(AccountID id, int usedCount) {
+	public void setAlreadyUsedAutomaticAssociations(final EntityNum id, final int usedCount) {
 		accountsLedger.set(id, ALREADY_USED_AUTOMATIC_ASSOCIATIONS, usedCount);
 	}
 
-	public boolean isDeleted(AccountID id) {
+	public boolean isDeleted(final EntityNum id) {
 		return (boolean) accountsLedger.get(id, IS_DELETED);
 	}
 
-	public boolean isDetached(AccountID id) {
+	public boolean isDetached(final EntityNum id) {
 		return dynamicProperties.autoRenewEnabled()
 				&& !(boolean) accountsLedger.get(id, IS_SMART_CONTRACT)
 				&& (long) accountsLedger.get(id, BALANCE) == 0L
 				&& !validator.isAfterConsensusSecond((long) accountsLedger.get(id, EXPIRY));
 	}
 
-	public JKey key(AccountID id) {
+	public JKey key(final EntityNum id) {
 		return (JKey) accountsLedger.get(id, KEY);
 	}
 
-	public String memo(AccountID id) {
+	public String memo(final EntityNum id) {
 		return (String) accountsLedger.get(id, MEMO);
 	}
 
-	public boolean isPendingCreation(AccountID id) {
+	public boolean isPendingCreation(final EntityNum id) {
 		return accountsLedger.existsPending(id);
 	}
 
-	public MerkleAccount get(AccountID id) {
+	public MerkleAccount get(final EntityNum id) {
 		return accountsLedger.getFinalized(id);
 	}
 
@@ -475,7 +477,7 @@ public class HederaLedger {
 		return (balance + adjustment >= 0);
 	}
 
-	private long computeNewBalance(AccountID id, long adjustment) {
+	private long computeNewBalance(final EntityNum id, final long adjustment) {
 		if ((boolean) accountsLedger.get(id, IS_DELETED)) {
 			throw new DeletedAccountException(id);
 		}
@@ -495,7 +497,7 @@ public class HederaLedger {
 		}
 	}
 
-	private void setBalance(AccountID id, long newBalance) {
+	private void setBalance(final EntityNum id, final long newBalance) {
 		accountsLedger.set(id, BALANCE, newBalance);
 	}
 
@@ -509,7 +511,7 @@ public class HederaLedger {
 		return sideEffectsTracker.getNetTrackedTokenUnitAndOwnershipChanges();
 	}
 
-	public TransactionalLedger<AccountID, AccountProperty, MerkleAccount> getAccountsLedger() {
+	public TransactionalLedger<EntityNum, AccountProperty, MerkleAccount> getAccountsLedger() {
 		return accountsLedger;
 	}
 

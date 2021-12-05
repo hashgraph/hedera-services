@@ -66,7 +66,7 @@ public class RenewalHelper {
 	private final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels;
 
 	/* Only needed for interoperability, will be removed during refactor */
-	private final BackingStore<AccountID, MerkleAccount> backingAccounts;
+	private final BackingStore<EntityNum, MerkleAccount> backingAccounts;
 
 	private MerkleAccount lastClassifiedAccount = null;
 	private EntityNum lastClassifiedEntityId;
@@ -78,7 +78,7 @@ public class RenewalHelper {
 			Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
 			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels,
-			BackingStore<AccountID, MerkleAccount> backingAccounts
+			BackingStore<EntityNum, MerkleAccount> backingAccounts
 	) {
 		this.tokens = tokens;
 		this.tokenStore = tokenStore;
@@ -116,8 +116,7 @@ public class RenewalHelper {
 			if (gracePeriodEnd > now) {
 				return DETACHED_ACCOUNT;
 			}
-			final var grpcId = lastClassifiedEntityId.toGrpcAccountId();
-			if (tokenStore.isKnownTreasury(grpcId)) {
+			if (tokenStore.isKnownTreasury(lastClassifiedEntityId)) {
 				return DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;
 			}
 
@@ -142,7 +141,7 @@ public class RenewalHelper {
 		}
 
 		/* When refactoring to remove this backingAccounts, please remove the account from accounts instead.*/
-		backingAccounts.remove(lastClassifiedEntityId.toGrpcAccountId());
+		backingAccounts.remove(lastClassifiedEntityId);
 
 		log.debug("Removed {}, displacing {}", lastClassifiedEntityId, displacements);
 
@@ -180,7 +179,7 @@ public class RenewalHelper {
 			MerkleMap<EntityNum, MerkleToken> currentTokens
 	) {
 		final var currentTokenRels = tokenRels.get();
-		final var expiredRel = fromAccountTokenRel(expired, scopedToken);
+		final var expiredRel = fromAccountTokenRel(EntityNum.fromAccountId(expired), scopedToken);
 		final var relStatus = currentTokenRels.get(expiredRel);
 		final long balance = relStatus.getBalance();
 
@@ -210,7 +209,7 @@ public class RenewalHelper {
 				expiredFirst ? List.of(expiredId, treasuryId) : List.of(treasuryId, expiredId)
 		));
 
-		final var treasuryRel = fromAccountTokenRel(treasury, scopedToken);
+		final var treasuryRel = fromAccountTokenRel(EntityNum.fromAccountId(treasury), scopedToken);
 		final var mutableTreasuryRelStatus = currentTokenRels.getForModify(treasuryRel);
 		final long newTreasuryBalance = mutableTreasuryRelStatus.getBalance() + balance;
 		mutableTreasuryRelStatus.setBalance(newTreasuryBalance);

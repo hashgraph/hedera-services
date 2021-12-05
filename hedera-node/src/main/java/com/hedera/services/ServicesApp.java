@@ -69,10 +69,10 @@ import com.hedera.services.txns.network.UpgradeActions;
 import com.hedera.services.txns.prefetch.PrefetchProcessor;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.submission.SubmissionModule;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.NamedDigestFactory;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SystemExits;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.Address;
 import com.swirlds.common.InvalidSignedStateListener;
 import com.swirlds.common.NodeId;
@@ -154,7 +154,7 @@ public interface ServicesApp {
 	StateWriteToDiskCompleteListener stateWriteToDiskListener();
 	InvalidSignedStateListener issListener();
 	Supplier<NotificationEngine> notificationEngine();
-	BackingStore<AccountID, MerkleAccount> backingAccounts();
+	BackingStore<EntityNum, MerkleAccount> backingAccounts();
 
 	@Component.Builder
 	interface Builder {

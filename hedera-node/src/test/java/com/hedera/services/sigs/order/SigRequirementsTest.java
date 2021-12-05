@@ -301,7 +301,7 @@ class SigRequirementsTest {
 		public static AccountSigMetaLookup withSafe(
 				Function<AccountID, SafeLookupResult<AccountSigningMetadata>> fn
 		) {
-			return fn::apply;
+			return t -> fn.apply(t);
 		}
 	}
 

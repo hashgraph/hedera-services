@@ -21,6 +21,7 @@ package com.hedera.services.ledger.ids;
  */
 
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -29,6 +30,8 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 
 import java.util.function.Supplier;
+
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 
 public class SeqNoEntityIdSource implements EntityIdSource {
 	private final Supplier<SequenceNumber> seqNo;
@@ -54,12 +57,8 @@ public class SeqNoEntityIdSource implements EntityIdSource {
 	}
 
 	@Override
-	public AccountID newAccountId(AccountID sponsor) {
-		return AccountID.newBuilder()
-				.setRealmNum(sponsor.getRealmNum())
-				.setShardNum(sponsor.getShardNum())
-				.setAccountNum(seqNo.get().getAndIncrement())
-				.build();
+	public EntityNum newAccountId() {
+		return EntityNum.fromLong(seqNo.get().getAndIncrement());
 	}
 
 	/**
@@ -68,17 +67,12 @@ public class SeqNoEntityIdSource implements EntityIdSource {
 	 *
 	 * Increments the provisional Ids created during this instance of transaction execution
 	 *
-	 * @param newContractSponsor the sponsor account from which the realm and shard will be used
 	 * @return newly generated {@link ContractID}
 	 */
 	@Override
-	public ContractID newContractId(AccountID newContractSponsor) {
+	public ContractID newContractId() {
 		provisionalIds++;
-		return ContractID.newBuilder()
-				.setRealmNum(newContractSponsor.getRealmNum())
-				.setShardNum(newContractSponsor.getShardNum())
-				.setContractNum(seqNo.get().getAndIncrement())
-				.build();
+		return STATIC_PROPERTIES.scopedContractWith(seqNo.get().getAndIncrement());
 	}
 
 	@Override
@@ -101,12 +95,8 @@ public class SeqNoEntityIdSource implements EntityIdSource {
 	}
 
 	@Override
-	public ScheduleID newScheduleId(AccountID sponsor) {
-		return ScheduleID.newBuilder()
-				.setRealmNum(sponsor.getRealmNum())
-				.setShardNum(sponsor.getShardNum())
-				.setScheduleNum(seqNo.get().getAndIncrement())
-				.build();
+	public ScheduleID newScheduleId() {
+		return STATIC_PROPERTIES.scopedScheduleWith(seqNo.get().getAndIncrement());
 	}
 
 	@Override

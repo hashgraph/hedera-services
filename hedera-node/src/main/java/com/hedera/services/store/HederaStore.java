@@ -25,7 +25,7 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
@@ -41,7 +41,7 @@ public abstract class HederaStore {
 	protected final EntityIdSource ids;
 
 	protected HederaLedger hederaLedger;
-	protected TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	protected TransactionalLedger<EntityNum, AccountProperty, MerkleAccount> accountsLedger;
 
 	protected HederaStore(
 			EntityIdSource ids
@@ -49,7 +49,7 @@ public abstract class HederaStore {
 		this.ids = ids;
 	}
 
-	public void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+	public void setAccountsLedger(final TransactionalLedger<EntityNum, AccountProperty, MerkleAccount> accountsLedger) {
 		this.accountsLedger = accountsLedger;
 	}
 
@@ -61,13 +61,13 @@ public abstract class HederaStore {
 		ids.reclaimLastId();
 	}
 
-	protected ResponseCodeEnum usableOrElse(AccountID aId, ResponseCodeEnum fallbackFailure) {
+	protected ResponseCodeEnum usableOrElse(final EntityNum aId, final ResponseCodeEnum fallbackFailure) {
 		final var validity = checkAccountUsability(aId);
 
 		return (validity == ACCOUNT_EXPIRED_AND_PENDING_REMOVAL || validity == OK) ? validity : fallbackFailure;
 	}
 
-	protected ResponseCodeEnum checkAccountUsability(AccountID aId) {
+	protected ResponseCodeEnum checkAccountUsability(final EntityNum aId) {
 		if (!accountsLedger.exists(aId)) {
 			return INVALID_ACCOUNT_ID;
 		} else if (hederaLedger.isDeleted(aId)) {

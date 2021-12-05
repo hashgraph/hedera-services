@@ -32,7 +32,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -48,7 +47,6 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
-import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccountId;
 import static com.hedera.services.utils.EntityNum.fromScheduleId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SCHEDULE_ADMIN_KT;
@@ -82,12 +80,12 @@ class HederaScheduleStoreTest {
 	private static final Key adminJKey = asKeyUnchecked(SCHEDULE_ADMIN_KT.asJKeyUnchecked());
 
 	private static final ScheduleID created = IdUtils.asSchedule("0.0.333333");
-	private static final AccountID schedulingAccount = IdUtils.asAccount("0.0.333");
-	private static final AccountID payerId = IdUtils.asAccount("0.0.456");
-	private static final AccountID anotherPayerId = IdUtils.asAccount("0.0.457");
+	private static final EntityNum schedulingAccount = EntityNum.fromLong(333);
+	private static final EntityNum payerId = EntityNum.fromLong(456);
+	private static final EntityNum anotherPayerId = EntityNum.fromLong(457);
 
-	private static final EntityId entityPayer = fromGrpcAccountId(payerId);
-	private static final EntityId entitySchedulingAccount = fromGrpcAccountId(schedulingAccount);
+	private static final EntityId entityPayer = payerId.toEntityId();
+	private static final EntityId entitySchedulingAccount = schedulingAccount.toEntityId();
 
 	private static final TransactionBody parentTxn = MerkleScheduleTest.scheduleCreateTxnWith(
 			adminJKey,
@@ -98,7 +96,7 @@ class HederaScheduleStoreTest {
 
 	private EntityIdSource ids;
 	private MerkleMap<EntityNum, MerkleSchedule> schedules;
-	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	private TransactionalLedger<EntityNum, AccountProperty, MerkleAccount> accountsLedger;
 	private HederaLedger hederaLedger;
 	private GlobalDynamicProperties globalDynamicProperties;
 
@@ -114,19 +112,18 @@ class HederaScheduleStoreTest {
 
 		given(schedule.hasAdminKey()).willReturn(true);
 		given(schedule.adminKey()).willReturn(Optional.of(SCHEDULE_ADMIN_KT.asJKeyUnchecked()));
-		given(schedule.payer()).willReturn(fromGrpcAccountId(payerId));
+		given(schedule.payer()).willReturn(payerId.toEntityId());
 		given(schedule.memo()).willReturn(Optional.of(entityMemo));
 
-		given(anotherSchedule.payer()).willReturn(fromGrpcAccountId(anotherPayerId));
+		given(anotherSchedule.payer()).willReturn(anotherPayerId.toEntityId());
 
 		ids = mock(EntityIdSource.class);
-		given(ids.newScheduleId(schedulingAccount)).willReturn(created);
+		given(ids.newScheduleId()).willReturn(created);
 
 		hederaLedger = mock(HederaLedger.class);
 		globalDynamicProperties = mock(GlobalDynamicProperties.class);
 
-		accountsLedger = (TransactionalLedger<AccountID, AccountProperty, MerkleAccount>) mock(
-				TransactionalLedger.class);
+		accountsLedger = (TransactionalLedger<EntityNum, AccountProperty, MerkleAccount>) mock(TransactionalLedger.class);
 		given(accountsLedger.exists(payerId)).willReturn(true);
 		given(accountsLedger.exists(schedulingAccount)).willReturn(true);
 		given(accountsLedger.get(payerId, IS_DELETED)).willReturn(false);

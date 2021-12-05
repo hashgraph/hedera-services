@@ -23,23 +23,25 @@ package com.hedera.services.sigs.metadata.lookups;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
 
 public class BackedAccountLookup implements AccountSigMetaLookup {
-	private final BackingStore<AccountID, MerkleAccount> accounts;
+	private final BackingStore<EntityNum, MerkleAccount> accounts;
 
-	public BackedAccountLookup(BackingStore<AccountID, MerkleAccount> accounts) {
+	public BackedAccountLookup(final BackingStore<EntityNum, MerkleAccount> accounts) {
 		this.accounts = accounts;
 	}
 
 	@Override
-	public SafeLookupResult<AccountSigningMetadata> safeLookup(AccountID id) {
-		if (!accounts.contains(id)) {
+	public SafeLookupResult<AccountSigningMetadata> safeLookup(final AccountID id) {
+		final var accountId = EntityNum.fromAccountId(id);
+		if (!accounts.contains(accountId)) {
 			return SafeLookupResult.failure(MISSING_ACCOUNT);
 		}
-		var account = accounts.getImmutableRef(id);
+		var account = accounts.getImmutableRef(accountId);
 		return new SafeLookupResult<>(
 				new AccountSigningMetadata(
 						account.getAccountKey(),

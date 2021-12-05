@@ -9,9 +9,9 @@ package com.hedera.services.ledger.ids;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,6 +20,7 @@ package com.hedera.services.ledger.ids;
  * ‍
  */
 
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -36,12 +37,14 @@ public enum ExceptionalEntityIdSource implements EntityIdSource {
 	}
 
 	@Override
-	public AccountID newAccountId(AccountID newAccountSponsor) {
+	public EntityNum newAccountId() {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public ContractID newContractId(AccountID newContractSponsor) { throw new UnsupportedOperationException(); }
+	public ContractID newContractId(AccountID newContractSponsor) {
+		throw new UnsupportedOperationException();
+	}
 
 	@Override
 	public FileID newFileId(AccountID newFileSponsor) {
@@ -54,7 +57,9 @@ public enum ExceptionalEntityIdSource implements EntityIdSource {
 	}
 
 	@Override
-	public ScheduleID newScheduleId(AccountID sponsor) { throw  new UnsupportedOperationException(); }
+	public ScheduleID newScheduleId(AccountID sponsor) {
+		throw new UnsupportedOperationException();
+	}
 
 	@Override
 	public void reclaimLastId() {
@@ -62,8 +67,12 @@ public enum ExceptionalEntityIdSource implements EntityIdSource {
 	}
 
 	@Override
-	public void reclaimProvisionalIds() { throw new UnsupportedOperationException(); }
+	public void reclaimProvisionalIds() {
+		throw new UnsupportedOperationException();
+	}
 
 	@Override
-	public void resetProvisionalIds() { throw new UnsupportedOperationException(); }
+	public void resetProvisionalIds() {
+		throw new UnsupportedOperationException();
+	}
 }

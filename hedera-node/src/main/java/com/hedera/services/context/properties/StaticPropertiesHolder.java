@@ -22,7 +22,10 @@ package com.hedera.services.context.properties;
 
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -51,11 +54,27 @@ public class StaticPropertiesHolder {
 		return new JContractIDKey(shard, realm, num);
 	}
 
+	public EntityId scopedEntityIdWith(final long num) {
+		return new EntityId(shard, realm, num);
+	}
+
+	public Id scopedModelIdWith(final long num) {
+		return new Id(shard, realm, num);
+	}
+
 	public AccountID scopedAccountWith(final long num) {
 		return AccountID.newBuilder()
 				.setShardNum(shard)
 				.setRealmNum(realm)
 				.setAccountNum(num)
+				.build();
+	}
+
+	public ContractID scopedContractWith(final long num) {
+		return ContractID.newBuilder()
+				.setShardNum(shard)
+				.setRealmNum(realm)
+				.setContractNum(num)
 				.build();
 	}
 

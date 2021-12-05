@@ -22,14 +22,13 @@ package com.hedera.services.ledger;
 
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.ledger.BalanceChange.NO_TOKEN_FOR_HBAR_ADJUST;
 import static com.hedera.services.ledger.BalanceChange.changingNftOwnership;
-import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.nftXfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,13 +41,13 @@ class BalanceChangeTest {
 	private final Id t = new Id(1, 2, 3);
 	private final long delta = -1_234L;
 	private final long serialNo = 1234L;
-	private final AccountID a = asAccount("1.2.3");
-	private final AccountID b = asAccount("2.3.4");
+	private final EntityNum a = EntityNum.fromLong(3);
+	private final EntityNum b = EntityNum.fromLong(4);
 
 	@Test
 	void objectContractSanityChecks() {
 		// given:
-		final var hbarChange = IdUtils.hbarChange(a, delta);
+		final var hbarChange = IdUtils.hbarChange(a.toGrpcAccountId(), delta);
 		final var tokenChange = IdUtils.tokenChange(t, a, delta);
 		final var nftChange = changingNftOwnership(t, t.asGrpcToken(), nftXfer(a, b, serialNo));
 		// and:
@@ -74,7 +73,7 @@ class BalanceChangeTest {
 	@Test
 	void recognizesFungibleTypes() {
 		// given:
-		final var hbarChange = IdUtils.hbarChange(a, delta);
+		final var hbarChange = IdUtils.hbarChange(a.toGrpcAccountId(), delta);
 		final var tokenChange = IdUtils.tokenChange(t, a, delta);
 
 		assertTrue(hbarChange.isForHbar());
@@ -86,7 +85,7 @@ class BalanceChangeTest {
 
 	@Test
 	void noTokenForHbarAdjust() {
-		final var hbarChange = IdUtils.hbarChange(a, delta);
+		final var hbarChange = IdUtils.hbarChange(a.toGrpcAccountId(), delta);
 		assertSame(NO_TOKEN_FOR_HBAR_ADJUST, hbarChange.tokenId());
 	}
 
@@ -126,8 +125,8 @@ class BalanceChangeTest {
 	void ownershipChangeFactoryWorks() {
 		// setup:
 		final var xfer = NftTransfer.newBuilder()
-				.setSenderAccountID(a)
-				.setReceiverAccountID(b)
+				.setSenderAccountID(a.toGrpcAccountId())
+				.setReceiverAccountID(b.toGrpcAccountId())
 				.setSerialNumber(serialNo)
 				.build();
 
