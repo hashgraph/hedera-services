@@ -25,8 +25,10 @@ import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
+import com.hedera.test.factories.keys.KeyFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -126,6 +128,38 @@ class ImpliedTransfersMarshalTest {
 
 		// then:
 		assertEquals(expectedChanges, result.getAllBalanceChanges());
+		assertEquals(result.getMeta(), expectedMeta);
+		assertTrue(result.getAssessedCustomFees().isEmpty());
+	}
+
+	@Test
+	void hasAliasInChanges() {
+		Key aliasA  = KeyFactory.getDefaultInstance().newEd25519();
+		Key aliasB  = KeyFactory.getDefaultInstance().newEd25519();
+		AccountID a = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(9_999L).setAlias(aliasA.toByteString()).build();
+		AccountID validAliasAccount = AccountID.newBuilder().setAlias(aliasB.toByteString()).build();
+		setupProps();
+
+		final var builder = CryptoTransferTransactionBody.newBuilder()
+				.setTransfers(TransferList.newBuilder()
+						.addAccountAmounts(adjustFrom(a, -100))
+						.addAccountAmounts(adjustFrom(validAliasAccount, 100))
+						.build());
+		op = builder.build();
+
+		final List<BalanceChange> expectedChanges = new ArrayList<>();
+		expectedChanges.add(changingHbar(adjustFrom(a, -100)));
+		expectedChanges.add(changingHbar(adjustFrom(validAliasAccount, +100)));
+
+		final var expectedMeta = new ImpliedTransfersMeta(props, OK, Collections.emptyList());
+
+		givenValidity(OK);
+
+		final var result = subject.unmarshalFromGrpc(op);
+
+		assertEquals(expectedChanges, result.getAllBalanceChanges());
+		assertEquals(aliasA.toByteString(), result.getAllBalanceChanges().get(0).alias());
+		assertEquals(aliasB.toByteString(), result.getAllBalanceChanges().get(1).alias());
 		assertEquals(result.getMeta(), expectedMeta);
 		assertTrue(result.getAssessedCustomFees().isEmpty());
 	}

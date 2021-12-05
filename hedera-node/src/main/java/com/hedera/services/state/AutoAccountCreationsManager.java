@@ -40,15 +40,15 @@ import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 public class AutoAccountCreationsManager {
 	private static AutoAccountCreationsManager autoAccountCreations = null;
 
-	/* Alias Accounts Map that will be rebuilt after restart, reconnect*/
-	private Map<ByteString, EntityNum> autoAccountsMap;
-
 	public static AutoAccountCreationsManager getInstance() {
 		if (autoAccountCreations == null) {
 			autoAccountCreations = new AutoAccountCreationsManager();
 		}
 		return autoAccountCreations;
 	}
+
+	/* Alias Accounts Map that will be rebuilt after restart, reconnect*/
+	private Map<ByteString, EntityNum> autoAccountsMap;
 
 	@Inject
 	public AutoAccountCreationsManager() {
@@ -57,11 +57,6 @@ public class AutoAccountCreationsManager {
 
 	public Map<ByteString, EntityNum> getAutoAccountsMap() {
 		return autoAccountsMap;
-	}
-
-	/* Only for unit tests */
-	public void setAutoAccountsMap(Map<ByteString, EntityNum> map) {
-		this.autoAccountsMap = map;
 	}
 
 	/**
@@ -83,8 +78,11 @@ public class AutoAccountCreationsManager {
 
 	/**
 	 * Removes an entry from the autoAccountsMap when an entity is expired and deleted from the ledger.
-	 * @param lastClassifiedEntityId entity id that is expired
-	 * @param currentAccounts current accounts map
+	 *
+	 * @param lastClassifiedEntityId
+	 * 		entity id that is expired
+	 * @param currentAccounts
+	 * 		current accounts map
 	 */
 	public void remove(final EntityNum lastClassifiedEntityId,
 			final MerkleMap<EntityNum, MerkleAccount> currentAccounts) {
@@ -93,7 +91,7 @@ public class AutoAccountCreationsManager {
 		remove(alias);
 	}
 
-	public void remove(final ByteString alias){
+	public void remove(final ByteString alias) {
 		if (autoAccountsMap.containsKey(alias)) {
 			autoAccountsMap.remove(alias);
 		}
@@ -101,11 +99,17 @@ public class AutoAccountCreationsManager {
 
 	/**
 	 * Returns the entityNum for the given alias
-	 * @param alias alias of the accountId
+	 *
+	 * @param alias
+	 * 		alias of the accountId
 	 * @return EntityNum mapped to the given alias.
 	 */
 	public EntityNum fetchEntityNumFor(ByteString alias) {
-		return  autoAccountsMap.getOrDefault(alias, MISSING_NUM);
+		return autoAccountsMap.getOrDefault(alias, MISSING_NUM);
 	}
 
+	/* Only for unit tests */
+	public void setAutoAccountsMap(Map<ByteString, EntityNum> map) {
+		this.autoAccountsMap = map;
+	}
 }

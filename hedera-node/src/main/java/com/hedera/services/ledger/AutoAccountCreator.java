@@ -21,13 +21,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.function.Supplier;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KEY_ENCODING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class AutoAccountCreator {
-	private AccountRecordsHistorian recordsHistorian = null;
-	private EntityIdSource ids;
-	private Supplier<SideEffectsTracker> sideEffectsFactory = SideEffectsTracker::new;
+	private final AccountRecordsHistorian recordsHistorian;
+	private final EntityIdSource ids;
+	private final Supplier<SideEffectsTracker> sideEffectsFactory;
 	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final EntityCreator creator;
 	private final HashMap<ByteString, AccountID> tempCreations = new HashMap<>();
@@ -39,53 +39,57 @@ public class AutoAccountCreator {
 	public AutoAccountCreator(
 			SyntheticTxnFactory syntheticTxnFactory,
 			EntityCreator creator,
-			EntityIdSource ids) {
+			EntityIdSource ids,
+			AccountRecordsHistorian recordsHistorian) {
 		this.syntheticTxnFactory = syntheticTxnFactory;
 		this.creator = creator;
 		this.ids = ids;
+		this.recordsHistorian = recordsHistorian;
+		sideEffectsFactory = SideEffectsTracker::new;
 	}
 
-	private void createAutoAccounts(final List<Key> accountsToBeCreated,
-			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) throws InvalidProtocolBufferException {
-		final var sideEffects = sideEffectsFactory.get();
-		for (Key alias : accountsToBeCreated) {
-			// Fees to be added here
-			var syntheticCreateTxn = syntheticTxnFactory.autoAccountCreate(alias, 0L);
-			var newAccountId = ids.newAccountId(syntheticCreateTxn.getTransactionID().getAccountID());
-			accountsLedger.create(newAccountId);
-			sideEffects.trackAutoCreatedAccount(newAccountId);
-
-			var childRecord = creator.createSuccessfulSyntheticRecord(null, sideEffects, AUTO_CREATED_ACCOUNT_MEMO);
-			var sourceId = recordsHistorian.nextChildRecordSourceId();
-			recordsHistorian.trackPrecedingChildRecord(sourceId, syntheticCreateTxn, childRecord);
-
-			AutoAccountCreationsManager.getInstance()
-					.getAutoAccountsMap()
-					.put(alias.toByteString(), EntityNum.fromAccountId(newAccountId));
-
-			tempCreations.put(alias.toByteString(), newAccountId);
-		}
-	}
-
-
-	ResponseCodeEnum autoCreateForAliasTransfers(final List<ByteString> autoCreateAliases,
+	public ResponseCodeEnum createAutoAccounts(final List<ByteString> accountsToBeCreated,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
-		try {
-			List<Key> aliasKeys = new ArrayList<>();
-			for (ByteString alias : autoCreateAliases) {
-				final var key = Key.parseFrom(alias);
-				aliasKeys.add(key);
-				//Need to check if it is primitive key
+		final var sideEffects = sideEffectsFactory.get();
+		for (ByteString alias : accountsToBeCreated) {
+			try {
+				var syntheticCreateTxn = syntheticTxnFactory.autoAccountCreate(alias, 0L);
+				var newAccountId = ids.newAccountId(syntheticCreateTxn.getTransactionID().getAccountID());
+				accountsLedger.create(newAccountId);
+				sideEffects.trackAutoCreatedAccount(newAccountId);
+
+				var childRecord = creator.createSuccessfulSyntheticRecord(null, sideEffects, AUTO_CREATED_ACCOUNT_MEMO);
+				var sourceId = recordsHistorian.nextChildRecordSourceId();
+				recordsHistorian.trackPrecedingChildRecord(sourceId, syntheticCreateTxn, childRecord);
+
+				/* add auto created accounts changes to the rebuilt data structure */
+				AutoAccountCreationsManager.getInstance()
+						.getAutoAccountsMap()
+						.put(alias, EntityNum.fromAccountId(newAccountId));
+
+				tempCreations.put(alias, newAccountId);
+
+			} catch (InvalidProtocolBufferException ex) {
+				return BAD_ENCODING;
 			}
-			createAutoAccounts(aliasKeys, accountsLedger);
-		} catch (InvalidProtocolBufferException ex) {
-			return INVALID_KEY_ENCODING;
 		}
 		return OK;
 	}
 
+	static boolean isPrimitiveKey(ByteString alias) {
+		try {
+			Key key = Key.parseFrom(alias);
+			return !key.getECDSASecp256K1().isEmpty() || !key.getEd25519().isEmpty();
+		} catch (InvalidProtocolBufferException ex) {
+			return false;
+		}
+	}
 
 	public void clearTempCreations() {
+		tempCreations.clear();
+	}
+
+	public void getTempCreations() {
 		tempCreations.clear();
 	}
 }

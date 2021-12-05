@@ -27,6 +27,7 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.state.AutoAccountCreationsManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -90,8 +91,9 @@ public class TransferLogic {
 			if (change.isForHbar()) {
 				if (change.createsAccount()) {
 					autoCreateAliases.add(change.alias());
+				} else {
+					validity = accountsLedger.validate(change.accountId(), scopedCheck.setBalanceChange(change));
 				}
-				validity = accountsLedger.validate(change.accountId(), scopedCheck.setBalanceChange(change));
 			} else {
 				validity = tokenStore.tryTokenChange(change);
 			}
@@ -100,8 +102,8 @@ public class TransferLogic {
 			}
 		}
 
-		if(autoCreateAliases.size() > 0){
-			validity = autoAccountCreator.autoCreateForAliasTransfers(autoCreateAliases, accountsLedger);
+		if (autoCreateAliases.size() > 0) {
+			validity = autoAccountCreator.createAutoAccounts(autoCreateAliases, accountsLedger);
 		}
 
 		if (validity == OK) {
@@ -113,10 +115,18 @@ public class TransferLogic {
 		}
 	}
 
-	private void adjustHbarUnchecked(final  List<BalanceChange> changes) {
+	private void adjustHbarUnchecked(final List<BalanceChange> changes) {
 		for (var change : changes) {
 			if (change.isForHbar()) {
-				final var accountId = change.accountId();
+				final AccountID accountId;
+				if (change.accountId().getAccountNum() == 0 && !change.alias().equals(ByteString.EMPTY)) {
+					accountId = AutoAccountCreationsManager.getInstance()
+							.getAutoAccountsMap()
+							.get(change.alias())
+							.toGrpcAccountId();
+				} else {
+					accountId = change.accountId();
+				}
 				final var newBalance = change.getNewBalance();
 				accountsLedger.set(accountId, BALANCE, newBalance);
 				sideEffectsTracker.trackHbarChange(accountId, change.units());

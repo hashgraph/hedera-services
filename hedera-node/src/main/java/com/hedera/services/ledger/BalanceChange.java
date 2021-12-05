@@ -69,6 +69,7 @@ public class BalanceChange {
 	private AccountID counterPartyAccountId = null;
 	private ResponseCodeEnum codeForInsufficientBalance;
 	private ByteString alias = ByteString.EMPTY;
+	private ByteString counterPartyAlias = ByteString.EMPTY;
 
 	public static BalanceChange changingHbar(AccountAmount aa) {
 		return new BalanceChange(null, aa, INSUFFICIENT_ACCOUNT_BALANCE);
@@ -109,6 +110,7 @@ public class BalanceChange {
 		this.token = null;
 		this.account = account;
 		this.accountId = account.asGrpcAccount();
+		this.alias = accountId.getAlias();
 		this.units = amount;
 		this.originalUnits = amount;
 		this.codeForInsufficientBalance = code;
@@ -131,15 +133,9 @@ public class BalanceChange {
 		this.accountId = sender;
 		this.counterPartyAccountId = receiver;
 		this.account = Id.fromGrpcAccount(accountId);
+		this.alias = accountId.getAlias();
+		this.counterPartyAlias = counterPartyAccountId.getAlias();
 		this.units = serialNo;
-		this.codeForInsufficientBalance = code;
-	}
-
-	/* AutoAccount creation constructor */
-	private BalanceChange(AccountID sender, AccountID receiver, ResponseCodeEnum code) {
-		this.accountId = sender;
-		this.counterPartyAccountId = receiver;
-		this.account = Id.fromGrpcAccount(accountId);
 		this.codeForInsufficientBalance = code;
 	}
 
@@ -227,6 +223,7 @@ public class BalanceChange {
 			return MoreObjects.toStringHelper(BalanceChange.class)
 					.add("token", token == null ? "ℏ" : token)
 					.add("account", account)
+					.add("alias", alias)
 					.add("units", units)
 					.toString();
 		} else {

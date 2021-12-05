@@ -56,7 +56,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyObject;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
@@ -96,7 +95,7 @@ class PureTransferSemanticChecksTest {
 
 		given(subject.isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList())).willReturn(true);
 		given(subject.isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts)).willReturn(true);
-		given(subject.isValidAlias(hbarAdjusts.getAccountAmountsList())).willReturn(true);
+		given(subject.hasValidAlias(hbarAdjusts.getAccountAmountsList())).willReturn(true);
 		given(subject.validateTokenTransferSyntax(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true)).willReturn(OK);
 		given(subject.validateTokenTransferSemantics(tokenAdjusts)).willReturn(OK);
 		// and:
@@ -110,7 +109,7 @@ class PureTransferSemanticChecksTest {
 		inOrder.verify(subject).hasRepeatedAccount(hbarAdjusts.getAccountAmountsList());
 		inOrder.verify(subject).isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList());
 		inOrder.verify(subject).isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts);
-		inOrder.verify(subject).isValidAlias(hbarAdjusts.getAccountAmountsList());
+		inOrder.verify(subject).hasValidAlias(hbarAdjusts.getAccountAmountsList());
 		inOrder.verify(subject).validateTokenTransferSyntax(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true);
 		inOrder.verify(subject).validateTokenTransferSemantics(tokenAdjusts);
 		// and:
@@ -129,7 +128,7 @@ class PureTransferSemanticChecksTest {
 		given(subject.isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts)).willReturn(true);
 		given(subject.validateTokenTransferSyntax(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true))
 				.willReturn(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
-		given(subject.isValidAlias(any())).willReturn(true);
+		given(subject.hasValidAlias(any())).willReturn(true);
 		// and:
 		doCallRealMethod().when(subject)
 				.fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps);
@@ -154,7 +153,7 @@ class PureTransferSemanticChecksTest {
 		// and:
 		given(subject.isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList())).willReturn(true);
 		given(subject.isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts)).willReturn(true);
-		given(subject.isValidAlias(hbarAdjusts.getAccountAmountsList())).willReturn(true);
+		given(subject.hasValidAlias(hbarAdjusts.getAccountAmountsList())).willReturn(true);
 		given(subject.validateTokenTransferSyntax(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true)).willReturn(OK);
 		given(subject.validateTokenTransferSemantics(tokenAdjusts)).willReturn(TOKEN_ID_REPEATED_IN_TOKEN_LIST);
 		// and:
@@ -458,7 +457,7 @@ class PureTransferSemanticChecksTest {
 		given(subject.validateTokenTransferSyntax(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true)).willReturn(OK);
 		given(subject.validateTokenTransferSemantics(tokenAdjusts)).willReturn(OK);
 
-		doCallRealMethod().when(subject).isValidAlias(any());
+		doCallRealMethod().when(subject).hasValidAlias(any());
 		doCallRealMethod().when(subject).fullPureValidation(any(), any(), any());
 
 	    var result = subject.fullPureValidation(inValidHbarAdjusts, tokenAdjusts, validationProps);
@@ -483,7 +482,7 @@ class PureTransferSemanticChecksTest {
 		given(subject.validateTokenTransferSyntax(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true)).willReturn(OK);
 		given(subject.validateTokenTransferSemantics(tokenAdjusts)).willReturn(OK);
 
-		doCallRealMethod().when(subject).isValidAlias(any());
+		doCallRealMethod().when(subject).hasValidAlias(any());
 		doCallRealMethod().when(subject).fullPureValidation(any(), any(), any());
 
 		final var result = subject.fullPureValidation(validHbarAdjusts, tokenAdjusts, validationProps);

@@ -9,9 +9,9 @@ package com.hedera.services.store.contracts.precompile;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,7 @@ package com.hedera.services.store.contracts.precompile;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
@@ -87,9 +88,11 @@ public class SyntheticTxnFactory {
 		return TransactionBody.newBuilder().setCryptoTransfer(builder);
 	}
 
-	public TransactionBody.Builder autoAccountCreate(Key alias, long balance){
+	public TransactionBody.Builder autoAccountCreate(ByteString alias, long balance)
+			throws InvalidProtocolBufferException {
+		Key key = Key.parseFrom(alias);
 		final var txnBody = CryptoCreateTransactionBody.newBuilder()
-				.setKey(alias)
+				.setKey(key)
 				.setMemo(AUTO_CREATED_ACCOUNT_MEMO)
 				.setInitialBalance(balance)
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS))

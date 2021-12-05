@@ -36,13 +36,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static com.hedera.services.ledger.AutoAccountCreator.isPrimitiveKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KEY_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -87,7 +87,7 @@ public class PureTransferSemanticChecks {
 		if (!isAcceptableSize(hbarAdjusts, maxHbarAdjusts)) {
 			return TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 		}
-		if(!isValidAlias(hbarAdjusts)){
+		if (!hasValidAlias(hbarAdjusts)) {
 			return BAD_ENCODING;
 		}
 
@@ -99,19 +99,14 @@ public class PureTransferSemanticChecks {
 		return validateTokenTransferSemantics(tokenAdjustsList);
 	}
 
-	boolean isValidAlias(final List<AccountAmount> hbarAdjusts) {
+	boolean hasValidAlias(final List<AccountAmount> hbarAdjusts) {
 		for (AccountAmount aa : hbarAdjusts) {
 			final var alias = aa.getAccountID().getAlias();
-			//TODO Confirm check for valid primitive key
-			if (!alias.equals(ByteString.EMPTY) && !isValidPrimitiveKey(alias)) {
+			if (!alias.equals(ByteString.EMPTY) && !isPrimitiveKey(alias)) {
 				return false;
 			}
 		}
 		return true;
-	}
-
-	private boolean isValidPrimitiveKey(final ByteString alias) {
-		return alias.toStringUtf8().length() == 33 || alias.toStringUtf8().length() == 32;
 	}
 
 	ResponseCodeEnum validateTokenTransferSyntax(
