@@ -24,10 +24,11 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.txns.crypto.AutoAccountCreateLogic;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.state.AutoAccountCreationsManager;
+import com.hedera.services.ledger.accounts.AutoAccountsManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -61,7 +62,7 @@ public class TransferLogic {
 	private final TokenStore tokenStore;
 	private final MerkleAccountScopedCheck scopedCheck;
 	private final UniqTokenViewsManager tokenViewsManager;
-	private final AutoAccountCreator autoAccountCreator;
+	private final AutoAccountCreateLogic autoAccountCreator;
 
 	@Inject
 	public TransferLogic(final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
@@ -72,7 +73,7 @@ public class TransferLogic {
 			final UniqTokenViewsManager tokenViewsManager,
 			final GlobalDynamicProperties dynamicProperties,
 			final OptionValidator validator,
-			final AutoAccountCreator autoAccountCreator) {
+			final AutoAccountCreateLogic autoAccountCreator) {
 		this.accountsLedger = accountsLedger;
 		this.nftsLedger = nftsLedger;
 		this.tokenRelsLedger = tokenRelsLedger;
@@ -86,12 +87,16 @@ public class TransferLogic {
 
 	public void transfer(final List<BalanceChange> changes) {
 		var validity = OK;
-		List<ByteString> autoCreateAliases = new ArrayList<>();
+		List<ByteString> autoCreationAliases = new ArrayList<>();
 		for (var change : changes) {
 			if (change.isForHbar()) {
-				if (change.createsAccount()) {
-					autoCreateAliases.add(change.alias());
+				/* if the change has only alias set, account number is not set, and the alias
+				is not present in the autoAccountsMap then add the alias to list for auto
+				creations */
+				if (change.hasOnlyAlias()) {
+					autoCreationAliases.add(change.alias());
 				} else {
+					// TODO : if change is in auto accounts map, use that account ID to validate
 					validity = accountsLedger.validate(change.accountId(), scopedCheck.setBalanceChange(change));
 				}
 			} else {
@@ -102,8 +107,8 @@ public class TransferLogic {
 			}
 		}
 
-		if (!autoCreateAliases.isEmpty()) {
-			validity = autoAccountCreator.createAutoAccounts(autoCreateAliases, accountsLedger);
+		if (!autoCreationAliases.isEmpty()) {
+			validity = autoAccountCreator.createAutoAccounts(autoCreationAliases, accountsLedger);
 		}
 
 		if (validity == OK) {
@@ -120,7 +125,7 @@ public class TransferLogic {
 			if (change.isForHbar()) {
 				final AccountID accountId;
 				if (change.accountId().getAccountNum() == 0 && !change.alias().equals(ByteString.EMPTY)) {
-					accountId = AutoAccountCreationsManager.getInstance()
+					accountId = AutoAccountsManager.getInstance()
 							.getAutoAccountsMap()
 							.get(change.alias())
 							.toGrpcAccountId();

@@ -31,7 +31,7 @@ import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.ledger.TransferLogic;
-import com.hedera.services.state.AutoAccountCreationsManager;
+import com.hedera.services.ledger.accounts.AutoAccountsManager;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
@@ -105,7 +105,7 @@ class CryptoTransferTransitionLogicTest {
 	@Mock
 	private PlatformTxnAccessor accessor;
 	@Mock
-	private AutoAccountCreationsManager autoAccounts;
+	private AutoAccountsManager autoAccounts;
 	@Mock
 	private TransferLogic transferLogic;
 

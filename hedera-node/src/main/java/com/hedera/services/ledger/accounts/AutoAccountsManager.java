@@ -1,4 +1,4 @@
-package com.hedera.services.state;
+package com.hedera.services.ledger.accounts;
 
 /*-
  * ‌
@@ -37,21 +37,21 @@ import static com.hedera.services.utils.EntityNum.MISSING_NUM;
  * Entries from the map are removed when the entity expires
  */
 @Singleton
-public class AutoAccountCreationsManager {
-	private static AutoAccountCreationsManager autoAccountCreations = null;
+public class AutoAccountsManager {
+	private static AutoAccountsManager autoAccounts = null;
 
-	public static AutoAccountCreationsManager getInstance() {
-		if (autoAccountCreations == null) {
-			autoAccountCreations = new AutoAccountCreationsManager();
+	public static AutoAccountsManager getInstance() {
+		if (autoAccounts == null) {
+			autoAccounts = new AutoAccountsManager();
 		}
-		return autoAccountCreations;
+		return autoAccounts;
 	}
 
 	/* Alias Accounts Map that will be rebuilt after restart, reconnect*/
 	private Map<ByteString, EntityNum> autoAccountsMap;
 
 	@Inject
-	public AutoAccountCreationsManager() {
+	public AutoAccountsManager() {
 		this.autoAccountsMap = new HashMap<>();
 	}
 
@@ -66,10 +66,11 @@ public class AutoAccountCreationsManager {
 	 * @param accountsMap
 	 * 		accounts MerkleMap
 	 */
-	public void constructAccountAliasRels(MerkleMap<? extends EntityNum, ? extends MerkleAccount> accountsMap) {
-		for (Map.Entry entry : accountsMap.entrySet()) {
-			MerkleAccount value = (MerkleAccount) entry.getValue();
-			EntityNum number = (EntityNum) entry.getKey();
+	public void rebuildAutoAccountsMap(MerkleMap<? extends EntityNum, ? extends MerkleAccount> accountsMap) {
+		for (Map.Entry<? extends EntityNum, ? extends MerkleAccount> entry :
+				accountsMap.entrySet()) {
+			EntityNum number = entry.getKey();
+			MerkleAccount value = entry.getValue();
 			if (!value.state().getAlias().isEmpty()) {
 				this.autoAccountsMap.put(value.state().getAlias(), number);
 			}

@@ -36,7 +36,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static com.hedera.services.ledger.AutoAccountCreator.isPrimitiveKey;
+import static com.hedera.services.txns.crypto.AutoAccountCreateLogic.isPrimitiveKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
@@ -88,7 +88,7 @@ public class PureTransferSemanticChecks {
 			return TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 		}
 		if (!hasValidAlias(hbarAdjusts)) {
-			return BAD_ENCODING;
+			return BAD_ENCODING; // need to change response code ?
 		}
 
 		final var tokenValidity = validateTokenTransferSyntax(
@@ -99,10 +99,16 @@ public class PureTransferSemanticChecks {
 		return validateTokenTransferSemantics(tokenAdjustsList);
 	}
 
+	/**
+	 * validates if the alias is a valid primitive key from the balance changes.
+	 *
+	 * @param hbarAdjusts
+	 * @return
+	 */
 	boolean hasValidAlias(final List<AccountAmount> hbarAdjusts) {
 		for (AccountAmount aa : hbarAdjusts) {
 			final var alias = aa.getAccountID().getAlias();
-			if (!alias.equals(ByteString.EMPTY) && !isPrimitiveKey(alias)) {
+			if (!alias.isEmpty() && !isPrimitiveKey(alias)) {
 				return false;
 			}
 		}

@@ -1,12 +1,13 @@
 package com.hedera.services.ledger;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.ledger.accounts.AutoAccountsManager;
+import com.hedera.services.txns.crypto.AutoAccountCreateLogic;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.records.TxnAwareRecordsHistorian;
-import com.hedera.services.state.AutoAccountCreationsManager;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -24,7 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.hedera.services.ledger.AutoAccountCreator.isPrimitiveKey;
+import static com.hedera.services.txns.crypto.AutoAccountCreateLogic.isPrimitiveKey;
 import static com.hedera.test.utils.IdUtils.hbarChange;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -35,7 +36,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-public class AutoAccountCreatorTest {
+class AutoAccountCreatorTest {
 	@Mock
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	@Mock
@@ -45,11 +46,11 @@ public class AutoAccountCreatorTest {
 	@Mock
 	EntityIdSource entityIdSource;
 
-	AutoAccountCreator subject;
+	AutoAccountCreateLogic subject;
 
 	private final BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
 	SyntheticTxnFactory syntheticTxnFactory = new SyntheticTxnFactory();
-	AutoAccountCreationsManager autoAccounts = AutoAccountCreationsManager.getInstance();
+	AutoAccountsManager autoAccounts = AutoAccountsManager.getInstance();
 
 	private List<ByteString> aliases = new ArrayList<>();
 	private final Key aliasA = KeyFactory.getDefaultInstance().newEd25519();
@@ -66,7 +67,7 @@ public class AutoAccountCreatorTest {
 	@BeforeEach
 	void setUp() {
 		backingAccounts.put(a, aAccount);
-		subject = new AutoAccountCreator(syntheticTxnFactory, entityCreator, entityIdSource, recordsHistorian);
+		subject = new AutoAccountCreateLogic(syntheticTxnFactory, entityCreator, entityIdSource, recordsHistorian);
 		autoAccounts.getAutoAccountsMap().clear();
 	}
 

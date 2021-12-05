@@ -157,7 +157,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 
 	public void undoCreations() {
 		if (!isInTransaction) {
-			throw new IllegalStateException("Cannot undo changes, no transaction is active");
+			throw new IllegalStateException("Cannot undo created keys, no transaction is active");
 		}
 		createdKeys.clear();
 	}

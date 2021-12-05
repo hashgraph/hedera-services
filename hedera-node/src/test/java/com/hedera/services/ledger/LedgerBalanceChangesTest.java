@@ -24,6 +24,8 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.accounts.AutoAccountsManager;
+import com.hedera.services.txns.crypto.AutoAccountCreateLogic;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.BackingTokenRels;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
@@ -37,7 +39,6 @@ import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.TxnAwareRecordsHistorian;
-import com.hedera.services.state.AutoAccountCreationsManager;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.expiry.ExpiringCreations;
@@ -79,8 +80,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
-import static com.hedera.services.ledger.AutoAccountCreator.AUTO_CREATED_ACCOUNT_MEMO;
-import static com.hedera.services.ledger.AutoAccountCreator.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.txns.crypto.AutoAccountCreateLogic.AUTO_CREATED_ACCOUNT_MEMO;
+import static com.hedera.services.txns.crypto.AutoAccountCreateLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.services.ledger.BalanceChange.changingNftOwnership;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -130,7 +131,7 @@ class LedgerBalanceChangesTest {
 	@Mock
 	private MutableEntityAccess mutableEntityAccess;
 
-	private AutoAccountCreator autoAccountCreator;
+	private AutoAccountCreateLogic autoAccountCreator;
 	@Mock
 	private SyntheticTxnFactory syntheticTxnFactory;
 	@Mock
@@ -141,7 +142,7 @@ class LedgerBalanceChangesTest {
 	private TxnAwareRecordsHistorian recordsHistorian;
 
 	private HederaLedger subject;
-	private AutoAccountCreationsManager autoAccounts = AutoAccountCreationsManager.getInstance();
+	private AutoAccountsManager autoAccounts = AutoAccountsManager.getInstance();
 
 	@BeforeEach
 	void setUp() throws ConstructableRegistryException {
@@ -176,7 +177,7 @@ class LedgerBalanceChangesTest {
 				nftsLedger,
 				backingTokens);
 
-		autoAccountCreator = new AutoAccountCreator(syntheticTxnFactory, entityCreator, entityIdSource,
+		autoAccountCreator = new AutoAccountCreateLogic(syntheticTxnFactory, entityCreator, entityIdSource,
 				recordsHistorian);
 		transferLogic = new TransferLogic(accountsLedger, nftsLedger, tokenRelsLedger, tokenStore, sideEffectsTracker
 				, tokenViewsManager, dynamicProperties, validator, autoAccountCreator);

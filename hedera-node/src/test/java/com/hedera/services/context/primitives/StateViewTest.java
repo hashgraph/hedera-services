@@ -24,8 +24,8 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.files.HFileMeta;
+import com.hedera.services.ledger.accounts.AutoAccountsManager;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.AutoAccountCreationsManager;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -630,7 +630,7 @@ class StateViewTest {
 
 	@Test
 	void infoForAccountWithAlias() {
-		AutoAccountCreationsManager mockedAutoAccountCreations = mock(AutoAccountCreationsManager.class);
+		AutoAccountsManager mockedAutoAccountCreations = mock(AutoAccountsManager.class);
 		given(mockedAutoAccountCreations.fetchEntityNumFor(any())).willReturn(EntityNum.fromAccountId(tokenAccountId));
 
 		final var expectedResponse = CryptoGetInfoResponse.AccountInfo.newBuilder()
@@ -648,8 +648,8 @@ class StateViewTest {
 				.setMaxAutomaticTokenAssociations(tokenAccount.getMaxAutomaticAssociations())
 				.build();
 
-		try (MockedStatic<AutoAccountCreationsManager> theMock = Mockito.mockStatic(AutoAccountCreationsManager.class)){
-			theMock.when(AutoAccountCreationsManager::getInstance)
+		try (MockedStatic<AutoAccountsManager> theMock = Mockito.mockStatic(AutoAccountsManager.class)){
+			theMock.when(AutoAccountsManager::getInstance)
 					.thenReturn(mockedAutoAccountCreations);
 
 			final var actualResponse = subject.infoForAccount(accountWithAlias);
@@ -675,12 +675,12 @@ class StateViewTest {
 	@Test
 	void infoForMissingAccountWithAlias() {
 		EntityNum mockedEntityNum = mock(EntityNum.class);
-		AutoAccountCreationsManager mockedAutoAccountCreations = mock(AutoAccountCreationsManager.class);
+		AutoAccountsManager mockedAutoAccountCreations = mock(AutoAccountsManager.class);
 		given(mockedAutoAccountCreations.fetchEntityNumFor(any())).willReturn(mockedEntityNum);
 		given(contracts.get(mockedEntityNum)).willReturn(null);
 
-		try (MockedStatic<AutoAccountCreationsManager> theMock = Mockito.mockStatic(AutoAccountCreationsManager.class)){
-			theMock.when(AutoAccountCreationsManager::getInstance)
+		try (MockedStatic<AutoAccountsManager> theMock = Mockito.mockStatic(AutoAccountsManager.class)){
+			theMock.when(AutoAccountsManager::getInstance)
 					.thenReturn(mockedAutoAccountCreations);
 
 			final var actualResponse = subject.infoForAccount(accountWithAlias);

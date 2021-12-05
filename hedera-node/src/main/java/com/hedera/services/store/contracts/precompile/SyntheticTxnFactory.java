@@ -39,8 +39,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.List;
 
-import static com.hedera.services.ledger.AutoAccountCreator.AUTO_CREATED_ACCOUNT_MEMO;
-import static com.hedera.services.ledger.AutoAccountCreator.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.txns.crypto.AutoAccountCreateLogic.AUTO_CREATED_ACCOUNT_MEMO;
+import static com.hedera.services.txns.crypto.AutoAccountCreateLogic.THREE_MONTHS_IN_SECONDS;
 
 @Singleton
 public class SyntheticTxnFactory {

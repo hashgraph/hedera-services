@@ -24,9 +24,9 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.ledger.accounts.AutoAccountsManager;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.AutoAccountCreationsManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -307,13 +307,13 @@ class GetAccountInfoAnswerTest {
 	void usesValidatorOnAccountWithAlias() throws Throwable {
 		EntityNum entityNum = EntityNum.fromAccountId(payerId);
 		Query query = validQueryWithAlias(COST_ANSWER, fee, "aaaa");
-		AutoAccountCreationsManager mockedAutoAccountCreations = mock(AutoAccountCreationsManager.class);
+		AutoAccountsManager mockedAutoAccountCreations = mock(AutoAccountsManager.class);
 		given(mockedAutoAccountCreations.fetchEntityNumFor(any())).willReturn(entityNum);
 
 		given(optionValidator.queryableAccountStatus(entityNum, accounts)).willReturn(INVALID_ACCOUNT_ID);
 
-		try (MockedStatic<AutoAccountCreationsManager> theMock = Mockito.mockStatic(AutoAccountCreationsManager.class)) {
-			theMock.when(AutoAccountCreationsManager::getInstance)
+		try (MockedStatic<AutoAccountsManager> theMock = Mockito.mockStatic(AutoAccountsManager.class)) {
+			theMock.when(AutoAccountsManager::getInstance)
 					.thenReturn(mockedAutoAccountCreations);
 			ResponseCodeEnum validity = subject.checkValidity(query, view);
 

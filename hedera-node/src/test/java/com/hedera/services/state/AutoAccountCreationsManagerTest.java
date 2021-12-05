@@ -21,6 +21,7 @@ package com.hedera.services.state;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.ledger.accounts.AutoAccountsManager;
 import com.hedera.services.utils.EntityNum;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,7 +45,7 @@ class AutoAccountCreationsManagerTest {
 			put(ByteString.copyFromUtf8("bbbb"), b);
 		}};
 
-		var subject = new AutoAccountCreationsManager();
+		var subject = new AutoAccountsManager();
 		assertTrue(subject.getAutoAccountsMap().isEmpty());
 
 		subject.setAutoAccountsMap(expectedMap);

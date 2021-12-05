@@ -24,8 +24,8 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.config.MockHederaNumbers;
+import com.hedera.services.ledger.accounts.AutoAccountsManager;
 import com.hedera.services.ledger.backing.BackingAccounts;
-import com.hedera.services.state.AutoAccountCreationsManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -64,7 +64,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -142,7 +141,7 @@ class RenewalHelperTest {
 	@Mock
 	private TokenStore tokenStore;
 	@Mock
-	private AutoAccountCreationsManager autoAccounts;
+	private AutoAccountsManager autoAccounts;
 
 	private RenewalHelper subject;
 
@@ -318,7 +317,7 @@ class RenewalHelperTest {
 		accountsMap.put(EntityNum.fromLong(nonExpiredAccountNum), nonExpiredAccount);
 		accountsMap.put(EntityNum.fromLong(brokeExpiredAccountNum), expiredAccountZeroBalance);
 
-		AutoAccountCreationsManager autoAccounts = new AutoAccountCreationsManager();
+		AutoAccountsManager autoAccounts = new AutoAccountsManager();
 		autoAccounts.setAutoAccountsMap(autoAccountsMap);
 
 		subject = new RenewalHelper(tokenStore, dynamicProps, () -> tokens, () -> accountsMap, () -> tokenRels,

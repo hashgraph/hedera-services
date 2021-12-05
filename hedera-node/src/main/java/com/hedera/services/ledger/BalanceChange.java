@@ -24,7 +24,7 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.backing.BackingAccounts;
 import com.hedera.services.ledger.backing.BackingTokenRels;
-import com.hedera.services.state.AutoAccountCreationsManager;
+import com.hedera.services.ledger.accounts.AutoAccountsManager;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -245,9 +245,9 @@ public class BalanceChange {
 		return exemptFromCustomFees;
 	}
 
-	public boolean createsAccount() {
-		AutoAccountCreationsManager autoAccounts = AutoAccountCreationsManager.getInstance();
-		return !alias.equals(ByteString.EMPTY)
+	public boolean hasOnlyAlias() {
+		AutoAccountsManager autoAccounts = AutoAccountsManager.getInstance();
+		return !alias.isEmpty()
 				&& accountId.getAccountNum() == 0
 				&& !autoAccounts.getAutoAccountsMap().containsKey(alias);
 	}
