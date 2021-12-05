@@ -59,6 +59,7 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.EMPTY_CONSTRUCTOR;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FIBONACCI_PLUS_CONSTRUCTOR_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FIBONACCI_PLUS_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.HW_BRRR_CALL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.HW_MINT_CALL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.HW_MINT_CONS_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MULTIPURPOSE_BYTECODE_PATH;
@@ -123,24 +124,25 @@ public class ContractCreateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						createEmptyConstructor(),
-						insufficientPayerBalanceUponCreation(),
-						rejectsInvalidMemo(),
-						rejectsInsufficientFee(),
-						rejectsInvalidBytecode(),
-						revertsNonzeroBalance(),
-						createFailsIfMissingSigs(),
-						rejectsInsufficientGas(),
-						createsVanillaContractAsExpectedWithOmittedAdminKey(),
-						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
-						cannotCreateTooLargeContract(),
-						revertedTryExtCallHasNoSideEffects(),
-						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
-						receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
-						cannotSendToNonExistentAccount(),
-						canCallPendingContractSafely(),
-						delegateContractIdRequiredForTransferInDelegateCall(),
-						helloWorldMint(),
+//						createEmptyConstructor(),
+//						insufficientPayerBalanceUponCreation(),
+//						rejectsInvalidMemo(),
+//						rejectsInsufficientFee(),
+//						rejectsInvalidBytecode(),
+//						revertsNonzeroBalance(),
+//						createFailsIfMissingSigs(),
+//						rejectsInsufficientGas(),
+//						createsVanillaContractAsExpectedWithOmittedAdminKey(),
+//						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
+//						cannotCreateTooLargeContract(),
+//						revertedTryExtCallHasNoSideEffects(),
+//						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
+//						receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
+//						cannotSendToNonExistentAccount(),
+//						canCallPendingContractSafely(),
+//						delegateContractIdRequiredForTransferInDelegateCall(),
+//						helloWorldNftMint(),
+						helloWorldFungibleMint(),
 				}
 		);
 	}
@@ -477,7 +479,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec helloWorldMint() {
+	private HapiApiSpec helloWorldNftMint() {
 		final var hwMintInitcode = "hwMintInitcode";
 
 		final var nonfungibleToken = "nonfungibleToken";
@@ -490,7 +492,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 
 		final AtomicLong nonFungibleNum = new AtomicLong();
 
-		return defaultHapiSpec("HelloWorldMint")
+		return defaultHapiSpec("HelloWorldNftMint")
 				.given(
 						newKeyNamed(multiKey),
 						fileCreate(hwMintInitcode)
@@ -522,6 +524,54 @@ public class ContractCreateSuite extends HapiApiSuite {
 						getTxnRecord(secondMintTxn).andAllChildRecords().logged(),
 						getTokenInfo(nonfungibleToken).hasTotalSupply(2),
 						getTokenNftInfo(nonfungibleToken, 2L).logged()
+				);
+	}
+
+	private HapiApiSpec helloWorldFungibleMint() {
+		final var hwMintInitcode = "hwMintInitcode";
+
+		final var amount = 1_234_567L;
+		final var fungibleToken = "fungibleToken";
+		final var multiKey = "purpose";
+		final var contractKey = "meaning";
+		final var hwMint = "hwMint";
+		final var firstMintTxn = "firstMintTxn";
+		final var secondMintTxn = "secondMintTxn";
+		final var contractKeyShape = DELEGATE_CONTRACT;
+
+		final AtomicLong fungibleNum = new AtomicLong();
+
+		return defaultHapiSpec("HelloWorldFungibleMint")
+				.given(
+						newKeyNamed(multiKey),
+						fileCreate(hwMintInitcode)
+								.path(ContractResources.HW_MINT_PATH),
+						tokenCreate(fungibleToken)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(0)
+								.adminKey(multiKey)
+								.supplyKey(multiKey)
+								.exposingCreatedIdTo(idLit -> fungibleNum.set(asDotDelimitedLongArray(idLit)[2]))
+				).when(
+						sourcing(() -> contractCreate(hwMint, HW_MINT_CONS_ABI, fungibleNum.get())
+								.bytecode(hwMintInitcode)
+								.gas(300_000L))
+				).then(
+						contractCall(hwMint, HW_BRRR_CALL_ABI, amount)
+								.via(firstMintTxn)
+								.alsoSigningWithFullPrefix(multiKey),
+						getTxnRecord(firstMintTxn).andAllChildRecords().logged(),
+						getTokenInfo(fungibleToken).hasTotalSupply(amount),
+						/* And now make the token contract-controlled so no explicit supply sig is required */
+						newKeyNamed(contractKey)
+								.shape(contractKeyShape.signedWith(hwMint)),
+						tokenUpdate(fungibleToken)
+								.supplyKey(contractKey),
+						getTokenInfo(fungibleToken).logged(),
+						contractCall(hwMint, HW_BRRR_CALL_ABI, amount)
+								.via(secondMintTxn),
+						getTxnRecord(secondMintTxn).andAllChildRecords().logged(),
+						getTokenInfo(fungibleToken).hasTotalSupply(2 * amount)
 				);
 	}
 

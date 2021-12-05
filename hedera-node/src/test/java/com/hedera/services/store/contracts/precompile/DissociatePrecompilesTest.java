@@ -3,9 +3,9 @@ package com.hedera.services.store.contracts.precompile;
 /*-
  * ‌
  * Hedera Services Node
- * ​
+ *
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,20 +20,17 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
+import com.hedera.services.contracts.sources.SoliditySigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
-import com.hedera.services.state.expiry.ExpiringCreations;
+import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -45,7 +42,7 @@ import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.txns.token.MintLogic;
+import com.hedera.services.txns.token.DissociateLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
@@ -65,21 +62,20 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
 import java.util.Collections;
-import java.util.List;
 
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_ADDER;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_REMOVER;
-import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
+import static com.hedera.services.store.tokens.views.UniqTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("rawtypes")
-class MintPrecompilesTest {
+class DissociatePrecompilesTest {
 	private static final Bytes pretendArguments = Bytes.fromBase64String("ABCDEF");
 
 	@Mock
@@ -95,7 +91,7 @@ class MintPrecompilesTest {
 	@Mock
 	private MessageFrame frame;
 	@Mock
-	private TxnAwareSoliditySigsVerifier sigsVerifier;
+	private SoliditySigsVerifier sigsVerifier;
 	@Mock
 	private AccountRecordsHistorian recordsHistorian;
 	@Mock
@@ -107,7 +103,9 @@ class MintPrecompilesTest {
 	@Mock
 	private HTSPrecompiledContract.AccountStoreFactory accountStoreFactory;
 	@Mock
-	private MintLogic mintLogic;
+	private HTSPrecompiledContract.DissociateLogicFactory dissociateLogicFactory;
+	@Mock
+	private DissociateLogic dissociateLogic;
 	@Mock
 	private SideEffectsTracker sideEffects;
 	@Mock
@@ -129,11 +127,7 @@ class MintPrecompilesTest {
 	@Mock
 	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
 	@Mock
-	private EntityIdSource ids;
-	@Mock
-	private ExpiringCreations creator;
-	@Mock
-	private ImpliedTransfersMarshal impliedTransfers;
+	private EntityCreator creator;
 	@Mock
 	private DissociationFactory dissociationFactory;
 
@@ -146,21 +140,24 @@ class MintPrecompilesTest {
 				recordsHistorian, sigsVerifier, decoder,
 				syntheticTxnFactory, creator, dissociationFactory);
 		subject.setMintLogicFactory(mintLogicFactory);
+		subject.setDissociateLogicFactory(dissociateLogicFactory);
 		subject.setTokenStoreFactory(tokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);
 		subject.setSideEffectsFactory(() -> sideEffects);
 	}
 
 	@Test
-	void mintFailurePathWorks() {
-		givenNonFungibleFrameContext();
+	void dissociateTokenFailurePathWorks() {
+		givenFrameContext();
 
-		given(sigsVerifier.hasActiveSupplyKey(nonFungibleId, recipientAddr, contractAddr))
+		given(sigsVerifier.hasActiveKey(accountId, recipientAddr, contractAddr))
 				.willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
+		given(decoder.decodeDissociate(pretendArguments)).willReturn(dissociateToken);
+		given(syntheticTxnFactory.createDissociate(dissociateToken)).willReturn(mockSynthBodyBuilder);
 
 		// when:
-		final var result = subject.computeMintToken(pretendArguments, frame);
+		final var result = subject.computeDissociateToken(pretendArguments, frame);
 
 		// then:
 		assertEquals(invalidSigResult, result);
@@ -169,68 +166,61 @@ class MintPrecompilesTest {
 	}
 
 	@Test
-	void nftMintHappyPathWorks() {
-		givenNonFungibleFrameContext();
+	void dissociateTokenHappyPathWorks() {
+		givenFrameContext();
 		givenLedgers();
 
-		given(sigsVerifier.hasActiveSupplyKey(nonFungibleId, recipientAddr, contractAddr)).willReturn(true);
+		given(sigsVerifier.hasActiveKey(accountId, recipientAddr, contractAddr)).willReturn(true);
 		given(accountStoreFactory.newAccountStore(
 				validator, dynamicProperties, accounts
 		)).willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(
 				accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects
 		)).willReturn(tokenStore);
-		given(mintLogicFactory.newMintLogic(validator, tokenStore, accountStore)).willReturn(mintLogic);
+		given(dissociateLogicFactory.newDissociateLogic(validator, tokenStore, accountStore, dissociationFactory)).willReturn(dissociateLogic);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects)).willReturn(mockRecordBuilder);
-		given(recordsHistorian.nextFollowingChildConsensusTime()).willReturn(pendingChildConsTime);
+		given(decoder.decodeDissociate(pretendArguments)).willReturn(dissociateToken);
+		given(syntheticTxnFactory.createDissociate(dissociateToken)).willReturn(mockSynthBodyBuilder);
 
 		// when:
-		final var result = subject.computeMintToken(pretendArguments, frame);
+		final var result = subject.computeDissociateToken(pretendArguments, frame);
 
 		// then:
 		assertEquals(successResult, result);
 		// and:
-		verify(mintLogic).mint(nonFungibleId, 3, 0, newMetadata, pendingChildConsTime);
+		verify(dissociateLogic).dissociate(accountId, singletonList(nonFungible));
 		verify(wrappedLedgers).commit();
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}
 
 	@Test
-	void fungibleMintHappyPathWorks() {
-		givenFungibleFrameContext();
+	void computeMultiDissociateTokenHappyPathWorks() {
+		givenFrameContext();
 		givenLedgers();
-
-		given(sigsVerifier.hasActiveSupplyKey(fungibleId, recipientAddr, contractAddr)).willReturn(true);
-		given(accountStoreFactory.newAccountStore(
-				validator, dynamicProperties, accounts
-		)).willReturn(accountStore);
-		given(tokenStoreFactory.newTokenStore(
-				accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects
-		)).willReturn(tokenStore);
-		given(mintLogicFactory.newMintLogic(validator, tokenStore, accountStore)).willReturn(mintLogic);
-		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects)).willReturn(mockRecordBuilder);
+		given(decoder.decodeMultipleDissociations(pretendArguments))
+				.willReturn(multiDissociateOp);
+		given(syntheticTxnFactory.createDissociate(multiDissociateOp))
+				.willReturn(mockSynthBodyBuilder);
+		given(sigsVerifier.hasActiveKey(accountId, recipientAddr, contractAddr))
+				.willReturn(true);
+		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
+				.willReturn(accountStore);
+		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER,
+				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects))
+				.willReturn(tokenStore);
+		given(dissociateLogicFactory.newDissociateLogic(validator, tokenStore, accountStore, dissociationFactory))
+				.willReturn(dissociateLogic);
+		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects))
+				.willReturn(mockRecordBuilder);
 
 		// when:
-		final var result = subject.computeMintToken(pretendArguments, frame);
+		final var result = subject.computeDissociateTokens(pretendArguments, frame);
 
 		// then:
 		assertEquals(successResult, result);
-		// and:
-		verify(mintLogic).mint(fungibleId, 0, amount, Collections.emptyList(), Instant.EPOCH);
+		verify(dissociateLogic).dissociate(accountId, multiDissociateOp.getTokenIds());
 		verify(wrappedLedgers).commit();
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
-	}
-
-	private void givenNonFungibleFrameContext() {
-		givenFrameContext();
-		given(decoder.decodeMint(pretendArguments)).willReturn(nftMint);
-		given(syntheticTxnFactory.createMint(nftMint)).willReturn(mockSynthBodyBuilder);
-	}
-
-	private void givenFungibleFrameContext() {
-		givenFrameContext();
-		given(decoder.decodeMint(pretendArguments)).willReturn(fungibleMint);
-		given(syntheticTxnFactory.createMint(fungibleMint)).willReturn(mockSynthBodyBuilder);
 	}
 
 	private void givenFrameContext() {
@@ -247,20 +237,15 @@ class MintPrecompilesTest {
 		given(wrappedLedgers.tokens()).willReturn(tokens);
 	}
 
-	private static final long amount = 1_234_567;
 	private static final TokenID nonFungible = IdUtils.asToken("0.0.777");
-	private static final TokenID fungible = IdUtils.asToken("0.0.888");
-	private static final Id nonFungibleId = Id.fromGrpcToken(nonFungible);
-	private static final Id fungibleId = Id.fromGrpcToken(fungible);
-	private static final List<ByteString> newMetadata = List.of(
-			ByteString.copyFromUtf8("AAA"), ByteString.copyFromUtf8("BBB"), ByteString.copyFromUtf8("CCC"));
-	private static final SyntheticTxnFactory.MintWrapper nftMint =
-			SyntheticTxnFactory.MintWrapper.forNonFungible(nonFungible, newMetadata);
-	private static final SyntheticTxnFactory.MintWrapper fungibleMint =
-			SyntheticTxnFactory.MintWrapper.forFungible(fungible, amount);
+	private static final AccountID account = IdUtils.asAccount("0.0.3");
+	private static final Id accountId = Id.fromGrpcAccount(account);
+	private static final SyntheticTxnFactory.Dissociation dissociateToken =
+			SyntheticTxnFactory.Dissociation.singleDissociation(account, nonFungible);
+	private static final SyntheticTxnFactory.Dissociation multiDissociateOp =
+			SyntheticTxnFactory.Dissociation.singleDissociation(account, nonFungible);
 	private static final Address recipientAddr = Address.ALTBN128_ADD;
 	private static final Address contractAddr = Address.ALTBN128_MUL;
 	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
 	private static final Bytes invalidSigResult = UInt256.valueOf(ResponseCodeEnum.INVALID_SIGNATURE_VALUE);
-	private static final Instant pendingChildConsTime = Instant.ofEpochSecond(1_234_567L, 890);
 }

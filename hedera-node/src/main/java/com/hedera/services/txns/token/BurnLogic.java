@@ -44,7 +44,8 @@ public class BurnLogic {
 	public void burn(
 			final Id targetId,
 			final long amount,
-			final List<Long> serialNumbersList) {
+			final List<Long> serialNumbersList
+	) {
 		/* --- Load the models --- */
 		final var token = tokenStore.loadToken(targetId);
 		final var treasuryRel = tokenStore.loadTokenRelationship(token, token.getTreasury());

@@ -1,4 +1,23 @@
 package com.hedera.services.ledger.properties;
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
 
 /*-
  * ‌
@@ -86,7 +105,6 @@ class TokenPropertyTest {
 	void gettersWork() {
 		// given:
 		final MerkleToken target = new MerkleToken();
-
 		TOTAL_SUPPLY.setter().accept(target, totalSupply);
 		ADMIN_KEY.setter().accept(target, adminKey);
 		FREEZE_KEY.setter().accept(target, freezeKey);
@@ -110,7 +128,6 @@ class TokenPropertyTest {
 		SUPPLY_TYPE.setter().accept(target, supplyType);
 		MAX_SUPPLY.setter().accept(target, maxSupply);
 		FEE_SCHEDULE.setter().accept(target, feeSchedule);
-
 		// and:
 		final var totalSupplyGetter = TOTAL_SUPPLY.getter();
 		final var adminKeyGetter = ADMIN_KEY.getter();
@@ -135,7 +152,6 @@ class TokenPropertyTest {
 		final var supplyTypeGetter = SUPPLY_TYPE.getter();
 		final var maxSupplyGetter = MAX_SUPPLY.getter();
 		final var feeScheduleGetter = FEE_SCHEDULE.getter();
-
 		// expect:
 		assertEquals(totalSupply, totalSupplyGetter.apply(target));
 		assertEquals(adminKey, adminKeyGetter.apply(target));
@@ -190,7 +206,6 @@ class TokenPropertyTest {
 		final var supplyTypeSetter = SUPPLY_TYPE.setter();
 		final var maxSupplySetter = MAX_SUPPLY.setter();
 		final var feeScheduleSetter = FEE_SCHEDULE.setter();
-
 		// when:
 		totalSupplySetter.accept(target, totalSupply);
 		adminKeySetter.accept(target, adminKey);
@@ -215,7 +230,6 @@ class TokenPropertyTest {
 		supplyTypeSetter.accept(target, supplyType);
 		maxSupplySetter.accept(target, maxSupply);
 		feeScheduleSetter.accept(target, feeSchedule);
-
 		// expect:
 		assertEquals(totalSupply, target.totalSupply());
 		assertEquals(adminKey.get(), target.getAdminKey());
