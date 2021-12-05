@@ -185,11 +185,11 @@ public class SideEffectsTracker {
 		return newTokenId;
 	}
 
-	public boolean hasTrackedNewAccountId() {
+	public boolean hasTrackedAutoCreatedAccountId() {
 		return autoCreatedAccount != null;
 	}
 
-	public AccountID getTrackedNewAccountId() {
+	public AccountID getTrackedAutoCreatedAccountId() {
 		return autoCreatedAccount;
 	}
 
@@ -381,6 +381,7 @@ public class SideEffectsTracker {
 	 * Clears all side effects tracked since the last call to this method.
 	 */
 	public void reset() {
+		resetTrackedAutoCreatedAccount();
 		resetTrackedTokenChanges();
 		netHbarChanges.clear();
 	}

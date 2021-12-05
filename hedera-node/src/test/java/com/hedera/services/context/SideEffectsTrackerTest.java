@@ -20,6 +20,7 @@ package com.hedera.services.context;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
@@ -110,6 +111,31 @@ class SideEffectsTrackerTest {
 		subject.reset();
 
 		assertTrue(subject.getTrackedAutoAssociations().isEmpty());
+	}
+
+	@Test
+	void tracksAndResetsNewAccountIdAsExpected() {
+		final var createdAutoAccount = AccountID.newBuilder().setShardNum(0).setRealmNum(0)
+				.setAccountNum(20L).setAlias(ByteString.copyFromUtf8("aaa")).build();
+
+		subject.trackAutoCreatedAccount(createdAutoAccount);
+
+		assertTrue(subject.hasTrackedAutoCreatedAccountId());
+		assertEquals(createdAutoAccount, subject.getTrackedAutoCreatedAccountId());
+
+		subject.reset();
+		assertFalse(subject.hasTrackedAutoCreatedAccountId());
+	}
+
+	@Test
+	void canClearJustAutoCreatedAccountChanges() {
+		final var createdAutoAccount = AccountID.newBuilder().setShardNum(0).setRealmNum(0)
+				.setAccountNum(20L).setAlias(ByteString.copyFromUtf8("aaa")).build();
+
+		subject.trackAutoCreatedAccount(createdAutoAccount);
+		assertTrue(subject.hasTrackedAutoCreatedAccountId());
+		subject.resetTrackedAutoCreatedAccount();
+		assertFalse(subject.hasTrackedAutoCreatedAccountId());
 	}
 
 	@Test

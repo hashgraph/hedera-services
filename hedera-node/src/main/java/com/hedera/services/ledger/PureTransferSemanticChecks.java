@@ -102,7 +102,8 @@ public class PureTransferSemanticChecks {
 	boolean isValidAlias(final List<AccountAmount> hbarAdjusts) {
 		for (AccountAmount aa : hbarAdjusts) {
 			final var alias = aa.getAccountID().getAlias();
-			if (!alias.equals(ByteString.EMPTY) && isValidPrimitiveKey(alias)) {
+			//TODO Confirm check for valid primitive key
+			if (!alias.equals(ByteString.EMPTY) && !isValidPrimitiveKey(alias)) {
 				return false;
 			}
 		}
