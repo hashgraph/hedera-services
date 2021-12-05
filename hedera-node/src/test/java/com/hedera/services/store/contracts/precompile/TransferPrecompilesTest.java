@@ -1,12 +1,14 @@
 package com.hedera.services.store.contracts.precompile;
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
@@ -25,9 +27,10 @@ import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.txns.token.MintLogic;
+import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -44,26 +47,30 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_ADDER;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_REMOVER;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class MintPrecompilesTest {
+class TransferPrecompilesTest {
 	private static final Bytes pretendArguments = Bytes.fromBase64String("ABCDEF");
 
 	@Mock
 	private AccountStore accountStore;
 	@Mock
 	private TypedTokenStore tokenStore;
+	@Mock
+	private HederaTokenStore hederaTokenStore;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
@@ -79,13 +86,13 @@ class MintPrecompilesTest {
 	@Mock
 	private DecodingFacade decoder;
 	@Mock
-	private HTSPrecompiledContract.MintLogicFactory mintLogicFactory;
+	private HTSPrecompiledContract.TransferLogicFactory transferLogicFactory;
 	@Mock
-	private HTSPrecompiledContract.TokenStoreFactory tokenStoreFactory;
+	private HTSPrecompiledContract.HederaTokenStoreFactory hederaTokenStoreFactory;
 	@Mock
 	private HTSPrecompiledContract.AccountStoreFactory accountStoreFactory;
 	@Mock
-	private MintLogic mintLogic;
+	private TransferLogic transferLogic;
 	@Mock
 	private SideEffectsTracker sideEffects;
 	@Mock
@@ -111,7 +118,9 @@ class MintPrecompilesTest {
 	@Mock
 	private ExpiringCreations creator;
 	@Mock
-	private ImpliedTransfersMarshal impliedTransfers;
+	private ImpliedTransfersMarshal impliedTransfersMarshal;
+	@Mock
+	private ImpliedTransfers impliedTransfers;
 
 	private HTSPrecompiledContract subject;
 
@@ -121,64 +130,89 @@ class MintPrecompilesTest {
 				accountStore, validator,
 				tokenStore, dynamicProperties, gasCalculator,
 				decoder,
-				syntheticTxnFactory, impliedTransfers);
-		subject.setMintLogicFactory(mintLogicFactory);
-		subject.setTokenStoreFactory(tokenStoreFactory);
+				syntheticTxnFactory, impliedTransfersMarshal);
+		subject.setTransferLogicFactory(transferLogicFactory);
+		subject.setHederaTokenStoreFactory(hederaTokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);
 		subject.setSideEffectsFactory(() -> sideEffects);
 	}
 
 	@Test
-	void nftMintFailurePathWorks() {
-		givenFrameContext();
-
-		given(sigsVerifier.hasActiveSupplyKey(nonFungibleId, recipientAddr, contractAddr))
-				.willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
-		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
-
-		// when:
-		final var result = subject.computeMintToken(pretendArguments, frame);
-
-		// then:
-		assertEquals(invalidSigResult, result);
-
-		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
-	}
-
-	@Test
-	void nftMintHappyPathWorks() {
+	void transferTokenHappyPathWorks() {
 		givenFrameContext();
 		givenLedgers();
 
-		given(sigsVerifier.hasActiveSupplyKey(nonFungibleId, recipientAddr, contractAddr)).willReturn(true);
-		given(accountStoreFactory.newAccountStore(
-				validator, dynamicProperties, accounts
-		)).willReturn(accountStore);
-		given(tokenStoreFactory.newTokenStore(
-			accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects
-		)).willReturn(tokenStore);
-		given(mintLogicFactory.newLogic(validator, tokenStore, accountStore)).willReturn(mintLogic);
+		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
+
+		hederaTokenStore.setAccountsLedger(accounts);
+		given(hederaTokenStoreFactory.newHederaTokenStore(
+				ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
+		)).willReturn(hederaTokenStore);
+
+		given(transferLogicFactory.newLogic(
+				accounts, nfts, tokenRels, hederaTokenStore,
+				sideEffects,
+				NOOP_VIEWS_MANAGER,
+				dynamicProperties,
+				validator
+		)).willReturn(transferLogic);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects)).willReturn(mockRecordBuilder);
-		given(recordsHistorian.nextFollowingChildConsensusTime()).willReturn(pendingChildConsTime);
+		given(impliedTransfersMarshal.assessCustomFeesAndValidate(any(), anyInt(), any())).willReturn(impliedTransfers);
+		given(impliedTransfers.getAllBalanceChanges()).willReturn(changes);
 
 		// when:
-		final var result = subject.computeMintToken(pretendArguments, frame);
+		final var result = subject.computeTransferToken(pretendArguments, frame);
 
 		// then:
 		assertEquals(successResult, result);
 		// and:
-		verify(mintLogic).mint(nonFungibleId, 3, 0, newMetadata, pendingChildConsTime);
+		verify(transferLogic).transfer(changes);
 		verify(wrappedLedgers).commit();
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}
 
+
+	@Test
+	void transferFailsAndCatchesProperly() {
+		givenFrameContext();
+		givenLedgers();
+
+		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
+
+		hederaTokenStore.setAccountsLedger(accounts);
+		given(hederaTokenStoreFactory.newHederaTokenStore(
+				ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
+		)).willReturn(hederaTokenStore);
+
+		given(transferLogicFactory.newLogic(
+				accounts, nfts, tokenRels, hederaTokenStore,
+				sideEffects,
+				NOOP_VIEWS_MANAGER,
+				dynamicProperties,
+				validator
+		)).willReturn(transferLogic);
+		given(impliedTransfersMarshal.assessCustomFeesAndValidate(any(), anyInt(), any())).willReturn(impliedTransfers);
+		given(impliedTransfers.getAllBalanceChanges()).willReturn(changes);
+
+		doThrow(new InvalidTransactionException(ResponseCodeEnum.FAIL_INVALID)).when(transferLogic).transfer(changes);
+
+		// when:
+		final var result = subject.computeTransferToken(pretendArguments, frame);
+
+		// then:
+		assertNotEquals(successResult, result);
+		// and:
+		verify(transferLogic).transfer(changes);
+		verify(wrappedLedgers, never()).commit();
+		verify(worldUpdater, never()).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+	}
+
 	private void givenFrameContext() {
 		given(frame.getContractAddress()).willReturn(contractAddr);
-		given(frame.getRecipientAddress()).willReturn(recipientAddr);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
-		given(decoder.decodeMint(pretendArguments)).willReturn(nftMint);
-		given(syntheticTxnFactory.createNonFungibleMint(nftMint)).willReturn(mockSynthBodyBuilder);
+		given(decoder.decodeTransferToken(pretendArguments)).willReturn(transfer);
+		given(syntheticTxnFactory.createCryptoTransfer(List.of(), List.of(), List.of(transfer))).willReturn(mockSynthBodyBuilder);
 	}
 
 	private void givenLedgers() {
@@ -188,14 +222,29 @@ class MintPrecompilesTest {
 		given(wrappedLedgers.tokens()).willReturn(tokens);
 	}
 
-	private static final TokenID nonFungible = IdUtils.asToken("0.0.777");
-	private static final Id nonFungibleId = Id.fromGrpcToken(nonFungible);
-	private static final List<ByteString> newMetadata = List.of(
-			ByteString.copyFromUtf8("AAA"), ByteString.copyFromUtf8("BBB"), ByteString.copyFromUtf8("CCC"));
-	private static final SyntheticTxnFactory.NftMint nftMint = new SyntheticTxnFactory.NftMint(nonFungible, newMetadata);
-	private static final Address recipientAddr = Address.ALTBN128_ADD;
+	private static final long amount = 1L;
+	private static final TokenID token = IdUtils.asToken("0.0.1");
+	private static final AccountID sender = IdUtils.asAccount("0.0.2");
+	private static final AccountID receiver = IdUtils.asAccount("0.0.3");
+	private static final SyntheticTxnFactory.FungibleTokenTransfer transfer =
+			new SyntheticTxnFactory.FungibleTokenTransfer(
+					amount,
+					token,
+					sender,
+					receiver
+			);
 	private static final Address contractAddr = Address.ALTBN128_MUL;
 	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
-	private static final Bytes invalidSigResult = UInt256.valueOf(ResponseCodeEnum.INVALID_SIGNATURE_VALUE);
-	private static final Instant pendingChildConsTime = Instant.ofEpochSecond(1_234_567L, 890);
+	private static final List<BalanceChange> changes = List.of(
+			BalanceChange.changingFtUnits(
+					Id.fromGrpcToken(token),
+					token,
+					AccountAmount.newBuilder().setAccountID(sender).setAmount(amount).build()
+			),
+			BalanceChange.changingFtUnits(
+					Id.fromGrpcToken(token),
+					token,
+					AccountAmount.newBuilder().setAccountID(receiver).setAmount(amount).build()
+			)
+	);
 }

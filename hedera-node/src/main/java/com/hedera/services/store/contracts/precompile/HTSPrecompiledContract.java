@@ -29,31 +29,31 @@ import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.BalanceChange;
-import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.ledger.backing.BackingStore;
+import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.properties.NftProperty;
+import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
+import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.ledger.TransferLogic;
-import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.records.AccountRecordsHistorian;
-import com.hedera.services.state.expiry.ExpiringCreations;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.TokenRelationship;
-import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
-import com.hedera.services.txns.token.MintLogic;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
+import com.hedera.services.txns.token.MintLogic;
 import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
@@ -74,7 +74,6 @@ import org.hyperledger.besu.evm.precompile.AbstractPrecompiledContract;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -82,8 +81,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.store.tokens.views.UniqTokenViewsManager.NOOP_VIEWS_MANAGER;
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 
@@ -101,11 +99,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	};
 
 	private MintLogicFactory mintLogicFactory = MintLogic::new;
+	private TransferLogicFactory transferLogicFactory = TransferLogic::new;
 	private TokenStoreFactory tokenStoreFactory = TypedTokenStore::new;
+	private HederaTokenStoreFactory hederaTokenStoreFactory = HederaTokenStore::new;
 	private AccountStoreFactory accountStoreFactory = AccountStore::new;
 	private Supplier<SideEffectsTracker> sideEffectsFactory = SideEffectsTracker::new;
 
-	private final HederaLedger ledger;
 	private final EntityCreator creator;
 	private final DecodingFacade decoder;
 	private final AccountStore accountStore;
@@ -118,12 +117,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	private final UniqueTokenViewsManager tokenViewsManager;
 	private final EntityIdSource ids;
-	private final ExpiringCreations creator;
-	private final AccountRecordsHistorian recordsHistorian;
-	private final TxnAwareSoliditySigsVerifier sigsVerifier;
 	private final ImpliedTransfersMarshal impliedTransfersMarshal;
-
-	private SyntheticTxnFactory syntheticTxnFactory;
 
 	//cryptoTransfer(TokenTransferList[] calldata tokenTransfers)
 	protected static final int ABI_ID_CRYPTO_TRANSFER = 0x189a554c;
@@ -160,33 +154,25 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final TypedTokenStore tokenStore,
 			final GlobalDynamicProperties dynamicProperties,
 			final GasCalculator gasCalculator,
-			final AccountRecordsHistorian recordsHistorian,
-			final SoliditySigsVerifier sigsVerifier,
 			final DecodingFacade decoder,
 			final SyntheticTxnFactory syntheticTxnFactory,
-			final EntityCreator creator,
 			final ImpliedTransfersMarshal impliedTransfersMarshal
 	) {
 		super("HTS", gasCalculator);
 
-		this.ledger = ledger;
 		this.decoder = decoder;
 
 		this.sigsVerifier = sigsVerifier;
 		this.recordsHistorian = recordsHistorian;
-		this.syntheticTxnFactory = new SyntheticTxnFactory();
+		this.syntheticTxnFactory = syntheticTxnFactory;
 		this.creator = creator;
 		this.validator = validator;
-		this.creator = creator;
 		this.tokenStore = tokenStore;
 		this.accountStore = accountStore;
-		this.sigsVerifier = sigsVerifier;
 		this.dynamicProperties = dynamicProperties;
 		this.tokenViewsManager = tokenViewsManager;
 		this.ids = ids;
 		this.impliedTransfersMarshal = impliedTransfersMarshal;
-		this.recordsHistorian = recordsHistorian;
-		this.syntheticTxnFactory = syntheticTxnFactory;
 	}
 
 	@Override
@@ -248,25 +234,18 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		var updater = (AbstractLedgerWorldUpdater) messageFrame.getWorldUpdater();
 		var ledgers = updater.wrappedTrackingLedgers();
 
-		final Bytes tokenAddress = Address.wrap(input.slice(16, 20));
-		final Bytes fromAddress = Address.wrap(input.slice(48, 20));
-		final Bytes toAddress = Address.wrap(input.slice(80, 20));
-		final BigInteger amount = input.slice(100, 32).toBigInteger();
-
-		final var token = EntityIdUtils.tokenParsedFromSolidityAddress(tokenAddress.toArray());
-		final var from = EntityIdUtils.accountParsedFromSolidityAddress(fromAddress.toArray());
-		final var to = EntityIdUtils.accountParsedFromSolidityAddress(toAddress.toArray());
+		final var transferOp = decoder.decodeTransferToken(input);
 
 		final List<BalanceChange> changes = List.of(
 				BalanceChange.changingFtUnits(
-						Id.fromGrpcToken(token),
-						token,
-						AccountAmount.newBuilder().setAccountID(from).setAmount(-amount.longValue()).build()
+						Id.fromGrpcToken(transferOp.getDenomination()),
+						transferOp.getDenomination(),
+						AccountAmount.newBuilder().setAccountID(transferOp.sender).setAmount(-transferOp.amount).build()
 				),
 				BalanceChange.changingFtUnits(
-						Id.fromGrpcToken(token),
-						token,
-						AccountAmount.newBuilder().setAccountID(to).setAmount(amount.longValue()).build()
+						Id.fromGrpcToken(transferOp.getDenomination()),
+						transferOp.getDenomination(),
+						AccountAmount.newBuilder().setAccountID(transferOp.receiver).setAmount(transferOp.amount).build()
 				)
 		);
 
@@ -276,22 +255,20 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				impliedTransfersMarshal.currentProps()
 		);
 
-		SyntheticTxnFactory.FungibleTokenTransfer tokenTransfer =
-				new SyntheticTxnFactory.FungibleTokenTransfer(amount.longValue(), token, from, to);
-		final var syntheticTxn = syntheticTxnFactory.createCryptoTransfer(List.of(), List.of(), List.of(tokenTransfer));
+		final var syntheticTxn = syntheticTxnFactory.createCryptoTransfer(List.of(), List.of(), List.of(transferOp));
 
-		var sideEffects = new SideEffectsTracker();
-		var hederaTokenStore = new HederaTokenStore(
+		final var sideEffects = sideEffectsFactory.get();
+		final var hederaTokenStore = hederaTokenStoreFactory.newHederaTokenStore(
 				ids,
 				validator,
 				sideEffects,
 				tokenViewsManager,
 				dynamicProperties,
-				ledgers.tokenRels(), ledgers.nfts(), ledgers.tokens()
-		);
+				ledgers.tokenRels(), ledgers.nfts(), ledgers.tokens());
 		hederaTokenStore.setAccountsLedger(ledgers.accounts());
 
-		TransferLogic transferLogic = new TransferLogic(
+
+		final var transferLogic = transferLogicFactory.newLogic(
 				ledgers.accounts(), ledgers.nfts(), ledgers.tokenRels(), hederaTokenStore,
 				sideEffects,
 				tokenViewsManager,
@@ -301,20 +278,20 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		ResponseCodeEnum responseCode;
 		ExpirableTxnRecord.Builder childRecord = null;
 		try {
-			var solidityAddressFrom = EntityIdUtils.asTypedSolidityAddress(from);
-			var solidityAddressTo = EntityIdUtils.asTypedSolidityAddress(to);
+			var solidityAddressFrom = EntityIdUtils.asTypedSolidityAddress(transferOp.sender);
+			var solidityAddressTo = EntityIdUtils.asTypedSolidityAddress(transferOp.receiver);
 
-			 final var hasRequiredSigs = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-			 		solidityAddressFrom,
-				    solidityAddressTo,
-				    messageFrame.getContractAddress()
-			 );
-			 validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
+			final var hasRequiredSigs = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+					solidityAddressFrom,
+					solidityAddressTo,
+					messageFrame.getContractAddress()
+			);
+			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
 			transferLogic.transfer(validated.getAllBalanceChanges());
 			ledgers.commit();
 
-			childRecord = creator.createSuccessfulSyntheticRecord(syntheticTxn, validated.getAssessedCustomFees(),
+			childRecord = creator.createSuccessfulSyntheticRecord(validated.getAssessedCustomFees(),
 					sideEffects);
 
 			responseCode = ResponseCodeEnum.SUCCESS;
@@ -461,6 +438,17 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	interface MintLogicFactory {
 		MintLogic newLogic(OptionValidator validator, TypedTokenStore tokenStore, AccountStore accountStore);
 	}
+	@FunctionalInterface
+	interface TransferLogicFactory {
+		TransferLogic newLogic(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
+							   TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
+							   TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
+							   HederaTokenStore tokenStore,
+							   SideEffectsTracker sideEffectsTracker,
+							   UniqueTokenViewsManager tokenViewsManager,
+							   GlobalDynamicProperties dynamicProperties,
+							   OptionValidator validator);
+	}
 
 	@FunctionalInterface
 	interface AccountStoreFactory {
@@ -477,10 +465,23 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				BackingStore<TokenID, MerkleToken> tokens,
 				BackingStore<NftId, MerkleUniqueToken> uniqueTokens,
 				BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels,
-				UniqTokenViewsManager uniqTokenViewsManager,
+				UniqueTokenViewsManager uniqTokenViewsManager,
 				TypedTokenStore.LegacyTreasuryAdder treasuryAdder,
 				TypedTokenStore.LegacyTreasuryRemover treasuryRemover,
 				SideEffectsTracker sideEffectsTracker);
+	}
+
+	@FunctionalInterface
+	interface HederaTokenStoreFactory {
+		HederaTokenStore newHederaTokenStore(
+				EntityIdSource ids,
+				OptionValidator validator,
+				SideEffectsTracker sideEffectsTracker,
+				UniqueTokenViewsManager uniqueTokenViewsManager,
+				GlobalDynamicProperties properties,
+				TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
+				TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
+				BackingStore<TokenID, MerkleToken> backingTokens);
 	}
 
 
@@ -489,8 +490,16 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.mintLogicFactory = mintLogicFactory;
 	}
 
+	void setTransferLogicFactory(final TransferLogicFactory transferLogicFactory) {
+		this.transferLogicFactory = transferLogicFactory;
+	}
+
 	void setTokenStoreFactory(final TokenStoreFactory tokenStoreFactory) {
 		this.tokenStoreFactory = tokenStoreFactory;
+	}
+
+	void setHederaTokenStoreFactory(final HederaTokenStoreFactory hederaTokenStoreFactory) {
+		this.hederaTokenStoreFactory = hederaTokenStoreFactory;
 	}
 
 	void setAccountStoreFactory(final AccountStoreFactory accountStoreFactory) {
