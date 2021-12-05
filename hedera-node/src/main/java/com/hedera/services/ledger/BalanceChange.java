@@ -222,7 +222,7 @@ public class BalanceChange {
 			return MoreObjects.toStringHelper(BalanceChange.class)
 					.add("token", token == null ? "ℏ" : token)
 					.add("account", account)
-					.add("alias", alias)
+					.add("alias", alias.toStringUtf8())
 					.add("units", units)
 					.toString();
 		} else {

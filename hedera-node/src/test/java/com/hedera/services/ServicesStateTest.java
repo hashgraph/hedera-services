@@ -26,6 +26,7 @@ import com.hedera.services.context.init.ServicesInitFlow;
 import com.hedera.services.sigs.ExpansionHelper;
 import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
+import com.hedera.services.state.AutoAccountCreationsManager;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.forensics.HashLogger;
@@ -156,11 +157,7 @@ class ServicesStateTest {
 	@Mock
 	private ServicesState.BinaryObjectStoreMigrator blobMigrator;
 	@Mock
-	private Consumer<Boolean> blobMigrationFlag;
-	@Mock
 	private PrefetchProcessor prefetchProcessor;
-	@Mock
-	private CodeCache codeCache;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
@@ -168,6 +165,7 @@ class ServicesStateTest {
 	private LogCaptor logCaptor;
 	@LoggingSubject
 	private ServicesState subject = new ServicesState();
+	AutoAccountCreationsManager autoAccounts = AutoAccountCreationsManager.getInstance();
 
 
 	@AfterEach
@@ -175,6 +173,7 @@ class ServicesStateTest {
 		if (APPS.includes(selfId.getId())) {
 			APPS.clear(selfId.getId());
 		}
+		autoAccounts.getAutoAccountsMap().clear();
 	}
 
 	@Test

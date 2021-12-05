@@ -67,6 +67,7 @@ public class AutoAccountCreatorTest {
 	void setUp() {
 		backingAccounts.put(a, aAccount);
 		subject = new AutoAccountCreator(syntheticTxnFactory, entityCreator, entityIdSource, recordsHistorian);
+		autoAccounts.getAutoAccountsMap().clear();
 	}
 
 	@Test
