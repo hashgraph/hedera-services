@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -69,9 +70,9 @@ public class TxnUtils {
 	}
 
 	public static List<TokenTransferList> withOwnershipChanges(
-			TokenID a, AccountID aId, AccountID aCounterpartyId, long A,
-			TokenID b, AccountID bId, AccountID bCounterpartyId, long B,
-			TokenID c, AccountID cId, AccountID cCounterpartyId, long C
+			TokenID a, EntityNum aId, EntityNum aCounterpartyId, long A,
+			TokenID b, EntityNum bId, EntityNum bCounterpartyId, long B,
+			TokenID c, EntityNum cId, EntityNum cCounterpartyId, long C
 	) {
 		return List.of(
 				TokenTransferList.newBuilder()

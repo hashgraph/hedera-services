@@ -45,7 +45,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-
 @ExtendWith(MockitoExtension.class)
 class StoreInitializationFlowTest {
 	@Mock
@@ -57,7 +56,7 @@ class StoreInitializationFlowTest {
 	@Mock
 	private UniqTokenViewsManager uniqTokenViewsManager;
 	@Mock
-	private BackingStore<AccountID, MerkleAccount> backingAccounts;
+	private BackingStore<EntityNum, MerkleAccount> backingAccounts;
 	@Mock
 	private BackingStore<NftId, MerkleUniqueToken> backingNfts;
 	@Mock

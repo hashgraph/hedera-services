@@ -98,8 +98,8 @@ class MerkleTopicUpdateTransitionLogicTest {
 	private HederaLedger ledger;
 	private PlatformTxnAccessor accessor;
 	private OptionValidator validator;
-	private MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
-	private MerkleMap<EntityNum, MerkleTopic> topics = new MerkleMap<>();
+	private final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
+	private final MerkleMap<EntityNum, MerkleTopic> topics = new MerkleMap<>();
 	private TopicUpdateTransitionLogic subject;
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 
@@ -316,7 +316,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 	}
 
 	@Test
-	void failsOnInvalidTopic() throws Throwable {
+	void failsOnInvalidTopic() {
 		// given:
 		givenValidTransactionInvalidTopic();
 
@@ -345,7 +345,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 		// given:
 		givenExistingTopicWithAutoRenewAccount();
 		givenValidTransactionWithAllOptions();
-		given(ledger.isDetached(MISC_ACCOUNT)).willReturn(true);
+		given(ledger.isDetached(EntityNum.fromAccountId(MISC_ACCOUNT))).willReturn(true);
 
 		// when:
 		subject.doStateTransition();
@@ -359,7 +359,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 		// given:
 		givenExistingTopicWithAdminKey();
 		givenTransactionWithAutoRenewAccountNotClearingAdminKey();
-		given(ledger.isDetached(MISC_ACCOUNT)).willReturn(true);
+		given(ledger.isDetached(EntityNum.fromAccountId(MISC_ACCOUNT))).willReturn(true);
 
 		// when:
 		subject.doStateTransition();

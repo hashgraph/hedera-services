@@ -38,7 +38,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -74,15 +74,15 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 class AbstractLedgerWorldUpdaterTest {
 	private static final TokenID aToken = IdUtils.asToken("0.0.666");
 	private static final TokenID bToken = IdUtils.asToken("0.0.777");
-	private static final AccountID aAccount = IdUtils.asAccount("0.0.12345");
-	private static final AccountID bAccount = IdUtils.asAccount("0.0.23456");
-	private static final Pair<AccountID, TokenID> aaRel = Pair.of(aAccount, aToken);
-	private static final Pair<AccountID, TokenID> abRel = Pair.of(aAccount, bToken);
-	private static final Pair<AccountID, TokenID> bbRel = Pair.of(bAccount, bToken);
+	private static final EntityNum aAccount = EntityNum.fromLong(12345);
+	private static final EntityNum bAccount = EntityNum.fromLong(23456);
+	private static final Pair<AccountID, TokenID> aaRel = Pair.of(aAccount.toGrpcAccountId(), aToken);
+	private static final Pair<AccountID, TokenID> abRel = Pair.of(aAccount.toGrpcAccountId(), bToken);
+	private static final Pair<AccountID, TokenID> bbRel = Pair.of(bAccount.toGrpcAccountId(), bToken);
 	private static final NftId aNft = new NftId(0, 0, 0, 3456);
 	private static final NftId bNft = new NftId(0, 0, 0, 4567);
-	private static final Address aAddress = EntityIdUtils.asTypedSolidityAddress(aAccount);
-	private static final Address bAddress = EntityIdUtils.asTypedSolidityAddress(bAccount);
+	private static final Address aAddress = aAccount.toTypedSolidityAddress();
+	private static final Address bAddress = bAccount.toTypedSolidityAddress();
 	private static final long aaBalance = 1L;
 	private static final long bbBalance = 9L;
 	private static final long aHbarBalance = 1_000L;
@@ -243,7 +243,7 @@ class AbstractLedgerWorldUpdaterTest {
 
 	@Test
 	void commitsToWrappedTrackingLedgersAreRespected() {
-		final var aEntityId = EntityId.fromGrpcAccountId(aAccount);
+		final var aEntityId = aAccount.toEntityId();
 		setupWellKnownNfts();
 
 		/* Get the wrapped nfts for the updater */
@@ -364,9 +364,9 @@ class AbstractLedgerWorldUpdaterTest {
 	private void setupWellKnownNfts() {
 		final var trackingNfts = ledgers.nftsLedger;
 		trackingNfts.create(aNft);
-		trackingNfts.set(aNft, OWNER, EntityId.fromGrpcAccountId(aAccount));
+		trackingNfts.set(aNft, OWNER, aAccount.toEntityId());
 		trackingNfts.create(bNft);
-		trackingNfts.set(bNft, OWNER, EntityId.fromGrpcAccountId(bAccount));
+		trackingNfts.set(bNft, OWNER, bAccount.toEntityId());
 		trackingNfts.commit();
 		trackingNfts.begin();
 	}

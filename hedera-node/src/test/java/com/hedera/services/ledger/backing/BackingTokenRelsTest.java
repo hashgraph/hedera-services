@@ -20,10 +20,9 @@ package com.hedera.services.ledger.backing;
  * ‍
  */
 
-import com.hedera.services.ledger.backing.BackingTokenRels;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,7 +33,6 @@ import java.util.Collections;
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.backing.BackingTokenRels.readableTokenRel;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
-import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -58,9 +56,9 @@ class BackingTokenRelsTest {
 	private final boolean bKyc = true;
 	private final boolean cKyc = false;
 	private final boolean automaticAssociation = false;
-	private final AccountID a = asAccount("0.0.3");
-	private final AccountID b = asAccount("0.0.1");
-	private final AccountID c = asAccount("0.0.0");
+	private final EntityNum a = EntityNum.fromLong(3);
+	private final EntityNum b = EntityNum.fromLong(1);
+	private final EntityNum c = EntityNum.fromLong(0);
 	private final TokenID at = asToken("0.0.7");
 	private final TokenID bt = asToken("0.0.6");
 	private final TokenID ct = asToken("0.0.5");
@@ -88,13 +86,13 @@ class BackingTokenRelsTest {
 	@Test
 	void relToStringWorks() {
 		// expect:
-		assertEquals("0.0.3 <-> 0.0.7", readableTokenRel(asTokenRel(a, at)));
+		assertEquals("0.0.3 <-> 0.0.7", readableTokenRel(asTokenRel(a.toGrpcAccountId(), at)));
 	}
 
 	@Test
 	void delegatesPutForNewRelIfMissing() {
 		// when:
-		subject.put(asTokenRel(c, ct), cValue);
+		subject.put(asTokenRel(c.toGrpcAccountId(), ct), cValue);
 
 		// then:
 		assertEquals(cValue, rels.get(fromAccountTokenRel(c, ct)));
@@ -103,7 +101,7 @@ class BackingTokenRelsTest {
 	@Test
 	void delegatesPutForNewRel() {
 		// when:
-		subject.put(asTokenRel(c, ct), cValue);
+		subject.put(asTokenRel(c.toGrpcAccountId(), ct), cValue);
 
 		// then:
 		assertEquals(cValue, rels.get(fromAccountTokenRel(c, ct)));
@@ -112,7 +110,7 @@ class BackingTokenRelsTest {
 	@Test
 	void removeUpdatesDelegate() {
 		// when:
-		subject.remove(asTokenRel(a, at));
+		subject.remove(asTokenRel(a.toGrpcAccountId(), at));
 
 		// then:
 		assertFalse(rels.containsKey(fromAccountTokenRel(a, at)));
@@ -124,8 +122,8 @@ class BackingTokenRelsTest {
 		subject.rebuildFromSources();
 
 		// expect:
-		assertTrue(subject.contains(asTokenRel(a, at)));
-		assertTrue(subject.contains(asTokenRel(b, bt)));
+		assertTrue(subject.contains(asTokenRel(a.toGrpcAccountId(), at)));
+		assertTrue(subject.contains(asTokenRel(b.toGrpcAccountId(), bt)));
 	}
 
 	@Test
@@ -136,13 +134,13 @@ class BackingTokenRelsTest {
 		given(rels.get(bKey)).willReturn(bValue);
 
 		// when:
-		var firstStatus = subject.getRef(asTokenRel(a, at));
-		var secondStatus = subject.getRef(asTokenRel(a, at));
+		var firstStatus = subject.getRef(asTokenRel(a.toGrpcAccountId(), at));
+		var secondStatus = subject.getRef(asTokenRel(a.toGrpcAccountId(), at));
 
 		// then:
 		assertSame(aValue, firstStatus);
 		assertSame(aValue, secondStatus);
-		assertSame(bValue, subject.getImmutableRef(asTokenRel(b, bt)));
+		assertSame(bValue, subject.getImmutableRef(asTokenRel(b.toGrpcAccountId(), bt)));
 		// and:
 		verify(rels, times(2)).getForModify(any());
 		verify(rels, times(1)).get(any());

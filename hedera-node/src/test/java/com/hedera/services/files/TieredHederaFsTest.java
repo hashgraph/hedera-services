@@ -631,7 +631,7 @@ class TieredHederaFsTest {
 
 	@Test
 	void createUsesNextEntityId() {
-		given(ids.newFileId(sponsor)).willReturn(fid);
+		given(ids.newFileId()).willReturn(fid);
 
 		final var newFile = subject.create(origContents, livingAttr, sponsor);
 

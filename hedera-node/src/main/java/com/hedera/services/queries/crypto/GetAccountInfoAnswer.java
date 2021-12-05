@@ -23,6 +23,7 @@ package com.hedera.services.queries.crypto;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
@@ -71,7 +72,7 @@ public class GetAccountInfoAnswer implements AnswerService {
 			if (type == COST_ANSWER) {
 				response.setHeader(costAnswerHeader(OK, cost));
 			} else {
-				AccountID id = op.getAccountID();
+				final var id = EntityNum.fromAccountId(op.getAccountID());
 				var optionalInfo = view.infoForAccount(id);
 				if (optionalInfo.isPresent()) {
 					response.setHeader(answerOnlyHeader(OK));

@@ -21,6 +21,7 @@ package com.hedera.services.ledger.backing;
  */
 
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -63,7 +64,8 @@ public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, 
 
 	@Override
 	public MerkleTokenRelStatus getRef(Pair<AccountID, TokenID> key) {
-		return delegate.get().getForModify(fromAccountTokenRel(key.getLeft(), key.getRight()));
+		final var accountId = EntityNum.fromAccountId(key.getLeft());
+		return delegate.get().getForModify(fromAccountTokenRel(accountId, key.getRight()));
 	}
 
 	@Override

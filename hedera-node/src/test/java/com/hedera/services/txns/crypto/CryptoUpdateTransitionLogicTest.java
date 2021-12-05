@@ -34,6 +34,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -91,7 +92,7 @@ class CryptoUpdateTransitionLogicTest {
 	private static final long AUTO_RENEW_PERIOD = 100_001L;
 	private static final AccountID PROXY = AccountID.newBuilder().setAccountNum(4_321L).build();
 	private static final AccountID PAYER = AccountID.newBuilder().setAccountNum(1_234L).build();
-	private static final AccountID TARGET = AccountID.newBuilder().setAccountNum(9_999L).build();
+	private static final EntityNum TARGET = EntityNum.fromLong(9_999L);
 	private static final String MEMO = "Not since life began";
 
 	private boolean useLegacyFields;
@@ -462,7 +463,7 @@ class CryptoUpdateTransitionLogicTest {
 		if (updating.contains(MAX_AUTOMATIC_ASSOCIATIONS)) {
 			op.setMaxAutomaticTokenAssociations(Int32Value.of(NEW_MAX_AUTOMATIC_ASSOCIATIONS));
 		}
-		op.setAccountIDToUpdate(TARGET);
+		op.setAccountIDToUpdate(TARGET.toGrpcAccountId());
 		cryptoUpdateTxn = TransactionBody.newBuilder().setTransactionID(ourTxnId()).setCryptoUpdateAccount(op).build();
 		given(accessor.getTxn()).willReturn(cryptoUpdateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);

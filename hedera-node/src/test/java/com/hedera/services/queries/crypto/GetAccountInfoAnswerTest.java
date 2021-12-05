@@ -34,12 +34,10 @@ import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.Query;
@@ -88,12 +86,12 @@ class GetAccountInfoAnswerTest {
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 	private OptionValidator optionValidator;
 
-	private String node = "0.0.3";
-	private String memo = "When had I my own will?";
-	private String payer = "0.0.12345";
-	private AccountID payerId = IdUtils.asAccount(payer);
+	private final String node = "0.0.3";
+	private final String memo = "When had I my own will?";
+	private final String payer = "0.0.12345";
+	private final EntityNum payerId = EntityNum.fromLong(12345);
 	private MerkleAccount payerAccount;
-	private String target = payer;
+	private final String target = payer;
 	private MerkleToken token;
 	private MerkleToken deletedToken;
 	TokenID firstToken = tokenWith(555),
@@ -103,7 +101,7 @@ class GetAccountInfoAnswerTest {
 			missingToken = tokenWith(999);
 	long firstBalance = 123, secondBalance = 234, thirdBalance = 345, fourthBalance = 456, missingBalance = 567;
 
-	private long fee = 1_234L;
+	private final long fee = 1_234L;
 	private Transaction paymentTxn;
 
 	private GetAccountInfoAnswer subject;

@@ -99,7 +99,7 @@ public final class TopicCreateTransitionLogic implements TransitionLogic {
 
 		/* --- Do business logic --- */
 		final var expirationTime = transactionContext.consensusTime().plusSeconds(autoRenewPeriod.getSeconds());
-		final var topicId = entityIdSource.newTopicId(payerAccountId);
+		final var topicId = entityIdSource.newTopicId();
 		final var topic = Topic.fromGrpcTopicCreate(
 				Id.fromGrpcTopic(topicId),
 				submitKey,

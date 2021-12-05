@@ -27,7 +27,6 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.TxnAccessor;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.fee.FeeObject;
 import com.swirlds.merkle.map.MerkleMap;
 
@@ -58,8 +57,6 @@ public class NarratedLedgerCharging implements NarratedCharging {
 	private long totalOfferedFee;
 	private long totalCharged;
 	private boolean payerExempt;
-	private AccountID grpcNodeId;
-	private AccountID grpcPayerId;
 	private EntityNum nodeId;
 	private EntityNum payerId;
 
@@ -88,12 +85,10 @@ public class NarratedLedgerCharging implements NarratedCharging {
 
 	@Override
 	public void resetForTxn(TxnAccessor accessor, long submittingNodeId) {
-		this.grpcPayerId = accessor.getPayer();
-		this.payerId = EntityNum.fromAccountId(grpcPayerId);
+		this.payerId = EntityNum.fromAccountId(accessor.getPayer());
 		this.totalOfferedFee = accessor.getOfferedFee();
 
 		nodeId = nodeInfo.accountKeyOf(submittingNodeId);
-		grpcNodeId = nodeInfo.accountOf(submittingNodeId);
 		payerExempt = feeExemptions.hasExemptPayer(accessor);
 		totalCharged = 0L;
 		effPayerStartingBalance = UNKNOWN_ACCOUNT_BALANCE;
@@ -159,10 +154,10 @@ public class NarratedLedgerCharging implements NarratedCharging {
 		if (payerExempt) {
 			return;
 		}
-		ledger.adjustBalance(grpcNodeId, +nodeFee);
+		ledger.adjustBalance(nodeId, +nodeFee);
 		ledger.adjustBalance(dynamicProperties.fundingAccount(), +(networkFee + serviceFee));
 		totalCharged = nodeFee + networkFee + serviceFee;
-		ledger.adjustBalance(grpcPayerId, -totalCharged);
+		ledger.adjustBalance(payerId, -totalCharged);
 	}
 
 	@Override
@@ -172,7 +167,7 @@ public class NarratedLedgerCharging implements NarratedCharging {
 		}
 		ledger.adjustBalance(dynamicProperties.fundingAccount(), +serviceFee);
 		totalCharged = serviceFee;
-		ledger.adjustBalance(grpcPayerId, -totalCharged);
+		ledger.adjustBalance(payerId, -totalCharged);
 	}
 
 	@Override
@@ -184,17 +179,17 @@ public class NarratedLedgerCharging implements NarratedCharging {
 			initEffPayerBalance(payerId);
 		}
 		long chargeableNodeFee = Math.min(nodeFee, effPayerStartingBalance - networkFee);
-		ledger.adjustBalance(grpcNodeId, +chargeableNodeFee);
+		ledger.adjustBalance(nodeId, +chargeableNodeFee);
 		ledger.adjustBalance(dynamicProperties.fundingAccount(), +networkFee);
 		totalCharged = networkFee + chargeableNodeFee;
-		ledger.adjustBalance(grpcPayerId, -totalCharged);
+		ledger.adjustBalance(payerId, -totalCharged);
 	}
 
 	@Override
 	public void chargeSubmittingNodeUpToNetworkFee() {
 		initEffPayerBalance(nodeId);
 		long chargeableNetworkFee = Math.min(networkFee, effPayerStartingBalance);
-		ledger.adjustBalance(grpcNodeId, -chargeableNetworkFee);
+		ledger.adjustBalance(nodeId, -chargeableNetworkFee);
 		ledger.adjustBalance(dynamicProperties.fundingAccount(), +chargeableNetworkFee);
 	}
 

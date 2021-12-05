@@ -70,7 +70,7 @@ public class RoyaltyFeeAssessor {
 			if (exchangedValue.isEmpty()) {
 				final var fallback = spec.getFallbackFee();
 				if (fallback != null) {
-					final var receiver = Id.fromGrpcAccount(change.counterPartyAccountId());
+					final var receiver = change.counterPartyAccountId();
 					final var fallbackFee = FcCustomFee.fixedFee(
 							fallback.getUnitsToCollect(),
 							fallback.getTokenDenomination(),
@@ -78,7 +78,7 @@ public class RoyaltyFeeAssessor {
 					/* Since a fallback fee for a charging non-fungible token can never be
 					denominated in the units of its charging token (by definition), just
 					use MISSING_ID for the charging token here. */
-					fixedFeeAssessor.assess(receiver, MISSING_ID, fallbackFee, changeManager, accumulator);
+					fixedFeeAssessor.assess(receiver.toModelId(), MISSING_ID, fallbackFee, changeManager, accumulator);
 				}
 			} else {
 				final var fractionalValidity = chargeRoyalty(

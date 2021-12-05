@@ -20,9 +20,7 @@ package com.hedera.services.state.expiry.renewal;
  * ‍
  */
 
-import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
-import com.hedera.services.config.MockHederaNumbers;
 import com.hedera.services.ledger.backing.BackingAccounts;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
@@ -38,6 +36,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.swirlds.merkle.map.MerkleMap;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -107,8 +106,6 @@ class RenewalHelperTest {
 	private final TokenID deletedTokenGrpcId = deletedTokenId.toGrpcTokenId();
 	private final TokenID survivedTokenGrpcId = survivedTokenId.toGrpcTokenId();
 	private final TokenID missingTokenGrpcId = TokenID.newBuilder().setTokenNum(5678L).build();
-
-	private final HederaNumbers nums = new MockHederaNumbers();
 
 	{
 		deletedToken.setDeleted(true);
@@ -180,7 +177,7 @@ class RenewalHelperTest {
 	@Test
 	void classifiesDetachedAccountAfterGracePeriodAsOtherIfTokenNotYetRemoved() {
 		givenPresent(brokeExpiredAccountNum, expiredAccountZeroBalance);
-		given(tokenStore.isKnownTreasury(grpcIdWith(brokeExpiredAccountNum))).willReturn(true);
+		given(tokenStore.isKnownTreasury(EntityNum.fromLong(brokeExpiredAccountNum))).willReturn(true);
 
 		// expect:
 		assertEquals(
@@ -243,10 +240,10 @@ class RenewalHelperTest {
 		var displacedTokens = subject.removeLastClassifiedAccount();
 
 		// then:
-		verify(backingAccounts).remove(expiredKey.toGrpcAccountId());
-		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), deletedTokenGrpcId));
-		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));
-		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), missingTokenGrpcId));
+		verify(backingAccounts).remove(expiredKey);
+		verify(tokenRels).remove(fromAccountTokenRel(Pair.of(grpcIdWith(brokeExpiredAccountNum), deletedTokenGrpcId)));
+		verify(tokenRels).remove(fromAccountTokenRel(Pair.of(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId)));
+		verify(tokenRels).remove(fromAccountTokenRel(Pair.of(grpcIdWith(brokeExpiredAccountNum), missingTokenGrpcId)));
 		// and:
 		assertTrue(displacedTokens.getLeft().isEmpty());
 	}
@@ -270,10 +267,10 @@ class RenewalHelperTest {
 		var displacedTokens = subject.removeLastClassifiedAccount();
 
 		// then:
-		verify(backingAccounts).remove(expiredKey.toGrpcAccountId());
-		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), deletedTokenGrpcId));
-		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));
-		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));
+		verify(backingAccounts).remove(expiredKey);
+		verify(tokenRels).remove(fromAccountTokenRel(Pair.of(grpcIdWith(brokeExpiredAccountNum), deletedTokenGrpcId)));
+		verify(tokenRels).remove(fromAccountTokenRel(Pair.of(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId)));
+		verify(tokenRels).remove(fromAccountTokenRel(Pair.of(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId)));
 		// and:
 		final var ttls = List.of(
 				ttlOf(survivedTokenGrpcId, grpcIdWith(brokeExpiredAccountNum), treasuryGrpcId, tokenBalance));

@@ -55,6 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -132,7 +133,7 @@ class HederaWorldStateTest {
 		updater.commit();
 		subject.customizeSponsoredAccounts();
 
-		verify(entityAccess).customize(sponsoredId, captor.capture());
+		verify(entityAccess).customize(eq(sponsoredId), captor.capture());
 		final var customizer = captor.getValue();
 		final var standin = new MerkleAccount();
 		customizer.customizing(standin);
@@ -145,8 +146,6 @@ class HederaWorldStateTest {
 	@Test
 	void newContractAddress() {
 		final var sponsor = mock(Address.class);
-		given(sponsor.toArrayUnsafe())
-				.willReturn(new byte[] { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 });
 		given(ids.newContractId()).willReturn(ContractID.newBuilder().setContractNum(1).build());
 		var addr = subject.newContractAddress(sponsor);
 		assertNotEquals(addr, sponsor);

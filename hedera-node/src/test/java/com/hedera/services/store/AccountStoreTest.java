@@ -32,7 +32,6 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.utils.TxnUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -60,7 +59,7 @@ class AccountStoreTest {
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
-	private BackingStore<AccountID, MerkleAccount> accounts;
+	private BackingStore<EntityNum, MerkleAccount> accounts;
 
 	private AccountStore subject;
 
@@ -216,12 +215,12 @@ class AccountStoreTest {
 		assertEquals(expectedReplacement, miscMerkleAccount);
 	}
 
-	private void setupWithAccount(EntityNum anId, MerkleAccount anAccount) {
-		given(accounts.getImmutableRef(anId.toGrpcAccountId())).willReturn(anAccount);
+	private void setupWithAccount(final EntityNum anId, final MerkleAccount anAccount) {
+		given(accounts.getImmutableRef(anId)).willReturn(anAccount);
 	}
 
-	private void setupWithMutableAccount(EntityNum anId, MerkleAccount anAccount) {
-		given(accounts.getRef(anId.toGrpcAccountId())).willReturn(anAccount);
+	private void setupWithMutableAccount(final EntityNum anId, final MerkleAccount anAccount) {
+		given(accounts.getRef(anId)).willReturn(anAccount);
 	}
 
 	private void assertMiscAccountLoadFailsWith(ResponseCodeEnum status) {

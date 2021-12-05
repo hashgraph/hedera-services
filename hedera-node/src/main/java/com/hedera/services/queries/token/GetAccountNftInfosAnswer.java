@@ -23,8 +23,8 @@ package com.hedera.services.queries.token;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SignedTxnAccessor;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -39,7 +39,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.hedera.services.utils.EntityIdUtils.asContract;
 import static com.hedera.services.utils.SignedTxnAccessor.uncheckedFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_QUERY_RANGE;
@@ -85,21 +84,18 @@ public class GetAccountNftInfosAnswer implements AnswerService {
     @Override
     public ResponseCodeEnum checkValidity(Query query, StateView view) {
         var accountNftInfoQuery = query.getTokenGetAccountNftInfos();
-        AccountID id = accountNftInfoQuery.getAccountID();
-
+        final var id = EntityNum.fromAccountId(accountNftInfoQuery.getAccountID());
         if (accountNftInfoQuery.getStart() >= accountNftInfoQuery.getEnd()) {
             return INVALID_QUERY_RANGE;
         }
-
         var validity = validator.nftMaxQueryRangeCheck(accountNftInfoQuery.getStart(), accountNftInfoQuery.getEnd());
         if (validity != OK) {
             return validity;
         }
-
         final var currentAccounts = view.accounts();
-        validity = validator.queryableAccountStatus(id, currentAccounts);
+        validity = validator.queryableAccountStatus(id.toGrpcAccountId(), currentAccounts);
         if (validity != OK) {
-            final var fallback = validator.queryableContractStatus(asContract(id), currentAccounts);
+            final var fallback = validator.queryableContractStatus(id.toGrpcContractId(), currentAccounts);
             if (fallback != OK) {
                 return validity;
             }
@@ -176,7 +172,8 @@ public class GetAccountNftInfosAnswer implements AnswerService {
                 response.addAllNfts((List<TokenNftInfo>)ctx.get(ACCOUNT_NFT_INFO_CTX_KEY));
             }
         } else {
-            var info = view.infoForAccountNfts(op.getAccountID(), op.getStart(), op.getEnd());
+        	final var accountId = EntityNum.fromAccountId(op.getAccountID());
+            var info = view.infoForAccountNfts(accountId, op.getStart(), op.getEnd());
             if (info.isEmpty()) {
                 response.setHeader(answerOnlyHeader(INVALID_ACCOUNT_ID));
             } else {

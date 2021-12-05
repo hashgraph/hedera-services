@@ -46,6 +46,7 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.token.MintLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -123,7 +124,7 @@ class MintPrecompilesTest {
 	@Mock
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRels;
 	@Mock
-	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
+	private TransactionalLedger<EntityNum, AccountProperty, MerkleAccount> accounts;
 	@Mock
 	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
 	@Mock

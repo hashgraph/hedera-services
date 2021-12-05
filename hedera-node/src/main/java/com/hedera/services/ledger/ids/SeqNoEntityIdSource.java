@@ -22,7 +22,6 @@ package com.hedera.services.ledger.ids;
 
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.utils.EntityNum;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -47,13 +46,9 @@ public class SeqNoEntityIdSource implements EntityIdSource {
 	}
 
 	@Override
-	public TopicID newTopicId(final AccountID sponsor) {
+	public TopicID newTopicId() {
 		provisionalIds++;
-		return TopicID.newBuilder()
-				.setRealmNum(sponsor.getRealmNum())
-				.setShardNum(sponsor.getShardNum())
-				.setTopicNum(seqNo.get().getAndIncrement())
-				.build();
+		return STATIC_PROPERTIES.scopedTopicWith(seqNo.get().getAndIncrement());
 	}
 
 	@Override
@@ -76,22 +71,14 @@ public class SeqNoEntityIdSource implements EntityIdSource {
 	}
 
 	@Override
-	public FileID newFileId(AccountID sponsor) {
-		return FileID.newBuilder()
-				.setRealmNum(sponsor.getRealmNum())
-				.setShardNum(sponsor.getShardNum())
-				.setFileNum(seqNo.get().getAndIncrement())
-				.build();
+	public FileID newFileId() {
+		return STATIC_PROPERTIES.scopedFileWith(seqNo.get().getAndIncrement());
 	}
 
 	@Override
-	public TokenID newTokenId(AccountID sponsor) {
+	public TokenID newTokenId() {
 		provisionalIds++;
-		return TokenID.newBuilder()
-				.setRealmNum(sponsor.getRealmNum())
-				.setShardNum(sponsor.getShardNum())
-				.setTokenNum(seqNo.get().getAndIncrement())
-				.build();
+		return STATIC_PROPERTIES.scopedTokenWith(seqNo.get().getAndIncrement());
 	}
 
 	@Override

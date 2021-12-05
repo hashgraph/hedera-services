@@ -98,7 +98,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 		final var creation = creationFactory.processFrom(accountStore, tokenStore, dynamicProperties, op);
 
 		/* --- Load existing model objects --- */
-		creation.loadModelsWith(txnCtx.activePayer(), ids, validator);
+		creation.loadModelsWith(ids, validator);
 
 		/* --- Create, update, and validate model objects  --- */
 		final var now = txnCtx.consensusTime().getEpochSecond();

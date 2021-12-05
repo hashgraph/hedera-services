@@ -29,11 +29,11 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
-import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceQuery;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceResponse;
@@ -51,9 +51,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
-import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.EntityNum.fromContractId;
-import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.tokenBalanceWith;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
@@ -74,8 +72,7 @@ class GetAccountBalanceAnswerTest {
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 	private StateView view;
 	private OptionValidator optionValidator;
-	private String accountIdLit = "0.0.12345";
-	private AccountID target = asAccount(accountIdLit);
+	private EntityNum target = EntityNum.fromLong(12345);
 	private String contractIdLit = "0.0.12346";
 	private long balance = 1_234L;
 	private long aBalance = 345;
@@ -124,7 +121,7 @@ class GetAccountBalanceAnswerTest {
 
 		accounts = mock(MerkleMap.class);
 		nodeProps = mock(NodeLocalProperties.class);
-		given(accounts.get(fromAccountId(asAccount(accountIdLit)))).willReturn(accountV);
+		given(accounts.get(target)).willReturn(accountV);
 		given(accounts.get(fromContractId(asContract(contractIdLit)))).willReturn(contractV);
 
 		tokenStore = mock(TokenStore.class);
@@ -222,12 +219,8 @@ class GetAccountBalanceAnswerTest {
 
 	@Test
 	void requiresOkMetaValidity() {
-		// setup:
-		AccountID id = asAccount(accountIdLit);
-
-		// given:
 		CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder()
-				.setAccountID(id)
+				.setAccountID(target.toGrpcAccountId())
 				.build();
 		Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
 
@@ -239,21 +232,17 @@ class GetAccountBalanceAnswerTest {
 
 		// expect:
 		assertEquals(PLATFORM_NOT_ACTIVE, status);
-		assertEquals(id, response.getCryptogetAccountBalance().getAccountID());
+		assertEquals(target.toGrpcAccountId(), response.getCryptogetAccountBalance().getAccountID());
 	}
 
 	@Test
 	void syntaxCheckValidatesIdIfPresent() {
-		// setup:
-		AccountID id = asAccount(accountIdLit);
-
-		// given:
 		CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder()
-				.setAccountID(id)
+				.setAccountID(target.toGrpcAccountId())
 				.build();
 		Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
 		// and:
-		given(optionValidator.queryableAccountStatus(id, accounts))
+		given(optionValidator.queryableAccountStatus(target.toGrpcAccountId(), accounts))
 				.willReturn(ACCOUNT_DELETED);
 
 		// when:
@@ -265,12 +254,8 @@ class GetAccountBalanceAnswerTest {
 
 	@Test
 	void answersWithAccountBalance() {
-		// setup:
-		AccountID id = asAccount(accountIdLit);
-
-		// given:
 		CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder()
-				.setAccountID(id)
+				.setAccountID(target.toGrpcAccountId())
 				.build();
 		Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
 
@@ -292,17 +277,13 @@ class GetAccountBalanceAnswerTest {
 				response.getCryptogetAccountBalance().getTokenBalancesList());
 		assertEquals(OK, status);
 		assertEquals(balance, answer);
-		assertEquals(id, response.getCryptogetAccountBalance().getAccountID());
+		assertEquals(target.toGrpcAccountId(), response.getCryptogetAccountBalance().getAccountID());
 	}
 
 	@Test
 	void answersWithAccountBalanceWhenTheAccountIDIsContractID() {
-		// setup:
-		ContractID id = asContract(accountIdLit);
-
-		// given:
 		CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder()
-				.setContractID(id)
+				.setContractID(target.toGrpcContractId())
 				.build();
 		Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
 
@@ -324,7 +305,7 @@ class GetAccountBalanceAnswerTest {
 				response.getCryptogetAccountBalance().getTokenBalancesList());
 		assertEquals(OK, status);
 		assertEquals(balance, answer);
-		assertEquals(asAccount(accountIdLit), response.getCryptogetAccountBalance().getAccountID());
+		assertEquals(target.toGrpcAccountId(), response.getCryptogetAccountBalance().getAccountID());
 	}
 
 	@Test

@@ -28,8 +28,8 @@ import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -99,10 +99,10 @@ class SideEffectsTrackerTest {
 	@Test
 	void tracksAndResetsAutoAssociationsAsExpected() {
 		final var expected = List.of(
-				new FcTokenAssociation(aToken.getTokenNum(), aAccount.getAccountNum()),
-				new FcTokenAssociation(bToken.getTokenNum(), bAccount.getAccountNum()));
+				new FcTokenAssociation(aToken.getTokenNum(), aAccountId.longValue()),
+				new FcTokenAssociation(bToken.getTokenNum(), bAccountId.longValue()));
 
-		subject.trackAutoAssociation(aToken, aAccount);
+		subject.trackAutoAssociation(aToken, aAccountId);
 		subject.trackExplicitAutoAssociation(expected.get(1));
 
 		assertEquals(expected, subject.getTrackedAutoAssociations());
@@ -120,10 +120,10 @@ class SideEffectsTrackerTest {
 		changedToken.setTotalSupply(newSupply);
 		changedToken.mintedUniqueTokens().add(new UniqueToken(Id.fromGrpcToken(cSN1.tokenId()), cSN1.serialNo()));
 
-		subject.trackHbarChange(aAccount, aFirstBalanceChange);
-		subject.trackTokenUnitsChange(bToken, cAccount, cOnlyBalanceChange);
-		subject.trackNftOwnerChange(cSN1, aAccount, bAccount);
-		subject.trackAutoAssociation(aToken, bAccount);
+		subject.trackHbarChange(aAccountId, aFirstBalanceChange);
+		subject.trackTokenUnitsChange(bToken, cAccountId, cOnlyBalanceChange);
+		subject.trackNftOwnerChange(cSN1, aAccountId, bAccountId);
+		subject.trackAutoAssociation(aToken, bAccountId);
 		subject.trackTokenChanges(changedToken);
 
 		subject.resetTrackedTokenChanges();
@@ -136,18 +136,18 @@ class SideEffectsTrackerTest {
 		final var netChanges = subject.getNetTrackedHbarChanges();
 		assertEquals(1, netChanges.getAccountAmountsCount());
 		final var aChange = netChanges.getAccountAmounts(0);
-		assertEquals(aAccount, aChange.getAccountID());
+		assertEquals(aAccountId.toGrpcAccountId(), aChange.getAccountID());
 		assertEquals(aFirstBalanceChange, aChange.getAmount());
 	}
 
 	@Test
 	void tracksAndResetsTokenUnitAndOwnershipChangesAsExpected() {
-		subject.trackNftOwnerChange(cSN1, aAccount, bAccount);
-		subject.trackTokenUnitsChange(bToken, cAccount, cOnlyBalanceChange);
-		subject.trackTokenUnitsChange(aToken, aAccount, aFirstBalanceChange);
-		subject.trackTokenUnitsChange(aToken, bAccount, bOnlyBalanceChange);
-		subject.trackTokenUnitsChange(aToken, aAccount, aSecondBalanceChange);
-		subject.trackTokenUnitsChange(aToken, bAccount, -bOnlyBalanceChange);
+		subject.trackNftOwnerChange(cSN1, aAccountId, bAccountId);
+		subject.trackTokenUnitsChange(bToken, cAccountId, cOnlyBalanceChange);
+		subject.trackTokenUnitsChange(aToken, aAccountId, aFirstBalanceChange);
+		subject.trackTokenUnitsChange(aToken, bAccountId, bOnlyBalanceChange);
+		subject.trackTokenUnitsChange(aToken, aAccountId, aSecondBalanceChange);
+		subject.trackTokenUnitsChange(aToken, bAccountId, -bOnlyBalanceChange);
 
 		final var netTokenChanges = subject.getNetTrackedTokenUnitAndOwnershipChanges();
 
@@ -157,22 +157,22 @@ class SideEffectsTrackerTest {
 		assertEquals(aToken, netAChanges.getToken());
 		assertEquals(1, netAChanges.getTransfersCount());
 		final var aaChange = netAChanges.getTransfers(0);
-		assertEquals(aAccount, aaChange.getAccountID());
+		assertEquals(aAccountId.toGrpcAccountId(), aaChange.getAccountID());
 		assertEquals(aFirstBalanceChange + aSecondBalanceChange, aaChange.getAmount());
 
 		final var netBChanges = netTokenChanges.get(1);
 		assertEquals(bToken, netBChanges.getToken());
 		assertEquals(1, netBChanges.getTransfersCount());
 		final var bcChange = netBChanges.getTransfers(0);
-		assertEquals(cAccount, bcChange.getAccountID());
+		assertEquals(cAccountId.toGrpcAccountId(), bcChange.getAccountID());
 		assertEquals(cOnlyBalanceChange, bcChange.getAmount());
 
 		final var netCChanges = netTokenChanges.get(2);
 		assertEquals(cToken, netCChanges.getToken());
 		assertEquals(1, netCChanges.getNftTransfersCount());
 		final var abcChange = netCChanges.getNftTransfers(0);
-		assertEquals(aAccount, abcChange.getSenderAccountID());
-		assertEquals(bAccount, abcChange.getReceiverAccountID());
+		assertEquals(aAccountId.toGrpcAccountId(), abcChange.getSenderAccountID());
+		assertEquals(bAccountId.toGrpcAccountId(), abcChange.getReceiverAccountID());
 		assertEquals(1L, abcChange.getSerialNumber());
 
 		subject.reset();
@@ -181,19 +181,19 @@ class SideEffectsTrackerTest {
 
 	@Test
 	void tracksAndResetsHbarChangesAsExpected() {
-		subject.trackHbarChange(cAccount, cOnlyBalanceChange);
-		subject.trackHbarChange(aAccount, aFirstBalanceChange);
-		subject.trackHbarChange(bAccount, bOnlyBalanceChange);
-		subject.trackHbarChange(aAccount, aSecondBalanceChange);
-		subject.trackHbarChange(bAccount, -bOnlyBalanceChange);
+		subject.trackHbarChange(cAccountId, cOnlyBalanceChange);
+		subject.trackHbarChange(aAccountId, aFirstBalanceChange);
+		subject.trackHbarChange(bAccountId, bOnlyBalanceChange);
+		subject.trackHbarChange(aAccountId, aSecondBalanceChange);
+		subject.trackHbarChange(bAccountId, -bOnlyBalanceChange);
 
 		final var netChanges = subject.getNetTrackedHbarChanges();
 		assertEquals(2, netChanges.getAccountAmountsCount());
 		final var aChange = netChanges.getAccountAmounts(0);
-		assertEquals(aAccount, aChange.getAccountID());
+		assertEquals(aAccountId.toGrpcAccountId(), aChange.getAccountID());
 		assertEquals(aFirstBalanceChange + aSecondBalanceChange, aChange.getAmount());
 		final var cChange = netChanges.getAccountAmounts(1);
-		assertEquals(cAccount, cChange.getAccountID());
+		assertEquals(cAccountId.toGrpcAccountId(), cChange.getAccountID());
 		assertEquals(cOnlyBalanceChange, cChange.getAmount());
 
 		subject.reset();
@@ -205,10 +205,10 @@ class SideEffectsTrackerTest {
 		final var tracker = new OwnershipTracker();
 		tracker.add(
 				Id.fromGrpcToken(cToken),
-				new OwnershipTracker.Change(Id.fromGrpcAccount(aAccount), Id.fromGrpcAccount(bAccount), 1L));
+				new OwnershipTracker.Change(aAccountId.toModelId(), bAccountId.toModelId(), 1L));
 		tracker.add(
 				Id.fromGrpcToken(aToken),
-				new OwnershipTracker.Change(Id.fromGrpcAccount(bAccount), Id.fromGrpcAccount(cAccount), 2L));
+				new OwnershipTracker.Change(bAccountId.toModelId(), cAccountId.toModelId(), 2L));
 
 		subject.trackTokenOwnershipChanges(tracker);
 
@@ -234,18 +234,18 @@ class SideEffectsTrackerTest {
 	@Test
 	void prioritizesExplicitTokenBalanceChanges() {
 		final var aaRelChange = new TokenRelationship(
-				new Token(Id.fromGrpcToken(aToken)), new Account(Id.fromGrpcAccount(aAccount)));
+				new Token(Id.fromGrpcToken(aToken)), new Account(aAccountId.toModelId()));
 		aaRelChange.getToken().setType(FUNGIBLE_COMMON);
 		aaRelChange.setBalance(aFirstBalanceChange);
 		final var bbRelChange = new TokenRelationship(
-				new Token(Id.fromGrpcToken(bToken)), new Account(Id.fromGrpcAccount(bAccount)));
+				new Token(Id.fromGrpcToken(bToken)), new Account(bAccountId.toModelId()));
 		bbRelChange.getToken().setType(FUNGIBLE_COMMON);
 		final var ccRelChange = new TokenRelationship(
-				new Token(Id.fromGrpcToken(cToken)), new Account(Id.fromGrpcAccount(cAccount)));
+				new Token(Id.fromGrpcToken(cToken)), new Account(cAccountId.toModelId()));
 		ccRelChange.setBalance(cOnlyBalanceChange);
 		ccRelChange.getToken().setType(FUNGIBLE_COMMON);
 
-		subject.trackNftOwnerChange(cSN1, aAccount, bAccount);
+		subject.trackNftOwnerChange(cSN1, aAccountId, bAccountId);
 		subject.trackTokenBalanceChanges(List.of(ccRelChange, bbRelChange, aaRelChange));
 
 		final var tokenChanges = subject.getNetTrackedTokenUnitAndOwnershipChanges();
@@ -268,7 +268,7 @@ class SideEffectsTrackerTest {
 	private static final TokenID bToken = IdUtils.asToken("0.0.777");
 	private static final TokenID cToken = IdUtils.asToken("0.0.888");
 	private static final NftId cSN1 = new NftId(0, 0, 888, 1);
-	private static final AccountID aAccount = IdUtils.asAccount("0.0.12345");
-	private static final AccountID bAccount = IdUtils.asAccount("0.0.23456");
-	private static final AccountID cAccount = IdUtils.asAccount("0.0.34567");
+	private static final EntityNum aAccountId = EntityNum.fromLong(12345);
+	private static final EntityNum bAccountId = EntityNum.fromLong(23456);
+	private static final EntityNum cAccountId = EntityNum.fromLong(34567);
 }

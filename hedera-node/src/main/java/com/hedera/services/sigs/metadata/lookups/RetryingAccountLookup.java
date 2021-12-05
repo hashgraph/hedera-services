@@ -87,7 +87,7 @@ public class RetryingAccountLookup extends DefaultAccountLookup {
 	}
 
 	@Override
-	public SafeLookupResult<AccountSigningMetadata> safeLookup(final EntityNum id) {
+	public SafeLookupResult<AccountSigningMetadata> safeLookup(final AccountID account) {
 		maxRetries = properties
 				.map(NodeLocalProperties::precheckLookupRetries)
 				.orElse(maxRetries);
@@ -98,7 +98,7 @@ public class RetryingAccountLookup extends DefaultAccountLookup {
 		final long lookupStart = System.nanoTime();
 		int retriesRemaining = maxRetries;
 
-		var meta = superLookup(id);
+		var meta = superLookup(account);
 		if (meta != null) {
 			return new SafeLookupResult<>(meta);
 		}
@@ -108,7 +108,7 @@ public class RetryingAccountLookup extends DefaultAccountLookup {
 			if (!pause.forMs((long) retryNo * retryWaitIncrementMs)) {
 				return SafeLookupResult.failure(MISSING_ACCOUNT);
 			}
-			meta = superLookup(id);
+			meta = superLookup(account);
 			if (meta != null) {
 				if (isInstrumented()) {
 					updateStats(retryNo, msElapsedSince(lookupStart));

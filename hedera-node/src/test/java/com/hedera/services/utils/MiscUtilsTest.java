@@ -39,7 +39,6 @@ import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.stats.ServicesStatsConfig;
-import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -321,7 +320,7 @@ class MiscUtilsTest {
 
 		final var accounts = MiscUtils.getNodeAccounts(book);
 
-		assertEquals(Set.of(IdUtils.asAccount("0.0.3")), accounts);
+		assertEquals(Set.of(EntityNum.fromLong(3)), accounts);
 	}
 
 	@Test

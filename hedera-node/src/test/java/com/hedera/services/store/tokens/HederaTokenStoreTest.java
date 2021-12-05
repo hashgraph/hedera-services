@@ -221,7 +221,7 @@ class HederaTokenStoreTest {
 		given(nonfungibleToken.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 
 		ids = mock(EntityIdSource.class);
-		given(ids.newTokenId(sponsor.toGrpcAccountId())).willReturn(created);
+		given(ids.newTokenId()).willReturn(created);
 
 		hederaLedger = mock(HederaLedger.class);
 

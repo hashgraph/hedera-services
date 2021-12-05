@@ -667,10 +667,10 @@ public final class MiscUtils {
 		}
 	}
 
-	public static Set<AccountID> getNodeAccounts(final AddressBook addressBook) {
+	public static Set<EntityNum> getNodeAccounts(final AddressBook addressBook) {
 		return IntStream.range(0, addressBook.getSize())
 				.mapToObj(addressBook::getAddress)
-				.map(address -> parseAccount(address.getMemo()))
+				.map(address -> EntityNum.fromAccountId(parseAccount(address.getMemo())))
 				.collect(toSet());
 	}
 

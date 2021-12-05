@@ -25,14 +25,13 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -73,9 +72,9 @@ class AwareNodeDiligenceScreenTest {
 	private static final long SUBMITTING_MEMBER = 2L;
 	private static final String PRETEND_MEMO = "ignored";
 	private static final Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
-	private static final AccountID aNodeAccount = IdUtils.asAccount("0.0.3");
-	private static final AccountID bNodeAccount = IdUtils.asAccount("0.0.4");
-	private static final AccountID payerAccountId = IdUtils.asAccount("0.0.5");
+	private static final EntityNum aNodeAccount = EntityNum.fromLong(3);
+	private static final EntityNum bNodeAccount = EntityNum.fromLong(4);
+	private static final EntityNum payerAccountId = EntityNum.fromLong(5);
 	private static final Duration validDuration = Duration.newBuilder().setSeconds(1_234_567L).build();
 
 	private TxnAccessor accessor;
@@ -85,7 +84,7 @@ class AwareNodeDiligenceScreenTest {
 	@Mock
 	private OptionValidator validator;
 	@Mock
-	private BackingStore<AccountID, MerkleAccount> backingAccounts;
+	private BackingStore<EntityNum, MerkleAccount> backingAccounts;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -230,21 +229,22 @@ class AwareNodeDiligenceScreenTest {
 	}
 
 	private void givenHandleCtx(
-			final AccountID submittingNodeAccount,
-			final AccountID designatedNodeAccount
+			final EntityNum submittingNodeAccount,
+			final EntityNum designatedNodeAccount
 	) throws InvalidProtocolBufferException {
-		given(txnCtx.submittingNodeAccount()).willReturn(submittingNodeAccount);
+		given(txnCtx.submittingNodeAccount()).willReturn(submittingNodeAccount.toGrpcAccountId());
 		accessor = accessorWith(designatedNodeAccount);
 		given(txnCtx.accessor()).willReturn(accessor);
 	}
 
-	private TxnAccessor accessorWith(final AccountID designatedNodeAccount) throws InvalidProtocolBufferException {
-		final var transactionId = TransactionID.newBuilder().setAccountID(payerAccountId);
+	private TxnAccessor accessorWith(final EntityNum designatedNodeAccount) throws InvalidProtocolBufferException {
+		final var transactionId = TransactionID.newBuilder()
+				.setAccountID(payerAccountId.toGrpcAccountId());
 
 		final var bodyBytes = TransactionBody.newBuilder()
 				.setMemo(PRETEND_MEMO)
 				.setTransactionValidDuration(validDuration)
-				.setNodeAccountID(designatedNodeAccount)
+				.setNodeAccountID(designatedNodeAccount.toGrpcAccountId())
 				.setTransactionID(transactionId)
 				.build()
 				.toByteString();

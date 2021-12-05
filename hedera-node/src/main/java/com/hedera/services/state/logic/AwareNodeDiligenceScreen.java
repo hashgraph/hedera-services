@@ -72,7 +72,7 @@ public final class AwareNodeDiligenceScreen {
 		final var accessor = txnCtx.accessor();
 
 		final var submittingAccount = txnCtx.submittingNodeAccount();
-		final var designatedAccount= accessor.getTxn().getNodeAccountID();
+		final var designatedAccount = accessor.getTxn().getNodeAccountID();
 		final var designatedAccountId = EntityNum.fromAccountId(designatedAccount);
 		final var designatedNodeExists = backingAccounts.contains(designatedAccountId);
 		if (!designatedNodeExists) {
@@ -88,20 +88,18 @@ public final class AwareNodeDiligenceScreen {
 
 		final var payerAccountId = EntityNum.fromAccountId(accessor.getPayer());
 		final var payerAccountExists = backingAccounts.contains(payerAccountId);
-
 		if (!payerAccountExists) {
 			txnCtx.setStatus(ACCOUNT_ID_DOES_NOT_EXIST);
 			return true;
 		}
 
 		final var payerAccountRef = backingAccounts.getImmutableRef(payerAccountId);
-
 		if (payerAccountRef.isDeleted()) {
 			txnCtx.setStatus(PAYER_ACCOUNT_DELETED);
 			return true;
 		}
 
-		if (!submittingAccount.equals(designatedAccountId)) {
+		if (!submittingAccount.equals(designatedAccount)) {
 			logAccountWarning(
 					WRONG_NODE_LOG_TPL,
 					submittingAccount,

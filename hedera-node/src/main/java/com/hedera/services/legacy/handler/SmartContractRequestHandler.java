@@ -29,9 +29,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.validation.PureValidation;
 import com.hedera.services.utils.EntityNum;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
@@ -49,7 +47,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -95,12 +92,12 @@ public class SmartContractRequestHandler {
 	/**
 	 * check if a contract with given contractId exists
 	 *
-	 * @param contractID
+	 * @param contractId
 	 * 		the contract id to check for existence
 	 * @return CONTRACT_DELETED if deleted, INVALID_CONTRACT_ID if doesn't exist, OK otherwise
 	 */
-	public ResponseCodeEnum validateContractExistence(ContractID contractID) {
-		return PureValidation.queryableContractStatus(contractID, accounts.get());
+	public ResponseCodeEnum validateContractExistence(final EntityNum contractId) {
+		return PureValidation.queryableContractStatus(contractId.toGrpcContractId(), accounts.get());
 	}
 
 	/**
@@ -114,18 +111,16 @@ public class SmartContractRequestHandler {
 	 */
 	public TransactionRecord systemDelete(TransactionBody txBody, Instant consensusTimestamp) {
 		SystemDeleteTransactionBody op = txBody.getSystemDelete();
-		ContractID cid = op.getContractID();
+		final var contractId = EntityNum.fromContractId(op.getContractID());
 		long newExpiry = op.getExpirationTime().getSeconds();
 		TransactionReceipt receipt;
-		receipt = updateDeleteFlag(cid, true);
+		receipt = updateDeleteFlag(contractId, true);
 		try {
 			if (receipt.getStatus().equals(ResponseCodeEnum.SUCCESS)) {
-				AccountID id = asAccount(cid);
-				long oldExpiry = ledger.expiry(id);
-				var entity = EntityId.fromGrpcContractId(cid);
-				entityExpiries.put(entity, oldExpiry);
+				long oldExpiry = ledger.expiry(contractId);
+				entityExpiries.put(contractId.toEntityId(), oldExpiry);
 				HederaAccountCustomizer customizer = new HederaAccountCustomizer().expiry(newExpiry);
-				ledger.customizePotentiallyDeleted(id, customizer);
+				ledger.customizePotentiallyDeleted(contractId, customizer);
 			}
 		} catch (Exception e) {
 			log.warn("Unhandled exception in SystemDelete", e);
@@ -152,8 +147,8 @@ public class SmartContractRequestHandler {
 	 */
 	public TransactionRecord systemUndelete(TransactionBody txBody, Instant consensusTimestamp) {
 		SystemUndeleteTransactionBody op = txBody.getSystemUndelete();
-		ContractID cid = op.getContractID();
-		var entity = EntityId.fromGrpcContractId(cid);
+		final var contractId = EntityNum.fromContractId(op.getContractID());
+		var entity = contractId.toEntityId();
 		TransactionReceipt receipt = getTransactionReceipt(SUCCESS, exchange.activeRates());
 
 		long oldExpiry = 0;
@@ -165,11 +160,11 @@ public class SmartContractRequestHandler {
 			}
 			if (oldExpiry > 0) {
 				HederaAccountCustomizer customizer = new HederaAccountCustomizer().expiry(oldExpiry);
-				ledger.customizePotentiallyDeleted(asAccount(cid), customizer);
+				ledger.customizePotentiallyDeleted(contractId, customizer);
 			}
 			if (receipt.getStatus() == SUCCESS) {
 				try {
-					receipt = updateDeleteFlag(cid, false);
+					receipt = updateDeleteFlag(contractId, false);
 				} catch (Exception e) {
 					receipt = getTransactionReceipt(FAIL_INVALID, exchange.activeRates());
 					if (log.isDebugEnabled()) {
@@ -189,12 +184,11 @@ public class SmartContractRequestHandler {
 		return transactionRecord.build();
 	}
 
-	private TransactionReceipt updateDeleteFlag(ContractID cid, boolean deleted) {
-		var id = asAccount(cid);
-		if (ledger.isDeleted(id)) {
-			ledger.customizePotentiallyDeleted(asAccount(cid), new HederaAccountCustomizer().isDeleted(deleted));
+	private TransactionReceipt updateDeleteFlag(final EntityNum contractId, final boolean deleted) {
+		if (ledger.isDeleted(contractId)) {
+			ledger.customizePotentiallyDeleted(contractId, new HederaAccountCustomizer().isDeleted(deleted));
 		} else {
-			ledger.customize(asAccount(cid), new HederaAccountCustomizer().isDeleted(deleted));
+			ledger.customize(contractId, new HederaAccountCustomizer().isDeleted(deleted));
 		}
 		return getTransactionReceipt(SUCCESS, exchange.activeRates());
 	}
@@ -212,22 +206,21 @@ public class SmartContractRequestHandler {
 		TransactionReceipt transactionReceipt;
 		ContractDeleteTransactionBody op = transaction.getContractDeleteInstance();
 
-		ContractID cid = op.getContractID();
-		ResponseCodeEnum validity = validateContractExistence(cid);
+		final var contractId = EntityNum.fromContractId(op.getContractID());
+		ResponseCodeEnum validity = validateContractExistence(contractId);
 		if (validity == ResponseCodeEnum.OK) {
-			AccountID beneficiary = Optional.ofNullable(getBeneficiary(op)).orElse(dynamicProperties.fundingAccount());
+			final var beneficiaryId = Optional.ofNullable(getBeneficiary(op)).orElse(dynamicProperties.fundingAccount());
 			validity = validateContractDelete(op);
 			if (validity == SUCCESS) {
-				validity = ledger.exists(beneficiary) ? SUCCESS : OBTAINER_DOES_NOT_EXIST;
+				validity = ledger.exists(beneficiaryId) ? SUCCESS : OBTAINER_DOES_NOT_EXIST;
 				if (validity == SUCCESS) {
-					validity = ledger.isDeleted(beneficiary)
-							? (ledger.isSmartContract(beneficiary) ? CONTRACT_DELETED : ACCOUNT_DELETED)
+					validity = ledger.isDeleted(beneficiaryId)
+							? (ledger.isSmartContract(beneficiaryId) ? CONTRACT_DELETED : ACCOUNT_DELETED)
 							: SUCCESS;
 				}
 			}
 			if (validity == SUCCESS) {
-				AccountID id = asAccount(cid);
-				ledger.delete(id, beneficiary);
+				ledger.delete(contractId, beneficiaryId);
 			}
 			transactionReceipt = getTransactionReceipt(validity, exchange.activeRates());
 		} else {
@@ -242,12 +235,12 @@ public class SmartContractRequestHandler {
 	}
 
 	private ResponseCodeEnum validateContractDelete(ContractDeleteTransactionBody op) {
-		AccountID id = asAccount(op.getContractID());
-		if (ledger.getBalance(id) > 0) {
-			AccountID beneficiary = getBeneficiary(op);
+		final var contractId = EntityNum.fromContractId(op.getContractID());
+		if (ledger.getBalance(contractId) > 0) {
+			final var beneficiary = getBeneficiary(op);
 			if (beneficiary == null) {
 				return OBTAINER_REQUIRED;
-			} else if (beneficiary.equals(id)) {
+			} else if (beneficiary.equals(contractId)) {
 				return OBTAINER_SAME_CONTRACT_ID;
 			} else if (!ledger.exists(beneficiary) || ledger.isDeleted(beneficiary)) {
 				return ResponseCodeEnum.OBTAINER_DOES_NOT_EXIST;
@@ -256,11 +249,11 @@ public class SmartContractRequestHandler {
 		return SUCCESS;
 	}
 
-	private AccountID getBeneficiary(ContractDeleteTransactionBody op) {
+	private EntityNum getBeneficiary(final ContractDeleteTransactionBody op) {
 		if (op.hasTransferAccountID()) {
-			return op.getTransferAccountID();
+			return EntityNum.fromAccountId(op.getTransferAccountID());
 		} else if (op.hasTransferContractID()) {
-			return asAccount(op.getTransferContractID());
+			return EntityNum.fromContractId(op.getTransferContractID());
 		}
 		return null;
 	}

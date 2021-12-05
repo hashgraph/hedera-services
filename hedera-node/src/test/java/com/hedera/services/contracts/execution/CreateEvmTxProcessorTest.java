@@ -27,6 +27,7 @@ import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
@@ -259,7 +260,7 @@ class CreateEvmTxProcessorTest {
 	private void givenValidMock(boolean expectedSuccess) {
 		given(worldState.updater()).willReturn(updater);
 		given(worldState.updater().updater()).willReturn(updater);
-		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
+		given(globalDynamicProperties.fundingAccount()).willReturn(EntityNum.fromLong(1010));
 
 		var evmAccount = mock(EvmAccount.class);
 

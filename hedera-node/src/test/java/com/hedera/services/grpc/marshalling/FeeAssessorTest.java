@@ -336,15 +336,15 @@ class FeeAssessorTest {
 	private final long maxAmountOfFractionalFee = 100L;
 	private final long numerator = 1L;
 	private final long denominator = 100L;
-	private final Id payer = new Id(0, 1, 2);
-	private final Id treasury = new Id(6, 6, 6);
-	private final Id fungibleTokenId = new Id(1, 2, 3);
-	private final Id uniqueTokenId = new Id(11, 22, 33);
-	private final EntityId feeDenom = new EntityId(6, 6, 6);
-	private final EntityId hbarFeeCollector = new EntityId(2, 3, 4);
-	private final EntityId htsFeeCollector = new EntityId(3, 4, 5);
-	private final EntityId royaltyFeeCollector = new EntityId(5, 6, 7);
-	private final EntityId fractionalFeeCollector = new EntityId(4, 5, 6);
+	private final Id payer = new Id(0, 0, 20);
+	private final Id treasury = new Id(0, 0, 66);
+	private final Id fungibleTokenId = new Id(0, 0, 3);
+	private final Id uniqueTokenId = new Id(0, 0, 33);
+	private final EntityId feeDenom = new EntityId(0, 0, 67);
+	private final EntityId hbarFeeCollector = new EntityId(0, 0, 4);
+	private final EntityId htsFeeCollector = new EntityId(0, 0, 5);
+	private final EntityId royaltyFeeCollector = new EntityId(0, 0, 7);
+	private final EntityId fractionalFeeCollector = new EntityId(0, 0, 69);
 	private final AccountAmount fungibleDebit = AccountAmount.newBuilder()
 			.setAccountID(payer.asGrpcAccount())
 			.setAmount(amountOfFungibleDebit)

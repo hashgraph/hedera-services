@@ -120,7 +120,7 @@ public class BaseHederaLedgerTestHelper {
 			long nextId = NEXT_ID;
 
 			@Override
-			public TopicID newTopicId(final AccountID sponsor) {
+			public TopicID newTopicId() {
 				return TopicID.newBuilder().setTopicNum(nextId++).build();
 			}
 
@@ -135,12 +135,12 @@ public class BaseHederaLedgerTestHelper {
 			}
 
 			@Override
-			public FileID newFileId(AccountID newFileSponsor) {
+			public FileID newFileId() {
 				return FileID.newBuilder().setFileNum(nextId++).build();
 			}
 
 			@Override
-			public TokenID newTokenId(AccountID sponsor) {
+			public TokenID newTokenId() {
 				return TokenID.newBuilder().setTokenNum(nextId++).build();
 			}
 

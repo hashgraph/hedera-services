@@ -31,7 +31,6 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 
 import javax.annotation.Nullable;
@@ -95,11 +94,7 @@ public class Creation {
 		this.dynamicProperties = dynamicProperties;
 	}
 
-	public void loadModelsWith(
-			AccountID sponsor,
-			EntityIdSource ids,
-			OptionValidator validator
-	) {
+	public void loadModelsWith(final EntityIdSource ids, final OptionValidator validator) {
 		final var hasValidOrNoExplicitExpiry = !op.hasExpiry() || validator.isValidExpiry(op.getExpiry());
 		validateTrue(hasValidOrNoExplicitExpiry, INVALID_EXPIRATION_TIME);
 
@@ -111,7 +106,7 @@ public class Creation {
 			autoRenew = accountStore.loadAccountOrFailWith(autoRenewId, INVALID_AUTORENEW_ACCOUNT);
 		}
 
-		provisionalId = Id.fromGrpcToken(ids.newTokenId(sponsor));
+		provisionalId = Id.fromGrpcToken(ids.newTokenId());
 	}
 
 	public void doProvisionallyWith(long now, TokenModelFactory modelFactory, NewRelsListing listing) {

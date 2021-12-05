@@ -26,6 +26,7 @@ import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
+import com.hedera.services.utils.EntityNum;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -34,7 +35,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.tokenChange;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
@@ -58,9 +58,7 @@ class ImpliedTransfersTest {
 	void impliedXfersObjectContractSanityChecks() {
 		// given:
 		final var twoChanges = List.of(tokenChange(
-				new Id(1, 2, 3),
-				asAccount("4.5.6"),
-				7));
+				new Id(1, 2, 3), EntityNum.fromLong(6), 7));
 		final var oneImpliedXfers = ImpliedTransfers.invalid(props, TOKEN_WAS_DELETED);
 		final var twoImpliedXfers = ImpliedTransfers.valid(
 				props, twoChanges, entityCustomFees, assessedCustomFees);
@@ -74,7 +72,7 @@ class ImpliedTransfersTest {
 				"maxXferBalanceChanges=20, areNftsEnabled=true, tokenFeeSchedules=[" +
 				"CustomFeeMeta{tokenId=Id{shard=0, realm=0, num=123}, treasuryId=Id{shard=2, realm=3, num=4}, " +
 				"customFees=[]}]}, changes=[BalanceChange{token=Id{shard=1, realm=2, num=3}, " +
-				"account=Id{shard=4, realm=5, num=6}, units=7}], tokenFeeSchedules=[" +
+				"account=Id{shard=0, realm=0, num=6}, units=7}], tokenFeeSchedules=[" +
 				"CustomFeeMeta{tokenId=Id{shard=0, realm=0, num=123}, treasuryId=Id{shard=2, realm=3, num=4}, " +
 				"customFees=[]}], assessedCustomFees=[FcAssessedCustomFee{token=EntityId{shard=0, realm=0, num=123}, " +
 				"account=EntityId{shard=0, realm=0, num=124}, units=123, effective payer accounts=[123]}]}";

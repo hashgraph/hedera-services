@@ -25,7 +25,7 @@ import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.txns.TransitionLogic;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -75,23 +75,23 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 		try {
 			CryptoDeleteTransactionBody op = txnCtx.accessor().getTxn().getCryptoDelete();
 
-			AccountID id = op.getDeleteAccountID();
-			if (ledger.isKnownTreasury(id)) {
+			final var accountId = EntityNum.fromAccountId(op.getDeleteAccountID());
+			if (ledger.isKnownTreasury(accountId)) {
 				txnCtx.setStatus(ACCOUNT_IS_TREASURY);
 				return;
 			}
-			AccountID beneficiary = op.getTransferAccountID();
-			if (ledger.isDetached(id) || ledger.isDetached(beneficiary)) {
+			final var beneficiaryId = EntityNum.fromAccountId(op.getTransferAccountID());
+			if (ledger.isDetached(accountId) || ledger.isDetached(beneficiaryId)) {
 				txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 				return;
 			}
 
-			if (!ledger.allTokenBalancesVanish(id)) {
+			if (!ledger.allTokenBalancesVanish(accountId)) {
 				txnCtx.setStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
 				return;
 			}
 
-			ledger.delete(id, beneficiary);
+			ledger.delete(accountId, beneficiaryId);
 
 			txnCtx.setStatus(SUCCESS);
 		} catch (MissingAccountException mae) {

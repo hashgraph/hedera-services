@@ -20,10 +20,9 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
-import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,7 +48,6 @@ class GlobalDynamicPropertiesTest {
 
 	private PropertySource properties;
 
-	private HederaNumbers numbers;
 	private CongestionMultipliers oddCongestion = CongestionMultipliers.from("90,11x,95,27x,99,103x");
 	private CongestionMultipliers evenCongestion = CongestionMultipliers.from("90,10x,95,25x,99,100x");
 	private ThrottleReqOpsScaleFactor oddFactor = ThrottleReqOpsScaleFactor.from("5:2");
@@ -58,9 +56,6 @@ class GlobalDynamicPropertiesTest {
 
 	@BeforeEach
 	void setup() {
-		numbers = mock(HederaNumbers.class);
-		given(numbers.shard()).willReturn(1L);
-		given(numbers.realm()).willReturn(2L);
 		properties = mock(PropertySource.class);
 	}
 
@@ -69,7 +64,7 @@ class GlobalDynamicPropertiesTest {
 		givenPropsWithSeed(1);
 
 		// when:
-		subject = new GlobalDynamicProperties(numbers, properties);
+		subject = new GlobalDynamicProperties(properties);
 
 		// then:
 		assertTrue(subject.shouldExportBalances());
@@ -82,7 +77,7 @@ class GlobalDynamicPropertiesTest {
 	@Test
 	void nftPropertiesTest() {
 		givenPropsWithSeed(1);
-		subject = new GlobalDynamicProperties(numbers, properties);
+		subject = new GlobalDynamicProperties(properties);
 
 		assertEquals(37, subject.maxNftTransfersLen());
 		assertEquals(38, subject.maxBatchSizeBurn());
@@ -99,7 +94,7 @@ class GlobalDynamicPropertiesTest {
 		givenPropsWithSeed(1);
 
 		// when:
-		subject = new GlobalDynamicProperties(numbers, properties);
+		subject = new GlobalDynamicProperties(properties);
 
 		// then:
 		assertEquals(8, subject.cacheRecordsTtl());
@@ -122,7 +117,7 @@ class GlobalDynamicPropertiesTest {
 		givenPropsWithSeed(1);
 
 		// when:
-		subject = new GlobalDynamicProperties(numbers, properties);
+		subject = new GlobalDynamicProperties(properties);
 
 		// then:
 		assertEquals(1, subject.maxTokensPerAccount());
@@ -144,7 +139,7 @@ class GlobalDynamicPropertiesTest {
 		givenPropsWithSeed(1);
 
 		// when:
-		subject = new GlobalDynamicProperties(numbers, properties);
+		subject = new GlobalDynamicProperties(properties);
 
 		// then:
 		assertEquals(3L, subject.maxAccountNum());
@@ -164,10 +159,10 @@ class GlobalDynamicPropertiesTest {
 		givenPropsWithSeed(1);
 
 		// when:
-		subject = new GlobalDynamicProperties(numbers, properties);
+		subject = new GlobalDynamicProperties(properties);
 
 		// expect:
-		assertEquals(accountWith(1L, 2L, 7L), subject.fundingAccount());
+		assertEquals(EntityNum.fromLong(7L), subject.fundingAccount());
 		assertEquals(balanceExportPaths[1], subject.pathToBalancesExportDir());
 		assertEquals(Set.of(HederaFunctionality.CryptoTransfer), subject.schedulingWhitelist());
 		assertEquals(oddCongestion, subject.congestionMultipliers());
@@ -179,7 +174,7 @@ class GlobalDynamicPropertiesTest {
 		givenPropsWithSeed(2);
 
 		// when:
-		subject = new GlobalDynamicProperties(numbers, properties);
+		subject = new GlobalDynamicProperties(properties);
 
 		// then:
 		assertFalse(subject.shouldExportBalances());
@@ -194,7 +189,7 @@ class GlobalDynamicPropertiesTest {
 		givenPropsWithSeed(2);
 
 		// when:
-		subject = new GlobalDynamicProperties(numbers, properties);
+		subject = new GlobalDynamicProperties(properties);
 
 		// then:
 		assertEquals(2, subject.maxTokensPerAccount());
@@ -228,7 +223,7 @@ class GlobalDynamicPropertiesTest {
 		givenPropsWithSeed(2);
 
 		// when:
-		subject = new GlobalDynamicProperties(numbers, properties);
+		subject = new GlobalDynamicProperties(properties);
 
 		// then:
 		assertEquals(4L, subject.maxAccountNum());
@@ -248,10 +243,10 @@ class GlobalDynamicPropertiesTest {
 		givenPropsWithSeed(2);
 
 		// when:
-		subject = new GlobalDynamicProperties(numbers, properties);
+		subject = new GlobalDynamicProperties(properties);
 
 		// expect:
-		assertEquals(accountWith(1L, 2L, 8L), subject.fundingAccount());
+		assertEquals(EntityNum.fromLong(8L), subject.fundingAccount());
 		assertEquals(balanceExportPaths[0], subject.pathToBalancesExportDir());
 		assertEquals(Set.of(HederaFunctionality.CryptoCreate), subject.schedulingWhitelist());
 		assertEquals(evenCongestion, subject.congestionMultipliers());
@@ -319,13 +314,5 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getIntProperty("contracts.maxRefundPercentOfGasLimit")).willReturn(i + 47);
 		given(properties.getLongProperty("contracts.frontendThrottleMaxGasLimit")).willReturn(i + 48L);
 		given(properties.getLongProperty("contracts.consensusThrottleMaxGasLimit")).willReturn(i + 49L);
-	}
-
-	private AccountID accountWith(long shard, long realm, long num) {
-		return AccountID.newBuilder()
-				.setShardNum(shard)
-				.setRealmNum(realm)
-				.setAccountNum(num)
-				.build();
 	}
 }

@@ -24,13 +24,12 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -67,8 +66,8 @@ import static org.mockito.BDDMockito.willThrow;
 
 @ExtendWith(LogCaptureExtension.class)
 class CryptoDeleteTransitionLogicTest {
-	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
-	final private AccountID target = AccountID.newBuilder().setAccountNum(9_999L).build();
+	final private EntityNum payer = EntityNum.fromLong(1234);
+	final private EntityNum target = EntityNum.fromLong(9_999L);
 	final private boolean withKnownTreasury = true;
 
 	private HederaLedger ledger;
@@ -169,8 +168,7 @@ class CryptoDeleteTransitionLogicTest {
 
 	@Test
 	void rejectsDetachedAccountAsReceiver() {
-		// setup:
-		var receiver = IdUtils.asAccount("0.0.7676");
+		final var receiver = EntityNum.fromLong(7676);
 
 		givenValidTxnCtx(receiver);
 		given(ledger.isDetached(receiver)).willReturn(true);
@@ -252,13 +250,13 @@ class CryptoDeleteTransitionLogicTest {
 		givenValidTxnCtx(payer);
 	}
 
-	private void givenValidTxnCtx(AccountID transfer) {
+	private void givenValidTxnCtx(final EntityNum transfer) {
 		cryptoDeleteTxn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
 				.setCryptoDelete(
 						CryptoDeleteTransactionBody.newBuilder()
-								.setDeleteAccountID(target)
-								.setTransferAccountID(transfer)
+								.setDeleteAccountID(target.toGrpcAccountId())
+								.setTransferAccountID(transfer.toGrpcAccountId())
 								.build()
 				).build();
 		given(accessor.getTxn()).willReturn(cryptoDeleteTxn);
@@ -287,7 +285,7 @@ class CryptoDeleteTransitionLogicTest {
 
 	private TransactionID ourTxnId() {
 		return TransactionID.newBuilder()
-				.setAccountID(payer)
+				.setAccountID(payer.toGrpcAccountId())
 				.setTransactionValidStart(
 						Timestamp.newBuilder().setSeconds(Instant.now().getEpochSecond()))
 				.build();

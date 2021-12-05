@@ -82,8 +82,8 @@ public class ContractDeleteTransitionLogic implements TransitionLogic {
 			final var op = contractDeleteTxn.getContractDeleteInstance();
 
 			if (op.hasTransferAccountID()) {
-				final var receiver = op.getTransferAccountID();
-				if (ledger.exists(receiver) && ledger.isDetached(receiver)) {
+				final var receiverId = EntityNum.fromAccountId(op.getTransferAccountID());
+				if (ledger.exists(receiverId) && ledger.isDetached(receiverId)) {
 					txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 					return;
 				}

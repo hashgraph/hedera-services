@@ -24,6 +24,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 
@@ -49,8 +50,8 @@ public final class GetAccountInfoResourceUsage implements QueryResourceUsageEsti
 	public FeeData usageGiven(final Query query, final StateView view, final Map<String, Object> ignoreCtx) {
 		final var op = query.getCryptoGetInfo();
 
-		final var tgt = op.getAccountID();
-		final var info = view.infoForAccount(tgt);
+		final var accountId = EntityNum.fromAccountId(op.getAccountID());
+		final var info = view.infoForAccount(accountId);
 		/* Given the test in {@code GetAccountInfoAnswer.checkValidity}, this can only be empty
 		 * under the extraordinary circumstance that the desired account expired during the query
 		 * answer flow (which will now fail downstream with an appropriate status code); so

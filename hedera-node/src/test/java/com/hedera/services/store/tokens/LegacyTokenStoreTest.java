@@ -71,10 +71,7 @@ class LegacyTokenStoreTest {
 	@Test
 	void adaptsBehaviorToNonfungibleType() {
 		// setup:
-		final var nftChange = changingNftOwnership(
-				t,
-				t.asGrpcToken(),
-				nftXfer(a.toGrpcAccountId(), b.toGrpcAccountId(), serialNo));
+		final var nftChange = changingNftOwnership(t, t.asGrpcToken(), nftXfer(a, b, serialNo));
 		// and:
 		final var hybridSubject = Mockito.mock(TokenStore.class);
 

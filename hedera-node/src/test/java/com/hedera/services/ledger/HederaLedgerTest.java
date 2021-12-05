@@ -264,7 +264,7 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 
 		final var created = subject.create(rand, 1_000L, customizer);
 
-		assertEquals(NEXT_ID, created);
+		assertEquals(NEXT_ID, created.longValue());
 		verify(accountsLedger).set(rand, BALANCE, RAND_BALANCE - 1_000L);
 		verify(accountsLedger).create(created);
 		verify(accountsLedger).set(created, BALANCE, 1_000L);

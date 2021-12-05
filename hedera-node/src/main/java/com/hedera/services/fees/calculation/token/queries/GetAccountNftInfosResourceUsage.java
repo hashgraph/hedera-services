@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.usage.token.TokenGetAccountNftInfosUsage;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 
@@ -56,8 +57,9 @@ public final class GetAccountNftInfosResourceUsage implements QueryResourceUsage
 	@Override
 	public FeeData usageGiven(final Query query, final StateView view, @Nullable final Map<String, Object> queryCtx) {
 		final var op = query.getTokenGetAccountNftInfos();
+		final var accountId = EntityNum.fromAccountId(op.getAccountID());
 		final var optionalInfo = view.infoForAccountNfts(
-				op.getAccountID(),
+				accountId,
 				op.getStart(),
 				op.getEnd());
 		if (optionalInfo.isPresent()) {

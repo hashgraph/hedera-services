@@ -27,7 +27,6 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.store.models.Account;
-import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -186,7 +185,7 @@ abstract class EvmTxProcessor {
 			mutableSender.decrementBalance(gasCost);
 		}
 
-		final Address coinbase = Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress();
+		final Address coinbase = dynamicProperties.fundingAccount().toTypedSolidityAddress();
 		final HederaBlockValues blockValues = new HederaBlockValues(gasLimit, consensusTime.getEpochSecond());
 		final Gas gasAvailable = Gas.of(gasLimit).minus(intrinsicGas);
 		final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();

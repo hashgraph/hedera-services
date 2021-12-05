@@ -106,7 +106,8 @@ public class OpUsageCtxHelper {
 	public ExtantCryptoContext ctxForCryptoUpdate(TransactionBody txn) {
 		final var op = txn.getCryptoUpdateAccount();
 		ExtantCryptoContext cryptoContext;
-		var info = workingView.infoForAccount(op.getAccountIDToUpdate());
+		final var accountId = EntityNum.fromAccountId(op.getAccountIDToUpdate());
+		var info = workingView.infoForAccount(accountId);
 		if (info.isPresent()) {
 			var details = info.get();
 			cryptoContext = ExtantCryptoContext.newBuilder()

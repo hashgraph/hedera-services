@@ -85,9 +85,9 @@ class TokenCreateTransitionLogicTest {
 	private final Instant now = Instant.ofEpochSecond(thisSecond);
 	private final int decimals = 2;
 	private final long initialSupply = 1_000_000L;
-	private final AccountID payer = IdUtils.asAccount("1.2.3");
-	private final AccountID treasury = IdUtils.asAccount("1.2.4");
-	private final AccountID renewAccount = IdUtils.asAccount("1.2.5");
+	private final AccountID payer = IdUtils.asAccount("0.0.3");
+	private final AccountID treasury = IdUtils.asAccount("0.0.4");
+	private final AccountID renewAccount = IdUtils.asAccount("0.0.5");
 	private final Timestamp expiry = Timestamp.newBuilder().setSeconds(thisSecond + thisSecond).build();
 
 	private TransactionBody tokenCreateTxn;
@@ -130,7 +130,6 @@ class TokenCreateTransitionLogicTest {
 
 		given(accessor.getTxn()).willReturn(tokenCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(txnCtx.activePayer()).willReturn(payer);
 		given(txnCtx.consensusTime()).willReturn(now);
 		given(creationFactory.processFrom(
 				accountStore,
@@ -141,7 +140,7 @@ class TokenCreateTransitionLogicTest {
 
 		subject.doStateTransition();
 
-		verify(creation).loadModelsWith(payer, ids, validator);
+		verify(creation).loadModelsWith(ids, validator);
 		verify(creation).doProvisionallyWith(now.getEpochSecond(), MODEL_FACTORY, RELS_LISTING);
 		verify(creation).persist();
 		verify(sideEffectsTracker).trackExplicitAutoAssociation(mockAssociations.get(0));

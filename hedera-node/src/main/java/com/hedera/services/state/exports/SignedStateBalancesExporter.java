@@ -213,18 +213,15 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			var id = entry.getKey();
 			var account = entry.getValue();
 			if (!account.isDeleted()) {
-				var accountId = id.toGrpcAccountId();
 				var balance = account.getBalance();
-				if (nodeIds.contains(accountId) && balance < nodeBalanceWarnThreshold) {
-					log.warn(LOW_NODE_BALANCE_WARN_MSG_TPL,
-							readableId(accountId),
-							balance);
+				if (nodeIds.contains(id) && balance < nodeBalanceWarnThreshold) {
+					log.warn(LOW_NODE_BALANCE_WARN_MSG_TPL, id.toIdString(), balance);
 				}
 				totalFloat = totalFloat.add(BigInteger.valueOf(account.getBalance()));
 				SingleAccountBalances.Builder sabBuilder = SingleAccountBalances.newBuilder();
-				sabBuilder.setHbarBalance(balance).setAccountID(accountId);
+				sabBuilder.setHbarBalance(balance).setAccountID(id.toGrpcAccountId());
 				if (dynamicProperties.shouldExportTokenBalances()) {
-					addTokenBalances(accountId, account, sabBuilder, tokens, tokenAssociations);
+					addTokenBalances(id, account, sabBuilder, tokens, tokenAssociations);
 				}
 				accountBalances.add(sabBuilder.build());
 			}
@@ -234,11 +231,11 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 	}
 
 	private void addTokenBalances(
-			AccountID id,
-			MerkleAccount account,
-			SingleAccountBalances.Builder sabBuilder,
-			MerkleMap<EntityNum, MerkleToken> tokens,
-			MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations
+			final EntityNum id,
+			final MerkleAccount account,
+			final SingleAccountBalances.Builder sabBuilder,
+			final MerkleMap<EntityNum, MerkleToken> tokens,
+			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations
 	) {
 		var accountTokens = account.tokens();
 		for (TokenID tokenId : accountTokens.asTokenIds()) {

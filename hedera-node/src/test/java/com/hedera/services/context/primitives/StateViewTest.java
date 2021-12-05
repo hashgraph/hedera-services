@@ -196,6 +196,7 @@ class StateViewTest {
 	private StateView subject;
 
 	@BeforeEach
+	@SuppressWarnings("unchecked")
 	private void setup() throws Throwable {
 		metadata = new HFileMeta(
 				false,
@@ -243,9 +244,9 @@ class StateViewTest {
 		nftOwner = MerkleAccountFactory.newAccount()
 				.get();
 		contracts = (MerkleMap<EntityNum, MerkleAccount>) mock(MerkleMap.class);
-		given(contracts.get(cid)).willReturn(contract);
+		given(contracts.get(EntityNum.fromContractId(cid))).willReturn(contract);
 		given(contracts.get(nftOwnerId)).willReturn(nftOwner);
-		given(contracts.get(notCid)).willReturn(notContract);
+		given(contracts.get(EntityNum.fromContractId(notCid))).willReturn(notContract);
 		given(contracts.get(tokenAccountId)).willReturn(tokenAccount);
 
 		topics = (MerkleMap<EntityNum, MerkleTopic>) mock(MerkleMap.class);
@@ -511,7 +512,7 @@ class StateViewTest {
 		assertEquals(TOKEN_PAUSE_KT.asKey(), info.getPauseKey());
 		assertEquals(miscKey, info.getWipeKey());
 		assertEquals(miscKey, info.getFeeScheduleKey());
-		assertEquals(autoRenew, info.getAutoRenewAccount());
+		assertEquals(autoRenew.toGrpcAccountId(), info.getAutoRenewAccount());
 		assertEquals(Duration.newBuilder().setSeconds(autoRenewPeriod).build(), info.getAutoRenewPeriod());
 		assertEquals(Timestamp.newBuilder().setSeconds(expiry).build(), info.getExpiry());
 		assertEquals(TokenFreezeStatus.Frozen, info.getDefaultFreezeStatus());
@@ -808,7 +809,7 @@ class StateViewTest {
 
 		final var info = optionalNftInfo.get();
 		assertEquals(targetNftId, info.getNftID());
-		assertEquals(tokenAccountId, info.getAccountID());
+		assertEquals(tokenAccountId.toGrpcAccountId(), info.getAccountID());
 		assertEquals(fromJava(nftCreation).toGrpc(), info.getCreationTime());
 		assertArrayEquals(nftMeta, info.getMetadata().toByteArray());
 	}
@@ -820,7 +821,7 @@ class StateViewTest {
 		assertTrue(optionalNftInfo.isPresent());
 		final var info = optionalNftInfo.get();
 		assertEquals(targetNftId, info.getNftID());
-		assertEquals(nftOwnerId, info.getAccountID());
+		assertEquals(nftOwnerId.toGrpcAccountId(), info.getAccountID());
 		assertEquals(fromJava(nftCreation).toGrpc(), info.getCreationTime());
 		assertArrayEquals(nftMeta, info.getMetadata().toByteArray());
 	}

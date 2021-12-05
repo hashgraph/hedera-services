@@ -38,7 +38,6 @@ import com.hedera.services.txns.network.UpgradeActions;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.NamedDigestFactory;
 import com.hedera.services.utils.SystemExits;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.InvalidSignedStateListener;
 import com.swirlds.common.NodeId;
@@ -102,7 +101,7 @@ class ServicesMainTest {
 	@Mock
 	private AddressBook book;
 	@Mock
-	private BackingStore<AccountID, MerkleAccount> backingAccounts;
+	private BackingStore<EntityNum, MerkleAccount> backingAccounts;
 	@Mock
 	private SystemAccountsCreator systemAccountsCreator;
 	@Mock

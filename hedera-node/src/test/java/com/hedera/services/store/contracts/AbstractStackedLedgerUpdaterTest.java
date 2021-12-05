@@ -22,10 +22,10 @@ package com.hedera.services.store.contracts;
 
 
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.backing.HashMapBackingTokens;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.backing.HashMapBackingNfts;
 import com.hedera.services.ledger.backing.HashMapBackingTokenRels;
+import com.hedera.services.ledger.backing.HashMapBackingTokens;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
@@ -36,9 +36,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.services.utils.EntityNum;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -205,8 +203,8 @@ class AbstractStackedLedgerUpdaterTest {
 		ledgers = new WorldLedgers(tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
 	}
 
-	private static final AccountID aAccount = IdUtils.asAccount("0.0.12345");
-	private static final Address aAddress = EntityIdUtils.asTypedSolidityAddress(aAccount);
+	private static final EntityNum aAccount = EntityNum.fromLong(12345);
+	private static final Address aAddress = aAccount.toTypedSolidityAddress();
 	private static final long aBalance = 1_000L;
 	private static final long aNonce = 1L;
 	private static final long aExpiry = 1_234_567L;

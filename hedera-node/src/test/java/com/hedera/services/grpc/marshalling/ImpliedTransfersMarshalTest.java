@@ -274,17 +274,17 @@ class ImpliedTransfersMarshalTest {
 			maxBalanceChanges,
 			areNftsEnabled);
 
-	private final AccountID aModel = asAccount("1.2.3");
-	private final AccountID bModel = asAccount("2.3.4");
-	private final AccountID cModel = asAccount("3.4.5");
+	private final AccountID aModel = asAccount("0.0.3");
+	private final AccountID bModel = asAccount("0.0.4");
+	private final AccountID cModel = asAccount("0.0.5");
 	private final long serialNumberA = 12;
 	private final long serialNumberB = 13;
 	private final TokenID anId = asToken("0.0.75231");
 	private final TokenID anotherId = asToken("0.0.75232");
 	private final TokenID yetAnotherId = asToken("0.0.75233");
-	private final Id aAccount = new Id(1, 2, 3);
-	private final Id bAccount = new Id(2, 3, 4);
-	private final Id cAccount = new Id(3, 4, 5);
+	private final Id aAccount = new Id(0, 0, 3);
+	private final Id bAccount = new Id(0, 0, 4);
+	private final Id cAccount = new Id(0, 0, 5);
 	private final EntityNum a = EntityNum.fromLong(3);
 	private final EntityNum b = EntityNum.fromLong(4);
 	private final EntityNum c = EntityNum.fromLong(5);

@@ -20,7 +20,7 @@ package com.hedera.services.store.tokens.views;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.junit.jupiter.api.Test;
 
@@ -35,7 +35,7 @@ class EmptyUniqueTokenViewTest {
 		// expect:
 		assertSame(
 				Collections.emptyList(),
-				EMPTY_UNIQUE_TOKEN_VIEW.ownedAssociations(AccountID.getDefaultInstance(), 0, Long.MAX_VALUE));
+				EMPTY_UNIQUE_TOKEN_VIEW.ownedAssociations(EntityNum.fromLong(0), 0, Long.MAX_VALUE));
 		assertSame(
 				Collections.emptyList(),
 				EMPTY_UNIQUE_TOKEN_VIEW.typedAssociations(TokenID.getDefaultInstance(), 0, Long.MAX_VALUE));

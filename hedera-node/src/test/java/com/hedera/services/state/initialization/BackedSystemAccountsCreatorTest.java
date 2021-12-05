@@ -27,17 +27,16 @@ import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
-import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.swirlds.common.Address;
@@ -63,14 +62,14 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(LogCaptureExtension.class)
 class BackedSystemAccountsCreatorTest {
-	private long shard = 0;
-	private long realm = 0;
-	private long totalBalance = 100l;
-	private long expiry = Instant.now().getEpochSecond() + 1_234_567L;
-	private int numAccounts = 4;
-	private String b64Loc = "somewhere";
-	private String legacyId = "CURSED";
-	private String hexedABytes = "447dc6bdbfc64eb894851825194744662afcb70efb8b23a6a24af98f0c1fd8ad";
+	private final long shard = 0;
+	private final long realm = 0;
+	private final long totalBalance = 100l;
+	private final long expiry = Instant.now().getEpochSecond() + 1_234_567L;
+	private final int numAccounts = 4;
+	private final String b64Loc = "somewhere";
+	private final String legacyId = "CURSED";
+	private final String hexedABytes = "447dc6bdbfc64eb894851825194744662afcb70efb8b23a6a24af98f0c1fd8ad";
 	private JKey genesisKey;
 
 	HederaNumbers hederaNums;
@@ -79,7 +78,7 @@ class BackedSystemAccountsCreatorTest {
 	LegacyEd25519KeyReader legacyReader;
 
 	AddressBook book;
-	BackingStore<AccountID, MerkleAccount> backingAccounts;
+	BackingStore<EntityNum, MerkleAccount> backingAccounts;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -87,6 +86,7 @@ class BackedSystemAccountsCreatorTest {
 	private BackedSystemAccountsCreator subject;
 
 	@BeforeEach
+	@SuppressWarnings("unchecked")
 	void setup() throws DecoderException, NegativeAccountBalanceException, IllegalArgumentException {
 		genesisKey = JKey.mapKey(Key.newBuilder()
 				.setKeyList(KeyList.newBuilder()
@@ -119,7 +119,7 @@ class BackedSystemAccountsCreatorTest {
 		given(book.getSize()).willReturn(1);
 		given(book.getAddress(0L)).willReturn(address);
 
-		backingAccounts = (BackingStore<AccountID, MerkleAccount>)mock(BackingStore.class);
+		backingAccounts = (BackingStore<EntityNum, MerkleAccount>)mock(BackingStore.class);
 		given(backingAccounts.idSet()).willReturn(Set.of(
 				accountWith(1),
 				accountWith(2),
@@ -259,20 +259,20 @@ class BackedSystemAccountsCreatorTest {
 
 	private void givenAllPresentSpecialAccounts() {
 		given(backingAccounts.contains(
-				argThat(accountID -> (900 <= accountID.getAccountNum() && accountID.getAccountNum() <= 1000)))
+				argThat(accountID -> (900 <= accountID.longValue() && accountID.longValue() <= 1000)))
 		).willReturn(true);
 	}
 
 	private void givenMissingSpecialAccounts() {
 		given(backingAccounts.contains(
-				argThat(accountID -> (accountID.getAccountNum() != 900 && accountID.getAccountNum() != 1000)))
+				argThat(accountID -> (accountID.longValue() != 900 && accountID.longValue() != 1000)))
 		).willReturn(true);
 		given(backingAccounts.contains(accountWith(900L))).willReturn(false);
 		given(backingAccounts.contains(accountWith(1000L))).willReturn(false);
 	}
 
-	private AccountID accountWith(long num) {
-		return IdUtils.asAccount(String.format("%d.%d.%d", shard, realm, num));
+	private EntityNum accountWith(long num) {
+		return EntityNum.fromLong(num);
 	}
 
 	private MerkleAccount withExpectedBalance(long balance) throws NegativeAccountBalanceException {

@@ -21,7 +21,6 @@ package com.hedera.services.ledger.ids;
  */
 
 import com.hedera.services.utils.EntityNum;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -32,7 +31,7 @@ public enum ExceptionalEntityIdSource implements EntityIdSource {
 	NOOP_ID_SOURCE;
 
 	@Override
-	public TopicID newTopicId(final AccountID sponsor) {
+	public TopicID newTopicId() {
 		throw new UnsupportedOperationException();
 	}
 
@@ -42,22 +41,22 @@ public enum ExceptionalEntityIdSource implements EntityIdSource {
 	}
 
 	@Override
-	public ContractID newContractId(AccountID newContractSponsor) {
+	public ContractID newContractId() {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public FileID newFileId(AccountID newFileSponsor) {
+	public FileID newFileId() {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public TokenID newTokenId(AccountID sponsor) {
+	public TokenID newTokenId() {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public ScheduleID newScheduleId(AccountID sponsor) {
+	public ScheduleID newScheduleId() {
 		throw new UnsupportedOperationException();
 	}
 

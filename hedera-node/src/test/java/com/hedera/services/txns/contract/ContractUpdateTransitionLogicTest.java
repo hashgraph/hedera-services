@@ -64,7 +64,7 @@ class ContractUpdateTransitionLogicTest {
 	final private AccountID proxy = AccountID.newBuilder().setAccountNum(4_321L).build();
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
-	final private AccountID targetId = AccountID.newBuilder().setAccountNum(9_999L).build();
+	final private EntityNum targetId = EntityNum.fromLong(9_999L);
 	final private String memo = "Who, me?";
 
 	private long customAutoRenewPeriod = 100_001L;

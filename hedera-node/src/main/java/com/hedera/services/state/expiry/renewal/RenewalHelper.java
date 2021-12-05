@@ -50,7 +50,6 @@ import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassificati
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.EXPIRED_ACCOUNT_READY_TO_RENEW;
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.OTHER;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
-import static com.hedera.services.utils.EntityNum.fromAccountId;
 
 /**
  * Helper for renewing and removing expired entities. Only crypto accounts are supported in this implementation.
@@ -160,7 +159,7 @@ public class RenewalHelper {
 		mutableLastClassified.setExpiry(newExpiry);
 		mutableLastClassified.setBalanceUnchecked(newBalance);
 
-		final var fundingId = fromAccountId(dynamicProperties.fundingAccount());
+		final var fundingId = dynamicProperties.fundingAccount();
 		final var mutableFundingAccount = currentAccounts.getForModify(fundingId);
 		final long newFundingBalance = mutableFundingAccount.getBalance() + fee;
 		mutableFundingAccount.setBalanceUnchecked(newFundingBalance);

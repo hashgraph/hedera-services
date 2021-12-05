@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class BalanceChangeTest {
-	private final Id t = new Id(1, 2, 3);
+	private final Id t = new Id(0, 0, 3);
 	private final long delta = -1_234L;
 	private final long serialNo = 1234L;
 	private final EntityNum a = EntityNum.fromLong(3);
@@ -51,11 +51,11 @@ class BalanceChangeTest {
 		final var tokenChange = IdUtils.tokenChange(t, a, delta);
 		final var nftChange = changingNftOwnership(t, t.asGrpcToken(), nftXfer(a, b, serialNo));
 		// and:
-		final var hbarRepr = "BalanceChange{token=ℏ, account=Id{shard=1, realm=2, num=3}, units=-1234}";
-		final var tokenRepr = "BalanceChange{token=Id{shard=1, realm=2, num=3}, " +
-				"account=Id{shard=1, realm=2, num=3}, units=-1234}";
-		final var nftRepr = "BalanceChange{nft=Id{shard=1, realm=2, num=3}, serialNo=1234, " +
-				"from=Id{shard=1, realm=2, num=3}, to=Id{shard=2, realm=3, num=4}}";
+		final var hbarRepr = "BalanceChange{token=ℏ, account=Id{shard=0, realm=0, num=3}, units=-1234}";
+		final var tokenRepr = "BalanceChange{token=Id{shard=0, realm=0, num=3}, " +
+				"account=Id{shard=0, realm=0, num=3}, units=-1234}";
+		final var nftRepr = "BalanceChange{nft=Id{shard=0, realm=0, num=3}, serialNo=1234, " +
+				"from=Id{shard=0, realm=0, num=3}, to=0.0.4}";
 
 		// expect:
 		assertNotEquals(hbarChange, tokenChange);
@@ -65,7 +65,7 @@ class BalanceChangeTest {
 		assertEquals(tokenRepr, tokenChange.toString());
 		assertEquals(nftRepr, nftChange.toString());
 		// and:
-		assertSame(a, hbarChange.accountId());
+		assertEquals(a, hbarChange.accountId());
 		assertEquals(delta, hbarChange.units());
 		assertEquals(t.asGrpcToken(), tokenChange.tokenId());
 	}

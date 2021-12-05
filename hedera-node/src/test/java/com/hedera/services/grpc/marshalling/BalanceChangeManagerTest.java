@@ -200,13 +200,13 @@ class BalanceChangeManagerTest {
 
 	private final long amountOfFirstFungibleDebit = 1_000L;
 	private final long amountOfSecondFungibleDebit = 2_000L;
-	private final Id misc = new Id(1, 1, 2);
-	private final Id payer = new Id(0, 1, 2);
+	private final Id misc = new Id(0, 0, 2);
+	private final Id payer = new Id(0, 0, 20);
 	private final Id funding = new Id(0, 0, 98);
-	private final Id firstFungibleTokenId = new Id(1, 2, 3);
-	private final Id nonFungibleTokenId = new Id(7, 4, 7);
-	private final Id secondFungibleTokenId = new Id(3, 2, 1);
-	private final Id repeatedCreditsFungibleTokenId = new Id(4, 3, 2);
+	private final Id firstFungibleTokenId = new Id(0, 0, 3);
+	private final Id nonFungibleTokenId = new Id(0, 0, 7);
+	private final Id secondFungibleTokenId = new Id(0, 0, 1);
+	private final Id repeatedCreditsFungibleTokenId = new Id(0, 0, 22);
 	private final AccountAmount payerCredit = AccountAmount.newBuilder()
 			.setAccountID(payer.asGrpcAccount())
 			.setAmount(100)

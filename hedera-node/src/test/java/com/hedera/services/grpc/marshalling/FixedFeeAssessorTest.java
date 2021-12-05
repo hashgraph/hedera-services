@@ -82,8 +82,8 @@ class FixedFeeAssessorTest {
 		Assertions.assertEquals(OK, result);
 	}
 
-	private final EntityId feeDenom = new EntityId(6, 6, 6);
-	private final Id payer = new Id(0, 1, 2);
-	private final EntityId otherCollector = new EntityId(10, 9, 8);
-	private final Id chargingToken = new Id(0, 1, 2222);
+	private final EntityId feeDenom = new EntityId(0, 0, 6);
+	private final Id payer = new Id(0, 0, 2);
+	private final EntityId otherCollector = new EntityId(10, 0, 8);
+	private final Id chargingToken = new Id(0, 0, 2222);
 }

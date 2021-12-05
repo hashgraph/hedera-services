@@ -27,6 +27,7 @@ import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -117,7 +118,7 @@ class CallLocalEvmTxProcessorTest {
 	void throwsWhenCodeCacheFailsLoading() {
 		given(worldState.updater()).willReturn(updater);
 		given(worldState.updater().updater()).willReturn(updater);
-		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
+		given(globalDynamicProperties.fundingAccount()).willReturn(EntityNum.fromLong(1010));
 
 		var evmAccount = mock(EvmAccount.class);
 
@@ -187,7 +188,7 @@ class CallLocalEvmTxProcessorTest {
 	private void givenValidMock() {
 		given(worldState.updater()).willReturn(updater);
 		given(worldState.updater().updater()).willReturn(updater);
-		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
+		given(globalDynamicProperties.fundingAccount()).willReturn(EntityNum.fromLong(1010));
 
 		var evmAccount = mock(EvmAccount.class);
 

@@ -21,7 +21,6 @@ package com.hedera.services.ledger.ids;
  */
 
 import com.hedera.services.utils.EntityNum;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -38,47 +37,44 @@ import java.time.Instant;
 public interface EntityIdSource {
 
 	/**
-	 * Returns the {@link TopicID} to use for a new topic with the given sponsor.
+	 * Returns the next {@link TopicID} to use.
 	 * 
-	 * @param sponsor the sponsor of the new topic
-	 * @return an appropriate id to use
+	 * @return the next topic id
 	 */
-	TopicID newTopicId(AccountID sponsor);
+	TopicID newTopicId();
 	
 	/**
-	 * Returns the {@link com.hedera.services.utils.EntityNum} to use for a new account with the given sponsor.
+	 * Returns the next account number.
 	 *
-	 * @return an appropriate id to use
+	 * @return the next account number
 	 */
 	EntityNum newAccountId();
 
 	/**
-	 * Returns the {@link ContractID} to use for a new contract with the given account.
+	 * Returns the next {@link ContractID} to use.
 	 *
-	 * @return an appropriate id to use
+	 * @return the next contract id
 	 */
 	ContractID newContractId();
 
 	/**
-	 * Returns the {@link FileID} to use for a new account with the given sponsor.
+	 * Returns the next {@link FileID} to use.
 	 *
-	 * @param newFileSponsor the sponsor of the new account.
-	 * @return an appropriate id to use
+	 * @return the next file id
 	 */
-	FileID newFileId(AccountID newFileSponsor);
+	FileID newFileId();
 
 	/**
-	 * Returns the {@link TokenID} to use for a new token with the given sponsor.
+	 * Returns the next {@link TokenID} to use.
 	 *
-	 * @param sponsor the sponsor of the new token.
-	 * @return an appropriate id to use
+	 * @return the next token id
 	 */
-	TokenID newTokenId(AccountID sponsor);
+	TokenID newTokenId();
 
 	/**
-	 * Returns the {@link ScheduleID} to use for a new scheduled entity with the given sponsor.
+	 * Returns the next {@link ScheduleID} to use.
 	 *
-	 * @return an appropriate id to use
+	 * @return the next schedule id
 	 */
 	ScheduleID newScheduleId();
 

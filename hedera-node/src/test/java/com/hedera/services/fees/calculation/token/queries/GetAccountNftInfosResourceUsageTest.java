@@ -23,8 +23,7 @@ package com.hedera.services.fees.calculation.token.queries;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.usage.token.TokenGetAccountNftInfosUsage;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
@@ -64,7 +63,7 @@ class GetAccountNftInfosResourceUsageTest {
 			TokenNftInfo.newBuilder()
 					.setMetadata(m2)
 					.build());
-	private static final AccountID target = IdUtils.asAccount("0.0.123");
+	private static final EntityNum target = EntityNum.fromLong(123);
 	private static final int start = 0;
 	private static final int end = 1;
 	private static final Query satisfiableAnswerOnly = tokenGetAccountNftInfosQuery(target, start, end, ANSWER_ONLY);
@@ -152,12 +151,12 @@ class GetAccountNftInfosResourceUsageTest {
 	}
 
 	private static final Query tokenGetAccountNftInfosQuery(
-			final AccountID id,
+			final EntityNum id,
 			final long start,
 			final long end,
 			final ResponseType type) {
 		final var op = TokenGetAccountNftInfosQuery.newBuilder()
-				.setAccountID(id)
+				.setAccountID(id.toGrpcAccountId())
 				.setStart(start)
 				.setEnd(end)
 				.setHeader(QueryHeader.newBuilder().setResponseType(type));

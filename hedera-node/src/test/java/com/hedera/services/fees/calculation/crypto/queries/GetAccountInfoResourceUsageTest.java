@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
@@ -66,7 +67,7 @@ class GetAccountInfoResourceUsageTest {
 	private static final TokenID cToken = asToken("0.0.1003");
 	private static final String memo = "Hi there!";
 	private static final int maxAutomaticAssociations = 123;
-	private static final AccountID queryTarget = IdUtils.asAccount(a);
+	private static final EntityNum queryTarget = EntityNum.fromLong(1234);
 
 	private FeeData expected;
 	private CryptoOpsUsage cryptoOpsUsage;

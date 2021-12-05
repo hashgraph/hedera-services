@@ -57,7 +57,7 @@ public class RenewalRecordsHelper {
 
 	private int consensusNanosIncr = 0;
 	private Instant cycleStart = null;
-	private AccountID funding = null;
+	private EntityNum funding = null;
 
 	@Inject
 	public RenewalRecordsHelper(
@@ -131,7 +131,7 @@ public class RenewalRecordsHelper {
 	private CurrencyAdjustments feeXfers(final long amount, final AccountID payer) {
 		return new CurrencyAdjustments(
 				new long[] { amount, -amount },
-				List.of(EntityId.fromGrpcAccountId(funding), EntityId.fromGrpcAccountId(payer))
+				List.of(funding.toEntityId(), EntityId.fromGrpcAccountId(payer))
 		);
 	}
 

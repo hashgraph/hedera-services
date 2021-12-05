@@ -29,6 +29,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TopicID;
 
 public class StaticPropertiesHolder {
 	/* This will not be accessed concurrently, */
@@ -67,6 +68,14 @@ public class StaticPropertiesHolder {
 				.setShardNum(shard)
 				.setRealmNum(realm)
 				.setAccountNum(num)
+				.build();
+	}
+
+	public TopicID scopedTopicWith(final long num) {
+		return TopicID.newBuilder()
+				.setShardNum(shard)
+				.setRealmNum(realm)
+				.setTopicNum(num)
 				.build();
 	}
 

@@ -31,7 +31,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -96,20 +96,20 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		try {
 			final var op = txnCtx.accessor().getTxn().getCryptoUpdateAccount();
-			final var target = op.getAccountIDToUpdate();
+			final var targetId = EntityNum.fromAccountId(op.getAccountIDToUpdate());
 			final var customizer = asCustomizer(op);
 
 			if (op.hasExpirationTime() && !validator.isValidExpiry(op.getExpirationTime())) {
 				txnCtx.setStatus(INVALID_EXPIRATION_TIME);
 				return;
 			}
-			final var validity = sanityCheck(target, customizer);
+			final var validity = sanityCheck(targetId, customizer);
 			if (validity != OK) {
 				txnCtx.setStatus(validity);
 				return;
 			}
 
-			ledger.customize(target, customizer);
+			ledger.customize(targetId, customizer);
 			txnCtx.setStatus(SUCCESS);
 		} catch (MissingAccountException mae) {
 			txnCtx.setStatus(INVALID_ACCOUNT_ID);
@@ -121,7 +121,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		}
 	}
 
-	private ResponseCodeEnum sanityCheck(AccountID target, HederaAccountCustomizer customizer) {
+	private ResponseCodeEnum sanityCheck(final EntityNum target, final HederaAccountCustomizer customizer) {
 		if (!ledger.exists(target) || ledger.isSmartContract(target)) {
 			return INVALID_ACCOUNT_ID;
 		}

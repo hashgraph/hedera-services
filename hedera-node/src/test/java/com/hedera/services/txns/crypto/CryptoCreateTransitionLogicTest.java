@@ -29,6 +29,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -83,8 +84,8 @@ class CryptoCreateTransitionLogicTest {
 	private static final int MAX_AUTO_ASSOCIATIONS = 1234;
 	private static final int MAX_TOKEN_ASSOCIATIONS = 12345;
 	private static final AccountID PROXY = AccountID.newBuilder().setAccountNum(4_321L).build();
-	private static final AccountID PAYER = AccountID.newBuilder().setAccountNum(1_234L).build();
-	private static final AccountID CREATED = AccountID.newBuilder().setAccountNum(9_999L).build();
+	private static final EntityNum PAYER = EntityNum.fromLong(1_234L);
+	private static final EntityNum CREATED = EntityNum.fromLong(9_999L);
 	private static final Instant consensusTime = Instant.now();
 
 	private HederaLedger ledger;
@@ -208,7 +209,7 @@ class CryptoCreateTransitionLogicTest {
 		subject.doStateTransition();
 
 		verify(ledger).create(argThat(PAYER::equals), longThat(BALANCE::equals), captor.capture());
-		verify(txnCtx).setCreated(CREATED);
+		verify(txnCtx).setCreated(CREATED.toGrpcAccountId());
 		verify(txnCtx).setStatus(SUCCESS);
 
 		final var changes = captor.getValue().getChanges();
@@ -344,7 +345,7 @@ class CryptoCreateTransitionLogicTest {
 
 	private TransactionID ourTxnId() {
 		return TransactionID.newBuilder()
-				.setAccountID(PAYER)
+				.setAccountID(PAYER.toGrpcAccountId())
 				.setTransactionValidStart(
 						Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
 				.build();

@@ -214,11 +214,11 @@ class RoyaltyFeeAssessorTest {
 	}
 
 	private final long originalUnits = 100;
-	private final Id payer = new Id(0, 1, 2);
-	private final EntityId otherCollector = new EntityId(10, 9, 8);
-	private final EntityId targetCollector = new EntityId(9, 8, 7);
+	private final Id payer = new Id(0, 0, 2);
+	private final EntityId otherCollector = new EntityId(0, 0, 8);
+	private final EntityId targetCollector = new EntityId(0, 0, 7);
 	private final Id funding = new Id(0, 0, 98);
-	private final Id firstFungibleTokenId = new Id(1, 2, 3);
+	private final Id firstFungibleTokenId = new Id(0, 0, 3);
 	private final AccountAmount payerCredit = AccountAmount.newBuilder()
 			.setAccountID(payer.asGrpcAccount())
 			.setAmount(originalUnits)

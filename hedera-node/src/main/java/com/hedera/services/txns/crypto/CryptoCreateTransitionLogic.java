@@ -29,7 +29,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -90,13 +90,13 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		try {
 			TransactionBody cryptoCreateTxn = txnCtx.accessor().getTxn();
-			AccountID sponsor = cryptoCreateTxn.getTransactionID().getAccountID();
+			final var sponsorId = EntityNum.fromAccountId(cryptoCreateTxn.getTransactionID().getAccountID());
 
 			CryptoCreateTransactionBody op = cryptoCreateTxn.getCryptoCreateAccount();
 			long balance = op.getInitialBalance();
-			AccountID created = ledger.create(sponsor, balance, asCustomizer(op));
+			final var createdId = ledger.create(sponsorId, balance, asCustomizer(op));
 
-			txnCtx.setCreated(created);
+			txnCtx.setCreated(createdId.toGrpcAccountId());
 			txnCtx.setStatus(SUCCESS);
 		} catch (InsufficientFundsException ife) {
 			txnCtx.setStatus(INSUFFICIENT_PAYER_BALANCE);

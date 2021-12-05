@@ -27,18 +27,17 @@ import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hedera.services.stream.proto.TokenUnitBalance;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.SystemExits;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
@@ -68,7 +67,6 @@ import java.util.function.UnaryOperator;
 
 import static com.hedera.services.state.exports.SignedStateBalancesExporter.SINGLE_ACCOUNT_BALANCES_COMPARATOR;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
-import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.EntityNum.fromTokenId;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
@@ -96,14 +94,14 @@ class SignedStateBalancesExporterTest {
 
 	private static final long ledgerFloat = 1_000;
 	private static final long thisNodeBalance = 400;
-	private static final AccountID thisNode = asAccount("0.0.3");
+	private static final EntityNum thisNode = EntityNum.fromLong(3);
 	private static final long anotherNodeBalance = 100;
-	private static final AccountID anotherNode = asAccount("0.0.4");
+	private static final EntityNum anotherNode = EntityNum.fromLong(4);
 	private static final long firstNonNodeAccountBalance = 250;
-	private static final AccountID firstNonNode = asAccount("0.0.1001");
+	private static final EntityNum firstNonNode = EntityNum.fromLong(1001);
 	private static final long secondNonNodeAccountBalance = 250;
-	private static final AccountID secondNonNode = asAccount("0.0.1002");
-	private static final AccountID deleted = asAccount("0.0.1003");
+	private static final EntityNum secondNonNode = EntityNum.fromLong(1002);
+	private static final EntityNum deleted = EntityNum.fromLong(1003);
 
 	private static final TokenID theToken = asToken("0.0.1004");
 	private static final long secondNonNodeTokenBalance = 100;
@@ -147,11 +145,11 @@ class SignedStateBalancesExporterTest {
 				.get();
 		deletedAccount = MerkleAccountFactory.newAccount().deleted(true).get();
 
-		accounts.put(fromAccountId(thisNode), thisNodeAccount);
-		accounts.put(fromAccountId(anotherNode), anotherNodeAccount);
-		accounts.put(fromAccountId(firstNonNode), firstNonNodeAccount);
-		accounts.put(fromAccountId(secondNonNode), secondNonNodeAccount);
-		accounts.put(fromAccountId(deleted), deletedAccount);
+		accounts.put(thisNode, thisNodeAccount);
+		accounts.put(anotherNode, anotherNodeAccount);
+		accounts.put(firstNonNode, firstNonNodeAccount);
+		accounts.put(secondNonNode, secondNonNodeAccount);
+		accounts.put(deleted, deletedAccount);
 
 		token = mock(MerkleToken.class);
 		given(token.isDeleted()).willReturn(false);
@@ -183,7 +181,7 @@ class SignedStateBalancesExporterTest {
 		given(book.getAddress(1)).willReturn(secondNodeAddress);
 
 		state = mock(ServicesState.class);
-		given(state.getAccountFromNodeId(nodeId)).willReturn(thisNode);
+		given(state.getAccountFromNodeId(nodeId)).willReturn(thisNode.toGrpcAccountId());
 		given(state.tokens()).willReturn(tokens);
 		given(state.accounts()).willReturn(accounts);
 		given(state.tokenAssociations()).willReturn(tokenRels);
@@ -373,7 +371,7 @@ class SignedStateBalancesExporterTest {
 	@Test
 	void throwsOnUnexpectedTotalFloat() throws NegativeAccountBalanceException {
 		// setup:
-		final var mutableAnotherNodeAccount = accounts.getForModify(fromAccountId(anotherNode));
+		final var mutableAnotherNodeAccount = accounts.getForModify(anotherNode);
 		final var desiredSuffix = "had total balance 1001 not 1000; exiting";
 
 		// given:

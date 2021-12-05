@@ -21,6 +21,7 @@ package com.hedera.services.ledger;
  */
 
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
@@ -68,6 +69,11 @@ class PureTransferSemanticChecksTest {
 	final private AccountID b = AccountID.newBuilder().setAccountNum(8_999L).build();
 	final private AccountID c = AccountID.newBuilder().setAccountNum(7_999L).build();
 	final private AccountID d = AccountID.newBuilder().setAccountNum(6_999L).build();
+	final private EntityNum aEntityNum = EntityNum.fromLong(9_999L);
+	final private EntityNum bEntityNum = EntityNum.fromLong(8_999L);
+	final private EntityNum cEntityNum = EntityNum.fromLong(7_999L);
+	final private EntityNum dEntityNum = EntityNum.fromLong(6_999L);
+
 	final private TokenID aTid = TokenID.newBuilder().setTokenNum(1_234L).build();
 	final private TokenID bTid = TokenID.newBuilder().setTokenNum(2_345L).build();
 	final private TokenID cTid = TokenID.newBuilder().setTokenNum(3_456L).build();
@@ -354,9 +360,9 @@ class PureTransferSemanticChecksTest {
 	void rejectsOwnershipChangesIfNftsNotEnabled() {
 		// given:
 		List<TokenTransferList> wrapper = withOwnershipChanges(
-				aTid, a, a, 123,
-				bTid, b, c, 234,
-				cTid, c, a, 345);
+				aTid, aEntityNum, aEntityNum, 123,
+				bTid, bEntityNum, cEntityNum, 234,
+				cTid, cEntityNum, aEntityNum, 345);
 
 		// when:
 		final var result = subject.validateTokenTransferSyntax(wrapper, 20, 1, false);
@@ -369,9 +375,9 @@ class PureTransferSemanticChecksTest {
 	void rejectsExceedingMaxOwnershipChanges() {
 		// given:
 		List<TokenTransferList> wrapper = withOwnershipChanges(
-				aTid, a, a, 123,
-				bTid, b, c, 234,
-				cTid, c, a, 345);
+				aTid, aEntityNum, aEntityNum, 123,
+				bTid, bEntityNum, cEntityNum, 234,
+				cTid, cEntityNum, aEntityNum, 345);
 
 		// when:
 		final var result = subject.validateTokenTransferSyntax(wrapper, 20, 1, true);

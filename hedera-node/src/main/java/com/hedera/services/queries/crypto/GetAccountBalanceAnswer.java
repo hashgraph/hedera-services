@@ -79,17 +79,17 @@ public class GetAccountBalanceAnswer implements AnswerService {
 		MerkleMap<EntityNum, MerkleAccount> accounts = view.accounts();
 		CryptoGetAccountBalanceQuery op = query.getCryptogetAccountBalance();
 
-		AccountID id = targetOf(op);
+		AccountID grpcId = targetOf(op);
+		final var accountId = EntityNum.fromAccountId(grpcId);
 		CryptoGetAccountBalanceResponse.Builder opAnswer = CryptoGetAccountBalanceResponse.newBuilder()
 				.setHeader(answerOnlyHeader(validity))
-				.setAccountID(id);
+				.setAccountID(grpcId);
 
 		if (validity == OK) {
-			var key = EntityNum.fromAccountId(id);
-			var account = accounts.get(key);
+			var account = accounts.get(accountId);
 			opAnswer.setBalance(account.getBalance());
 			for (TokenID tId : account.tokens().asTokenIds()) {
-				var relKey = fromAccountTokenRel(id, tId);
+				var relKey = fromAccountTokenRel(accountId, tId);
 				var relationship = view.tokenAssociations().get(relKey);
 				var decimals = view.tokenWith(tId).map(MerkleToken::decimals).orElse(0);
 				opAnswer.addTokenBalances(TokenBalance.newBuilder()

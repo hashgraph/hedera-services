@@ -193,11 +193,11 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 		if (!op.hasAutoRenewAccount()) {
 			return true;
 		}
-		var newAutoRenewAccount = op.getAutoRenewAccount();
-		if (designatesAccountRemoval(newAutoRenewAccount)) {
+		final var newAutoRenewAccountGrpcId = op.getAutoRenewAccount();
+		if (designatesAccountRemoval(newAutoRenewAccountGrpcId)) {
 			return true;
 		}
-		if (topic.hasAutoRenewAccountId() && ledger.isDetached(topic.getAutoRenewAccountId().toGrpcAccountId())) {
+		if (topic.hasAutoRenewAccountId() && ledger.isDetached(EntityNum.fromEntityId(topic.getAutoRenewAccountId()))) {
 			transactionContext.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 			return false;
 		}
@@ -205,11 +205,12 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 			transactionContext.setStatus(AUTORENEW_ACCOUNT_NOT_ALLOWED);
 			return false;
 		}
-		if (OK != validator.queryableAccountStatus(newAutoRenewAccount, accounts.get())) {
+		if (OK != validator.queryableAccountStatus(newAutoRenewAccountGrpcId, accounts.get())) {
 			transactionContext.setStatus(INVALID_AUTORENEW_ACCOUNT);
 			return false;
 		}
-		if (ledger.isDetached(newAutoRenewAccount)) {
+		final var newAutoRenewAccountId = EntityNum.fromAccountId(newAutoRenewAccountGrpcId);
+		if (ledger.isDetached(newAutoRenewAccountId)) {
 			transactionContext.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 			return false;
 		}

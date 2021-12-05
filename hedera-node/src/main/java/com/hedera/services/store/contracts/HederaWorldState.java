@@ -53,7 +53,6 @@ import java.util.stream.Stream;
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.HederaLedger.CONTRACT_ID_COMPARATOR;
-import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asTypedSolidityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
@@ -108,8 +107,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 	@Override
 	public Address newContractAddress(Address sponsor) {
-		final var newContractId = ids.newContractId(accountParsedFromSolidityAddress(sponsor));
-		return asTypedSolidityAddress(newContractId);
+		return asTypedSolidityAddress(ids.newContractId());
 	}
 
 	@Override

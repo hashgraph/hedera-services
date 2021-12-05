@@ -23,6 +23,7 @@ package com.hedera.services.state.merkle;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -86,7 +87,7 @@ class MerkleEntityAssociationTest {
 	void factoryWorks() {
 		assertEquals(
 				EntityNumPair.fromLongs(7, 8),
-				MerkleEntityAssociation.fromAccountTokenRel(asAccount("0.0.7"), asToken("0.0.8")));
+				MerkleEntityAssociation.fromAccountTokenRel(Pair.of(asAccount("0.0.7"), asToken("0.0.8"))));
 	}
 
 	@Test

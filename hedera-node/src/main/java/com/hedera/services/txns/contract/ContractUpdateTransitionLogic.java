@@ -23,10 +23,10 @@ package com.hedera.services.txns.contract;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.contract.helpers.UpdateCustomizerFactory;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.merkle.map.MerkleMap;
@@ -37,8 +37,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import static com.hedera.services.utils.EntityNum.fromContractId;
-import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
@@ -75,13 +73,12 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 		try {
 			var contractUpdateTxn = txnCtx.accessor().getTxn();
 			var op = contractUpdateTxn.getContractUpdateInstance();
-			var id = op.getContractID();
-			var target = contracts.get().get(fromContractId(id));
-
+			var contractId = EntityNum.fromContractId(op.getContractID());
+			var target = contracts.get().get(contractId);
 			var result = customizerFactory.customizerFor(target, validator, op);
 			var customizer = result.getLeft();
 			if (customizer.isPresent()) {
-				ledger.customize(asAccount(id), customizer.get());
+				ledger.customize(contractId, customizer.get());
 				txnCtx.setStatus(SUCCESS);
 			} else {
 				txnCtx.setStatus(result.getRight());

@@ -58,7 +58,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 class ContractDeleteTransitionLogicTest {
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
-	final private AccountID transfer = AccountID.newBuilder().setAccountNum(4_321L).build();
+	final private EntityNum transfer = EntityNum.fromLong(4_321L);
 
 	private Instant consensusTime;
 	private HederaLedger ledger;
@@ -184,7 +184,7 @@ class ContractDeleteTransitionLogicTest {
 				.setTransactionID(ourTxnId())
 				.setContractDeleteInstance(
 						ContractDeleteTransactionBody.newBuilder()
-								.setTransferAccountID(transfer)
+								.setTransferAccountID(transfer.toGrpcAccountId())
 								.setContractID(target));
 		contractDeleteTxn = op.build();
 		given(accessor.getTxn()).willReturn(contractDeleteTxn);

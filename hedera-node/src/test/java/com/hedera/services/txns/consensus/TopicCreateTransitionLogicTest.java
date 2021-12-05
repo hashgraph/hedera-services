@@ -144,7 +144,7 @@ class TopicCreateTransitionLogicTest {
 		given(validator.isValidAutoRenewPeriod(Duration.newBuilder().setSeconds(VALID_AUTORENEW_PERIOD_SECONDS).build()))
 				.willReturn(true);
 		given(transactionContext.consensusTime()).willReturn(consensusTimestamp);
-		given(entityIdSource.newTopicId(any())).willReturn(NEW_TOPIC_ID);
+		given(entityIdSource.newTopicId()).willReturn(NEW_TOPIC_ID);
 
 		subject.doStateTransition();
 

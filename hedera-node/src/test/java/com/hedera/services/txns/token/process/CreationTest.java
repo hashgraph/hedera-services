@@ -31,8 +31,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
@@ -125,18 +124,17 @@ class CreationTest {
 	void verifiesExpiryBeforeLoading() {
 		givenSubjectWithInvalidExpiry();
 
-		assertFailsWith(
-				() -> subject.loadModelsWith(grpcSponsor, ids, validator),
-				INVALID_EXPIRATION_TIME);
+		assertFailsWith(() -> subject.loadModelsWith(ids, validator), INVALID_EXPIRATION_TIME);
 	}
 
 	@Test
 	void onlyLoadsTreasuryWithNoAutoRenew() {
 		givenSubjectNoAutoRenew();
-		given(accountStore.loadAccountOrFailWith(treasuryId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN)).willReturn(treasury);
-		given(ids.newTokenId(grpcSponsor)).willReturn(provisionalId.asGrpcToken());
+		given(accountStore.loadAccountOrFailWith(treasuryId.toModelId(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
+				.willReturn(treasury);
+		given(ids.newTokenId()).willReturn(provisionalId.asGrpcToken());
 
-		subject.loadModelsWith(grpcSponsor, ids, validator);
+		subject.loadModelsWith(ids, validator);
 
 		assertSame(treasury, subject.getTreasury());
 		assertNull(subject.getAutoRenew());
@@ -146,11 +144,13 @@ class CreationTest {
 	@Test
 	void loadsAutoRenewWhenAvail() {
 		givenSubjectWithEverything();
-		given(accountStore.loadAccountOrFailWith(treasuryId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN)).willReturn(treasury);
-		given(accountStore.loadAccountOrFailWith(autoRenewId, INVALID_AUTORENEW_ACCOUNT)).willReturn(autoRenew);
-		given(ids.newTokenId(grpcSponsor)).willReturn(provisionalId.asGrpcToken());
+		given(accountStore.loadAccountOrFailWith(treasuryId.toModelId(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
+				.willReturn(treasury);
+		given(accountStore.loadAccountOrFailWith(autoRenewId.toModelId(), INVALID_AUTORENEW_ACCOUNT))
+				.willReturn(autoRenew);
+		given(ids.newTokenId()).willReturn(provisionalId.asGrpcToken());
 
-		subject.loadModelsWith(grpcSponsor, ids, validator);
+		subject.loadModelsWith(ids, validator);
 
 		assertSame(treasury, subject.getTreasury());
 		assertSame(autoRenew, subject.getAutoRenew());
@@ -223,26 +223,24 @@ class CreationTest {
 		subject = new Creation(accountStore, tokenStore, dynamicProperties, creationInvalidExpiry());
 	}
 
-	private final AccountID grpcSponsor = IdUtils.asAccount("0.0.3");
-	private final AccountID grpcTreasuryId = IdUtils.asAccount("0.0.1234");
-	private final AccountID grpcAutoRenewId = IdUtils.asAccount("0.0.2345");
-	private final Id treasuryId = Id.fromGrpcAccount(grpcTreasuryId);
-	private final Id autoRenewId = Id.fromGrpcAccount(grpcAutoRenewId);
+	private final EntityNum sponsorId = EntityNum.fromLong(3);
+	private final EntityNum treasuryId = EntityNum.fromLong(1234);
+	private final EntityNum autoRenewId = EntityNum.fromLong(2345);
 
 	private TokenCreateTransactionBody creationInvalidExpiry() {
 		op = TokenCreateTransactionBody.newBuilder()
 				.setExpiry(Timestamp.newBuilder().setSeconds(now))
-				.setTreasury(grpcTreasuryId)
-				.setAutoRenewAccount(grpcAutoRenewId)
+				.setTreasury(treasuryId.toGrpcAccountId())
+				.setAutoRenewAccount(autoRenewId.toGrpcAccountId())
 				.build();
 		return op;
 	}
 
 	private TokenCreateTransactionBody creationWithEverything() {
 		op = TokenCreateTransactionBody.newBuilder()
-				.setTreasury(grpcTreasuryId)
+				.setTreasury(treasuryId.toGrpcAccountId())
 				.setInitialSupply(initialSupply)
-				.setAutoRenewAccount(grpcAutoRenewId)
+				.setAutoRenewAccount(autoRenewId.toGrpcAccountId())
 				.addCustomFees(CustomFee.getDefaultInstance())
 				.addCustomFees(CustomFee.getDefaultInstance())
 				.build();
@@ -256,8 +254,8 @@ class CreationTest {
 
 	private TokenCreateTransactionBody creationNoAutoRenew() {
 		op = TokenCreateTransactionBody.newBuilder()
-				.setTreasury(grpcTreasuryId)
-				.setAutoRenewAccount(grpcAutoRenewId)
+				.setTreasury(treasuryId.toGrpcAccountId())
+				.setAutoRenewAccount(autoRenewId.toGrpcAccountId())
 				.build();
 		return op;
 	}

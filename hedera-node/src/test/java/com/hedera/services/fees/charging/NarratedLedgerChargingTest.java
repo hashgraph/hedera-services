@@ -48,14 +48,13 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class NarratedLedgerChargingTest {
-	private final long submittingNodeId = 0L;
+	private final long submittingNodeId = 1L;
 	private final long nodeFee = 2L, networkFee = 4L, serviceFee = 6L;
 	private final FeeObject fees = new FeeObject(nodeFee, networkFee, serviceFee);
 	private final AccountID grpcNodeId = IdUtils.asAccount("0.0.3");
-	private final AccountID grpcPayerId = IdUtils.asAccount("0.0.1234");
-	private final AccountID grpcFundingId = IdUtils.asAccount("0.0.98");
+	private final EntityNum payerId = EntityNum.fromLong(1234);
+	private final EntityNum fundingId = EntityNum.fromLong(98);
 	private final EntityNum nodeId = EntityNum.fromLong(3L);
-	private final EntityNum payerId = EntityNum.fromLong(1_234L);
 
 	@Mock
 	private NodeInfo nodeInfo;
@@ -81,7 +80,7 @@ class NarratedLedgerChargingTest {
 	@Test
 	void chargesNoFeesToExemptPayer() {
 		given(feeExemptions.hasExemptPayer(accessor)).willReturn(true);
-		given(accessor.getPayer()).willReturn(grpcPayerId);
+		given(accessor.getPayer()).willReturn(payerId.toGrpcAccountId());
 		subject.resetForTxn(accessor, submittingNodeId);
 
 		// when:
@@ -105,9 +104,9 @@ class NarratedLedgerChargingTest {
 		subject.chargePayerAllFees();
 
 		// then:
-		verify(ledger).adjustBalance(grpcPayerId, -(nodeFee + networkFee + serviceFee));
-		verify(ledger).adjustBalance(grpcNodeId, +nodeFee);
-		verify(ledger).adjustBalance(grpcFundingId, +(networkFee + serviceFee));
+		verify(ledger).adjustBalance(payerId, -(nodeFee + networkFee + serviceFee));
+		verify(ledger).adjustBalance(nodeId, +nodeFee);
+		verify(ledger).adjustBalance(fundingId, +(networkFee + serviceFee));
 		assertEquals(nodeFee + networkFee + serviceFee, subject.totalFeesChargedToPayer());
 	}
 
@@ -123,8 +122,8 @@ class NarratedLedgerChargingTest {
 		subject.chargePayerServiceFee();
 
 		// then:
-		verify(ledger).adjustBalance(grpcPayerId, -serviceFee);
-		verify(ledger).adjustBalance(grpcFundingId, +serviceFee);
+		verify(ledger).adjustBalance(payerId, -serviceFee);
+		verify(ledger).adjustBalance(fundingId, +serviceFee);
 		assertEquals(serviceFee, subject.totalFeesChargedToPayer());
 	}
 
@@ -136,9 +135,9 @@ class NarratedLedgerChargingTest {
 		subject.chargePayerNetworkAndUpToNodeFee();
 
 		// then:
-		verify(ledger).adjustBalance(grpcPayerId, -(networkFee + nodeFee / 2));
-		verify(ledger).adjustBalance(grpcFundingId, +networkFee);
-		verify(ledger).adjustBalance(grpcNodeId, nodeFee / 2);
+		verify(ledger).adjustBalance(payerId, -(networkFee + nodeFee / 2));
+		verify(ledger).adjustBalance(fundingId, +networkFee);
+		verify(ledger).adjustBalance(nodeId, nodeFee / 2);
 		assertEquals(networkFee + nodeFee / 2, subject.totalFeesChargedToPayer());
 	}
 
@@ -150,8 +149,8 @@ class NarratedLedgerChargingTest {
 		subject.chargeSubmittingNodeUpToNetworkFee();
 
 		// then:
-		verify(ledger).adjustBalance(grpcNodeId, -networkFee + 1);
-		verify(ledger).adjustBalance(grpcFundingId, +networkFee - 1);
+		verify(ledger).adjustBalance(nodeId, -networkFee + 1);
+		verify(ledger).adjustBalance(fundingId, +networkFee - 1);
 		assertEquals(0, subject.totalFeesChargedToPayer());
 	}
 
@@ -161,7 +160,7 @@ class NarratedLedgerChargingTest {
 		assertThrows(IllegalStateException.class, subject::canPayerAffordAllFees);
 		assertThrows(IllegalStateException.class, subject::canPayerAffordNetworkFee);
 
-		given(accessor.getPayer()).willReturn(grpcPayerId);
+		given(accessor.getPayer()).willReturn(payerId.toGrpcAccountId());
 		// and given:
 		subject.resetForTxn(accessor, submittingNodeId);
 		subject.setFees(fees);
@@ -173,7 +172,7 @@ class NarratedLedgerChargingTest {
 
 	@Test
 	void detectsLackOfWillingness() {
-		given(accessor.getPayer()).willReturn(grpcPayerId);
+		given(accessor.getPayer()).willReturn(payerId.toGrpcAccountId());
 
 		subject.resetForTxn(accessor, submittingNodeId);
 		subject.setFees(fees);
@@ -186,7 +185,7 @@ class NarratedLedgerChargingTest {
 
 	@Test
 	void exemptPayerNeedsNoAbility() {
-		given(accessor.getPayer()).willReturn(grpcPayerId);
+		given(accessor.getPayer()).willReturn(payerId.toGrpcAccountId());
 		given(feeExemptions.hasExemptPayer(accessor)).willReturn(true);
 
 		subject.resetForTxn(accessor, submittingNodeId);
@@ -200,7 +199,7 @@ class NarratedLedgerChargingTest {
 
 	@Test
 	void exemptPayerNeedsNoWillingness() {
-		given(accessor.getPayer()).willReturn(grpcPayerId);
+		given(accessor.getPayer()).willReturn(payerId.toGrpcAccountId());
 		given(feeExemptions.hasExemptPayer(accessor)).willReturn(true);
 
 		subject.resetForTxn(accessor, submittingNodeId);
@@ -216,11 +215,10 @@ class NarratedLedgerChargingTest {
 		final var payerAccount = MerkleAccountFactory.newAccount().balance(payerBalance).get();
 		given(accounts.get(payerId)).willReturn(payerAccount);
 
-		given(dynamicProperties.fundingAccount()).willReturn(grpcFundingId);
-		given(nodeInfo.accountOf(submittingNodeId)).willReturn(grpcNodeId);
+		given(dynamicProperties.fundingAccount()).willReturn(fundingId);
 		given(nodeInfo.accountKeyOf(submittingNodeId)).willReturn(nodeId);
 
-		given(accessor.getPayer()).willReturn(grpcPayerId);
+		given(accessor.getPayer()).willReturn(payerId.toGrpcAccountId());
 		given(accessor.getOfferedFee()).willReturn(totalOfferedFee);
 		subject.resetForTxn(accessor, submittingNodeId);
 		subject.setFees(fees);
@@ -230,11 +228,10 @@ class NarratedLedgerChargingTest {
 		final var nodeAccount = MerkleAccountFactory.newAccount().balance(nodeBalance).get();
 		given(accounts.get(nodeId)).willReturn(nodeAccount);
 
-		given(dynamicProperties.fundingAccount()).willReturn(grpcFundingId);
-		given(nodeInfo.accountOf(submittingNodeId)).willReturn(nodeId.toGrpcAccountId());
+		given(dynamicProperties.fundingAccount()).willReturn(fundingId);
 		given(nodeInfo.accountKeyOf(submittingNodeId)).willReturn(nodeId);
 
-		given(accessor.getPayer()).willReturn(grpcPayerId);
+		given(accessor.getPayer()).willReturn(payerId.toGrpcAccountId());
 		subject.resetForTxn(accessor, submittingNodeId);
 		subject.setFees(fees);
 	}

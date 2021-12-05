@@ -23,10 +23,8 @@ package com.hedera.services.queries.token;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityIdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
@@ -47,7 +45,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
-import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_QUERY_RANGE;
@@ -69,8 +66,8 @@ class GetAccountNftInfosAnswerTest {
 
 	String node = "0.0.3";
 	String payer = "0.0.1";
-	AccountID accountId = asAccount("0.0.2");
-	AccountID invalidAccountId = asAccount("0.0.4");
+	EntityNum accountId = EntityNum.fromLong(2);
+	EntityNum invalidAccountId = EntityNum.fromLong(4);
 	MerkleMap<EntityNum, MerkleAccount> accountMap;
 
 	private List<TokenNftInfo> accountNftInfos;
@@ -96,9 +93,7 @@ class GetAccountNftInfosAnswerTest {
 						.build()
 		));
 		accountMap = new MerkleMap<>();
-		accountMap.put(
-				EntityNum.fromAccountId(accountId),
-				new MerkleAccount());
+		accountMap.put(accountId, new MerkleAccount());
 	}
 
 	@Test
@@ -121,7 +116,8 @@ class GetAccountNftInfosAnswerTest {
 		given(view.numNftsOwnedBy(accountId)).willReturn(3L);
 		given(view.accounts()).willReturn(accountMap);
 		given(optionValidator.nftMaxQueryRangeCheck(start, end)).willReturn(OK);
-		given(optionValidator.queryableAccountStatus(accountId, accountMap)).willReturn(OK);
+		given(optionValidator.queryableAccountStatus(accountId.toGrpcAccountId(), accountMap))
+				.willReturn(OK);
 
 		// when:
 		var validity = subject.checkValidity(validQuery(ANSWER_ONLY, 0, accountId, start, end), view);
@@ -148,7 +144,8 @@ class GetAccountNftInfosAnswerTest {
 		given(view.numNftsOwnedBy(accountId)).willReturn(1L);
 		given(view.accounts()).willReturn(accountMap);
 		given(optionValidator.nftMaxQueryRangeCheck(start, end)).willReturn(OK);
-		given(optionValidator.queryableAccountStatus(accountId, accountMap)).willReturn(OK);
+		given(optionValidator.queryableAccountStatus(accountId.toGrpcAccountId(), accountMap))
+				.willReturn(OK);
 
 		// when:
 		var validity = subject.checkValidity(validQuery(ANSWER_ONLY, 0, accountId, start, end), view);
@@ -163,7 +160,8 @@ class GetAccountNftInfosAnswerTest {
 		given(view.numNftsOwnedBy(accountId)).willReturn(10L);
 		given(view.accounts()).willReturn(accountMap);
 		given(optionValidator.nftMaxQueryRangeCheck(start, end)).willReturn(OK);
-		given(optionValidator.queryableAccountStatus(accountId, accountMap)).willReturn(INVALID_ACCOUNT_ID);
+		given(optionValidator.queryableAccountStatus(accountId.toGrpcAccountId(), accountMap))
+				.willReturn(INVALID_ACCOUNT_ID);
 
 		// when:
 		var validity = subject.checkValidity(validQuery(ANSWER_ONLY, 0, accountId, start, end), view);
@@ -178,8 +176,10 @@ class GetAccountNftInfosAnswerTest {
 		given(view.numNftsOwnedBy(accountId)).willReturn(10L);
 		given(view.accounts()).willReturn(accountMap);
 		given(optionValidator.nftMaxQueryRangeCheck(start, end)).willReturn(OK);
-		given(optionValidator.queryableAccountStatus(accountId, accountMap)).willReturn(INVALID_ACCOUNT_ID);
-		given(optionValidator.queryableContractStatus(EntityIdUtils.asContract(accountId), accountMap)).willReturn(OK);
+		given(optionValidator.queryableAccountStatus(accountId.toGrpcAccountId(), accountMap))
+				.willReturn(INVALID_ACCOUNT_ID);
+		given(optionValidator.queryableContractStatus(accountId.toGrpcContractId(), accountMap))
+				.willReturn(OK);
 
 		// when:
 		var validity = subject.checkValidity(validQuery(ANSWER_ONLY, 0, accountId, start, end), view);
@@ -332,7 +332,13 @@ class GetAccountNftInfosAnswerTest {
 		assertTrue(actual.isEmpty());
 	}
 
-	private Query validQuery(ResponseType type, long payment, AccountID id, long start, long end) throws Throwable {
+	private Query validQuery(
+			final ResponseType type,
+			final long payment,
+			final EntityNum id,
+			final long start,
+			final long end
+	) throws Throwable {
 		this.paymentTxn = payerSponsoredTransfer(payer, COMPLEX_KEY_ACCOUNT_KT, node, payment);
 		QueryHeader.Builder header = QueryHeader.newBuilder()
 				.setPayment(this.paymentTxn)
@@ -341,7 +347,7 @@ class GetAccountNftInfosAnswerTest {
 				.setHeader(header)
 				.setStart(start)
 				.setEnd(end)
-				.setAccountID(id);
+				.setAccountID(id.toGrpcAccountId());
 		return Query.newBuilder().setTokenGetAccountNftInfos(op).build();
 	}
 }

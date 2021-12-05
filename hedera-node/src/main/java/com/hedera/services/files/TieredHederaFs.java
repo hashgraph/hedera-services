@@ -133,7 +133,7 @@ public final class TieredHederaFs implements HederaFs {
 		assertValid(attr);
 		assertWithinSizeLimits(contents);
 
-		final var fid = ids.newFileId(sponsor);
+		final var fid = ids.newFileId();
 		data.put(fid, contents);
 		metadata.put(fid, attr);
 

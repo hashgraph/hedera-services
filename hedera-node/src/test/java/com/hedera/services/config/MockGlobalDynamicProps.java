@@ -22,7 +22,7 @@ package com.hedera.services.config;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 
 import java.util.Set;
@@ -39,7 +39,7 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	private boolean throttleByGas;
 
 	public MockGlobalDynamicProps() {
-		super(null, null);
+		super(null);
 	}
 
 	@Override
@@ -71,8 +71,8 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	}
 
 	@Override
-	public AccountID fundingAccount() {
-		return AccountID.newBuilder().setAccountNum(98L).build();
+	public EntityNum fundingAccount() {
+		return EntityNum.fromLong(98L);
 	}
 
 	@Override

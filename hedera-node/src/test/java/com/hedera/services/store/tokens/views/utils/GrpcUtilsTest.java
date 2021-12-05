@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
@@ -41,9 +42,9 @@ class GrpcUtilsTest {
 	void createsExpectedForTreasuryUsingWildcard() {
 		final var treasuryNft = new MerkleUniqueToken(wildcard, meta, creationTime);
 
-		final var actual = GrpcUtils.reprOf(token, treasurySerial, treasuryNft, treasury.toGrpcAccountId());
+		final var actual = GrpcUtils.reprOf(token, treasurySerial, treasuryNft, treasury);
 
-		assertEquals(expectedNftInfo(treasurySerial, treasury), actual);
+		assertEquals(expectedNftInfo(treasurySerial, treasury.toEntityId()), actual);
 	}
 
 	@Test
@@ -73,7 +74,7 @@ class GrpcUtilsTest {
 	private final TokenID token = new EntityId(0, 0, 6).toGrpcTokenId();
 	private final EntityId wildcard = EntityId.MISSING_ENTITY_ID;
 	private final EntityId nonTreasuryOwner = new EntityId(0, 0, 3);
-	private final EntityId treasury = new EntityId(0, 0, 4);
+	private final EntityNum treasury = EntityNum.fromLong(4);
 
 	private TokenNftInfo expectedNftInfo(final long serial, final EntityId owner) {
 		return TokenNftInfo.newBuilder()

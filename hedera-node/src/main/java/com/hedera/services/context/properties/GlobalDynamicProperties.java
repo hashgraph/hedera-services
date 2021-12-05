@@ -20,11 +20,10 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
-import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 
 import javax.inject.Inject;
@@ -33,7 +32,6 @@ import java.util.Set;
 
 @Singleton
 public class GlobalDynamicProperties {
-	private final HederaNumbers hederaNums;
 	private final PropertySource properties;
 
 	private int maxNftMetadataBytes;
@@ -55,7 +53,7 @@ public class GlobalDynamicProperties {
 	private String pathToBalancesExportDir;
 	private boolean shouldExportBalances;
 	private boolean shouldExportTokenBalances;
-	private AccountID fundingAccount;
+	private EntityNum fundingAccount;
 	private int maxTransfersLen;
 	private int maxTokenTransfersLen;
 	private int maxMemoUtf8Bytes;
@@ -91,11 +89,7 @@ public class GlobalDynamicProperties {
 	private long consensusThrottleMaxGasLimit;
 
 	@Inject
-	public GlobalDynamicProperties(
-			HederaNumbers hederaNums,
-			@CompositeProps PropertySource properties
-	) {
-		this.hederaNums = hederaNums;
+	public GlobalDynamicProperties(@CompositeProps PropertySource properties) {
 		this.properties = properties;
 
 		reload();
@@ -112,11 +106,7 @@ public class GlobalDynamicProperties {
 		maxTokenNameUtf8Bytes = properties.getIntProperty("tokens.maxTokenNameUtf8Bytes");
 		maxAccountNum = properties.getLongProperty("ledger.maxAccountNum");
 		maxFileSizeKb = properties.getIntProperty("files.maxSizeKb");
-		fundingAccount = AccountID.newBuilder()
-				.setShardNum(hederaNums.shard())
-				.setRealmNum(hederaNums.realm())
-				.setAccountNum(properties.getLongProperty("ledger.fundingAccount"))
-				.build();
+		fundingAccount = EntityNum.fromLong(properties.getLongProperty("ledger.fundingAccount"));
 		cacheRecordsTtl = properties.getIntProperty("cache.records.ttl");
 		ratesIntradayChangeLimitPercent = properties.getIntProperty("rates.intradayChangeLimitPercent");
 		balancesExportPeriodSecs = properties.getIntProperty("balances.exportPeriodSecs");
@@ -137,8 +127,8 @@ public class GlobalDynamicProperties {
 		feesTokenTransferUsageMultiplier = properties.getIntProperty("fees.tokenTransferUsageMultiplier");
 		autoRenewEnabled = properties.getBooleanProperty("autorenew.isEnabled");
 		autoRenewNumberOfEntitiesToScan = properties.getIntProperty("autorenew.numberOfEntitiesToScan");
-		autoRenewMaxNumberOfEntitiesToRenewOrDelete =
-				properties.getIntProperty("autorenew.maxNumberOfEntitiesToRenewOrDelete");
+		autoRenewMaxNumberOfEntitiesToRenewOrDelete = properties.getIntProperty(
+				"autorenew.maxNumberOfEntitiesToRenewOrDelete");
 		autoRenewGracePeriod = properties.getLongProperty("autorenew.gracePeriod");
 		maxAutoRenewDuration = properties.getLongProperty("ledger.autoRenewPeriod.maxDuration");
 		minAutoRenewDuration = properties.getLongProperty("ledger.autoRenewPeriod.minDuration");
@@ -170,17 +160,29 @@ public class GlobalDynamicProperties {
 		return maxCustomFeesAllowed;
 	}
 
-	public int maxNftMetadataBytes() { return maxNftMetadataBytes; }
+	public int maxNftMetadataBytes() {
+		return maxNftMetadataBytes;
+	}
 
-	public int maxBatchSizeBurn() { return maxBatchSizeBurn; }
+	public int maxBatchSizeBurn() {
+		return maxBatchSizeBurn;
+	}
 
-	public int maxNftTransfersLen() { return maxNftTransfersLen; }
+	public int maxNftTransfersLen() {
+		return maxNftTransfersLen;
+	}
 
-	public int maxBatchSizeWipe() { return maxBatchSizeWipe; }
+	public int maxBatchSizeWipe() {
+		return maxBatchSizeWipe;
+	}
 
-	public int maxBatchSizeMint() { return maxBatchSizeMint; }
+	public int maxBatchSizeMint() {
+		return maxBatchSizeMint;
+	}
 
-	public long maxNftQueryRange() { return maxNftQueryRange; }
+	public long maxNftQueryRange() {
+		return maxNftQueryRange;
+	}
 
 	public int maxTokenSymbolUtf8Bytes() {
 		return maxTokenSymbolUtf8Bytes;
@@ -198,7 +200,7 @@ public class GlobalDynamicProperties {
 		return maxFileSizeKb;
 	}
 
-	public AccountID fundingAccount() {
+	public EntityNum fundingAccount() {
 		return fundingAccount;
 	}
 
@@ -324,7 +326,7 @@ public class GlobalDynamicProperties {
 
 	public boolean areNftsEnabled() {
 		return areNftsEnabled;
-        }
+	}
 
 	public long maxNftMints() {
 		return maxNftMints;

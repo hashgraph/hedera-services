@@ -20,12 +20,10 @@ package com.hedera.services.ledger.backing;
  * ‍
  */
 
-import com.hedera.services.ledger.backing.BackingAccounts;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.FcLong;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.MutabilityException;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -37,29 +35,19 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Set;
 
-import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.never;
-import static org.mockito.BDDMockito.verify;
 
 class BackingAccountsTest {
-	private final AccountID a = asAccount("0.0.1");
-	private final AccountID b = asAccount("0.0.2");
-	private final AccountID c = asAccount("0.0.3");
-	private final AccountID d = asAccount("0.0.4");
-	private final EntityNum aKey = EntityNum.fromAccountId(a);
-	private final EntityNum bKey = EntityNum.fromAccountId(b);
-	private final EntityNum cKey = EntityNum.fromAccountId(c);
-	private final EntityNum dKey = EntityNum.fromAccountId(d);
+	private final EntityNum a = EntityNum.fromLong(1);
+	private final EntityNum b = EntityNum.fromLong(2);
+	private final EntityNum c = EntityNum.fromLong(3);
+	private final EntityNum d = EntityNum.fromLong(4);
 	private final MerkleAccount aValue = MerkleAccountFactory.newAccount().balance(123L).get();
 	private final MerkleAccount bValue = MerkleAccountFactory.newAccount().balance(122L).get();
-	private final MerkleAccount cValue = MerkleAccountFactory.newAccount().balance(121L).get();
-	private final MerkleAccount dValue = MerkleAccountFactory.newAccount().balance(120L).get();
 
 	private MerkleMap<EntityNum, MerkleAccount> delegate;
 	private BackingAccounts subject;
@@ -67,8 +55,8 @@ class BackingAccountsTest {
 	@BeforeEach
 	private void setup() {
 		delegate = new MerkleMap<>();
-		delegate.put(aKey, aValue);
-		delegate.put(bKey, bValue);
+		delegate.put(a, aValue);
+		delegate.put(b, bValue);
 
 		subject = new BackingAccounts(() -> delegate);
 	}

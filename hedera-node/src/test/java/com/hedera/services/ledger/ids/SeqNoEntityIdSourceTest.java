@@ -21,7 +21,6 @@ package com.hedera.services.ledger.ids;
  */
 
 import com.hedera.services.state.submerkle.SequenceNumber;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -42,7 +41,6 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 class SeqNoEntityIdSourceTest {
-	final AccountID sponsor = asAccount("1.2.3");
 	SequenceNumber seqNo;
 	SeqNoEntityIdSource subject;
 
@@ -54,27 +52,21 @@ class SeqNoEntityIdSourceTest {
 
 	@Test
 	void resetsToZero() {
-		// given:
-		subject.newTokenId(sponsor);
-		subject.newTokenId(sponsor);
+		subject.newTokenId();
+		subject.newTokenId();
 
-		// when:
 		subject.resetProvisionalIds();
 
-		// then:
 		assertEquals(0, subject.getProvisionalIds());
 	}
 
 	@Test
 	void reclaimsAsExpected() {
-		// given:
-		subject.newTokenId(sponsor);
-		subject.newTokenId(sponsor);
+		subject.newTokenId();
+		subject.newTokenId();
 
-		// when:
 		subject.reclaimProvisionalIds();
 
-		// then:
 		assertEquals(0, subject.getProvisionalIds());
 		verify(seqNo, times(2)).decrement();
 	}
@@ -95,28 +87,26 @@ class SeqNoEntityIdSourceTest {
 		given(seqNo.getAndIncrement()).willReturn(555L);
 
 		// when:
-		FileID newId = subject.newFileId(sponsor);
+		FileID newId = subject.newFileId();
 
 		// then:
-		assertEquals(asFile("1.2.555"), newId);
+		assertEquals(asFile("0.0.555"), newId);
 	}
 
 	@Test
 	void returnsExpectedTokenId() {
 		given(seqNo.getAndIncrement()).willReturn(555L);
 
-		// when:
-		TokenID newId = subject.newTokenId(sponsor);
+		TokenID newId = subject.newTokenId();
 
-		// then:
-		assertEquals(asToken("1.2.555"), newId);
+		assertEquals(asToken("0.0.555"), newId);
 	}
 
 	@Test
 	void returnsExpectedTopicId() {
 		given(seqNo.getAndIncrement()).willReturn(222L);
-		TopicID id = subject.newTopicId(sponsor);
-		assertEquals(asTopic("1.2.222"), id);
+		TopicID id = subject.newTopicId();
+		assertEquals(asTopic("0.0.222"), id);
 	}
 
 	@Test
@@ -130,19 +120,12 @@ class SeqNoEntityIdSourceTest {
 
 	@Test
 	void exceptionalSourceAlwaysThrows() {
-		var defaultAccountId = AccountID.getDefaultInstance();
-		// expect:
 		assertThrows(UnsupportedOperationException.class, NOOP_ID_SOURCE::newAccountId);
-		assertThrows(UnsupportedOperationException.class,
-				() -> NOOP_ID_SOURCE.newFileId(defaultAccountId));
-		assertThrows(UnsupportedOperationException.class,
-				() -> NOOP_ID_SOURCE.newTokenId(defaultAccountId));
-		assertThrows(UnsupportedOperationException.class,
-				() -> NOOP_ID_SOURCE.newScheduleId(defaultAccountId));
-		assertThrows(UnsupportedOperationException.class,
-				() -> NOOP_ID_SOURCE.newTopicId(defaultAccountId));
-		assertThrows(UnsupportedOperationException.class,
-				() -> NOOP_ID_SOURCE.newContractId(defaultAccountId));
+		assertThrows(UnsupportedOperationException.class, NOOP_ID_SOURCE::newFileId);
+		assertThrows(UnsupportedOperationException.class, NOOP_ID_SOURCE::newTokenId);
+		assertThrows(UnsupportedOperationException.class, NOOP_ID_SOURCE::newScheduleId);
+		assertThrows(UnsupportedOperationException.class, NOOP_ID_SOURCE::newTopicId);
+		assertThrows(UnsupportedOperationException.class, NOOP_ID_SOURCE::newContractId);
 		assertThrows(UnsupportedOperationException.class, NOOP_ID_SOURCE::reclaimLastId);
 		assertThrows(UnsupportedOperationException.class, NOOP_ID_SOURCE::reclaimProvisionalIds);
 		assertThrows(UnsupportedOperationException.class, NOOP_ID_SOURCE::resetProvisionalIds);
@@ -151,28 +134,20 @@ class SeqNoEntityIdSourceTest {
 	@Test
 	void newScheduleId() {
 		given(seqNo.getAndIncrement()).willReturn(3L);
-		var scheduleId = subject.newScheduleId(AccountID.newBuilder()
-				.setRealmNum(1)
-				.setShardNum(2)
-				.setAccountNum(3)
-				.build());
+		var scheduleId = subject.newScheduleId();
 		assertNotNull(scheduleId);
 		assertEquals(3, scheduleId.getScheduleNum());
-		assertEquals(1, scheduleId.getRealmNum());
-		assertEquals(2, scheduleId.getShardNum());
+		assertEquals(0, scheduleId.getRealmNum());
+		assertEquals(0, scheduleId.getShardNum());
 	}
 
 	@Test
 	void newContractId() {
 		given(seqNo.getAndIncrement()).willReturn(3L);
-		var contractId = subject.newContractId(AccountID.newBuilder()
-				.setRealmNum(1)
-				.setShardNum(2)
-				.setAccountNum(3)
-				.build());
+		var contractId = subject.newContractId();
 		assertNotNull(contractId);
 		assertEquals(3, contractId.getContractNum());
-		assertEquals(1, contractId.getRealmNum());
-		assertEquals(2, contractId.getShardNum());
+		assertEquals(0, contractId.getRealmNum());
+		assertEquals(0, contractId.getShardNum());
 	}
 }

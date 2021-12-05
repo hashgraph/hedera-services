@@ -27,6 +27,7 @@ import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
@@ -111,7 +112,7 @@ class CallEvmTxProcessorTest {
 	@Test
 	void assertSuccessExecution() {
 		givenValidMock();
-		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
+		given(globalDynamicProperties.fundingAccount()).willReturn(EntityNum.fromLong(1010));
 
 		givenSenderWithBalance(350_000L);
 		var result = callEvmTxProcessor.execute(
@@ -124,7 +125,7 @@ class CallEvmTxProcessorTest {
 	void throwsWhenCodeCacheFailsLoading() {
 		given(worldState.updater()).willReturn(updater);
 		given(worldState.updater().updater()).willReturn(updater);
-		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
+		given(globalDynamicProperties.fundingAccount()).willReturn(EntityNum.fromLong(1010));
 
 		var evmAccount = mock(EvmAccount.class);
 
@@ -147,7 +148,7 @@ class CallEvmTxProcessorTest {
 	void assertSuccessExecutionChargesCorrectMinimumGas() {
 		givenValidMock();
 		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENT);
-		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
+		given(globalDynamicProperties.fundingAccount()).willReturn(EntityNum.fromLong(1010));
 		givenSenderWithBalance(350_000L);
 		var result = callEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), GAS_LIMIT, 1234L, Bytes.EMPTY,
 				consensusTime);
@@ -161,7 +162,7 @@ class CallEvmTxProcessorTest {
 		givenValidMock();
 		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENT);
 		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(Gas.of(INTRINSIC_GAS_COST));
-		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
+		given(globalDynamicProperties.fundingAccount()).willReturn(EntityNum.fromLong(1010));
 
 		givenSenderWithBalance(350_000L);
 		var result = callEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), GAS_LIMIT, 1234L, Bytes.EMPTY,
@@ -259,7 +260,7 @@ class CallEvmTxProcessorTest {
 	private void givenValidMock() {
 		given(worldState.updater()).willReturn(updater);
 		given(worldState.updater().updater()).willReturn(updater);
-		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
+		given(globalDynamicProperties.fundingAccount()).willReturn(EntityNum.fromLong(1010));
 
 		var evmAccount = mock(EvmAccount.class);
 

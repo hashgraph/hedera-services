@@ -39,6 +39,7 @@ import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -277,7 +278,9 @@ class ContractCreateTransitionLogicTest {
 				txnCtx.consensusTime(),
 				expiry);
 		final ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
-		verify(hederaLedger).customizePotentiallyDeleted(eq(contractAccount.getId().asGrpcAccount()), captor.capture());
+		verify(hederaLedger).customizePotentiallyDeleted(
+				eq(EntityNum.fromModel(contractAccount.getId())),
+				captor.capture());
 		final var standin = new MerkleAccount();
 		captor.getValue().customizing(standin);
 		final var accountKey = standin.getAccountKey();
@@ -353,7 +356,9 @@ class ContractCreateTransitionLogicTest {
 				txnCtx.consensusTime(),
 				expiry);
 		final ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
-		verify(hederaLedger).customizePotentiallyDeleted(eq(contractAccount.getId().asGrpcAccount()), captor.capture());
+		verify(hederaLedger).customizePotentiallyDeleted(
+				eq(EntityNum.fromModel(contractAccount.getId())),
+				captor.capture());
 		final var standin = new MerkleAccount();
 		captor.getValue().customizing(standin);
 		final var accountKey = standin.getAccountKey();

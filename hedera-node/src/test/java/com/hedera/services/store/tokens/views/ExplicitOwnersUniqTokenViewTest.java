@@ -27,7 +27,6 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.store.tokens.views.utils.GrpcUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Assertions;
@@ -71,14 +70,14 @@ class ExplicitOwnersUniqTokenViewTest {
 	void interpolatesAccountIdForWildcard() {
 		final var explicitInfo = GrpcUtils.reprOf(tokenId.toGrpcTokenId(), someSerial, someExplicitNft, null);
 		final var interpolatedInfo = GrpcUtils.reprOf(otherTokenId.toGrpcTokenId(), wildcardSerial, wildcardNft,
-				grpcOwnerId);
+				ownerId);
 		setupFirstMockRange();
 
-		given(nftsByOwner.get(EntityNum.fromInt(ownerId.identityCode()), start, end)).willReturn(firstMockRange);
+		given(nftsByOwner.get(EntityNum.fromInt(ownerEntityId.identityCode()), start, end)).willReturn(firstMockRange);
 		given(nfts.get(someExplicitNftId)).willReturn(someExplicitNft);
 		given(nfts.get(wildcardNftId)).willReturn(wildcardNft);
 
-		final var actual = subject.ownedAssociations(grpcOwnerId, start, end);
+		final var actual = subject.ownedAssociations(ownerId, start, end);
 
 		Assertions.assertEquals(List.of(explicitInfo, interpolatedInfo), actual);
 	}
@@ -101,9 +100,9 @@ class ExplicitOwnersUniqTokenViewTest {
 	private final RichInstant someCreationTime = new RichInstant(1_234_567L, 890);
 	private final EntityId tokenId = new EntityId(0, 0, 6);
 	private final EntityId otherTokenId = new EntityId(0, 0, 7);
-	private final EntityId ownerId = new EntityId(0, 0, 3);
-	private final AccountID grpcOwnerId = ownerId.toGrpcAccountId();
-	private final MerkleUniqueToken someExplicitNft = new MerkleUniqueToken(ownerId, someMeta, someCreationTime);
+	private final EntityId ownerEntityId = new EntityId(0, 0, 3);
+	private final EntityNum ownerId = EntityNum.fromLong(3);
+	private final MerkleUniqueToken someExplicitNft = new MerkleUniqueToken(ownerEntityId, someMeta, someCreationTime);
 	private final MerkleUniqueToken wildcardNft = new MerkleUniqueToken(MISSING_ENTITY_ID, wildMeta, someCreationTime);
 	private final EntityNumPair someExplicitNftId = EntityNumPair.fromLongs(tokenId.num(), someSerial);
 	private final EntityNumPair wildcardNftId = EntityNumPair.fromLongs(otherTokenId.num(), wildcardSerial);
