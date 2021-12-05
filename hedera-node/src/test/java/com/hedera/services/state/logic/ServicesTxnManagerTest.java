@@ -98,7 +98,6 @@ class ServicesTxnManagerTest {
 		inOrder.verify(txnCtx).resetFor(accessor, consensusTime, submittingMember);
 		inOrder.verify(recordsHistorian).clearHistory();
 		inOrder.verify(ledger).begin();
-		inOrder.verify(txnCtx).resetFor(accessor, consensusTime, submittingMember);
 		inOrder.verify(processLogic).run();
 		inOrder.verify(ledger).commit();
 		inOrder.verify(recordStreaming).run();
