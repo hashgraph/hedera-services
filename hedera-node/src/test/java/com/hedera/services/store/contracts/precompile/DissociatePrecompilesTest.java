@@ -22,15 +22,17 @@ package com.hedera.services.store.contracts.precompile;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.contracts.sources.SoliditySigsVerifier;
+import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
-import com.hedera.services.state.EntityCreator;
+import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -66,7 +68,7 @@ import java.util.Collections;
 
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_ADDER;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_REMOVER;
-import static com.hedera.services.store.tokens.views.UniqTokenViewsManager.NOOP_VIEWS_MANAGER;
+import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -91,7 +93,7 @@ class DissociatePrecompilesTest {
 	@Mock
 	private MessageFrame frame;
 	@Mock
-	private SoliditySigsVerifier sigsVerifier;
+	private TxnAwareSoliditySigsVerifier sigsVerifier;
 	@Mock
 	private AccountRecordsHistorian recordsHistorian;
 	@Mock
@@ -127,9 +129,13 @@ class DissociatePrecompilesTest {
 	@Mock
 	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
 	@Mock
-	private EntityCreator creator;
+	private ExpiringCreations creator;
 	@Mock
 	private DissociationFactory dissociationFactory;
+	@Mock
+	private EntityIdSource ids;
+	@Mock
+	private ImpliedTransfersMarshal impliedTransfersMarshal;
 
 	private HTSPrecompiledContract subject;
 
@@ -138,7 +144,7 @@ class DissociatePrecompilesTest {
 		subject = new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory, creator, dissociationFactory);
+				syntheticTxnFactory, creator, dissociationFactory, ids, impliedTransfersMarshal);
 		subject.setMintLogicFactory(mintLogicFactory);
 		subject.setDissociateLogicFactory(dissociateLogicFactory);
 		subject.setTokenStoreFactory(tokenStoreFactory);

@@ -48,6 +48,7 @@ import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
+import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -141,16 +142,17 @@ class TransferPrecompilesTest {
 	private ImpliedTransfersMarshal impliedTransfersMarshal;
 	@Mock
 	private ImpliedTransfers impliedTransfers;
+	@Mock
+	private DissociationFactory dissociationFactory;
 
 	private HTSPrecompiledContract subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new HTSPrecompiledContract(recordsHistorian, sigsVerifier, NOOP_VIEWS_MANAGER, creator, ids,
-				accountStore, validator,
-				tokenStore, dynamicProperties, gasCalculator,
-				decoder,
-				syntheticTxnFactory, impliedTransfersMarshal);
+		subject = new HTSPrecompiledContract(
+				validator, dynamicProperties, gasCalculator,
+				recordsHistorian, sigsVerifier, decoder,
+				syntheticTxnFactory, creator, dissociationFactory, ids, impliedTransfersMarshal);
 		subject.setTransferLogicFactory(transferLogicFactory);
 		subject.setHederaTokenStoreFactory(hederaTokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);

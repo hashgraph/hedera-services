@@ -52,10 +52,8 @@ import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
-import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.services.txns.token.AssociateLogic;
 import com.hedera.services.txns.token.BurnLogic;
 import com.hedera.services.txns.token.DissociateLogic;
@@ -63,6 +61,7 @@ import com.hedera.services.txns.token.MintLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -78,9 +77,6 @@ import org.hyperledger.besu.evm.precompile.AbstractPrecompiledContract;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -89,7 +85,6 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -127,7 +122,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final DissociationFactory dissociationFactory;
 
-	private final UniqueTokenViewsManager tokenViewsManager;
 	private final EntityIdSource ids;
 	private final ImpliedTransfersMarshal impliedTransfersMarshal;
 
@@ -156,18 +150,16 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@Inject
 	public HTSPrecompiledContract(
-			final AccountRecordsHistorian recordsHistorian,
-			final TxnAwareSoliditySigsVerifier sigsVerifier,
-			final UniqueTokenViewsManager tokenViewsManager,
-			final ExpiringCreations creator,
-			final EntityIdSource ids,
-			final AccountStore accountStore,
 			final OptionValidator validator,
 			final GlobalDynamicProperties dynamicProperties,
 			final GasCalculator gasCalculator,
+			final AccountRecordsHistorian recordsHistorian,
+			final TxnAwareSoliditySigsVerifier sigsVerifier,
 			final DecodingFacade decoder,
 			final SyntheticTxnFactory syntheticTxnFactory,
+			final ExpiringCreations creator,
 			final DissociationFactory dissociationFactory,
+			final EntityIdSource ids,
 			final ImpliedTransfersMarshal impliedTransfersMarshal
 	) {
 		super("HTS", gasCalculator);
@@ -181,7 +173,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.validator = validator;
 		this.dynamicProperties = dynamicProperties;
 		this.dissociationFactory = dissociationFactory;
-		this.tokenViewsManager = tokenViewsManager;
 		this.ids = ids;
 		this.impliedTransfersMarshal = impliedTransfersMarshal;
 	}
@@ -238,80 +229,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	@SuppressWarnings("unused")
-	protected Bytes computeTransferToken(final Bytes input, final MessageFrame messageFrame) {
-		var updater = (AbstractLedgerWorldUpdater) messageFrame.getWorldUpdater();
-		var ledgers = updater.wrappedTrackingLedgers();
-
-		final var transferOp = decoder.decodeTransferToken(input);
-
-		final List<BalanceChange> changes = List.of(
-				BalanceChange.changingFtUnits(
-						Id.fromGrpcToken(transferOp.getDenomination()),
-						transferOp.getDenomination(),
-						AccountAmount.newBuilder().setAccountID(transferOp.sender).setAmount(-transferOp.amount).build()
-				),
-				BalanceChange.changingFtUnits(
-						Id.fromGrpcToken(transferOp.getDenomination()),
-						transferOp.getDenomination(),
-						AccountAmount.newBuilder().setAccountID(transferOp.receiver).setAmount(transferOp.amount).build()
-				)
-		);
-
-		var validated = impliedTransfersMarshal.assessCustomFeesAndValidate(
-				changes,
-				changes.size(),
-				impliedTransfersMarshal.currentProps()
-		);
-
-		final var syntheticTxn = syntheticTxnFactory.createCryptoTransfer(List.of(), List.of(), List.of(transferOp));
-
-		final var sideEffects = sideEffectsFactory.get();
-		final var hederaTokenStore = hederaTokenStoreFactory.newHederaTokenStore(
-				ids,
-				validator,
-				sideEffects,
-				tokenViewsManager,
-				dynamicProperties,
-				ledgers.tokenRels(), ledgers.nfts(), ledgers.tokens());
-		hederaTokenStore.setAccountsLedger(ledgers.accounts());
-
-
-		final var transferLogic = transferLogicFactory.newLogic(
-				ledgers.accounts(), ledgers.nfts(), ledgers.tokenRels(), hederaTokenStore,
-				sideEffects,
-				tokenViewsManager,
-				dynamicProperties,
-				validator);
-
-		ResponseCodeEnum responseCode;
-		ExpirableTxnRecord.Builder childRecord = null;
-		try {
-			var solidityAddressFrom = EntityIdUtils.asTypedSolidityAddress(transferOp.sender);
-			var solidityAddressTo = EntityIdUtils.asTypedSolidityAddress(transferOp.receiver);
-
-			final var hasRequiredSigs = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-					solidityAddressFrom,
-					solidityAddressTo,
-					messageFrame.getContractAddress()
-			);
-			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
-
-			transferLogic.transfer(validated.getAllBalanceChanges());
-			ledgers.commit();
-
-			childRecord = creator.createSuccessfulSyntheticRecord(validated.getAssessedCustomFees(),
-					sideEffects);
-
-			responseCode = ResponseCodeEnum.SUCCESS;
-		} catch (InvalidTransactionException ite) {
-			responseCode = ite.getResponseCode();
-			if (responseCode == FAIL_INVALID) {
-				LOG.warn("HTS Precompiled Contract failed, status {} ", responseCode);
-			}
-		}
-
-		updater.manageInProgressRecord(recordsHistorian, childRecord, syntheticTxn);
-		return UInt256.valueOf(responseCode.getNumber());
+	protected Bytes computeTransferToken(final Bytes input, final MessageFrame frame) {
+		return computeInternal(frame, input, new TransferPrecompile());
 	}
 
 	@SuppressWarnings("unused")
@@ -607,6 +526,75 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				mintLogic.mint(tokenId, 0, mintOp.getAmount(), NO_METADATA, Instant.EPOCH);
 			}
 			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects);
+		}
+	}
+
+	private class TransferPrecompile implements Precompile {
+		private SyntheticTxnFactory.FungibleTokenTransfer transferOp;
+
+		@Override
+		public TransactionBody.Builder body(final Bytes input) {
+			transferOp = decoder.decodeTransferToken(input);
+			return syntheticTxnFactory.createCryptoTransfer(List.of(), List.of(), List.of(transferOp));
+		}
+
+		@Override
+		public ExpirableTxnRecord.Builder run(
+				final Address recipient,
+				final Address contract,
+				final WorldLedgers ledgers
+		) {
+			final List<BalanceChange> changes = List.of(
+					BalanceChange.changingFtUnits(
+							Id.fromGrpcToken(transferOp.getDenomination()),
+							transferOp.getDenomination(),
+							AccountAmount.newBuilder().setAccountID(transferOp.sender).setAmount(-transferOp.amount).build()
+					),
+					BalanceChange.changingFtUnits(
+							Id.fromGrpcToken(transferOp.getDenomination()),
+							transferOp.getDenomination(),
+							AccountAmount.newBuilder().setAccountID(transferOp.receiver).setAmount(transferOp.amount).build()
+					)
+			);
+
+			var validated = impliedTransfersMarshal.assessCustomFeesAndValidate(
+					changes,
+					changes.size(),
+					impliedTransfersMarshal.currentProps()
+			);
+
+			final var sideEffects = sideEffectsFactory.get();
+			final var hederaTokenStore = hederaTokenStoreFactory.newHederaTokenStore(
+					ids,
+					validator,
+					sideEffects,
+					NOOP_VIEWS_MANAGER,
+					dynamicProperties,
+					ledgers.tokenRels(), ledgers.nfts(), ledgers.tokens());
+			hederaTokenStore.setAccountsLedger(ledgers.accounts());
+
+
+			final var transferLogic = transferLogicFactory.newLogic(
+					ledgers.accounts(), ledgers.nfts(), ledgers.tokenRels(), hederaTokenStore,
+					sideEffects,
+					NOOP_VIEWS_MANAGER,
+					dynamicProperties,
+					validator);
+
+			var solidityAddressFrom = EntityIdUtils.asTypedSolidityAddress(transferOp.sender);
+			var solidityAddressTo = EntityIdUtils.asTypedSolidityAddress(transferOp.receiver);
+
+			final var hasRequiredSigs = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+					solidityAddressFrom,
+					solidityAddressTo,
+					contract
+			);
+			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
+
+			transferLogic.transfer(validated.getAllBalanceChanges());
+
+			return creator.createSuccessfulSyntheticRecord(validated.getAssessedCustomFees(),
+					sideEffects);
 		}
 	}
 

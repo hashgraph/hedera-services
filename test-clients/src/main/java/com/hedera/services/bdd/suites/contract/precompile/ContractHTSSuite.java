@@ -81,7 +81,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(
-//				depositAndWithdraw(),
+				depositAndWithdraw(),
 				associateToken(),
 				dissociateToken()
 		);

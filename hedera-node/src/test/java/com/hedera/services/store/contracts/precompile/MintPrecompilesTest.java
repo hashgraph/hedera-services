@@ -144,7 +144,7 @@ class MintPrecompilesTest {
 		subject = new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory, creator, dissociationFactory);
+				syntheticTxnFactory, creator, dissociationFactory, ids, impliedTransfers);;
 		subject.setMintLogicFactory(mintLogicFactory);
 		subject.setTokenStoreFactory(tokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);

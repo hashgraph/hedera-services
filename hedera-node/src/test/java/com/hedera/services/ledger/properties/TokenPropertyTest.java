@@ -28,9 +28,9 @@ package com.hedera.services.ledger.properties;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -49,7 +49,6 @@ import com.hedera.services.state.submerkle.FcCustomFee;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.Optional;
 
 import static com.hedera.services.ledger.properties.TokenProperty.ACC_FROZEN_BY_DEFAULT;
 import static com.hedera.services.ledger.properties.TokenProperty.ADMIN_KEY;
@@ -78,8 +77,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class TokenPropertyTest {
 	final long totalSupply = 2L;
-	final Optional<JEd25519Key> adminKey = Optional.of(new JEd25519Key("abcdefghijklmnopqrstuvwxyz012345".getBytes()));
-	final Optional<JEd25519Key> freezeKey = Optional.of(new JEd25519Key("abcdefghijklmnopqrstuvwxyz012346".getBytes()));
+	final JKey adminKey = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012345".getBytes());
+	final JKey freezeKey = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012346".getBytes());
 	final JKey kycKey = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012347".getBytes());
 	final JKey pauseKey = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012348".getBytes());
 	final JKey supplyKey = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012349".getBytes());
@@ -232,8 +231,8 @@ class TokenPropertyTest {
 		feeScheduleSetter.accept(target, feeSchedule);
 		// expect:
 		assertEquals(totalSupply, target.totalSupply());
-		assertEquals(adminKey.get(), target.getAdminKey());
-		assertEquals(freezeKey.get(), target.getFreezeKey());
+		assertEquals(adminKey, target.getAdminKey());
+		assertEquals(freezeKey, target.getFreezeKey());
 		assertEquals(kycKey, target.getKycKey());
 		assertEquals(pauseKey, target.getPauseKey());
 		assertEquals(supplyKey, target.getSupplyKey());
