@@ -582,29 +582,15 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					dynamicProperties,
 					validator);
 
-			var solidityAddressFrom = EntityIdUtils.asTypedSolidityAddress(transferOp.sender);
-			var solidityAddressTo = EntityIdUtils.asTypedSolidityAddress(transferOp.receiver);
-
 			for (final var change : changes) {
-				final var units = change.units();
-				if (units < 0) {
-					final var hasSenderSig = sigsVerifier.hasActiveKey(change.getAccount(), recipient, contract);
-					validateTrue(hasSenderSig, INVALID_SIGNATURE);
-				} else if (units > 0) {
-					/* Need to add the Id.asSolidityAddress() method. */
-					final var hasReceiverSigIfReq =
-							sigsVerifier.hasActiveKeyOrNoReceiverSigReq(change.getAccount().asEvmAddress(),
-									recipient, contract);
-					validateTrue(hasReceiverSigIfReq, INVALID_SIGNATURE);
-				}
+				final var hasReceiverSigIfReq =
+						sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+								change.getAccount().asEvmAddress(),
+								recipient,
+								contract
+						);
+				validateTrue(hasReceiverSigIfReq, INVALID_SIGNATURE);
 			}
-
-			final var hasRequiredSigs = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-					solidityAddressFrom,
-					solidityAddressTo,
-					contract
-			);
-			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
 			transferLogic.transfer(validated.getAllBalanceChanges());
 
