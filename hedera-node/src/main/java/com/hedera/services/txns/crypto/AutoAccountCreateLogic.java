@@ -23,6 +23,7 @@ package com.hedera.services.txns.crypto;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AutoAccountsManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -38,7 +39,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import javax.inject.Inject;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -75,38 +75,45 @@ public class AutoAccountCreateLogic {
 	/**
 	 * Create accounts corresponding to each alias given in the list of aliases from a cryptoTransfer transaction
 	 *
-	 * @param accountsToBeCreated
-	 * 		alases from cryptoTransfer transaction
+	 * @param changeWithOnlyAlias
+	 * 		BalanceChange from cryptoTransfer transaction which has only alias
 	 * @param accountsLedger
 	 * 		accounts ledger
 	 * @return response code for the operation
 	 */
-	public ResponseCodeEnum createAutoAccounts(final List<ByteString> accountsToBeCreated,
+	public ResponseCodeEnum createAutoAccounts(BalanceChange changeWithOnlyAlias,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
 		final var sideEffects = sideEffectsFactory.get();
-		for (ByteString alias : accountsToBeCreated) {
-			try {
-				/* create a crypto create synthetic transaction */
-				var syntheticCreateTxn = syntheticTxnFactory.cryptoCreate(alias, 0L);
-				var newAccountId = ids.newAccountId(syntheticCreateTxn.getTransactionID().getAccountID());
-				accountsLedger.create(newAccountId);
-				sideEffects.trackAutoCreatedAccount(newAccountId);
-
-				/* create and track a synthetic record for crypto create synthetic transaction */
-				var childRecord = creator.createSuccessfulSyntheticRecord(null, sideEffects, AUTO_CREATED_ACCOUNT_MEMO);
-				var sourceId = recordsHistorian.nextChildRecordSourceId();
-				recordsHistorian.trackPrecedingChildRecord(sourceId, syntheticCreateTxn, childRecord);
-
-				/* add auto created accounts changes to the rebuilt data structure */
-				AutoAccountsManager.getInstance()
-						.getAutoAccountsMap()
-						.put(alias, EntityNum.fromAccountId(newAccountId));
-
-				tempCreations.put(alias, newAccountId);
-
-			} catch (InvalidProtocolBufferException ex) {
-				return BAD_ENCODING;
+		try {
+			/* create a crypto create synthetic transaction */
+			var alias = changeWithOnlyAlias.alias();
+			var syntheticCreateTxn = syntheticTxnFactory.cryptoCreate(alias, 0L);
+			/* TODO calculate the cryptoCreate Fee and update the amount in the balanceChange accordingly and set the validity */
+			var feeForSyntheticCreateTxn = 0;
+			// adjust fee and return if insufficient balance.
+			if (feeForSyntheticCreateTxn < changeWithOnlyAlias.units()) {
+				return changeWithOnlyAlias.codeForInsufficientBalance();
+			} else {
+				changeWithOnlyAlias.adjustUnits(-feeForSyntheticCreateTxn);
 			}
+			var newAccountId = ids.newAccountId(syntheticCreateTxn.getTransactionID().getAccountID());
+			accountsLedger.create(newAccountId);
+			sideEffects.trackAutoCreatedAccount(newAccountId);
+
+			/* create and track a synthetic record for crypto create synthetic transaction */
+			var childRecord = creator.createSuccessfulSyntheticRecord(null, sideEffects, AUTO_CREATED_ACCOUNT_MEMO);
+			var sourceId = recordsHistorian.nextChildRecordSourceId();
+			recordsHistorian.trackPrecedingChildRecord(sourceId, syntheticCreateTxn, childRecord);
+
+			/* add auto created accounts changes to the rebuilt data structure */
+			AutoAccountsManager.getInstance()
+					.getAutoAccountsMap()
+					.put(alias, EntityNum.fromAccountId(newAccountId));
+
+			tempCreations.put(alias, newAccountId);
+
+		} catch (InvalidProtocolBufferException ex) {
+			return BAD_ENCODING;
 		}
 		return OK;
 	}

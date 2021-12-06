@@ -24,17 +24,17 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.txns.crypto.AutoAccountCreateLogic;
+import com.hedera.services.ledger.accounts.AutoAccountsManager;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.ledger.accounts.AutoAccountsManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.txns.crypto.AutoAccountCreateLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -42,7 +42,6 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.ArrayList;
 import java.util.List;
 
 import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
@@ -87,14 +86,13 @@ public class TransferLogic {
 
 	public void transfer(final List<BalanceChange> changes) {
 		var validity = OK;
-		List<ByteString> autoCreationAliases = new ArrayList<>();
 		for (var change : changes) {
 			if (change.isForHbar()) {
 				/* if the change has only alias set, account number is not set, and the alias
 				is not present in the autoAccountsMap then add the alias to list for auto
 				creations */
 				if (change.hasOnlyAlias()) {
-					autoCreationAliases.add(change.alias());
+					validity = autoAccountCreator.createAutoAccounts(change, accountsLedger);
 				} else {
 					// if change is in auto accounts map, use that account ID to validate ?
 					validity = accountsLedger.validate(change.accountId(), scopedCheck.setBalanceChange(change));
@@ -105,10 +103,6 @@ public class TransferLogic {
 			if (validity != OK) {
 				break;
 			}
-		}
-
-		if (!autoCreationAliases.isEmpty()) {
-			validity = autoAccountCreator.createAutoAccounts(autoCreationAliases, accountsLedger);
 		}
 
 		if (validity == OK) {

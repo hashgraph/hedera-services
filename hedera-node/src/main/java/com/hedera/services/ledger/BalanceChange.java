@@ -118,7 +118,7 @@ public class BalanceChange {
 	private BalanceChange(Id token, AccountAmount aa, ResponseCodeEnum code) {
 		this.token = token;
 		this.accountId = aa.getAccountID();
-		this.alias = aa.getAccountID().getAlias();
+		this.alias = accountId.getAlias();
 		this.account = Id.fromGrpcAccount(accountId);
 		this.units = aa.getAmount();
 		this.originalUnits = units;

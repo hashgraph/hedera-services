@@ -2,7 +2,6 @@ package com.hedera.services.ledger;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.accounts.AutoAccountsManager;
-import com.hedera.services.txns.crypto.AutoAccountCreateLogic;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -11,6 +10,7 @@ import com.hedera.services.records.TxnAwareRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.services.txns.crypto.AutoAccountCreateLogic;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.keys.KeyFactory;
@@ -21,9 +21,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import static com.hedera.services.txns.crypto.AutoAccountCreateLogic.isPrimitiveKey;
 import static com.hedera.test.utils.IdUtils.hbarChange;
@@ -52,7 +49,6 @@ class AutoAccountCreatorTest {
 	SyntheticTxnFactory syntheticTxnFactory = new SyntheticTxnFactory();
 	AutoAccountsManager autoAccounts = AutoAccountsManager.getInstance();
 
-	private List<ByteString> aliases = new ArrayList<>();
 	private final Key aliasA = KeyFactory.getDefaultInstance().newEd25519();
 	private final ByteString validAlias = aliasA.toByteString();
 	private final ByteString inValidAlias = ByteString.copyFromUtf8("aaaa");
@@ -60,9 +56,11 @@ class AutoAccountCreatorTest {
 
 
 	private final AccountID a = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(10L).build();
-	private final AccountID validAliasAccount = AccountID.newBuilder().setAlias(aliasA.toByteString()).build();
+	private final AccountID validAliasAccount = AccountID.newBuilder().setAlias(validAlias).build();
+	private final AccountID inValidAliasAccount = AccountID.newBuilder().setAlias(inValidAlias).build();
 	final MerkleAccount aAccount = MerkleAccountFactory.newAccount().balance(100).get();
-	private final List<BalanceChange> changes = List.of(hbarChange(a, -100), hbarChange(validAliasAccount, +100));
+	private final BalanceChange validChange = hbarChange(validAliasAccount, +100);
+	private final BalanceChange inValidChange = hbarChange(inValidAliasAccount, +100);
 
 	@BeforeEach
 	void setUp() {
@@ -73,11 +71,10 @@ class AutoAccountCreatorTest {
 
 	@Test
 	void happyPathAutoCreates() {
-		aliases.add(validAlias);
 		given(entityIdSource.newAccountId(any()))
 				.willReturn(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(99).build());
 
-		final var response = subject.createAutoAccounts(aliases, accountsLedger);
+		final var response = subject.createAutoAccounts(validChange, accountsLedger);
 
 		final var expectedCreatedAccount = new EntityNum(99);
 
@@ -89,9 +86,7 @@ class AutoAccountCreatorTest {
 
 	@Test
 	void invalidEncodedAlias() {
-		aliases.add(inValidAlias);
-
-		final var response = subject.createAutoAccounts(aliases, accountsLedger);
+		final var response = subject.createAutoAccounts(inValidChange, accountsLedger);
 
 		assertEquals(BAD_ENCODING, response);
 		assertEquals(null, autoAccounts.getAutoAccountsMap().get(validAlias));
