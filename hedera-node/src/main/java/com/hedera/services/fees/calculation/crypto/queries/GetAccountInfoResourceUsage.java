@@ -22,6 +22,7 @@ package com.hedera.services.fees.calculation.crypto.queries;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
+import com.hedera.services.ledger.accounts.AutoAccountsManager;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -34,10 +35,12 @@ import java.util.Map;
 @Singleton
 public final class GetAccountInfoResourceUsage implements QueryResourceUsageEstimator {
 	private final CryptoOpsUsage cryptoOpsUsage;
+	private final AutoAccountsManager autoAccounts;
 
 	@Inject
-	public GetAccountInfoResourceUsage(final CryptoOpsUsage cryptoOpsUsage) {
+	public GetAccountInfoResourceUsage(final CryptoOpsUsage cryptoOpsUsage, final AutoAccountsManager autoAccounts) {
 		this.cryptoOpsUsage = cryptoOpsUsage;
+		this.autoAccounts = autoAccounts;
 	}
 
 	@Override
@@ -50,7 +53,7 @@ public final class GetAccountInfoResourceUsage implements QueryResourceUsageEsti
 		final var op = query.getCryptoGetInfo();
 
 		final var tgt = op.getAccountID();
-		final var info = view.infoForAccount(tgt);
+		final var info = view.infoForAccount(tgt, autoAccounts);
 		/* Given the test in {@code GetAccountInfoAnswer.checkValidity}, this can only be empty
 		 * under the extraordinary circumstance that the desired account expired during the query
 		 * answer flow (which will now fail downstream with an appropriate status code); so

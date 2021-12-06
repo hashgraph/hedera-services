@@ -377,10 +377,10 @@ public class StateView {
 		return Optional.of(info.build());
 	}
 
-	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(AccountID id) {
+	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(AccountID id, AutoAccountsManager autoAccounts) {
 		var account = accounts().get(
 				id.getAlias().isEmpty() ? fromAccountId(id) :
-				AutoAccountsManager.getInstance().fetchEntityNumFor(id.getAlias())
+				autoAccounts.fetchEntityNumFor(id.getAlias())
 		);
 		if (account == null) {
 			return Optional.empty();

@@ -25,6 +25,7 @@ import com.hedera.services.config.FileNumbers;
 import com.hedera.services.config.MockFileNumbers;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.files.HFileMeta;
+import com.hedera.services.ledger.accounts.AutoAccountsManager;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -85,10 +86,12 @@ class OpUsageCtxHelperTest {
 	private SignedTxnAccessor accessor;
 
 	private OpUsageCtxHelper subject;
+	@Mock
+	private AutoAccountsManager autoAccounts;
 
 	@BeforeEach
 	void setUp() {
-		subject = new OpUsageCtxHelper(workingView, fileNumbers, () -> tokens);
+		subject = new OpUsageCtxHelper(workingView, fileNumbers, () -> tokens, autoAccounts);
 	}
 
 	@Test
@@ -154,7 +157,7 @@ class OpUsageCtxHelperTest {
 	void returnsExpectedCtxForAccount() {
 		var mockInfo = mock(AccountInfo.class);
 		var mockTimeStamp = mock(Timestamp.class);
-		given(workingView.infoForAccount(any())).willReturn(Optional.ofNullable(mockInfo));
+		given(workingView.infoForAccount(any(), any())).willReturn(Optional.ofNullable(mockInfo));
 		given(mockInfo.getKey()).willReturn(key);
 		given(mockInfo.getMemo()).willReturn(memo);
 		given(mockInfo.getExpirationTime()).willReturn(mockTimeStamp);
@@ -173,7 +176,7 @@ class OpUsageCtxHelperTest {
 
 	@Test
 	void returnsMissingCtxWhenAccountNotFound() {
-		given(workingView.infoForAccount(any())).willReturn(Optional.empty());
+		given(workingView.infoForAccount(any(), any())).willReturn(Optional.empty());
 
 		final var ctx = subject.ctxForCryptoUpdate(TransactionBody.getDefaultInstance());
 

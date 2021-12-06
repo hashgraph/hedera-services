@@ -22,6 +22,7 @@ package com.hedera.services.fees.calculation.crypto.queries;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.ledger.accounts.AutoAccountsManager;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.test.utils.IdUtils;
@@ -38,7 +39,10 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
 
@@ -56,6 +60,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
+@ExtendWith(MockitoExtension.class)
 class GetAccountInfoResourceUsageTest {
 	private static final Key aKey = Key.newBuilder().setEd25519(ByteString.copyFrom("NONSENSE".getBytes())).build();
 	private static final String a = "0.0.1234";
@@ -68,19 +73,20 @@ class GetAccountInfoResourceUsageTest {
 	private static final int maxAutomaticAssociations = 123;
 	private static final AccountID queryTarget = IdUtils.asAccount(a);
 
+	@Mock
 	private FeeData expected;
+	@Mock
 	private CryptoOpsUsage cryptoOpsUsage;
+	@Mock
 	private StateView view;
+	@Mock
+	private AutoAccountsManager autoAccounts;
 
 	private GetAccountInfoResourceUsage subject;
 
 	@BeforeEach
 	private void setup() {
-		cryptoOpsUsage = mock(CryptoOpsUsage.class);
-		expected = mock(FeeData.class);
-		view = mock(StateView.class);
-
-		subject = new GetAccountInfoResourceUsage(cryptoOpsUsage);
+		subject = new GetAccountInfoResourceUsage(cryptoOpsUsage, autoAccounts);
 	}
 
 	@Test
@@ -97,7 +103,7 @@ class GetAccountInfoResourceUsageTest {
 				.setMaxAutomaticTokenAssociations(maxAutomaticAssociations)
 				.build();
 		final var query = accountInfoQuery(a, ANSWER_ONLY);
-		given(view.infoForAccount(queryTarget)).willReturn(Optional.of(info));
+		given(view.infoForAccount(queryTarget, autoAccounts)).willReturn(Optional.of(info));
 		given(cryptoOpsUsage.cryptoInfoUsage(any(), any())).willReturn(expected);
 
 		final var usage = subject.usageGiven(query, view);
@@ -115,7 +121,7 @@ class GetAccountInfoResourceUsageTest {
 
 	@Test
 	void returnsDefaultIfNoSuchAccount() {
-		given(view.infoForAccount(queryTarget)).willReturn(Optional.empty());
+		given(view.infoForAccount(queryTarget, autoAccounts)).willReturn(Optional.empty());
 
 		final var usage = subject.usageGiven(accountInfoQuery(a, ANSWER_ONLY), view);
 
