@@ -38,7 +38,6 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Collections;
-import java.math.BigInteger;
 import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
@@ -153,6 +152,30 @@ public class SyntheticTxnFactory {
 
 		public TokenID getDenomination() {
 			return denomination;
+		}
+	}
+
+	public static class FungibleTokensTransfer {
+		private final TokenID denomination;
+		private final List<AccountID> accounts;
+		private final long[] amounts;
+
+		public FungibleTokensTransfer(TokenID denomination, List<AccountID> accounts, long[] amounts) {
+			this.denomination = denomination;
+			this.accounts = accounts;
+			this.amounts = amounts;
+		}
+
+		public TokenID getDenomination() {
+			return denomination;
+		}
+
+		public List<AccountID> getAccounts() {
+			return accounts;
+		}
+
+		public long[] getAmounts() {
+			return amounts;
 		}
 	}
 
@@ -302,6 +325,31 @@ public class SyntheticTxnFactory {
 
 		public static Dissociation multiDissociation(final AccountID accountId, final List<TokenID> tokenIds) {
 			return new Dissociation(accountId, tokenIds);
+		}
+	}
+
+	public static class TokenTransferLists {
+		private final List<NftExchange> nftExchanges;
+		private final List<HbarTransfer> hbarTransfers;
+		private final List<FungibleTokenTransfer> fungibleTransfers;
+
+		public TokenTransferLists(final List<NftExchange> nftExchanges, final List<HbarTransfer> hbarTransfers,
+								  final List<FungibleTokenTransfer> fungibleTransfers) {
+			this.nftExchanges = nftExchanges;
+			this.hbarTransfers = hbarTransfers;
+			this.fungibleTransfers = fungibleTransfers;
+		}
+
+		public List<NftExchange> getNftExchanges() {
+			return nftExchanges;
+		}
+
+		public List<HbarTransfer> getHbarTransfers() {
+			return hbarTransfers;
+		}
+
+		public List<FungibleTokenTransfer> getFungibleTransfers() {
+			return fungibleTransfers;
 		}
 	}
 }
