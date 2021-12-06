@@ -26,7 +26,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -40,7 +39,6 @@ import java.util.stream.Collectors;
 
 @Singleton
 public class DecodingFacade {
-	private static final int LONG_LENGTH = 8;
 	private static final int ADDRESS_BYTES_LENGTH = 20;
 	private static final int ADDRESS_SKIP_BYTES_LENGTH = 12;
 	private static final int FUNCTION_SELECTOR_BYTES_LENGTH = 4;
