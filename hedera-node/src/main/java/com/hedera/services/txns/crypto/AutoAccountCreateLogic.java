@@ -26,8 +26,10 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AutoAccountsManager;
+import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -36,6 +38,7 @@ import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import org.apache.commons.codec.DecoderException;
 
 import javax.inject.Inject;
 import java.util.HashMap;
@@ -87,7 +90,8 @@ public class AutoAccountCreateLogic {
 		try {
 			/* create a crypto create synthetic transaction */
 			var alias = changeWithOnlyAlias.alias();
-			var syntheticCreateTxn = syntheticTxnFactory.cryptoCreate(alias, 0L);
+			Key key = Key.parseFrom(alias);
+			var syntheticCreateTxn = syntheticTxnFactory.cryptoCreate(key, 0L);
 			/* TODO calculate the cryptoCreate Fee and update the amount in the balanceChange accordingly and set the validity */
 			var feeForSyntheticCreateTxn = 0;
 			// adjust fee and return if insufficient balance.
@@ -98,6 +102,14 @@ public class AutoAccountCreateLogic {
 			}
 			var newAccountId = ids.newAccountId(syntheticCreateTxn.getTransactionID().getAccountID());
 			accountsLedger.create(newAccountId);
+			final var customizer = new HederaAccountCustomizer()
+					.key(JKey.mapKey(key))
+					.memo(AUTO_CREATED_ACCOUNT_MEMO)
+					.autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+					.isReceiverSigRequired(false)
+					.isSmartContract(false);
+			customizer.customize(newAccountId, accountsLedger);
+
 			sideEffects.trackAutoCreatedAccount(newAccountId);
 
 			/* create and track a synthetic record for crypto create synthetic transaction */
@@ -112,7 +124,7 @@ public class AutoAccountCreateLogic {
 
 			tempCreations.put(alias, newAccountId);
 
-		} catch (InvalidProtocolBufferException ex) {
+		} catch (InvalidProtocolBufferException | DecoderException ex) {
 			return BAD_ENCODING;
 		}
 		return OK;

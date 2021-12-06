@@ -113,4 +113,8 @@ public class AutoAccountsManager {
 	public void setAutoAccountsMap(Map<ByteString, EntityNum> map) {
 		this.autoAccountsMap = map;
 	}
+
+	public boolean contains(ByteString alias) {
+		return autoAccountsMap.containsKey(alias);
+	}
 }

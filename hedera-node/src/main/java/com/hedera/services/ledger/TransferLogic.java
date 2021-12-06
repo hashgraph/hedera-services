@@ -62,6 +62,7 @@ public class TransferLogic {
 	private final MerkleAccountScopedCheck scopedCheck;
 	private final UniqTokenViewsManager tokenViewsManager;
 	private final AutoAccountCreateLogic autoAccountCreator;
+	private final AutoAccountsManager autoAccounts;
 
 	@Inject
 	public TransferLogic(final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
@@ -72,7 +73,8 @@ public class TransferLogic {
 			final UniqTokenViewsManager tokenViewsManager,
 			final GlobalDynamicProperties dynamicProperties,
 			final OptionValidator validator,
-			final AutoAccountCreateLogic autoAccountCreator) {
+			final AutoAccountCreateLogic autoAccountCreator,
+			final AutoAccountsManager autoAccounts) {
 		this.accountsLedger = accountsLedger;
 		this.nftsLedger = nftsLedger;
 		this.tokenRelsLedger = tokenRelsLedger;
@@ -80,6 +82,7 @@ public class TransferLogic {
 		this.tokenStore = tokenStore;
 		this.tokenViewsManager = tokenViewsManager;
 		this.autoAccountCreator = autoAccountCreator;
+		this.autoAccounts = autoAccounts;
 
 		scopedCheck = new MerkleAccountScopedCheck(dynamicProperties, validator);
 	}
@@ -94,7 +97,6 @@ public class TransferLogic {
 				if (change.hasOnlyAlias()) {
 					validity = autoAccountCreator.createAutoAccounts(change, accountsLedger);
 				} else {
-					// if change is in auto accounts map, use that account ID to validate ?
 					validity = accountsLedger.validate(change.accountId(), scopedCheck.setBalanceChange(change));
 				}
 			} else {

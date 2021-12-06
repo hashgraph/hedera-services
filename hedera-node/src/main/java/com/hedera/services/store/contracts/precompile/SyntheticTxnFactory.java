@@ -21,7 +21,6 @@ package com.hedera.services.store.contracts.precompile;
  */
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
@@ -88,11 +87,9 @@ public class SyntheticTxnFactory {
 		return TransactionBody.newBuilder().setCryptoTransfer(builder);
 	}
 
-	public TransactionBody.Builder cryptoCreate(ByteString alias, long balance)
-			throws InvalidProtocolBufferException {
-		Key key = Key.parseFrom(alias);
+	public TransactionBody.Builder cryptoCreate(Key alias, long balance) {
 		final var txnBody = CryptoCreateTransactionBody.newBuilder()
-				.setKey(key)
+				.setKey(alias)
 				.setMemo(AUTO_CREATED_ACCOUNT_MEMO)
 				.setInitialBalance(balance)
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS))

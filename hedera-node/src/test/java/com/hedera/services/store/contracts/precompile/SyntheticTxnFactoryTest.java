@@ -82,9 +82,9 @@ class SyntheticTxnFactoryTest {
 	}
 
 	@Test
-	void createsExpectedCryptoCreate() throws InvalidProtocolBufferException {
+	void createsExpectedCryptoCreate() {
 		final var balance = 10L;
-		final var alias = KeyFactory.getDefaultInstance().newEd25519().toByteString();
+		final var alias = KeyFactory.getDefaultInstance().newEd25519();
 		final var result = subject.cryptoCreate(alias, balance);
 		final var txnBody = result.build();
 
@@ -96,13 +96,6 @@ class SyntheticTxnFactoryTest {
 				txnBody.getCryptoCreateAccount().getInitialBalance());
 		assertEquals(alias,
 				txnBody.getCryptoCreateAccount().getKey().toByteString());
-	}
-
-	@Test
-	void failsCreateIfInvalidAlias() {
-		final var balance = 10L;
-		final var alias = ByteString.copyFromUtf8("aaa");
-		assertThrows(InvalidProtocolBufferException.class, () -> subject.cryptoCreate(alias, balance));
 	}
 
 	private static final long serialNo = 100;
