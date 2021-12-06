@@ -28,6 +28,7 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -121,8 +122,9 @@ public class CryptoTransferSuite extends HapiApiSuite {
 
 	private HapiApiSpec autoAccountCreationsTest() {
 		long initialBalance = 1000L;
-		var validEd25519Alias = ByteString.copyFromUtf8("a479462fba67674b5a41acfb16cb6828626b61d3f389fa611005a45754130e5c749073c0b1b791596430f4a54649cc8a3f6d28147dd4099070a5c3c4811d1771");
-
+		var randomContent = ByteString.copyFromUtf8("a479462fba67674b5a41acfb16cb6828626b61d3f389fa611005a45754130e5c749073c0b1b791596430f4a54649cc8a3f6d28147dd4099070a5c3c4811d1771");
+		var validEd25519Key = Key.newBuilder().setEd25519(randomContent).build();
+		var valid25519Alias = validEd25519Key.toByteString();
 		return defaultHapiSpec("VanillaTransferSucceeds")
 				.given(
 						UtilVerbs.inParallel(
@@ -130,7 +132,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						)
 				).when(
 						cryptoTransfer(
-								tinyBarsFromTo("payer", validEd25519Alias, 100L)
+								tinyBarsFromTo("payer", valid25519Alias, 100L)
 						).via("transferTxn")
 				).then(
 						getTxnRecord("transferTxn").andAllChildRecords().logged(),
