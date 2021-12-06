@@ -583,13 +583,17 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					validator);
 
 			for (final var change : changes) {
-				final var hasReceiverSigIfReq =
-						sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-								change.getAccount().asEvmAddress(),
-								recipient,
-								contract
-						);
-				validateTrue(hasReceiverSigIfReq, INVALID_SIGNATURE);
+				final var units = change.units();
+				if (units < 0) {
+					final var hasSenderSig = sigsVerifier.hasActiveKey(change.getAccount(), recipient, contract);
+					validateTrue(hasSenderSig, INVALID_SIGNATURE);
+				} else if (units > 0) {
+					/* Need to add the Id.asSolidityAddress() method. */
+					final var hasReceiverSigIfReq =
+							sigsVerifier.hasActiveKeyOrNoReceiverSigReq(change.getAccount().asEvmAddress(),
+									recipient, contract);
+					validateTrue(hasReceiverSigIfReq, INVALID_SIGNATURE);
+				}
 			}
 
 			transferLogic.transfer(validated.getAllBalanceChanges());
