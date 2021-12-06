@@ -94,7 +94,7 @@ class SyntheticTxnFactoryTest {
 				txnBody.getCryptoCreateAccount().getAutoRenewPeriod().getSeconds());
 		assertEquals(10L,
 				txnBody.getCryptoCreateAccount().getInitialBalance());
-		assertEquals(alias,
+		assertEquals(alias.toByteString(),
 				txnBody.getCryptoCreateAccount().getKey().toByteString());
 	}
 
