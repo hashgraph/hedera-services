@@ -87,6 +87,7 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -562,6 +563,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					changes.size(),
 					impliedTransfersMarshal.currentProps()
 			);
+
+			final var assessmentStatus = validated.getMeta().code();
+			validateTrue(assessmentStatus == OK, assessmentStatus);
 
 			final var sideEffects = sideEffectsFactory.get();
 			final var hederaTokenStore = hederaTokenStoreFactory.newHederaTokenStore(
