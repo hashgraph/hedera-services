@@ -209,14 +209,13 @@ public class SmartContractRequestHandler {
 		final var contractId = EntityNum.fromContractId(op.getContractID());
 		ResponseCodeEnum validity = validateContractExistence(contractId);
 		if (validity == ResponseCodeEnum.OK) {
-			final var beneficiaryId = Optional.ofNullable(getBeneficiary(op)).orElse(dynamicProperties.fundingAccount());
+			final var beneficiaryId =
+					Optional.ofNullable(getBeneficiary(op)).orElse(dynamicProperties.fundingAccount());
 			validity = validateContractDelete(op);
 			if (validity == SUCCESS) {
 				validity = ledger.exists(beneficiaryId) ? SUCCESS : OBTAINER_DOES_NOT_EXIST;
-				if (validity == SUCCESS) {
-					if (ledger.isDeleted(beneficiaryId)) {
-						validity = ledger.isSmartContract(beneficiaryId) ? CONTRACT_DELETED : ACCOUNT_DELETED;
-					}
+				if (validity == SUCCESS && ledger.isDeleted(beneficiaryId)) {
+					validity = ledger.isSmartContract(beneficiaryId) ? CONTRACT_DELETED : ACCOUNT_DELETED;
 				}
 			}
 			if (validity == SUCCESS) {
