@@ -61,7 +61,7 @@ public class SimpleXfersAvoidingHotspot extends HapiApiSuite {
 
 	private AtomicLong duration = new AtomicLong(600);
 	private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
-	private AtomicInteger maxOpsPerSec = new AtomicInteger(1000);
+	private AtomicInteger maxOpsPerSec = new AtomicInteger(700);
 
 	public static void main(String... args) {
 		new SimpleXfersAvoidingHotspot().runSuiteSync();
