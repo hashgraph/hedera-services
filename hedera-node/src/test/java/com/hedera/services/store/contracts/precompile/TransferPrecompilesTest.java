@@ -71,6 +71,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Collections;
 import java.util.List;
 
+import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -86,10 +87,6 @@ import static org.mockito.Mockito.when;
 class TransferPrecompilesTest {
 	private static final Bytes pretendArguments = Bytes.fromBase64String("ABCDEF");
 
-	@Mock
-	private AccountStore accountStore;
-	@Mock
-	private TypedTokenStore tokenStore;
 	@Mock
 	private HederaTokenStore hederaTokenStore;
 	@Mock
@@ -134,8 +131,7 @@ class TransferPrecompilesTest {
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
 	@Mock
 	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
-	@Mock
-	private EntityIdSource ids;
+	private EntityIdSource ids = NOOP_ID_SOURCE;
 	@Mock
 	private ExpiringCreations creator;
 	@Mock
@@ -165,6 +161,7 @@ class TransferPrecompilesTest {
 		givenLedgers();
 
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
+		given(sigsVerifier.hasActiveKey(any(), any(), any())).willReturn(true);
 
 		hederaTokenStore.setAccountsLedger(accounts);
 		given(hederaTokenStoreFactory.newHederaTokenStore(
@@ -200,6 +197,7 @@ class TransferPrecompilesTest {
 		givenLedgers();
 
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
+		given(sigsVerifier.hasActiveKey(any(), any(), any())).willReturn(true);
 
 		hederaTokenStore.setAccountsLedger(accounts);
 		given(hederaTokenStoreFactory.newHederaTokenStore(
