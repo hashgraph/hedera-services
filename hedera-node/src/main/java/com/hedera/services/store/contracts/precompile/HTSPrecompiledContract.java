@@ -60,7 +60,6 @@ import com.hedera.services.txns.token.DissociateLogic;
 import com.hedera.services.txns.token.MintLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -98,6 +97,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
 	private static final List<ByteString> NO_METADATA = Collections.emptyList();
 	private static final List<FcAssessedCustomFee> NO_CUSTOM_FEES = Collections.emptyList();
+	private static final EntityIdSource ids = NOOP_ID_SOURCE;
 
 	/* Precompiles cannot change treasury accounts */
 	public static final TypedTokenStore.LegacyTreasuryAdder NOOP_TREASURY_ADDER = (aId, tId) -> {
@@ -124,7 +124,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final DissociationFactory dissociationFactory;
 
-	private final EntityIdSource ids = NOOP_ID_SOURCE;
 	private final ImpliedTransfersMarshal impliedTransfersMarshal;
 
 	//cryptoTransfer(TokenTransferList[] calldata tokenTransfers)
