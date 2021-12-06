@@ -129,8 +129,6 @@ class MintPrecompilesTest {
 	@Mock
 	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
 	@Mock
-	private EntityIdSource ids;
-	@Mock
 	private ExpiringCreations creator;
 	@Mock
 	private ImpliedTransfersMarshal impliedTransfers;
@@ -144,7 +142,7 @@ class MintPrecompilesTest {
 		subject = new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory, creator, dissociationFactory, ids, impliedTransfers);;
+				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers);;
 		subject.setMintLogicFactory(mintLogicFactory);
 		subject.setTokenStoreFactory(tokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);

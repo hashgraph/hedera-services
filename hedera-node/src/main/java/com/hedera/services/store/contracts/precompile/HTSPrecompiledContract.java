@@ -78,12 +78,14 @@ import org.hyperledger.besu.evm.precompile.AbstractPrecompiledContract;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -122,7 +124,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final DissociationFactory dissociationFactory;
 
-	private final EntityIdSource ids;
+	private final EntityIdSource ids = NOOP_ID_SOURCE;
 	private final ImpliedTransfersMarshal impliedTransfersMarshal;
 
 	//cryptoTransfer(TokenTransferList[] calldata tokenTransfers)
@@ -159,7 +161,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final SyntheticTxnFactory syntheticTxnFactory,
 			final ExpiringCreations creator,
 			final DissociationFactory dissociationFactory,
-			final EntityIdSource ids,
 			final ImpliedTransfersMarshal impliedTransfersMarshal
 	) {
 		super("HTS", gasCalculator);
@@ -173,7 +174,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.validator = validator;
 		this.dynamicProperties = dynamicProperties;
 		this.dissociationFactory = dissociationFactory;
-		this.ids = ids;
 		this.impliedTransfersMarshal = impliedTransfersMarshal;
 	}
 
@@ -544,7 +544,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				final Address contract,
 				final WorldLedgers ledgers
 		) {
-			final List<BalanceChange> changes = List.of(
+			final List<BalanceChange> changes = new ArrayList<>(){};
+			changes.addAll(List.of(
 					BalanceChange.changingFtUnits(
 							Id.fromGrpcToken(transferOp.getDenomination()),
 							transferOp.getDenomination(),
@@ -555,7 +556,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							transferOp.getDenomination(),
 							AccountAmount.newBuilder().setAccountID(transferOp.receiver).setAmount(transferOp.amount).build()
 					)
-			);
+			));
 
 			var validated = impliedTransfersMarshal.assessCustomFeesAndValidate(
 					changes,
@@ -583,6 +584,20 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			var solidityAddressFrom = EntityIdUtils.asTypedSolidityAddress(transferOp.sender);
 			var solidityAddressTo = EntityIdUtils.asTypedSolidityAddress(transferOp.receiver);
+
+			for (final var change : changes) {
+				final var units = change.units();
+				if (units < 0) {
+					final var hasSenderSig = sigsVerifier.hasActiveKey(change.getAccount(), recipient, contract);
+					validateTrue(hasSenderSig, INVALID_SIGNATURE);
+				} else if (units > 0) {
+					/* Need to add the Id.asSolidityAddress() method. */
+					final var hasReceiverSigIfReq =
+							sigsVerifier.hasActiveKeyOrNoReceiverSigReq(change.getAccount().asEvmAddress(),
+									recipient, contract);
+					validateTrue(hasReceiverSigIfReq, INVALID_SIGNATURE);
+				}
+			}
 
 			final var hasRequiredSigs = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
 					solidityAddressFrom,

@@ -131,8 +131,6 @@ class BurnPrecompilesTest {
 	@Mock
 	private DissociationFactory dissociationFactory;
 	@Mock
-	private EntityIdSource ids;
-	@Mock
 	private ImpliedTransfersMarshal impliedTransfersMarshal;
 
 	private HTSPrecompiledContract subject;
@@ -142,7 +140,7 @@ class BurnPrecompilesTest {
 		subject = new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory, creator, dissociationFactory, ids, impliedTransfersMarshal);
+				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal);
 		subject.setBurnLogicFactory(burnLogicFactory);
 		subject.setTokenStoreFactory(tokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);

@@ -120,6 +120,7 @@ public class DecodingFacade {
 				List.of(tokenParsedFromSolidityAddress(tokenAddress)));
 	}
 
+	/* NOT A REAL IMPLEMENTATION */
 	public SyntheticTxnFactory.FungibleTokenTransfer decodeTransferToken(final Bytes input) {
 		final var tokenAddress = Address.wrap(input.slice(16, 20));
 		final var fromAddress = Address.wrap(input.slice(48, 20));

@@ -80,8 +80,6 @@ class HTSPrecompiledContractTest {
 	@Mock
 	private ExpiringCreations creator;
 	@Mock
-	private EntityIdSource ids;
-	@Mock
 	private ImpliedTransfersMarshal impliedTransfers;
 	@Mock
 	private DissociationFactory dissociationFactory;
@@ -94,7 +92,7 @@ class HTSPrecompiledContractTest {
 		subject = new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory, creator, dissociationFactory, ids, impliedTransfers);
+				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers);
 	}
 
 	@Test
@@ -122,7 +120,7 @@ class HTSPrecompiledContractTest {
 		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory, creator, dissociationFactory, ids, impliedTransfers));
+				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers));
 		given(input.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
 
 		// when
@@ -138,7 +136,7 @@ class HTSPrecompiledContractTest {
 		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory, creator, dissociationFactory, ids, impliedTransfers));
+				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers));
 		given(input.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
 
@@ -169,7 +167,7 @@ class HTSPrecompiledContractTest {
 		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory, creator, dissociationFactory, ids, impliedTransfers));
+				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers));
 		given(input.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_NFTS);
 
@@ -186,7 +184,7 @@ class HTSPrecompiledContractTest {
 		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory, creator, dissociationFactory, ids, impliedTransfers));
+				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers));
 		given(input.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_NFT);
 
