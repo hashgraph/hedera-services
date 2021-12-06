@@ -114,7 +114,6 @@ public class DecodingFacade {
 		return tokenTransferLists;
 	}
 
-	/* NOT A REAL IMPLEMENTATION */
 	public SyntheticTxnFactory.BurnWrapper decodeBurn(final Bytes input) {
 		final Tuple decodedArguments =
 				BURN_TOKEN_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
@@ -133,7 +132,6 @@ public class DecodingFacade {
 		}
 	}
 
-	/* NOT A REAL IMPLEMENTATION */
 	public SyntheticTxnFactory.MintWrapper decodeMint(final Bytes input) {
 		final Tuple decodedArguments =
 				MINT_TOKEN_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
@@ -220,7 +218,6 @@ public class DecodingFacade {
 		return nftExchanges;
 	}
 
-	/* NOT A REAL IMPLEMENTATION */
 	public SyntheticTxnFactory.Association decodeAssociation(final Bytes input) {
 		final Tuple decodedArguments =
 				ASSOCIATE_TOKEN_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
@@ -233,7 +230,6 @@ public class DecodingFacade {
 				accountID, tokenID);
 	}
 
-	/* NOT A REAL IMPLEMENTATION */
 	public SyntheticTxnFactory.Association decodeMultipleAssociations(final Bytes input) {
 		final Tuple decodedArguments =
 				ASSOCIATE_TOKENS_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
@@ -246,7 +242,6 @@ public class DecodingFacade {
 				accountID, tokenIDs);
 	}
 
-	/* NOT A REAL IMPLEMENTATION */
 	public SyntheticTxnFactory.Dissociation decodeDissociate(final Bytes input) {
 		final Tuple decodedArguments =
 				DISSOCIATE_TOKEN_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
@@ -259,7 +254,6 @@ public class DecodingFacade {
 				accountID, tokenID);
 	}
 
-	/* NOT A REAL IMPLEMENTATION */
 	public SyntheticTxnFactory.Dissociation decodeMultipleDissociations(final Bytes input) {
 		final Tuple decodedArguments =
 				DISSOCIATE_TOKENS_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
