@@ -20,6 +20,7 @@ package com.hedera.services.bdd.spec;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
@@ -159,6 +160,13 @@ public interface HapiPropertySource {
 				 .setAccountNum(nativeParts[2])
 				 .build();
 	}
+
+	static AccountID asAccount(ByteString v) {
+		return AccountID.newBuilder()
+				.setAlias(v)
+				.build();
+	}
+
 	static String asAccountString(AccountID account) {
 		return String.format("%d.%d.%d", account.getShardNum(), account.getRealmNum(), account.getAccountNum());
 	}

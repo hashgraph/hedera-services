@@ -20,6 +20,7 @@ package com.hedera.services.bdd.spec.assertions;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
@@ -127,6 +128,13 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 	public AccountInfoAsserts balance(long amount) {
 		registerProvider((spec, o) -> {
 			assertEquals(amount, ((AccountInfo) o).getBalance(), "Bad balance!");
+		});
+		return this;
+	}
+
+	public AccountInfoAsserts alias(ByteString alias) {
+		registerProvider((spec, o) -> {
+			assertEquals(alias, ((AccountInfo) o).getAlias(), "Bad Alias!");
 		});
 		return this;
 	}

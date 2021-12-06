@@ -96,7 +96,7 @@ public class TransferLogic {
 				if (change.hasOnlyAlias()) {
 					autoCreationAliases.add(change.alias());
 				} else {
-					// TODO : if change is in auto accounts map, use that account ID to validate
+					// if change is in auto accounts map, use that account ID to validate ?
 					validity = accountsLedger.validate(change.accountId(), scopedCheck.setBalanceChange(change));
 				}
 			} else {

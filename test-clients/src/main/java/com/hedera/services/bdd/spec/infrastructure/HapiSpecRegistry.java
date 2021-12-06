@@ -85,6 +85,8 @@ public class HapiSpecRegistry {
 	private final List<ThroughputObs> throughputObs = new ArrayList<>();
 	private Map<Class, List<RegistryChangeListener>> listenersByType = new HashMap<>();
 
+	private Map<ByteString, AccountID> autoAccountsMap = new HashMap<>();
+
 	private static final Integer ZERO = Integer.valueOf(0);
 
 	public HapiSpecRegistry(HapiSpecSetup setup) throws Exception {
@@ -579,6 +581,10 @@ public class HapiSpecRegistry {
 		put(asTokenString(id), name);
 	}
 
+	public void saveAccountAlias(ByteString alias, AccountID id) {
+		autoAccountsMap.put(alias, id);
+	}
+
 	public void forgetTokenId(String name) {
 		try {
 			var id = getTokenID(name);
@@ -790,6 +796,18 @@ public class HapiSpecRegistry {
 		return get(name, CryptoGetInfoResponse.AccountInfo.class);
 	}
 
+	public Map<ByteString, AccountID> getAutoAccountsMap() {
+		return autoAccountsMap;
+	}
+
+	public void setAutoAutoAccountsMap(
+			final Map<ByteString, AccountID> autoCreateAliasMap) {
+		this.autoAccountsMap = autoCreateAliasMap;
+	}
+
+	public AccountID getFromAutoAccountsMap(ByteString alias){
+		return autoAccountsMap.get(alias);
+	}
 
 	public <T> T getId(String name, Class<T> type) {
 		return get(name, type);

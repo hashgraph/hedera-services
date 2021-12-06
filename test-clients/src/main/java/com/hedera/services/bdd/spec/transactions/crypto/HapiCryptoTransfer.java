@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.transactions.crypto;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
@@ -70,6 +71,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdWithAlias;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.HBAR_SENTINEL_TOKEN_ID;
 import static java.util.stream.Collectors.collectingAndThen;
@@ -181,6 +183,24 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 
 	public static Function<HapiApiSpec, TransferList> tinyBarsFromTo(String from, String to, long amount) {
 		return tinyBarsFromTo(from, to, ignore -> amount);
+	}
+
+	public static Function<HapiApiSpec, TransferList> tinyBarsFromTo(String from, ByteString to, long amount) {
+		return tinyBarsFromTo(from, to, ignore -> amount);
+	}
+
+	public static Function<HapiApiSpec, TransferList> tinyBarsFromTo(
+			String from, ByteString to, Function<HapiApiSpec, Long> amountFn) {
+		return spec -> {
+			long amount = amountFn.apply(spec);
+			AccountID toAccount = asIdWithAlias(to);
+			AccountID fromAccount = asId(from, spec);
+			return TransferList.newBuilder()
+					.addAllAccountAmounts(Arrays.asList(
+							AccountAmount.newBuilder().setAccountID(toAccount).setAmount(amount).build(),
+							AccountAmount.newBuilder().setAccountID(fromAccount).setAmount(
+									-1L * amount).build())).build();
+		};
 	}
 
 	public static Function<HapiApiSpec, TransferList> tinyBarsFromTo(
