@@ -130,6 +130,13 @@ class MerkleEntityIdUtilsTest {
 	}
 
 	@Test
+	void prettyPrintsEntityNums() {
+		final var id = EntityNum.fromLong(3);
+
+		assertEquals("0.0.3", EntityIdUtils.readableId(id));
+	}
+
+	@Test
 	void prettyPrintsScheduleIds() {
 		final var id = ScheduleID.newBuilder().setShardNum(1).setRealmNum(2).setScheduleNum(3).build();
 

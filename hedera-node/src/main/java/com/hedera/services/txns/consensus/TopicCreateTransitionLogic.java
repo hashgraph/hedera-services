@@ -77,7 +77,6 @@ public final class TopicCreateTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		/* --- Extract gRPC --- */
 		final var transactionBody = transactionContext.accessor().getTxn();
-		final var payerAccountId = transactionBody.getTransactionID().getAccountID();
 		final var op = transactionBody.getConsensusCreateTopic();
 		final var submitKey = op.hasSubmitKey() ? validator.attemptDecodeOrThrow(op.getSubmitKey()) : null;
 		final var adminKey = op.hasAdminKey() ? validator.attemptDecodeOrThrow(op.getAdminKey()) : null;

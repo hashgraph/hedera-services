@@ -66,7 +66,7 @@ public class ToStringAccountsExporter implements AccountsExporter {
 					writer.write("\n");
 				}
 				first = false;
-				writer.write(key.toIdString() + "\n");
+				writer.write(key + "\n");
 				writer.write("---\n");
 				writer.write(accounts.get(key).toString() + "\n");
 			}

@@ -204,7 +204,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 			if (deletedAccounts.contains(address)) {
 				throw new IllegalArgumentException(
 						"A wrapped tracking ledger tried to change the " +
-								"balance of deleted account " + id.toIdString() + " to " + newValue);
+								"balance of deleted account " + id + " to " + newValue);
 			}
 			var updatedAccount = updatedAccounts.get(address);
 			if (updatedAccount == null) {
@@ -214,7 +214,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 				if (origin == null) {
 					throw new IllegalArgumentException(
 							"A wrapped tracking ledger tried to create/change the " +
-									"balance of missing account " + id.toIdString() + " to " + newValue);
+									"balance of missing account " + id + " to " + newValue);
 				}
 				updatedAccount = new UpdateTrackingLedgerAccount<>(origin, trackingLedgers.accounts());
 				track(updatedAccount);

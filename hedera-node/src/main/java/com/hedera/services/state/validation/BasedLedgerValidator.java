@@ -55,7 +55,7 @@ public class BasedLedgerValidator implements LedgerValidator {
 		MiscUtils.forEach(accounts, (id, account) -> {
 			final var num = id.longValue();
 			if (num < 1 || num > dynamicProperties.maxAccountNum()) {
-				throw new IllegalStateException(String.format("Invalid num in account %s", id.toIdString()));
+				throw new IllegalStateException(String.format("Invalid num in account %s", id));
 			}
 			totalFloat.set(totalFloat.get().add(BigInteger.valueOf(account.getBalance())));
 		});

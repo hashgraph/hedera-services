@@ -479,10 +479,10 @@ public class HederaLedger {
 
 	private long computeNewBalance(final EntityNum id, final long adjustment) {
 		if ((boolean) accountsLedger.get(id, IS_DELETED)) {
-			throw new DeletedAccountException(id.toIdString());
+			throw new DeletedAccountException(id);
 		}
 		if (isDetached(id)) {
-			throw new DetachedAccountException(id.toIdString());
+			throw new DetachedAccountException(id);
 		}
 		final long balance = getBalance(id);
 		if (!isLegalToAdjust(balance, adjustment)) {

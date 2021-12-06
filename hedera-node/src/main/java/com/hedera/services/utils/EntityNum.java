@@ -167,7 +167,7 @@ public class EntityNum {
 		return STATIC_PROPERTIES.scopedScheduleWith(numFromCode(value));
 	}
 
-	public String toIdString() {
+	public String toString() {
 		return STATIC_PROPERTIES.scopedIdLiteralWith(numFromCode(value));
 	}
 

@@ -85,7 +85,7 @@ public class RenewalRecordsHelper {
 
 		final var eventTime = cycleStart.plusNanos(consensusNanosIncr++);
 		final var grpcId = id.toGrpcAccountId();
-		final var memo = "Entity " + id.toIdString() + " was automatically deleted.";
+		final var memo = "Entity " + id + " was automatically deleted.";
 		final var expirableTxnRecord = forCrypto(grpcId, eventTime)
 				.setMemo(memo)
 				.setTokens(tokens)
@@ -102,7 +102,7 @@ public class RenewalRecordsHelper {
 		final var eventTime = cycleStart.plusNanos(consensusNanosIncr++);
 		final var grpcId = id.toGrpcAccountId();
 		final var memo = "Entity " +
-				id.toIdString() +
+				id +
 				" was automatically renewed. New expiration time: " +
 				newExpiry +
 				".";

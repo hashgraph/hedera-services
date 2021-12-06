@@ -32,6 +32,8 @@ import java.util.function.Supplier;
 
 @Singleton
 public class BackingAccounts implements BackingStore<EntityNum, MerkleAccount> {
+	private final Set<EntityNum> extant = new HashSet<>();
+
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> delegate;
 
 	@Inject
@@ -41,7 +43,8 @@ public class BackingAccounts implements BackingStore<EntityNum, MerkleAccount> {
 
 	@Override
 	public void rebuildFromSources() {
-		/* No-op. */
+		extant.clear();
+		extant.addAll(delegate.get().keySet());
 	}
 
 	@Override
@@ -51,24 +54,26 @@ public class BackingAccounts implements BackingStore<EntityNum, MerkleAccount> {
 
 	@Override
 	public void put(final EntityNum id, final MerkleAccount account) {
-		if (!delegate.get().containsKey(id)) {
+		if (!extant.contains(id)) {
 			delegate.get().put(id, account);
+			extant.add(id);
 		}
 	}
 
 	@Override
 	public boolean contains(final EntityNum id) {
-		return delegate.get().containsKey(id);
+		return extant.contains(id);
 	}
 
 	@Override
 	public void remove(final EntityNum id) {
 		delegate.get().remove(id);
+		extant.remove(id);
 	}
 
 	@Override
 	public Set<EntityNum> idSet() {
-		return new HashSet<>(delegate.get().keySet());
+		return extant;
 	}
 
 	@Override

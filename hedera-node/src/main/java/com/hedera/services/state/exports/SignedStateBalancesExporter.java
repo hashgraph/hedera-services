@@ -215,7 +215,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			if (!account.isDeleted()) {
 				var balance = account.getBalance();
 				if (nodeIds.contains(id) && balance < nodeBalanceWarnThreshold) {
-					log.warn(LOW_NODE_BALANCE_WARN_MSG_TPL, id.toIdString(), balance);
+					log.warn(LOW_NODE_BALANCE_WARN_MSG_TPL, id, balance);
 				}
 				totalFloat = totalFloat.add(BigInteger.valueOf(account.getBalance()));
 				SingleAccountBalances.Builder sabBuilder = SingleAccountBalances.newBuilder();

@@ -197,7 +197,7 @@ public class NarratedLedgerCharging implements NarratedCharging {
 		final var payerAccount = accounts.get().get(effPayerId);
 		if (payerAccount == null) {
 			throw new IllegalStateException("Invariant failure, effective payer account "
-					+ Optional.ofNullable(effPayerId).map(EntityNum::toIdString).orElse("null")
+					+ Optional.ofNullable(effPayerId).map(Object::toString).orElse("null")
 					+ " is missing!");
 		}
 		effPayerStartingBalance = payerAccount.getBalance();

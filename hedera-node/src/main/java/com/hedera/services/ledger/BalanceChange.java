@@ -218,7 +218,7 @@ public class BalanceChange {
 					.add("nft", token)
 					.add("serialNo", units)
 					.add("from", account)
-					.add("to", counterPartyAccountId.toIdString())
+					.add("to", counterPartyAccountId)
 					.toString();
 		}
 	}

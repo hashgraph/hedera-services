@@ -63,33 +63,33 @@ class BackingAccountsTest {
 
 	@Test
 	void containsDelegatesToKnownActive() {
-		// expect:
+		subject.rebuildFromSources();
+
 		assertTrue(subject.contains(a));
 		assertTrue(subject.contains(b));
 	}
 
 	@Test
 	void putUpdatesKnownAccounts() {
-		// when:
 		subject.put(a, aValue);
 
-		// then:
 		assertTrue(subject.contains(a));
 	}
 
 	@Test
 	void getRefIsReadThrough() {
-		// expect:
 		assertEquals(aValue, subject.getRef(a));
 		assertEquals(bValue, subject.getRef(b));
 	}
 
 	@Test
 	void removeUpdatesDelegate() {
-		// when:
+		subject.rebuildFromSources();
+
+		assertTrue(subject.contains(b));
+
 		subject.remove(b);
 
-		// then:
 		assertFalse(subject.contains(b));
 	}
 
@@ -103,19 +103,17 @@ class BackingAccountsTest {
 
 	@Test
 	void getImmutableRefDelegatesToGet() {
-		// when:
 		final var immutable = subject.getImmutableRef(b);
 
-		// then:
 		assertEquals(bValue, immutable);
 	}
 
 	@Test
 	void returnsExpectedIds() {
-		// setup:
 		final var s = Set.of(a, b);
 
-		// expect:
+		subject.rebuildFromSources();
+
 		assertEquals(s, subject.idSet());
 	}
 

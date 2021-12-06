@@ -27,7 +27,6 @@ import org.junit.jupiter.api.Test;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EntityNumTest {
 	@Test
@@ -100,7 +99,7 @@ class EntityNumTest {
 		assertEquals(123, subject.toGrpcAccountId().getAccountNum());
 		assertEquals(123, subject.toGrpcTokenId().getTokenNum());
 		assertEquals(123, subject.toGrpcScheduleId().getScheduleNum());
-		assertTrue(subject.toIdString().endsWith(".123"));
+		assertEquals("0.0.123", subject.toString());
 	}
 
 	@Test
@@ -112,7 +111,7 @@ class EntityNumTest {
 		assertEquals(realNum, subject.toGrpcAccountId().getAccountNum());
 		assertEquals(realNum, subject.toGrpcTokenId().getTokenNum());
 		assertEquals(realNum, subject.toGrpcScheduleId().getScheduleNum());
-		assertTrue(subject.toIdString().endsWith("." + realNum));
+		assertEquals("0.0." + realNum, subject.toString());
 	}
 
 	@Test

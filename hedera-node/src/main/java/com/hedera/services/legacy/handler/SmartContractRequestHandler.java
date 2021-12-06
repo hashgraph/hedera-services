@@ -214,9 +214,9 @@ public class SmartContractRequestHandler {
 			if (validity == SUCCESS) {
 				validity = ledger.exists(beneficiaryId) ? SUCCESS : OBTAINER_DOES_NOT_EXIST;
 				if (validity == SUCCESS) {
-					validity = ledger.isDeleted(beneficiaryId)
-							? (ledger.isSmartContract(beneficiaryId) ? CONTRACT_DELETED : ACCOUNT_DELETED)
-							: SUCCESS;
+					if (ledger.isDeleted(beneficiaryId)) {
+						validity = ledger.isSmartContract(beneficiaryId) ? CONTRACT_DELETED : ACCOUNT_DELETED;
+					}
 				}
 			}
 			if (validity == SUCCESS) {
