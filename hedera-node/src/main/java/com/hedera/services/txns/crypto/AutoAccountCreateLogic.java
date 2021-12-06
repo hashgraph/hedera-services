@@ -25,8 +25,10 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AutoAccountsManager;
+import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -35,6 +37,7 @@ import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import org.apache.commons.codec.DecoderException;
 
 import javax.inject.Inject;
 import java.util.HashMap;
@@ -86,10 +89,22 @@ public class AutoAccountCreateLogic {
 		final var sideEffects = sideEffectsFactory.get();
 		for (ByteString alias : accountsToBeCreated) {
 			try {
+				Key key = Key.parseFrom(alias);
 				/* create a crypto create synthetic transaction */
-				var syntheticCreateTxn = syntheticTxnFactory.cryptoCreate(alias, 0L);
+				var syntheticCreateTxn = syntheticTxnFactory.cryptoCreate(key, 0L);
 				var newAccountId = ids.newAccountId(syntheticCreateTxn.getTransactionID().getAccountID());
+
+				/* create new account id and customize it */
 				accountsLedger.create(newAccountId);
+				final var customizer = new HederaAccountCustomizer()
+						.key(JKey.mapKey(key))
+						.memo(AUTO_CREATED_ACCOUNT_MEMO)
+						.autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+						.isReceiverSigRequired(false)
+						.isSmartContract(false);
+				customizer.customize(newAccountId, accountsLedger);
+
+
 				sideEffects.trackAutoCreatedAccount(newAccountId);
 
 				/* create and track a synthetic record for crypto create synthetic transaction */
@@ -104,7 +119,7 @@ public class AutoAccountCreateLogic {
 
 				tempCreations.put(alias, newAccountId);
 
-			} catch (InvalidProtocolBufferException ex) {
+			} catch (InvalidProtocolBufferException | DecoderException ex) {
 				return BAD_ENCODING;
 			}
 		}

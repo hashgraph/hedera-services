@@ -88,11 +88,9 @@ public class SyntheticTxnFactory {
 		return TransactionBody.newBuilder().setCryptoTransfer(builder);
 	}
 
-	public TransactionBody.Builder cryptoCreate(ByteString alias, long balance)
-			throws InvalidProtocolBufferException {
-		Key key = Key.parseFrom(alias);
+	public TransactionBody.Builder cryptoCreate(Key alias, long balance) {
 		final var txnBody = CryptoCreateTransactionBody.newBuilder()
-				.setKey(key)
+				.setKey(alias)
 				.setMemo(AUTO_CREATED_ACCOUNT_MEMO)
 				.setInitialBalance(balance)
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS))
