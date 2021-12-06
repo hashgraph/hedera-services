@@ -38,16 +38,6 @@ import static com.hedera.services.utils.EntityNum.MISSING_NUM;
  */
 @Singleton
 public class AutoAccountsManager {
-	private static AutoAccountsManager autoAccounts = null;
-
-	public static AutoAccountsManager getInstance() {
-		if (autoAccounts == null) {
-			autoAccounts = new AutoAccountsManager();
-		}
-		return autoAccounts;
-	}
-
-	/* Alias Accounts Map that will be rebuilt after restart, reconnect*/
 	private Map<ByteString, EntityNum> autoAccountsMap;
 
 	@Inject

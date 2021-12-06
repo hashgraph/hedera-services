@@ -60,21 +60,24 @@ public class AutoAccountCreateLogic {
 	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final EntityCreator creator;
 	private final Map<ByteString, AccountID> tempCreations = new HashMap<>();
+	private final AutoAccountsManager autoAccounts;
 
 	public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 	public static final String AUTO_CREATED_ACCOUNT_MEMO = "auto-created account";
 
 	@Inject
 	public AutoAccountCreateLogic(
-			SyntheticTxnFactory syntheticTxnFactory,
-			EntityCreator creator,
-			EntityIdSource ids,
-			AccountRecordsHistorian recordsHistorian) {
+			final SyntheticTxnFactory syntheticTxnFactory,
+			final EntityCreator creator,
+			final EntityIdSource ids,
+			final AccountRecordsHistorian recordsHistorian,
+			final AutoAccountsManager autoAccounts) {
 		this.syntheticTxnFactory = syntheticTxnFactory;
 		this.creator = creator;
 		this.ids = ids;
 		this.recordsHistorian = recordsHistorian;
 		sideEffectsFactory = SideEffectsTracker::new;
+		this.autoAccounts = autoAccounts;
 	}
 
 	/**
@@ -120,9 +123,7 @@ public class AutoAccountCreateLogic {
 			recordsHistorian.trackPrecedingChildRecord(sourceId, syntheticCreateTxn, childRecord);
 
 			/* add auto created accounts changes to the rebuilt data structure */
-			AutoAccountsManager.getInstance()
-					.getAutoAccountsMap()
-					.put(alias, EntityNum.fromAccountId(newAccountId));
+			autoAccounts.getAutoAccountsMap().put(alias, EntityNum.fromAccountId(newAccountId));
 
 			tempCreations.put(alias, newAccountId);
 

@@ -308,18 +308,14 @@ class GetAccountInfoAnswerTest {
 	void usesValidatorOnAccountWithAlias() throws Throwable {
 		EntityNum entityNum = EntityNum.fromAccountId(payerId);
 		Query query = validQueryWithAlias(COST_ANSWER, fee, "aaaa");
-		AutoAccountsManager mockedAutoAccountCreations = mock(AutoAccountsManager.class);
-		given(mockedAutoAccountCreations.fetchEntityNumFor(any())).willReturn(entityNum);
+		
+		given(autoAccounts.fetchEntityNumFor(any())).willReturn(entityNum);
 
 		given(optionValidator.queryableAccountStatus(entityNum, accounts)).willReturn(INVALID_ACCOUNT_ID);
 
-		try (MockedStatic<AutoAccountsManager> theMock = Mockito.mockStatic(AutoAccountsManager.class)) {
-			theMock.when(AutoAccountsManager::getInstance)
-					.thenReturn(mockedAutoAccountCreations);
-			ResponseCodeEnum validity = subject.checkValidity(query, view);
+		ResponseCodeEnum validity = subject.checkValidity(query, view);
+		assertEquals(INVALID_ACCOUNT_ID, validity);
 
-			assertEquals(INVALID_ACCOUNT_ID, validity);
-		}
 	}
 
 	@Test

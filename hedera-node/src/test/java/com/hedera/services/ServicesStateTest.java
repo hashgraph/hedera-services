@@ -162,15 +162,12 @@ class ServicesStateTest {
 	private LogCaptor logCaptor;
 	@LoggingSubject
 	private ServicesState subject = new ServicesState();
-	AutoAccountsManager autoAccounts = AutoAccountsManager.getInstance();
-
 
 	@AfterEach
 	void cleanup() {
 		if (APPS.includes(selfId.getId())) {
 			APPS.clear(selfId.getId());
 		}
-		autoAccounts.getAutoAccountsMap().clear();
 	}
 
 	@Test

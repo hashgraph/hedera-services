@@ -61,7 +61,7 @@ public class GetAccountInfoAnswer implements AnswerService {
 		AccountID id = query.getCryptoGetInfo().getAccountID();
 		var entityNum = id.getAlias().isEmpty() ?
 				EntityNum.fromAccountId(id) :
-				AutoAccountsManager.getInstance().fetchEntityNumFor(id.getAlias());
+				autoAccounts.fetchEntityNumFor(id.getAlias());
 		return optionValidator.queryableAccountStatus(entityNum, view.accounts());
 	}
 

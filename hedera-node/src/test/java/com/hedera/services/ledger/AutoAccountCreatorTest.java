@@ -22,6 +22,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.HashMap;
+
 import static com.hedera.services.txns.crypto.AutoAccountCreateLogic.isPrimitiveKey;
 import static com.hedera.test.utils.IdUtils.hbarChange;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
@@ -44,10 +46,11 @@ class AutoAccountCreatorTest {
 	EntityIdSource entityIdSource;
 
 	AutoAccountCreateLogic subject;
+	@Mock
+	AutoAccountsManager autoAccounts;
 
 	private final BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
 	SyntheticTxnFactory syntheticTxnFactory = new SyntheticTxnFactory();
-	AutoAccountsManager autoAccounts = AutoAccountsManager.getInstance();
 
 	private final Key aliasA = KeyFactory.getDefaultInstance().newEd25519();
 	private final ByteString validAlias = aliasA.toByteString();
@@ -65,12 +68,12 @@ class AutoAccountCreatorTest {
 	@BeforeEach
 	void setUp() {
 		backingAccounts.put(a, aAccount);
-		subject = new AutoAccountCreateLogic(syntheticTxnFactory, entityCreator, entityIdSource, recordsHistorian);
-		autoAccounts.getAutoAccountsMap().clear();
+		subject = new AutoAccountCreateLogic(syntheticTxnFactory, entityCreator, entityIdSource, recordsHistorian, autoAccounts);
 	}
 
 	@Test
 	void happyPathAutoCreates() {
+		given(autoAccounts.getAutoAccountsMap()).willReturn(new HashMap<>());
 		given(entityIdSource.newAccountId(any()))
 				.willReturn(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(99).build());
 

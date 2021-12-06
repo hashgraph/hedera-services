@@ -78,6 +78,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.HashMap;
 import java.util.List;
 
 import static com.hedera.services.txns.crypto.AutoAccountCreateLogic.AUTO_CREATED_ACCOUNT_MEMO;
@@ -142,7 +143,8 @@ class LedgerBalanceChangesTest {
 	private TxnAwareRecordsHistorian recordsHistorian;
 
 	private HederaLedger subject;
-	private AutoAccountsManager autoAccounts = AutoAccountsManager.getInstance();
+	@Mock
+	private AutoAccountsManager autoAccounts;
 
 	@BeforeEach
 	void setUp() throws ConstructableRegistryException {
@@ -178,7 +180,7 @@ class LedgerBalanceChangesTest {
 				backingTokens);
 
 		autoAccountCreator = new AutoAccountCreateLogic(syntheticTxnFactory, entityCreator, entityIdSource,
-				recordsHistorian);
+				recordsHistorian, autoAccounts);
 		transferLogic = new TransferLogic(accountsLedger, nftsLedger, tokenRelsLedger, tokenStore, sideEffectsTracker
 				, tokenViewsManager, dynamicProperties, validator, autoAccountCreator, autoAccounts);
 
@@ -381,6 +383,7 @@ class LedgerBalanceChangesTest {
 
 	@Test
 	void happyPathTransfersWithAutoCreation() throws InvalidProtocolBufferException {
+		given(autoAccounts.getAutoAccountsMap()).willReturn(new HashMap<>());
 		Key aliasA = KeyFactory.getDefaultInstance().newEd25519();
 		AccountID a = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(10L).build();
 		AccountID validAliasAccount = AccountID.newBuilder().setAlias(aliasA.toByteString()).build();

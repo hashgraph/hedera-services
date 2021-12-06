@@ -183,7 +183,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		}
 
 		if (deserializedVersion >= RELEASE_0210_VERSION) {
-			autoAccountCreations = AutoAccountsManager.getInstance();
+			autoAccountCreations = new AutoAccountsManager();
 			autoAccountCreations.rebuildAutoAccountsMap(accounts());
 		}
 
