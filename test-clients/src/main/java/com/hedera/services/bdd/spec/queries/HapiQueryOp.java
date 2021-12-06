@@ -412,8 +412,8 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 		return self();
 	}
 
-	public T sigMapPrefixes(SigMapGenerator.Nature nature) {
-		sigMapGen = Optional.of(nature);
+	public T sigMapPrefixes(SigMapGenerator gen) {
+		sigMapGen = Optional.of(gen);
 		return self();
 	}
 

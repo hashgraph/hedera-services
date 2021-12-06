@@ -104,7 +104,7 @@
       </snapshots>
       <id>sdk-staging</id>
       <name>Staging repo for SDK</name>
-      <url>https://oss.sonatype.org/content/repositories/comswirlds-1194</url>
+      <url>https://oss.sonatype.org/content/repositories/comswirlds-1192</url>
     </repository>
     <repository>
       <snapshots>
@@ -177,7 +177,7 @@
     <log4j.version>2.14.1</log4j.version>
     <netty.version>4.1.66.Final</netty.version>
     <protobuf-java.version>3.19.1</protobuf-java.version>
-    <swirlds.version>0.21.0-vm.test.10</swirlds.version>
+    <swirlds.version>0.21.0-alpha.1</swirlds.version>
     <!-- Test dependency properties in alphabetical order -->
     <hamcrest.version>2.2</hamcrest.version>
     <junit5.version>5.8.1</junit5.version>
