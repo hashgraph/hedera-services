@@ -63,6 +63,7 @@ public class TransferLogic {
 	private final MerkleAccountScopedCheck scopedCheck;
 	private final UniqTokenViewsManager tokenViewsManager;
 	private final AutoAccountCreateLogic autoAccountCreator;
+	private final AutoAccountsManager autoAccounts;
 
 	@Inject
 	public TransferLogic(final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
@@ -73,7 +74,8 @@ public class TransferLogic {
 			final UniqTokenViewsManager tokenViewsManager,
 			final GlobalDynamicProperties dynamicProperties,
 			final OptionValidator validator,
-			final AutoAccountCreateLogic autoAccountCreator) {
+			final AutoAccountCreateLogic autoAccountCreator,
+			final AutoAccountsManager autoAccounts) {
 		this.accountsLedger = accountsLedger;
 		this.nftsLedger = nftsLedger;
 		this.tokenRelsLedger = tokenRelsLedger;
@@ -81,22 +83,25 @@ public class TransferLogic {
 		this.tokenStore = tokenStore;
 		this.tokenViewsManager = tokenViewsManager;
 		this.autoAccountCreator = autoAccountCreator;
+		this.autoAccounts = autoAccounts;
 
 		scopedCheck = new MerkleAccountScopedCheck(dynamicProperties, validator);
 	}
 
 	public void transfer(final List<BalanceChange> changes) {
 		var validity = OK;
-		List<ByteString> autoCreationAliases = new ArrayList<>();
+		List<ByteString> autoCreationAliases = null;
 		for (var change : changes) {
 			if (change.isForHbar()) {
 				/* if the change has only alias set, account number is not set, and the alias
 				is not present in the autoAccountsMap then add the alias to list for auto
 				creations */
 				if (change.hasOnlyAlias()) {
+					if (autoCreationAliases == null) {
+						autoCreationAliases = new ArrayList<>();
+					}
 					autoCreationAliases.add(change.alias());
 				} else {
-					// if change is in auto accounts map, use that account ID to validate ?
 					validity = accountsLedger.validate(change.accountId(), scopedCheck.setBalanceChange(change));
 				}
 			} else {
@@ -107,7 +112,7 @@ public class TransferLogic {
 			}
 		}
 
-		if (!autoCreationAliases.isEmpty()) {
+		if (autoCreationAliases != null && !autoCreationAliases.isEmpty() && validity == OK) {
 			validity = autoAccountCreator.createAutoAccounts(autoCreationAliases, accountsLedger);
 		}
 

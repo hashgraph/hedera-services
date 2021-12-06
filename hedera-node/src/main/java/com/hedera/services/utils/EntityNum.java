@@ -70,12 +70,7 @@ public class EntityNum {
 		if (!areValidNums(grpc.getShardNum(), grpc.getRealmNum())) {
 			return MISSING_NUM;
 		}
-		final var autoAccountsMap = AutoAccountsManager.getInstance().getAutoAccountsMap();
-		if (!grpc.getAlias().isEmpty() && autoAccountsMap.containsKey(grpc.getAlias())) {
-			return autoAccountsMap.get(grpc.getAlias());
-		} else {
-			return fromLong(grpc.getAccountNum());
-		}
+		return fromLong(grpc.getAccountNum());
 	}
 
 	public static EntityNum fromTokenId(TokenID grpc) {

@@ -180,7 +180,7 @@ class LedgerBalanceChangesTest {
 		autoAccountCreator = new AutoAccountCreateLogic(syntheticTxnFactory, entityCreator, entityIdSource,
 				recordsHistorian);
 		transferLogic = new TransferLogic(accountsLedger, nftsLedger, tokenRelsLedger, tokenStore, sideEffectsTracker
-				, tokenViewsManager, dynamicProperties, validator, autoAccountCreator);
+				, tokenViewsManager, dynamicProperties, validator, autoAccountCreator, autoAccounts);
 
 		tokenStore.rebuildViews();
 
@@ -290,7 +290,7 @@ class LedgerBalanceChangesTest {
 				backingTokens);
 
 		transferLogic = new TransferLogic(accountsLedger, nftsLedger, tokenRelsLedger, tokenStore, sideEffectsTracker
-				, viewManager, dynamicProperties, validator, autoAccountCreator);
+				, viewManager, dynamicProperties, validator, autoAccountCreator, autoAccounts);
 		subject = new HederaLedger(
 				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProperties, accountsLedger
 				, transferLogic);
@@ -317,6 +317,7 @@ class LedgerBalanceChangesTest {
 	@Test
 	void happyPathRecordsTransfersAndChangesBalancesAsExpected() {
 		givenInitialBalancesAndOwnership();
+
 
 		// when:
 		TransferList inProgress;
