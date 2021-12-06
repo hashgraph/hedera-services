@@ -100,8 +100,9 @@ public class ChunkingSuite extends HapiApiSuite {
 								.chunkInfo(3, 2, "initialTransactionPayer")
 								.hasRetryPrecheckFrom(BUSY)
 								.hasKnownStatus(INVALID_CHUNK_TRANSACTION_ID),
+						/* AcceptsChunkNumberDifferentThan1HavingTheSamePayerEvenWhenNotMatchingValidStart */
 						submitMessageTo("testTopic")
-								.message("acceptsChunkNumberDifferentThan1HavingTheSamePayerEvenWhenNotMatchingValidStart")
+								.message("A")
 								.chunkInfo(3, 3, "initialTransactionPayer")
 								.payingWith("initialTransactionPayer")
 								// Add delay to make sure the valid start of the transaction will not match
@@ -109,15 +110,17 @@ public class ChunkingSuite extends HapiApiSuite {
 								.delayBy(1000)
 								.hasRetryPrecheckFrom(BUSY)
 								.hasKnownStatus(SUCCESS),
+						/* FailsForTransactionIDOfChunkNumber1NotMatchingTheEntireInitialTransactionID */
 						submitMessageTo("testTopic")
-								.message("failsForTransactionIDOfChunkNumber1NotMatchingTheEntireInitialTransactionID")
+								.message("B")
 								.chunkInfo(2, 1)
 								// Also add delay here
 								.delayBy(1000)
 								.hasRetryPrecheckFrom(BUSY)
 								.hasKnownStatus(INVALID_CHUNK_TRANSACTION_ID),
+						/* AcceptsChunkNumber1WhenItsTransactionIDMatchesTheEntireInitialTransactionID */
 						submitMessageTo("testTopic")
-								.message("acceptsChunkNumber1WhenItsTransactionIDMatchesTheEntireInitialTransactionID")
+								.message("C")
 								.chunkInfo(4, 1)
 								.via("firstChunk")
 								.payingWith("initialTransactionPayer")

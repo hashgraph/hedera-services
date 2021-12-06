@@ -85,6 +85,9 @@ public class ContractResources {
 	public static final String HW_MINT_CONS_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
 			"\"name\":\"_tokenAddress\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\"," +
 			"\"type\":\"constructor\"}";
+	public static final String HW_BRRR_CALL_ABI = "{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"amount\"," +
+			"\"type\":\"uint64\"}],\"name\":\"brrr\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
+			"\"type\":\"function\"}";
 	public static final String HW_MINT_CALL_ABI = "{\"inputs\":[],\"name\":\"mint\",\"outputs\":[]," +
 			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	public static final String SEND_REPEATEDLY_ABI = "{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"just_send_" +

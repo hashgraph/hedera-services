@@ -37,11 +37,17 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+
+import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
+import static com.hedera.services.utils.EntityIdUtils.tokenParsedFromSolidityAddress;
 
 @Singleton
 public class DecodingFacade {
+	private static final int LONG_LENGTH = 8;
 	private static final int ADDRESS_BYTES_LENGTH = 20;
 	private static final int ADDRESS_SKIP_BYTES_LENGTH = 12;
 	private static final int FUNCTION_SELECTOR_BYTES_LENGTH = 4;
@@ -107,15 +113,94 @@ public class DecodingFacade {
 		}
 	}
 
-	@SuppressWarnings("unused")
-	public static void decodeTransferTokens(final Bytes input) {
+	/* NOT A REAL IMPLEMENTATION */
+	public SyntheticTxnFactory.BurnWrapper decodeBurn(final Bytes input) {
 		final Tuple decodedArguments =
-				TRANSFER_TOKENS_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
+				BURN_TOKEN_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
 						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
 
 		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
-		final var accountIDs = decodeAccountIDsFromBytesArray((byte[][]) decodedArguments.get(1));
-		final var amountsConverted = convertLongArrayToBigIntegerArray((long[]) decodedArguments.get(2));
+		final var fungibleAmount = (long) decodedArguments.get(1);
+		final var serialNumbers = (long[]) decodedArguments.get(2);
+
+		if (fungibleAmount > 0) {
+			return SyntheticTxnFactory.BurnWrapper.forFungible(
+					tokenID, fungibleAmount);
+		} else {
+			return SyntheticTxnFactory.BurnWrapper.forNonFungible(
+					tokenID, Arrays.stream(serialNumbers).boxed().collect(Collectors.toList()));
+		}
+	}
+
+	/* NOT A REAL IMPLEMENTATION */
+	public SyntheticTxnFactory.MintWrapper decodeMint(final Bytes input) {
+		final Tuple decodedArguments =
+				MINT_TOKEN_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
+						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
+
+		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
+		final var fungibleAmount = (long) decodedArguments.get(1);
+		final var metadata = String.valueOf(decodedArguments.get(2));
+
+		if (fungibleAmount > 0) {
+			return SyntheticTxnFactory.MintWrapper.forFungible(
+					tokenID, fungibleAmount);
+		} else {
+			return SyntheticTxnFactory.MintWrapper.forNonFungible(
+					tokenID, Collections.singletonList(ByteString.copyFrom(metadata.getBytes())));
+		}
+	}
+
+	/* NOT A REAL IMPLEMENTATION */
+	public SyntheticTxnFactory.Association decodeAssociation(final Bytes input) {
+		final Tuple decodedArguments =
+				ASSOCIATE_TOKEN_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
+						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
+
+		final var accountID = convertAddressBytesToAccountID((byte[]) decodedArguments.get(0));
+		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(1));
+
+		return SyntheticTxnFactory.Association.singleAssociation(
+				accountID, tokenID);
+	}
+
+	/* NOT A REAL IMPLEMENTATION */
+	public SyntheticTxnFactory.Association decodeMultipleAssociations(final Bytes input) {
+		final Tuple decodedArguments =
+				ASSOCIATE_TOKENS_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
+						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
+
+		final var accountID = convertAddressBytesToAccountID((byte[]) decodedArguments.get(0));
+		final var tokenIDs = decodeTokenIDsFromBytesArray((byte[][]) decodedArguments.get(1));
+
+		return SyntheticTxnFactory.Association.multiAssociation(
+				accountID, tokenIDs);
+	}
+
+	/* NOT A REAL IMPLEMENTATION */
+	public SyntheticTxnFactory.Dissociation decodeDissociate(final Bytes input) {
+		final Tuple decodedArguments =
+				DISSOCIATE_TOKEN_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
+						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
+
+		final var accountID = convertAddressBytesToAccountID((byte[]) decodedArguments.get(0));
+		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(1));
+
+		return SyntheticTxnFactory.Dissociation.singleDissociation(
+				accountID, tokenID);
+	}
+
+	/* NOT A REAL IMPLEMENTATION */
+	public SyntheticTxnFactory.Dissociation decodeMultipleDissociations(final Bytes input) {
+		final Tuple decodedArguments =
+				DISSOCIATE_TOKENS_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
+						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
+
+		final var accountID = convertAddressBytesToAccountID((byte[]) decodedArguments.get(0));
+		final var tokenIDs = decodeTokenIDsFromBytesArray((byte[][]) decodedArguments.get(1));
+
+		return SyntheticTxnFactory.Dissociation.multiDissociation(
+				accountID, tokenIDs);
 	}
 
 	@SuppressWarnings("unused")
@@ -128,6 +213,17 @@ public class DecodingFacade {
 		final var fromAccountId = convertAddressBytesToAccountID((byte[]) decodedArguments.get(1));
 		final var toAccountId = convertAddressBytesToAccountID((byte[]) decodedArguments.get(2));
 		final var amountConverted = BigInteger.valueOf((long) decodedArguments.get(3));
+	}
+
+	@SuppressWarnings("unused")
+	public static void decodeTransferTokens(final Bytes input) {
+		final Tuple decodedArguments =
+				TRANSFER_TOKENS_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
+						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
+
+		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
+		final var accountIDs = decodeAccountIDsFromBytesArray((byte[][]) decodedArguments.get(1));
+		final var amountsConverted = convertLongArrayToBigIntegerArray((long[]) decodedArguments.get(2));
 	}
 
 	@SuppressWarnings("unused")
@@ -152,77 +248,6 @@ public class DecodingFacade {
 		final var senderID = convertAddressBytesToAccountID((byte[]) decodedArguments.get(1));
 		final var recipientID = convertAddressBytesToAccountID((byte[]) decodedArguments.get(2));
 		final var serialNumber = BigInteger.valueOf((long) decodedArguments.get(3));
-	}
-
-	@SuppressWarnings("unused")
-	public static void decodeBurnToken(final Bytes input) {
-		final Tuple decodedArguments =
-				BURN_TOKEN_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
-						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
-
-		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
-		final var amount = BigInteger.valueOf((long) decodedArguments.get(1));
-		final var serialNumbers = convertLongArrayToBigIntegerArray((long[]) decodedArguments.get(2));
-	}
-
-	@SuppressWarnings("unused")
-	public static void decodeAAssociateTokens(final Bytes input) {
-		final Tuple decodedArguments =
-				ASSOCIATE_TOKENS_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
-						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
-
-		final var accountID = convertAddressBytesToAccountID((byte[]) decodedArguments.get(0));
-		final var tokenIDs = decodeTokenIDsFromBytesArray((byte[][]) decodedArguments.get(1));
-	}
-
-	@SuppressWarnings("unused")
-	public static void decodeDissociateTokens(final Bytes input) {
-		final Tuple decodedArguments =
-				DISSOCIATE_TOKENS_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
-						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
-
-		final var accountID = convertAddressBytesToAccountID((byte[]) decodedArguments.get(0));
-		final var tokenIDs = decodeTokenIDsFromBytesArray((byte[][]) decodedArguments.get(1));
-	}
-
-	public SyntheticTxnFactory.MintInput decodeMint(final Bytes input) {
-		final Tuple decodedArguments =
-				MINT_TOKEN_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
-						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
-
-		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
-		final var amount = (long) decodedArguments.get(1);
-		final var metadata = String.valueOf(decodedArguments.get(2));
-
-		return new SyntheticTxnFactory.MintInput(
-				tokenID, amount,
-				Collections.singletonList(ByteString.copyFrom(metadata.getBytes())));
-	}
-
-	public SyntheticTxnFactory.AssociateToken decodeAssociate(final Bytes input) {
-		final Tuple decodedArguments =
-				ASSOCIATE_TOKEN_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
-						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
-
-		final var accountID = convertAddressBytesToAccountID((byte[]) decodedArguments.get(0));
-		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(1));
-
-		return new SyntheticTxnFactory.AssociateToken(
-				accountID,
-				tokenID);
-	}
-
-	public SyntheticTxnFactory.DissociateToken decodeDissociate(final Bytes input) {
-		final Tuple decodedArguments =
-				DISSOCIATE_TOKEN_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
-						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
-
-		final var accountID = convertAddressBytesToAccountID((byte[]) decodedArguments.get(0));
-		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(1));
-
-		return new SyntheticTxnFactory.DissociateToken(
-				accountID,
-				tokenID);
 	}
 
 	private static List<BigInteger> convertLongArrayToBigIntegerArray(final long[] longArray) {
