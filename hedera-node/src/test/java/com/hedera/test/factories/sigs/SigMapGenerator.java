@@ -84,7 +84,7 @@ public class SigMapGenerator {
 		} else {
 			if (sigType == SignatureType.RSA) {
 				sp.setRSA3072(ByteString.copyFrom(sig));
-			} else if (sigType == SignatureType.ECDSA) {
+			} else if (sigType == SignatureType.ECDSA_SECP256K1) {
 				sp.setECDSA384(ByteString.copyFrom(sig));
 			} else if (sigType == SignatureType.ED25519) {
 				sp.setEd25519(ByteString.copyFrom(sig));

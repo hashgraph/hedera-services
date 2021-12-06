@@ -133,7 +133,7 @@ public class SigFactory {
 				PrivateKey signer = factory.lookupPrivateKey(pubKeyHex);
 				byte[] sig = CommonUtils.unhex(SignatureGenerator.signBytes(data, signer));
 				keySigs.add(new AbstractMap.SimpleEntry<>(key.getEd25519().toByteArray(), sig));
-			} else if (sigType == SignatureType.ECDSA) {
+			} else if (sigType == SignatureType.ECDSA_SECP256K1) {
 				keySigs.add(new AbstractMap.SimpleEntry<>(key.getECDSA384().toByteArray(), NONSENSE_ECDSA_SIG));
 			} else if (sigType == SignatureType.RSA) {
 				keySigs.add(new AbstractMap.SimpleEntry<>(key.getRSA3072().toByteArray(), NONSENSE_RSA_SIG));
@@ -145,7 +145,7 @@ public class SigFactory {
 			if (key.getEd25519() != ByteString.EMPTY) {
 				return SignatureType.ED25519;
 			} else if (key.getECDSA384() != ByteString.EMPTY) {
-				return SignatureType.ECDSA;
+				return SignatureType.ECDSA_SECP256K1;
 			} else if (key.getRSA3072() != ByteString.EMPTY) {
 				return SignatureType.RSA;
 			}

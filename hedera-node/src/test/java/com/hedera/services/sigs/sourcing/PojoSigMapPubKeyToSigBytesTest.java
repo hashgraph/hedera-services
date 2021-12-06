@@ -128,7 +128,7 @@ class PojoSigMapPubKeyToSigBytesTest {
 				return SigFactory.signUnchecked(data, factory.lookupPrivateKey(leaf.asKey(factory)));
 			} else if (leaf.getSigType() == SignatureType.RSA) {
 				return SigFactory.NONSENSE_RSA_SIG;
-			} else if (leaf.getSigType() == SignatureType.ECDSA) {
+			} else if (leaf.getSigType() == SignatureType.ECDSA_SECP256K1) {
 				return SigFactory.NONSENSE_ECDSA_SIG;
 			}
 			throw new AssertionError("Impossible leaf type!");
