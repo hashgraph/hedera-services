@@ -101,11 +101,13 @@ import com.hedera.services.bdd.suites.perf.contract.ContractCallLoadTest;
 import com.hedera.services.bdd.suites.perf.contract.ContractCallLocalPerfSuite;
 import com.hedera.services.bdd.suites.perf.contract.ContractCallPerfSuite;
 import com.hedera.services.bdd.suites.perf.contract.ContractPerformanceSuite;
+import com.hedera.services.bdd.suites.perf.contract.FibonacciPlusLoadProvider;
 import com.hedera.services.bdd.suites.perf.contract.MixedSmartContractOpsLoadTest;
 import com.hedera.services.bdd.suites.perf.contract.opcodes.SStoreOperationLoadTest;
 import com.hedera.services.bdd.suites.perf.crypto.CryptoCreatePerfSuite;
 import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferLoadTest;
 import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferPerfSuiteWOpProvider;
+import com.hedera.services.bdd.suites.perf.crypto.SimpleXfersAvoidingHotspot;
 import com.hedera.services.bdd.suites.perf.file.FileUpdateLoadTest;
 import com.hedera.services.bdd.suites.perf.file.MixedFileOpsLoadTest;
 import com.hedera.services.bdd.suites.perf.mixedops.MixedOpsLoadTest;
@@ -288,6 +290,7 @@ public class SuiteRunner {
 		/* JRS restart tests */
 		put("RestartWithScheduledEntities", aof(JrsRestartTestTemplate::new));
 		/* Load tests. */
+		put("SimpleXfersAvoidingHotspot", aof(SimpleXfersAvoidingHotspot::new));
 		put("QueryOnlyLoadTest", aof(QueryOnlyLoadTest::new));
 		put("TokenTransfersBasicLoadTest", aof(TokenTransferBasicLoadTest::new));
 		put("AccountBalancesLoadTest", aof(AccountBalancesClientSaveLoadTest::new));
@@ -402,6 +405,7 @@ public class SuiteRunner {
 		put("ContractCallPerfSuite", aof(ContractCallPerfSuite::new));
 		put("ContractPerformanceSuite", aof(ContractPerformanceSuite::new));
 		put("MixedSmartContractOpsLoadTest", aof(MixedSmartContractOpsLoadTest::new));
+		put("FibonacciPlusLoadProvider", aof(FibonacciPlusLoadProvider::new));
 		/* Functional tests - AUTORENEW */
 		put("AccountAutoRenewalSuite", aof(AccountAutoRenewalSuite::new));
 		/* Functional tests - MIXED (record emphasis) */

@@ -21,7 +21,6 @@ package com.hedera.services.utils;
  */
 
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.sigs.Rationalization;
 import com.swirlds.common.SwirldDualState;
 import com.swirlds.common.SwirldTransaction;
 import com.swirlds.common.crypto.TransactionSignature;
@@ -33,7 +32,7 @@ import java.util.function.Function;
 import static com.hedera.services.keys.HederaKeyActivation.pkToSigMapFrom;
 
 /**
- * A simple wrapper around the three outputs of the {@link Rationalization#execute()} process.
+ * A simple wrapper around the three outputs of the {@code Rationalization#execute()} process.
  *
  * These outputs are,
  * <ol>
@@ -71,10 +70,10 @@ public class RationalizedSigMeta {
 	}
 
 	private RationalizedSigMeta(
-			JKey payerReqSig,
-			List<JKey> othersReqSigs,
-			List<TransactionSignature> rationalizedSigs,
-			Function<byte[], TransactionSignature> pkToVerifiedSigFn
+			final JKey payerReqSig,
+			final List<JKey> othersReqSigs,
+			final List<TransactionSignature> rationalizedSigs,
+			final Function<byte[], TransactionSignature> pkToVerifiedSigFn
 	) {
 		this.payerReqSig = payerReqSig;
 		this.othersReqSigs = othersReqSigs;
@@ -87,16 +86,16 @@ public class RationalizedSigMeta {
 	}
 
 	public static RationalizedSigMeta forPayerOnly(
-			JKey payerReqSig,
-			List<TransactionSignature> rationalizedSigs
+			final JKey payerReqSig,
+			final List<TransactionSignature> rationalizedSigs
 	) {
 		return forPayerAndOthers(payerReqSig, null, rationalizedSigs);
 	}
 
 	public static RationalizedSigMeta forPayerAndOthers(
-			JKey payerReqSig,
-			List<JKey> othersReqSigs,
-			List<TransactionSignature> rationalizedSigs
+			final JKey payerReqSig,
+			final List<JKey> othersReqSigs,
+			final List<TransactionSignature> rationalizedSigs
 	) {
 		return new RationalizedSigMeta(
 				payerReqSig,

@@ -36,6 +36,10 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenView;
@@ -71,7 +75,7 @@ import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
-import org.hamcrest.Matchers;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -84,7 +88,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 
 import static com.hedera.services.state.merkle.MerkleScheduleTest.scheduleCreateTxnWith;
@@ -115,7 +118,6 @@ import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.TokenPauseStatus.PauseNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenPauseStatus.Paused;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -128,38 +130,36 @@ import static org.mockito.BDDMockito.mock;
 
 @ExtendWith(LogCaptureExtension.class)
 class StateViewTest {
-	private Instant resolutionTime = Instant.ofEpochSecond(123L);
-	private RichInstant now = RichInstant.fromGrpc(Timestamp.newBuilder().setNanos(123123213).build());
-	private long expiry = 2_000_000L;
-	private byte[] data = "SOMETHING".getBytes();
-	private byte[] expectedBytecode = "A Supermarket in California".getBytes();
-	private byte[] expectedStorage = "The Ecstasy".getBytes();
-	private String tokenMemo = "Goodbye and keep cold";
+	private final Instant resolutionTime = Instant.ofEpochSecond(123L);
+	private final RichInstant now = RichInstant.fromGrpc(Timestamp.newBuilder().setNanos(123123213).build());
+	private final long expiry = 2_000_000L;
+	private final byte[] data = "SOMETHING".getBytes();
+	private final byte[] expectedBytecode = "A Supermarket in California".getBytes();
+	private final String tokenMemo = "Goodbye and keep cold";
 	private HFileMeta metadata;
 	private HFileMeta immutableMetadata;
-	private FileID target = asFile("0.0.123");
-	private TokenID tokenId = asToken("0.0.5");
-	private TokenID nftTokenId = asToken("0.0.3");
-	private TokenID missingTokenId = asToken("0.0.5555");
-	private AccountID payerAccountId = asAccount("0.0.9");
-	private AccountID tokenAccountId = asAccount("0.0.10");
-	private AccountID treasuryOwnerId = asAccount("0.0.0");
-	private AccountID nftOwnerId = asAccount("0.0.44");
-	private ScheduleID scheduleId = asSchedule("0.0.8");
-	private ScheduleID missingScheduleId = asSchedule("0.0.9");
-	private ContractID cid = asContract("0.0.1");
-	private byte[] cidAddress = asSolidityAddress((int) cid.getShardNum(), cid.getRealmNum(), cid.getContractNum());
-	private ContractID notCid = asContract("0.0.3");
-	private AccountID autoRenew = asAccount("0.0.6");
-	private AccountID creatorAccountID = asAccount("0.0.7");
-	private long autoRenewPeriod = 1_234_567;
-	private String fileMemo = "Originally she thought";
-	private String scheduleMemo = "For what but eye and ear";
+	private final FileID target = asFile("0.0.123");
+	private final TokenID tokenId = asToken("0.0.5");
+	private final TokenID nftTokenId = asToken("0.0.3");
+	private final TokenID missingTokenId = asToken("0.0.5555");
+	private final AccountID payerAccountId = asAccount("0.0.9");
+	private final AccountID tokenAccountId = asAccount("0.0.10");
+	private final AccountID treasuryOwnerId = asAccount("0.0.0");
+	private final AccountID nftOwnerId = asAccount("0.0.44");
+	private final ScheduleID scheduleId = asSchedule("0.0.8");
+	private final ScheduleID missingScheduleId = asSchedule("0.0.9");
+	private final ContractID cid = asContract("0.0.1");
+	private final byte[] cidAddress = asSolidityAddress((int) cid.getShardNum(), cid.getRealmNum(), cid.getContractNum());
+	private final ContractID notCid = asContract("0.0.3");
+	private final AccountID autoRenew = asAccount("0.0.6");
+	private final AccountID creatorAccountID = asAccount("0.0.7");
+	private final long autoRenewPeriod = 1_234_567;
+	private final String fileMemo = "Originally she thought";
+	private final String scheduleMemo = "For what but eye and ear";
 
 	private FileGetInfoResponse.FileInfo expected;
 	private FileGetInfoResponse.FileInfo expectedImmutable;
 
-	private Map<byte[], byte[]> storage;
 	private Map<byte[], byte[]> bytecode;
 	private Map<FileID, byte[]> contents;
 	private Map<FileID, HFileMeta> attrs;
@@ -172,6 +172,8 @@ class StateViewTest {
 	private FCOneToManyRelation<EntityNum, Long> nftsByType;
 	private FCOneToManyRelation<EntityNum, Long> nftsByOwner;
 	private FCOneToManyRelation<EntityNum, Long> treasuryNftsByType;
+	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
+	private VirtualMap<ContractKey, ContractValue> contractStorage;
 	private TokenStore tokenStore;
 	private ScheduleStore scheduleStore;
 	private TransactionBody parentScheduleCreate;
@@ -293,9 +295,9 @@ class StateViewTest {
 						MiscUtils.asTimestamp(now.toJava())
 				);
 		schedule = MerkleSchedule.from(parentScheduleCreate.toByteArray(), expiry);
-		schedule.witnessValidEd25519Signature("firstPretendKey".getBytes());
-		schedule.witnessValidEd25519Signature("secondPretendKey".getBytes());
-		schedule.witnessValidEd25519Signature("thirdPretendKey".getBytes());
+		schedule.witnessValidSignature("firstPretendKey".getBytes());
+		schedule.witnessValidSignature("secondPretendKey".getBytes());
+		schedule.witnessValidSignature("thirdPretendKey".getBytes());
 
 		given(scheduleStore.resolve(scheduleId)).willReturn(scheduleId);
 		given(scheduleStore.resolve(missingScheduleId)).willReturn(ScheduleStore.MISSING_SCHEDULE);
@@ -303,9 +305,7 @@ class StateViewTest {
 
 		contents = mock(Map.class);
 		attrs = mock(Map.class);
-		storage = mock(Map.class);
 		bytecode = mock(Map.class);
-		given(storage.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedStorage);
 		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedBytecode);
 		nodeProps = mock(NodeLocalProperties.class);
 		specialFiles = mock(MerkleSpecialFiles.class);
@@ -324,6 +324,8 @@ class StateViewTest {
 		treasuryNftsByType = (FCOneToManyRelation<EntityNum, Long>) mock(FCOneToManyRelation.class);
 		uniqTokenView = mock(UniqTokenView.class);
 		uniqTokenViewFactory = mock(UniqTokenViewFactory.class);
+		storage = (VirtualMap<VirtualBlobKey, VirtualBlobValue>) mock(VirtualMap.class);
+		contractStorage = (VirtualMap<ContractKey, ContractValue>) mock(VirtualMap.class);
 
 		children = new StateChildren();
 		children.setUniqueTokens(uniqueTokens);
@@ -339,13 +341,11 @@ class StateViewTest {
 		subject = new StateView(
 				tokenStore,
 				scheduleStore,
-				nodeProps,
 				children,
 				uniqTokenViewFactory);
 		subject.fileAttrs = attrs;
 		subject.fileContents = contents;
 		subject.contractBytecode = bytecode;
-		subject.contractStorage = storage;
 	}
 
 	@AfterEach
@@ -542,7 +542,7 @@ class StateViewTest {
 		assertEquals(contract.getExpiry(), info.getExpirationTime().getSeconds());
 		assertEquals(rels, info.getTokenRelationshipsList());
 		assertTrue(info.getDeleted());
-		assertEquals(expectedStorage.length + expectedBytecode.length, info.getStorage());
+		assertEquals(expectedBytecode.length, info.getStorage());
 	}
 
 	@Test
@@ -641,11 +641,27 @@ class StateViewTest {
 		children.setTopics(topics);
 
 		subject = new StateView(
-				null, null, null, children, EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+				null, null, children, EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 
 		final var actualTopics = subject.topics();
 
 		assertEquals(topics, actualTopics);
+	}
+
+	@Test
+	void getStorageAndContractStorage() {
+		final var children = new StateChildren();
+		children.setContractStorage(contractStorage);
+		children.setStorage(storage);
+
+		subject = new StateView(
+				null, null, children, EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+
+		final var actualStorage = subject.storage();
+		final var actualContractStorage = subject.contractStorage();
+
+		assertEquals(storage, actualStorage);
+		assertEquals(contractStorage, actualContractStorage);
 	}
 
 	@Test
@@ -681,13 +697,6 @@ class StateViewTest {
 	}
 
 	@Test
-	void getsStorage() {
-		final var actual = subject.storageOf(cid);
-
-		assertArrayEquals(expectedStorage, actual.get());
-	}
-
-	@Test
 	void getsContents() {
 		given(contents.get(target)).willReturn(data);
 
@@ -700,21 +709,6 @@ class StateViewTest {
 	@Test
 	void assemblesFileInfo() {
 		given(attrs.get(target)).willReturn(metadata);
-		given(contents.get(target)).willReturn(data);
-
-		final var info = subject.infoForFile(target);
-
-		assertTrue(info.isPresent());
-		assertEquals(expected, info.get());
-	}
-
-	@Test
-	void returnFileInfoForBinaryObjectNotFoundExceptionAfterRetries() {
-		given(attrs.get(target))
-				.willThrow(new com.swirlds.blob.BinaryObjectNotFoundException())
-				.willThrow(new com.swirlds.blob.BinaryObjectNotFoundException())
-				.willReturn(metadata);
-		given(nodeProps.queryBlobLookupRetries()).willReturn(2);
 		given(contents.get(target)).willReturn(data);
 
 		final var info = subject.infoForFile(target);
@@ -748,83 +742,6 @@ class StateViewTest {
 
 		assertTrue(info.isPresent());
 		assertEquals(expected, info.get());
-	}
-
-	@Test
-	void returnEmptyFileInfoForBinaryObjectNotFoundException() {
-		given(attrs.get(target)).willThrow(new com.swirlds.blob.BinaryObjectNotFoundException());
-		given(nodeProps.queryBlobLookupRetries()).willReturn(1);
-
-		final var info = subject.infoForFile(target);
-
-		assertTrue(info.isEmpty());
-	}
-
-	@Test
-	void returnEmptyFileInfoForBinaryObjectDeletedExceptionAfterRetries() {
-		given(attrs.get(target))
-				.willThrow(new com.swirlds.blob.BinaryObjectDeletedException())
-				.willThrow(new com.swirlds.blob.BinaryObjectDeletedException())
-				.willThrow(new com.swirlds.blob.BinaryObjectDeletedException())
-				.willReturn(metadata);
-		given(nodeProps.queryBlobLookupRetries()).willReturn(2);
-
-		final var info = subject.infoForFile(target);
-
-		assertTrue(info.isEmpty());
-	}
-
-	@Test
-	void returnFileInfoForBinaryObjectDeletedExceptionAfterRetries() {
-		expected = expected.toBuilder()
-				.setDeleted(true)
-				.setSize(0)
-				.build();
-		metadata.setDeleted(true);
-
-		given(attrs.get(target))
-				.willThrow(new com.swirlds.blob.BinaryObjectDeletedException())
-				.willThrow(new com.swirlds.blob.BinaryObjectDeletedException())
-				.willReturn(metadata);
-		given(nodeProps.queryBlobLookupRetries()).willReturn(2);
-
-		final var info = subject.infoForFile(target);
-
-		assertTrue(info.isPresent());
-		assertEquals(expected, info.get());
-	}
-
-	@Test
-	void returnEmptyFileForOtherBinaryObjectException() {
-		given(attrs.get(target)).willThrow(new com.swirlds.blob.BinaryObjectException());
-
-		final var info = subject.infoForFile(target);
-
-		assertTrue(info.isEmpty());
-		final var warnLogs = logCaptor.warnLogs();
-		assertEquals(1, warnLogs.size());
-		assertThat(warnLogs.get(0), Matchers.startsWith("Unexpected error occurred when getting info for file"));
-	}
-
-	@Test
-	void logsAtDebugWhenInterrupted() throws InterruptedException {
-		final var finalAnswer = new AtomicReference<Optional<FileGetInfoResponse.FileInfo>>();
-
-		given(attrs.get(target)).willThrow(new com.swirlds.blob.BinaryObjectNotFoundException());
-		given(nodeProps.queryBlobLookupRetries()).willReturn(5);
-
-		final var t = new Thread(() -> finalAnswer.set(subject.infoForFile(target)));
-		t.start();
-		for (int i = 0; i < 5; i++) {
-			t.interrupt();
-		}
-		t.join();
-
-		final var debugLogs = logCaptor.debugLogs();
-		assertTrue(finalAnswer.get().isEmpty());
-		assertTrue(debugLogs.size() >= 2);
-		assertThat(debugLogs.get(0), Matchers.startsWith("Retrying fetch of 0.0.123 file meta"));
-		assertThat(debugLogs.get(1), Matchers.startsWith("Interrupted fetching meta for file 0.0.123"));
 	}
 
 	@Test
@@ -947,14 +864,15 @@ class StateViewTest {
 
 	@Test
 	void viewAdaptToNullChildren() {
-		subject = new StateView(null, null, null, null, EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+		subject = new StateView(null, null, null, EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 
 		assertSame(EMPTY_UNIQUE_TOKEN_VIEW, subject.uniqTokenView());
 		assertSame(StateView.EMPTY_FCOTMR, subject.treasuryNftsByType());
 		assertSame(StateView.EMPTY_FCOTMR, subject.nftsByOwner());
 		assertSame(StateView.EMPTY_FCOTMR, subject.nftsByType());
 		assertSame(StateView.EMPTY_FCM, subject.tokens());
-		assertSame(StateView.EMPTY_FCM, subject.storage());
+		assertSame(StateView.EMPTY_VM, subject.storage());
+		assertSame(StateView.EMPTY_VM, subject.contractStorage());
 		assertSame(StateView.EMPTY_FCM, subject.uniqueTokens());
 		assertSame(StateView.EMPTY_FCM, subject.tokenAssociations());
 		assertSame(StateView.EMPTY_FCM, subject.contracts());
@@ -995,15 +913,15 @@ class StateViewTest {
 			nftMeta,
 			fromJava(nftCreation));
 
-	private CustomFeeBuilder builder = new CustomFeeBuilder(payerAccountId);
-	private CustomFee customFixedFeeInHbar = builder.withFixedFee(fixedHbar(100L));
-	private CustomFee customFixedFeeInHts = builder.withFixedFee(fixedHts(tokenId, 100L));
-	private CustomFee customFixedFeeSameToken = builder.withFixedFee(fixedHts(50L));
-	private CustomFee customFractionalFee = builder.withFractionalFee(
+	private final CustomFeeBuilder builder = new CustomFeeBuilder(payerAccountId);
+	private final CustomFee customFixedFeeInHbar = builder.withFixedFee(fixedHbar(100L));
+	private final CustomFee customFixedFeeInHts = builder.withFixedFee(fixedHts(tokenId, 100L));
+	private final CustomFee customFixedFeeSameToken = builder.withFixedFee(fixedHts(50L));
+	private final CustomFee customFractionalFee = builder.withFractionalFee(
 			fractional(15L, 100L)
 					.setMinimumAmount(10L)
 					.setMaximumAmount(50L));
-	private List<CustomFee> grpcCustomFees = List.of(
+	private final List<CustomFee> grpcCustomFees = List.of(
 			customFixedFeeInHbar,
 			customFixedFeeInHts,
 			customFixedFeeSameToken,

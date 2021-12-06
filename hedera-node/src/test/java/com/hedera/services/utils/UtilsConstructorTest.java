@@ -22,6 +22,7 @@ package com.hedera.services.utils;
 
 import com.hedera.services.context.domain.security.PermissionFileUtils;
 import com.hedera.services.context.properties.PropUtils;
+import com.hedera.services.contracts.execution.CallLocalExecutor;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaUtil;
 import com.hedera.services.contracts.operation.HederaOperationUtil;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
@@ -40,17 +41,18 @@ import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.HederaKeyTraversal;
 import com.hedera.services.keys.KeysModule;
 import com.hedera.services.keys.RevocationServiceCharacteristics;
-import com.hedera.services.keys.StandardSyncActivationCheck;
 import com.hedera.services.queries.QueriesModule;
 import com.hedera.services.sigs.HederaToPlatformSigOps;
 import com.hedera.services.sigs.PlatformSigOps;
 import com.hedera.services.sigs.factories.PlatformSigFactory;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
+import com.hedera.services.sigs.utils.MiscCryptoUtils;
 import com.hedera.services.sigs.utils.PrecheckUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.migration.LegacyStateChildIndices;
 import com.hedera.services.state.migration.Release0170Migration;
+import com.hedera.services.state.migration.ReleaseTwentyMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.stats.MiscRunningAvgs;
@@ -84,6 +86,7 @@ import java.util.Set;
 
 class UtilsConstructorTest {
 	private static final Set<Class<?>> toBeTested = new HashSet<>(Arrays.asList(
+			MiscCryptoUtils.class,
 			NewRels.class,
 			PermissionFileUtils.class,
 			PropUtils.class,
@@ -95,7 +98,6 @@ class UtilsConstructorTest {
 			HederaKeyActivation.class,
 			HederaKeyTraversal.class,
 			RevocationServiceCharacteristics.class,
-			StandardSyncActivationCheck.class,
 			HederaToPlatformSigOps.class,
 			PlatformSigOps.class,
 			PlatformSigFactory.class,
@@ -105,6 +107,7 @@ class UtilsConstructorTest {
 			BitPackUtils.class,
 			LegacyStateChildIndices.class,
 			Release0170Migration.class,
+			ReleaseTwentyMigration.class,
 			StateChildIndices.class,
 			StateVersions.class,
 			MiscRunningAvgs.Names.class,
@@ -143,6 +146,7 @@ class UtilsConstructorTest {
 			ScheduleLogicModule.class,
 			TokenLogicModule.class,
 			TopicConversion.class,
+			CallLocalExecutor.class,
 			HederaOperationUtil.class,
 			GasCalculatorHederaUtil.class
 	));

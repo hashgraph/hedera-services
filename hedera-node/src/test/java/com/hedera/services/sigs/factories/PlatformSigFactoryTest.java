@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static com.hedera.services.sigs.factories.PlatformSigFactory.allVaryingMaterialEquals;
-import static com.hedera.services.sigs.factories.PlatformSigFactory.createEd25519;
+import static com.hedera.services.sigs.factories.PlatformSigFactory.ed25519Sig;
 import static com.hedera.services.sigs.factories.PlatformSigFactory.pkSigRepr;
 import static com.hedera.services.sigs.factories.PlatformSigFactory.varyingMaterialEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -57,38 +57,38 @@ public class PlatformSigFactoryTest {
 
 	@Test
 	void createsExpectedSig() {
-		final var actualSig = PlatformSigFactory.createEd25519(pk, sig, data);
+		final var actualSig = PlatformSigFactory.ed25519Sig(pk, sig, data);
 
 		Assertions.assertEquals(EXPECTED_SIG, actualSig);
 	}
 
 	@Test
 	void differentPksAreUnequal() {
-		final var a = createEd25519(pk, sig, data);
-		final var b = createEd25519(differentPk, sig, data);
+		final var a = ed25519Sig(pk, sig, data);
+		final var b = ed25519Sig(differentPk, sig, data);
 
 		assertFalse(varyingMaterialEquals(a, b));
 	}
 
 	@Test
 	void differentSigsAreUnequal() {
-		final var a = createEd25519(pk, sig, data);
-		final var b = createEd25519(pk, differentSig, data);
+		final var a = ed25519Sig(pk, sig, data);
+		final var b = ed25519Sig(pk, differentSig, data);
 
 		assertFalse(varyingMaterialEquals(a, b));
 	}
 
 	@Test
 	void equalVaryingMaterialAreEqual() {
-		final var a = createEd25519(pk, sig, data);
-		final var b = createEd25519(pk, sig, differentData);
+		final var a = ed25519Sig(pk, sig, data);
+		final var b = ed25519Sig(pk, sig, differentData);
 
 		assertTrue(varyingMaterialEquals(a, b));
 	}
 
 	@Test
 	void differentLensAreUnequal() {
-		final var a = createEd25519(pk, sig, data);
+		final var a = ed25519Sig(pk, sig, data);
 
 		final var aList = List.of(a);
 		final var bList = List.of(a, a);
@@ -98,8 +98,8 @@ public class PlatformSigFactoryTest {
 
 	@Test
 	void differingItemsMeanUnequal() {
-		final var a = createEd25519(pk, sig, data);
-		final var b = createEd25519(pk, differentSig, data);
+		final var a = ed25519Sig(pk, sig, data);
+		final var b = ed25519Sig(pk, differentSig, data);
 
 		final var aList = List.of(a, a, a);
 		final var bList = List.of(a, b, a);
@@ -109,8 +109,8 @@ public class PlatformSigFactoryTest {
 
 	@Test
 	void pkSigReprWorks() {
-		final var a = createEd25519(pk, sig, data);
-		final var b = createEd25519(differentPk, differentSig, data);
+		final var a = ed25519Sig(pk, sig, data);
+		final var b = ed25519Sig(differentPk, differentSig, data);
 		final var expected = String.format(
 				"(PK = %s | SIG = %s | UNKNOWN), (PK = %s | SIG = %s | UNKNOWN)",
 				CommonUtils.hex(pk),

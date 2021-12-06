@@ -21,6 +21,7 @@ package com.hedera.services.txns.schedule;
  */
 
 import com.hedera.services.keys.InHandleActivationHelper;
+import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -52,12 +53,14 @@ import static org.mockito.BDDMockito.willAnswer;
 
 @ExtendWith(MockitoExtension.class)
 class SignatoryUtilsTest {
-	private JKey goodKey = new JEd25519Key("angelic".getBytes());
+	private JKey goodEd25519Key = new JEd25519Key("angelic".getBytes());
+	private JKey goodSecp256k1Key = new JECDSASecp256k1Key("spasmodic".getBytes());
 	private TransactionBody scheduledTxn = TransactionBody.getDefaultInstance();
 	private ScheduleID id = IdUtils.asSchedule("0.0.75231");
 	private Optional<List<JKey>> noValidNoInvalid = Optional.of(Collections.emptyList());
-	private Optional<List<JKey>> goodValidNoInvalid = Optional.of(List.of(goodKey));
-	private Optional<List<JKey>> doublingValidNoInvalid = Optional.of(List.of(goodKey, goodKey));
+	private Optional<List<JKey>> goodValidNoInvalid = Optional.of(List.of(goodEd25519Key));
+	private Optional<List<JKey>> doublingValidNoInvalid = Optional.of(List.of(goodEd25519Key, goodEd25519Key));
+	private Optional<List<JKey>> goodSecp256k1Valid = Optional.of(List.of(goodSecp256k1Key));
 
 	@Mock
 	ScheduleStore store;
@@ -104,12 +107,12 @@ class SignatoryUtilsTest {
 	}
 
 	@Test
-	void respondsToRepeatedCorrectlyIfNotActive() {
+	void respondsToValidCorrectlyIfNotActive() {
 		given(store.get(id)).willReturn(schedule);
 		given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
 		given(activationHelper.areScheduledPartiesActive(any(), any())).willReturn(false);
 		// and:
-		given(schedule.witnessValidEd25519Signature(eq(goodKey.getEd25519()))).willReturn(false);
+		given(schedule.witnessValidSignature(eq(goodEd25519Key.getEd25519()))).willReturn(false);
 		willAnswer(inv -> {
 			Consumer<MerkleSchedule> action = inv.getArgument(1);
 			action.accept(schedule);
@@ -129,7 +132,7 @@ class SignatoryUtilsTest {
 		given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
 		given(activationHelper.areScheduledPartiesActive(any(), any())).willReturn(true);
 		// and:
-		given(schedule.witnessValidEd25519Signature(eq(goodKey.getEd25519()))).willReturn(false);
+		given(schedule.witnessValidSignature(eq(goodEd25519Key.getEd25519()))).willReturn(false);
 		willAnswer(inv -> {
 			Consumer<MerkleSchedule> action = inv.getArgument(1);
 			action.accept(schedule);
@@ -149,7 +152,7 @@ class SignatoryUtilsTest {
 		given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
 		given(activationHelper.areScheduledPartiesActive(any(), any())).willReturn(true);
 		// and:
-		given(schedule.witnessValidEd25519Signature(eq(goodKey.getEd25519()))).willReturn(true);
+		given(schedule.witnessValidSignature(eq(goodEd25519Key.getEd25519()))).willReturn(true);
 		willAnswer(inv -> {
 			Consumer<MerkleSchedule> action = inv.getArgument(1);
 			action.accept(schedule);
@@ -164,12 +167,32 @@ class SignatoryUtilsTest {
 	}
 
 	@Test
+	void respondsToActivatingSecp256k1Correctly() {
+		given(store.get(id)).willReturn(schedule);
+		given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
+		given(activationHelper.areScheduledPartiesActive(any(), any())).willReturn(true);
+		// and:
+		given(schedule.witnessValidSignature(eq(goodSecp256k1Key.getECDSASecp256k1Key()))).willReturn(true);
+		willAnswer(inv -> {
+			Consumer<MerkleSchedule> action = inv.getArgument(1);
+			action.accept(schedule);
+			return null;
+		}).given(store).apply(eq(id), any());
+
+		// when:
+		var outcome = SignatoryUtils.witnessScoped(id, store, goodSecp256k1Valid, activationHelper);
+
+		// then:
+		assertEquals(Pair.of(OK, true), outcome);
+	}
+
+	@Test
 	void respondsToActivatingDoublingKeysCorrectly() {
 		given(store.get(id)).willReturn(schedule);
 		given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
 		given(activationHelper.areScheduledPartiesActive(any(), any())).willReturn(true);
 		// and:
-		given(schedule.witnessValidEd25519Signature(goodKey.getEd25519())).willReturn(true);
+		given(schedule.witnessValidSignature(goodEd25519Key.getEd25519())).willReturn(true);
 		willAnswer(inv -> {
 			Consumer<MerkleSchedule> action = inv.getArgument(1);
 			action.accept(schedule);

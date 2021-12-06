@@ -34,7 +34,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.function.BiFunction;
 
-import static com.hedera.services.sigs.PlatformSigOps.createEd25519PlatformSigsFrom;
+import static com.hedera.services.sigs.PlatformSigOps.createCryptoSigsFrom;
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -78,20 +78,27 @@ class Expansion {
 						txnAccessor.getTxnId(),
 						otherStatus);
 			}
+			return otherStatus;
 		}
-		return otherStatus;
+
+		if (pkToSigFn.hasAtLeastOneUnusedSigWithFullPrefix()) {
+			pkToSigFn.forEachUnusedSigWithFullPrefix((pubKey, sig) ->
+					txnAccessor.getPlatformTxn().add(sigFactory.signBodyWithEd25519(pubKey, sig)));
+		}
+
+		return OK;
 	}
 
 	private ResponseCodeEnum expand(
-			PubKeyToSigBytes pkToSigFn,
-			BiFunction<TransactionBody, CodeOrderResultFactory, SigningOrderResult<ResponseCodeEnum>> keysFn
+			final PubKeyToSigBytes pkToSigFn,
+			final BiFunction<TransactionBody, CodeOrderResultFactory, SigningOrderResult<ResponseCodeEnum>> keysFn
 	) {
 		var orderResult = keysFn.apply(txnAccessor.getTxn(), CODE_ORDER_RESULT_FACTORY);
 		if (orderResult.hasErrorReport()) {
 			return orderResult.getErrorReport();
 		}
 
-		var creationResult = createEd25519PlatformSigsFrom(orderResult.getOrderedKeys(), pkToSigFn, sigFactory);
+		var creationResult = createCryptoSigsFrom(orderResult.getOrderedKeys(), pkToSigFn, sigFactory);
 		if (!creationResult.hasFailed()) {
 			txnAccessor.getPlatformTxn().addAll(creationResult.getPlatformSigs().toArray(new TransactionSignature[0]));
 		}

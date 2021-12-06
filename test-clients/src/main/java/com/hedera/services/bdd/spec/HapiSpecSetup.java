@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec;
  */
 
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
@@ -173,6 +174,9 @@ public class HapiSpecSetup {
 	}
 	public byte[] defaultFileContents() {
 		return props.getBytes("default.file.contents");
+	}
+	public SigControl.KeyAlgo defaultKeyAlgo() {
+		return props.getKeyAlgorithm("default.keyAlgorithm");
 	}
 	public KeyType defaultKeyType() {
 		return props.getKeyType("default.keyType");

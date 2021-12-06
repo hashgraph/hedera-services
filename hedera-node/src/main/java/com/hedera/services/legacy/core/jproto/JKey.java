@@ -21,7 +21,6 @@ package com.hedera.services.legacy.core.jproto;
  */
 
 import com.google.protobuf.ByteString;
-import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
@@ -30,7 +29,6 @@ import org.apache.commons.codec.DecoderException;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -38,10 +36,9 @@ import java.util.Objects;
 /**
  * Maps to proto Key.
  */
-public abstract class JKey implements Serializable {
+public abstract class JKey {
 	static final int MAX_KEY_DEPTH = 15;
-
-	private static final long serialVersionUID = 1L;
+	private static final byte[] EMPTY_ARRAY = new byte[0];
 
 	private boolean forScheduledTxn = false;
 
@@ -86,8 +83,7 @@ public abstract class JKey implements Serializable {
 			}
 			JKeyList keys = new JKeyList(jkeys);
 			int thd = key.getThresholdKey().getThreshold();
-			JKey result = new JThresholdKey(keys, thd);
-			return (result);
+			return new JThresholdKey(keys, thd);
 		} else {
 			List<Key> tKeys = key.getKeyList().getKeysList();
 			List<JKey> jkeys = new ArrayList<>();
@@ -119,9 +115,13 @@ public abstract class JKey implements Serializable {
 		} else if (!key.getRSA3072().isEmpty()) {
 			byte[] pubKeyBytes = key.getRSA3072().toByteArray();
 			rv = new JRSA_3072Key(pubKeyBytes);
-		} else if (key.getContractID() != null && key.getContractID().getContractNum() != 0) {
-			ContractID cid = key.getContractID();
-			rv = new JContractIDKey(cid);
+		} else if (key.getContractID().getContractNum() != 0) {
+			rv = new JContractIDKey(key.getContractID());
+		} else if (!key.getECDSASecp256K1().isEmpty()) {
+			byte[] pubKeyBytes = key.getECDSASecp256K1().toByteArray();
+			rv = new JECDSASecp256k1Key(pubKeyBytes);
+		} else if (key.getDelegatableContractId().getContractNum() != 0) {
+			rv = new JDelegatableContractIDKey(key.getDelegatableContractId());
 		} else {
 			throw new DecoderException("Key type not implemented: key=" + key);
 		}
@@ -139,7 +139,7 @@ public abstract class JKey implements Serializable {
 	 * 		on an inconvertible given key
 	 */
 	static Key convertJKeyBasic(JKey jkey) throws DecoderException {
-		Key rv = null;
+		Key rv;
 		if (jkey.hasEd25519Key()) {
 			rv = Key.newBuilder().setEd25519(ByteString.copyFrom(jkey.getEd25519())).build();
 		} else if (jkey.hasECDSA_383Key()) {
@@ -148,6 +148,10 @@ public abstract class JKey implements Serializable {
 			rv = Key.newBuilder().setRSA3072(ByteString.copyFrom(jkey.getRSA3072())).build();
 		} else if (jkey.hasContractID()) {
 			rv = Key.newBuilder().setContractID(jkey.getContractIDKey().getContractID()).build();
+		} else if (jkey.hasECDSAsecp256k1Key()) {
+			rv = Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(jkey.getECDSASecp256k1Key())).build();
+		} else if (jkey.hasDelegatableContractId()) {
+			rv = Key.newBuilder().setDelegatableContractId(jkey.getDelegatableContractIdKey().getContractID()).build();
 		} else {
 			throw new DecoderException("Key type not implemented: key=" + jkey);
 		}
@@ -253,6 +257,10 @@ public abstract class JKey implements Serializable {
 		return false;
 	}
 
+	public boolean hasECDSAsecp256k1Key() {
+		return false;
+	}
+
 	public boolean hasRSA_3072Key() {
 		return false;
 	}
@@ -269,7 +277,15 @@ public abstract class JKey implements Serializable {
 		return false;
 	}
 
+	public boolean hasDelegatableContractId() {
+		return false;
+	}
+
 	public JContractIDKey getContractIDKey() {
+		return null;
+	}
+
+	public JDelegatableContractIDKey getDelegatableContractIdKey() {
 		return null;
 	}
 
@@ -282,15 +298,19 @@ public abstract class JKey implements Serializable {
 	}
 
 	public byte[] getEd25519() {
-		return null;
+		return EMPTY_ARRAY;
 	}
 
 	public byte[] getECDSA384() {
-		return null;
+		return EMPTY_ARRAY;
+	}
+
+	public byte[] getECDSASecp256k1Key() {
+		return EMPTY_ARRAY;
 	}
 
 	public byte[] getRSA3072() {
-		return null;
+		return EMPTY_ARRAY;
 	}
 
 	public JKey duplicate() {
@@ -303,6 +323,16 @@ public abstract class JKey implements Serializable {
 			}
 		} catch (IOException ex) {
 			throw new IllegalArgumentException(ex);
+		}
+	}
+
+	public byte[] primitiveKeyIfPresent() {
+		if (hasEd25519Key()) {
+			return getEd25519();
+		} else if (hasECDSAsecp256k1Key()) {
+			return getECDSASecp256k1Key();
+		} else {
+			return EMPTY_ARRAY;
 		}
 	}
 }
