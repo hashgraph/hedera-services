@@ -34,8 +34,10 @@ import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.commons.codec.DecoderException;
@@ -93,9 +95,9 @@ public class AutoAccountCreateLogic {
 			Key key = Key.parseFrom(alias);
 			var syntheticCreateTxn = syntheticTxnFactory.cryptoCreate(key, 0L);
 			/* TODO calculate the cryptoCreate Fee and update the amount in the balanceChange accordingly and set the validity */
-			var feeForSyntheticCreateTxn = 0;
+			var feeForSyntheticCreateTxn = feeForAutoAccountCreateTxn(syntheticCreateTxn.getCryptoCreateAccount());
 			// adjust fee and return if insufficient balance.
-			if (feeForSyntheticCreateTxn < changeWithOnlyAlias.units()) {
+			if (feeForSyntheticCreateTxn > changeWithOnlyAlias.units()) {
 				return changeWithOnlyAlias.codeForInsufficientBalance();
 			} else {
 				changeWithOnlyAlias.adjustUnits(-feeForSyntheticCreateTxn);
@@ -156,5 +158,10 @@ public class AutoAccountCreateLogic {
 
 	public Map<ByteString, AccountID> getTempCreations() {
 		return tempCreations;
+	}
+
+	private long feeForAutoAccountCreateTxn(CryptoCreateTransactionBody cryptoCreateTxn) {
+		CryptoCreateMeta cryptoCreateMeta = new CryptoCreateMeta(cryptoCreateTxn);
+		return 0;
 	}
 }
