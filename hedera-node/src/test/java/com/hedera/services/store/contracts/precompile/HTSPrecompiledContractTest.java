@@ -117,10 +117,8 @@ class HTSPrecompiledContractTest {
 	@Test
 	void computeCallsCorrectImplementationForCryptoTransfer() {
 		// given
-		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(
-				validator, dynamicProperties, gasCalculator,
-				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers));
+		final var contract = mock(HTSPrecompiledContract.class);
+		willCallRealMethod().given(contract).compute(input, messageFrame);
 		given(input.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
 
 		// when
@@ -133,11 +131,8 @@ class HTSPrecompiledContractTest {
 	@Test
 	void computeCallsCorrectImplementationForTransferTokens() {
 		// given
-		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(
-				validator, dynamicProperties, gasCalculator,
-				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers));
-		given(input.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
+		final var contract = mock(HTSPrecompiledContract.class);
+		willCallRealMethod().given(contract).compute(input, messageFrame);
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
 
 		// when
@@ -164,11 +159,8 @@ class HTSPrecompiledContractTest {
 	@Test
 	void computeCallsCorrectImplementationForTransferNfts() {
 		// given
-		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(
-				validator, dynamicProperties, gasCalculator,
-				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers));
-		given(input.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
+		final var contract = mock(HTSPrecompiledContract.class);
+		willCallRealMethod().given(contract).compute(input, messageFrame);
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_NFTS);
 
 		// when
@@ -181,11 +173,8 @@ class HTSPrecompiledContractTest {
 	@Test
 	void computeCallsCorrectImplementationForTransferNft() {
 		// given
-		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(
-				validator, dynamicProperties, gasCalculator,
-				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers));
-		given(input.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
+		final var contract = mock(HTSPrecompiledContract.class);
+		willCallRealMethod().given(contract).compute(input, messageFrame);
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_NFT);
 
 		// when
@@ -199,6 +188,7 @@ class HTSPrecompiledContractTest {
 	void computeCallsCorrectImplementationForMintToken() {
 		// given
 		HTSPrecompiledContract contract = mock(HTSPrecompiledContract.class);
+		willCallRealMethod().given(contract).compute(input, messageFrame);
 
 		willCallRealMethod().given(contract).compute(input, messageFrame);
 		given(input.getInt(0)).willReturn(ABI_ID_MINT_TOKEN);
