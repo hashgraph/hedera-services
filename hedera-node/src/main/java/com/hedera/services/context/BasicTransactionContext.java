@@ -182,9 +182,9 @@ public class BasicTransactionContext implements TransactionContext {
 	@Override
 	public ExpirableTxnRecord.Builder recordSoFar() {
 		final var receipt = receiptSoFar();
-
+		final var totalFees = narratedCharging.totalFeesChargedToPayer() + otherNonThresholdFees;
 		recordSoFar = creator.createTopLevelRecord(
-				otherNonThresholdFees,
+				totalFees,
 				hash,
 				accessor,
 				consensusTime,
@@ -200,15 +200,6 @@ public class BasicTransactionContext implements TransactionContext {
 		final var receipt = TxnReceipt.newBuilder()
 				.setExchangeRates(exchange.fcActiveRates())
 				.setStatus(statusSoFar.name());
-
-		if (sideEffectsTracker.hasTrackedNewTokenId()) {
-			receiptConfig = receiptConfig.andThen(r ->
-					r.setTokenId(EntityId.fromGrpcTokenId(sideEffectsTracker.getTrackedNewTokenId())));
-		}
-		if (sideEffectsTracker.hasTrackedTokenSupply()) {
-			receiptConfig = receiptConfig.andThen(r -> r.setNewTotalSupply(sideEffectsTracker.getTrackedTokenSupply()));
-		}
-
 		receiptConfig.accept(receipt);
 		return receipt;
 	}
