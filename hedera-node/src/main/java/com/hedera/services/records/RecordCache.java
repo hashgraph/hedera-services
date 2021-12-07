@@ -34,10 +34,12 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
@@ -85,7 +87,7 @@ public class RecordCache {
 			final Instant consensusTimestamp,
 			final long submittingMember
 	) {
-		final var recordBuilder = creator.buildFailedExpiringRecord(accessor, consensusTimestamp);
+		final var recordBuilder = creator.createInvalidFailureRecord(accessor, consensusTimestamp);
 		final var expiringRecord = creator.saveExpiringRecord(
 				effectivePayer,
 				recordBuilder.build(),
@@ -114,6 +116,41 @@ public class RecordCache {
 
 	public List<TransactionReceipt> getDuplicateReceipts(final TransactionID txnId) {
 		return duplicatesOf(txnId).stream().map(TransactionRecord::getReceipt).collect(toList());
+	}
+
+	public List<TransactionReceipt> getChildReceipts(final TransactionID txnId) {
+		return transformedChildrenOf(txnId, childRecord -> childRecord.getReceipt().toGrpc());
+	}
+
+	public List<TransactionRecord> getChildRecords(final TransactionID txnId) {
+		return transformedChildrenOf(txnId, ExpirableTxnRecord::asGrpc);
+	}
+
+	private <T> List<T> transformedChildrenOf(
+			final TransactionID txnId,
+			final Function<ExpirableTxnRecord, T> transform
+	) {
+		final var priorityRecord = getPriorityRecord(txnId);
+		if (priorityRecord == null) {
+			return Collections.emptyList();
+		} else {
+			final var numChildren = priorityRecord.getNumChildRecords();
+			if (numChildren == 0) {
+				return Collections.emptyList();
+			} else {
+				final List<T> children = new ArrayList<>();
+				for (short i = 1; i <= numChildren; i++) {
+					final var childTxnId = txnId.toBuilder().setNonce(i).build();
+					final var childRecord = getPriorityRecord(childTxnId);
+					/* It will be extraordinarily rare for a parent record to still be available
+					while a child has expired. But it could happen, so we silently work around it. */
+					if (childRecord != null) {
+						children.add(transform.apply(childRecord));
+					}
+				}
+				return children;
+			}
+		}
 	}
 
 	private List<TransactionRecord> duplicatesOf(final TransactionID txnId) {

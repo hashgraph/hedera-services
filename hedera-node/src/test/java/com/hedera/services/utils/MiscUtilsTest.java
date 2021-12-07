@@ -174,6 +174,7 @@ import static com.hedera.services.utils.MiscUtils.functionOf;
 import static com.hedera.services.utils.MiscUtils.functionalityOfQuery;
 import static com.hedera.services.utils.MiscUtils.getTxnStat;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
+import static com.hedera.services.utils.MiscUtils.nonNegativeNanosOffset;
 import static com.hedera.services.utils.MiscUtils.perm64;
 import static com.hedera.services.utils.MiscUtils.readableNftTransferList;
 import static com.hedera.services.utils.MiscUtils.readableProperty;
@@ -770,6 +771,21 @@ class MiscUtilsTest {
 
 		final var tooDeep = TxnUtils.nestJKeys(15);
 		assertEquals("<N/A>", describe(tooDeep));
+	}
+
+	@Test
+	void managesOffsetsAsExpected() {
+		final var sec = 1_234_567L;
+		final Instant wellBeforeBoundary = Instant.ofEpochSecond(sec - 1, 500_000_000);
+		final Instant beforeBoundary = Instant.ofEpochSecond(sec - 1, 999_999_999);
+		final Instant onBoundary = Instant.ofEpochSecond(sec, 0);
+		final Instant inTheMiddle = Instant.ofEpochSecond(sec, 500_000_000);
+
+		assertEquals(beforeBoundary, nonNegativeNanosOffset(onBoundary, -1));
+		assertEquals(wellBeforeBoundary, nonNegativeNanosOffset(onBoundary, -500_000_000));
+		assertEquals(onBoundary, nonNegativeNanosOffset(beforeBoundary, +1));
+		assertEquals(inTheMiddle.minusNanos(1), nonNegativeNanosOffset(inTheMiddle, -1));
+		assertEquals(inTheMiddle.plusNanos(1), nonNegativeNanosOffset(inTheMiddle, +1));
 	}
 
 	public static class BodySetter<T, B> {

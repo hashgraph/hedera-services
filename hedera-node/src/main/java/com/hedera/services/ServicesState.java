@@ -156,7 +156,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			}
 			moveLargeFcmsToBinaryRoutePositions(this, deserializedVersion);
 		}
-		if (deserializedVersion < StateVersions.RELEASE_0190_VERSION) {
+		if (deserializedVersion < StateVersions.RELEASE_0190_AND_020_VERSION) {
 			final var specialFiles = new MerkleSpecialFiles();
 			setChild(SPECIAL_FILES, specialFiles);
 		}

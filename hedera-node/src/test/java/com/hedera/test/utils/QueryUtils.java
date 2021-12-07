@@ -55,7 +55,17 @@ public final class QueryUtils {
 	public static TransactionGetRecordQuery txnRecordQuery(
 			final TransactionID txnId,
 			final ResponseType type,
-			final Transaction paymentTxn) {
+			final boolean duplicates,
+			final boolean children
+	) {
+		return txnRecordQuery(txnId, type, Transaction.getDefaultInstance(), duplicates, children);
+	}
+
+	public static TransactionGetRecordQuery txnRecordQuery(
+			final TransactionID txnId,
+			final ResponseType type,
+			final Transaction paymentTxn
+	) {
 		return txnRecordQuery(txnId, type, paymentTxn, false);
 	}
 
@@ -73,18 +83,40 @@ public final class QueryUtils {
 			final long payment,
 			final boolean duplicates
 	) {
-		return txnRecordQuery(txnId, type, defaultPaymentTxn(payment), duplicates);
+		return txnRecordQuery(txnId, type, payment, duplicates, false);
+	}
+
+	public static TransactionGetRecordQuery txnRecordQuery(
+			final TransactionID txnId,
+			final ResponseType type,
+			final long payment,
+			final boolean duplicates,
+			final boolean children
+	) {
+		return txnRecordQuery(txnId, type, defaultPaymentTxn(payment), duplicates, children);
 	}
 
 	public static TransactionGetRecordQuery txnRecordQuery(
 			final TransactionID txnId,
 			final ResponseType type,
 			final Transaction paymentTxn,
-			final boolean duplicates) {
+			final boolean duplicates
+	) {
+		return txnRecordQuery(txnId, type, paymentTxn, duplicates, false);
+	}
+
+	public static TransactionGetRecordQuery txnRecordQuery(
+			final TransactionID txnId,
+			final ResponseType type,
+			final Transaction paymentTxn,
+			final boolean duplicates,
+			final boolean children
+	) {
 		return TransactionGetRecordQuery.newBuilder()
 				.setTransactionID(txnId)
 				.setHeader(queryHeaderOf(type, paymentTxn))
 				.setIncludeDuplicates(duplicates)
+				.setIncludeChildRecords(children)
 				.build();
 	}
 

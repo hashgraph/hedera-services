@@ -22,18 +22,32 @@ package com.hedera.services.records;
 
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
+import java.util.Collections;
+
 import static com.hedera.services.records.NoopRecordsHistorian.NOOP_RECORDS_HISTORIAN;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 class NoopRecordsHistorianTest {
 	@Test
 	void nothingMuchHappens() {
-		// expect:
-		assertDoesNotThrow(NOOP_RECORDS_HISTORIAN::finalizeExpirableTransactionRecord);
+		assertDoesNotThrow(NOOP_RECORDS_HISTORIAN::clearHistory);
 		assertDoesNotThrow(NOOP_RECORDS_HISTORIAN::noteNewExpirationEvents);
-		assertDoesNotThrow(NOOP_RECORDS_HISTORIAN::saveExpirableTransactionRecord);
+		assertDoesNotThrow(NOOP_RECORDS_HISTORIAN::saveExpirableTransactionRecords);
 		assertDoesNotThrow(() -> NOOP_RECORDS_HISTORIAN.setCreator(null));
-		assertTrue(NOOP_RECORDS_HISTORIAN.lastCreatedRecord().isEmpty());
+		assertDoesNotThrow(() -> NOOP_RECORDS_HISTORIAN.revertChildRecordsFromSource(0));
+		assertDoesNotThrow(() -> NOOP_RECORDS_HISTORIAN.trackFollowingChildRecord(0, null, null));
+		assertDoesNotThrow(() -> NOOP_RECORDS_HISTORIAN.trackFollowingChildRecord(0, null, null));
+		assertNull(NOOP_RECORDS_HISTORIAN.lastCreatedTopLevelRecord());
+		assertFalse(NOOP_RECORDS_HISTORIAN.hasPrecedingChildRecords());
+		assertFalse(NOOP_RECORDS_HISTORIAN.hasFollowingChildRecords());
+		assertSame(Instant.EPOCH, NOOP_RECORDS_HISTORIAN.nextFollowingChildConsensusTime());
+		assertSame(Collections.emptyList(), NOOP_RECORDS_HISTORIAN.getPrecedingChildRecords());
+		assertSame(Collections.emptyList(), NOOP_RECORDS_HISTORIAN.getFollowingChildRecords());
+		assertEquals(0, NOOP_RECORDS_HISTORIAN.nextChildRecordSourceId());
 	}
 }

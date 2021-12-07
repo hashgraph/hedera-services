@@ -44,7 +44,6 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.merkle.map.MerkleMap;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,11 +54,11 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 
-import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRING_CREATIONS;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -76,6 +75,8 @@ class ExpiringCreationsTest {
 	private static final long expectedExpiry = now + cacheTtl;
 	private static final long totalFee = 666_666L;
 
+	private static final long newTokenSupply = 1_234_567L;
+	private static final TokenID newTokenId = IdUtils.asToken("0.0.666");
 	private static final AccountID effPayer = IdUtils.asAccount("0.0.75231");
 	private static final ExpirableTxnRecord record = DomainSerdesTest.recordOne();
 	private static ExpirableTxnRecord expectedRecord;
@@ -119,7 +120,7 @@ class ExpiringCreationsTest {
 
 	private ExpiringCreations subject;
 
-	private static final TxnReceipt receipt = receiptWith(SUCCESS);
+	private static final TxnReceipt.Builder receiptBuilder = receiptBuilderWith(SUCCESS);
 
 	private static final EntityId customFeeToken = new EntityId(0, 0, 123);
 	private static final EntityId customFeeCollector = new EntityId(0, 0, 124);
@@ -141,6 +142,28 @@ class ExpiringCreationsTest {
 	}
 
 	@Test
+	void createsSuccessfulSyntheticRecordAsExpected() {
+		setupTracker();
+		final var tokensExpected = List.of(EntityId.fromGrpcTokenId(tokenCreated));
+		final var tokenAdjustmentsExpected = List.of(CurrencyAdjustments.fromGrpc(adjustments));
+
+		final var record = subject.createSuccessfulSyntheticRecord(
+				customFeesCharged,
+				sideEffectsTracker);
+
+		assertEquals(SUCCESS.toString(), record.getReceiptBuilder().getStatus());
+		assertEquals(tokensExpected, record.getTokens());
+		assertEquals(tokenAdjustmentsExpected, record.getTokenAdjustments());
+		assertEquals(customFeesCharged, record.getAssessedCustomFees());
+	}
+
+	@Test
+	void createsFailedSyntheticRecordAsExpected() {
+		final var record = subject.createUnsuccessfulSyntheticRecord(INSUFFICIENT_ACCOUNT_BALANCE);
+		assertEquals(INSUFFICIENT_ACCOUNT_BALANCE.toString(), record.getReceiptBuilder().getStatus());
+	}
+
+	@Test
 	void addsToPayerRecordsAndTracks() {
 		// setup:
 		final var key = EntityNum.fromAccountId(effPayer);
@@ -156,46 +179,34 @@ class ExpiringCreationsTest {
 	}
 
 	@Test
-	void noopFormDoesNothing() {
-		Assertions.assertThrows(UnsupportedOperationException.class, () ->
-				NOOP_EXPIRING_CREATIONS.saveExpiringRecord(
-						null, null, 0L, submittingMember));
-		Assertions.assertThrows(UnsupportedOperationException.class, () ->
-				NOOP_EXPIRING_CREATIONS.buildFailedExpiringRecord(null, null));
-		Assertions.assertThrows(UnsupportedOperationException.class, () ->
-				NOOP_EXPIRING_CREATIONS.createExpiringRecord(0L, null, null, null,
-						null, null, null));
-	}
-
-	@Test
 	void validateBuildFailedExpiringRecord() {
 		setUpForExpiringRecordBuilder();
 		given(accessor.getHash()).willReturn(hash);
 
-		final var builder = subject.buildFailedExpiringRecord(accessor, timestamp);
+		final var builder = subject.createInvalidFailureRecord(accessor, timestamp);
 		final var actualRecord = builder.build();
 
-		validateCommonFields(actualRecord, receiptWith(FAIL_INVALID));
+		validateCommonFields(actualRecord, receiptBuilderWith(FAIL_INVALID));
 	}
 
 	@Test
-	void createsExpectedRecordForNonTriggeredTxnWithTokenChanges() {
+	void createsExpectedRecordForNonTriggeredTxnWithNoTokenChanges() {
 		setupTrackerNoTokenChanges();
 		setUpForExpiringRecordBuilder();
 
-		final var created = subject.createExpiringRecord(
+		final var created = subject.createTopLevelRecord(
 				totalFee,
 				hash,
 				accessor,
 				timestamp,
-				receipt,
+				receiptBuilder,
 				customFeesCharged,
 				sideEffectsTracker).build();
 
 		assertEquals(totalFee, created.getFee());
 		assertSame(hash, created.getTxnHash());
 		assertEquals(memo, created.getMemo());
-		assertEquals(receipt, created.getReceipt());
+		assertEquals(receiptBuilder.build(), created.getReceipt());
 		assertEquals(timestamp, created.getConsensusTimestamp().toJava());
 		assertEquals(scheduleRef, created.getScheduleRef().toGrpcScheduleId());
 		assertNull(created.getTokens());
@@ -204,23 +215,37 @@ class ExpiringCreationsTest {
 	}
 
 	@Test
-	void createsExpectedRecordForTriggeredTxnWithNoTokenChanges() {
+	void createsExpectedRecordForNonTriggeredTxnWithTokenChangesAndCustomFees() {
 		setupTracker();
 		setupAccessorForNonTriggeredTxn();
+		final var tokensExpected = List.of(EntityId.fromGrpcTokenId(tokenCreated));
+		final var tokenAdjustmentsExpected = List.of(CurrencyAdjustments.fromGrpc(adjustments));
 
-		final var created = subject.createExpiringRecord(
+		given(sideEffectsTracker.hasTrackedNewTokenId()).willReturn(true);
+		given(sideEffectsTracker.getTrackedNewTokenId()).willReturn(newTokenId);
+		given(sideEffectsTracker.hasTrackedTokenSupply()).willReturn(true);
+		given(sideEffectsTracker.getTrackedTokenSupply()).willReturn(newTokenSupply);
+
+		final var created = subject.createTopLevelRecord(
 				totalFee,
 				hash,
 				accessor,
 				timestamp,
-				receipt,
+				receiptBuilder,
 				customFeesCharged,
-				sideEffectsTracker).build();
+				sideEffectsTracker
+		).build();
 
+		final var actualReceipt = created.getReceipt();
+		assertEquals(EntityId.fromGrpcTokenId(newTokenId), actualReceipt.getTokenId());
+		assertEquals(newTokenSupply, actualReceipt.getNewTotalSupply());
+
+		assertEquals(tokensExpected, created.getTokens());
+		assertEquals(tokenAdjustmentsExpected, created.getTokenAdjustments());
+		assertEquals(customFeesCharged, created.getCustomFeesCharged());
 		assertEquals(totalFee, created.getFee());
 		assertSame(hash, created.getTxnHash());
 		assertEquals(memo, created.getMemo());
-		assertEquals(receipt, created.getReceipt());
 		assertEquals(timestamp, created.getConsensusTimestamp().toJava());
 		assertNull(created.getScheduleRef());
 	}
@@ -237,30 +262,17 @@ class ExpiringCreationsTest {
 		given(sideEffectsTracker.getNetTrackedTokenUnitAndOwnershipChanges()).willReturn(List.of());
 	}
 
-	private void validateCommonFields(final ExpirableTxnRecord actualRecord, final TxnReceipt receipt) {
+	private void validateCommonFields(final ExpirableTxnRecord actualRecord, final TxnReceipt.Builder receipt) {
 		assertEquals(grpcTxnId, actualRecord.getTxnId().toGrpc());
-		assertEquals(receipt, actualRecord.getReceipt());
+		assertEquals(receipt.build(), actualRecord.getReceipt());
 		assertEquals(memo, actualRecord.getMemo());
 		assertArrayEquals(hash, actualRecord.getTxnHash());
 		assertEquals(timestamp, actualRecord.getConsensusTimestamp().toJava());
 		assertEquals(scheduleRef, actualRecord.getScheduleRef().toGrpcScheduleId());
 	}
 
-	private void validateTokensAndTokenAdjustments(final ExpirableTxnRecord actualRecord) {
-		final var tokensExpected = List.of(EntityId.fromGrpcTokenId(tokenCreated));
-		final var tokenAdjustmentsExpected = List.of(CurrencyAdjustments.fromGrpc(adjustments));
-
-		assertEquals(tokensExpected, actualRecord.getTokens());
-		assertEquals(tokenAdjustmentsExpected, actualRecord.getTokenAdjustments());
-	}
-
-	private void validateCustomFeesChargedAndNewTokenAssociations(final ExpirableTxnRecord actualRecord) {
-		assertEquals(customFeesCharged, actualRecord.getCustomFeesCharged());
-		assertEquals(newTokenAssociations, actualRecord.getNewTokenAssociations());
-	}
-
-	private static TxnReceipt receiptWith(final ResponseCodeEnum code) {
-		return TxnReceipt.newBuilder().setStatus(code.name()).build();
+	private static TxnReceipt.Builder receiptBuilderWith(final ResponseCodeEnum code) {
+		return TxnReceipt.newBuilder().setStatus(code.name());
 	}
 
 	private void setUpForExpiringRecordBuilder() {

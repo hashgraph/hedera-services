@@ -28,6 +28,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import java.time.Instant;
 import java.util.List;
@@ -42,25 +43,31 @@ public enum NoopExpiringCreations implements EntityCreator {
 
 	@Override
 	public ExpirableTxnRecord saveExpiringRecord(
-			final AccountID id,
-			final ExpirableTxnRecord expiringRecord,
-			final long consensusTime,
-			final long submittingMember
-	) {
+			AccountID id, ExpirableTxnRecord expiringRecord, long consensusTime, long submittingMember) {
 		throw new UnsupportedOperationException();
 	}
 
+
 	@Override
-	public ExpirableTxnRecord.Builder createExpiringRecord(long fee, byte[] hash, TxnAccessor accessor,
-			Instant consensusTime, TxnReceipt receipt, List<FcAssessedCustomFee> assessedCustomFees,
+	public ExpirableTxnRecord.Builder createTopLevelRecord(long fee, byte[] hash, TxnAccessor accessor,
+			Instant consensusTime, TxnReceipt.Builder receiptBuilder, List<FcAssessedCustomFee> assessedCustomFees,
 			SideEffectsTracker sideEffectsTracker) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public ExpirableTxnRecord.Builder buildFailedExpiringRecord(
-			final TxnAccessor accessor,
-			final Instant consensusTimestamp) {
+	public ExpirableTxnRecord.Builder createSuccessfulSyntheticRecord(List<FcAssessedCustomFee> assessedCustomFees,
+			SideEffectsTracker sideEffectsTracker) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public ExpirableTxnRecord.Builder createUnsuccessfulSyntheticRecord(ResponseCodeEnum failureReason) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public ExpirableTxnRecord.Builder createInvalidFailureRecord(TxnAccessor accessor, Instant consensusTimestamp) {
 		throw new UnsupportedOperationException();
 	}
 }

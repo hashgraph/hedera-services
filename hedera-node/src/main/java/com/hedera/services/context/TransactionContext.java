@@ -114,12 +114,12 @@ public interface TransactionContext {
 	ResponseCodeEnum status();
 
 	/**
-	 * Constructs and gets a {@link ExpirableTxnRecord} which captures the history
+	 * Constructs and gets a {@link ExpirableTxnRecord.Builder} which captures the history
 	 * of processing the current txn up to the time of the call.
 	 *
 	 * @return the historical record of processing the current txn thus far.
 	 */
-	ExpirableTxnRecord recordSoFar();
+	ExpirableTxnRecord.Builder recordSoFar();
 
 	/**
 	 * Gets an accessor to the defined type {@link TxnAccessor}
