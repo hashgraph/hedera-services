@@ -81,6 +81,10 @@ public class ImpliedTransfersMarshal {
 		final var hbarOnly = changes.size();
 		appendToken(op, changes);
 
+		return assessCustomFeesAndValidate(changes, hbarOnly, props);
+	}
+
+	public ImpliedTransfers assessCustomFeesAndValidate(List<BalanceChange> changes, int hbarOnly, ImpliedTransfersMeta.ValidationProps props) {
 		/* Construct the process objects for custom fee charging */
 		final var changeManager = changeManagerFactory.from(changes, hbarOnly);
 		final var schedulesManager = schedulesManagerFactory.apply(customFeeSchedules);
@@ -133,7 +137,7 @@ public class ImpliedTransfersMarshal {
 		return false;
 	}
 
-	private ImpliedTransfersMeta.ValidationProps currentProps() {
+	public ImpliedTransfersMeta.ValidationProps currentProps() {
 		return new ImpliedTransfersMeta.ValidationProps(
 				dynamicProperties.maxTransferListSize(),
 				dynamicProperties.maxTokenTransferListSize(),

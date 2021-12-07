@@ -26,7 +26,6 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.backing.BackingTokens;
-import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
@@ -43,7 +42,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -58,7 +57,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -72,7 +70,10 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
+import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
@@ -123,12 +124,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
 class HederaTokenStoreTest {
 	private static final Key newKey = TxnHandlingScenario.TOKEN_REPLACE_KT.asKey();
@@ -187,7 +191,7 @@ class HederaTokenStoreTest {
 	private EntityIdSource ids;
 	private SideEffectsTracker sideEffectsTracker;
 	private GlobalDynamicProperties properties;
-	private UniqTokenViewsManager uniqTokenViewsManager;
+	private UniqueTokenViewsManager uniqueTokenViewsManager;
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
@@ -240,6 +244,9 @@ class HederaTokenStoreTest {
 		given(accountsLedger.get(treasury, IS_DELETED)).willReturn(false);
 		given(accountsLedger.get(autoRenewAccount, IS_DELETED)).willReturn(false);
 		given(accountsLedger.get(newAutoRenewAccount, IS_DELETED)).willReturn(false);
+		given(accountsLedger.get(sponsor, IS_DELETED)).willReturn(false);
+		given(accountsLedger.get(counterparty, IS_DELETED)).willReturn(false);
+		given(accountsLedger.get(IdUtils.asAccount("0.0.0"), IS_DELETED)).willReturn(false);
 
 		backingTokens = mock(BackingTokens.class);
 		given(backingTokens.contains(misc)).willReturn(true);
@@ -283,11 +290,11 @@ class HederaTokenStoreTest {
 		given(properties.maxTokenNameUtf8Bytes()).willReturn(MAX_TOKEN_NAME_UTF8_BYTES);
 		given(properties.maxCustomFeesAllowed()).willReturn(maxCustomFees);
 
-		uniqTokenViewsManager = mock(UniqTokenViewsManager.class);
+		uniqueTokenViewsManager = mock(UniqueTokenViewsManager.class);
 
 		sideEffectsTracker = new SideEffectsTracker();
 		subject = new HederaTokenStore(
-				ids, TEST_VALIDATOR, sideEffectsTracker, uniqTokenViewsManager, properties,
+				ids, TEST_VALIDATOR, sideEffectsTracker, uniqueTokenViewsManager, properties,
 				tokenRelsLedger, nftsLedger, backingTokens);
 		subject.setAccountsLedger(accountsLedger);
 		subject.setHederaLedger(hederaLedger);
@@ -553,6 +560,13 @@ class HederaTokenStoreTest {
 		given(accountsLedger.exists(sponsor)).willReturn(true);
 		given(hederaLedger.isDetached(sponsor)).willReturn(true);
 
+		given(properties.autoRenewEnabled()).willReturn(true);
+		given(accountsLedger.get(any(), eq(IS_SMART_CONTRACT))).willReturn(false);
+		given(accountsLedger.get(any(), eq(BALANCE))).willReturn(0l);
+		given(accountsLedger.get(any(), eq(EXPIRY))).willReturn(100000000000000l);
+		var val = spy(TEST_VALIDATOR);
+		when(val.isAfterConsensusSecond(100000000000000l)).thenReturn(false);
+
 		final var status = subject.grantKyc(sponsor, misc);
 
 		assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, status);
@@ -561,7 +575,7 @@ class HederaTokenStoreTest {
 	@Test
 	void grantingKycRejectsDeletedAccount() {
 		given(accountsLedger.exists(sponsor)).willReturn(true);
-		given(hederaLedger.isDeleted(sponsor)).willReturn(true);
+		given(accountsLedger.get(sponsor, IS_DELETED)).willReturn(true);
 
 		final var status = subject.grantKyc(sponsor, misc);
 
@@ -675,7 +689,7 @@ class HederaTokenStoreTest {
 		verify(accountsLedger).set(counterparty, NUM_NFTS_OWNED, startCounterpartyNfts + 1);
 		verify(tokenRelsLedger).set(sponsorNft, TOKEN_BALANCE, startSponsorANfts - 1);
 		verify(tokenRelsLedger).set(counterpartyNft, TOKEN_BALANCE, startCounterpartyANfts + 1);
-		verify(uniqTokenViewsManager).exchangeNotice(muti, sender, receiver);
+		verify(uniqueTokenViewsManager).exchangeNotice(muti, sender, receiver);
 		assertSoleTokenChangesAreForNftTransfer(aNft, sponsor, counterparty);
 	}
 
@@ -705,7 +719,7 @@ class HederaTokenStoreTest {
 		verify(accountsLedger).set(counterparty, NUM_NFTS_OWNED, startCounterpartyNfts - 1);
 		verify(tokenRelsLedger).set(treasuryNft, TOKEN_BALANCE, startTreasuryTNfts + 1);
 		verify(tokenRelsLedger).set(counterpartyNft, TOKEN_BALANCE, startCounterpartyTNfts - 1);
-		verify(uniqTokenViewsManager).treasuryReturnNotice(muti, sender, receiver);
+		verify(uniqueTokenViewsManager).treasuryReturnNotice(muti, sender, receiver);
 		assertSoleTokenChangesAreForNftTransfer(tNft, counterparty, primaryTreasury);
 	}
 
@@ -736,7 +750,7 @@ class HederaTokenStoreTest {
 		verify(accountsLedger).set(counterparty, NUM_NFTS_OWNED, startCounterpartyNfts + 1);
 		verify(tokenRelsLedger).set(treasuryNft, TOKEN_BALANCE, startTreasuryTNfts - 1);
 		verify(tokenRelsLedger).set(counterpartyNft, TOKEN_BALANCE, startCounterpartyTNfts + 1);
-		verify(uniqTokenViewsManager).treasuryExitNotice(muti, sender, receiver);
+		verify(uniqueTokenViewsManager).treasuryExitNotice(muti, sender, receiver);
 		assertSoleTokenChangesAreForNftTransfer(tNft, primaryTreasury, counterparty);
 	}
 

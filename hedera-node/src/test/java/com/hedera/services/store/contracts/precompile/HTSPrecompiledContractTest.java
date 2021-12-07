@@ -21,9 +21,11 @@ package com.hedera.services.store.contracts.precompile;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.contracts.sources.SoliditySigsVerifier;
+import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.records.AccountRecordsHistorian;
-import com.hedera.services.state.EntityCreator;
+import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import org.apache.tuweni.bytes.Bytes;
@@ -68,7 +70,7 @@ class HTSPrecompiledContractTest {
 	@Mock
 	private MessageFrame messageFrame;
 	@Mock
-	private SoliditySigsVerifier sigsVerifier;
+	private TxnAwareSoliditySigsVerifier sigsVerifier;
 	@Mock
 	private AccountRecordsHistorian recordsHistorian;
 	@Mock
@@ -76,9 +78,12 @@ class HTSPrecompiledContractTest {
 	@Mock
 	private SyntheticTxnFactory syntheticTxnFactory;
 	@Mock
-	private EntityCreator creator;
+	private ExpiringCreations creator;
+	@Mock
+	private ImpliedTransfersMarshal impliedTransfers;
 	@Mock
 	private DissociationFactory dissociationFactory;
+
 
 	private HTSPrecompiledContract subject;
 
@@ -87,7 +92,7 @@ class HTSPrecompiledContractTest {
 		subject = new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory, creator, dissociationFactory);
+				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers);
 	}
 
 	@Test
@@ -115,14 +120,14 @@ class HTSPrecompiledContractTest {
 		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory, creator, dissociationFactory));
+				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers));
 		given(input.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
 
 		// when
 		contract.compute(input, messageFrame);
 
 		// then
-		verify(contract).computeCryptoTransfer(input, messageFrame);
+		verify(contract).computeTransfer(input, messageFrame);
 	}
 
 	@Test
@@ -131,7 +136,7 @@ class HTSPrecompiledContractTest {
 		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory, creator, dissociationFactory));
+				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers));
 		given(input.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
 
@@ -139,28 +144,21 @@ class HTSPrecompiledContractTest {
 		contract.compute(input, messageFrame);
 
 		// then
-		verify(contract).computeTransferTokens(input, messageFrame);
+		verify(contract).computeTransfer(input, messageFrame);
 	}
 
 	@Test
 	void computeCallsCorrectImplementationForTransferToken() {
 		// given
-		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(
-				validator, dynamicProperties, gasCalculator,
-				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory, creator, dissociationFactory));
-		given(input.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
+		final var contract = mock(HTSPrecompiledContract.class);
+		willCallRealMethod().given(contract).compute(input, messageFrame);
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKEN);
-		given(input.slice(16, 20)).willReturn(Bytes.of("0x000000000000000001".getBytes()));
-		given(input.slice(48, 20)).willReturn(Bytes.of("0x000000000000000002".getBytes()));
-		given(input.slice(80, 20)).willReturn(Bytes.of("0x000000000000000003".getBytes()));
-		given(input.slice(100, 32)).willReturn(Bytes.of("0x000000000000000000000000000342".getBytes()));
 
 		// when
 		contract.compute(input, messageFrame);
 
 		// then
-		verify(contract).computeTransferToken(input, messageFrame);
+		verify(contract).computeTransfer(input, messageFrame);
 	}
 
 	@Test
@@ -169,7 +167,7 @@ class HTSPrecompiledContractTest {
 		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory, creator, dissociationFactory));
+				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers));
 		given(input.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_NFTS);
 
@@ -177,7 +175,7 @@ class HTSPrecompiledContractTest {
 		contract.compute(input, messageFrame);
 
 		// then
-		verify(contract).computeTransferNfts(input, messageFrame);
+		verify(contract).computeTransfer(input, messageFrame);
 	}
 
 	@Test
@@ -186,7 +184,7 @@ class HTSPrecompiledContractTest {
 		HTSPrecompiledContract contract = Mockito.spy(new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder,
-				syntheticTxnFactory, creator, dissociationFactory));
+				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers));
 		given(input.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_NFT);
 
@@ -194,7 +192,7 @@ class HTSPrecompiledContractTest {
 		contract.compute(input, messageFrame);
 
 		// then
-		verify(contract).computeTransferNft(input, messageFrame);
+		verify(contract).computeTransfer(input, messageFrame);
 	}
 
 	@Test
@@ -283,50 +281,6 @@ class HTSPrecompiledContractTest {
 
 		// when
 		var result = subject.compute(input, messageFrame);
-
-		// then
-		assertNull(result);
-	}
-
-	@Test
-	void verifyComputeCryptoTransfer() {
-		// given
-
-		// when
-		var result = subject.computeCryptoTransfer(input, messageFrame);
-
-		// then
-		assertNull(result);
-	}
-
-	@Test
-	void verifyComputeTransferTokens() {
-		// given
-
-		// when
-		var result = subject.computeTransferTokens(input, messageFrame);
-
-		// then
-		assertNull(result);
-	}
-
-	@Test
-	void verifyComputeTransferNfts() {
-		// given
-
-		// when
-		var result = subject.computeTransferNfts(input, messageFrame);
-
-		// then
-		assertNull(result);
-	}
-
-	@Test
-	void verifyComputeTransferNft() {
-		// given
-
-		// when
-		var result = subject.computeTransferNft(input, messageFrame);
 
 		// then
 		assertNull(result);

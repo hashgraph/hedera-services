@@ -81,7 +81,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(
-//				depositAndWithdraw(),
+				depositAndWithdraw(),
 				associateToken(),
 				dissociateToken()
 		);
@@ -126,6 +126,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 						getTxnRecord("zeno").logged(),
 						contractCall(theContract, ZENOS_BANK_WITHDRAW_TOKENS)
 								.payingWith(theReceiver)
+								.alsoSigningWithFullPrefix(theContract)
 								.gas(70_000)
 								.via("receiver"),
 						getTxnRecord("receiver").logged()

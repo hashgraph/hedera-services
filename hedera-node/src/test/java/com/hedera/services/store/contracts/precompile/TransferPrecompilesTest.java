@@ -3,9 +3,9 @@ package com.hedera.services.store.contracts.precompile;
 /*-
  * ‌
  * Hedera Services Node
- *
+ * ​
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- *
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -24,8 +24,12 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
+import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
@@ -38,16 +42,15 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.txns.token.DissociateLogic;
+import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -64,26 +67,28 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_ADDER;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_REMOVER;
+import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TRANSFER_TOKEN;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("rawtypes")
-class DissociatePrecompilesTest {
-	private static final Bytes pretendArguments = Bytes.fromBase64String("ABCDEF");
-
+class TransferPrecompilesTest {
 	@Mock
-	private AccountStore accountStore;
+	private Bytes pretendArguments;
 	@Mock
-	private TypedTokenStore tokenStore;
+	private HederaTokenStore hederaTokenStore;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
@@ -99,15 +104,13 @@ class DissociatePrecompilesTest {
 	@Mock
 	private DecodingFacade decoder;
 	@Mock
-	private HTSPrecompiledContract.MintLogicFactory mintLogicFactory;
+	private HTSPrecompiledContract.TransferLogicFactory transferLogicFactory;
 	@Mock
-	private HTSPrecompiledContract.TokenStoreFactory tokenStoreFactory;
+	private HTSPrecompiledContract.HederaTokenStoreFactory hederaTokenStoreFactory;
 	@Mock
 	private HTSPrecompiledContract.AccountStoreFactory accountStoreFactory;
 	@Mock
-	private HTSPrecompiledContract.DissociateLogicFactory dissociateLogicFactory;
-	@Mock
-	private DissociateLogic dissociateLogic;
+	private TransferLogic transferLogic;
 	@Mock
 	private SideEffectsTracker sideEffects;
 	@Mock
@@ -128,12 +131,17 @@ class DissociatePrecompilesTest {
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
 	@Mock
 	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
+	private final EntityIdSource ids = NOOP_ID_SOURCE;
 	@Mock
 	private ExpiringCreations creator;
 	@Mock
+	private ImpliedTransfersMarshal impliedTransfersMarshal;
+	@Mock
+	private ImpliedTransfers impliedTransfers;
+	@Mock
 	private DissociationFactory dissociationFactory;
 	@Mock
-	private ImpliedTransfersMarshal impliedTransfersMarshal;
+	private ImpliedTransfersMeta impliedTransfersMeta;
 
 	private HTSPrecompiledContract subject;
 
@@ -143,95 +151,97 @@ class DissociatePrecompilesTest {
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal);
-		subject.setMintLogicFactory(mintLogicFactory);
-		subject.setDissociateLogicFactory(dissociateLogicFactory);
-		subject.setTokenStoreFactory(tokenStoreFactory);
+		subject.setTransferLogicFactory(transferLogicFactory);
+		subject.setHederaTokenStoreFactory(hederaTokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);
 		subject.setSideEffectsFactory(() -> sideEffects);
 	}
 
 	@Test
-	void dissociateTokenFailurePathWorks() {
-		givenFrameContext();
-
-		given(sigsVerifier.hasActiveKey(accountId, recipientAddr, contractAddr))
-				.willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
-		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
-		given(decoder.decodeDissociate(pretendArguments)).willReturn(dissociateToken);
-		given(syntheticTxnFactory.createDissociate(dissociateToken)).willReturn(mockSynthBodyBuilder);
-
-		// when:
-		final var result = subject.computeDissociateToken(pretendArguments, frame);
-
-		// then:
-		assertEquals(invalidSigResult, result);
-
-		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
-	}
-
-	@Test
-	void dissociateTokenHappyPathWorks() {
+	void transferTokenHappyPathWorks() {
 		givenFrameContext();
 		givenLedgers();
 
-		given(sigsVerifier.hasActiveKey(accountId, recipientAddr, contractAddr)).willReturn(true);
-		given(accountStoreFactory.newAccountStore(
-				validator, dynamicProperties, accounts
-		)).willReturn(accountStore);
-		given(tokenStoreFactory.newTokenStore(
-				accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects
-		)).willReturn(tokenStore);
-		given(dissociateLogicFactory.newDissociateLogic(validator, tokenStore, accountStore, dissociationFactory)).willReturn(dissociateLogic);
+		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
+		given(sigsVerifier.hasActiveKey(any(), any(), any())).willReturn(true);
+
+		hederaTokenStore.setAccountsLedger(accounts);
+		given(hederaTokenStoreFactory.newHederaTokenStore(
+				ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
+		)).willReturn(hederaTokenStore);
+
+		given(transferLogicFactory.newLogic(
+				accounts, nfts, tokenRels, hederaTokenStore,
+				sideEffects,
+				NOOP_VIEWS_MANAGER,
+				dynamicProperties,
+				validator
+		)).willReturn(transferLogic);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects)).willReturn(mockRecordBuilder);
-		given(decoder.decodeDissociate(pretendArguments)).willReturn(dissociateToken);
-		given(syntheticTxnFactory.createDissociate(dissociateToken)).willReturn(mockSynthBodyBuilder);
+		given(impliedTransfersMarshal.assessCustomFeesAndValidate(any(), anyInt(), any())).willReturn(impliedTransfers);
+		given(impliedTransfers.getAllBalanceChanges()).willReturn(changes);
+		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
+		given(impliedTransfersMeta.code()).willReturn(ResponseCodeEnum.OK);
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKEN);
 
 		// when:
-		final var result = subject.computeDissociateToken(pretendArguments, frame);
+		final var result = subject.computeTransfer(pretendArguments, frame);
 
 		// then:
 		assertEquals(successResult, result);
 		// and:
-		verify(dissociateLogic).dissociate(accountId, singletonList(nonFungible));
+		verify(transferLogic).transfer(changes);
 		verify(wrappedLedgers).commit();
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}
 
+
 	@Test
-	void computeMultiDissociateTokenHappyPathWorks() {
+	void transferFailsAndCatchesProperly() {
 		givenFrameContext();
 		givenLedgers();
-		given(decoder.decodeMultipleDissociations(pretendArguments))
-				.willReturn(multiDissociateOp);
-		given(syntheticTxnFactory.createDissociate(multiDissociateOp))
-				.willReturn(mockSynthBodyBuilder);
-		given(sigsVerifier.hasActiveKey(accountId, recipientAddr, contractAddr))
-				.willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
-				.willReturn(accountStore);
-		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER,
-				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects))
-				.willReturn(tokenStore);
-		given(dissociateLogicFactory.newDissociateLogic(validator, tokenStore, accountStore, dissociationFactory))
-				.willReturn(dissociateLogic);
-		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects))
-				.willReturn(mockRecordBuilder);
+
+		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
+		given(sigsVerifier.hasActiveKey(any(), any(), any())).willReturn(true);
+
+		hederaTokenStore.setAccountsLedger(accounts);
+		given(hederaTokenStoreFactory.newHederaTokenStore(
+				ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
+		)).willReturn(hederaTokenStore);
+
+		given(transferLogicFactory.newLogic(
+				accounts, nfts, tokenRels, hederaTokenStore,
+				sideEffects,
+				NOOP_VIEWS_MANAGER,
+				dynamicProperties,
+				validator
+		)).willReturn(transferLogic);
+		given(impliedTransfersMarshal.assessCustomFeesAndValidate(any(), anyInt(), any())).willReturn(impliedTransfers);
+		given(impliedTransfers.getAllBalanceChanges()).willReturn(changes);
+		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
+		given(impliedTransfersMeta.code()).willReturn(ResponseCodeEnum.OK);
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKEN);
+
+		doThrow(new InvalidTransactionException(ResponseCodeEnum.FAIL_INVALID)).when(transferLogic).transfer(changes);
 
 		// when:
-		final var result = subject.computeDissociateTokens(pretendArguments, frame);
+		final var result = subject.computeTransfer(pretendArguments, frame);
 
 		// then:
-		assertEquals(successResult, result);
-		verify(dissociateLogic).dissociate(accountId, multiDissociateOp.getTokenIds());
-		verify(wrappedLedgers).commit();
-		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+		assertNotEquals(successResult, result);
+		// and:
+		verify(transferLogic).transfer(changes);
+		verify(wrappedLedgers, never()).commit();
+		verify(worldUpdater, never()).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}
 
 	private void givenFrameContext() {
 		given(frame.getContractAddress()).willReturn(contractAddr);
-		given(frame.getRecipientAddress()).willReturn(recipientAddr);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
+		given(decoder.decodeTransferToken(pretendArguments)).willReturn(transferList);
+		given(syntheticTxnFactory.createCryptoTransfer(transferList.getNftExchanges(),
+				transferList.getFungibleTransfers())).willReturn(mockSynthBodyBuilder);
 	}
 
 	private void givenLedgers() {
@@ -241,15 +251,34 @@ class DissociatePrecompilesTest {
 		given(wrappedLedgers.tokens()).willReturn(tokens);
 	}
 
-	private static final TokenID nonFungible = IdUtils.asToken("0.0.777");
-	private static final AccountID account = IdUtils.asAccount("0.0.3");
-	private static final Id accountId = Id.fromGrpcAccount(account);
-	private static final SyntheticTxnFactory.Dissociation dissociateToken =
-			SyntheticTxnFactory.Dissociation.singleDissociation(account, nonFungible);
-	private static final SyntheticTxnFactory.Dissociation multiDissociateOp =
-			SyntheticTxnFactory.Dissociation.singleDissociation(account, nonFungible);
-	private static final Address recipientAddr = Address.ALTBN128_ADD;
+	private static final long amount = 1L;
+	private static final TokenID token = IdUtils.asToken("0.0.1");
+	private static final AccountID sender = IdUtils.asAccount("0.0.2");
+	private static final AccountID receiver = IdUtils.asAccount("0.0.3");
+	private static final SyntheticTxnFactory.FungibleTokenTransfer transfer =
+			new SyntheticTxnFactory.FungibleTokenTransfer(
+					amount,
+					token,
+					sender,
+					receiver
+			);
+	private static final SyntheticTxnFactory.TokenTransferLists transferList = new SyntheticTxnFactory.TokenTransferLists(
+			new ArrayList<>() {
+			},
+			List.of(transfer)
+	);
 	private static final Address contractAddr = Address.ALTBN128_MUL;
 	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
-	private static final Bytes invalidSigResult = UInt256.valueOf(ResponseCodeEnum.INVALID_SIGNATURE_VALUE);
+	private static final List<BalanceChange> changes = List.of(
+			BalanceChange.changingFtUnits(
+					Id.fromGrpcToken(token),
+					token,
+					AccountAmount.newBuilder().setAccountID(sender).setAmount(amount).build()
+			),
+			BalanceChange.changingFtUnits(
+					Id.fromGrpcToken(token),
+					token,
+					AccountAmount.newBuilder().setAccountID(receiver).setAmount(amount).build()
+			)
+	);
 }
