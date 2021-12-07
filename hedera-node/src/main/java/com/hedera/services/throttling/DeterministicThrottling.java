@@ -22,7 +22,6 @@ package com.hedera.services.throttling;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
-import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -86,12 +85,15 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	}
 
 	private boolean shouldThrottleTransfer(
-			final ThrottleReqsManager manager, final int autoAccountCreationCount, final Instant now) {
-		if (autoAccountCreationCount == 0) {
+			ThrottleReqsManager manager,
+			final int numAutoCreations,
+			final Instant now
+	) {
+		if (numAutoCreations == 0) {
 			return !manager.allReqsMetAt(now);
 		} else {
-			return !functionReqs.get(CryptoCreate).allReqsMetAt(
-					now, autoAccountCreationCount, ThrottleReqOpsScaleFactor.from("1:1"));
+			manager = functionReqs.get(CryptoCreate);
+			return manager == null || !manager.allReqsMetAt(now, numAutoCreations, null);
 		}
 	}
 

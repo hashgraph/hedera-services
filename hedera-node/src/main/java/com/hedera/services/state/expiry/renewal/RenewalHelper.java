@@ -152,7 +152,7 @@ public class RenewalHelper {
 		log.debug("Removed {}, displacing {}", lastClassifiedEntityId, displacements);
 
 		/* Remove the entry from auto created accounts map if there is an entry in the map */
-		autoAccounts.remove(lastClassifiedEntityId, accounts.get());
+		autoAccounts.forgetAliasIfPresent(lastClassifiedEntityId, accounts.get());
 
 		return displacements;
 	}

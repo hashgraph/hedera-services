@@ -272,7 +272,7 @@ class RenewalHelperTest {
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), deletedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), missingTokenGrpcId));
-		verify(autoAccounts).remove(expiredKey, accounts);
+		verify(autoAccounts).forgetAliasIfPresent(expiredKey, accounts);
 		// and:
 		assertTrue(displacedTokens.getLeft().isEmpty());
 	}
@@ -302,7 +302,7 @@ class RenewalHelperTest {
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), deletedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));
-		verify(autoAccounts).remove(expiredKey, accounts);
+		verify(autoAccounts).forgetAliasIfPresent(expiredKey, accounts);
 		// and:
 		final var ttls = List.of(
 				ttlOf(survivedTokenGrpcId, grpcIdWith(brokeExpiredAccountNum), treasuryGrpcId, tokenBalance));
@@ -357,7 +357,7 @@ class RenewalHelperTest {
 		// then:
 		verify(accounts).getForModify(key);
 		verify(accounts).getForModify(fundingKey);
-		verify(autoAccounts, never()).remove(fundingKey, accounts);
+		verify(autoAccounts, never()).forgetAliasIfPresent(fundingKey, accounts);
 	}
 
 	@Test

@@ -20,7 +20,6 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hederahashgraph.api.proto.java.AccountID;

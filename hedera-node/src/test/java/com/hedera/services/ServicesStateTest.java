@@ -20,7 +20,6 @@ package com.hedera.services;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.init.ServicesInitFlow;
 import com.hedera.services.sigs.ExpansionHelper;
@@ -30,18 +29,11 @@ import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.forensics.HashLogger;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleAccountState;
-import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
-import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.migration.LegacyStateChildIndices;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.org.StateMetadata;
@@ -58,7 +50,6 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.NodeId;
@@ -70,8 +61,6 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.fchashmap.FCOneToManyRelation;
-import com.swirlds.fcqueue.FCQueue;
-import com.swirlds.merkle.map.FCMapMigration;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkle.tree.MerkleBinaryTree;
 import com.swirlds.merkle.tree.MerkleTreeInternalNode;
@@ -88,14 +77,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.List;
-import java.util.function.Consumer;
 
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0160_VERSION;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -106,9 +93,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -164,11 +149,7 @@ class ServicesStateTest {
 	@Mock
 	private ServicesApp.Builder appBuilder;
 	@Mock
-	private ServicesState.FcmMigrator fcmMigrator;
-	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
-	@Mock
-	private Consumer<Boolean> blobMigrationFlag;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -381,13 +362,13 @@ class ServicesStateTest {
 	void minimumChildCountsAsExpected() {
 		// expect:
 		assertEquals(
-				StateChildIndices.NUM_PRE_0210_CHILDREN,
+				StateChildIndices.NUM_PRE_0160_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_0180_VERSION));
 		assertEquals(
-				StateChildIndices.NUM_PRE_0210_CHILDREN,
+				StateChildIndices.NUM_PRE_0160_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_0180_VERSION));
 		assertEquals(
-				StateChildIndices.NUM_0210_CHILDREN,
+				StateChildIndices.NUM_POST_0160_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_0210_VERSION));
 		assertThrows(IllegalArgumentException.class,
 				() -> subject.getMinimumChildCount(StateVersions.CURRENT_VERSION + 1));
@@ -406,17 +387,6 @@ class ServicesStateTest {
 
 		assertDoesNotThrow(subject::initialize);
 		assertNotNull(subject.specialFiles());
-	}
-
-	@Test
-	void defersInitWhenInitializingFromRelease0190() {
-		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0190_AND_020_VERSION);
-
-		subject.init(platform, addressBook, dualState);
-
-		assertSame(platform, subject.getPlatformForDeferredInit());
-		assertSame(addressBook, subject.getAddressBookForDeferredInit());
-		assertSame(dualState, subject.getDualStateForDeferredInit());
 	}
 
 	@Test
@@ -442,57 +412,6 @@ class ServicesStateTest {
 
 		// expect:
 		assertDoesNotThrow(subject::migrate);
-	}
-
-	@Test
-	@SuppressWarnings("unchecked")
-	void migratesWhenInitializingFromRelease0180() {
-		ServicesState.setFcmMigrator(fcmMigrator);
-		ServicesState.setBlobMigrationFlag(blobMigrationFlag);
-		final MerkleMap<?, ?> pretend = new MerkleMap<>();
-
-		subject = mock(ServicesState.class);
-		given(subject.uniqueTokens()).willReturn((MerkleMap<EntityNumPair, MerkleUniqueToken>) pretend);
-		given(subject.tokenAssociations()).willReturn((MerkleMap<EntityNumPair, MerkleTokenRelStatus>) pretend);
-		given(subject.topics()).willReturn((MerkleMap<EntityNum, MerkleTopic>) pretend);
-		given(subject.storage()).willReturn((MerkleMap<String, MerkleOptionalBlob>) pretend);
-		given(subject.accounts()).willReturn((MerkleMap<EntityNum, MerkleAccount>) pretend);
-		given(subject.tokens()).willReturn((MerkleMap<EntityNum, MerkleToken>) pretend);
-		given(subject.scheduleTxs()).willReturn((MerkleMap<EntityNum, MerkleSchedule>) pretend);
-
-		willCallRealMethod().given(subject).migrate();
-		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0170_VERSION);
-		given(subject.getPlatformForDeferredInit()).willReturn(platform);
-		given(subject.getAddressBookForDeferredInit()).willReturn(addressBook);
-		given(subject.getDualStateForDeferredInit()).willReturn(dualState);
-
-		subject.migrate();
-
-		verify(fcmMigrator).toMerkleMap(eq(subject), eq(StateChildIndices.UNIQUE_TOKENS), any(), any());
-		verify(fcmMigrator).toMerkleMap(eq(subject), eq(StateChildIndices.TOKEN_ASSOCIATIONS), any(), any());
-		verify(fcmMigrator).toMerkleMap(eq(subject), eq(StateChildIndices.TOPICS), any(), any());
-		verify(fcmMigrator).toMerkleMap(eq(subject), eq(StateChildIndices.STORAGE), any(), any());
-		verify(fcmMigrator).toMerkleMap(eq(subject), eq(StateChildIndices.ACCOUNTS), any(), any());
-		verify(fcmMigrator).toMerkleMap(eq(subject), eq(StateChildIndices.TOKENS), any(), any());
-		verify(fcmMigrator).toMerkleMap(eq(subject), eq(StateChildIndices.SCHEDULE_TXS), any(), any());
-		verify(subject).init(platform, addressBook, dualState);
-		assertThat(
-				logCaptor.infoLogs(),
-				contains(
-						equalTo("Beginning FCMap -> MerkleMap migrations"),
-						Matchers.startsWith("↪ Migrated 0 "),
-						Matchers.startsWith("↪ Migrated 0 "),
-						Matchers.startsWith("↪ Migrated 0 "),
-						Matchers.startsWith("↪ Migrated 0 "),
-						Matchers.startsWith("↪ Migrated 0 "),
-						Matchers.startsWith("↪ Migrated 0 "),
-						Matchers.startsWith("↪ Migrated 0 "),
-						equalTo("Finished with FCMap -> MerkleMap migrations, completing the deferred init")));
-		verify(blobMigrationFlag).accept(true);
-		verify(blobMigrationFlag).accept(false);
-
-		ServicesState.setFcmMigrator(FCMapMigration::FCMapToMerkleMap);
-		ServicesState.setBlobMigrationFlag(MerkleOptionalBlob::setInMigration);
 	}
 
 	@Test
@@ -742,40 +661,7 @@ class ServicesStateTest {
 
 		// when:
 		subject.genesisInit(platform, addressBook, dualState);
-
-		// then:
-		assertTrue(subject.getAutoAccountsManager().getAutoAccountsMap().isEmpty());
 	}
-
-	@Test
-	void nonGenesisInitLoadsAutoAccountsMap() {
-		MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
-		final Key aliasKey = Key.newBuilder()
-				.setECDSASecp256K1(ByteString.copyFromUtf8("bbbbbbbbbbbbbbbbbbbbb")).build();
-		final ByteString alias = aliasKey.getECDSASecp256K1();
-		MerkleAccountState state = new MerkleAccountState(null, 10, 10, 10, null, false, false, false, null, 2, 0,
-				alias);
-		accounts.put(new EntityNum(2),
-				new MerkleAccount(List.of(state, mock(FCQueue.class), mock(MerkleAccountTokens.class))));
-
-		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
-		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
-
-		given(networkContext.getStateVersion()).willReturn(StateVersions.RELEASE_0210_VERSION);
-
-		given(app.hashLogger()).willReturn(hashLogger);
-		given(app.initializationFlow()).willReturn(initFlow);
-		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
-		given(platform.getSelfId()).willReturn(selfId);
-		// and:
-		APPS.save(selfId.getId(), app);
-
-		// when:
-		subject.init(platform, addressBook, dualState);
-
-		assertEquals(1, subject.getAutoAccountsManager().getAutoAccountsMap().size());
-	}
-
 
 	@Test
 	void forwardsFcomtrAsExpected() {

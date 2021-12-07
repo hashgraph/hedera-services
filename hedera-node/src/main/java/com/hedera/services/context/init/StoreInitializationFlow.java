@@ -20,6 +20,7 @@ package com.hedera.services.context.init;
  * ‍
  */
 
+import com.hedera.services.ledger.accounts.AutoAccountsManager;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.annotations.WorkingState;
@@ -46,6 +47,7 @@ public class StoreInitializationFlow {
 	private final TokenStore tokenStore;
 	private final ScheduleStore scheduleStore;
 	private final StateAccessor stateAccessor;
+	private final AutoAccountsManager autoAccountsManager;
 	private final UniqTokenViewsManager uniqTokenViewsManager;
 	private final BackingStore<AccountID, MerkleAccount> backingAccounts;
 	private final BackingStore<NftId, MerkleUniqueToken> backingNfts;
@@ -53,13 +55,14 @@ public class StoreInitializationFlow {
 
 	@Inject
 	public StoreInitializationFlow(
-			TokenStore tokenStore,
-			ScheduleStore scheduleStore,
-			@WorkingState StateAccessor stateAccessor,
-			UniqTokenViewsManager uniqTokenViewsManager,
-			BackingStore<AccountID, MerkleAccount> backingAccounts,
-			BackingStore<NftId, MerkleUniqueToken> backingNfts,
-			BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels
+			final TokenStore tokenStore,
+			final ScheduleStore scheduleStore,
+			final AutoAccountsManager autoAccountsManager,
+			final @WorkingState StateAccessor stateAccessor,
+			final UniqTokenViewsManager uniqTokenViewsManager,
+			final BackingStore<AccountID, MerkleAccount> backingAccounts,
+			final BackingStore<NftId, MerkleUniqueToken> backingNfts,
+			final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels
 	) {
 		this.tokenStore = tokenStore;
 		this.scheduleStore = scheduleStore;
@@ -67,6 +70,7 @@ public class StoreInitializationFlow {
 		this.stateAccessor = stateAccessor;
 		this.backingNfts = backingNfts;
 		this.backingTokenRels = backingTokenRels;
+		this.autoAccountsManager = autoAccountsManager;
 		this.uniqTokenViewsManager = uniqTokenViewsManager;
 	}
 
@@ -82,5 +86,8 @@ public class StoreInitializationFlow {
 
 		uniqTokenViewsManager.rebuildNotice(stateAccessor.tokens(), stateAccessor.uniqueTokens());
 		log.info("Unique token views rebuilt");
+
+		autoAccountsManager.rebuildAliasesMap(stateAccessor.accounts());
+		log.info("Account aliases map rebuilt");
 	}
 }

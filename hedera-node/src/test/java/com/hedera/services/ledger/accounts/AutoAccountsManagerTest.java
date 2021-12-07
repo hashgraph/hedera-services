@@ -1,4 +1,4 @@
-package com.hedera.services.state;
+package com.hedera.services.ledger.accounts;
 
 /*-
  * ‌
@@ -21,11 +21,10 @@ package com.hedera.services.state;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.ledger.accounts.AutoAccountsManager;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -33,9 +32,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@ExtendWith(MockitoExtension.class)
-class AutoAccountCreationsManagerTest {
-
+class AutoAccountsManagerTest {
 	@Test
 	void settersAndGettersWork() {
 		EntityNum a = new EntityNum(1);
@@ -51,5 +48,29 @@ class AutoAccountCreationsManagerTest {
 		subject.setAutoAccountsMap(expectedMap);
 		assertEquals(expectedMap, subject.getAutoAccountsMap());
 		assertEquals(b, subject.fetchEntityNumFor(ByteString.copyFromUtf8("bbbb")));
+	}
+
+	@Test
+	void rebuildsFromMap() {
+		final var withNum = EntityNum.fromLong(1L);
+		final var withoutNum = EntityNum.fromLong(2L);
+		final var expiredAlias = ByteString.copyFromUtf8("zyxwvut");
+		final var upToDateAlias = ByteString.copyFromUtf8("abcdefg");
+
+		final var accountWithAlias = new MerkleAccount();
+		accountWithAlias.setAlias(upToDateAlias);
+		final var accountWithNoAlias = new MerkleAccount();
+
+		final MerkleMap<EntityNum, MerkleAccount> liveAccounts = new MerkleMap<>();
+		liveAccounts.put(withNum, accountWithAlias);
+		liveAccounts.put(withoutNum, accountWithNoAlias);
+
+		final var subject = new AutoAccountsManager();
+		subject.getAutoAccountsMap().put(expiredAlias, withoutNum);
+		subject.rebuildAliasesMap(liveAccounts);
+
+		final var finalMap = subject.getAutoAccountsMap();
+		assertEquals(finalMap.size(), 1);
+		assertEquals(withNum, subject.getAutoAccountsMap().get(upToDateAlias));
 	}
 }
