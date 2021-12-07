@@ -555,31 +555,18 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				}
 			}
 
-			for (SyntheticTxnFactory.HbarTransfer hbarTransfer : transferOp.getHbarTransfers()) {
-				if (hbarTransfer.sender == null) {
+			if (changes.isEmpty()) {
+				for (SyntheticTxnFactory.NftExchange nftExchange : transferOp.getNftExchanges()) {
 					changes.add(
-							BalanceChange.changingHbar(
-									AccountAmount.newBuilder().setAccountID(hbarTransfer.receiver).setAmount(hbarTransfer.amount).build()
-							)
-					);
-				} else {
-					changes.add(
-							BalanceChange.changingHbar(
-									AccountAmount.newBuilder().setAccountID(hbarTransfer.sender).setAmount(-hbarTransfer.amount).build()
+							BalanceChange.changingNftOwnership(
+									Id.fromGrpcToken(nftExchange.getTokenType()),
+									nftExchange.getTokenType(),
+									nftExchange.nftTransfer()
 							)
 					);
 				}
 			}
 
-			for (SyntheticTxnFactory.NftExchange nftExchange : transferOp.getNftExchanges()) {
-				changes.add(
-						BalanceChange.changingNftOwnership(
-								Id.fromGrpcToken(nftExchange.getTokenType()),
-								nftExchange.getTokenType(),
-								nftExchange.nftTransfer()
-						)
-				);
-			}
 			return changes;
 		}
 
