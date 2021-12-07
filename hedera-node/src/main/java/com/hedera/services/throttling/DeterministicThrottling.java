@@ -45,6 +45,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 
 public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	private static final Logger log = LogManager.getLogger(DeterministicThrottling.class);
+	private static final ThrottleReqOpsScaleFactor ONE_TO_ONE_SCALE = ThrottleReqOpsScaleFactor.from("1:1");
 
 	private final IntSupplier capacitySplitSource;
 	private final GlobalDynamicProperties dynamicProperties;
@@ -86,12 +87,15 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	}
 
 	private boolean shouldThrottleTransfer(
-			final ThrottleReqsManager manager, final int autoAccountCreationCount, final Instant now) {
-		if (autoAccountCreationCount == 0) {
+			ThrottleReqsManager manager,
+			final int numAutoCreations,
+			final Instant now
+	) {
+		if (numAutoCreations == 0) {
 			return !manager.allReqsMetAt(now);
 		} else {
-			return !functionReqs.get(CryptoCreate).allReqsMetAt(
-					now, autoAccountCreationCount, ThrottleReqOpsScaleFactor.from("1:1"));
+			manager = functionReqs.get(CryptoCreate);
+			return manager == null || !manager.allReqsMetAt(now, numAutoCreations, ONE_TO_ONE_SCALE);
 		}
 	}
 

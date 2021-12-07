@@ -20,6 +20,7 @@ package com.hedera.services.context.init;
  * ‍
  */
 
+import com.hedera.services.ledger.accounts.AutoAccountsManager;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -55,6 +56,8 @@ class StoreInitializationFlowTest {
 	@Mock
 	private StateAccessor stateAccessor;
 	@Mock
+	private AutoAccountsManager autoAccountsManager;
+	@Mock
 	private UniqTokenViewsManager uniqTokenViewsManager;
 	@Mock
 	private BackingStore<AccountID, MerkleAccount> backingAccounts;
@@ -66,6 +69,8 @@ class StoreInitializationFlowTest {
 	private MerkleMap<EntityNum, MerkleToken> tokens;
 	@Mock
 	private MerkleMap<EntityNumPair, MerkleUniqueToken> nfts;
+	@Mock
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	private StoreInitializationFlow subject;
 
@@ -74,6 +79,7 @@ class StoreInitializationFlowTest {
 		subject = new StoreInitializationFlow(
 				tokenStore,
 				scheduleStore,
+				autoAccountsManager,
 				stateAccessor,
 				uniqTokenViewsManager,
 				backingAccounts,
@@ -84,6 +90,7 @@ class StoreInitializationFlowTest {
 	@Test
 	void initsAsExpected() {
 		given(stateAccessor.tokens()).willReturn(tokens);
+		given(stateAccessor.accounts()).willReturn(accounts);
 		given(stateAccessor.uniqueTokens()).willReturn(nfts);
 
 		// when:
@@ -96,5 +103,6 @@ class StoreInitializationFlowTest {
 		verify(tokenStore).rebuildViews();
 		verify(scheduleStore).rebuildViews();
 		verify(uniqTokenViewsManager).rebuildNotice(tokens, nfts);
+		verify(autoAccountsManager).rebuildAliasesMap(accounts);
 	}
 }

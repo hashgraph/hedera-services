@@ -194,6 +194,19 @@ class DeterministicThrottlingTest {
 	}
 
 	@Test
+	void managerRejectsCryptoTransfersWithMissingCryptoCreateThrottle() throws IOException {
+		var defs = SerdeUtils.pojoDefs("bootstrap/throttles-sans-creation.json");
+
+		givenFunction(CryptoTransfer);
+		given(accessor.getAutoAccountCreationsCount()).willReturn(1);
+		subject.rebuildFor(defs);
+
+		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+
+		assertTrue(ans);
+	}
+
+	@Test
 	void logsErrorOnBadBucketButDoesntFail() throws IOException {
 		// given:
 		var defs = SerdeUtils.pojoDefs("bootstrap/insufficient-capacity-throttles.json");

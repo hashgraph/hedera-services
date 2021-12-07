@@ -61,7 +61,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyShort;
 import static org.mockito.BDDMockito.any;
@@ -251,18 +250,16 @@ class TxnAwareRecordsHistorianTest {
 		verify(creator).saveExpiringRecord(effPayer, mockPrecedingRecord, precedingChildNows, submittingMember);
 		verify(creator).saveExpiringRecord(effPayer, mockTopLevelRecord, nows, submittingMember);
 		verify(creator).saveExpiringRecord(effPayer, mockFollowingRecord, followingChildNows, submittingMember);
-		verify(precedingBuilder).setTxnId(expectedPrecedingChildId);
-		verify(followingBuilder).setTxnId(expectedFollowingChildId);
-		verify(precedingBuilder).setTxnHash(
+		verifyBuilderUse(
+				precedingBuilder,
+				expectedPrecedingChildId,
 				noThrowSha384HashOf(expectedPrecedeSynth.getSignedTransactionBytes().toByteArray()));
-		verify(followingBuilder).setTxnHash(
+		verifyBuilderUse(
+				followingBuilder,
+				expectedFollowingChildId,
 				noThrowSha384HashOf(expectedFollowSynth.getSignedTransactionBytes().toByteArray()));
 		verify(recordCache).setPostConsensus(expPrecedeId, INVALID_ACCOUNT_ID, mockPrecedingRecord);
 		verify(recordCache).setPostConsensus(expFollowId, INVALID_CHUNK_NUMBER, mockFollowingRecord);
-
-		subject.clearHistory();
-		assertTrue(subject.getPrecedingChildRecords().isEmpty());
-		assertTrue(subject.getFollowingChildRecords().isEmpty());
 	}
 
 	@Test
@@ -371,5 +368,14 @@ class TxnAwareRecordsHistorianTest {
 
 	private TransactionBody.Builder aBuilderWith(final String memo) {
 		return TransactionBody.newBuilder().setMemo(memo);
+	}
+
+	private void verifyBuilderUse(
+			final ExpirableTxnRecord.Builder builder,
+			final TxnId expectedId,
+			final byte[] expectedHash
+	) {
+		verify(builder).setTxnId(expectedId);
+		verify(builder).setTxnHash(expectedHash);
 	}
 }

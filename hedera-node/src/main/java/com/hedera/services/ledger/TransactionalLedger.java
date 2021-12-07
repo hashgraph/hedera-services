@@ -231,7 +231,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	}
 
 	public ResponseCodeEnum validate(final K id, final LedgerCheck<A, P> ledgerCheck) {
-		if(!exists(id)) {
+		if (!exists(id)) {
 			return ResponseCodeEnum.INVALID_ACCOUNT_ID;
 		}
 		var changeSet = changes.get(id);
