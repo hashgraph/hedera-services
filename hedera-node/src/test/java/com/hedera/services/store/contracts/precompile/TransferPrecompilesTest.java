@@ -168,6 +168,7 @@ class TransferPrecompilesTest {
 		givenLedgers();
 
 		given(sigsVerifier.hasActiveKey(any(), any(), any())).willReturn(true);
+		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
 		given(syntheticTxnFactory.createCryptoTransfer(tokenTransferList.getNftExchanges(),
 				tokenTransferList.getFungibleTransfers())).willReturn(mockSynthBodyBuilder);
 
@@ -210,6 +211,7 @@ class TransferPrecompilesTest {
 		given(syntheticTxnFactory.createCryptoTransfer(tokensTransferList.getNftExchanges(),
 				tokensTransferList.getFungibleTransfers())).willReturn(mockSynthBodyBuilder);
 		given(sigsVerifier.hasActiveKey(any(), any(), any())).willReturn(true);
+		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
 		given(decoder.decodeTransferTokens(pretendArguments)).willReturn(tokensTransferList);
 
 		hederaTokenStore.setAccountsLedger(accounts);
@@ -369,6 +371,7 @@ class TransferPrecompilesTest {
 		givenLedgers();
 
 		given(sigsVerifier.hasActiveKey(any(), any(), any())).willReturn(true);
+		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
 
 		hederaTokenStore.setAccountsLedger(accounts);
 		given(hederaTokenStoreFactory.newHederaTokenStore(
@@ -496,8 +499,7 @@ class TransferPrecompilesTest {
 					NftTransfer.newBuilder().setSenderAccountID(sender).setReceiverAccountID(receiver).setSerialNumber(1L).build()
 			)
 	);
-
-
+	
 	private static final List<BalanceChange> nftsTransferChanges = List.of(
 			BalanceChange.changingNftOwnership(
 					Id.fromGrpcToken(token),
