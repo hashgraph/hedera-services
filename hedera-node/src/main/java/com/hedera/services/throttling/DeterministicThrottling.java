@@ -22,6 +22,7 @@ package com.hedera.services.throttling;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
+import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -44,6 +45,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 
 public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	private static final Logger log = LogManager.getLogger(DeterministicThrottling.class);
+	private static final ThrottleReqOpsScaleFactor ONE_TO_ONE_SCALE = ThrottleReqOpsScaleFactor.from("1:1");
 
 	private final IntSupplier capacitySplitSource;
 	private final GlobalDynamicProperties dynamicProperties;
@@ -93,7 +95,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 			return !manager.allReqsMetAt(now);
 		} else {
 			manager = functionReqs.get(CryptoCreate);
-			return manager == null || !manager.allReqsMetAt(now, numAutoCreations, null);
+			return manager == null || !manager.allReqsMetAt(now, numAutoCreations, ONE_TO_ONE_SCALE);
 		}
 	}
 
