@@ -148,7 +148,19 @@ public interface AccountRecordsHistorian {
 	 */
 	Instant nextFollowingChildConsensusTime();
 
+	/**
+	 * Provides the payer key from the current transaction context.
+	 * It is used to get the key of payer from parent record while calculating fee for child record
+	 *
+	 * @return payer key
+	 */
 	JKey getActivePayerKeyFromTxnCtx();
 
+	/**
+	 * Provides the consensus timestamp of the current transaction from transaction context.
+	 * It is used to get the consensus time of parent record while calculating fee for child record
+	 *
+	 * @return the consensus timestamp of parent
+	 */
 	Instant getConsensusTimeFromTxnCtx();
 }

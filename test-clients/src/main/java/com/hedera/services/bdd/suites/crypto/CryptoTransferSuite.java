@@ -139,7 +139,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 				).then(
 						getTxnRecord("transferTxn").andAllChildRecords().logged(),
 						getAccountInfo("payer").has(accountWith().balance((initialBalance * ONE_HBAR) - ONE_HUNDRED_HBARS)),
-						getAccountInfo(valid25519Alias).has(accountWith().balance(ONE_HUNDRED_HBARS))
+						getAccountInfo(valid25519Alias).has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.1))
 				);
 	}
 

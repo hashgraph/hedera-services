@@ -103,28 +103,29 @@ public class AutoAccountCreateLogic {
 	/**
 	 * Create accounts corresponding to each alias given in the list of aliases from a cryptoTransfer transaction
 	 *
-	 * @param changeWithOnlyAlias
+	 * @param change
 	 * 		BalanceChange from cryptoTransfer transaction which has only alias
 	 * @param accountsLedger
 	 * 		accounts ledger
 	 * @return response code for the operation
 	 */
-	public Pair<ResponseCodeEnum, Long> createAccount(BalanceChange changeWithOnlyAlias,
+	public Pair<ResponseCodeEnum, Long> createAccount(BalanceChange change,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
 		final var sideEffects = sideEffectsFactory.get();
 		long feeForSyntheticCreateTxn;
 		try {
 			/* create a crypto create synthetic transaction */
-			var alias = changeWithOnlyAlias.alias();
+			var alias = change.alias();
 			Key key = Key.parseFrom(alias);
 			var syntheticCreateTxn = syntheticTxnFactory.cryptoCreate(key, 0L);
 			feeForSyntheticCreateTxn = feeForAutoAccountCreateTxn(syntheticCreateTxn);
 
 			/* Adjust fees for create and validate */
-			if (feeForSyntheticCreateTxn > changeWithOnlyAlias.units()) {
-				return Pair.of(changeWithOnlyAlias.codeForInsufficientBalance(), 0L);
+			if (feeForSyntheticCreateTxn > change.units()) {
+				return Pair.of(change.codeForInsufficientBalance(), 0L);
 			} else {
-				changeWithOnlyAlias.adjustUnits(-feeForSyntheticCreateTxn);
+				change.adjustUnits(-feeForSyntheticCreateTxn);
+				change.setNewBalance(change.units());
 			}
 
 			var newAccountId = ids.newAccountId(syntheticCreateTxn.getTransactionID().getAccountID());
