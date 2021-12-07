@@ -155,30 +155,6 @@ public class SyntheticTxnFactory {
 		}
 	}
 
-	public static class FungibleTokensTransfer {
-		private final TokenID denomination;
-		private final List<AccountID> accounts;
-		private final long[] amounts;
-
-		public FungibleTokensTransfer(TokenID denomination, List<AccountID> accounts, long[] amounts) {
-			this.denomination = denomination;
-			this.accounts = accounts;
-			this.amounts = amounts;
-		}
-
-		public TokenID getDenomination() {
-			return denomination;
-		}
-
-		public List<AccountID> getAccounts() {
-			return accounts;
-		}
-
-		public long[] getAmounts() {
-			return amounts;
-		}
-	}
-
 	public static class NftExchange {
 		private final long serialNo;
 		private final TokenID tokenType;
