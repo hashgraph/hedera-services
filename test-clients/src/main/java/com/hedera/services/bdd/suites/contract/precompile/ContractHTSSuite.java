@@ -123,14 +123,14 @@ public class ContractHTSSuite extends HapiApiSuite {
 								.payingWith(theAccount)
 								.gas(48_000)
 								.via("zeno"),
-						getTxnRecord("zeno").logged(),
+						getTxnRecord("zeno").andAllChildRecords().logged()
+				).then(
 						contractCall(theContract, ZENOS_BANK_WITHDRAW_TOKENS)
 								.payingWith(theReceiver)
 								.alsoSigningWithFullPrefix(theContract)
 								.gas(70_000)
 								.via("receiver"),
-						getTxnRecord("receiver").logged()
-				).then(
+						getTxnRecord("receiver").andAllChildRecords().logged()
 				);
 	}
 
