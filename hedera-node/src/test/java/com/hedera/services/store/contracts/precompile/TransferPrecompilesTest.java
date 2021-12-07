@@ -26,6 +26,7 @@ import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.TransferLogic;
@@ -137,6 +138,8 @@ class TransferPrecompilesTest {
 	private ImpliedTransfers impliedTransfers;
 	@Mock
 	private DissociationFactory dissociationFactory;
+	@Mock
+	private ImpliedTransfersMeta impliedTransfersMeta;
 
 	private HTSPrecompiledContract subject;
 
@@ -175,6 +178,8 @@ class TransferPrecompilesTest {
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects)).willReturn(mockRecordBuilder);
 		given(impliedTransfersMarshal.assessCustomFeesAndValidate(any(), anyInt(), any())).willReturn(impliedTransfers);
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(changes);
+		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
+		given(impliedTransfersMeta.code()).willReturn(ResponseCodeEnum.OK);
 
 		// when:
 		final var result = subject.computeTransferToken(pretendArguments, frame);
@@ -210,6 +215,8 @@ class TransferPrecompilesTest {
 		)).willReturn(transferLogic);
 		given(impliedTransfersMarshal.assessCustomFeesAndValidate(any(), anyInt(), any())).willReturn(impliedTransfers);
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(changes);
+		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
+		given(impliedTransfersMeta.code()).willReturn(ResponseCodeEnum.OK);
 
 		doThrow(new InvalidTransactionException(ResponseCodeEnum.FAIL_INVALID)).when(transferLogic).transfer(changes);
 
