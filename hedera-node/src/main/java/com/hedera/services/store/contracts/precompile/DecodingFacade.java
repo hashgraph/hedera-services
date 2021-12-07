@@ -77,8 +77,8 @@ public class DecodingFacade {
 
 		final List<SyntheticTxnFactory.NftExchange> nftExchanges = new ArrayList<>();
 		final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
-		for(final var tuple: decodedTuples) {
-			for(final var tupleNested: (Tuple[]) tuple) {
+		for (final var tuple : decodedTuples) {
+			for (final var tupleNested : (Tuple[]) tuple) {
 				final var tokenType = convertAddressBytesToTokenID((byte[]) tupleNested.get(0));
 
 				final var transfers = (Tuple[]) tupleNested.get(1);
@@ -90,7 +90,7 @@ public class DecodingFacade {
 				}
 
 				final var nftTransfersDecoded = (Tuple[]) tupleNested.get(2);
-				for(final var nftTransferDecoded: nftTransfersDecoded) {
+				for (final var nftTransferDecoded : nftTransfersDecoded) {
 					nftExchanges.add(new SyntheticTxnFactory.NftExchange((long) nftTransferDecoded.get(2),
 							tokenType, convertAddressBytesToAccountID((byte[]) nftTransferDecoded.get(0)),
 							convertAddressBytesToAccountID((byte[]) nftTransferDecoded.get(1))));
@@ -198,7 +198,7 @@ public class DecodingFacade {
 		final var serialNumbers = ((long[]) decodedArguments.get(3));
 
 		final List<SyntheticTxnFactory.NftExchange> nftExchanges = new ArrayList<>();
-		for(var i = 0; i < senders.size(); i++) {
+		for (var i = 0; i < senders.size(); i++) {
 			final var nftExchange = new SyntheticTxnFactory.NftExchange(
 					serialNumbers[i], tokenID,
 					senders.get(i), receivers.get(i));
@@ -253,12 +253,12 @@ public class DecodingFacade {
 		final var tokenIDs = decodeTokenIDsFromBytesArray((byte[][]) decodedArguments.get(1));
 
 		return SyntheticTxnFactory.Dissociation.multiDissociation(
-					accountID, tokenIDs);
+				accountID, tokenIDs);
 	}
 
 	private static List<AccountID> decodeAccountIDsFromBytesArray(final byte[][] accountBytesArray) {
 		final List<AccountID> accountIDs = new ArrayList<>();
-		for(final var account: accountBytesArray) {
+		for (final var account : accountBytesArray) {
 			accountIDs.add(convertAddressBytesToAccountID(account));
 		}
 		return accountIDs;
@@ -266,7 +266,7 @@ public class DecodingFacade {
 
 	private static List<TokenID> decodeTokenIDsFromBytesArray(final byte[][] accountBytesArray) {
 		final List<TokenID> accountIDs = new ArrayList<>();
-		for(final var account: accountBytesArray) {
+		for (final var account : accountBytesArray) {
 			accountIDs.add(convertAddressBytesToTokenID(account));
 		}
 		return accountIDs;

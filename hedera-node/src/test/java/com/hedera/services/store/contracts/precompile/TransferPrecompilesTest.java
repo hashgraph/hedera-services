@@ -167,47 +167,6 @@ class TransferPrecompilesTest {
 		givenFrameContext();
 		givenLedgers();
 
-		given(sigsVerifier.hasActiveKey(any(), any(), any())).willReturn(true);
-		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
-		given(syntheticTxnFactory.createCryptoTransfer(tokenTransferList.getNftExchanges(),
-				tokenTransferList.getFungibleTransfers())).willReturn(mockSynthBodyBuilder);
-
-		hederaTokenStore.setAccountsLedger(accounts);
-		given(hederaTokenStoreFactory.newHederaTokenStore(
-				ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
-		)).willReturn(hederaTokenStore);
-
-		given(transferLogicFactory.newLogic(
-				accounts, nfts, tokenRels, hederaTokenStore,
-				sideEffects,
-				NOOP_VIEWS_MANAGER,
-				dynamicProperties,
-				validator
-		)).willReturn(transferLogic);
-		given(decoder.decodeTransferToken(pretendArguments)).willReturn(tokenTransferList);
-		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects)).willReturn(mockRecordBuilder);
-		given(impliedTransfersMarshal.assessCustomFeesAndValidate(any(), anyInt(), any())).willReturn(impliedTransfers);
-		given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
-		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
-		given(impliedTransfersMeta.code()).willReturn(ResponseCodeEnum.OK);
-		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKEN);
-
-		// when:
-		final var result = subject.computeTransfer(pretendArguments, frame);
-
-		// then:
-		assertEquals(successResult, result);
-		// and:
-		verify(transferLogic).transfer(tokenTransferChanges);
-		verify(wrappedLedgers).commit();
-		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
-	}
-
-	@Test
-	void transferTokensHappyPathWorks() {
-		givenFrameContext();
-		givenLedgers();
-
 		given(syntheticTxnFactory.createCryptoTransfer(tokensTransferList.getNftExchanges(),
 				tokensTransferList.getFungibleTransfers())).willReturn(mockSynthBodyBuilder);
 		given(sigsVerifier.hasActiveKey(any(), any(), any())).willReturn(true);
@@ -443,7 +402,8 @@ class TransferPrecompilesTest {
 	private static final SyntheticTxnFactory.TokenTransferLists nftTransferList =
 			new SyntheticTxnFactory.TokenTransferLists(
 					List.of(new SyntheticTxnFactory.NftExchange(1, token, sender, receiver)),
-					new ArrayList<>() {}
+					new ArrayList<>() {
+					}
 			);
 	private static final SyntheticTxnFactory.TokenTransferLists nftsTransferList =
 			new SyntheticTxnFactory.TokenTransferLists(
@@ -451,7 +411,8 @@ class TransferPrecompilesTest {
 							new SyntheticTxnFactory.NftExchange(1, token, sender, receiver),
 							new SyntheticTxnFactory.NftExchange(2, token, sender, receiver)
 					),
-					new ArrayList<>() {}
+					new ArrayList<>() {
+					}
 			);
 	private static final Address contractAddr = Address.ALTBN128_MUL;
 	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
@@ -499,7 +460,7 @@ class TransferPrecompilesTest {
 					NftTransfer.newBuilder().setSenderAccountID(sender).setReceiverAccountID(receiver).setSerialNumber(1L).build()
 			)
 	);
-	
+
 	private static final List<BalanceChange> nftsTransferChanges = List.of(
 			BalanceChange.changingNftOwnership(
 					Id.fromGrpcToken(token),
