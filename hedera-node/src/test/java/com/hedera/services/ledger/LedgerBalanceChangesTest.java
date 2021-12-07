@@ -23,6 +23,9 @@ package com.hedera.services.ledger;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.calculation.UsagePricesProvider;
+import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.ledger.accounts.AutoAccountsManager;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.BackingTokenRels;
@@ -40,7 +43,6 @@ import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.TxnAwareRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -150,6 +152,12 @@ class LedgerBalanceChangesTest {
 	private TxnAwareRecordsHistorian recordsHistorian;
 	@Mock
 	private AutoAccountsManager autoAccounts;
+	@Mock
+	private HbarCentExchange exchange;
+	@Mock
+	private UsagePricesProvider usagePrices;
+	@Mock
+	private PricedUsageCalculator pricedUsageCalculator;
 
 	private HederaLedger subject;
 
@@ -189,7 +197,7 @@ class LedgerBalanceChangesTest {
 				backingTokens);
 
 		autoAccountCreator = new AutoAccountCreateLogic(syntheticTxnFactory, entityCreator, entityIdSource,
-				recordsHistorian, autoAccounts);
+				recordsHistorian, autoAccounts, exchange, usagePrices, pricedUsageCalculator);
 		transferLogic = new TransferLogic(accountsLedger, nftsLedger, tokenRelsLedger, tokenStore, sideEffectsTracker
 				, tokenViewsManager, dynamicProperties, validator, autoAccountCreator, autoAccounts);
 

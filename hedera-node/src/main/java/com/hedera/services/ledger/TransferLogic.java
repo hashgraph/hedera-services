@@ -20,7 +20,6 @@ package com.hedera.services.ledger;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
@@ -31,6 +30,7 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
@@ -62,6 +62,7 @@ public class TransferLogic {
 	private final MerkleAccountScopedCheck scopedCheck;
 	private final UniqTokenViewsManager tokenViewsManager;
 	private final AutoAccountCreateLogic autoAccountCreator;
+	private final GlobalDynamicProperties dynamicProperties;
 	private final AutoAccountsManager autoAccounts;
 
 	@Inject
@@ -83,19 +84,23 @@ public class TransferLogic {
 		this.tokenViewsManager = tokenViewsManager;
 		this.autoAccountCreator = autoAccountCreator;
 		this.autoAccounts = autoAccounts;
+		this.dynamicProperties = dynamicProperties;
 
 		scopedCheck = new MerkleAccountScopedCheck(dynamicProperties, validator);
 	}
 
 	public void transfer(final List<BalanceChange> changes) {
 		var validity = OK;
+		long autoAccountCreationFeeAccumulated = 0;
 		for (var change : changes) {
 			if (change.isForHbar()) {
 				/* if the change has only alias set, account number is not set, and the alias
 				is not present in the autoAccountsMap then add the alias to list for auto
 				creations */
 				if (change.hasUniqueAlias(autoAccounts)) {
-					validity = autoAccountCreator.createAutoAccount(change, accountsLedger);
+					var creationResult = autoAccountCreator.createAutoAccount(change, accountsLedger);
+					validity = creationResult.getLeft();
+					autoAccountCreationFeeAccumulated += creationResult.getRight();
 				} else {
 					validity = accountsLedger.validate(change.accountId(), scopedCheck.setBalanceChange(change));
 				}
@@ -106,6 +111,9 @@ public class TransferLogic {
 				break;
 			}
 		}
+
+		changes.add(BalanceChange.hbarAdjust(
+				Id.fromGrpcAccount(dynamicProperties.fundingAccount()), autoAccountCreationFeeAccumulated));
 
 		if (validity == OK) {
 			adjustHbarUnchecked(changes);

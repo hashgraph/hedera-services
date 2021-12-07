@@ -130,16 +130,16 @@ public class CryptoTransferSuite extends HapiApiSuite {
 		return defaultHapiSpec("VanillaTransferSucceeds")
 				.given(
 						UtilVerbs.inParallel(
-								cryptoCreate("payer").balance(initialBalance)
+								cryptoCreate("payer").balance(initialBalance * ONE_HBAR)
 						)
 				).when(
 						cryptoTransfer(
-								tinyBarsFromTo("payer", valid25519Alias, 100L)
+								tinyBarsFromTo("payer", valid25519Alias, ONE_HUNDRED_HBARS)
 						).via("transferTxn")
 				).then(
 						getTxnRecord("transferTxn").andAllChildRecords().logged(),
-						getAccountInfo("payer").has(accountWith().balance(initialBalance - 100L)),
-						getAccountInfo(valid25519Alias).has(accountWith().balance(100L))
+						getAccountInfo("payer").has(accountWith().balance((initialBalance * ONE_HBAR) - ONE_HUNDRED_HBARS)),
+						getAccountInfo(valid25519Alias).has(accountWith().balance(ONE_HUNDRED_HBARS))
 				);
 	}
 

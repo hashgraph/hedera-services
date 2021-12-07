@@ -1,6 +1,9 @@
 package com.hedera.services.ledger;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.calculation.UsagePricesProvider;
+import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.ledger.accounts.AutoAccountsManager;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
@@ -21,6 +24,7 @@ import com.hedera.test.factories.keys.KeyFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.fee.FeeObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,19 +47,27 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-class AutoAccountCreatorTest {
+class AutoAccountCreateLogicTest {
 	@Mock
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	@Mock
-	EntityCreator entityCreator;
+	private EntityCreator entityCreator;
 	@Mock
-	TxnAwareRecordsHistorian recordsHistorian;
+	private TxnAwareRecordsHistorian recordsHistorian;
 	@Mock
-	EntityIdSource entityIdSource;
+	private EntityIdSource entityIdSource;
 	@Mock
-	AutoAccountsManager autoAccounts;
+	private AutoAccountsManager autoAccounts;
+	@Mock
+	private HbarCentExchange exchange;
+	@Mock
+	private UsagePricesProvider usagePrices;
+	@Mock
+	private PricedUsageCalculator pricedUsageCalculator;
+	@Mock
+	private FeeObject fees;
 
-	AutoAccountCreateLogic subject;
+	private AutoAccountCreateLogic subject;
 
 	private final BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
 	SyntheticTxnFactory syntheticTxnFactory = new SyntheticTxnFactory();
@@ -69,15 +81,16 @@ class AutoAccountCreatorTest {
 	private final AccountID a = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(10L).build();
 	private final AccountID validAliasAccount = AccountID.newBuilder().setAlias(validAlias).build();
 	private final AccountID inValidAliasAccount = AccountID.newBuilder().setAlias(inValidAlias).build();
-	final MerkleAccount aAccount = MerkleAccountFactory.newAccount().balance(100).get();
-	private final BalanceChange validChange = hbarChange(validAliasAccount, +100);
-	private final BalanceChange inValidChange = hbarChange(inValidAliasAccount, +100);
+	final MerkleAccount aAccount = MerkleAccountFactory.newAccount().balance(1_000_000).get();
+	private final BalanceChange validChange = hbarChange(validAliasAccount, +100_000);
+	private final BalanceChange inValidChange = hbarChange(inValidAliasAccount, +100_000);
 
 	@BeforeEach
 	void setUp() {
 		MockitoAnnotations.initMocks(this);
 		backingAccounts.put(a, aAccount);
-		subject = new AutoAccountCreateLogic(syntheticTxnFactory, entityCreator, entityIdSource, recordsHistorian, autoAccounts);
+		subject = new AutoAccountCreateLogic(syntheticTxnFactory, entityCreator, entityIdSource, recordsHistorian,
+				autoAccounts, exchange, usagePrices, pricedUsageCalculator);
 	}
 
 	@Test
@@ -87,17 +100,25 @@ class AutoAccountCreatorTest {
 				.setReceipt(TxnReceipt.newBuilder().setStatus(OK.name()).build())
 				.setMemo("test")
 				.setConsensusTime(RichInstant.fromJava(Instant.now()));
+		final var nodeFee = 1_000L;
+		final var networkFee = 1_000L;
+		final var serviceFee = 10_000L;
 
 		given(autoAccounts.getAutoAccountsMap()).willReturn(new HashMap<>());
 		given(entityIdSource.newAccountId(any()))
 				.willReturn(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(99).build());
 		given(entityCreator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(expirableTxnRecordBuilder);
+		given(fees.getNetworkFee()).willReturn(networkFee);
+		given(fees.getNodeFee()).willReturn(nodeFee);
+		given(fees.getServiceFee()).willReturn(serviceFee);
+		given(pricedUsageCalculator.inHandleFees(any(), any(), any(), any())).willReturn(fees);
 
 		final var response = subject.createAutoAccount(validChange, accountsLedger);
 
 		final var expectedCreatedAccount = new EntityNum(99);
 
-		assertEquals(OK, response);
+		assertEquals(OK, response.getLeft());
+		assertEquals(nodeFee + networkFee + serviceFee, response.getRight());
 		assertEquals(expectedCreatedAccount, autoAccounts.getAutoAccountsMap().get(validAlias));
 		assertEquals(1, subject.getTempCreations().size());
 		assertEquals(expectedCreatedAccount.toGrpcAccountId(), subject.getTempCreations().get(validAlias));
@@ -107,7 +128,8 @@ class AutoAccountCreatorTest {
 	void invalidEncodedAlias() {
 		final var response = subject.createAutoAccount(inValidChange, accountsLedger);
 
-		assertEquals(BAD_ENCODING, response);
+		assertEquals(BAD_ENCODING, response.getLeft());
+		assertEquals(0, response.getRight());
 		assertEquals(null, autoAccounts.getAutoAccountsMap().get(validAlias));
 		assertEquals(0, autoAccounts.getAutoAccountsMap().size());
 		assertEquals(0, subject.getTempCreations().size());

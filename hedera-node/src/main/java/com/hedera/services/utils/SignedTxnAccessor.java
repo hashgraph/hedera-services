@@ -163,21 +163,25 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private void countAutoAccountCreations() {
 		if (getFunction() == CryptoTransfer) {
 			final var cryptoTransfer = getTxn().getCryptoTransfer();
+			AccountID accountId;
 			for ( var accountAmount : cryptoTransfer.getTransfers().getAccountAmountsList()) {
-				if (!accountAmount.getAccountID().getAlias().isEmpty()) {
+				accountId = accountAmount.getAccountID();
+				if (!accountId.getAlias().isEmpty() && accountId.getAccountNum() == 0) {
 					autoAccountCreationCount++;
 				}
 			}
 
 			for ( var tokenAmounts : cryptoTransfer.getTokenTransfersList()) {
 				for (var nftTransfer : tokenAmounts.getNftTransfersList()) {
-					if (!nftTransfer.getReceiverAccountID().getAlias().isEmpty()) {
+					accountId = nftTransfer.getReceiverAccountID();
+					if (!accountId.getAlias().isEmpty() && accountId.getAccountNum() == 0) {
 						autoAccountCreationCount++;
 					}
 				}
 
 				for (var fungibleTransfer : tokenAmounts.getTransfersList()) {
-					if (!fungibleTransfer.getAccountID().getAlias().isEmpty()) {
+					accountId = fungibleTransfer.getAccountID();
+					if (!accountId.getAlias().isEmpty() && accountId.getAccountNum() == 0) {
 						autoAccountCreationCount++;
 					}
 				}

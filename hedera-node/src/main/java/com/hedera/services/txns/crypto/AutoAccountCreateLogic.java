@@ -23,6 +23,9 @@ package com.hedera.services.txns.crypto;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.calculation.UsagePricesProvider;
+import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AutoAccountsManager;
@@ -34,13 +37,19 @@ import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.codec.DecoderException;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import java.util.HashMap;
@@ -55,11 +64,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * Responsible for creating accounts from cryptoTransfer, when hbar is transferred from an account to an alias.
  */
 public class AutoAccountCreateLogic {
+	private static final Logger log = LogManager.getLogger(AutoAccountCreateLogic.class);
+
 	private final AccountRecordsHistorian recordsHistorian;
 	private final EntityIdSource ids;
 	private final Supplier<SideEffectsTracker> sideEffectsFactory;
 	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final EntityCreator creator;
+	private final HbarCentExchange exchange;
+	private final UsagePricesProvider usagePrices;
+	private final PricedUsageCalculator pricedUsageCalculator;
 	private final Map<ByteString, AccountID> tempCreations = new HashMap<>();
 	private final AutoAccountsManager autoAccounts;
 
@@ -72,11 +86,17 @@ public class AutoAccountCreateLogic {
 			final EntityCreator creator,
 			final EntityIdSource ids,
 			final AccountRecordsHistorian recordsHistorian,
-			final AutoAccountsManager autoAccounts) {
+			final AutoAccountsManager autoAccounts,
+			final HbarCentExchange exchange,
+			final UsagePricesProvider usagePrices,
+			final PricedUsageCalculator pricedUsageCalculator) {
 		this.syntheticTxnFactory = syntheticTxnFactory;
 		this.creator = creator;
 		this.ids = ids;
 		this.recordsHistorian = recordsHistorian;
+		this.exchange = exchange;
+		this.usagePrices = usagePrices;
+		this.pricedUsageCalculator = pricedUsageCalculator;
 		sideEffectsFactory = SideEffectsTracker::new;
 		this.autoAccounts = autoAccounts;
 	}
@@ -90,20 +110,19 @@ public class AutoAccountCreateLogic {
 	 * 		accounts ledger
 	 * @return response code for the operation
 	 */
-	public ResponseCodeEnum createAutoAccount(BalanceChange changeWithOnlyAlias,
+	public Pair<ResponseCodeEnum, Long> createAutoAccount(BalanceChange changeWithOnlyAlias,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
 		final var sideEffects = sideEffectsFactory.get();
+		long feeForSyntheticCreateTxn;
 		try {
 			/* create a crypto create synthetic transaction */
 			var alias = changeWithOnlyAlias.alias();
 			Key key = Key.parseFrom(alias);
 			var syntheticCreateTxn = syntheticTxnFactory.cryptoCreate(key, 0L);
-
-			/* TODO calculate the cryptoCreate Fee and update the amount in the balanceChange accordingly and set the validity */
-			var feeForSyntheticCreateTxn = feeForAutoAccountCreateTxn(syntheticCreateTxn.getCryptoCreateAccount());
+			feeForSyntheticCreateTxn = feeForAutoAccountCreateTxn(syntheticCreateTxn);
 			// adjust fee and return if insufficient balance.
 			if (feeForSyntheticCreateTxn > changeWithOnlyAlias.units()) {
-				return changeWithOnlyAlias.codeForInsufficientBalance();
+				return Pair.of(changeWithOnlyAlias.codeForInsufficientBalance(), 0L);
 			} else {
 				changeWithOnlyAlias.adjustUnits(-feeForSyntheticCreateTxn);
 			}
@@ -133,9 +152,9 @@ public class AutoAccountCreateLogic {
 			tempCreations.put(alias, newAccountId);
 
 		} catch (InvalidProtocolBufferException | DecoderException ex) {
-			return BAD_ENCODING;
+			return Pair.of(BAD_ENCODING, 0L);
 		}
-		return OK;
+		return Pair.of(OK, feeForSyntheticCreateTxn);
 	}
 
 	/**
@@ -166,8 +185,25 @@ public class AutoAccountCreateLogic {
 		return tempCreations;
 	}
 
-	private long feeForAutoAccountCreateTxn(CryptoCreateTransactionBody cryptoCreateTxn) {
-		CryptoCreateMeta cryptoCreateMeta = new CryptoCreateMeta(cryptoCreateTxn);
+	private long feeForAutoAccountCreateTxn(TransactionBody.Builder cryptoCreateTxn) {
+		SignedTransaction signedTransaction = SignedTransaction.newBuilder()
+				.setBodyBytes(cryptoCreateTxn.build().toByteString())
+				.setSigMap(SignatureMap.getDefaultInstance())
+				.build();
+
+		Transaction txn = Transaction.newBuilder()
+				.setSignedTransactionBytes(signedTransaction.toByteString())
+				.build();
+
+		try {
+			SignedTxnAccessor accessor = new SignedTxnAccessor(txn);
+			final var applicablePrices = usagePrices.activePrices(accessor).get(accessor.getSubType());
+			final var rate = exchange.activeRate(recordsHistorian.getConsensusTimeFromTxnCtx());
+			var feeData = pricedUsageCalculator.inHandleFees(accessor, applicablePrices, rate, recordsHistorian.getActivePayerKeyFromTxnCtx());
+			return feeData.getServiceFee() + feeData.getNetworkFee() + feeData.getNodeFee();
+		} catch (InvalidProtocolBufferException ex) {
+			log.error("Error when parsing synthetic cryptoCreate transaction");
+		}
 		return 0;
 	}
 }

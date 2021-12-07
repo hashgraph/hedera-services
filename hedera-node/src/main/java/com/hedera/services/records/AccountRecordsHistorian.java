@@ -20,6 +20,7 @@ package com.hedera.services.records;
  * ‍
  */
 
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.RecordStreamObject;
@@ -146,4 +147,8 @@ public interface AccountRecordsHistorian {
 	 * @return the consensus time that will be used for the next following child record
 	 */
 	Instant nextFollowingChildConsensusTime();
+
+	JKey getActivePayerKeyFromTxnCtx();
+
+	Instant getConsensusTimeFromTxnCtx();
 }
