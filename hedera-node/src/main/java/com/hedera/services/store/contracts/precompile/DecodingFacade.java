@@ -69,7 +69,7 @@ public class DecodingFacade {
 	@Inject
 	public DecodingFacade() {
 	}
-	
+
 	public SyntheticTxnFactory.TokenTransferLists decodeCryptoTransfer(final Bytes input) {
 		final Tuple decodedTuples =
 				CRYPTO_TRANSFER_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,

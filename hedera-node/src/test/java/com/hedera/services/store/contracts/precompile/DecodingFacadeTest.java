@@ -9,8 +9,9 @@ import java.util.Collections;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class DecodingFacadeTest {
+class DecodingFacadeTest {
 	private final DecodingFacade subject = new DecodingFacade();
 
 	private static final Bytes CRYPTO_TRANSFER_INPUT = Bytes.fromHexString("0x189a554c00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004a4000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000004a1000000000000000000000000000000000000000000000000000000000000002b000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000004a100000000000000000000000000000000000000000000000000000000000004a10000000000000000000000000000000000000000000000000000000000000048");
@@ -42,14 +43,14 @@ public class DecodingFacadeTest {
 		assertEquals(1, hbarTransfers.size());
 		assertEquals(1, fungibleTransfers.size());
 		assertEquals(1, nftExchanges.size());
-		assertNotNull(fungibleTransfers.get(0).getDenomination().getTokenNum());
-		assertNotNull(fungibleTransfers.get(0).receiver.getAccountNum());
+		assertTrue(fungibleTransfers.get(0).getDenomination().getTokenNum() > 0);
+		assertTrue(fungibleTransfers.get(0).receiver.getAccountNum() > 0);
 		assertEquals(43, fungibleTransfers.get(0).receiverAdjustment().getAmount());
-		assertNotNull(hbarTransfers.get(0).receiver.getAccountNum());
+		assertTrue(hbarTransfers.get(0).receiver.getAccountNum() > 0);
 		assertEquals(43, hbarTransfers.get(0).receiverAdjustment().getAmount());
-		assertNotNull(nftExchanges.get(0).getTokenType().getTokenNum());
-		assertNotNull(nftExchanges.get(0).nftTransfer().getReceiverAccountID().getAccountNum());
-		assertNotNull(nftExchanges.get(0).nftTransfer().getSenderAccountID().getAccountNum());
+		assertTrue(nftExchanges.get(0).getTokenType().getTokenNum() > 0);
+		assertTrue(nftExchanges.get(0).nftTransfer().getReceiverAccountID().getAccountNum() > 0);
+		assertTrue(nftExchanges.get(0).nftTransfer().getSenderAccountID().getAccountNum() > 0);
 		assertEquals(72, nftExchanges.get(0).nftTransfer().getSerialNumber());
 	}
 
@@ -57,7 +58,7 @@ public class DecodingFacadeTest {
 	void decodeFungibleBurnInput() {
 		final var decodedInput = subject.decodeBurn(FUNGIBLE_BURN_INPUT);
 
-		assertNotNull(decodedInput.getTokenType().getTokenNum());
+		assertTrue(decodedInput.getTokenType().getTokenNum() > 0);
 		assertEquals(33, decodedInput.getAmount());
 		assertEquals(0, decodedInput.getSerialNos().size());
 	}
@@ -66,7 +67,7 @@ public class DecodingFacadeTest {
 	void decodeNonFungibleBurnInput() {
 		final var decodedInput = subject.decodeBurn(NON_FUNGIBLE_BURN_INPUT);
 
-		assertNotNull(decodedInput.getTokenType().getTokenNum());
+		assertTrue(decodedInput.getTokenType().getTokenNum() > 0);
 		assertEquals(-1, decodedInput.getAmount());
 		assertEquals(2, decodedInput.getSerialNos().size());
 		assertEquals(123, decodedInput.getSerialNos().get(0));
@@ -77,7 +78,7 @@ public class DecodingFacadeTest {
 	void decodeFungibleMintInput() {
 		final var decodedInput = subject.decodeMint(FUNGIBLE_MINT_INPUT);
 
-		assertNotNull(decodedInput.getTokenType().getTokenNum());
+		assertTrue(decodedInput.getTokenType().getTokenNum() > 0);
 		assertEquals(15l, decodedInput.getAmount());
 	}
 
@@ -87,7 +88,7 @@ public class DecodingFacadeTest {
 		final var metadata = "NFT metadata test";
 		final var metadataByteString = Collections.singletonList(ByteString.copyFrom(metadata.getBytes()));
 
-		assertNotNull(decodedInput.getTokenType().getTokenNum());
+		assertTrue(decodedInput.getTokenType().getTokenNum() > 0);
 		assertEquals(metadataByteString, decodedInput.getMetadata());
 	}
 
@@ -96,9 +97,9 @@ public class DecodingFacadeTest {
 		final var decodedInput = subject.decodeTransferToken(TRANSFER_TOKEN_INPUT);
 		final var fungibleTransfer = decodedInput.getFungibleTransfers().get(0);
 
-		assertNotNull(fungibleTransfer.sender.getAccountNum());
-		assertNotNull(fungibleTransfer.receiver.getAccountNum());
-		assertNotNull(fungibleTransfer.getDenomination().getTokenNum());
+		assertTrue(fungibleTransfer.sender.getAccountNum() > 0);
+		assertTrue(fungibleTransfer.receiver.getAccountNum() > 0);
+		assertTrue(fungibleTransfer.getDenomination().getTokenNum() > 0);
 		assertEquals(20, fungibleTransfer.amount);
 	}
 
@@ -108,12 +109,12 @@ public class DecodingFacadeTest {
 		final var fungibleTransfers = decodedInput.getFungibleTransfers();
 
 		assertEquals(2, fungibleTransfers.size());
-		assertNotNull(fungibleTransfers.get(0).getDenomination().getTokenNum());
-		assertNotNull(fungibleTransfers.get(1).getDenomination().getTokenNum());
+		assertTrue(fungibleTransfers.get(0).getDenomination().getTokenNum() > 0);
+		assertTrue(fungibleTransfers.get(1).getDenomination().getTokenNum() > 0);
 		assertNull(fungibleTransfers.get(0).sender);
 		assertNull(fungibleTransfers.get(1).sender);
-		assertNotNull(fungibleTransfers.get(0).receiver.getAccountNum());
-		assertNotNull(fungibleTransfers.get(1).receiver.getAccountNum());
+		assertTrue(fungibleTransfers.get(0).receiver.getAccountNum() > 0);
+		assertTrue(fungibleTransfers.get(1).receiver.getAccountNum() > 0);
 		assertEquals(10, fungibleTransfers.get(0).amount);
 		assertEquals(20, fungibleTransfers.get(1).amount);
 	}
@@ -123,9 +124,9 @@ public class DecodingFacadeTest {
 		final var decodedInput = subject.decodeTransferNFT(TRANSFER_NFT_INPUT);
 		final var nonFungibleTransfer = decodedInput.getNftExchanges().get(0);
 
-		assertNotNull(nonFungibleTransfer.nftTransfer().getSenderAccountID().getAccountNum());
-		assertNotNull(nonFungibleTransfer.nftTransfer().getReceiverAccountID().getAccountNum());
-		assertNotNull(nonFungibleTransfer.getTokenType().getTokenNum());
+		assertTrue(nonFungibleTransfer.nftTransfer().getSenderAccountID().getAccountNum() > 0);
+		assertTrue(nonFungibleTransfer.nftTransfer().getReceiverAccountID().getAccountNum() > 0);
+		assertTrue(nonFungibleTransfer.getTokenType().getTokenNum() > 0);
 		assertEquals(101, nonFungibleTransfer.nftTransfer().getSerialNumber());
 	}
 
@@ -135,12 +136,12 @@ public class DecodingFacadeTest {
 		final var nonFungibleTransfers = decodedInput.getNftExchanges();
 
 		assertEquals(2, nonFungibleTransfers.size());
-		assertNotNull(nonFungibleTransfers.get(0).nftTransfer().getSenderAccountID().getAccountNum());
-		assertNotNull(nonFungibleTransfers.get(1).nftTransfer().getSenderAccountID().getAccountNum());
-		assertNotNull(nonFungibleTransfers.get(0).nftTransfer().getReceiverAccountID().getAccountNum());
-		assertNotNull(nonFungibleTransfers.get(1).nftTransfer().getReceiverAccountID().getAccountNum());
-		assertNotNull(nonFungibleTransfers.get(0).getTokenType().getTokenNum());
-		assertNotNull(nonFungibleTransfers.get(1).getTokenType().getTokenNum());
+		assertTrue(nonFungibleTransfers.get(0).nftTransfer().getSenderAccountID().getAccountNum() > 0);
+		assertTrue(nonFungibleTransfers.get(1).nftTransfer().getSenderAccountID().getAccountNum() > 0);
+		assertTrue(nonFungibleTransfers.get(0).nftTransfer().getReceiverAccountID().getAccountNum() > 0 );
+		assertTrue(nonFungibleTransfers.get(1).nftTransfer().getReceiverAccountID().getAccountNum() > 0);
+		assertTrue(nonFungibleTransfers.get(0).getTokenType().getTokenNum() > 0);
+		assertTrue(nonFungibleTransfers.get(1).getTokenType().getTokenNum() > 0);
 		assertEquals(123, nonFungibleTransfers.get(0).nftTransfer().getSerialNumber());
 		assertEquals(234, nonFungibleTransfers.get(1).nftTransfer().getSerialNumber());
 	}
@@ -149,35 +150,35 @@ public class DecodingFacadeTest {
 	void decodeAssociateToken() {
 		final var decodedInput = subject.decodeAssociation(ASSOCIATE_INPUT);
 
-		assertNotNull(decodedInput.getAccountId().getAccountNum());
-		assertNotNull(decodedInput.getTokenIds().get(0).getTokenNum());
+		assertTrue(decodedInput.getAccountId().getAccountNum() > 0);
+		assertTrue(decodedInput.getTokenIds().get(0).getTokenNum() > 0);
 	}
 
 	@Test
 	void decodeMultipleAssociateToken() {
 		final var decodedInput = subject.decodeMultipleAssociations(MULTIPLE_ASSOCIATE_INPUT);
 
-		assertNotNull(decodedInput.getAccountId().getAccountNum());
+		assertTrue(decodedInput.getAccountId().getAccountNum() > 0);
 		assertEquals(2, decodedInput.getTokenIds().size());
-		assertNotNull(decodedInput.getTokenIds().get(0).getTokenNum());
-		assertNotNull(decodedInput.getTokenIds().get(1).getTokenNum());
+		assertTrue(decodedInput.getTokenIds().get(0).getTokenNum() > 0);
+		assertTrue(decodedInput.getTokenIds().get(1).getTokenNum() > 0);
 	}
 
 	@Test
 	void decodeDissociateToken() {
 		final var decodedInput = subject.decodeDissociate(DISSOCIATE_INPUT);
 
-		assertNotNull(decodedInput.getAccountId().getAccountNum());
-		assertNotNull(decodedInput.getTokenIds().get(0).getTokenNum());
+		assertTrue(decodedInput.getAccountId().getAccountNum() > 0);
+		assertTrue(decodedInput.getTokenIds().get(0).getTokenNum() > 0);
 	}
 
 	@Test
 	void decodeMultipleDissociateToken() {
 		final var decodedInput = subject.decodeMultipleDissociations(MULTIPLE_DISSOCIATE_INPUT);
 
-		assertNotNull(decodedInput.getAccountId().getAccountNum());
+		assertTrue(decodedInput.getAccountId().getAccountNum() > 0);
 		assertEquals(2, decodedInput.getTokenIds().size());
-		assertNotNull(decodedInput.getTokenIds().get(0).getTokenNum());
-		assertNotNull(decodedInput.getTokenIds().get(1).getTokenNum());
+		assertTrue(decodedInput.getTokenIds().get(0).getTokenNum() > 0);
+		assertTrue(decodedInput.getTokenIds().get(1).getTokenNum() > 0);
 	}
 }
