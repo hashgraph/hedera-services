@@ -36,7 +36,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -54,9 +53,7 @@ import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relat
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
@@ -76,7 +73,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordSystemPropert
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE;
@@ -100,12 +96,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ROYALTY_FRACTION_CANNOT_EXCEED_ONE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -113,7 +107,6 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenCreateSpecs.class);
 
 	private static String TOKEN_TREASURY = "treasury";
-	private static final long A_HUNDRED_SECONDS = 100;
 
 	private static final String A_TOKEN = "TokenA";
 	private static final String B_TOKEN = "TokenB";
@@ -152,7 +145,6 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						creationValidatesFreezeDefaultWithNoFreezeKey(),
 						creationSetsCorrectExpiry(),
 						creationHappyPath(),
-						numAccountsAllowedIsDynamic(),
 						worksAsExpectedWithDefaultTokenId(),
 						cannotCreateWithExcessiveLifetime(),
 						prechecksWork(),
@@ -492,7 +484,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.name(saltedName)
 								.treasury(TOKEN_TREASURY)
 								.autoRenewAccount("autoRenewAccount")
-								.autoRenewPeriod(A_HUNDRED_SECONDS)
+								.autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
 								.maxSupply(1000)
 								.initialSupply(500)
 								.decimals(1)
@@ -516,7 +508,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 							var createTxn = getTxnRecord("createTxn");
 							allRunFor(spec, createTxn);
 							var timestamp = createTxn.getResponseRecord().getConsensusTimestamp().getSeconds();
-							spec.registry().saveExpiry("primary", timestamp + A_HUNDRED_SECONDS);
+							spec.registry().saveExpiry("primary", timestamp + THREE_MONTHS_IN_SECONDS);
 						}),
 						getTokenInfo("primary")
 								.logged()
@@ -526,7 +518,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.hasEntityMemo(memo)
 								.hasName(saltedName)
 								.hasTreasury(TOKEN_TREASURY)
-								.hasAutoRenewPeriod(A_HUNDRED_SECONDS)
+								.hasAutoRenewPeriod(THREE_MONTHS_IN_SECONDS)
 								.hasValidExpiry()
 								.hasDecimals(1)
 								.hasAdminKey("primary")
@@ -573,7 +565,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 				).when(
 						tokenCreate("primary")
 								.autoRenewAccount("autoRenew")
-								.autoRenewPeriod(A_HUNDRED_SECONDS)
+								.autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
 								.treasury(TOKEN_TREASURY)
 								.via("createTxn")
 				).then(
@@ -581,7 +573,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 							var createTxn = getTxnRecord("createTxn");
 							allRunFor(spec, createTxn);
 							var timestamp = createTxn.getResponseRecord().getConsensusTimestamp().getSeconds();
-							spec.registry().saveExpiry("primary", timestamp + A_HUNDRED_SECONDS);
+							spec.registry().saveExpiry("primary", timestamp + THREE_MONTHS_IN_SECONDS);
 						}),
 						getTokenInfo("primary")
 								.logged()
@@ -669,10 +661,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						cryptoCreate(htsCollector),
 						cryptoCreate(hbarCollector),
 						cryptoCreate(tokenCollector),
-						tokenCreate(feeDenom).treasury(htsCollector),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(GENESIS)
-								.overridingProps(Map.of("tokens.maxCustomFeesAllowed", "1"))
+						tokenCreate(feeDenom).treasury(htsCollector)
 				).when(
 						tokenCreate(token)
 								.treasury(tokenCollector)
@@ -681,11 +670,6 @@ public class TokenCreateSpecs extends HapiApiSuite {
 										minimumToCollect, OptionalLong.of(maximumToCollect),
 										tokenCollector))
 								.hasKnownStatus(FRACTION_DIVIDES_BY_ZERO),
-						tokenCreate(token)
-								.treasury(tokenCollector)
-								.withCustom(fixedHbarFee(hbarAmount, hbarCollector))
-								.withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
-								.hasKnownStatus(CUSTOM_FEES_LIST_TOO_LONG),
 						tokenCreate(token)
 								.treasury(tokenCollector)
 								.withCustom(fixedHbarFee(hbarAmount, invalidEntityId))
@@ -803,9 +787,6 @@ public class TokenCreateSpecs extends HapiApiSuite {
 										1, 2,
 										fixedHtsFeeInheritingRoyaltyCollector(100, feeDenom),
 										htsCollector)),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(GENESIS)
-								.overridingProps(Map.of("tokens.maxCustomFeesAllowed", "10")),
 						tokenCreate(token)
 								.treasury(tokenCollector)
 								.withCustom(fixedHbarFee(hbarAmount, hbarCollector))
@@ -906,38 +887,6 @@ public class TokenCreateSpecs extends HapiApiSuite {
 				);
 	}
 
-	public HapiApiSpec numAccountsAllowedIsDynamic() {
-		final int MONOGAMOUS_NETWORK = 1;
-		final int ADVENTUROUS_NETWORK = 1_000;
-
-		return defaultHapiSpec("NumAccountsAllowedIsDynamic")
-				.given(
-						newKeyNamed("admin"),
-						cryptoCreate(TOKEN_TREASURY).balance(0L)
-				).when(
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("tokens.maxPerAccount", "" + MONOGAMOUS_NETWORK)),
-						tokenCreate("primary")
-								.adminKey("admin")
-								.treasury(TOKEN_TREASURY),
-						tokenCreate("secondaryFails")
-								.treasury(TOKEN_TREASURY)
-								.hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED),
-						tokenDelete("primary"),
-						/* Deleted tokens still count against your max allowed associations. */
-						tokenCreate("secondaryFailsAgain")
-								.treasury(TOKEN_TREASURY)
-								.hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)
-				).then(
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of(
-										"tokens.maxPerAccount", "" + ADVENTUROUS_NETWORK
-								)),
-						tokenCreate("secondary").treasury(TOKEN_TREASURY)
-				);
-	}
 
 	public HapiApiSpec creationValidatesSymbol() {
 		AtomicInteger maxUtf8Bytes = new AtomicInteger();
@@ -1077,18 +1026,6 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								moving(1, A_TOKEN)
 										.between(TOKEN_TREASURY, FIRST_USER)
 						).hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
-						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
-								"ledger.tokenTransfers.maxLen", "" + 2
-						)).payingWith(ADDRESS_BOOK_CONTROL),
-						cryptoTransfer(
-								moving(1, A_TOKEN)
-										.between(TOKEN_TREASURY, FIRST_USER),
-								moving(1, B_TOKEN)
-										.between(TOKEN_TREASURY, FIRST_USER)
-						).hasPrecheck(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED),
-						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
-								"ledger.tokenTransfers.maxLen", "" + 10
-						)).payingWith(ADDRESS_BOOK_CONTROL),
 						cryptoTransfer(
 								movingHbar(1)
 										.between(TOKEN_TREASURY, FIRST_USER),

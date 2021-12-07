@@ -23,8 +23,10 @@ package com.hedera.services.bdd.suites.file;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -33,20 +35,38 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.BYTES_4K;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
+import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
+import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
+import static com.hederahashgraph.api.proto.java.TokenKycStatus.KycNotApplicable;
+import static com.hederahashgraph.api.proto.java.TokenKycStatus.Revoked;
 
 /**
  * NOTE: 1. This test suite covers the test08UpdateFile() test scenarios from the legacy FileServiceIT test class after
@@ -65,6 +85,11 @@ public class FileUpdateSuite extends HapiApiSuite {
 
 	private static final long defaultMaxLifetime =
 			Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
+	private static final String defaultMaxCustomFees =
+			HapiSpecSetup.getDefaultNodeProps().get("tokens.maxCustomFeesAllowed");
+	private static final String defaultMaxTokenPerAccount =
+			HapiSpecSetup.getDefaultNodeProps().get("tokens.maxPerAccount");
+
 
 	public static void main(String... args) {
 		new FileUpdateSuite().runSuiteSync();
@@ -78,7 +103,113 @@ public class FileUpdateSuite extends HapiApiSuite {
 				apiPermissionsChangeDynamically(),
 				cannotUpdateExpirationPastMaxLifetime(),
 				optimisticSpecialFileUpdate(),
+				notTooManyFeeScheduleCanBeCreated(),
+				numAccountsAllowedIsDynamic(),
+				associateHasExpectedSemantics()
 		});
+	}
+
+
+	private HapiApiSpec associateHasExpectedSemantics() {
+		return defaultHapiSpec("AssociateHasExpectedSemantics")
+				.given(flattened(
+						TokenAssociationSpecs.basicKeysAndTokens()
+				)).when(
+						cryptoCreate("misc").balance(0L),
+						TxnVerbs.tokenAssociate("misc", TokenAssociationSpecs.FREEZABLE_TOKEN_ON_BY_DEFAULT),
+						TxnVerbs.tokenAssociate("misc", TokenAssociationSpecs.FREEZABLE_TOKEN_ON_BY_DEFAULT)
+								.hasKnownStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT),
+						tokenAssociate("misc", "1.2.3")
+								.hasKnownStatus(INVALID_TOKEN_ID),
+						tokenAssociate("misc", "1.2.3", "1.2.3")
+								.hasPrecheck(TOKEN_ID_REPEATED_IN_TOKEN_LIST),
+						tokenDissociate("misc", "1.2.3", "1.2.3")
+								.hasPrecheck(TOKEN_ID_REPEATED_IN_TOKEN_LIST),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of("tokens.maxPerAccount", "" + 1)),
+						TxnVerbs.tokenAssociate("misc", TokenAssociationSpecs.FREEZABLE_TOKEN_OFF_BY_DEFAULT)
+								.hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED),
+						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
+								"tokens.maxPerAccount", "" + 1000
+						)).payingWith(ADDRESS_BOOK_CONTROL),
+						TxnVerbs.tokenAssociate("misc", TokenAssociationSpecs.FREEZABLE_TOKEN_OFF_BY_DEFAULT),
+						tokenAssociate("misc", TokenAssociationSpecs.KNOWABLE_TOKEN, TokenAssociationSpecs.VANILLA_TOKEN)
+				).then(
+						getAccountInfo("misc")
+								.hasToken(
+										relationshipWith(TokenAssociationSpecs.FREEZABLE_TOKEN_ON_BY_DEFAULT)
+												.kyc(KycNotApplicable)
+												.freeze(Frozen))
+								.hasToken(
+										relationshipWith(TokenAssociationSpecs.FREEZABLE_TOKEN_OFF_BY_DEFAULT)
+												.kyc(KycNotApplicable)
+												.freeze(Unfrozen))
+								.hasToken(
+										relationshipWith(TokenAssociationSpecs.KNOWABLE_TOKEN)
+												.kyc(Revoked)
+												.freeze(FreezeNotApplicable))
+								.hasToken(
+										relationshipWith(TokenAssociationSpecs.VANILLA_TOKEN)
+												.kyc(KycNotApplicable)
+												.freeze(FreezeNotApplicable))
+								.logged()
+				);
+	}
+
+
+	public HapiApiSpec numAccountsAllowedIsDynamic() {
+		final int MONOGAMOUS_NETWORK = 1;
+
+		return defaultHapiSpec("NumAccountsAllowedIsDynamic")
+				.given(
+						newKeyNamed("admin"),
+						cryptoCreate(TOKEN_TREASURY).balance(0L)
+				).when(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of("tokens.maxPerAccount", "" + MONOGAMOUS_NETWORK)),
+						tokenCreate("primary")
+								.adminKey("admin")
+								.treasury(TOKEN_TREASURY),
+						tokenCreate("secondaryFails")
+								.treasury(TOKEN_TREASURY)
+								.hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED),
+						tokenDelete("primary"),
+						/* Deleted tokens still count against your max allowed associations. */
+						tokenCreate("secondaryFailsAgain")
+								.treasury(TOKEN_TREASURY)
+								.hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)
+				).then(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
+										"tokens.maxPerAccount", defaultMaxTokenPerAccount
+								)),
+						tokenCreate("secondary").treasury(TOKEN_TREASURY)
+				);
+	}
+
+	public HapiApiSpec notTooManyFeeScheduleCanBeCreated() {
+		final var denom = "fungible";
+		final var token = "token";
+		return defaultHapiSpec("OnlyValidCustomFeeScheduleCanBeCreated")
+				.given(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(GENESIS)
+								.overridingProps(Map.of("tokens.maxCustomFeesAllowed", "1"))
+				).when(
+						tokenCreate(denom),
+						tokenCreate(token)
+								.treasury(DEFAULT_PAYER)
+								.withCustom(fixedHbarFee(1, DEFAULT_PAYER))
+								.withCustom(fixedHtsFee(1, denom, DEFAULT_PAYER))
+								.hasKnownStatus(CUSTOM_FEES_LIST_TOO_LONG)
+				).then(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(GENESIS)
+								.overridingProps(Map.of("tokens.maxCustomFeesAllowed", defaultMaxCustomFees))
+				);
 	}
 
 	private HapiApiSpec optimisticSpecialFileUpdate() {
