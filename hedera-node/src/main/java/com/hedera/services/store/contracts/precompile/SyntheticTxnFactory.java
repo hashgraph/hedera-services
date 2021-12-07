@@ -33,7 +33,6 @@ import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransferList;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -77,17 +76,9 @@ public class SyntheticTxnFactory {
 
 	public TransactionBody.Builder createCryptoTransfer(
 			final List<NftExchange> nftExchanges,
-			final List<HbarTransfer> hbarTransfers,
 			final List<FungibleTokenTransfer> fungibleTransfers
 	) {
 		final var builder = CryptoTransferTransactionBody.newBuilder();
-
-		final var hbarBuilder = TransferList.newBuilder();
-		for (final var hbarTransfer : hbarTransfers) {
-			hbarBuilder.addAccountAmounts(hbarTransfer.senderAdjustment());
-			hbarBuilder.addAccountAmounts(hbarTransfer.receiverAdjustment());
-		}
-		builder.setTransfers(hbarBuilder);
 
 		for (final var nftExchange : nftExchanges) {
 			builder.addTokenTransfers(TokenTransferList.newBuilder()
@@ -306,22 +297,16 @@ public class SyntheticTxnFactory {
 
 	public static class TokenTransferLists {
 		private final List<NftExchange> nftExchanges;
-		private final List<HbarTransfer> hbarTransfers;
 		private final List<FungibleTokenTransfer> fungibleTransfers;
 
-		public TokenTransferLists(final List<NftExchange> nftExchanges, final List<HbarTransfer> hbarTransfers,
+		public TokenTransferLists(final List<NftExchange> nftExchanges,
 								  final List<FungibleTokenTransfer> fungibleTransfers) {
 			this.nftExchanges = nftExchanges;
-			this.hbarTransfers = hbarTransfers;
 			this.fungibleTransfers = fungibleTransfers;
 		}
 
 		public List<NftExchange> getNftExchanges() {
 			return nftExchanges;
-		}
-
-		public List<HbarTransfer> getHbarTransfers() {
-			return hbarTransfers;
 		}
 
 		public List<FungibleTokenTransfer> getFungibleTransfers() {

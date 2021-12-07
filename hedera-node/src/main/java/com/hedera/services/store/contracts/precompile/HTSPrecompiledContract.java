@@ -279,14 +279,19 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		final var updater = (AbstractLedgerWorldUpdater) frame.getWorldUpdater();
 		final var ledgers = updater.wrappedTrackingLedgers();
 
-		final var synthBody = precompile.body(input);
+		TransactionBody.Builder synthBody = TransactionBody.newBuilder();
 		Bytes result = SUCCESS_RESULT;
 		ExpirableTxnRecord.Builder childRecord;
 		try {
+			synthBody = precompile.body(input);
 			childRecord = precompile.run(recipient, contract, ledgers);
 			ledgers.commit();
 		} catch (InvalidTransactionException e) {
 			final var status = e.getResponseCode();
+			childRecord = creator.createUnsuccessfulSyntheticRecord(status);
+			result = resultFrom(status);
+		} catch (Exception e) {
+			final var status = ResponseCodeEnum.FAIL_INVALID;
 			childRecord = creator.createUnsuccessfulSyntheticRecord(status);
 			result = resultFrom(status);
 		}
