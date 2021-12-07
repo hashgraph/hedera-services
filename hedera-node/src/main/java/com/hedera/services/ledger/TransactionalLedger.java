@@ -118,14 +118,14 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		}
 	}
 
-	public void undoCreations() {
+	void undoCreations() {
 		if (!isInTransaction) {
 			throw new IllegalStateException("Cannot undo created keys, no transaction is active");
 		}
 		createdKeys.clear();
 	}
 
-	public void rollback() {
+	void rollback() {
 		if (!isInTransaction) {
 			throw new IllegalStateException("Cannot perform rollback, no transaction is active!");
 		}
@@ -139,7 +139,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		isInTransaction = false;
 	}
 
-	public void commit() {
+	void commit() {
 		if (!isInTransaction) {
 			throw new IllegalStateException("Cannot perform commit, no transaction is active!");
 		}

@@ -22,6 +22,7 @@ package com.hedera.services.ledger;
 
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.ledger.accounts.AutoAccountsManager;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -40,6 +41,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.txns.crypto.AutoAccountCreateLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -50,6 +52,9 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
 import java.util.Map;
@@ -72,7 +77,13 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 public class BaseHederaLedgerTestHelper {
+	@Mock
+	private AutoAccountsManager autoAccounts;
+	@Mock
+	private AutoAccountCreateLogic autoAccountCreator;
+
 	protected OptionValidator validator = TEST_VALIDATOR;
 	protected MockGlobalDynamicProps dynamicProps = new MockGlobalDynamicProps();
 
@@ -237,7 +248,7 @@ public class BaseHederaLedgerTestHelper {
 		sideEffectsTracker = mock(SideEffectsTracker.class);
 
 		subject = new HederaLedger(
-				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProps, accountsLedger);
+				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProps, accountsLedger, autoAccountCreator, autoAccounts);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setNftsLedger(nftsLedger);
 	}

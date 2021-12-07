@@ -57,7 +57,7 @@ public enum NoopExpiringCreations implements EntityCreator {
 
 	@Override
 	public ExpirableTxnRecord.Builder createSuccessfulSyntheticRecord(List<FcAssessedCustomFee> assessedCustomFees,
-			SideEffectsTracker sideEffectsTracker) {
+			SideEffectsTracker sideEffectsTracker, final String memo) {
 		throw new UnsupportedOperationException();
 	}
 

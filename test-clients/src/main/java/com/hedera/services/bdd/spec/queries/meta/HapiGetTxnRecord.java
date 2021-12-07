@@ -522,7 +522,6 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		Query query = getRecordQuery(spec, payment, false);
 		response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getTxRecordByTxID(query);
 		final TransactionRecord record = response.getTransactionGetRecord().getTransactionRecord();
-		observer.ifPresent(obs -> obs.accept(record));
 		childRecords = response.getTransactionGetRecord().getChildTransactionRecordsList();
 		for (var rec : childRecords){
 			spec.registry().saveAccountId(rec.getAlias().toStringUtf8(), rec.getReceipt().getAccountID());

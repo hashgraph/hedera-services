@@ -112,7 +112,7 @@ public class StateView {
 			false, false, MISSING_ENTITY_ID);
 	public static final StateView EMPTY_VIEW = new StateView(
 					null, null, null,
-					EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+					null, EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 
 	private final TokenStore tokenStore;
 	private final ScheduleStore scheduleStore;

@@ -23,6 +23,7 @@ package com.hedera.services.ledger;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.InconsistentAdjustmentsException;
+import com.hedera.services.ledger.accounts.AutoAccountsManager;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.HashMapBackingAccounts;
 import com.hedera.services.ledger.accounts.HashMapBackingNfts;
@@ -38,6 +39,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.txns.crypto.AutoAccountCreateLogic;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.mocks.TestContextValidator;
@@ -48,6 +50,9 @@ import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -55,8 +60,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.verify;
 
+@ExtendWith(MockitoExtension.class)
 class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 	private static final long thisSecond = 1_234_567L;
+
+	@Mock
+	private AutoAccountsManager autoAccounts;
+	@Mock
+	private AutoAccountCreateLogic autoAccountCreator;
 
 	@BeforeEach
 	void setup() {
@@ -99,7 +110,7 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 				tokenRelsLedger,
 				nftsLedger);
 		subject = new HederaLedger(
-				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProps, accountsLedger);
+				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProps, accountsLedger, autoAccountCreator, autoAccounts);
 	}
 
 	@Test

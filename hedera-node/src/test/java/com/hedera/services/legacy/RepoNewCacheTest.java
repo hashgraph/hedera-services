@@ -25,6 +25,7 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.AutoAccountsManager;
 import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -36,6 +37,7 @@ import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.txns.crypto.AutoAccountCreateLogic;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.mocks.StorageSourceFactory;
@@ -52,6 +54,7 @@ import org.ethereum.db.ServicesRepositoryImpl;
 import org.ethereum.db.ServicesRepositoryRoot;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 import java.math.BigInteger;
 
@@ -59,6 +62,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.mock;
 
 class RepoNewCacheTest {
+	@Mock
+	private AutoAccountsManager autoAccounts;
+	@Mock
+	private AutoAccountCreateLogic autoAccountCreator;
+
 	@Disabled
 	public void test() {
 		MerkleMap<EntityNum, MerkleAccount> accountMap = new MerkleMap<>();
@@ -78,7 +86,9 @@ class RepoNewCacheTest {
 				new SideEffectsTracker(),
 				mock(AccountRecordsHistorian.class),
 				new MockGlobalDynamicProps(),
-				delegate);
+				delegate,
+				autoAccountCreator,
+				autoAccounts);
 		Source<byte[], AccountState> repDatabase = new LedgerAccountsSource(ledger);
 		ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);
 		String key = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, 1));
@@ -175,7 +185,9 @@ class RepoNewCacheTest {
 				new SideEffectsTracker(),
 				mock(AccountRecordsHistorian.class),
 				new MockGlobalDynamicProps(),
-				delegate);
+				delegate,
+				autoAccountCreator,
+				autoAccounts);
 		Source<byte[], AccountState> accountSource = new LedgerAccountsSource(ledger);
 		ServicesRepositoryRoot repository = new ServicesRepositoryRoot(accountSource, repDBFile);
 

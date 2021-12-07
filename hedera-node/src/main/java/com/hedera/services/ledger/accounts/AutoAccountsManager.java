@@ -30,6 +30,8 @@ import javax.inject.Singleton;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.hedera.services.utils.EntityNum.MISSING_NUM;
+
 /**
  * Handles a map with all the accounts that are auto-created. The map will be re-built on restart, reconnect.
  * Entries from the map are removed when the entity expires

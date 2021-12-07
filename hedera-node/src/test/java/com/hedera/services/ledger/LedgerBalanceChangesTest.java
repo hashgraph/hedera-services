@@ -27,12 +27,6 @@ import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.ledger.accounts.AutoAccountsManager;
-import com.hedera.services.ledger.backing.BackingStore;
-import com.hedera.services.ledger.backing.BackingTokenRels;
-import com.hedera.services.ledger.backing.HashMapBackingAccounts;
-import com.hedera.services.ledger.backing.HashMapBackingNfts;
-import com.hedera.services.ledger.backing.HashMapBackingTokenRels;
-import com.hedera.services.ledger.backing.HashMapBackingTokens;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.HashMapBackingAccounts;
@@ -56,7 +50,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
-import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -132,7 +125,6 @@ class LedgerBalanceChangesTest {
 			TokenRelProperty,
 			MerkleTokenRelStatus> tokenRelsLedger;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
-	private TransferLogic transferLogic;
 
 	@Mock
 	private EntityIdSource ids;
@@ -146,8 +138,6 @@ class LedgerBalanceChangesTest {
 	private AccountRecordsHistorian historian;
 	@Mock
 	private UniqTokenViewsManager tokenViewsManager;
-	@Mock
-	private MutableEntityAccess mutableEntityAccess;
 	@Mock
 	private AutoAccountCreateLogic autoAccountCreator;
 	@Mock
@@ -202,13 +192,11 @@ class LedgerBalanceChangesTest {
 				tokenRelsLedger,
 				nftsLedger);
 
-		transferLogic = new TransferLogic(accountsLedger, nftsLedger, tokenRelsLedger, tokenStore, sideEffectsTracker
-				, tokenViewsManager, dynamicProperties, validator, autoAccountCreator, autoAccounts);
-
 		tokenStore.rebuildViews();
 
 		subject = new HederaLedger(
-				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProperties, accountsLedger);
+				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProperties, accountsLedger,
+				autoAccountCreator, autoAccounts);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setTokenViewsManager(tokenViewsManager);
 	}
@@ -310,11 +298,9 @@ class LedgerBalanceChangesTest {
 				tokenRelsLedger,
 				nftsLedger);
 
-		transferLogic = new TransferLogic(accountsLedger, nftsLedger, tokenRelsLedger, tokenStore, sideEffectsTracker
-				, viewManager, dynamicProperties, validator, autoAccountCreator, autoAccounts);
 		subject = new HederaLedger(
 				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProperties, accountsLedger
-				, transferLogic);
+				, autoAccountCreator, autoAccounts);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setTokenViewsManager(viewManager);
 		tokenStore.rebuildViews();

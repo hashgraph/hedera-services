@@ -27,6 +27,7 @@ import com.hedera.services.exceptions.DetachedAccountException;
 import com.hedera.services.exceptions.InconsistentAdjustmentsException;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.accounts.AutoAccountsManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -40,9 +41,11 @@ import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.txns.crypto.AutoAccountCreateLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -133,6 +136,8 @@ public class HederaLedger {
 			MerkleTokenRelStatus> tokenRelsLedger = null;
 
 	private final MerkleAccountScopedCheck scopedCheck;
+	private final AutoAccountsManager autoAccounts;
+	private final AutoAccountCreateLogic autoAccountCreator;
 
 	public HederaLedger(
 			final TokenStore tokenStore,
@@ -142,7 +147,10 @@ public class HederaLedger {
 			final SideEffectsTracker sideEffectsTracker,
 			final AccountRecordsHistorian historian,
 			final GlobalDynamicProperties dynamicProperties,
-			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger
+			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
+			final AutoAccountCreateLogic autoAccountCreator,
+			final AutoAccountsManager autoAccounts
+
 	) {
 		this.ids = ids;
 		this.validator = validator;
@@ -151,6 +159,8 @@ public class HederaLedger {
 		this.accountsLedger = accountsLedger;
 		this.dynamicProperties = dynamicProperties;
 		this.sideEffectsTracker = sideEffectsTracker;
+		this.autoAccountCreator = autoAccountCreator;
+		this.autoAccounts = autoAccounts;
 
 		creator.setLedger(this);
 		historian.setCreator(creator);
@@ -356,21 +366,39 @@ public class HederaLedger {
 
 	public void doZeroSum(List<BalanceChange> changes) {
 		var validity = OK;
+		long autoAccountCreationFeeAccumulated = 0;
 		for (var change : changes) {
 			if (change.isForHbar()) {
-				validity = accountsLedger.validate(change.accountId(), scopedCheck.setBalanceChange(change));
-			} else {
-				validity = tokenStore.tryTokenChange(change);
+				if (change.isForHbar()) {
+				/* if the change has only alias set, account number is not set, and the alias
+				is not present in the autoAccountsMap then add the alias to list for auto
+				creations */
+					if (change.hasUniqueAlias(autoAccounts)) {
+						var creationResult = autoAccountCreator.createAutoAccount(change, accountsLedger);
+						validity = creationResult.getLeft();
+						autoAccountCreationFeeAccumulated += creationResult.getRight();
+					} else {
+						validity = accountsLedger.validate(change.accountId(), scopedCheck.setBalanceChange(change));
+					}
+				} else {
+					validity = tokenStore.tryTokenChange(change);
+				}
+				if (validity != OK) {
+					break;
+				}
 			}
-			if (validity != OK) {
-				break;
-			}
+		}
+
+		if (autoAccountCreationFeeAccumulated != 0) {
+			changes.add(BalanceChange.hbarAdjust(
+					Id.fromGrpcAccount(dynamicProperties.fundingAccount()), autoAccountCreationFeeAccumulated));
 		}
 
 		if (validity == OK) {
 			adjustHbarUnchecked(changes);
 		} else {
 			dropPendingTokenChanges();
+			dropPendingAutoCreations();
 			throw new InvalidTransactionException(validity);
 		}
 	}
@@ -521,7 +549,12 @@ public class HederaLedger {
 	private void adjustHbarUnchecked(List<BalanceChange> changes) {
 		for (var change : changes) {
 			if (change.isForHbar()) {
-				final var accountId = change.accountId();
+				final AccountID accountId;
+				if (change.accountId().getAccountNum() == 0 && !change.alias().isEmpty()) {
+					accountId = autoAccounts.getAutoAccountsMap().get(change.alias()).toGrpcAccountId();
+				} else {
+					accountId = change.accountId();
+				}
 				setBalance(accountId, change.getNewBalance());
 				sideEffectsTracker.trackHbarChange(accountId, change.units());
 			}
@@ -536,5 +569,11 @@ public class HederaLedger {
 
 	List<TokenTransferList> netTokenTransfersInTxn() {
 		return sideEffectsTracker.getNetTrackedTokenUnitAndOwnershipChanges();
+	}
+
+	private void dropPendingAutoCreations() {
+		accountsLedger.undoCreations();
+		autoAccountCreator.clearTempCreations();
+		sideEffectsTracker.resetTrackedAutoCreatedAccount();
 	}
 }

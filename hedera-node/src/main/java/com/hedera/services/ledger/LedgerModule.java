@@ -22,6 +22,7 @@ package com.hedera.services.ledger;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.accounts.AutoAccountsManager;
 import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -33,6 +34,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.txns.crypto.AutoAccountCreateLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import dagger.Binds;
@@ -59,7 +61,9 @@ public abstract class LedgerModule {
 			final UniqTokenViewsManager uniqTokenViewsManager,
 			final AccountRecordsHistorian recordsHistorian,
 			final GlobalDynamicProperties dynamicProperties,
-			final BackingStore<AccountID, MerkleAccount> backingAccounts
+			final BackingStore<AccountID, MerkleAccount> backingAccounts,
+			final AutoAccountCreateLogic autoAccountCreator,
+			final AutoAccountsManager autoAccounts
 	) {
 		TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger =
 				new TransactionalLedger<>(
@@ -75,7 +79,9 @@ public abstract class LedgerModule {
 				sideEffectsTracker,
 				recordsHistorian,
 				dynamicProperties,
-				accountsLedger);
+				accountsLedger,
+				autoAccountCreator,
+				autoAccounts);
 		ledger.setTokenViewsManager(uniqTokenViewsManager);
 		scheduleStore.setAccountsLedger(accountsLedger);
 		scheduleStore.setHederaLedger(ledger);

@@ -33,6 +33,7 @@ import com.hedera.services.contracts.sources.LedgerAccountsSource;
 import com.hedera.services.keys.StandardSyncActivationCheck;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.AutoAccountsManager;
 import com.hedera.services.ledger.accounts.PureBackingAccounts;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
@@ -51,6 +52,7 @@ import com.hedera.services.contracts.operation.HederaExtCodeSizeOperation;
 import com.hedera.services.contracts.operation.HederaSStoreOperation;
 import com.hedera.services.contracts.operation.HederaSelfDestructOperation;
 import com.hedera.services.contracts.operation.HederaStaticCallOperation;
+import com.hedera.services.txns.crypto.AutoAccountCreateLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -126,7 +128,10 @@ public abstract class ContractsModule {
 			StoragePersistence storagePersistence,
 			Source<byte[], byte[]> bytecodeSource,
 			GlobalDynamicProperties dynamicProperties,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final AutoAccountCreateLogic autoAccountCreator,
+			final AutoAccountsManager autoAccounts
+
 	) {
 		final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> pureDelegate = new TransactionalLedger<>(
 				AccountProperty.class,
@@ -141,7 +146,9 @@ public abstract class ContractsModule {
 				new SideEffectsTracker(),
 				NOOP_RECORDS_HISTORIAN,
 				dynamicProperties,
-				pureDelegate);
+				pureDelegate,
+				autoAccountCreator,
+				autoAccounts);
 		final var pureAccountSource = new LedgerAccountsSource(pureLedger);
 		return () -> {
 			var pureRepository = new ServicesRepositoryRoot(pureAccountSource, bytecodeSource);

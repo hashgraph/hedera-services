@@ -26,7 +26,6 @@ import com.hedera.services.context.init.ServicesInitFlow;
 import com.hedera.services.sigs.ExpansionHelper;
 import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
-import com.hedera.services.ledger.accounts.AutoAccountsManager;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.forensics.HashLogger;
@@ -59,7 +58,6 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
-import com.hedera.test.utils.TestFileUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
@@ -90,12 +88,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0160_VERSION;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
-import static com.hedera.services.utils.MiscUtils.constructAccountAliasRels;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -168,17 +166,15 @@ class ServicesStateTest {
 	@Mock
 	private ServicesState.FcmMigrator fcmMigrator;
 	@Mock
-	private Consumer<Boolean> blobMigrationFlag;
-	private ServicesState.BinaryObjectStoreMigrator blobMigrator;
-	@Mock
-	private PrefetchProcessor prefetchProcessor;
-	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
+	@Mock
+	private Consumer<Boolean> blobMigrationFlag;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
 	@LoggingSubject
 	private ServicesState subject = new ServicesState();
+
 
 	@AfterEach
 	void cleanup() {
@@ -376,7 +372,7 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void minimumVersionIsRelease0130() {
+	void minimumVersionIsRelease0180() {
 		// expect:
 		assertEquals(StateVersions.RELEASE_0180_VERSION, subject.getMinimumSupportedVersion());
 	}
@@ -449,8 +445,11 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void migratesWhenInitializingFromRelease0190() {
-		ServicesState.setBlobMigrator(blobMigrator);
+	@SuppressWarnings("unchecked")
+	void migratesWhenInitializingFromRelease0180() {
+		ServicesState.setFcmMigrator(fcmMigrator);
+		ServicesState.setBlobMigrationFlag(blobMigrationFlag);
+		final MerkleMap<?, ?> pretend = new MerkleMap<>();
 
 		subject = mock(ServicesState.class);
 		given(subject.uniqueTokens()).willReturn((MerkleMap<EntityNumPair, MerkleUniqueToken>) pretend);
@@ -638,6 +637,95 @@ class ServicesStateTest {
 	}
 
 	@Test
+	void migratesFromRelease0160AsExpected() throws ConstructableRegistryException {
+		// setup:
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
+		// and:
+		final var addressBook = new AddressBook();
+		final var networkContext = new MerkleNetworkContext();
+		networkContext.setSeqNo(new SequenceNumber(1234L));
+		networkContext.setMidnightRates(new ExchangeRates(1, 2, 3, 4, 5, 6));
+		final MerkleMap<EntityNumPair, MerkleUniqueToken> nfts = new MerkleMap<>();
+		final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels = new MerkleMap<>();
+		final var nftKey = EntityNumPair.fromLongs(MISSING_ENTITY_ID.num(), 1L);
+		final var nftVal = new MerkleUniqueToken(MISSING_ENTITY_ID, "TBD".getBytes(), MISSING_INSTANT);
+		final var tokenRelsKey = EntityNumPair.fromLongs(2, 3);
+		final var tokenRelsVal = new MerkleTokenRelStatus(1_234L, true, false, true);
+		// and:
+		nfts.put(nftKey, nftVal);
+		tokenRels.put(tokenRelsKey, tokenRelsVal);
+		// and:
+		final List<MerkleNode> legacyChildren = legacyChildrenWith(addressBook, networkContext, nfts, tokenRels, true);
+
+		// given:
+		subject.addDeserializedChildren(legacyChildren, RELEASE_0160_VERSION);
+
+		// when:
+		subject.initialize();
+
+		// then:
+		assertEquals(addressBook, subject.getChild(StateChildIndices.ADDRESS_BOOK));
+		assertEquals(addressBook, subject.addressBook());
+		assertEquals(
+				networkContext.midnightRates(),
+				((MerkleNetworkContext) subject.getChild(StateChildIndices.NETWORK_CTX)).midnightRates());
+		assertEquals(networkContext.midnightRates(), subject.networkCtx().midnightRates());
+		assertEquals(
+				nftVal,
+				((MerkleMap<EntityNumPair, MerkleUniqueToken>) subject.getChild(StateChildIndices.UNIQUE_TOKENS))
+						.get(nftKey));
+		assertEquals(nftVal, subject.uniqueTokens().get(nftKey));
+		assertEquals(
+				tokenRelsVal,
+				((MerkleMap<EntityNumPair, MerkleTokenRelStatus>) subject.getChild(
+						StateChildIndices.TOKEN_ASSOCIATIONS))
+						.get(tokenRelsKey));
+		assertEquals(tokenRelsVal, subject.tokenAssociations().get(tokenRelsKey));
+	}
+
+	@Test
+	void migratesFromPreRelease0160AsExpected() throws ConstructableRegistryException {
+		// and:
+		final var addressBook = new AddressBook();
+		final var networkContext = new MerkleNetworkContext();
+		networkContext.setSeqNo(new SequenceNumber(1234L));
+		networkContext.setMidnightRates(new ExchangeRates(1, 2, 3, 4, 5, 6));
+		final MerkleMap<EntityNumPair, MerkleUniqueToken> nfts = new MerkleMap<>();
+		final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels = new MerkleMap<>();
+		final var tokenRelsKey = EntityNumPair.fromLongs(2, 3);
+		final var tokenRelsVal = new MerkleTokenRelStatus(1_234L, true, false, true);
+		// and:
+		tokenRels.put(tokenRelsKey, tokenRelsVal);
+		// and:
+		final List<MerkleNode> legacyChildren = legacyChildrenWith(addressBook, networkContext, nfts, tokenRels, false);
+
+		// given:
+		subject.addDeserializedChildren(legacyChildren, RELEASE_0160_VERSION);
+
+		// when:
+		subject.initialize();
+
+		// then:
+		assertEquals(addressBook, subject.getChild(StateChildIndices.ADDRESS_BOOK));
+		assertEquals(addressBook, subject.addressBook());
+		assertEquals(
+				networkContext.midnightRates(),
+				((MerkleNetworkContext) subject.getChild(StateChildIndices.NETWORK_CTX)).midnightRates());
+		assertEquals(networkContext.midnightRates(), subject.networkCtx().midnightRates());
+		assertEquals(
+				tokenRelsVal,
+				((MerkleMap<EntityNumPair, MerkleTokenRelStatus>) subject.getChild(
+						StateChildIndices.TOKEN_ASSOCIATIONS))
+						.get(tokenRelsKey));
+		assertEquals(tokenRelsVal, subject.tokenAssociations().get(tokenRelsKey));
+	}
+
+	@Test
 	void genesisInitCreatesAnEmptyAutoAccountsMap() {
 		ServicesState.setAppBuilder(() -> appBuilder);
 
@@ -687,6 +775,7 @@ class ServicesStateTest {
 
 		assertEquals(1, subject.getAutoAccountsManager().getAutoAccountsMap().size());
 	}
+
 
 	@Test
 	void forwardsFcomtrAsExpected() {

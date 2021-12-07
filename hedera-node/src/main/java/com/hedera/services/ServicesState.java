@@ -68,6 +68,9 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.AppsManager.APPS;
@@ -75,8 +78,6 @@ import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONS
 import static com.hedera.services.state.migration.Release0170Migration.moveLargeFcmsToBinaryRoutePositions;
 import static com.hedera.services.state.migration.StateChildIndices.SPECIAL_FILES;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0210_VERSION;
-import static com.hedera.services.state.migration.StateVersions.RELEASE_0210_VERSION;
-import static com.hedera.services.state.migration.StateVersions.RELEASE_TWENTY_VERSION;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static com.hedera.services.utils.EntityNumPair.fromLongs;
 import static java.util.concurrent.CompletableFuture.runAsync;
@@ -136,10 +137,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public int getMinimumChildCount(int version) {
-		if (version < RELEASE_TWENTY_VERSION) {
-			return StateChildIndices.NUM_PRE_TWENTY_CHILDREN;
-		} else if (version <= RELEASE_0210_VERSION) {
-			return StateChildIndices.NUM_TWENTY_CHILDREN;
+		if (version < RELEASE_0210_VERSION) {
+			return StateChildIndices.NUM_PRE_0210_CHILDREN;
+		} else if (version == RELEASE_0210_VERSION) {
+			return StateChildIndices.NUM_0210_CHILDREN;
 		} else {
 			throw new IllegalArgumentException("Argument 'version='" + version + "' is invalid!");
 		}

@@ -56,7 +56,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NO_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -140,7 +139,7 @@ public class AutoAccountCreateLogic {
 			sideEffects.trackAutoCreatedAccount(newAccountId);
 
 			/* create and track a synthetic record for crypto create synthetic transaction */
-			var childRecord = creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, AUTO_CREATED_ACCOUNT_MEMO);
+			var childRecord = creator.createSuccessfulSyntheticRecord(null, sideEffects, AUTO_CREATED_ACCOUNT_MEMO);
 			childRecord.setAlias(alias);
 
 			var sourceId = recordsHistorian.nextChildRecordSourceId();

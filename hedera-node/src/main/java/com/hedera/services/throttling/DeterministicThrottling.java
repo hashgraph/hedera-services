@@ -39,7 +39,6 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.function.IntSupplier;
 
-import static com.hedera.services.utils.MiscUtils.isGasThrottled;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;

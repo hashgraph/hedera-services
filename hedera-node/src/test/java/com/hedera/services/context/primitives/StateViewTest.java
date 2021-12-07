@@ -137,6 +137,7 @@ class StateViewTest {
 	private final long expiry = 2_000_000L;
 	private final byte[] data = "SOMETHING".getBytes();
 	private final byte[] expectedBytecode = "A Supermarket in California".getBytes();
+	private byte[] expectedStorage = "The Ecstasy".getBytes();
 	private final String tokenMemo = "Goodbye and keep cold";
 	private HFileMeta metadata;
 	private HFileMeta immutableMetadata;
@@ -704,27 +705,11 @@ class StateViewTest {
 		children.setTopics(topics);
 
 		subject = new StateView(
-				null, null, children, EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+				null, null, null, children, EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 
 		final var actualTopics = subject.topics();
 
 		assertEquals(topics, actualTopics);
-	}
-
-	@Test
-	void getStorageAndContractStorage() {
-		final var children = new StateChildren();
-		children.setContractStorage(contractStorage);
-		children.setStorage(storage);
-
-		subject = new StateView(
-				null, null, children, EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
-
-		final var actualStorage = subject.storage();
-		final var actualContractStorage = subject.contractStorage();
-
-		assertEquals(storage, actualStorage);
-		assertEquals(contractStorage, actualContractStorage);
 	}
 
 	@Test

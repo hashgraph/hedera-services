@@ -22,9 +22,9 @@ package com.hedera.services.ledger;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.hedera.services.ledger.backing.BackingAccounts;
-import com.hedera.services.ledger.backing.BackingTokenRels;
 import com.hedera.services.ledger.accounts.AutoAccountsManager;
+import com.hedera.services.ledger.accounts.BackingAccounts;
+import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountAmount;

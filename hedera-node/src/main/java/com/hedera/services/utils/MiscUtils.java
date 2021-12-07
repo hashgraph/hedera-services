@@ -785,15 +785,4 @@ public final class MiscUtils {
 			map.put(key, value);
 		}
 	}
-
-	/**
-	 * Verifies whether a {@link HederaFunctionality} should be throttled by the consensus throttle
-	 *
-	 * @param hederaFunctionality
-	 * 		- the {@link HederaFunctionality} to verify
-	 * @return - whether this {@link HederaFunctionality} should be throttled by the consensus throttle
-	 */
-	public static boolean isGasThrottled(HederaFunctionality hederaFunctionality) {
-		return CONSENSUS_THROTTLED_FUNCTIONS.contains(hederaFunctionality);
-	}
 }
