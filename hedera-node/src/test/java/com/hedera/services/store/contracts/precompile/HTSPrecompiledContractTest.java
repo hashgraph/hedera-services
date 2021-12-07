@@ -190,7 +190,6 @@ class HTSPrecompiledContractTest {
 		HTSPrecompiledContract contract = mock(HTSPrecompiledContract.class);
 		willCallRealMethod().given(contract).compute(input, messageFrame);
 
-		willCallRealMethod().given(contract).compute(input, messageFrame);
 		given(input.getInt(0)).willReturn(ABI_ID_MINT_TOKEN);
 
 		contract.compute(input, messageFrame);
