@@ -240,14 +240,14 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 				).when(
 						cryptoCreate(detachedAccount)
 								.balance(0L)
-								.autoRenewSecs(2),
+								.autoRenewSecs(4),
 						createTopic(topicWithDetachedAsAutoRenew)
 								.adminKeyName(adminKey)
 								.autoRenewAccountId(detachedAccount),
 						createTopic(topicSansDetachedAsAutoRenew)
 								.adminKeyName(adminKey)
 								.autoRenewAccountId(civilian),
-						sleepFor(1_500L)
+						sleepFor(3_500L)
 				).then(
 						createTopic(notToBe)
 								.adminKeyName(adminKey)

@@ -181,6 +181,8 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 
 	@Override
 	public void clearHistory() {
+		precedingChildRecords.clear();
+		precedingChildStreamObjs.clear();
 		followingChildRecords.clear();
 		followingChildStreamObjs.clear();
 
