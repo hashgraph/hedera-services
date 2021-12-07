@@ -307,7 +307,7 @@ public class TypedTokenStore {
 	 *
 	 * @param id
 	 * 		the token to load
-	 * @return @return a usable model of the token which is possibly paused
+	 * @return a usable model of the token which is possibly paused
 	 */
 	public Token loadPossiblyPausedToken(Id id) {
 		final var merkleToken = tokens.get().get(EntityNum.fromModel(id));

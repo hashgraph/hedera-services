@@ -523,7 +523,7 @@ public class HederaLedger {
 			if (change.isForHbar()) {
 				final var accountId = change.accountId();
 				setBalance(accountId, change.getNewBalance());
-				sideEffectsTracker.trackHbarChange(accountId, change.units());;
+				sideEffectsTracker.trackHbarChange(accountId, change.units());
 			}
 		}
 	}
