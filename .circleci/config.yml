@@ -888,9 +888,32 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Update-Ubuntu1804-4N-2C:
+    triggers:
+      - schedule:
+          cron: "0 3 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_2C/Update
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Crypto-Update-Ubuntu1804-4N-2C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+  GCP-Daily-Services-Update-Rhel7-4N-2C:
 #    triggers:
 #      - schedule:
-#          cron: "30 22 * * *"
+#          cron: "15 3 * * *"
 #          filters:
 #            branches:
 #              only:
@@ -902,7 +925,7 @@ workflows:
           regression_path: /swirlds-platform/regression
           result_path: results/4N_2C/Update
           config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Crypto-Update-Ubuntu1804-4N-2C"
+          workflow-name: "GCP-Daily-Services-Crypto-Update-Rhel7-4N-2C"
           requires:
             - build-platform-and-services
           pre-steps:
