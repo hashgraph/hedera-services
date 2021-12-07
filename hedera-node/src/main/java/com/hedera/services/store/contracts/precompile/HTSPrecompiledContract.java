@@ -136,7 +136,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	//transferNFTs(address token, address[] calldata sender, address[] calldata receiver, int64[] calldata serialNumber)
 	protected static final int ABI_ID_TRANSFER_NFTS = 0x2c4ba191;
 	//transferNFT(address token,  address sender, address recipient, int64 serialNum)
-	protected static final int ABI_ID_TRANSFER_NFT = 0x7c502795;
+	protected static final int ABI_ID_TRANSFER_NFT = 0x5cfc9011;
 	//mintToken(address token, uint64 amount, bytes calldata metadata)
 	protected static final int ABI_ID_MINT_TOKEN = 0x36dcedf0;
 	//burnToken(address token, uint64 amount, int64[] calldata serialNumbers)
@@ -235,6 +235,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@SuppressWarnings("unused")
 	protected Bytes computeTransferNfts(final Bytes input, final MessageFrame messageFrame) {
+		final var decodedArguments = decoder.decodeTransferNFTs(input);
 		return null;
 	}
 
@@ -650,12 +651,13 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.mintLogicFactory = mintLogicFactory;
 	}
 
-	public void setBurnLogicFactory(final BurnLogicFactory burnLogicFactory) {
-		this.burnLogicFactory = burnLogicFactory;
-	}
-
+	/* --- Only used by unit tests --- */
 	void setDissociateLogicFactory(final DissociateLogicFactory dissociateLogicFactory) {
 		this.dissociateLogicFactory = dissociateLogicFactory;
+	}
+
+	public void setBurnLogicFactory(final BurnLogicFactory burnLogicFactory) {
+		this.burnLogicFactory = burnLogicFactory;
 	}
 
 	void setTransferLogicFactory(final TransferLogicFactory transferLogicFactory) {

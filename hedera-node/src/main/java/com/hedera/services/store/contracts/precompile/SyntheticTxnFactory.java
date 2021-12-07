@@ -198,8 +198,8 @@ public class SyntheticTxnFactory {
 		}
 
 		public MintWrapper(long amount, TokenID tokenType, List<ByteString> metadata) {
-			this.amount = amount;
 			this.tokenType = tokenType;
+			this.amount = amount;
 			this.metadata = metadata;
 		}
 
@@ -301,6 +301,31 @@ public class SyntheticTxnFactory {
 
 		public static Dissociation multiDissociation(final AccountID accountId, final List<TokenID> tokenIds) {
 			return new Dissociation(accountId, tokenIds);
+		}
+	}
+
+	public static class TokenTransferLists {
+		private final List<NftExchange> nftExchanges;
+		private final List<HbarTransfer> hbarTransfers;
+		private final List<FungibleTokenTransfer> fungibleTransfers;
+
+		public TokenTransferLists(final List<NftExchange> nftExchanges, final List<HbarTransfer> hbarTransfers,
+								  final List<FungibleTokenTransfer> fungibleTransfers) {
+			this.nftExchanges = nftExchanges;
+			this.hbarTransfers = hbarTransfers;
+			this.fungibleTransfers = fungibleTransfers;
+		}
+
+		public List<NftExchange> getNftExchanges() {
+			return nftExchanges;
+		}
+
+		public List<HbarTransfer> getHbarTransfers() {
+			return hbarTransfers;
+		}
+
+		public List<FungibleTokenTransfer> getFungibleTransfers() {
+			return fungibleTransfers;
 		}
 	}
 }
