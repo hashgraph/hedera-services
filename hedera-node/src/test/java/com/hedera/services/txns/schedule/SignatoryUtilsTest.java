@@ -112,7 +112,7 @@ class SignatoryUtilsTest {
 		given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
 		given(activationHelper.areScheduledPartiesActive(any(), any())).willReturn(false);
 		// and:
-		given(schedule.witnessValidSignature(eq(goodEd25519Key.getEd25519()))).willReturn(false);
+		given(schedule.witnessValidSignature(goodEd25519Key.getEd25519())).willReturn(false);
 		willAnswer(inv -> {
 			Consumer<MerkleSchedule> action = inv.getArgument(1);
 			action.accept(schedule);
@@ -132,7 +132,7 @@ class SignatoryUtilsTest {
 		given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
 		given(activationHelper.areScheduledPartiesActive(any(), any())).willReturn(true);
 		// and:
-		given(schedule.witnessValidSignature(eq(goodEd25519Key.getEd25519()))).willReturn(false);
+		given(schedule.witnessValidSignature(goodEd25519Key.getEd25519())).willReturn(false);
 		willAnswer(inv -> {
 			Consumer<MerkleSchedule> action = inv.getArgument(1);
 			action.accept(schedule);
@@ -152,7 +152,7 @@ class SignatoryUtilsTest {
 		given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
 		given(activationHelper.areScheduledPartiesActive(any(), any())).willReturn(true);
 		// and:
-		given(schedule.witnessValidSignature(eq(goodEd25519Key.getEd25519()))).willReturn(true);
+		given(schedule.witnessValidSignature(goodEd25519Key.getEd25519())).willReturn(true);
 		willAnswer(inv -> {
 			Consumer<MerkleSchedule> action = inv.getArgument(1);
 			action.accept(schedule);
@@ -172,7 +172,7 @@ class SignatoryUtilsTest {
 		given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
 		given(activationHelper.areScheduledPartiesActive(any(), any())).willReturn(true);
 		// and:
-		given(schedule.witnessValidSignature(eq(goodSecp256k1Key.getECDSASecp256k1Key()))).willReturn(true);
+		given(schedule.witnessValidSignature(goodSecp256k1Key.getECDSASecp256k1Key())).willReturn(true);
 		willAnswer(inv -> {
 			Consumer<MerkleSchedule> action = inv.getArgument(1);
 			action.accept(schedule);

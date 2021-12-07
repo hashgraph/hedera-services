@@ -38,7 +38,11 @@ import java.util.Objects;
  */
 public abstract class JKey {
 	static final int MAX_KEY_DEPTH = 15;
-	private static final byte[] EMPTY_ARRAY = new byte[0];
+
+	private static final byte[] MISSING_RSA_3072_KEY = new byte[0];
+	private static final byte[] MISSING_ED25519_KEY = new byte[0];
+	private static final byte[] MISSING_ECDSA_384_KEY = new byte[0];
+	private static final byte[] MISSING_ECDSA_SECP256K1_KEY = new byte[0];
 
 	private boolean forScheduledTxn = false;
 
@@ -298,19 +302,19 @@ public abstract class JKey {
 	}
 
 	public byte[] getEd25519() {
-		return EMPTY_ARRAY;
+		return MISSING_ED25519_KEY;
 	}
 
 	public byte[] getECDSA384() {
-		return EMPTY_ARRAY;
+		return MISSING_ECDSA_384_KEY;
 	}
 
 	public byte[] getECDSASecp256k1Key() {
-		return EMPTY_ARRAY;
+		return MISSING_ECDSA_SECP256K1_KEY;
 	}
 
 	public byte[] getRSA3072() {
-		return EMPTY_ARRAY;
+		return MISSING_RSA_3072_KEY;
 	}
 
 	public JKey duplicate() {
@@ -332,7 +336,7 @@ public abstract class JKey {
 		} else if (hasECDSAsecp256k1Key()) {
 			return getECDSASecp256k1Key();
 		} else {
-			return EMPTY_ARRAY;
+			return MISSING_ECDSA_SECP256K1_KEY;
 		}
 	}
 }

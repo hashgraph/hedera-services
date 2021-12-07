@@ -90,7 +90,7 @@ class SigMapScheduleClassifierTest {
 
 	@Test
 	void ignoresInvalidInnerIfMatchingOuter() {
-		given(sigsFn.apply(eq(a.getECDSASecp256k1Key()))).willReturn(VALID_SIG);
+		given(sigsFn.apply(a.getECDSASecp256k1Key())).willReturn(VALID_SIG);
 
 		// when:
 		var answer = subject.validScheduleKeys(List.of(a), sigMap, sigsFn, new MatchingInvalidASig());
