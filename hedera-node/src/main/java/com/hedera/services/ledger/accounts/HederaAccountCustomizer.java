@@ -26,14 +26,14 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
 
 public final class HederaAccountCustomizer extends
 		AccountCustomizer<AccountID, MerkleAccount, AccountProperty, HederaAccountCustomizer> {
 	private static final Map<Option, AccountProperty> OPTION_PROPERTIES;
 	static {
-		Map<Option, AccountProperty> optionAccountPropertyMap = new HashMap<>();
+		Map<Option, AccountProperty> optionAccountPropertyMap = new EnumMap<>(Option.class);
 		optionAccountPropertyMap.put(Option.KEY, AccountProperty.KEY);
 		optionAccountPropertyMap.put(Option.MEMO, AccountProperty.MEMO);
 		optionAccountPropertyMap.put(Option.PROXY, AccountProperty.PROXY);

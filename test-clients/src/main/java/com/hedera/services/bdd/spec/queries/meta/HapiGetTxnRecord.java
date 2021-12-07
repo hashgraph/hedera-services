@@ -529,6 +529,14 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getTxRecordByTxID(query);
 		final TransactionRecord record = response.getTransactionGetRecord().getTransactionRecord();
 		observer.ifPresent(obs -> obs.accept(record));
+		childRecords = response.getTransactionGetRecord().getChildTransactionRecordsList();
+		for (var rec : childRecords){
+			spec.registry().saveAccountId(rec.getAlias().toStringUtf8(), rec.getReceipt().getAccountID());
+			log.info(spec.logPrefix() + "  Saving alias {} to registry for Account ID {}",
+					rec.getAlias().toStringUtf8(),
+					rec.getReceipt().getAccountID());
+		}
+
 		if (verboseLoggingOn) {
 			if (format.isPresent()) {
 				format.get().accept(record, log);
@@ -537,13 +545,6 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 				var rates = spec.ratesProvider();
 				var priceInUsd = sdec(rates.toUsdWithActiveRates(fee), 5);
 				log.info(spec.logPrefix() + "Record (charged ${}): {}", priceInUsd, record);
-				childRecords = response.getTransactionGetRecord().getChildTransactionRecordsList();
-				for (var rec : childRecords){
-					spec.registry().saveAccountId(rec.getAlias().toStringUtf8(), rec.getReceipt().getAccountID());
-					log.info(spec.logPrefix() + "  Saving alias {} to registry for Account ID {}",
-							rec.getAlias().toStringUtf8(),
-							rec.getReceipt().getAccountID());
-				}
 				log.info(spec.logPrefix() + "  And {} child record{}: {}",
 						childRecords.size(),
 						childRecords.size() > 1 ? "s" : "",
