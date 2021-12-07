@@ -74,6 +74,7 @@ import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContr
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -164,6 +165,19 @@ class MintPrecompilesTest {
 		assertEquals(invalidSigResult, result);
 
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+	}
+
+	@Test
+	void mintRandomFailurePathWorks() {
+		givenNonFungibleFrameContext();
+
+		given(sigsVerifier.hasActiveSupplyKey(any(), any(), any())).willThrow(new IllegalArgumentException("random error"));
+
+		// when:
+		final var result = subject.computeMintToken(pretendArguments, frame);
+
+		// then:
+		assertEquals(failInvalidResult, result);
 	}
 
 	@Test
@@ -260,5 +274,6 @@ class MintPrecompilesTest {
 	private static final Address contractAddr = Address.ALTBN128_MUL;
 	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
 	private static final Bytes invalidSigResult = UInt256.valueOf(ResponseCodeEnum.INVALID_SIGNATURE_VALUE);
+	private static final Bytes failInvalidResult = UInt256.valueOf(ResponseCodeEnum.FAIL_INVALID_VALUE);
 	private static final Instant pendingChildConsTime = Instant.ofEpochSecond(1_234_567L, 890);
 }
