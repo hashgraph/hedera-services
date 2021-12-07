@@ -74,6 +74,10 @@ public class QueryVerbs {
 		return new HapiGetAccountInfo(account);
 	}
 
+	public static HapiGetAccountInfo getAccountInfo(final ByteString alias) {
+		return new HapiGetAccountInfo(alias);
+	}
+
 	public static HapiGetAccountRecords getAccountRecords(final String account) {
 		return new HapiGetAccountRecords(account);
 	}

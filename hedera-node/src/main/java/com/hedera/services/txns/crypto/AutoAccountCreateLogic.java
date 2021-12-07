@@ -114,7 +114,8 @@ public class AutoAccountCreateLogic {
 					.memo(AUTO_CREATED_ACCOUNT_MEMO)
 					.autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
 					.isReceiverSigRequired(false)
-					.isSmartContract(false);
+					.isSmartContract(false)
+					.alias(key.getEd25519().isEmpty() ? key.getECDSASecp256K1() : key.getEd25519());
 			customizer.customize(newAccountId, accountsLedger);
 
 			sideEffects.trackAutoCreatedAccount(newAccountId);

@@ -537,11 +537,17 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 				var rates = spec.ratesProvider();
 				var priceInUsd = sdec(rates.toUsdWithActiveRates(fee), 5);
 				log.info(spec.logPrefix() + "Record (charged ${}): {}", priceInUsd, record);
-				final var children = response.getTransactionGetRecord().getChildTransactionRecordsList();
+				childRecords = response.getTransactionGetRecord().getChildTransactionRecordsList();
+				for (var rec : childRecords){
+					spec.registry().saveAccountId(rec.getAlias().toStringUtf8(), rec.getReceipt().getAccountID());
+					log.info(spec.logPrefix() + "  Saving alias {} to registry for Account ID {}",
+							rec.getAlias().toStringUtf8(),
+							rec.getReceipt().getAccountID());
+				}
 				log.info(spec.logPrefix() + "  And {} child record{}: {}",
-						children.size(),
-						children.size() > 1 ? "s" : "",
-						children);
+						childRecords.size(),
+						childRecords.size() > 1 ? "s" : "",
+						childRecords);
 				log.info("Duplicates: {}",
 						response.getTransactionGetRecord().getDuplicateTransactionRecordsList());
 			}
