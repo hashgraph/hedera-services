@@ -221,17 +221,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	@SuppressWarnings("unused")
-	protected Bytes computeTransferNfts(final Bytes input, final MessageFrame messageFrame) {
-		final var decodedArguments = decoder.decodeTransferNFTs(input);
-		return null;
-	}
-
-	@SuppressWarnings("unused")
-	protected Bytes computeTransferNft(final Bytes input, final MessageFrame messageFrame) {
-		return null;
-	}
-
-	@SuppressWarnings("unused")
 	protected Bytes computeMintToken(final Bytes input, final MessageFrame frame) {
 		return computeInternal(frame, input, new MintPrecompile());
 	}
