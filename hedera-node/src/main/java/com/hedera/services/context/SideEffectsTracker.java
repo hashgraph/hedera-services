@@ -45,11 +45,20 @@ public class SideEffectsTracker {
 	private int numTouches = 0;
 	private long newSupply = INAPPLICABLE_NEW_SUPPLY;
 	private TokenID newTokenId = null;
+	private AccountID autoCreatedAccount = null;
 	private List<TokenTransferList> explicitNetTokenUnitOrOwnershipChanges = null;
 
 	@Inject
 	public SideEffectsTracker() {
 		/* For Dagger2 */
+	}
+
+	public void trackAutoCreatedAccount(final AccountID accountID){
+		this.autoCreatedAccount = accountID;
+	}
+
+	public void resetTrackedAutoCreatedAccount() {
+		this.autoCreatedAccount = null;
 	}
 
 	/**
@@ -153,6 +162,14 @@ public class SideEffectsTracker {
 	 */
 	public TokenID getTrackedNewTokenId() {
 		return newTokenId;
+	}
+
+	public boolean hasTrackedAutoCreatedAccountId() {
+		return autoCreatedAccount != null;
+	}
+
+	public AccountID getTrackedAutoCreatedAccountId() {
+		return autoCreatedAccount;
 	}
 
 	/**
@@ -343,6 +360,7 @@ public class SideEffectsTracker {
 	 * Clears all side effects tracked since the last call to this method.
 	 */
 	public void reset() {
+		resetTrackedAutoCreatedAccount();
 		resetTrackedTokenChanges();
 		netHbarChanges.clear();
 	}

@@ -23,9 +23,9 @@ package com.hedera.services.queries.crypto;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.ledger.accounts.AutoAccountsManager;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.AutoAccountCreationsManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -54,8 +54,11 @@ import com.swirlds.common.CommonUtils;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
@@ -82,14 +85,20 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
+import static org.mockito.Mockito.mock;
 
+@ExtendWith(MockitoExtension.class)
 class GetAccountInfoAnswerTest {
 	private StateView view;
+	@Mock
 	private TokenStore tokenStore;
+	@Mock
 	private ScheduleStore scheduleStore;
+	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
+	@Mock
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
+	@Mock
 	private OptionValidator optionValidator;
 
 	private String node = "0.0.3";
@@ -98,7 +107,9 @@ class GetAccountInfoAnswerTest {
 	private AccountID payerId = IdUtils.asAccount(payer);
 	private MerkleAccount payerAccount;
 	private String target = payer;
+	@Mock
 	private MerkleToken token;
+	@Mock
 	private MerkleToken deletedToken;
 	TokenID firstToken = tokenWith(555),
 			secondToken = tokenWith(666),
@@ -111,8 +122,10 @@ class GetAccountInfoAnswerTest {
 	private Transaction paymentTxn;
 
 	private GetAccountInfoAnswer subject;
-
+	@Mock
 	private NodeLocalProperties nodeProps;
+	@Mock
+	private AutoAccountsManager autoAccounts;
 
 	@BeforeEach
 	private void setup() throws Throwable {
@@ -133,33 +146,6 @@ class GetAccountInfoAnswerTest {
 				fromAccountTokenRel(payerId, missingToken),
 				new MerkleTokenRelStatus(missingBalance, false, false, false));
 
-		token = mock(MerkleToken.class);
-		given(token.kycKey()).willReturn(Optional.of(new JEd25519Key("kyc".getBytes())));
-		given(token.freezeKey()).willReturn(Optional.of(new JEd25519Key("freeze".getBytes())));
-		given(token.hasKycKey()).willReturn(true);
-		given(token.hasFreezeKey()).willReturn(true);
-		given(token.decimals())
-				.willReturn(1).willReturn(2).willReturn(3)
-				.willReturn(1).willReturn(2).willReturn(3);
-		deletedToken = mock(MerkleToken.class);
-		given(deletedToken.isDeleted()).willReturn(true);
-		given(deletedToken.decimals()).willReturn(4);
-
-		tokenStore = mock(TokenStore.class);
-		given(tokenStore.exists(firstToken)).willReturn(true);
-		given(tokenStore.exists(secondToken)).willReturn(true);
-		given(tokenStore.exists(thirdToken)).willReturn(true);
-		given(tokenStore.exists(fourthToken)).willReturn(true);
-		given(tokenStore.exists(missingToken)).willReturn(false);
-		given(tokenStore.get(firstToken)).willReturn(token);
-		given(tokenStore.get(secondToken)).willReturn(token);
-		given(tokenStore.get(thirdToken)).willReturn(token);
-		given(tokenStore.get(fourthToken)).willReturn(deletedToken);
-		given(token.symbol()).willReturn("HEYMA");
-		given(deletedToken.symbol()).willReturn("THEWAY");
-
-		scheduleStore = mock(ScheduleStore.class);
-
 		var tokens = new MerkleAccountTokens();
 		tokens.associateAll(Set.of(firstToken, secondToken, thirdToken, fourthToken, missingToken));
 		payerAccount = MerkleAccountFactory.newAccount()
@@ -175,10 +161,6 @@ class GetAccountInfoAnswerTest {
 				.get();
 		payerAccount.setTokens(tokens);
 
-		accounts = mock(MerkleMap.class);
-		given(accounts.get(EntityNum.fromAccountId(asAccount(target)))).willReturn(payerAccount);
-
-		nodeProps = mock(NodeLocalProperties.class);
 		final StateChildren children = new StateChildren();
 		children.setAccounts(accounts);
 		children.setTokenAssociations(tokenRels);
@@ -188,9 +170,8 @@ class GetAccountInfoAnswerTest {
 				nodeProps,
 				children,
 				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
-		optionValidator = mock(OptionValidator.class);
 
-		subject = new GetAccountInfoAnswer(optionValidator);
+		subject = new GetAccountInfoAnswer(optionValidator, autoAccounts);
 	}
 
 	@Test
@@ -230,7 +211,7 @@ class GetAccountInfoAnswerTest {
 		// and:
 		StateView view = mock(StateView.class);
 
-		given(view.infoForAccount(any())).willReturn(Optional.empty());
+		given(view.infoForAccount(any(), any())).willReturn(Optional.empty());
 
 		// when:
 		Response response = subject.responseGiven(query, view, OK, fee);
@@ -243,6 +224,26 @@ class GetAccountInfoAnswerTest {
 
 	@Test
 	void getsTheAccountInfo() throws Throwable {
+		given(token.hasKycKey()).willReturn(true);
+		given(token.hasFreezeKey()).willReturn(true);
+		given(token.decimals())
+				.willReturn(1).willReturn(2).willReturn(3)
+				.willReturn(1).willReturn(2).willReturn(3);
+		given(deletedToken.decimals()).willReturn(4);
+
+		given(tokenStore.exists(firstToken)).willReturn(true);
+		given(tokenStore.exists(secondToken)).willReturn(true);
+		given(tokenStore.exists(thirdToken)).willReturn(true);
+		given(tokenStore.exists(fourthToken)).willReturn(true);
+		given(tokenStore.exists(missingToken)).willReturn(false);
+		given(tokenStore.get(firstToken)).willReturn(token);
+		given(tokenStore.get(secondToken)).willReturn(token);
+		given(tokenStore.get(thirdToken)).willReturn(token);
+		given(tokenStore.get(fourthToken)).willReturn(deletedToken);
+		given(token.symbol()).willReturn("HEYMA");
+		given(deletedToken.symbol()).willReturn("THEWAY");
+		given(accounts.get(EntityNum.fromAccountId(asAccount(target)))).willReturn(payerAccount);
+
 		// setup:
 		Query query = validQuery(ANSWER_ONLY, fee, target);
 
@@ -307,18 +308,14 @@ class GetAccountInfoAnswerTest {
 	void usesValidatorOnAccountWithAlias() throws Throwable {
 		EntityNum entityNum = EntityNum.fromAccountId(payerId);
 		Query query = validQueryWithAlias(COST_ANSWER, fee, "aaaa");
-		AutoAccountCreationsManager mockedAutoAccountCreations = mock(AutoAccountCreationsManager.class);
-		given(mockedAutoAccountCreations.fetchEntityNumFor(any())).willReturn(entityNum);
+		
+		given(autoAccounts.fetchEntityNumFor(any())).willReturn(entityNum);
 
 		given(optionValidator.queryableAccountStatus(entityNum, accounts)).willReturn(INVALID_ACCOUNT_ID);
 
-		try (MockedStatic<AutoAccountCreationsManager> theMock = Mockito.mockStatic(AutoAccountCreationsManager.class)) {
-			theMock.when(AutoAccountCreationsManager::getInstance)
-					.thenReturn(mockedAutoAccountCreations);
-			ResponseCodeEnum validity = subject.checkValidity(query, view);
+		ResponseCodeEnum validity = subject.checkValidity(query, view);
+		assertEquals(INVALID_ACCOUNT_ID, validity);
 
-			assertEquals(INVALID_ACCOUNT_ID, validity);
-		}
 	}
 
 	@Test

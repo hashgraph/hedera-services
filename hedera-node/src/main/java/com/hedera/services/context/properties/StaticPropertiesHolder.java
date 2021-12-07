@@ -25,7 +25,6 @@ import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 

@@ -20,6 +20,9 @@ package com.hedera.services.bdd.spec.transactions;
  * ‍
  */
 
+import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -139,11 +142,11 @@ public class TxnUtils {
 	}
 
 	public static Key netOf(
-			HapiApiSpec spec,
-			Optional<String> keyName,
-			Optional<? extends SigControl> keyShape,
-			Optional<KeyFactory.KeyType> keyType,
-			Optional<Supplier<KeyGenerator>> keyGenSupplier
+			final HapiApiSpec spec,
+			final Optional<String> keyName,
+			final Optional<? extends SigControl> keyShape,
+			final Optional<KeyFactory.KeyType> keyType,
+			final Optional<Supplier<KeyGenerator>> keyGenSupplier
 	) {
 		if (!keyName.isPresent()) {
 			KeyGenerator generator = keyGenSupplier.get().get();
@@ -182,6 +185,10 @@ public class TxnUtils {
 
 	public static AccountID asId(String s, HapiApiSpec lookupSpec) {
 		return isIdLiteral(s) ? asAccount(s) : lookupSpec.registry().getAccountID(s);
+	}
+
+	public static AccountID asIdWithAlias(final ByteString s) {
+		return asAccount(s);
 	}
 
 	public static TokenID asTokenId(String s, HapiApiSpec lookupSpec) {
@@ -233,8 +240,8 @@ public class TxnUtils {
 	}
 
 	public static ContractID asContractId(byte[] bytes) {
-		long realm = ByteUtil.byteArrayToLong(Arrays.copyOfRange(bytes, 4, 12));
-		long accountNum = ByteUtil.byteArrayToLong(Arrays.copyOfRange(bytes, 12, 20));
+		long realm = Longs.fromByteArray(Arrays.copyOfRange(bytes, 4, 12));
+		long accountNum = Longs.fromByteArray(Arrays.copyOfRange(bytes, 12, 20));
 
 		return ContractID.newBuilder()
 				.setContractNum(accountNum)

@@ -35,11 +35,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static com.hedera.services.txns.crypto.AutoAccountCreateLogic.isPrimitiveKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -84,6 +86,9 @@ public class PureTransferSemanticChecks {
 		if (!isAcceptableSize(hbarAdjusts, maxHbarAdjusts)) {
 			return TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 		}
+		if (!hasValidAlias(hbarAdjusts)) {
+			return INVALID_ALIAS;
+		}
 
 		final var tokenValidity = validateTokenTransferSyntax(
 				tokenAdjustsList, maxTokenAdjusts, maxOwnershipChanges, areNftsEnabled);
@@ -91,6 +96,22 @@ public class PureTransferSemanticChecks {
 			return tokenValidity;
 		}
 		return validateTokenTransferSemantics(tokenAdjustsList);
+	}
+
+	/**
+	 * validates if the alias is a valid primitive key from the balance changes.
+	 *
+	 * @param hbarAdjusts
+	 * @return
+	 */
+	boolean hasValidAlias(final List<AccountAmount> hbarAdjusts) {
+		for (AccountAmount aa : hbarAdjusts) {
+			final var alias = aa.getAccountID().getAlias();
+			if (!alias.isEmpty() && !isPrimitiveKey(alias)) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	ResponseCodeEnum validateTokenTransferSyntax(

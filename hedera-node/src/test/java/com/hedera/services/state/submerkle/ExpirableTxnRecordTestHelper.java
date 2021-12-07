@@ -80,6 +80,7 @@ public class ExpirableTxnRecordTestHelper {
 				.setScheduleRef(record.hasScheduleRef() ? fromGrpcScheduleId(record.getScheduleRef()) : null)
 				.setAssessedCustomFees(fcAssessedFees)
 				.setNewTokenAssociations(newTokenAssociations)
+				.setAlias(record.getAlias())
 				.build();
 	}
 }

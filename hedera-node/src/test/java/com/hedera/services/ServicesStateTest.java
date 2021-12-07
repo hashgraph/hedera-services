@@ -26,6 +26,7 @@ import com.hedera.services.context.init.ServicesInitFlow;
 import com.hedera.services.sigs.ExpansionHelper;
 import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
+import com.hedera.services.ledger.accounts.AutoAccountsManager;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.forensics.HashLogger;
@@ -89,7 +90,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.List;
-import java.util.function.Consumer;
 
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0160_VERSION;
@@ -169,10 +169,9 @@ class ServicesStateTest {
 	private ServicesState.FcmMigrator fcmMigrator;
 	@Mock
 	private Consumer<Boolean> blobMigrationFlag;
+	private ServicesState.BinaryObjectStoreMigrator blobMigrator;
 	@Mock
 	private PrefetchProcessor prefetchProcessor;
-	@Mock
-	private CodeCache codeCache;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
@@ -180,7 +179,6 @@ class ServicesStateTest {
 	private LogCaptor logCaptor;
 	@LoggingSubject
 	private ServicesState subject = new ServicesState();
-
 
 	@AfterEach
 	void cleanup() {
@@ -380,24 +378,21 @@ class ServicesStateTest {
 	@Test
 	void minimumVersionIsRelease0130() {
 		// expect:
-		assertEquals(StateVersions.RELEASE_0120_VERSION, subject.getMinimumSupportedVersion());
+		assertEquals(StateVersions.RELEASE_0180_VERSION, subject.getMinimumSupportedVersion());
 	}
 
 	@Test
 	void minimumChildCountsAsExpected() {
 		// expect:
 		assertEquals(
-				LegacyStateChildIndices.NUM_0160_CHILDREN,
-				subject.getMinimumChildCount(RELEASE_0160_VERSION));
-		assertEquals(
-				StateChildIndices.NUM_POST_0160_CHILDREN,
-				subject.getMinimumChildCount(StateVersions.RELEASE_0170_VERSION));
-		assertEquals(
-				StateChildIndices.NUM_POST_0160_CHILDREN,
+				StateChildIndices.NUM_PRE_0210_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_0180_VERSION));
 		assertEquals(
-				StateChildIndices.NUM_PRE_0160_CHILDREN,
-				subject.getMinimumChildCount(StateVersions.RELEASE_0120_VERSION));
+				StateChildIndices.NUM_PRE_0210_CHILDREN,
+				subject.getMinimumChildCount(StateVersions.RELEASE_0180_VERSION));
+		assertEquals(
+				StateChildIndices.NUM_0210_CHILDREN,
+				subject.getMinimumChildCount(StateVersions.RELEASE_0210_VERSION));
 		assertThrows(IllegalArgumentException.class,
 				() -> subject.getMinimumChildCount(StateVersions.CURRENT_VERSION + 1));
 	}
@@ -418,8 +413,8 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void defersInitWhenInitializingFromRelease0170() {
-		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0170_VERSION);
+	void defersInitWhenInitializingFromRelease0190() {
+		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0190_AND_020_VERSION);
 
 		subject.init(platform, addressBook, dualState);
 
@@ -445,20 +440,17 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void doesntMigrateWhenInitializingFromRelease0180() {
+	void doesntMigrateWhenInitializingFromRelease0200() {
 		// given:
-		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0180_VERSION);
+		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0210_VERSION);
 
 		// expect:
 		assertDoesNotThrow(subject::migrate);
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
-	void migratesWhenInitializingFromRelease0180() {
-		ServicesState.setFcmMigrator(fcmMigrator);
-		ServicesState.setBlobMigrationFlag(blobMigrationFlag);
-		final MerkleMap<?, ?> pretend = new MerkleMap<>();
+	void migratesWhenInitializingFromRelease0190() {
+		ServicesState.setBlobMigrator(blobMigrator);
 
 		subject = mock(ServicesState.class);
 		given(subject.uniqueTokens()).willReturn((MerkleMap<EntityNumPair, MerkleUniqueToken>) pretend);
@@ -646,7 +638,7 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void genesisInitCreatesAnEmptyAutoAccountsMap() throws IOException {
+	void genesisInitCreatesAnEmptyAutoAccountsMap() {
 		ServicesState.setAppBuilder(() -> appBuilder);
 
 		given(appBuilder.bootstrapProps(any())).willReturn(appBuilder);
@@ -661,7 +653,6 @@ class ServicesStateTest {
 		given(platform.getSelfId()).willReturn(selfId);
 
 		// when:
-		assertEquals(null, subject.getAutoAccountsManager());
 		subject.genesisInit(platform, addressBook, dualState);
 
 		// then:

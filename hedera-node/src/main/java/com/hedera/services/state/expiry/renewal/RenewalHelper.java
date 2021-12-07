@@ -20,11 +20,9 @@ package com.hedera.services.state.expiry.renewal;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ledger.accounts.BackingStore;
+import com.hedera.services.ledger.accounts.AutoAccountsManager;
 import com.hedera.services.ledger.backing.BackingStore;
-import com.hedera.services.state.AutoAccountCreationsManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -44,7 +42,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
@@ -75,7 +72,7 @@ public class RenewalHelper {
 	private MerkleAccount lastClassifiedAccount = null;
 	private EntityNum lastClassifiedEntityId;
 
-	private AutoAccountCreationsManager autoAccounts;
+	private AutoAccountsManager autoAccounts;
 
 	@Inject
 	public RenewalHelper(
@@ -85,7 +82,7 @@ public class RenewalHelper {
 			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels,
 			BackingStore<AccountID, MerkleAccount> backingAccounts,
-			AutoAccountCreationsManager autoAccounts
+			AutoAccountsManager autoAccounts
 	) {
 		this.tokens = tokens;
 		this.tokenStore = tokenStore;

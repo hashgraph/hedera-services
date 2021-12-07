@@ -20,6 +20,7 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -181,6 +182,7 @@ class ExpirableTxnRecordBuilderTest {
 		subject.setContractCreateResult(new SolidityFnResult());
 		subject.setNewTokenAssociations(List.of(new FcTokenAssociation(1, 2)));
 		subject.setAssessedCustomFees(List.of(new FcAssessedCustomFee(MISSING_ENTITY_ID, 1, new long[] { 1L })));
+		subject.setAlias(ByteString.copyFromUtf8("aaa"));
 
 		subject.revert();
 
@@ -195,10 +197,18 @@ class ExpirableTxnRecordBuilderTest {
 		assertNull(subject.getContractCreateResult());
 		assertNull(subject.getAssessedCustomFees());
 		assertTrue(subject.getNewTokenAssociations().isEmpty());
+		assertTrue(subject.getAlias().isEmpty());
 	}
 
 	@Test
 	void revertOnlyPossibleWithReceiptBuilder() {
+		subject.setReceipt(new TxnReceipt());
+
+		assertThrows(IllegalStateException.class, subject::revert);
+	}
+
+	@Test
+	void buildWithAlias(){
 		subject.setReceipt(new TxnReceipt());
 
 		assertThrows(IllegalStateException.class, subject::revert);

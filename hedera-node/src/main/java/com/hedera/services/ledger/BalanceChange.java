@@ -21,6 +21,10 @@ package com.hedera.services.ledger;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
+import com.hedera.services.ledger.backing.BackingAccounts;
+import com.hedera.services.ledger.backing.BackingTokenRels;
+import com.hedera.services.ledger.accounts.AutoAccountsManager;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -44,8 +48,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NO
  * (This field is helpful to simplify work done in {@link HederaLedger}.)
  *
  * The {@code tokenId} and {@code accountId} fields are
- * temporary, needed to interact with the {@link com.hedera.services.ledger.accounts.BackingAccounts}
- * and {@link com.hedera.services.ledger.accounts.BackingTokenRels} components
+ * temporary, needed to interact with the {@link BackingAccounts}
+ * and {@link BackingTokenRels} components
  * whose APIs still use gRPC types.
  */
 public class BalanceChange {
@@ -63,6 +67,7 @@ public class BalanceChange {
 	private AccountID accountId;
 	private AccountID counterPartyAccountId = null;
 	private ResponseCodeEnum codeForInsufficientBalance;
+	private ByteString alias;
 
 	public static BalanceChange changingHbar(AccountAmount aa) {
 		return new BalanceChange(null, aa, INSUFFICIENT_ACCOUNT_BALANCE);
@@ -103,6 +108,7 @@ public class BalanceChange {
 		this.token = null;
 		this.account = account;
 		this.accountId = account.asGrpcAccount();
+		this.alias = accountId.getAlias();
 		this.units = amount;
 		this.originalUnits = amount;
 		this.codeForInsufficientBalance = code;
@@ -112,6 +118,7 @@ public class BalanceChange {
 	private BalanceChange(Id token, AccountAmount aa, ResponseCodeEnum code) {
 		this.token = token;
 		this.accountId = aa.getAccountID();
+		this.alias = accountId.getAlias();
 		this.account = Id.fromGrpcAccount(accountId);
 		this.units = aa.getAmount();
 		this.originalUnits = units;
@@ -124,6 +131,7 @@ public class BalanceChange {
 		this.accountId = sender;
 		this.counterPartyAccountId = receiver;
 		this.account = Id.fromGrpcAccount(accountId);
+		this.alias = accountId.getAlias();
 		this.units = serialNo;
 		this.codeForInsufficientBalance = code;
 	}
@@ -172,6 +180,10 @@ public class BalanceChange {
 		return accountId;
 	}
 
+	public ByteString alias() {
+		return alias;
+	}
+
 	public AccountID counterPartyAccountId() {
 		return counterPartyAccountId;
 	}
@@ -208,6 +220,7 @@ public class BalanceChange {
 			return MoreObjects.toStringHelper(BalanceChange.class)
 					.add("token", token == null ? "ℏ" : token)
 					.add("account", account)
+					.add("alias", alias.toStringUtf8())
 					.add("units", units)
 					.toString();
 		} else {
@@ -230,5 +243,11 @@ public class BalanceChange {
 
 	public boolean isExemptFromCustomFees() {
 		return exemptFromCustomFees;
+	}
+
+	public boolean hasUniqueAlias(final AutoAccountsManager autoAccounts) {
+		return !alias.isEmpty()
+				&& accountId.getAccountNum() == 0
+				&& !autoAccounts.getAutoAccountsMap().containsKey(alias);
 	}
 }

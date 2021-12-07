@@ -1,4 +1,4 @@
-package com.hedera.services.state;
+package com.hedera.services.ledger.accounts;
 
 /*-
  * ‌
@@ -35,31 +35,16 @@ import java.util.Map;
  * Entries from the map are removed when the entity expires
  */
 @Singleton
-public class AutoAccountCreationsManager {
-	private static AutoAccountCreationsManager autoAccountCreations = null;
-
-	/* Alias Accounts Map that will be rebuilt after restart, reconnect*/
+public class AutoAccountsManager {
 	private Map<ByteString, EntityNum> autoAccountsMap;
 
-	public static AutoAccountCreationsManager getInstance() {
-		if (autoAccountCreations == null) {
-			autoAccountCreations = new AutoAccountCreationsManager();
-		}
-		return autoAccountCreations;
-	}
-
 	@Inject
-	public AutoAccountCreationsManager() {
+	public AutoAccountsManager() {
 		this.autoAccountsMap = new HashMap<>();
 	}
 
 	public Map<ByteString, EntityNum> getAutoAccountsMap() {
 		return autoAccountsMap;
-	}
-
-	/* Only for unit tests */
-	public void setAutoAccountsMap(Map<ByteString, EntityNum> map) {
-		this.autoAccountsMap = map;
 	}
 
 	/**
@@ -69,10 +54,11 @@ public class AutoAccountCreationsManager {
 	 * @param accountsMap
 	 * 		accounts MerkleMap
 	 */
-	public void constructAccountAliasRels(MerkleMap<EntityNum, MerkleAccount> accountsMap) {
-		for (Map.Entry entry : accountsMap.entrySet()) {
-			MerkleAccount value = (MerkleAccount) entry.getValue();
-			EntityNum number = (EntityNum) entry.getKey();
+	public void rebuildAutoAccountsMap(MerkleMap<? extends EntityNum, ? extends MerkleAccount> accountsMap) {
+		for (Map.Entry<? extends EntityNum, ? extends MerkleAccount> entry :
+				accountsMap.entrySet()) {
+			EntityNum number = entry.getKey();
+			MerkleAccount value = entry.getValue();
 			if (!value.state().getAlias().isEmpty()) {
 				this.autoAccountsMap.put(value.state().getAlias(), number);
 			}
@@ -81,14 +67,20 @@ public class AutoAccountCreationsManager {
 
 	/**
 	 * Removes an entry from the autoAccountsMap when an entity is expired and deleted from the ledger.
-	 * @param lastClassifiedEntityId entity id that is expired
-	 * @param currentAccounts current accounts map
+	 *
+	 * @param lastClassifiedEntityId
+	 * 		entity id that is expired
+	 * @param currentAccounts
+	 * 		current accounts map
 	 */
 	public void remove(final EntityNum lastClassifiedEntityId,
 			final MerkleMap<EntityNum, MerkleAccount> currentAccounts) {
 		/* get the alias from the account */
 		ByteString alias = currentAccounts.get(lastClassifiedEntityId).getAlias();
+		remove(alias);
+	}
 
+	public void remove(final ByteString alias) {
 		if (autoAccountsMap.containsKey(alias)) {
 			autoAccountsMap.remove(alias);
 		}
@@ -96,11 +88,21 @@ public class AutoAccountCreationsManager {
 
 	/**
 	 * Returns the entityNum for the given alias
-	 * @param alias alias of the accountId
+	 *
+	 * @param alias
+	 * 		alias of the accountId
 	 * @return EntityNum mapped to the given alias.
 	 */
 	public EntityNum fetchEntityNumFor(ByteString alias) {
-		return  autoAccountsMap.get(alias);
+		return autoAccountsMap.getOrDefault(alias, MISSING_NUM);
 	}
 
+	/* Only for unit tests */
+	public void setAutoAccountsMap(Map<ByteString, EntityNum> map) {
+		this.autoAccountsMap = map;
+	}
+
+	public boolean contains(ByteString alias) {
+		return autoAccountsMap.containsKey(alias);
+	}
 }

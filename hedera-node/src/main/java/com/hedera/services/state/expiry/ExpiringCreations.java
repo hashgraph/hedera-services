@@ -54,7 +54,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 @Singleton
 public class ExpiringCreations implements EntityCreator {
-	private static final String EMPTY_MEMO = "";
+	public static final String EMPTY_MEMO = "";
 
 	private final ExpiryManager expiries;
 	private final NarratedCharging narratedCharging;
@@ -100,10 +100,11 @@ public class ExpiringCreations implements EntityCreator {
 	@Override
 	public ExpirableTxnRecord.Builder createSuccessfulSyntheticRecord(
 			final List<FcAssessedCustomFee> assessedCustomFees,
-			final SideEffectsTracker sideEffectsTracker
+			final SideEffectsTracker sideEffectsTracker,
+			final String memo
 	) {
 		final var receiptBuilder = TxnReceipt.newBuilder().setStatus(SUCCESS_LITERAL);
-		return createBaseRecord(EMPTY_MEMO, receiptBuilder, assessedCustomFees, sideEffectsTracker);
+		return createBaseRecord(memo, receiptBuilder, assessedCustomFees, sideEffectsTracker);
 	}
 
 	@Override
@@ -149,6 +150,11 @@ public class ExpiringCreations implements EntityCreator {
 		if (sideEffectsTracker.hasTrackedNewTokenId()) {
 			receiptBuilder.setTokenId(EntityId.fromGrpcTokenId(sideEffectsTracker.getTrackedNewTokenId()));
 		}
+
+		if (sideEffectsTracker.hasTrackedAutoCreatedAccountId()) {
+			receiptBuilder.setAccountId(EntityId.fromGrpcAccountId(sideEffectsTracker.getTrackedAutoCreatedAccountId()));
+		}
+
 		if (sideEffectsTracker.hasTrackedTokenSupply()) {
 			receiptBuilder.setNewTotalSupply(sideEffectsTracker.getTrackedTokenSupply());
 		}

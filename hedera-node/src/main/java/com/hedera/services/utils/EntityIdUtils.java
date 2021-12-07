@@ -35,7 +35,6 @@ import com.swirlds.common.CommonUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.regex.Pattern;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;

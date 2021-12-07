@@ -29,7 +29,7 @@ import java.util.Map;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class MerkleAccountCustomizerTest {
+class HederaAccountCustomizerTest {
 	HederaAccountCustomizer subject = new HederaAccountCustomizer();
 
 	@Test

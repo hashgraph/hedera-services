@@ -22,7 +22,7 @@ package com.hedera.services;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.BootstrapProperties;
-import com.hedera.services.state.AutoAccountCreationsManager;
+import com.hedera.services.ledger.accounts.AutoAccountsManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
@@ -99,7 +99,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	private Platform platformForDeferredInit;
 	private AddressBook addressBookForDeferredInit;
 	private SwirldDualState dualStateForDeferredInit;
-	private AutoAccountCreationsManager autoAccountCreations;
+	private AutoAccountsManager autoAccountCreations;
 
 	public ServicesState() {
 		/* RuntimeConstructable */
@@ -255,8 +255,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		}
 
 		if (deserializedVersion >= RELEASE_0210_VERSION) {
-			autoAccountCreations = AutoAccountCreationsManager.getInstance();
-			autoAccountCreations.constructAccountAliasRels(accounts());
+			autoAccountCreations = new AutoAccountsManager();
+			autoAccountCreations.rebuildAutoAccountsMap(accounts());
 		}
 
 		log.info("Init called on Services node {} WITH Merkle saved state", platform.getSelfId());
@@ -275,7 +275,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		final var bootstrapProps = new BootstrapProperties();
 		final var seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
 		createGenesisChildren(addressBook, seqStart);
-		autoAccountCreations = new AutoAccountCreationsManager();
+		autoAccountCreations = new AutoAccountsManager();
 
 		internalInit(platform, bootstrapProps, dualState);
 	}
@@ -499,7 +499,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return dualStateForDeferredInit;
 	}
 
-	AutoAccountCreationsManager getAutoAccountsManager() {
+	AutoAccountsManager getAutoAccountsManager() {
 		return autoAccountCreations;
 	}
 

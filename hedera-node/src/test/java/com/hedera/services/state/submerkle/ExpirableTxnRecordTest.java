@@ -39,12 +39,14 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.MAX_ASSESSED_CUSTOM_FEES_CHANGES;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.MAX_INVOLVED_TOKENS;
+import static com.hedera.services.state.submerkle.ExpirableTxnRecord.MISSING_ALIAS;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.MISSING_PARENT_CONSENSUS_TIMESTAMP;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.NO_CHILD_TRANSACTIONS;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.UNKNOWN_SUBMITTING_MEMBER;
@@ -58,6 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.times;
@@ -142,6 +145,7 @@ class ExpirableTxnRecordTest {
 				.setScheduleRef(scheduleID)
 				.addAssessedCustomFees(balanceChange.toGrpc())
 				.addAllAutomaticTokenAssociations(newRelationships)
+				.setAlias(ByteString.copyFromUtf8("test"))
 				.build();
 	}
 
@@ -153,6 +157,7 @@ class ExpirableTxnRecordTest {
 						.addAllTokenTransferLists(List.of(aTokenTransfers, bTokenTransfers))
 						.setScheduleRef(scheduleID)
 						.addAssessedCustomFees(balanceChange.toGrpc())
+						.setAlias(ByteString.copyFrom("test".getBytes(StandardCharsets.UTF_8)))
 						.build());
 		setNonGrpcDefaultsOn(s);
 		return s;
@@ -223,6 +228,7 @@ class ExpirableTxnRecordTest {
 		subject = subjectRecordWithTokenTransfersAndScheduleRefCustomFees();
 		subject.setNumChildRecords(NO_CHILD_TRANSACTIONS);
 		subject.setPackedParentConsensusTime(MISSING_PARENT_CONSENSUS_TIMESTAMP);
+		subject.setAlias(MISSING_ALIAS);
 		final var fin = mock(SerializableDataInputStream.class);
 		given(serdes.readNullableSerializable(fin))
 				.willReturn(subject.getReceipt())
@@ -265,6 +271,7 @@ class ExpirableTxnRecordTest {
 		subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
 		subject.setNumChildRecords(NO_CHILD_TRANSACTIONS);
 		subject.setPackedParentConsensusTime(MISSING_PARENT_CONSENSUS_TIMESTAMP);
+		subject.setAlias(MISSING_ALIAS);
 		final var fin = mock(SerializableDataInputStream.class);
 		given(serdes.readNullableSerializable(fin))
 				.willReturn(subject.getReceipt())
@@ -348,6 +355,8 @@ class ExpirableTxnRecordTest {
 		given(fin.readSerializableList(Integer.MAX_VALUE))
 				.willReturn(List.of(subject.getNewTokenAssociations().get(0)));
 		given(fin.readBoolean()).willReturn(true);
+		given(fin.readByteArray(Integer.MAX_VALUE))
+				.willReturn(subject.getAlias().toByteArray());
 		final var deserializedRecord = new ExpirableTxnRecord();
 
 		deserializedRecord.deserialize(fin, ExpirableTxnRecord.RELEASE_0210_VERSION);
@@ -397,6 +406,8 @@ class ExpirableTxnRecordTest {
 				.willReturn(List.of(subject.getCustomFeesCharged().get(0)));
 		given(fin.readSerializableList(Integer.MAX_VALUE))
 				.willReturn(List.of(subject.getNewTokenAssociations().get(0)));
+		given(fin.readByteArray(Integer.MAX_VALUE))
+				.willReturn(subject.getAlias().toByteArray());
 		final var deserializedRecord = new ExpirableTxnRecord();
 
 		deserializedRecord.deserialize(fin, ExpirableTxnRecord.RELEASE_0210_VERSION);
@@ -434,6 +445,7 @@ class ExpirableTxnRecordTest {
 		inOrder.verify(fout).writeShort(numChildRecords);
 		inOrder.verify(fout).writeBoolean(true);
 		inOrder.verify(fout).writeLong(packedParentConsTime);
+		inOrder.verify(fout).writeByteArray(subject.getAlias().toByteArray());
 	}
 
 	@Test
@@ -465,6 +477,7 @@ class ExpirableTxnRecordTest {
 				subject.getNftTokenAdjustments(), true, true);
 		inOrder.verify(fout).writeSerializableList(subject.getCustomFeesCharged(), true, true);
 		inOrder.verify(fout, times(2)).writeBoolean(false);
+		inOrder.verify(fout).writeByteArray(subject.getAlias().toByteArray());
 	}
 
 	@Test
@@ -521,12 +534,13 @@ class ExpirableTxnRecordTest {
 				"accountCreated=EntityId{shard=0, realm=0, num=3}, newTotalTokenSupply=0}, fee=555, " +
 				"txnHash=6e6f742d7265616c6c792d612d68617368, txnId=TxnId{payer=EntityId{shard=0, realm=0, num=0}, " +
 				"validStart=RichInstant{seconds=9999999999, nanos=0}, scheduled=false, nonce=0}, consensusTimestamp=" +
-				"RichInstant{seconds=9999999999, nanos=0}, expiry=1234567, submittingMember=1, memo=Alpha bravo charlie, " +
+				"RichInstant{seconds=9999999999, nanos=0}, expiry=1234567, submittingMember=1, memo=Alpha bravo " +
+				"charlie, " +
 				"contractCreation=SolidityFnResult{gasUsed=55, bloom=, result=, error=null, contractId=" +
 				"EntityId{shard=4, realm=3, num=2}, createdContractIds=[], logs=[" +
 				"SolidityLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}]}, hbarAdjustments=" +
 				"CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, scheduleRef=" +
-				"EntityId{shard=5, realm=6, num=7}, parentConsensusTime=1970-01-15T06:56:07.000000890Z, " +
+				"EntityId{shard=5, realm=6, num=7}, alias=test, parentConsensusTime=1970-01-15T06:56:07.000000890Z, " +
 				"tokenAdjustments=1.2.3(CurrencyAdjustments{readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), " +
 				"1.2.4(CurrencyAdjustments{readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), " +
 				"1.2.2(NftAdjustments{readable=[1 1.2.5 1.2.6]}), assessedCustomFees=(FcAssessedCustomFee{token=" +
@@ -546,15 +560,16 @@ class ExpirableTxnRecordTest {
 				"validStart=RichInstant{seconds=9999999999, nanos=0}, scheduled=false, nonce=0}, " +
 				"consensusTimestamp=RichInstant{seconds=9999999999, nanos=0}, expiry=1234567, submittingMember=1, " +
 				"memo=Alpha bravo charlie, contractCreation=SolidityFnResult{gasUsed=55, bloom=, result=, error=null, " +
-				"contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[], logs=[" +
-				"SolidityLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}]}, " +
+				"contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[], " +
+				"logs=[SolidityLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}]}, " +
 				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
-				"scheduleRef=EntityId{shard=5, realm=6, num=7}, tokenAdjustments=1.2.3(CurrencyAdjustments{readable=" +
-				"[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), 1.2.4(CurrencyAdjustments{readable=[1.2.5 -> -1, " +
-				"1.2.6 <- +1, 1.2.7 <- +1000]}), 1.2.2(NftAdjustments{readable=[1 1.2.5 1.2.6]}), " +
-				"assessedCustomFees=(FcAssessedCustomFee{token=EntityId{shard=1, realm=2, num=9}, " +
-				"account=EntityId{shard=1, realm=2, num=8}, units=123, effective payer accounts=[234]}), " +
-				"newTokenAssociations=(FcTokenAssociation{token=10, account=11})}";
+				"scheduleRef=EntityId{shard=5, realm=6, num=7}, alias=test, tokenAdjustments=1.2.3" +
+				"(CurrencyAdjustments{readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), 1.2.4" +
+				"(CurrencyAdjustments{readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), 1.2.2" +
+				"(NftAdjustments{readable=[1 1.2.5 1.2.6]}), assessedCustomFees=" +
+				"(FcAssessedCustomFee{token=EntityId{shard=1, realm=2, num=9}, account=EntityId{shard=1, realm=2, " +
+				"num=8}, units=123, effective payer accounts=[234]}), newTokenAssociations=" +
+				"(FcTokenAssociation{token=10, account=11})}";
 		assertEquals(desired, subject.toString());
 	}
 

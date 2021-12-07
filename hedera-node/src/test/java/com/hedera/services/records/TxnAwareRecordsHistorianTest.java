@@ -21,6 +21,7 @@ package com.hedera.services.records;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiringEntity;
@@ -31,6 +32,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -75,6 +77,7 @@ class TxnAwareRecordsHistorianTest {
 	final private AccountID b = asAccount("0.0.2222");
 	final private AccountID c = asAccount("0.0.3333");
 	final private AccountID effPayer = asAccount("0.0.5555");
+	final private JKey effPayerKey = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKeyUnchecked();
 	final private long nows = 1_234_567L;
 	final private int nanos = 999_999_999;
 	final private Instant topLevelNow = Instant.ofEpochSecond(nows, 999_999_999);
@@ -186,6 +189,7 @@ class TxnAwareRecordsHistorianTest {
 		given(precedingBuilder.build()).willReturn(mockPrecedingRecord);
 
 		given(txnCtx.recordSoFar()).willReturn(topLevelRecord);
+		given(txnCtx.activePayerKey()).willReturn(effPayerKey);
 		given(creator.saveExpiringRecord(
 				effPayer,
 				mockTopLevelRecord,
@@ -204,6 +208,8 @@ class TxnAwareRecordsHistorianTest {
 
 		final var followSynthBody = aBuilderWith("FOLLOW");
 		final var precedeSynthBody = aBuilderWith("PRECEDE");
+		assertEquals(effPayerKey, subject.getActivePayerKeyFromTxnCtx());
+		assertEquals(topLevelNow, subject.getConsensusTimeFromTxnCtx());
 		assertEquals(topLevelNow.plusNanos(1), subject.nextFollowingChildConsensusTime());
 		subject.trackFollowingChildRecord(1, followSynthBody, followingBuilder);
 		assertEquals(topLevelNow.plusNanos(2), subject.nextFollowingChildConsensusTime());

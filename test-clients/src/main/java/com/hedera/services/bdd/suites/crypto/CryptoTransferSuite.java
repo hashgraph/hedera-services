@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.crypto;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -27,6 +28,7 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -93,21 +95,22 @@ public class CryptoTransferSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						transferWithMissingAccountGetsInvalidAccountId(),
-						vanillaTransferSucceeds(),
-						complexKeyAcctPaysForOwnTransfer(),
-						twoComplexKeysRequired(),
-						specialAccountsBalanceCheck(),
-						transferToTopicReturnsInvalidAccountId(),
-						tokenTransferFeesScaleAsExpected(),
-						okToSetInvalidPaymentHeaderForCostAnswer(),
-						baseCryptoTransferFeeChargedAsExpected(),
-						autoAssociationRequiresOpenSlots(),
-						royaltyCollectorsCanUseAutoAssociation(),
-						royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
-						dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
-						nftSelfTransfersRejectedBothInPrecheckAndHandle(),
-						hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
+//						transferWithMissingAccountGetsInvalidAccountId(),
+//						vanillaTransferSucceeds(),
+//						complexKeyAcctPaysForOwnTransfer(),
+//						twoComplexKeysRequired(),
+//						specialAccountsBalanceCheck(),
+//						transferToTopicReturnsInvalidAccountId(),
+//						tokenTransferFeesScaleAsExpected(),
+//						okToSetInvalidPaymentHeaderForCostAnswer(),
+//						baseCryptoTransferFeeChargedAsExpected(),
+//						autoAssociationRequiresOpenSlots(),
+//						royaltyCollectorsCanUseAutoAssociation(),
+//						royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
+//						dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
+//						nftSelfTransfersRejectedBothInPrecheckAndHandle(),
+//						hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
+						autoAccountCreationsTest()
 				}
 		);
 	}
@@ -115,6 +118,29 @@ public class CryptoTransferSuite extends HapiApiSuite {
 	@Override
 	public boolean canRunAsync() {
 		return true;
+	}
+
+	private HapiApiSpec autoAccountCreationsTest() {
+		long initialBalance = 1000L;
+		var aliasContent = ByteString.copyFromUtf8("a479462fba67674b5a41acfb16cb6828626b61d3f389fa611005a45754130e5c749073c0b1b791596430f4a54649cc8a3f6d28147dd4099070a5c3c4811d1771");
+		var validEd25519Key = Key.newBuilder().setEd25519(aliasContent).build();
+		var valid25519Alias = validEd25519Key.toByteString();
+
+//		var expectedAlias = Key.parseFrom(valid25519Alias).getEd25519();
+		return defaultHapiSpec("VanillaTransferSucceeds")
+				.given(
+						UtilVerbs.inParallel(
+								cryptoCreate("payer").balance(initialBalance * ONE_HBAR)
+						)
+				).when(
+						cryptoTransfer(
+								tinyBarsFromTo("payer", valid25519Alias, ONE_HUNDRED_HBARS)
+						).via("transferTxn")
+				).then(
+						getTxnRecord("transferTxn").andAllChildRecords().logged(),
+						getAccountInfo("payer").has(accountWith().balance((initialBalance * ONE_HBAR) - ONE_HUNDRED_HBARS)),
+						getAccountInfo(valid25519Alias).has(accountWith().balance(ONE_HUNDRED_HBARS))
+				);
 	}
 
 	private HapiApiSpec nftSelfTransfersRejectedBothInPrecheckAndHandle() {

@@ -21,11 +21,14 @@ package com.hedera.services.ledger;
  */
 
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
+import com.hedera.test.factories.keys.KeyFactory;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
@@ -37,10 +40,12 @@ import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hedera.test.utils.TxnUtils.withOwnershipChanges;
 import static com.hedera.test.utils.TxnUtils.withTokenAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -51,6 +56,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_LIST_
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
@@ -64,7 +70,11 @@ class PureTransferSemanticChecksTest {
 	private final int maxBalanceChanges = 20;
 	final ImpliedTransfersMeta.ValidationProps validationProps = new ImpliedTransfersMeta.ValidationProps(
 			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, maxFeeNesting, maxBalanceChanges, areNftsEnabled);
-	final private AccountID a = AccountID.newBuilder().setAccountNum(9_999L).build();
+	private final Key aliasA  = KeyFactory.getDefaultInstance().newEd25519();
+	private final Key aliasB  = KeyFactory.getDefaultInstance().newEd25519();
+	final private AccountID a = AccountID.newBuilder().setAccountNum(9_999L).setAlias(aliasA.toByteString()).build();
+	final private AccountID invalidAliasAccount = AccountID.newBuilder().setAlias(aliasA.toByteString().substring(0,10)).build();
+	final private AccountID validAliasAccount = AccountID.newBuilder().setAlias(aliasB.toByteString()).build();
 	final private AccountID b = AccountID.newBuilder().setAccountNum(8_999L).build();
 	final private AccountID c = AccountID.newBuilder().setAccountNum(7_999L).build();
 	final private AccountID d = AccountID.newBuilder().setAccountNum(6_999L).build();
@@ -86,6 +96,7 @@ class PureTransferSemanticChecksTest {
 
 		given(subject.isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList())).willReturn(true);
 		given(subject.isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts)).willReturn(true);
+		given(subject.hasValidAlias(hbarAdjusts.getAccountAmountsList())).willReturn(true);
 		given(subject.validateTokenTransferSyntax(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true)).willReturn(OK);
 		given(subject.validateTokenTransferSemantics(tokenAdjusts)).willReturn(OK);
 		// and:
@@ -99,6 +110,7 @@ class PureTransferSemanticChecksTest {
 		inOrder.verify(subject).hasRepeatedAccount(hbarAdjusts.getAccountAmountsList());
 		inOrder.verify(subject).isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList());
 		inOrder.verify(subject).isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts);
+		inOrder.verify(subject).hasValidAlias(hbarAdjusts.getAccountAmountsList());
 		inOrder.verify(subject).validateTokenTransferSyntax(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true);
 		inOrder.verify(subject).validateTokenTransferSemantics(tokenAdjusts);
 		// and:
@@ -117,6 +129,7 @@ class PureTransferSemanticChecksTest {
 		given(subject.isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts)).willReturn(true);
 		given(subject.validateTokenTransferSyntax(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true))
 				.willReturn(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
+		given(subject.hasValidAlias(any())).willReturn(true);
 		// and:
 		doCallRealMethod().when(subject)
 				.fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps);
@@ -141,6 +154,7 @@ class PureTransferSemanticChecksTest {
 		// and:
 		given(subject.isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList())).willReturn(true);
 		given(subject.isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts)).willReturn(true);
+		given(subject.hasValidAlias(hbarAdjusts.getAccountAmountsList())).willReturn(true);
 		given(subject.validateTokenTransferSyntax(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true)).willReturn(OK);
 		given(subject.validateTokenTransferSemantics(tokenAdjusts)).willReturn(TOKEN_ID_REPEATED_IN_TOKEN_LIST);
 		// and:
@@ -425,5 +439,54 @@ class PureTransferSemanticChecksTest {
 				withAdjustments(a, -4L, b, +2L, b, +2L).getAccountAmountsList()));
 		assertTrue(subject.hasRepeatedAccount(
 				withAdjustments(a, -4L, a, +2L, b, +2L).getAccountAmountsList()));
+	}
+
+	@Test
+	void rejectsInvalidAliasKeys(){
+		final var inValidHbarAdjusts = TransferList.newBuilder()
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(a).setAmount(-10L).build())
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(invalidAliasAccount).setAmount(10L).build())
+				.build();
+		final var tokenAdjusts = withTokenAdjustments(aTid, a, -1, bTid, b, 2, cTid, c, 3);
+		subject = mock(PureTransferSemanticChecks.class);
+
+		final var validationProps = new ImpliedTransfersMeta.ValidationProps(
+				maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, maxFeeNesting, maxBalanceChanges, areNftsEnabled);
+
+		given(subject.isNetZeroAdjustment(any())).willReturn(true);
+		given(subject.isAcceptableSize(inValidHbarAdjusts.getAccountAmountsList(), maxHbarAdjusts)).willReturn(true);
+		given(subject.validateTokenTransferSyntax(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true)).willReturn(OK);
+		given(subject.validateTokenTransferSemantics(tokenAdjusts)).willReturn(OK);
+
+		doCallRealMethod().when(subject).hasValidAlias(any());
+		doCallRealMethod().when(subject).fullPureValidation(any(), any(), any());
+
+	    var result = subject.fullPureValidation(inValidHbarAdjusts, tokenAdjusts, validationProps);
+		assertEquals(INVALID_ALIAS, result);
+	}
+
+	@Test
+	void acceptsValidAliasKeys(){
+		final var validHbarAdjusts = TransferList.newBuilder()
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(a).setAmount(-10L).build())
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(validAliasAccount).setAmount(10L).build())
+				.build();
+
+		final var tokenAdjusts = withTokenAdjustments(aTid, a, -1, bTid, b, 2, cTid, c, 3);
+		subject = mock(PureTransferSemanticChecks.class);
+
+		final var validationProps = new ImpliedTransfersMeta.ValidationProps(
+				maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, maxFeeNesting, maxBalanceChanges, areNftsEnabled);
+
+		given(subject.isNetZeroAdjustment(any())).willReturn(true);
+		given(subject.isAcceptableSize(validHbarAdjusts.getAccountAmountsList(), maxHbarAdjusts)).willReturn(true);
+		given(subject.validateTokenTransferSyntax(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true)).willReturn(OK);
+		given(subject.validateTokenTransferSemantics(tokenAdjusts)).willReturn(OK);
+
+		doCallRealMethod().when(subject).hasValidAlias(any());
+		doCallRealMethod().when(subject).fullPureValidation(any(), any(), any());
+
+		final var result = subject.fullPureValidation(validHbarAdjusts, tokenAdjusts, validationProps);
+		assertEquals(OK, result);
 	}
 }

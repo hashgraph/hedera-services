@@ -20,6 +20,7 @@ package com.hedera.services.ledger.accounts;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.BeanProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
@@ -29,6 +30,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import java.util.EnumMap;
 import java.util.Map;
 
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.ALIAS;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.EXPIRY;
@@ -69,7 +71,8 @@ public abstract class AccountCustomizer<
 		AUTO_RENEW_PERIOD,
 		IS_RECEIVER_SIG_REQUIRED,
 		MAX_AUTOMATIC_ASSOCIATIONS,
-		ALREADY_USED_AUTOMATIC_ASSOCIATIONS
+		ALREADY_USED_AUTOMATIC_ASSOCIATIONS,
+		ALIAS
 	}
 
 	private final Map<Option, P> optionProperties;
@@ -122,6 +125,11 @@ public abstract class AccountCustomizer<
 
 	public T expiry(final long option) {
 		changeManager.update(changes, optionProperties.get(EXPIRY), option);
+		return self();
+	}
+
+	public T alias(final ByteString option) {
+		changeManager.update(changes, optionProperties.get(ALIAS), option);
 		return self();
 	}
 

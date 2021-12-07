@@ -54,6 +54,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 
+import static com.hedera.services.state.expiry.ExpiringCreations.EMPTY_MEMO;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
@@ -149,7 +150,8 @@ class ExpiringCreationsTest {
 
 		final var record = subject.createSuccessfulSyntheticRecord(
 				customFeesCharged,
-				sideEffectsTracker);
+				sideEffectsTracker,
+				EMPTY_MEMO);
 
 		assertEquals(SUCCESS.toString(), record.getReceiptBuilder().getStatus());
 		assertEquals(tokensExpected, record.getTokens());
