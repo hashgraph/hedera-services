@@ -33,21 +33,16 @@ class DecodingFacadeTest {
 	@Test
 	void decodeCryptoTransfer() {
 		final var decodedInput = subject.decodeCryptoTransfer(CRYPTO_TRANSFER_INPUT);
-		final var hbarTransfers = decodedInput.getHbarTransfers();
 		final var fungibleTransfers = decodedInput.getFungibleTransfers();
 		final var nftExchanges = decodedInput.getNftExchanges();
 
-		assertNotNull(hbarTransfers);
 		assertNotNull(fungibleTransfers);
 		assertNotNull(nftExchanges);
-		assertEquals(1, hbarTransfers.size());
 		assertEquals(1, fungibleTransfers.size());
 		assertEquals(1, nftExchanges.size());
 		assertTrue(fungibleTransfers.get(0).getDenomination().getTokenNum() > 0);
 		assertTrue(fungibleTransfers.get(0).receiver.getAccountNum() > 0);
 		assertEquals(43, fungibleTransfers.get(0).receiverAdjustment().getAmount());
-		assertTrue(hbarTransfers.get(0).receiver.getAccountNum() > 0);
-		assertEquals(43, hbarTransfers.get(0).receiverAdjustment().getAmount());
 		assertTrue(nftExchanges.get(0).getTokenType().getTokenNum() > 0);
 		assertTrue(nftExchanges.get(0).nftTransfer().getReceiverAccountID().getAccountNum() > 0);
 		assertTrue(nftExchanges.get(0).nftTransfer().getSenderAccountID().getAccountNum() > 0);
