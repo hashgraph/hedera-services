@@ -594,13 +594,11 @@ public class ContractResources {
 			"\"outputs\": [{\"internalType\": \"address\",\"name\": \"hotSeatAddress\",\"type\": \"address\"}]," +
 			"\"stateMutability\": \"view\",\"type\": \"function\"}";
 
-	public static final String ASSOCIATE_DISSOCIATE_CONSTRUCTOR = "{ \"inputs\": [ { \"internalType\": \"address\", " +
-			"\"name\": \"_tokenAddress\", \"type\": \"address\" } ], \"stateMutability\": \"nonpayable\", " +
-			"\"type\": \"constructor\" }";
-
-	public static final String ASSOCIATE_TOKEN = "{ \"inputs\": [], \"name\": \"associateToken\", \"outputs\": [], " +
+	public static final String ASSOCIATE_TOKEN = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": " +
+			"\"tokenAddress\", \"type\": \"address\" } ], \"name\": \"associateToken\", \"outputs\": [], " +
 			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
-	public static final String DISSOCIATE_TOKEN = "{ \"inputs\": [], \"name\": \"dissociateToken\", \"outputs\": [], " +
+	public static final String DISSOCIATE_TOKEN = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": " +
+			"\"tokenAddress\", \"type\": \"address\" } ], \"name\": \"dissociateToken\", \"outputs\": [], " +
 			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
 

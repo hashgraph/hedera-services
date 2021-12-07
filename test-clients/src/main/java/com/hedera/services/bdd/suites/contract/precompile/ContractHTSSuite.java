@@ -29,9 +29,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.DISSOCIATE_TOKEN;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.HW_MINT_CONS_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ZENOS_BANK_DEPOSIT_TOKENS;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ZENOS_BANK_WITHDRAW_TOKENS;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -45,12 +48,18 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
+import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.FREEZABLE_TOKEN_OFF_BY_DEFAULT;
+import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.FREEZABLE_TOKEN_ON_BY_DEFAULT;
+import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.KNOWABLE_TOKEN;
+import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.TokenType.*;
 
 public class ContractHTSSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractHTSSuite.class);
@@ -99,7 +108,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 						cryptoCreate(theReceiver),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(A_TOKEN)
-								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.tokenType(FUNGIBLE_COMMON)
 								.initialSupply(TOTAL_SUPPLY)
 								.treasury(TOKEN_TREASURY),
 						fileCreate("bytecode").payingWith(theAccount),
@@ -134,6 +143,54 @@ public class ContractHTSSuite extends HapiApiSuite {
 				);
 	}
 
+	private HapiApiSpec validatesAssociatePrecompileWorks() {
+		final var theAccount = "anybody";
+		final var theContract = "associateDissociateContract";
+
+		final AtomicLong freezeKeyOnNum = new AtomicLong();
+		final AtomicLong freezeKeyOffNum = new AtomicLong();
+		final AtomicLong knowableTokenNum = new AtomicLong();
+		final AtomicLong vanillaTokenNum = new AtomicLong();
+
+		return defaultHapiSpec("associatePrecompileWorks")
+				.given(
+						newKeyNamed("kycKey"),
+						newKeyNamed("freezeKey"),
+						fileCreate(theContract)
+								.path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
+						cryptoCreate(theAccount).balance(0L),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						tokenCreate(FREEZABLE_TOKEN_ON_BY_DEFAULT)
+								.tokenType(FUNGIBLE_COMMON)
+								.treasury(TOKEN_TREASURY)
+								.freezeKey("freezeKey")
+								.freezeDefault(true)
+								.exposingCreatedIdTo(idLit -> freezeKeyOnNum.set(asDotDelimitedLongArray(idLit)[2])),
+						tokenCreate(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
+								.tokenType(FUNGIBLE_COMMON)
+								.treasury(TOKEN_TREASURY)
+								.freezeKey("freezeKey")
+								.freezeDefault(false)
+								.exposingCreatedIdTo(idLit -> freezeKeyOffNum.set(asDotDelimitedLongArray(idLit)[2])),
+						tokenCreate(KNOWABLE_TOKEN)
+								.tokenType(FUNGIBLE_COMMON)
+								.treasury(TOKEN_TREASURY)
+								.kycKey("kycKey")
+								.exposingCreatedIdTo(idLit -> knowableTokenNum.set(asDotDelimitedLongArray(idLit)[2])),
+						tokenCreate(VANILLA_TOKEN)
+								.tokenType(FUNGIBLE_COMMON)
+								.treasury(TOKEN_TREASURY)
+								.exposingCreatedIdTo(idLit -> vanillaTokenNum.set(asDotDelimitedLongArray(idLit)[2]))
+				).when(
+						sourcing(() -> contractCreate(theContract)
+								.bytecode("associateDissociateContractByteCode")
+								.gas(100_000))
+				).then();
+
+
+	}
+
+
 	private HapiApiSpec associateToken() {
 		final var theAccount = "anybody";
 		final var theContract = "associateDissociateContract";
@@ -142,7 +199,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 						cryptoCreate(theAccount).balance(10 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(A_TOKEN)
-								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.tokenType(FUNGIBLE_COMMON)
 								.initialSupply(TOTAL_SUPPLY)
 								.treasury(TOKEN_TREASURY),
 						fileCreate("associateDissociateContractByteCode").payingWith(theAccount),
@@ -152,8 +209,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(theContract, ContractResources.ASSOCIATE_DISSOCIATE_CONSTRUCTOR,
-														asAddress(spec.registry().getTokenID(A_TOKEN)))
+												contractCreate(theContract)
 														.payingWith(theAccount)
 														.bytecode("associateDissociateContractByteCode")
 														.via("associateTxn")
@@ -178,7 +234,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 						cryptoCreate(theAccount).balance(10 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(A_TOKEN)
-								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.tokenType(FUNGIBLE_COMMON)
 								.initialSupply(TOTAL_SUPPLY)
 								.treasury(TOKEN_TREASURY),
 						fileCreate("associateDissociateContractByteCode").payingWith(theAccount),
@@ -188,8 +244,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(theContract, ContractResources.ASSOCIATE_DISSOCIATE_CONSTRUCTOR,
-														asAddress(spec.registry().getTokenID(A_TOKEN)))
+												contractCreate(theContract)
 														.payingWith(theAccount)
 														.bytecode("associateDissociateContractByteCode")
 														.via("associateTxn")
