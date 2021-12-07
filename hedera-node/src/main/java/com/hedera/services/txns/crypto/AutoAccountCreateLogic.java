@@ -47,6 +47,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NO_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -89,7 +90,7 @@ public class AutoAccountCreateLogic {
 	 * 		accounts ledger
 	 * @return response code for the operation
 	 */
-	public ResponseCodeEnum createAutoAccounts(BalanceChange changeWithOnlyAlias,
+	public ResponseCodeEnum createAutoAccount(BalanceChange changeWithOnlyAlias,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
 		final var sideEffects = sideEffectsFactory.get();
 		try {
@@ -97,6 +98,7 @@ public class AutoAccountCreateLogic {
 			var alias = changeWithOnlyAlias.alias();
 			Key key = Key.parseFrom(alias);
 			var syntheticCreateTxn = syntheticTxnFactory.cryptoCreate(key, 0L);
+
 			/* TODO calculate the cryptoCreate Fee and update the amount in the balanceChange accordingly and set the validity */
 			var feeForSyntheticCreateTxn = feeForAutoAccountCreateTxn(syntheticCreateTxn.getCryptoCreateAccount());
 			// adjust fee and return if insufficient balance.
@@ -118,7 +120,9 @@ public class AutoAccountCreateLogic {
 			sideEffects.trackAutoCreatedAccount(newAccountId);
 
 			/* create and track a synthetic record for crypto create synthetic transaction */
-			var childRecord = creator.createSuccessfulSyntheticRecord(null, sideEffects, AUTO_CREATED_ACCOUNT_MEMO);
+			var childRecord = creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, AUTO_CREATED_ACCOUNT_MEMO);
+			childRecord.setAlias(alias);
+
 			var sourceId = recordsHistorian.nextChildRecordSourceId();
 			recordsHistorian.trackPrecedingChildRecord(sourceId, syntheticCreateTxn, childRecord);
 

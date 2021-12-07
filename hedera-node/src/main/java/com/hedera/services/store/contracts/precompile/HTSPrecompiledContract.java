@@ -82,7 +82,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private static final Logger LOG = LogManager.getLogger(HTSPrecompiledContract.class);
 
-	private static final List<FcAssessedCustomFee> NO_CUSTOM_FEES = Collections.emptyList();
+	public static final List<FcAssessedCustomFee> NO_CUSTOM_FEES = Collections.emptyList();
 
 	public static final TypedTokenStore.LegacyTreasuryAdder NOOP_TREASURY_ADDER = (aId, tId) -> {
 		/* Precompiles cannot change treasury accounts */

@@ -6,9 +6,13 @@ import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.TxnAwareRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.txns.crypto.AutoAccountCreateLogic;
 import com.hedera.services.utils.EntityNum;
@@ -16,15 +20,19 @@ import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.util.HashMap;
 
 import static com.hedera.services.txns.crypto.AutoAccountCreateLogic.isPrimitiveKey;
+import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.hbarChange;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -44,10 +52,10 @@ class AutoAccountCreatorTest {
 	TxnAwareRecordsHistorian recordsHistorian;
 	@Mock
 	EntityIdSource entityIdSource;
-
-	AutoAccountCreateLogic subject;
 	@Mock
 	AutoAccountsManager autoAccounts;
+
+	AutoAccountCreateLogic subject;
 
 	private final BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
 	SyntheticTxnFactory syntheticTxnFactory = new SyntheticTxnFactory();
@@ -67,17 +75,25 @@ class AutoAccountCreatorTest {
 
 	@BeforeEach
 	void setUp() {
+		MockitoAnnotations.initMocks(this);
 		backingAccounts.put(a, aAccount);
 		subject = new AutoAccountCreateLogic(syntheticTxnFactory, entityCreator, entityIdSource, recordsHistorian, autoAccounts);
 	}
 
 	@Test
 	void happyPathAutoCreates() {
+		final var expirableTxnRecordBuilder = ExpirableTxnRecord.newBuilder()
+				.setTxnId(TxnId.fromGrpc(TransactionID.newBuilder().setAccountID(asAccount("0.0.1001")).build()))
+				.setReceipt(TxnReceipt.newBuilder().setStatus(OK.name()).build())
+				.setMemo("test")
+				.setConsensusTime(RichInstant.fromJava(Instant.now()));
+
 		given(autoAccounts.getAutoAccountsMap()).willReturn(new HashMap<>());
 		given(entityIdSource.newAccountId(any()))
 				.willReturn(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(99).build());
+		given(entityCreator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(expirableTxnRecordBuilder);
 
-		final var response = subject.createAutoAccounts(validChange, accountsLedger);
+		final var response = subject.createAutoAccount(validChange, accountsLedger);
 
 		final var expectedCreatedAccount = new EntityNum(99);
 
@@ -89,7 +105,7 @@ class AutoAccountCreatorTest {
 
 	@Test
 	void invalidEncodedAlias() {
-		final var response = subject.createAutoAccounts(inValidChange, accountsLedger);
+		final var response = subject.createAutoAccount(inValidChange, accountsLedger);
 
 		assertEquals(BAD_ENCODING, response);
 		assertEquals(null, autoAccounts.getAutoAccountsMap().get(validAlias));

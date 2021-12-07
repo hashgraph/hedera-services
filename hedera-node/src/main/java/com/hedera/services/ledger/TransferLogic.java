@@ -94,8 +94,8 @@ public class TransferLogic {
 				/* if the change has only alias set, account number is not set, and the alias
 				is not present in the autoAccountsMap then add the alias to list for auto
 				creations */
-				if (change.hasOnlyAlias(autoAccounts)) {
-					validity = autoAccountCreator.createAutoAccounts(change, accountsLedger);
+				if (change.hasUniqueAlias(autoAccounts)) {
+					validity = autoAccountCreator.createAutoAccount(change, accountsLedger);
 				} else {
 					validity = accountsLedger.validate(change.accountId(), scopedCheck.setBalanceChange(change));
 				}
@@ -120,7 +120,7 @@ public class TransferLogic {
 		for (var change : changes) {
 			if (change.isForHbar()) {
 				final AccountID accountId;
-				if (change.accountId().getAccountNum() == 0 && !change.alias().equals(ByteString.EMPTY)) {
+				if (change.accountId().getAccountNum() == 0 && !change.alias().isEmpty()) {
 					accountId = autoAccounts.getAutoAccountsMap().get(change.alias()).toGrpcAccountId();
 				} else {
 					accountId = change.accountId();
