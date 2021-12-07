@@ -57,7 +57,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NO_CUSTOM_FEES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
@@ -152,7 +152,7 @@ public class AutoAccountCreateLogic {
 			tempCreations.put(alias, newAccountId);
 
 		} catch (InvalidProtocolBufferException | DecoderException ex) {
-			return Pair.of(BAD_ENCODING, 0L);
+			return Pair.of(INVALID_ALIAS, 0L);
 		}
 		return Pair.of(OK, feeForSyntheticCreateTxn);
 	}

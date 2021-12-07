@@ -38,7 +38,7 @@ import java.util.HashMap;
 import static com.hedera.services.txns.crypto.AutoAccountCreateLogic.isPrimitiveKey;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.hbarChange;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -128,7 +128,7 @@ class AutoAccountCreateLogicTest {
 	void invalidEncodedAlias() {
 		final var response = subject.createAutoAccount(inValidChange, accountsLedger);
 
-		assertEquals(BAD_ENCODING, response.getLeft());
+		assertEquals(INVALID_ALIAS, response.getLeft());
 		assertEquals(0, response.getRight());
 		assertEquals(null, autoAccounts.getAutoAccountsMap().get(validAlias));
 		assertEquals(0, autoAccounts.getAutoAccountsMap().size());

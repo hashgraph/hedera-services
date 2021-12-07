@@ -45,6 +45,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIM
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -461,7 +462,7 @@ class PureTransferSemanticChecksTest {
 		doCallRealMethod().when(subject).fullPureValidation(any(), any(), any());
 
 	    var result = subject.fullPureValidation(inValidHbarAdjusts, tokenAdjusts, validationProps);
-		assertEquals(BAD_ENCODING, result);
+		assertEquals(INVALID_ALIAS, result);
 	}
 
 	@Test

@@ -37,11 +37,11 @@ import java.util.Set;
 
 import static com.hedera.services.txns.crypto.AutoAccountCreateLogic.isPrimitiveKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -87,7 +87,7 @@ public class PureTransferSemanticChecks {
 			return TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 		}
 		if (!hasValidAlias(hbarAdjusts)) {
-			return BAD_ENCODING; // need to change response code ?
+			return INVALID_ALIAS;
 		}
 
 		final var tokenValidity = validateTokenTransferSyntax(
