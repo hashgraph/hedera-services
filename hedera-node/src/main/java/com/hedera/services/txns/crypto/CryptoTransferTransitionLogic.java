@@ -80,7 +80,7 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 		var outcome = impliedTransfers.getMeta().code();
 		validateTrue(outcome == OK, outcome);
 
-		final var changes = impliedTransfers.getAllBalanceChanges();
+		var changes = impliedTransfers.getAllBalanceChanges();
 		ledger.doZeroSum(changes);
 
 		txnCtx.setAssessedCustomFees(impliedTransfers.getAssessedCustomFees());

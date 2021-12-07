@@ -86,6 +86,7 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -140,7 +141,7 @@ class LedgerBalanceChangesTest {
 	private UniqTokenViewsManager tokenViewsManager;
 	@Mock
 	private MutableEntityAccess mutableEntityAccess;
-
+	@Mock
 	private AutoAccountCreateLogic autoAccountCreator;
 	@Mock
 	private SyntheticTxnFactory syntheticTxnFactory;
@@ -196,8 +197,6 @@ class LedgerBalanceChangesTest {
 				nftsLedger,
 				backingTokens);
 
-		autoAccountCreator = new AutoAccountCreateLogic(syntheticTxnFactory, entityCreator, entityIdSource,
-				recordsHistorian, autoAccounts, exchange, usagePrices, pricedUsageCalculator);
 		transferLogic = new TransferLogic(accountsLedger, nftsLedger, tokenRelsLedger, tokenStore, sideEffectsTracker
 				, tokenViewsManager, dynamicProperties, validator, autoAccountCreator, autoAccounts);
 
@@ -400,20 +399,37 @@ class LedgerBalanceChangesTest {
 
 	@Test
 	void happyPathTransfersWithAutoCreation() {
-		final var expirableTxnRecordBuilder = ExpirableTxnRecord.newBuilder()
-				.setTxnId(TxnId.fromGrpc(TransactionID.newBuilder().setAccountID(asAccount("0.0.1001")).build()))
-				.setReceipt(TxnReceipt.newBuilder().setStatus(OK.name()).build())
-				.setMemo("test")
-				.setConsensusTime(RichInstant.fromJava(Instant.now()));
+		final Key aliasA = KeyFactory.getDefaultInstance().newEd25519();
+		final AccountID a = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(10L).build();
+		final AccountID validAliasAccountWithAlias = AccountID.newBuilder().setAlias(aliasA.toByteString()).build();
+		final AccountID validAliasAccountWithId = AccountID.newBuilder()
+				.setShardNum(0)
+				.setRealmNum(0)
+				.setAccountNum(11L)
+				.build();
+		final AccountID funding = AccountID.newBuilder()
+				.setShardNum(0)
+				.setRealmNum(0)
+				.setAccountNum(98L)
+				.build();
+		final EntityNum validAliasEntityNum = new EntityNum(11);
+		List<BalanceChange> changes = new ArrayList<>();
+		changes.add(hbarChange(a, -100));
+		changes.add(hbarChange(validAliasAccountWithAlias, 0));
+		final var validAliasAccount = MerkleAccountFactory.newAccount().get();
+		final var fundingAccount = MerkleAccountFactory.newAccount().get();
+		final var aAccount = MerkleAccountFactory.newAccount().balance(aStartBalance).get();
+		backingAccounts.put(a, aAccount);
+		backingAccounts.put(validAliasAccountWithId, validAliasAccount);
+		backingAccounts.put(funding, fundingAccount);
 
-		given(autoAccounts.getAutoAccountsMap()).willReturn(new HashMap<>());
-		given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(expirableTxnRecordBuilder);
-		Key aliasA = KeyFactory.getDefaultInstance().newEd25519();
-		AccountID a = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(10L).build();
-		AccountID validAliasAccount = AccountID.newBuilder().setAlias(aliasA.toByteString()).build();
-		List<BalanceChange> changes = List.of(hbarChange(a, -100), hbarChange(validAliasAccount, +100));
-
-		setUpForAutoCreations(aliasA, a);
+		given(autoAccounts.getAutoAccountsMap())
+				.willReturn(new HashMap<>())
+				.willReturn(new HashMap<>(){{
+					put(aliasA.toByteString(), validAliasEntityNum);
+				}});
+		given(autoAccountCreator.createAutoAccount(any(), any())).willReturn(Pair.of(OK, 100L));
+		given(dynamicProperties.fundingAccount()).willReturn(funding);
 
 		subject.begin();
 		assertDoesNotThrow(() -> subject.doZeroSum(changes));
@@ -422,13 +438,13 @@ class LedgerBalanceChangesTest {
 		subject.commit();
 
 		final var entity = autoAccounts.getAutoAccountsMap().get(aliasA.toByteString());
-		assertEquals(99L, entity.longValue());
+		assertEquals(validAliasEntityNum.longValue(), entity.longValue());
 		assertEquals(aStartBalance - 100, backingAccounts.getImmutableRef(a).getBalance());
 		assertEquals(0, backingAccounts.getImmutableRef(entity.toGrpcAccountId()).getBalance());
 
 		final var expectedTransfers = TransferList.newBuilder()
 				.addAccountAmounts(aaBuilderWith(a, -100))
-				.addAccountAmounts(aaBuilderWith(entity.toGrpcAccountId(), 100))
+				.addAccountAmounts(aaBuilderWith(funding, 100))
 				.build();
 		assertEquals(expectedTransfers, inProgress);
 		assertTrue(inProgressTokens.isEmpty());
@@ -438,6 +454,12 @@ class LedgerBalanceChangesTest {
 		final var aAccount = MerkleAccountFactory.newAccount().balance(aStartBalance).get();
 		backingAccounts.put(sender, aAccount);
 
+		final var expirableTxnRecordBuilder = ExpirableTxnRecord.newBuilder()
+				.setTxnId(TxnId.fromGrpc(TransactionID.newBuilder().setAccountID(asAccount("0.0.1001")).build()))
+				.setReceipt(TxnReceipt.newBuilder().setStatus(OK.name()).build())
+				.setMemo("test")
+				.setConsensusTime(RichInstant.fromJava(Instant.now()));
+
 		final var mockCreateTxn = TransactionBody.newBuilder()
 				.setCryptoCreateAccount(CryptoCreateTransactionBody.newBuilder()
 						.setKey(alias)
@@ -445,7 +467,7 @@ class LedgerBalanceChangesTest {
 						.setInitialBalance(0)
 						.setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS))
 						.build());
-
+		given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(expirableTxnRecordBuilder);
 		given(syntheticTxnFactory.cryptoCreate(any(), anyLong())).willReturn(mockCreateTxn);
 		given(entityIdSource.newAccountId(any()))
 				.willReturn(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(99).build());
@@ -655,6 +677,7 @@ class LedgerBalanceChangesTest {
 	private final AccountID aModel = asAccount("0.0.3");
 	private final AccountID bModel = asAccount("0.0.4");
 	private final AccountID cModel = asAccount("0.0.5");
+	private final AccountID funding = asAccount("0.0.98");
 	private final Id token = new Id(0, 0, 75231);
 	private final Id anotherToken = new Id(0, 0, 75232);
 	private final Id yetAnotherToken = new Id(0, 0, 75233);

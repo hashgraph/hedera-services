@@ -89,7 +89,7 @@ public class TransferLogic {
 		scopedCheck = new MerkleAccountScopedCheck(dynamicProperties, validator);
 	}
 
-	public void transfer(final List<BalanceChange> changes) {
+	public void transfer(List<BalanceChange> changes) {
 		var validity = OK;
 		long autoAccountCreationFeeAccumulated = 0;
 		for (var change : changes) {
@@ -112,8 +112,10 @@ public class TransferLogic {
 			}
 		}
 
-		changes.add(BalanceChange.hbarAdjust(
-				Id.fromGrpcAccount(dynamicProperties.fundingAccount()), autoAccountCreationFeeAccumulated));
+		if (autoAccountCreationFeeAccumulated != 0) {
+			changes.add(BalanceChange.hbarAdjust(
+					Id.fromGrpcAccount(dynamicProperties.fundingAccount()), autoAccountCreationFeeAccumulated));
+		}
 
 		if (validity == OK) {
 			adjustHbarUnchecked(changes);
