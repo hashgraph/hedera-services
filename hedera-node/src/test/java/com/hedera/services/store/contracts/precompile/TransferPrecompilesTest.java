@@ -67,10 +67,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TRANSFER_TOKEN;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -83,8 +85,8 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class TransferPrecompilesTest {
-	private static final Bytes pretendArguments = Bytes.fromBase64String("ABCDEF");
-
+	@Mock
+	private Bytes pretendArguments;
 	@Mock
 	private HederaTokenStore hederaTokenStore;
 	@Mock
@@ -129,7 +131,7 @@ class TransferPrecompilesTest {
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
 	@Mock
 	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
-	private EntityIdSource ids = NOOP_ID_SOURCE;
+	private final EntityIdSource ids = NOOP_ID_SOURCE;
 	@Mock
 	private ExpiringCreations creator;
 	@Mock
@@ -180,9 +182,10 @@ class TransferPrecompilesTest {
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(changes);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
 		given(impliedTransfersMeta.code()).willReturn(ResponseCodeEnum.OK);
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKEN);
 
 		// when:
-		final var result = subject.computeTransferToken(pretendArguments, frame);
+		final var result = subject.computeTransfer(pretendArguments, frame);
 
 		// then:
 		assertEquals(successResult, result);
@@ -217,11 +220,12 @@ class TransferPrecompilesTest {
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(changes);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
 		given(impliedTransfersMeta.code()).willReturn(ResponseCodeEnum.OK);
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKEN);
 
 		doThrow(new InvalidTransactionException(ResponseCodeEnum.FAIL_INVALID)).when(transferLogic).transfer(changes);
 
 		// when:
-		final var result = subject.computeTransferToken(pretendArguments, frame);
+		final var result = subject.computeTransfer(pretendArguments, frame);
 
 		// then:
 		assertNotEquals(successResult, result);
@@ -235,8 +239,9 @@ class TransferPrecompilesTest {
 		given(frame.getContractAddress()).willReturn(contractAddr);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
-		given(decoder.decodeTransferToken(pretendArguments)).willReturn(transfer);
-		given(syntheticTxnFactory.createCryptoTransfer(List.of(), List.of(), List.of(transfer))).willReturn(mockSynthBodyBuilder);
+		given(decoder.decodeTransferToken(pretendArguments)).willReturn(transferList);
+		given(syntheticTxnFactory.createCryptoTransfer(transferList.getNftExchanges(), transferList.getHbarTransfers(),
+				transferList.getFungibleTransfers())).willReturn(mockSynthBodyBuilder);
 	}
 
 	private void givenLedgers() {
@@ -257,6 +262,13 @@ class TransferPrecompilesTest {
 					sender,
 					receiver
 			);
+	private static final SyntheticTxnFactory.TokenTransferLists transferList = new SyntheticTxnFactory.TokenTransferLists(
+			new ArrayList<>() {
+			},
+			new ArrayList<>() {
+			},
+			List.of(transfer)
+	);
 	private static final Address contractAddr = Address.ALTBN128_MUL;
 	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
 	private static final List<BalanceChange> changes = List.of(

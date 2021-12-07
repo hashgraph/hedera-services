@@ -127,7 +127,7 @@ class HTSPrecompiledContractTest {
 		contract.compute(input, messageFrame);
 
 		// then
-		verify(contract).computeCryptoTransfer(input, messageFrame);
+		verify(contract).computeTransfer(input, messageFrame);
 	}
 
 	@Test
@@ -144,7 +144,7 @@ class HTSPrecompiledContractTest {
 		contract.compute(input, messageFrame);
 
 		// then
-		verify(contract).computeTransferTokens(input, messageFrame);
+		verify(contract).computeTransfer(input, messageFrame);
 	}
 
 	@Test
@@ -158,7 +158,7 @@ class HTSPrecompiledContractTest {
 		contract.compute(input, messageFrame);
 
 		// then
-		verify(contract).computeTransferToken(input, messageFrame);
+		verify(contract).computeTransfer(input, messageFrame);
 	}
 
 	@Test
@@ -175,7 +175,7 @@ class HTSPrecompiledContractTest {
 		contract.compute(input, messageFrame);
 
 		// then
-		verify(contract).computeTransferNfts(input, messageFrame);
+		verify(contract).computeTransfer(input, messageFrame);
 	}
 
 	@Test
@@ -192,7 +192,7 @@ class HTSPrecompiledContractTest {
 		contract.compute(input, messageFrame);
 
 		// then
-		verify(contract).computeTransferNft(input, messageFrame);
+		verify(contract).computeTransfer(input, messageFrame);
 	}
 
 	@Test
@@ -281,50 +281,6 @@ class HTSPrecompiledContractTest {
 
 		// when
 		var result = subject.compute(input, messageFrame);
-
-		// then
-		assertNull(result);
-	}
-
-	@Test
-	void verifyComputeCryptoTransfer() {
-		// given
-
-		// when
-		var result = subject.computeCryptoTransfer(input, messageFrame);
-
-		// then
-		assertNull(result);
-	}
-
-	@Test
-	void verifyComputeTransferTokens() {
-		// given
-
-		// when
-		var result = subject.computeTransferTokens(input, messageFrame);
-
-		// then
-		assertNull(result);
-	}
-
-	@Test
-	void verifyComputeTransferNfts() {
-		// given
-
-		// when
-		var result = subject.computeTransferNfts(input, messageFrame);
-
-		// then
-		assertNull(result);
-	}
-
-	@Test
-	void verifyComputeTransferNft() {
-		// given
-
-		// when
-		var result = subject.computeTransferNft(input, messageFrame);
 
 		// then
 		assertNull(result);
