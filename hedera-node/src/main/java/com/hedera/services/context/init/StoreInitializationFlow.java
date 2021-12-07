@@ -30,7 +30,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
@@ -47,7 +47,7 @@ public class StoreInitializationFlow {
 	private final TokenStore tokenStore;
 	private final ScheduleStore scheduleStore;
 	private final StateAccessor stateAccessor;
-	private final UniqTokenViewsManager uniqTokenViewsManager;
+	private final UniqueTokenViewsManager uniqueTokenViewsManager;
 	private final BackingStore<AccountID, MerkleAccount> backingAccounts;
 	private final BackingStore<TokenID, MerkleToken> backingTokens;
 	private final BackingStore<NftId, MerkleUniqueToken> backingNfts;
@@ -58,7 +58,7 @@ public class StoreInitializationFlow {
 			TokenStore tokenStore,
 			ScheduleStore scheduleStore,
 			@WorkingState StateAccessor stateAccessor,
-			UniqTokenViewsManager uniqTokenViewsManager,
+			UniqueTokenViewsManager uniqueTokenViewsManager,
 			BackingStore<AccountID, MerkleAccount> backingAccounts,
 			BackingStore<TokenID, MerkleToken> backingTokens,
 			BackingStore<NftId, MerkleUniqueToken> backingNfts,
@@ -71,7 +71,7 @@ public class StoreInitializationFlow {
 		this.stateAccessor = stateAccessor;
 		this.backingNfts = backingNfts;
 		this.backingTokenRels = backingTokenRels;
-		this.uniqTokenViewsManager = uniqTokenViewsManager;
+		this.uniqueTokenViewsManager = uniqueTokenViewsManager;
 	}
 
 	public void run() {
@@ -85,7 +85,7 @@ public class StoreInitializationFlow {
 		scheduleStore.rebuildViews();
 		log.info("Store internal views rebuilt");
 
-		uniqTokenViewsManager.rebuildNotice(stateAccessor.tokens(), stateAccessor.uniqueTokens());
+		uniqueTokenViewsManager.rebuildNotice(stateAccessor.tokens(), stateAccessor.uniqueTokens());
 		log.info("Unique token views rebuilt");
 	}
 }

@@ -30,8 +30,9 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -57,15 +58,15 @@ public class TransferLogic {
     private final SideEffectsTracker sideEffectsTracker;
     private final TokenStore tokenStore;
     private final MerkleAccountScopedCheck scopedCheck;
-    private final UniqTokenViewsManager tokenViewsManager;
+    private final UniqueTokenViewsManager tokenViewsManager;
 
     @Inject
     public TransferLogic(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
                          TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
                          TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
-                         TokenStore tokenStore,
+                         HederaTokenStore tokenStore,
                          SideEffectsTracker sideEffectsTracker,
-                         UniqTokenViewsManager tokenViewsManager,
+                         UniqueTokenViewsManager tokenViewsManager,
                          GlobalDynamicProperties dynamicProperties,
                          OptionValidator validator) {
         this.accountsLedger = accountsLedger;

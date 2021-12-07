@@ -22,7 +22,7 @@ package com.hedera.services.ledger;
 
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
-import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -148,7 +148,7 @@ class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
 
 	@Test
 	void delegatesTokenChangeDrop() {
-		final var manager = mock(UniqTokenViewsManager.class);
+		final var manager = mock(UniqueTokenViewsManager.class);
 		subject.setTokenViewsManager(manager);
 
 		given(nftsLedger.isInTransaction()).willReturn(true);
@@ -166,7 +166,7 @@ class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
 	@Test
 	void onlyRollsbackIfTokenRelsLedgerInTxn() {
 		given(tokenRelsLedger.isInTransaction()).willReturn(false);
-		subject.setTokenViewsManager(mock(UniqTokenViewsManager.class));
+		subject.setTokenViewsManager(mock(UniqueTokenViewsManager.class));
 
 		subject.dropPendingTokenChanges();
 
@@ -175,7 +175,7 @@ class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
 
 	@Test
 	void forwardsTransactionalSemanticsToTokenLedgersIfPresent() {
-		final var manager = mock(UniqTokenViewsManager.class);
+		final var manager = mock(UniqueTokenViewsManager.class);
 		final var inOrder = inOrder(tokenRelsLedger, nftsLedger, manager);
 		given(tokenRelsLedger.isInTransaction()).willReturn(true);
 		given(tokensLedger.isInTransaction()).willReturn(true);

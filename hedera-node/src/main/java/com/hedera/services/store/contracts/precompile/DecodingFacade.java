@@ -27,6 +27,7 @@ import org.hyperledger.besu.datatypes.Address;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.math.BigInteger;
 import java.util.List;
 
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
@@ -117,5 +118,19 @@ public class DecodingFacade {
 		return SyntheticTxnFactory.Dissociation.multiDissociation(
 				accountParsedFromSolidityAddress(accountAddress),
 				List.of(tokenParsedFromSolidityAddress(tokenAddress)));
+	}
+
+	/* NOT A REAL IMPLEMENTATION */
+	public SyntheticTxnFactory.FungibleTokenTransfer decodeTransferToken(final Bytes input) {
+		final var tokenAddress = Address.wrap(input.slice(16, 20));
+		final var fromAddress = Address.wrap(input.slice(48, 20));
+		final var toAddress = Address.wrap(input.slice(80, 20));
+		final BigInteger amount = input.slice(100, 32).toBigInteger();
+
+		return new SyntheticTxnFactory.FungibleTokenTransfer(
+				amount.longValue(),
+				tokenParsedFromSolidityAddress(tokenAddress),
+				accountParsedFromSolidityAddress(fromAddress),
+				accountParsedFromSolidityAddress(toAddress));
 	}
 }

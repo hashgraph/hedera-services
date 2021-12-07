@@ -26,10 +26,20 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.SoliditySigsVerifier;
+import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.ledger.backing.BackingStore;
+import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.properties.NftProperty;
+import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
+import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -42,14 +52,15 @@ import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.store.tokens.HederaTokenStore;
+import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.txns.token.AssociateLogic;
 import com.hedera.services.txns.token.BurnLogic;
 import com.hedera.services.txns.token.DissociateLogic;
 import com.hedera.services.txns.token.MintLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -65,16 +76,18 @@ import org.hyperledger.besu.evm.precompile.AbstractPrecompiledContract;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.math.BigInteger;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.store.tokens.views.UniqTokenViewsManager.NOOP_VIEWS_MANAGER;
+import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
+import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -85,6 +98,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
 	private static final List<ByteString> NO_METADATA = Collections.emptyList();
 	private static final List<FcAssessedCustomFee> NO_CUSTOM_FEES = Collections.emptyList();
+	private static final EntityIdSource ids = NOOP_ID_SOURCE;
 
 	/* Precompiles cannot change treasury accounts */
 	public static final TypedTokenStore.LegacyTreasuryAdder NOOP_TREASURY_ADDER = (aId, tId) -> {
@@ -96,7 +110,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private BurnLogicFactory burnLogicFactory = BurnLogic::new;
 	private AssociateLogicFactory associateLogicFactory = AssociateLogic::new;
 	private DissociateLogicFactory dissociateLogicFactory = DissociateLogic::new;
+	private TransferLogicFactory transferLogicFactory = TransferLogic::new;
 	private TokenStoreFactory tokenStoreFactory = TypedTokenStore::new;
+	private HederaTokenStoreFactory hederaTokenStoreFactory = HederaTokenStore::new;
 	private AccountStoreFactory accountStoreFactory = AccountStore::new;
 	private Supplier<SideEffectsTracker> sideEffectsFactory = SideEffectsTracker::new;
 
@@ -108,6 +124,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private final AccountRecordsHistorian recordsHistorian;
 	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final DissociationFactory dissociationFactory;
+
+	private final ImpliedTransfersMarshal impliedTransfersMarshal;
 
 	//cryptoTransfer(TokenTransferList[] calldata tokenTransfers)
 	protected static final int ABI_ID_CRYPTO_TRANSFER = 0x189a554c;
@@ -138,22 +156,25 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final GlobalDynamicProperties dynamicProperties,
 			final GasCalculator gasCalculator,
 			final AccountRecordsHistorian recordsHistorian,
-			final SoliditySigsVerifier sigsVerifier,
+			final TxnAwareSoliditySigsVerifier sigsVerifier,
 			final DecodingFacade decoder,
 			final SyntheticTxnFactory syntheticTxnFactory,
-			final EntityCreator creator,
-			final DissociationFactory dissociationFactory
+			final ExpiringCreations creator,
+			final DissociationFactory dissociationFactory,
+			final ImpliedTransfersMarshal impliedTransfersMarshal
 	) {
 		super("HTS", gasCalculator);
 
 		this.decoder = decoder;
-		this.validator = validator;
-		this.creator = creator;
+
 		this.sigsVerifier = sigsVerifier;
-		this.dynamicProperties = dynamicProperties;
 		this.recordsHistorian = recordsHistorian;
 		this.syntheticTxnFactory = syntheticTxnFactory;
+		this.creator = creator;
+		this.validator = validator;
+		this.dynamicProperties = dynamicProperties;
 		this.dissociationFactory = dissociationFactory;
+		this.impliedTransfersMarshal = impliedTransfersMarshal;
 	}
 
 	@Override
@@ -208,17 +229,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	@SuppressWarnings("unused")
-	protected Bytes computeTransferToken(final Bytes input, final MessageFrame messageFrame) {
-		final Bytes tokenAddress = Address.wrap(input.slice(16, 20));
-		final Bytes fromAddress = Address.wrap(input.slice(48, 20));
-		final Bytes toAddress = Address.wrap(input.slice(80, 20));
-		final BigInteger amount = input.slice(100, 32).toBigInteger();
-
-		final var from = EntityIdUtils.accountParsedFromSolidityAddress(fromAddress.toArray());
-		final var token = EntityIdUtils.tokenParsedFromSolidityAddress(tokenAddress.toArray());
-		final var to = EntityIdUtils.accountParsedFromSolidityAddress(toAddress.toArray());
-
-		return null;
+	protected Bytes computeTransferToken(final Bytes input, final MessageFrame frame) {
+		return computeInternal(frame, input, new TransferPrecompile());
 	}
 
 	@SuppressWarnings("unused")
@@ -334,6 +346,17 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				AccountStore accountStore,
 				DissociationFactory dissociationFactory);
 	}
+	@FunctionalInterface
+	interface TransferLogicFactory {
+		TransferLogic newLogic(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
+							   TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
+							   TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
+							   HederaTokenStore tokenStore,
+							   SideEffectsTracker sideEffectsTracker,
+							   UniqueTokenViewsManager tokenViewsManager,
+							   GlobalDynamicProperties dynamicProperties,
+							   OptionValidator validator);
+	}
 
 	@FunctionalInterface
 	interface AccountStoreFactory {
@@ -350,10 +373,23 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				BackingStore<TokenID, MerkleToken> tokens,
 				BackingStore<NftId, MerkleUniqueToken> uniqueTokens,
 				BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels,
-				UniqTokenViewsManager uniqTokenViewsManager,
+				UniqueTokenViewsManager uniqTokenViewsManager,
 				TypedTokenStore.LegacyTreasuryAdder treasuryAdder,
 				TypedTokenStore.LegacyTreasuryRemover treasuryRemover,
 				SideEffectsTracker sideEffectsTracker);
+	}
+
+	@FunctionalInterface
+	interface HederaTokenStoreFactory {
+		HederaTokenStore newHederaTokenStore(
+				EntityIdSource ids,
+				OptionValidator validator,
+				SideEffectsTracker sideEffectsTracker,
+				UniqueTokenViewsManager uniqueTokenViewsManager,
+				GlobalDynamicProperties properties,
+				TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
+				TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
+				BackingStore<TokenID, MerkleToken> backingTokens);
 	}
 
 	/* --- The precompile implementations --- */
@@ -493,6 +529,83 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
+	private class TransferPrecompile implements Precompile {
+		private SyntheticTxnFactory.FungibleTokenTransfer transferOp;
+
+		@Override
+		public TransactionBody.Builder body(final Bytes input) {
+			transferOp = decoder.decodeTransferToken(input);
+			return syntheticTxnFactory.createCryptoTransfer(List.of(), List.of(), List.of(transferOp));
+		}
+
+		@Override
+		public ExpirableTxnRecord.Builder run(
+				final Address recipient,
+				final Address contract,
+				final WorldLedgers ledgers
+		) {
+			final List<BalanceChange> changes = new ArrayList<>(){};
+			changes.addAll(List.of(
+					BalanceChange.changingFtUnits(
+							Id.fromGrpcToken(transferOp.getDenomination()),
+							transferOp.getDenomination(),
+							AccountAmount.newBuilder().setAccountID(transferOp.sender).setAmount(-transferOp.amount).build()
+					),
+					BalanceChange.changingFtUnits(
+							Id.fromGrpcToken(transferOp.getDenomination()),
+							transferOp.getDenomination(),
+							AccountAmount.newBuilder().setAccountID(transferOp.receiver).setAmount(transferOp.amount).build()
+					)
+			));
+
+			var validated = impliedTransfersMarshal.assessCustomFeesAndValidate(
+					changes,
+					changes.size(),
+					impliedTransfersMarshal.currentProps()
+			);
+
+			final var assessmentStatus = validated.getMeta().code();
+			validateTrue(assessmentStatus == OK, assessmentStatus);
+
+			final var sideEffects = sideEffectsFactory.get();
+			final var hederaTokenStore = hederaTokenStoreFactory.newHederaTokenStore(
+					ids,
+					validator,
+					sideEffects,
+					NOOP_VIEWS_MANAGER,
+					dynamicProperties,
+					ledgers.tokenRels(), ledgers.nfts(), ledgers.tokens());
+			hederaTokenStore.setAccountsLedger(ledgers.accounts());
+
+
+			final var transferLogic = transferLogicFactory.newLogic(
+					ledgers.accounts(), ledgers.nfts(), ledgers.tokenRels(), hederaTokenStore,
+					sideEffects,
+					NOOP_VIEWS_MANAGER,
+					dynamicProperties,
+					validator);
+
+			for (final var change : changes) {
+				final var units = change.units();
+				if (units < 0) {
+					final var hasSenderSig = sigsVerifier.hasActiveKey(change.getAccount(), recipient, contract);
+					validateTrue(hasSenderSig, INVALID_SIGNATURE);
+				} else if (units > 0) {
+					/* Need to add the Id.asSolidityAddress() method. */
+					final var hasReceiverSigIfReq =
+							sigsVerifier.hasActiveKeyOrNoReceiverSigReq(change.getAccount().asEvmAddress(),
+									recipient, contract);
+					validateTrue(hasReceiverSigIfReq, INVALID_SIGNATURE);
+				}
+			}
+
+			transferLogic.transfer(validated.getAllBalanceChanges());
+
+			return creator.createSuccessfulSyntheticRecord(validated.getAssessedCustomFees(),
+					sideEffects);
+		}
+	}
+
 	private class BurnPrecompile implements Precompile {
 		private SyntheticTxnFactory.BurnWrapper burnOp;
 
@@ -545,8 +658,16 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.dissociateLogicFactory = dissociateLogicFactory;
 	}
 
+	void setTransferLogicFactory(final TransferLogicFactory transferLogicFactory) {
+		this.transferLogicFactory = transferLogicFactory;
+	}
+
 	void setTokenStoreFactory(final TokenStoreFactory tokenStoreFactory) {
 		this.tokenStoreFactory = tokenStoreFactory;
+	}
+
+	void setHederaTokenStoreFactory(final HederaTokenStoreFactory hederaTokenStoreFactory) {
+		this.hederaTokenStoreFactory = hederaTokenStoreFactory;
 	}
 
 	void setAccountStoreFactory(final AccountStoreFactory accountStoreFactory) {
