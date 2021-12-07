@@ -299,8 +299,8 @@ class StateViewTest {
 		attrs = mock(Map.class);
 		storage = mock(Map.class);
 		bytecode = mock(Map.class);
-		given(storage.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedStorage);
-		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedBytecode);
+//		given(storage.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedStorage);
+//		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedBytecode);
 		nodeProps = mock(NodeLocalProperties.class);
 		specialFiles = mock(MerkleSpecialFiles.class);
 
@@ -534,6 +534,7 @@ class StateViewTest {
 
 	@Test
 	void getsContractInfo() throws Exception {
+		given(storage.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedStorage);
 		given(contracts.get(EntityNum.fromContractId(cid))).willReturn(contract);
 		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedBytecode);
 
@@ -752,6 +753,7 @@ class StateViewTest {
 
 	@Test
 	void getsStorage() {
+		given(storage.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedStorage);
 		final var actual = subject.storageOf(cid);
 
 		assertArrayEquals(expectedStorage, actual.get());

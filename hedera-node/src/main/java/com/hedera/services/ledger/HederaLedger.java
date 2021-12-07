@@ -369,23 +369,21 @@ public class HederaLedger {
 		long autoAccountCreationFeeAccumulated = 0;
 		for (var change : changes) {
 			if (change.isForHbar()) {
-				if (change.isForHbar()) {
 				/* if the change has only alias set, account number is not set, and the alias
 				is not present in the autoAccountsMap then add the alias to list for auto
 				creations */
-					if (change.hasUniqueAlias(autoAccounts)) {
-						var creationResult = autoAccountCreator.createAutoAccount(change, accountsLedger);
-						validity = creationResult.getLeft();
-						autoAccountCreationFeeAccumulated += creationResult.getRight();
-					} else {
-						validity = accountsLedger.validate(change.accountId(), scopedCheck.setBalanceChange(change));
-					}
+				if (change.hasUniqueAlias(autoAccounts)) {
+					var creationResult = autoAccountCreator.createAutoAccount(change, accountsLedger);
+					validity = creationResult.getLeft();
+					autoAccountCreationFeeAccumulated += creationResult.getRight();
 				} else {
-					validity = tokenStore.tryTokenChange(change);
+					validity = accountsLedger.validate(change.accountId(), scopedCheck.setBalanceChange(change));
 				}
-				if (validity != OK) {
-					break;
-				}
+			} else {
+				validity = tokenStore.tryTokenChange(change);
+			}
+			if (validity != OK) {
+				break;
 			}
 		}
 

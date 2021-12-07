@@ -23,9 +23,6 @@ package com.hedera.services.ledger;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.ledger.accounts.AutoAccountsManager;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
@@ -145,20 +142,11 @@ class LedgerBalanceChangesTest {
 	@Mock
 	private EntityIdSource entityIdSource;
 	@Mock
-	EntityCreator entityCreator;
-	@Mock
 	private TxnAwareRecordsHistorian recordsHistorian;
 	@Mock
 	private AutoAccountsManager autoAccounts;
-	@Mock
-	private HbarCentExchange exchange;
-	@Mock
-	private UsagePricesProvider usagePrices;
-	@Mock
-	private PricedUsageCalculator pricedUsageCalculator;
 
 	private HederaLedger subject;
-
 
 	@BeforeEach
 	void setUp() throws ConstructableRegistryException {
@@ -323,7 +311,6 @@ class LedgerBalanceChangesTest {
 	@Test
 	void happyPathRecordsTransfersAndChangesBalancesAsExpected() {
 		givenInitialBalancesAndOwnership();
-
 
 		// when:
 		TransferList inProgress;
@@ -665,7 +652,6 @@ class LedgerBalanceChangesTest {
 	private final AccountID aModel = asAccount("0.0.3");
 	private final AccountID bModel = asAccount("0.0.4");
 	private final AccountID cModel = asAccount("0.0.5");
-	private final AccountID funding = asAccount("0.0.98");
 	private final Id token = new Id(0, 0, 75231);
 	private final Id anotherToken = new Id(0, 0, 75232);
 	private final Id yetAnotherToken = new Id(0, 0, 75233);
