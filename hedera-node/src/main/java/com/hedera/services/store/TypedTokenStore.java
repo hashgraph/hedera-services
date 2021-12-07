@@ -20,6 +20,7 @@ package com.hedera.services.store;
  * ‍
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.records.TransactionRecordService;
@@ -83,8 +84,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
 @Singleton
 public class TypedTokenStore {
 	private final AccountStore accountStore;
+	private final SideEffectsTracker sideEffectsTracker;
 	private final UniqTokenViewsManager uniqTokenViewsManager;
-	private final TransactionRecordService transactionRecordService;
 	private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
 	private final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens;
 	private final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels;
@@ -96,22 +97,22 @@ public class TypedTokenStore {
 
 	@Inject
 	public TypedTokenStore(
-			AccountStore accountStore,
-			TransactionRecordService transactionRecordService,
-			Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
-			Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens,
-			Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels,
-			BackingTokenRels backingTokenRels,
-			UniqTokenViewsManager uniqTokenViewsManager,
-			LegacyTreasuryAdder legacyStoreDelegate,
-			LegacyTreasuryRemover delegate
+			final AccountStore accountStore,
+			final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
+			final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens,
+			final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels,
+			final BackingTokenRels backingTokenRels,
+			final UniqTokenViewsManager uniqTokenViewsManager,
+			final LegacyTreasuryAdder legacyStoreDelegate,
+			final LegacyTreasuryRemover delegate,
+			final SideEffectsTracker sideEffectsTracker
 	) {
 		this.tokens = tokens;
 		this.uniqTokenViewsManager = uniqTokenViewsManager;
 		this.tokenRels = tokenRels;
 		this.uniqueTokens = uniqueTokens;
 		this.accountStore = accountStore;
-		this.transactionRecordService = transactionRecordService;
+		this.sideEffectsTracker = sideEffectsTracker;
 		this.delegate = delegate;
 		this.backingTokenRels = backingTokenRels;
 		this.addKnownTreasury = legacyStoreDelegate;
@@ -190,7 +191,7 @@ public class TypedTokenStore {
 	public TokenRelationship loadPossiblyDeletedTokenRelationship(Token token, Account account) {
 		final var merkleTokenRel = getMerkleTokenRelationship(token, account);
 
-		if(merkleTokenRel == null) {
+		if (merkleTokenRel == null) {
 			return null;
 		} else {
 			return buildTokenRelationship(token, account, merkleTokenRel);
@@ -205,7 +206,7 @@ public class TypedTokenStore {
 	 * @param tokenRelationships
 	 * 		the token relationships to save
 	 */
-	public void persistTokenRelationships(List<TokenRelationship> tokenRelationships) {
+	public void persistTokenRelationships(final List<TokenRelationship> tokenRelationships) {
 		final var currentTokenRels = tokenRels.get();
 
 		for (var tokenRelationship : tokenRelationships) {
@@ -217,7 +218,7 @@ public class TypedTokenStore {
 				persistNonDestroyed(tokenRelationship, key, currentTokenRels);
 			}
 		}
-		transactionRecordService.includeChangesToTokenRels(tokenRelationships);
+		sideEffectsTracker.trackTokenBalanceChanges(tokenRelationships);
 	}
 
 	private MerkleTokenRelStatus getMerkleTokenRelationship(Token token, Account account) {
@@ -269,8 +270,8 @@ public class TypedTokenStore {
 	 * @param ownershipTracker
 	 * 		holds changes to {@link UniqueToken} ownership
 	 */
-	public void persistTrackers(OwnershipTracker ownershipTracker) {
-		transactionRecordService.includeOwnershipChanges(ownershipTracker);
+	public void persistTrackers(final OwnershipTracker ownershipTracker) {
+		sideEffectsTracker.trackTokenOwnershipChanges(ownershipTracker);
 	}
 
 	/**
@@ -303,10 +304,10 @@ public class TypedTokenStore {
 	/**
 	 * This is only to be used when pausing/unpausing token as this method ignores the pause status
 	 * of the token.
+	 *
 	 * @param id
 	 * 		the token to load
-	 * @return
-	 * 		a usable model of the token which is possibly paused.
+	 * @return @return a usable model of the token which is possibly paused
 	 */
 	public Token loadPossiblyPausedToken(Id id) {
 		final var merkleToken = tokens.get().get(EntityNum.fromModel(id));
@@ -413,14 +414,14 @@ public class TypedTokenStore {
 			destroyRemoved(token.removedUniqueTokens(), treasury);
 		}
 
-		/* Only needed during HTS refactor.
-		Will be removed once all operations that refer to the knownTreasuries in-memory structure are refactored */
+		/* Only needed during HTS refactor. Will be removed once all operations that
+		 * refer to the knownTreasuries in-memory structure are refactored */
 		if (token.isDeleted()) {
 			final AccountID affectedTreasury = token.getTreasury().getId().asGrpcAccount();
 			final TokenID mutatedToken = token.getId().asGrpcToken();
 			delegate.removeKnownTreasuryForToken(affectedTreasury, mutatedToken);
 		}
-		transactionRecordService.includeChangesToToken(token);
+		sideEffectsTracker.trackTokenChanges(token);
 	}
 
 	/**
@@ -450,7 +451,7 @@ public class TypedTokenStore {
 		tokens.get().put(newMerkleTokenId, newMerkleToken);
 		addKnownTreasury.perform(token.getTreasury().getId().asGrpcAccount(), token.getId().asGrpcToken());
 
-		transactionRecordService.includeChangesToToken(token);
+		sideEffectsTracker.trackTokenChanges(token);
 	}
 
 	private void destroyRemoved(List<UniqueToken> nfts, EntityId treasury) {

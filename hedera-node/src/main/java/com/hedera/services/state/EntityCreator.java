@@ -20,15 +20,14 @@ package com.hedera.services.state;
  * ‍
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
 
 import java.time.Instant;
 import java.util.List;
@@ -66,7 +65,7 @@ public interface EntityCreator {
 	 * Build {@link ExpirableTxnRecord.Builder} when the record is finalized before committing
 	 * the active transaction
 	 *
-	 * @param otherNonThresholdFees
+	 * @param fee
 	 * 		part of fees
 	 * @param hash
 	 * 		transaction hash
@@ -76,23 +75,20 @@ public interface EntityCreator {
 	 * 		consensus time
 	 * @param receipt
 	 * 		transaction receipt
-	 * @param explicitTokenTransfers
-	 * 		explicit list of token transfers
 	 * @param assessedCustomFees
 	 * 		the list of assessed custom fees
-	 * @param newTokenAssociations
-	 * 		the list of newly created token associations
+	 * @param sideEffectsTracker
+	 * 		the side effects tracked throughout the transaction
 	 * @return a {@link ExpirableTxnRecord.Builder} for the finalized record
 	 */
-	ExpirableTxnRecord.Builder buildExpiringRecord(
-			long otherNonThresholdFees,
+	ExpirableTxnRecord.Builder createExpiringRecord(
+			long fee,
 			byte[] hash,
 			TxnAccessor accessor,
 			Instant consensusTime,
 			TxnReceipt receipt,
-			List<TokenTransferList> explicitTokenTransfers,
 			List<FcAssessedCustomFee> assessedCustomFees,
-			List<FcTokenAssociation> newTokenAssociations);
+			SideEffectsTracker sideEffectsTracker);
 
 	/**
 	 * Build a {@link ExpirableTxnRecord.Builder} for a transaction failed to commit

@@ -24,7 +24,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -32,8 +31,6 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 
@@ -168,13 +165,6 @@ public interface TransactionContext {
 	void setCreated(TopicID id);
 
 	/**
-	 * Record that the current transaction created a token.
-	 *
-	 * @param id the created token.
-	 */
-	void setCreated(TokenID id);
-
-	/**
 	 * Record that the current transaction created a scheduled transaction.
 	 *
 	 * @param id the created scheduled transaction
@@ -227,12 +217,6 @@ public interface TransactionContext {
 	void setTopicRunningHash(byte[] runningHash, long sequenceNumber);
 
 	/**
-	 * Set this token's new total supply for mint/burn/wipe transaction
-	 * @param newTotalTokenSupply new total supply of the token.
-	 */
-	void setNewTotalSupply(long newTotalTokenSupply);
-
-	/**
 	 * Sets a triggered TxnAccessor for execution
 	 * @param accessor the accessor which will be triggered
 	 */
@@ -258,29 +242,9 @@ public interface TransactionContext {
 	List<ExpiringEntity> expiringEntities();
 
 	/**
-	 * Set the token transfers that occurred as a result of the active transaction.
-	 *
-	 * @param tokenTransfers the token transfers to record
-	 */
-	void setTokenTransferLists(List<TokenTransferList> tokenTransfers);
-
-	/**
-	 * Update the serial numbers after minting unique tokens
-	 * @param serialNumbers - the serial numbers used in the mint op
-	 */
-	void setCreated(List<Long> serialNumbers);
-
-	/**
 	 * Set the assessed custom fees as a result of the active transaction. It is used for {@link ExpirableTxnRecord}.
 	 *
 	 * @param assessedCustomFees the assessed custom fees
 	 */
 	void setAssessedCustomFees(List<FcAssessedCustomFee> assessedCustomFees);
-
-	/**
-	 * Set the newly created token associations as a result of the active transaction. It is used for {@link ExpirableTxnRecord}.
-	 *
-	 * @param newTokenAssociations the newly created token associations
-	 */
-	void setNewTokenAssociations(List<FcTokenAssociation> newTokenAssociations);
 }

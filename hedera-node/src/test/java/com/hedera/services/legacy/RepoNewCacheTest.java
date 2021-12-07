@@ -21,6 +21,7 @@ package com.hedera.services.legacy;
  */
 
 import com.hedera.services.config.MockGlobalDynamicProps;
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -74,6 +75,7 @@ class RepoNewCacheTest {
 				mock(EntityIdSource.class),
 				mock(ExpiringCreations.class),
 				TestContextValidator.TEST_VALIDATOR,
+				new SideEffectsTracker(),
 				mock(AccountRecordsHistorian.class),
 				new MockGlobalDynamicProps(),
 				delegate);
@@ -170,6 +172,7 @@ class RepoNewCacheTest {
 				mock(EntityIdSource.class),
 				mock(ExpiringCreations.class),
 				TestContextValidator.TEST_VALIDATOR,
+				new SideEffectsTracker(),
 				mock(AccountRecordsHistorian.class),
 				new MockGlobalDynamicProps(),
 				delegate);

@@ -20,6 +20,7 @@ package com.hedera.services.contracts;
  * ‍
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.annotations.BytecodeSource;
@@ -137,6 +138,7 @@ public abstract class ContractsModule {
 				NOOP_ID_SOURCE,
 				NOOP_EXPIRING_CREATIONS,
 				validator,
+				new SideEffectsTracker(),
 				NOOP_RECORDS_HISTORIAN,
 				dynamicProperties,
 				pureDelegate);

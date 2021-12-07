@@ -21,6 +21,7 @@ package com.hedera.services.ledger;
  */
 
 import com.hedera.services.config.MockGlobalDynamicProps;
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.InconsistentAdjustmentsException;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.HashMapBackingAccounts;
@@ -48,7 +49,6 @@ import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -71,6 +71,7 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 		final FCOneToManyRelation<EntityNum, Long> uniqueTokenOwnerships = new FCOneToManyRelation<>();
 		final FCOneToManyRelation<EntityNum, Long> uniqueTokenAccountOwnerships = new FCOneToManyRelation<>();
 		final FCOneToManyRelation<EntityNum, Long> uniqueTokenTreasuryOwnerships = new FCOneToManyRelation<>();
+		final var sideEffectsTracker = new SideEffectsTracker();
 
 		nftsLedger = new TransactionalLedger<>(
 				NftProperty.class,
@@ -91,12 +92,14 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 		tokenStore = new HederaTokenStore(
 				ids,
 				TestContextValidator.TEST_VALIDATOR,
+				sideEffectsTracker,
 				viewManager,
 				new MockGlobalDynamicProps(),
 				() -> tokens,
 				tokenRelsLedger,
 				nftsLedger);
-		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger);
+		subject = new HederaLedger(
+				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProps, accountsLedger);
 	}
 
 	@Test
@@ -108,45 +111,12 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
-	void resetsNetTransfersAfterCommit() {
-		subject.begin();
-		subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
-		subject.commit();
-
-		subject.begin();
-		subject.create(genesis, 2_000L, new HederaAccountCustomizer().memo("b"));
-
-		assertEquals(2L, subject.netTransfersInTxn().getAccountAmountsList().size());
-	}
-
-	@Test
 	void doesntIncludeZeroAdjustsInNetTransfers() {
 		subject.begin();
 		final var a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
 		subject.delete(a, genesis);
 
 		assertEquals(0L, subject.netTransfersInTxn().getAccountAmountsList().size());
-	}
-
-	@Test
-	void doesntAllowDestructionOfRealCurrency() {
-		subject.begin();
-		final var a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
-		subject.destroy(a);
-
-		assertThrows(InconsistentAdjustmentsException.class, () -> subject.commit());
-	}
-
-	@Test
-	void allowsDestructionOfEphemeralCurrency() {
-		subject.begin();
-		final var a = asAccount("1.2.3");
-		subject.spawn(a, 1_000L, new HederaAccountCustomizer().memo("a"));
-		subject.destroy(a);
-		subject.commit();
-
-		assertFalse(subject.exists(a));
-		assertEquals(GENESIS_BALANCE, subject.getBalance(genesis));
 	}
 
 	@Test
@@ -170,18 +140,6 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 
 		verify(historian).finalizeExpirableTransactionRecord();
 		verify(historian).noteNewExpirationEvents();
-	}
-
-	@Test
-	void resetsNetTransfersAfterRollback() {
-		subject.begin();
-		subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
-		subject.rollback();
-
-		subject.begin();
-		subject.create(genesis, 2_000L, new HederaAccountCustomizer().memo("b"));
-
-		assertEquals(2L, subject.netTransfersInTxn().getAccountAmountsList().size());
 	}
 
 	@Test
