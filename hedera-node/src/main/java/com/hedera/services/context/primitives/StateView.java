@@ -111,8 +111,8 @@ public class StateView {
 			0L, 0L, 0, "", "",
 			false, false, MISSING_ENTITY_ID);
 	public static final StateView EMPTY_VIEW = new StateView(
-					null, null, null,
-					null, EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+			null, null, null, null,
+			EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 
 	private final TokenStore tokenStore;
 	private final ScheduleStore scheduleStore;
@@ -400,10 +400,8 @@ public class StateView {
 	}
 
 	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(AccountID id, AutoAccountsManager autoAccounts) {
-		var account = accounts().get(
-				id.getAlias().isEmpty() ? fromAccountId(id) :
-				autoAccounts.fetchEntityNumFor(id.getAlias())
-		);
+		var accountId = id.getAlias().isEmpty() ? fromAccountId(id) : autoAccounts.fetchEntityNumFor(id.getAlias());
+		var account = accounts().get(accountId);
 		if (account == null) {
 			return Optional.empty();
 		}

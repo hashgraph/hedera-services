@@ -366,16 +366,15 @@ public class HederaLedger {
 
 	public void doZeroSum(List<BalanceChange> changes) {
 		var validity = OK;
-		long autoAccountCreationFeeAccumulated = 0;
+		long autoCreationFee = 0;
 		for (var change : changes) {
 			if (change.isForHbar()) {
-				/* if the change has only alias set, account number is not set, and the alias
-				is not present in the autoAccountsMap then add the alias to list for auto
-				creations */
+				/* if the change has only alias set, account number is not set, and the alias is not present in the
+				autoAccountsMap then create account */
 				if (change.hasUniqueAlias(autoAccounts)) {
-					var creationResult = autoAccountCreator.createAutoAccount(change, accountsLedger);
-					validity = creationResult.getLeft();
-					autoAccountCreationFeeAccumulated += creationResult.getRight();
+					var result = autoAccountCreator.createAccount(change, accountsLedger);
+					validity = result.getLeft();
+					autoCreationFee += result.getRight();
 				} else {
 					validity = accountsLedger.validate(change.accountId(), scopedCheck.setBalanceChange(change));
 				}
@@ -387,9 +386,9 @@ public class HederaLedger {
 			}
 		}
 
-		if (autoAccountCreationFeeAccumulated != 0) {
-			changes.add(BalanceChange.hbarAdjust(
-					Id.fromGrpcAccount(dynamicProperties.fundingAccount()), autoAccountCreationFeeAccumulated));
+		if (autoCreationFee != 0 && validity == OK) {
+			changes.add(
+					BalanceChange.hbarAdjust(Id.fromGrpcAccount(dynamicProperties.fundingAccount()), autoCreationFee));
 		}
 
 		if (validity == OK) {
@@ -548,7 +547,7 @@ public class HederaLedger {
 		for (var change : changes) {
 			if (change.isForHbar()) {
 				final AccountID accountId;
-				if (change.accountId().getAccountNum() == 0 && !change.alias().isEmpty()) {
+				if (change.hasNonEmptyAlias()) {
 					accountId = autoAccounts.getAutoAccountsMap().get(change.alias()).toGrpcAccountId();
 				} else {
 					accountId = change.accountId();

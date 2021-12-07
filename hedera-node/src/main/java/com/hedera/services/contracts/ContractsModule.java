@@ -124,11 +124,11 @@ public abstract class ContractsModule {
 	@Provides
 	@Singleton
 	public static Supplier<ServicesRepositoryRoot> providePureServicesRepositoryRoots(
-			OptionValidator validator,
-			StoragePersistence storagePersistence,
-			Source<byte[], byte[]> bytecodeSource,
-			GlobalDynamicProperties dynamicProperties,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final OptionValidator validator,
+			final StoragePersistence storagePersistence,
+			final Source<byte[], byte[]> bytecodeSource,
+			final GlobalDynamicProperties dynamicProperties,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			final AutoAccountCreateLogic autoAccountCreator,
 			final AutoAccountsManager autoAccounts
 

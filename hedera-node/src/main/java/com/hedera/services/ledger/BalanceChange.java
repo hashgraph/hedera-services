@@ -250,4 +250,8 @@ public class BalanceChange {
 				&& accountId.getAccountNum() == 0
 				&& !autoAccounts.getAutoAccountsMap().containsKey(alias);
 	}
+
+	public boolean hasNonEmptyAlias() {
+		return accountId.getAccountNum() == 0 && !alias.isEmpty();
+	}
 }

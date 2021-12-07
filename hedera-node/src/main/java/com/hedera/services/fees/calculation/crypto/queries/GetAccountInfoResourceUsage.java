@@ -52,8 +52,8 @@ public final class GetAccountInfoResourceUsage implements QueryResourceUsageEsti
 	public FeeData usageGiven(final Query query, final StateView view, final Map<String, Object> ignoreCtx) {
 		final var op = query.getCryptoGetInfo();
 
-		final var tgt = op.getAccountID();
-		final var info = view.infoForAccount(tgt, autoAccounts);
+		final var account = op.getAccountID();
+		final var info = view.infoForAccount(account, autoAccounts);
 		/* Given the test in {@code GetAccountInfoAnswer.checkValidity}, this can only be empty
 		 * under the extraordinary circumstance that the desired account expired during the query
 		 * answer flow (which will now fail downstream with an appropriate status code); so

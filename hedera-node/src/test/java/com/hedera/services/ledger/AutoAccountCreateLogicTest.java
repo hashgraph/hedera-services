@@ -38,7 +38,7 @@ import java.util.HashMap;
 import static com.hedera.services.txns.crypto.AutoAccountCreateLogic.isPrimitiveKey;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.hbarChange;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -113,7 +113,7 @@ class AutoAccountCreateLogicTest {
 		given(fees.getServiceFee()).willReturn(serviceFee);
 		given(pricedUsageCalculator.inHandleFees(any(), any(), any(), any())).willReturn(fees);
 
-		final var response = subject.createAutoAccount(validChange, accountsLedger);
+		final var response = subject.createAccount(validChange, accountsLedger);
 
 		final var expectedCreatedAccount = new EntityNum(99);
 
@@ -126,9 +126,9 @@ class AutoAccountCreateLogicTest {
 
 	@Test
 	void invalidEncodedAlias() {
-		final var response = subject.createAutoAccount(inValidChange, accountsLedger);
+		final var response = subject.createAccount(inValidChange, accountsLedger);
 
-		assertEquals(INVALID_ALIAS, response.getLeft());
+		assertEquals(INVALID_ALIAS_KEY, response.getLeft());
 		assertEquals(0, response.getRight());
 		assertEquals(null, autoAccounts.getAutoAccountsMap().get(validAlias));
 		assertEquals(0, autoAccounts.getAutoAccountsMap().size());

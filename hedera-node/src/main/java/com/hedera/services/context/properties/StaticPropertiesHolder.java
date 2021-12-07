@@ -60,15 +60,6 @@ public class StaticPropertiesHolder {
 				.build();
 	}
 
-	public AccountID scopedAccountWith(final long num, final ByteString alias) {
-		return AccountID.newBuilder()
-				.setShardNum(shard)
-				.setRealmNum(realm)
-				.setAccountNum(num)
-				.setAlias(alias)
-				.build();
-	}
-
 	public FileID scopedFileWith(final long num) {
 		return FileID.newBuilder()
 				.setShardNum(shard)

@@ -56,7 +56,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
@@ -109,7 +109,7 @@ public class AutoAccountCreateLogic {
 	 * 		accounts ledger
 	 * @return response code for the operation
 	 */
-	public Pair<ResponseCodeEnum, Long> createAutoAccount(BalanceChange changeWithOnlyAlias,
+	public Pair<ResponseCodeEnum, Long> createAccount(BalanceChange changeWithOnlyAlias,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
 		final var sideEffects = sideEffectsFactory.get();
 		long feeForSyntheticCreateTxn;
@@ -119,12 +119,14 @@ public class AutoAccountCreateLogic {
 			Key key = Key.parseFrom(alias);
 			var syntheticCreateTxn = syntheticTxnFactory.cryptoCreate(key, 0L);
 			feeForSyntheticCreateTxn = feeForAutoAccountCreateTxn(syntheticCreateTxn);
-			// adjust fee and return if insufficient balance.
+
+			/* Adjust fees for create and validate */
 			if (feeForSyntheticCreateTxn > changeWithOnlyAlias.units()) {
 				return Pair.of(changeWithOnlyAlias.codeForInsufficientBalance(), 0L);
 			} else {
 				changeWithOnlyAlias.adjustUnits(-feeForSyntheticCreateTxn);
 			}
+
 			var newAccountId = ids.newAccountId(syntheticCreateTxn.getTransactionID().getAccountID());
 			accountsLedger.create(newAccountId);
 			final var customizer = new HederaAccountCustomizer()
@@ -133,7 +135,7 @@ public class AutoAccountCreateLogic {
 					.autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
 					.isReceiverSigRequired(false)
 					.isSmartContract(false)
-					.alias(key.getEd25519().isEmpty() ? key.getECDSASecp256K1() : key.getEd25519());
+					.alias(alias);
 			customizer.customize(newAccountId, accountsLedger);
 
 			sideEffects.trackAutoCreatedAccount(newAccountId);
@@ -151,7 +153,7 @@ public class AutoAccountCreateLogic {
 			tempCreations.put(alias, newAccountId);
 
 		} catch (InvalidProtocolBufferException | DecoderException ex) {
-			return Pair.of(INVALID_ALIAS, 0L);
+			return Pair.of(INVALID_ALIAS_KEY, 0L);
 		}
 		return Pair.of(OK, feeForSyntheticCreateTxn);
 	}

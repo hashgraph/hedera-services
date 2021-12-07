@@ -403,7 +403,7 @@ class LedgerBalanceChangesTest {
 				.willReturn(new HashMap<>(){{
 					put(aliasA.toByteString(), validAliasEntityNum);
 				}});
-		given(autoAccountCreator.createAutoAccount(any(), any())).willReturn(Pair.of(OK, 100L));
+		given(autoAccountCreator.createAccount(any(), any())).willReturn(Pair.of(OK, 100L));
 		given(dynamicProperties.fundingAccount()).willReturn(funding);
 
 		subject.begin();
