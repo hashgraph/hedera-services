@@ -533,6 +533,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				case ABI_ID_TRANSFER_NFT:
 					transferOp = decoder.decodeTransferNFT(input);
 					break;
+				default:
+					throw new InvalidTransactionException(FAIL_INVALID);
 			}
 			return syntheticTxnFactory.createCryptoTransfer(transferOp.getNftExchanges(),
 					transferOp.getFungibleTransfers());
