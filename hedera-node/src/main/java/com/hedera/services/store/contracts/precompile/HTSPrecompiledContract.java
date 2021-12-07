@@ -534,7 +534,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					transferOp = decoder.decodeTransferNFT(input);
 					break;
 			}
-			return syntheticTxnFactory.createCryptoTransfer(transferOp.getNftExchanges(), transferOp.getHbarTransfers(),
+			return syntheticTxnFactory.createCryptoTransfer(transferOp.getNftExchanges(),
 					transferOp.getFungibleTransfers());
 		}
 

@@ -240,7 +240,7 @@ class TransferPrecompilesTest {
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
 		given(decoder.decodeTransferToken(pretendArguments)).willReturn(transferList);
-		given(syntheticTxnFactory.createCryptoTransfer(transferList.getNftExchanges(), transferList.getHbarTransfers(),
+		given(syntheticTxnFactory.createCryptoTransfer(transferList.getNftExchanges(),
 				transferList.getFungibleTransfers())).willReturn(mockSynthBodyBuilder);
 	}
 
@@ -263,8 +263,6 @@ class TransferPrecompilesTest {
 					receiver
 			);
 	private static final SyntheticTxnFactory.TokenTransferLists transferList = new SyntheticTxnFactory.TokenTransferLists(
-			new ArrayList<>() {
-			},
 			new ArrayList<>() {
 			},
 			List.of(transfer)
