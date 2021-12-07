@@ -20,8 +20,10 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
+import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
+import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.google.protobuf.ByteString;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -43,37 +45,65 @@ public class DecodingFacade {
 	private static final int ADDRESS_SKIP_BYTES_LENGTH = 12;
 	private static final int FUNCTION_SELECTOR_BYTES_LENGTH = 4;
 
-	private static final Function CRYPTO_TRANSFER_FUNCTION = new Function("cryptoTransfer((bytes32,(bytes32,int64)[],(bytes32,bytes32,int64)[])[])",
+	private static final Function CRYPTO_TRANSFER_FUNCTION = new Function(
+			"cryptoTransfer((address,(address,int64)[],(address,address,int64)[])[])", "(int)");
+	private static final Bytes CRYPTO_TRANSFER_SELECTOR = Bytes.wrap(CRYPTO_TRANSFER_FUNCTION.selector());
+	private static final ABIType<Tuple> CRYPTO_TRANSFER_DECODER = TypeFactory.create(
 			"((bytes32,(bytes32,int64)[],(bytes32,bytes32,int64)[])[])");
+
 	private static final Function TRANSFER_TOKENS_FUNCTION = new Function("transferTokens(address,address[],int64[])",
-			"(bytes32,bytes32[],int64[])");
+			"(int)");
+	private static final Bytes TRANSFER_TOKENS_SELECTOR = Bytes.wrap(TRANSFER_TOKENS_FUNCTION.selector());
+	private static final ABIType<Tuple> TRANSFER_TOKENS_DECODER = TypeFactory.create("(bytes32,bytes32[],int64[])");
+
 	private static final Function TRANSFER_TOKEN_FUNCTION = new Function("transferToken(address,address,address,int64)",
-			"(bytes32,bytes32,bytes32,int64)");
-	private static final Function TRANSFER_NFTS_FUNCTION = new Function("transferNFTs(address,address[],address[],int64[])",
+			"(int)");
+	private static final Bytes TRANSFER_TOKEN_SELECTOR = Bytes.wrap(TRANSFER_TOKEN_FUNCTION.selector());
+	private static final ABIType<Tuple> TRANSFER_TOKEN_DECODER = TypeFactory.create("(bytes32,bytes32,bytes32,int64)");
+
+	private static final Function TRANSFER_NFTS_FUNCTION = new Function(
+			"transferNFTs(address,address[],address[],int64[])", "(int)");
+	private static final Bytes TRANSFER_NFTS_SELECTOR = Bytes.wrap(TRANSFER_NFTS_FUNCTION.selector());
+	private static final ABIType<Tuple> TRANSFER_NFTS_DECODER = TypeFactory.create(
 			"(bytes32,bytes32[],bytes32[],int64[])");
+
 	private static final Function TRANSFER_NFT_FUNCTION = new Function("transferNFT(address,address,address,int64)",
-			"(bytes32,bytes32,bytes32,int64)");
-	private static final Function MINT_TOKEN_FUNCTION = new Function("mintToken(address,uint64,bytes)",
-			"(bytes32,int64,string)");
-	private static final Function BURN_TOKEN_FUNCTION = new Function("burnToken(address,uint64,int64[])",
-			"(bytes32,int64,int64[])");
+			"(int)");
+	private static final Bytes TRANSFER_NFT_SELECTOR = Bytes.wrap(TRANSFER_NFT_FUNCTION.selector());
+	private static final ABIType<Tuple> TRANSFER_NFT_DECODER = TypeFactory.create("(bytes32,bytes32,bytes32,int64)");
+
+	private static final Function MINT_TOKEN_FUNCTION = new Function("mintToken(address,uint64,bytes)", "(int)");
+	private static final Bytes MINT_TOKEN_SELECTOR = Bytes.wrap(MINT_TOKEN_FUNCTION.selector());
+	private static final ABIType<Tuple> MINT_TOKEN_DECODER = TypeFactory.create("(bytes32,int64,string)");
+
+	private static final Function BURN_TOKEN_FUNCTION = new Function("burnToken(address,uint64,int64[])", "(int)");
+	private static final Bytes BURN_TOKEN_SELECTOR = Bytes.wrap(BURN_TOKEN_FUNCTION.selector());
+	private static final ABIType<Tuple> BURN_TOKEN_DECODER = TypeFactory.create("(bytes32,int64,int64[])");
+
 	private static final Function ASSOCIATE_TOKENS_FUNCTION = new Function("associateTokens(address,address[])",
-			"(bytes32,bytes32[])");
-	private static final Function ASSOCIATE_TOKEN_FUNCTION = new Function("associateToken(address,address)",
-			"(bytes32,bytes32)");
+			"(int)");
+	private static final Bytes ASSOCIATE_TOKENS_SELECTOR = Bytes.wrap(ASSOCIATE_TOKENS_FUNCTION.selector());
+	private static final ABIType<Tuple> ASSOCIATE_TOKENS_DECODER = TypeFactory.create("(bytes32,bytes32[])");
+
+	private static final Function ASSOCIATE_TOKEN_FUNCTION = new Function("associateToken(address,address)", "(int)");
+	private static final Bytes ASSOCIATE_TOKEN_SELECTOR = Bytes.wrap(ASSOCIATE_TOKEN_FUNCTION.selector());
+	private static final ABIType<Tuple> ASSOCIATE_TOKEN_DECODER = TypeFactory.create("(bytes32,bytes32)");
+
 	private static final Function DISSOCIATE_TOKENS_FUNCTION = new Function("dissociateTokens(address,address[])",
-			"(bytes32,bytes32[])");
-	private static final Function DISSOCIATE_TOKEN_FUNCTION = new Function("associateToken(address,address)",
-			"(bytes32,bytes32)");
+			"(int)");
+	private static final Bytes DISSOCIATE_TOKENS_SELECTOR = Bytes.wrap(DISSOCIATE_TOKENS_FUNCTION.selector());
+	private static final ABIType<Tuple> DISSOCIATE_TOKENS_DECODER = TypeFactory.create("(bytes32,bytes32[])");
+
+	private static final Function DISSOCIATE_TOKEN_FUNCTION = new Function("dissociateToken(address,address)", "(int)");
+	private static final Bytes DISSOCIATE_TOKEN_SELECTOR = Bytes.wrap(DISSOCIATE_TOKEN_FUNCTION.selector());
+	private static final ABIType<Tuple> DISSOCIATE_TOKEN_DECODER = TypeFactory.create("(bytes32,bytes32)");
 
 	@Inject
 	public DecodingFacade() {
 	}
 
 	public SyntheticTxnFactory.TokenTransferLists decodeCryptoTransfer(final Bytes input) {
-		final Tuple decodedTuples =
-				CRYPTO_TRANSFER_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
-						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
+		final Tuple decodedTuples = decodeFunctionCall(input, CRYPTO_TRANSFER_SELECTOR, CRYPTO_TRANSFER_DECODER);
 
 		final List<SyntheticTxnFactory.NftExchange> nftExchanges = new ArrayList<>();
 		final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
@@ -102,9 +132,7 @@ public class DecodingFacade {
 	}
 
 	public SyntheticTxnFactory.BurnWrapper decodeBurn(final Bytes input) {
-		final Tuple decodedArguments =
-				BURN_TOKEN_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
-						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
+		final Tuple decodedArguments = decodeFunctionCall(input, BURN_TOKEN_SELECTOR, BURN_TOKEN_DECODER);
 
 		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
 		final var fungibleAmount = (long) decodedArguments.get(1);
@@ -120,9 +148,7 @@ public class DecodingFacade {
 	}
 
 	public SyntheticTxnFactory.MintWrapper decodeMint(final Bytes input) {
-		final Tuple decodedArguments =
-				MINT_TOKEN_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
-						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
+		final Tuple decodedArguments = decodeFunctionCall(input, MINT_TOKEN_SELECTOR, MINT_TOKEN_DECODER);
 
 		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
 		final var fungibleAmount = (long) decodedArguments.get(1);
@@ -138,9 +164,7 @@ public class DecodingFacade {
 	}
 
 	public SyntheticTxnFactory.TokenTransferLists decodeTransferToken(final Bytes input) {
-		final Tuple decodedArguments =
-				TRANSFER_TOKEN_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
-						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
+		final Tuple decodedArguments = decodeFunctionCall(input, TRANSFER_TOKEN_SELECTOR, TRANSFER_TOKEN_DECODER);
 
 		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
 		final var sender = convertAddressBytesToAccountID((byte[]) decodedArguments.get(1));
@@ -153,9 +177,7 @@ public class DecodingFacade {
 	}
 
 	public SyntheticTxnFactory.TokenTransferLists decodeTransferTokens(final Bytes input) {
-		final Tuple decodedArguments =
-				TRANSFER_TOKENS_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
-						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
+		final Tuple decodedArguments = decodeFunctionCall(input, TRANSFER_TOKENS_SELECTOR, TRANSFER_TOKENS_DECODER);
 
 		final var tokenType = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
 		final var accountIDs = decodeAccountIDsFromBytesArray((byte[][]) decodedArguments.get(1));
@@ -173,9 +195,7 @@ public class DecodingFacade {
 	}
 
 	public SyntheticTxnFactory.TokenTransferLists decodeTransferNFT(final Bytes input) {
-		final Tuple decodedArguments =
-				TRANSFER_NFT_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
-						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
+		final Tuple decodedArguments = decodeFunctionCall(input, TRANSFER_NFT_SELECTOR, TRANSFER_NFT_DECODER);
 
 		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
 		final var sender = convertAddressBytesToAccountID((byte[]) decodedArguments.get(1));
@@ -188,9 +208,7 @@ public class DecodingFacade {
 	}
 
 	public SyntheticTxnFactory.TokenTransferLists decodeTransferNFTs(final Bytes input) {
-		final Tuple decodedArguments =
-				TRANSFER_NFTS_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
-						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
+		final Tuple decodedArguments = decodeFunctionCall(input, TRANSFER_NFTS_SELECTOR, TRANSFER_NFTS_DECODER);
 
 		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
 		final var senders = decodeAccountIDsFromBytesArray((byte[][]) decodedArguments.get(1));
@@ -209,9 +227,7 @@ public class DecodingFacade {
 	}
 
 	public SyntheticTxnFactory.Association decodeAssociation(final Bytes input) {
-		final Tuple decodedArguments =
-				ASSOCIATE_TOKEN_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
-						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
+		final Tuple decodedArguments = decodeFunctionCall(input, ASSOCIATE_TOKEN_SELECTOR, ASSOCIATE_TOKEN_DECODER);
 
 		final var accountID = convertAddressBytesToAccountID((byte[]) decodedArguments.get(0));
 		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(1));
@@ -221,9 +237,7 @@ public class DecodingFacade {
 	}
 
 	public SyntheticTxnFactory.Association decodeMultipleAssociations(final Bytes input) {
-		final Tuple decodedArguments =
-				ASSOCIATE_TOKENS_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
-						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
+		final Tuple decodedArguments = decodeFunctionCall(input, ASSOCIATE_TOKENS_SELECTOR, ASSOCIATE_TOKENS_DECODER);
 
 		final var accountID = convertAddressBytesToAccountID((byte[]) decodedArguments.get(0));
 		final var tokenIDs = decodeTokenIDsFromBytesArray((byte[][]) decodedArguments.get(1));
@@ -233,9 +247,7 @@ public class DecodingFacade {
 	}
 
 	public SyntheticTxnFactory.Dissociation decodeDissociate(final Bytes input) {
-		final Tuple decodedArguments =
-				DISSOCIATE_TOKEN_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
-						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
+		final Tuple decodedArguments = decodeFunctionCall(input, DISSOCIATE_TOKEN_SELECTOR, DISSOCIATE_TOKEN_DECODER);
 
 		final var accountID = convertAddressBytesToAccountID((byte[]) decodedArguments.get(0));
 		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(1));
@@ -245,15 +257,22 @@ public class DecodingFacade {
 	}
 
 	public SyntheticTxnFactory.Dissociation decodeMultipleDissociations(final Bytes input) {
-		final Tuple decodedArguments =
-				DISSOCIATE_TOKENS_FUNCTION.getOutputs().decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH,
-						input.size() - FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
+		final Tuple decodedArguments = decodeFunctionCall(input, DISSOCIATE_TOKENS_SELECTOR, DISSOCIATE_TOKENS_DECODER);
 
 		final var accountID = convertAddressBytesToAccountID((byte[]) decodedArguments.get(0));
 		final var tokenIDs = decodeTokenIDsFromBytesArray((byte[][]) decodedArguments.get(1));
 
 		return SyntheticTxnFactory.Dissociation.multiDissociation(
 				accountID, tokenIDs);
+	}
+
+	private Tuple decodeFunctionCall(final Bytes input, final Bytes selector, final ABIType<Tuple> decoder) {
+		if (!selector.equals(input.slice(0, FUNCTION_SELECTOR_BYTES_LENGTH))) {
+			throw new IllegalArgumentException(
+					"Selector does not match, expected " + selector + " actual " + input.slice(0,
+							FUNCTION_SELECTOR_BYTES_LENGTH));
+		}
+		return decoder.decode(input.slice(4).toArray());
 	}
 
 	private static List<AccountID> decodeAccountIDsFromBytesArray(final byte[][] accountBytesArray) {
