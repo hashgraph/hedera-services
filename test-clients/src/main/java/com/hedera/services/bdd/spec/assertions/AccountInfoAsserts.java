@@ -36,7 +36,6 @@ import static com.hedera.services.legacy.core.CommonUtils.calculateSolidityAddre
 import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo> {
@@ -134,14 +133,16 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 		return this;
 	}
 
-	public AccountInfoAsserts expectedBalanceWithChargedUsd(long amount, double expectedUsdToSubstract, double allowedPercentDiff) {
+	public AccountInfoAsserts expectedBalanceWithChargedUsd(long amount, double expectedUsdToSubstract,
+			double allowedPercentDiff) {
 		registerProvider((spec, o) -> {
 			var expectedTinyBarsToSubtract = expectedUsdToSubstract
 					* 100
 					* spec.ratesProvider().rates().getHbarEquiv() / spec.ratesProvider().rates().getCentEquiv()
 					* ONE_HBAR;
 			var expected = amount - expectedTinyBarsToSubtract;
-			assertEquals(expected, ((AccountInfo) o).getBalance(), (allowedPercentDiff / 100.0) * expected, "Bad balance!");
+			assertEquals(expected, ((AccountInfo) o).getBalance(), (allowedPercentDiff / 100.0) * expected,
+					"Bad balance!");
 		});
 		return this;
 	}
@@ -155,7 +156,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 
 	public AccountInfoAsserts noAlias() {
 		registerProvider((spec, o) -> {
-			assertNull(((AccountInfo) o).getAlias(), "Bad Alias!");
+			assertTrue(((AccountInfo) o).getAlias().isEmpty(), "Bad Alias!");
 		});
 		return this;
 	}

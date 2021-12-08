@@ -48,7 +48,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						autoAccountCreationsHappyPath(),
+						autoAccountCreationsHappyPath()
 //						autoAccountCreationBadAlias(),
 //						autoAccountCreationUnsupportedAlias(),
 //						transferToAccountAutoCreatedUsingAlias(),
@@ -56,7 +56,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 //						transferToAccountUsingItsPublicKey(),
 //						autoAccountCreationWorksWhenUsingAliasOfDeletedAccount()
 //						transferFromAliasToAlias(),
-						multipleAutoAccountCreations()
+//						multipleAutoAccountCreations()
 				}
 		);
 	}
@@ -185,9 +185,10 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 						ThresholdKey.newBuilder()
 								.setThreshold(2)
 								.setKeys(KeyList.newBuilder()
-								.addKeys(Key.newBuilder().setEd25519(ByteString.copyFrom("aaa".getBytes())))
-								.addKeys(Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom("bbbb".getBytes())))
-								.addKeys(Key.newBuilder().setEd25519(ByteString.copyFrom("cccccc".getBytes()))))
+										.addKeys(Key.newBuilder().setEd25519(ByteString.copyFrom("aaa".getBytes())))
+										.addKeys(Key.newBuilder().setECDSASecp256K1(
+												ByteString.copyFrom("bbbb".getBytes())))
+										.addKeys(Key.newBuilder().setEd25519(ByteString.copyFrom("cccccc".getBytes()))))
 				)
 				.build().toByteString();
 		final var keyListAlias = Key.newBuilder().setKeyList(KeyList.newBuilder().addKeys(
@@ -248,10 +249,12 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 										.noAlias()
 						),
 						getAccountInfo(valid25519Alias).has(
-								accountWith()
-										.expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.1)
-										.alias(valid25519Alias))
-						.logged()
+										accountWith()
+												.expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.1)
+												.alias(valid25519Alias)
+												.autoRenew(THREE_MONTHS_IN_SECONDS)
+												.receiverSigReq(false))
+								.logged()
 				);
 	}
 
