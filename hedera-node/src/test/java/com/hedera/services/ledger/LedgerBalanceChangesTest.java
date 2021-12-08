@@ -53,7 +53,7 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
-import com.hedera.services.txns.crypto.AutoAccountCreateLogic;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -88,8 +88,8 @@ import java.util.List;
 
 import static com.hedera.services.ledger.BalanceChange.changingNftOwnership;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
-import static com.hedera.services.txns.crypto.AutoAccountCreateLogic.AUTO_CREATED_ACCOUNT_MEMO;
-import static com.hedera.services.txns.crypto.AutoAccountCreateLogic.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
+import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.hbarChange;
 import static com.hedera.test.utils.IdUtils.nftXfer;
@@ -136,7 +136,7 @@ class LedgerBalanceChangesTest {
 	@Mock
 	private UniqTokenViewsManager tokenViewsManager;
 	@Mock
-	private AutoAccountCreateLogic autoAccountCreator;
+	private AutoCreationLogic autoAccountCreator;
 	@Mock
 	private SyntheticTxnFactory syntheticTxnFactory;
 	@Mock
@@ -403,7 +403,7 @@ class LedgerBalanceChangesTest {
 				.willReturn(new HashMap<>(){{
 					put(aliasA.toByteString(), validAliasEntityNum);
 				}});
-		given(autoAccountCreator.createAccount(any(), any())).willReturn(Pair.of(OK, 100L));
+		given(autoAccountCreator.create(any(), any())).willReturn(Pair.of(OK, 100L));
 		given(dynamicProperties.fundingAccount()).willReturn(funding);
 
 		subject.begin();
@@ -438,7 +438,7 @@ class LedgerBalanceChangesTest {
 		final var mockCreateTxn = TransactionBody.newBuilder()
 				.setCryptoCreateAccount(CryptoCreateTransactionBody.newBuilder()
 						.setKey(alias)
-						.setMemo(AUTO_CREATED_ACCOUNT_MEMO)
+						.setMemo(AUTO_MEMO)
 						.setInitialBalance(0)
 						.setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS))
 						.build());

@@ -22,6 +22,7 @@ package com.hedera.services.txns;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.logging.log4j.LogManager;
@@ -34,8 +35,8 @@ import java.util.EnumSet;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
@@ -77,11 +78,17 @@ public class TransitionRunner {
 			FileDelete
 	);
 
+	private final EntityIdSource ids;
 	private final TransactionContext txnCtx;
 	private final TransitionLogicLookup lookup;
 
 	@Inject
-	public TransitionRunner(TransactionContext txnCtx, TransitionLogicLookup lookup) {
+	public TransitionRunner(
+			final EntityIdSource ids,
+			final TransactionContext txnCtx,
+			final TransitionLogicLookup lookup
+	) {
+		this.ids = ids;
 		this.txnCtx = txnCtx;
 		this.lookup = lookup;
 	}
@@ -109,25 +116,28 @@ public class TransitionRunner {
 				txnCtx.setStatus(validity);
 				return false;
 			}
+
 			try {
 				transition.doStateTransition();
 				if (opsWithDefaultSuccessStatus.contains(function)) {
 					txnCtx.setStatus(SUCCESS);
 				}
-				transition.resetCreatedIds();
-			} catch (InvalidTransactionException ite) {
-				final var code = ite.getResponseCode();
-				txnCtx.setStatus(code);
-				if (code == FAIL_INVALID) {
-					log.warn("Avoidable failure in transition logic for {}", accessor.getSignedTxnWrapper(), ite);
-				}
-				logic.get().reclaimCreatedIds();
+			} catch (InvalidTransactionException e) {
+				resolveFailure(e, accessor);
 			} catch (Exception processFailure) {
-				logic.get().reclaimCreatedIds();
-
+				ids.reclaimProvisionalIds();
 				throw processFailure;
 			}
 			return true;
 		}
+	}
+
+	private void resolveFailure(final InvalidTransactionException e, final TxnAccessor accessor) {
+		final var code = e.getResponseCode();
+		if (code == FAIL_INVALID) {
+			log.warn("Avoidable failure while handling {}", accessor.getSignedTxnWrapper(), e);
+		}
+		txnCtx.setStatus(code);
+		ids.reclaimProvisionalIds();
 	}
 }

@@ -41,7 +41,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.txns.crypto.AutoAccountCreateLogic;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -52,8 +52,6 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
 import java.util.Map;
@@ -240,7 +238,7 @@ public class BaseHederaLedgerTestHelper {
 		given(tokenStore.get(frozenId)).willReturn(frozenToken);
 		sideEffectsTracker = mock(SideEffectsTracker.class);
 		AutoAccountsManager autoAccounts = mock(AutoAccountsManager.class);
-		AutoAccountCreateLogic autoAccountCreator = mock(AutoAccountCreateLogic.class);
+		AutoCreationLogic autoAccountCreator = mock(AutoCreationLogic.class);
 
 		subject = new HederaLedger(
 				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProps, accountsLedger, autoAccountCreator, autoAccounts);

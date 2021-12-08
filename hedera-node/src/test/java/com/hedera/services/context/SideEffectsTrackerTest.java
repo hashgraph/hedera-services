@@ -115,27 +115,21 @@ class SideEffectsTrackerTest {
 
 	@Test
 	void tracksAndResetsNewAccountIdAsExpected() {
-		final var createdAutoAccount = AccountID.newBuilder().setShardNum(0).setRealmNum(0)
-				.setAccountNum(20L).setAlias(ByteString.copyFromUtf8("aaa")).build();
+		final var createdAutoAccount = AccountID.newBuilder()
+				.setShardNum(0)
+				.setRealmNum(0)
+				.setAccountNum(20L)
+				.build();
+		final var alias = ByteString.copyFromUtf8("abcdefg");
 
-		subject.trackAutoCreatedAccount(createdAutoAccount);
+		subject.trackAutoCreation(createdAutoAccount, alias);
 
-		assertTrue(subject.hasTrackedAutoCreatedAccountId());
+		assertTrue(subject.hasTrackedAutoCreation());
 		assertEquals(createdAutoAccount, subject.getTrackedAutoCreatedAccountId());
+		assertEquals(alias, subject.getNewAccountAlias());
 
 		subject.reset();
-		assertFalse(subject.hasTrackedAutoCreatedAccountId());
-	}
-
-	@Test
-	void canClearJustAutoCreatedAccountChanges() {
-		final var createdAutoAccount = AccountID.newBuilder().setShardNum(0).setRealmNum(0)
-				.setAccountNum(20L).setAlias(ByteString.copyFromUtf8("aaa")).build();
-
-		subject.trackAutoCreatedAccount(createdAutoAccount);
-		assertTrue(subject.hasTrackedAutoCreatedAccountId());
-		subject.resetTrackedAutoCreatedAccount();
-		assertFalse(subject.hasTrackedAutoCreatedAccountId());
+		assertFalse(subject.hasTrackedAutoCreation());
 	}
 
 	@Test

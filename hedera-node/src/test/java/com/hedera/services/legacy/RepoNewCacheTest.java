@@ -37,9 +37,9 @@ import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.txns.crypto.AutoAccountCreateLogic;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.mocks.StorageSourceFactory;
 import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.utils.IdUtils;
@@ -54,18 +54,21 @@ import org.ethereum.db.ServicesRepositoryImpl;
 import org.ethereum.db.ServicesRepositoryRoot;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.mock;
 
+@ExtendWith(MockitoExtension.class)
 class RepoNewCacheTest {
 	@Mock
 	private AutoAccountsManager autoAccounts;
 	@Mock
-	private AutoAccountCreateLogic autoAccountCreator;
+	private AutoCreationLogic autoAccountCreator;
 
 	@Disabled
 	public void test() {

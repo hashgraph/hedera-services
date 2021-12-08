@@ -26,7 +26,6 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
-import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
@@ -61,7 +60,6 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 	private static final JContractIDKey STANDIN_CONTRACT_ID_KEY = new JContractIDKey(0, 0, 0);
 
 	private final HederaFs hfs;
-	private final EntityIdSource ids;
 	private final AccountStore accountStore;
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
@@ -74,17 +72,15 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 
 	@Inject
 	public ContractCreateTransitionLogic(
-			HederaFs hfs,
-			EntityIdSource ids,
-			TransactionContext txnCtx,
-			AccountStore accountStore,
-			OptionValidator validator,
-			HederaWorldState worldState,
-			TransactionRecordService recordService,
-			CreateEvmTxProcessor evmTxProcessor,
-			HederaLedger hederaLedger
+			final HederaFs hfs,
+			final TransactionContext txnCtx,
+			final AccountStore accountStore,
+			final OptionValidator validator,
+			final HederaWorldState worldState,
+			final TransactionRecordService recordService,
+			final CreateEvmTxProcessor evmTxProcessor,
+			final HederaLedger hederaLedger
 	) {
-		this.ids = ids;
 		this.hfs = hfs;
 		this.txnCtx = txnCtx;
 		this.validator = validator;
@@ -154,16 +150,6 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		recordService.externaliseEvmCreateTransaction(result);
 	}
 
-
-	@Override
-	public void reclaimCreatedIds() {
-		ids.reclaimProvisionalIds();
-	}
-
-	@Override
-	public void resetCreatedIds() {
-		ids.resetProvisionalIds();
-	}
 
 	@Override
 	public Predicate<TransactionBody> applicability() {

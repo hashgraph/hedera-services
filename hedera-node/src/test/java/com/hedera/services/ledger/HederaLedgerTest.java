@@ -26,7 +26,7 @@ import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.ledger.accounts.AutoAccountsManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.txns.crypto.AutoAccountCreateLogic;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -71,7 +71,7 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 	@Mock
 	private AutoAccountsManager autoAccounts;
 	@Mock
-	private AutoAccountCreateLogic autoAccountCreator;
+	private AutoCreationLogic autoAccountCreator;
 
 	@BeforeEach
 	private void setup() {

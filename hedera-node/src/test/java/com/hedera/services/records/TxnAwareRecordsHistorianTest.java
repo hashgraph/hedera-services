@@ -189,7 +189,6 @@ class TxnAwareRecordsHistorianTest {
 		given(precedingBuilder.build()).willReturn(mockPrecedingRecord);
 
 		given(txnCtx.recordSoFar()).willReturn(topLevelRecord);
-		given(txnCtx.activePayerKey()).willReturn(effPayerKey);
 		given(creator.saveExpiringRecord(
 				effPayer,
 				mockTopLevelRecord,
@@ -208,8 +207,6 @@ class TxnAwareRecordsHistorianTest {
 
 		final var followSynthBody = aBuilderWith("FOLLOW");
 		final var precedeSynthBody = aBuilderWith("PRECEDE");
-		assertEquals(effPayerKey, subject.getActivePayerKeyFromTxnCtx());
-		assertEquals(topLevelNow, subject.getConsensusTimeFromTxnCtx());
 		assertEquals(topLevelNow.plusNanos(1), subject.nextFollowingChildConsensusTime());
 		subject.trackFollowingChildRecord(1, followSynthBody, followingBuilder);
 		assertEquals(topLevelNow.plusNanos(2), subject.nextFollowingChildConsensusTime());

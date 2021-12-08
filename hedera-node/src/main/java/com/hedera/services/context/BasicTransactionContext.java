@@ -22,6 +22,7 @@ package com.hedera.services.context;
 
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.charging.NarratedCharging;
+import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.EntityCreator;
@@ -73,7 +74,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 public class BasicTransactionContext implements TransactionContext {
 	private static final Logger log = LogManager.getLogger(BasicTransactionContext.class);
 
-	static final JKey EMPTY_KEY;
+	public static final JKey EMPTY_KEY;
 
 	static {
 		EMPTY_KEY = asFcKeyUnchecked(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build());
@@ -100,6 +101,7 @@ public class BasicTransactionContext implements TransactionContext {
 
 	private final NodeInfo nodeInfo;
 	private final EntityCreator creator;
+	private final EntityIdSource ids;
 	private final NarratedCharging narratedCharging;
 	private final HbarCentExchange exchange;
 	private final SideEffectsTracker sideEffectsTracker;
@@ -112,8 +114,10 @@ public class BasicTransactionContext implements TransactionContext {
 			final NodeInfo nodeInfo,
 			final HbarCentExchange exchange,
 			final EntityCreator creator,
-			final SideEffectsTracker sideEffectsTracker
+			final SideEffectsTracker sideEffectsTracker,
+			final EntityIdSource ids
 	) {
+		this.ids = ids;
 		this.accounts = accounts;
 		this.narratedCharging = narratedCharging;
 		this.nodeInfo = nodeInfo;
@@ -140,6 +144,7 @@ public class BasicTransactionContext implements TransactionContext {
 
 		narratedCharging.resetForTxn(accessor, submittingMember);
 
+		ids.resetProvisionalIds();
 		recordSoFar.reset();
 		sideEffectsTracker.reset();
 	}

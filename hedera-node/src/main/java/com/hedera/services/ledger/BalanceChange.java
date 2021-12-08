@@ -245,7 +245,7 @@ public class BalanceChange {
 		return exemptFromCustomFees;
 	}
 
-	public boolean hasUniqueAlias(final AutoAccountsManager autoAccounts) {
+	public boolean hasUniqueAliasWith(final AutoAccountsManager autoAccounts) {
 		return !alias.isEmpty()
 				&& accountId.getAccountNum() == 0
 				&& !autoAccounts.getAutoAccountsMap().containsKey(alias);
