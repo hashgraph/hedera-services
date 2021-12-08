@@ -28,8 +28,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import static com.hedera.services.txns.crypto.AutoAccountCreateLogic.AUTO_CREATED_ACCOUNT_MEMO;
-import static com.hedera.services.txns.crypto.AutoAccountCreateLogic.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
+import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 
 @Singleton
 public class SyntheticTxnFactory {
@@ -40,7 +40,7 @@ public class SyntheticTxnFactory {
 	public TransactionBody.Builder cryptoCreate(Key alias, long balance) {
 		final var txnBody = CryptoCreateTransactionBody.newBuilder()
 				.setKey(alias)
-				.setMemo(AUTO_CREATED_ACCOUNT_MEMO)
+				.setMemo(AUTO_MEMO)
 				.setInitialBalance(balance)
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS))
 				.build();

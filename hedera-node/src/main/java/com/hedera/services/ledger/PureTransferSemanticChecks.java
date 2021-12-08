@@ -20,9 +20,12 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -35,7 +38,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static com.hedera.services.txns.crypto.AutoAccountCreateLogic.isPrimitiveKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
@@ -63,6 +65,23 @@ import static java.math.BigInteger.ZERO;
 public class PureTransferSemanticChecks {
 	@Inject
 	public PureTransferSemanticChecks() {
+	}
+
+	/**
+	 * Parses the {@code Key} from given alias {@code ByteString}. If the Key is of type Ed25519 or
+	 * ECDSA_SECP256K1 keys, returns true. Returns false if any other Key type.
+	 *
+	 * @param alias
+	 * 		given alias byte string
+	 * @return whether it parses to a primitive key
+	 */
+	public static boolean isPrimitiveKey(final ByteString alias) {
+		try {
+			Key key = Key.parseFrom(alias);
+			return !key.getECDSASecp256K1().isEmpty() || !key.getEd25519().isEmpty();
+		} catch (InvalidProtocolBufferException ex) {
+			return false;
+		}
 	}
 
 	public ResponseCodeEnum fullPureValidation(
@@ -99,10 +118,12 @@ public class PureTransferSemanticChecks {
 	}
 
 	/**
-	 * validates if the alias is a valid primitive key from the balance changes.
+	 * Validates that all non-empty aliases used in the given adjustments list are
+	 * serialized {@link com.hederahashgraph.api.proto.java.Key} messages that
+	 * represent a single cryptographic public key.
 	 *
-	 * @param hbarAdjusts
-	 * @return
+	 * @param hbarAdjusts the adjustments list to check
+	 * @return whether all non-empty aliases are valid
 	 */
 	boolean hasValidAlias(final List<AccountAmount> hbarAdjusts) {
 		for (AccountAmount aa : hbarAdjusts) {

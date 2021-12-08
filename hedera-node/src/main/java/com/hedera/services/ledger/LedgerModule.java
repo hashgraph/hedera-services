@@ -34,7 +34,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
-import com.hedera.services.txns.crypto.AutoAccountCreateLogic;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import dagger.Binds;
@@ -62,7 +62,7 @@ public abstract class LedgerModule {
 			final AccountRecordsHistorian recordsHistorian,
 			final GlobalDynamicProperties dynamicProperties,
 			final BackingStore<AccountID, MerkleAccount> backingAccounts,
-			final AutoAccountCreateLogic autoAccountCreator,
+			final AutoCreationLogic autoAccountCreator,
 			final AutoAccountsManager autoAccounts
 	) {
 		TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger =

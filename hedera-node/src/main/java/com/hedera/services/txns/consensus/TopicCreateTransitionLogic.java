@@ -114,16 +114,6 @@ public final class TopicCreateTransitionLogic implements TransitionLogic {
 	}
 
 	@Override
-	public void reclaimCreatedIds() {
-		entityIdSource.reclaimProvisionalIds();
-	}
-
-	@Override
-	public void resetCreatedIds() {
-		entityIdSource.resetProvisionalIds();
-	}
-
-	@Override
 	public Predicate<TransactionBody> applicability() {
 		return TransactionBody::hasConsensusCreateTopic;
 	}

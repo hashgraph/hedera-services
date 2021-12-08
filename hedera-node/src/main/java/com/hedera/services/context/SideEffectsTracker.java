@@ -1,5 +1,6 @@
 package com.hedera.services.context;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -45,7 +46,8 @@ public class SideEffectsTracker {
 	private int numTouches = 0;
 	private long newSupply = INAPPLICABLE_NEW_SUPPLY;
 	private TokenID newTokenId = null;
-	private AccountID autoCreatedAccount = null;
+	private AccountID newAccountId = null;
+	private ByteString newAccountAlias = ByteString.EMPTY;
 	private List<TokenTransferList> explicitNetTokenUnitOrOwnershipChanges = null;
 
 	@Inject
@@ -53,12 +55,13 @@ public class SideEffectsTracker {
 		/* For Dagger2 */
 	}
 
-	public void trackAutoCreatedAccount(final AccountID accountID){
-		this.autoCreatedAccount = accountID;
+	public void trackAutoCreation(final AccountID accountID, final ByteString alias){
+		this.newAccountId = accountID;
+		this.newAccountAlias = alias;
 	}
 
 	public void resetTrackedAutoCreatedAccount() {
-		this.autoCreatedAccount = null;
+		this.newAccountId = null;
 	}
 
 	/**
@@ -164,12 +167,16 @@ public class SideEffectsTracker {
 		return newTokenId;
 	}
 
-	public boolean hasTrackedAutoCreatedAccountId() {
-		return autoCreatedAccount != null;
+	public boolean hasTrackedAutoCreation() {
+		return newAccountId != null;
+	}
+
+	public ByteString getNewAccountAlias() {
+		return newAccountAlias;
 	}
 
 	public AccountID getTrackedAutoCreatedAccountId() {
-		return autoCreatedAccount;
+		return newAccountId;
 	}
 
 	/**
@@ -360,9 +367,10 @@ public class SideEffectsTracker {
 	 * Clears all side effects tracked since the last call to this method.
 	 */
 	public void reset() {
-		resetTrackedAutoCreatedAccount();
 		resetTrackedTokenChanges();
 		netHbarChanges.clear();
+		newAccountId = null;
+		newAccountAlias = ByteString.EMPTY;
 	}
 
 	/**

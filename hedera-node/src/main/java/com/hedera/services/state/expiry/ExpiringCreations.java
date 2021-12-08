@@ -150,28 +150,27 @@ public class ExpiringCreations implements EntityCreator {
 		if (sideEffectsTracker.hasTrackedNewTokenId()) {
 			receiptBuilder.setTokenId(EntityId.fromGrpcTokenId(sideEffectsTracker.getTrackedNewTokenId()));
 		}
-
-		if (sideEffectsTracker.hasTrackedAutoCreatedAccountId()) {
-			receiptBuilder.setAccountId(EntityId.fromGrpcAccountId(sideEffectsTracker.getTrackedAutoCreatedAccountId()));
-		}
-
 		if (sideEffectsTracker.hasTrackedTokenSupply()) {
 			receiptBuilder.setNewTotalSupply(sideEffectsTracker.getTrackedTokenSupply());
 		}
 
-		final var expiringRecord = ExpirableTxnRecord.newBuilder()
+		final var baseRecord = ExpirableTxnRecord.newBuilder()
 				.setReceiptBuilder(receiptBuilder)
 				.setMemo(memo)
 				.setTransferList(CurrencyAdjustments.fromGrpc(sideEffectsTracker.getNetTrackedHbarChanges()))
 				.setAssessedCustomFees(customFeesCharged)
 				.setNewTokenAssociations(sideEffectsTracker.getTrackedAutoAssociations());
+		if (sideEffectsTracker.hasTrackedAutoCreation()) {
+			receiptBuilder.setAccountId(EntityId.fromGrpcAccountId(sideEffectsTracker.getTrackedAutoCreatedAccountId()));
+			baseRecord.setAlias(sideEffectsTracker.getNewAccountAlias());
+		}
 
 		final var tokenChanges = sideEffectsTracker.getNetTrackedTokenUnitAndOwnershipChanges();
 		if (!tokenChanges.isEmpty()) {
-			setTokensAndTokenAdjustments(expiringRecord, tokenChanges);
+			setTokensAndTokenAdjustments(baseRecord, tokenChanges);
 		}
 
-		return expiringRecord;
+		return baseRecord;
 	}
 
 	@Override

@@ -537,25 +537,6 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void genesisInitCreatesAnEmptyAutoAccountsMap() {
-		ServicesState.setAppBuilder(() -> appBuilder);
-
-		given(appBuilder.bootstrapProps(any())).willReturn(appBuilder);
-		given(appBuilder.initialState(subject)).willReturn(appBuilder);
-		given(appBuilder.platform(platform)).willReturn(appBuilder);
-		given(appBuilder.selfId(1L)).willReturn(appBuilder);
-		given(appBuilder.build()).willReturn(app);
-		// and:
-		given(app.hashLogger()).willReturn(hashLogger);
-		given(app.initializationFlow()).willReturn(initFlow);
-		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
-		given(platform.getSelfId()).willReturn(selfId);
-
-		// when:
-		subject.genesisInit(platform, addressBook, dualState);
-	}
-
-	@Test
 	void forwardsFcomtrAsExpected() {
 		// setup:
 		final FCOneToManyRelation<EntityNum, Long> a = new FCOneToManyRelation<>();

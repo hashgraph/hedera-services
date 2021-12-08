@@ -37,7 +37,7 @@ import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.txns.crypto.AutoAccountCreateLogic;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.mocks.StorageSourceFactory;
@@ -65,7 +65,7 @@ class RepoNewCacheTest {
 	@Mock
 	private AutoAccountsManager autoAccounts;
 	@Mock
-	private AutoAccountCreateLogic autoAccountCreator;
+	private AutoCreationLogic autoAccountCreator;
 
 	@Disabled
 	public void test() {

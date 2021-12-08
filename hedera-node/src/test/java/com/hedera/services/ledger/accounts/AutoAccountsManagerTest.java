@@ -70,7 +70,7 @@ class AutoAccountsManagerTest {
 		subject.rebuildAliasesMap(liveAccounts);
 
 		final var finalMap = subject.getAutoAccountsMap();
-		assertEquals(finalMap.size(), 1);
+		assertEquals(1, finalMap.size());
 		assertEquals(withNum, subject.getAutoAccountsMap().get(upToDateAlias));
 	}
 }

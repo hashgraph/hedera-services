@@ -23,8 +23,8 @@ package com.hedera.services.store.contracts.precompile;
 import com.hedera.test.factories.keys.KeyFactory;
 import org.junit.jupiter.api.Test;
 
-import static com.hedera.services.txns.crypto.AutoAccountCreateLogic.AUTO_CREATED_ACCOUNT_MEMO;
-import static com.hedera.services.txns.crypto.AutoAccountCreateLogic.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
+import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -38,7 +38,7 @@ class SyntheticTxnFactoryTest {
 		final var txnBody = result.build();
 
 		assertTrue(txnBody.hasCryptoCreateAccount());
-		assertEquals(AUTO_CREATED_ACCOUNT_MEMO, txnBody.getCryptoCreateAccount().getMemo());
+		assertEquals(AUTO_MEMO, txnBody.getCryptoCreateAccount().getMemo());
 		assertEquals(THREE_MONTHS_IN_SECONDS,
 				txnBody.getCryptoCreateAccount().getAutoRenewPeriod().getSeconds());
 		assertEquals(10L,

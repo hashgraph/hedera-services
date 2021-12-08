@@ -49,21 +49,7 @@ import static com.hedera.services.utils.MiscUtils.nonNegativeNanosOffset;
  */
 @Singleton
 public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
-	private static class InProgressChildRecord {
-		private final int sourceId;
-		private final TransactionBody.Builder syntheticBody;
-		private final ExpirableTxnRecord.Builder recordBuilder;
-
-		public InProgressChildRecord(
-				final int sourceId,
-				final TransactionBody.Builder syntheticBody,
-				final ExpirableTxnRecord.Builder recordBuilder
-		) {
-			this.sourceId = sourceId;
-			this.syntheticBody = syntheticBody;
-			this.recordBuilder = recordBuilder;
-		}
-	}
+	public static final int DEFAULT_SOURCE_ID = 0;
 
 	private final RecordCache recordCache;
 	private final ExpiryManager expiries;
@@ -192,8 +178,8 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 
 	private void revert(final int sourceId, final List<InProgressChildRecord> childRecords) {
 		for (final var inProgress : childRecords) {
-			if (inProgress.sourceId == sourceId) {
-				inProgress.recordBuilder.revert();
+			if (inProgress.getSourceId() == sourceId) {
+				inProgress.getRecordBuilder().revert();
 			}
 		}
 	}
@@ -213,14 +199,14 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 		final var parentId = topLevel.getTxnId();
 		for (int i = 0, n = childRecords.size(); i < n; i++) {
 			final var inProgress = childRecords.get(i);
-			final var child = inProgress.recordBuilder;
+			final var child = inProgress.getRecordBuilder();
 			topLevel.excludeHbarChangesFrom(child);
 
 			child.setTxnId(parentId.withNonce(nextNonce++));
 			final var childConsTime = nonNegativeNanosOffset(consensusNow, sigNum * (i + 1));
 			child.setConsensusTime(RichInstant.fromJava(childConsTime));
 
-			final var synthTxn = synthFrom(inProgress.syntheticBody, child);
+			final var synthTxn = synthFrom(inProgress.getSyntheticBody(), child);
 			final var synthHash = noThrowSha384HashOf(synthTxn.getSignedTransactionBytes().toByteArray());
 			child.setTxnHash(synthHash);
 			recordObjs.add(new RecordStreamObject(child.build(), synthTxn, childConsTime));

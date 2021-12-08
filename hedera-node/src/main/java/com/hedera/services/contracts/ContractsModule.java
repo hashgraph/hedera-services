@@ -52,7 +52,7 @@ import com.hedera.services.contracts.operation.HederaExtCodeSizeOperation;
 import com.hedera.services.contracts.operation.HederaSStoreOperation;
 import com.hedera.services.contracts.operation.HederaSelfDestructOperation;
 import com.hedera.services.contracts.operation.HederaStaticCallOperation;
-import com.hedera.services.txns.crypto.AutoAccountCreateLogic;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -129,7 +129,7 @@ public abstract class ContractsModule {
 			final Source<byte[], byte[]> bytecodeSource,
 			final GlobalDynamicProperties dynamicProperties,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-			final AutoAccountCreateLogic autoAccountCreator,
+			final AutoCreationLogic autoAccountCreator,
 			final AutoAccountsManager autoAccounts
 
 	) {
