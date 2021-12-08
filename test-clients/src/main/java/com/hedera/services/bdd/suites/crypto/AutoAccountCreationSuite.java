@@ -29,10 +29,10 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 	private static final Key validEd25519Key = Key.newBuilder().setEd25519(aliasContent).build();
 	private static final ByteString valid25519Alias = validEd25519Key.toByteString();
 
-	private static final Logger log = LogManager.getLogger(CryptoTransferSuite.class);
+	private static final Logger log = LogManager.getLogger(AutoAccountCreationSuite.class);
 
 	public static void main(String... args) {
-		new CryptoTransferSuite().runSuiteAsync();
+		new AutoAccountCreationSuite().runSuiteAsync();
 	}
 
 	@Override
