@@ -34,7 +34,6 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.TxnAwareRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
@@ -44,9 +43,6 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -60,14 +56,10 @@ import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fchashmap.FCOneToManyRelation;
@@ -81,15 +73,12 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
 import static com.hedera.services.ledger.BalanceChange.changingNftOwnership;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
-import static com.hedera.services.txns.crypto.AutoAccountCreateLogic.AUTO_CREATED_ACCOUNT_MEMO;
-import static com.hedera.services.txns.crypto.AutoAccountCreateLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.hbarChange;
 import static com.hedera.test.utils.IdUtils.nftXfer;
@@ -100,7 +89,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -425,28 +413,32 @@ class LedgerBalanceChangesTest {
 		assertTrue(inProgressTokens.isEmpty());
 	}
 
-	private void setUpForAutoCreations(Key alias, AccountID sender) {
+	@Test
+	void transfersToAliasAfterCreateFails() {
+		final Key aliasA = KeyFactory.getDefaultInstance().newEd25519();
+
+		final AccountID a = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(10L).build();
+		final AccountID accountWithAlias = AccountID.newBuilder().setAlias(aliasA.toByteString()).build();
+		final AccountID funding = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(98L).build();
+
+		final AccountID expectingAccountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(11L).build();
+		final EntityNum validAliasEntityNum = new EntityNum(11);
+		List<BalanceChange> changes = new ArrayList<>();
+		changes.add(hbarChange(a, -100));
+		changes.add(hbarChange(accountWithAlias, 100));
+
+		final var validAliasAccount = MerkleAccountFactory.newAccount().get();
 		final var aAccount = MerkleAccountFactory.newAccount().balance(aStartBalance).get();
-		backingAccounts.put(sender, aAccount);
+		final var fundingAccount = MerkleAccountFactory.newAccount().get();
+		backingAccounts.put(a, aAccount);
+		backingAccounts.put(expectingAccountId, validAliasAccount);
+		backingAccounts.put(funding, fundingAccount);
+		given(autoAccounts.getAutoAccountsMap())
+				.willReturn(new HashMap<>(){{
+					put(aliasA.toByteString(), validAliasEntityNum);
+				}});
 
-		final var expirableTxnRecordBuilder = ExpirableTxnRecord.newBuilder()
-				.setTxnId(TxnId.fromGrpc(TransactionID.newBuilder().setAccountID(asAccount("0.0.1001")).build()))
-				.setReceipt(TxnReceipt.newBuilder().setStatus(OK.name()).build())
-				.setMemo("test")
-				.setConsensusTime(RichInstant.fromJava(Instant.now()));
-
-		final var mockCreateTxn = TransactionBody.newBuilder()
-				.setCryptoCreateAccount(CryptoCreateTransactionBody.newBuilder()
-						.setKey(alias)
-						.setMemo(AUTO_CREATED_ACCOUNT_MEMO)
-						.setInitialBalance(0)
-						.setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS))
-						.build());
-		given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(expirableTxnRecordBuilder);
-		given(syntheticTxnFactory.cryptoCreate(any(), anyLong())).willReturn(mockCreateTxn);
-		given(entityIdSource.newAccountId(any()))
-				.willReturn(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(99).build());
-		given(recordsHistorian.nextChildRecordSourceId()).willReturn(123);
+		assertThrows(IllegalStateException.class, () -> subject.doZeroSum(changes));
 	}
 
 	private TransferList expectedXfers() {
