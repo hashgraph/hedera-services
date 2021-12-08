@@ -187,7 +187,7 @@ public class AutoAccountCreateLogic {
 		return tempCreations;
 	}
 
-	private long feeForAutoAccountCreateTxn(TransactionBody.Builder cryptoCreateTxn) {
+	long feeForAutoAccountCreateTxn(TransactionBody.Builder cryptoCreateTxn) {
 		SignedTransaction signedTransaction = SignedTransaction.newBuilder()
 				.setBodyBytes(cryptoCreateTxn.build().toByteString())
 				.setSigMap(SignatureMap.getDefaultInstance())
@@ -205,7 +205,7 @@ public class AutoAccountCreateLogic {
 			return feeData.getServiceFee() + feeData.getNetworkFee() + feeData.getNodeFee();
 		} catch (InvalidProtocolBufferException ex) {
 			log.error("Error when parsing synthetic cryptoCreate transaction");
+			throw new IllegalArgumentException("Argument 'cryptoCreateTxn' must be a valid txn");
 		}
-		return 0;
 	}
 }

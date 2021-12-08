@@ -38,6 +38,7 @@ import java.util.HashMap;
 import static com.hedera.services.txns.crypto.AutoAccountCreateLogic.isPrimitiveKey;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.hbarChange;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -84,6 +85,10 @@ class AutoAccountCreateLogicTest {
 	final MerkleAccount aAccount = MerkleAccountFactory.newAccount().balance(1_000_000).get();
 	private final BalanceChange validChange = hbarChange(validAliasAccount, +100_000);
 	private final BalanceChange inValidChange = hbarChange(inValidAliasAccount, +100_000);
+	private final BalanceChange changeWithInsufficientBalance = hbarChange(validAliasAccount, +100);
+	private final long nodeFee = 1_000L;
+	private final long networkFee = 1_000L;
+	private final long serviceFee = 10_000L;
 
 	@BeforeEach
 	void setUp() {
@@ -100,9 +105,7 @@ class AutoAccountCreateLogicTest {
 				.setReceipt(TxnReceipt.newBuilder().setStatus(OK.name()).build())
 				.setMemo("test")
 				.setConsensusTime(RichInstant.fromJava(Instant.now()));
-		final var nodeFee = 1_000L;
-		final var networkFee = 1_000L;
-		final var serviceFee = 10_000L;
+		final var expectedCreatedAccount = new EntityNum(99);
 
 		given(autoAccounts.getAutoAccountsMap()).willReturn(new HashMap<>());
 		given(entityIdSource.newAccountId(any()))
@@ -115,13 +118,30 @@ class AutoAccountCreateLogicTest {
 
 		final var response = subject.createAccount(validChange, accountsLedger);
 
-		final var expectedCreatedAccount = new EntityNum(99);
-
 		assertEquals(OK, response.getLeft());
 		assertEquals(nodeFee + networkFee + serviceFee, response.getRight());
 		assertEquals(expectedCreatedAccount, autoAccounts.getAutoAccountsMap().get(validAlias));
 		assertEquals(1, subject.getTempCreations().size());
 		assertEquals(expectedCreatedAccount.toGrpcAccountId(), subject.getTempCreations().get(validAlias));
+
+		// when
+		subject.clearTempCreations();
+
+		//then
+		assertTrue(subject.getTempCreations().isEmpty());
+	}
+
+	@Test
+	void autoCreationFailsIfInsufficientFundsToCoverFees() {
+		given(fees.getNetworkFee()).willReturn(networkFee);
+		given(fees.getNodeFee()).willReturn(nodeFee);
+		given(fees.getServiceFee()).willReturn(serviceFee);
+		given(pricedUsageCalculator.inHandleFees(any(), any(), any(), any())).willReturn(fees);
+
+		final var response = subject.createAccount(changeWithInsufficientBalance, accountsLedger);
+
+		assertEquals(INSUFFICIENT_ACCOUNT_BALANCE, response.getLeft());
+		assertEquals(0, response.getRight());
 	}
 
 	@Test

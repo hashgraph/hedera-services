@@ -40,6 +40,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.booleanThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -176,6 +177,7 @@ class TxnIdTest {
 		assertEquals(subject, deserializedId);
 		// and:
 		verify(din, times(2)).readBoolean();
+		verify(din).readInt();
 
 		// cleanup:
 		TxnId.serdes = new DomainSerdes();
@@ -192,7 +194,9 @@ class TxnIdTest {
 
 		given(din.readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class))).willReturn(fcPayer);
 		given(serdes.deserializeTimestamp(din)).willReturn(fcValidStart);
-		given(din.readBoolean()).willReturn(true);
+		given(din.readBoolean())
+				.willReturn(true)
+				.willReturn(false);
 		// and:
 		var deserializedId = new TxnId();
 
@@ -203,6 +207,7 @@ class TxnIdTest {
 		assertEquals(subject, deserializedId);
 		// and:
 		verify(din, times(2)).readBoolean();
+		verify(din, never()).readInt();
 
 		// cleanup:
 		TxnId.serdes = new DomainSerdes();

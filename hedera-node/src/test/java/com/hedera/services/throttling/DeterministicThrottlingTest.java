@@ -181,6 +181,32 @@ class DeterministicThrottlingTest {
 	}
 
 	@Test
+	void CryptoTransfersWithNoAutoAccountCreationsAreThrottledAsExpected() throws IOException {
+		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+
+		givenFunction(CryptoTransfer);
+		given(accessor.getAutoAccountCreationsCount()).willReturn(0);
+		subject.rebuildFor(defs);
+
+		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+
+		assertFalse(ans);
+	}
+
+	@Test
+	void managerAllowsCryptoTransfersWithAutoAccountCreationsAsExpected() throws IOException {
+		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+
+		givenFunction(CryptoTransfer);
+		given(accessor.getAutoAccountCreationsCount()).willReturn(1);
+		subject.rebuildFor(defs);
+
+		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+
+		assertFalse(ans);
+	}
+
+	@Test
 	void managerRejectsCryptoTransfersWithAutoAccountCreationsAsExpected() throws IOException {
 		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
 
