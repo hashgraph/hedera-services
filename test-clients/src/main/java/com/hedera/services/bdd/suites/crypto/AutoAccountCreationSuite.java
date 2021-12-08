@@ -25,6 +25,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.asKey;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.randomValidEd25519Alias;
 
 public class AutoAccountCreationSuite extends HapiApiSuite {
@@ -48,7 +49,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						autoAccountCreationsHappyPath()
+						autoAccountCreationsHappyPath(),
 //						autoAccountCreationBadAlias(),
 //						autoAccountCreationUnsupportedAlias(),
 //						transferToAccountAutoCreatedUsingAlias(),
@@ -57,8 +58,37 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 //						autoAccountCreationWorksWhenUsingAliasOfDeletedAccount()
 //						transferFromAliasToAlias(),
 //						multipleAutoAccountCreations()
+						accountCreatedIfAliasUsedAsPubKey()
 				}
 		);
+	}
+
+	private HapiApiSpec accountCreatedIfAliasUsedAsPubKey() {
+		final var alias = randomValidEd25519Alias();
+		Key aliasKey = asKey(alias);
+		return defaultHapiSpec("AutoAccountCreationsHappyPath")
+				.given(
+						UtilVerbs.inParallel(cryptoCreate("payer")
+								.balance(initialBalance * ONE_HBAR)
+								.key(aliasKey))
+				).when(
+						cryptoTransfer(tinyBarsFromTo("payer", alias, ONE_HUNDRED_HBARS)).via("transferTxn")
+				).then(
+						getTxnRecord("transferTxn").andAllChildRecords().logged(),
+						getAccountInfo("payer").has(
+								accountWith()
+										.balance((initialBalance * ONE_HBAR) - ONE_HUNDRED_HBARS)
+										.noAlias()
+						),
+						getAccountInfo(alias).has(
+										accountWith()
+												.key(aliasKey)
+												.expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.1)
+												.alias(alias)
+												.autoRenew(THREE_MONTHS_IN_SECONDS)
+												.receiverSigReq(false))
+								.logged()
+				);
 	}
 
 	private HapiApiSpec autoAccountCreationWorksWhenUsingAliasOfDeletedAccount() {
@@ -250,6 +280,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 						),
 						getAccountInfo(valid25519Alias).has(
 										accountWith()
+												.key(validEd25519Key)
 												.expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.1)
 												.alias(valid25519Alias)
 												.autoRenew(THREE_MONTHS_IN_SECONDS)

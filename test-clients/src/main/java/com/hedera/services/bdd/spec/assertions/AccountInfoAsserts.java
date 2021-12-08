@@ -25,6 +25,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Key;
 import org.junit.jupiter.api.Assertions;
 
 import java.util.List;
@@ -108,6 +109,13 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 	public AccountInfoAsserts key(String key) {
 		registerProvider((spec, o) -> {
 			assertEquals(spec.registry().getKey(key), ((AccountInfo) o).getKey(), "Bad key!");
+		});
+		return this;
+	}
+
+	public AccountInfoAsserts key(Key key) {
+		registerProvider((spec, o) -> {
+			assertEquals(key, ((AccountInfo) o).getKey(), "Bad key!");
 		});
 		return this;
 	}

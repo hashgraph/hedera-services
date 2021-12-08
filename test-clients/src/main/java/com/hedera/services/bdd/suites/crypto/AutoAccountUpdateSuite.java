@@ -1,6 +1,8 @@
 package com.hedera.services.bdd.suites.crypto;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -11,7 +13,8 @@ import java.util.List;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
-import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
+import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
+import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -44,6 +47,10 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec updateKeyOnAutoCreatedAccount() {
+		SigControl ENOUGH_UNIQUE_SIGS = KeyShape.threshSigs(2,
+				KeyShape.threshSigs(1, OFF, OFF, OFF, OFF, OFF, OFF, ON),
+				KeyShape.threshSigs(3, ON, ON, ON, OFF, OFF, OFF, OFF));
+
 		final var alias = randomValidEd25519Alias();
 		return defaultHapiSpec("updateKeyOnAutoCreatedAccount")
 				.given(
@@ -57,7 +64,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 								.alias(alias))
 				).then(
 						withOpContext((spec, opLog) -> {
-							newKeyNamed("key").shape(SIMPLE);
+							newKeyNamed("key").shape(ENOUGH_UNIQUE_SIGS);
 							final var aliasAccount = spec.registry().getAccountID(alias.toStringUtf8());
 							final var account = asAccountString(aliasAccount);
 
