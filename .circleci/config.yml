@@ -957,13 +957,13 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Update-CentOS7-4N-2C:
-#    triggers:
-#      - schedule:
-#          cron: "45 3 * * *"
-#          filters:
-#            branches:
-#              only:
-#                - master
+    triggers:
+      - schedule:
+          cron: "45 3 * * *"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1404,7 +1404,7 @@ workflows:
             filters:
               branches:
                 ignore:
-                  - 02557-M-other-os-update-regression-workflows
+                  - NONE
             workflow-name: "Continuous-integration"
         - sonar-check:
             context: SonarCloud
@@ -1582,7 +1582,6 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression; git checkout 01867-D-update-panels-for-other-os; cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
