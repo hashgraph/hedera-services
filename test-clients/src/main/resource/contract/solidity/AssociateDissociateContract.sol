@@ -6,10 +6,18 @@ import "./HederaTokenService.sol";
 contract AssociateDissociateContract is HederaTokenService {
 
     function tokenAssociate(address sender, address tokenAddress) external {
-        HederaTokenService.associateToken(sender, tokenAddress);
+        int response = HederaTokenService.associateToken(sender, tokenAddress);
+
+        if (response != HederaResponseCodes.SUCCESS) {
+            revert ("Associate Failed");
+        }
     }
 
     function tokenDissociate(address sender, address tokenAddress) external {
-        HederaTokenService.dissociateToken(sender, tokenAddress);
+        int response = HederaTokenService.dissociateToken(sender, tokenAddress);
+
+        if (response != HederaResponseCodes.SUCCESS) {
+            revert ("Dissociate Failed");
+        }
     }
 }
