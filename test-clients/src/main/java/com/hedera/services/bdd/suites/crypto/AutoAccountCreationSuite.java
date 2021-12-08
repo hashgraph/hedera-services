@@ -29,10 +29,10 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 	private static final Key validEd25519Key = Key.newBuilder().setEd25519(aliasContent).build();
 	private static final ByteString valid25519Alias = validEd25519Key.toByteString();
 
-	private static final Logger log = LogManager.getLogger(CryptoTransferSuite.class);
+	private static final Logger log = LogManager.getLogger(AutoAccountCreationSuite.class);
 
 	public static void main(String... args) {
-		new CryptoTransferSuite().runSuiteAsync();
+		new AutoAccountCreationSuite().runSuiteSync();
 	}
 
 	@Override
@@ -43,55 +43,52 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						autoAccountCreationsHappyPath(),
-						autoAccountCreationBadAlias(),
-						autoAccountCreationAliasAsThresholdKey(),
-						autoAccountCreationAliasAsKeyList(),
-						autoAccountCreationAliasAsContractID()
+//						autoAccountCreationsHappyPath(),
+//						autoAccountCreationBadAlias(),
+//						autoAccountCreationUnsupportedAlias(),
+						transferToAccountAutoCreatedUsingAlias(),
+//						transferToAccountAutoCreatedUsingAccount()
 				}
 		);
 	}
 
-	private HapiApiSpec autoAccountCreationAliasAsContractID() {
-		Key contractKey = Key.newBuilder().setContractID(ContractID.newBuilder().setContractNum(100L)).build();
-		final ByteString contractAlias = contractKey.toByteString();
-		return defaultHapiSpec("autoAccountCreationsHappyPath")
+//	private HapiApiSpec transferToAccountAutoCreatedUsingAccount() {
+//	}
+
+	private HapiApiSpec transferToAccountAutoCreatedUsingAlias() {
+		final var alias = AutoCreateUtils.randomValidECDSAAlias();
+		return defaultHapiSpec("transferToAccountAutoCreated")
 				.given(
 						UtilVerbs.inParallel(
 								cryptoCreate("payer").balance(initialBalance * ONE_HBAR)
 						)
 				).when(
 						cryptoTransfer(
-								tinyBarsFromTo("payer", contractAlias, ONE_HUNDRED_HBARS)
-						).via("transferTxn").hasPrecheck(ResponseCodeEnum.INVALID_ALIAS_KEY)
+								tinyBarsFromTo("payer", alias, ONE_HUNDRED_HBARS)
+						).via("transferTxn"),
+
+						getTxnRecord("transferTxn").andAllChildRecords().logged(),
+						getAccountInfo("payer").has(
+								accountWith().balance((initialBalance * ONE_HBAR) - ONE_HUNDRED_HBARS)),
+						getAccountInfo(alias).has(
+								accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.1))
 				).then(
+						cryptoTransfer(
+								tinyBarsFromTo("payer", alias, ONE_HUNDRED_HBARS)
+						).via("transferTxn2").hasPrecheck(ResponseCodeEnum.INVALID_ACCOUNT_ID) // will be modified as below
+//						cryptoTransfer(
+//								tinyBarsFromTo("payer", alias, ONE_HUNDRED_HBARS)
+//						).via("transferTxn2"),
+//						getTxnRecord("transferTxn2").andAllChildRecords().logged(),
+//						getAccountInfo("payer").has(
+//								accountWith().balance((initialBalance * ONE_HBAR) - (2 * ONE_HUNDRED_HBARS))),
+//						getAccountInfo(alias).has(
+//								accountWith().expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0.05, 0.1))
 				);
 	}
 
-	private HapiApiSpec autoAccountCreationAliasAsKeyList() {
-		Key keyList = Key.newBuilder()
-				.setKeyList(KeyList.newBuilder()
-						.addKeys(Key.newBuilder()
-								.setEd25519(ByteString.copyFrom("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes())))
-						.addKeys(Key.newBuilder()
-								.setECDSASecp256K1(
-										ByteString.copyFrom("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes()))))
-				.build();
-		final ByteString keyListAlias = keyList.toByteString();
-		return defaultHapiSpec("autoAccountCreationsHappyPath")
-				.given(
-						UtilVerbs.inParallel(
-								cryptoCreate("payer").balance(initialBalance * ONE_HBAR)
-						)
-				).when(
-						cryptoTransfer(
-								tinyBarsFromTo("payer", keyListAlias, ONE_HUNDRED_HBARS)
-						).via("transferTxn").hasPrecheck(ResponseCodeEnum.INVALID_ALIAS_KEY)
-				).then();
-	}
-
-	private HapiApiSpec autoAccountCreationAliasAsThresholdKey() {
-		Key threshKey = Key.newBuilder()
+	private HapiApiSpec autoAccountCreationUnsupportedAlias() {
+		final var threshKeyAlias = Key.newBuilder()
 				.setThresholdKey(ThresholdKey.newBuilder()
 						.setThreshold(2)
 						.setKeys(KeyList.newBuilder()
@@ -103,22 +100,49 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 								.addKeys(Key.newBuilder()
 										.setEd25519(
 												ByteString.copyFrom("cccccccccccccccccccccccccccccccc".getBytes())))))
-				.build();
-		final ByteString thresholdAlias = threshKey.toByteString();
-		return defaultHapiSpec("autoAccountCreationsHappyPath")
+				.build().toByteString();
+		final var keyListAlias = Key.newBuilder()
+				.setKeyList(KeyList.newBuilder()
+						.addKeys(Key.newBuilder()
+								.setEd25519(ByteString.copyFrom("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes())))
+						.addKeys(Key.newBuilder()
+								.setECDSASecp256K1(
+										ByteString.copyFrom("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes()))))
+				.build().toByteString();
+		final var contractKeyAlias = Key.newBuilder().setContractID(
+				ContractID.newBuilder().setContractNum(100L)).build().toByteString();
+		final var delegateContractKeyAlias = Key.newBuilder().setDelegatableContractId(
+				ContractID.newBuilder().setContractNum(100L)).build().toByteString();
+
+		return defaultHapiSpec("autoAccountCreationUnsupportedAlias")
 				.given(
 						UtilVerbs.inParallel(
 								cryptoCreate("payer").balance(initialBalance * ONE_HBAR)
 						)
 				).when(
 						cryptoTransfer(
-								tinyBarsFromTo("payer", thresholdAlias, ONE_HUNDRED_HBARS)
-						).via("transferTxn").hasPrecheck(ResponseCodeEnum.INVALID_ALIAS_KEY)
+								tinyBarsFromTo("payer", threshKeyAlias, ONE_HUNDRED_HBARS)
+						).hasPrecheck(ResponseCodeEnum.INVALID_ALIAS_KEY)
+								.via("transferTxnThreshKey"),
+						cryptoTransfer(
+								tinyBarsFromTo("payer", keyListAlias, ONE_HUNDRED_HBARS)
+						).hasPrecheck(ResponseCodeEnum.INVALID_ALIAS_KEY)
+								.via("transferTxnKeyList"),
+						cryptoTransfer(
+								tinyBarsFromTo("payer", contractKeyAlias, ONE_HUNDRED_HBARS)
+						).hasPrecheck(ResponseCodeEnum.INVALID_ALIAS_KEY)
+								.via("transferTxnContract"),
+						cryptoTransfer(
+								tinyBarsFromTo("payer", delegateContractKeyAlias, ONE_HUNDRED_HBARS)
+						).hasPrecheck(ResponseCodeEnum.INVALID_ALIAS_KEY)
+								.via("transferTxnKeyDelegate")
 				).then();
 	}
 
+
 	private HapiApiSpec autoAccountCreationBadAlias() {
 		final var invalidAlias = valid25519Alias.substring(0, 10);
+
 		return defaultHapiSpec("autoAccountCreationBadAlias")
 				.given(
 						UtilVerbs.inParallel(
@@ -128,13 +152,8 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 						cryptoTransfer(
 								tinyBarsFromTo("payer", invalidAlias, ONE_HUNDRED_HBARS)
 						).hasPrecheck(ResponseCodeEnum.INVALID_ALIAS_KEY)
-								.via("transferTxn")
+								.via("transferTxnBad")
 				).then();
-	}
-
-	@Override
-	public boolean canRunAsync() {
-		return true;
 	}
 
 	private HapiApiSpec autoAccountCreationsHappyPath() {
@@ -154,6 +173,11 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 						getAccountInfo(valid25519Alias).has(
 								accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.1))
 				);
+	}
+
+	@Override
+	public boolean canRunAsync() {
+		return true;
 	}
 
 }
