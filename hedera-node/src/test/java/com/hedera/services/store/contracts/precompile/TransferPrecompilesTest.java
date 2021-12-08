@@ -364,6 +364,16 @@ class TransferPrecompilesTest {
 		verify(worldUpdater, never()).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}
 
+	@Test
+	void transferWithWrongInput() {
+		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		given(decoder.decodeTransferToken(pretendArguments)).willThrow(new IndexOutOfBoundsException());
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKEN);
+
+		final var result = subject.computeTransfer(pretendArguments, frame);
+		assertEquals(result,  UInt256.valueOf(ResponseCodeEnum.FAIL_INVALID.getNumber()));
+	}
+
 	private void givenFrameContext() {
 		given(frame.getContractAddress()).willReturn(contractAddr);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
