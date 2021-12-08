@@ -9,6 +9,7 @@ import java.util.Collections;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DecodingFacadeTest {
@@ -35,6 +36,7 @@ class DecodingFacadeTest {
 	private static final Bytes MULTIPLE_ASSOCIATE_INPUT = Bytes.fromHexString("0x2e63879b00000000000000000000000000000000000000000000000000000000000004880000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000004860000000000000000000000000000000000000000000000000000000000000486");
 	private static final Bytes DISSOCIATE_INPUT = Bytes.fromHexString("0x099794e8000000000000000000000000000000000000000000000000000000000000048e000000000000000000000000000000000000000000000000000000000000048c");
 	private static final Bytes MULTIPLE_DISSOCIATE_INPUT = Bytes.fromHexString("0x78b6391800000000000000000000000000000000000000000000000000000000000004940000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000004920000000000000000000000000000000000000000000000000000000000000492");
+	private static final Bytes INVALID_INPUT = Bytes.fromHexString("0x00000000");
 
 	@Test
 	void decodeCryptoTransferPositiveFungibleAmountAndNftTransfer() {
@@ -210,5 +212,11 @@ class DecodingFacadeTest {
 		assertEquals(2, decodedInput.getTokenIds().size());
 		assertTrue(decodedInput.getTokenIds().get(0).getTokenNum() > 0);
 		assertTrue(decodedInput.getTokenIds().get(1).getTokenNum() > 0);
+	}
+
+	@Test
+	void decodeMultipleDissociateTokenInvalidInput() {
+		assertThrows(IllegalArgumentException.class,
+				() -> subject.decodeMultipleDissociations(INVALID_INPUT));
 	}
 }

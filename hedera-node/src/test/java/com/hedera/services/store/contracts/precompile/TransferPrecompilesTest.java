@@ -204,6 +204,86 @@ class TransferPrecompilesTest {
 	}
 
 	@Test
+	void transferTokenWithSenderOnlyHappyPathWorks() {
+		givenFrameContext();
+		givenLedgers();
+
+		given(syntheticTxnFactory.createCryptoTransfer(tokensTransferListSenderOnly.getNftExchanges(),
+				tokensTransferListSenderOnly.getFungibleTransfers())).willReturn(mockSynthBodyBuilder);
+		given(sigsVerifier.hasActiveKey(any(), any(), any())).willReturn(true);
+		given(decoder.decodeTransferTokens(pretendArguments)).willReturn(tokensTransferListSenderOnly);
+
+		hederaTokenStore.setAccountsLedger(accounts);
+		given(hederaTokenStoreFactory.newHederaTokenStore(
+				ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
+		)).willReturn(hederaTokenStore);
+
+		given(transferLogicFactory.newLogic(
+				accounts, nfts, tokenRels, hederaTokenStore,
+				sideEffects,
+				NOOP_VIEWS_MANAGER,
+				dynamicProperties,
+				validator
+		)).willReturn(transferLogic);
+		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects)).willReturn(mockRecordBuilder);
+		given(impliedTransfersMarshal.assessCustomFeesAndValidate(any(), anyInt(), any())).willReturn(impliedTransfers);
+		given(impliedTransfers.getAllBalanceChanges()).willReturn(tokensTransferChangesSenderOnly);
+		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
+		given(impliedTransfersMeta.code()).willReturn(ResponseCodeEnum.OK);
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
+
+		// when:
+		final var result = subject.computeTransfer(pretendArguments, frame);
+
+		// then:
+		assertEquals(successResult, result);
+		// and:
+		verify(transferLogic).transfer(tokensTransferChangesSenderOnly);
+		verify(wrappedLedgers).commit();
+		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+	}
+
+	@Test
+	void transferTokenWithReceiverOnlyHappyPathWorks() {
+		givenFrameContext();
+		givenLedgers();
+
+		given(syntheticTxnFactory.createCryptoTransfer(tokensTransferListReceiverOnly.getNftExchanges(),
+				tokensTransferListReceiverOnly.getFungibleTransfers())).willReturn(mockSynthBodyBuilder);
+		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
+		given(decoder.decodeTransferTokens(pretendArguments)).willReturn(tokensTransferListReceiverOnly);
+
+		hederaTokenStore.setAccountsLedger(accounts);
+		given(hederaTokenStoreFactory.newHederaTokenStore(
+				ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
+		)).willReturn(hederaTokenStore);
+
+		given(transferLogicFactory.newLogic(
+				accounts, nfts, tokenRels, hederaTokenStore,
+				sideEffects,
+				NOOP_VIEWS_MANAGER,
+				dynamicProperties,
+				validator
+		)).willReturn(transferLogic);
+		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects)).willReturn(mockRecordBuilder);
+		given(impliedTransfersMarshal.assessCustomFeesAndValidate(any(), anyInt(), any())).willReturn(impliedTransfers);
+		given(impliedTransfers.getAllBalanceChanges()).willReturn(tokensTransferChangesSenderOnly);
+		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
+		given(impliedTransfersMeta.code()).willReturn(ResponseCodeEnum.OK);
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
+
+		// when:
+		final var result = subject.computeTransfer(pretendArguments, frame);
+
+		// then:
+		assertEquals(successResult, result);
+		// and:
+		verify(transferLogic).transfer(tokensTransferChangesSenderOnly);
+		verify(wrappedLedgers).commit();
+		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+	}
+
+	@Test
 	void transferNftsHappyPathWorks() {
 		givenFrameContext();
 		givenLedgers();
@@ -398,6 +478,20 @@ class TransferPrecompilesTest {
 					sender,
 					receiver
 			);
+	private static final SyntheticTxnFactory.FungibleTokenTransfer transferSenderOnly =
+			new SyntheticTxnFactory.FungibleTokenTransfer(
+					amount,
+					token,
+					sender,
+					null
+			);
+	private static final SyntheticTxnFactory.FungibleTokenTransfer transferReceiverOnly =
+			new SyntheticTxnFactory.FungibleTokenTransfer(
+					amount,
+					token,
+					null,
+					receiver
+			);
 	private static final SyntheticTxnFactory.TokenTransferLists tokenTransferList = new SyntheticTxnFactory.TokenTransferLists(
 			new ArrayList<>() {
 			},
@@ -408,6 +502,18 @@ class TransferPrecompilesTest {
 					new ArrayList<>() {
 					},
 					List.of(transfer, transfer)
+			);
+	private static final SyntheticTxnFactory.TokenTransferLists tokensTransferListSenderOnly =
+			new SyntheticTxnFactory.TokenTransferLists(
+					new ArrayList<>() {
+					},
+					List.of(transferSenderOnly, transferSenderOnly)
+			);
+	private static final SyntheticTxnFactory.TokenTransferLists tokensTransferListReceiverOnly =
+			new SyntheticTxnFactory.TokenTransferLists(
+					new ArrayList<>() {
+					},
+					List.of(transferReceiverOnly, transferReceiverOnly)
 			);
 	private static final SyntheticTxnFactory.TokenTransferLists nftTransferList =
 			new SyntheticTxnFactory.TokenTransferLists(
@@ -460,6 +566,14 @@ class TransferPrecompilesTest {
 					Id.fromGrpcToken(token),
 					token,
 					AccountAmount.newBuilder().setAccountID(receiver).setAmount(amount).build()
+			)
+	);
+
+	private static final List<BalanceChange> tokensTransferChangesSenderOnly = List.of(
+			BalanceChange.changingFtUnits(
+					Id.fromGrpcToken(token),
+					token,
+					AccountAmount.newBuilder().setAccountID(sender).setAmount(amount).build()
 			)
 	);
 
