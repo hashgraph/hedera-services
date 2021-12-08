@@ -389,9 +389,10 @@ public class HederaLedger {
 		if (autoCreationFee != 0 && validity == OK) {
 			var fundingAccountBalanceChange = BalanceChange.hbarAdjust(
 					Id.fromGrpcAccount(dynamicProperties.fundingAccount()), autoCreationFee);
-			accountsLedger.validate(fundingAccountBalanceChange.accountId(),
+			accountsLedger.validate(
+					fundingAccountBalanceChange.accountId(),
 					scopedCheck.setBalanceChange(fundingAccountBalanceChange));
-			changes.add(BalanceChange.hbarAdjust(Id.fromGrpcAccount(dynamicProperties.fundingAccount()), autoCreationFee));
+			changes.add(fundingAccountBalanceChange);
 		}
 
 		if (validity == OK) {
