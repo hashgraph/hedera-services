@@ -21,7 +21,6 @@ package com.hedera.services.records;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -251,15 +250,5 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	) {
 		final var expiringRecord = creator.saveExpiringRecord(effPayer, baseRecord, expiry, submittingMember);
 		recordCache.setPostConsensus(txnId, baseRecord.getEnumStatus(), expiringRecord);
-	}
-
-	@Override
-	public JKey getActivePayerKeyFromTxnCtx() {
-		return txnCtx.activePayerKey();
-	}
-
-	@Override
-	public Instant getConsensusTimeFromTxnCtx() {
-		return txnCtx.consensusTime();
 	}
 }

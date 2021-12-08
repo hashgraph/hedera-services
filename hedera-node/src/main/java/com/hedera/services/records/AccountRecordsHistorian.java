@@ -20,7 +20,6 @@ package com.hedera.services.records;
  * ‍
  */
 
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.RecordStreamObject;
@@ -147,20 +146,4 @@ public interface AccountRecordsHistorian {
 	 * @return the consensus time that will be used for the next following child record
 	 */
 	Instant nextFollowingChildConsensusTime();
-
-	/**
-	 * Provides the payer key from the current transaction context.
-	 * It is used to get the key of payer from parent record while calculating fee for child record
-	 *
-	 * @return payer key
-	 */
-	JKey getActivePayerKeyFromTxnCtx();
-
-	/**
-	 * Provides the consensus timestamp of the current transaction from transaction context.
-	 * It is used to get the consensus time of parent record while calculating fee for child record
-	 *
-	 * @return the consensus timestamp of parent
-	 */
-	Instant getConsensusTimeFromTxnCtx();
 }

@@ -20,7 +20,6 @@ package com.hedera.services.records;
  * ‍
  */
 
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.RecordStreamObject;
@@ -103,15 +102,5 @@ public enum NoopRecordsHistorian implements AccountRecordsHistorian {
 	@Override
 	public Instant nextFollowingChildConsensusTime() {
 		return Instant.EPOCH;
-	}
-
-	@Override
-	public JKey getActivePayerKeyFromTxnCtx() {
-		return null;
-	}
-
-	@Override
-	public Instant getConsensusTimeFromTxnCtx() {
-		return null;
 	}
 }
