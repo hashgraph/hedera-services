@@ -57,7 +57,7 @@
 	  -->
       <Filters>
         <!-- Filter out levels above INFO (ex: DEBUG & TRACE) -->
-        <!-- Intentially left disabled by default -->
+        <!-- Intentionally left disabled by default -->
         <!-- <ThresholdFilter level="INFO"                 onMatch="NEUTRAL" onMismatch="DENY" />-->
 
         <!-- In the following, enable a marker with onMatch="ACCEPT" and disable with onMatch="DENY". -->
@@ -132,6 +132,8 @@
         <MarkerFilter marker="MERKLE_HASHING"         onMatch="DENY"   onMismatch="NEUTRAL"/>
         <MarkerFilter marker="MERKLE_GENERATION"      onMatch="DENY"   onMismatch="NEUTRAL"/>
         <MarkerFilter marker="MERKLE_LOCKS"           onMatch="DENY"   onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="JASPER_DB"              onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="VIRTUAL_MERKLE_STATS"   onMatch="ACCEPT" onMismatch="NEUTRAL"/>
 
         <MarkerFilter marker="DISABLED"               onMatch="DENY"   onMismatch="DENY" />
       </Filters>
