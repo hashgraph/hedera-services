@@ -24,6 +24,8 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -39,6 +41,8 @@ import static com.hedera.services.utils.MiscUtils.forEach;
  */
 @Singleton
 public class AutoAccountsManager {
+	private static final Logger log = LogManager.getLogger(AutoAccountsManager.class);
+
 	private Map<ByteString, EntityNum> autoAccountsMap;
 
 	@Inject
@@ -57,12 +61,14 @@ public class AutoAccountsManager {
 	 * @param accounts the current accounts
 	 */
 	public void rebuildAliasesMap(MerkleMap<EntityNum, MerkleAccount> accounts) {
+		log.info("Rebuilding aliases map from accounts map");
 		autoAccountsMap.clear();
 		forEach(accounts, (k, v) -> {
 			if (!v.getAlias().isEmpty()) {
 				autoAccountsMap.put(v.getAlias(), k);
 			}
 		});
+		log.info("Rebuild complete : No.of accounts with aliases - " + autoAccountsMap.size());
 	}
 
 	/**
