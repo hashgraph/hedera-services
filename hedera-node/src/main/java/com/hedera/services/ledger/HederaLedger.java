@@ -364,7 +364,7 @@ public class HederaLedger {
 		return validity;
 	}
 
-	public void doZeroSum(List<BalanceChange> changes) {
+	public void doZeroSum(final List<BalanceChange> changes) {
 		var validity = OK;
 		var autoCreationFee = 0L;
 		for (final var change : changes) {
