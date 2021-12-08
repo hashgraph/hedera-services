@@ -20,8 +20,10 @@ import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.account
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.randomValidEd25519Alias;
 
@@ -51,9 +53,53 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 //						autoAccountCreationUnsupportedAlias(),
 //						transferToAccountAutoCreatedUsingAlias(),
 //						transferToAccountAutoCreatedUsingAccount(),
-						transferFromAliasToAlias()
+//						transferToAccountUsingItsPublicKey(),
+//						autoAccountCreationWorksWhenUsingAliasOfDeletedAccount()
+//						transferFromAliasToAlias(),
+						multipleAutoAccountCreations()
 				}
 		);
+	}
+
+	private HapiApiSpec autoAccountCreationWorksWhenUsingAliasOfDeletedAccount() {
+		final var transferOp = tinyBarsFromTo("payer", valid25519Alias, ONE_HUNDRED_HBARS);
+		return defaultHapiSpec("AutoAccountCreationWorksWhenUsingAliasOfDeletedAccount")
+				.given(
+						UtilVerbs.inParallel(cryptoCreate("payer").balance(initialBalance * ONE_HBAR))
+				).when(
+						cryptoTransfer(transferOp).via("AutoAccountCreateTxn"),
+						getTxnRecord("AutoAccountCreateTxn").hasChildRecordCount(1).logged(),
+						// TODO fix this
+						cryptoTransfer(transferOp).via("transferTxn"),
+						getTxnRecord("transferTxn").hasChildRecordCount(0).logged(),
+						getAccountInfo(valid25519Alias).has(
+								accountWith().expectedBalanceWithChargedUsd(2 * ONE_HUNDRED_HBARS, 0.05, 0.01))
+				).then(
+						cryptoDelete(valid25519Alias),
+						getTxnRecord("AutoAccountCreateTxn").hasChildRecordCount(1).logged(),
+						cryptoTransfer(transferOp).via("transferTxn"),
+						getAccountInfo(valid25519Alias).has(
+								accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.01))
+				);
+	}
+
+	private HapiApiSpec transferToAccountUsingItsPublicKey() {
+		// TODO fix this
+		final var alias = randomValidEd25519Alias();
+		final var pubKey = Key.newBuilder().setEd25519(alias).build();
+		return defaultHapiSpec("TransferToAccountUsingItsPublicKey")
+				.given(
+						newKeyNamed("pubKey"),
+						cryptoCreate("testAccount")
+								.balance(0L)
+								.key(pubKey)
+				)
+				.when(
+						cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, alias, ONE_HUNDRED_HBARS))
+				)
+				.then(
+						getAccountInfo("testAccount").has(accountWith().balance(ONE_HUNDRED_HBARS))
+				);
 	}
 
 	private HapiApiSpec transferFromAliasToAlias() {
@@ -135,12 +181,14 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 
 	private HapiApiSpec autoAccountCreationUnsupportedAlias() {
 		final var threshKeyAlias = Key.newBuilder()
-				.setThresholdKey(ThresholdKey.newBuilder()
-						.setThreshold(2)
-						.setKeys(KeyList.newBuilder().addKeys(
-										Key.newBuilder().setEd25519(ByteString.copyFrom("aaa".getBytes())))
+				.setThresholdKey(
+						ThresholdKey.newBuilder()
+								.setThreshold(2)
+								.setKeys(KeyList.newBuilder()
+								.addKeys(Key.newBuilder().setEd25519(ByteString.copyFrom("aaa".getBytes())))
 								.addKeys(Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom("bbbb".getBytes())))
-								.addKeys(Key.newBuilder().setEd25519(ByteString.copyFrom("cccccc".getBytes())))))
+								.addKeys(Key.newBuilder().setEd25519(ByteString.copyFrom("cccccc".getBytes()))))
+				)
 				.build().toByteString();
 		final var keyListAlias = Key.newBuilder().setKeyList(KeyList.newBuilder().addKeys(
 						Key.newBuilder().setEd25519(ByteString.copyFrom("aaaaaa".getBytes()))).addKeys(
@@ -176,7 +224,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 	private HapiApiSpec autoAccountCreationBadAlias() {
 		final var invalidAlias = valid25519Alias.substring(0, 10);
 
-		return defaultHapiSpec("autoAccountCreationBadAlias")
+		return defaultHapiSpec("AutoAccountCreationBadAlias")
 				.given(
 						UtilVerbs.inParallel(cryptoCreate("payer").balance(initialBalance * ONE_HBAR))
 				).when(
@@ -187,7 +235,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec autoAccountCreationsHappyPath() {
-		return defaultHapiSpec("autoAccountCreationsHappyPath")
+		return defaultHapiSpec("AutoAccountCreationsHappyPath")
 				.given(
 						UtilVerbs.inParallel(cryptoCreate("payer").balance(initialBalance * ONE_HBAR))
 				).when(
@@ -195,9 +243,50 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 				).then(
 						getTxnRecord("transferTxn").andAllChildRecords().logged(),
 						getAccountInfo("payer").has(
-								accountWith().balance((initialBalance * ONE_HBAR) - ONE_HUNDRED_HBARS)),
+								accountWith()
+										.balance((initialBalance * ONE_HBAR) - ONE_HUNDRED_HBARS)
+										.noAlias()
+						),
 						getAccountInfo(valid25519Alias).has(
-								accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.1))
+								accountWith()
+										.expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.1)
+										.alias(valid25519Alias))
+						.logged()
+				);
+	}
+
+	private HapiApiSpec multipleAutoAccountCreations() {
+		final var alias1 = randomValidEd25519Alias();
+		final var alias2 = randomValidEd25519Alias();
+		final var alias3 = randomValidEd25519Alias();
+		final var alias4 = randomValidEd25519Alias();
+		final var alias5 = randomValidEd25519Alias();
+		return defaultHapiSpec("MultipleAutoAccountCreations")
+				.given(
+						UtilVerbs.inParallel(cryptoCreate("payer").balance(initialBalance * ONE_HBAR))
+				)
+				.when(
+						cryptoTransfer(
+								tinyBarsFromTo("payer", alias1, ONE_HUNDRED_HBARS),
+								tinyBarsFromTo("payer", alias2, ONE_HUNDRED_HBARS),
+								tinyBarsFromTo("payer", alias3, ONE_HUNDRED_HBARS)
+						).via("multipleAutoAccountCreates"),
+						getTxnRecord("multipleAutoAccountCreates").hasChildRecordCount(3).logged(),
+						getAccountInfo("payer").has(
+								accountWith()
+										.balance((initialBalance * ONE_HBAR) - 3 * ONE_HUNDRED_HBARS)
+						)
+				)
+				.then(
+						cryptoTransfer(
+								tinyBarsFromTo("payer", alias4, ONE_HUNDRED_HBARS),
+								tinyBarsFromTo("payer", alias5, 100)
+						).via("failedAutoCreate"),
+						getTxnRecord("multipleAutoAccountCreates").hasChildRecordCount(0).logged(),
+						getAccountInfo("payer").has(
+								accountWith()
+										.balance((initialBalance * ONE_HBAR) - 3 * ONE_HUNDRED_HBARS)
+						)
 				);
 	}
 

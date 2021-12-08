@@ -77,6 +77,9 @@ public class TxnVerbs {
 	public static HapiCryptoDelete cryptoDelete(String account) {
 		return new HapiCryptoDelete(account);
 	}
+	public static HapiCryptoDelete cryptoDelete(ByteString alias) {
+		return new HapiCryptoDelete(alias);
+	}
 	@SafeVarargs
 	public static HapiCryptoTransfer cryptoTransfer(Function<HapiApiSpec, TransferList>... providers) {
 		return new HapiCryptoTransfer(providers);

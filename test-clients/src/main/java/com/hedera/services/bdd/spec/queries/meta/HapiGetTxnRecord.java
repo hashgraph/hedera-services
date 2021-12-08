@@ -110,6 +110,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private Optional<Map<AccountID, Long>> expectedDebits = Optional.empty();
 	private Optional<Consumer<Map<AccountID, Long>>> debitsConsumer = Optional.empty();
 	private Optional<ErroringAssertsProvider<List<TransactionRecord>>> duplicateExpectations = Optional.empty();
+	private Optional<Integer> childRecordsCount = Optional.empty();
 
 	public HapiGetTxnRecord(String txn) {
 		this.txn = txn;
@@ -163,6 +164,12 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	public HapiGetTxnRecord andAllChildRecords() {
 		requestChildRecords = true;
+		return this;
+	}
+
+	public HapiGetTxnRecord hasChildRecordCount(int count) {
+		requestChildRecords = true;
+		childRecordsCount = Optional.of(count);
 		return this;
 	}
 
@@ -523,6 +530,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getTxRecordByTxID(query);
 		final TransactionRecord record = response.getTransactionGetRecord().getTransactionRecord();
 		childRecords = response.getTransactionGetRecord().getChildTransactionRecordsList();
+		childRecordsCount.ifPresent(count -> assertEquals(count, childRecords.size()));
 		for (var rec : childRecords){
 			spec.registry().saveAccountId(rec.getAlias().toStringUtf8(), rec.getReceipt().getAccountID());
 			log.info(spec.logPrefix() + "  Saving alias {} to registry for Account ID {}",

@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.transactions.crypto;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -46,11 +47,16 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
 	static final Logger log = LogManager.getLogger(HapiCryptoDelete.class);
 
 	private String account;
+	private ByteString alias = ByteString.EMPTY;
 	private boolean shouldPurge = false;
 	private Optional<String> transferAccount = Optional.empty();
 
 	public HapiCryptoDelete(String account) {
 		this.account = account;
+	}
+	public HapiCryptoDelete(ByteString alias) {
+		this.account = "0.0.0";
+		this.alias = alias;
 	}
 
 	@Override
@@ -83,6 +89,9 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
 
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
+		if (!alias.isEmpty()) {
+			account = alias.toStringUtf8();
+		}
 		AccountID target = TxnUtils.asId(account, spec);
 		CryptoDeleteTransactionBody opBody = spec
 				.txns()

@@ -36,6 +36,7 @@ import static com.hedera.services.legacy.core.CommonUtils.calculateSolidityAddre
 import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo> {
@@ -148,6 +149,13 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 	public AccountInfoAsserts alias(ByteString alias) {
 		registerProvider((spec, o) -> {
 			assertEquals(alias, ((AccountInfo) o).getAlias(), "Bad Alias!");
+		});
+		return this;
+	}
+
+	public AccountInfoAsserts noAlias() {
+		registerProvider((spec, o) -> {
+			assertNull(((AccountInfo) o).getAlias(), "Bad Alias!");
 		});
 		return this;
 	}
