@@ -56,7 +56,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 //	}
 
 	private HapiApiSpec transferToAccountAutoCreatedUsingAlias() {
-		final var alias = AutoCreateUtils.randomValidECDSAAlias();
+		final var alias = AutoCreateUtils.randomValidEd25519Alias();
 		return defaultHapiSpec("transferToAccountAutoCreated")
 				.given(
 						UtilVerbs.inParallel(
@@ -75,7 +75,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 				).then(
 						cryptoTransfer(
 								tinyBarsFromTo("payer", alias, ONE_HUNDRED_HBARS)
-						).via("transferTxn2").hasPrecheck(ResponseCodeEnum.INVALID_ACCOUNT_ID) // will be modified as below
+						).via("transferTxn2").hasKnownStatus(ResponseCodeEnum.INVALID_ACCOUNT_ID) // will be modified as below
 //						cryptoTransfer(
 //								tinyBarsFromTo("payer", alias, ONE_HUNDRED_HBARS)
 //						).via("transferTxn2"),
