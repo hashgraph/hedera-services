@@ -54,7 +54,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 		final var alias = randomValidEd25519Alias();
 		return defaultHapiSpec("updateKeyOnAutoCreatedAccount")
 				.given(
-						UtilVerbs.inParallel(cryptoCreate("payer").balance(initialBalance * ONE_HBAR))
+						cryptoCreate("payer").balance(initialBalance * ONE_HBAR)
 				).when(
 						cryptoTransfer(tinyBarsFromTo("payer", alias, ONE_HUNDRED_HBARS)).via("transferTxn"),
 
@@ -76,11 +76,6 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 											.expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0.05, 0.1)
 											.key("key"));
 						}));
-	}
-
-	@Override
-	public boolean canRunAsync() {
-		return true;
 	}
 
 }
