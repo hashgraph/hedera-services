@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.queries.crypto;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
@@ -66,6 +67,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 	private Pattern DOT_DELIMTED_ACCOUNT = Pattern.compile("\\d+[.]\\d+[.]\\d+");
 	private String entity;
 	private Optional<AccountID> accountID = Optional.empty();
+	private ByteString alias = ByteString.EMPTY;
 	private boolean exportAccount = false;
 	Optional<Long> expected = Optional.empty();
 	Optional<Supplier<String>> entityFn = Optional.empty();
@@ -76,6 +78,10 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 
 	public HapiGetAccountBalance(String entity) {
 		this.entity = entity;
+	}
+
+	public HapiGetAccountBalance(ByteString alias) {
+		this.entity = alias.toStringUtf8();
 	}
 
 	public HapiGetAccountBalance(Supplier<String> supplier) {

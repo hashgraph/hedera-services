@@ -97,6 +97,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 	private Optional<Pair<String[], Long>> appendedFromTo = Optional.empty();
 	private Optional<AtomicReference<FeeObject>> feesObserver = Optional.empty();
 	private boolean fullyAggregateTokenTransfers = false;
+	private boolean transferToKey = false;
 
 	@Override
 	public HederaFunctionality type() {
@@ -162,6 +163,11 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 		return this;
 	}
 
+	public HapiCryptoTransfer isTransferToKey() {
+		this.transferToKey = true;
+		return this;
+	}
+
 	public HapiCryptoTransfer withEmptyTokenTransfers(String token) {
 		tokenWithEmptyTransferAmounts = Optional.of(token);
 		return this;
@@ -191,7 +197,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 
 	public static Function<HapiApiSpec, TransferList> tinyBarsFromTo(ByteString from, ByteString to, long amount) {
 		return spec -> {
-			AccountID toAccount =  spec.registry().getAccountID(to.toStringUtf8()) != null ?
+			AccountID toAccount = spec.registry().getAccountID(to.toStringUtf8()) != null ?
 					spec.registry().getAccountID(to.toStringUtf8()) : asIdWithAlias(to);
 			AccountID fromAccount = spec.registry().getAccountID(from.toStringUtf8()) != null ?
 					spec.registry().getAccountID(from.toStringUtf8()) : asIdWithAlias(from);
@@ -345,7 +351,8 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 			numTokenTransfers += tokenTransfers.getTransfersCount();
 			numNftOwnershipChanges += tokenTransfers.getNftTransfersCount();
 		}
-		final var xferUsageMeta = new CryptoTransferMeta(multiplier, numTokensInvolved, numTokenTransfers, numNftOwnershipChanges);
+		final var xferUsageMeta = new CryptoTransferMeta(multiplier, numTokensInvolved, numTokenTransfers,
+				numNftOwnershipChanges);
 
 		final var accumulator = new UsageAccumulator();
 		cryptoOpsUsage.cryptoTransferUsage(suFrom(svo), xferUsageMeta, baseMeta, accumulator);
@@ -457,14 +464,13 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 								.stream().collect(groupingBy(
 										AccountAmount::getAccountID,
 										summingLong(AccountAmount::getAmount))).entrySet().stream().map(
-										entry ->  AccountAmount.newBuilder()
+										entry -> AccountAmount.newBuilder()
 												.setAccountID(entry.getKey())
 												.setAmount(entry.getValue())
 												.build()
 								).collect(toList()),
 						HashMap::new));
 	}
-
 
 
 	private List<TokenTransferList> transfersForNft(HapiApiSpec spec) {

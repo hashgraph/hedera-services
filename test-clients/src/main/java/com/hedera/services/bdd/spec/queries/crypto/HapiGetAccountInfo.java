@@ -67,8 +67,9 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 	public HapiGetAccountInfo(String account) {
 		this.account = account;
 	}
+
 	public HapiGetAccountInfo(ByteString alias) {
-		this.account = "0.0.0";
+		this.account = alias.isEmpty() ? "0.0.0" : alias.toStringUtf8();
 		this.alias = alias;
 	}
 
@@ -189,9 +190,6 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 	}
 
 	private Query getAccountInfoQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {
-		if (!alias.isEmpty()) {
-			account = alias.toStringUtf8();
-		}
 		CryptoGetInfoQuery query = CryptoGetInfoQuery.newBuilder()
 				.setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
 				.setAccountID(TxnUtils.asId(account, spec))

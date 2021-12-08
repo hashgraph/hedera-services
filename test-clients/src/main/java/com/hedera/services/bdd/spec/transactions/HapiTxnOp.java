@@ -165,7 +165,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 						return false;
 					}
 					log.error("{} Status resolution failed due to unrecoverable runtime exception, " +
-									"possibly network connection lost.", CommonUtils.toReadableString(txn));
+							"possibly network connection lost.", CommonUtils.toReadableString(txn));
 					throw new HapiTxnCheckStateException("Unable to resolve txn status!");
 				}
 			}
@@ -176,8 +176,8 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 			actualPrecheck = response.getNodeTransactionPrecheckCode();
 			if (
 					retryPrechecks.isPresent() &&
-					retryPrechecks.get().contains(actualPrecheck) &&
-					isWithInRetryLimit(retryCount)
+							retryPrechecks.get().contains(actualPrecheck) &&
+							isWithInRetryLimit(retryCount)
 			) {
 				retryCount++;
 				sleep(10);
@@ -344,8 +344,10 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		}
 		if (!memo.get().equals(recordOfSubmission.getMemo())) {
 			/*
-			When different clients submit a transaction with same transaction IDs and different memos, They are treated as
-			Duplicate transactions and except for the client that gets its transaction handled first.. rest of the clients
+			When different clients submit a transaction with same transaction IDs and different memos, They are
+			treated as
+			Duplicate transactions and except for the client that gets its transaction handled first.. rest of the
+			clients
 			will submit a similar transaction again, with new transaction IDs. No need to throw an exception. 
 			 */
 			log.warn("{} {} Memo didn't come from submitted transaction! actual memo {}, recorded {}."

@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.queries.meta;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.assertions.ErroringAssertsProvider;
@@ -32,6 +33,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.AssessedCustomFee;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
@@ -525,14 +527,15 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	}
 
 	@Override
-	protected void submitWith(HapiApiSpec spec, Transaction payment) {
+	protected void submitWith(HapiApiSpec spec, Transaction payment) throws InvalidProtocolBufferException {
 		Query query = getRecordQuery(spec, payment, false);
 		response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getTxRecordByTxID(query);
 		final TransactionRecord record = response.getTransactionGetRecord().getTransactionRecord();
 		childRecords = response.getTransactionGetRecord().getChildTransactionRecordsList();
 		childRecordsCount.ifPresent(count -> assertEquals(count, childRecords.size()));
-		for (var rec : childRecords){
+		for (var rec : childRecords) {
 			spec.registry().saveAccountId(rec.getAlias().toStringUtf8(), rec.getReceipt().getAccountID());
+			spec.registry().saveKey(rec.getAlias().toStringUtf8(), Key.parseFrom(rec.getAlias()));
 			log.info(spec.logPrefix() + "  Saving alias {} to registry for Account ID {}",
 					rec.getAlias().toStringUtf8(),
 					rec.getReceipt().getAccountID());
