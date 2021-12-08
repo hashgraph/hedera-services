@@ -217,9 +217,11 @@ class TxnIdTest {
 	void equalsWorks() {
 		// given:
 		subject = scheduledSubject();
+		var subjectUserNonce = scheduledSubjectUserNonce();
 
 		// expect:
 		assertNotEquals(subject, unscheduledSubject());
+		assertNotEquals(subject, subjectUserNonce);
 	}
 
 	@Test

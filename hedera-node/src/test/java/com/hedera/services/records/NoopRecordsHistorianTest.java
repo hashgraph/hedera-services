@@ -41,8 +41,10 @@ class NoopRecordsHistorianTest {
 		assertDoesNotThrow(() -> NOOP_RECORDS_HISTORIAN.setCreator(null));
 		assertDoesNotThrow(() -> NOOP_RECORDS_HISTORIAN.revertChildRecordsFromSource(0));
 		assertDoesNotThrow(() -> NOOP_RECORDS_HISTORIAN.trackFollowingChildRecord(0, null, null));
-		assertDoesNotThrow(() -> NOOP_RECORDS_HISTORIAN.trackFollowingChildRecord(0, null, null));
+		assertDoesNotThrow(() -> NOOP_RECORDS_HISTORIAN.trackPrecedingChildRecord(0, null, null));
 		assertNull(NOOP_RECORDS_HISTORIAN.lastCreatedTopLevelRecord());
+		assertNull(NOOP_RECORDS_HISTORIAN.getActivePayerKeyFromTxnCtx());
+		assertNull(NOOP_RECORDS_HISTORIAN.getConsensusTimeFromTxnCtx());
 		assertFalse(NOOP_RECORDS_HISTORIAN.hasPrecedingChildRecords());
 		assertFalse(NOOP_RECORDS_HISTORIAN.hasFollowingChildRecords());
 		assertSame(Instant.EPOCH, NOOP_RECORDS_HISTORIAN.nextFollowingChildConsensusTime());
