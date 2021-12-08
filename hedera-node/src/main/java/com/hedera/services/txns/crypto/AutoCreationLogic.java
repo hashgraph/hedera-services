@@ -115,12 +115,15 @@ public class AutoCreationLogic {
 	/**
 	 * Removes any aliases added to the {@link AutoAccountsManager} map as part of provisional creations.
 	 */
-	public void reclaimPendingAliases() {
+	public boolean reclaimPendingAliases() {
 		if (!pendingCreations.isEmpty()) {
 			for (final var pendingCreation : pendingCreations) {
 				final var alias = pendingCreation.getRecordBuilder().getAlias();
 				autoAccountsManager.getAutoAccountsMap().remove(alias);
 			}
+			return true;
+		} else {
+			return false;
 		}
 	}
 

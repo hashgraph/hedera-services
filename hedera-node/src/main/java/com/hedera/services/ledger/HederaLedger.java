@@ -392,7 +392,9 @@ public class HederaLedger {
 			}
 		} else {
 			dropPendingTokenChanges();
-			autoCreationLogic.reclaimPendingAliases();
+			if (autoCreationLogic.reclaimPendingAliases()) {
+				accountsLedger.undoCreations();
+			}
 			throw new InvalidTransactionException(validity);
 		}
 	}
