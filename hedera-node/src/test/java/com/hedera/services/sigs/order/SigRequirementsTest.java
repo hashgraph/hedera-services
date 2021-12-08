@@ -26,6 +26,7 @@ import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.config.MockFileNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.files.HederaFs;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.sigs.metadata.ContractSigningMetadata;
@@ -60,6 +61,7 @@ import java.util.function.Function;
 
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
+import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_ACCOUNT;
 import static com.hedera.test.factories.scenarios.BadPayerScenarios.INVALID_PAYER_ID_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_PAYER_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_SCENARIO;
@@ -301,7 +303,17 @@ class SigRequirementsTest {
 		public static AccountSigMetaLookup withSafe(
 				Function<AccountID, SafeLookupResult<AccountSigningMetadata>> fn
 		) {
-			return fn::apply;
+			return new AccountSigMetaLookup() {
+				@Override
+				public SafeLookupResult<AccountSigningMetadata> safeLookup(AccountID id) {
+					return fn.apply(id);
+				}
+
+				@Override
+				public SafeLookupResult<AccountSigningMetadata> aliasableSafeLookup(AccountID idOrAlias) {
+					return SafeLookupResult.failure(INVALID_ACCOUNT);
+				}
+			};
 		}
 	}
 
@@ -336,6 +348,7 @@ class SigRequirementsTest {
 
 	private HederaFs hfs;
 	private TokenStore tokenStore;
+	private AliasManager aliasManager;
 	private FileNumbers fileNumbers = new MockFileNumbers();
 	private ScheduleStore scheduleStore;
 	private TransactionBody txn;
@@ -2702,10 +2715,12 @@ class SigRequirementsTest {
 		tokenStore = scenario.tokenStore();
 		scheduleStore = scenario.scheduleStore();
 		final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
+		aliasManager = mock(AliasManager.class);
 
 		subject = new SigRequirements(
 				sigMetaLookup.orElse(
 						defaultLookupsFor(
+								aliasManager,
 								hfsSigMetaLookup,
 								() -> accounts,
 								() -> topics,

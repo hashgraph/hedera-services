@@ -25,7 +25,7 @@ import com.hedera.services.config.FileNumbers;
 import com.hedera.services.config.MockFileNumbers;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.files.HFileMeta;
-import com.hedera.services.ledger.accounts.AutoAccountsManager;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -87,7 +87,7 @@ class OpUsageCtxHelperTest {
 
 	private OpUsageCtxHelper subject;
 	@Mock
-	private AutoAccountsManager autoAccounts;
+	private AliasManager autoAccounts;
 
 	@BeforeEach
 	void setUp() {

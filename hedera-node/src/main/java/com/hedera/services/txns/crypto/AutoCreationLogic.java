@@ -28,7 +28,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.accounts.AutoAccountsManager;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -75,7 +75,7 @@ public class AutoCreationLogic {
 	private final EntityIdSource ids;
 	private final EntityCreator creator;
 	private final TransactionContext txnCtx;
-	private final AutoAccountsManager autoAccountsManager;
+	private final AliasManager aliasManager;
 	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final List<InProgressChildRecord> pendingCreations = new ArrayList<>();
 
@@ -89,7 +89,7 @@ public class AutoCreationLogic {
 			final SyntheticTxnFactory syntheticTxnFactory,
 			final EntityCreator creator,
 			final EntityIdSource ids,
-			final AutoAccountsManager autoAccountsManager,
+			final AliasManager aliasManager,
 			final StateView currentView,
 			final TransactionContext txnCtx
 	) {
@@ -98,7 +98,7 @@ public class AutoCreationLogic {
 		this.creator = creator;
 		this.currentView = currentView;
 		this.syntheticTxnFactory = syntheticTxnFactory;
-		this.autoAccountsManager = autoAccountsManager;
+		this.aliasManager = aliasManager;
 	}
 
 	public void setFeeCalculator(final FeeCalculator feeCalculator) {
@@ -113,13 +113,15 @@ public class AutoCreationLogic {
 	}
 
 	/**
-	 * Removes any aliases added to the {@link AutoAccountsManager} map as part of provisional creations.
+	 * Removes any aliases added to the {@link AliasManager} map as part of provisional creations.
+	 *
+	 * @return whether any aliases were removed
 	 */
 	public boolean reclaimPendingAliases() {
 		if (!pendingCreations.isEmpty()) {
 			for (final var pendingCreation : pendingCreations) {
 				final var alias = pendingCreation.getRecordBuilder().getAlias();
-				autoAccountsManager.getAutoAccountsMap().remove(alias);
+				aliasManager.getAutoAccountsMap().remove(alias);
 			}
 			return true;
 		} else {
@@ -130,6 +132,8 @@ public class AutoCreationLogic {
 	/**
 	 * Notifies the given {@link AccountRecordsHistorian} of the child records for any
 	 * provisionally created accounts since the last call to {@link AutoCreationLogic#reset()}.
+	 *
+	 * @param recordsHistorian the records historian that should track the child records
 	 */
 	public void submitRecordsTo(final AccountRecordsHistorian recordsHistorian) {
 		for (final var pendingCreation : pendingCreations) {
@@ -184,7 +188,7 @@ public class AutoCreationLogic {
 		final var inProgress = new InProgressChildRecord(DEFAULT_SOURCE_ID, syntheticCreation, childRecord);
 		pendingCreations.add(inProgress);
 		/* If the transaction fails, we will get an opportunity to remove this alias in reclaimPendingAliases() */
-		autoAccountsManager.getAutoAccountsMap().put(alias, EntityNum.fromAccountId(newAccountId));
+		aliasManager.getAutoAccountsMap().put(alias, EntityNum.fromAccountId(newAccountId));
 
 		return Pair.of(OK, fee);
 	}

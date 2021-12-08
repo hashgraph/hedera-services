@@ -60,10 +60,6 @@ public class SideEffectsTracker {
 		this.newAccountAlias = alias;
 	}
 
-	public void resetTrackedAutoCreatedAccount() {
-		this.newAccountId = null;
-	}
-
 	/**
 	 * Tracks the side-effects to a token changed by the active transaction that are
 	 * of interest to a records historian.

@@ -959,6 +959,7 @@ public class SigRequirements {
 		var account = adjust.getAccountID();
 		if (!payer.equals(account)) {
 			var result = sigMetaLookup.accountSigningMetaFor(account);
+			System.out.println("Looked for non-payer " + account + ", got " + result);
 			if (result.succeeded()) {
 				var meta = result.metadata();
 				if (adjust.getAmount() < 0 || meta.isReceiverSigRequired()) {

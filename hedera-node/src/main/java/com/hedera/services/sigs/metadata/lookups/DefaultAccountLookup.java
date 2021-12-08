@@ -20,6 +20,7 @@ package com.hedera.services.sigs.metadata.lookups;
  * ‍
  */
 
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
@@ -35,9 +36,14 @@ import static com.hedera.services.utils.EntityNum.fromAccountId;
  * Trivial account signing metadata lookup backed by a {@code FCMap<MapKey, MapValue>}.
  */
 public class DefaultAccountLookup implements AccountSigMetaLookup {
+	private final AliasManager aliasManager;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
-	public DefaultAccountLookup(Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts) {
+	public DefaultAccountLookup(
+			final AliasManager aliasManager,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
+	) {
+		this.aliasManager = aliasManager;
 		this.accounts = accounts;
 	}
 
@@ -50,5 +56,10 @@ public class DefaultAccountLookup implements AccountSigMetaLookup {
 						new AccountSigningMetadata(
 								account.getAccountKey(),
 								account.isReceiverSigRequired()));
+	}
+
+	@Override
+	public SafeLookupResult<AccountSigningMetadata> aliasableSafeLookup(AccountID idOrAlias) {
+		throw new AssertionError("Not implemented");
 	}
 }

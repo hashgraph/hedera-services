@@ -28,6 +28,7 @@ import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.KeyActivationCharacteristics;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
@@ -91,6 +92,7 @@ import static org.mockito.BDDMockito.mock;
 
 class SigOpsRegressionTest {
 	private HederaFs hfs;
+	private AliasManager aliasManager;
 	private FileNumbers fileNumbers = new MockFileNumbers();
 	private MiscRunningAvgs runningAvgs;
 	private MiscSpeedometers speedometers;
@@ -361,7 +363,7 @@ class SigOpsRegressionTest {
 
 	private boolean invokePayerSigActivationScenario(List<TransactionSignature> knownSigs) {
 		SigRequirements keysOrder = new SigRequirements(
-				defaultLookupsFor(null, () -> accounts, () -> null, ref -> null, ref -> null),
+				defaultLookupsFor(aliasManager, null, () -> accounts, () -> null, ref -> null, ref -> null),
 				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
 		final var impliedOrdering = keysOrder.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY);
@@ -376,7 +378,7 @@ class SigOpsRegressionTest {
 		platformTxn.getPlatformTxn().addAll(knownSigs.toArray(new TransactionSignature[0]));
 		final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
 		SigRequirements keysOrder = new SigRequirements(
-				defaultLookupsFor(hfsSigMetaLookup, () -> accounts, null, ref -> null, ref -> null),
+				defaultLookupsFor(aliasManager, hfsSigMetaLookup, () -> accounts, null, ref -> null, ref -> null),
 				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
 
@@ -388,7 +390,7 @@ class SigOpsRegressionTest {
 		final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
 		SigMetadataLookup sigMetaLookups =
 				defaultLookupsPlusAccountRetriesFor(
-						hfsSigMetaLookup,
+						hfsSigMetaLookup, aliasManager,
 						() -> accounts, () -> null, ref -> null, ref -> null, MAGIC_NUMBER, MAGIC_NUMBER,
 						runningAvgs, speedometers);
 		SigRequirements keyOrder = new SigRequirements(
@@ -405,7 +407,7 @@ class SigOpsRegressionTest {
 		SyncVerifier syncVerifier = new CryptoEngine()::verifySync;
 		final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
 		SigMetadataLookup sigMetaLookups = defaultLookupsFor(
-				hfsSigMetaLookup, () -> accounts, () -> null, ref -> null, ref -> null);
+				aliasManager, hfsSigMetaLookup, () -> accounts, () -> null, ref -> null, ref -> null);
 		SigRequirements keyOrder = new SigRequirements(
 				sigMetaLookups,
 				new MockGlobalDynamicProps(),
@@ -421,6 +423,7 @@ class SigOpsRegressionTest {
 
 	private void setupFor(TxnHandlingScenario scenario) throws Throwable {
 		hfs = scenario.hfs();
+		aliasManager = mock(AliasManager.class);
 		runningAvgs = mock(MiscRunningAvgs.class);
 		speedometers = mock(MiscSpeedometers.class);
 		accounts = scenario.accounts();
@@ -430,7 +433,7 @@ class SigOpsRegressionTest {
 
 		final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
 		signingOrder = new SigRequirements(
-				defaultLookupsFor(hfsSigMetaLookup, () -> accounts, () -> null, ref -> null, ref -> null),
+				defaultLookupsFor(aliasManager, hfsSigMetaLookup, () -> accounts, () -> null, ref -> null, ref -> null),
 				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
 		final var payerKeys =

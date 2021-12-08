@@ -54,6 +54,7 @@ public class KeyActivationScreen {
 	}
 
 	public boolean reqKeysAreActiveGiven(ResponseCodeEnum sigStatus) {
+		System.out.println("Is sigStatus=" + sigStatus + " terminal? " + terminalSigStatusTest.test(sigStatus));
 		if (terminalSigStatusTest.test(sigStatus)) {
 			txnCtx.setStatus(sigStatus);
 			return false;

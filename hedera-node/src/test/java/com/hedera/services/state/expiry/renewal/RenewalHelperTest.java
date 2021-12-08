@@ -24,7 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.config.MockHederaNumbers;
-import com.hedera.services.ledger.accounts.AutoAccountsManager;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
@@ -140,7 +140,7 @@ class RenewalHelperTest {
 	@Mock
 	private TokenStore tokenStore;
 	@Mock
-	private AutoAccountsManager autoAccounts;
+	private AliasManager autoAccounts;
 
 	private RenewalHelper subject;
 
@@ -316,7 +316,7 @@ class RenewalHelperTest {
 		accountsMap.put(EntityNum.fromLong(nonExpiredAccountNum), nonExpiredAccount);
 		accountsMap.put(EntityNum.fromLong(brokeExpiredAccountNum), expiredAccountZeroBalance);
 
-		AutoAccountsManager autoAccounts = new AutoAccountsManager();
+		AliasManager autoAccounts = new AliasManager();
 		autoAccounts.setAutoAccountsMap(autoAccountsMap);
 
 		subject = new RenewalHelper(tokenStore, dynamicProps, () -> tokens, () -> accountsMap, () -> tokenRels,

@@ -45,4 +45,9 @@ public class BackedAccountLookup implements AccountSigMetaLookup {
 						account.getAccountKey(),
 						account.isReceiverSigRequired()));
 	}
+
+	@Override
+	public SafeLookupResult<AccountSigningMetadata> aliasableSafeLookup(AccountID idOrAlias) {
+		throw new AssertionError("Not implemented");
+	}
 }
