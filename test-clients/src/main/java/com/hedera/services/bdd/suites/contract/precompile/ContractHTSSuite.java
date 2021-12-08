@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
@@ -34,7 +33,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -58,7 +56,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
@@ -110,9 +107,9 @@ public class ContractHTSSuite extends HapiApiSuite {
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(
 //				depositAndWithdraw(),
-//				associateToken(),
-//				dissociateToken(),
-				validatesAssociatePrecompileWorks()
+				dissociateToken(),
+				associatePrecompileWithSignatureWorksWorksForFungible(),
+				associatePrecompileWithoutSignatureWorksWorksForFungible()
 		);
 	}
 
@@ -163,19 +160,18 @@ public class ContractHTSSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec validatesAssociatePrecompileWorks() {
+	private HapiApiSpec associatePrecompileWithSignatureWorksWorksForFungible() {
 		final var theAccount = "anybody";
 		final var theContract = "associateDissociateContract";
 		final var multiKey = "purpose";
 
 		AtomicReference<AccountID> accountID = new AtomicReference<>();
-
 		AtomicReference<TokenID> freezeKeyOnTokenID = new AtomicReference<>();
 		AtomicReference<TokenID> freezeKeyOffTokenID = new AtomicReference<>();
 		AtomicReference<TokenID> knowableTokenTokenID = new AtomicReference<>();
 		AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
-		return defaultHapiSpec("associatePrecompileWorks")
+		return defaultHapiSpec("associatePrecompileWithSignatureWorksWorksForFungible")
 				.given(
 						newKeyNamed(multiKey),
 						newKeyNamed("kycKey"),
@@ -209,91 +205,161 @@ public class ContractHTSSuite extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id)))
 				).when(
-						sourcing(() -> contractCreate("AssociateDissociate")
-								.bytecode(theContract)
-								.gas(100_000))
-				).then(
-						contractCall("AssociateDissociate", ASSOCIATE_TOKEN, asAddress(accountID.get()), asAddress(freezeKeyOnTokenID.get()))
-								.payingWith(theAccount)
-								.via("freezeKeyOnTxn")
-								.alsoSigningWithFullPrefix(multiKey)
-								.hasKnownStatus(ResponseCodeEnum.SUCCESS),
-						getTxnRecord("freezeKeyOnTxn").andAllChildRecords().logged(),
-						contractCall("AssociateDissociate", ASSOCIATE_TOKEN, asAddress(accountID.get()), asAddress(freezeKeyOffTokenID.get()))
-								.payingWith(theAccount)
-								.via("freezeKeyOffTxn")
-								.alsoSigningWithFullPrefix(multiKey)
-								.hasKnownStatus(ResponseCodeEnum.SUCCESS),
-						getTxnRecord("freezeKeyOffTxn").andAllChildRecords().logged(),
-						contractCall("AssociateDissociate", ASSOCIATE_TOKEN, asAddress(accountID.get()), asAddress(knowableTokenTokenID.get()))
-								.payingWith(theAccount)
-								.via("knowableTokenTxn")
-								.alsoSigningWithFullPrefix(multiKey)
-								.hasKnownStatus(ResponseCodeEnum.SUCCESS),
-						getTxnRecord("knowableTokenTxn").andAllChildRecords().logged(),
-						contractCall("AssociateDissociate", ASSOCIATE_TOKEN, asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
-								.payingWith(theAccount)
-								.via("vanillaTokenTxn")
-								.alsoSigningWithFullPrefix(multiKey)
-								.hasKnownStatus(ResponseCodeEnum.SUCCESS),
-						getTxnRecord("vanillaTokenTxn").andAllChildRecords().logged(),
-
-						getAccountInfo(theAccount)
-								.hasToken(
-										relationshipWith(TokenAssociationSpecs.FREEZABLE_TOKEN_ON_BY_DEFAULT)
-												.kyc(KycNotApplicable)
-												.freeze(Frozen))
-								.hasToken(
-										relationshipWith(TokenAssociationSpecs.FREEZABLE_TOKEN_OFF_BY_DEFAULT)
-												.kyc(KycNotApplicable)
-												.freeze(Unfrozen))
-								.hasToken(
-										relationshipWith(TokenAssociationSpecs.KNOWABLE_TOKEN)
-												.kyc(Revoked)
-												.freeze(FreezeNotApplicable))
-								.hasToken(
-										relationshipWith(TokenAssociationSpecs.VANILLA_TOKEN)
-												.kyc(KycNotApplicable)
-												.freeze(FreezeNotApplicable))
-								.logged()
-				);
-	}
-
-
-	private HapiApiSpec associateToken() {
-		final var theAccount = "anybody";
-		final var theContract = "associateDissociateContract";
-		return defaultHapiSpec("associateHappyPath")
-				.given(
-						cryptoCreate(theAccount).balance(10 * ONE_HUNDRED_HBARS),
-						cryptoCreate(TOKEN_TREASURY),
-						tokenCreate(A_TOKEN)
-								.tokenType(FUNGIBLE_COMMON)
-								.initialSupply(TOTAL_SUPPLY)
-								.treasury(TOKEN_TREASURY),
-						fileCreate("associateDissociateContractByteCode").payingWith(theAccount),
-						updateLargeFile(theAccount, "associateDissociateContractByteCode",
-								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(theContract)
+												contractCreate("AssociateDissociate")
+														.bytecode(theContract)
+														.gas(100_000),
+												contractCall("AssociateDissociate", ASSOCIATE_TOKEN,
+														asAddress(accountID.get()), asAddress(freezeKeyOnTokenID.get()))
 														.payingWith(theAccount)
-														.bytecode("associateDissociateContractByteCode")
-														.via("associateTxn")
-														.gas(100000),
-												cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, theAccount))
-														.hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
+														.via("freezeKeyOnTxn")
+														.alsoSigningWithFullPrefix(multiKey)
+														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
+												getTxnRecord("freezeKeyOnTxn").andAllChildRecords().logged(),
+												contractCall("AssociateDissociate", ASSOCIATE_TOKEN,
+														asAddress(accountID.get()), asAddress(freezeKeyOffTokenID.get()))
+														.payingWith(theAccount)
+														.via("freezeKeyOffTxn")
+														.alsoSigningWithFullPrefix(multiKey)
+														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
+												getTxnRecord("freezeKeyOffTxn").andAllChildRecords().logged(),
+												contractCall("AssociateDissociate", ASSOCIATE_TOKEN,
+														asAddress(accountID.get()), asAddress(knowableTokenTokenID.get()))
+														.payingWith(theAccount)
+														.via("knowableTokenTxn")
+														.alsoSigningWithFullPrefix(multiKey)
+														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
+												getTxnRecord("knowableTokenTxn").andAllChildRecords().logged(),
+												contractCall("AssociateDissociate", ASSOCIATE_TOKEN,
+														asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
+														.payingWith(theAccount)
+														.via("vanillaTokenTxn")
+														.alsoSigningWithFullPrefix(multiKey)
+														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
+												getTxnRecord("vanillaTokenTxn").andAllChildRecords().logged()
 										)
 						)
-				).when(
-						contractCall(theContract, ASSOCIATE_TOKEN).payingWith(theAccount).via("associateMethodCall")
-				).then(
-						cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, theAccount))
-								.hasKnownStatus(ResponseCodeEnum.SUCCESS)
+				).then(getAccountInfo(theAccount)
+						.hasToken(
+								relationshipWith(TokenAssociationSpecs.FREEZABLE_TOKEN_ON_BY_DEFAULT)
+										.kyc(KycNotApplicable)
+										.freeze(Frozen))
+						.hasToken(
+								relationshipWith(TokenAssociationSpecs.FREEZABLE_TOKEN_OFF_BY_DEFAULT)
+										.kyc(KycNotApplicable)
+										.freeze(Unfrozen))
+						.hasToken(
+								relationshipWith(TokenAssociationSpecs.KNOWABLE_TOKEN)
+										.kyc(Revoked)
+										.freeze(FreezeNotApplicable))
+						.hasToken(
+								relationshipWith(TokenAssociationSpecs.VANILLA_TOKEN)
+										.kyc(KycNotApplicable)
+										.freeze(FreezeNotApplicable))
+						.logged()
 				);
 	}
+
+	private HapiApiSpec associatePrecompileWithoutSignatureWorksWorksForFungible() {
+		final var theAccount = "anybody";
+		final var theContract = "AssociatePrecompileWithoutSignatureWorksWorksForFungible";
+
+		AtomicReference<AccountID> accountID = new AtomicReference<>();
+		AtomicReference<TokenID> freezeKeyOnTokenID = new AtomicReference<>();
+		AtomicReference<TokenID> freezeKeyOffTokenID = new AtomicReference<>();
+		AtomicReference<TokenID> knowableTokenTokenID = new AtomicReference<>();
+		AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
+
+		return defaultHapiSpec("associatePrecompileWorks")
+				.given(
+						newKeyNamed("kycKey"),
+						newKeyNamed("freezeKey"),
+						fileCreate(theContract)
+								.path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
+						cryptoCreate(theAccount)
+								.balance(10 * ONE_HUNDRED_HBARS)
+								.exposingCreatedIdTo(accountID::set),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						tokenCreate(FREEZABLE_TOKEN_ON_BY_DEFAULT)
+								.tokenType(FUNGIBLE_COMMON)
+								.treasury(TOKEN_TREASURY)
+								.initialSupply(TOTAL_SUPPLY)
+								.freezeKey("freezeKey")
+								.freezeDefault(true)
+								.exposingCreatedIdTo(id -> freezeKeyOnTokenID.set(asToken(id))),
+						tokenCreate(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
+								.tokenType(FUNGIBLE_COMMON)
+								.treasury(TOKEN_TREASURY)
+								.freezeKey("freezeKey")
+								.freezeDefault(false)
+								.exposingCreatedIdTo(id -> freezeKeyOffTokenID.set(asToken(id))),
+						tokenCreate(KNOWABLE_TOKEN)
+								.tokenType(FUNGIBLE_COMMON)
+								.treasury(TOKEN_TREASURY)
+								.kycKey("kycKey")
+								.exposingCreatedIdTo(id -> knowableTokenTokenID.set(asToken(id))),
+						tokenCreate(VANILLA_TOKEN)
+								.tokenType(FUNGIBLE_COMMON)
+								.treasury(TOKEN_TREASURY)
+								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id)))
+				).when(
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCreate("AssociateDissociate")
+														.bytecode(theContract)
+														.gas(100_000),
+												contractCall("AssociateDissociate", ASSOCIATE_TOKEN,
+														asAddress(accountID.get()), asAddress(freezeKeyOnTokenID.get()))
+														.payingWith(theAccount)
+														.via("freezeKeyOnTxn")
+														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
+												getTxnRecord("freezeKeyOnTxn").andAllChildRecords().logged(),
+												contractCall("AssociateDissociate", ASSOCIATE_TOKEN,
+														asAddress(accountID.get()), asAddress(freezeKeyOffTokenID.get()))
+														.payingWith(theAccount)
+														.via("freezeKeyOffTxn")
+														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
+												getTxnRecord("freezeKeyOffTxn").andAllChildRecords().logged(),
+												contractCall("AssociateDissociate", ASSOCIATE_TOKEN,
+														asAddress(accountID.get()), asAddress(knowableTokenTokenID.get()))
+														.payingWith(theAccount)
+														.via("knowableTokenTxn")
+														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
+												getTxnRecord("knowableTokenTxn").andAllChildRecords().logged(),
+												contractCall("AssociateDissociate", ASSOCIATE_TOKEN,
+														asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
+														.payingWith(theAccount)
+														.via("vanillaTokenTxn")
+														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
+												getTxnRecord("vanillaTokenTxn").andAllChildRecords().logged()
+										)
+						)
+				).then(getAccountInfo(theAccount)
+						.hasToken(
+								relationshipWith(TokenAssociationSpecs.FREEZABLE_TOKEN_ON_BY_DEFAULT)
+										.kyc(KycNotApplicable)
+										.freeze(Frozen))
+						.hasToken(
+								relationshipWith(TokenAssociationSpecs.FREEZABLE_TOKEN_OFF_BY_DEFAULT)
+										.kyc(KycNotApplicable)
+										.freeze(Unfrozen))
+						.hasToken(
+								relationshipWith(TokenAssociationSpecs.KNOWABLE_TOKEN)
+										.kyc(Revoked)
+										.freeze(FreezeNotApplicable))
+						.hasToken(
+								relationshipWith(TokenAssociationSpecs.VANILLA_TOKEN)
+										.kyc(KycNotApplicable)
+										.freeze(FreezeNotApplicable))
+						.logged()
+				);
+	}
+
 
 	private HapiApiSpec dissociateToken() {
 		final var theAccount = "anybody";
