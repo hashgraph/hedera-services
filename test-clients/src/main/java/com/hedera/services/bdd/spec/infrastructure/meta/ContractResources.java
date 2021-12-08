@@ -595,11 +595,13 @@ public class ContractResources {
 			"\"stateMutability\": \"view\",\"type\": \"function\"}";
 
 	public static final String ASSOCIATE_TOKEN = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": " +
-			"\"tokenAddress\", \"type\": \"address\" } ], \"name\": \"associateToken\", \"outputs\": [], " +
-			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+			"\"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", \"name\": \"tokenAddress\", " +
+			"\"type\": \"address\" } ], \"name\": \"tokenAssociate\", \"outputs\": [], \"stateMutability\": " +
+			"\"nonpayable\", \"type\": \"function\" }";
 	public static final String DISSOCIATE_TOKEN = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": " +
-			"\"tokenAddress\", \"type\": \"address\" } ], \"name\": \"dissociateToken\", \"outputs\": [], " +
-			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+			"\"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", \"name\": \"tokenAddress\"," +
+			" \"type\": \"address\" } ], \"name\": \"tokenDissociate\", \"outputs\": [], \"stateMutability\": " +
+			"\"nonpayable\", \"type\": \"function\" }";
 
 
 	public static String bytecodePath(String bytecode) {

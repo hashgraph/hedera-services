@@ -22,16 +22,20 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
@@ -164,10 +168,12 @@ public class ContractHTSSuite extends HapiApiSuite {
 		final var theContract = "associateDissociateContract";
 		final var multiKey = "purpose";
 
-		final AtomicLong freezeKeyOnNum = new AtomicLong();
-		final AtomicLong freezeKeyOffNum = new AtomicLong();
-		final AtomicLong knowableTokenNum = new AtomicLong();
-		final AtomicLong vanillaTokenNum = new AtomicLong();
+		AtomicReference<AccountID> accountID = new AtomicReference<>();
+
+		AtomicReference<TokenID> freezeKeyOnTokenID = new AtomicReference<>();
+		AtomicReference<TokenID> freezeKeyOffTokenID = new AtomicReference<>();
+		AtomicReference<TokenID> knowableTokenTokenID = new AtomicReference<>();
+		AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
 		return defaultHapiSpec("associatePrecompileWorks")
 				.given(
@@ -176,7 +182,9 @@ public class ContractHTSSuite extends HapiApiSuite {
 						newKeyNamed("freezeKey"),
 						fileCreate(theContract)
 								.path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
-						cryptoCreate(theAccount).balance(10 * ONE_HUNDRED_HBARS),
+						cryptoCreate(theAccount)
+								.balance(10 * ONE_HUNDRED_HBARS)
+								.exposingCreatedIdTo(accountID::set),
 						cryptoCreate(TOKEN_TREASURY).balance(0L),
 						tokenCreate(FREEZABLE_TOKEN_ON_BY_DEFAULT)
 								.tokenType(FUNGIBLE_COMMON)
@@ -184,46 +192,46 @@ public class ContractHTSSuite extends HapiApiSuite {
 								.initialSupply(TOTAL_SUPPLY)
 								.freezeKey("freezeKey")
 								.freezeDefault(true)
-								.exposingCreatedIdTo(idLit -> freezeKeyOnNum.set(asDotDelimitedLongArray(idLit)[2])),
+								.exposingCreatedIdTo(id -> freezeKeyOnTokenID.set(asToken(id))),
 						tokenCreate(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
 								.freezeKey("freezeKey")
 								.freezeDefault(false)
-								.exposingCreatedIdTo(idLit -> freezeKeyOffNum.set(asDotDelimitedLongArray(idLit)[2])),
+								.exposingCreatedIdTo(id -> freezeKeyOffTokenID.set(asToken(id))),
 						tokenCreate(KNOWABLE_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
 								.kycKey("kycKey")
-								.exposingCreatedIdTo(idLit -> knowableTokenNum.set(asDotDelimitedLongArray(idLit)[2])),
+								.exposingCreatedIdTo(id -> knowableTokenTokenID.set(asToken(id))),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
-								.exposingCreatedIdTo(idLit -> vanillaTokenNum.set(asDotDelimitedLongArray(idLit)[2]))
+								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id)))
 				).when(
 						sourcing(() -> contractCreate("AssociateDissociate")
 								.bytecode(theContract)
 								.gas(100_000))
 				).then(
-						contractCall("AssociateDissociate", ASSOCIATE_TOKEN, freezeKeyOnNum.get())
+						contractCall("AssociateDissociate", ASSOCIATE_TOKEN, asAddress(accountID.get()), asAddress(freezeKeyOnTokenID.get()))
 								.payingWith(theAccount)
 								.via("freezeKeyOnTxn")
 								.alsoSigningWithFullPrefix(multiKey)
 								.hasKnownStatus(ResponseCodeEnum.SUCCESS),
 						getTxnRecord("freezeKeyOnTxn").andAllChildRecords().logged(),
-						contractCall("AssociateDissociate", ASSOCIATE_TOKEN, freezeKeyOffNum.get())
+						contractCall("AssociateDissociate", ASSOCIATE_TOKEN, asAddress(accountID.get()), asAddress(freezeKeyOffTokenID.get()))
 								.payingWith(theAccount)
 								.via("freezeKeyOffTxn")
 								.alsoSigningWithFullPrefix(multiKey)
 								.hasKnownStatus(ResponseCodeEnum.SUCCESS),
 						getTxnRecord("freezeKeyOffTxn").andAllChildRecords().logged(),
-						contractCall("AssociateDissociate", ASSOCIATE_TOKEN, knowableTokenNum.get())
+						contractCall("AssociateDissociate", ASSOCIATE_TOKEN, asAddress(accountID.get()), asAddress(knowableTokenTokenID.get()))
 								.payingWith(theAccount)
 								.via("knowableTokenTxn")
 								.alsoSigningWithFullPrefix(multiKey)
 								.hasKnownStatus(ResponseCodeEnum.SUCCESS),
 						getTxnRecord("knowableTokenTxn").andAllChildRecords().logged(),
-						contractCall("AssociateDissociate", ASSOCIATE_TOKEN, vanillaTokenNum.get())
+						contractCall("AssociateDissociate", ASSOCIATE_TOKEN, asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
 								.payingWith(theAccount)
 								.via("vanillaTokenTxn")
 								.alsoSigningWithFullPrefix(multiKey)
@@ -248,10 +256,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 												.kyc(KycNotApplicable)
 												.freeze(FreezeNotApplicable))
 								.logged()
-
 				);
-
-
 	}
 
 
@@ -417,5 +422,14 @@ public class ContractHTSSuite extends HapiApiSuite {
 	@Override
 	protected Logger getResultsLogger() {
 		return log;
+	}
+
+	private static TokenID asToken(String v) {
+		long[] nativeParts = asDotDelimitedLongArray(v);
+		return TokenID.newBuilder()
+				.setShardNum(nativeParts[0])
+				.setRealmNum(nativeParts[1])
+				.setTokenNum(nativeParts[2])
+				.build();
 	}
 }

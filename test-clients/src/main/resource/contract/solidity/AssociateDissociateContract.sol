@@ -5,11 +5,11 @@ import "./HederaTokenService.sol";
 
 contract AssociateDissociateContract is HederaTokenService {
 
-    function associateToken(address tokenAddress) external {
-        HederaTokenService.associateToken(msg.sender, tokenAddress);
+    function tokenAssociate(address sender, address tokenAddress) external {
+        HederaTokenService.associateToken(sender, tokenAddress);
     }
 
-    function dissociateToken(address tokenAddress) external {
-        HederaTokenService.dissociateToken(msg.sender, tokenAddress);
+    function tokenDissociate(address sender, address tokenAddress) external {
+        HederaTokenService.dissociateToken(sender, tokenAddress);
     }
 }
