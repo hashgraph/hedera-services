@@ -86,6 +86,7 @@ import java.util.function.Supplier;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -136,7 +137,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	//transferNFTs(address token, address[] calldata sender, address[] calldata receiver, int64[] calldata serialNumber)
 	protected static final int ABI_ID_TRANSFER_NFTS = 0x2c4ba191;
 	//transferNFT(address token,  address sender, address recipient, int64 serialNum)
-	protected static final int ABI_ID_TRANSFER_NFT = 0x7c502795;
+	protected static final int ABI_ID_TRANSFER_NFT = 0x5cfc9011;
 	//mintToken(address token, uint64 amount, bytes calldata metadata)
 	protected static final int ABI_ID_MINT_TOKEN = 0x36dcedf0;
 	//burnToken(address token, uint64 amount, int64[] calldata serialNumbers)
@@ -192,15 +193,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		final var functionId = input.getInt(0);
 		switch (functionId) {
 			case ABI_ID_CRYPTO_TRANSFER:
-				return computeCryptoTransfer(input, messageFrame);
 			case ABI_ID_TRANSFER_TOKENS:
-				return computeTransferTokens(input, messageFrame);
 			case ABI_ID_TRANSFER_TOKEN:
-				return computeTransferToken(input, messageFrame);
 			case ABI_ID_TRANSFER_NFTS:
-				return computeTransferNfts(input, messageFrame);
 			case ABI_ID_TRANSFER_NFT:
-				return computeTransferNft(input, messageFrame);
+				return computeTransfer(input, messageFrame);
 			case ABI_ID_MINT_TOKEN:
 				return computeMintToken(input, messageFrame);
 			case ABI_ID_BURN_TOKEN:
@@ -219,28 +216,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	@SuppressWarnings("unused")
-	protected Bytes computeCryptoTransfer(final Bytes input, final MessageFrame messageFrame) {
-		return null;
-	}
-
-	@SuppressWarnings("unused")
-	protected Bytes computeTransferTokens(final Bytes input, final MessageFrame messageFrame) {
-		return null;
-	}
-
-	@SuppressWarnings("unused")
-	protected Bytes computeTransferToken(final Bytes input, final MessageFrame frame) {
+	protected Bytes computeTransfer(final Bytes input, final MessageFrame frame) {
 		return computeInternal(frame, input, new TransferPrecompile());
-	}
-
-	@SuppressWarnings("unused")
-	protected Bytes computeTransferNfts(final Bytes input, final MessageFrame messageFrame) {
-		return null;
-	}
-
-	@SuppressWarnings("unused")
-	protected Bytes computeTransferNft(final Bytes input, final MessageFrame messageFrame) {
-		return null;
 	}
 
 	@SuppressWarnings("unused")
@@ -302,14 +279,19 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		final var updater = (AbstractLedgerWorldUpdater) frame.getWorldUpdater();
 		final var ledgers = updater.wrappedTrackingLedgers();
 
-		final var synthBody = precompile.body(input);
+		TransactionBody.Builder synthBody = TransactionBody.newBuilder();
 		Bytes result = SUCCESS_RESULT;
 		ExpirableTxnRecord.Builder childRecord;
 		try {
+			synthBody = precompile.body(input);
 			childRecord = precompile.run(recipient, contract, ledgers);
 			ledgers.commit();
 		} catch (InvalidTransactionException e) {
 			final var status = e.getResponseCode();
+			childRecord = creator.createUnsuccessfulSyntheticRecord(status);
+			result = resultFrom(status);
+		} catch (Exception e) {
+			final var status = ResponseCodeEnum.FAIL_INVALID;
 			childRecord = creator.createUnsuccessfulSyntheticRecord(status);
 			result = resultFrom(status);
 		}
@@ -346,6 +328,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				AccountStore accountStore,
 				DissociationFactory dissociationFactory);
 	}
+
 	@FunctionalInterface
 	interface TransferLogicFactory {
 		TransferLogic newLogic(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
@@ -530,12 +513,81 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	private class TransferPrecompile implements Precompile {
-		private SyntheticTxnFactory.FungibleTokenTransfer transferOp;
+		private SyntheticTxnFactory.TokenTransferLists transferOp;
 
 		@Override
 		public TransactionBody.Builder body(final Bytes input) {
-			transferOp = decoder.decodeTransferToken(input);
-			return syntheticTxnFactory.createCryptoTransfer(List.of(), List.of(), List.of(transferOp));
+			switch (input.getInt(0)) {
+				case ABI_ID_CRYPTO_TRANSFER:
+					transferOp = decoder.decodeCryptoTransfer(input);
+					break;
+				case ABI_ID_TRANSFER_TOKENS:
+					transferOp = decoder.decodeTransferTokens(input);
+					break;
+				case ABI_ID_TRANSFER_TOKEN:
+					transferOp = decoder.decodeTransferToken(input);
+					break;
+				case ABI_ID_TRANSFER_NFTS:
+					transferOp = decoder.decodeTransferNFTs(input);
+					break;
+				case ABI_ID_TRANSFER_NFT:
+					transferOp = decoder.decodeTransferNFT(input);
+					break;
+				default:
+					throw new InvalidTransactionException(FAIL_INVALID);
+			}
+			return syntheticTxnFactory.createCryptoTransfer(transferOp.getNftExchanges(),
+					transferOp.getFungibleTransfers());
+		}
+
+		private List<BalanceChange> constructBalanceChanges(SyntheticTxnFactory.TokenTransferLists transferOp) {
+			List<BalanceChange> changes = new ArrayList<>();
+			for (SyntheticTxnFactory.FungibleTokenTransfer fungibleTransfer : transferOp.getFungibleTransfers()) {
+				if (fungibleTransfer.sender != null && fungibleTransfer.receiver != null) {
+					changes.addAll(List.of(
+							BalanceChange.changingFtUnits(
+									Id.fromGrpcToken(fungibleTransfer.getDenomination()),
+									fungibleTransfer.getDenomination(),
+									AccountAmount.newBuilder().setAccountID(fungibleTransfer.receiver).setAmount(fungibleTransfer.amount).build()
+							),
+							BalanceChange.changingFtUnits(
+									Id.fromGrpcToken(fungibleTransfer.getDenomination()),
+									fungibleTransfer.getDenomination(),
+									AccountAmount.newBuilder().setAccountID(fungibleTransfer.sender).setAmount(-fungibleTransfer.amount).build()
+							))
+					);
+				} else if (fungibleTransfer.sender == null) {
+					changes.add(
+							BalanceChange.changingFtUnits(
+									Id.fromGrpcToken(fungibleTransfer.getDenomination()),
+									fungibleTransfer.getDenomination(),
+									AccountAmount.newBuilder().setAccountID(fungibleTransfer.receiver).setAmount(fungibleTransfer.amount).build()
+							)
+					);
+				} else {
+					changes.add(
+							BalanceChange.changingFtUnits(
+									Id.fromGrpcToken(fungibleTransfer.getDenomination()),
+									fungibleTransfer.getDenomination(),
+									AccountAmount.newBuilder().setAccountID(fungibleTransfer.sender).setAmount(-fungibleTransfer.amount).build()
+							)
+					);
+				}
+			}
+
+			if (changes.isEmpty()) {
+				for (SyntheticTxnFactory.NftExchange nftExchange : transferOp.getNftExchanges()) {
+					changes.add(
+							BalanceChange.changingNftOwnership(
+									Id.fromGrpcToken(nftExchange.getTokenType()),
+									nftExchange.getTokenType(),
+									nftExchange.nftTransfer()
+							)
+					);
+				}
+			}
+
+			return changes;
 		}
 
 		@Override
@@ -544,20 +596,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				final Address contract,
 				final WorldLedgers ledgers
 		) {
-			final List<BalanceChange> changes = new ArrayList<>(){};
-			changes.addAll(List.of(
-					BalanceChange.changingFtUnits(
-							Id.fromGrpcToken(transferOp.getDenomination()),
-							transferOp.getDenomination(),
-							AccountAmount.newBuilder().setAccountID(transferOp.sender).setAmount(-transferOp.amount).build()
-					),
-					BalanceChange.changingFtUnits(
-							Id.fromGrpcToken(transferOp.getDenomination()),
-							transferOp.getDenomination(),
-							AccountAmount.newBuilder().setAccountID(transferOp.receiver).setAmount(transferOp.amount).build()
-					)
-			));
-
+			final List<BalanceChange> changes = constructBalanceChanges(transferOp);
 			var validated = impliedTransfersMarshal.assessCustomFeesAndValidate(
 					changes,
 					changes.size(),
@@ -650,12 +689,13 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.mintLogicFactory = mintLogicFactory;
 	}
 
-	public void setBurnLogicFactory(final BurnLogicFactory burnLogicFactory) {
-		this.burnLogicFactory = burnLogicFactory;
-	}
-
+	/* --- Only used by unit tests --- */
 	void setDissociateLogicFactory(final DissociateLogicFactory dissociateLogicFactory) {
 		this.dissociateLogicFactory = dissociateLogicFactory;
+	}
+
+	public void setBurnLogicFactory(final BurnLogicFactory burnLogicFactory) {
+		this.burnLogicFactory = burnLogicFactory;
 	}
 
 	void setTransferLogicFactory(final TransferLogicFactory transferLogicFactory) {

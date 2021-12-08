@@ -105,23 +105,13 @@ class SyntheticTxnFactoryTest {
 
 	@Test
 	void createsExpectedCryptoTransfer() {
-		final var nftExchange = new SyntheticTxnFactory.NftExchange(serialNo, nonFungible, a, d);
-		final var firstHbarTransfer = new SyntheticTxnFactory.HbarTransfer(firstAmount, a, b);
-		final var secondHbarTransfer = new SyntheticTxnFactory.HbarTransfer(secondAmount, b, c);
-		final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, fungible, c, a);
+		final var nftExchange = new SyntheticTxnFactory.NftExchange(serialNo, nonFungible, a, c);
+		final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, fungible, b, a);
 
 		final var result = subject.createCryptoTransfer(
 				List.of(nftExchange),
-				List.of(firstHbarTransfer, secondHbarTransfer),
 				List.of(fungibleTransfer));
 		final var txnBody = result.build();
-
-		final var hbarTransfers = txnBody.getCryptoTransfer().getTransfers().getAccountAmountsList();
-		assertEquals(List.of(
-				firstHbarTransfer.senderAdjustment(),
-				firstHbarTransfer.receiverAdjustment(),
-				secondHbarTransfer.senderAdjustment(),
-				secondHbarTransfer.receiverAdjustment()), hbarTransfers);
 
 		final var tokenTransfers = txnBody.getCryptoTransfer().getTokenTransfersList();
 		final var expNftTransfer = tokenTransfers.get(0);
@@ -135,14 +125,12 @@ class SyntheticTxnFactoryTest {
 	}
 
 	private static final long serialNo = 100;
-	private static final long firstAmount = 100;
 	private static final long secondAmount = 200;
 	private static final AccountID a = IdUtils.asAccount("0.0.2");
 	private static final AccountID b = IdUtils.asAccount("0.0.3");
 	private static final AccountID c = IdUtils.asAccount("0.0.4");
-	private static final AccountID d = IdUtils.asAccount("0.0.5");
-	private static final TokenID fungible = IdUtils.asToken("0.0.666");
-	private static final TokenID nonFungible = IdUtils.asToken("0.0.777");
+	private static final TokenID fungible = IdUtils.asToken("0.0.555");
+	private static final TokenID nonFungible = IdUtils.asToken("0.0.666");
 	private static final List<Long> targetSerialNos = List.of(1L, 2L, 3L);
 	private static final List<ByteString> newMetadata = List.of(
 			ByteString.copyFromUtf8("AAA"), ByteString.copyFromUtf8("BBB"), ByteString.copyFromUtf8("CCC"));
