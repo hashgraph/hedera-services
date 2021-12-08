@@ -299,7 +299,7 @@ public class StateView {
 		final var targetNft = currentNfts.get(targetKey);
 		var accountId = targetNft.getOwner().toGrpcAccountId();
 
-		if (accountId.equals(AccountID.getDefaultInstance())) {
+		if (accountId.equals(AccountID.newBuilder().setAccountNum(0).build())) {
 			var merkleToken = tokens().get(tokenId);
 			if (merkleToken == null) {
 				return Optional.empty();
