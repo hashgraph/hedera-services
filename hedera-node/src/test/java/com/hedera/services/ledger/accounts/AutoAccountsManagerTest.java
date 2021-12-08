@@ -37,9 +37,11 @@ class AutoAccountsManagerTest {
 	void settersAndGettersWork() {
 		EntityNum a = new EntityNum(1);
 		EntityNum b = new EntityNum(2);
+		ByteString aliasA = ByteString.copyFromUtf8("aaaa");
+		ByteString aliasB = ByteString.copyFromUtf8("bbbb");
 		Map<ByteString, EntityNum> expectedMap = new HashMap<>() {{
-			put(ByteString.copyFromUtf8("aaaa"), a);
-			put(ByteString.copyFromUtf8("bbbb"), b);
+			put(aliasA, a);
+			put(aliasB, b);
 		}};
 
 		var subject = new AutoAccountsManager();
@@ -48,6 +50,7 @@ class AutoAccountsManagerTest {
 		subject.setAutoAccountsMap(expectedMap);
 		assertEquals(expectedMap, subject.getAutoAccountsMap());
 		assertEquals(b, subject.fetchEntityNumFor(ByteString.copyFromUtf8("bbbb")));
+		assertTrue(subject.contains(aliasA));
 	}
 
 	@Test
@@ -72,5 +75,9 @@ class AutoAccountsManagerTest {
 		final var finalMap = subject.getAutoAccountsMap();
 		assertEquals(1, finalMap.size());
 		assertEquals(withNum, subject.getAutoAccountsMap().get(upToDateAlias));
+
+		// finally when
+		subject.forgetAliasIfPresent(withNum, liveAccounts);
+		assertEquals(0, subject.getAutoAccountsMap().size());
 	}
 }
