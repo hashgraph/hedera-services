@@ -44,57 +44,58 @@ public class DecodingFacade {
 	private static final int ADDRESS_BYTES_LENGTH = 20;
 	private static final int ADDRESS_SKIP_BYTES_LENGTH = 12;
 	private static final int FUNCTION_SELECTOR_BYTES_LENGTH = 4;
+	private static final String INT_OUTPUT = "(int)";
 
 	private static final Function CRYPTO_TRANSFER_FUNCTION = new Function(
-			"cryptoTransfer((address,(address,int64)[],(address,address,int64)[])[])", "(int)");
+			"cryptoTransfer((address,(address,int64)[],(address,address,int64)[])[])", INT_OUTPUT);
 	private static final Bytes CRYPTO_TRANSFER_SELECTOR = Bytes.wrap(CRYPTO_TRANSFER_FUNCTION.selector());
 	private static final ABIType<Tuple> CRYPTO_TRANSFER_DECODER = TypeFactory.create(
 			"((bytes32,(bytes32,int64)[],(bytes32,bytes32,int64)[])[])");
 
 	private static final Function TRANSFER_TOKENS_FUNCTION = new Function("transferTokens(address,address[],int64[])",
-			"(int)");
+			INT_OUTPUT);
 	private static final Bytes TRANSFER_TOKENS_SELECTOR = Bytes.wrap(TRANSFER_TOKENS_FUNCTION.selector());
 	private static final ABIType<Tuple> TRANSFER_TOKENS_DECODER = TypeFactory.create("(bytes32,bytes32[],int64[])");
 
 	private static final Function TRANSFER_TOKEN_FUNCTION = new Function("transferToken(address,address,address,int64)",
-			"(int)");
+			INT_OUTPUT);
 	private static final Bytes TRANSFER_TOKEN_SELECTOR = Bytes.wrap(TRANSFER_TOKEN_FUNCTION.selector());
 	private static final ABIType<Tuple> TRANSFER_TOKEN_DECODER = TypeFactory.create("(bytes32,bytes32,bytes32,int64)");
 
 	private static final Function TRANSFER_NFTS_FUNCTION = new Function(
-			"transferNFTs(address,address[],address[],int64[])", "(int)");
+			"transferNFTs(address,address[],address[],int64[])", INT_OUTPUT);
 	private static final Bytes TRANSFER_NFTS_SELECTOR = Bytes.wrap(TRANSFER_NFTS_FUNCTION.selector());
 	private static final ABIType<Tuple> TRANSFER_NFTS_DECODER = TypeFactory.create(
 			"(bytes32,bytes32[],bytes32[],int64[])");
 
 	private static final Function TRANSFER_NFT_FUNCTION = new Function("transferNFT(address,address,address,int64)",
-			"(int)");
+			INT_OUTPUT);
 	private static final Bytes TRANSFER_NFT_SELECTOR = Bytes.wrap(TRANSFER_NFT_FUNCTION.selector());
 	private static final ABIType<Tuple> TRANSFER_NFT_DECODER = TypeFactory.create("(bytes32,bytes32,bytes32,int64)");
 
-	private static final Function MINT_TOKEN_FUNCTION = new Function("mintToken(address,uint64,bytes)", "(int)");
+	private static final Function MINT_TOKEN_FUNCTION = new Function("mintToken(address,uint64,bytes)", INT_OUTPUT);
 	private static final Bytes MINT_TOKEN_SELECTOR = Bytes.wrap(MINT_TOKEN_FUNCTION.selector());
 	private static final ABIType<Tuple> MINT_TOKEN_DECODER = TypeFactory.create("(bytes32,int64,string)");
 
-	private static final Function BURN_TOKEN_FUNCTION = new Function("burnToken(address,uint64,int64[])", "(int)");
+	private static final Function BURN_TOKEN_FUNCTION = new Function("burnToken(address,uint64,int64[])", INT_OUTPUT);
 	private static final Bytes BURN_TOKEN_SELECTOR = Bytes.wrap(BURN_TOKEN_FUNCTION.selector());
 	private static final ABIType<Tuple> BURN_TOKEN_DECODER = TypeFactory.create("(bytes32,int64,int64[])");
 
 	private static final Function ASSOCIATE_TOKENS_FUNCTION = new Function("associateTokens(address,address[])",
-			"(int)");
+			INT_OUTPUT);
 	private static final Bytes ASSOCIATE_TOKENS_SELECTOR = Bytes.wrap(ASSOCIATE_TOKENS_FUNCTION.selector());
 	private static final ABIType<Tuple> ASSOCIATE_TOKENS_DECODER = TypeFactory.create("(bytes32,bytes32[])");
 
-	private static final Function ASSOCIATE_TOKEN_FUNCTION = new Function("associateToken(address,address)", "(int)");
+	private static final Function ASSOCIATE_TOKEN_FUNCTION = new Function("associateToken(address,address)", INT_OUTPUT);
 	private static final Bytes ASSOCIATE_TOKEN_SELECTOR = Bytes.wrap(ASSOCIATE_TOKEN_FUNCTION.selector());
 	private static final ABIType<Tuple> ASSOCIATE_TOKEN_DECODER = TypeFactory.create("(bytes32,bytes32)");
 
 	private static final Function DISSOCIATE_TOKENS_FUNCTION = new Function("dissociateTokens(address,address[])",
-			"(int)");
+			INT_OUTPUT);
 	private static final Bytes DISSOCIATE_TOKENS_SELECTOR = Bytes.wrap(DISSOCIATE_TOKENS_FUNCTION.selector());
 	private static final ABIType<Tuple> DISSOCIATE_TOKENS_DECODER = TypeFactory.create("(bytes32,bytes32[])");
 
-	private static final Function DISSOCIATE_TOKEN_FUNCTION = new Function("dissociateToken(address,address)", "(int)");
+	private static final Function DISSOCIATE_TOKEN_FUNCTION = new Function("dissociateToken(address,address)", INT_OUTPUT);
 	private static final Bytes DISSOCIATE_TOKEN_SELECTOR = Bytes.wrap(DISSOCIATE_TOKEN_FUNCTION.selector());
 	private static final ABIType<Tuple> DISSOCIATE_TOKEN_DECODER = TypeFactory.create("(bytes32,bytes32)");
 
