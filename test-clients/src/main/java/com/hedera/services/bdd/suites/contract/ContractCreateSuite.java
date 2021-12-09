@@ -140,9 +140,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 //						receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
 //						cannotSendToNonExistentAccount(),
 //						canCallPendingContractSafely(),
-//						delegateContractIdRequiredForTransferInDelegateCall(),
-//						helloWorldNftMint(),
-						helloWorldFungibleMint(),
+//						delegateContractIdRequiredForTransferInDelegateCall()
 				}
 		);
 	}
@@ -476,102 +474,6 @@ public class ContractCreateSuite extends HapiApiSuite {
 								beneficiaryAccountNum.get(),
 								totalToSend / 2)),
 						getAccountBalance(beneficiary).hasTinyBars(3 * (totalToSend / 2))
-				);
-	}
-
-	private HapiApiSpec helloWorldNftMint() {
-		final var hwMintInitcode = "hwMintInitcode";
-
-		final var nonfungibleToken = "nonfungibleToken";
-		final var multiKey = "purpose";
-		final var contractKey = "meaning";
-		final var hwMint = "hwMint";
-		final var firstMintTxn = "firstMintTxn";
-		final var secondMintTxn = "secondMintTxn";
-		final var contractKeyShape = DELEGATE_CONTRACT;
-
-		final AtomicLong nonFungibleNum = new AtomicLong();
-
-		return defaultHapiSpec("HelloWorldNftMint")
-				.given(
-						newKeyNamed(multiKey),
-						fileCreate(hwMintInitcode)
-								.path(ContractResources.HW_MINT_PATH),
-						tokenCreate(nonfungibleToken)
-								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-								.initialSupply(0)
-								.adminKey(multiKey)
-								.supplyKey(multiKey)
-								.exposingCreatedIdTo(idLit -> nonFungibleNum.set(asDotDelimitedLongArray(idLit)[2]))
-				).when(
-						sourcing(() -> contractCreate(hwMint, HW_MINT_CONS_ABI, nonFungibleNum.get())
-								.bytecode(hwMintInitcode)
-								.gas(300_000L))
-				).then(
-						contractCall(hwMint, HW_MINT_CALL_ABI)
-								.via(firstMintTxn)
-								.alsoSigningWithFullPrefix(multiKey),
-						getTxnRecord(firstMintTxn).andAllChildRecords().logged(),
-						getTokenInfo(nonfungibleToken).hasTotalSupply(1),
-						/* And now make the token contract-controlled so no explicit supply sig is required */
-						newKeyNamed(contractKey)
-								.shape(contractKeyShape.signedWith(hwMint)),
-						tokenUpdate(nonfungibleToken)
-								.supplyKey(contractKey),
-						getTokenInfo(nonfungibleToken).logged(),
-						contractCall(hwMint, HW_MINT_CALL_ABI)
-								.via(secondMintTxn),
-						getTxnRecord(secondMintTxn).andAllChildRecords().logged(),
-						getTokenInfo(nonfungibleToken).hasTotalSupply(2),
-						getTokenNftInfo(nonfungibleToken, 2L).logged()
-				);
-	}
-
-	private HapiApiSpec helloWorldFungibleMint() {
-		final var hwMintInitcode = "hwMintInitcode";
-
-		final var amount = 1_234_567L;
-		final var fungibleToken = "fungibleToken";
-		final var multiKey = "purpose";
-		final var contractKey = "meaning";
-		final var hwMint = "hwMint";
-		final var firstMintTxn = "firstMintTxn";
-		final var secondMintTxn = "secondMintTxn";
-		final var contractKeyShape = DELEGATE_CONTRACT;
-
-		final AtomicLong fungibleNum = new AtomicLong();
-
-		return defaultHapiSpec("HelloWorldFungibleMint")
-				.given(
-						newKeyNamed(multiKey),
-						fileCreate(hwMintInitcode)
-								.path(ContractResources.HW_MINT_PATH),
-						tokenCreate(fungibleToken)
-								.tokenType(TokenType.FUNGIBLE_COMMON)
-								.initialSupply(0)
-								.adminKey(multiKey)
-								.supplyKey(multiKey)
-								.exposingCreatedIdTo(idLit -> fungibleNum.set(asDotDelimitedLongArray(idLit)[2]))
-				).when(
-						sourcing(() -> contractCreate(hwMint, HW_MINT_CONS_ABI, fungibleNum.get())
-								.bytecode(hwMintInitcode)
-								.gas(300_000L))
-				).then(
-						contractCall(hwMint, HW_BRRR_CALL_ABI, amount)
-								.via(firstMintTxn)
-								.alsoSigningWithFullPrefix(multiKey),
-						getTxnRecord(firstMintTxn).andAllChildRecords().logged(),
-						getTokenInfo(fungibleToken).hasTotalSupply(amount),
-						/* And now make the token contract-controlled so no explicit supply sig is required */
-						newKeyNamed(contractKey)
-								.shape(contractKeyShape.signedWith(hwMint)),
-						tokenUpdate(fungibleToken)
-								.supplyKey(contractKey),
-						getTokenInfo(fungibleToken).logged(),
-						contractCall(hwMint, HW_BRRR_CALL_ABI, amount)
-								.via(secondMintTxn),
-						getTxnRecord(secondMintTxn).andAllChildRecords().logged(),
-						getTokenInfo(fungibleToken).hasTotalSupply(2 * amount)
 				);
 	}
 
