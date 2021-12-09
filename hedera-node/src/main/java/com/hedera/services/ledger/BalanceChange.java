@@ -112,6 +112,10 @@ public class BalanceChange {
 		this.codeForInsufficientBalance = code;
 	}
 
+	public void replaceAliasWith(final AccountID createdId) {
+		throw new AssertionError("Not implemented");
+	}
+
 	/* HTS constructor */
 	private BalanceChange(Id token, AccountAmount aa, ResponseCodeEnum code) {
 		this.token = token;
