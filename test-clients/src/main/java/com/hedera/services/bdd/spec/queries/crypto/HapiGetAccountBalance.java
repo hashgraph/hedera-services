@@ -57,6 +57,7 @@ import java.util.stream.Collectors;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
+import static com.hedera.services.bdd.spec.queries.QueryUtils.lookUpAccountWithAlias;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
@@ -228,8 +229,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 
 	private Query getAccountBalanceQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {
 		if (lookUpAccountWithKey) {
-			final var lookedUpKey = spec.registry().getKey(aliasKey).toByteString().toStringUtf8();
-			entity = HapiPropertySource.asAccountString(spec.registry().getAccountID(lookedUpKey));
+			entity = lookUpAccountWithAlias(spec, aliasKey);
 		}
 		if (entityFn.isPresent()) {
 			entity = entityFn.get().get();

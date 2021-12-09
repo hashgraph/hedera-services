@@ -42,10 +42,10 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.LongConsumer;
 
-import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
+import static com.hedera.services.bdd.spec.queries.QueryUtils.lookUpAccountWithAlias;
 import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -198,8 +198,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 
 	private Query getAccountInfoQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {
 		if (lookUpAccountWithKey) {
-			final var lookedUpKey = spec.registry().getKey(aliasKey).toByteString().toStringUtf8();
-			account = asAccountString(spec.registry().getAccountID(lookedUpKey));
+			account = lookUpAccountWithAlias(spec, aliasKey);
 		}
 		CryptoGetInfoQuery query = CryptoGetInfoQuery.newBuilder()
 				.setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))

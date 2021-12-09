@@ -114,6 +114,8 @@ public class AutoCreationLogic {
 
 	/**
 	 * Removes any aliases added to the {@link AutoAccountsManager} map as part of provisional creations.
+	 *
+	 * @return true if there are any pending aliases
 	 */
 	public boolean reclaimPendingAliases() {
 		if (!pendingCreations.isEmpty()) {
@@ -130,6 +132,9 @@ public class AutoCreationLogic {
 	/**
 	 * Notifies the given {@link AccountRecordsHistorian} of the child records for any
 	 * provisionally created accounts since the last call to {@link AutoCreationLogic#reset()}.
+	 *
+	 * @param recordsHistorian
+	 * 		record historian
 	 */
 	public void submitRecordsTo(final AccountRecordsHistorian recordsHistorian) {
 		for (final var pendingCreation : pendingCreations) {

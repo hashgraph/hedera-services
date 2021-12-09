@@ -192,7 +192,7 @@ public class TxnUtils {
 						lookupSpec.registry().getAccountID(s) : lookUpAccount(lookupSpec, s));
 	}
 
-	public static AccountID lookUpAccount(HapiApiSpec spec, String alias) {
+	private static AccountID lookUpAccount(HapiApiSpec spec, String alias) {
 		final var key = spec.registry().getKey(alias);
 		final var lookedUpKey = spec.registry().getKey(alias).toByteString().toStringUtf8();
 		return spec.registry().hasAccountId(lookedUpKey) ?
@@ -204,11 +204,11 @@ public class TxnUtils {
 		return asAccount(s);
 	}
 
-	public static AccountID asIdWithAlias(final String s) {
-		return AccountID.newBuilder()
-				.setAlias(ByteString.copyFromUtf8(s))
-				.build();
-	}
+//	public static AccountID asIdWithAlias(final String s) {
+//		return AccountID.newBuilder()
+//				.setAlias(ByteString.copyFromUtf8(s))
+//				.build();
+//	}
 
 	public static TokenID asTokenId(String s, HapiApiSpec lookupSpec) {
 		return isIdLiteral(s) ? asToken(s) : lookupSpec.registry().getTokenID(s);

@@ -22,7 +22,6 @@ package com.hedera.services.bdd.spec.transactions.crypto;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -41,6 +40,8 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
+import static com.hedera.services.bdd.spec.queries.QueryUtils.lookUpAccountWithAlias;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
@@ -94,9 +95,8 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		AccountID target;
 		if (lookUpAccountWithKey) {
-			final var lookedUpKey = spec.registry().getKey(aliasKey).toByteString().toStringUtf8();
-			target = spec.registry().getAccountID(lookedUpKey);
-			account = HapiPropertySource.asAccountString(target);
+			account = lookUpAccountWithAlias(spec, aliasKey);
+			target = asAccount(account);
 		} else {
 			target = TxnUtils.asId(account, spec);
 		}

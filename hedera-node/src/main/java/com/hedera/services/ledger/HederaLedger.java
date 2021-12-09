@@ -20,6 +20,7 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.DeletedAccountException;
@@ -59,6 +60,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
+import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
 import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
@@ -442,6 +444,10 @@ public class HederaLedger {
 	public void delete(AccountID id, AccountID beneficiary) {
 		doTransfer(id, beneficiary, getBalance(id));
 		accountsLedger.set(id, IS_DELETED, true);
+		ByteString alias = (ByteString) accountsLedger.get(id, ALIAS);
+		if (!alias.isEmpty()) {
+			autoAccountsManager.getAutoAccountsMap().remove(alias);
+		}
 	}
 
 	/* -- ACCOUNT PROPERTY ACCESS -- */
