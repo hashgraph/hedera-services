@@ -21,7 +21,6 @@ package com.hedera.services.bdd.spec.queries.crypto;
  */
 
 import com.google.common.base.MoreObjects;
-import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
@@ -67,12 +66,13 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 	private Pattern DOT_DELIMTED_ACCOUNT = Pattern.compile("\\d+[.]\\d+[.]\\d+");
 	private String entity;
 	private Optional<AccountID> accountID = Optional.empty();
-	private ByteString alias = ByteString.EMPTY;
+	private String aliasKey = "";
 	private boolean exportAccount = false;
 	Optional<Long> expected = Optional.empty();
 	Optional<Supplier<String>> entityFn = Optional.empty();
 	Optional<Function<HapiApiSpec, Function<Long, Optional<String>>>> expectedCondition = Optional.empty();
 	Optional<Map<String, LongConsumer>> tokenBalanceObservers = Optional.empty();
+	private boolean lookUpAccountWithKey = false;
 
 	List<Map.Entry<String, String>> expectedTokenBalances = Collections.EMPTY_LIST;
 
@@ -80,8 +80,10 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 		this.entity = entity;
 	}
 
-	public HapiGetAccountBalance(ByteString alias) {
-		this.entity = alias.toStringUtf8();
+	public HapiGetAccountBalance(String aliasKey, boolean lookUpAccount) {
+		this.entity = entity;
+		this.aliasKey = aliasKey;
+		this.lookUpAccountWithKey = lookUpAccount;
 	}
 
 	public HapiGetAccountBalance(Supplier<String> supplier) {
@@ -225,6 +227,10 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 	}
 
 	private Query getAccountBalanceQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {
+		if (lookUpAccountWithKey) {
+			final var lookedUpKey = spec.registry().getKey(aliasKey).toByteString().toStringUtf8();
+			entity = HapiPropertySource.asAccountString(spec.registry().getAccountID(lookedUpKey));
+		}
 		if (entityFn.isPresent()) {
 			entity = entityFn.get().get();
 		}

@@ -22,7 +22,6 @@ package com.hedera.services.bdd.spec.transactions.crypto;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.BoolValue;
-import com.google.protobuf.ByteString;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import com.google.protobuf.UInt64Value;
@@ -38,6 +37,7 @@ import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.services.usage.state.UsageAccumulator;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -56,7 +56,9 @@ import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.defaultUpdateSigners;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -67,7 +69,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	private boolean useContractKey = false;
 	private boolean skipNewKeyRegistryUpdate = false;
 	private String account;
-	private ByteString alias = ByteString.EMPTY;
+	private String aliasKey = "";
 	private OptionalLong sendThreshold = OptionalLong.empty();
 	private Optional<Key> updKey = Optional.empty();
 	private OptionalLong newExpiry = OptionalLong.empty();
@@ -78,9 +80,16 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	private Optional<String> updKeyName = Optional.empty();
 	private Optional<Boolean> updSigRequired = Optional.empty();
 	private Optional<Integer> newMaxAutomaticAssociations = Optional.empty();
+	private boolean lookUpAccountWithKey = false;
 
 	public HapiCryptoUpdate(String account) {
 		this.account = account;
+	}
+
+	public HapiCryptoUpdate(String aliasKey, boolean lookUpAccount) {
+		this.account = "";
+		this.aliasKey = aliasKey;
+		this.lookUpAccountWithKey = lookUpAccount;
 	}
 
 	public HapiCryptoUpdate notUpdatingRegistryWithNewKey() {
@@ -157,7 +166,13 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 			updKey = updKeyName.map(spec.registry()::getKey);
 		} catch (Exception ignore) {
 		}
-		var id = TxnUtils.asId(account, spec);
+		AccountID id;
+		if (lookUpAccountWithKey) {
+			id = asIdForKeyLookUp(aliasKey, spec);
+			account = asAccountString(id);
+		} else {
+			id = TxnUtils.asId(account, spec);
+		}
 		CryptoUpdateTransactionBody opBody = spec
 				.txns()
 				.<CryptoUpdateTransactionBody, CryptoUpdateTransactionBody.Builder>body(

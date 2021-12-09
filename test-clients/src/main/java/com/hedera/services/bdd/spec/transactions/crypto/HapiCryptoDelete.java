@@ -124,6 +124,11 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
 			if (spec.registry().hasSigRequirement(account)) {
 				spec.registry().removeSigRequirement(account);
 			}
+			if (spec.registry().hasKey(aliasKey)) {
+				final var lookedUpKey = spec.registry().getKey(aliasKey).toByteString().toStringUtf8();
+				spec.registry().removeAccount(lookedUpKey);
+				spec.registry().removeKey(lookedUpKey);
+			}
 		}
 	}
 

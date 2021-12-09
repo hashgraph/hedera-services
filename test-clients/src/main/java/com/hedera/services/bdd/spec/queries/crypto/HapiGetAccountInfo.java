@@ -21,8 +21,8 @@ package com.hedera.services.bdd.spec.queries.crypto;
  */
 
 import com.google.common.base.MoreObjects;
-import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
@@ -42,6 +42,7 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.LongConsumer;
 
+import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
@@ -52,7 +53,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 	private static final Logger log = LogManager.getLogger(HapiGetAccountInfo.class);
 
 	private String account;
-	private ByteString alias = ByteString.EMPTY;
+	private String aliasKey = "";
 	private Optional<String> registryEntry = Optional.empty();
 	private List<String> absentRelationships = new ArrayList<>();
 	private List<ExpectedTokenRel> relationships = new ArrayList<>();
@@ -63,14 +64,16 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 	Optional<Long> ownedNfts = Optional.empty();
 	Optional<Integer> maxAutomaticAssociations = Optional.empty();
 	Optional<Integer> alreadyUsedAutomaticAssociations = Optional.empty();
+	private boolean lookUpAccountWithKey = false;
 
 	public HapiGetAccountInfo(String account) {
 		this.account = account;
 	}
 
-	public HapiGetAccountInfo(ByteString alias) {
-		this.account = alias.isEmpty() ? "0.0.0" : alias.toStringUtf8();
-		this.alias = alias;
+	public HapiGetAccountInfo(String aliasKey, boolean lookUpAccount) {
+		this.account = "0.0.0";
+		this.aliasKey = aliasKey;
+		this.lookUpAccountWithKey = lookUpAccount;
 	}
 
 	@Override
@@ -135,6 +138,10 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 
 	@Override
 	protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
+		if (lookUpAccountWithKey) {
+			final var lookedUpKey = spec.registry().getKey(aliasKey).toByteString().toStringUtf8();
+			account = HapiPropertySource.asAccountString(spec.registry().getAccountID(lookedUpKey));
+		}
 		final var actualInfo = response.getCryptoGetInfo().getAccountInfo();
 		if (expectations.isPresent()) {
 			ErroringAsserts<AccountInfo> asserts = expectations.get().assertsFor(spec);
@@ -190,6 +197,10 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 	}
 
 	private Query getAccountInfoQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {
+		if (lookUpAccountWithKey) {
+			final var lookedUpKey = spec.registry().getKey(aliasKey).toByteString().toStringUtf8();
+			account = asAccountString(spec.registry().getAccountID(lookedUpKey));
+		}
 		CryptoGetInfoQuery query = CryptoGetInfoQuery.newBuilder()
 				.setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
 				.setAccountID(TxnUtils.asId(account, spec))

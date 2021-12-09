@@ -71,6 +71,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdWithAlias;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.HBAR_SENTINEL_TOKEN_ID;
@@ -97,7 +98,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 	private Optional<Pair<String[], Long>> appendedFromTo = Optional.empty();
 	private Optional<AtomicReference<FeeObject>> feesObserver = Optional.empty();
 	private boolean fullyAggregateTokenTransfers = false;
-	private boolean transferToKey = false;
+	private static boolean transferToKey = false;
 
 	@Override
 	public HederaFunctionality type() {
@@ -238,25 +239,27 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 		};
 	}
 
-	public static Function<HapiApiSpec, TransferList> tinyBarsFromTo(
-			String from, String to, long amount, boolean autoaccount) {
-		return tinyBarsFromTo(from, to, ignore -> amount, autoaccount);
+	public static Function<HapiApiSpec, TransferList> tinyBarsFromToWithAlias(
+			String from, String to, long amount) {
+		transferToKey = true;
+		return tinyBarsFromToWithAlias(from, to, ignore -> amount);
 	}
 
-	public static Function<HapiApiSpec, TransferList> tinyBarsFromTo(
-			String from, String to, Function<HapiApiSpec, Long> amountFn, boolean isToAlias) {
+	public static Function<HapiApiSpec, TransferList> tinyBarsFromToWithAlias(
+			String from, String to, Function<HapiApiSpec, Long> amountFn) {
 		return spec -> {
 			long amount = amountFn.apply(spec);
 			AccountID toAccount;
+			AccountID fromAccount;
 
-			if (isToAlias) {
-				Key key = spec.registry().getKey(to);
-				toAccount = AccountID.newBuilder().setAlias(key.toByteString()).build();
+			if (transferToKey) {
+				fromAccount = asIdForKeyLookUp(from, spec);
+				toAccount = asIdForKeyLookUp(to, spec);
 			} else {
+				fromAccount = asId(from, spec);
 				toAccount = asId(to, spec);
 			}
 
-			AccountID fromAccount = asId(from, spec);
 			return TransferList.newBuilder()
 					.addAllAccountAmounts(Arrays.asList(
 							AccountAmount.newBuilder().setAccountID(toAccount).setAmount(amount).build(),

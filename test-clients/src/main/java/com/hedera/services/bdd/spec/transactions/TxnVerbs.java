@@ -96,6 +96,10 @@ public class TxnVerbs {
 		return new HapiCryptoUpdate(account);
 	}
 
+	public static HapiCryptoUpdate cryptoUpdateWithAlias(String account) {
+		return new HapiCryptoUpdate(account, true);
+	}
+
 	/* CONSENSUS */
 	public static HapiTopicCreate createTopic(String topic) {
 		return new HapiTopicCreate(topic);

@@ -20,7 +20,6 @@ package com.hedera.services.bdd.spec.assertions;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
@@ -37,7 +36,6 @@ import static com.hedera.services.legacy.core.CommonUtils.calculateSolidityAddre
 import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo> {
@@ -163,9 +161,9 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 		return this;
 	}
 
-	public AccountInfoAsserts alias(ByteString alias) {
+	public AccountInfoAsserts alias(String alias) {
 		registerProvider((spec, o) -> {
-			assertEquals(alias, ((AccountInfo) o).getAlias(), "Bad Alias!");
+			assertEquals(spec.registry().getKey(alias).toByteString(), ((AccountInfo) o).getAlias(), "Bad Alias!");
 		});
 		return this;
 	}
