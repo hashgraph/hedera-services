@@ -306,7 +306,7 @@ class GetAccountInfoAnswerTest {
 		EntityNum entityNum = EntityNum.fromAccountId(payerId);
 		Query query = validQueryWithAlias(COST_ANSWER, fee, "aaaa");
 		
-		given(autoAccounts.fetchEntityNumFor(any())).willReturn(entityNum);
+		given(autoAccounts.lookupByAlias(any())).willReturn(entityNum);
 
 		given(optionValidator.queryableAccountStatus(entityNum, accounts)).willReturn(INVALID_ACCOUNT_ID);
 

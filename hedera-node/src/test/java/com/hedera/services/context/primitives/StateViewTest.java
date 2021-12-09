@@ -648,7 +648,7 @@ class StateViewTest {
 
 	@Test
 	void infoForAccountWithAlias() {
-		given(autoAccounts.fetchEntityNumFor(any())).willReturn(EntityNum.fromAccountId(tokenAccountId));
+		given(autoAccounts.lookupByAlias(any())).willReturn(EntityNum.fromAccountId(tokenAccountId));
 		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
 		given(mockTokenRelsFn.apply(any(), any())).willReturn(Collections.emptyList());
 
@@ -692,7 +692,7 @@ class StateViewTest {
 	void infoForMissingAccountWithAlias() {
 		EntityNum mockedEntityNum = mock(EntityNum.class);
 
-		given(autoAccounts.fetchEntityNumFor(any())).willReturn(mockedEntityNum);
+		given(autoAccounts.lookupByAlias(any())).willReturn(mockedEntityNum);
 		given(contracts.get(mockedEntityNum)).willReturn(null);
 
 		final var actualResponse = subject.infoForAccount(accountWithAlias, autoAccounts);

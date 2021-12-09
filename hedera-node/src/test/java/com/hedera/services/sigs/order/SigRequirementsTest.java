@@ -20,6 +20,7 @@ package com.hedera.services.sigs.order;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.config.MockEntityNumbers;
@@ -129,7 +130,9 @@ import static com.hedera.test.factories.scenarios.CryptoDeleteScenarios.CRYPTO_D
 import static com.hedera.test.factories.scenarios.CryptoDeleteScenarios.CRYPTO_DELETE_TARGET_RECEIVER_SIG_SELF_PAID_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_MISSING_ACCOUNT_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_NO_RECEIVER_SIG_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_NO_RECEIVER_SIG_USING_ALIAS_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_RECEIVER_SIG_USING_ALIAS_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_MOVING_HBARS_WITH_EXTANT_SENDER;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_MOVING_HBARS_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDER;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_EXTANT_SENDERS;
@@ -144,6 +147,7 @@ import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_BUT_ROYALTY_FEE_WITH_FALLBACK_TRIGGERED;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_TRIGGERED_BUT_SENDER_IS_TREASURY;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_RECEIVER_SIG_REQ;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_USING_ALIAS;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDERS;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_MISSING_ACCOUNT_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_NO_NEW_KEY_SCENARIO;
@@ -246,7 +250,12 @@ import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WI
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_SUPPLY_KEYED_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_WIPE_KEYED_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenWipeScenarios.VALID_WIPE_WITH_EXTANT_TOKEN;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKEN_SENDER;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG_ALIAS;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.RECEIVER_SIG;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.RECEIVER_SIG_ALIAS;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SYS_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT;
 import static com.hedera.test.factories.txns.ConsensusCreateTopicFactory.SIMPLE_TOPIC_ADMIN_KEY;
@@ -277,6 +286,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 class SigRequirementsTest {
+	private static final ByteString noReceiverSigAlias = ByteString.copyFromUtf8("ABCDEFG");
+
 	private static class TopicAdapter {
 		public static TopicSigMetaLookup throwingUoe() {
 			return id -> {
@@ -412,6 +423,18 @@ class SigRequirementsTest {
 	}
 
 	@Test
+	void getsCryptoTransferReceiverNoSigReqViaAlias() throws Throwable {
+		setupFor(CRYPTO_TRANSFER_NO_RECEIVER_SIG_USING_ALIAS_SCENARIO);
+
+		final var payerSummary = subject.keysForPayer(txn, summaryFactory);
+		final var nonPayerSummary = subject.keysForOtherParties(txn, summaryFactory);
+
+		assertThat(sanityRestored(payerSummary.getOrderedKeys()), contains(DEFAULT_PAYER_KT.asKey()));
+		assertFalse(nonPayerSummary.hasErrorReport());
+		assertTrue(sanityRestored(nonPayerSummary.getOrderedKeys()).isEmpty());
+	}
+
+	@Test
 	void getsCryptoTransferReceiverNoSigReq() throws Throwable {
 		// given:
 		setupFor(CRYPTO_TRANSFER_NO_RECEIVER_SIG_SCENARIO);
@@ -439,6 +462,19 @@ class SigRequirementsTest {
 	}
 
 	@Test
+	void getsCryptoTransferReceiverSigReqWithAlias() throws Throwable {
+		// given:
+		setupFor(CRYPTO_TRANSFER_RECEIVER_SIG_USING_ALIAS_SCENARIO);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(sanityRestored(summary.getOrderedKeys()), contains(RECEIVER_SIG_KT.asKey()));
+		assertFalse(sanityRestored(summary.getOrderedKeys()).contains(DEFAULT_PAYER_KT.asKey()));
+	}
+
+	@Test
 	void getsNftOwnerChange() throws Throwable {
 		// given:
 		setupFor(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE);
@@ -447,6 +483,17 @@ class SigRequirementsTest {
 		final var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(FIRST_TOKEN_SENDER_KT.asKey()));
+	}
+
+	@Test
+	void getsNftOwnerChangeUsingAlias() throws Throwable {
+		setupFor(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_USING_ALIAS);
+
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
 				contains(FIRST_TOKEN_SENDER_KT.asKey()));
@@ -2704,9 +2751,9 @@ class SigRequirementsTest {
 	}
 
 	private void setupFor(
-			TxnHandlingScenario scenario,
-			Optional<SigMetadataLookup> sigMetaLookup,
-			SignatureWaivers signatureWaivers
+			final TxnHandlingScenario scenario,
+			final Optional<SigMetadataLookup> sigMetaLookup,
+			final SignatureWaivers signatureWaivers
 	) throws Throwable {
 		txn = scenario.platformTxn().getTxn();
 		hfs = scenario.hfs();
@@ -2715,7 +2762,14 @@ class SigRequirementsTest {
 		tokenStore = scenario.tokenStore();
 		scheduleStore = scenario.scheduleStore();
 		final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
+
 		aliasManager = mock(AliasManager.class);
+		given(aliasManager.lookupByAlias(ByteString.copyFromUtf8(NO_RECEIVER_SIG_ALIAS)))
+				.willReturn(EntityNum.fromAccountId(NO_RECEIVER_SIG));
+		given(aliasManager.lookupByAlias(ByteString.copyFromUtf8(RECEIVER_SIG_ALIAS)))
+				.willReturn(EntityNum.fromAccountId(RECEIVER_SIG));
+		given(aliasManager.lookupByAlias(TxnHandlingScenario.FIRST_TOKEN_SENDER_LITERAL_ALIAS))
+				.willReturn(EntityNum.fromAccountId(FIRST_TOKEN_SENDER));
 
 		subject = new SigRequirements(
 				sigMetaLookup.orElse(

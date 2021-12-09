@@ -958,7 +958,7 @@ public class SigRequirements {
 	private KeyOrderingFailure includeIfNecessary(AccountID payer, AccountAmount adjust, List<JKey> required) {
 		var account = adjust.getAccountID();
 		if (!payer.equals(account)) {
-			var result = sigMetaLookup.accountSigningMetaFor(account);
+			var result = sigMetaLookup.aliasableAccountSigningMetaFor(account);
 			System.out.println("Looked for non-payer " + account + ", got " + result);
 			if (result.succeeded()) {
 				var meta = result.metadata();
@@ -972,14 +972,15 @@ public class SigRequirements {
 	}
 
 	private KeyOrderingFailure nftIncludeIfNecessary(
-			AccountID payer,
-			AccountID party,
-			AccountID counterparty,
-			List<JKey> required,
-			TokenID token,
-			CryptoTransferTransactionBody op) {
+			final AccountID payer,
+			final AccountID party,
+			final AccountID counterparty,
+			final List<JKey> required,
+			final TokenID token,
+			final CryptoTransferTransactionBody op
+	) {
 		if (!payer.equals(party)) {
-			var result = sigMetaLookup.accountSigningMetaFor(party);
+			var result = sigMetaLookup.aliasableAccountSigningMetaFor(party);
 			if (!result.succeeded()) {
 				return result.failureIfAny();
 			}

@@ -49,7 +49,7 @@ class AliasManagerTest {
 
 		subject.setAutoAccountsMap(expectedMap);
 		assertEquals(expectedMap, subject.getAutoAccountsMap());
-		assertEquals(b, subject.fetchEntityNumFor(ByteString.copyFromUtf8("bbbb")));
+		assertEquals(b, subject.lookupByAlias(ByteString.copyFromUtf8("bbbb")));
 		assertTrue(subject.contains(aliasA));
 	}
 

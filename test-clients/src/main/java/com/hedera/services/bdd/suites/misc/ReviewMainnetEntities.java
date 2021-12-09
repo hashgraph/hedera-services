@@ -66,9 +66,9 @@ public class ReviewMainnetEntities extends HapiApiSuite {
 //						checkTls(),
 //						doSomething(),
 //						oneOfEveryTokenTxn(),
-//						customPayerOp(),
+						customPayerOp(),
 //						previewnetCryptoCreatePrice(),
-						stablenetCreateAccountWithExplicitKey(),
+//						stablenetCreateAccountWithExplicitKey(),
 				}
 		);
 	}
@@ -185,9 +185,11 @@ public class ReviewMainnetEntities extends HapiApiSuite {
 	}
 
 	private HapiApiSpec customPayerOp() {
-		final String MAINNET_NODES = "35.237.200.180:0.0.3";
+//		final String MAINNET_NODES = "35.237.200.180:0.0.3";
+		final String MAINNET_NODES = "18.118.244.7:0.0.19";
 		final String payer = "0.0.107630";
-		final String payerWords = "<secret>";
+		final String payerWords = "give credit milk ignore curve oppose regular grit gesture cousin escape grocery " +
+				"fashion note match plunge curtain hat blue good nature brand scale awful";
 
 		final long ONE_HBAR = 100_000_000L;
 
@@ -197,7 +199,8 @@ public class ReviewMainnetEntities extends HapiApiSuite {
 						"fees.fixedOffer", "" + ONE_HBAR,
 						"fees.useFixedOffer", "false",
 						"default.payer", payer,
-						"default.payer.mnemonic", payerWords
+						"default.payer.mnemonic", payerWords,
+						"default.node", "0.0.19"
 				)).given(
 						getAccountBalance(payer).logged()
 				).when(

@@ -87,7 +87,7 @@ public class AliasManager {
 	 * 		alias of the accountId
 	 * @return EntityNum mapped to the given alias.
 	 */
-	public EntityNum fetchEntityNumFor(final ByteString alias) {
+	public EntityNum lookupByAlias(final ByteString alias) {
 		return autoAccountsMap.getOrDefault(alias, MISSING_NUM);
 	}
 

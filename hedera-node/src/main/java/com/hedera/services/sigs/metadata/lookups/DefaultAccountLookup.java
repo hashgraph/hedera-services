@@ -48,18 +48,29 @@ public class DefaultAccountLookup implements AccountSigMetaLookup {
 	}
 
 	@Override
-	public SafeLookupResult<AccountSigningMetadata> safeLookup(AccountID id) {
-		var account = accounts.get().get(fromAccountId(id));
-		return (account == null)
-				? SafeLookupResult.failure(MISSING_ACCOUNT)
-				: new SafeLookupResult<>(
-						new AccountSigningMetadata(
-								account.getAccountKey(),
-								account.isReceiverSigRequired()));
+	public SafeLookupResult<AccountSigningMetadata> safeLookup(final AccountID id) {
+		return lookupByNumber(fromAccountId(id));
 	}
 
 	@Override
-	public SafeLookupResult<AccountSigningMetadata> aliasableSafeLookup(AccountID idOrAlias) {
-		throw new AssertionError("Not implemented");
+	public SafeLookupResult<AccountSigningMetadata> aliasableSafeLookup(final AccountID idOrAlias) {
+		if (idOrAlias.getAccountNum() == 0) {
+			final var explicitId = aliasManager.lookupByAlias(idOrAlias.getAlias());
+			return (explicitId == EntityNum.MISSING_NUM)
+					? SafeLookupResult.failure(MISSING_ACCOUNT)
+					: lookupByNumber(explicitId);
+		} else {
+			return safeLookup(idOrAlias);
+		}
+	}
+
+	private SafeLookupResult<AccountSigningMetadata> lookupByNumber(final EntityNum id) {
+		var account = accounts.get().get(id);
+		return (account == null)
+				? SafeLookupResult.failure(MISSING_ACCOUNT)
+				: new SafeLookupResult<>(
+				new AccountSigningMetadata(
+						account.getAccountKey(),
+						account.isReceiverSigRequired()));
 	}
 }
