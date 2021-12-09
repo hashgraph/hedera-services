@@ -55,6 +55,7 @@ import com.hedera.services.bdd.suites.contract.opcodes.StaticCallOperationSuite;
 import com.hedera.services.bdd.suites.contract.records.LogsSuite;
 import com.hedera.services.bdd.suites.contract.records.RecordsSuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite;
+import com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCornerCasesSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateForSuiteRunner;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
@@ -333,6 +334,7 @@ public class SuiteRunner {
 		/* Functional tests - AutoAccountCreations */
 		put("AutoAccountCreationValidationsAfterReconnect", aof(AutoAccountCreationValidationsAfterReconnect::new));
 		put("AutoAccountCreationSuite", aof(AutoAccountCreationSuite::new));
+		put("AutoAccountUpdateSuite", aof(AutoAccountUpdateSuite::new));
 		/* Functional tests - AUTORENEW */
 		put("AutoRemovalCasesSuite", aof(AutoRemovalCasesSuite::new));
 		put("AccountAutoRenewalSuite", aof(AccountAutoRenewalSuite::new));

@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -61,9 +62,46 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 						transferFromAliasToAlias(),
 						multipleAutoAccountCreations(),
 						accountCreatedIfAliasUsedAsPubKey(),
+						aliasCanBeUsedOnManyAccountsNotAsAlias(),
 //				        autoAccountCreationWorksWhenUsingAliasOfDeletedAccount(), --> still fails
 				}
 		);
+	}
+
+	private HapiApiSpec aliasCanBeUsedOnManyAccountsNotAsAlias() {
+		return defaultHapiSpec("AutoAccountCreationsHappyPath")
+				.given(
+						/* have alias key on other accounts and tokens not as alias */
+						newKeyNamed("validAlias"),
+						cryptoCreate("payer").key("validAlias").balance(initialBalance * ONE_HBAR),
+						tokenCreate("payer").adminKey("validAlias"),
+						tokenCreate("payer").supplyKey("validAlias"),
+						tokenCreate("a").treasury("payer")
+				).when(
+						/* auto account is created */
+						cryptoTransfer(
+								HapiCryptoTransfer.tinyBarsFromToWithAlias("payer", "validAlias",
+										ONE_HUNDRED_HBARS)).via(
+								"transferTxn")
+				).then(
+						/* get transaction record and validate the child record has alias bytes as expected */
+						getTxnRecord("transferTxn").andAllChildRecords().hasChildRecordCount(
+								1).hasAliasInChildRecord("validAlias", 0).logged(),
+						getAccountInfo("payer").has(
+								accountWith()
+										.balance((initialBalance * ONE_HBAR) - ONE_HUNDRED_HBARS)
+										.noAlias()
+						),
+						getAccountInfoWithAlias("validAlias").has(
+										accountWith()
+												.key("validAlias")
+												.expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.5)
+												.alias("validAlias")
+												.autoRenew(THREE_MONTHS_IN_SECONDS)
+												.receiverSigReq(false)
+												.memo(AUTO_MEMO))
+								.logged()
+				);
 	}
 
 	private HapiApiSpec accountCreatedIfAliasUsedAsPubKey() {
