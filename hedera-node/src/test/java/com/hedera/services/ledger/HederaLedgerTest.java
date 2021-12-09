@@ -20,6 +20,7 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.InsufficientFundsException;
@@ -28,6 +29,7 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,7 +40,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static com.hedera.services.exceptions.InsufficientFundsException.messageFor;
+import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
 import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
@@ -293,9 +299,11 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 
 	@Test
 	void deletesGivenAccount() {
+		given(accountsLedger.get(rand, ALIAS)).willReturn(ByteString.copyFromUtf8("aaa"));
 		subject.delete(rand, misc);
 
 		verify(accountsLedger).set(rand, BALANCE, 0L);
+		verify(accountsLedger).get(rand, ALIAS);
 		verify(accountsLedger).set(misc, BALANCE, MISC_BALANCE + RAND_BALANCE);
 		verify(accountsLedger).set(rand, IS_DELETED, true);
 		verify(autoAccounts, never()).getAutoAccountsMap();

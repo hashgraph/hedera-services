@@ -68,7 +68,7 @@ public class AutoAccountsManager {
 				autoAccountsMap.put(v.getAlias(), k);
 			}
 		});
-		log.info("Rebuild complete : No.of accounts with aliases - " + autoAccountsMap.size());
+		log.info("Rebuild complete : No.of accounts with aliases {} ", autoAccountsMap.size());
 	}
 
 	/**
