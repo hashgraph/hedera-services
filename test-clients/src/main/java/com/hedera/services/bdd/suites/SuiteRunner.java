@@ -122,6 +122,7 @@ import com.hedera.services.bdd.suites.perf.topic.CreateTopicPerfSuite;
 import com.hedera.services.bdd.suites.perf.topic.HCSChunkingRealisticPerfSuite;
 import com.hedera.services.bdd.suites.perf.topic.SubmitMessageLoadTest;
 import com.hedera.services.bdd.suites.reconnect.AutoAccountCreationValidationsAfterReconnect;
+import com.hedera.services.bdd.suites.reconnect.AutoAccountCreationsBeforeReconnect;
 import com.hedera.services.bdd.suites.reconnect.AutoRenewEntitiesForReconnect;
 import com.hedera.services.bdd.suites.reconnect.CheckUnavailableNode;
 import com.hedera.services.bdd.suites.reconnect.CreateAccountsBeforeReconnect;
@@ -333,6 +334,7 @@ public class SuiteRunner {
 		/* Functional tests - AutoAccountCreations */
 		put("AutoAccountCreationValidationsAfterReconnect", aof(AutoAccountCreationValidationsAfterReconnect::new));
 		put("AutoAccountCreationSuite", aof(AutoAccountCreationSuite::new));
+		put("AutoAccountCreationsBeforeReconnect", aof(AutoAccountCreationsBeforeReconnect::new));
 		/* Functional tests - AUTORENEW */
 		put("AutoRemovalCasesSuite", aof(AutoRemovalCasesSuite::new));
 		put("AccountAutoRenewalSuite", aof(AccountAutoRenewalSuite::new));

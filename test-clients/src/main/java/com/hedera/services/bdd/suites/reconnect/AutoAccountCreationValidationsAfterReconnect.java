@@ -31,6 +31,7 @@ import java.util.List;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
+import static com.hedera.services.bdd.suites.reconnect.AutoAccountCreationsBeforeReconnect.TOTAL_ACCOUNTS;
 
 public class AutoAccountCreationValidationsAfterReconnect  extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(AutoAccountCreationValidationsAfterReconnect.class);
@@ -52,16 +53,15 @@ public class AutoAccountCreationValidationsAfterReconnect  extends HapiApiSuite 
 	}
 
 	private HapiApiSpec getAccountInfoOfAutomaticallyCreatedAccounts() {
-		final int NUM_CREATES = 10;
 		return defaultHapiSpec("GetAccountInfoOfAutomaticallyCreatedAccounts")
 				.given()
 				.when()
 				.then(
 						inParallel(
-								asOpArray(NUM_CREATES, i ->
-										getAccountInfo("0.0." + (i + 1002))
+								asOpArray(TOTAL_ACCOUNTS, i ->
+										getAccountInfo("0.0." + (i + 1001))
 												.has(AccountInfoAsserts.accountWith().hasAlias())
-												.setNode("0.0.6")
+												.setNode("0.0.9")
 												.logged()
 								)
 						)
