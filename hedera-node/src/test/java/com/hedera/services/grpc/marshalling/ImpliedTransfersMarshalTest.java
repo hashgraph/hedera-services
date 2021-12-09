@@ -23,6 +23,7 @@ package com.hedera.services.grpc.marshalling;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.test.factories.keys.KeyFactory;
@@ -82,6 +83,10 @@ class ImpliedTransfersMarshalTest {
 	private BalanceChangeManager changeManager;
 	@Mock
 	private CustomSchedulesManager schedulesManager;
+	@Mock
+	private AliasManager aliasManager;
+	@Mock
+	private AliasResolver aliasResolver;
 
 	private ImpliedTransfersMarshal subject;
 
@@ -89,7 +94,9 @@ class ImpliedTransfersMarshalTest {
 	void setUp() {
 		subject = new ImpliedTransfersMarshal(
 				feeAssessor,
+				aliasManager,
 				customFeeSchedules,
+				() -> aliasResolver,
 				dynamicProperties,
 				xferChecks,
 				changeManagerFactory,

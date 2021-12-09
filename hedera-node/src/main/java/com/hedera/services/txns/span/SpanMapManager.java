@@ -84,18 +84,18 @@ public class SpanMapManager {
 		}
 	}
 
-	private void rationalizeImpliedTransfers(TxnAccessor accessor) {
-		final var impliedTransfers = spanMapAccessor.getImpliedTransfers(accessor);
-		if (!impliedTransfers.getMeta().wasDerivedFrom(dynamicProperties, customFeeSchedules)) {
-			expandImpliedTransfers(accessor);
-		}
-	}
-
 	private void expandImpliedTransfers(TxnAccessor accessor) {
 		final var op = accessor.getTxn().getCryptoTransfer();
 		final var impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op);
 		reCalculateXferMeta(accessor, impliedTransfers);
 		spanMapAccessor.setImpliedTransfers(accessor, impliedTransfers);
+	}
+
+	private void rationalizeImpliedTransfers(TxnAccessor accessor) {
+		final var impliedTransfers = spanMapAccessor.getImpliedTransfers(accessor);
+		if (!impliedTransfers.getMeta().wasDerivedFrom(dynamicProperties, customFeeSchedules)) {
+			expandImpliedTransfers(accessor);
+		}
 	}
 
 	private void reCalculateXferMeta(TxnAccessor accessor, ImpliedTransfers impliedTransfers) {

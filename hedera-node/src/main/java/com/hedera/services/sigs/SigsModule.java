@@ -90,6 +90,7 @@ public abstract class SigsModule {
 	public static SigRequirements provideHandleSigReqs(
 			TokenStore tokenStore,
 			ScheduleStore scheduleStore,
+			AliasManager aliasManager,
 			SignatureWaivers signatureWaivers,
 			HfsSigMetaLookup hfsSigMetaLookup,
 			GlobalDynamicProperties dynamicProperties,
@@ -98,6 +99,7 @@ public abstract class SigsModule {
 			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {
 		final var sigMetaLookup = backedLookupsFor(
+				aliasManager,
 				hfsSigMetaLookup,
 				backingAccounts,
 				topics,

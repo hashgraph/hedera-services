@@ -23,6 +23,7 @@ package com.hedera.services.grpc.marshalling;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
@@ -32,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static com.hedera.services.ledger.BalanceChange.changingFtUnits;
 import static com.hedera.services.ledger.BalanceChange.changingHbar;
@@ -40,7 +42,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class ImpliedTransfersMarshal {
 	private final FeeAssessor feeAssessor;
+	private final AliasManager aliasManager;
 	private final CustomFeeSchedules customFeeSchedules;
+	private final Supplier<AliasResolver> aliasResolverFactory;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final PureTransferSemanticChecks checks;
 	private final BalanceChangeManager.ChangeManagerFactory changeManagerFactory;
@@ -48,14 +52,18 @@ public class ImpliedTransfersMarshal {
 
 	public ImpliedTransfersMarshal(
 			FeeAssessor feeAssessor,
+			AliasManager aliasManager,
 			CustomFeeSchedules customFeeSchedules,
+			Supplier<AliasResolver> aliasResolverFactory,
 			GlobalDynamicProperties dynamicProperties,
 			PureTransferSemanticChecks checks,
 			BalanceChangeManager.ChangeManagerFactory changeManagerFactory,
 			Function<CustomFeeSchedules, CustomSchedulesManager> schedulesManagerFactory
 	) {
 		this.checks = checks;
+		this.aliasManager = aliasManager;
 		this.feeAssessor = feeAssessor;
+		this.aliasResolverFactory = aliasResolverFactory;
 		this.customFeeSchedules = customFeeSchedules;
 		this.dynamicProperties = dynamicProperties;
 		this.changeManagerFactory = changeManagerFactory;

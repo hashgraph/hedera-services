@@ -400,7 +400,7 @@ public class StateView {
 	}
 
 	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(AccountID id, AliasManager autoAccounts) {
-		var accountId = id.getAlias().isEmpty() ? fromAccountId(id) : autoAccounts.lookupByAlias(id.getAlias());
+		var accountId = id.getAlias().isEmpty() ? fromAccountId(id) : autoAccounts.lookupIdBy(id.getAlias());
 		var account = accounts().get(accountId);
 		if (account == null) {
 			return Optional.empty();

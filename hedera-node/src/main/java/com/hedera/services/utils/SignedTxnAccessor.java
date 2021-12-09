@@ -85,7 +85,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 	private int sigMapSize;
 	private int numSigPairs;
-	private int autoAccountCreationCount;
+	private int numAutoCreations;
 	private byte[] hash;
 	private byte[] txnBytes;
 	private byte[] utf8MemoBytes;
@@ -145,7 +145,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 		memoHasZeroByte = Arrays.contains(utf8MemoBytes, (byte) 0);
 
 		getFunction();
-		countAutoAccountCreations();
+		countAliases();
 		setBaseUsageMeta();
 		setOpUsageMeta();
 	}
@@ -157,35 +157,6 @@ public class SignedTxnAccessor implements TxnAccessor {
 	@Override
 	public SignatureMap getSigMap() {
 		return sigMap;
-	}
-
-	private void countAutoAccountCreations() {
-		if (getFunction() == CryptoTransfer) {
-			final var cryptoTransfer = getTxn().getCryptoTransfer();
-			AccountID accountId;
-			for ( var accountAmount : cryptoTransfer.getTransfers().getAccountAmountsList()) {
-				accountId = accountAmount.getAccountID();
-				if (!accountId.getAlias().isEmpty() && accountId.getAccountNum() == 0) {
-					autoAccountCreationCount++;
-				}
-			}
-
-			for ( var tokenAmounts : cryptoTransfer.getTokenTransfersList()) {
-				for (var nftTransfer : tokenAmounts.getNftTransfersList()) {
-					accountId = nftTransfer.getReceiverAccountID();
-					if (!accountId.getAlias().isEmpty() && accountId.getAccountNum() == 0) {
-						autoAccountCreationCount++;
-					}
-				}
-
-				for (var fungibleTransfer : tokenAmounts.getTransfersList()) {
-					accountId = fungibleTransfer.getAccountID();
-					if (!accountId.getAlias().isEmpty() && accountId.getAccountNum() == 0) {
-						autoAccountCreationCount++;
-					}
-				}
-			}
-		}
 	}
 
 	@Override
@@ -270,7 +241,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 	@Override
 	public int getAutoAccountCreationsCount() {
-		return autoAccountCreationCount;
+		return numAutoCreations;
 	}
 
 	@Override
@@ -443,5 +414,31 @@ public class SignedTxnAccessor implements TxnAccessor {
 		final var cryptoUpdateMeta = new CryptoUpdateMeta(txn.getCryptoUpdateAccount(),
 				txn.getTransactionID().getTransactionValidStart().getSeconds());
 		SPAN_MAP_ACCESSOR.setCryptoUpdate(this, cryptoUpdateMeta);
+	}
+
+	private void countAliases() {
+		if (getFunction() == CryptoTransfer) {
+			final var cryptoTransfer = getTxn().getCryptoTransfer();
+			for (var adjust : cryptoTransfer.getTransfers().getAccountAmountsList()) {
+				if (EntityIdUtils.isAlias(adjust.getAccountID())) {
+					numAutoCreations++;
+				}
+			}
+			for (var tokenAdjusts : cryptoTransfer.getTokenTransfersList()) {
+				for (var ownershipChange : tokenAdjusts.getNftTransfersList()) {
+					if (EntityIdUtils.isAlias(ownershipChange.getSenderAccountID())) {
+						numAutoCreations++;
+					}
+					if (EntityIdUtils.isAlias(ownershipChange.getReceiverAccountID())) {
+						numAutoCreations++;
+					}
+				}
+				for (var tokenAdjust : tokenAdjusts.getTransfersList()) {
+					if (EntityIdUtils.isAlias(tokenAdjust.getAccountID())) {
+						numAutoCreations++;
+					}
+				}
+			}
+		}
 	}
 }

@@ -62,7 +62,6 @@ import java.util.function.Function;
 
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
-import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_ACCOUNT;
 import static com.hedera.test.factories.scenarios.BadPayerScenarios.INVALID_PAYER_ID_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_PAYER_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_SCENARIO;
@@ -322,7 +321,7 @@ class SigRequirementsTest {
 
 				@Override
 				public SafeLookupResult<AccountSigningMetadata> aliasableSafeLookup(AccountID idOrAlias) {
-					return SafeLookupResult.failure(INVALID_ACCOUNT);
+					return fn.apply(idOrAlias);
 				}
 			};
 		}
@@ -2764,11 +2763,11 @@ class SigRequirementsTest {
 		final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
 
 		aliasManager = mock(AliasManager.class);
-		given(aliasManager.lookupByAlias(ByteString.copyFromUtf8(NO_RECEIVER_SIG_ALIAS)))
+		given(aliasManager.lookupIdBy(ByteString.copyFromUtf8(NO_RECEIVER_SIG_ALIAS)))
 				.willReturn(EntityNum.fromAccountId(NO_RECEIVER_SIG));
-		given(aliasManager.lookupByAlias(ByteString.copyFromUtf8(RECEIVER_SIG_ALIAS)))
+		given(aliasManager.lookupIdBy(ByteString.copyFromUtf8(RECEIVER_SIG_ALIAS)))
 				.willReturn(EntityNum.fromAccountId(RECEIVER_SIG));
-		given(aliasManager.lookupByAlias(TxnHandlingScenario.FIRST_TOKEN_SENDER_LITERAL_ALIAS))
+		given(aliasManager.lookupIdBy(TxnHandlingScenario.FIRST_TOKEN_SENDER_LITERAL_ALIAS))
 				.willReturn(EntityNum.fromAccountId(FIRST_TOKEN_SENDER));
 
 		subject = new SigRequirements(
@@ -2784,6 +2783,7 @@ class SigRequirementsTest {
 				signatureWaivers);
 	}
 
+	@SuppressWarnings("unchecked")
 	private void aMockSummaryFactory() {
 		mockSummaryFactory = (SigningOrderResultFactory<ResponseCodeEnum>) mock(SigningOrderResultFactory.class);
 	}

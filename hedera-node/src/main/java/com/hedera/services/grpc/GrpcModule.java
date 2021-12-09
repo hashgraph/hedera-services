@@ -30,6 +30,7 @@ import com.hedera.services.grpc.controllers.NetworkController;
 import com.hedera.services.grpc.controllers.ScheduleController;
 import com.hedera.services.grpc.controllers.TokenController;
 import com.hedera.services.grpc.marshalling.AdjustmentUtils;
+import com.hedera.services.grpc.marshalling.AliasResolver;
 import com.hedera.services.grpc.marshalling.BalanceChangeManager;
 import com.hedera.services.grpc.marshalling.CustomSchedulesManager;
 import com.hedera.services.grpc.marshalling.FeeAssessor;
@@ -37,6 +38,7 @@ import com.hedera.services.grpc.marshalling.FixedFeeAssessor;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.RoyaltyFeeAssessor;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import dagger.Binds;
 import dagger.Module;
@@ -93,13 +95,16 @@ public abstract class GrpcModule {
 	@Singleton
 	public static ImpliedTransfersMarshal provideImpliedTransfersMarshal(
 			FeeAssessor feeAssessor,
+			AliasManager aliasManager,
 			CustomFeeSchedules customFeeSchedules,
 			GlobalDynamicProperties dynamicProperties,
 			PureTransferSemanticChecks transferSemanticChecks
 	) {
 		return new ImpliedTransfersMarshal(
 				feeAssessor,
+				aliasManager,
 				customFeeSchedules,
+				AliasResolver::new,
 				dynamicProperties,
 				transferSemanticChecks,
 				BalanceChangeManager::new,

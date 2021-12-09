@@ -9,9 +9,9 @@ package com.hedera.services.sigs.metadata.lookups;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,6 +30,7 @@ import com.swirlds.merkle.map.MerkleMap;
 import java.util.function.Supplier;
 
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
+import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 
 /**
@@ -54,23 +55,24 @@ public class DefaultAccountLookup implements AccountSigMetaLookup {
 
 	@Override
 	public SafeLookupResult<AccountSigningMetadata> aliasableSafeLookup(final AccountID idOrAlias) {
-		if (idOrAlias.getAccountNum() == 0) {
-			final var explicitId = aliasManager.lookupByAlias(idOrAlias.getAlias());
+		if (isAlias(idOrAlias)) {
+			final var explicitId = aliasManager.lookupIdBy(idOrAlias.getAlias());
 			return (explicitId == EntityNum.MISSING_NUM)
 					? SafeLookupResult.failure(MISSING_ACCOUNT)
 					: lookupByNumber(explicitId);
 		} else {
-			return safeLookup(idOrAlias);
+			return lookupByNumber(fromAccountId(idOrAlias));
 		}
 	}
 
 	private SafeLookupResult<AccountSigningMetadata> lookupByNumber(final EntityNum id) {
 		var account = accounts.get().get(id);
-		return (account == null)
-				? SafeLookupResult.failure(MISSING_ACCOUNT)
-				: new SafeLookupResult<>(
-				new AccountSigningMetadata(
-						account.getAccountKey(),
-						account.isReceiverSigRequired()));
+		if (account == null) {
+			return SafeLookupResult.failure(MISSING_ACCOUNT);
+		} else {
+			return new SafeLookupResult<>(
+					new AccountSigningMetadata(
+							account.getAccountKey(), account.isReceiverSigRequired()));
+		}
 	}
 }

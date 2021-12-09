@@ -66,6 +66,7 @@ public final class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	private final Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleSigMetaLookup;
 
 	public static DelegatingSigMetadataLookup backedLookupsFor(
+			final AliasManager aliasManager,
 			final HfsSigMetaLookup hfsSigMetaLookup,
 			final BackingStore<AccountID, MerkleAccount> backingAccounts,
 			final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
@@ -75,7 +76,7 @@ public final class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	) {
 		return new DelegatingSigMetadataLookup(
 				hfsSigMetaLookup,
-				new BackedAccountLookup(backingAccounts),
+				new BackedAccountLookup(backingAccounts, aliasManager),
 				new DefaultContractLookup(accounts),
 				new DefaultTopicLookup(topics),
 				tokenLookup,

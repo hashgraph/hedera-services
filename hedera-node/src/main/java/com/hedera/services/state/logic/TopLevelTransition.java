@@ -60,7 +60,6 @@ public class TopLevelTransition implements Runnable {
 		networkCtxManager.advanceConsensusClockTo(now);
 
 		final var sigStatus = signatureScreen.applyTo(accessor);
-		System.out.println("Final sigStatus: " + sigStatus);
 		if (!chargingPolicyAgent.applyPolicyFor(accessor)) {
 			return;
 		}
