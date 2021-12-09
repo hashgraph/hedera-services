@@ -40,13 +40,13 @@ import static com.hedera.services.utils.MiscUtils.forEach;
  * Entries from the map are removed when the entity expires
  */
 @Singleton
-public class AutoAccountsManager {
-	private static final Logger log = LogManager.getLogger(AutoAccountsManager.class);
+public class AliasManager {
+	private static final Logger log = LogManager.getLogger(AliasManager.class);
 
 	private Map<ByteString, EntityNum> autoAccountsMap;
 
 	@Inject
-	public AutoAccountsManager() {
+	public AliasManager() {
 		this.autoAccountsMap = new HashMap<>();
 	}
 
@@ -58,7 +58,8 @@ public class AutoAccountsManager {
 	 * From given MerkleMap of accounts, populate the auto accounts creations map. Iterate through
 	 * each account in accountsMap and add an entry to autoAccountsMap if {@code alias} exists on the account.
 	 *
-	 * @param accounts the current accounts
+	 * @param accounts
+	 * 		the current accounts
 	 */
 	public void rebuildAliasesMap(MerkleMap<EntityNum, MerkleAccount> accounts) {
 		log.info("Rebuilding aliases map from accounts map");
@@ -93,7 +94,7 @@ public class AutoAccountsManager {
 	 * 		alias of the accountId
 	 * @return EntityNum mapped to the given alias.
 	 */
-	public EntityNum fetchEntityNumFor(final ByteString alias) {
+	public EntityNum lookupIdBy(final ByteString alias) {
 		return autoAccountsMap.getOrDefault(alias, MISSING_NUM);
 	}
 

@@ -22,7 +22,7 @@ package com.hedera.services.ledger;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.hedera.services.ledger.accounts.AutoAccountsManager;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.store.models.Id;
@@ -47,10 +47,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NO
  * and a field to contain the new balance that will result from the change.
  * (This field is helpful to simplify work done in {@link HederaLedger}.)
  *
- * The {@code tokenId} and {@code accountId} fields are
- * temporary, needed to interact with the {@link BackingAccounts}
- * and {@link BackingTokenRels} components
- * whose APIs still use gRPC types.
+ * The {@code tokenId} and {@code accountId} fields are * temporary, needed to interact with the {@link BackingAccounts}
+ * and {@link BackingTokenRels} components whose APIs still use gRPC types.
  */
 public class BalanceChange {
 	static final TokenID NO_TOKEN_FOR_HBAR_ADJUST = TokenID.getDefaultInstance();
@@ -245,7 +243,7 @@ public class BalanceChange {
 		return exemptFromCustomFees;
 	}
 
-	public boolean hasUniqueAliasWith(final AutoAccountsManager autoAccounts) {
+	public boolean hasUniqueAliasWith(final AliasManager autoAccounts) {
 		return !alias.isEmpty()
 				&& accountId.getAccountNum() == 0
 				&& !autoAccounts.getAutoAccountsMap().containsKey(alias);

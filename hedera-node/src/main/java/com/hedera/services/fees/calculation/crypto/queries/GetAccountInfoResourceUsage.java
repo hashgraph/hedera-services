@@ -22,7 +22,7 @@ package com.hedera.services.fees.calculation.crypto.queries;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
-import com.hedera.services.ledger.accounts.AutoAccountsManager;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -35,10 +35,10 @@ import java.util.Map;
 @Singleton
 public final class GetAccountInfoResourceUsage implements QueryResourceUsageEstimator {
 	private final CryptoOpsUsage cryptoOpsUsage;
-	private final AutoAccountsManager autoAccounts;
+	private final AliasManager autoAccounts;
 
 	@Inject
-	public GetAccountInfoResourceUsage(final CryptoOpsUsage cryptoOpsUsage, final AutoAccountsManager autoAccounts) {
+	public GetAccountInfoResourceUsage(final CryptoOpsUsage cryptoOpsUsage, final AliasManager autoAccounts) {
 		this.cryptoOpsUsage = cryptoOpsUsage;
 		this.autoAccounts = autoAccounts;
 	}

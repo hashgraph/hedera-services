@@ -20,6 +20,7 @@ package com.hedera.services.utils;
  * ‍
  */
 
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.usage.BaseTransactionMeta;
@@ -66,7 +67,6 @@ public interface TxnAccessor {
     }
 
     long getOfferedFee();
-    int getAutoAccountCreationsCount();
     AccountID getPayer();
     TransactionID getTxnId();
     HederaFunctionality getFunction();
@@ -97,4 +97,9 @@ public interface TxnAccessor {
     default ExpandHandleSpanMapAccessor getSpanMapAccessor() {
         throw new UnsupportedOperationException();
     }
+
+    void setNumAutoCreations(int numAutoCreations);
+    int getNumAutoCreations();
+    boolean areAutoCreationsCounted();
+    void countAutoCreationsWith(AliasManager aliasManager);
 }

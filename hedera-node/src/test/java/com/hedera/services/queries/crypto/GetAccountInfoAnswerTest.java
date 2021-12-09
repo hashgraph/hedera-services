@@ -23,8 +23,7 @@ package com.hedera.services.queries.crypto;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.ledger.accounts.AutoAccountsManager;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
@@ -56,8 +55,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
@@ -125,7 +122,7 @@ class GetAccountInfoAnswerTest {
 	@Mock
 	private NodeLocalProperties nodeProps;
 	@Mock
-	private AutoAccountsManager autoAccounts;
+	private AliasManager autoAccounts;
 
 	@BeforeEach
 	private void setup() throws Throwable {
@@ -309,7 +306,7 @@ class GetAccountInfoAnswerTest {
 		EntityNum entityNum = EntityNum.fromAccountId(payerId);
 		Query query = validQueryWithAlias(COST_ANSWER, fee, "aaaa");
 		
-		given(autoAccounts.fetchEntityNumFor(any())).willReturn(entityNum);
+		given(autoAccounts.lookupIdBy(any())).willReturn(entityNum);
 
 		given(optionValidator.queryableAccountStatus(entityNum, accounts)).willReturn(INVALID_ACCOUNT_ID);
 

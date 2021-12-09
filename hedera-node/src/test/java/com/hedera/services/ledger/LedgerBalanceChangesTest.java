@@ -23,7 +23,7 @@ package com.hedera.services.ledger;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.ledger.accounts.AutoAccountsManager;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.HashMapBackingAccounts;
@@ -144,7 +144,7 @@ class LedgerBalanceChangesTest {
 	@Mock
 	private TxnAwareRecordsHistorian recordsHistorian;
 	@Mock
-	private AutoAccountsManager autoAccounts;
+	private AliasManager autoAccounts;
 
 	private HederaLedger subject;
 

@@ -20,6 +20,8 @@ package com.hedera.services.utils;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.HederaLedger;
@@ -783,6 +785,23 @@ public final class MiscUtils {
 	public static void putIfNotNull(@Nullable final Map<String, Object> map, final String key, final Object value) {
 		if (null != map) {
 			map.put(key, value);
+		}
+	}
+
+	/**
+	 * Attempts to parse a {@code Key} from given alias {@code ByteString}. If the Key is of type Ed25519 or
+	 * ECDSA(secp256k1), returns true and false otherwise.
+	 *
+	 * @param alias
+	 * 		given alias byte string
+	 * @return whether it parses to a primitive key
+	 */
+	public static boolean isSerializedProtoKey(final ByteString alias) {
+		try {
+			final var key = Key.parseFrom(alias);
+			return !key.getECDSASecp256K1().isEmpty() || !key.getEd25519().isEmpty();
+		} catch (InvalidProtocolBufferException ignore) {
+			return false;
 		}
 	}
 }

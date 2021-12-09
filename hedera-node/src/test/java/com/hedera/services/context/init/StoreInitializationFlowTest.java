@@ -20,7 +20,7 @@ package com.hedera.services.context.init;
  * ‍
  */
 
-import com.hedera.services.ledger.accounts.AutoAccountsManager;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -56,7 +56,7 @@ class StoreInitializationFlowTest {
 	@Mock
 	private StateAccessor stateAccessor;
 	@Mock
-	private AutoAccountsManager autoAccountsManager;
+	private AliasManager aliasManager;
 	@Mock
 	private UniqTokenViewsManager uniqTokenViewsManager;
 	@Mock
@@ -79,7 +79,7 @@ class StoreInitializationFlowTest {
 		subject = new StoreInitializationFlow(
 				tokenStore,
 				scheduleStore,
-				autoAccountsManager,
+				aliasManager,
 				stateAccessor,
 				uniqTokenViewsManager,
 				backingAccounts,
@@ -103,6 +103,6 @@ class StoreInitializationFlowTest {
 		verify(tokenStore).rebuildViews();
 		verify(scheduleStore).rebuildViews();
 		verify(uniqTokenViewsManager).rebuildNotice(tokens, nfts);
-		verify(autoAccountsManager).rebuildAliasesMap(accounts);
+		verify(aliasManager).rebuildAliasesMap(accounts);
 	}
 }

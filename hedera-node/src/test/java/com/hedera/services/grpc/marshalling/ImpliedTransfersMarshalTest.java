@@ -20,11 +20,14 @@ package com.hedera.services.grpc.marshalling;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -42,8 +45,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
+import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
+import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_CUSTOM_FEE_META;
 import static com.hedera.services.ledger.BalanceChange.changingHbar;
 import static com.hedera.services.ledger.BalanceChange.changingNftOwnership;
 import static com.hedera.services.ledger.BalanceChange.tokenAdjust;
@@ -52,6 +59,8 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.IdUtils.nftXfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -63,6 +72,7 @@ import static org.mockito.BDDMockito.given;
 @ExtendWith(MockitoExtension.class)
 class ImpliedTransfersMarshalTest {
 	private final List<CustomFeeMeta> mockFinalMeta = List.of(CustomFeeMeta.MISSING_META);
+	private final Map<ByteString, EntityNum> mockAliases = Map.of(ByteString.copyFromUtf8("A"), EntityNum.fromLong(1L));
 
 	private CryptoTransferTransactionBody op;
 
@@ -82,6 +92,12 @@ class ImpliedTransfersMarshalTest {
 	private BalanceChangeManager changeManager;
 	@Mock
 	private CustomSchedulesManager schedulesManager;
+	@Mock
+	private AliasManager aliasManager;
+	@Mock
+	private AliasResolver aliasResolver;
+	@Mock
+	private Predicate<CryptoTransferTransactionBody> aliasCheck;
 
 	private ImpliedTransfersMarshal subject;
 
@@ -89,11 +105,50 @@ class ImpliedTransfersMarshalTest {
 	void setUp() {
 		subject = new ImpliedTransfersMarshal(
 				feeAssessor,
+				aliasManager,
 				customFeeSchedules,
+				() -> aliasResolver,
 				dynamicProperties,
 				xferChecks,
+				aliasCheck,
 				changeManagerFactory,
 				customSchedulesFactory);
+	}
+
+	@Test
+	void rejectsPerceivedMissing() {
+		setupHbarOnlyFixture();
+		setupProps();
+
+		given(aliasCheck.test(op)).willReturn(true);
+		given(aliasResolver.resolve(op, aliasManager)).willReturn(op);
+		given(aliasResolver.perceivedMissingAliases()).willReturn(1);
+		given(aliasResolver.resolutions()).willReturn(mockAliases);
+
+		final var expectedMeta = new ImpliedTransfersMeta(
+				props, INVALID_ACCOUNT_ID, NO_CUSTOM_FEE_META, mockAliases);
+
+		final var result = subject.unmarshalFromGrpc(op);
+
+		assertEquals(result.getMeta(), expectedMeta);
+	}
+
+	@Test
+	void rejectsPerceivedInvalidAliasKey() {
+		setupHbarOnlyFixture();
+		setupProps();
+
+		given(aliasCheck.test(op)).willReturn(true);
+		given(aliasResolver.resolve(op, aliasManager)).willReturn(op);
+		given(aliasResolver.perceivedInvalidCreations()).willReturn(1);
+		given(aliasResolver.resolutions()).willReturn(mockAliases);
+
+		final var expectedMeta = new ImpliedTransfersMeta(
+				props, INVALID_ALIAS_KEY, NO_CUSTOM_FEE_META, mockAliases);
+
+		final var result = subject.unmarshalFromGrpc(op);
+
+		assertEquals(result.getMeta(), expectedMeta);
 	}
 
 	@Test
@@ -102,14 +157,12 @@ class ImpliedTransfersMarshalTest {
 		setupProps();
 
 		final var expectedMeta = new ImpliedTransfersMeta(
-				props, TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, Collections.emptyList());
+				props, TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, Collections.emptyList(), NO_ALIASES);
 
 		givenValidity(TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
 
-		// when:
 		final var result = subject.unmarshalFromGrpc(op);
 
-		// then:
 		assertEquals(result.getMeta(), expectedMeta);
 	}
 
@@ -117,13 +170,17 @@ class ImpliedTransfersMarshalTest {
 	void getsHbarOnly() {
 		setupHbarOnlyFixture();
 		setupProps();
+		given(aliasCheck.test(op)).willReturn(true);
+		given(aliasResolver.resolve(op, aliasManager)).willReturn(op);
+		given(aliasResolver.perceivedAutoCreations()).willReturn(1);
+		given(aliasResolver.resolutions()).willReturn(mockAliases);
+
 		final var expectedChanges = expNonFeeChanges(false);
 		// and:
-		final var expectedMeta = new ImpliedTransfersMeta(props, OK, Collections.emptyList());
+		final var expectedMeta = new ImpliedTransfersMeta(props, OK, Collections.emptyList(), mockAliases, 1);
 
 		givenValidity(OK);
 
-		// when:
 		final var result = subject.unmarshalFromGrpc(op);
 
 		// then:
@@ -151,7 +208,7 @@ class ImpliedTransfersMarshalTest {
 		expectedChanges.add(changingHbar(adjustFrom(a, -100)));
 		expectedChanges.add(changingHbar(adjustFrom(validAliasAccount, +100)));
 
-		final var expectedMeta = new ImpliedTransfersMeta(props, OK, Collections.emptyList());
+		final var expectedMeta = new ImpliedTransfersMeta(props, OK, Collections.emptyList(), NO_ALIASES);
 
 		givenValidity(OK);
 
@@ -172,7 +229,7 @@ class ImpliedTransfersMarshalTest {
 		// and:
 		final var nonFeeChanges = expNonFeeChanges(true);
 		// and:
-		final var expectedMeta = new ImpliedTransfersMeta(props, OK, mockFinalMeta);
+		final var expectedMeta = new ImpliedTransfersMeta(props, OK, mockFinalMeta, NO_ALIASES);
 
 		givenValidity(OK);
 		// and:
@@ -202,7 +259,7 @@ class ImpliedTransfersMarshalTest {
 		final var nonFeeChanges = expNonFeeChanges(true);
 		// and:
 		final var expectedMeta = new ImpliedTransfersMeta(
-				props, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH, mockFinalMeta);
+				props, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH, mockFinalMeta, NO_ALIASES);
 
 		givenValidity(OK);
 		// and:

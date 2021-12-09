@@ -185,7 +185,7 @@ class DeterministicThrottlingTest {
 		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
 
 		givenFunction(CryptoTransfer);
-		given(accessor.getAutoAccountCreationsCount()).willReturn(0);
+		given(accessor.getNumAutoCreations()).willReturn(0);
 		subject.rebuildFor(defs);
 
 		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
@@ -198,7 +198,7 @@ class DeterministicThrottlingTest {
 		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
 
 		givenFunction(CryptoTransfer);
-		given(accessor.getAutoAccountCreationsCount()).willReturn(1);
+		given(accessor.getNumAutoCreations()).willReturn(1);
 		subject.rebuildFor(defs);
 
 		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
@@ -211,7 +211,7 @@ class DeterministicThrottlingTest {
 		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
 
 		givenFunction(CryptoTransfer);
-		given(accessor.getAutoAccountCreationsCount()).willReturn(10);
+		given(accessor.getNumAutoCreations()).willReturn(10);
 		subject.rebuildFor(defs);
 
 		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
@@ -224,7 +224,7 @@ class DeterministicThrottlingTest {
 		var defs = SerdeUtils.pojoDefs("bootstrap/throttles-sans-creation.json");
 
 		givenFunction(CryptoTransfer);
-		given(accessor.getAutoAccountCreationsCount()).willReturn(1);
+		given(accessor.getNumAutoCreations()).willReturn(1);
 		subject.rebuildFor(defs);
 
 		var ans = subject.shouldThrottleTxn(accessor, consensusNow);

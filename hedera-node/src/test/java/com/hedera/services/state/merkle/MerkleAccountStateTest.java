@@ -113,7 +113,6 @@ class MerkleAccountStateTest {
 
 	@Test
 	void toStringWorks() {
-		System.out.println(subject.toString());
 		assertEquals("MerkleAccountState{number=123 <-> 0.0.123, " +
 						"key=" + MiscUtils.describe(key) + ", " +
 						"expiry=" + expiry + ", " +

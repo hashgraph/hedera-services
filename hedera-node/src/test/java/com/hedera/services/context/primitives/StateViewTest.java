@@ -24,7 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.files.HFileMeta;
-import com.hedera.services.ledger.accounts.AutoAccountsManager;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
@@ -194,7 +194,7 @@ class StateViewTest {
 	private UniqTokenViewFactory uniqTokenViewFactory;
 	private StateChildren children;
 	@Mock
-	private AutoAccountsManager autoAccounts;
+	private AliasManager autoAccounts;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -648,7 +648,7 @@ class StateViewTest {
 
 	@Test
 	void infoForAccountWithAlias() {
-		given(autoAccounts.fetchEntityNumFor(any())).willReturn(EntityNum.fromAccountId(tokenAccountId));
+		given(autoAccounts.lookupIdBy(any())).willReturn(EntityNum.fromAccountId(tokenAccountId));
 		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
 		given(mockTokenRelsFn.apply(any(), any())).willReturn(Collections.emptyList());
 
@@ -692,7 +692,7 @@ class StateViewTest {
 	void infoForMissingAccountWithAlias() {
 		EntityNum mockedEntityNum = mock(EntityNum.class);
 
-		given(autoAccounts.fetchEntityNumFor(any())).willReturn(mockedEntityNum);
+		given(autoAccounts.lookupIdBy(any())).willReturn(mockedEntityNum);
 		given(contracts.get(mockedEntityNum)).willReturn(null);
 
 		final var actualResponse = subject.infoForAccount(accountWithAlias, autoAccounts);

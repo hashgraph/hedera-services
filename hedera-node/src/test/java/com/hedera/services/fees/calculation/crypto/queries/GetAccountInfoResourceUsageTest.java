@@ -22,7 +22,7 @@ package com.hedera.services.fees.calculation.crypto.queries;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.ledger.accounts.AutoAccountsManager;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.test.utils.IdUtils;
@@ -80,7 +80,7 @@ class GetAccountInfoResourceUsageTest {
 	@Mock
 	private StateView view;
 	@Mock
-	private AutoAccountsManager autoAccounts;
+	private AliasManager autoAccounts;
 
 	private GetAccountInfoResourceUsage subject;
 

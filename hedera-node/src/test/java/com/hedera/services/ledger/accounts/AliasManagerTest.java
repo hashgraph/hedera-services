@@ -32,7 +32,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class AutoAccountsManagerTest {
+class AliasManagerTest {
 	@Test
 	void settersAndGettersWork() {
 		EntityNum a = new EntityNum(1);
@@ -44,12 +44,12 @@ class AutoAccountsManagerTest {
 			put(aliasB, b);
 		}};
 
-		var subject = new AutoAccountsManager();
+		var subject = new AliasManager();
 		assertTrue(subject.getAutoAccountsMap().isEmpty());
 
 		subject.setAutoAccountsMap(expectedMap);
 		assertEquals(expectedMap, subject.getAutoAccountsMap());
-		assertEquals(b, subject.fetchEntityNumFor(ByteString.copyFromUtf8("bbbb")));
+		assertEquals(b, subject.lookupIdBy(ByteString.copyFromUtf8("bbbb")));
 		assertTrue(subject.contains(aliasA));
 	}
 
@@ -68,7 +68,7 @@ class AutoAccountsManagerTest {
 		liveAccounts.put(withNum, accountWithAlias);
 		liveAccounts.put(withoutNum, accountWithNoAlias);
 
-		final var subject = new AutoAccountsManager();
+		final var subject = new AliasManager();
 		subject.getAutoAccountsMap().put(expiredAlias, withoutNum);
 		subject.rebuildAliasesMap(liveAccounts);
 

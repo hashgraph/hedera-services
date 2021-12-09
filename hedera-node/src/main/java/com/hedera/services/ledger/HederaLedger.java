@@ -28,7 +28,7 @@ import com.hedera.services.exceptions.DetachedAccountException;
 import com.hedera.services.exceptions.InconsistentAdjustmentsException;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.ledger.accounts.AutoAccountsManager;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -137,7 +137,7 @@ public class HederaLedger {
 			MerkleTokenRelStatus> tokenRelsLedger = null;
 
 	private final MerkleAccountScopedCheck scopedCheck;
-	private final AutoAccountsManager autoAccountsManager;
+	private final AliasManager aliasManager;
 	private final AutoCreationLogic autoCreationLogic;
 
 	public HederaLedger(
@@ -150,7 +150,7 @@ public class HederaLedger {
 			final GlobalDynamicProperties dynamicProperties,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
 			final AutoCreationLogic autoCreationLogic,
-			final AutoAccountsManager autoAccountsManager
+			final AliasManager aliasManager
 
 	) {
 		this.ids = ids;
@@ -161,7 +161,7 @@ public class HederaLedger {
 		this.dynamicProperties = dynamicProperties;
 		this.sideEffectsTracker = sideEffectsTracker;
 		this.autoCreationLogic = autoCreationLogic;
-		this.autoAccountsManager = autoAccountsManager;
+		this.aliasManager = aliasManager;
 
 		creator.setLedger(this);
 		historian.setCreator(creator);
@@ -371,7 +371,7 @@ public class HederaLedger {
 		var autoCreationFee = 0L;
 		for (final var change : changes) {
 			if (change.isForHbar()) {
-				if (change.hasUniqueAliasWith(autoAccountsManager)) {
+				if (change.hasUniqueAliasWith(aliasManager)) {
 					final var result = autoCreationLogic.create(change, accountsLedger);
 					validity = result.getLeft();
 					autoCreationFee += result.getRight();
@@ -446,7 +446,7 @@ public class HederaLedger {
 		accountsLedger.set(id, IS_DELETED, true);
 		ByteString alias = (ByteString) accountsLedger.get(id, ALIAS);
 		if (!alias.isEmpty()) {
-			autoAccountsManager.getAutoAccountsMap().remove(alias);
+			aliasManager.getAutoAccountsMap().remove(alias);
 		}
 	}
 
@@ -552,7 +552,7 @@ public class HederaLedger {
 			if (change.isForHbar()) {
 				final AccountID accountId;
 				if (change.hasNonEmptyAlias()) {
-					accountId = autoAccountsManager.getAutoAccountsMap().get(change.alias()).toGrpcAccountId();
+					accountId = aliasManager.getAutoAccountsMap().get(change.alias()).toGrpcAccountId();
 				} else {
 					accountId = change.accountId();
 				}
