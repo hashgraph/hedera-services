@@ -27,6 +27,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.disablingAutoRenewWithDefaults;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.enablingAutoRenewWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 
 public class AutoAccountUpdateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(AutoAccountUpdateSuite.class);
@@ -44,11 +45,54 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						updateKeyOnAutoCreatedAccount(),
+						updateKeyOnAutoCreatedAccount(),
 						accountCreatedAfterAliasAccountExpires(),
+						modifySigRequiredAfterAutoAccountCreation(),
 //						accountCreatedAfterAliasAccountExpiresAndDelete()
 				}
 		);
+	}
+
+	private HapiApiSpec modifySigRequiredAfterAutoAccountCreation() {
+		return defaultHapiSpec("modifySigRequiredAfterAutoAccountCreation")
+				.given(
+						newKeyNamed("testAlias"),
+						cryptoCreate("payer").balance(initialBalance * ONE_HBAR)
+				).when(
+						cryptoTransfer(tinyBarsFromToWithAlias("payer", "testAlias", ONE_HUNDRED_HBARS)).via(
+								"transferTxn"),
+						/* validate child record has alias set and has fields as expected */
+						getTxnRecord("transferTxn").andAllChildRecords()
+								.hasChildRecordCount(1)
+								.hasAliasInChildRecord("testAlias", 0).logged(),
+						getAccountInfoWithAlias("testAlias").has(accountWith()
+								.autoRenew(THREE_MONTHS_IN_SECONDS)
+								.receiverSigReq(false)
+								.expectedBalanceWithChargedUsd((ONE_HUNDRED_HBARS), 0.05, 0.5))
+				).then(
+						/* change receiverSigRequired to false and validate */
+						cryptoUpdateWithAlias("testAlias").receiverSigRequired(true).signedBy(
+								"testAlias", "payer", DEFAULT_PAYER),
+						getAccountInfoWithAlias("testAlias").has(accountWith()
+								.autoRenew(THREE_MONTHS_IN_SECONDS)
+								.receiverSigReq(true)
+								.expectedBalanceWithChargedUsd((ONE_HUNDRED_HBARS), 0.05, 0.5)),
+
+						/* transfer without receiver sig fails */
+						cryptoTransfer(tinyBarsFromToWithAlias("payer", "testAlias", ONE_HUNDRED_HBARS))
+								.via("transferTxn2")
+								.signedBy("payer", DEFAULT_PAYER)
+								.hasKnownStatus(INVALID_SIGNATURE),
+
+						/* transfer with receiver sig passes */
+						cryptoTransfer(tinyBarsFromToWithAlias("payer", "testAlias", ONE_HUNDRED_HBARS))
+								.via("transferTxn3")
+								.signedBy("testAlias", "payer", DEFAULT_PAYER),
+						getTxnRecord("transferTxn3").andAllChildRecords().hasChildRecordCount(0),
+						getAccountInfoWithAlias("testAlias").has(
+								accountWith()
+										.expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0.05, 0.5))
+				);
 	}
 
 	private HapiApiSpec accountCreatedAfterAliasAccountExpires() {
@@ -60,6 +104,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 								.overridingProps(enablingAutoRenewWith(briefAutoRenew, 20 * briefAutoRenew)),
 						cryptoCreate("randomPayer").balance(initialBalance * ONE_HBAR)
 				).when(
+						/* auto account is created */
 						cryptoTransfer(tinyBarsFromToWithAlias("randomPayer", "alias", ONE_HUNDRED_HBARS)).via(
 								"transferTxn"),
 						getTxnRecord("transferTxn").andAllChildRecords().logged(),
@@ -67,12 +112,13 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 								.autoRenew(THREE_MONTHS_IN_SECONDS)
 								.expectedBalanceWithChargedUsd((ONE_HUNDRED_HBARS), 1, 10))
 				).then(
+						/* update auto renew period */
 						cryptoUpdateWithAlias("alias").autoRenewPeriod(briefAutoRenew).signedBy(
 								"alias", "randomPayer", DEFAULT_PAYER),
 						sleepFor(2 * briefAutoRenew * 1_000L + 500L),
 						getAccountBalanceWithAlias("alias"),
 
-						// Need to know why its INVALID_ACCOUNT_ID, same reason as Delete
+						/* account is expired but not deleted and validate the transfer succeeds*/
 						cryptoTransfer(tinyBarsFromToWithAlias("randomPayer", "alias", ONE_HUNDRED_HBARS)).via(
 								"transferTxn2"),
 						getTxnRecord("transferTxn2").andAllChildRecords().hasChildRecordCount(0),
@@ -97,6 +143,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 						newKeyNamed("complexKey").shape(ENOUGH_UNIQUE_SIGS),
 						cryptoCreate("payer").balance(initialBalance * ONE_HBAR)
 				).when(
+						/* auto account is created */
 						cryptoTransfer(
 								tinyBarsFromToWithAlias("payer", "alias", ONE_HUNDRED_HBARS)).via(
 								"transferTxn"),
@@ -106,6 +153,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 								.expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.1)
 								.alias("alias"))
 				).then(
+						/* validate the key on account can be updated to complex key, and has no relation to alias*/
 						cryptoUpdateWithAlias("alias")
 								.key("complexKey")
 								.payingWith("payer")
@@ -131,12 +179,15 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 						getTxnRecord("transferTxn").andAllChildRecords().logged(),
 						getAccountInfoWithAlias("alias").has(accountWith().autoRenew(THREE_MONTHS_IN_SECONDS))
 				).then(
+						/* update auto renew period */
 						cryptoUpdateWithAlias("alias").autoRenewPeriod(briefAutoRenew).signedBy(
 								"alias", "randomPayer"),
 						sleepFor(2 * briefAutoRenew * 1_000L + 500L),
 						getAccountBalance("alias").hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID),
 
 						// Need to know why its INVALID_ACCOUNT_ID, same reason as Delete
+						
+						/* validate account is expired and deleted , so new account is created */
 						cryptoTransfer(tinyBarsFromToWithAlias("randomPayer", "alias", ONE_HUNDRED_HBARS)).via(
 								"transferTxn2"),
 						getTxnRecord("transferTxn2").andAllChildRecords().hasChildRecordCount(1),

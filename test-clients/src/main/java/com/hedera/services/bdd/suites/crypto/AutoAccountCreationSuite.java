@@ -137,6 +137,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 						getAccountInfoWithAlias("alias").has(
 								accountWith().expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0.05, 0.5))
 				).then(
+						/* transfer from an alias that was auto created to a new alias, validate account is created */
 						cryptoTransfer(
 								HapiCryptoTransfer.tinyBarsFromToWithAlias("alias", "alias2", ONE_HUNDRED_HBARS)).via(
 								"transferTxn2"),
@@ -160,6 +161,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 								"txn"),
 						getTxnRecord("txn").andAllChildRecords().logged()
 				).then(
+						/* get the account associated with alias and transfer */
 						withOpContext((spec, opLog) -> {
 							final var aliasAccount = spec.registry().getAccountID(
 									spec.registry().getKey("transferAlias").toByteString().toStringUtf8());
@@ -193,6 +195,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 						getAccountInfoWithAlias("alias").has(
 								accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.5))
 				).then(
+						/* transfer using alias and not account number */
 						cryptoTransfer(HapiCryptoTransfer.tinyBarsFromToWithAlias("payer", "alias", ONE_HUNDRED_HBARS))
 								.via("transferTxn2"),
 						getTxnRecord("transferTxn2").andAllChildRecords().hasChildRecordCount(0).logged(),
@@ -263,11 +266,13 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 						newKeyNamed("validAlias"),
 						cryptoCreate("payer").balance(initialBalance * ONE_HBAR)
 				).when(
+						/* auto account is created */
 						cryptoTransfer(
 								HapiCryptoTransfer.tinyBarsFromToWithAlias("payer", "validAlias",
 										ONE_HUNDRED_HBARS)).via(
 								"transferTxn")
 				).then(
+						/* get transaction record and validate the child record has alias bytes as expected */
 						getTxnRecord("transferTxn").andAllChildRecords().hasChildRecordCount(
 								1).hasAliasInChildRecord("validAlias", 0).logged(),
 						getAccountInfo("payer").has(
