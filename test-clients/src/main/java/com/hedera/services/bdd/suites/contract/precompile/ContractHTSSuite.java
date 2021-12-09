@@ -30,6 +30,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 
+import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.DISSOCIATE_TOKEN;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ZENOS_BANK_DEPOSIT_TOKENS;
@@ -40,9 +41,11 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
@@ -85,6 +88,186 @@ public class ContractHTSSuite extends HapiApiSuite {
 				associateToken(),
 				dissociateToken()
 		);
+	}
+
+//	private HapiApiSpec insufficientBalanceRollback() {
+//		final var theAccount = "anybody";
+//		final var tokenWithHbarFee = "TokenWithHbarFee";
+//		final var treasuryForToken = "TokenTreasury";
+//		final var theReceiver = "somebody";
+//		final var theContract = "transfer amount and token";
+//
+//		return defaultHapiSpec("insufficientBalanceRollback")
+//				.given(
+//						cryptoCreate(theAccount).balance(10 * ONE_HUNDRED_HBARS),
+//						cryptoCreate(theReceiver).balance(52390000L),
+//						cryptoCreate(treasuryForToken),
+//						tokenCreate(tokenWithHbarFee)
+//								.tokenType(TokenType.FUNGIBLE_COMMON)
+//								.initialSupply(2L)
+//								.treasury(treasuryForToken)
+//								.withCustom(fixedHbarFee(ONE_HBAR, treasuryForToken)),
+//						getAccountInfo(theReceiver).savingSnapshot("receivableSigReqAccountInfo"),
+//						fileCreate("bytecode").payingWith(theAccount),
+//						updateLargeFile(theAccount, "bytecode", extractByteCode(ContractResources.TRANSFER_AMOUNT_AND_TOKEN_CONTRACT)),
+//						withOpContext(
+//								(spec, opLog) ->
+//										allRunFor(
+//												spec,
+//												contractCreate(theContract, ContractResources.TRANSFER_AMOUNT_AND_TOKEN_CONSTRUCTOR,
+//														asAddress(spec.registry().getTokenID(tokenWithHbarFee)))
+//														.payingWith(theAccount)
+//														.bytecode("bytecode")
+//														.gas(28_000))),
+//						tokenAssociate(theAccount, tokenWithHbarFee),
+//						tokenAssociate(theReceiver, tokenWithHbarFee),
+//						tokenAssociate(theContract, tokenWithHbarFee),
+//						cryptoTransfer(moving(2, tokenWithHbarFee).between(treasuryForToken, theAccount))
+//				)
+//				.when(
+//						contractCall(theContract, TRANSFER_AMOUNT_AND_TOKEN_DEPOSIT_TOKENS, 2)
+//								.payingWith(theAccount)
+//								.gas(48_000)
+//								.via("test"),
+//						getTxnRecord("test").andAllChildRecords().logged()
+//
+//				)
+//				.then(
+//						withOpContext(
+//								(spec, opLog) -> {
+//									String accountAddress = spec.registry()
+//											.getAccountInfo("receivableSigReqAccountInfo").getContractAccountID();
+//									allRunFor(
+//											spec,
+//											contractCall(theContract, TRANSFER_AMOUNT_AND_TOKEN_TRANSFER_TO_ADDRESS,
+//													accountAddress,
+//													 1).payingWith(theReceiver)
+//													.alsoSigningWithFullPrefix(theContract)
+//													.gas(70_000)
+//													.via("test1"));}),
+//						getTxnRecord("test1").andAllChildRecords().logged()
+//				);
+//
+//
+//	}
+//
+//		private HapiApiSpec depositAndWithdraw() {
+//		final var theAccount = "anybody";
+//		final var theReceiver = "somebody";
+//		final var theKey = "multipurpose";
+//		final var theContract = "zeno's bank";
+//		return defaultHapiSpec("depositAndWithdraw")
+//				.given(
+//						newKeyNamed(theKey),
+//						cryptoCreate(theAccount).balance(10 * ONE_HUNDRED_HBARS),
+//						cryptoCreate(theReceiver),
+//						cryptoCreate(TOKEN_TREASURY),
+//						tokenCreate(A_TOKEN)
+//								.tokenType(TokenType.FUNGIBLE_COMMON)
+//								.initialSupply(TOTAL_SUPPLY)
+//								.treasury(TOKEN_TREASURY),
+//						fileCreate("bytecode").payingWith(theAccount),
+//						updateLargeFile(theAccount, "bytecode", extractByteCode(ContractResources.ZENOS_BANK_CONTRACT)),
+//						withOpContext(
+//								(spec, opLog) ->
+//										allRunFor(
+//												spec,
+//												contractCreate(theContract, ContractResources.ZENOS_BANK_CONSTRUCTOR,
+//														asAddress(spec.registry().getTokenID(A_TOKEN)))
+//														.payingWith(theAccount)
+//														.bytecode("bytecode")
+//														.via("creationTx")
+//														.gas(28_000))),
+//						getTxnRecord("creationTx").logged(),
+//						tokenAssociate(theAccount, List.of(A_TOKEN)),
+//						tokenAssociate(theContract, List.of(A_TOKEN)),
+//						cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, theAccount))
+//				).when(
+//						contractCall(theContract, ZENOS_BANK_DEPOSIT_TOKENS, 50)
+//								.payingWith(theAccount)
+//								.gas(48_000)
+//								.via("zeno"),
+//						getTxnRecord("zeno").andAllChildRecords().logged()
+//				).then(
+//						contractCall(theContract, ZENOS_BANK_WITHDRAW_TOKENS)
+//								.payingWith(theReceiver)
+//								.alsoSigningWithFullPrefix(theContract)
+//								.gas(70_000)
+//								.via("receiver"),
+//						getTxnRecord("receiver").andAllChildRecords().logged()
+//				);
+//	}
+
+	private HapiApiSpec insufficientBalanceRollback() {
+		final var alice = "anybody";
+		final var tokenWithHbarFee = "TokenWithHbarFee";
+		final var treasuryForToken = "TokenTreasury";
+		final var supplyKey = "antique";
+		final var bob = "somebody";
+		final var theContract = "transfer amount and token";
+
+		final var txnFromTreasury = "txnFromTreasury";
+
+		return defaultHapiSpec("insufficientBalanceRollback")
+				.given(
+						newKeyNamed(supplyKey),
+						cryptoCreate(alice).balance(10 * ONE_HUNDRED_HBARS),
+						cryptoCreate(bob).balance(52390000L),
+						cryptoCreate(treasuryForToken).balance(ONE_HUNDRED_HBARS),
+						tokenCreate(tokenWithHbarFee)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.supplyKey(supplyKey)
+								.initialSupply(0L)
+								.treasury(treasuryForToken)
+								.withCustom(fixedHbarFee(ONE_HBAR, treasuryForToken)),
+						mintToken(tokenWithHbarFee, List.of(copyFromUtf8("First!"))),
+						mintToken(tokenWithHbarFee, List.of(copyFromUtf8("Second!"))),
+						getAccountInfo(bob).savingSnapshot("receivableSigReqAccountInfo"),
+						fileCreate("bytecode").payingWith(alice),
+						updateLargeFile(alice, "bytecode", extractByteCode(ContractResources.TRANSFER_AMOUNT_AND_TOKEN_CONTRACT)),
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCreate(theContract, ContractResources.TRANSFER_AMOUNT_AND_TOKEN_CONSTRUCTOR,
+														asAddress(spec.registry().getTokenID(tokenWithHbarFee)))
+														.payingWith(alice)
+														.bytecode("bytecode")
+														.gas(28_000))),
+						tokenAssociate(alice, tokenWithHbarFee),
+						tokenAssociate(bob, tokenWithHbarFee),
+						tokenAssociate(theContract, tokenWithHbarFee),
+						cryptoTransfer(movingUnique(tokenWithHbarFee, 2L).between(treasuryForToken, alice))
+								.payingWith(GENESIS)
+								.fee(ONE_HBAR)
+								.via(txnFromTreasury)
+				)
+				.when(
+						contractCall(theContract, TRANSFER_AMOUNT_AND_TOKEN_DEPOSIT_TOKENS, 2L)
+								.payingWith(alice)
+								.gas(48_000)
+								.via("test"),
+						getTxnRecord("test").andAllChildRecords().logged()
+
+				)
+				.then(
+						withOpContext(
+								(spec, opLog) -> {
+									String accountAddress = spec.registry()
+											.getAccountInfo("receivableSigReqAccountInfo").getContractAccountID();
+									allRunFor(
+											spec,
+											contractCall(theContract, TRANSFER_AMOUNT_AND_TOKEN_TRANSFER_TO_ADDRESS,
+													accountAddress,
+													2L).payingWith(bob)
+													.fee(ONE_HBAR)
+													.alsoSigningWithFullPrefix(theContract)
+													.gas(70_000)
+													.via("test1"));}),
+						getTxnRecord("test1").andAllChildRecords().logged()
+				);
+
+
 	}
 
 	private HapiApiSpec depositAndWithdraw() {
