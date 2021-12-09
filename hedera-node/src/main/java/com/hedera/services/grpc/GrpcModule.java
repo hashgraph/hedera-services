@@ -107,6 +107,7 @@ public abstract class GrpcModule {
 				AliasResolver::new,
 				dynamicProperties,
 				transferSemanticChecks,
+				AliasResolver::usesAliases,
 				BalanceChangeManager::new,
 				CustomSchedulesManager::new);
 	}

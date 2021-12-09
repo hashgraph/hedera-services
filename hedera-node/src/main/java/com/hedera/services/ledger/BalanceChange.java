@@ -59,9 +59,6 @@ public class BalanceChange {
 	private long units;
 	private long originalUnits;
 	private long newBalance;
-	private boolean usedAlias = false;
-	private boolean usedUniqueAlias = false;
-	private boolean usedUniqueCounterpartyAlias = false;
 	private boolean exemptFromCustomFees = false;
 	private NftId nftId = null;
 	private TokenID tokenId = null;

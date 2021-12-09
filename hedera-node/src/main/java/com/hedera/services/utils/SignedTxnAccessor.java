@@ -22,6 +22,8 @@ package com.hedera.services.utils;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
+import com.hedera.services.grpc.marshalling.AliasResolver;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
@@ -76,6 +78,7 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQ
 public class SignedTxnAccessor implements TxnAccessor {
 	private static final Logger log = LogManager.getLogger(SignedTxnAccessor.class);
 
+	private static final int UNKNOWN_NUM_AUTO_CREATIONS = -1;
 	private static final String ACCESSOR_LITERAL = " accessor";
 
 	private static final TokenOpsUsage TOKEN_OPS_USAGE = new TokenOpsUsage();
@@ -85,7 +88,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 	private int sigMapSize;
 	private int numSigPairs;
-	private int numAutoCreations;
+	private int numAutoCreations = UNKNOWN_NUM_AUTO_CREATIONS;
 	private byte[] hash;
 	private byte[] txnBytes;
 	private byte[] utf8MemoBytes;
@@ -145,13 +148,34 @@ public class SignedTxnAccessor implements TxnAccessor {
 		memoHasZeroByte = Arrays.contains(utf8MemoBytes, (byte) 0);
 
 		getFunction();
-		countAliases();
 		setBaseUsageMeta();
 		setOpUsageMeta();
 	}
 
 	public SignedTxnAccessor(Transaction signedTxnWrapper) throws InvalidProtocolBufferException {
 		this(signedTxnWrapper.toByteArray());
+	}
+
+	@Override
+	public void countAutoCreationsWith(final AliasManager aliasManager) {
+		final var resolver = new AliasResolver();
+		resolver.resolve(txn.getCryptoTransfer(), aliasManager);
+		numAutoCreations = resolver.perceivedAutoCreations();
+	}
+
+	@Override
+	public void setNumAutoCreations(final int numAutoCreations) {
+		this.numAutoCreations = numAutoCreations;
+	}
+
+	@Override
+	public int getNumAutoCreations() {
+		return numAutoCreations;
+	}
+
+	@Override
+	public boolean areAutoCreationsCounted() {
+		return numAutoCreations != UNKNOWN_NUM_AUTO_CREATIONS;
 	}
 
 	@Override
@@ -237,11 +261,6 @@ public class SignedTxnAccessor implements TxnAccessor {
 	@Override
 	public String getMemo() {
 		return memo;
-	}
-
-	@Override
-	public int getAutoAccountCreationsCount() {
-		return numAutoCreations;
 	}
 
 	@Override
@@ -414,31 +433,5 @@ public class SignedTxnAccessor implements TxnAccessor {
 		final var cryptoUpdateMeta = new CryptoUpdateMeta(txn.getCryptoUpdateAccount(),
 				txn.getTransactionID().getTransactionValidStart().getSeconds());
 		SPAN_MAP_ACCESSOR.setCryptoUpdate(this, cryptoUpdateMeta);
-	}
-
-	private void countAliases() {
-		if (getFunction() == CryptoTransfer) {
-			final var cryptoTransfer = getTxn().getCryptoTransfer();
-			for (var adjust : cryptoTransfer.getTransfers().getAccountAmountsList()) {
-				if (EntityIdUtils.isAlias(adjust.getAccountID())) {
-					numAutoCreations++;
-				}
-			}
-			for (var tokenAdjusts : cryptoTransfer.getTokenTransfersList()) {
-				for (var ownershipChange : tokenAdjusts.getNftTransfersList()) {
-					if (EntityIdUtils.isAlias(ownershipChange.getSenderAccountID())) {
-						numAutoCreations++;
-					}
-					if (EntityIdUtils.isAlias(ownershipChange.getReceiverAccountID())) {
-						numAutoCreations++;
-					}
-				}
-				for (var tokenAdjust : tokenAdjusts.getTransfersList()) {
-					if (EntityIdUtils.isAlias(tokenAdjust.getAccountID())) {
-						numAutoCreations++;
-					}
-				}
-			}
-		}
 	}
 }

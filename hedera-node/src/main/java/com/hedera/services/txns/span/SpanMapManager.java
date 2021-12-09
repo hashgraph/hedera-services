@@ -23,6 +23,7 @@ package com.hedera.services.txns.span;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.utils.TxnAccessor;
@@ -55,6 +56,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTrans
  */
 @Singleton
 public class SpanMapManager {
+	private final AliasManager aliasManager;
 	private final CustomFeeSchedules customFeeSchedules;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final ImpliedTransfersMarshal impliedTransfersMarshal;
@@ -62,13 +64,15 @@ public class SpanMapManager {
 
 	@Inject
 	public SpanMapManager(
-			ImpliedTransfersMarshal impliedTransfersMarshal,
-			GlobalDynamicProperties dynamicProperties,
-			CustomFeeSchedules customFeeSchedules
+			final ImpliedTransfersMarshal impliedTransfersMarshal,
+			final GlobalDynamicProperties dynamicProperties,
+			final CustomFeeSchedules customFeeSchedules,
+			final AliasManager aliasManager
 	) {
 		this.impliedTransfersMarshal = impliedTransfersMarshal;
 		this.dynamicProperties = dynamicProperties;
 		this.customFeeSchedules = customFeeSchedules;
+		this.aliasManager = aliasManager;
 	}
 
 	public void expandSpan(TxnAccessor accessor) {
@@ -89,11 +93,12 @@ public class SpanMapManager {
 		final var impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op);
 		reCalculateXferMeta(accessor, impliedTransfers);
 		spanMapAccessor.setImpliedTransfers(accessor, impliedTransfers);
+		accessor.setNumAutoCreations(impliedTransfers.getMeta().getNumAutoCreations());
 	}
 
 	private void rationalizeImpliedTransfers(TxnAccessor accessor) {
 		final var impliedTransfers = spanMapAccessor.getImpliedTransfers(accessor);
-		if (!impliedTransfers.getMeta().wasDerivedFrom(dynamicProperties, customFeeSchedules)) {
+		if (!impliedTransfers.getMeta().wasDerivedFrom(dynamicProperties, customFeeSchedules, aliasManager)) {
 			expandImpliedTransfers(accessor);
 		}
 	}

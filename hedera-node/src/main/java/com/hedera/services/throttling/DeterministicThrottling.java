@@ -78,7 +78,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		if ((manager = functionReqs.get(function)) == null) {
 			return true;
 		} else if (function == CryptoTransfer) {
-			return shouldThrottleTransfer(manager, accessor.getAutoAccountCreationsCount(), now);
+			return shouldThrottleTransfer(manager, accessor.getNumAutoCreations(), now);
 		} else if (function == TokenMint) {
 			return shouldThrottleMint(manager, accessor.getTxn().getTokenMint(), now);
 		} else {

@@ -130,8 +130,10 @@ import static com.hedera.test.factories.scenarios.CryptoDeleteScenarios.CRYPTO_D
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_MISSING_ACCOUNT_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_NO_RECEIVER_SIG_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_NO_RECEIVER_SIG_USING_ALIAS_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_RECEIVER_IS_MISSING_ALIAS_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_RECEIVER_SIG_USING_ALIAS_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_SENDER_IS_MISSING_ALIAS_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_MOVING_HBARS_WITH_EXTANT_SENDER;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_MOVING_HBARS_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDER;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_EXTANT_SENDERS;
@@ -249,6 +251,7 @@ import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WI
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_SUPPLY_KEYED_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_WIPE_KEYED_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenWipeScenarios.VALID_WIPE_WITH_EXTANT_TOKEN;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CURRENTLY_UNUSED_ALIAS;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKEN_SENDER;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG_ALIAS;
@@ -285,8 +288,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 class SigRequirementsTest {
-	private static final ByteString noReceiverSigAlias = ByteString.copyFromUtf8("ABCDEFG");
-
 	private static class TopicAdapter {
 		public static TopicSigMetaLookup throwingUoe() {
 			return id -> {
@@ -623,19 +624,36 @@ class SigRequirementsTest {
 	}
 
 	@Test
+	void getsMissingAliasCannotBeSender() throws Throwable {
+		setupFor(CRYPTO_TRANSFER_SENDER_IS_MISSING_ALIAS_SCENARIO);
+
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		assertTrue(summary.getOrderedKeys().isEmpty());
+		assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, summary.getErrorReport());
+	}
+
+	@Test
+	void getsMissingAliasCanBeReceiver() throws Throwable {
+		setupFor(CRYPTO_TRANSFER_RECEIVER_IS_MISSING_ALIAS_SCENARIO);
+
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(FIRST_TOKEN_SENDER_KT.asKey()));
+	}
+
+	@Test
 	void reportsMissingCryptoTransferReceiver() throws Throwable {
-		// given:
 		setupFor(CRYPTO_TRANSFER_MISSING_ACCOUNT_SCENARIO);
 		aMockSummaryFactory();
-		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
 		given(mockSummaryFactory.forMissingAccount()).willReturn(result);
 
-		// when:
 		subject.keysForOtherParties(txn, mockSummaryFactory);
 
-		// then:
 		verify(mockSummaryFactory).forMissingAccount();
 	}
 
@@ -2763,6 +2781,8 @@ class SigRequirementsTest {
 		final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
 
 		aliasManager = mock(AliasManager.class);
+		given(aliasManager.lookupIdBy(ByteString.copyFromUtf8(CURRENTLY_UNUSED_ALIAS)))
+				.willReturn(EntityNum.MISSING_NUM);
 		given(aliasManager.lookupIdBy(ByteString.copyFromUtf8(NO_RECEIVER_SIG_ALIAS)))
 				.willReturn(EntityNum.fromAccountId(NO_RECEIVER_SIG));
 		given(aliasManager.lookupIdBy(ByteString.copyFromUtf8(RECEIVER_SIG_ALIAS)))

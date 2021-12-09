@@ -68,6 +68,7 @@ import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_AUTORENEW_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.NONE;
+import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static java.util.Collections.EMPTY_LIST;
 
@@ -490,7 +491,7 @@ public class SigRequirements {
 		KeyOrderingFailure failure;
 		for (TokenTransferList xfers : op.getTokenTransfersList()) {
 			for (AccountAmount adjust : xfers.getTransfersList()) {
-				if ((failure = includeIfNecessary(payer, adjust, required)) != NONE) {
+				if ((failure = includeIfNecessary(payer, adjust, required, false)) != NONE) {
 					return accountFailure(failure, factory);
 				}
 			}
@@ -507,7 +508,7 @@ public class SigRequirements {
 			}
 		}
 		for (AccountAmount adjust : op.getTransfers().getAccountAmountsList()) {
-			if ((failure = includeIfNecessary(payer, adjust, required)) != NONE) {
+			if ((failure = includeIfNecessary(payer, adjust, required, true)) != NONE) {
 				return accountFailure(failure, factory);
 			}
 		}
@@ -955,7 +956,12 @@ public class SigRequirements {
 		return factory.forValidOrder(required);
 	}
 
-	private KeyOrderingFailure includeIfNecessary(AccountID payer, AccountAmount adjust, List<JKey> required) {
+	private KeyOrderingFailure includeIfNecessary(
+			AccountID payer,
+			AccountAmount adjust,
+			List<JKey> required,
+			boolean autoCreationAllowed
+	) {
 		var account = adjust.getAccountID();
 		if (!payer.equals(account)) {
 			var result = sigMetaLookup.aliasableAccountSigningMetaFor(account);
@@ -964,8 +970,14 @@ public class SigRequirements {
 				if (adjust.getAmount() < 0 || meta.isReceiverSigRequired()) {
 					required.add(meta.getKey());
 				}
+			} else {
+				final var reason = result.failureIfAny();
+				if (autoCreationAllowed && reason == MISSING_ACCOUNT && adjust.getAmount() > 0L && isAlias(account)) {
+					return NONE;
+				} else {
+					return reason;
+				}
 			}
-			return result.failureIfAny();
 		}
 		return NONE;
 	}

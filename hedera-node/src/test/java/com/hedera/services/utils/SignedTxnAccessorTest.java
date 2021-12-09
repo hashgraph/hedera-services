@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.StringValue;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
@@ -76,6 +77,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 
@@ -126,6 +128,13 @@ class SignedTxnAccessorTest {
 
 	@Test
 	void parsesLegacyCorrectly() throws Exception {
+		final Key aPrimitiveKey = Key.newBuilder()
+				.setEd25519(ByteString.copyFromUtf8("01234567890123456789012345678901"))
+				.build();
+		final ByteString aNewAlias = aPrimitiveKey.toByteString();
+		final AliasManager aliasManager = mock(AliasManager.class);
+		given(aliasManager.lookupIdBy(any())).willReturn(EntityNum.MISSING_NUM);
+
 		final long offeredFee = 100_000_000L;
 		var transaction1 = RequestBuilder.getCryptoTransferRequest(1234l, 0l, 0l,
 				3l, 0l, 0l,
@@ -147,7 +156,7 @@ class SignedTxnAccessorTest {
 				false,
 				zeroByteMemo,
 				5678l, -70000l,
-				ByteString.copyFromUtf8("aaaa"), 70000l);
+				aNewAlias, 70000l);
 		transaction2 = transaction2.toBuilder()
 				.setSigMap(expectedMap)
 				.build();
@@ -166,6 +175,7 @@ class SignedTxnAccessorTest {
 		final var body = CommonUtils.extractTransactionBody(transaction1);
 
 		var accessor = SignedTxnAccessor.uncheckedFrom(transaction1);
+		accessor.countAutoCreationsWith(aliasManager);
 		final var txnUsageMeta = accessor.baseUsageMeta();
 
 		assertEquals(transaction1, accessor.getSignedTxnWrapper());
@@ -186,14 +196,16 @@ class SignedTxnAccessorTest {
 		assertEquals(zeroByteMemo, accessor.getMemo());
 		assertEquals(false, accessor.isTriggeredTxn());
 		assertEquals(false, accessor.canTriggerTxn());
-		assertEquals(0, accessor.getAutoAccountCreationsCount());
+		assertEquals(0, accessor.getNumAutoCreations());
 		assertEquals(memoUtf8Bytes.length, txnUsageMeta.getMemoUtf8Bytes());
 
 		accessor = SignedTxnAccessor.uncheckedFrom(transaction2);
-		assertEquals(1, accessor.getAutoAccountCreationsCount());
+		accessor.countAutoCreationsWith(aliasManager);
+		assertEquals(1, accessor.getNumAutoCreations());
 
 		accessor = SignedTxnAccessor.uncheckedFrom(transaction3);
-		assertEquals(2, accessor.getAutoAccountCreationsCount());
+		accessor.countAutoCreationsWith(aliasManager);
+		assertEquals(0, accessor.getNumAutoCreations());
 	}
 
 	@Test
@@ -208,6 +220,16 @@ class SignedTxnAccessorTest {
 		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
 
 		assertEquals(TOKEN_FUNGIBLE_COMMON, subject.getSubType());
+	}
+
+	@Test
+	void canGetSetNumAutoCreations() {
+		final var accessor = SignedTxnAccessor.uncheckedFrom(Transaction.getDefaultInstance());
+		assertFalse(accessor.areAutoCreationsCounted());
+		accessor.setNumAutoCreations(2);
+		assertEquals(2, accessor.getNumAutoCreations());
+		assertTrue(accessor.areAutoCreationsCounted());
+		accessor.setNumAutoCreations(2);
 	}
 
 	@Test

@@ -371,6 +371,8 @@ public interface TxnHandlingScenario {
 	String MISSING_ACCOUNT_ID = "0.0.321321";
 	AccountID MISSING_ACCOUNT = asAccount(MISSING_ACCOUNT_ID);
 
+	String CURRENTLY_UNUSED_ALIAS = "currentlyUnusedAlias";
+
 	String NO_RECEIVER_SIG_ID = "0.0.1337";
 	String NO_RECEIVER_SIG_ALIAS = "noReceiverSigReqAlias";
 	AccountID NO_RECEIVER_SIG = asAccount(NO_RECEIVER_SIG_ID);

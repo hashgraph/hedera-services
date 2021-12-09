@@ -20,12 +20,15 @@ package com.hedera.services.grpc.marshalling;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
+import com.hedera.services.utils.EntityNum;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -33,6 +36,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.tokenChange;
@@ -50,6 +54,8 @@ class ImpliedTransfersTest {
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
+	private AliasManager aliasManager;
+	@Mock
 	private CustomFeeSchedules customFeeSchedules;
 	@Mock
 	private CustomFeeSchedules newCustomFeeSchedules;
@@ -65,20 +71,20 @@ class ImpliedTransfersTest {
 		final var twoImpliedXfers = ImpliedTransfers.valid(
 				props, twoChanges, entityCustomFees, assessedCustomFees);
 		// and:
-		final var oneRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=TOKEN_WAS_DELETED, " +
-				"maxExplicitHbarAdjusts=5, " +
+		final var oneRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=TOKEN_WAS_DELETED, maxExplicitHbarAdjusts=5, " +
 				"maxExplicitTokenAdjusts=50, maxExplicitOwnershipChanges=12, maxNestedCustomFees=1, " +
 				"maxXferBalanceChanges=20, areNftsEnabled=true, tokenFeeSchedules=[]}, changes=[], " +
-				"tokenFeeSchedules=[], assessedCustomFees=[]}";
+				"tokenFeeSchedules=[], assessedCustomFees=[], resolvedAliases={}, numAutoCreations=0}";
 		final var twoRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=OK, maxExplicitHbarAdjusts=5, " +
 				"maxExplicitTokenAdjusts=50, maxExplicitOwnershipChanges=12, maxNestedCustomFees=1, " +
-				"maxXferBalanceChanges=20, areNftsEnabled=true, tokenFeeSchedules=[CustomFeeMeta{tokenId=Id{shard=0, " +
-				"realm=0, num=123}, treasuryId=Id{shard=2, realm=3, num=4}, customFees=[]}]}, " +
-				"changes=[BalanceChange{token=Id{shard=1, realm=2, num=3}, account=Id{shard=4, realm=5, num=6}, alias=," +
-				" units=7}], tokenFeeSchedules=[CustomFeeMeta{tokenId=Id{shard=0, realm=0, num=123}, " +
-				"treasuryId=Id{shard=2, realm=3, num=4}, customFees=[]}], " +
-				"assessedCustomFees=[FcAssessedCustomFee{token=EntityId{shard=0, realm=0, num=123}, " +
-				"account=EntityId{shard=0, realm=0, num=124}, units=123, effective payer accounts=[123]}]}";
+				"maxXferBalanceChanges=20, areNftsEnabled=true, tokenFeeSchedules=[" +
+				"CustomFeeMeta{tokenId=Id{shard=0, realm=0, num=123}, treasuryId=Id{shard=2, realm=3, num=4}, " +
+				"customFees=[]}]}, changes=[BalanceChange{token=Id{shard=1, realm=2, num=3}, " +
+				"account=Id{shard=4, realm=5, num=6}, alias=, units=7}], tokenFeeSchedules=[" +
+				"CustomFeeMeta{tokenId=Id{shard=0, realm=0, num=123}, treasuryId=Id{shard=2, realm=3, num=4}, " +
+				"customFees=[]}], assessedCustomFees=[FcAssessedCustomFee{token=EntityId{shard=0, realm=0, num=123}, " +
+				"account=EntityId{shard=0, realm=0, num=124}, units=123, effective payer accounts=[123]}], " +
+				"resolvedAliases={}, numAutoCreations=0}";
 
 		// expect:
 		assertNotEquals(oneImpliedXfers, twoImpliedXfers);
@@ -90,9 +96,9 @@ class ImpliedTransfersTest {
 
 	@Test
 	void metaRecognizesIdenticalConditions() {
-		// given:
-		final var meta = new ImpliedTransfersMeta(props, OK, entityCustomFees);
+		final var meta = new ImpliedTransfersMeta(props, OK, entityCustomFees, resolvedAliases);
 
+		given(aliasManager.lookupIdBy(anAlias)).willReturn(aNum);
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxExplicitHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxExplicitTokenAdjusts);
 		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxExplicitOwnershipChanges);
@@ -102,54 +108,45 @@ class ImpliedTransfersTest {
 		given(customFeeSchedules.lookupMetaFor(any())).willReturn(entityCustomFees.get(0));
 
 		// expect:
-		assertTrue(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules));
+		assertTrue(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules, aliasManager));
 
 		// and:
-		given(newCustomFeeSchedules.lookupMetaFor(any())).willReturn(newCustomFeeMeta);
+		given(aliasManager.lookupIdBy(anAlias)).willReturn(bNum);
+		assertFalse(meta.wasDerivedFrom(dynamicProperties, newCustomFeeSchedules, aliasManager));
 
-		// expect:
-		assertFalse(meta.wasDerivedFrom(dynamicProperties, newCustomFeeSchedules));
+		// and:
+		given(aliasManager.lookupIdBy(anAlias)).willReturn(aNum);
+		given(newCustomFeeSchedules.lookupMetaFor(any())).willReturn(newCustomFeeMeta);
+		assertFalse(meta.wasDerivedFrom(dynamicProperties, newCustomFeeSchedules, aliasManager));
 
 		// and:
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxExplicitHbarAdjusts - 1);
-
-		// expect:
-		assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules));
+		assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules, aliasManager));
 
 		// and:
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxExplicitHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxExplicitTokenAdjusts + 1);
-
-		// expect:
-		assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules));
+		assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules, aliasManager));
 
 		// and:
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxExplicitTokenAdjusts);
 		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxExplicitOwnershipChanges - 1);
-
-		// expect:
-		assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules));
+		assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules, aliasManager));
 
 		// and:
 		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxExplicitOwnershipChanges);
 		given(dynamicProperties.maxXferBalanceChanges()).willReturn(maxBalanceChanges - 1);
-
-		// expect:
-		assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules));
+		assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules, aliasManager));
 
 		// and:
 		given(dynamicProperties.maxXferBalanceChanges()).willReturn(maxBalanceChanges);
 		given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting + 1);
-
-		// expect:
-		assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules));
+		assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules, aliasManager));
 
 		// and:
 		given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
 		given(dynamicProperties.areNftsEnabled()).willReturn(!areNftsEnabled);
-
-		// expect:
-		assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules));
+		assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules, aliasManager));
 	}
 
 	private final int maxExplicitHbarAdjusts = 5;
@@ -171,6 +168,10 @@ class ImpliedTransfersTest {
 	private final Id someTreasuryId = new Id(2, 3, 4);
 	private final List<CustomFeeMeta> entityCustomFees = List.of(
 			new CustomFeeMeta(customFeeToken.asId(), someTreasuryId, new ArrayList<>()));
+	private static final ByteString anAlias = ByteString.copyFromUtf8("abcdefg");
+	private static final EntityNum aNum = EntityNum.fromLong(1_234L);
+	private static final EntityNum bNum = EntityNum.fromLong(5_4321L);
+	private final Map<ByteString, EntityNum> resolvedAliases = Map.of(anAlias, aNum);
 	private final CustomFeeMeta newCustomFeeMeta = new CustomFeeMeta(
 			someId,
 			someTreasuryId,
