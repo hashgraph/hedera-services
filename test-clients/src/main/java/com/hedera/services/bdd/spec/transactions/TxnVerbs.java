@@ -79,8 +79,8 @@ public class TxnVerbs {
 		return new HapiCryptoDelete(account);
 	}
 
-	public static HapiCryptoDelete cryptoDelete(ByteString alias) {
-		return new HapiCryptoDelete(alias);
+	public static HapiCryptoDelete cryptoDelete(String aliasKey, boolean lookupAccountWithKey) {
+		return new HapiCryptoDelete(aliasKey, lookupAccountWithKey);
 	}
 
 	@SafeVarargs
@@ -94,10 +94,6 @@ public class TxnVerbs {
 
 	public static HapiCryptoUpdate cryptoUpdate(String account) {
 		return new HapiCryptoUpdate(account);
-	}
-
-	public static HapiCryptoUpdate cryptoUpdate(ByteString alias) {
-		return new HapiCryptoUpdate(alias);
 	}
 
 	/* CONSENSUS */

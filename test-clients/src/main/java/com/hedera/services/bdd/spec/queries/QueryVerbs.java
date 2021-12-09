@@ -106,7 +106,8 @@ public class QueryVerbs {
 		return new HapiGetContractRecords(contract);
 	}
 
-	public static HapiContractCallLocal contractCallLocal(final String contract, final String abi, final Object... params) {
+	public static HapiContractCallLocal contractCallLocal(final String contract, final String abi,
+			final Object... params) {
 		return new HapiContractCallLocal(abi, contract, params);
 	}
 
@@ -122,6 +123,10 @@ public class QueryVerbs {
 
 	public static HapiGetAccountBalance getAccountBalance(final String account) {
 		return new HapiGetAccountBalance(account);
+	}
+
+	public static HapiGetAccountBalance getAccountBalance(final ByteString alias) {
+		return new HapiGetAccountBalance(alias);
 	}
 
 	public static HapiGetAccountBalance getAccountBalance(final Supplier<String> supplier) {

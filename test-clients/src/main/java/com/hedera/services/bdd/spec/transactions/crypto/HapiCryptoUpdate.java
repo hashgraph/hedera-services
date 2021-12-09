@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.transactions.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,6 +22,7 @@ package com.hedera.services.bdd.spec.transactions.crypto;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.BoolValue;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import com.google.protobuf.UInt64Value;
@@ -65,7 +66,8 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 
 	private boolean useContractKey = false;
 	private boolean skipNewKeyRegistryUpdate = false;
-	private final String account;
+	private String account;
+	private ByteString alias = ByteString.EMPTY;
 	private OptionalLong sendThreshold = OptionalLong.empty();
 	private Optional<Key> updKey = Optional.empty();
 	private OptionalLong newExpiry = OptionalLong.empty();
@@ -153,7 +155,8 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		try {
 			updKey = updKeyName.map(spec.registry()::getKey);
-		} catch (Exception ignore) { }
+		} catch (Exception ignore) {
+		}
 		var id = TxnUtils.asId(account, spec);
 		CryptoUpdateTransactionBody opBody = spec
 				.txns()
@@ -178,7 +181,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 									builder.setSendRecordThresholdWrapper(
 											UInt64Value.newBuilder().setValue(v).build()));
 							newExpiry.ifPresent(l ->
-								builder.setExpirationTime(Timestamp.newBuilder().setSeconds(l).build()));
+									builder.setExpirationTime(Timestamp.newBuilder().setSeconds(l).build()));
 							newMaxAutomaticAssociations.ifPresent(p ->
 									builder.setMaxAutomaticTokenAssociations(Int32Value.of(p)));
 						}

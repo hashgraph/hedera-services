@@ -91,20 +91,18 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec autoAccountCreationWorksWhenUsingAliasOfDeletedAccount() {
-		return defaultHapiSpec("AutoAccountCreationWorksWhenUsingAliasOfDeletedAccount")
+		return defaultHapiSpec("deleteAutoCreatedAccount")
 				.given(
-						newKeyNamed("aliasKey"),
-						cryptoCreate("payer2").balance(initialBalance * ONE_HBAR)
+						newKeyNamed("alias"),
+						cryptoCreate("payer").balance(initialBalance * ONE_HBAR)
 				).when(
-						cryptoTransfer(tinyBarsFromTo("payer2", "aliasKey", ONE_HUNDRED_HBARS)).via("txn"),
-						getTxnRecord("txn").andAllChildRecords().hasChildRecordCount(1).logged()
+						cryptoTransfer(tinyBarsFromTo("payer", "alias", ONE_HUNDRED_HBARS, true)).via("txn"),
+						getTxnRecord("txn").andAllChildRecords().logged()
 				).then(
-						cryptoDelete("aliasKey").transfer("payer2").hasKnownStatus(SUCCESS).signedBy("aliasKey")
-//						getAccountBalance(alias).hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID)
-//						getTxnRecord("AutoAccountCreateTxn").hasChildRecordCount(1).logged(),
-//						cryptoTransfer(tinyBarsFromTo("payer2", alias, ONE_HUNDRED_HBARS)).via("transferTxn"),
-//						getAccountInfo(valid25519Alias).has(
-//								accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.01))
+						cryptoDelete("alias", true)
+								.transfer("payer")
+								.hasKnownStatus(SUCCESS)
+								.signedBy("alias")
 				);
 	}
 

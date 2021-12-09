@@ -102,7 +102,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 						withOpContext((spec, opLog) -> {
 							final var detachedAccount = spec.registry().getAccountID(alias.toStringUtf8());
 							final var account = asAccountString(detachedAccount);
-							var op = cryptoUpdate(alias).autoRenewPeriod(briefAutoRenew).signedBy(
+							var op = cryptoUpdate(alias.toStringUtf8()).autoRenewPeriod(briefAutoRenew).signedBy(
 									alias.toStringUtf8(), "randomPayer").logged();
 							var op2 = sleepFor(2 * briefAutoRenew * 1_000L + 500L);
 							var op3 = getAccountBalance(alias).hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID);
