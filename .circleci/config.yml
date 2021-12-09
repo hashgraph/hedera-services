@@ -1211,7 +1211,7 @@ workflows:
             - attach_workspace:
                 at: /
 
-  GCP-Weekly-Services-Query-Restart-Performance-6N-6C:
+  GCP-Weekly-Services-Query-Restart-Performance-7N-7C:
     triggers:
       - schedule:
           cron: "0 6 * * 2"
@@ -1224,9 +1224,9 @@ workflows:
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/6N_6C/QueryPerf
+          result_path: results/7N_7C/QueryPerf
           config_type: "weekly"
-          workflow-name: "GCP-Weekly-Services-Query-Restart-Performance-6N-6C"
+          workflow-name: "GCP-Weekly-Services-Query-Restart-Performance-7N-7C"
           requires:
             - build-platform-and-services
           pre-steps:
@@ -1257,7 +1257,7 @@ workflows:
             - attach_workspace:
                 at: /
 
-  GCP-Daily-Services-Comp-Restart-Performance-Random-6N-6C:
+  GCP-Daily-Services-Comp-Restart-Performance-Random-7N-7C:
     triggers:
       - schedule:
           cron: "40 4 * * *"
@@ -1270,9 +1270,9 @@ workflows:
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/6N_6C/Performance
+          result_path: results/7N_7C/Performance
           config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Comp-Restart-Performance-Random-6N-6C"
+          workflow-name: "GCP-Daily-Services-Comp-Restart-Performance-Random-7N-7C"
           requires:
             - build-platform-and-services
           pre-steps:
@@ -1281,7 +1281,7 @@ workflows:
                 at: /
 
 
-  GCP-Daily-Services-HTS-Restart-Performance-6N-6C:
+  GCP-Daily-Services-HTS-Restart-Performance-7N-7C:
     triggers:
       - schedule:
           cron: "30 4 * * *"
@@ -1294,9 +1294,9 @@ workflows:
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/6N_6C/Performance
+          result_path: results/7N_7C/Performance
           config_type: "daily"
-          workflow-name: "GCP-Daily-Services-HTS-Restart-Performance-6N-6C"
+          workflow-name: "GCP-Daily-Services-HTS-Restart-Performance-7N-7C"
           requires:
             - build-platform-and-services
           pre-steps:
