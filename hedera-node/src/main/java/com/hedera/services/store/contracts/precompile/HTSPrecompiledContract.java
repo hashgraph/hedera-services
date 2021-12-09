@@ -599,7 +599,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final List<BalanceChange> changes = constructBalanceChanges(transferOp);
 			var validated = impliedTransfersMarshal.assessCustomFeesAndValidate(
 					changes,
-					changes.size(),
+					0,
 					impliedTransfersMarshal.currentProps()
 			);
 
