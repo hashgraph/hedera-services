@@ -75,7 +75,7 @@ public class KeyTreeLeaf implements KeyTreeNode {
 	private Key customKey(KeyFactory factory) {
 		if (sigType == SignatureType.ED25519) {
 			return Optional.ofNullable(label).map(factory::labeledEd25519).orElse(factory.newEd25519());
-		} else if (sigType == SignatureType.ECDSA) {
+		} else if (sigType == SignatureType.ECDSA_SECP256K1) {
 			return NONSENSE_ECDSA_KEY;
 		} else if (sigType == SignatureType.RSA) {
 			return NONSENSE_RSA_KEY;
