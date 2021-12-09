@@ -136,7 +136,7 @@ class LedgerBalanceChangesTest {
 	@Mock
 	private UniqTokenViewsManager tokenViewsManager;
 	@Mock
-	private AutoCreationLogic autoAccountCreator;
+	private AutoCreationLogic autoCreateLogic;
 	@Mock
 	private SyntheticTxnFactory syntheticTxnFactory;
 	@Mock
@@ -184,7 +184,7 @@ class LedgerBalanceChangesTest {
 
 		subject = new HederaLedger(
 				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProperties, accountsLedger,
-				autoAccountCreator, autoAccounts);
+				autoCreateLogic, autoAccounts);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setTokenViewsManager(tokenViewsManager);
 	}
@@ -225,6 +225,21 @@ class LedgerBalanceChangesTest {
 
 		// then:
 		assertInitialBalanceUnchanged(-1L);
+	}
+
+	@Test
+	void undoCreationsOnFailure() {
+		givenInitialBalancesAndOwnership();
+		backingAccounts.remove(aModel);
+		given(autoCreateLogic.reclaimPendingAliases()).willReturn(true);
+		// when:
+		subject.begin();
+		accountsLedger.create(AccountID.newBuilder().setAccountNum(1).build());
+		// and:
+		assertFailsWith(
+				() -> subject.doZeroSum(fixtureChanges()),
+				ResponseCodeEnum.INVALID_ACCOUNT_ID);
+		assertTrue(accountsLedger.getCreations().isEmpty());
 	}
 
 	@Test
@@ -288,7 +303,7 @@ class LedgerBalanceChangesTest {
 
 		subject = new HederaLedger(
 				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProperties, accountsLedger
-				, autoAccountCreator, autoAccounts);
+				, autoCreateLogic, autoAccounts);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setTokenViewsManager(viewManager);
 		tokenStore.rebuildViews();
@@ -301,6 +316,7 @@ class LedgerBalanceChangesTest {
 		assertFailsWith(
 				() -> subject.doZeroSum(fixtureChanges()),
 				ResponseCodeEnum.INVALID_TOKEN_ID);
+
 
 		subject.commit();
 
@@ -400,10 +416,10 @@ class LedgerBalanceChangesTest {
 
 		given(autoAccounts.getAutoAccountsMap())
 				.willReturn(new HashMap<>())
-				.willReturn(new HashMap<>(){{
+				.willReturn(new HashMap<>() {{
 					put(aliasA.toByteString(), validAliasEntityNum);
 				}});
-		given(autoAccountCreator.create(any(), any())).willReturn(Pair.of(OK, 100L));
+		given(autoCreateLogic.create(any(), any())).willReturn(Pair.of(OK, 100L));
 		given(dynamicProperties.fundingAccount()).willReturn(funding);
 
 		subject.begin();

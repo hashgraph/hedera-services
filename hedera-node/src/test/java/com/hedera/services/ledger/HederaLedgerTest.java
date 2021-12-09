@@ -29,7 +29,6 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,9 +38,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import static com.hedera.services.exceptions.InsufficientFundsException.messageFor;
 import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
