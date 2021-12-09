@@ -83,7 +83,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 						multipleAutoAccountCreations(),
 						accountCreatedIfAliasUsedAsPubKey(),
 						aliasCanBeUsedOnManyAccountsNotAsAlias(),
-//				        autoAccountCreationWorksWhenUsingAliasOfDeletedAccount(), --> still fails
+				        autoAccountCreationWorksWhenUsingAliasOfDeletedAccount()
 				}
 		);
 	}
@@ -170,8 +170,6 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 								.hasKnownStatus(SUCCESS)
 								.signedBy("alias", "payer", DEFAULT_PAYER)
 								.purging(),
-//						getAccountInfoWithAlias("alias").hasCostAnswerPrecheck(ACCOUNT_DELETED).logged(),
-						// Need to check why its still INVALID_ACCOUNT_ID
 						cryptoTransfer(
 								HapiCryptoTransfer.tinyBarsFromToWithAlias("payer", "alias", ONE_HUNDRED_HBARS)).via(
 								"txn2"),

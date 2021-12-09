@@ -51,15 +51,16 @@ public class AutoAccountCreationValidationsAfterReconnect  extends HapiApiSuite 
 	public static void main(String... args) {
 		new AutoAccountCreationValidationsAfterReconnect().runSuiteSync();
 	}
-
+	/* These validations are assuming the state is from a 7N-7C test in which each client generated 10 autoAccounts in the
+	 * beginning of the test */
 	private HapiApiSpec getAccountInfoOfAutomaticallyCreatedAccounts() {
 		return defaultHapiSpec("GetAccountInfoOfAutomaticallyCreatedAccounts")
 				.given()
 				.when()
 				.then(
 						inParallel(
-								asOpArray(TOTAL_ACCOUNTS, i ->
-										getAccountInfo("0.0." + (i + 1001))
+								asOpArray(2*TOTAL_ACCOUNTS, i ->
+										getAccountInfo("0.0." + (i + 1010))
 												.has(AccountInfoAsserts.accountWith().hasAlias())
 												.setNode("0.0.9")
 												.logged()
