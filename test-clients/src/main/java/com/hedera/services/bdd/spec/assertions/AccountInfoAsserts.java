@@ -37,6 +37,7 @@ import static com.hedera.services.legacy.core.CommonUtils.calculateSolidityAddre
 import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo> {
@@ -151,6 +152,13 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 			var expected = amount - expectedTinyBarsToSubtract;
 			assertEquals(expected, ((AccountInfo) o).getBalance(), (allowedPercentDiff / 100.0) * expected,
 					"Bad balance!");
+		});
+		return this;
+	}
+
+	public AccountInfoAsserts hasAlias() {
+		registerProvider((spec, o) -> {
+			assertFalse(((AccountInfo) o).getAlias().isEmpty(), "Has no Alias!");
 		});
 		return this;
 	}
