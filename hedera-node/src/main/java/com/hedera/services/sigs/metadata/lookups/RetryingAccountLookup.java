@@ -50,7 +50,6 @@ public class RetryingAccountLookup extends DefaultAccountLookup {
 	private int maxRetries;
 	private int retryWaitIncrementMs;
 	private final Pause pause;
-	private final AliasManager aliasManager;
 	private final MiscRunningAvgs runningAvgs;
 	private final MiscSpeedometers speedometers;
 
@@ -71,7 +70,6 @@ public class RetryingAccountLookup extends DefaultAccountLookup {
 		this.runningAvgs = runningAvgs;
 		this.speedometers = speedometers;
 		this.maxRetries = maxRetries;
-		this.aliasManager = aliasManager;
 		this.retryWaitIncrementMs = retryWaitIncrementMs;
 	}
 
@@ -87,7 +85,6 @@ public class RetryingAccountLookup extends DefaultAccountLookup {
 		this.pause = pause;
 		this.properties = Optional.of(properties);
 		this.runningAvgs = runningAvgs;
-		this.aliasManager = aliasManager;
 		this.speedometers = speedometers;
 		this.maxRetries = DEFAULT_MAX_RETRIES;
 		this.retryWaitIncrementMs = DEFAULT_RETRY_WAIT_INCREMENT_MS;
