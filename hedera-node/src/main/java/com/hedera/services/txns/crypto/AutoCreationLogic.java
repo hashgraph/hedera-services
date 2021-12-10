@@ -170,6 +170,7 @@ public class AutoCreationLogic {
 		final var sideEffects = new SideEffectsTracker();
 		final var newAccountId = ids.newAccountId(syntheticCreation.getTransactionID().getAccountID());
 		accountsLedger.create(newAccountId);
+		change.replaceAliasWith(newAccountId);
 		final var customizer = new HederaAccountCustomizer()
 				.key(asFcKeyUnchecked(key))
 				.memo(AUTO_MEMO)

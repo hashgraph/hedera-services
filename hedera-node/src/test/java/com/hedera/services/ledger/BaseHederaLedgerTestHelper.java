@@ -22,7 +22,6 @@ package com.hedera.services.ledger;
 
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -237,11 +236,10 @@ public class BaseHederaLedgerTestHelper {
 				.willReturn(tokenId);
 		given(tokenStore.get(frozenId)).willReturn(frozenToken);
 		sideEffectsTracker = mock(SideEffectsTracker.class);
-		AliasManager autoAccounts = mock(AliasManager.class);
 		AutoCreationLogic autoAccountCreator = mock(AutoCreationLogic.class);
 
 		subject = new HederaLedger(
-				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProps, accountsLedger, autoAccountCreator, autoAccounts);
+				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProps, accountsLedger, autoAccountCreator);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setNftsLedger(nftsLedger);
 	}

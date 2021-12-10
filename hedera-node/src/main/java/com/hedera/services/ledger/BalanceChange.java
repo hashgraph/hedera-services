@@ -22,7 +22,6 @@ package com.hedera.services.ledger;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.store.models.Id;
@@ -113,7 +112,9 @@ public class BalanceChange {
 	}
 
 	public void replaceAliasWith(final AccountID createdId) {
-		throw new AssertionError("Not implemented");
+		accountId = createdId;
+		account = Id.fromGrpcAccount(createdId);
+		alias = ByteString.EMPTY;
 	}
 
 	/* HTS constructor */
@@ -245,12 +246,6 @@ public class BalanceChange {
 
 	public boolean isExemptFromCustomFees() {
 		return exemptFromCustomFees;
-	}
-
-	public boolean hasUniqueAliasWith(final AliasManager autoAccounts) {
-		return !alias.isEmpty()
-				&& accountId.getAccountNum() == 0
-				&& !autoAccounts.getAutoAccountsMap().containsKey(alias);
 	}
 
 	public boolean hasNonEmptyAlias() {

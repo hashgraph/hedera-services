@@ -148,10 +148,16 @@ class BalanceChangeTest {
 
 	@Test
 	void canReplaceAlias() {
+		final var created = IdUtils.asAccount("0.0.1234");
 		final var anAlias = ByteString.copyFromUtf8("abcdefg");
-		final var aliasChange = BalanceChange.changingHbar(AccountAmount.newBuilder()
+		final var subject = BalanceChange.changingHbar(AccountAmount.newBuilder()
+				.setAmount(1234)
 				.setAccountID(AccountID.newBuilder()
-						.setAlias()
+						.setAlias(anAlias))
 				.build());
+
+		subject.replaceAliasWith(created);
+		assertFalse(subject.hasNonEmptyAlias());
+		assertEquals(created, subject.accountId());
 	}
 }

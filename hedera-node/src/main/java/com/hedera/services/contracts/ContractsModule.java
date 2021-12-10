@@ -147,8 +147,7 @@ public abstract class ContractsModule {
 				NOOP_RECORDS_HISTORIAN,
 				dynamicProperties,
 				pureDelegate,
-				autoAccountCreator,
-				autoAccounts);
+				autoAccountCreator);
 		final var pureAccountSource = new LedgerAccountsSource(pureLedger);
 		return () -> {
 			var pureRepository = new ServicesRepositoryRoot(pureAccountSource, bytecodeSource);

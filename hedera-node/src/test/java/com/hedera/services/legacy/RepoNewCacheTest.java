@@ -25,7 +25,6 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -66,8 +65,6 @@ import static org.mockito.BDDMockito.mock;
 @ExtendWith(MockitoExtension.class)
 class RepoNewCacheTest {
 	@Mock
-	private AliasManager autoAccounts;
-	@Mock
 	private AutoCreationLogic autoAccountCreator;
 
 	@Disabled
@@ -90,8 +87,7 @@ class RepoNewCacheTest {
 				mock(AccountRecordsHistorian.class),
 				new MockGlobalDynamicProps(),
 				delegate,
-				autoAccountCreator,
-				autoAccounts);
+				autoAccountCreator);
 		Source<byte[], AccountState> repDatabase = new LedgerAccountsSource(ledger);
 		ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);
 		String key = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, 1));
@@ -189,8 +185,7 @@ class RepoNewCacheTest {
 				mock(AccountRecordsHistorian.class),
 				new MockGlobalDynamicProps(),
 				delegate,
-				autoAccountCreator,
-				autoAccounts);
+				autoAccountCreator);
 		Source<byte[], AccountState> accountSource = new LedgerAccountsSource(ledger);
 		ServicesRepositoryRoot repository = new ServicesRepositoryRoot(accountSource, repDBFile);
 

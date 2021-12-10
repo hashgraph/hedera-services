@@ -23,7 +23,6 @@ package com.hedera.services.ledger;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.HashMapBackingAccounts;
@@ -83,7 +82,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import static com.hedera.services.ledger.BalanceChange.changingNftOwnership;
@@ -143,8 +141,6 @@ class LedgerBalanceChangesTest {
 	private EntityIdSource entityIdSource;
 	@Mock
 	private TxnAwareRecordsHistorian recordsHistorian;
-	@Mock
-	private AliasManager autoAccounts;
 
 	private HederaLedger subject;
 
@@ -183,8 +179,8 @@ class LedgerBalanceChangesTest {
 		tokenStore.rebuildViews();
 
 		subject = new HederaLedger(
-				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProperties, accountsLedger,
-				autoAccountCreator, autoAccounts);
+				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProperties,
+				accountsLedger, autoAccountCreator);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setTokenViewsManager(tokenViewsManager);
 	}
@@ -287,8 +283,8 @@ class LedgerBalanceChangesTest {
 				nftsLedger);
 
 		subject = new HederaLedger(
-				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProperties, accountsLedger
-				, autoAccountCreator, autoAccounts);
+				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProperties,
+				accountsLedger, autoAccountCreator);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setTokenViewsManager(viewManager);
 		tokenStore.rebuildViews();
@@ -398,12 +394,11 @@ class LedgerBalanceChangesTest {
 		backingAccounts.put(validAliasAccountWithId, validAliasAccount);
 		backingAccounts.put(funding, fundingAccount);
 
-		given(autoAccounts.getAutoAccountsMap())
-				.willReturn(new HashMap<>())
-				.willReturn(new HashMap<>(){{
-					put(aliasA.toByteString(), validAliasEntityNum);
-				}});
-		given(autoAccountCreator.create(any(), any())).willReturn(Pair.of(OK, 100L));
+		given(autoAccountCreator.create(any(), any())).willAnswer(invocationOnMock -> {
+			final var change = (BalanceChange) invocationOnMock.getArgument(0);
+			change.replaceAliasWith(validAliasEntityNum.toGrpcAccountId());
+			return Pair.of(OK, 100L);
+		});
 		given(dynamicProperties.fundingAccount()).willReturn(funding);
 
 		subject.begin();
@@ -412,10 +407,8 @@ class LedgerBalanceChangesTest {
 		List<TokenTransferList> inProgressTokens = subject.netTokenTransfersInTxn();
 		subject.commit();
 
-		final var entity = autoAccounts.getAutoAccountsMap().get(aliasA.toByteString());
-		assertEquals(validAliasEntityNum.longValue(), entity.longValue());
 		assertEquals(aStartBalance - 100, backingAccounts.getImmutableRef(a).getBalance());
-		assertEquals(0, backingAccounts.getImmutableRef(entity.toGrpcAccountId()).getBalance());
+		assertEquals(0, backingAccounts.getImmutableRef(validAliasEntityNum.toGrpcAccountId()).getBalance());
 
 		final var expectedTransfers = TransferList.newBuilder()
 				.addAccountAmounts(aaBuilderWith(a, -100))

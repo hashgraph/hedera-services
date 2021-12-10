@@ -27,7 +27,6 @@ import com.hedera.services.exceptions.DetachedAccountException;
 import com.hedera.services.exceptions.InconsistentAdjustmentsException;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -135,7 +134,6 @@ public class HederaLedger {
 			MerkleTokenRelStatus> tokenRelsLedger = null;
 
 	private final MerkleAccountScopedCheck scopedCheck;
-	private final AliasManager aliasManager;
 	private final AutoCreationLogic autoCreationLogic;
 
 	public HederaLedger(
@@ -147,9 +145,7 @@ public class HederaLedger {
 			final AccountRecordsHistorian historian,
 			final GlobalDynamicProperties dynamicProperties,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
-			final AutoCreationLogic autoCreationLogic,
-			final AliasManager aliasManager
-
+			final AutoCreationLogic autoCreationLogic
 	) {
 		this.ids = ids;
 		this.validator = validator;
@@ -159,7 +155,6 @@ public class HederaLedger {
 		this.dynamicProperties = dynamicProperties;
 		this.sideEffectsTracker = sideEffectsTracker;
 		this.autoCreationLogic = autoCreationLogic;
-		this.aliasManager = aliasManager;
 
 		creator.setLedger(this);
 		historian.setCreator(creator);
@@ -369,7 +364,8 @@ public class HederaLedger {
 		var autoCreationFee = 0L;
 		for (final var change : changes) {
 			if (change.isForHbar()) {
-				if (change.hasUniqueAliasWith(aliasManager)) {
+				/* The ImpliedTransferMarshal resolves any existing alias to its account id */
+				if (change.hasNonEmptyAlias()) {
 					final var result = autoCreationLogic.create(change, accountsLedger);
 					validity = result.getLeft();
 					autoCreationFee += result.getRight();
@@ -541,15 +537,10 @@ public class HederaLedger {
 		accountsLedger.set(id, BALANCE, newBalance);
 	}
 
-	private void adjustHbarUnchecked(List<BalanceChange> changes) {
+	private void adjustHbarUnchecked(final List<BalanceChange> changes) {
 		for (var change : changes) {
 			if (change.isForHbar()) {
-				final AccountID accountId;
-				if (change.hasNonEmptyAlias()) {
-					accountId = aliasManager.getAutoAccountsMap().get(change.alias()).toGrpcAccountId();
-				} else {
-					accountId = change.accountId();
-				}
+				final var accountId = change.accountId();
 				setBalance(accountId, change.getNewBalance());
 				sideEffectsTracker.trackHbarChange(accountId, change.units());
 			}
