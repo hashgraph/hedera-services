@@ -24,10 +24,11 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenType;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Collections;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -36,12 +37,16 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VERSATILE_TRANSFERS_TOKENS;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ZENOS_BANK_DEPOSIT_TOKENS;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ZENOS_BANK_WITHDRAW_TOKENS;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -51,14 +56,23 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
+import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 public class ContractHTSSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractHTSSuite.class);
 	private static final long TOTAL_SUPPLY = 1_000;
 	private static final String A_TOKEN = "TokenA";
 	private static final String TOKEN_TREASURY = "treasury";
+
+
+	private static final String ACCOUNT = "receiver";
+	private static final String NFT = "nft";
+	private static final String SUPPLY_KEY = "supplyKey";
+
 
 	public static void main(String... args) {
 		new ContractHTSSuite().runSuiteAsync();
@@ -102,7 +116,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 						cryptoCreate(theReceiver),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(A_TOKEN)
-								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.tokenType(FUNGIBLE_COMMON)
 								.initialSupply(TOTAL_SUPPLY)
 								.treasury(TOKEN_TREASURY),
 						fileCreate("bytecode").payingWith(theAccount),
@@ -267,7 +281,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 						cryptoCreate(theAccount).balance(10 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(A_TOKEN)
-								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.tokenType(FUNGIBLE_COMMON)
 								.initialSupply(TOTAL_SUPPLY)
 								.treasury(TOKEN_TREASURY),
 						fileCreate("associateDissociateContractByteCode").payingWith(theAccount),
@@ -303,7 +317,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 						cryptoCreate(theAccount).balance(10 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(A_TOKEN)
-								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.tokenType(FUNGIBLE_COMMON)
 								.initialSupply(TOTAL_SUPPLY)
 								.treasury(TOKEN_TREASURY),
 						fileCreate("associateDissociateContractByteCode").payingWith(theAccount),
@@ -331,6 +345,94 @@ public class ContractHTSSuite extends HapiApiSuite {
 				).then(
 						cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, theAccount))
 								.hasKnownStatus(ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
+				);
+	}
+
+	private HapiApiSpec transferSingleNft() {
+		final var contract = "transferNftContract";
+
+		return defaultHapiSpec("transferSingleNftHappyPath")
+				.given(
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(ACCOUNT),
+						tokenCreate(NFT)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.supplyType(TokenSupplyType.INFINITE)
+								.supplyKey(SUPPLY_KEY)
+								.initialSupply(0)
+								.treasury(TOKEN_TREASURY),
+						tokenAssociate(ACCOUNT, NFT),
+						mintToken(NFT, Collections.singletonList(metadata("memo"))),
+						fileCreate("transferNftContractByteCode").payingWith(GENESIS),
+						updateLargeFile(GENESIS, "transferNftContractByteCode", extractByteCode(ContractResources.TRANSFER_NFT_CONTRACT))
+				)
+				.when(withOpContext(
+						(spec, opLog) -> allRunFor(
+								spec,
+								contractCreate(contract)
+										.payingWith(GENESIS)
+										.bytecode("transferNftContractByteCode")
+										.via("transferSingleNftTxn")
+										.gas(100000),
+								contractCall(
+										contract,
+										ContractResources.TRANSFER_NFT,
+										asAddress(spec.registry().getTokenID(NFT)),
+										asAddress(spec.registry().getTokenID(TOKEN_TREASURY)),
+										asAddress(spec.registry().getTokenID(ACCOUNT)),
+										1L
+								)
+										.payingWith(GENESIS).via("transferSingleNftCall")
+						)
+				))
+				.then(
+						getTokenInfo(NFT).hasTotalSupply(1),
+						getAccountInfo(ACCOUNT).hasOwnedNfts(1),
+						getAccountBalance(ACCOUNT).hasTokenBalance(NFT, 1)
+				);
+	}
+
+	private HapiApiSpec transferMultipleNfts() {
+		final var contract = "transferNftContract";
+
+		return defaultHapiSpec("transferMultipleNftsHappyPath")
+				.given(
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(ACCOUNT),
+						tokenCreate(NFT)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.supplyType(TokenSupplyType.INFINITE)
+								.supplyKey(SUPPLY_KEY)
+								.initialSupply(0)
+								.treasury(TOKEN_TREASURY),
+						tokenAssociate(ACCOUNT, NFT),
+						mintToken(NFT, List.of(metadata("firstMemo"), metadata("secondMemo"))),
+						fileCreate("transferNftContractByteCode").payingWith(GENESIS),
+						updateLargeFile(GENESIS, "transferNftContractByteCode", extractByteCode(ContractResources.TRANSFER_NFT_CONTRACT))
+				)
+				.when(withOpContext(
+						(spec, opLog) -> allRunFor(
+								spec,
+								contractCreate(contract)
+										.payingWith(GENESIS)
+										.bytecode("transferNftContractByteCode")
+										.via("transferMultipleNftsTxn")
+										.gas(100000),
+								contractCall(
+										contract,
+										ContractResources.TRANSFER_NFTS,
+										asAddress(spec.registry().getTokenID(NFT)),
+										List.of(asAddress(spec.registry().getTokenID(TOKEN_TREASURY))),
+										List.of(asAddress(spec.registry().getTokenID(ACCOUNT))),
+										List.of(1L, 2L)
+								)
+										.payingWith(GENESIS).via("transferMultipleNftsCall")
+						)
+				))
+				.then(
+						getTokenInfo(NFT).hasTotalSupply(2),
+						getAccountInfo(ACCOUNT).hasOwnedNfts(2),
+						getAccountBalance(ACCOUNT).hasTokenBalance(NFT, 2)
 				);
 	}
 

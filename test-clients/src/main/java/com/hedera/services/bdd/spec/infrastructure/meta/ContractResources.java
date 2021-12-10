@@ -82,6 +82,7 @@ public class ContractResources {
 	public static final String VERSATILE_TRANSFERS_CONTRACT = bytecodePath("VersatileTransfers");
 	public static final String MUSICAL_CHAIRS_CONTRACT = bytecodePath("MusicalChairs");
 	public static final String ASSOCIATE_DISSOCIATE_CONTRACT = bytecodePath("AssociateDissociateContract");
+	public static final String TRANSFER_NFT_CONTRACT = bytecodePath("TransferNftContract");
 
 	public static final String HW_MINT_CONS_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
 			"\"name\":\"_tokenAddress\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\"," +
@@ -618,6 +619,17 @@ public class ContractResources {
 			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 	public static final String DISSOCIATE_TOKEN = "{ \"inputs\": [], \"name\": \"dissociateToken\", \"outputs\": [], " +
 			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
+	public static final String TRANSFER_NFT = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"token\", " +
+			"\"type\": \"address\" }, { \"internalType\": \"address\", \"name\": \"sender\", \"type\": \"address\" }, " +
+			"{ \"internalType\": \"address\", \"name\": \"receiver\", \"type\": \"address\" }, " +
+			"{ \"internalType\": \"int64\", \"name\": \"serialNum\", \"type\": \"int64\" } ], " +
+			"\"name\": \"transferNft\", \"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+	public static final String TRANSFER_NFTS = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"token\", " +
+			"\"type\": \"address\" }, { \"internalType\": \"address[]\", \"name\": \"sender\", \"type\": \"address[]\" }," +
+			" { \"internalType\": \"address[]\", \"name\": \"receiver\", \"type\": \"address[]\" }, " +
+			"{ \"internalType\": \"int64[]\", \"name\": \"serialNumber\", \"type\": \"int64[]\" } ], " +
+			"\"name\": \"transferNfts\", \"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
 
 	public static String bytecodePath(String bytecode) {
