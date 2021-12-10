@@ -20,11 +20,11 @@ package com.hedera.services.bdd.spec.assertions;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Key;
 import org.junit.jupiter.api.Assertions;
 
 import java.util.List;
@@ -112,6 +112,13 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 		return this;
 	}
 
+	public AccountInfoAsserts key(Key key) {
+		registerProvider((spec, o) -> {
+			assertEquals(key, ((AccountInfo) o).getKey(), "Bad key!");
+		});
+		return this;
+	}
+
 	public AccountInfoAsserts receiverSigReq(Boolean isReq) {
 		registerProvider((spec, o) -> {
 			assertEquals(isReq, ((AccountInfo) o).getReceiverSigRequired(), "Bad receiver sig requirement!");
@@ -133,21 +140,37 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 		return this;
 	}
 
-	public AccountInfoAsserts expectedBalanceWithChargedUsd(long amount, double expectedUsdToSubstract, double allowedPercentDiff) {
+	public AccountInfoAsserts expectedBalanceWithChargedUsd(long amount, double expectedUsdToSubstract,
+			double allowedPercentDiff) {
 		registerProvider((spec, o) -> {
 			var expectedTinyBarsToSubtract = expectedUsdToSubstract
 					* 100
 					* spec.ratesProvider().rates().getHbarEquiv() / spec.ratesProvider().rates().getCentEquiv()
 					* ONE_HBAR;
 			var expected = amount - expectedTinyBarsToSubtract;
-			assertEquals(expected, ((AccountInfo) o).getBalance(), (allowedPercentDiff / 100.0) * expected, "Bad balance!");
+			assertEquals(expected, ((AccountInfo) o).getBalance(), (allowedPercentDiff / 100.0) * expected,
+					"Bad balance!");
 		});
 		return this;
 	}
 
-	public AccountInfoAsserts alias(ByteString alias) {
+	public AccountInfoAsserts hasAlias() {
 		registerProvider((spec, o) -> {
-			assertEquals(alias, ((AccountInfo) o).getAlias(), "Bad Alias!");
+			assertFalse(((AccountInfo) o).getAlias().isEmpty(), "Has no Alias!");
+		});
+		return this;
+	}
+
+	public AccountInfoAsserts alias(String alias) {
+		registerProvider((spec, o) -> {
+			assertEquals(spec.registry().getKey(alias).toByteString(), ((AccountInfo) o).getAlias(), "Bad Alias!");
+		});
+		return this;
+	}
+
+	public AccountInfoAsserts noAlias() {
+		registerProvider((spec, o) -> {
+			assertTrue(((AccountInfo) o).getAlias().isEmpty(), "Bad Alias!");
 		});
 		return this;
 	}

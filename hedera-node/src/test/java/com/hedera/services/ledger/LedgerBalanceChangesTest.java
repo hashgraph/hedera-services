@@ -224,6 +224,21 @@ class LedgerBalanceChangesTest {
 	}
 
 	@Test
+	void undoCreationsOnFailure() {
+		givenInitialBalancesAndOwnership();
+		backingAccounts.remove(aModel);
+		given(autoAccountCreator.reclaimPendingAliases()).willReturn(true);
+		// when:
+		subject.begin();
+		accountsLedger.create(AccountID.newBuilder().setAccountNum(1).build());
+		// and:
+		assertFailsWith(
+				() -> subject.doZeroSum(fixtureChanges()),
+				ResponseCodeEnum.INVALID_ACCOUNT_ID);
+		assertTrue(accountsLedger.getCreations().isEmpty());
+	}
+
+	@Test
 	void rejectsDetachedAccount() {
 		givenInitialBalancesAndOwnership();
 		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
@@ -297,6 +312,7 @@ class LedgerBalanceChangesTest {
 		assertFailsWith(
 				() -> subject.doZeroSum(fixtureChanges()),
 				ResponseCodeEnum.INVALID_TOKEN_ID);
+
 
 		subject.commit();
 

@@ -152,7 +152,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 
 		Transaction payment = Transaction.getDefaultInstance();
 		int retryCount = 1;
-		while(true) {
+		while (true) {
 			/* Note that HapiQueryOp#fittedPayment makes a COST_ANSWER query if necessary. */
 			if (needsPayment()) {
 				payment = fittedPayment(spec);
@@ -175,8 +175,8 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 			actualPrecheck = reflectForPrecheck(response);
 			if (
 					answerOnlyRetryPrechecks.isPresent() &&
-					answerOnlyRetryPrechecks.get().contains(actualPrecheck) &&
-					isWithInRetryLimit(retryCount)
+							answerOnlyRetryPrechecks.get().contains(actualPrecheck) &&
+							isWithInRetryLimit(retryCount)
 			) {
 				retryCount++;
 				sleep(10);

@@ -24,6 +24,8 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -39,6 +41,7 @@ import static com.hedera.services.utils.MiscUtils.forEach;
  */
 @Singleton
 public class AliasManager {
+	private static final Logger log = LogManager.getLogger(AliasManager.class);
 	private Map<ByteString, EntityNum> aliases;
 
 	@Inject
@@ -67,6 +70,7 @@ public class AliasManager {
 				aliases.put(v.getAlias(), k);
 			}
 		});
+		log.info("Rebuild complete : No.of accounts with aliases {} ", aliases.size());
 	}
 
 	/**
