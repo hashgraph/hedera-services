@@ -81,6 +81,7 @@ public class ContractResources {
 	public static final String ZENOS_BANK_CONTRACT = bytecodePath("ZenosBank");
 	public static final String MUSICAL_CHAIRS_CONTRACT = bytecodePath("MusicalChairs");
 	public static final String ASSOCIATE_DISSOCIATE_CONTRACT = bytecodePath("AssociateDissociateContract");
+	public static final String NESTED_ASSOCIATE_DISSOCIATE_CONTRACT = bytecodePath("NestedAssociateDissociateContract");
 
 	public static final String HW_MINT_CONS_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
 			"\"name\":\"_tokenAddress\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\"," +
@@ -602,6 +603,16 @@ public class ContractResources {
 			"\"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", \"name\": \"tokenAddress\"," +
 			" \"type\": \"address\" } ], \"name\": \"tokenDissociate\", \"outputs\": [], \"stateMutability\": " +
 			"\"nonpayable\", \"type\": \"function\" }";
+
+	public static final String NESTED_ASSOCIATE_TOKEN = "{ \"inputs\": [ { \"internalType\": \"address\", " +
+			"\"name\": \"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", \"name\": " +
+			"\"tokenAddress\", \"type\": \"address\" } ], \"name\": \"associateDissociateContractCall\", " +
+			"\"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
+	public static final String NESTED_DISSOCIATE_TOKEN = "{ \"inputs\": [ { \"internalType\": " +
+			"\"address\", \"name\": \"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", " +
+			"\"name\": \"tokenAddress\", \"type\": \"address\" } ], \"name\": \"dissociateAssociateContractCall\", " +
+			"\"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
 
 	public static String bytecodePath(String bytecode) {
