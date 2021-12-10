@@ -28,6 +28,7 @@
     <jackson.version>2.11.2</jackson.version>
     <besu.version>21.10.2</besu.version>
     <tuweni.version>2.0.0</tuweni.version>
+    <caffeine.version>3.0.4</caffeine.version>
     <besu-native.version>0.4.2</besu-native.version>
   </properties>
 
@@ -259,11 +260,19 @@
     </dependency>
     <dependency>
       <groupId>com.swirlds</groupId>
+      <artifactId>swirlds-jasperdb</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.swirlds</groupId>
       <artifactId>swirlds-merkle</artifactId>
     </dependency>
     <dependency>
       <groupId>com.swirlds</groupId>
       <artifactId>swirlds-fcqueue</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.swirlds</groupId>
+      <artifactId>swirlds-virtualmap</artifactId>
     </dependency>
     <dependency>
       <groupId>com.hedera.hashgraph</groupId>
@@ -315,9 +324,22 @@
       <artifactId>besu-datatypes</artifactId>
       <version>${besu.version}</version>
     </dependency>
+    <dependency>
+      <groupId>com.github.ben-manes.caffeine</groupId>
+      <artifactId>caffeine</artifactId>
+      <version>${caffeine.version}</version>
+    </dependency>
   </dependencies>
 
   <repositories>
+    <repository>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>sdk-staging</id>
+      <name>Staging repo for SDK</name>
+      <url>https://oss.sonatype.org/content/repositories/comswirlds-1198</url>
+    </repository>
     <repository>
       <snapshots>
         <enabled>false</enabled>

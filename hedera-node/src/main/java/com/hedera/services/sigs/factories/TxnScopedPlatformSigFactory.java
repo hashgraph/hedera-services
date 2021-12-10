@@ -28,13 +28,26 @@ import com.swirlds.common.crypto.TransactionSignature;
  */
 public interface TxnScopedPlatformSigFactory {
 	/**
-	 * Returns a {@link com.swirlds.common.crypto.TransactionSignature} for the scoped transaction.
+	 * Returns an {@link com.swirlds.common.crypto.TransactionSignature} for the scoped transaction,
+	 * assuming the bytes signed are the bytes of the transaction in scope.
 	 *
 	 * @param publicKey
-	 * 		the public key to use in creating the platform sig.
+	 * 		the public key to use in creating the platform sig
 	 * @param sigBytes
-	 * 		the cryptographic signature to use in creating the platform sig.
-	 * @return a platform sig for the scoped transaction.
+	 * 		the cryptographic signature to use in creating the platform sig
+	 * @return a platform sig for the scoped transaction
 	 */
-	TransactionSignature create(byte[] publicKey, byte[] sigBytes);
+	TransactionSignature signBodyWithEd25519(byte[] publicKey, byte[] sigBytes);
+
+	/**
+	 * Returns an {@link com.swirlds.common.crypto.TransactionSignature} for the scoped transaction,
+	 * assuming the bytes signed are the keccak256 hash of the bytes of the transaction in scope.
+	 *
+	 * @param publicKey
+	 * 		the public key to use in creating the platform sig
+	 * @param sigBytes
+	 * 		the cryptographic signature to use in creating the platform sig
+	 * @return a platform sig for the scoped transaction
+	 */
+	TransactionSignature signKeccak256DigestWithSecp256k1(byte[] publicKey, byte[] sigBytes);
 }

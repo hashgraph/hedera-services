@@ -35,11 +35,11 @@ import java.util.function.Supplier;
 import static com.hedera.services.keys.HederaKeyTraversal.visitSimpleKeys;
 
 /**
- * Provides information about the Ed25519 keys that compose the Hedera keys
+ * Provides information about the primitive keys that compose the Hedera keys
  * linked to the active transaction (and the schedule it references, if
  * applicable).
  *
- * In particular, lets a visitor traverse these Ed25519 keys along with
+ * In particular, lets a visitor traverse these primitive keys along with
  * their expanded {@code TransactionSignature}s (if present).
  */
 public class InHandleActivationHelper {
@@ -62,11 +62,11 @@ public class InHandleActivationHelper {
 	}
 
 	/**
-	 * Returns true if the set of Ed25519 signing keys for the active transaction
+	 * Returns true if the set of primitive signing keys for the active transaction
 	 * suffice to meet the signing requirements of all Hedera keys prerequisite
 	 * to the active transaction.
 	 *
-	 * @param tests the predicate(s) to use for testing if an Ed25519 key has signed
+	 * @param tests the predicate(s) to use for testing if an primitive key has signed
 	 * @return whether or not the given set of keys are sufficient for signing the active transaction
 	 */
 	public boolean areOtherPartiesActive(BiPredicate<JKey, TransactionSignature> tests) {
@@ -75,12 +75,12 @@ public class InHandleActivationHelper {
 	}
 
 	/**
-	 * Returns true if the set of Ed25519 signing keys for the active transaction
+	 * Returns true if the set of primitive signing keys for the active transaction
 	 * suffice to meet the signing requirements of all Hedera keys prerequisite
 	 * to the schedule referenced by the active transaction.
 	 *
 	 * @param scheduledTxn the scheduled transaction
-	 * @param tests the predicate(s) to use for testing if an Ed25519 key has signed
+	 * @param tests the predicate(s) to use for testing if a primitive key has signed
 	 * @return whether or not the given set of keys are sufficient for signing the schedule
 	 * 		referenced by the active transaction
 	 */
@@ -93,7 +93,7 @@ public class InHandleActivationHelper {
 	}
 
 	/**
-	 * Permits a visitor to traverse the Ed25519 keys, and their expanded signatures,
+	 * Permits a visitor to traverse the primitive keys, and their expanded signatures,
 	 * that constitute the Hedera keys prerequisite to the schedule referenced by
 	 * the active transaction.
 	 *
@@ -101,17 +101,17 @@ public class InHandleActivationHelper {
 	 */
 	public void visitScheduledCryptoSigs(BiConsumer<JKey, TransactionSignature> visitor) {
 		ensureUpToDate();
-		for (JKey req : otherParties) {
+		for (final var req : otherParties) {
 			if (req.isForScheduledTxn()) {
-				visitSimpleKeys(req, key -> visitor.accept(key, sigsFn.apply(key.getEd25519())));
+				visitSimpleKeys(req, key -> visitor.accept(key, sigsFn.apply(key.primitiveKeyIfPresent())));
 			}
 		}
 	}
 
 	/**
-	 * Returns the canonical mapping between Ed25519 public keys and expanded signatures for the active transaction.
+	 * Returns the canonical mapping between primitive public keys and expanded signatures for the active transaction.
 	 *
-	 * @return the canonical mapping between Ed25519 public keys and expanded signatures for the active transaction.
+	 * @return the canonical mapping between primitive public keys and expanded signatures for the active transaction.
 	 */
 	public Function<byte[], TransactionSignature> currentSigsFn() {
 		return sigsFn;

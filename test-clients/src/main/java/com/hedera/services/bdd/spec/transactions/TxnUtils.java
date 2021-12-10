@@ -20,6 +20,8 @@ package com.hedera.services.bdd.spec.transactions;
  * ‍
  */
 
+import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -55,7 +57,6 @@ import com.hederahashgraph.fee.SigValueObj;
 import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.ethereum.util.ByteUtil;
 
 import java.math.BigInteger;
 import java.time.Clock;
@@ -93,6 +94,7 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_RECEIPT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_MATRICES_CONST;
 import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
 import static com.hederahashgraph.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
+import static java.lang.System.arraycopy;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -139,18 +141,18 @@ public class TxnUtils {
 	}
 
 	public static Key netOf(
-			HapiApiSpec spec,
-			Optional<String> keyName,
-			Optional<? extends SigControl> keyShape,
-			Optional<KeyFactory.KeyType> keyType,
-			Optional<Supplier<KeyGenerator>> keyGenSupplier
+			final HapiApiSpec spec,
+			final Optional<String> keyName,
+			final Optional<? extends SigControl> keyShape,
+			final Optional<KeyFactory.KeyType> keyType,
+			final Optional<Supplier<KeyGenerator>> keyGenSupplier
 	) {
 		if (!keyName.isPresent()) {
 			KeyGenerator generator = keyGenSupplier.get().get();
 			if (keyShape.isPresent()) {
-				return spec.keys().generateSubjectTo(keyShape.get(), generator);
+				return spec.keys().generateSubjectTo(spec, keyShape.get(), generator);
 			} else {
-				return spec.keys().generate(keyType.orElse(spec.setup().defaultKeyType()), generator);
+				return spec.keys().generate(spec, keyType.orElse(spec.setup().defaultKeyType()), generator);
 			}
 		} else {
 			return spec.registry().getKey(keyName.get());
@@ -233,8 +235,8 @@ public class TxnUtils {
 	}
 
 	public static ContractID asContractId(byte[] bytes) {
-		long realm = ByteUtil.byteArrayToLong(Arrays.copyOfRange(bytes, 4, 12));
-		long accountNum = ByteUtil.byteArrayToLong(Arrays.copyOfRange(bytes, 12, 20));
+		long realm = Longs.fromByteArray(Arrays.copyOfRange(bytes, 4, 12));
+		long accountNum = Longs.fromByteArray(Arrays.copyOfRange(bytes, 12, 20));
 
 		return ContractID.newBuilder()
 				.setContractNum(accountNum)
@@ -280,10 +282,13 @@ public class TxnUtils {
 	}
 
 	public static String solidityIdFrom(ContractID contract) {
-		return CommonUtils.hex(ByteUtil.merge(
-				ByteUtil.intToBytes((int) contract.getShardNum()),
-				ByteUtil.longToBytes(contract.getRealmNum()),
-				ByteUtil.longToBytes(contract.getContractNum())));
+		final byte[] solidityAddress = new byte[20];
+
+		arraycopy(Ints.toByteArray((int) contract.getShardNum()), 0, solidityAddress, 0, 4);
+		arraycopy(Longs.toByteArray(contract.getRealmNum()), 0, solidityAddress, 4, 8);
+		arraycopy(Longs.toByteArray(contract.getContractNum()), 0, solidityAddress, 12, 8);
+
+		return CommonUtils.hex(solidityAddress);
 	}
 
 	public static TransactionID extractTxnId(Transaction txn) throws Throwable {

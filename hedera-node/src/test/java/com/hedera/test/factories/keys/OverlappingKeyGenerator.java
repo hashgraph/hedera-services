@@ -23,8 +23,6 @@ package com.hedera.test.factories.keys;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.CommonUtils;
-import net.i2p.crypto.eddsa.EdDSAPublicKey;
-import net.i2p.crypto.eddsa.KeyPairGenerator;
 
 import java.security.PrivateKey;
 import java.util.ArrayList;
@@ -47,7 +45,7 @@ public class OverlappingKeyGenerator implements KeyGenerator {
 		Set<ByteString> usedPrefixes = new HashSet<>();
 		Map<ByteString, Key> byPrefix = new HashMap<>();
 		while (precomputed.size() < n) {
-			Key candidate = genSingleEd25519Key(pkMap);
+			Key candidate = KeyFactory.genSingleEd25519Key(pkMap);
 			ByteString prefix = pubKeyPrefixOf(candidate, minOverlapLen);
 			if (byPrefix.containsKey(prefix)) {
 				if (!usedPrefixes.contains(prefix)) {
@@ -63,23 +61,6 @@ public class OverlappingKeyGenerator implements KeyGenerator {
 		}
 	}
 
-	/**
-	 * Generates a single Ed25519 key.
-	 *
-	 * @param pubKey2privKeyMap
-	 * 		map of public key hex string as key and the private key as value
-	 * @return generated Ed25519 key
-	 */
-	public static Key genSingleEd25519Key(Map<String, PrivateKey> pubKey2privKeyMap) {
-		final var pair = new KeyPairGenerator().generateKeyPair();
-		final var pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
-		final var pubKeyHex = com.swirlds.common.CommonUtils.hex(pubKey);
-		final var akey = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
-
-		pubKey2privKeyMap.put(pubKeyHex, pair.getPrivate());
-		return akey;
-	}
-
 	private ByteString pubKeyPrefixOf(Key key, int prefixLen) {
 		return key.getEd25519().substring(0, prefixLen);
 	}
@@ -91,5 +72,10 @@ public class OverlappingKeyGenerator implements KeyGenerator {
 		String hexPubKey = CommonUtils.hex(key.getEd25519().toByteArray());
 		mutablePkMap.put(hexPubKey, pkMap.get(hexPubKey));
 		return key;
+	}
+
+	@Override
+	public Key genEcdsaSecp256k1AndUpdateMap(Map<String, PrivateKey> publicToPrivateKey) {
+		throw new UnsupportedOperationException();
 	}
 }

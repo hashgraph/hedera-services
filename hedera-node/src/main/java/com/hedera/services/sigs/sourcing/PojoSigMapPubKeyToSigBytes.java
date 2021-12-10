@@ -25,6 +25,7 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.swirlds.common.CommonUtils;
 
 import java.util.Arrays;
+import java.util.function.BiConsumer;
 
 /**
  * A source of cryptographic signatures backed by a {@link SignatureMap} instance.
@@ -39,14 +40,19 @@ import java.util.Arrays;
  * simple keys lack a valid signature.
  */
 public class PojoSigMapPubKeyToSigBytes implements PubKeyToSigBytes {
+	private static final int MISSING_SIG_BYTES_INDEX = -1;
+
 	private final PojoSigMap pojoSigMap;
+	private final boolean[] used;
 
 	public PojoSigMapPubKeyToSigBytes(SignatureMap sigMap) {
 		pojoSigMap = PojoSigMap.fromGrpc(sigMap);
+		used = new boolean[pojoSigMap.numSigsPairs()];
 	}
 
 	@Override
 	public byte[] sigBytesFor(byte[] pubKey) throws Exception {
+		var chosenSigBytesIndex = MISSING_SIG_BYTES_INDEX;
 		byte[] sigBytes = EMPTY_SIG;
 		for (int i = 0, n = pojoSigMap.numSigsPairs(); i < n; i++) {
 			final byte[] pubKeyPrefix = pojoSigMap.pubKeyPrefix(i);
@@ -56,13 +62,46 @@ public class PojoSigMapPubKeyToSigBytes implements PubKeyToSigBytes {
 							"Source signature map with prefix " + CommonUtils.hex(pubKeyPrefix) +
 									" is ambiguous for given public key! (" + CommonUtils.hex(pubKey) + ")");
 				}
-				sigBytes = pojoSigMap.ed25519Signature(i);
+				sigBytes = pojoSigMap.primitiveSignature(i);
+				chosenSigBytesIndex = i;
 			}
+		}
+		if (chosenSigBytesIndex != MISSING_SIG_BYTES_INDEX) {
+			used[chosenSigBytesIndex] = true;
 		}
 		return sigBytes;
 	}
 
+	@Override
+	public void forEachUnusedSigWithFullPrefix(BiConsumer<byte[], byte[]> keySigObs) {
+		for (int i = 0, n = pojoSigMap.numSigsPairs(); i < n; i++) {
+			if (!used[i] && pojoSigMap.isFullPrefixAt(i)) {
+				keySigObs.accept(pojoSigMap.pubKeyPrefix(i), pojoSigMap.primitiveSignature(i));
+			}
+		}
+	}
+
+	@Override
+	public boolean hasAtLeastOneUnusedSigWithFullPrefix() {
+		for (int i = 0, n = pojoSigMap.numSigsPairs(); i < n; i++) {
+			if (!used[i] && pojoSigMap.isFullPrefixAt(i)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	@Override
+	public void resetAllSigsToUnused() {
+		for (int i = 0, n = pojoSigMap.numSigsPairs(); i < n; i++) {
+			used[i] = false;
+		}
+	}
+
 	public static boolean beginsWith(byte[] pubKey, byte[] prefix) {
+		if (pubKey.length < prefix.length) {
+			return false;
+		}
 		int n = prefix.length;
 		return Arrays.equals(prefix, 0, n, pubKey, 0, n);
 	}
