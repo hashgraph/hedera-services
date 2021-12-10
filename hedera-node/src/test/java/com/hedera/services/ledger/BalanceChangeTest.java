@@ -20,9 +20,11 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import org.junit.jupiter.api.Test;
@@ -142,5 +144,20 @@ class BalanceChangeTest {
 		// and:
 		assertTrue(nftChange.isForNft());
 		assertEquals(new NftId(t.getShard(), t.getRealm(), t.getNum(), serialNo), nftChange.nftId());
+	}
+
+	@Test
+	void canReplaceAlias() {
+		final var created = IdUtils.asAccount("0.0.1234");
+		final var anAlias = ByteString.copyFromUtf8("abcdefg");
+		final var subject = BalanceChange.changingHbar(AccountAmount.newBuilder()
+				.setAmount(1234)
+				.setAccountID(AccountID.newBuilder()
+						.setAlias(anAlias))
+				.build());
+
+		subject.replaceAliasWith(created);
+		assertFalse(subject.hasNonEmptyAlias());
+		assertEquals(created, subject.accountId());
 	}
 }

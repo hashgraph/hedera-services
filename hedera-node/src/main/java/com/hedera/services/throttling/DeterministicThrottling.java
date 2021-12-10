@@ -21,6 +21,7 @@ package com.hedera.services.throttling;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hedera.services.throttles.DeterministicThrottle;
@@ -48,17 +49,20 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	private static final ThrottleReqOpsScaleFactor ONE_TO_ONE_SCALE = ThrottleReqOpsScaleFactor.from("1:1");
 
 	private final IntSupplier capacitySplitSource;
+	private final AliasManager aliasManager;
 	private final GlobalDynamicProperties dynamicProperties;
 
 	private List<DeterministicThrottle> activeThrottles = Collections.emptyList();
 	private EnumMap<HederaFunctionality, ThrottleReqsManager> functionReqs = new EnumMap<>(HederaFunctionality.class);
 
 	public DeterministicThrottling(
-			IntSupplier capacitySplitSource,
-			GlobalDynamicProperties dynamicProperties
+			final IntSupplier capacitySplitSource,
+			final AliasManager aliasManager,
+			final GlobalDynamicProperties dynamicProperties
 	) {
 		this.capacitySplitSource = capacitySplitSource;
 		this.dynamicProperties = dynamicProperties;
+		this.aliasManager = aliasManager;
 	}
 
 	@Override
@@ -78,6 +82,9 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		if ((manager = functionReqs.get(function)) == null) {
 			return true;
 		} else if (function == CryptoTransfer) {
+			if (!accessor.areAutoCreationsCounted()) {
+				accessor.countAutoCreationsWith(aliasManager);
+			}
 			return shouldThrottleTransfer(manager, accessor.getNumAutoCreations(), now);
 		} else if (function == TokenMint) {
 			return shouldThrottleMint(manager, accessor.getTxn().getTokenMint(), now);

@@ -22,7 +22,6 @@ package com.hedera.services.ledger;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -62,8 +61,7 @@ public abstract class LedgerModule {
 			final AccountRecordsHistorian recordsHistorian,
 			final GlobalDynamicProperties dynamicProperties,
 			final BackingStore<AccountID, MerkleAccount> backingAccounts,
-			final AutoCreationLogic autoAccountCreator,
-			final AliasManager autoAccounts
+			final AutoCreationLogic autoAccountCreator
 	) {
 		TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger =
 				new TransactionalLedger<>(
@@ -80,8 +78,7 @@ public abstract class LedgerModule {
 				recordsHistorian,
 				dynamicProperties,
 				accountsLedger,
-				autoAccountCreator,
-				autoAccounts);
+				autoAccountCreator);
 		ledger.setTokenViewsManager(uniqTokenViewsManager);
 		scheduleStore.setAccountsLedger(accountsLedger);
 		scheduleStore.setHederaLedger(ledger);
