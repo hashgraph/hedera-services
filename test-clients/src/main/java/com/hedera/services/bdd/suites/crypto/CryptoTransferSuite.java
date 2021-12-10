@@ -22,13 +22,13 @@ package com.hedera.services.bdd.suites.crypto;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -110,7 +110,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 //						dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
 //						nftSelfTransfersRejectedBothInPrecheckAndHandle(),
 //						hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
-						autoAccountCreationsTest()
+						autoAccountCreationsHappyPath()
 				}
 		);
 	}
@@ -120,26 +120,67 @@ public class CryptoTransferSuite extends HapiApiSuite {
 		return true;
 	}
 
-	private HapiApiSpec autoAccountCreationsTest() {
+	private HapiApiSpec autoAccountCreationsHappyPath() {
 		long initialBalance = 1000L;
-		var aliasContent = ByteString.copyFromUtf8("a479462fba67674b5a41acfb16cb6828626b61d3f389fa611005a45754130e5c749073c0b1b791596430f4a54649cc8a3f6d28147dd4099070a5c3c4811d1771");
-		var validEd25519Key = Key.newBuilder().setEd25519(aliasContent).build();
-		var valid25519Alias = validEd25519Key.toByteString();
+		final AtomicReference<ByteString> finalEd25519Alias = new AtomicReference<>();
+		final AtomicReference<ByteString> finalSecp256k1Alias = new AtomicReference<>();
+		final AtomicReference<String> ed25519Id = new AtomicReference<>();
+		final AtomicReference<String> secp256k1Id = new AtomicReference<>();
 
-//		var expectedAlias = Key.parseFrom(valid25519Alias).getEd25519();
-		return defaultHapiSpec("VanillaTransferSucceeds")
+		final var ed25519AliasKey = "ed25519";
+		final var secp256k1AliasKey = "secp256k1";
+		final var eddsaAliasKeyShape = KeyShape.ED25519;
+		final var ecdsaAliasKeyShape = KeyShape.SECP256K1;
+		final var ed25519Txn = "eddsaTxn";
+		final var secp256k1Txn = "ecdsaTxn";
+
+		return defaultHapiSpec("AutoAccountCreationsHappyPath")
 				.given(
-						UtilVerbs.inParallel(
-								cryptoCreate("payer").balance(initialBalance * ONE_HBAR)
-						)
+						newKeyNamed(ed25519AliasKey).shape(eddsaAliasKeyShape),
+						newKeyNamed(secp256k1AliasKey).shape(ecdsaAliasKeyShape),
+						cryptoCreate("payer").balance(initialBalance * ONE_HBAR)
 				).when(
-						cryptoTransfer(
-								tinyBarsFromTo("payer", valid25519Alias, ONE_HUNDRED_HBARS)
-						).via("transferTxn")
+						withOpContext((spec, opLog) -> {
+							final var key = spec.registry().getKey(ed25519AliasKey);
+							final var alias = key.toByteString();
+							finalEd25519Alias.set(alias);
+							final var op = cryptoTransfer(
+									tinyBarsFromTo("payer", alias, ONE_HUNDRED_HBARS)
+							).via(ed25519Txn);
+							allRunFor(spec, op);
+						}),
+						withOpContext((spec, opLog) -> {
+							final var key = spec.registry().getKey(secp256k1AliasKey);
+							final var alias = key.toByteString();
+							finalSecp256k1Alias.set(alias);
+							final var op = cryptoTransfer(
+									tinyBarsFromTo("payer", alias, ONE_HUNDRED_HBARS)
+							).via(secp256k1Txn);
+							allRunFor(spec, op);
+						})
 				).then(
-						getTxnRecord("transferTxn").andAllChildRecords().logged(),
-						getAccountInfo("payer").has(accountWith().balance((initialBalance * ONE_HBAR) - ONE_HUNDRED_HBARS)),
-						getAccountInfo(valid25519Alias).has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.1))
+						getTxnRecord(ed25519Txn)
+								.andAllChildRecords()
+								.logged(),
+						getTxnRecord(secp256k1Txn)
+								.andAllChildRecords()
+								.logged(),
+						getAccountInfo("payer").has(
+								accountWith().balance((initialBalance * ONE_HBAR) - 2 * ONE_HUNDRED_HBARS)),
+						sourcing(() -> getAccountInfo(finalEd25519Alias.get())
+								.has(accountWith()
+										.expectedBalanceWithChargedUsd(
+												ONE_HUNDRED_HBARS, 0.05, 0.1))
+								.exposingIdTo(id -> ed25519Id.set(HapiPropertySource.asAccountString(id)))),
+						sourcing(() -> getAccountInfo(finalSecp256k1Alias.get())
+								.has(accountWith()
+										.expectedBalanceWithChargedUsd(
+												ONE_HUNDRED_HBARS, 0.05, 0.1))
+								.exposingIdTo(id -> secp256k1Id.set(HapiPropertySource.asAccountString(id)))),
+						sourcing(() -> cryptoTransfer(tinyBarsFromTo(ed25519Id.get(), FUNDING, 1))
+								.signedBy(DEFAULT_PAYER, ed25519AliasKey)),
+						sourcing(() -> cryptoTransfer(tinyBarsFromTo(secp256k1Id.get(), FUNDING, 1))
+								.signedBy(DEFAULT_PAYER, secp256k1AliasKey))
 				);
 	}
 

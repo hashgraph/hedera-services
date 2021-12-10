@@ -27,6 +27,8 @@ import org.junit.jupiter.api.Test;
 import java.security.SecureRandom;
 import java.security.spec.ECGenParameterSpec;
 
+import static com.hedera.services.legacy.proto.utils.SignatureGenerator.BOUNCYCASTLE_PROVIDER;
+
 class SignatureGeneratorTest {
 	@Test
 	void rejectsNonEddsaKeys() {
@@ -38,7 +40,8 @@ class SignatureGeneratorTest {
 	@Test
 	void acceptsEcdsaKey() throws Exception {
 		final ECGenParameterSpec ecSpec = new ECGenParameterSpec("secp256k1");
-		final java.security.KeyPairGenerator generator = java.security.KeyPairGenerator.getInstance("EC");
+		final java.security.KeyPairGenerator generator =
+				java.security.KeyPairGenerator.getInstance("EC", BOUNCYCASTLE_PROVIDER);
 		generator.initialize(ecSpec, new SecureRandom());
 		final var kp = generator.generateKeyPair();
 		Assertions.assertDoesNotThrow(() -> SignatureGenerator.signBytes("abc".getBytes(), kp.getPrivate()));

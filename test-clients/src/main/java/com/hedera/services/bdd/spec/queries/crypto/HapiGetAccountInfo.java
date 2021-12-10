@@ -27,6 +27,7 @@ import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -40,6 +41,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
@@ -63,6 +65,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 	Optional<Long> ownedNfts = Optional.empty();
 	Optional<Integer> maxAutomaticAssociations = Optional.empty();
 	Optional<Integer> alreadyUsedAutomaticAssociations = Optional.empty();
+	private Optional<Consumer<AccountID>> idObserver = Optional.empty();
 
 	public HapiGetAccountInfo(String account) {
 		this.account = account;
@@ -89,6 +92,11 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 
 	public HapiGetAccountInfo exposingExpiry(LongConsumer obs) {
 		this.exposingExpiryTo = Optional.of(obs);
+		return this;
+	}
+
+	public HapiGetAccountInfo exposingIdTo(Consumer<AccountID> obs) {
+		this.idObserver = Optional.of(obs);
 		return this;
 	}
 
@@ -169,6 +177,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 		if (infoResponse.getHeader().getNodeTransactionPrecheckCode() == OK) {
 			exposingExpiryTo.ifPresent(cb -> cb.accept(infoResponse.getAccountInfo().getExpirationTime().getSeconds()));
 			exposingBalanceTo.ifPresent(cb -> cb.accept(infoResponse.getAccountInfo().getBalance()));
+			idObserver.ifPresent(cb -> cb.accept(infoResponse.getAccountInfo().getAccountID()));
 		}
 		if (verboseLoggingOn) {
 			log.info("Info for '" + account + "': " + response.getCryptoGetInfo().getAccountInfo());
