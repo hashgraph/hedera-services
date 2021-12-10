@@ -144,7 +144,6 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 
 		byte[] callData = (abi != FALLBACK_ABI)
 				? CallTransaction.Function.fromJsonInterface(abi).encode(params) : new byte[] { };
-
 		final var id = TxnUtils.asContractId(contract, spec);
 		ContractCallTransactionBody opBody = spec
 				.txns()

@@ -71,46 +71,43 @@ public class PrefetchProcessor {
 
     @VisibleForTesting
     ExecutorService createExecutorService(int threadPoolSize, BlockingQueue<Runnable> queue) {
-        return new ThreadPoolExecutor(
+        final var executor = new ThreadPoolExecutor(
                 threadPoolSize,
                 threadPoolSize,
                 0L,
                 TimeUnit.MILLISECONDS,
                 queue
         );
+        executor.setRejectedExecutionHandler((runnable, execService) -> logger.warn("Pre-fetch queue is FULL!"));
+        executor.prestartAllCoreThreads();
+        return executor;
     }
 
     /**
      * Attempts to schedule a pre-fetch task for the given transaction. A task will be created
      * only if the transition logic associated with the transaction request type implements
      * {@code PreFetchableTransition}. If the task cannot be scheduled due to the schedule queue
-     * being full, the method will return {@code false} without error. The pre-fetch action
-     * is optional and is only intended for performance optimization; the handleTransaction
-     * portion of {@code EventFlow} will pay the cost of whatever the pre-fetch operation was.
+     * being full, the task will be skipped. The pre-fetch action is optional and is only intended
+     * for performance optimization; the handleTransaction portion of {@code EventFlow} will pay
+     * the cost of whatever the pre-fetch operation was.
      *
      * @param accessor the transaction accessor
-     * @return true if the transaction was enqueued for processing, false otherwise
      */
-    public boolean offer(PlatformTxnAccessor accessor) {
+    public void submit(PlatformTxnAccessor accessor) {
         final var opt = lookup.lookupFor(accessor.getFunction(), accessor.getTxn());
 
         if (!opt.isEmpty()) {
             final var logic = opt.get();
             if (logic instanceof PreFetchableTransition) {
-                if (queue.offer(() -> {
+                executorService.execute(() -> {
                     try {
                         ((PreFetchableTransition) logic).preFetch(accessor);
                     } catch (RuntimeException e) {
                         logger.warn("Exception thrown during pre-fetch", e);
                     }
-                })) {
-                    return true;
-                }
-
-                logger.warn("Pre-fetch queue is FULL!");
+                });
             }
         }
-        return false;
     }
 
     public void shutdown() {
