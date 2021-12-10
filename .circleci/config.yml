@@ -887,6 +887,98 @@ workflows:
             - attach_workspace:
                 at: /
 
+  GCP-Daily-Services-Update-Ubuntu1804-4N-2C:
+    triggers:
+      - schedule:
+          cron: "0 3 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_2C/Update
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Crypto-Update-Ubuntu1804-4N-2C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+  GCP-Daily-Services-Update-Rhel7-4N-2C:
+    triggers:
+      - schedule:
+          cron: "15 3 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_2C/Update
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Crypto-Update-Rhel7-4N-2C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+  GCP-Daily-Services-Update-Rhel8-4N-2C:
+    triggers:
+      - schedule:
+          cron: "30 3 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_2C/Update
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Crypto-Update-Rhel8-4N-2C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+  GCP-Daily-Services-Update-CentOS7-4N-2C:
+    triggers:
+      - schedule:
+          cron: "45 3 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_2C/Update
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Crypto-Update-CentOS7-4N-2C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
   GCP-Daily-Services-Update-4N-2C:
     triggers:
       - schedule:
@@ -1119,7 +1211,7 @@ workflows:
             - attach_workspace:
                 at: /
 
-  GCP-Weekly-Services-Query-Restart-Performance-6N-6C:
+  GCP-Weekly-Services-Query-Restart-Performance-7N-7C:
     triggers:
       - schedule:
           cron: "0 6 * * 2"
@@ -1132,9 +1224,9 @@ workflows:
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/6N_6C/QueryPerf
+          result_path: results/7N_7C/QueryPerf
           config_type: "weekly"
-          workflow-name: "GCP-Weekly-Services-Query-Restart-Performance-6N-6C"
+          workflow-name: "GCP-Weekly-Services-Query-Restart-Performance-7N-7C"
           requires:
             - build-platform-and-services
           pre-steps:
@@ -1165,7 +1257,7 @@ workflows:
             - attach_workspace:
                 at: /
 
-  GCP-Daily-Services-Comp-Restart-Performance-Random-6N-6C:
+  GCP-Daily-Services-Comp-Restart-Performance-Random-7N-7C:
     triggers:
       - schedule:
           cron: "40 4 * * *"
@@ -1178,9 +1270,9 @@ workflows:
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/6N_6C/Performance
+          result_path: results/7N_7C/Performance
           config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Comp-Restart-Performance-Random-6N-6C"
+          workflow-name: "GCP-Daily-Services-Comp-Restart-Performance-Random-7N-7C"
           requires:
             - build-platform-and-services
           pre-steps:
@@ -1189,7 +1281,7 @@ workflows:
                 at: /
 
 
-  GCP-Daily-Services-HTS-Restart-Performance-6N-6C:
+  GCP-Daily-Services-HTS-Restart-Performance-7N-7C:
     triggers:
       - schedule:
           cron: "30 4 * * *"
@@ -1202,9 +1294,9 @@ workflows:
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/6N_6C/Performance
+          result_path: results/7N_7C/Performance
           config_type: "daily"
-          workflow-name: "GCP-Daily-Services-HTS-Restart-Performance-6N-6C"
+          workflow-name: "GCP-Daily-Services-HTS-Restart-Performance-7N-7C"
           requires:
             - build-platform-and-services
           pre-steps:
