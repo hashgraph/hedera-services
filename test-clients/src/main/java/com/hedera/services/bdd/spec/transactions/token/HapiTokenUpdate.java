@@ -190,6 +190,10 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 			final TokenInfo info = HapiTokenFeeScheduleUpdate.lookupInfo(spec, token, log, loggingOff);
 			FeeCalculator.ActivityMetrics metricsCalc = (_txn, svo) -> {
 				var estimate = TokenUpdateUsage.newEstimate(_txn, suFrom(svo));
+				estimate.givenCurrentExpiry(info.getExpiry().getSeconds())
+						.givenCurrentMemo(info.getMemo())
+						.givenCurrentName(info.getName())
+						.givenCurrentSymbol(info.getSymbol());
 				if (info.hasFreezeKey()) {
 					estimate.givenCurrentFreezeKey(Optional.of(info.getFreezeKey()));
 				}
@@ -211,17 +215,14 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 				if (info.hasPauseKey()) {
 					estimate.givenCurrentPauseKey(Optional.of(info.getPauseKey()));
 				}
-				estimate.givenCurrentExpiry(info.getExpiry().getSeconds())
-						.givenCurrentMemo(info.getMemo())
-						.givenCurrentName(info.getName())
-						.givenCurrentSymbol(info.getSymbol());
 				if (info.hasAutoRenewAccount()) {
 					estimate.givenCurrentlyUsingAutoRenewAccount();
 				}
 				return estimate.get();
 			};
 			return spec.fees().forActivityBasedOp(HederaFunctionality.TokenUpdate, metricsCalc, txn, numPayerKeys);
-		} catch (Throwable ignore) {
+		} catch (Throwable t) {
+			log.warn("Couldn't estimate usage", t);
 			return HapiApiSuite.ONE_HBAR;
 		}
 	}
