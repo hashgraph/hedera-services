@@ -54,6 +54,8 @@ import com.hedera.services.bdd.suites.contract.opcodes.SStoreSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.StaticCallOperationSuite;
 import com.hedera.services.bdd.suites.contract.records.LogsSuite;
 import com.hedera.services.bdd.suites.contract.records.RecordsSuite;
+import com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite;
+import com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCornerCasesSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateForSuiteRunner;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
@@ -120,6 +122,8 @@ import com.hedera.services.bdd.suites.perf.token.UniqueTokenStateSetup;
 import com.hedera.services.bdd.suites.perf.topic.CreateTopicPerfSuite;
 import com.hedera.services.bdd.suites.perf.topic.HCSChunkingRealisticPerfSuite;
 import com.hedera.services.bdd.suites.perf.topic.SubmitMessageLoadTest;
+import com.hedera.services.bdd.suites.reconnect.AutoAccountCreationValidationsAfterReconnect;
+import com.hedera.services.bdd.suites.reconnect.AutoAccountCreationsBeforeReconnect;
 import com.hedera.services.bdd.suites.reconnect.AutoRenewEntitiesForReconnect;
 import com.hedera.services.bdd.suites.reconnect.CheckUnavailableNode;
 import com.hedera.services.bdd.suites.reconnect.CreateAccountsBeforeReconnect;
@@ -328,6 +332,11 @@ public class SuiteRunner {
 		put("SchedulesExpiryDuringReconnect", aof(SchedulesExpiryDuringReconnect::new));
 		put("ValidateTokensStateAfterReconnect", aof(ValidateTokensStateAfterReconnect::new));
 		put("ValidateCongestionPricingAfterReconnect", aof(ValidateCongestionPricingAfterReconnect::new));
+		/* Functional tests - AutoAccountCreations */
+		put("AutoAccountCreationValidationsAfterReconnect", aof(AutoAccountCreationValidationsAfterReconnect::new));
+		put("AutoAccountCreationSuite", aof(AutoAccountCreationSuite::new));
+		put("AutoAccountUpdateSuite", aof(AutoAccountUpdateSuite::new));
+		put("AutoAccountCreationsBeforeReconnect", aof(AutoAccountCreationsBeforeReconnect::new));
 		/* Functional tests - AUTORENEW */
 		put("AutoRemovalCasesSuite", aof(AutoRemovalCasesSuite::new));
 		put("AccountAutoRenewalSuite", aof(AccountAutoRenewalSuite::new));

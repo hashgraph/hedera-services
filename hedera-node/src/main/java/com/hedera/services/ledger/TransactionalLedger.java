@@ -288,6 +288,10 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		return changes;
 	}
 
+	List<K> getCreations() {
+		return createdKeys;
+	}
+
 	private void flushListed(List<K> l) {
 		if (!l.isEmpty()) {
 			for (var key : l) {
