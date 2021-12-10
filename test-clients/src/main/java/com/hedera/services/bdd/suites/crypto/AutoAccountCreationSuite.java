@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -83,7 +83,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 						multipleAutoAccountCreations(),
 						accountCreatedIfAliasUsedAsPubKey(),
 						aliasCanBeUsedOnManyAccountsNotAsAlias(),
-				        autoAccountCreationWorksWhenUsingAliasOfDeletedAccount()
+						autoAccountCreationWorksWhenUsingAliasOfDeletedAccount() // fails after merging
 				}
 		);
 	}
@@ -288,16 +288,16 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 						cryptoCreate("payer").balance(initialBalance * ONE_HBAR)
 				).when(
 						cryptoTransfer(tinyBarsFromTo("payer", threshKeyAlias, ONE_HUNDRED_HBARS))
-								.hasPrecheck(ResponseCodeEnum.INVALID_ALIAS_KEY)
+								.hasKnownStatus(ResponseCodeEnum.INVALID_ALIAS_KEY)
 								.via("transferTxnThreshKey"),
 						cryptoTransfer(tinyBarsFromTo("payer", keyListAlias, ONE_HUNDRED_HBARS))
-								.hasPrecheck(ResponseCodeEnum.INVALID_ALIAS_KEY)
+								.hasKnownStatus(ResponseCodeEnum.INVALID_ALIAS_KEY)
 								.via("transferTxnKeyList"),
 						cryptoTransfer(tinyBarsFromTo("payer", contractKeyAlias, ONE_HUNDRED_HBARS))
-								.hasPrecheck(ResponseCodeEnum.INVALID_ALIAS_KEY)
+								.hasKnownStatus(ResponseCodeEnum.INVALID_ALIAS_KEY)
 								.via("transferTxnContract"),
 						cryptoTransfer(tinyBarsFromTo("payer", delegateContractKeyAlias, ONE_HUNDRED_HBARS))
-								.hasPrecheck(ResponseCodeEnum.INVALID_ALIAS_KEY)
+								.hasKnownStatus(ResponseCodeEnum.INVALID_ALIAS_KEY)
 								.via("transferTxnKeyDelegate")
 				).then();
 	}
@@ -311,7 +311,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 						cryptoCreate("payer").balance(initialBalance * ONE_HBAR)
 				).when(
 						cryptoTransfer(tinyBarsFromTo("payer", invalidAlias, ONE_HUNDRED_HBARS))
-								.hasPrecheck(ResponseCodeEnum.INVALID_ALIAS_KEY)
+								.hasKnownStatus(ResponseCodeEnum.INVALID_ALIAS_KEY)
 								.via("transferTxnBad")
 				).then();
 	}

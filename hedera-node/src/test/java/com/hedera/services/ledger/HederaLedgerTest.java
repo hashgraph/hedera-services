@@ -299,7 +299,6 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		verify(accountsLedger).get(rand, ALIAS);
 		verify(accountsLedger).set(misc, BALANCE, MISC_BALANCE + RAND_BALANCE);
 		verify(accountsLedger).set(rand, IS_DELETED, true);
-		verify(autoAccounts, never()).getAutoAccountsMap();
 	}
 
 	@Test
