@@ -438,11 +438,6 @@ public class HederaLedger {
 	public void delete(AccountID id, AccountID beneficiary) {
 		doTransfer(id, beneficiary, getBalance(id));
 		accountsLedger.set(id, IS_DELETED, true);
-//	Need to add this back
-//		ByteString alias = (ByteString) accountsLedger.get(id, ALIAS);
-//		if (!alias.isEmpty()) {
-//			aliasManager.getAutoAccountsMap().remove(alias);
-//		}
 	}
 
 	/* -- ACCOUNT PROPERTY ACCESS -- */

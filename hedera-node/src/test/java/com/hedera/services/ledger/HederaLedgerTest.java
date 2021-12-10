@@ -20,7 +20,6 @@ package com.hedera.services.ledger;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.InsufficientFundsException;
@@ -39,7 +38,6 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 import static com.hedera.services.exceptions.InsufficientFundsException.messageFor;
-import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
 import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
@@ -292,22 +290,11 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 
 	@Test
 	void deletesGivenAccount() {
-		given(accountsLedger.get(rand, ALIAS)).willReturn(ByteString.copyFromUtf8("aaa"));
 		subject.delete(rand, misc);
 
 		verify(accountsLedger).set(rand, BALANCE, 0L);
-		verify(accountsLedger).get(rand, ALIAS);
 		verify(accountsLedger).set(misc, BALANCE, MISC_BALANCE + RAND_BALANCE);
 		verify(accountsLedger).set(rand, IS_DELETED, true);
-	}
-
-	@Test
-	void deletesAnAccountWithAliasFromAutoAccountsMap() {
-		subject.delete(aliasAccountId, misc);
-
-		verify(accountsLedger).set(aliasAccountId, BALANCE, 0L);
-		verify(accountsLedger).set(misc, BALANCE, MISC_BALANCE + RAND_BALANCE);
-		verify(accountsLedger).set(aliasAccountId, IS_DELETED, true);
 	}
 
 	@Test
