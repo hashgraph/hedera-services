@@ -79,6 +79,7 @@ public class ContractResources {
 	public static final String SELF_DESTRUCT_CALLABLE = bytecodePath("SelfDestructCallable");
 	public static final String REVERTING_SEND_TRY = bytecodePath("RevertingSendTry");
 	public static final String ZENOS_BANK_CONTRACT = bytecodePath("ZenosBank");
+	public static final String VERSATILE_TRANSFERS_CONTRACT = bytecodePath("VersatileTransfers");
 	public static final String MUSICAL_CHAIRS_CONTRACT = bytecodePath("MusicalChairs");
 	public static final String ASSOCIATE_DISSOCIATE_CONTRACT = bytecodePath("AssociateDissociateContract");
 
@@ -576,6 +577,21 @@ public class ContractResources {
 	public static final String ZENOS_BANK_CONSTRUCTOR = "{" +
 			"\"inputs\": [{\"name\": \"_tokenAddress\",\"type\": \"address\"}]," +
 			"\"payable\": false,\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
+
+	public static final String VERSATILE_TRANSFERS_TOKENS = "{" +
+			"\"inputs\":[{\"internalType\":\"address\",\"name\":\"tokenAddress\",\"type\":\"address\"}," +
+			"{\"internalType\":\"address[]\",\"name\":\"accounts\",\"type\":\"address[]\"}," +
+			"{\"internalType\":\"int64[]\",\"name\":\"amounts\",\"type\":\"int64[]\"}],\"name\":\"distributeTokens\"," +
+			"\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String VERSATILE_CRYPTO_TRANSFERS = "{\"inputs\":[{\"components\":[{\"internalType\":\"address\"" +
+			",\"name\":\"token\",\"type\":\"address\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"accountID\"" +
+			",\"type\":\"address\"},{\"internalType\":\"int64\",\"name\":\"amount\",\"type\":\"int64\"}],\"internalType\"" +
+			":\"structIHederaTokenService.AccountAmount[]\",\"name\":\"transfers\",\"type\":\"tuple[]\"},{\"components\":" +
+			"[{\"internalType\":\"address\",\"name\":\"senderAccountID\",\"type\":\"address\"},{\"internalType\":\"address\"" +
+			",\"name\":\"receiverAccountID\",\"type\":\"address\"},{\"internalType\":\"int64\",\"name\":\"serialNumber\"," +
+			"\"type\":\"int64\"}],\"internalType\":\"structIHederaTokenService.NftTransfer[]\",\"name\":\"nftTransfers\",\"type\":" +
+			"\"tuple[]\"}],\"internalType\":\"structIHederaTokenService.TokenTransferList[]\",\"name\":\"transferList\",\"type\":" +
+			"\"tuple[]\"}],\"name\":\"cryptoTransfers\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
 	public static final String MUSICAL_CHAIRS_CONSTRUCTOR = "{" +
 			"\"inputs\": [{\"internalType\": \"address\",\"name\": \"_dj\",\"type\": \"address\"}]," +

@@ -32,6 +32,8 @@ import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.DISSOCIATE_TOKEN;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VERSATILE_CRYPTO_TRANSFERS;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VERSATILE_TRANSFERS_TOKENS;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ZENOS_BANK_DEPOSIT_TOKENS;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ZENOS_BANK_WITHDRAW_TOKENS;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -81,6 +83,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(
+				distributeTokens(),
 				depositAndWithdraw(),
 				associateToken(),
 				dissociateToken()
@@ -131,6 +134,128 @@ public class ContractHTSSuite extends HapiApiSuite {
 								.gas(70_000)
 								.via("receiver"),
 						getTxnRecord("receiver").andAllChildRecords().logged()
+				);
+	}
+
+	private HapiApiSpec distributeTokens() {
+		final var theAccount = "anybody";
+		final var theReceiver = "somebody";
+		final var theSecondReceiver = "somebody2";
+		final var theKey = "multipurpose";
+		final var theContract = "versatileTransfers";
+		return defaultHapiSpec("distributeTokens")
+				.given(
+						newKeyNamed(theKey),
+						cryptoCreate(theAccount).balance(10 * ONE_HUNDRED_HBARS),
+						cryptoCreate(theReceiver),
+						cryptoCreate(theSecondReceiver),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(A_TOKEN)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(TOTAL_SUPPLY)
+								.treasury(TOKEN_TREASURY),
+						fileCreate("bytecode").payingWith(theAccount),
+						updateLargeFile(theAccount, "bytecode", extractByteCode(ContractResources.VERSATILE_TRANSFERS_CONTRACT)),
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCreate(theContract)
+														.payingWith(theAccount)
+														.bytecode("bytecode")
+														.via("creationTx")
+														.gas(28_000))),
+						getTxnRecord("creationTx").logged(),
+						tokenAssociate(theAccount, List.of(A_TOKEN)),
+						tokenAssociate(theContract, List.of(A_TOKEN)),
+						tokenAssociate(theReceiver, List.of(A_TOKEN)),
+						tokenAssociate(theSecondReceiver, List.of(A_TOKEN)),
+						cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, theAccount))
+				).when(
+						withOpContext(
+								(spec, opLog) -> {
+									final var sender = asAddress(spec.registry().getAccountID(theAccount));
+									final var receiver1 = asAddress(spec.registry().getAccountID(theReceiver));
+									final var receiver2 = asAddress(spec.registry().getAccountID(theSecondReceiver));
+
+									final var accounts = List.of(sender, receiver1, receiver2);
+									final var amounts = List.of(-10L, 5L, 5L);
+
+									allRunFor(
+											spec,
+											contractCall(theContract, VERSATILE_TRANSFERS_TOKENS,
+													asAddress(spec.registry().getTokenID(A_TOKEN)),
+													accounts.toArray(),
+													amounts.toArray()
+											)
+													.payingWith(theAccount)
+													.gas(48_000)
+													.via("distribute"),
+											getTxnRecord("distribute").logged());
+								})
+
+				).then(
+				);
+	}
+
+	private HapiApiSpec distributeCryptoTransfers() {
+		final var theAccount = "anybody";
+		final var theReceiver = "somebody";
+		final var theSecondReceiver = "somebody2";
+		final var theKey = "multipurpose";
+		final var theContract = "versatileTransfers";
+		return defaultHapiSpec("distributeCryptoTransfers")
+				.given(
+						newKeyNamed(theKey),
+						cryptoCreate(theAccount).balance(10 * ONE_HUNDRED_HBARS),
+						cryptoCreate(theReceiver),
+						cryptoCreate(theSecondReceiver),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(A_TOKEN)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(TOTAL_SUPPLY)
+								.treasury(TOKEN_TREASURY),
+						fileCreate("bytecode").payingWith(theAccount),
+						updateLargeFile(theAccount, "bytecode", extractByteCode(ContractResources.VERSATILE_TRANSFERS_CONTRACT)),
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCreate(theContract)
+														.payingWith(theAccount)
+														.bytecode("bytecode")
+														.via("creationTx")
+														.gas(28_000))),
+						getTxnRecord("creationTx").logged(),
+						tokenAssociate(theAccount, List.of(A_TOKEN)),
+						tokenAssociate(theContract, List.of(A_TOKEN)),
+						tokenAssociate(theReceiver, List.of(A_TOKEN)),
+						tokenAssociate(theSecondReceiver, List.of(A_TOKEN)),
+						cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, theAccount))
+				).when(
+						withOpContext(
+								(spec, opLog) -> {
+									final var sender = asAddress(spec.registry().getAccountID(theAccount));
+									final var receiver1 = asAddress(spec.registry().getAccountID(theReceiver));
+									final var receiver2 = asAddress(spec.registry().getAccountID(theSecondReceiver));
+
+									final var accounts = List.of(sender, receiver1, receiver2);
+									final var amounts = List.of(-10L, 5L, 5L);
+
+									allRunFor(
+											spec,
+											contractCall(theContract, VERSATILE_CRYPTO_TRANSFERS,
+													asAddress(spec.registry().getTokenID(A_TOKEN)),
+													accounts.toArray(),
+													amounts.toArray()
+											)
+													.payingWith(theAccount)
+													.gas(48_000)
+													.via("distribute"),
+											getTxnRecord("distribute").logged());
+								})
+
+				).then(
 				);
 	}
 
