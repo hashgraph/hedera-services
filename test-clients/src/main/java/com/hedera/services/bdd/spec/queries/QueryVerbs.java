@@ -20,6 +20,7 @@ package com.hedera.services.bdd.spec.queries;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.consensus.HapiGetTopicInfo;
 import com.hedera.services.bdd.spec.queries.contract.HapiContractCallLocal;
@@ -71,6 +72,10 @@ public class QueryVerbs {
 
 	public static HapiGetAccountInfo getAccountInfo(final String account) {
 		return new HapiGetAccountInfo(account);
+	}
+
+	public static HapiGetAccountInfo getAccountInfo(final ByteString alias) {
+		return new HapiGetAccountInfo(alias);
 	}
 
 	public static HapiGetAccountRecords getAccountRecords(final String account) {

@@ -22,6 +22,7 @@ package com.hedera.services.throttling;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hedera.services.throttles.BucketThrottle;
 import com.hedera.services.throttles.DeterministicThrottle;
@@ -62,6 +63,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class DeterministicThrottlingTest {
@@ -75,6 +77,8 @@ class DeterministicThrottlingTest {
 	private ThrottleReqsManager manager;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private AliasManager aliasManager;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -83,7 +87,7 @@ class DeterministicThrottlingTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new DeterministicThrottling(() -> n, dynamicProperties);
+		subject = new DeterministicThrottling(() -> n, aliasManager, dynamicProperties);
 	}
 
 	@Test
@@ -178,6 +182,72 @@ class DeterministicThrottlingTest {
 		assertFalse(ans);
 		assertEquals(2500 * BucketThrottle.capacityUnitsPerTxn(), aNow.used());
 		assertEquals(BucketThrottle.capacityUnitsPerTxn(), bNow.used());
+	}
+
+	@Test
+	void computesNumAutoCreationsIfNotAlreadyKnown() throws IOException {
+		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+
+		givenFunction(CryptoTransfer);
+		given(accessor.getNumAutoCreations()).willReturn(0);
+		subject.rebuildFor(defs);
+
+		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+
+		verify(accessor).countAutoCreationsWith(aliasManager);
+		assertFalse(ans);
+	}
+
+	@Test
+	void cryptoTransfersWithNoAutoAccountCreationsAreThrottledAsExpected() throws IOException {
+		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+
+		givenFunction(CryptoTransfer);
+		given(accessor.getNumAutoCreations()).willReturn(0);
+		subject.rebuildFor(defs);
+
+		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+
+		assertFalse(ans);
+	}
+
+	@Test
+	void managerAllowsCryptoTransfersWithAutoAccountCreationsAsExpected() throws IOException {
+		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+
+		givenFunction(CryptoTransfer);
+		given(accessor.getNumAutoCreations()).willReturn(1);
+		subject.rebuildFor(defs);
+
+		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+
+		assertFalse(ans);
+	}
+
+	@Test
+	void managerRejectsCryptoTransfersWithAutoAccountCreationsAsExpected() throws IOException {
+		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+
+		givenFunction(CryptoTransfer);
+		given(accessor.getNumAutoCreations()).willReturn(10);
+		subject.rebuildFor(defs);
+
+		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+
+		assertTrue(ans);
+	}
+
+	@Test
+	void managerRejectsCryptoTransfersWithMissingCryptoCreateThrottle() throws IOException {
+		var defs = SerdeUtils.pojoDefs("bootstrap/throttles-sans-creation.json");
+
+		givenFunction(CryptoTransfer);
+		given(accessor.getNumAutoCreations()).willReturn(1);
+		subject.rebuildFor(defs);
+
+		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+
+		assertTrue(ans);
 	}
 
 	@Test

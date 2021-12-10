@@ -21,8 +21,10 @@ package com.hedera.services.ledger;
  */
 
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
+import com.hedera.test.factories.keys.KeyFactory;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -64,7 +66,11 @@ class PureTransferSemanticChecksTest {
 	private final int maxBalanceChanges = 20;
 	final ImpliedTransfersMeta.ValidationProps validationProps = new ImpliedTransfersMeta.ValidationProps(
 			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, maxFeeNesting, maxBalanceChanges, areNftsEnabled);
-	final private AccountID a = AccountID.newBuilder().setAccountNum(9_999L).build();
+	private final Key aliasA  = KeyFactory.getDefaultInstance().newEd25519();
+	private final Key aliasB  = KeyFactory.getDefaultInstance().newEd25519();
+	final private AccountID a = AccountID.newBuilder().setAccountNum(9_999L).setAlias(aliasA.toByteString()).build();
+	final private AccountID invalidAliasAccount = AccountID.newBuilder().setAlias(aliasA.toByteString().substring(0,10)).build();
+	final private AccountID validAliasAccount = AccountID.newBuilder().setAlias(aliasB.toByteString()).build();
 	final private AccountID b = AccountID.newBuilder().setAccountNum(8_999L).build();
 	final private AccountID c = AccountID.newBuilder().setAccountNum(7_999L).build();
 	final private AccountID d = AccountID.newBuilder().setAccountNum(6_999L).build();

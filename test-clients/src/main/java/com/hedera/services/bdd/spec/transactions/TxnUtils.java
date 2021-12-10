@@ -22,6 +22,7 @@ package com.hedera.services.bdd.spec.transactions;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -184,6 +185,10 @@ public class TxnUtils {
 
 	public static AccountID asId(String s, HapiApiSpec lookupSpec) {
 		return isIdLiteral(s) ? asAccount(s) : lookupSpec.registry().getAccountID(s);
+	}
+
+	public static AccountID asIdWithAlias(final ByteString s) {
+		return asAccount(s);
 	}
 
 	public static TokenID asTokenId(String s, HapiApiSpec lookupSpec) {

@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.queries.crypto;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
@@ -50,7 +51,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 	private static final Logger log = LogManager.getLogger(HapiGetAccountInfo.class);
 
-	private final String account;
+	private String account;
+	private ByteString alias = ByteString.EMPTY;
 	private Optional<String> registryEntry = Optional.empty();
 	private List<String> absentRelationships = new ArrayList<>();
 	private List<ExpectedTokenRel> relationships = new ArrayList<>();
@@ -64,6 +66,10 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 
 	public HapiGetAccountInfo(String account) {
 		this.account = account;
+	}
+	public HapiGetAccountInfo(ByteString alias) {
+		this.account = "0.0.0";
+		this.alias = alias;
 	}
 
 	@Override
@@ -183,6 +189,9 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 	}
 
 	private Query getAccountInfoQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {
+		if (!alias.isEmpty()) {
+			account = alias.toStringUtf8();
+		}
 		CryptoGetInfoQuery query = CryptoGetInfoQuery.newBuilder()
 				.setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
 				.setAccountID(TxnUtils.asId(account, spec))

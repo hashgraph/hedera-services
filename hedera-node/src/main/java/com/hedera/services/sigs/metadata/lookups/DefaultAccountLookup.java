@@ -9,9 +9,9 @@ package com.hedera.services.sigs.metadata.lookups;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,6 +20,7 @@ package com.hedera.services.sigs.metadata.lookups;
  * ‍
  */
 
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
@@ -29,26 +30,49 @@ import com.swirlds.merkle.map.MerkleMap;
 import java.util.function.Supplier;
 
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
+import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 
 /**
  * Trivial account signing metadata lookup backed by a {@code FCMap<MapKey, MapValue>}.
  */
 public class DefaultAccountLookup implements AccountSigMetaLookup {
+	private final AliasManager aliasManager;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
-	public DefaultAccountLookup(Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts) {
+	public DefaultAccountLookup(
+			final AliasManager aliasManager,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
+	) {
+		this.aliasManager = aliasManager;
 		this.accounts = accounts;
 	}
 
 	@Override
-	public SafeLookupResult<AccountSigningMetadata> safeLookup(AccountID id) {
-		var account = accounts.get().get(fromAccountId(id));
-		return (account == null)
-				? SafeLookupResult.failure(MISSING_ACCOUNT)
-				: new SafeLookupResult<>(
-						new AccountSigningMetadata(
-								account.getAccountKey(),
-								account.isReceiverSigRequired()));
+	public SafeLookupResult<AccountSigningMetadata> safeLookup(final AccountID id) {
+		return lookupByNumber(fromAccountId(id));
+	}
+
+	@Override
+	public SafeLookupResult<AccountSigningMetadata> aliasableSafeLookup(final AccountID idOrAlias) {
+		if (isAlias(idOrAlias)) {
+			final var explicitId = aliasManager.lookupIdBy(idOrAlias.getAlias());
+			return (explicitId == EntityNum.MISSING_NUM)
+					? SafeLookupResult.failure(MISSING_ACCOUNT)
+					: lookupByNumber(explicitId);
+		} else {
+			return lookupByNumber(fromAccountId(idOrAlias));
+		}
+	}
+
+	private SafeLookupResult<AccountSigningMetadata> lookupByNumber(final EntityNum id) {
+		var account = accounts.get().get(id);
+		if (account == null) {
+			return SafeLookupResult.failure(MISSING_ACCOUNT);
+		} else {
+			return new SafeLookupResult<>(
+					new AccountSigningMetadata(
+							account.getAccountKey(), account.isReceiverSigRequired()));
+		}
 	}
 }

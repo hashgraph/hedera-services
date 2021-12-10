@@ -87,6 +87,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private boolean useDefaultTxnId = false;
 	private boolean requestDuplicates = false;
 	private boolean shouldBeTransferFree = false;
+	private boolean requestChildRecords = false;
 	private boolean assertOnlyPriority = false;
 	private boolean assertNothingAboutHashes = false;
 	private boolean lookupScheduledFromRegistryId = false;
@@ -157,6 +158,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	public HapiGetTxnRecord assertingNothingAboutHashes() {
 		assertNothingAboutHashes = true;
+		return this;
+	}
+
+	public HapiGetTxnRecord andAllChildRecords() {
+		requestChildRecords = true;
 		return this;
 	}
 
@@ -515,7 +521,15 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	protected void submitWith(HapiApiSpec spec, Transaction payment) {
 		Query query = getRecordQuery(spec, payment, false);
 		response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getTxRecordByTxID(query);
-		TransactionRecord record = response.getTransactionGetRecord().getTransactionRecord();
+		final TransactionRecord record = response.getTransactionGetRecord().getTransactionRecord();
+		childRecords = response.getTransactionGetRecord().getChildTransactionRecordsList();
+		for (var rec : childRecords){
+			spec.registry().saveAccountId(rec.getAlias().toStringUtf8(), rec.getReceipt().getAccountID());
+			log.info(spec.logPrefix() + "  Saving alias {} to registry for Account ID {}",
+					rec.getAlias().toStringUtf8(),
+					rec.getReceipt().getAccountID());
+		}
+
 		if (verboseLoggingOn) {
 			if (format.isPresent()) {
 				format.get().accept(record, log);
@@ -524,6 +538,10 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 				var rates = spec.ratesProvider();
 				var priceInUsd = sdec(rates.toUsdWithActiveRates(fee), 5);
 				log.info(spec.logPrefix() + "Record (charged ${}): {}", priceInUsd, record);
+				log.info(spec.logPrefix() + "  And {} child record{}: {}",
+						childRecords.size(),
+						childRecords.size() > 1 ? "s" : "",
+						childRecords);
 				log.info("Duplicates: {}",
 						response.getTransactionGetRecord().getDuplicateTransactionRecordsList());
 			}
@@ -575,6 +593,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 				.setHeader(header)
 				.setTransactionID(txnId)
 				.setIncludeDuplicates(requestDuplicates)
+				.setIncludeChildRecords(requestChildRecords)
 				.build();
 		return Query.newBuilder().setTransactionGetRecord(getRecordQuery).build();
 	}

@@ -111,7 +111,8 @@ class AccountTest {
 	void toStringAsExpected() {
 		// given:
 		final var desired = "Account{id=Id{shard=0, realm=0, num=12345}, expiry=0, balance=0, deleted=false, " +
-				"tokens=[0.0.666, 0.0.777], ownedNfts=5, alreadyUsedAutoAssociations=123, maxAutoAssociations=1234}";
+				"tokens=[0.0.666, 0.0.777], ownedNfts=5, alreadyUsedAutoAssociations=123, maxAutoAssociations=1234, alias=" +
+				subject.getAlias() + "}";
 
 		// expect:
 		assertEquals(desired, subject.toString());

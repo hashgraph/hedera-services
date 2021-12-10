@@ -9,9 +9,9 @@ package com.hedera.services.queries.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,8 +21,10 @@ package com.hedera.services.queries.crypto;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
@@ -46,17 +48,21 @@ import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 @Singleton
 public class GetAccountInfoAnswer implements AnswerService {
 	private final OptionValidator optionValidator;
+	private final AliasManager autoAccounts;
 
 	@Inject
-	public GetAccountInfoAnswer(OptionValidator optionValidator) {
+	public GetAccountInfoAnswer(final OptionValidator optionValidator, final AliasManager autoAccounts) {
 		this.optionValidator = optionValidator;
+		this.autoAccounts = autoAccounts;
 	}
 
 	@Override
 	public ResponseCodeEnum checkValidity(Query query, StateView view) {
 		AccountID id = query.getCryptoGetInfo().getAccountID();
-
-		return optionValidator.queryableAccountStatus(id, view.accounts());
+		var entityNum = id.getAlias().isEmpty() ?
+				EntityNum.fromAccountId(id) :
+				autoAccounts.lookupIdBy(id.getAlias());
+		return optionValidator.queryableAccountStatus(entityNum, view.accounts());
 	}
 
 	@Override
@@ -72,7 +78,7 @@ public class GetAccountInfoAnswer implements AnswerService {
 				response.setHeader(costAnswerHeader(OK, cost));
 			} else {
 				AccountID id = op.getAccountID();
-				var optionalInfo = view.infoForAccount(id);
+				var optionalInfo = view.infoForAccount(id, autoAccounts);
 				if (optionalInfo.isPresent()) {
 					response.setHeader(answerOnlyHeader(OK));
 					response.setAccountInfo(optionalInfo.get());

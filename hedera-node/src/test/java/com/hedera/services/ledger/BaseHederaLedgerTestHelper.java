@@ -21,6 +21,7 @@ package com.hedera.services.ledger;
  */
 
 import com.hedera.services.config.MockGlobalDynamicProps;
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -39,6 +40,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -81,6 +83,7 @@ public class BaseHederaLedgerTestHelper {
 
 	protected HederaLedger subject;
 
+	protected SideEffectsTracker sideEffectsTracker;
 	protected HederaTokenStore tokenStore;
 	protected EntityIdSource ids;
 	protected ExpiringCreations creator;
@@ -232,21 +235,17 @@ public class BaseHederaLedgerTestHelper {
 		given(tokenStore.resolve(tokenId))
 				.willReturn(tokenId);
 		given(tokenStore.get(frozenId)).willReturn(frozenToken);
+		sideEffectsTracker = mock(SideEffectsTracker.class);
+		AutoCreationLogic autoAccountCreator = mock(AutoCreationLogic.class);
 
-		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger);
+		subject = new HederaLedger(
+				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProps, accountsLedger, autoAccountCreator);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setNftsLedger(nftsLedger);
 	}
 
-	protected void givenAdjustBalanceUpdatingTokenXfers(AccountID misc, TokenID tokenId, long i) {
-		given(tokenStore.adjustBalance(misc, tokenId, i))
-				.willAnswer(invocationOnMock -> {
-					AccountID aId = invocationOnMock.getArgument(0);
-					TokenID tId = invocationOnMock.getArgument(1);
-					long amount = invocationOnMock.getArgument(2);
-					subject.updateTokenXfers(tId, aId, amount);
-					return OK;
-				});
+	protected void givenOkTokenXfers(AccountID misc, TokenID tokenId, long i) {
+		given(tokenStore.adjustBalance(misc, tokenId, i)).willReturn(OK);;
 	}
 
 	protected static class TokenInfo {
