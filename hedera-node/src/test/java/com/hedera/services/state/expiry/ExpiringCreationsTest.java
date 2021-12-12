@@ -192,8 +192,29 @@ class ExpiringCreationsTest {
 	}
 
 	@Test
+	void includesMintedSerialNos() {
+		final var mockMints = List.of(1L, 2L);
+		setupTrackerNoUnitOrOwnershipChanges();
+		setUpForExpiringRecordBuilder();
+
+		given(sideEffectsTracker.hasTrackedNftMints()).willReturn(true);
+		given(sideEffectsTracker.getTrackedNftMints()).willReturn(mockMints);
+
+		final var created = subject.createTopLevelRecord(
+				totalFee,
+				hash,
+				accessor,
+				timestamp,
+				receiptBuilder,
+				customFeesCharged,
+				sideEffectsTracker).build();
+
+		assertArrayEquals(mockMints.stream().mapToLong(l -> l).toArray(), created.getReceipt().getSerialNumbers());
+	}
+
+	@Test
 	void createsExpectedRecordForNonTriggeredTxnWithNoTokenChanges() {
-		setupTrackerNoTokenChanges();
+		setupTrackerNoUnitOrOwnershipChanges();
 		setUpForExpiringRecordBuilder();
 
 		final var created = subject.createTopLevelRecord(
@@ -258,7 +279,7 @@ class ExpiringCreationsTest {
 		given(sideEffectsTracker.getNetTrackedTokenUnitAndOwnershipChanges()).willReturn(netTokenChanges);
 	}
 
-	private void setupTrackerNoTokenChanges() {
+	private void setupTrackerNoUnitOrOwnershipChanges() {
 		given(sideEffectsTracker.getNetTrackedHbarChanges()).willReturn(transfers);
 		given(sideEffectsTracker.getTrackedAutoAssociations()).willReturn(newTokenAssociations);
 		given(sideEffectsTracker.getNetTrackedTokenUnitAndOwnershipChanges()).willReturn(List.of());

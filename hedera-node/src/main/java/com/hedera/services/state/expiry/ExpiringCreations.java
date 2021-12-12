@@ -45,6 +45,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -152,6 +153,12 @@ public class ExpiringCreations implements EntityCreator {
 		}
 		if (sideEffectsTracker.hasTrackedTokenSupply()) {
 			receiptBuilder.setNewTotalSupply(sideEffectsTracker.getTrackedTokenSupply());
+		}
+		if (sideEffectsTracker.hasTrackedNftMints()) {
+			final var serialNoList = sideEffectsTracker.getTrackedNftMints();
+			final var rawSerials = new long[serialNoList.size()];
+			Arrays.setAll(rawSerials, serialNoList::get);
+			receiptBuilder.setSerialNumbers(rawSerials);
 		}
 
 		final var baseRecord = ExpirableTxnRecord.newBuilder()
