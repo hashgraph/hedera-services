@@ -632,17 +632,6 @@ public class ContractResources {
 	public static final String DISSOCIATE_TOKEN = "{ \"inputs\": [], \"name\": \"dissociateToken\", \"outputs\": [], " +
 			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
-	public static final String TRANSFER_NFT = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"token\", " +
-			"\"type\": \"address\" }, { \"internalType\": \"address\", \"name\": \"sender\", \"type\": \"address\" }, " +
-			"{ \"internalType\": \"address\", \"name\": \"receiver\", \"type\": \"address\" }, " +
-			"{ \"internalType\": \"int64\", \"name\": \"serialNum\", \"type\": \"int64\" } ], " +
-			"\"name\": \"transferNft\", \"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
-	public static final String TRANSFER_NFTS = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"token\", " +
-			"\"type\": \"address\" }, { \"internalType\": \"address[]\", \"name\": \"sender\", \"type\": \"address[]\" }," +
-			" { \"internalType\": \"address[]\", \"name\": \"receiver\", \"type\": \"address[]\" }, " +
-			"{ \"internalType\": \"int64[]\", \"name\": \"serialNumber\", \"type\": \"int64[]\" } ], " +
-			"\"name\": \"transferNfts\", \"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
-
 
 	public static String bytecodePath(String bytecode) {
 		return String.format("src/main/resource/contract/bytecodes/%s.bin", bytecode);
