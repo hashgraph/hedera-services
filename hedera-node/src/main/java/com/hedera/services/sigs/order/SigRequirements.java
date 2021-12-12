@@ -975,7 +975,10 @@ public class SigRequirements {
 				if (autoCreationAllowed && reason == MISSING_ACCOUNT && adjust.getAmount() > 0L && isAlias(account)) {
 					return NONE;
 				} else {
-					return reason;
+					/* MISSING_ACCOUNT is not a "terminal" signature status, because in several transaction types
+					 * we want a downstream components to choose a more specific failure response. But missing
+					 * accounts in a transfer list can be safely given the terminal INVALID_ACCOUNT_ID status. */
+					return (reason == MISSING_ACCOUNT) ? INVALID_ACCOUNT : reason;
 				}
 			}
 		}

@@ -25,7 +25,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.EnumSet;
 import java.util.function.Predicate;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
@@ -49,7 +48,6 @@ public enum TerminalSigStatuses implements Predicate<ResponseCodeEnum> {
 			KEY_PREFIX_MISMATCH,
 			MODIFYING_IMMUTABLE_CONTRACT,
 			INVALID_CONTRACT_ID,
-			ACCOUNT_ID_DOES_NOT_EXIST,
 			UNRESOLVABLE_REQUIRED_SIGNERS,
 			SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
 

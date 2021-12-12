@@ -28,7 +28,6 @@ import java.util.EnumSet;
 import java.util.stream.Stream;
 
 import static com.hedera.services.state.logic.TerminalSigStatuses.TERMINAL_SIG_STATUSES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
@@ -50,7 +49,6 @@ class TerminalSigStatusesTest {
 			KEY_PREFIX_MISMATCH,
 			MODIFYING_IMMUTABLE_CONTRACT,
 			INVALID_CONTRACT_ID,
-			ACCOUNT_ID_DOES_NOT_EXIST,
 			UNRESOLVABLE_REQUIRED_SIGNERS,
 			SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
 

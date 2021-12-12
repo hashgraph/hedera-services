@@ -630,7 +630,7 @@ class SigRequirementsTest {
 		final var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		assertTrue(summary.getOrderedKeys().isEmpty());
-		assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, summary.getErrorReport());
+		assertEquals(INVALID_ACCOUNT_ID, summary.getErrorReport());
 	}
 
 	@Test
@@ -654,7 +654,7 @@ class SigRequirementsTest {
 
 		subject.keysForOtherParties(txn, mockSummaryFactory);
 
-		verify(mockSummaryFactory).forMissingAccount();
+		verify(mockSummaryFactory).forInvalidAccount();
 	}
 
 	@Test
