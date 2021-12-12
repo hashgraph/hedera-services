@@ -584,15 +584,16 @@ public class ContractResources {
 			"{\"internalType\":\"address[]\",\"name\":\"accounts\",\"type\":\"address[]\"}," +
 			"{\"internalType\":\"int64[]\",\"name\":\"amounts\",\"type\":\"int64[]\"}],\"name\":\"distributeTokens\"," +
 			"\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String VERSATILE_CRYPTO_TRANSFERS = "{\"inputs\":[{\"components\":[{\"internalType\":\"address\"" +
-			",\"name\":\"token\",\"type\":\"address\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"accountID\"" +
-			",\"type\":\"address\"},{\"internalType\":\"int64\",\"name\":\"amount\",\"type\":\"int64\"}],\"internalType\"" +
-			":\"structIHederaTokenService.AccountAmount[]\",\"name\":\"transfers\",\"type\":\"tuple[]\"},{\"components\":" +
-			"[{\"internalType\":\"address\",\"name\":\"senderAccountID\",\"type\":\"address\"},{\"internalType\":\"address\"" +
-			",\"name\":\"receiverAccountID\",\"type\":\"address\"},{\"internalType\":\"int64\",\"name\":\"serialNumber\"," +
-			"\"type\":\"int64\"}],\"internalType\":\"structIHederaTokenService.NftTransfer[]\",\"name\":\"nftTransfers\",\"type\":" +
-			"\"tuple[]\"}],\"internalType\":\"structIHederaTokenService.TokenTransferList[]\",\"name\":\"transferList\",\"type\":" +
-			"\"tuple[]\"}],\"name\":\"cryptoTransfers\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String VERSATILE_TRANSFERS_NFTS = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token" +
+			"\",\"type\":\"address\"},{\"internalType\":\"address[]\",\"name\":\"sender\",\"type\":\"address[]\"}," +
+			"{\"internalType\":\"address[]\",\"name\":\"receiver\",\"type\":\"address[]\"},{\"internalType\":\"int64[]" +
+			"\",\"name\":\"serialNumber\",\"type\":\"int64[]\"}],\"name\":\"transferNfts\",\"outputs\":[],\"" +
+			"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String VERSATILE_TRANSFERS_NFT = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token" +
+			"\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType" +
+			"\":\"address\",\"name\":\"receiver\",\"type\":\"address\"},{\"internalType\":\"int64\",\"name\":\"serialNum" +
+			"\",\"type\":\"int64\"}],\"name\":\"transferNft\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+
 
 	public static final String MUSICAL_CHAIRS_CONSTRUCTOR = "{" +
 			"\"inputs\": [{\"internalType\": \"address\",\"name\": \"_dj\",\"type\": \"address\"}]," +
