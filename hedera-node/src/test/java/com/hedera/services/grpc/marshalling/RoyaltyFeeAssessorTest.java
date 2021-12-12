@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.hedera.services.store.models.Id.MISSING_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -103,6 +104,18 @@ class RoyaltyFeeAssessorTest {
 				FcCustomFee.fixedFee(33, null, targetCollector),
 				changeManager,
 				accumulator);
+	}
+
+	@Test
+	void abortsWithNecessaryResponseCodeIfNoCounterpartyId() {
+		final var fallback = new FixedFeeSpec(33, null);
+		final List<FcCustomFee> fees = List.of(
+				FcCustomFee.royaltyFee(1, 2, fallback, targetCollector));
+
+		final var result =
+				subject.assessAllRoyalties(htsPayerPlusChange, fees, changeManager, accumulator);
+
+		assertEquals(ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON, result);
 	}
 
 	@Test

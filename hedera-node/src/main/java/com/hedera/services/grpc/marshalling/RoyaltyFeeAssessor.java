@@ -32,6 +32,7 @@ import java.util.List;
 import static com.hedera.services.grpc.marshalling.AdjustmentUtils.safeFractionMultiply;
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.ROYALTY_FEE;
 import static com.hedera.services.store.models.Id.MISSING_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -50,6 +51,12 @@ public class RoyaltyFeeAssessor {
 			BalanceChangeManager changeManager,
 			List<FcAssessedCustomFee> accumulator
 	) {
+		if (!change.isForNft()) {
+			/* This change was denominated in a non-fungible token type---but appeared
+			 * in the fungible transfer list. Fail now with the appropriate status. */
+			return ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
+		}
+
 		final var payer = change.getAccount();
 		final var token = change.getToken();
 

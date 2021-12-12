@@ -140,10 +140,17 @@ class StandardProcessLogicTest {
 	void warnsOnNonGrpc() throws InvalidProtocolBufferException {
 		given(expandHandleSpan.accessorFor(swirldTransaction)).willThrow(InvalidProtocolBufferException.class);
 
-		// when:
 		subject.incorporateConsensusTxn(swirldTransaction, consensusNow, member);
 
-		// then:
 		assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith("Consensus platform txn was not gRPC!")));
+	}
+
+	@Test
+	void logsAtErrorForUnhandledInternalProcessFailure() throws InvalidProtocolBufferException {
+		given(expandHandleSpan.accessorFor(swirldTransaction)).willThrow(IllegalStateException.class);
+
+		subject.incorporateConsensusTxn(swirldTransaction, consensusNow, member);
+
+		assertThat(logCaptor.errorLogs(), contains(Matchers.startsWith("Unhandled internal process failure")));
 	}
 }
