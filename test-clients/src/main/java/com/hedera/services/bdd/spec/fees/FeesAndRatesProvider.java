@@ -42,6 +42,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.time.Instant;
 import java.util.Arrays;
@@ -242,9 +243,9 @@ public class FeesAndRatesProvider {
 
 	public double toUsdWithActiveRates(long tb) {
 		return BigDecimal.valueOf(tb).divide(HBAR_DIVISOR)
-				.divide(BigDecimal.valueOf(activeRates().getHbarEquiv()))
-				.multiply(BigDecimal.valueOf(activeRates().getCentEquiv()))
 				.divide(USD_DIVISOR)
+				.multiply(BigDecimal.valueOf(activeRates().getCentEquiv()))
+				.divide(BigDecimal.valueOf(activeRates().getHbarEquiv()), 5, RoundingMode.HALF_UP)
 				.doubleValue();
 	}
 
