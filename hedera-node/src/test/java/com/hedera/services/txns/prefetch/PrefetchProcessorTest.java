@@ -25,11 +25,6 @@ import com.hedera.services.txns.PreFetchableTransition;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.TransitionLogicLookup;
 import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.test.extensions.LogCaptor;
-import com.hedera.test.extensions.LogCaptureExtension;
-import com.hedera.test.extensions.LoggingSubject;
-import com.hedera.test.extensions.LoggingTarget;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,6 +34,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -49,18 +46,14 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.txns.prefetch.PrefetchProcessor.MINIMUM_QUEUE_CAPACITY;
 import static com.hedera.services.txns.prefetch.PrefetchProcessor.MINIMUM_THREAD_POOL_SIZE;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.hamcrest.core.IsNot.not;
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
-@ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
+@ExtendWith({ MockitoExtension.class })
 @MockitoSettings(strictness = Strictness.LENIENT)
 class PrefetchProcessorTest {
     @Mock NodeLocalProperties properties;
@@ -68,10 +61,9 @@ class PrefetchProcessorTest {
     @Mock PlatformTxnAccessor accessor;
     @Mock PreFetchableTransition logic;
 
-    @LoggingTarget
-    LogCaptor logCaptor;
-    @LoggingSubject
     PrefetchProcessor processor;
+    List<Runnable> executed = new ArrayList<>();
+    List<Runnable> rejected = new ArrayList<>();
 
     @AfterEach
     void teardown() {
@@ -122,7 +114,7 @@ class PrefetchProcessorTest {
         };
     }
 
-    BlockingQueue<Runnable> setupOffer() {
+    BlockingQueue<Runnable> setupSubmit() {
         given(properties.prefetchQueueCapacity()).willReturn(2);
         given(properties.prefetchThreadPoolSize()).willReturn(1);
 
@@ -130,7 +122,30 @@ class PrefetchProcessorTest {
         processor = new PrefetchProcessor(properties, lookup) {
             @Override
             ExecutorService createExecutorService(int threadPoolSize, BlockingQueue<Runnable> queue) {
-                ExecutorService execService = super.createExecutorService(threadPoolSize, queue);
+                queue = new ArrayBlockingQueue<>(2);
+                ThreadPoolExecutor execService = new ThreadPoolExecutor(
+                        threadPoolSize,
+                        threadPoolSize,
+                        0L,
+                        TimeUnit.MILLISECONDS,
+                        queue
+                ) {
+                    @Override
+                    @java.lang.SuppressWarnings("java:S2925")
+                    protected void beforeExecute(Thread t, Runnable r) {
+                        try {
+                            executed.add(r);
+                            Thread.sleep(10);   // need to wait to allow assertions to work
+                        } catch (InterruptedException e) {
+                            // noop
+                        }
+                    }
+                };
+                execService.setRejectedExecutionHandler((runnable, exec) -> {
+                    rejected.add(runnable);
+                });
+
+                this.queue = queue;
                 queueRef.set(queue);
                 return execService;
             }
@@ -140,68 +155,61 @@ class PrefetchProcessorTest {
     }
 
     @Test
-    void offerSuccessful() throws InterruptedException {
+    void submitSuccessful() {
         given(lookup.lookupFor(any(), any())).willReturn(Optional.of(logic));
 
-        final var queue = setupOffer();
-        processor.offer(accessor);
+        final var queue = setupSubmit();
+        processor.submit(accessor);
 
-        assertEquals(1, queue.size());
-        Runnable runnable = queue.take();
-        runnable.run();
+        await().until(() -> executed.size() == 1);
 
         verify(logic).preFetch(accessor);
     }
 
     @Test
-    void offerNotPrefetchableLogic() {
+    void submitNotPrefetchableLogic() {
         TransitionLogic logic = Mockito.mock(TransitionLogic.class);
         given(lookup.lookupFor(any(), any())).willReturn(Optional.of(logic));
 
-        final var queue = setupOffer();
-        processor.offer(accessor);
+        final var queue = setupSubmit();
+        processor.submit(accessor);
 
-        assertEquals(0, queue.size());
-        assertThat(
-                logCaptor.warnLogs(),
-                not(contains(Matchers.startsWith("Pre-fetch queue is FULL"))));
+        await().atMost(200, TimeUnit.MILLISECONDS)
+                .until(() -> executed.size() == 0 && rejected.size() == 0);
     }
 
     @Test
-    void failedOfferQueueFull() {
+    void failedSubmitQueueFull() {
         given(lookup.lookupFor(any(), any())).willReturn(Optional.of(logic));
 
-        final var queue = setupOffer();
-        processor.queue = new ArrayBlockingQueue<>(1);
+        final var queue = setupSubmit();
+        for (int i = 0; i < 20; i++) {
+            processor.submit(accessor);
+        }
 
-        assertTrue(processor.offer(accessor));
-        assertFalse(processor.offer(accessor));
-        assertThat(
-                logCaptor.warnLogs(),
-                contains(Matchers.startsWith("Pre-fetch queue is FULL")));
+        await().atMost(10, TimeUnit.SECONDS).until(() -> rejected.size() > 0);
     }
 
     @Test
-    void offerEmptyTransitionLogic() {
+    void submitEmptyTransitionLogic() {
         given(lookup.lookupFor(any(), any())).willReturn(Optional.empty());
 
-        final var queue = setupOffer();
-        processor.offer(accessor);
+        final var queue = setupSubmit();
+        processor.submit(accessor);
 
-        assertEquals(0, queue.size());
+        await().atMost(200, TimeUnit.MILLISECONDS)
+                .until(() -> executed.size() == 0);
     }
 
     @Test
-    void offerExceptionThrownDuringRun() throws InterruptedException {
+    void submitExceptionThrownDuringRun() {
         given(lookup.lookupFor(any(), any())).willReturn(Optional.of(logic));
         doThrow(new RuntimeException("oh no")).when(logic).preFetch(accessor);
 
-        final var queue = setupOffer();
-        processor.offer(accessor);
+        final var queue = setupSubmit();
+        processor.submit(accessor);
 
-        assertEquals(1, queue.size());
-        Runnable runnable = queue.take();
-        runnable.run();
+        await().until(() -> executed.size() == 1);
 
         verify(logic).preFetch(accessor);
     }

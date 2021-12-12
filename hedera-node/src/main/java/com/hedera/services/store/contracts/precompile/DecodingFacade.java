@@ -28,11 +28,13 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -153,14 +155,22 @@ public class DecodingFacade {
 
 		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
 		final var fungibleAmount = (long) decodedArguments.get(1);
-		final var metadata = String.valueOf(decodedArguments.get(2));
+		final var metadataList = String.valueOf(decodedArguments.get(2));
+		final var splittedMetadataList = metadataList.split(StringUtils.toEncodedString(new byte[1], StandardCharsets.UTF_8));
+		final List<ByteString> metadataByteStringList = new ArrayList<>();
+		for (final var metadata: splittedMetadataList) {
+			if(metadata!=null && !StringUtils.isEmpty(metadata)) {
+				metadataByteStringList.add(ByteString.copyFrom(metadata.getBytes()));
+			}
+		}
 
 		if (fungibleAmount > 0) {
 			return SyntheticTxnFactory.MintWrapper.forFungible(
 					tokenID, fungibleAmount);
 		} else {
 			return SyntheticTxnFactory.MintWrapper.forNonFungible(
-					tokenID, Collections.singletonList(ByteString.copyFrom(metadata.getBytes())));
+					tokenID, !metadataByteStringList.isEmpty() ? metadataByteStringList :
+							Collections.singletonList(ByteString.copyFrom("".getBytes())));
 		}
 	}
 
