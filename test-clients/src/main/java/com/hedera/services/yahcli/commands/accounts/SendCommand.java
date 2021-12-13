@@ -20,53 +20,77 @@ package com.hedera.services.yahcli.commands.accounts;
  * ‍
  */
 
-import com.hedera.services.yahcli.suites.BalanceSuite;
+import com.hedera.services.yahcli.suites.SendSuite;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
-import picocli.CommandLine.Parameters;
 import picocli.CommandLine.ParentCommand;
 
 import java.util.concurrent.Callable;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.SpecStatus.PASSED;
 import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
+import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
 @Command(
 		name = "send",
 		subcommands = { HelpCommand.class },
 		description = "Transfers funds from the payer to a target account")
 public class SendCommand implements Callable<Integer> {
+	private static final long TINYBARS_PER_HBAR = 100_000_000L;
+	private static final long TINYBARS_PER_KILOBAR = 1_000 * TINYBARS_PER_HBAR;
+
 	@ParentCommand
 	AccountsCommand accountsCommand;
 
 	@CommandLine.Option(names = { "-d", "--denomination" },
 			paramLabel = "denomination",
-			description = "{tinybar|hbar|kilobar}",
+			description = "{ tinybar | hbar | kilobar }",
 			defaultValue = "hbar")
 	String denomination;
 
-	@Parameters(
-			index = "0",
+	@CommandLine.Option(
+			names = { "--to" },
 			paramLabel = "<beneficiary>",
 			description = "account to receive the funds")
 	String beneficiary;
-	@Parameters(
-			index = "1",
-			paramLabel = "<beneficiary>",
-			description = "account to receive the funds")
-	Long amount;
+	@CommandLine.Parameters(
+			paramLabel = "<amount_to_send>",
+			description = "how many units of the denomination to send")
+	String amountRepr;
 
 	@Override
 	public Integer call() throws Exception {
 		var config = configFrom(accountsCommand.getYahcli());
 
-		var delegate = new BalanceSuite(config.asSpecConfig(), beneficiary);
+		long amount = Long.parseLong(amountRepr.replaceAll("_", ""));
+		long amountInTinybars = amount;
+		switch (denomination) {
+			default:
+				throw new CommandLine.ParameterException(
+						accountsCommand.getYahcli().getSpec().commandLine(),
+						"Denomination must be one of { tinybar | hbar | kilobar }");
+			case "tinybar":
+				break;
+			case "hbar":
+				amountInTinybars = amount * TINYBARS_PER_HBAR;
+				break;
+			case "kilobar":
+				amountInTinybars = amount * TINYBARS_PER_KILOBAR;
+				break;
+		}
+		var delegate = new SendSuite(config.asSpecConfig(), beneficiary, amountInTinybars);
 		delegate.runSuiteSync();
 
-		return 0;
-	}
+		if (delegate.getFinalSpecs().get(0).getStatus() == PASSED) {
+			COMMON_MESSAGES.info("SUCCESS - " +
+					"sent " + amountRepr + " " + denomination + " to account " + beneficiary);
+		} else {
+			COMMON_MESSAGES.info("FAILED - " +
+					"could not send " + amountRepr + " " + denomination + " to account " + beneficiary);
+			return 1;
+		}
 
-	private void printTable(final StringBuilder balanceRegister) {
-		System.out.println(balanceRegister.toString());
+		return 0;
 	}
 }

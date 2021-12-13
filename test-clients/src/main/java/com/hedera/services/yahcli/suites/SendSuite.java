@@ -21,15 +21,14 @@ package com.hedera.services.yahcli.suites;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 
 public class SendSuite extends HapiApiSuite {
@@ -47,15 +46,14 @@ public class SendSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		List<HapiApiSpec> specToRun = new ArrayList<>();
-		return specToRun;
+		return List.of(doSend());
 	}
 
 	private HapiApiSpec doSend() {
 		return HapiApiSpec.customHapiSpec("DoSend")
 				.withProperties(specConfig)
 				.given().when().then(
-						TxnVerbs.cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, beneficiary, tinybarsToSend))
+						cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, beneficiary, tinybarsToSend))
 				);
 	}
 
