@@ -296,7 +296,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			result = resultFrom(status);
 		}
 
-		updater.manageInProgressRecord(recordsHistorian, childRecord, synthBody);
+		((AbstractLedgerWorldUpdater) updater.parentUpdater().get()).manageInProgressRecord(recordsHistorian, childRecord,
+				synthBody);
 
 		return result;
 	}

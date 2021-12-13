@@ -92,11 +92,11 @@ public class ContractHTSSuite extends HapiApiSuite {
 				depositAndWithdraw(),
 				associateToken(),
 				dissociateToken(),
-				insufficientBalanceRollback()
+				HSCS_PREC_017_rollback_after_insufficient_balance()
 		);
 	}
 
-	private HapiApiSpec insufficientBalanceRollback() {
+	private HapiApiSpec HSCS_PREC_017_rollback_after_insufficient_balance() {
 		final var alice = "alice";
 		final var bob = "bob";
 		final var treasuryForToken = "treasuryForToken";
@@ -105,11 +105,11 @@ public class ContractHTSSuite extends HapiApiSuite {
 		final var tokenWithHbarFee = "tokenWithHbarFee";
 		final var theContract = "theContract";
 
-		return defaultHapiSpec("insufficientBalanceRollback")
+		return defaultHapiSpec("HSCS_PREC_017_rollback_after_insufficient_balance")
 				.given(
 						newKeyNamed(supplyKey),
-						cryptoCreate(alice).balance(12 * ONE_HBAR),
-						cryptoCreate(bob).balance(52390000L),
+						cryptoCreate(alice).balance(3 * ONE_HBAR),
+						cryptoCreate(bob).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(treasuryForToken).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(feeCollector).balance(0L),
 						tokenCreate(tokenWithHbarFee)
@@ -120,15 +120,16 @@ public class ContractHTSSuite extends HapiApiSuite {
 								.withCustom(fixedHbarFee(2 * ONE_HBAR, feeCollector)),
 						mintToken(tokenWithHbarFee, List.of(copyFromUtf8("First!"))),
 						mintToken(tokenWithHbarFee, List.of(copyFromUtf8("Second!"))),
-						fileCreate("bytecode").payingWith(alice),
-						updateLargeFile(alice, "bytecode", extractByteCode(ContractResources.TRANSFER_AMOUNT_AND_TOKEN_CONTRACT)),
+						fileCreate("bytecode").payingWith(bob),
+						updateLargeFile(bob, "bytecode",
+								extractByteCode(ContractResources.TRANSFER_AMOUNT_AND_TOKEN_CONTRACT)),
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
 												contractCreate(theContract, ContractResources.TRANSFER_AMOUNT_AND_TOKEN_CONSTRUCTOR,
 														asAddress(spec.registry().getTokenID(tokenWithHbarFee)))
-														.payingWith(alice)
+														.payingWith(bob)
 														.bytecode("bytecode")
 														.gas(28_000))),
 						tokenAssociate(alice, tokenWithHbarFee),
@@ -141,27 +142,26 @@ public class ContractHTSSuite extends HapiApiSuite {
 						getAccountInfo(feeCollector).has(AccountInfoAsserts.accountWith().balance(0L))
 				)
 				.when(
-
-				)
-				.then(
 						withOpContext(
 								(spec, opLog) -> {
 									allRunFor(
 											spec,
 											contractCall(theContract, TRANSFER_AMOUNT_AND_TOKEN_TRANSFER_TO_ADDRESS,
-													asAddress(spec.registry().getAccountID(alice)), asAddress(spec.registry().getAccountID(bob)),
+													asAddress(spec.registry().getAccountID(alice)),
+													asAddress(spec.registry().getAccountID(bob)),
 													1L, 2L)
 													.payingWith(alice)
 													.alsoSigningWithFullPrefix(alice)
 													.gas(70_000)
-													.via("test1")
+													.via("contractCallTxn")
 													.hasKnownStatus(CONTRACT_REVERT_EXECUTED));
-								}),
-						getTxnRecord("test1").andAllChildRecords().logged(),
+								})
+				)
+				.then(
+						getTxnRecord("contractCallTxn").andAllChildRecords().logged(),
 						getAccountInfo(feeCollector).has(AccountInfoAsserts.accountWith().balance(0L))
 				);
 	}
-
 
 	private HapiApiSpec depositAndWithdraw() {
 		final var theAccount = "anybody";
