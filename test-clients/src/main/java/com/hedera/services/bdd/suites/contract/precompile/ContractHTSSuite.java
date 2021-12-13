@@ -89,9 +89,9 @@ public class ContractHTSSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(
-//				depositAndWithdraw(),
-//				associateToken(),
-//				dissociateToken()
+				depositAndWithdraw(),
+				associateToken(),
+				dissociateToken(),
 				insufficientBalanceRollback()
 		);
 	}
@@ -122,7 +122,6 @@ public class ContractHTSSuite extends HapiApiSuite {
 								.withCustom(fixedHbarFee(2 * ONE_HBAR, feeCollector)),
 						mintToken(tokenWithHbarFee, List.of(copyFromUtf8("First!"))),
 						mintToken(tokenWithHbarFee, List.of(copyFromUtf8("Second!"))),
-						getAccountInfo(bob).savingSnapshot("receivableSigReqAccountInfo"),
 						fileCreate("bytecode").payingWith(alice),
 						updateLargeFile(alice, "bytecode", extractByteCode(ContractResources.TRANSFER_AMOUNT_AND_TOKEN_CONTRACT)),
 						withOpContext(
@@ -149,8 +148,6 @@ public class ContractHTSSuite extends HapiApiSuite {
 				.then(
 						withOpContext(
 								(spec, opLog) -> {
-									String accountAddress = spec.registry()
-											.getAccountInfo("receivableSigReqAccountInfo").getContractAccountID();
 									allRunFor(
 											spec,
 											contractCall(theContract, TRANSFER_AMOUNT_AND_TOKEN_TRANSFER_TO_ADDRESS,
