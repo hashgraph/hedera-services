@@ -99,6 +99,10 @@ import static java.util.Collections.unmodifiableMap;
 public class StateView {
 	private static final Logger log = LogManager.getLogger(StateView.class);
 
+	private static final AccountID WILDCARD_OWNER = AccountID.newBuilder()
+			.setAccountNum(0L)
+			.build();
+
 	static BiFunction<StateView, AccountID, List<TokenRelationship>> tokenRelsFn = StateView::tokenRels;
 
 	static final byte[] EMPTY_BYTES = new byte[0];
@@ -304,7 +308,7 @@ public class StateView {
 		final var targetNft = currentNfts.get(targetKey);
 		var accountId = targetNft.getOwner().toGrpcAccountId();
 
-		if (accountId.equals(AccountID.getDefaultInstance())) {
+		if (WILDCARD_OWNER.equals(accountId)) {
 			var merkleToken = tokens().get(tokenId);
 			if (merkleToken == null) {
 				return Optional.empty();

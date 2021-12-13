@@ -212,8 +212,8 @@ public class KeyExpansion {
 	) throws Exception {
 		final var pubKeyHex = com.swirlds.common.CommonUtils.hex(pubKeyBytes);
 		final var privKey = pubKey2privKeyMap.get(pubKeyHex);
-		final var sigHex = SignatureGenerator.signBytes(msgBytes, privKey);
-		return ByteString.copyFrom(com.swirlds.common.CommonUtils.unhex(sigHex));
+		final var sig = SignatureGenerator.signBytes(msgBytes, privKey);
+		return ByteString.copyFrom(sig);
 	}
 
 	/**
@@ -347,11 +347,11 @@ public class KeyExpansion {
 				: CommonUtils.copyBytes(0, prefixLen, pubKeyBytes);
 
 		final var privKey = pubKey2privKeyMap.get(pubKeyHex);
-		final var sigHex = SignatureGenerator.signBytes(msgBytes, privKey);
+		final var sig = SignatureGenerator.signBytes(msgBytes, privKey);
 
 		return SignaturePair.newBuilder()
 				.setPubKeyPrefix(ByteString.copyFrom(prefixBytes))
-				.setEd25519(ByteString.copyFrom(com.swirlds.common.CommonUtils.unhex(sigHex)))
+				.setEd25519(ByteString.copyFrom(sig))
 				.build();
 	}
 }

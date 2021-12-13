@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec;
  */
 
 import com.hedera.services.bdd.spec.keys.KeyFactory;
+import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -126,6 +127,9 @@ public interface HapiPropertySource {
 	}
 	default KeyFactory.KeyType getKeyType(String property) {
 		return KeyFactory.KeyType.valueOf(get(property));
+	}
+	default SigControl.KeyAlgo getKeyAlgorithm(String property) {
+		return SigControl.KeyAlgo.valueOf(get(property));
 	}
 	default HapiApiSpec.SpecStatus getSpecStatus(String property) {
 		return HapiApiSpec.SpecStatus.valueOf(get(property));

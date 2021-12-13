@@ -63,7 +63,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 
 	static final int CURRENT_VERSION = RELEASE_0180_VERSION;
 
-	static final int NUM_ED25519_PUBKEY_BYTES = 32;
+	static final int MAX_NUM_PUBKEY_BYTES = 33;
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d2b7d9e673285fcL;
 	static DomainSerdes serdes = new DomainSerdes();
@@ -107,8 +107,8 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 	}
 
 	/* Notary functions */
-	public boolean witnessValidEd25519Signature(byte[] key) {
-		var usableKey = copyFrom(key);
+	public boolean witnessValidSignature(byte[] key) {
+		final var usableKey = copyFrom(key);
 		if (notary.contains(usableKey)) {
 			return false;
 		} else {
@@ -144,7 +144,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 				.build();
 	}
 
-	public boolean hasValidEd25519Signature(byte[] key) {
+	public boolean hasValidSignatureFor(byte[] key) {
 		return notary.contains(copyFrom(key));
 	}
 
@@ -210,7 +210,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 		resolutionTime = serdes.readNullableInstant(in);
 		int numSignatories = in.readInt();
 		while (numSignatories-- > 0) {
-			witnessValidEd25519Signature(in.readByteArray(NUM_ED25519_PUBKEY_BYTES));
+			witnessValidSignature(in.readByteArray(MAX_NUM_PUBKEY_BYTES));
 		}
 		if (version >= RELEASE_0180_VERSION) {
 			number = in.readInt();
@@ -266,7 +266,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 
 		/* Signatories are mutable */
 		for (byte[] signatory : signatories) {
-			fc.witnessValidEd25519Signature(signatory);
+			fc.witnessValidSignature(signatory);
 		}
 
 		return fc;

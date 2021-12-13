@@ -85,7 +85,6 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenUpdateSpecs.class);
 	private static final int MAX_NAME_LENGTH = 100;
 	private static final int MAX_SYMBOL_LENGTH = 100;
-	private static final long A_HUNDRED_SECONDS = 100;
 
 	private static String TOKEN_TREASURY = "treasury";
 	private static final long defaultMaxLifetime =
@@ -118,7 +117,6 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						newTreasuryMustSign(),
 						newTreasuryMustBeAssociated(),
 						tokensCanBeMadeImmutableWithEmptyKeyList(),
-						updateHappyPath(),
 						updateNftTreasuryHappyPath(),
 						updateTokenTreasuryRequiresZeroTokenBalance(),
 						validatesMissingAdminKey(),
@@ -127,6 +125,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						/* HIP-18 */
 						canUpdateFeeScheduleKeyWithAdmin(),
 						updateUniqueTreasuryWithNfts(),
+						updateHappyPath(),
 				}
 		);
 	}
@@ -354,7 +353,8 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 	}
 
 	public HapiApiSpec validAutoRenewWorks() {
-		long firstPeriod = 500_000, secondPeriod = 600_000;
+		final var firstPeriod = THREE_MONTHS_IN_SECONDS;
+		final var secondPeriod = THREE_MONTHS_IN_SECONDS + 1234;
 		return defaultHapiSpec("AutoRenewInfoChanges")
 				.given(
 						cryptoCreate("autoRenew").balance(0L),
@@ -526,8 +526,10 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 		String updatedMemo = "Nothing left to do";
 		String saltedName = salted("primary");
 		String newSaltedName = salted("primary");
+		final var civilian = "civilian";
 		return defaultHapiSpec("UpdateHappyPath")
 				.given(
+						cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY).balance(0L),
 						cryptoCreate("newTokenTreasury").balance(0L),
 						cryptoCreate("autoRenewAccount").balance(0L),
@@ -548,7 +550,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.entityMemo(originalMemo)
 								.treasury(TOKEN_TREASURY)
 								.autoRenewAccount("autoRenewAccount")
-								.autoRenewPeriod(A_HUNDRED_SECONDS)
+								.autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
 								.initialSupply(500)
 								.decimals(1)
 								.adminKey("adminKey")
@@ -557,6 +559,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.supplyKey("supplyKey")
 								.wipeKey("wipeKey")
 								.pauseKey("pauseKey")
+								.payingWith(civilian)
 				).when(
 						tokenAssociate("newTokenTreasury", "primary"),
 						tokenUpdate("primary")
@@ -567,12 +570,13 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.entityMemo(updatedMemo)
 								.treasury("newTokenTreasury")
 								.autoRenewAccount("newAutoRenewAccount")
-								.autoRenewPeriod(101)
+								.autoRenewPeriod(THREE_MONTHS_IN_SECONDS + 1)
 								.freezeKey("newFreezeKey")
 								.kycKey("newKycKey")
 								.supplyKey("newSupplyKey")
 								.wipeKey("newWipeKey")
 								.pauseKey("newPauseKey")
+								.payingWith(civilian)
 				).then(
 						getAccountBalance(TOKEN_TREASURY)
 								.hasTokenBalance("primary", 0),
@@ -604,7 +608,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.hasTotalSupply(500)
 								.hasAutoRenewAccount("newAutoRenewAccount")
 								.hasPauseStatus(TokenPauseStatus.Unpaused)
-								.hasAutoRenewPeriod(101L)
+								.hasAutoRenewPeriod(THREE_MONTHS_IN_SECONDS + 1)
 				);
 	}
 
