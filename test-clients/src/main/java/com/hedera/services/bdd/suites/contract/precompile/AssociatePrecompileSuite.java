@@ -24,11 +24,13 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
+import com.hedera.services.legacy.core.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -102,7 +104,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 	private HapiApiSpec nestedDissociateAfterAssociateWorksAsExpected() {
 		final var theAccount = "anybody";
-		final var theContract = "NestedAssociateDissociateContract";
+		final var outerContract = "AssociateDissociateContract";
+		final var nestedContract = "NestedAssociateDissociateContract";
 		final var multiKey = "purpose";
 
 		AtomicReference<AccountID> accountID = new AtomicReference<>();
@@ -112,7 +115,11 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 		return defaultHapiSpec("nestedDissociateAfterAssociateWorksAsExpected")
 				.given(
 						newKeyNamed(multiKey),
-						fileCreate(theContract).path(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT),
+						fileCreate(outerContract).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
+						fileCreate(nestedContract).path(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT),
+						contractCreate(outerContract)
+								.bytecode(outerContract)
+								.gas(100_000),
 						cryptoCreate(theAccount)
 								.balance(10 * ONE_HUNDRED_HBARS)
 								.exposingCreatedIdTo(accountID::set),
@@ -128,10 +135,11 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(theContract)
-														.bytecode(theContract)
+												contractCreate(nestedContract, ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR,
+														getOuterContractAddress(outerContract, spec))
+														.bytecode(nestedContract)
 														.gas(100_000),
-												contractCall(theContract, NESTED_ASSOCIATE_TOKEN,
+												contractCall(nestedContract, NESTED_ASSOCIATE_TOKEN,
 														asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
 														.payingWith(theAccount)
 														.via("nestedDissociateAfterAssociateTxn")
@@ -631,6 +639,9 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 		return log;
 	}
 
+
+/* --- Helpers --- */
+
 	private static TokenID asToken(String v) {
 		long[] nativeParts = asDotDelimitedLongArray(v);
 		return TokenID.newBuilder()
@@ -638,5 +649,13 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 				.setRealmNum(nativeParts[1])
 				.setTokenNum(nativeParts[2])
 				.build();
+	}
+
+	@NotNull
+	private String getOuterContractAddress(String outerContract, HapiApiSpec spec) {
+		return CommonUtils.calculateSolidityAddress(
+				(int) spec.registry().getContractId(outerContract).getShardNum(),
+				spec.registry().getContractId(outerContract).getRealmNum(),
+				spec.registry().getContractId(outerContract).getContractNum());
 	}
 }

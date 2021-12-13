@@ -24,11 +24,14 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.legacy.core.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -37,6 +40,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.DISSOCIATE_TOKEN;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.NESTED_ASSOCIATE_TOKEN;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -65,6 +69,7 @@ import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.FREEZAB
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.KNOWABLE_TOKEN;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.TBD_TOKEN;
+import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -106,6 +111,61 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 				dissociatePrecompileHasExpectedSemanticsForDeletedTokens()
 		);
 	}
+
+	private HapiApiSpec nestedDissociateAfterAssociateWorksAsExpected() {
+		final var theAccount = "anybody";
+		final var outerContract = "AssociateDissociateContract";
+		final var nestedContract = "NestedAssociateDissociateContract";
+		final var multiKey = "purpose";
+
+		AtomicReference<AccountID> accountID = new AtomicReference<>();
+		AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
+
+
+		return defaultHapiSpec("nestedDissociateAfterAssociateWorksAsExpected")
+				.given(
+						newKeyNamed(multiKey),
+						fileCreate(outerContract).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
+						fileCreate(nestedContract).path(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT),
+						contractCreate(outerContract)
+								.bytecode(outerContract)
+								.gas(100_000),
+						cryptoCreate(theAccount)
+								.balance(10 * ONE_HUNDRED_HBARS)
+								.exposingCreatedIdTo(accountID::set),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						tokenCreate(VANILLA_TOKEN)
+								.tokenType(FUNGIBLE_COMMON)
+								.treasury(TOKEN_TREASURY)
+								.adminKey(multiKey)
+								.supplyKey(multiKey)
+								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id)))
+				)
+				.when(withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCreate(nestedContract, ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR,
+														getOuterContractAddress(outerContract, spec))
+														.bytecode(nestedContract)
+														.gas(100_000),
+												contractCall(nestedContract, NESTED_ASSOCIATE_TOKEN,
+														asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
+														.payingWith(theAccount)
+														.via("nestedDissociateAfterAssociateTxn")
+														.alsoSigningWithFullPrefix(multiKey)
+														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
+												getTxnRecord("nestedDissociateAfterAssociateTxn").andAllChildRecords().logged()
+										)
+						)
+
+				).then(
+						getAccountInfo(theAccount)
+								.hasNoTokenRelationship(VANILLA_TOKEN)
+				);
+	}
+
+
 
 	public HapiApiSpec dissociatePrecompileWithSigsForFungibleWorks() {
 		final var theAccount = "anybody";
@@ -663,6 +723,8 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 		return log;
 	}
 
+	/* --- Helpers --- */
+
 	private static TokenID asToken(String v) {
 		long[] nativeParts = asDotDelimitedLongArray(v);
 		return TokenID.newBuilder()
@@ -670,5 +732,13 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 				.setRealmNum(nativeParts[1])
 				.setTokenNum(nativeParts[2])
 				.build();
+	}
+
+	@NotNull
+	private String getOuterContractAddress(String outerContract, HapiApiSpec spec) {
+		return CommonUtils.calculateSolidityAddress(
+				(int) spec.registry().getContractId(outerContract).getShardNum(),
+				spec.registry().getContractId(outerContract).getRealmNum(),
+				spec.registry().getContractId(outerContract).getContractNum());
 	}
 }

@@ -604,6 +604,10 @@ public class ContractResources {
 			" \"type\": \"address\" } ], \"name\": \"tokenDissociate\", \"outputs\": [], \"stateMutability\": " +
 			"\"nonpayable\", \"type\": \"function\" }";
 
+	public static final String NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR = "{ \"inputs\": " +
+			"[ { \"internalType\": \"address\", \"name\": \"associateDissociateContractAddress\", \"type\":" +
+			" \"address\" } ], \"stateMutability\": \"nonpayable\", \"type\": \"constructor\" }";
+
 	public static final String NESTED_ASSOCIATE_TOKEN = "{ \"inputs\": [ { \"internalType\": \"address\", " +
 			"\"name\": \"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", \"name\": " +
 			"\"tokenAddress\", \"type\": \"address\" } ], \"name\": \"associateDissociateContractCall\", " +
