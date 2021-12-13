@@ -34,6 +34,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AliasManagerTest {
 	@Test
+	void createAliasAddsToMap() {
+		final var alias = ByteString.copyFromUtf8("aaaa");
+		final var num = EntityNum.fromLong(1234L);
+
+
+		final var subject = new AliasManager();
+		subject.createAlias(alias, num);
+
+		assertEquals(Map.of(alias, num), subject.getAliases());
+	}
+
+	@Test
 	void settersAndGettersWork() {
 		EntityNum a = new EntityNum(1);
 		EntityNum b = new EntityNum(2);
@@ -45,10 +57,10 @@ class AliasManagerTest {
 		}};
 
 		var subject = new AliasManager();
-		assertTrue(subject.getAutoAccountsMap().isEmpty());
+		assertTrue(subject.getAliases().isEmpty());
 
-		subject.setAutoAccountsMap(expectedMap);
-		assertEquals(expectedMap, subject.getAutoAccountsMap());
+		subject.setAliases(expectedMap);
+		assertEquals(expectedMap, subject.getAliases());
 		assertEquals(b, subject.lookupIdBy(ByteString.copyFromUtf8("bbbb")));
 		assertTrue(subject.contains(aliasA));
 	}
@@ -69,15 +81,15 @@ class AliasManagerTest {
 		liveAccounts.put(withoutNum, accountWithNoAlias);
 
 		final var subject = new AliasManager();
-		subject.getAutoAccountsMap().put(expiredAlias, withoutNum);
+		subject.getAliases().put(expiredAlias, withoutNum);
 		subject.rebuildAliasesMap(liveAccounts);
 
-		final var finalMap = subject.getAutoAccountsMap();
+		final var finalMap = subject.getAliases();
 		assertEquals(1, finalMap.size());
-		assertEquals(withNum, subject.getAutoAccountsMap().get(upToDateAlias));
+		assertEquals(withNum, subject.getAliases().get(upToDateAlias));
 
 		// finally when
 		subject.forgetAliasIfPresent(withNum, liveAccounts);
-		assertEquals(0, subject.getAutoAccountsMap().size());
+		assertEquals(0, subject.getAliases().size());
 	}
 }

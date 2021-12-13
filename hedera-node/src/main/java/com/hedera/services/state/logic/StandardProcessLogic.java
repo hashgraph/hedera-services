@@ -93,7 +93,6 @@ public class StandardProcessLogic implements ProcessLogic {
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("Consensus platform txn was not gRPC!", e);
 		} catch (Exception internal) {
-			internal.printStackTrace();
 			log.error("Unhandled internal process failure", internal);
 		}
 	}

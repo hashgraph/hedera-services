@@ -157,7 +157,7 @@ class RenewalHelperTest {
 		autoAccountsMap.put(expiredDeletedAccount.getAlias(), EntityNum.fromLong(expiredAccountNum));
 		autoAccountsMap.put(expiredAccountNonZeroBalance.getAlias(), EntityNum.fromLong(fundedExpiredAccountNum));
 		autoAccountsMap.put(fundingAccount.getAlias(), EntityNum.fromLong(98));
-		autoAccounts.setAutoAccountsMap(autoAccountsMap);
+		autoAccounts.setAliases(autoAccountsMap);
 	}
 
 	@Test
@@ -317,7 +317,7 @@ class RenewalHelperTest {
 		accountsMap.put(EntityNum.fromLong(brokeExpiredAccountNum), expiredAccountZeroBalance);
 
 		AliasManager autoAccounts = new AliasManager();
-		autoAccounts.setAutoAccountsMap(autoAccountsMap);
+		autoAccounts.setAliases(autoAccountsMap);
 
 		subject = new RenewalHelper(tokenStore, dynamicProps, () -> tokens, () -> accountsMap, () -> tokenRels,
 				backingAccounts, autoAccounts);

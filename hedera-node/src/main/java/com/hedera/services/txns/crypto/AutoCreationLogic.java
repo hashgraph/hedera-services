@@ -78,7 +78,7 @@ public class AutoCreationLogic {
 	private FeeCalculator feeCalculator;
 
 	public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
-	public static final String AUTO_MEMO = "auto-created account";
+	public static final String AUTO_MEMO = "";
 
 	@Inject
 	public AutoCreationLogic(
@@ -117,7 +117,7 @@ public class AutoCreationLogic {
 		if (!pendingCreations.isEmpty()) {
 			for (final var pendingCreation : pendingCreations) {
 				final var alias = pendingCreation.getRecordBuilder().getAlias();
-				aliasManager.getAutoAccountsMap().remove(alias);
+				aliasManager.getAliases().remove(alias);
 			}
 			return true;
 		} else {
@@ -185,7 +185,7 @@ public class AutoCreationLogic {
 		final var inProgress = new InProgressChildRecord(DEFAULT_SOURCE_ID, syntheticCreation, childRecord);
 		pendingCreations.add(inProgress);
 		/* If the transaction fails, we will get an opportunity to remove this alias in reclaimPendingAliases() */
-		aliasManager.getAutoAccountsMap().put(alias, EntityNum.fromAccountId(newAccountId));
+		aliasManager.createAlias(alias, EntityNum.fromAccountId(newAccountId));
 
 		return Pair.of(OK, fee);
 	}

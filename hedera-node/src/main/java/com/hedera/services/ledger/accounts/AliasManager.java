@@ -39,15 +39,19 @@ import static com.hedera.services.utils.MiscUtils.forEach;
  */
 @Singleton
 public class AliasManager {
-	private Map<ByteString, EntityNum> autoAccountsMap;
+	private Map<ByteString, EntityNum> aliases;
 
 	@Inject
 	public AliasManager() {
-		this.autoAccountsMap = new HashMap<>();
+		this.aliases = new HashMap<>();
 	}
 
-	public Map<ByteString, EntityNum> getAutoAccountsMap() {
-		return autoAccountsMap;
+	public Map<ByteString, EntityNum> getAliases() {
+		return aliases;
+	}
+
+	public void createAlias(final ByteString alias, final EntityNum num) {
+		aliases.put(alias, num);
 	}
 
 	/**
@@ -57,10 +61,10 @@ public class AliasManager {
 	 * @param accounts the current accounts
 	 */
 	public void rebuildAliasesMap(MerkleMap<EntityNum, MerkleAccount> accounts) {
-		autoAccountsMap.clear();
+		aliases.clear();
 		forEach(accounts, (k, v) -> {
 			if (!v.getAlias().isEmpty()) {
-				autoAccountsMap.put(v.getAlias(), k);
+				aliases.put(v.getAlias(), k);
 			}
 		});
 	}
@@ -76,7 +80,7 @@ public class AliasManager {
 	public void forgetAliasIfPresent(final EntityNum expiredId, final MerkleMap<EntityNum, MerkleAccount> accounts) {
 		final var alias = accounts.get(expiredId).getAlias();
 		if (!alias.isEmpty()) {
-			autoAccountsMap.remove(alias);
+			aliases.remove(alias);
 		}
 	}
 
@@ -88,15 +92,15 @@ public class AliasManager {
 	 * @return EntityNum mapped to the given alias.
 	 */
 	public EntityNum lookupIdBy(final ByteString alias) {
-		return autoAccountsMap.getOrDefault(alias, MISSING_NUM);
+		return aliases.getOrDefault(alias, MISSING_NUM);
 	}
 
 	/* Only for unit tests */
-	public void setAutoAccountsMap(final Map<ByteString, EntityNum> map) {
-		this.autoAccountsMap = map;
+	public void setAliases(final Map<ByteString, EntityNum> map) {
+		this.aliases = map;
 	}
 
 	public boolean contains(ByteString alias) {
-		return autoAccountsMap.containsKey(alias);
+		return aliases.containsKey(alias);
 	}
 }

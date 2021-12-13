@@ -36,6 +36,7 @@ import java.util.stream.IntStream;
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -68,8 +69,8 @@ public class ReviewMainnetEntities extends HapiApiSuite {
 //						checkTls(),
 //						doSomething(),
 //						oneOfEveryTokenTxn(),
-						customPayerOp(),
-//						previewnetCryptoCreatePrice(),
+//						customPayerOp(),
+						previewnetCryptoCreatePrice(),
 //						stablenetCreateAccountWithExplicitKey(),
 				}
 		);
@@ -99,25 +100,26 @@ public class ReviewMainnetEntities extends HapiApiSuite {
 	public HapiApiSpec previewnetCryptoCreatePrice() {
 		return customHapiSpec("cryptoCreatePrice")
 				.withProperties(Map.of(
-						"nodes", "35.231.208.148",
+						"nodes", "40.121.64.48",
 						"default.payer.pemKeyLoc", "previewtestnet-account2.pem",
-						"default.payer.pemKeyPassphrase", "<secret>"
+						"default.payer.pemKeyPassphrase", "P1WUX2Xla2wFslpoPTN39avz"
 				))
 				.given(
-						cryptoCreate("civilian")
-								.balance(ONE_HUNDRED_HBARS)
+//						cryptoCreate("civilian")
+//								.balance(ONE_HUNDRED_HBARS)
 				).when(
-						cryptoCreate("another")
-								.payingWith("civilian")
-//								.signedBy("civilian")
-								.balance(0L)
-								.receiverSigRequired(true)
-								.blankMemo()
-								.entityMemo("")
-								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
-								.via("civilianCreate")
+//						cryptoCreate("another")
+//								.payingWith("civilian")
+////								.signedBy("civilian")
+//								.balance(0L)
+//								.receiverSigRequired(true)
+//								.blankMemo()
+//								.entityMemo("")
+//								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
+//								.via("civilianCreate")
 				).then(
-						getTxnRecord("civilianCreate").logged()
+//						getTxnRecord("civilianCreate").logged()
+						getVersionInfo().logged()
 				);
 	}
 
