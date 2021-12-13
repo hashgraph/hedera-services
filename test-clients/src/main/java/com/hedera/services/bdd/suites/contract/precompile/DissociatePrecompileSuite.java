@@ -41,6 +41,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.DISSOCIATE_TOKEN;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.NESTED_ASSOCIATE_TOKEN;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.NESTED_DISSOCIATE_TOKEN;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -104,15 +105,16 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(
-				dissociatePrecompileWithSigsForFungibleWorks(),
-				dissociatePrecompileWitContractIdSigForFungibleWorks(),
-				dissociatePrecompileWithSigsForNFTWorks(),
-				dissociatePrecompileWitContractIdSigForNFTWorks(),
-				dissociatePrecompileHasExpectedSemanticsForDeletedTokens()
+//				dissociatePrecompileWithSigsForFungibleWorks(),
+//				dissociatePrecompileWitContractIdSigForFungibleWorks(),
+//				dissociatePrecompileWithSigsForNFTWorks(),
+//				dissociatePrecompileWitContractIdSigForNFTWorks(),
+//				dissociatePrecompileHasExpectedSemanticsForDeletedTokens(),
+				nestedDissociateWorksAsExpected()
 		);
 	}
 
-	private HapiApiSpec nestedDissociateAfterAssociateWorksAsExpected() {
+	private HapiApiSpec nestedDissociateWorksAsExpected() {
 		final var theAccount = "anybody";
 		final var outerContract = "AssociateDissociateContract";
 		final var nestedContract = "NestedAssociateDissociateContract";
@@ -121,8 +123,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 		AtomicReference<AccountID> accountID = new AtomicReference<>();
 		AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
-
-		return defaultHapiSpec("nestedDissociateAfterAssociateWorksAsExpected")
+		return defaultHapiSpec("nestedDissociateWorksAsExpected")
 				.given(
 						newKeyNamed(multiKey),
 						fileCreate(outerContract).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
@@ -149,7 +150,8 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 														getOuterContractAddress(outerContract, spec))
 														.bytecode(nestedContract)
 														.gas(100_000),
-												contractCall(nestedContract, NESTED_ASSOCIATE_TOKEN,
+												tokenAssociate(theAccount, VANILLA_TOKEN),
+												contractCall(nestedContract, NESTED_DISSOCIATE_TOKEN,
 														asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
 														.payingWith(theAccount)
 														.via("nestedDissociateAfterAssociateTxn")
@@ -158,14 +160,10 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 												getTxnRecord("nestedDissociateAfterAssociateTxn").andAllChildRecords().logged()
 										)
 						)
-
 				).then(
-						getAccountInfo(theAccount)
-								.hasNoTokenRelationship(VANILLA_TOKEN)
+						getAccountInfo(theAccount).hasToken(relationshipWith(VANILLA_TOKEN))
 				);
 	}
-
-
 
 	public HapiApiSpec dissociatePrecompileWithSigsForFungibleWorks() {
 		final var theAccount = "anybody";

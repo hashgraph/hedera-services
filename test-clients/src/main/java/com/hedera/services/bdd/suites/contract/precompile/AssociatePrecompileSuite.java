@@ -98,11 +98,11 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 //				associatePrecompileWithContractIdSignatureWorksForFungible(),
 //				associatePrecompileWithSignatureWorksForNFT(),
 //				associatePrecompileWithContractIdSignatureWorksForNFT()
-				nestedDissociateAfterAssociateWorksAsExpected()
+				nestedAssociateWorksAsExpected()
 		);
 	}
 
-	private HapiApiSpec nestedDissociateAfterAssociateWorksAsExpected() {
+	private HapiApiSpec nestedAssociateWorksAsExpected() {
 		final var theAccount = "anybody";
 		final var outerContract = "AssociateDissociateContract";
 		final var nestedContract = "NestedAssociateDissociateContract";
@@ -112,7 +112,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 		AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
 
-		return defaultHapiSpec("nestedDissociateAfterAssociateWorksAsExpected")
+		return defaultHapiSpec("nestedAssociateWorksAsExpected")
 				.given(
 						newKeyNamed(multiKey),
 						fileCreate(outerContract).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
