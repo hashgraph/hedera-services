@@ -21,12 +21,6 @@ package com.hedera.services.legacy.core.jproto;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.legacy.core.jproto.JKeySerializer;
-import com.hedera.services.legacy.core.jproto.JThresholdKey;
 import com.hedera.services.legacy.proto.utils.AtomicCounter;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.Key;
@@ -57,6 +51,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 class JKeySerializerTest {
 	@Test
@@ -65,6 +61,13 @@ class JKeySerializerTest {
 				() -> JKeySerializer.pack(null, null, null));
 		assertThrows(IllegalStateException.class,
 				() -> JKeySerializer.unpack(null, null, 0));
+	}
+
+	@Test
+	void throwsAsExpectedWhenDeserializingLegacyVersions() throws IOException {
+		final var in = mock(DataInputStream.class);
+		given(in.readLong()).willReturn(1L);
+		assertThrows(IllegalArgumentException.class, () -> JKeySerializer.deserialize(in));
 	}
 
 	@Test
