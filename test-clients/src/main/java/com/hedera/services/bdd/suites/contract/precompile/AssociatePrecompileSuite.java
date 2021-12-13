@@ -37,8 +37,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ASSOCIATE_TOKEN;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.NESTED_ASSOCIATE_TOKEN;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SINGLE_TOKEN_ASSOCIATE;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.NESTED_TOKEN_ASSOCIATE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
@@ -139,7 +139,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 														getOuterContractAddress(outerContract, spec))
 														.bytecode(nestedContract)
 														.gas(100_000),
-												contractCall(nestedContract, NESTED_ASSOCIATE_TOKEN,
+												contractCall(nestedContract, NESTED_TOKEN_ASSOCIATE,
 														asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
 														.payingWith(theAccount)
 														.via("nestedDissociateAfterAssociateTxn")
@@ -216,28 +216,28 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 												contractCreate("AssociateDissociate")
 														.bytecode(theContract)
 														.gas(100_000),
-												contractCall("AssociateDissociate", ASSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_ASSOCIATE,
 														asAddress(accountID.get()), asAddress(freezeKeyOnTokenID.get()))
 														.payingWith(theAccount)
 														.via("freezeKeyOnTxn")
 														.alsoSigningWithFullPrefix(multiKey)
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
 												getTxnRecord("freezeKeyOnTxn").andAllChildRecords().logged(),
-												contractCall("AssociateDissociate", ASSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_ASSOCIATE,
 														asAddress(accountID.get()), asAddress(freezeKeyOffTokenID.get()))
 														.payingWith(theAccount)
 														.via("freezeKeyOffTxn")
 														.alsoSigningWithFullPrefix(multiKey)
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
 												getTxnRecord("freezeKeyOffTxn").andAllChildRecords().logged(),
-												contractCall("AssociateDissociate", ASSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_ASSOCIATE,
 														asAddress(accountID.get()), asAddress(knowableTokenTokenID.get()))
 														.payingWith(theAccount)
 														.via("knowableTokenTxn")
 														.alsoSigningWithFullPrefix(multiKey)
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
 												getTxnRecord("knowableTokenTxn").andAllChildRecords().logged(),
-												contractCall("AssociateDissociate", ASSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_ASSOCIATE,
 														asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
 														.payingWith(theAccount)
 														.via("vanillaTokenTxn")
@@ -335,7 +335,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 												tokenUpdate(FREEZABLE_TOKEN_ON_BY_DEFAULT)
 														.supplyKey(contractKey),
 												getTokenInfo(FREEZABLE_TOKEN_ON_BY_DEFAULT).logged(),
-												contractCall("AssociateDissociate", ASSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_ASSOCIATE,
 														asAddress(accountID.get()), asAddress(freezeKeyOnTokenID.get()))
 														.payingWith(theAccount)
 														.via("freezeKeyOnTxn")
@@ -344,7 +344,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 												tokenUpdate(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
 														.supplyKey(contractKey),
 												getTokenInfo(FREEZABLE_TOKEN_OFF_BY_DEFAULT).logged(),
-												contractCall("AssociateDissociate", ASSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_ASSOCIATE,
 														asAddress(accountID.get()), asAddress(freezeKeyOffTokenID.get()))
 														.payingWith(theAccount)
 														.via("freezeKeyOffTxn")
@@ -353,7 +353,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 												tokenUpdate(KNOWABLE_TOKEN)
 														.supplyKey(contractKey),
 												getTokenInfo(KNOWABLE_TOKEN).logged(),
-												contractCall("AssociateDissociate", ASSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_ASSOCIATE,
 														asAddress(accountID.get()), asAddress(knowableTokenTokenID.get()))
 														.payingWith(theAccount)
 														.via("knowableTokenTxn")
@@ -362,7 +362,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 												tokenUpdate(VANILLA_TOKEN)
 														.supplyKey(contractKey),
 												getTokenInfo(VANILLA_TOKEN).logged(),
-												contractCall("AssociateDissociate", ASSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_ASSOCIATE,
 														asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
 														.payingWith(theAccount)
 														.via("vanillaTokenTxn")
@@ -455,28 +455,28 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 												contractCreate("AssociateDissociate")
 														.bytecode(theContract)
 														.gas(100_000),
-												contractCall("AssociateDissociate", ASSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_ASSOCIATE,
 														asAddress(accountID.get()), asAddress(freezeKeyOnTokenID.get()))
 														.payingWith(theAccount)
 														.via("freezeKeyOnTxn")
 														.alsoSigningWithFullPrefix(multiKey)
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
 												getTxnRecord("freezeKeyOnTxn").andAllChildRecords().logged(),
-												contractCall("AssociateDissociate", ASSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_ASSOCIATE,
 														asAddress(accountID.get()), asAddress(freezeKeyOffTokenID.get()))
 														.payingWith(theAccount)
 														.via("freezeKeyOffTxn")
 														.alsoSigningWithFullPrefix(multiKey)
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
 												getTxnRecord("freezeKeyOffTxn").andAllChildRecords().logged(),
-												contractCall("AssociateDissociate", ASSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_ASSOCIATE,
 														asAddress(accountID.get()), asAddress(knowableTokenTokenID.get()))
 														.payingWith(theAccount)
 														.via("knowableTokenTxn")
 														.alsoSigningWithFullPrefix(multiKey)
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
 												getTxnRecord("knowableTokenTxn").andAllChildRecords().logged(),
-												contractCall("AssociateDissociate", ASSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_ASSOCIATE,
 														asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
 														.payingWith(theAccount)
 														.via("vanillaTokenTxn")
@@ -577,7 +577,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 												tokenUpdate(FREEZABLE_TOKEN_ON_BY_DEFAULT)
 														.supplyKey(contractKey),
 												getTokenInfo(FREEZABLE_TOKEN_ON_BY_DEFAULT).logged(),
-												contractCall("AssociateDissociate", ASSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_ASSOCIATE,
 														asAddress(accountID.get()), asAddress(freezeKeyOnTokenID.get()))
 														.payingWith(theAccount)
 														.via("freezeKeyOnTxn")
@@ -586,7 +586,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 												tokenUpdate(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
 														.supplyKey(contractKey),
 												getTokenInfo(FREEZABLE_TOKEN_OFF_BY_DEFAULT).logged(),
-												contractCall("AssociateDissociate", ASSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_ASSOCIATE,
 														asAddress(accountID.get()), asAddress(freezeKeyOffTokenID.get()))
 														.payingWith(theAccount)
 														.via("freezeKeyOffTxn")
@@ -595,7 +595,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 												tokenUpdate(KNOWABLE_TOKEN)
 														.supplyKey(contractKey),
 												getTokenInfo(KNOWABLE_TOKEN).logged(),
-												contractCall("AssociateDissociate", ASSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_ASSOCIATE,
 														asAddress(accountID.get()), asAddress(knowableTokenTokenID.get()))
 														.payingWith(theAccount)
 														.via("knowableTokenTxn")
@@ -604,7 +604,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 												tokenUpdate(VANILLA_TOKEN)
 														.supplyKey(contractKey),
 												getTokenInfo(VANILLA_TOKEN).logged(),
-												contractCall("AssociateDissociate", ASSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_ASSOCIATE,
 														asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
 														.payingWith(theAccount)
 														.via("vanillaTokenTxn")

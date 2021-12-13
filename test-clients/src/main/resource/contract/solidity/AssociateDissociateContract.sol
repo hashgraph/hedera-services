@@ -20,4 +20,20 @@ contract AssociateDissociateContract is HederaTokenService {
             revert ("Dissociate Failed");
         }
     }
+
+    function tokensAssociate(address account, address[] memory tokens) external {
+        int response = HederaTokenService.associateTokens(account, tokens);
+
+        if (response != HederaResponseCodes.SUCCESS) {
+            revert ("Multiple Associations Failed");
+        }
+    }
+
+    function tokensDissociate(address account, address[] memory tokens) external {
+        int response = HederaTokenService.dissociateTokens(account, tokens);
+
+        if (response != HederaResponseCodes.SUCCESS) {
+            revert ("Multiple Dissociations Failed");
+        }
+    }
 }

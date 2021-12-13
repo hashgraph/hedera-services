@@ -595,29 +595,39 @@ public class ContractResources {
 			"\"outputs\": [{\"internalType\": \"address\",\"name\": \"hotSeatAddress\",\"type\": \"address\"}]," +
 			"\"stateMutability\": \"view\",\"type\": \"function\"}";
 
-	public static final String ASSOCIATE_TOKEN = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": " +
+	public static final String SINGLE_TOKEN_ASSOCIATE = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": " +
 			"\"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", \"name\": \"tokenAddress\", " +
 			"\"type\": \"address\" } ], \"name\": \"tokenAssociate\", \"outputs\": [], \"stateMutability\": " +
 			"\"nonpayable\", \"type\": \"function\" }";
-	public static final String DISSOCIATE_TOKEN = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": " +
+
+	public static final String MULTIPLE_TOKENS_ASSOCIATE = "{ \"inputs\": [ { \"internalType\": \"address\"," +
+			" \"name\": \"account\", \"type\": \"address\" }, { \"internalType\": \"address[]\", \"name\": " +
+			"\"tokens\", \"type\": \"address[]\" } ], \"name\": \"tokensAssociate\", \"outputs\": [], " +
+			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
+	public static final String SINGLE_TOKEN_DISSOCIATE = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": " +
 			"\"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", \"name\": \"tokenAddress\"," +
 			" \"type\": \"address\" } ], \"name\": \"tokenDissociate\", \"outputs\": [], \"stateMutability\": " +
 			"\"nonpayable\", \"type\": \"function\" }";
+
+	public static final String MULTIPLE_TOKENS_DISSOCIATE = "{ \"inputs\": [ { \"internalType\": \"address\", " +
+			"\"name\": \"account\", \"type\": \"address\" }, { \"internalType\": \"address[]\", \"name\": " +
+			"\"tokens\", \"type\": \"address[]\" } ], \"name\": \"tokensDissociate\", \"outputs\": [], " +
+			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
 	public static final String NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR = "{ \"inputs\": " +
 			"[ { \"internalType\": \"address\", \"name\": \"associateDissociateContractAddress\", \"type\":" +
 			" \"address\" } ], \"stateMutability\": \"nonpayable\", \"type\": \"constructor\" }";
 
-	public static final String NESTED_ASSOCIATE_TOKEN = "{ \"inputs\": [ { \"internalType\": \"address\", " +
+	public static final String NESTED_TOKEN_ASSOCIATE = "{ \"inputs\": [ { \"internalType\": \"address\", " +
 			"\"name\": \"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", \"name\": " +
 			"\"tokenAddress\", \"type\": \"address\" } ], \"name\": \"associateDissociateContractCall\", " +
 			"\"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
-	public static final String NESTED_DISSOCIATE_TOKEN = "{ \"inputs\": [ { \"internalType\": " +
+	public static final String NESTED_TOKEN_DISSOCIATE = "{ \"inputs\": [ { \"internalType\": " +
 			"\"address\", \"name\": \"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", " +
 			"\"name\": \"tokenAddress\", \"type\": \"address\" } ], \"name\": \"dissociateAssociateContractCall\", " +
 			"\"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
-
 
 	public static String bytecodePath(String bytecode) {
 		return String.format("src/main/resource/contract/bytecodes/%s.bin", bytecode);

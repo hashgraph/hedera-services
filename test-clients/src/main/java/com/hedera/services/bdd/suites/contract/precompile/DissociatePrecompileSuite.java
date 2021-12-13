@@ -39,9 +39,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.DISSOCIATE_TOKEN;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.NESTED_ASSOCIATE_TOKEN;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.NESTED_DISSOCIATE_TOKEN;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SINGLE_TOKEN_DISSOCIATE;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.NESTED_TOKEN_DISSOCIATE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -151,7 +150,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 														.bytecode(nestedContract)
 														.gas(100_000),
 												tokenAssociate(theAccount, VANILLA_TOKEN),
-												contractCall(nestedContract, NESTED_DISSOCIATE_TOKEN,
+												contractCall(nestedContract, NESTED_TOKEN_DISSOCIATE,
 														asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
 														.payingWith(theAccount)
 														.via("nestedDissociateAfterAssociateTxn")
@@ -217,14 +216,14 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 												contractCreate("AssociateDissociate")
 														.bytecode(theContract)
 														.gas(100_000),
-												contractCall("AssociateDissociate", DISSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_DISSOCIATE,
 														asAddress(treasuryID.get()), asAddress(tk1TokenID.get()))
 														.payingWith(theAccount)
 														.via("tk1Txn")
 														.alsoSigningWithFullPrefix(multiKey, TOKEN_TREASURY)
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
 												getTxnRecord("tk1Txn").andAllChildRecords().logged(),
-												contractCall("AssociateDissociate", DISSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_DISSOCIATE,
 														asAddress(accountID.get()), asAddress(freezeKeyOnTokenID.get()))
 														.payingWith(theAccount)
 														.via("freezeOnTxn")
@@ -232,7 +231,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
 												getTxnRecord("freezeOnTxn").andAllChildRecords().logged(),
 												tokenAssociate(theAccount, FREEZABLE_TOKEN_ON_BY_DEFAULT, KNOWABLE_TOKEN),
-												contractCall("AssociateDissociate", DISSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_DISSOCIATE,
 														asAddress(accountID.get()), asAddress(freezeKeyOnTokenID.get()))
 														.payingWith(theAccount)
 														.via("freezeKeyOnTxn")
@@ -243,7 +242,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 												cryptoTransfer(
 														moving(1, FREEZABLE_TOKEN_ON_BY_DEFAULT)
 																.between(TOKEN_TREASURY, theAccount)),
-												contractCall("AssociateDissociate", DISSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_DISSOCIATE,
 														asAddress(accountID.get()), asAddress(freezeKeyOnTokenID.get()))
 														.payingWith(theAccount)
 														.via("freezeKeyOnTxn2")
@@ -253,7 +252,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 												cryptoTransfer(
 														moving(1, FREEZABLE_TOKEN_ON_BY_DEFAULT)
 																.between(theAccount, TOKEN_TREASURY)),
-												contractCall("AssociateDissociate", DISSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_DISSOCIATE,
 														asAddress(accountID.get()), asAddress(freezeKeyOnTokenID.get()))
 														.payingWith(theAccount)
 														.via("freezeKeyOnTxn3")
@@ -327,7 +326,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 												tokenUpdate("tkn1")
 														.supplyKey(contractKey),
 												getTokenInfo("tkn1").logged(),
-												contractCall("AssociateDissociate", DISSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_DISSOCIATE,
 														asAddress(treasuryID.get()), asAddress(tk1TokenID.get()))
 														.payingWith(theAccount)
 														.via("tk1Txn")
@@ -336,14 +335,14 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 												tokenUpdate(FREEZABLE_TOKEN_ON_BY_DEFAULT)
 														.supplyKey(contractKey),
 												getTokenInfo(FREEZABLE_TOKEN_ON_BY_DEFAULT).logged(),
-												contractCall("AssociateDissociate", DISSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_DISSOCIATE,
 														asAddress(accountID.get()), asAddress(freezeKeyOnTokenID.get()))
 														.payingWith(theAccount)
 														.via("freezeOnTxn")
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
 												getTxnRecord("freezeOnTxn").andAllChildRecords().logged(),
 												tokenAssociate(theAccount, FREEZABLE_TOKEN_ON_BY_DEFAULT, KNOWABLE_TOKEN),
-												contractCall("AssociateDissociate", DISSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_DISSOCIATE,
 														asAddress(accountID.get()), asAddress(freezeKeyOnTokenID.get()))
 														.payingWith(theAccount)
 														.via("freezeKeyOnTxn")
@@ -353,7 +352,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 												cryptoTransfer(
 														moving(1, FREEZABLE_TOKEN_ON_BY_DEFAULT)
 																.between(TOKEN_TREASURY, theAccount)),
-												contractCall("AssociateDissociate", DISSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_DISSOCIATE,
 														asAddress(accountID.get()), asAddress(freezeKeyOnTokenID.get()))
 														.payingWith(theAccount)
 														.via("freezeKeyOnTxn2")
@@ -362,7 +361,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 												cryptoTransfer(
 														moving(1, FREEZABLE_TOKEN_ON_BY_DEFAULT)
 																.between(theAccount, TOKEN_TREASURY)),
-												contractCall("AssociateDissociate", DISSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_DISSOCIATE,
 														asAddress(accountID.get()), asAddress(freezeKeyOnTokenID.get()))
 														.payingWith(theAccount)
 														.via("freezeKeyOnTxn3")
@@ -433,14 +432,14 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 												contractCreate("AssociateDissociate")
 														.bytecode(theContract)
 														.gas(100_000),
-												contractCall("AssociateDissociate", DISSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_DISSOCIATE,
 														asAddress(treasuryID.get()), asAddress(tk1TokenID.get()))
 														.payingWith(theAccount)
 														.via("tk1Txn")
 														.alsoSigningWithFullPrefix(multiKey, TOKEN_TREASURY)
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
 												getTxnRecord("tk1Txn").andAllChildRecords().logged(),
-												contractCall("AssociateDissociate", DISSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_DISSOCIATE,
 														asAddress(accountID.get()), asAddress(freezeKeyOnTokenID.get()))
 														.payingWith(theAccount)
 														.via("freezeOnTxn")
@@ -448,7 +447,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
 												getTxnRecord("freezeOnTxn").andAllChildRecords().logged(),
 												tokenAssociate(theAccount, FREEZABLE_TOKEN_ON_BY_DEFAULT, KNOWABLE_TOKEN),
-												contractCall("AssociateDissociate", DISSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_DISSOCIATE,
 														asAddress(accountID.get()), asAddress(freezeKeyOnTokenID.get()))
 														.payingWith(theAccount)
 														.via("freezeKeyOnTxn")
@@ -458,7 +457,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 												tokenUnfreeze(FREEZABLE_TOKEN_ON_BY_DEFAULT, theAccount),
 												cryptoTransfer(movingUnique(FREEZABLE_TOKEN_ON_BY_DEFAULT, 1)
 														.between(TOKEN_TREASURY, theAccount)),
-												contractCall("AssociateDissociate", DISSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_DISSOCIATE,
 														asAddress(accountID.get()), asAddress(freezeKeyOnTokenID.get()))
 														.payingWith(theAccount)
 														.via("freezeKeyOnTxn2")
@@ -467,7 +466,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 												getTxnRecord("freezeKeyOnTxn2").andAllChildRecords().logged(),
 												cryptoTransfer(movingUnique(FREEZABLE_TOKEN_ON_BY_DEFAULT, 1)
 														.between(theAccount, TOKEN_TREASURY)),
-												contractCall("AssociateDissociate", DISSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_DISSOCIATE,
 														asAddress(accountID.get()), asAddress(freezeKeyOnTokenID.get()))
 														.payingWith(theAccount)
 														.via("freezeKeyOnTxn3")
@@ -544,7 +543,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 												tokenUpdate("tkn1")
 														.supplyKey(contractKey),
 												getTokenInfo("tkn1").logged(),
-												contractCall("AssociateDissociate", DISSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_DISSOCIATE,
 														asAddress(treasuryID.get()), asAddress(tk1TokenID.get()))
 														.payingWith(theAccount)
 														.via("tk1Txn")
@@ -553,14 +552,14 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 												tokenUpdate(FREEZABLE_TOKEN_ON_BY_DEFAULT)
 														.supplyKey(contractKey),
 												getTokenInfo(FREEZABLE_TOKEN_ON_BY_DEFAULT).logged(),
-												contractCall("AssociateDissociate", DISSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_DISSOCIATE,
 														asAddress(accountID.get()), asAddress(freezeKeyOnTokenID.get()))
 														.payingWith(theAccount)
 														.via("freezeOnTxn")
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
 												getTxnRecord("freezeOnTxn").andAllChildRecords().logged(),
 												tokenAssociate(theAccount, FREEZABLE_TOKEN_ON_BY_DEFAULT, KNOWABLE_TOKEN),
-												contractCall("AssociateDissociate", DISSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_DISSOCIATE,
 														asAddress(accountID.get()), asAddress(freezeKeyOnTokenID.get()))
 														.payingWith(theAccount)
 														.via("freezeKeyOnTxn")
@@ -569,7 +568,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 												tokenUnfreeze(FREEZABLE_TOKEN_ON_BY_DEFAULT, theAccount),
 												cryptoTransfer(movingUnique(FREEZABLE_TOKEN_ON_BY_DEFAULT, 1)
 														.between(TOKEN_TREASURY, theAccount)),
-												contractCall("AssociateDissociate", DISSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_DISSOCIATE,
 														asAddress(accountID.get()), asAddress(freezeKeyOnTokenID.get()))
 														.payingWith(theAccount)
 														.via("freezeKeyOnTxn2")
@@ -577,7 +576,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 												getTxnRecord("freezeKeyOnTxn2").andAllChildRecords().logged(),
 												cryptoTransfer(movingUnique(FREEZABLE_TOKEN_ON_BY_DEFAULT, 1)
 														.between(theAccount, TOKEN_TREASURY)),
-												contractCall("AssociateDissociate", DISSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_DISSOCIATE,
 														asAddress(accountID.get()), asAddress(freezeKeyOnTokenID.get()))
 														.payingWith(theAccount)
 														.via("freezeKeyOnTxn3")
@@ -676,23 +675,23 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 														.hasTokenBalance(TBD_TOKEN, initialSupply - 2 * nonZeroXfer),
 												tokenDelete(TBD_TOKEN),
 												tokenDelete(tbdUniqToken),
-												contractCall("AssociateDissociate", DISSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_DISSOCIATE,
 														asAddress(zeroBalanceFrozenID.get()), asAddress(tbdTokenID.get()))
 														.payingWith(zeroBalanceFrozen)
 														.alsoSigningWithFullPrefix(MULTI_KEY),
-												contractCall("AssociateDissociate", DISSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_DISSOCIATE,
 														asAddress(zeroBalanceUnfrozenID.get()), asAddress(tbdTokenID.get()))
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.payingWith(zeroBalanceUnfrozen),
-												contractCall("AssociateDissociate", DISSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_DISSOCIATE,
 														asAddress(nonZeroBalanceFrozenID.get()), asAddress(tbdTokenID.get()))
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.payingWith(nonZeroBalanceFrozen),
-												contractCall("AssociateDissociate", DISSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_DISSOCIATE,
 														asAddress(nonZeroBalanceUnfrozenID.get()), asAddress(tbdTokenID.get()))
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.payingWith(nonZeroBalanceUnfrozen),
-												contractCall("AssociateDissociate", DISSOCIATE_TOKEN,
+												contractCall("AssociateDissociate", SINGLE_TOKEN_DISSOCIATE,
 														asAddress(treasuryID.get()), asAddress(tbdUniqueTokenID.get()))
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.payingWith(TOKEN_TREASURY)
