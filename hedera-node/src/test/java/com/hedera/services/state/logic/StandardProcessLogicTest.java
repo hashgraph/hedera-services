@@ -22,6 +22,7 @@ package com.hedera.services.state.logic;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.expiry.EntityAutoRenewal;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.stats.ExecutionTimeTracker;
@@ -52,9 +53,11 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class StandardProcessLogicTest {
+	private static final long windBackNanos = 11L;
+
 	private final long member = 1L;
 	private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
-	private final Instant triggeredConsensusNow = consensusNow.minusNanos(1);
+	private final Instant triggeredConsensusNow = consensusNow.minusNanos(windBackNanos);
 
 	@Mock
 	private ExpiryManager expiries;
@@ -76,6 +79,8 @@ class StandardProcessLogicTest {
 	private SwirldTransaction swirldTransaction;
 	@Mock
 	private ExecutionTimeTracker executionTimeTracker;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -87,7 +92,7 @@ class StandardProcessLogicTest {
 		subject = new StandardProcessLogic(
 				expiries,
 				invariantChecks, expandHandleSpan, autoRenewal,
-				txnManager, txnCtx, executionTimeTracker);
+				txnManager, txnCtx, executionTimeTracker, dynamicProperties);
 	}
 
 	@Test
@@ -122,14 +127,13 @@ class StandardProcessLogicTest {
 	@Test
 	void happyPathFlowsForTriggered() throws InvalidProtocolBufferException {
 		given(accessor.canTriggerTxn()).willReturn(true);
+		given(dynamicProperties.triggerTxnWindBackNanos()).willReturn(windBackNanos);
 		given(expandHandleSpan.accessorFor(swirldTransaction)).willReturn(accessor);
 		given(invariantChecks.holdFor(accessor, triggeredConsensusNow, member)).willReturn(true);
 		given(txnCtx.triggeredTxn()).willReturn(triggeredAccessor);
 
-		// when:
 		subject.incorporateConsensusTxn(swirldTransaction, consensusNow, member);
 
-		// then:
 		verify(expiries).purge(consensusNow.getEpochSecond());
 		verify(txnManager).process(accessor, triggeredConsensusNow, member);
 		verify(txnManager).process(triggeredAccessor, consensusNow, member);

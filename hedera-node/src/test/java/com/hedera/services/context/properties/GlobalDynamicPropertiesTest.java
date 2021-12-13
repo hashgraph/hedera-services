@@ -79,7 +79,7 @@ class GlobalDynamicPropertiesTest {
 	}
 
 	@Test
-	void nftPropertiesTest(){
+	void nftPropertiesTest() {
 		givenPropsWithSeed(1);
 		subject = new GlobalDynamicProperties(numbers, properties);
 
@@ -144,6 +144,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(34L, subject.autoRenewGracePeriod());
 		assertEquals(35L, subject.ratesMidnightCheckInterval());
 		assertEquals(44L, subject.maxNftMints());
+		assertEquals(48L, subject.triggerTxnWindBackNanos());
 	}
 
 	@Test
@@ -225,6 +226,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(35L, subject.autoRenewGracePeriod());
 		assertEquals(36L, subject.ratesMidnightCheckInterval());
 		assertEquals(45L, subject.maxNftMints());
+		assertEquals(49L, subject.triggerTxnWindBackNanos());
 	}
 
 	@Test
@@ -247,9 +249,9 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getIntProperty("tokens.maxPerAccount")).willReturn(i);
 		given(properties.getIntProperty("tokens.maxSymbolUtf8Bytes")).willReturn(i + 1);
 		given(properties.getBooleanProperty("ledger.keepRecordsInState")).willReturn((i % 2) == 0);
-		given(properties.getLongProperty("ledger.maxAccountNum")).willReturn((long)i + 2);
+		given(properties.getLongProperty("ledger.maxAccountNum")).willReturn((long) i + 2);
 		given(properties.getIntProperty("files.maxSizeKb")).willReturn(i + 5);
-		given(properties.getLongProperty("ledger.fundingAccount")).willReturn((long)i + 6);
+		given(properties.getLongProperty("ledger.fundingAccount")).willReturn((long) i + 6);
 		given(properties.getIntProperty("cache.records.ttl")).willReturn(i + 7);
 		given(properties.getIntProperty("contracts.maxStorageKb")).willReturn(i + 8);
 		given(properties.getIntProperty("rates.intradayChangeLimitPercent")).willReturn(i + 9);
@@ -300,6 +302,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getThrottleScaleFactor("tokens.nfts.mintThrottleScaleFactor"))
 				.willReturn(i % 2 == 0 ? evenFactor : oddFactor);
 		given(properties.getStringProperty("upgrade.artifacts.path")).willReturn(upgradeArtifactLocs[i % 2]);
+		given(properties.getLongProperty("scheduling.triggerTxn.windBackNanos")).willReturn(i + 47L);
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {

@@ -22,6 +22,7 @@ package com.hedera.services.state.logic;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.expiry.EntityAutoRenewal;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.stats.ExecutionTimeTracker;
@@ -47,16 +48,18 @@ public class StandardProcessLogic implements ProcessLogic {
 	private final ServicesTxnManager txnManager;
 	private final TransactionContext txnCtx;
 	private final ExecutionTimeTracker executionTimeTracker;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
 	public StandardProcessLogic(
-			ExpiryManager expiries,
-			InvariantChecks invariantChecks,
-			ExpandHandleSpan expandHandleSpan,
-			EntityAutoRenewal autoRenewal,
-			ServicesTxnManager txnManager,
-			TransactionContext txnCtx,
-			ExecutionTimeTracker executionTimeTracker
+			final ExpiryManager expiries,
+			final InvariantChecks invariantChecks,
+			final ExpandHandleSpan expandHandleSpan,
+			final EntityAutoRenewal autoRenewal,
+			final ServicesTxnManager txnManager,
+			final TransactionContext txnCtx,
+			final ExecutionTimeTracker executionTimeTracker,
+			final GlobalDynamicProperties dynamicProperties
 	) {
 		this.expiries = expiries;
 		this.invariantChecks = invariantChecks;
@@ -65,6 +68,7 @@ public class StandardProcessLogic implements ProcessLogic {
 		this.autoRenewal = autoRenewal;
 		this.txnManager = txnManager;
 		this.txnCtx = txnCtx;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
@@ -73,7 +77,8 @@ public class StandardProcessLogic implements ProcessLogic {
 			final var accessor = expandHandleSpan.accessorFor(platformTxn);
 			Instant effectiveConsensusTime = consensusTime;
 			if (accessor.canTriggerTxn()) {
-				effectiveConsensusTime = consensusTime.minusNanos(1);
+				final var offset = dynamicProperties.triggerTxnWindBackNanos();
+				effectiveConsensusTime = consensusTime.minusNanos(offset);
 			}
 
 			if (!invariantChecks.holdFor(accessor, effectiveConsensusTime, submittingMember)) {
@@ -88,6 +93,7 @@ public class StandardProcessLogic implements ProcessLogic {
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("Consensus platform txn was not gRPC!", e);
 		} catch (Exception internal) {
+			internal.printStackTrace();
 			log.error("Unhandled internal process failure", internal);
 		}
 	}

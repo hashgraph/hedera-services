@@ -434,11 +434,12 @@ class HederaScheduleStoreTest {
 
 	@Test
 	void marksExecutedAsExpected() {
+		given(globalDynamicProperties.triggerTxnWindBackNanos()).willReturn(11L);
 		given(schedules.getForModify(fromScheduleId(created))).willReturn(schedule);
 
 		subject.markAsExecuted(created, consensusNow);
 
-		verify(schedule).markExecuted(consensusNow.plusNanos(1L));
+		verify(schedule).markExecuted(consensusNow.plusNanos(11L));
 		verify(schedules, never()).remove(fromScheduleId(created));
 	}
 
