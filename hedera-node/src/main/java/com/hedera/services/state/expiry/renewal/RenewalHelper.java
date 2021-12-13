@@ -76,13 +76,13 @@ public class RenewalHelper {
 
 	@Inject
 	public RenewalHelper(
-			TokenStore tokenStore,
-			GlobalDynamicProperties dynamicProperties,
-			Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-			Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels,
-			BackingStore<AccountID, MerkleAccount> backingAccounts,
-			AliasManager aliasManager
+			final TokenStore tokenStore,
+			final GlobalDynamicProperties dynamicProperties,
+			final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels,
+			final BackingStore<AccountID, MerkleAccount> backingAccounts,
+			final AliasManager aliasManager
 	) {
 		this.tokens = tokens;
 		this.tokenStore = tokenStore;
