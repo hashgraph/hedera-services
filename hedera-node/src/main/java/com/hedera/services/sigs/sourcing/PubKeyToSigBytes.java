@@ -60,7 +60,7 @@ public interface PubKeyToSigBytes {
 	 * with a full public key prefix, but <b>without</b> a matching public
 	 * key obviously linked to the parent transaction.
 	 *
-	 * A canonical example would the the supply key of a token that will be
+	 * A canonical example would be the supply key of a token that will be
 	 * minted through an HTS precompile run as part of a {@code ContractCall}
 	 * transaction. This key is not <b>obviously</b> linked to the top-level
 	 * {@code ContractCall}; but it will ultimately need to sign, hence requires
