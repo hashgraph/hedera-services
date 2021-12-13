@@ -13,6 +13,7 @@ commands:
       - run:
           name: Install necessary tools
           command: |
+            apt-get install sudo;
             sudo apt update -y;
             sudo apt install -y net-tools;
             sudo apt-get install -y apt-utils;
