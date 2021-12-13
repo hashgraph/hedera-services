@@ -205,12 +205,6 @@ public class TxnUtils {
 		return asAccount(s);
 	}
 
-//	public static AccountID asIdWithAlias(final String s) {
-//		return AccountID.newBuilder()
-//				.setAlias(ByteString.copyFromUtf8(s))
-//				.build();
-//	}
-
 	public static TokenID asTokenId(String s, HapiApiSpec lookupSpec) {
 		return isIdLiteral(s) ? asToken(s) : lookupSpec.registry().getTokenID(s);
 	}

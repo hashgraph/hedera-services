@@ -21,6 +21,7 @@ package com.hedera.services.legacy.proto.utils;
  */
 
 import net.i2p.crypto.eddsa.KeyPairGenerator;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -30,6 +31,8 @@ import java.security.spec.ECGenParameterSpec;
 import static com.hedera.services.legacy.proto.utils.SignatureGenerator.BOUNCYCASTLE_PROVIDER;
 
 class SignatureGeneratorTest {
+	private static final BouncyCastleProvider BC = new BouncyCastleProvider();
+
 	@Test
 	void rejectsNonEddsaKeys() {
 		Assertions.assertThrows(

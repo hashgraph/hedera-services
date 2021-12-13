@@ -20,6 +20,7 @@ package com.hedera.services.sigs.factories;
  * ‍
  */
 
+import com.hedera.services.sigs.sourcing.KeyType;
 import com.swirlds.common.crypto.TransactionSignature;
 
 /**
@@ -50,4 +51,23 @@ public interface TxnScopedPlatformSigFactory {
 	 * @return a platform sig for the scoped transaction
 	 */
 	TransactionSignature signKeccak256DigestWithSecp256k1(byte[] publicKey, byte[] sigBytes);
+
+	/**
+	 * Convenience method to return a {@link com.swirlds.common.crypto.TransactionSignature} for
+	 * the scoped transaction with the given public key and signature and a specified type.
+	 *
+	 * @param type the type of the given public key
+	 * @param publicKey the public key to use in creating the verifiable signature
+	 * @param sigBytes the signature bytes to use in creating the verifiable signature
+	 * @return a platform sig for the scoped transaction
+	 */
+	default TransactionSignature signAppropriately(KeyType type, byte[] publicKey, byte[] sigBytes) {
+		switch (type) {
+			default:
+			case ED25519:
+				return signBodyWithEd25519(publicKey, sigBytes);
+			case ECDSA_SECP256K1:
+				return signKeccak256DigestWithSecp256k1(publicKey, sigBytes);
+		}
+	}
 }

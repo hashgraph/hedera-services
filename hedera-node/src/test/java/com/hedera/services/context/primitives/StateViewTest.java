@@ -299,8 +299,6 @@ class StateViewTest {
 		attrs = mock(Map.class);
 		storage = mock(Map.class);
 		bytecode = mock(Map.class);
-//		given(storage.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedStorage);
-//		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedBytecode);
 		nodeProps = mock(NodeLocalProperties.class);
 		specialFiles = mock(MerkleSpecialFiles.class);
 

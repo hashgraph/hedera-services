@@ -50,6 +50,9 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
+import static com.hedera.services.legacy.core.jproto.JKeyUtils.genSampleComplexKey;
+import static com.hedera.services.legacy.core.jproto.JKeyUtils.genSingleECDSASecp256k1Key;
+import static com.hedera.services.legacy.core.jproto.JKeyUtils.getSpecificJKeysMade;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -57,6 +60,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 class JKeySerializerTest {
 	@Test
@@ -65,6 +70,20 @@ class JKeySerializerTest {
 				() -> JKeySerializer.pack(null, null, null));
 		assertThrows(IllegalStateException.class,
 				() -> JKeySerializer.unpack(null, null, 0));
+	}
+
+	@Test
+	void throwsAsExpectedWhenDeserializingLegacyVersions() throws IOException {
+		final var in = mock(DataInputStream.class);
+		given(in.readLong()).willReturn(1L);
+		assertThrows(IllegalArgumentException.class, () -> JKeySerializer.deserialize(in));
+	}
+
+	@Test
+	void throwsAsExpectedWhenDeserializingIllegalKeyType() throws IOException {
+		final var in = mock(DataInputStream.class);
+		given(in.readLong()).willReturn(2L);
+		assertThrows(IllegalStateException.class, () -> JKeySerializer.deserialize(in));
 	}
 
 	@Test
