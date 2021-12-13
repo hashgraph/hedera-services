@@ -54,6 +54,7 @@ public class SendSuite extends HapiApiSuite {
 				.withProperties(specConfig)
 				.given().when().then(
 						cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, beneficiary, tinybarsToSend))
+								.signedBy(DEFAULT_PAYER)
 				);
 	}
 
