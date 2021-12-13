@@ -27,16 +27,6 @@ public class PojoSigMap {
 	private static final int SIG_BYTES_INDEX = 1;
 	private static final int DATA_PER_SIG_PAIR = 2;
 
-	private enum KeyType {
-		ED25519(32), ECDSA_SECP256K1(33);
-
-		private final int length;
-
-		KeyType(final int length) {
-			this.length = length;
-		}
-	}
-
 	private final KeyType[] keyTypes;
 	private final byte[][][] rawMap;
 
@@ -67,7 +57,11 @@ public class PojoSigMap {
 		if (i < 0 || i >= rawMap.length) {
 			throw new IllegalArgumentException("Requested prefix at index " + i + ", not in [0, " + rawMap.length + ")");
 		}
-		return keyTypes[i].length == rawMap[i][PUB_KEY_PREFIX_INDEX].length;
+		return keyTypes[i].getLength() == rawMap[i][PUB_KEY_PREFIX_INDEX].length;
+	}
+
+	public KeyType keyType(int i) {
+		return keyTypes[i];
 	}
 
 	public byte[] pubKeyPrefix(int i) {

@@ -25,7 +25,6 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.swirlds.common.CommonUtils;
 
 import java.util.Arrays;
-import java.util.function.BiConsumer;
 
 /**
  * A source of cryptographic signatures backed by a {@link SignatureMap} instance.
@@ -73,10 +72,10 @@ public class PojoSigMapPubKeyToSigBytes implements PubKeyToSigBytes {
 	}
 
 	@Override
-	public void forEachUnusedSigWithFullPrefix(BiConsumer<byte[], byte[]> keySigObs) {
+	public void forEachUnusedSigWithFullPrefix(final SigObserver observer) {
 		for (int i = 0, n = pojoSigMap.numSigsPairs(); i < n; i++) {
 			if (!used[i] && pojoSigMap.isFullPrefixAt(i)) {
-				keySigObs.accept(pojoSigMap.pubKeyPrefix(i), pojoSigMap.primitiveSignature(i));
+				observer.accept(null, pojoSigMap.pubKeyPrefix(i), pojoSigMap.primitiveSignature(i));
 			}
 		}
 	}

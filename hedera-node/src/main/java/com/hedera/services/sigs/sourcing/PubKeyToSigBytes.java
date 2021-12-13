@@ -20,8 +20,6 @@ package com.hedera.services.sigs.sourcing;
  * ‍
  */
 
-import java.util.function.BiConsumer;
-
 /**
  * Defines a type that is a source of the cryptographic signatures associated to
  * given public keys. It is useful to define an explicit type for this simple behavior,
@@ -64,9 +62,9 @@ public interface PubKeyToSigBytes {
 	 * {@code ContractCall}; but it will ultimately need to sign, hence requires
 	 * a signature supplied with full public key prefix.
 	 *
-	 * @param keySigObs an observer to be shown all the unused full-public-key-to-signature mappings
+	 * @param obs an observer to be shown all the unused full-public-key-to-signature mappings
 	 */
-	default void forEachUnusedSigWithFullPrefix(BiConsumer<byte[], byte[]> keySigObs) {
+	default void forEachUnusedSigWithFullPrefix(SigObserver obs) {
 		/* No-op */
 	}
 

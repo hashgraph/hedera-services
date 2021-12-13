@@ -86,7 +86,7 @@ class PojoSigMapPubKeyToSigBytesTest {
 
 		final var numUnusedFullPrefixSigs = new AtomicInteger(0);
 		assertTrue(subject.hasAtLeastOneUnusedSigWithFullPrefix());
-		subject.forEachUnusedSigWithFullPrefix((pubKey, sig) -> {
+		subject.forEachUnusedSigWithFullPrefix((type, pubKey, sig) -> {
 			numUnusedFullPrefixSigs.getAndIncrement();
 		});
 		assertEquals(2, numUnusedFullPrefixSigs.get());
@@ -109,7 +109,7 @@ class PojoSigMapPubKeyToSigBytesTest {
 
 		assertTrue(subject.hasAtLeastOneUnusedSigWithFullPrefix());
 		final var numUnusedFullPrefixSigs = new AtomicInteger(0);
-		subject.forEachUnusedSigWithFullPrefix((pubKey, sig) -> {
+		subject.forEachUnusedSigWithFullPrefix((type, pubKey, sig) -> {
 			numUnusedFullPrefixSigs.getAndIncrement();
 		});
 		assertEquals(4, numUnusedFullPrefixSigs.get());

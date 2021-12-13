@@ -22,7 +22,9 @@ package com.hedera.services.sigs;
 
 import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.order.SigRequirements;
+import com.hedera.services.sigs.sourcing.KeyType;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
+import com.hedera.services.sigs.sourcing.SigObserver;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.SwirldTransaction;
@@ -34,7 +36,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.nio.charset.StandardCharsets;
-import java.util.function.BiConsumer;
 
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static com.hedera.services.sigs.order.SigningOrderResult.noKnownKeys;
@@ -59,7 +60,9 @@ class ExpansionTest {
 	@Mock
 	private SwirldTransaction swirldTransaction;
 	@Mock
-	private TransactionSignature signature;
+	private TransactionSignature ed25519Sig;
+	@Mock
+	private TransactionSignature secp256k1Sig;
 
 	private Expansion subject;
 
@@ -81,22 +84,29 @@ class ExpansionTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	void appendsUnusedFullKeySignaturesToList() {
-		final var pretendFullKey = "COMPLETE".getBytes(StandardCharsets.UTF_8);
-		final var pretendFullSig = "NONSENSE".getBytes(StandardCharsets.UTF_8);
+		final var pretendEd25519FullKey = "COMPLETE".getBytes(StandardCharsets.UTF_8);
+		final var pretendEd25519FullSig = "NONSENSE".getBytes(StandardCharsets.UTF_8);
+		final var pretendSecp256k1FullKey = "ALSO_COMPLETE".getBytes(StandardCharsets.UTF_8);
+		final var pretendSecp256k1FullSig = "ALSO_NONSENSE".getBytes(StandardCharsets.UTF_8);
 
-		given(sigFactory.signBodyWithEd25519(pretendFullKey, pretendFullSig)).willReturn(signature);
+		given(sigFactory.signAppropriately(KeyType.ED25519, pretendEd25519FullKey, pretendEd25519FullSig))
+				.willReturn(ed25519Sig);
+		given(sigFactory.signAppropriately(KeyType.ECDSA_SECP256K1, pretendSecp256k1FullKey, pretendSecp256k1FullSig))
+				.willReturn(secp256k1Sig);
 		setupDegenerateMocks();
 		given(pkToSigFn.hasAtLeastOneUnusedSigWithFullPrefix()).willReturn(true);
 		willAnswer(inv -> {
-			final var obs = (BiConsumer<byte[], byte[]>) inv.getArgument(0);
-			obs.accept(pretendFullKey, pretendFullSig);
+			final var obs = (SigObserver) inv.getArgument(0);
+			obs.accept(KeyType.ED25519, pretendEd25519FullKey, pretendEd25519FullSig);
+			obs.accept(KeyType.ECDSA_SECP256K1, pretendSecp256k1FullKey, pretendSecp256k1FullSig);
 			return null;
 		}).given(pkToSigFn).forEachUnusedSigWithFullPrefix(any());
 
 		final var result = subject.execute();
 
 		assertEquals(OK, result);
-		verify(swirldTransaction).add(signature);
+		verify(swirldTransaction).add(ed25519Sig);
+		verify(swirldTransaction).add(secp256k1Sig);
 	}
 
 	private void setupDegenerateMocks() {
