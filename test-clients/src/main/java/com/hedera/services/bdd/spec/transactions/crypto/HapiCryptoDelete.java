@@ -48,7 +48,7 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
 	static final Logger log = LogManager.getLogger(HapiCryptoDelete.class);
 
 	private String account;
-	private String aliasKey = "";
+	private String alias = "";
 	private boolean shouldPurge = false;
 	private Optional<String> transferAccount = Optional.empty();
 	private boolean lookUpAccountWithKey = false;
@@ -59,7 +59,7 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
 
 	public HapiCryptoDelete(String aliasKey, boolean lookUpAccount) {
 		this.account = "";
-		this.aliasKey = aliasKey;
+		this.alias = aliasKey;
 		this.lookUpAccountWithKey = lookUpAccount;
 	}
 
@@ -95,7 +95,7 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		AccountID target;
 		if (lookUpAccountWithKey) {
-			account = lookUpAccountWithAlias(spec, aliasKey);
+			account = lookUpAccountWithAlias(spec, alias);
 			target = asAccount(account);
 		} else {
 			target = TxnUtils.asId(account, spec);
@@ -124,8 +124,8 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
 			if (spec.registry().hasSigRequirement(account)) {
 				spec.registry().removeSigRequirement(account);
 			}
-			if (spec.registry().hasKey(aliasKey)) {
-				final var lookedUpKey = spec.registry().getKey(aliasKey).toByteString().toStringUtf8();
+			if (spec.registry().hasKey(alias)) {
+				final var lookedUpKey = spec.registry().getKey(alias).toByteString().toStringUtf8();
 				spec.registry().removeAccount(lookedUpKey);
 				spec.registry().removeKey(lookedUpKey);
 			}

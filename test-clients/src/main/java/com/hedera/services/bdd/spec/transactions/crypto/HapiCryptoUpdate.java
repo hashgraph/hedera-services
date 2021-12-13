@@ -69,7 +69,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	private boolean useContractKey = false;
 	private boolean skipNewKeyRegistryUpdate = false;
 	private String account;
-	private String aliasKey = "";
+	private String alias = "";
 	private OptionalLong sendThreshold = OptionalLong.empty();
 	private Optional<Key> updKey = Optional.empty();
 	private OptionalLong newExpiry = OptionalLong.empty();
@@ -86,9 +86,9 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 		this.account = account;
 	}
 
-	public HapiCryptoUpdate(String aliasKey, boolean lookUpAccount) {
+	public HapiCryptoUpdate(String alias, boolean lookUpAccount) {
 		this.account = "";
-		this.aliasKey = aliasKey;
+		this.alias = alias;
 		this.lookUpAccountWithKey = lookUpAccount;
 	}
 
@@ -168,7 +168,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 		}
 		AccountID id;
 		if (lookUpAccountWithKey) {
-			id = asIdForKeyLookUp(aliasKey, spec);
+			id = asIdForKeyLookUp(alias, spec);
 			account = asAccountString(id);
 		} else {
 			id = TxnUtils.asId(account, spec);
