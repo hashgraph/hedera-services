@@ -78,7 +78,7 @@ public class AutoCreationLogic {
 	private FeeCalculator feeCalculator;
 
 	public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
-	public static final String AUTO_MEMO = "";
+	public static final String AUTO_MEMO = "auto-created account";
 
 	@Inject
 	public AutoCreationLogic(

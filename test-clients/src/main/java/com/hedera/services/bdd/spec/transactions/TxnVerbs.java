@@ -79,8 +79,8 @@ public class TxnVerbs {
 		return new HapiCryptoDelete(account);
 	}
 
-	public static HapiCryptoDelete cryptoDelete(String aliasKey, boolean lookupAccountWithKey) {
-		return new HapiCryptoDelete(aliasKey, lookupAccountWithKey);
+	public static HapiCryptoDelete cryptoDelete(String alias, boolean lookupAccountWithKey) {
+		return new HapiCryptoDelete(alias, lookupAccountWithKey);
 	}
 
 	@SafeVarargs

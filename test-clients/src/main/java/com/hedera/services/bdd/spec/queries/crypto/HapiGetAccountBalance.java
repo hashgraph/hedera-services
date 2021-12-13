@@ -67,7 +67,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 	private Pattern DOT_DELIMTED_ACCOUNT = Pattern.compile("\\d+[.]\\d+[.]\\d+");
 	private String entity;
 	private Optional<AccountID> accountID = Optional.empty();
-	private String aliasKey = "";
+	private String alias = "";
 	private boolean exportAccount = false;
 	Optional<Long> expected = Optional.empty();
 	Optional<Supplier<String>> entityFn = Optional.empty();
@@ -81,9 +81,9 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 		this.entity = entity;
 	}
 
-	public HapiGetAccountBalance(String aliasKey, boolean lookUpAccount) {
+	public HapiGetAccountBalance(String alias, boolean lookUpAccount) {
 		this.entity = entity;
-		this.aliasKey = aliasKey;
+		this.alias = alias;
 		this.lookUpAccountWithKey = lookUpAccount;
 	}
 
@@ -229,7 +229,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 
 	private Query getAccountBalanceQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {
 		if (lookUpAccountWithKey) {
-			entity = lookUpAccountWithAlias(spec, aliasKey);
+			entity = lookUpAccountWithAlias(spec, alias);
 		}
 		if (entityFn.isPresent()) {
 			entity = entityFn.get().get();
