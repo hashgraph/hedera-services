@@ -71,6 +71,13 @@ class JKeySerializerTest {
 	}
 
 	@Test
+	void throwsAsExpectedWhenDeserializingIllegalKeyType() throws IOException {
+		final var in = mock(DataInputStream.class);
+		given(in.readLong()).willReturn(2L);
+		assertThrows(IllegalStateException.class, () -> JKeySerializer.deserialize(in));
+	}
+
+	@Test
 	void canSerializeAndDeserializeJEcdsa384Key() throws IOException {
 		final var mockPk = "NONSENSE".getBytes();
 		final var subject = new JECDSA_384Key(mockPk);
