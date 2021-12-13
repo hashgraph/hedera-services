@@ -74,7 +74,7 @@ public interface PubKeyToSigBytes {
 	}
 
 	/**
-	 * checks if there is any full-public-key-to-signature mapping that has not been used by
+	 * Checks if there is any full-public-key-to-signature mapping that has not been used by
 	 * {@link PubKeyToSigBytes#sigBytesFor(byte[])} since the last call to
 	 * {@link PubKeyToSigBytes#resetAllSigsToUnused()} on this instance
 	 *
