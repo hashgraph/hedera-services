@@ -1553,7 +1553,7 @@ jobs:
       - run:
           name: Generate javadocs
           command: |
-            cd /repo; export JAVA_HOME="/usr/local/java/jdk-12.0.2"; mvn javadoc:javadoc
+            cd /repo; export JAVA_HOME="/usr/local/java/jdk-17"; mvn javadoc:javadoc
 
   build-platform-and-services:
     parameters:
