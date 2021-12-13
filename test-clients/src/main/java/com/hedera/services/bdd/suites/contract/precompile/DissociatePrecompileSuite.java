@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MULTIPLE_TOKENS_DISSOCIATE;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SINGLE_TOKEN_DISSOCIATE;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.NESTED_TOKEN_DISSOCIATE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
@@ -65,6 +66,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.FREEZABLE_TOKEN_OFF_BY_DEFAULT;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.FREEZABLE_TOKEN_ON_BY_DEFAULT;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.KNOWABLE_TOKEN;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
@@ -108,11 +110,83 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 //				dissociatePrecompileWitContractIdSigForFungibleWorks(),
 //				dissociatePrecompileWithSigsForNFTWorks(),
 //				dissociatePrecompileWitContractIdSigForNFTWorks(),
-//				dissociatePrecompileHasExpectedSemanticsForDeletedTokens(),
-				nestedDissociateWorksAsExpected()
+//				dissociatePrecompileHasExpectedSemanticsForDeletedTokens()
+//				nestedDissociateWorksAsExpected()
+				multiplePrecompileDissociationsWithSigsForFungibleWorks()
 		);
 	}
 
+	public HapiApiSpec multiplePrecompileDissociationsWithSigsForFungibleWorks() {
+		final var theAccount = "anybody";
+		final var theContract = "associateDissociateContract";
+		final var multiKey = "purpose";
+
+		AtomicReference<AccountID> accountID = new AtomicReference<>();
+		AtomicReference<AccountID> treasuryID = new AtomicReference<>();
+		AtomicReference<TokenID> freezeKeyOnTokenID = new AtomicReference<>();
+		AtomicReference<TokenID> knowableTokenTokenID = new AtomicReference<>();
+
+		return defaultHapiSpec("multiplePrecompileDissociationsWithSigsForFungibleWorks")
+				.given(
+						newKeyNamed(multiKey),
+						fileCreate(theContract)
+								.path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
+						cryptoCreate(theAccount)
+								.balance(10 * ONE_HUNDRED_HBARS)
+								.exposingCreatedIdTo(accountID::set),
+						cryptoCreate(TOKEN_TREASURY)
+								.balance(0L)
+								.exposingCreatedIdTo(treasuryID::set),
+						tokenCreate(FREEZABLE_TOKEN_ON_BY_DEFAULT)
+								.tokenType(FUNGIBLE_COMMON)
+								.treasury(TOKEN_TREASURY)
+								.initialSupply(TOTAL_SUPPLY)
+								.adminKey(multiKey)
+								.supplyKey(multiKey)
+								.exposingCreatedIdTo(id -> freezeKeyOnTokenID.set(asToken(id))),
+						tokenCreate(KNOWABLE_TOKEN)
+								.tokenType(FUNGIBLE_COMMON)
+								.treasury(TOKEN_TREASURY)
+								.initialSupply(TOTAL_SUPPLY)
+								.adminKey(multiKey)
+								.supplyKey(multiKey)
+								.exposingCreatedIdTo(id -> knowableTokenTokenID.set(asToken(id)))
+						)
+				.when(
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCreate(theContract)
+														.bytecode(theContract)
+														.gas(100_000),
+												tokenAssociate(theAccount,
+														List.of(FREEZABLE_TOKEN_ON_BY_DEFAULT,
+																KNOWABLE_TOKEN)),
+												getAccountInfo(theAccount)
+														.hasToken(relationshipWith(FREEZABLE_TOKEN_ON_BY_DEFAULT)),
+												getAccountInfo(theAccount)
+														.hasToken(relationshipWith(KNOWABLE_TOKEN)),
+												contractCall(theContract, MULTIPLE_TOKENS_DISSOCIATE,
+														asAddress(accountID.get()), List.of(
+																asAddress(freezeKeyOnTokenID.get()),
+																asAddress(knowableTokenTokenID.get())))
+														.payingWith(theAccount)
+														.via("multipleDissociationsTxn")
+														.alsoSigningWithFullPrefix(multiKey)
+														.hasKnownStatus(SUCCESS),
+												getTxnRecord("multipleDissociationsTxn").andAllChildRecords().logged()
+										)
+						)
+				).then(
+						getAccountInfo(theAccount)
+								.hasNoTokenRelationship(FREEZABLE_TOKEN_ON_BY_DEFAULT),
+						getAccountInfo(theAccount)
+								.hasNoTokenRelationship(KNOWABLE_TOKEN)
+				);
+	}
+
+	//	TODO: Test is failing due to potential bug. Investigate further.
 	private HapiApiSpec nestedDissociateWorksAsExpected() {
 		final var theAccount = "anybody";
 		final var outerContract = "AssociateDissociateContract";

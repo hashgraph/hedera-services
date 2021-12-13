@@ -600,17 +600,17 @@ public class ContractResources {
 			"\"type\": \"address\" } ], \"name\": \"tokenAssociate\", \"outputs\": [], \"stateMutability\": " +
 			"\"nonpayable\", \"type\": \"function\" }";
 
-	public static final String MULTIPLE_TOKENS_ASSOCIATE = "{ \"inputs\": [ { \"internalType\": \"address\"," +
-			" \"name\": \"account\", \"type\": \"address\" }, { \"internalType\": \"address[]\", \"name\": " +
-			"\"tokens\", \"type\": \"address[]\" } ], \"name\": \"tokensAssociate\", \"outputs\": [], " +
-			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
-
 	public static final String SINGLE_TOKEN_DISSOCIATE = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": " +
 			"\"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", \"name\": \"tokenAddress\"," +
 			" \"type\": \"address\" } ], \"name\": \"tokenDissociate\", \"outputs\": [], \"stateMutability\": " +
 			"\"nonpayable\", \"type\": \"function\" }";
 
-	public static final String MULTIPLE_TOKENS_DISSOCIATE = "{ \"inputs\": [ { \"internalType\": \"address\", " +
+	public static final String MULTIPLE_TOKENS_ASSOCIATE = "{ \"inputs\": [ { \"internalType\": \"address\"," +
+			" \"name\": \"account\", \"type\": \"address\" }, { \"internalType\": \"address[]\", \"name\": " +
+			"\"tokens\", \"type\": \"address[]\" } ], \"name\": \"tokensAssociate\", \"outputs\": [], " +
+			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
+	public static final String MULTIPLE_TOKENS_DISSOCIATE = "{ \"inputs\": [ { \"internalType\": \"address\"," +
 			"\"name\": \"account\", \"type\": \"address\" }, { \"internalType\": \"address[]\", \"name\": " +
 			"\"tokens\", \"type\": \"address[]\" } ], \"name\": \"tokensDissociate\", \"outputs\": [], " +
 			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
