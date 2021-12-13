@@ -29,10 +29,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class PojoSigMapTest {
 	@Test
-	void dis() {
-	}
-
-	@Test
 	void distinguishesBetweenFullAndPartialPrefixes() {
 		final var partialEd25519Prefix = "a";
 		final var fullEd25519Prefix = "01234567890123456789012345678901";
