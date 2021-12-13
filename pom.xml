@@ -241,7 +241,7 @@
 				<version>${maven-javadoc.version}</version>
 				<configuration>
 					<javadocExecutable>${java.home}/bin/javadoc</javadocExecutable>
-					<failOnWarnings>true</failOnWarnings>
+<!--					<failOnWarnings>true</failOnWarnings>-->
 				</configuration>
 				<executions>
 					<execution>
@@ -600,7 +600,7 @@
 						<version>${maven-javadoc.version}</version>
 						<configuration>
 							<javadocExecutable>${java.home}/bin/javadoc</javadocExecutable>
-							<failOnWarnings>true</failOnWarnings>
+<!--							<failOnWarnings>true</failOnWarnings>-->
 						</configuration>
 						<executions>
 							<execution>
