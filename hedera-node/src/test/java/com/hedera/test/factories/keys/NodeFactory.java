@@ -29,7 +29,7 @@ public interface NodeFactory {
 		return new LeafFactory(null, usedToSign, SignatureType.RSA);
 	}
 	static NodeFactory ecdsa384(boolean usedToSign) {
-		return new LeafFactory(null, usedToSign, SignatureType.ECDSA);
+		return new LeafFactory(null, usedToSign, SignatureType.ECDSA_SECP256K1);
 	}
 
 	static NodeFactory ed25519() {

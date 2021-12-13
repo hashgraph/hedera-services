@@ -86,10 +86,16 @@ public class SyntheticTxnFactory {
 					.addNftTransfers(nftExchange.nftTransfer()));
 		}
 		for (final var fungibleTransfer : fungibleTransfers) {
-			builder.addTokenTransfers(TokenTransferList.newBuilder()
-					.setToken(fungibleTransfer.getDenomination())
-					.addTransfers(fungibleTransfer.senderAdjustment())
-					.addTransfers(fungibleTransfer.receiverAdjustment()));
+			final var tokenTransferList = TokenTransferList.newBuilder()
+					.setToken(fungibleTransfer.getDenomination());
+
+			if (fungibleTransfer.sender != null) {
+				tokenTransferList.addTransfers(fungibleTransfer.senderAdjustment());
+			}
+			if (fungibleTransfer.receiver != null) {
+				tokenTransferList.addTransfers(fungibleTransfer.receiverAdjustment());
+			}
+			builder.addTokenTransfers(tokenTransferList);
 		}
 
 		return TransactionBody.newBuilder().setCryptoTransfer(builder);

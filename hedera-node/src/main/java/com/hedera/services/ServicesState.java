@@ -162,7 +162,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	public void migrate() {
 		int deserializedVersionFromState = getDeserializedVersion();
 		if (deserializedVersionFromState < RELEASE_0210_VERSION) {
-			blobMigrator.migrateFromBinaryObjectStore(this, jdbLoc, deserializedVersionFromState);
+			blobMigrator.migrateFromBinaryObjectStore(this, deserializedVersionFromState);
 			init(getPlatformForDeferredInit(), getAddressBookForDeferredInit(), getDualStateForDeferredInit());
 		}
 	}
@@ -230,7 +230,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			// Submit the transaction for any prepare stage processing that can be performed
 			// such as pre-fetching of contract bytecode. This step is performed asynchronously
 			// so get this step started before synchronous signature expansion.
-			app.prefetchProcessor().offer(accessor);
+			app.prefetchProcessor().submit(accessor);
 
 			app.expansionHelper().expandIn(accessor, app.retryingSigReqs(), accessor.getPkToSigsFn());
 		} catch (InvalidProtocolBufferException e) {
@@ -434,7 +434,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	void createGenesisChildren(AddressBook addressBook, long seqStart) {
-		final var virtualMapFactory = new VirtualMapFactory(jdbLoc, JasperDbBuilder::new);
+		final var virtualMapFactory = new VirtualMapFactory(JasperDbBuilder::new);
 
 		setChild(StateChildIndices.UNIQUE_TOKENS, new MerkleMap<>());
 		setChild(StateChildIndices.TOKEN_ASSOCIATIONS, new MerkleMap<>());
@@ -466,10 +466,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@FunctionalInterface
 	interface BinaryObjectStoreMigrator {
-		void migrateFromBinaryObjectStore(ServicesState initializingState, String jdbcLoc, int deserializedVersion);
+		void migrateFromBinaryObjectStore(ServicesState initializingState, int deserializedVersion);
 	}
 
-	private static String jdbLoc = CANONICAL_JDB_LOC;
 	private static BinaryObjectStoreMigrator blobMigrator = ReleaseTwentyMigration::migrateFromBinaryObjectStore;
 	private static Supplier<ServicesApp.Builder> appBuilder = DaggerServicesApp::builder;
 
@@ -492,9 +491,5 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	static void setBlobMigrator(BinaryObjectStoreMigrator blobMigrator) {
 		ServicesState.blobMigrator = blobMigrator;
-	}
-
-	public static void setJdbLoc(String jdbLoc) {
-		ServicesState.jdbLoc = jdbLoc;
 	}
 }

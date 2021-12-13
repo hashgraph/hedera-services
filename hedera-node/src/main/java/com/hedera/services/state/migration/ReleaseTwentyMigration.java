@@ -62,20 +62,17 @@ public class ReleaseTwentyMigration {
 	 *
 	 * @param initializingState
 	 * 		the saved state being migrated during initialization
-	 * @param jdbDataLoc
-	 * 		canonical jasperDB location
 	 * @param deserializedVersion
 	 * 		for completeness, the version of the saved state
 	 */
 
 	public static void migrateFromBinaryObjectStore(
 			final ServicesState initializingState,
-			final String jdbDataLoc,
 			final int deserializedVersion
 	) {
 		log.info("Migrating state from version {} to {}", deserializedVersion, RELEASE_0210_VERSION);
 
-		final var virtualMapFactory = new VirtualMapFactory(jdbDataLoc, JasperDbBuilder::new);
+		final var virtualMapFactory = new VirtualMapFactory(JasperDbBuilder::new);
 		final MerkleMap<String, MerkleOptionalBlob> legacyBlobs = initializingState.getChild(StateChildIndices.STORAGE);
 
 		final VirtualMap<VirtualBlobKey, VirtualBlobValue> vmBlobs = virtualMapFactory.newVirtualizedBlobs();
