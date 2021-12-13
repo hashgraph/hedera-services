@@ -11,23 +11,20 @@ contract TransferAmountAndToken is HederaTokenService {
         tokenAddress = _tokenAddress;
     }
 
-    function depositTokens(int64 serialNum) public {
-        int response = HederaTokenService.transferNFT(tokenAddress, msg.sender, address(this), serialNum);
+    function transferToAddress(address _address, address _address2, int64 serialNum, int64 serialNum2) public {
 
-        if (response != HederaResponseCodes.SUCCESS) {
-            revert ("Deposit Failed");
-        }
-    }
-
-    function transferToAddress(address _address, int64 serialNum) public {
-
-        int response = HederaTokenService.transferNFT(tokenAddress, address(this), _address, serialNum);
+        int response = HederaTokenService.transferNFT(tokenAddress, _address, _address2, serialNum);
 
         if (response != HederaResponseCodes.SUCCESS) {
             revert ("Token transfer failed");
         }
 
-    }
+        int response2 = HederaTokenService.transferNFT(tokenAddress, _address, _address2, serialNum2);
 
+        if (response2 != HederaResponseCodes.SUCCESS) {
+            revert ("Token transfer2 failed");
+        }
+
+    }
 
 }

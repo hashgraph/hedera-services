@@ -578,13 +578,10 @@ public class ContractResources {
 			"\"inputs\": [{\"name\": \"_tokenAddress\",\"type\": \"address\"}]," +
 			"\"payable\": false,\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
 
-	public static final String TRANSFER_AMOUNT_AND_TOKEN_DEPOSIT_TOKENS = "{ \"inputs\": [{\"internalType\": \"int64\",\"name\": \"serialNum\",\"type\": \"int64\"} ]," +
-			"\"name\": \"depositTokens\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
 	public static final String TRANSFER_AMOUNT_AND_TOKEN_CONSTRUCTOR = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_tokenAddress\",\"type\": \"address\"}],\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
-	public static final String TRANSFER_AMOUNT_AND_TOKEN_TRANSFER_TO_ADDRESS = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_address\",\"type\": \"address\"}," +
-			"{\"internalType\": \"int64\",\"name\": \"serialNum\",\"type\": \"int64\"}]," +
+	public static final String TRANSFER_AMOUNT_AND_TOKEN_TRANSFER_TO_ADDRESS = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_address\",\"type\": \"address\"}, {\"internalType\": \"address\",\"name\": \"_address2\",\"type\": \"address\"}," +
+			"{\"internalType\": \"int64\",\"name\": \"serialNum\",\"type\": \"int64\"}, {\"internalType\": \"int64\",\"name\": \"serialNum2\",\"type\": \"int64\"}]," +
 			"\"name\": \"transferToAddress\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
-
 
 	public static final String MUSICAL_CHAIRS_CONSTRUCTOR = "{" +
 			"\"inputs\": [{\"internalType\": \"address\",\"name\": \"_dj\",\"type\": \"address\"}]," +

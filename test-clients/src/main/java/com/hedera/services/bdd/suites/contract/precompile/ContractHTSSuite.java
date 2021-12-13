@@ -34,7 +34,6 @@ import java.util.List;
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.DISSOCIATE_TOKEN;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_AMOUNT_AND_TOKEN_DEPOSIT_TOKENS;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_AMOUNT_AND_TOKEN_TRANSFER_TO_ADDRESS;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ZENOS_BANK_DEPOSIT_TOKENS;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ZENOS_BANK_WITHDRAW_TOKENS;
@@ -111,7 +110,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 		return defaultHapiSpec("insufficientBalanceRollback")
 				.given(
 						newKeyNamed(supplyKey),
-						cryptoCreate(alice).balance(10 * ONE_HUNDRED_HBARS),
+						cryptoCreate(alice).balance(12 * ONE_HBAR),
 						cryptoCreate(bob).balance(52390000L),
 						cryptoCreate(treasuryForToken).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(feeCollector).balance(0L),
@@ -120,7 +119,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 								.supplyKey(supplyKey)
 								.initialSupply(0L)
 								.treasury(treasuryForToken)
-								.withCustom(fixedHbarFee(ONE_HBAR, feeCollector)),
+								.withCustom(fixedHbarFee(2 * ONE_HBAR, feeCollector)),
 						mintToken(tokenWithHbarFee, List.of(copyFromUtf8("First!"))),
 						mintToken(tokenWithHbarFee, List.of(copyFromUtf8("Second!"))),
 						getAccountInfo(bob).savingSnapshot("receivableSigReqAccountInfo"),
@@ -140,15 +139,12 @@ public class ContractHTSSuite extends HapiApiSuite {
 						tokenAssociate(theContract, tokenWithHbarFee),
 						cryptoTransfer(movingUnique(tokenWithHbarFee, 1L).between(treasuryForToken, alice))
 								.payingWith(GENESIS),
+						cryptoTransfer(movingUnique(tokenWithHbarFee, 2L).between(treasuryForToken, alice))
+								.payingWith(GENESIS),
 						getAccountInfo(feeCollector).has(AccountInfoAsserts.accountWith().balance(0L))
 				)
 				.when(
-						contractCall(theContract, TRANSFER_AMOUNT_AND_TOKEN_DEPOSIT_TOKENS, 1L)
-								.payingWith(alice)
-								.gas(48_000)
-								.via("test"),
-						getTxnRecord("test").andAllChildRecords().logged(),
-						getAccountInfo(feeCollector).has(AccountInfoAsserts.accountWith().balance(ONE_HBAR))
+
 				)
 				.then(
 						withOpContext(
@@ -158,18 +154,17 @@ public class ContractHTSSuite extends HapiApiSuite {
 									allRunFor(
 											spec,
 											contractCall(theContract, TRANSFER_AMOUNT_AND_TOKEN_TRANSFER_TO_ADDRESS,
-													accountAddress, 1L)
-													.payingWith(bob)
-													.alsoSigningWithFullPrefix(theContract)
+													asAddress(spec.registry().getAccountID(alice)), asAddress(spec.registry().getAccountID(bob)),
+													1L, 2L)
+													.payingWith(alice)
+													.alsoSigningWithFullPrefix(alice)
 													.gas(70_000)
 													.via("test1")
-													.hasKnownStatus(CONTRACT_REVERT_EXECUTED));
+									.hasKnownStatus(CONTRACT_REVERT_EXECUTED));
 								}),
 						getTxnRecord("test1").andAllChildRecords().logged(),
-						getAccountInfo(feeCollector).has(AccountInfoAsserts.accountWith().balance(ONE_HBAR))
+						getAccountInfo(feeCollector).has(AccountInfoAsserts.accountWith().balance(0L))
 				);
-
-
 	}
 
 	private HapiApiSpec depositAndWithdraw() {
