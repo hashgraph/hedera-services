@@ -39,7 +39,7 @@ public final class SignatureGenerator {
 		throw new UnsupportedOperationException("Utility Class");
 	}
 
-	public static final Provider BOUNCYCASTLE_PROVIDER = new BouncyCastleProvider();
+	protected static final Provider BOUNCYCASTLE_PROVIDER = new BouncyCastleProvider();
 
 	/**
 	 * Signs a message with a private key.

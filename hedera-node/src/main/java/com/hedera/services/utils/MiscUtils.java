@@ -134,6 +134,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetByKey;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidityID;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
@@ -509,6 +510,22 @@ public final class MiscUtils {
 		} catch (UnknownHederaFunctionality unknownHederaFunctionality) {
 			return "NotImplemented";
 		}
+	}
+
+	public static HederaFunctionality scheduledFunctionOf(final SchedulableTransactionBody txn) {
+		if (txn.hasCryptoTransfer()) {
+			return CryptoTransfer;
+		}
+		if (txn.hasConsensusSubmitMessage()) {
+			return ConsensusSubmitMessage;
+		}
+		if (txn.hasTokenMint()) {
+			return TokenMint;
+		}
+		if (txn.hasTokenBurn()) {
+			return TokenBurn;
+		}
+		return NONE;
 	}
 
 	public static HederaFunctionality functionOf(final TransactionBody txn) throws UnknownHederaFunctionality {
