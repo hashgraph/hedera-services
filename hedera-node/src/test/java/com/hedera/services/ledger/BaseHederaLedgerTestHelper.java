@@ -20,7 +20,9 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -39,7 +41,9 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -54,6 +58,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
 import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
@@ -81,6 +86,7 @@ public class BaseHederaLedgerTestHelper {
 
 	protected HederaLedger subject;
 
+	protected SideEffectsTracker sideEffectsTracker;
 	protected HederaTokenStore tokenStore;
 	protected EntityIdSource ids;
 	protected ExpiringCreations creator;
@@ -98,9 +104,12 @@ public class BaseHederaLedgerTestHelper {
 	protected TokenID missingId = IdUtils.tokenWith(333);
 	protected TokenID tokenId = IdUtils.tokenWith(222);
 	protected TokenID frozenId = IdUtils.tokenWith(111);
+	protected ByteString alias = ByteString.copyFromUtf8("These aren't the droids you're looking for");
 	protected HederaAccountCustomizer noopCustomizer = new HederaAccountCustomizer();
 	protected AccountID deletable = AccountID.newBuilder().setAccountNum(666).build();
 	protected AccountID rand = AccountID.newBuilder().setAccountNum(2_345).build();
+	protected AccountID aliasAccountId = AccountID.newBuilder().setAlias(alias).build();
+	protected EntityNum aliasEntityNum = new EntityNum(5_432);
 	protected AccountID deleted = AccountID.newBuilder().setAccountNum(3_456).build();
 	protected AccountID detached = AccountID.newBuilder().setAccountNum(4_567).build();
 
@@ -216,6 +225,9 @@ public class BaseHederaLedgerTestHelper {
 				frozenId,
 				new TokenInfo(0, frozenToken)));
 		addToLedger(rand, RAND_BALANCE, noopCustomizer);
+		given(accountsLedger.get(rand, ALIAS)).willReturn(ByteString.EMPTY);
+		addToLedger(aliasAccountId, RAND_BALANCE, noopCustomizer);
+		given(accountsLedger.get(aliasAccountId, ALIAS)).willReturn(alias);
 		addToLedger(genesis, GENESIS_BALANCE, noopCustomizer);
 		addToLedger(detached, 0L, new HederaAccountCustomizer().expiry(1_234_567L));
 		addDeletedAccountToLedger(deleted);
@@ -232,21 +244,17 @@ public class BaseHederaLedgerTestHelper {
 		given(tokenStore.resolve(tokenId))
 				.willReturn(tokenId);
 		given(tokenStore.get(frozenId)).willReturn(frozenToken);
+		sideEffectsTracker = mock(SideEffectsTracker.class);
+		AutoCreationLogic autoAccountCreator = mock(AutoCreationLogic.class);
 
-		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger);
+		subject = new HederaLedger(
+				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProps, accountsLedger, autoAccountCreator);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setNftsLedger(nftsLedger);
 	}
 
-	protected void givenAdjustBalanceUpdatingTokenXfers(AccountID misc, TokenID tokenId, long i) {
-		given(tokenStore.adjustBalance(misc, tokenId, i))
-				.willAnswer(invocationOnMock -> {
-					AccountID aId = invocationOnMock.getArgument(0);
-					TokenID tId = invocationOnMock.getArgument(1);
-					long amount = invocationOnMock.getArgument(2);
-					subject.updateTokenXfers(tId, aId, amount);
-					return OK;
-				});
+	protected void givenOkTokenXfers(AccountID misc, TokenID tokenId, long i) {
+		given(tokenStore.adjustBalance(misc, tokenId, i)).willReturn(OK);;
 	}
 
 	protected static class TokenInfo {

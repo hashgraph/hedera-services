@@ -20,6 +20,8 @@ package com.hedera.services.utils;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.HederaLedger;
@@ -132,6 +134,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetByKey;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidityID;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
@@ -189,6 +192,8 @@ import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 
 public final class MiscUtils {
+	private static final long ONE_SEC_IN_NANOS = 1_000_000_000;
+
 	private MiscUtils() {
 		throw new UnsupportedOperationException("Utility Class");
 	}
@@ -507,6 +512,22 @@ public final class MiscUtils {
 		}
 	}
 
+	public static HederaFunctionality scheduledFunctionOf(final SchedulableTransactionBody txn) {
+		if (txn.hasCryptoTransfer()) {
+			return CryptoTransfer;
+		}
+		if (txn.hasConsensusSubmitMessage()) {
+			return ConsensusSubmitMessage;
+		}
+		if (txn.hasTokenMint()) {
+			return TokenMint;
+		}
+		if (txn.hasTokenBurn()) {
+			return TokenBurn;
+		}
+		return NONE;
+	}
+
 	public static HederaFunctionality functionOf(final TransactionBody txn) throws UnknownHederaFunctionality {
 		if (txn.hasSystemDelete()) {
 			return SystemDelete;
@@ -629,6 +650,18 @@ public final class MiscUtils {
 			return UncheckedSubmit;
 		}
 		throw new UnknownHederaFunctionality();
+	}
+
+	public static Instant nonNegativeNanosOffset(final Instant start, final int nanosOff) {
+		final var oldSecs = start.getEpochSecond();
+		final var newNanos = start.getNano() + nanosOff;
+		if (newNanos < 0) {
+			return Instant.ofEpochSecond(oldSecs - 1, ONE_SEC_IN_NANOS + newNanos);
+		} else if (newNanos >= ONE_SEC_IN_NANOS) {
+			return Instant.ofEpochSecond(oldSecs + 1, newNanos - ONE_SEC_IN_NANOS);
+		} else {
+			return Instant.ofEpochSecond(oldSecs, newNanos);
+		}
 	}
 
 	public static Optional<HederaFunctionality> functionalityOfQuery(final Query query) {
@@ -769,6 +802,23 @@ public final class MiscUtils {
 	public static void putIfNotNull(@Nullable final Map<String, Object> map, final String key, final Object value) {
 		if (null != map) {
 			map.put(key, value);
+		}
+	}
+
+	/**
+	 * Attempts to parse a {@code Key} from given alias {@code ByteString}. If the Key is of type Ed25519 or
+	 * ECDSA(secp256k1), returns true and false otherwise.
+	 *
+	 * @param alias
+	 * 		given alias byte string
+	 * @return whether it parses to a primitive key
+	 */
+	public static boolean isSerializedProtoKey(final ByteString alias) {
+		try {
+			final var key = Key.parseFrom(alias);
+			return !key.getECDSASecp256K1().isEmpty() || !key.getEd25519().isEmpty();
+		} catch (InvalidProtocolBufferException ignore) {
+			return false;
 		}
 	}
 }

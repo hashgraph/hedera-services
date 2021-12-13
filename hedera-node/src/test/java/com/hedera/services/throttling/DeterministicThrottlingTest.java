@@ -22,18 +22,32 @@ package com.hedera.services.throttling;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hedera.services.throttles.BucketThrottle;
 import com.hedera.services.throttles.DeterministicThrottle;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
+import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.SerdeUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,11 +62,13 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 
+import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCallLocal;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -62,6 +78,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class DeterministicThrottlingTest {
@@ -75,6 +92,8 @@ class DeterministicThrottlingTest {
 	private ThrottleReqsManager manager;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private AliasManager aliasManager;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -83,7 +102,7 @@ class DeterministicThrottlingTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new DeterministicThrottling(() -> n, dynamicProperties);
+		subject = new DeterministicThrottling(() -> n, aliasManager, dynamicProperties);
 	}
 
 	@Test
@@ -102,6 +121,96 @@ class DeterministicThrottlingTest {
 		// then:
 		assertFalse(ans);
 		assertEquals(BucketThrottle.capacityUnitsPerTxn(), dNow.used());
+	}
+
+	@Test
+	void usesScheduleCreateThrottleForSubmitMessage() throws IOException {
+		final var scheduledSubmit = SchedulableTransactionBody.newBuilder()
+				.setConsensusSubmitMessage(ConsensusSubmitMessageTransactionBody.getDefaultInstance())
+				.build();
+		var defs = SerdeUtils.pojoDefs("bootstrap/schedule-create-throttles.json");
+		subject.rebuildFor(defs);
+
+		final var accessor = scheduling(scheduledSubmit);
+		final var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+
+		final var throttlesNow = subject.activeThrottlesFor(ScheduleCreate);
+		final var aNow = throttlesNow.get(0);
+
+		assertFalse(ans);
+		assertEquals(BucketThrottle.capacityUnitsPerTxn(), aNow.used());
+	}
+
+	@Test
+	void usesScheduleCreateThrottleForCryptoTransferNoAutoCreations() throws IOException {
+		final var scheduledXferNoAliases = SchedulableTransactionBody.newBuilder()
+				.setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
+				.build();
+		var defs = SerdeUtils.pojoDefs("bootstrap/schedule-create-throttles.json");
+		subject.rebuildFor(defs);
+
+		final var accessor = scheduling(scheduledXferNoAliases);
+		final var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+
+		final var throttlesNow = subject.activeThrottlesFor(ScheduleCreate);
+		final var aNow = throttlesNow.get(0);
+
+		assertFalse(ans);
+		assertEquals(BucketThrottle.capacityUnitsPerTxn(), aNow.used());
+	}
+
+	@Test
+	void usesCryptoCreateThrottleForCryptoTransferWithAutoCreation() throws IOException {
+		final var alias = aPrimitiveKey.toByteString();
+		given(aliasManager.lookupIdBy(alias)).willReturn(MISSING_NUM);
+		final var scheduledXferWithAutoCreation = SchedulableTransactionBody.newBuilder()
+				.setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()
+						.setTransfers(TransferList.newBuilder()
+								.addAccountAmounts(AccountAmount.newBuilder()
+										.setAmount(-1_000_000_000)
+										.setAccountID(IdUtils.asAccount("0.0.3333")))
+								.addAccountAmounts(AccountAmount.newBuilder()
+										.setAmount(+1_000_000_000)
+										.setAccountID(AccountID.newBuilder().setAlias(alias)))))
+				.build();
+		var defs = SerdeUtils.pojoDefs("bootstrap/schedule-create-throttles.json");
+		subject.rebuildFor(defs);
+
+		final var accessor = scheduling(scheduledXferWithAutoCreation);
+		final var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+
+		final var throttlesNow = subject.activeThrottlesFor(ScheduleCreate);
+		final var aNow = throttlesNow.get(0);
+
+		assertFalse(ans);
+		assertEquals(50 * BucketThrottle.capacityUnitsPerTxn(), aNow.used());
+	}
+
+	@Test
+	void usesScheduleCreateThrottleForAliasedCryptoTransferWithNoAutoCreation() throws IOException {
+		final var alias = aPrimitiveKey.toByteString();
+		given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.fromLong(1_234L));
+		final var scheduledXferWithAutoCreation = SchedulableTransactionBody.newBuilder()
+				.setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()
+						.setTransfers(TransferList.newBuilder()
+								.addAccountAmounts(AccountAmount.newBuilder()
+										.setAmount(+1_000_000_000)
+										.setAccountID(IdUtils.asAccount("0.0.3333")))
+								.addAccountAmounts(AccountAmount.newBuilder()
+										.setAmount(-1_000_000_000)
+										.setAccountID(AccountID.newBuilder().setAlias(alias)))))
+				.build();
+		var defs = SerdeUtils.pojoDefs("bootstrap/schedule-create-throttles.json");
+		subject.rebuildFor(defs);
+
+		final var accessor = scheduling(scheduledXferWithAutoCreation);
+		final var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+
+		final var throttlesNow = subject.activeThrottlesFor(ScheduleCreate);
+		final var aNow = throttlesNow.get(0);
+
+		assertFalse(ans);
+		assertEquals(BucketThrottle.capacityUnitsPerTxn(), aNow.used());
 	}
 
 	@Test
@@ -128,7 +237,6 @@ class DeterministicThrottlingTest {
 		// and:
 		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
 		var throttlesNow = subject.activeThrottlesFor(TokenMint);
-		// and:
 		var aNow = throttlesNow.get(0);
 
 		// then:
@@ -178,6 +286,72 @@ class DeterministicThrottlingTest {
 		assertFalse(ans);
 		assertEquals(2500 * BucketThrottle.capacityUnitsPerTxn(), aNow.used());
 		assertEquals(BucketThrottle.capacityUnitsPerTxn(), bNow.used());
+	}
+
+	@Test
+	void computesNumAutoCreationsIfNotAlreadyKnown() throws IOException {
+		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+
+		givenFunction(CryptoTransfer);
+		given(accessor.getNumAutoCreations()).willReturn(0);
+		subject.rebuildFor(defs);
+
+		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+
+		verify(accessor).countAutoCreationsWith(aliasManager);
+		assertFalse(ans);
+	}
+
+	@Test
+	void cryptoTransfersWithNoAutoAccountCreationsAreThrottledAsExpected() throws IOException {
+		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+
+		givenFunction(CryptoTransfer);
+		given(accessor.getNumAutoCreations()).willReturn(0);
+		subject.rebuildFor(defs);
+
+		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+
+		assertFalse(ans);
+	}
+
+	@Test
+	void managerAllowsCryptoTransfersWithAutoAccountCreationsAsExpected() throws IOException {
+		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+
+		givenFunction(CryptoTransfer);
+		given(accessor.getNumAutoCreations()).willReturn(1);
+		subject.rebuildFor(defs);
+
+		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+
+		assertFalse(ans);
+	}
+
+	@Test
+	void managerRejectsCryptoTransfersWithAutoAccountCreationsAsExpected() throws IOException {
+		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+
+		givenFunction(CryptoTransfer);
+		given(accessor.getNumAutoCreations()).willReturn(10);
+		subject.rebuildFor(defs);
+
+		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+
+		assertTrue(ans);
+	}
+
+	@Test
+	void managerRejectsCryptoTransfersWithMissingCryptoCreateThrottle() throws IOException {
+		var defs = SerdeUtils.pojoDefs("bootstrap/throttles-sans-creation.json");
+
+		givenFunction(CryptoTransfer);
+		given(accessor.getNumAutoCreations()).willReturn(1);
+		subject.rebuildFor(defs);
+
+		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+
+		assertTrue(ans);
 	}
 
 	@Test
@@ -296,4 +470,23 @@ class DeterministicThrottlingTest {
 		opsManagers.put(CryptoTransfer, manager);
 		return opsManagers;
 	}
+
+	private SignedTxnAccessor scheduling(final SchedulableTransactionBody inner) {
+		final var schedule = ScheduleCreateTransactionBody.newBuilder()
+				.setScheduledTransactionBody(inner);
+		final var body = TransactionBody.newBuilder()
+				.setScheduleCreate(schedule)
+				.build();
+		final var signedTxn = SignedTransaction.newBuilder()
+				.setBodyBytes(body.toByteString())
+				.build();
+		final var txn = Transaction.newBuilder()
+				.setSignedTransactionBytes(signedTxn.toByteString())
+				.build();
+		return SignedTxnAccessor.uncheckedFrom(txn);
+	}
+
+	private static final Key aPrimitiveKey = Key.newBuilder()
+			.setEd25519(ByteString.copyFromUtf8("01234567890123456789012345678901"))
+			.build();
 }

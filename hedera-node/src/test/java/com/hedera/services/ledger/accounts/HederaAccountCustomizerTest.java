@@ -20,7 +20,9 @@ package com.hedera.services.ledger.accounts;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.state.merkle.MerkleAccount;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -29,7 +31,7 @@ import java.util.Map;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class MerkleAccountCustomizerTest {
+class HederaAccountCustomizerTest {
 	HederaAccountCustomizer subject = new HederaAccountCustomizer();
 
 	@Test
@@ -41,5 +43,13 @@ class MerkleAccountCustomizerTest {
 		Arrays.stream(Option.class.getEnumConstants()).forEach(
 				option -> assertEquals(AccountProperty.valueOf(option.toString()), optionProperties.get(option))
 		);
+	}
+
+	@Test
+	void canCustomizeAlias() {
+		final var target = new MerkleAccount();
+		final var alias = ByteString.copyFromUtf8("FAKE");
+		subject.alias(alias).customizing(target);
+		assertEquals(alias, target.getAlias());
 	}
 }

@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.files.HFileMeta;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
@@ -76,6 +77,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -108,6 +111,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREE
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_PAUSE_KT;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asAccountWithAlias;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.asFile;
 import static com.hedera.test.utils.IdUtils.asSchedule;
@@ -126,35 +130,37 @@ import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-@ExtendWith(LogCaptureExtension.class)
+@ExtendWith({ LogCaptureExtension.class, MockitoExtension.class })
 class StateViewTest {
-	private Instant resolutionTime = Instant.ofEpochSecond(123L);
-	private RichInstant now = RichInstant.fromGrpc(Timestamp.newBuilder().setNanos(123123213).build());
-	private long expiry = 2_000_000L;
-	private byte[] data = "SOMETHING".getBytes();
-	private byte[] expectedBytecode = "A Supermarket in California".getBytes();
+	private final Instant resolutionTime = Instant.ofEpochSecond(123L);
+	private final RichInstant now = RichInstant.fromGrpc(Timestamp.newBuilder().setNanos(123123213).build());
+	private final long expiry = 2_000_000L;
+	private final byte[] data = "SOMETHING".getBytes();
+	private final byte[] expectedBytecode = "A Supermarket in California".getBytes();
 	private byte[] expectedStorage = "The Ecstasy".getBytes();
-	private String tokenMemo = "Goodbye and keep cold";
+	private final String tokenMemo = "Goodbye and keep cold";
 	private HFileMeta metadata;
 	private HFileMeta immutableMetadata;
-	private FileID target = asFile("0.0.123");
-	private TokenID tokenId = asToken("0.0.5");
-	private TokenID nftTokenId = asToken("0.0.3");
-	private TokenID missingTokenId = asToken("0.0.5555");
-	private AccountID payerAccountId = asAccount("0.0.9");
-	private AccountID tokenAccountId = asAccount("0.0.10");
-	private AccountID treasuryOwnerId = asAccount("0.0.0");
-	private AccountID nftOwnerId = asAccount("0.0.44");
-	private ScheduleID scheduleId = asSchedule("0.0.8");
-	private ScheduleID missingScheduleId = asSchedule("0.0.9");
-	private ContractID cid = asContract("0.0.1");
-	private byte[] cidAddress = asSolidityAddress((int) cid.getShardNum(), cid.getRealmNum(), cid.getContractNum());
-	private ContractID notCid = asContract("0.0.3");
-	private AccountID autoRenew = asAccount("0.0.6");
-	private AccountID creatorAccountID = asAccount("0.0.7");
-	private long autoRenewPeriod = 1_234_567;
-	private String fileMemo = "Originally she thought";
-	private String scheduleMemo = "For what but eye and ear";
+	private final FileID target = asFile("0.0.123");
+	private final TokenID tokenId = asToken("0.0.5");
+	private final TokenID nftTokenId = asToken("0.0.3");
+	private final TokenID missingTokenId = asToken("0.0.5555");
+	private final AccountID payerAccountId = asAccount("0.0.9");
+	private final AccountID tokenAccountId = asAccount("0.0.10");
+	private final AccountID accountWithAlias = asAccountWithAlias("aaaa");
+	private final AccountID treasuryOwnerId = asAccount("0.0.0");
+	private final AccountID nftOwnerId = asAccount("0.0.44");
+	private final ScheduleID scheduleId = asSchedule("0.0.8");
+	private final ScheduleID missingScheduleId = asSchedule("0.0.9");
+	private final ContractID cid = asContract("0.0.1");
+	private final byte[] cidAddress = asSolidityAddress((int) cid.getShardNum(), cid.getRealmNum(),
+			cid.getContractNum());
+	private final ContractID notCid = asContract("0.0.3");
+	private final AccountID autoRenew = asAccount("0.0.6");
+	private final AccountID creatorAccountID = asAccount("0.0.7");
+	private final long autoRenewPeriod = 1_234_567;
+	private final String fileMemo = "Originally she thought";
+	private final String scheduleMemo = "For what but eye and ear";
 
 	private FileGetInfoResponse.FileInfo expected;
 	private FileGetInfoResponse.FileInfo expectedImmutable;
@@ -187,6 +193,8 @@ class StateViewTest {
 	private UniqTokenView uniqTokenView;
 	private UniqTokenViewFactory uniqTokenViewFactory;
 	private StateChildren children;
+	@Mock
+	private AliasManager aliasManager;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -226,6 +234,7 @@ class StateViewTest {
 				.get();
 		tokenAccount.setNftsOwned(10);
 		tokenAccount.setMaxAutomaticAssociations(123);
+		tokenAccount.setAlias(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey().getEd25519());
 		contract = MerkleAccountFactory.newAccount()
 				.memo("Stay cold...")
 				.isSmartContract(true)
@@ -242,10 +251,6 @@ class StateViewTest {
 		nftOwner = MerkleAccountFactory.newAccount()
 				.get();
 		contracts = (MerkleMap<EntityNum, MerkleAccount>) mock(MerkleMap.class);
-		given(contracts.get(EntityNum.fromContractId(cid))).willReturn(contract);
-		given(contracts.get(EntityNum.fromAccountId(nftOwnerId))).willReturn(nftOwner);
-		given(contracts.get(EntityNum.fromContractId(notCid))).willReturn(notContract);
-		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
 
 		topics = (MerkleMap<EntityNum, MerkleTopic>) mock(MerkleMap.class);
 
@@ -276,13 +281,6 @@ class StateViewTest {
 		token.setSupplyType(TokenSupplyType.FINITE);
 		token.setFeeScheduleFrom(grpcCustomFees);
 
-		given(tokenStore.resolve(tokenId)).willReturn(tokenId);
-		given(tokenStore.resolve(missingTokenId)).willReturn(TokenStore.MISSING_TOKEN);
-		given(tokenStore.listOfTokensServed(nftOwnerId)).willReturn(
-				Collections.singletonList(targetNftKey.getHiPhi().toGrpcTokenId()));
-		given(tokenStore.get(tokenId)).willReturn(token);
-		given(tokenStore.get(IdUtils.asToken("0.0.3"))).willReturn(token);
-
 		scheduleStore = mock(ScheduleStore.class);
 		parentScheduleCreate =
 				scheduleCreateTxnWith(
@@ -297,23 +295,16 @@ class StateViewTest {
 		schedule.witnessValidSignature("secondPretendKey".getBytes());
 		schedule.witnessValidSignature("thirdPretendKey".getBytes());
 
-		given(scheduleStore.resolve(scheduleId)).willReturn(scheduleId);
-		given(scheduleStore.resolve(missingScheduleId)).willReturn(ScheduleStore.MISSING_SCHEDULE);
-		given(scheduleStore.get(scheduleId)).willReturn(schedule);
-
 		contents = mock(Map.class);
 		attrs = mock(Map.class);
 		storage = mock(Map.class);
 		bytecode = mock(Map.class);
-		given(storage.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedStorage);
-		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedBytecode);
 		nodeProps = mock(NodeLocalProperties.class);
 		specialFiles = mock(MerkleSpecialFiles.class);
 
 		mockTokenRelsFn = (BiFunction<StateView, AccountID, List<TokenRelationship>>) mock(BiFunction.class);
 
 		StateView.tokenRelsFn = mockTokenRelsFn;
-		given(mockTokenRelsFn.apply(any(), any())).willReturn(Collections.emptyList());
 
 		final var uniqueTokens = new MerkleMap<EntityNumPair, MerkleUniqueToken>();
 		uniqueTokens.put(targetNftKey, targetNft);
@@ -360,6 +351,9 @@ class StateViewTest {
 
 	@Test
 	void tokenExistsWorks() {
+		given(tokenStore.resolve(tokenId)).willReturn(tokenId);
+		given(tokenStore.resolve(missingTokenId)).willReturn(TokenStore.MISSING_TOKEN);
+
 		assertTrue(subject.tokenExists(tokenId));
 		assertFalse(subject.tokenExists(missingTokenId));
 	}
@@ -372,6 +366,9 @@ class StateViewTest {
 
 	@Test
 	void scheduleExistsWorks() {
+		given(scheduleStore.resolve(scheduleId)).willReturn(scheduleId);
+		given(scheduleStore.resolve(missingScheduleId)).willReturn(ScheduleStore.MISSING_SCHEDULE);
+
 		assertTrue(subject.scheduleExists(scheduleId));
 		assertFalse(subject.scheduleExists(missingScheduleId));
 	}
@@ -409,6 +406,9 @@ class StateViewTest {
 
 	@Test
 	void getsScheduleInfoForDeleted() {
+		given(scheduleStore.resolve(scheduleId)).willReturn(scheduleId);
+		given(scheduleStore.get(scheduleId)).willReturn(schedule);
+
 		final var expectedScheduledTxn = parentScheduleCreate.getScheduleCreate().getScheduledTransactionBody();
 
 		schedule.markDeleted(resolutionTime);
@@ -433,6 +433,9 @@ class StateViewTest {
 
 	@Test
 	void getsScheduleInfoForExecuted() {
+		given(scheduleStore.resolve(scheduleId)).willReturn(scheduleId);
+		given(scheduleStore.get(scheduleId)).willReturn(schedule);
+
 		schedule.markExecuted(resolutionTime);
 		final var gotten = subject.infoForSchedule(scheduleId);
 		final var info = gotten.get();
@@ -458,6 +461,9 @@ class StateViewTest {
 
 	@Test
 	void getsTokenInfoMinusFreezeIfMissing() {
+		given(tokenStore.resolve(tokenId)).willReturn(tokenId);
+		given(tokenStore.get(tokenId)).willReturn(token);
+
 		token.setFreezeKey(MerkleToken.UNUSED_KEY);
 
 		final var info = subject.infoForToken(tokenId).get();
@@ -475,6 +481,9 @@ class StateViewTest {
 
 	@Test
 	void getsTokenInfoMinusPauseIfMissing() {
+		given(tokenStore.resolve(tokenId)).willReturn(tokenId);
+		given(tokenStore.get(tokenId)).willReturn(token);
+
 		token.setPauseKey(MerkleToken.UNUSED_KEY);
 
 		final var info = subject.infoForToken(tokenId).get();
@@ -492,6 +501,8 @@ class StateViewTest {
 
 	@Test
 	void getsTokenInfo() {
+		given(tokenStore.resolve(tokenId)).willReturn(tokenId);
+		given(tokenStore.get(tokenId)).willReturn(token);
 		final var miscKey = MISC_ACCOUNT_KT.asKey();
 
 		final var info = subject.infoForToken(tokenId).get();
@@ -521,6 +532,10 @@ class StateViewTest {
 
 	@Test
 	void getsContractInfo() throws Exception {
+		given(storage.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedStorage);
+		given(contracts.get(EntityNum.fromContractId(cid))).willReturn(contract);
+		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedBytecode);
+
 		List<TokenRelationship> rels = List.of(
 				TokenRelationship.newBuilder()
 						.setTokenId(TokenID.newBuilder().setTokenNum(123L))
@@ -547,8 +562,9 @@ class StateViewTest {
 
 	@Test
 	void getTokenRelationship() {
-		given(tokenStore.exists(tokenId)).willReturn(true);
 		given(tokenStore.get(tokenId)).willReturn(token);
+		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
+		given(tokenStore.exists(tokenId)).willReturn(true);
 
 		List<TokenRelationship> expectedRels = List.of(
 				TokenRelationship.newBuilder()
@@ -577,6 +593,9 @@ class StateViewTest {
 
 	@Test
 	void getTokenType() {
+		given(tokenStore.resolve(tokenId)).willReturn(tokenId);
+		given(tokenStore.get(tokenId)).willReturn(token);
+
 		final var actualTokenType = subject.tokenType(tokenId).get();
 
 		assertEquals(FUNGIBLE_COMMON, actualTokenType);
@@ -602,9 +621,13 @@ class StateViewTest {
 
 	@Test
 	void infoForAccount() {
+		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
+		given(mockTokenRelsFn.apply(any(), any())).willReturn(Collections.emptyList());
+
 		final var expectedResponse = CryptoGetInfoResponse.AccountInfo.newBuilder()
 				.setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
 				.setAccountID(tokenAccountId)
+				.setAlias(tokenAccount.getAlias())
 				.setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
 				.setDeleted(tokenAccount.isDeleted())
 				.setMemo(tokenAccount.getMemo())
@@ -616,23 +639,63 @@ class StateViewTest {
 				.setMaxAutomaticTokenAssociations(tokenAccount.getMaxAutomaticAssociations())
 				.build();
 
-		final var actualResponse = subject.infoForAccount(tokenAccountId);
+		final var actualResponse = subject.infoForAccount(tokenAccountId, aliasManager);
 
 		assertEquals(expectedResponse, actualResponse.get());
 	}
 
 	@Test
+	void infoForAccountWithAlias() {
+		given(aliasManager.lookupIdBy(any())).willReturn(EntityNum.fromAccountId(tokenAccountId));
+		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
+		given(mockTokenRelsFn.apply(any(), any())).willReturn(Collections.emptyList());
+
+		final var expectedResponse = CryptoGetInfoResponse.AccountInfo.newBuilder()
+				.setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
+				.setAccountID(accountWithAlias)
+				.setAlias(tokenAccount.getAlias())
+				.setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
+				.setDeleted(tokenAccount.isDeleted())
+				.setMemo(tokenAccount.getMemo())
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(tokenAccount.getAutoRenewSecs()))
+				.setBalance(tokenAccount.getBalance())
+				.setExpirationTime(Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
+				.setContractAccountID(asSolidityAddressHex(accountWithAlias))
+				.setOwnedNfts(tokenAccount.getNftsOwned())
+				.setMaxAutomaticTokenAssociations(tokenAccount.getMaxAutomaticAssociations())
+				.build();
+
+		final var actualResponse = subject.infoForAccount(accountWithAlias, aliasManager);
+		assertEquals(expectedResponse, actualResponse.get());
+
+	}
+
+	@Test
 	void numNftsOwnedWorksForExisting() {
+		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
+
 		assertEquals(tokenAccount.getNftsOwned(), subject.numNftsOwnedBy(tokenAccountId));
 	}
 
 	@Test
-	void infoForAccountEmpty() {
+	void infoForMissingAccount() {
 		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(null);
 
-		final var actualResponse = subject.infoForAccount(tokenAccountId);
+		final var actualResponse = subject.infoForAccount(tokenAccountId, aliasManager);
 
 		assertEquals(Optional.empty(), actualResponse);
+	}
+
+	@Test
+	void infoForMissingAccountWithAlias() {
+		EntityNum mockedEntityNum = mock(EntityNum.class);
+
+		given(aliasManager.lookupIdBy(any())).willReturn(mockedEntityNum);
+		given(contracts.get(mockedEntityNum)).willReturn(null);
+
+		final var actualResponse = subject.infoForAccount(accountWithAlias, aliasManager);
+		assertEquals(Optional.empty(), actualResponse);
+
 	}
 
 	@Test
@@ -657,6 +720,10 @@ class StateViewTest {
 
 	@Test
 	void handlesNullKey() {
+		given(contracts.get(EntityNum.fromContractId(cid))).willReturn(contract);
+
+		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedBytecode);
+		given(mockTokenRelsFn.apply(any(), any())).willReturn(Collections.emptyList());
 		contract.setAccountKey(null);
 
 		final var info = subject.infoForContract(cid).get();
@@ -675,6 +742,8 @@ class StateViewTest {
 
 	@Test
 	void getsBytecode() {
+		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedBytecode);
+
 		final var actual = subject.bytecodeOf(cid);
 
 		assertArrayEquals(expectedBytecode, actual.get());
@@ -682,6 +751,7 @@ class StateViewTest {
 
 	@Test
 	void getsStorage() {
+		given(storage.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedStorage);
 		final var actual = subject.storageOf(cid);
 
 		assertArrayEquals(expectedStorage, actual.get());
@@ -911,6 +981,7 @@ class StateViewTest {
 
 	@Test
 	void infoForAccountNftsWorks() {
+		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
 		final List<TokenNftInfo> mockInfo = new ArrayList<>();
 
 		given(uniqTokenView.ownedAssociations(tokenAccountId, 3L, 4L)).willReturn(mockInfo);
@@ -941,6 +1012,7 @@ class StateViewTest {
 
 	@Test
 	void infoForMissingTokenNftsReturnsEmpty() {
+		given(tokenStore.resolve(missingTokenId)).willReturn(TokenStore.MISSING_TOKEN);
 		final var result = subject.infosForTokenNfts(missingTokenId, 0, 1);
 		assertTrue(result.isEmpty());
 	}
@@ -963,7 +1035,7 @@ class StateViewTest {
 		assertTrue(subject.contentsOf(target).isEmpty());
 		assertTrue(subject.infoForFile(target).isEmpty());
 		assertTrue(subject.infoForContract(cid).isEmpty());
-		assertTrue(subject.infoForAccount(tokenAccountId).isEmpty());
+		assertTrue(subject.infoForAccount(tokenAccountId, aliasManager).isEmpty());
 		assertTrue(subject.infoForAccountNfts(nftOwnerId, 0, Long.MAX_VALUE).isEmpty());
 		assertTrue(subject.infosForTokenNfts(nftTokenId, 0, Long.MAX_VALUE).isEmpty());
 		assertTrue(subject.tokenType(tokenId).isEmpty());

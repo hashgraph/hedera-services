@@ -9,9 +9,9 @@ package com.hedera.services.records;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,32 +22,85 @@ package com.hedera.services.records;
 
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.stream.RecordStreamObject;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 
-import java.util.Optional;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
 
 public enum NoopRecordsHistorian implements AccountRecordsHistorian {
-  NOOP_RECORDS_HISTORIAN;
+	NOOP_RECORDS_HISTORIAN;
 
-  @Override
-  public void setCreator(EntityCreator creator) {
-    // Do nothing because this mainly serves as placeholder for now
-  }
+	@Override
+	public void clearHistory() {
+		/* No-op */
+	}
 
-  @Override
-  public void finalizeExpirableTransactionRecord() {
-    // Do nothing because this mainly serves as placeholder for now
-  }
+	@Override
+	public void setCreator(EntityCreator creator) {
+		/* No-op */
+	}
 
-  @Override
-  public void saveExpirableTransactionRecord() {
-    // Do nothing because this mainly serves as placeholder for now
-  }
+	@Override
+	public void saveExpirableTransactionRecords() {
+		/* No-op */
+	}
 
-  @Override
-  public Optional<ExpirableTxnRecord> lastCreatedRecord() { return Optional.empty(); }
+	@Override
+	public ExpirableTxnRecord lastCreatedTopLevelRecord() {
+		return null;
+	}
 
-  @Override
-  public void noteNewExpirationEvents() {
-    // Do nothing because this mainly serves as placeholder for now
-  }
+	@Override
+	public boolean hasFollowingChildRecords() {
+		return false;
+	}
+
+	@Override
+	public boolean hasPrecedingChildRecords() {
+		return false;
+	}
+
+	@Override
+	public List<RecordStreamObject> getFollowingChildRecords() {
+		return Collections.emptyList();
+	}
+
+	@Override
+	public List<RecordStreamObject> getPrecedingChildRecords() {
+		return Collections.emptyList();
+	}
+
+	@Override
+	public int nextChildRecordSourceId() {
+		return 0;
+	}
+
+	@Override
+	public void trackFollowingChildRecord(
+			int sourceId, TransactionBody.Builder syntheticBody, ExpirableTxnRecord.Builder recordSoFar) {
+		/* No-op */
+	}
+
+	@Override
+	public void trackPrecedingChildRecord(
+			int sourceId, TransactionBody.Builder syntheticBody, ExpirableTxnRecord.Builder recordSoFar) {
+		/* No-op */
+	}
+
+	@Override
+	public void revertChildRecordsFromSource(int sourceId) {
+		/* No-op */
+	}
+
+	@Override
+	public void noteNewExpirationEvents() {
+		/* No-op */
+	}
+
+	@Override
+	public Instant nextFollowingChildConsensusTime() {
+		return Instant.EPOCH;
+	}
 }

@@ -604,9 +604,9 @@ class TokenTest {
 	void toStringWorks() {
 		final var desired = "Token{id=Id{shard=1, realm=2, num=3}, type=null, deleted=false, autoRemoved=false, " +
 				"treasury=Account{id=Id{shard=0, realm=0, num=0}, expiry=0, balance=0, deleted=false, tokens=<N/A>, " +
-				"ownedNfts=0, alreadyUsedAutoAssociations=0, maxAutoAssociations=0}, autoRenewAccount=null, " +
-				"kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, currentSerialNumber=0, " +
-				"pauseKey=<N/A>, paused=false}";
+				"ownedNfts=0, alreadyUsedAutoAssociations=0, maxAutoAssociations=0, alias=" + treasuryAccount.getAlias() +
+				"}, autoRenewAccount=null, kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, " +
+				"currentSerialNumber=0, pauseKey=<N/A>, paused=false}";
 
 		assertEquals(desired, subject.toString());
 	}

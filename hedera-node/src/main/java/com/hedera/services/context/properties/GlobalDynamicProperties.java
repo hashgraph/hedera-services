@@ -86,6 +86,7 @@ public class GlobalDynamicProperties {
 	private int maxCustomFeeDepth;
 	private ThrottleReqOpsScaleFactor nftMintScaleFactor;
 	private String upgradeArtifactsLoc;
+	private long triggerTxnWindBackNanos;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -154,6 +155,7 @@ public class GlobalDynamicProperties {
 		maxCustomFeeDepth = properties.getIntProperty("tokens.maxCustomFeeDepth");
 		nftMintScaleFactor = properties.getThrottleScaleFactor("tokens.nfts.mintThrottleScaleFactor");
 		upgradeArtifactsLoc = properties.getStringProperty("upgrade.artifacts.path");
+		triggerTxnWindBackNanos = properties.getLongProperty("scheduling.triggerTxn.windBackNanos");
 	}
 
 	public int maxTokensPerAccount() {
@@ -342,5 +344,9 @@ public class GlobalDynamicProperties {
 
 	public String upgradeArtifactsLoc() {
 		return upgradeArtifactsLoc;
+	}
+
+	public long triggerTxnWindBackNanos() {
+		return triggerTxnWindBackNanos;
 	}
 }

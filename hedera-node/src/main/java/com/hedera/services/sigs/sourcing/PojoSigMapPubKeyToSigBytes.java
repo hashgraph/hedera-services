@@ -75,7 +75,7 @@ public class PojoSigMapPubKeyToSigBytes implements PubKeyToSigBytes {
 	public void forEachUnusedSigWithFullPrefix(final SigObserver observer) {
 		for (int i = 0, n = pojoSigMap.numSigsPairs(); i < n; i++) {
 			if (!used[i] && pojoSigMap.isFullPrefixAt(i)) {
-				observer.accept(null, pojoSigMap.pubKeyPrefix(i), pojoSigMap.primitiveSignature(i));
+				observer.accept(pojoSigMap.keyType(i), pojoSigMap.pubKeyPrefix(i), pojoSigMap.primitiveSignature(i));
 			}
 		}
 	}

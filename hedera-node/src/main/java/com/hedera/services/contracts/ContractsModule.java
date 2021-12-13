@@ -20,24 +20,11 @@ package com.hedera.services.contracts;
  * ‍
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.annotations.BytecodeSource;
 import com.hedera.services.contracts.annotations.StorageSource;
-import com.hedera.services.contracts.sources.SoliditySigsVerifier;
-import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
-import com.hedera.services.contracts.persistence.BlobStoragePersistence;
-import com.hedera.services.contracts.sources.BlobStorageSource;
-import com.hedera.services.contracts.sources.LedgerAccountsSource;
-import com.hedera.services.keys.StandardSyncActivationCheck;
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.accounts.PureBackingAccounts;
-import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.ledger.properties.ChangeSummaryManager;
-import com.hedera.services.sigs.verification.SyncVerifier;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV19;
 import com.hedera.services.contracts.operation.HederaBalanceOperation;
 import com.hedera.services.contracts.operation.HederaCallCodeOperation;
@@ -50,6 +37,21 @@ import com.hedera.services.contracts.operation.HederaExtCodeSizeOperation;
 import com.hedera.services.contracts.operation.HederaSStoreOperation;
 import com.hedera.services.contracts.operation.HederaSelfDestructOperation;
 import com.hedera.services.contracts.operation.HederaStaticCallOperation;
+import com.hedera.services.contracts.persistence.BlobStoragePersistence;
+import com.hedera.services.contracts.sources.BlobStorageSource;
+import com.hedera.services.contracts.sources.LedgerAccountsSource;
+import com.hedera.services.contracts.sources.SoliditySigsVerifier;
+import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
+import com.hedera.services.keys.StandardSyncActivationCheck;
+import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.PureBackingAccounts;
+import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.properties.ChangeSummaryManager;
+import com.hedera.services.sigs.verification.SyncVerifier;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -121,11 +123,13 @@ public abstract class ContractsModule {
 	@Provides
 	@Singleton
 	public static Supplier<ServicesRepositoryRoot> providePureServicesRepositoryRoots(
-			OptionValidator validator,
-			StoragePersistence storagePersistence,
-			Source<byte[], byte[]> bytecodeSource,
-			GlobalDynamicProperties dynamicProperties,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
+			final OptionValidator validator,
+			final StoragePersistence storagePersistence,
+			final Source<byte[], byte[]> bytecodeSource,
+			final GlobalDynamicProperties dynamicProperties,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final AutoCreationLogic autoAccountCreator
+
 	) {
 		final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> pureDelegate = new TransactionalLedger<>(
 				AccountProperty.class,
@@ -137,9 +141,11 @@ public abstract class ContractsModule {
 				NOOP_ID_SOURCE,
 				NOOP_EXPIRING_CREATIONS,
 				validator,
+				new SideEffectsTracker(),
 				NOOP_RECORDS_HISTORIAN,
 				dynamicProperties,
-				pureDelegate);
+				pureDelegate,
+				autoAccountCreator);
 		final var pureAccountSource = new LedgerAccountsSource(pureLedger);
 		return () -> {
 			var pureRepository = new ServicesRepositoryRoot(pureAccountSource, bytecodeSource);

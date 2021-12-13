@@ -22,7 +22,6 @@ package com.hedera.services.store;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
@@ -157,14 +156,13 @@ public class AccountStore {
 		account.setAutoRenewSecs(merkleAccount.getAutoRenewSecs());
 		account.setDeleted(merkleAccount.isDeleted());
 		account.setSmartContract(merkleAccount.isSmartContract());
+		account.setAlias(merkleAccount.getAlias());
 
 		return account;
 	}
 
 	/**
-	 * Persists the given account to the Swirlds state, inviting the injected {@link TransactionRecordService}
-	 * to update the {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} of the active transaction
-	 * with these changes.
+	 * Persists the given account to the Swirlds state.
 	 *
 	 * @param account
 	 * 		the account to save

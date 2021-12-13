@@ -20,6 +20,7 @@ package com.hedera.services.store.tokens;
  * ‍
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -33,13 +34,12 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.HederaStore;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
@@ -74,8 +74,8 @@ import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALAN
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.state.merkle.MerkleToken.UNUSED_KEY;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccountId;
-import static com.hedera.services.utils.EntityNum.fromTokenId;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
+import static com.hedera.services.utils.EntityNum.fromTokenId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hedera.services.utils.MiscUtils.forEach;
@@ -118,6 +118,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	private final OptionValidator validator;
 	private final UniqTokenViewsManager uniqTokenViewsManager;
 	private final GlobalDynamicProperties properties;
+	private final SideEffectsTracker sideEffectsTracker;
 	private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
 	private final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 	private final TransactionalLedger<
@@ -133,6 +134,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	public HederaTokenStore(
 			final EntityIdSource ids,
 			final OptionValidator validator,
+			final SideEffectsTracker sideEffectsTracker,
 			final UniqTokenViewsManager uniqTokenViewsManager,
 			final GlobalDynamicProperties properties,
 			final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
@@ -145,6 +147,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		this.properties = properties;
 		this.nftsLedger = nftsLedger;
 		this.tokenRelsLedger = tokenRelsLedger;
+		this.sideEffectsTracker = sideEffectsTracker;
 		this.uniqTokenViewsManager = uniqTokenViewsManager;
 		/* Known-treasuries view is re-built on restart or reconnect */
 	}
@@ -226,8 +229,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 								TokenRelProperty.IS_AUTOMATIC_ASSOCIATION,
 								automaticAssociation);
 
-						hederaLedger.addNewAssociationToList(
-								new FcTokenAssociation(id.getTokenNum(), aId.getAccountNum()));
+						sideEffectsTracker.trackAutoAssociation(id, aId);
 						if (automaticAssociation) {
 							hederaLedger.setAlreadyUsedAutomaticAssociations(aId, alreadyUsedAutomaticAssociations + 1);
 						}
@@ -386,7 +388,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				uniqTokenViewsManager.exchangeNotice(merkleNftId, owner, receiver);
 			}
 		}
-		hederaLedger.updateOwnershipChanges(nftId, from, to);
+		sideEffectsTracker.trackNftOwnerChange(nftId, from, to);
 	}
 
 	@Override
@@ -415,7 +417,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			tokenRelsLedger.set(fromRel, TOKEN_BALANCE, 0L);
 			tokenRelsLedger.set(toRel, TOKEN_BALANCE, toThisNftsOwned + fromThisNftsOwned);
 
-			hederaLedger.updateOwnershipChanges(nftId, from, to);
+			sideEffectsTracker.trackNftOwnerChange(nftId, from, to);
 
 			return OK;
 		});
@@ -455,7 +457,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			return INSUFFICIENT_TOKEN_BALANCE;
 		}
 		tokenRelsLedger.set(relationship, TOKEN_BALANCE, newBalance);
-		hederaLedger.updateTokenXfers(tId, aId, adjustment);
+		sideEffectsTracker.trackTokenUnitsChange(tId, aId, adjustment);
 		return OK;
 	}
 

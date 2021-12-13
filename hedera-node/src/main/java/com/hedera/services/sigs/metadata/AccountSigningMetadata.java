@@ -41,4 +41,12 @@ public class AccountSigningMetadata {
 	public boolean isReceiverSigRequired() {
 		return receiverSigRequired;
 	}
+
+	@Override
+	public String toString() {
+		return "AccountSigningMetadata{" +
+				"key=" + key +
+				", receiverSigRequired=" + receiverSigRequired +
+				'}';
+	}
 }

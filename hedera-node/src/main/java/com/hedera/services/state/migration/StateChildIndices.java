@@ -21,7 +21,7 @@ package com.hedera.services.state.migration;
  */
 
 /**
- * Gives the Services 0.17.0 index order of Merkle node children.
+ * Gives the Services index order of Merkle node children.
  */
 public final class StateChildIndices {
 	public static final int UNIQUE_TOKENS = 0;

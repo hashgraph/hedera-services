@@ -25,7 +25,6 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.contracts.execution.CallEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaWorldState;
@@ -71,8 +70,6 @@ class ContractCallTransitionLogicTest {
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
-	private EntityIdSource entityIdSource;
-	@Mock
 	private PlatformTxnAccessor accessor;
 	@Mock
 	private AccountStore accountStore;
@@ -94,7 +91,7 @@ class ContractCallTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new ContractCallTransitionLogic(txnCtx, entityIdSource, accountStore, worldState, recordService, evmTxProcessor, repositoryRoot);
+		subject = new ContractCallTransitionLogic(txnCtx, accountStore, worldState, recordService, evmTxProcessor, repositoryRoot);
 	}
 
 	@Test
@@ -192,18 +189,6 @@ class ContractCallTransitionLogicTest {
 
 		// expect:
 		assertEquals(CONTRACT_NEGATIVE_GAS, subject.semanticCheck().apply(contractCallTxn));
-	}
-
-	@Test
-	void reclaimMethodDelegates() {
-		subject.reclaimCreatedIds();
-		verify(entityIdSource).reclaimProvisionalIds();
-	}
-
-	@Test
-	void resetMethodDelegates() {
-		subject.resetCreatedIds();
-		verify(entityIdSource).resetProvisionalIds();
 	}
 
 	@Test

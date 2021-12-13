@@ -30,6 +30,7 @@ import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.files.store.FcBlobsBytesStore;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -114,8 +115,8 @@ public class StateView {
 			0L, 0L, 0, "", "",
 			false, false, MISSING_ENTITY_ID);
 	public static final StateView EMPTY_VIEW = new StateView(
-					null, null, null, null,
-					EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+			null, null, null, null,
+			EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 
 	private final TokenStore tokenStore;
 	private final ScheduleStore scheduleStore;
@@ -402,8 +403,9 @@ public class StateView {
 		return Optional.of(info.build());
 	}
 
-	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(AccountID id) {
-		var account = accounts().get(fromAccountId(id));
+	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(AccountID id, AliasManager aliasManager) {
+		final var accountId = id.getAlias().isEmpty() ? fromAccountId(id) : aliasManager.lookupIdBy(id.getAlias());
+		final var account = accounts().get(accountId);
 		if (account == null) {
 			return Optional.empty();
 		}
@@ -411,6 +413,7 @@ public class StateView {
 		var info = CryptoGetInfoResponse.AccountInfo.newBuilder()
 				.setKey(asKeyUnchecked(account.getAccountKey()))
 				.setAccountID(id)
+				.setAlias(account.getAlias())
 				.setReceiverSigRequired(account.isReceiverSigRequired())
 				.setDeleted(account.isDeleted())
 				.setMemo(account.getMemo())
@@ -423,7 +426,7 @@ public class StateView {
 		Optional.ofNullable(account.getProxy())
 				.map(EntityId::toGrpcAccountId)
 				.ifPresent(info::setProxyAccountID);
-		var tokenRels = tokenRelsFn.apply(this, id);
+		final var tokenRels = tokenRelsFn.apply(this, id);
 		if (!tokenRels.isEmpty()) {
 			info.addAllTokenRelationships(tokenRels);
 		}

@@ -39,6 +39,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
@@ -74,6 +75,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 	private boolean stopAfterCostAnswer = false;
 	private boolean expectStrictCostAnswer = false;
 	protected Response response = null;
+	protected List<TransactionRecord> childRecords = null;
 	protected ResponseCodeEnum actualPrecheck = UNKNOWN;
 	private Optional<ResponseCodeEnum> answerOnlyPrecheck = Optional.empty();
 	private Optional<Function<HapiApiSpec, Long>> nodePaymentFn = Optional.empty();
@@ -150,7 +152,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 
 		Transaction payment = Transaction.getDefaultInstance();
 		int retryCount = 1;
-		while(true) {
+		while (true) {
 			/* Note that HapiQueryOp#fittedPayment makes a COST_ANSWER query if necessary. */
 			if (needsPayment()) {
 				payment = fittedPayment(spec);
@@ -173,8 +175,8 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 			actualPrecheck = reflectForPrecheck(response);
 			if (
 					answerOnlyRetryPrechecks.isPresent() &&
-					answerOnlyRetryPrechecks.get().contains(actualPrecheck) &&
-					isWithInRetryLimit(retryCount)
+							answerOnlyRetryPrechecks.get().contains(actualPrecheck) &&
+							isWithInRetryLimit(retryCount)
 			) {
 				retryCount++;
 				sleep(10);

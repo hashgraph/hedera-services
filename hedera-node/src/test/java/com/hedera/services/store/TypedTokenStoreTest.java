@@ -20,10 +20,10 @@ package com.hedera.services.store;
  * ‍
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -76,6 +76,8 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class TypedTokenStoreTest {
 	@Mock
+	private SideEffectsTracker sideEffectsTracker;
+	@Mock
 	private AccountStore accountStore;
 	@Mock
 	private UniqTokenViewsManager uniqTokenViewsManager;
@@ -83,8 +85,6 @@ class TypedTokenStoreTest {
 	private MerkleMap<EntityNum, MerkleToken> tokens;
 	@Mock
 	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
-	@Mock
-	private TransactionRecordService transactionRecordService;
 	@Mock
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 	@Mock
@@ -104,14 +104,14 @@ class TypedTokenStoreTest {
 
 		subject = new TypedTokenStore(
 				accountStore,
-				transactionRecordService,
 				() -> tokens,
 				() -> uniqueTokens,
 				() -> tokenRels,
 				backingTokenRels,
 				uniqTokenViewsManager,
 				tokenStore::addKnownTreasury,
-				legacyStore::removeKnownTreasuryForToken);
+				legacyStore::removeKnownTreasuryForToken,
+				sideEffectsTracker);
 	}
 
 	/* --- Token relationship loading --- */
@@ -167,7 +167,7 @@ class TypedTokenStoreTest {
 		assertEquals(expectedReplacementTokenRel, miscTokenMerkleRel);
 		verify(tokenRels, never()).replace(miscTokenRelId, expectedReplacementTokenRel);
 		// and:
-		verify(transactionRecordService).includeChangesToTokenRels(List.of(modelTokenRel));
+		verify(sideEffectsTracker).trackTokenBalanceChanges(List.of(modelTokenRel));
 	}
 
 	@Test
@@ -183,14 +183,14 @@ class TypedTokenStoreTest {
 		// then:
 		verify(tokenRels).remove(miscTokenRelId);
 		verify(backingTokenRels).removeFromExistingRels(legacyReprOf(destroyedRel));
-		verify(transactionRecordService).includeChangesToTokenRels(List.of(destroyedRel));
+		verify(sideEffectsTracker).trackTokenBalanceChanges(List.of(destroyedRel));
 	}
 
 	@Test
 	void persistTrackers() {
 		final var ot = new OwnershipTracker();
 		subject.persistTrackers(ot);
-		verify(transactionRecordService).includeOwnershipChanges(ot);
+		verify(sideEffectsTracker).trackTokenOwnershipChanges(ot);
 	}
 
 	@Test
@@ -210,7 +210,7 @@ class TypedTokenStoreTest {
 		// then:
 		verify(tokenRels).put(miscTokenRelId, expectedNewTokenRel);
 		// and:
-		verify(transactionRecordService).includeChangesToTokenRels(List.of(newTokenRel));
+		verify(sideEffectsTracker).trackTokenBalanceChanges(List.of(newTokenRel));
 	}
 
 	/* --- Token loading --- */
@@ -434,7 +434,7 @@ class TypedTokenStoreTest {
 		// then:
 		assertEquals(expectedReplacementToken, merkleToken);
 		// and:
-		verify(transactionRecordService).includeChangesToToken(modelToken);
+		verify(sideEffectsTracker).trackTokenChanges(modelToken);
 		verify(uniqueTokens).put(expectedNewUniqTokenId, expectedNewUniqToken);
 		verify(uniqueTokens).remove(expectedPastUniqTokenId);
 		verify(uniqTokenViewsManager).mintNotice(expectedNewUniqTokenId, autoRenewId.asEntityId());
@@ -459,7 +459,7 @@ class TypedTokenStoreTest {
 		assertEquals(expectedReplacementToken2, merkleToken);
 		verify(tokens, never()).replace(merkleTokenId, expectedReplacementToken2);
 		// and:
-		verify(transactionRecordService).includeChangesToToken(modelToken);
+		verify(sideEffectsTracker).trackTokenChanges(modelToken);
 		verify(uniqueTokens).put(expectedNewUniqTokenId2, expectedNewUniqToken);
 		verify(uniqueTokens).remove(expectedPastUniqTokenId2);
 		verify(uniqTokenViewsManager).mintNotice(expectedNewUniqTokenId2, treasuryId);
@@ -486,7 +486,7 @@ class TypedTokenStoreTest {
 
 		subject.persistNew(newToken);
 		verify(tokens).put(any(), any());
-		verify(transactionRecordService).includeChangesToToken(newToken);
+		verify(sideEffectsTracker).trackTokenChanges(newToken);
 	}
 
 	@Test
