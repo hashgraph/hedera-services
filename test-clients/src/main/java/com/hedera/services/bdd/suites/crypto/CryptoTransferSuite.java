@@ -238,7 +238,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 		final var uncheckedHbarTxn = "uncheckedHbarTxn";
 		final var uncheckedFtTxn = "uncheckedFtTxn";
 
-		return defaultHapiSpec("NftSelfTransfersRejectedBothInPrecheckAndHandle")
+		return defaultHapiSpec("HbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle")
 				.given(
 						newKeyNamed(multipurpose),
 						cryptoCreate(TOKEN_TREASURY),
@@ -272,7 +272,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 										.txnId(uncheckedFtTxn)
 						).payingWith(GENESIS)
 				).then(
-						sleepFor(1_000),
+						sleepFor(5_000),
 						getReceipt(uncheckedHbarTxn).hasPriorityStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
 						getReceipt(uncheckedFtTxn).hasPriorityStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
 						getAccountInfo(owningParty)
