@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.transactions.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,6 +37,7 @@ import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.services.usage.state.UsageAccumulator;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -55,7 +56,9 @@ import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.defaultUpdateSigners;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -65,7 +68,8 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 
 	private boolean useContractKey = false;
 	private boolean skipNewKeyRegistryUpdate = false;
-	private final String account;
+	private String account;
+	private String alias = "";
 	private OptionalLong sendThreshold = OptionalLong.empty();
 	private Optional<Key> updKey = Optional.empty();
 	private OptionalLong newExpiry = OptionalLong.empty();
@@ -76,9 +80,16 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	private Optional<String> updKeyName = Optional.empty();
 	private Optional<Boolean> updSigRequired = Optional.empty();
 	private Optional<Integer> newMaxAutomaticAssociations = Optional.empty();
+	private boolean lookUpAccountWithKey = false;
 
 	public HapiCryptoUpdate(String account) {
 		this.account = account;
+	}
+
+	public HapiCryptoUpdate(String alias, boolean lookUpAccount) {
+		this.account = "";
+		this.alias = alias;
+		this.lookUpAccountWithKey = lookUpAccount;
 	}
 
 	public HapiCryptoUpdate notUpdatingRegistryWithNewKey() {
@@ -153,8 +164,15 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		try {
 			updKey = updKeyName.map(spec.registry()::getKey);
-		} catch (Exception ignore) { }
-		var id = TxnUtils.asId(account, spec);
+		} catch (Exception ignore) {
+		}
+		AccountID id;
+		if (lookUpAccountWithKey) {
+			id = asIdForKeyLookUp(alias, spec);
+			account = asAccountString(id);
+		} else {
+			id = TxnUtils.asId(account, spec);
+		}
 		CryptoUpdateTransactionBody opBody = spec
 				.txns()
 				.<CryptoUpdateTransactionBody, CryptoUpdateTransactionBody.Builder>body(
@@ -178,7 +196,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 									builder.setSendRecordThresholdWrapper(
 											UInt64Value.newBuilder().setValue(v).build()));
 							newExpiry.ifPresent(l ->
-								builder.setExpirationTime(Timestamp.newBuilder().setSeconds(l).build()));
+									builder.setExpirationTime(Timestamp.newBuilder().setSeconds(l).build()));
 							newMaxAutomaticAssociations.ifPresent(p ->
 									builder.setMaxAutomaticTokenAssociations(Int32Value.of(p)));
 						}

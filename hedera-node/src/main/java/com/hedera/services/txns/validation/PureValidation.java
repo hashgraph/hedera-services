@@ -24,7 +24,6 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -61,10 +60,10 @@ public final class PureValidation {
 	}
 
 	public static ResponseCodeEnum queryableAccountStatus(
-			final AccountID id,
+			final EntityNum entityNum,
 			final MerkleMap<EntityNum, MerkleAccount> accounts
 	) {
-		final var account = accounts.get(EntityNum.fromAccountId(id));
+		final var account = accounts.get(entityNum);
 
 		return Optional.ofNullable(account)
 				.map(v -> v.isDeleted()

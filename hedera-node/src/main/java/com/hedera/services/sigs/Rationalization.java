@@ -40,7 +40,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 
-import static com.hedera.services.sigs.PlatformSigOps.createEd25519PlatformSigsFrom;
+import static com.hedera.services.sigs.PlatformSigOps.createCryptoSigsFrom;
 import static com.hedera.services.sigs.factories.PlatformSigFactory.allVaryingMaterialEquals;
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -91,6 +91,7 @@ public class Rationalization {
 		this.pkToSigFn = txnAccessor.getPkToSigsFn();
 		this.txnAccessor = txnAccessor;
 
+		pkToSigFn.resetAllSigsToUnused();
 		bodySigningFactory.resetFor(txnAccessor);
 
 		txnSigs = txnAccessor.getPlatformTxn().getSignatures();
@@ -121,6 +122,10 @@ public class Rationalization {
 			otherFailure = otherPartiesStatus;
 		} else {
 			reqOthersSigs = lastOrderResult.getOrderedKeys();
+			if (pkToSigFn.hasAtLeastOneUnusedSigWithFullPrefix()) {
+				pkToSigFn.forEachUnusedSigWithFullPrefix((type, pubKey, sig) ->
+						realOtherPartySigs.add(bodySigningFactory.signAppropriately(type, pubKey, sig)));
+			}
 		}
 
 		final var rationalizedPayerSigs = rationalize(realPayerSigs, 0);
@@ -169,7 +174,7 @@ public class Rationalization {
 			return lastOrderResult.getErrorReport();
 		}
 		final var creation =
-				createEd25519PlatformSigsFrom(lastOrderResult.getOrderedKeys(), pkToSigFn, bodySigningFactory);
+				createCryptoSigsFrom(lastOrderResult.getOrderedKeys(), pkToSigFn, bodySigningFactory);
 		if (creation.hasFailed()) {
 			return creation.asCode();
 		}

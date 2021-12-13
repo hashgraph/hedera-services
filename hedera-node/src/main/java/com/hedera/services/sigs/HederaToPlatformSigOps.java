@@ -21,7 +21,7 @@ package com.hedera.services.sigs;
  */
 
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.sigs.factories.BodySigningSigFactory;
+import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -86,6 +86,7 @@ public final class HederaToPlatformSigOps {
 	) {
 		txnAccessor.getPlatformTxn().clear();
 
-		return new Expansion(txnAccessor, keyOrderer, pkToSigFn, new BodySigningSigFactory(txnAccessor)).execute();
+		final var scopedSigFactory = new ReusableBodySigningFactory(txnAccessor);
+		return new Expansion(txnAccessor, keyOrderer, pkToSigFn, scopedSigFactory).execute();
 	}
 }

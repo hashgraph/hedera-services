@@ -25,7 +25,7 @@ import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.SyncActivationCheck;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.PlatformSigOps;
-import com.hedera.services.sigs.factories.BodySigningSigFactory;
+import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
@@ -75,9 +75,9 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 					requiredKeys,
 					syncVerifier,
 					accessor,
-					PlatformSigOps::createEd25519PlatformSigsFrom,
+					PlatformSigOps::createCryptoSigsFrom,
 					accessor.getPkToSigsFn(),
-					BodySigningSigFactory::new,
+					ReusableBodySigningFactory::new,
 					(key, sigsFn) -> isActive(key, sigsFn, ONLY_IF_SIG_IS_VALID),
 					HederaKeyActivation::pkToSigMapFrom);
 		}

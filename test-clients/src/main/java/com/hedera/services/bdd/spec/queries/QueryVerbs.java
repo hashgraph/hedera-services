@@ -73,6 +73,14 @@ public class QueryVerbs {
 		return new HapiGetAccountInfo(account);
 	}
 
+	public static HapiGetAccountInfo getAccountInfo(final String alias, final boolean lookUpWithKey) {
+		return new HapiGetAccountInfo(alias, lookUpWithKey);
+	}
+
+	public static HapiGetAccountInfo getAccountInfoWithAlias(final String alias) {
+		return new HapiGetAccountInfo(alias, true);
+	}
+
 	public static HapiGetAccountRecords getAccountRecords(final String account) {
 		return new HapiGetAccountRecords(account);
 	}
@@ -101,7 +109,8 @@ public class QueryVerbs {
 		return new HapiGetContractRecords(contract);
 	}
 
-	public static HapiContractCallLocal contractCallLocal(final String contract, final String abi, final Object... params) {
+	public static HapiContractCallLocal contractCallLocal(final String contract, final String abi,
+			final Object... params) {
 		return new HapiContractCallLocal(abi, contract, params);
 	}
 
@@ -117,6 +126,10 @@ public class QueryVerbs {
 
 	public static HapiGetAccountBalance getAccountBalance(final String account) {
 		return new HapiGetAccountBalance(account);
+	}
+
+	public static HapiGetAccountBalance getAccountBalanceWithAlias(final String alias) {
+		return new HapiGetAccountBalance(alias, true);
 	}
 
 	public static HapiGetAccountBalance getAccountBalance(final Supplier<String> supplier) {

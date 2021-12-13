@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.transactions;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -74,36 +74,53 @@ public class TxnVerbs {
 	public static HapiCryptoCreate cryptoCreate(String account) {
 		return new HapiCryptoCreate(account);
 	}
+
 	public static HapiCryptoDelete cryptoDelete(String account) {
 		return new HapiCryptoDelete(account);
 	}
+
+	public static HapiCryptoDelete cryptoDelete(String alias, boolean lookupAccountWithKey) {
+		return new HapiCryptoDelete(alias, lookupAccountWithKey);
+	}
+
 	@SafeVarargs
 	public static HapiCryptoTransfer cryptoTransfer(Function<HapiApiSpec, TransferList>... providers) {
 		return new HapiCryptoTransfer(providers);
 	}
+
 	public static HapiCryptoTransfer cryptoTransfer(TokenMovement... sources) {
 		return new HapiCryptoTransfer(sources);
 	}
+
 	public static HapiCryptoUpdate cryptoUpdate(String account) {
 		return new HapiCryptoUpdate(account);
+	}
+
+	public static HapiCryptoUpdate cryptoUpdateWithAlias(String account) {
+		return new HapiCryptoUpdate(account, true);
 	}
 
 	/* CONSENSUS */
 	public static HapiTopicCreate createTopic(String topic) {
 		return new HapiTopicCreate(topic);
 	}
+
 	public static HapiTopicDelete deleteTopic(String topic) {
 		return new HapiTopicDelete(topic);
 	}
+
 	public static HapiTopicDelete deleteTopic(Function<HapiApiSpec, TopicID> topicFn) {
 		return new HapiTopicDelete(topicFn);
 	}
+
 	public static HapiTopicUpdate updateTopic(String topic) {
 		return new HapiTopicUpdate(topic);
 	}
+
 	public static HapiMessageSubmit submitMessageTo(String topic) {
 		return new HapiMessageSubmit(topic);
 	}
+
 	public static HapiMessageSubmit submitMessageTo(Function<HapiApiSpec, TopicID> topicFn) {
 		return new HapiMessageSubmit(topicFn);
 	}
@@ -112,15 +129,19 @@ public class TxnVerbs {
 	public static HapiFileCreate fileCreate(String fileName) {
 		return new HapiFileCreate(fileName);
 	}
+
 	public static HapiFileAppend fileAppend(String fileName) {
 		return new HapiFileAppend(fileName);
 	}
+
 	public static HapiFileUpdate fileUpdate(String fileName) {
 		return new HapiFileUpdate(fileName);
 	}
+
 	public static HapiFileDelete fileDelete(String fileName) {
 		return new HapiFileDelete(fileName);
 	}
+
 	public static HapiFileDelete fileDelete(Supplier<String> fileNameSupplier) {
 		return new HapiFileDelete(fileNameSupplier);
 	}
@@ -129,67 +150,88 @@ public class TxnVerbs {
 	public static HapiTokenDissociate tokenDissociate(String account, String... tokens) {
 		return new HapiTokenDissociate(account, tokens);
 	}
+
 	public static HapiTokenAssociate tokenAssociate(String account, String... tokens) {
 		return new HapiTokenAssociate(account, tokens);
 	}
+
 	public static HapiTokenAssociate tokenAssociate(String account, List<String> tokens) {
 		return new HapiTokenAssociate(account, tokens);
 	}
+
 	public static HapiTokenCreate tokenCreate(String token) {
 		return new HapiTokenCreate(token).name(token);
 	}
+
 	public static HapiTokenUpdate tokenUpdate(String token) {
 		return new HapiTokenUpdate(token);
 	}
+
 	public static HapiTokenFeeScheduleUpdate tokenFeeScheduleUpdate(String token) {
 		return new HapiTokenFeeScheduleUpdate(token);
 	}
+
 	public static HapiTokenPause tokenPause(String token) {
 		return new HapiTokenPause(token);
 	}
+
 	public static HapiTokenUnpause tokenUnpause(String token) {
 		return new HapiTokenUnpause(token);
 	}
+
 	public static HapiTokenDelete tokenDelete(String token) {
 		return new HapiTokenDelete(token);
 	}
+
 	public static HapiTokenFreeze tokenFreeze(String token, String account) {
 		return new HapiTokenFreeze(token, account);
 	}
+
 	public static HapiTokenUnfreeze tokenUnfreeze(String token, String account) {
 		return new HapiTokenUnfreeze(token, account);
 	}
+
 	public static HapiTokenKycGrant grantTokenKyc(String token, String account) {
 		return new HapiTokenKycGrant(token, account);
 	}
+
 	public static HapiTokenKycRevoke revokeTokenKyc(String token, String account) {
 		return new HapiTokenKycRevoke(token, account);
 	}
+
 	public static HapiTokenWipe wipeTokenAccount(String token, String account, long amount) {
 		return new HapiTokenWipe(token, account, amount);
 	}
+
 	public static HapiTokenWipe wipeTokenAccount(String token, String account, List<Long> serialNumbers) {
 		return new HapiTokenWipe(token, account, serialNumbers);
 	}
+
 	public static HapiTokenMint mintToken(String token, long amount) {
 		return new HapiTokenMint(token, amount);
 	}
+
 	public static HapiTokenMint mintToken(String token, List<ByteString> meta, String txName) {
 		return new HapiTokenMint(token, meta, txName);
 	}
-	public static HapiTokenMint mintToken(String token, List<ByteString> metadata){
-		return new HapiTokenMint(token,  metadata);
+
+	public static HapiTokenMint mintToken(String token, List<ByteString> metadata) {
+		return new HapiTokenMint(token, metadata);
 	}
-	public static HapiTokenMint invalidMintToken(String token, List<ByteString> metadata, long amount){
-		return new HapiTokenMint(token,  metadata, amount);
+
+	public static HapiTokenMint invalidMintToken(String token, List<ByteString> metadata, long amount) {
+		return new HapiTokenMint(token, metadata, amount);
 	}
+
 	public static HapiTokenBurn burnToken(String token, long amount) {
 		return new HapiTokenBurn(token, amount);
 	}
-	public static HapiTokenBurn burnToken(String token, List<Long> serialNumbers){
+
+	public static HapiTokenBurn burnToken(String token, List<Long> serialNumbers) {
 		return new HapiTokenBurn(token, serialNumbers);
 	}
-	public static HapiTokenBurn invalidBurnToken(String token, List<Long> serialNumbers, long amount){
+
+	public static HapiTokenBurn invalidBurnToken(String token, List<Long> serialNumbers, long amount) {
 		return new HapiTokenBurn(token, serialNumbers, amount);
 	}
 
@@ -214,6 +256,7 @@ public class TxnVerbs {
 	public static HapiSysDelete systemFileDelete(String target) {
 		return new HapiSysDelete().file(target);
 	}
+
 	public static HapiSysUndelete systemFileUndelete(String target) {
 		return new HapiSysUndelete().file(target);
 	}
@@ -222,6 +265,7 @@ public class TxnVerbs {
 	public static HapiSysDelete systemContractDelete(String target) {
 		return new HapiSysDelete().contract(target);
 	}
+
 	public static HapiSysUndelete systemContractUndelete(String target) {
 		return new HapiSysUndelete().contract(target);
 	}
@@ -235,24 +279,31 @@ public class TxnVerbs {
 	public static HapiContractCall contractCallFrom(String details) {
 		return HapiContractCall.fromDetails(details);
 	}
+
 	public static HapiContractCall contractCall(String contract) {
 		return new HapiContractCall(contract);
 	}
+
 	public static HapiContractCall contractCall(String contract, String abi, Object... params) {
 		return new HapiContractCall(abi, contract, params);
 	}
+
 	public static HapiContractCall contractCall(String contract, String abi, Function<HapiApiSpec, Object[]> fn) {
 		return new HapiContractCall(abi, contract, fn);
 	}
+
 	public static HapiContractCreate contractCreate(String contract) {
 		return new HapiContractCreate(contract);
 	}
+
 	public static HapiContractCreate contractCreate(String contract, String abi, Object... params) {
 		return new HapiContractCreate(contract, abi, params);
 	}
+
 	public static HapiContractDelete contractDelete(String contract) {
 		return new HapiContractDelete(contract);
 	}
+
 	public static HapiContractUpdate contractUpdate(String contract) {
 		return new HapiContractUpdate(contract);
 	}

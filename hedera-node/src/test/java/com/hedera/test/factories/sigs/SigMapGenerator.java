@@ -31,13 +31,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static java.util.Map.Entry;
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SigMapGenerator {
 	private static final byte[] NONSENSE_SIG = "'Twas brillig, and the slithy toves...".getBytes();
@@ -47,6 +47,16 @@ public class SigMapGenerator {
 
 	public static SigMapGenerator withUniquePrefixes() {
 		return new SigMapGenerator(trie -> key -> trie.shortestPrefix(key, 1));
+	}
+
+	public static SigMapGenerator withAlternatingUniqueAndFullPrefixes() {
+		final var isUnique = new AtomicBoolean(true);
+		final Function<ByteTrie, Function<byte[], byte[]>> prefixCalcFn = trie -> key -> {
+			final var goUnique = isUnique.get();
+			isUnique.set(!goUnique);
+			return goUnique ? trie.shortestPrefix(key, 1) : key;
+		};
+		return new SigMapGenerator(prefixCalcFn);
 	}
 
 	public static SigMapGenerator withAmbiguousPrefixes() {
@@ -84,8 +94,8 @@ public class SigMapGenerator {
 		} else {
 			if (sigType == SignatureType.RSA) {
 				sp.setRSA3072(ByteString.copyFrom(sig));
-			} else if (sigType == SignatureType.ECDSA) {
-				sp.setECDSA384(ByteString.copyFrom(sig));
+			} else if (sigType == SignatureType.ECDSA_SECP256K1) {
+				sp.setECDSASecp256K1(ByteString.copyFrom(sig));
 			} else if (sigType == SignatureType.ED25519) {
 				sp.setEd25519(ByteString.copyFrom(sig));
 			}
@@ -144,7 +154,9 @@ public class SigMapGenerator {
 		}
 
 		private byte[] shortestPrefix(byte[] a, Node n, int maxPrefixCard, int lenUsed) {
-			assertTrue(lenUsed <= a.length, "No unique prefix exists!");
+			if (lenUsed > a.length) {
+				throw new IllegalStateException("No unique prefix exists");
+			}
 			int v = vAt(a, lenUsed - 1);
 			if (n.children[v].count <= maxPrefixCard) {
 				return Arrays.copyOfRange(a, 0, lenUsed);

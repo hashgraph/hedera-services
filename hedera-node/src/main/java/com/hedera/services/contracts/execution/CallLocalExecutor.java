@@ -47,7 +47,6 @@ import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
  */
 @Singleton
 public class CallLocalExecutor {
-
 	private final AccountStore accountStore;
 	private final CallLocalEvmTxProcessor evmTxProcessor;
 

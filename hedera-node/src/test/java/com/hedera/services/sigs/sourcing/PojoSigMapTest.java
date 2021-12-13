@@ -29,6 +29,29 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class PojoSigMapTest {
 	@Test
+	void distinguishesBetweenFullAndPartialPrefixes() {
+		final var partialEd25519Prefix = "a";
+		final var fullEd25519Prefix = "01234567890123456789012345678901";
+		final var fakeSig = "012345678901234567890123456789012345678901234567";
+
+		final var sigMap = SignatureMap.newBuilder()
+				.addSigPair(SignaturePair.newBuilder()
+						.setPubKeyPrefix(ByteString.copyFromUtf8(partialEd25519Prefix))
+						.setEd25519(ByteString.copyFromUtf8(fakeSig)))
+				.addSigPair(SignaturePair.newBuilder()
+						.setPubKeyPrefix(ByteString.copyFromUtf8(fullEd25519Prefix))
+						.setEd25519(ByteString.copyFromUtf8(fakeSig)))
+				.build();
+
+		final var subject = PojoSigMap.fromGrpc(sigMap);
+
+		assertThrows(IllegalArgumentException.class, () -> subject.isFullPrefixAt(-1));
+		assertThrows(IllegalArgumentException.class, () -> subject.isFullPrefixAt(2));
+		assertFalse(subject.isFullPrefixAt(0));
+		assertTrue(subject.isFullPrefixAt(1));
+	}
+
+	@Test
 	void accessorsAsExpected() {
 		// setup:
 		final var fakePrefix = "a";
@@ -54,7 +77,7 @@ class PojoSigMapTest {
 						.setEd25519(ByteString.copyFromUtf8(secondFakeSig)))
 				.addSigPair(SignaturePair.newBuilder()
 						.setPubKeyPrefix(ByteString.copyFromUtf8(thirdFakePrefix))
-						.setEd25519(ByteString.copyFromUtf8(thirdFakeSig)))
+						.setECDSASecp256K1(ByteString.copyFromUtf8(thirdFakeSig)))
 				.build();
 
 		// when:
@@ -62,11 +85,15 @@ class PojoSigMapTest {
 
 		// then:
 		assertArrayEquals(expected[0][0], subject.pubKeyPrefix(0));
-		assertArrayEquals(expected[0][1], subject.ed25519Signature(0));
+		assertArrayEquals(expected[0][1], subject.primitiveSignature(0));
 		assertArrayEquals(expected[1][0], subject.pubKeyPrefix(1));
-		assertArrayEquals(expected[1][1], subject.ed25519Signature(1));
+		assertArrayEquals(expected[1][1], subject.primitiveSignature(1));
 		assertArrayEquals(expected[2][0], subject.pubKeyPrefix(2));
-		assertArrayEquals(expected[2][1], subject.ed25519Signature(2));
+		assertArrayEquals(expected[2][1], subject.primitiveSignature(2));
+		// and:
+		assertEquals(KeyType.ED25519, subject.keyType(0));
+		assertEquals(KeyType.ED25519, subject.keyType(1));
+		assertEquals(KeyType.ECDSA_SECP256K1, subject.keyType(2));
 		// and:
 		assertEquals(3, subject.numSigsPairs());
 	}

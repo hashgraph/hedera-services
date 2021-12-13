@@ -20,6 +20,7 @@ package com.hedera.test.factories.accounts;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
@@ -53,12 +54,14 @@ public class MerkleAccountFactory {
 	private Optional<AccountID> proxy = Optional.empty();
 	private Optional<Integer>  alreadyUsedAutoAssociations = Optional.empty();
 	private Optional<Integer>  maxAutoAssociations = Optional.empty();
+	private Optional<ByteString>  alias = Optional.empty();
 	private Set<TokenID> associatedTokens = new HashSet<>();
 	private Set<Id> assocTokens = new HashSet<>();
 
 	public MerkleAccount get() {
 		MerkleAccount value = new MerkleAccount();
 		memo.ifPresent(value::setMemo);
+		alias.ifPresent(value::setAlias);
 		proxy.ifPresent(p -> value.setProxy(EntityId.fromGrpcAccountId(p)));
 		balance.ifPresent(b -> { try { value.setBalance(b); } catch (Exception ignore) {} });
 		deleted.ifPresent(value::setDeleted);
@@ -94,6 +97,11 @@ public class MerkleAccountFactory {
 
 	public MerkleAccountFactory balance(long amount) {
 		balance = Optional.of(amount);
+		return this;
+	}
+
+	public MerkleAccountFactory alias(ByteString bytes) {
+		alias = Optional.of(bytes);
 		return this;
 	}
 

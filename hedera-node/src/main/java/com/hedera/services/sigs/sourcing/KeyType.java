@@ -1,4 +1,4 @@
-package com.hedera.services.txns;
+package com.hedera.services.sigs.sourcing;
 
 /*-
  * ‌
@@ -20,21 +20,16 @@ package com.hedera.services.txns;
  * ‍
  */
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+public enum KeyType {
+	ED25519(32), ECDSA_SECP256K1(33);
 
-import static org.mockito.BDDMockito.willCallRealMethod;
-import static org.mockito.Mockito.mock;
+	private final int length;
 
-class TransitionLogicTest {
-	@Test
-	void defaultMethodsAreNoops() {
-		final var subject = mock(TransitionLogic.class);
+	KeyType(final int length) {
+		this.length = length;
+	}
 
-		willCallRealMethod().given(subject).resetCreatedIds();
-		willCallRealMethod().given(subject).reclaimCreatedIds();
-
-		Assertions.assertDoesNotThrow(subject::resetCreatedIds);
-		Assertions.assertDoesNotThrow(subject::reclaimCreatedIds);
+	public int getLength() {
+		return length;
 	}
 }

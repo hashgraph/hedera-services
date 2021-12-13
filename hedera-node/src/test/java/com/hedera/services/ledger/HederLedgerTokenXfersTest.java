@@ -21,15 +21,13 @@ package com.hedera.services.ledger;
  */
 
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
-import java.util.List;
-
-import static com.hedera.test.utils.IdUtils.tokenWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,6 +39,8 @@ import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
 
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class HederLedgerTokenXfersTest extends BaseHederaLedgerTestHelper {
 	@BeforeEach
 	private void setup() {
@@ -75,7 +75,6 @@ class HederLedgerTokenXfersTest extends BaseHederaLedgerTestHelper {
 		// expect:
 		assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
 		// and:
-		assertEquals(0, subject.numTouches);
 		verify(tokenStore, times(1)).adjustBalance(any(), any(), anyLong());
 		verify(tokenRelsLedger).rollback();
 	}
@@ -94,56 +93,8 @@ class HederLedgerTokenXfersTest extends BaseHederaLedgerTestHelper {
 		// expect:
 		assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
 		// and:
-		assertEquals(0, subject.numTouches);
 		verify(tokenStore).adjustBalance(misc, tokenId, -555);
 		verify(tokenStore).adjustBalance(rand, tokenId, 555);
 		verify(tokenRelsLedger).rollback();
-	}
-
-	@Test
-	void tokenTransferHappyPath() {
-		// setup
-		givenAdjustBalanceUpdatingTokenXfers(misc, tokenId, -555);
-		givenAdjustBalanceUpdatingTokenXfers(rand, tokenId, 555);
-
-		// given
-		var outcome = subject.doTokenTransfer(tokenId, misc, rand, 555);
-		var netXfers = subject.netTokenTransfersInTxn();
-
-		assertEquals(OK, outcome);
-		assertEquals(tokenId, netXfers.get(0).getToken());
-		assertEquals(List.of(aa(misc, -555), aa(rand, 555)),
-				netXfers.get(0).getTransfersList());
-	}
-
-	@Test
-	void resetsTokenTransferTrackingAfterRollback() {
-		// setup:
-		subject.begin();
-		// and:
-		subject.numTouches = 2;
-		subject.tokensTouched[0] = tokenWith(111);
-		subject.tokensTouched[1] = tokenWith(222);
-		// and:
-		subject.netTokenTransfers.put(
-				tokenWith(111),
-				TransferList.newBuilder()
-						.addAccountAmounts(
-								AccountAmount.newBuilder()
-										.setAccountID(IdUtils.asAccount("0.0.2"))));
-		subject.netTokenTransfers.put(
-				tokenWith(222),
-				TransferList.newBuilder()
-						.addAccountAmounts(
-								AccountAmount.newBuilder()
-										.setAccountID(IdUtils.asAccount("0.0.3"))));
-
-		// when:
-		subject.rollback();
-
-		// then:
-		assertEquals(0, subject.numTouches);
-		assertEquals(0, subject.netTokenTransfers.get(tokenWith(111)).getAccountAmountsCount());
-		assertEquals(0, subject.netTokenTransfers.get(tokenWith(222)).getAccountAmountsCount());
 	}
 }

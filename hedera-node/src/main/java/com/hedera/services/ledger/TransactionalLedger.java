@@ -118,6 +118,13 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		}
 	}
 
+	void undoCreations() {
+		if (!isInTransaction) {
+			throw new IllegalStateException("Cannot undo created keys, no transaction is active");
+		}
+		createdKeys.clear();
+	}
+
 	void rollback() {
 		if (!isInTransaction) {
 			throw new IllegalStateException("Cannot perform rollback, no transaction is active!");
@@ -224,7 +231,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	}
 
 	public ResponseCodeEnum validate(final K id, final LedgerCheck<A, P> ledgerCheck) {
-		if(!exists(id)) {
+		if (!exists(id)) {
 			return ResponseCodeEnum.INVALID_ACCOUNT_ID;
 		}
 		var changeSet = changes.get(id);
@@ -279,6 +286,10 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 
 	Map<K, EnumMap<P, Object>> getChanges() {
 		return changes;
+	}
+
+	List<K> getCreations() {
+		return createdKeys;
 	}
 
 	private void flushListed(List<K> l) {

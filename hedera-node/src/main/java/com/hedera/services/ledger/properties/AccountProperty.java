@@ -20,6 +20,7 @@ package com.hedera.services.ledger.properties;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -189,6 +190,17 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 		@Override
 		public Function<MerkleAccount, Object> getter() {
 			return MerkleAccount::getAlreadyUsedAutoAssociations;
+		}
+	},
+	ALIAS {
+		@Override
+		public BiConsumer<MerkleAccount, Object> setter() {
+			return (a, t) -> a.setAlias((ByteString) t);
+		}
+
+		@Override
+		public Function<MerkleAccount, Object> getter() {
+			return MerkleAccount::getAlias;
 		}
 	};
 
