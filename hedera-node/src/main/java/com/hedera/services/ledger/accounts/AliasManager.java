@@ -63,7 +63,7 @@ public class AliasManager {
 	 *
 	 * @param accounts the current accounts
 	 */
-	public void rebuildAliasesMap(MerkleMap<EntityNum, MerkleAccount> accounts) {
+	public void rebuildAliasesMap(final MerkleMap<EntityNum, MerkleAccount> accounts) {
 		aliases.clear();
 		forEach(accounts, (k, v) -> {
 			if (!v.getAlias().isEmpty()) {
@@ -104,7 +104,7 @@ public class AliasManager {
 		this.aliases = map;
 	}
 
-	public boolean contains(ByteString alias) {
+	public boolean contains(final ByteString alias) {
 		return aliases.containsKey(alias);
 	}
 }

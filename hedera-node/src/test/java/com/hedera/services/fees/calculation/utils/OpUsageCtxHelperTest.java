@@ -87,11 +87,11 @@ class OpUsageCtxHelperTest {
 
 	private OpUsageCtxHelper subject;
 	@Mock
-	private AliasManager autoAccounts;
+	private AliasManager aliasManager;
 
 	@BeforeEach
 	void setUp() {
-		subject = new OpUsageCtxHelper(workingView, fileNumbers, () -> tokens, autoAccounts);
+		subject = new OpUsageCtxHelper(workingView, fileNumbers, () -> tokens, aliasManager);
 	}
 
 	@Test

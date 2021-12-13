@@ -122,7 +122,7 @@ class GetAccountInfoAnswerTest {
 	@Mock
 	private NodeLocalProperties nodeProps;
 	@Mock
-	private AliasManager autoAccounts;
+	private AliasManager aliasManager;
 
 	@BeforeEach
 	private void setup() throws Throwable {
@@ -168,7 +168,7 @@ class GetAccountInfoAnswerTest {
 				children,
 				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 
-		subject = new GetAccountInfoAnswer(optionValidator, autoAccounts);
+		subject = new GetAccountInfoAnswer(optionValidator, aliasManager);
 	}
 
 	@Test
@@ -306,7 +306,7 @@ class GetAccountInfoAnswerTest {
 		EntityNum entityNum = EntityNum.fromAccountId(payerId);
 		Query query = validQueryWithAlias(COST_ANSWER, fee, "aaaa");
 		
-		given(autoAccounts.lookupIdBy(any())).willReturn(entityNum);
+		given(aliasManager.lookupIdBy(any())).willReturn(entityNum);
 
 		given(optionValidator.queryableAccountStatus(entityNum, accounts)).willReturn(INVALID_ACCOUNT_ID);
 

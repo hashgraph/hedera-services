@@ -194,7 +194,7 @@ class StateViewTest {
 	private UniqTokenViewFactory uniqTokenViewFactory;
 	private StateChildren children;
 	@Mock
-	private AliasManager autoAccounts;
+	private AliasManager aliasManager;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -639,14 +639,14 @@ class StateViewTest {
 				.setMaxAutomaticTokenAssociations(tokenAccount.getMaxAutomaticAssociations())
 				.build();
 
-		final var actualResponse = subject.infoForAccount(tokenAccountId, autoAccounts);
+		final var actualResponse = subject.infoForAccount(tokenAccountId, aliasManager);
 
 		assertEquals(expectedResponse, actualResponse.get());
 	}
 
 	@Test
 	void infoForAccountWithAlias() {
-		given(autoAccounts.lookupIdBy(any())).willReturn(EntityNum.fromAccountId(tokenAccountId));
+		given(aliasManager.lookupIdBy(any())).willReturn(EntityNum.fromAccountId(tokenAccountId));
 		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
 		given(mockTokenRelsFn.apply(any(), any())).willReturn(Collections.emptyList());
 
@@ -665,7 +665,7 @@ class StateViewTest {
 				.setMaxAutomaticTokenAssociations(tokenAccount.getMaxAutomaticAssociations())
 				.build();
 
-		final var actualResponse = subject.infoForAccount(accountWithAlias, autoAccounts);
+		final var actualResponse = subject.infoForAccount(accountWithAlias, aliasManager);
 		assertEquals(expectedResponse, actualResponse.get());
 
 	}
@@ -681,7 +681,7 @@ class StateViewTest {
 	void infoForMissingAccount() {
 		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(null);
 
-		final var actualResponse = subject.infoForAccount(tokenAccountId, autoAccounts);
+		final var actualResponse = subject.infoForAccount(tokenAccountId, aliasManager);
 
 		assertEquals(Optional.empty(), actualResponse);
 	}
@@ -690,10 +690,10 @@ class StateViewTest {
 	void infoForMissingAccountWithAlias() {
 		EntityNum mockedEntityNum = mock(EntityNum.class);
 
-		given(autoAccounts.lookupIdBy(any())).willReturn(mockedEntityNum);
+		given(aliasManager.lookupIdBy(any())).willReturn(mockedEntityNum);
 		given(contracts.get(mockedEntityNum)).willReturn(null);
 
-		final var actualResponse = subject.infoForAccount(accountWithAlias, autoAccounts);
+		final var actualResponse = subject.infoForAccount(accountWithAlias, aliasManager);
 		assertEquals(Optional.empty(), actualResponse);
 
 	}
@@ -1035,7 +1035,7 @@ class StateViewTest {
 		assertTrue(subject.contentsOf(target).isEmpty());
 		assertTrue(subject.infoForFile(target).isEmpty());
 		assertTrue(subject.infoForContract(cid).isEmpty());
-		assertTrue(subject.infoForAccount(tokenAccountId, autoAccounts).isEmpty());
+		assertTrue(subject.infoForAccount(tokenAccountId, aliasManager).isEmpty());
 		assertTrue(subject.infoForAccountNfts(nftOwnerId, 0, Long.MAX_VALUE).isEmpty());
 		assertTrue(subject.infosForTokenNfts(nftTokenId, 0, Long.MAX_VALUE).isEmpty());
 		assertTrue(subject.tokenType(tokenId).isEmpty());

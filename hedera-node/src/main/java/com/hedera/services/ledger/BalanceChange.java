@@ -46,7 +46,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NO
  * and a field to contain the new balance that will result from the change.
  * (This field is helpful to simplify work done in {@link HederaLedger}.)
  *
- * The {@code tokenId} and {@code accountId} fields are * temporary, needed to interact with the {@link BackingAccounts}
+ * The {@code tokenId} and {@code accountId} fields are temporary, needed to interact with the {@link BackingAccounts}
  * and {@link BackingTokenRels} components whose APIs still use gRPC types.
  */
 public class BalanceChange {

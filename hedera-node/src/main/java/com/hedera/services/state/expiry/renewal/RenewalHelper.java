@@ -72,7 +72,7 @@ public class RenewalHelper {
 	private MerkleAccount lastClassifiedAccount = null;
 	private EntityNum lastClassifiedEntityId;
 
-	private AliasManager autoAccounts;
+	private AliasManager aliasManager;
 
 	@Inject
 	public RenewalHelper(
@@ -82,7 +82,7 @@ public class RenewalHelper {
 			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels,
 			BackingStore<AccountID, MerkleAccount> backingAccounts,
-			AliasManager autoAccounts
+			AliasManager aliasManager
 	) {
 		this.tokens = tokens;
 		this.tokenStore = tokenStore;
@@ -90,7 +90,7 @@ public class RenewalHelper {
 		this.tokenRels = tokenRels;
 		this.dynamicProperties = dynamicProperties;
 		this.backingAccounts = backingAccounts;
-		this.autoAccounts = autoAccounts;
+		this.aliasManager = aliasManager;
 	}
 
 	public ExpiredEntityClassification classify(long candidateNum, long now) {
@@ -152,7 +152,7 @@ public class RenewalHelper {
 		log.debug("Removed {}, displacing {}", lastClassifiedEntityId, displacements);
 
 		/* Remove the entry from auto created accounts map if there is an entry in the map */
-		autoAccounts.forgetAliasIfPresent(lastClassifiedEntityId, accounts.get());
+		aliasManager.forgetAliasIfPresent(lastClassifiedEntityId, accounts.get());
 
 		return displacements;
 	}

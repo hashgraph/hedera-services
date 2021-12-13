@@ -62,19 +62,19 @@ public class OpUsageCtxHelper {
 	private final FileNumbers fileNumbers;
 	private final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
 	private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
-	private final AliasManager autoAccounts;
+	private final AliasManager aliasManager;
 
 	@Inject
 	public OpUsageCtxHelper(
 			final StateView workingView,
 			final FileNumbers fileNumbers,
 			final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
-			final AliasManager autoAccounts
+			final AliasManager aliasManager
 	) {
 		this.tokens = tokens;
 		this.fileNumbers = fileNumbers;
 		this.workingView = workingView;
-		this.autoAccounts = autoAccounts;
+		this.aliasManager = aliasManager;
 	}
 
 	public FileAppendMeta metaForFileAppend(TransactionBody txn) {
@@ -110,7 +110,7 @@ public class OpUsageCtxHelper {
 	public ExtantCryptoContext ctxForCryptoUpdate(TransactionBody txn) {
 		final var op = txn.getCryptoUpdateAccount();
 		ExtantCryptoContext cryptoContext;
-		var info = workingView.infoForAccount(op.getAccountIDToUpdate(), autoAccounts);
+		var info = workingView.infoForAccount(op.getAccountIDToUpdate(), aliasManager);
 		if (info.isPresent()) {
 			var details = info.get();
 			cryptoContext = ExtantCryptoContext.newBuilder()

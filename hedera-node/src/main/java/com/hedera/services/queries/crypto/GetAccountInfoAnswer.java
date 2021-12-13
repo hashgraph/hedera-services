@@ -48,29 +48,29 @@ import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 @Singleton
 public class GetAccountInfoAnswer implements AnswerService {
 	private final OptionValidator optionValidator;
-	private final AliasManager autoAccounts;
+	private final AliasManager aliasManager;
 
 	@Inject
-	public GetAccountInfoAnswer(final OptionValidator optionValidator, final AliasManager autoAccounts) {
+	public GetAccountInfoAnswer(final OptionValidator optionValidator, final AliasManager aliasManager) {
 		this.optionValidator = optionValidator;
-		this.autoAccounts = autoAccounts;
+		this.aliasManager = aliasManager;
 	}
 
 	@Override
-	public ResponseCodeEnum checkValidity(Query query, StateView view) {
+	public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
 		AccountID id = query.getCryptoGetInfo().getAccountID();
 		var entityNum = id.getAlias().isEmpty() ?
 				EntityNum.fromAccountId(id) :
-				autoAccounts.lookupIdBy(id.getAlias());
+				aliasManager.lookupIdBy(id.getAlias());
 		return optionValidator.queryableAccountStatus(entityNum, view.accounts());
 	}
 
 	@Override
-	public Response responseGiven(Query query, StateView view, ResponseCodeEnum validity, long cost) {
-		CryptoGetInfoQuery op = query.getCryptoGetInfo();
+	public Response responseGiven(final Query query, final StateView view, final ResponseCodeEnum validity, final long cost) {
+		final CryptoGetInfoQuery op = query.getCryptoGetInfo();
 		CryptoGetInfoResponse.Builder response = CryptoGetInfoResponse.newBuilder();
 
-		ResponseType type = op.getHeader().getResponseType();
+		final ResponseType type = op.getHeader().getResponseType();
 		if (validity != OK) {
 			response.setHeader(header(validity, type, cost));
 		} else {
@@ -78,7 +78,7 @@ public class GetAccountInfoAnswer implements AnswerService {
 				response.setHeader(costAnswerHeader(OK, cost));
 			} else {
 				AccountID id = op.getAccountID();
-				var optionalInfo = view.infoForAccount(id, autoAccounts);
+				var optionalInfo = view.infoForAccount(id, aliasManager);
 				if (optionalInfo.isPresent()) {
 					response.setHeader(answerOnlyHeader(OK));
 					response.setAccountInfo(optionalInfo.get());
@@ -93,17 +93,17 @@ public class GetAccountInfoAnswer implements AnswerService {
 	}
 
 	@Override
-	public boolean needsAnswerOnlyCost(Query query) {
+	public boolean needsAnswerOnlyCost(final Query query) {
 		return COST_ANSWER == query.getCryptoGetInfo().getHeader().getResponseType();
 	}
 
 	@Override
-	public boolean requiresNodePayment(Query query) {
+	public boolean requiresNodePayment(final Query query) {
 		return typicallyRequiresNodePayment(query.getCryptoGetInfo().getHeader().getResponseType());
 	}
 
 	@Override
-	public Optional<SignedTxnAccessor> extractPaymentFrom(Query query) {
+	public Optional<SignedTxnAccessor> extractPaymentFrom(final Query query) {
 		Transaction paymentTxn = query.getCryptoGetInfo().getHeader().getPayment();
 		return Optional.ofNullable(SignedTxnAccessor.uncheckedFrom(paymentTxn));
 	}

@@ -129,8 +129,7 @@ public abstract class ContractsModule {
 			final Source<byte[], byte[]> bytecodeSource,
 			final GlobalDynamicProperties dynamicProperties,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-			final AutoCreationLogic autoAccountCreator,
-			final AliasManager autoAccounts
+			final AutoCreationLogic autoAccountCreator
 
 	) {
 		final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> pureDelegate = new TransactionalLedger<>(

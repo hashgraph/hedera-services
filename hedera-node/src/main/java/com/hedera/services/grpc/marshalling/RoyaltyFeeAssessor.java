@@ -40,16 +40,16 @@ public class RoyaltyFeeAssessor {
 	private final FixedFeeAssessor fixedFeeAssessor;
 	private final FungibleAdjuster fungibleAdjuster;
 
-	public RoyaltyFeeAssessor(FixedFeeAssessor fixedFeeAssessor, FungibleAdjuster fungibleAdjuster) {
+	public RoyaltyFeeAssessor(final FixedFeeAssessor fixedFeeAssessor, final FungibleAdjuster fungibleAdjuster) {
 		this.fixedFeeAssessor = fixedFeeAssessor;
 		this.fungibleAdjuster = fungibleAdjuster;
 	}
 
 	public ResponseCodeEnum assessAllRoyalties(
-			BalanceChange change,
-			List<FcCustomFee> feesWithRoyalties,
-			BalanceChangeManager changeManager,
-			List<FcAssessedCustomFee> accumulator
+			final BalanceChange change,
+			final List<FcCustomFee> feesWithRoyalties,
+			final BalanceChangeManager changeManager,
+			final List<FcAssessedCustomFee> accumulator
 	) {
 		if (!change.isForNft()) {
 			/* This change was denominated in a non-fungible token type---but appeared
@@ -102,12 +102,12 @@ public class RoyaltyFeeAssessor {
 	}
 
 	private ResponseCodeEnum chargeRoyalty(
-			Id collector,
-			RoyaltyFeeSpec spec,
-			List<BalanceChange> exchangedValue,
-			FungibleAdjuster fungibleAdjuster,
-			BalanceChangeManager changeManager,
-			List<FcAssessedCustomFee> accumulator
+			final Id collector,
+			final RoyaltyFeeSpec spec,
+			final List<BalanceChange> exchangedValue,
+			final FungibleAdjuster fungibleAdjuster,
+			final BalanceChangeManager changeManager,
+			final List<FcAssessedCustomFee> accumulator
 	) {
 		for (var exchange : exchangedValue) {
 			long value = exchange.originalUnits();

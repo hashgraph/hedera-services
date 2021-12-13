@@ -403,9 +403,9 @@ public class StateView {
 		return Optional.of(info.build());
 	}
 
-	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(AccountID id, AliasManager autoAccounts) {
-		var accountId = id.getAlias().isEmpty() ? fromAccountId(id) : autoAccounts.lookupIdBy(id.getAlias());
-		var account = accounts().get(accountId);
+	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(AccountID id, AliasManager aliasManager) {
+		final var accountId = id.getAlias().isEmpty() ? fromAccountId(id) : aliasManager.lookupIdBy(id.getAlias());
+		final var account = accounts().get(accountId);
 		if (account == null) {
 			return Optional.empty();
 		}
@@ -426,7 +426,7 @@ public class StateView {
 		Optional.ofNullable(account.getProxy())
 				.map(EntityId::toGrpcAccountId)
 				.ifPresent(info::setProxyAccountID);
-		var tokenRels = tokenRelsFn.apply(this, id);
+		final var tokenRels = tokenRelsFn.apply(this, id);
 		if (!tokenRels.isEmpty()) {
 			info.addAllTokenRelationships(tokenRels);
 		}

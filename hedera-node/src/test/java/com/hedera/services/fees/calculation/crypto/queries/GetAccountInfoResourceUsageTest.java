@@ -80,13 +80,13 @@ class GetAccountInfoResourceUsageTest {
 	@Mock
 	private StateView view;
 	@Mock
-	private AliasManager autoAccounts;
+	private AliasManager aliasManager;
 
 	private GetAccountInfoResourceUsage subject;
 
 	@BeforeEach
 	private void setup() {
-		subject = new GetAccountInfoResourceUsage(cryptoOpsUsage, autoAccounts);
+		subject = new GetAccountInfoResourceUsage(cryptoOpsUsage, aliasManager);
 	}
 
 	@Test
@@ -103,7 +103,7 @@ class GetAccountInfoResourceUsageTest {
 				.setMaxAutomaticTokenAssociations(maxAutomaticAssociations)
 				.build();
 		final var query = accountInfoQuery(a, ANSWER_ONLY);
-		given(view.infoForAccount(queryTarget, autoAccounts)).willReturn(Optional.of(info));
+		given(view.infoForAccount(queryTarget, aliasManager)).willReturn(Optional.of(info));
 		given(cryptoOpsUsage.cryptoInfoUsage(any(), any())).willReturn(expected);
 
 		final var usage = subject.usageGiven(query, view);
@@ -121,7 +121,7 @@ class GetAccountInfoResourceUsageTest {
 
 	@Test
 	void returnsDefaultIfNoSuchAccount() {
-		given(view.infoForAccount(queryTarget, autoAccounts)).willReturn(Optional.empty());
+		given(view.infoForAccount(queryTarget, aliasManager)).willReturn(Optional.empty());
 
 		final var usage = subject.usageGiven(accountInfoQuery(a, ANSWER_ONLY), view);
 

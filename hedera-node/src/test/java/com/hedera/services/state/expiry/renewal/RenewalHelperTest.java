@@ -140,14 +140,14 @@ class RenewalHelperTest {
 	@Mock
 	private TokenStore tokenStore;
 	@Mock
-	private AliasManager autoAccounts;
+	private AliasManager aliasManager;
 
 	private RenewalHelper subject;
 
 	@BeforeEach
 	void setUp() {
 		subject = new RenewalHelper(tokenStore, dynamicProps, () -> tokens, () -> accounts, () -> tokenRels,
-				backingAccounts, autoAccounts);
+				backingAccounts, aliasManager);
 		addEntitiesToAutoAccountsMap();
 	}
 
@@ -157,7 +157,7 @@ class RenewalHelperTest {
 		autoAccountsMap.put(expiredDeletedAccount.getAlias(), EntityNum.fromLong(expiredAccountNum));
 		autoAccountsMap.put(expiredAccountNonZeroBalance.getAlias(), EntityNum.fromLong(fundedExpiredAccountNum));
 		autoAccountsMap.put(fundingAccount.getAlias(), EntityNum.fromLong(98));
-		autoAccounts.setAliases(autoAccountsMap);
+		aliasManager.setAliases(autoAccountsMap);
 	}
 
 	@Test
@@ -272,7 +272,7 @@ class RenewalHelperTest {
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), deletedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), missingTokenGrpcId));
-		verify(autoAccounts).forgetAliasIfPresent(expiredKey, accounts);
+		verify(aliasManager).forgetAliasIfPresent(expiredKey, accounts);
 		// and:
 		assertTrue(displacedTokens.getLeft().isEmpty());
 	}
@@ -302,7 +302,7 @@ class RenewalHelperTest {
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), deletedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));
-		verify(autoAccounts).forgetAliasIfPresent(expiredKey, accounts);
+		verify(aliasManager).forgetAliasIfPresent(expiredKey, accounts);
 		// and:
 		final var ttls = List.of(
 				ttlOf(survivedTokenGrpcId, grpcIdWith(brokeExpiredAccountNum), treasuryGrpcId, tokenBalance));
@@ -316,11 +316,11 @@ class RenewalHelperTest {
 		accountsMap.put(EntityNum.fromLong(nonExpiredAccountNum), nonExpiredAccount);
 		accountsMap.put(EntityNum.fromLong(brokeExpiredAccountNum), expiredAccountZeroBalance);
 
-		AliasManager autoAccounts = new AliasManager();
-		autoAccounts.setAliases(autoAccountsMap);
+		AliasManager aliasManager = new AliasManager();
+		aliasManager.setAliases(autoAccountsMap);
 
 		subject = new RenewalHelper(tokenStore, dynamicProps, () -> tokens, () -> accountsMap, () -> tokenRels,
-				backingAccounts, autoAccounts);
+				backingAccounts, aliasManager);
 
 		final var expiredKey = EntityNum.fromLong(brokeExpiredAccountNum);
 
@@ -357,7 +357,7 @@ class RenewalHelperTest {
 		// then:
 		verify(accounts).getForModify(key);
 		verify(accounts).getForModify(fundingKey);
-		verify(autoAccounts, never()).forgetAliasIfPresent(fundingKey, accounts);
+		verify(aliasManager, never()).forgetAliasIfPresent(fundingKey, accounts);
 	}
 
 	@Test
