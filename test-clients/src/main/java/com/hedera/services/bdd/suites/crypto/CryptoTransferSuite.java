@@ -20,7 +20,6 @@ package com.hedera.services.bdd.suites.crypto;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -109,8 +108,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
 						dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
 						nftSelfTransfersRejectedBothInPrecheckAndHandle(),
-						hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
-						autoAccountCreationsHappyPath()
+						hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle()
 				}
 		);
 	}
@@ -118,70 +116,6 @@ public class CryptoTransferSuite extends HapiApiSuite {
 	@Override
 	public boolean canRunAsync() {
 		return true;
-	}
-
-	private HapiApiSpec autoAccountCreationsHappyPath() {
-		long initialBalance = 1000L;
-		final AtomicReference<ByteString> finalEd25519Alias = new AtomicReference<>();
-		final AtomicReference<ByteString> finalSecp256k1Alias = new AtomicReference<>();
-		final AtomicReference<String> ed25519Id = new AtomicReference<>();
-		final AtomicReference<String> secp256k1Id = new AtomicReference<>();
-
-		final var ed25519AliasKey = "ed25519";
-		final var secp256k1AliasKey = "secp256k1";
-		final var eddsaAliasKeyShape = KeyShape.ED25519;
-		final var ecdsaAliasKeyShape = KeyShape.SECP256K1;
-		final var ed25519Txn = "eddsaTxn";
-		final var secp256k1Txn = "ecdsaTxn";
-
-		return defaultHapiSpec("AutoAccountCreationsHappyPath")
-				.given(
-						newKeyNamed(ed25519AliasKey).shape(eddsaAliasKeyShape),
-						newKeyNamed(secp256k1AliasKey).shape(ecdsaAliasKeyShape),
-						cryptoCreate("payer").balance(initialBalance * ONE_HBAR)
-				).when(
-						withOpContext((spec, opLog) -> {
-							final var key = spec.registry().getKey(ed25519AliasKey);
-							final var alias = key.toByteString();
-							finalEd25519Alias.set(alias);
-							final var op = cryptoTransfer(
-									tinyBarsFromTo("payer", alias, ONE_HUNDRED_HBARS)
-							).via(ed25519Txn);
-							allRunFor(spec, op);
-						}),
-						withOpContext((spec, opLog) -> {
-							final var key = spec.registry().getKey(secp256k1AliasKey);
-							final var alias = key.toByteString();
-							finalSecp256k1Alias.set(alias);
-							final var op = cryptoTransfer(
-									tinyBarsFromTo("payer", alias, ONE_HUNDRED_HBARS)
-							).via(secp256k1Txn);
-							allRunFor(spec, op);
-						})
-				).then(
-						getTxnRecord(ed25519Txn)
-								.andAllChildRecords()
-								.logged(),
-						getTxnRecord(secp256k1Txn)
-								.andAllChildRecords()
-								.logged(),
-						getAccountInfo("payer").has(
-								accountWith().balance((initialBalance * ONE_HBAR) - 2 * ONE_HUNDRED_HBARS)),
-						sourcing(() -> getAccountInfo(finalEd25519Alias.get())
-								.has(accountWith()
-										.expectedBalanceWithChargedUsd(
-												ONE_HUNDRED_HBARS, 0.05, 0.1))
-								.exposingIdTo(id -> ed25519Id.set(HapiPropertySource.asAccountString(id)))),
-						sourcing(() -> getAccountInfo(finalSecp256k1Alias.get())
-								.has(accountWith()
-										.expectedBalanceWithChargedUsd(
-												ONE_HUNDRED_HBARS, 0.05, 0.1))
-								.exposingIdTo(id -> secp256k1Id.set(HapiPropertySource.asAccountString(id)))),
-						sourcing(() -> cryptoTransfer(tinyBarsFromTo(ed25519Id.get(), FUNDING, 1))
-								.signedBy(DEFAULT_PAYER, ed25519AliasKey)),
-						sourcing(() -> cryptoTransfer(tinyBarsFromTo(secp256k1Id.get(), FUNDING, 1))
-								.signedBy(DEFAULT_PAYER, secp256k1AliasKey))
-				);
 	}
 
 	private HapiApiSpec nftSelfTransfersRejectedBothInPrecheckAndHandle() {
