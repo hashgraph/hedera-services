@@ -39,22 +39,17 @@ public class LogCaptor {
 	private static final Pattern EVENT_PATTERN = Pattern.compile("(DEBUG|INFO|WARN|ERROR|$)");
 
 	private static final String MINIMAL_PATTERN = "%-5level %msg";
-	private static final String MINIMAL_PATTERN_NO_LOOKUP = "%-5level %msg{nolookups}";
 
 	private final Logger logger;
 	private final Appender appender;
 	private final CharArrayWriter capture = new CharArrayWriter();
 
-	public LogCaptor(org.apache.logging.log4j.Logger logger, boolean isNoLookUpEnabled) {
+	public LogCaptor(org.apache.logging.log4j.Logger logger) {
 		this.logger = (Logger) logger;
-
-		final PatternLayout patternLayout = isNoLookUpEnabled ?
-				PatternLayout.newBuilder().withPattern(MINIMAL_PATTERN_NO_LOOKUP).build() :
-				PatternLayout.newBuilder().withPattern(MINIMAL_PATTERN).build();
 
 		appender = WriterAppender.newBuilder()
 				.setTarget(capture)
-				.setLayout(patternLayout)
+				.setLayout(PatternLayout.newBuilder().withPattern(MINIMAL_PATTERN).build())
 				.setName("LogCaptor")
 				.build();
 
