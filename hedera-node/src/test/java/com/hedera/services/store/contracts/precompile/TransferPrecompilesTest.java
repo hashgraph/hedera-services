@@ -62,6 +62,7 @@ import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -71,6 +72,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_CRYPTO_TRANSFER;
@@ -447,6 +449,8 @@ class TransferPrecompilesTest {
 	@Test
 	void transferWithWrongInput() {
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(decoder.decodeTransferToken(pretendArguments)).willThrow(new IndexOutOfBoundsException());
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKEN);
 
@@ -457,6 +461,8 @@ class TransferPrecompilesTest {
 	private void givenFrameContext() {
 		given(frame.getContractAddress()).willReturn(contractAddr);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
 	}
 
