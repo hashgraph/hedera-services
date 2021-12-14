@@ -165,7 +165,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 	}
 
 	public HapiCryptoTransfer isTransferToKey() {
-		this.transferToKey = true;
+		transferToKey = true;
 		return this;
 	}
 

@@ -62,7 +62,6 @@ import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 	private static final Logger log = LogManager.getLogger(HapiGetAccountBalance.class);
 
-	private Pattern DOT_DELIMTED_ACCOUNT = Pattern.compile("\\d+[.]\\d+[.]\\d+");
 	private String account;
 	private Optional<AccountID> accountID = Optional.empty();
 	private boolean exportAccount = false;

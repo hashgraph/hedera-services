@@ -66,7 +66,6 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 	Optional<Integer> maxAutomaticAssociations = Optional.empty();
 	Optional<Integer> alreadyUsedAutomaticAssociations = Optional.empty();
 	private Optional<Consumer<AccountID>> idObserver = Optional.empty();
-	private boolean lookUpAccountWithKey = false;
 	private boolean assertAliasKeyMatches = false;
 	private ReferenceType referenceType;
 
