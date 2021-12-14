@@ -173,7 +173,7 @@
 		<swirlds.version>0.21.0</swirlds.version>
 		<!-- Test dependency properties in alphabetical order -->
 		<hamcrest.version>2.2</hamcrest.version>
-		<junit5.version>5.8.1</junit5.version>
+		<junit5.version>5.8.2</junit5.version>
 		<mockito.version>3.12.4</mockito.version>
 
 		<!-- SonarCloud properties -->
