@@ -102,6 +102,7 @@ import static java.util.Collections.unmodifiableMap;
 
 public class StateView {
 	private static final Logger log = LogManager.getLogger(StateView.class);
+	public static final AccountID EMPTY_ACCOUNT = AccountID.newBuilder().setAccountNum(0).build();
 
 	static BiFunction<StateView, AccountID, List<TokenRelationship>> tokenRelsFn = StateView::tokenRels;
 
@@ -299,7 +300,7 @@ public class StateView {
 		final var targetNft = currentNfts.get(targetKey);
 		var accountId = targetNft.getOwner().toGrpcAccountId();
 
-		if (accountId.equals(AccountID.getDefaultInstance())) {
+		if (accountId.equals(EMPTY_ACCOUNT)) {
 			var merkleToken = tokens().get(tokenId);
 			if (merkleToken == null) {
 				return Optional.empty();

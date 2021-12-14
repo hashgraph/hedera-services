@@ -43,7 +43,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 class NftAdjustmentsTest {
-	private final AccountID sender = AccountID.getDefaultInstance();
+	private final AccountID sender = AccountID.newBuilder().setAccountNum(0).build();
 	private final AccountID recipient = AccountID.newBuilder().setAccountNum(3).setRealmNum(2).setShardNum(1).build();
 
 	private NftAdjustments subject;

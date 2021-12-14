@@ -543,7 +543,20 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		private List<BalanceChange> constructBalanceChanges(SyntheticTxnFactory.TokenTransferLists transferOp) {
 			List<BalanceChange> changes = new ArrayList<>();
 			for (SyntheticTxnFactory.FungibleTokenTransfer fungibleTransfer : transferOp.getFungibleTransfers()) {
-				if (fungibleTransfer.sender == null) {
+				if (fungibleTransfer.sender != null && fungibleTransfer.receiver != null) {
+					changes.addAll(List.of(
+							BalanceChange.changingFtUnits(
+									Id.fromGrpcToken(fungibleTransfer.getDenomination()),
+									fungibleTransfer.getDenomination(),
+									AccountAmount.newBuilder().setAccountID(fungibleTransfer.receiver).setAmount(fungibleTransfer.amount).build()
+							),
+							BalanceChange.changingFtUnits(
+									Id.fromGrpcToken(fungibleTransfer.getDenomination()),
+									fungibleTransfer.getDenomination(),
+									AccountAmount.newBuilder().setAccountID(fungibleTransfer.sender).setAmount(-fungibleTransfer.amount).build()
+							))
+					);
+				} else if (fungibleTransfer.sender == null) {
 					changes.add(
 							BalanceChange.changingFtUnits(
 									Id.fromGrpcToken(fungibleTransfer.getDenomination()),
@@ -586,7 +599,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final List<BalanceChange> changes = constructBalanceChanges(transferOp);
 			var validated = impliedTransfersMarshal.assessCustomFeesAndValidate(
 					changes,
-					changes.size(),
+					0,
 					impliedTransfersMarshal.currentProps()
 			);
 
