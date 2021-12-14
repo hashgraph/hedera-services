@@ -133,6 +133,9 @@
         <MarkerFilter marker="MERKLE_LOCKS"           onMatch="DENY"   onMismatch="NEUTRAL"/>
 
         <MarkerFilter marker="DISABLED"               onMatch="DENY"   onMismatch="DENY" />
+
+        <!-- Jasper DB -->
+        <MarkerFilter marker="JASPER_DB"               onMatch="ACCEPT"   onMismatch="NEUTRAL" />
       </Filters>
     </Logger>
 
