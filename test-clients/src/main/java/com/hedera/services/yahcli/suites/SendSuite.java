@@ -25,46 +25,36 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 
-public class BalanceSuite extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(BalanceSuite.class);
+public class SendSuite extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(SendSuite.class);
 
 	private final Map<String, String> specConfig;
-	private final List<String> accounts;
+	private final String beneficiary;
+	private final long tinybarsToSend;
 
-	public BalanceSuite(final Map<String, String> specConfig, final String[] accounts) {
+	public SendSuite(final Map<String, String> specConfig, final String beneficiary, final long tinybarsToSend) {
 		this.specConfig = specConfig;
-		this.accounts = rationalized(accounts);
-	}
-
-	private List<String> rationalized(final String[] accounts) {
-		return Arrays.stream(accounts)
-				.map(Utils::extractAccount)
-				.collect(Collectors.toList());
+		this.beneficiary = Utils.extractAccount(beneficiary);
+		this.tinybarsToSend = tinybarsToSend;
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		List<HapiApiSpec> specToRun = new ArrayList<>();
-		accounts.forEach(s -> specToRun.add(getBalance(s)));
-		return specToRun;
+		return List.of(doSend());
 	}
 
-	private HapiApiSpec getBalance(String accountID) {
-		return HapiApiSpec.customHapiSpec("getBalance")
+	private HapiApiSpec doSend() {
+		return HapiApiSpec.customHapiSpec("DoSend")
 				.withProperties(specConfig)
-				.given().when()
-				.then(
-						getAccountBalance(accountID)
-								.noLogging()
-								.withYahcliLogging()
+				.given().when().then(
+						cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, beneficiary, tinybarsToSend))
+								.signedBy(DEFAULT_PAYER)
 				);
 	}
 

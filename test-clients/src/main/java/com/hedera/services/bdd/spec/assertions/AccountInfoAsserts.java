@@ -140,16 +140,22 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 		return this;
 	}
 
-	public AccountInfoAsserts expectedBalanceWithChargedUsd(long amount, double expectedUsdToSubstract,
-			double allowedPercentDiff) {
+	public AccountInfoAsserts expectedBalanceWithChargedUsd(
+			final long amount,
+			final double expectedUsdToSubstract,
+			final double allowedPercentDiff
+	) {
 		registerProvider((spec, o) -> {
 			var expectedTinyBarsToSubtract = expectedUsdToSubstract
 					* 100
 					* spec.ratesProvider().rates().getHbarEquiv() / spec.ratesProvider().rates().getCentEquiv()
 					* ONE_HBAR;
 			var expected = amount - expectedTinyBarsToSubtract;
-			assertEquals(expected, ((AccountInfo) o).getBalance(), (allowedPercentDiff / 100.0) * expected,
-					"Bad balance!");
+			assertEquals(
+					expected,
+					((AccountInfo) o).getBalance(),
+					(allowedPercentDiff / 100.0) * expected,
+					"Unexpected balance");
 		});
 		return this;
 	}

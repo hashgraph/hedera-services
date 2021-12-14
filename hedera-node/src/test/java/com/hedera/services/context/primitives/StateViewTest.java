@@ -169,7 +169,7 @@ class StateViewTest {
 	private Map<byte[], byte[]> bytecode;
 	private Map<FileID, byte[]> contents;
 	private Map<FileID, HFileMeta> attrs;
-	private BiFunction<StateView, AccountID, List<TokenRelationship>> mockTokenRelsFn;
+	private BiFunction<StateView, EntityNum, List<TokenRelationship>> mockTokenRelsFn;
 
 	private MerkleMap<EntityNum, MerkleToken> tokens;
 	private MerkleMap<EntityNum, MerkleTopic> topics;
@@ -302,7 +302,7 @@ class StateViewTest {
 		nodeProps = mock(NodeLocalProperties.class);
 		specialFiles = mock(MerkleSpecialFiles.class);
 
-		mockTokenRelsFn = (BiFunction<StateView, AccountID, List<TokenRelationship>>) mock(BiFunction.class);
+		mockTokenRelsFn = (BiFunction<StateView, EntityNum, List<TokenRelationship>>) mock(BiFunction.class);
 
 		StateView.tokenRelsFn = mockTokenRelsFn;
 
@@ -532,6 +532,7 @@ class StateViewTest {
 
 	@Test
 	void getsContractInfo() throws Exception {
+		final var target = EntityNum.fromContractId(cid);
 		given(storage.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedStorage);
 		given(contracts.get(EntityNum.fromContractId(cid))).willReturn(contract);
 		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedBytecode);
@@ -543,7 +544,7 @@ class StateViewTest {
 						.setKycStatus(TokenKycStatus.KycNotApplicable)
 						.setBalance(321L)
 						.build());
-		given(mockTokenRelsFn.apply(subject, asAccount(cid))).willReturn(rels);
+		given(mockTokenRelsFn.apply(subject, target)).willReturn(rels);
 
 		final var info = subject.infoForContract(cid).get();
 
@@ -562,8 +563,9 @@ class StateViewTest {
 
 	@Test
 	void getTokenRelationship() {
+		final var targetId = EntityNum.fromAccountId(tokenAccountId);
 		given(tokenStore.get(tokenId)).willReturn(token);
-		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
+		given(contracts.get(targetId)).willReturn(tokenAccount);
 		given(tokenStore.exists(tokenId)).willReturn(true);
 
 		List<TokenRelationship> expectedRels = List.of(
@@ -577,7 +579,7 @@ class StateViewTest {
 						.setDecimals(1)
 						.build());
 
-		final var actualRels = StateView.tokenRels(subject, tokenAccountId);
+		final var actualRels = StateView.tokenRels(subject, targetId);
 
 		assertEquals(expectedRels, actualRels);
 	}

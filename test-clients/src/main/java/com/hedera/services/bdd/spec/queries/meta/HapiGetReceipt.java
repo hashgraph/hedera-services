@@ -38,6 +38,7 @@ import org.junit.jupiter.api.Assertions;
 import java.util.Optional;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.txnReceiptQueryFor;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
 	static final Logger log = LogManager.getLogger(HapiGetReceipt.class);
@@ -46,12 +47,14 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
 	boolean forgetOp = false;
 	boolean requestDuplicates = false;
 	boolean useDefaultTxnId = false;
+	boolean getChildReceipts = false;
 	TransactionID defaultTxnId = TransactionID.getDefaultInstance();
 	Optional<String> expectedSchedule = Optional.empty();
 	Optional<String> expectedScheduledTxnId = Optional.empty();
 	Optional<TransactionID> explicitTxnId = Optional.empty();
 	Optional<ResponseCodeEnum> expectedPriorityStatus = Optional.empty();
 	Optional<ResponseCodeEnum[]> expectedDuplicateStatuses = Optional.empty();
+	Optional<Integer> hasChildAutoAccountCreations = Optional.empty();
 
 	@Override
 	public HederaFunctionality type() {
@@ -81,8 +84,18 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
 		return this;
 	}
 
+	public HapiGetReceipt andAnyChildReceipts() {
+		getChildReceipts = true;
+		return this;
+	}
+
 	public HapiGetReceipt useDefaultTxnId() {
 		useDefaultTxnId = true;
+		return this;
+	}
+
+	public HapiGetReceipt hasChildAutoAccountCreations(int count) {
+		hasChildAutoAccountCreations = Optional.of(count);
 		return this;
 	}
 
@@ -112,10 +125,15 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
 				useDefaultTxnId ? defaultTxnId : spec.registry().getTxnId(txn));
 		Query query = forgetOp
 				? Query.newBuilder().build()
-				: txnReceiptQueryFor(txnId, requestDuplicates);
+				: txnReceiptQueryFor(txnId, requestDuplicates, getChildReceipts);
 		response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getTransactionReceipts(query);
+		childReceipts = response.getTransactionGetReceipt().getChildTransactionReceiptsList();
 		if (verboseLoggingOn) {
 			log.info("Receipt: " + response.getTransactionGetReceipt().getReceipt());
+			log.info(spec.logPrefix() + "  And {} child receipts{}: {}",
+					childReceipts.size(),
+					childReceipts.size() > 1 ? "s" : "",
+					childReceipts);
 		}
 	}
 
@@ -124,7 +142,7 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
 		var receipt = response.getTransactionGetReceipt().getReceipt();
 		if (expectedPriorityStatus.isPresent()) {
 			ResponseCodeEnum actualStatus = receipt.getStatus();
-			Assertions.assertEquals(expectedPriorityStatus.get(), actualStatus);
+			assertEquals(expectedPriorityStatus.get(), actualStatus);
 		}
 		if (expectedDuplicateStatuses.isPresent()) {
 			var duplicates = response.getTransactionGetReceipt().getDuplicateTransactionReceiptsList()
@@ -136,11 +154,20 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
 		if (expectedScheduledTxnId.isPresent()) {
 			var expected = spec.registry().getTxnId(expectedScheduledTxnId.get());
 			var actual = response.getTransactionGetReceipt().getReceipt().getScheduledTransactionID();
-			Assertions.assertEquals(expected, actual, "Wrong scheduled transaction id!");
+			assertEquals(expected, actual, "Wrong scheduled transaction id!");
 		}
 		if (expectedSchedule.isPresent()) {
 			var schedule = TxnUtils.asScheduleId(expectedSchedule.get(), spec);
-			Assertions.assertEquals(schedule, receipt.getScheduleID(), "Wrong/missing schedule id!");
+			assertEquals(schedule, receipt.getScheduleID(), "Wrong/missing schedule id!");
+		}
+		if(hasChildAutoAccountCreations.isPresent()) {
+			int count = hasChildAutoAccountCreations.get();
+			for (var childReceipt : childReceipts) {
+				if (childReceipt.hasAccountID()) {
+					count--;
+				}
+			}
+			assertEquals(0, count);
 		}
 	}
 

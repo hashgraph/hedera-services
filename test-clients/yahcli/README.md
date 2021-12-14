@@ -13,13 +13,14 @@ appear below.
 1. [Setting up the working directory](#setting-up-the-working-directory)
 2. [Understanding general usage](#general-usage)
 3. [Checking account balances](#getting-account-balances)
-4. [Updating system files](#updating-system-files)
-5. [Validating network services](#validating-network-services)
-6. [Preparing for an NMT upgrade](#preparing-an-nmt-software-upgrade)
-7. [Launching an NMT telemetry upgrade](#launching-an-nmt-telemetry-upgrade)
-8. [Scheduling a network freeze](#scheduling-a-network-freeze)
-9. [Re-keying an account](#updating-account-keys)
-10. [Get deployed version info of a network](#get-version-info)
+4. [Sending funds to an account](#sending-account-funds)
+5. [Updating system files](#updating-system-files)
+6. [Validating network services](#validating-network-services)
+7. [Preparing for an NMT upgrade](#preparing-an-nmt-software-upgrade)
+8. [Launching an NMT telemetry upgrade](#launching-an-nmt-telemetry-upgrade)
+9. [Scheduling a network freeze](#scheduling-a-network-freeze)
+10. [Re-keying an account](#updating-account-keys)
+11. [Get deployed version info of a network](#get-version-info)
 
 # Setting up the working directory
 
@@ -117,6 +118,16 @@ The remaining sections of this document focus on specific use cases.
 # Getting account balances
 ```
 $ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.7 -n previewnet -p 2 accounts balance 56 50
+```
+
+# Sending account funds
+You can send funds from the default payer's account to a beneficiary account, in denominations of `tinybar`, `hbar`, or `kilobar`.
+
+The default denomination is `hbar`.
+
+```
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.7 -n previewnet -p 2 accounts send --denomination hbar --to 58 1_000_000
+
 ```
 
 # Updating system files

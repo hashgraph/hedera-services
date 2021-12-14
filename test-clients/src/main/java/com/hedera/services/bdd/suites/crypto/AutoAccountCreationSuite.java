@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.crypto;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -39,12 +40,15 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfoWithAlias;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDeleteAliased;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -84,13 +88,41 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 						multipleAutoAccountCreations(),
 						accountCreatedIfAliasUsedAsPubKey(),
 						aliasCanBeUsedOnManyAccountsNotAsAlias(),
-						autoAccountCreationWorksWhenUsingAliasOfDeletedAccount()
+						autoAccountCreationWorksWhenUsingAliasOfDeletedAccount(),
+						canGetBalanceAndInfoViaAlias(),
 				}
 		);
 	}
 
+	private HapiApiSpec canGetBalanceAndInfoViaAlias() {
+		final var ed25519SourceKey = "ed25519Alias";
+		final var secp256k1SourceKey = "secp256k1Alias";
+		final var secp256k1Shape = KeyShape.SECP256K1;
+		final var ed25519Shape = KeyShape.ED25519;
+		final var autoCreation = "autoCreation";
+
+		return defaultHapiSpec("CanGetBalanceAndInfoViaAlias")
+				.given(
+						newKeyNamed(ed25519SourceKey).shape(ed25519Shape),
+						newKeyNamed(secp256k1SourceKey).shape(secp256k1Shape)
+				).when(
+						cryptoTransfer(
+								tinyBarsFromAccountToAlias(GENESIS, ed25519SourceKey, ONE_HUNDRED_HBARS),
+								tinyBarsFromAccountToAlias(GENESIS, secp256k1SourceKey, ONE_HUNDRED_HBARS)
+						)
+								.payingWith(GENESIS)
+								.via(autoCreation)
+				).then(
+						getTxnRecord(autoCreation).andAllChildRecords().logged(),
+						getAliasedAccountBalance(ed25519SourceKey),
+						getAliasedAccountBalance(secp256k1SourceKey),
+						getAliasedAccountInfo(ed25519SourceKey).hasExpectedAliasKey(),
+						getAliasedAccountInfo(secp256k1SourceKey).hasExpectedAliasKey()
+				);
+	}
+
 	private HapiApiSpec aliasCanBeUsedOnManyAccountsNotAsAlias() {
-		return defaultHapiSpec("AutoAccountCreationsHappyPath")
+		return defaultHapiSpec("AliasCanBeUsedOnManyAccountsNotAsAlias")
 				.given(
 						/* have alias key on other accounts and tokens not as alias */
 						newKeyNamed("validAlias"),
@@ -113,7 +145,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 										.balance((initialBalance * ONE_HBAR) - ONE_HUNDRED_HBARS)
 										.noAlias()
 						),
-						getAccountInfoWithAlias("validAlias").has(
+						getAliasedAccountInfo("validAlias").has(
 										accountWith()
 												.key("validAlias")
 												.expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.5)
@@ -143,7 +175,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 										.balance((initialBalance * ONE_HBAR) - ONE_HUNDRED_HBARS)
 										.noAlias()
 						),
-						getAccountInfo("alias", true).has(
+						getAliasedAccountInfo("alias").has(
 										accountWith()
 												.key("alias")
 												.expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.5)
@@ -166,7 +198,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 								"txn"),
 						getTxnRecord("txn").hasChildRecordCount(1).logged()
 				).then(
-						cryptoDelete("alias", true)
+						cryptoDeleteAliased("alias")
 								.transfer("payer")
 								.hasKnownStatus(SUCCESS)
 								.signedBy("alias", "payer", DEFAULT_PAYER)
@@ -197,7 +229,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 								2 * ONE_HUNDRED_HBARS)).via(
 								"txn"),
 						getTxnRecord("txn").andAllChildRecords().logged(),
-						getAccountInfoWithAlias("alias").has(
+						getAliasedAccountInfo("alias").has(
 								accountWith().expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0.05, 0.5))
 				).then(
 						/* transfer from an alias that was auto created to a new alias, validate account is created */
@@ -205,9 +237,9 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 								HapiCryptoTransfer.tinyBarsFromToWithAlias("alias", "alias2", ONE_HUNDRED_HBARS)).via(
 								"transferTxn2"),
 						getTxnRecord("transferTxn2").andAllChildRecords().logged(),
-						getAccountInfoWithAlias("alias").has(
+						getAliasedAccountInfo("alias").has(
 								accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.5)),
-						getAccountInfoWithAlias("alias2").has(
+						getAliasedAccountInfo("alias2").has(
 								accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.5))
 				);
 	}
@@ -235,7 +267,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 							final var op2 = getTxnRecord("transferTxn2").andAllChildRecords().logged();
 							final var op3 = getAccountInfo("payer").has(
 									accountWith().balance((initialBalance * ONE_HBAR) - (2 * ONE_HUNDRED_HBARS)));
-							final var op4 = getAccountInfoWithAlias("transferAlias").has(
+							final var op4 = getAliasedAccountInfo("transferAlias").has(
 									accountWith().expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0.05, 0.5));
 							CustomSpecAssert.allRunFor(spec, op, op2, op3, op4);
 						}));
@@ -255,7 +287,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 						getTxnRecord("transferTxn").andAllChildRecords().logged(),
 						getAccountInfo("payer").has(
 								accountWith().balance((initialBalance * ONE_HBAR) - ONE_HUNDRED_HBARS)),
-						getAccountInfoWithAlias("alias").has(
+						getAliasedAccountInfo("alias").has(
 								accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.5))
 				).then(
 						/* transfer using alias and not account number */
@@ -264,7 +296,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 						getTxnRecord("transferTxn2").andAllChildRecords().hasChildRecordCount(0).logged(),
 						getAccountInfo("payer").has(
 								accountWith().balance((initialBalance * ONE_HBAR) - (2 * ONE_HUNDRED_HBARS))),
-						getAccountInfoWithAlias("alias").has(
+						getAliasedAccountInfo("alias").has(
 								accountWith().expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0.05, 0.5))
 				);
 	}
@@ -336,6 +368,10 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 								"transferTxn")
 				).then(
 						/* get transaction record and validate the child record has alias bytes as expected */
+						getReceipt("transferTxn")
+								.andAnyChildReceipts()
+								.hasChildAutoAccountCreations(1)
+								.logged(),
 						getTxnRecord("transferTxn").andAllChildRecords().hasChildRecordCount(
 								1).hasAliasInChildRecord("validAlias", 0).logged(),
 						getAccountInfo("payer").has(
@@ -343,7 +379,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 										.balance((initialBalance * ONE_HBAR) - ONE_HUNDRED_HBARS)
 										.noAlias()
 						),
-						getAccountInfoWithAlias("validAlias").has(
+						getAliasedAccountInfo("validAlias").has(
 										accountWith()
 												.key("validAlias")
 												.expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.5)

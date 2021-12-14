@@ -22,6 +22,7 @@ package com.hedera.services.bdd.spec.transactions.crypto;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -48,19 +49,22 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
 	static final Logger log = LogManager.getLogger(HapiCryptoDelete.class);
 
 	private String account;
-	private String alias = "";
+	private String aliasKeySource = null;
 	private boolean shouldPurge = false;
 	private Optional<String> transferAccount = Optional.empty();
-	private boolean lookUpAccountWithKey = false;
+	private ReferenceType referenceType = ReferenceType.REGISTRY_NAME;
 
 	public HapiCryptoDelete(String account) {
 		this.account = account;
 	}
 
-	public HapiCryptoDelete(String aliasKey, boolean lookUpAccount) {
-		this.account = "";
-		this.alias = aliasKey;
-		this.lookUpAccountWithKey = lookUpAccount;
+	public HapiCryptoDelete(String reference, ReferenceType type) {
+		this.referenceType = type;
+		if (type == ReferenceType.ALIAS_KEY_NAME) {
+			aliasKeySource = reference;
+		} else {
+			account = reference;
+		}
 	}
 
 	@Override
@@ -94,11 +98,12 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		AccountID target;
-		if (lookUpAccountWithKey) {
-			account = lookUpAccountWithAlias(spec, alias);
-			target = asAccount(account);
-		} else {
+
+		if (referenceType == ReferenceType.REGISTRY_NAME) {
 			target = TxnUtils.asId(account, spec);
+		} else {
+			account = lookUpAccountWithAlias(spec, aliasKeySource);
+			target = asAccount(account);
 		}
 
 		CryptoDeleteTransactionBody opBody = spec
@@ -124,8 +129,8 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
 			if (spec.registry().hasSigRequirement(account)) {
 				spec.registry().removeSigRequirement(account);
 			}
-			if (spec.registry().hasKey(alias)) {
-				final var lookedUpKey = spec.registry().getKey(alias).toByteString().toStringUtf8();
+			if (spec.registry().hasKey(aliasKeySource)) {
+				final var lookedUpKey = spec.registry().getKey(aliasKeySource).toByteString().toStringUtf8();
 				spec.registry().removeAccount(lookedUpKey);
 				spec.registry().removeKey(lookedUpKey);
 			}
