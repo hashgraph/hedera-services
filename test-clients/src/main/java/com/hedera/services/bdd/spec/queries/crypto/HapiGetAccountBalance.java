@@ -56,7 +56,6 @@ import java.util.stream.Collectors;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
-import static com.hedera.services.bdd.spec.queries.QueryUtils.lookUpAccountWithAlias;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
@@ -66,13 +65,11 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 	private Pattern DOT_DELIMTED_ACCOUNT = Pattern.compile("\\d+[.]\\d+[.]\\d+");
 	private String account;
 	private Optional<AccountID> accountID = Optional.empty();
-	private String alias = "";
 	private boolean exportAccount = false;
 	Optional<Long> expected = Optional.empty();
 	Optional<Supplier<String>> entityFn = Optional.empty();
 	Optional<Function<HapiApiSpec, Function<Long, Optional<String>>>> expectedCondition = Optional.empty();
 	Optional<Map<String, LongConsumer>> tokenBalanceObservers = Optional.empty();
-	private boolean lookUpAccountWithKey = false;
 	private String repr;
 
 	private String aliasKeySource = null;
@@ -82,11 +79,6 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 
 	public HapiGetAccountBalance(String account) {
 		this(account, ReferenceType.REGISTRY_NAME);
-	}
-
-	public HapiGetAccountBalance(String alias, boolean lookUpAccount) {
-		this.alias = alias;
-		this.lookUpAccountWithKey = lookUpAccount;
 	}
 
 	public HapiGetAccountBalance(String reference, ReferenceType type) {
@@ -241,9 +233,6 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 	}
 
 	private Query getAccountBalanceQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {
-		if (lookUpAccountWithKey) {
-			account = lookUpAccountWithAlias(spec, alias);
-		}
 		if (entityFn.isPresent()) {
 			account = entityFn.get().get();
 		}

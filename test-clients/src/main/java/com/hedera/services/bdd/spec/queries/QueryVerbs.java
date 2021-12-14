@@ -74,14 +74,6 @@ public class QueryVerbs {
 		return new HapiGetAccountInfo(account);
 	}
 
-	public static HapiGetAccountInfo getAccountInfo(final String alias, final boolean lookUpWithKey) {
-		return new HapiGetAccountInfo(alias, lookUpWithKey);
-	}
-
-	public static HapiGetAccountInfo getAccountInfoWithAlias(final String alias) {
-		return new HapiGetAccountInfo(alias, true);
-	}
-
 	public static HapiGetAccountInfo getAliasedAccountInfo(final String sourceKey) {
 		return new HapiGetAccountInfo(sourceKey, ReferenceType.ALIAS_KEY_NAME);
 	}
@@ -135,10 +127,6 @@ public class QueryVerbs {
 
 	public static HapiGetAccountBalance getAliasedAccountBalance(final String sourceKey) {
 		return new HapiGetAccountBalance(sourceKey, ReferenceType.ALIAS_KEY_NAME);
-	}
-
-	public static HapiGetAccountBalance getAccountBalanceWithAlias(final String alias) {
-		return new HapiGetAccountBalance(alias, true);
 	}
 
 	public static HapiGetAccountBalance getAccountBalance(final Supplier<String> supplier) {

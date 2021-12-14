@@ -22,7 +22,6 @@ package com.hedera.services.bdd.spec.queries.crypto;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
@@ -48,7 +47,6 @@ import java.util.function.LongConsumer;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
-import static com.hedera.services.bdd.spec.queries.QueryUtils.lookUpAccountWithAlias;
 import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -56,7 +54,6 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 	private static final Logger log = LogManager.getLogger(HapiGetAccountInfo.class);
 
 	private String account;
-	private String alias = "";
 	private String aliasKeySource = null;
 	private Optional<String> registryEntry = Optional.empty();
 	private List<String> absentRelationships = new ArrayList<>();
@@ -71,16 +68,10 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 	private Optional<Consumer<AccountID>> idObserver = Optional.empty();
 	private boolean lookUpAccountWithKey = false;
 	private boolean assertAliasKeyMatches = false;
-	private ReferenceType referenceType = ReferenceType.REGISTRY_NAME;
+	private ReferenceType referenceType;
 
 	public HapiGetAccountInfo(String account) {
 		this(account, ReferenceType.REGISTRY_NAME);
-	}
-
-	public HapiGetAccountInfo(String alias, boolean lookUpAccount) {
-		this.account = "0.0.0";
-		this.alias = alias;
-		this.lookUpAccountWithKey = lookUpAccount;
 	}
 
 	public HapiGetAccountInfo(String reference, ReferenceType type) {
@@ -170,10 +161,6 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 			final var expected = spec.registry().getKey(aliasKeySource).toByteString();
 			Assertions.assertEquals(expected, actualInfo.getAlias());
 		}
-		if (lookUpAccountWithKey) {
-			final var lookedUpKey = spec.registry().getKey(alias).toByteString().toStringUtf8();
-			account = HapiPropertySource.asAccountString(spec.registry().getAccountID(lookedUpKey));
-		}
 		if (expectations.isPresent()) {
 			ErroringAsserts<AccountInfo> asserts = expectations.get().assertsFor(spec);
 			List<Throwable> errors = asserts.errorsIn(actualInfo);
@@ -230,10 +217,6 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 
 	private Query getAccountInfoQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {
 		AccountID target;
-		if (lookUpAccountWithKey) {
-			account = lookUpAccountWithAlias(spec, alias);
-		}
-
 		if (referenceType == ReferenceType.ALIAS_KEY_NAME) {
 			target = AccountID.newBuilder()
 					.setAlias(spec.registry().getKey(aliasKeySource).toByteString())

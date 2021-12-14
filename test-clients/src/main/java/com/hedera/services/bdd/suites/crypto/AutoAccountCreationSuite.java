@@ -40,7 +40,6 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfoWithAlias;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -144,14 +143,14 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 										.balance((initialBalance * ONE_HBAR) - ONE_HUNDRED_HBARS)
 										.noAlias()
 						),
-						getAccountInfoWithAlias("validAlias").has(
-								accountWith()
-										.key("validAlias")
-										.expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.5)
-										.alias("validAlias")
-										.autoRenew(THREE_MONTHS_IN_SECONDS)
-										.receiverSigReq(false)
-										.memo(AUTO_MEMO))
+						getAliasedAccountInfo("validAlias").has(
+										accountWith()
+												.key("validAlias")
+												.expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.5)
+												.alias("validAlias")
+												.autoRenew(THREE_MONTHS_IN_SECONDS)
+												.receiverSigReq(false)
+												.memo(AUTO_MEMO))
 								.logged()
 				);
 	}
@@ -174,13 +173,13 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 										.balance((initialBalance * ONE_HBAR) - ONE_HUNDRED_HBARS)
 										.noAlias()
 						),
-						getAccountInfo("alias", true).has(
-								accountWith()
-										.key("alias")
-										.expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.5)
-										.alias("alias")
-										.autoRenew(THREE_MONTHS_IN_SECONDS)
-										.receiverSigReq(false))
+						getAliasedAccountInfo("alias").has(
+										accountWith()
+												.key("alias")
+												.expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.5)
+												.alias("alias")
+												.autoRenew(THREE_MONTHS_IN_SECONDS)
+												.receiverSigReq(false))
 								.logged()
 				);
 	}
@@ -228,7 +227,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 								2 * ONE_HUNDRED_HBARS)).via(
 								"txn"),
 						getTxnRecord("txn").andAllChildRecords().logged(),
-						getAccountInfoWithAlias("alias").has(
+						getAliasedAccountInfo("alias").has(
 								accountWith().expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0.05, 0.5))
 				).then(
 						/* transfer from an alias that was auto created to a new alias, validate account is created */
@@ -236,9 +235,9 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 								HapiCryptoTransfer.tinyBarsFromToWithAlias("alias", "alias2", ONE_HUNDRED_HBARS)).via(
 								"transferTxn2"),
 						getTxnRecord("transferTxn2").andAllChildRecords().logged(),
-						getAccountInfoWithAlias("alias").has(
+						getAliasedAccountInfo("alias").has(
 								accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.5)),
-						getAccountInfoWithAlias("alias2").has(
+						getAliasedAccountInfo("alias2").has(
 								accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.5))
 				);
 	}
@@ -266,7 +265,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 							final var op2 = getTxnRecord("transferTxn2").andAllChildRecords().logged();
 							final var op3 = getAccountInfo("payer").has(
 									accountWith().balance((initialBalance * ONE_HBAR) - (2 * ONE_HUNDRED_HBARS)));
-							final var op4 = getAccountInfoWithAlias("transferAlias").has(
+							final var op4 = getAliasedAccountInfo("transferAlias").has(
 									accountWith().expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0.05, 0.5));
 							CustomSpecAssert.allRunFor(spec, op, op2, op3, op4);
 						}));
@@ -286,7 +285,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 						getTxnRecord("transferTxn").andAllChildRecords().logged(),
 						getAccountInfo("payer").has(
 								accountWith().balance((initialBalance * ONE_HBAR) - ONE_HUNDRED_HBARS)),
-						getAccountInfoWithAlias("alias").has(
+						getAliasedAccountInfo("alias").has(
 								accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.5))
 				).then(
 						/* transfer using alias and not account number */
@@ -295,7 +294,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 						getTxnRecord("transferTxn2").andAllChildRecords().hasChildRecordCount(0).logged(),
 						getAccountInfo("payer").has(
 								accountWith().balance((initialBalance * ONE_HBAR) - (2 * ONE_HUNDRED_HBARS))),
-						getAccountInfoWithAlias("alias").has(
+						getAliasedAccountInfo("alias").has(
 								accountWith().expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0.05, 0.5))
 				);
 	}
@@ -313,8 +312,8 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 				)
 				.build().toByteString();
 		final var keyListAlias = Key.newBuilder().setKeyList(KeyList.newBuilder().addKeys(
-				Key.newBuilder().setEd25519(ByteString.copyFrom("aaaaaa".getBytes()))).addKeys(
-				Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom("bbbbbbb".getBytes()))))
+						Key.newBuilder().setEd25519(ByteString.copyFrom("aaaaaa".getBytes()))).addKeys(
+						Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom("bbbbbbb".getBytes()))))
 				.build().toByteString();
 		final var contractKeyAlias = Key.newBuilder().setContractID(
 				ContractID.newBuilder().setContractNum(100L)).build().toByteString();
@@ -374,14 +373,14 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 										.balance((initialBalance * ONE_HBAR) - ONE_HUNDRED_HBARS)
 										.noAlias()
 						),
-						getAccountInfoWithAlias("validAlias").has(
-								accountWith()
-										.key("validAlias")
-										.expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.5)
-										.alias("validAlias")
-										.autoRenew(THREE_MONTHS_IN_SECONDS)
-										.receiverSigReq(false)
-										.memo(AUTO_MEMO))
+						getAliasedAccountInfo("validAlias").has(
+										accountWith()
+												.key("validAlias")
+												.expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.5)
+												.alias("validAlias")
+												.autoRenew(THREE_MONTHS_IN_SECONDS)
+												.receiverSigReq(false)
+												.memo(AUTO_MEMO))
 								.logged()
 				);
 	}
