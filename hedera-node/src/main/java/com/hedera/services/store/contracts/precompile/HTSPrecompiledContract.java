@@ -298,8 +298,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		/*-- The updater here should always have a parent updater --*/
-		if(updater.parentUpdater().isPresent()) {
-			final var parent = (AbstractLedgerWorldUpdater) updater.parentUpdater().get();
+		Optional parentUpdater = updater.parentUpdater();
+		if(parentUpdater.isPresent()) {
+			final var parent = (AbstractLedgerWorldUpdater) parentUpdater.get();
 			parent.manageInProgressRecord(recordsHistorian, childRecord, synthBody);
 		} else {
 			throw new InvalidTransactionException(FAIL_INVALID);
