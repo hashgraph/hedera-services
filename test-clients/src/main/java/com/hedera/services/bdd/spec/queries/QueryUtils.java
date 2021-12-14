@@ -98,10 +98,6 @@ public class QueryUtils {
 		return "get" + field.substring(0, 1).toUpperCase() + field.substring(1);
 	}
 
-	public static String nameForCostQueryTxn(String baseTxn) {
-		return baseTxn + "Cost";
-	}
-
 	public static String lookUpAccountWithAlias(HapiApiSpec spec, String aliasKey) {
 		final var lookedUpKey = spec.registry().getKey(aliasKey).toByteString().toStringUtf8();
 		return asAccountString(spec.registry().getAccountID(lookedUpKey));

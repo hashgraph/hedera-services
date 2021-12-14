@@ -224,14 +224,28 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 		};
 	}
 
-	public static Function<HapiApiSpec, TransferList> tinyBarsFromToWithAlias(
-			String from, String to, long amount) {
+	public static Function<HapiApiSpec, TransferList> tinyBarsFromToWithAlias(String from, String to, long amount) {
 		transferToKey = true;
 		return tinyBarsFromToWithAlias(from, to, ignore -> amount);
 	}
 
+	public static Function<HapiApiSpec, TransferList> tinyBarsFromAccountToAlias(
+			final String from,
+			final String to,
+			long amount
+	) {
+		return spec -> {
+			final var fromId = asId(from, spec);
+			final var toId = spec.registry().aliasIdFor(to);
+			return xFromTo(fromId, toId, amount);
+		};
+	}
+
 	public static Function<HapiApiSpec, TransferList> tinyBarsFromToWithAlias(
-			String from, String to, Function<HapiApiSpec, Long> amountFn) {
+			String from,
+			String to,
+			Function<HapiApiSpec, Long> amountFn
+	) {
 		return spec -> {
 			long amount = amountFn.apply(spec);
 			AccountID toAccount;
@@ -253,8 +267,11 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 		};
 	}
 
-	public static Function<HapiApiSpec, TransferList> tinyBarsFromToWithInvalidAmounts(String from, String to,
-			long amount) {
+	public static Function<HapiApiSpec, TransferList> tinyBarsFromToWithInvalidAmounts(
+			final String from,
+			final String to,
+			final long amount
+	) {
 		return tinyBarsFromToWithInvalidAmounts(from, to, ignore -> amount);
 	}
 
@@ -270,6 +287,14 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 							AccountAmount.newBuilder().setAccountID(fromAccount).setAmount(
 									-1L * amount + 1L).build())).build();
 		};
+	}
+
+	private static TransferList xFromTo(final AccountID from, final AccountID to, final long amount) {
+		return TransferList.newBuilder()
+				.addAllAccountAmounts(List.of(
+						AccountAmount.newBuilder().setAccountID(from).setAmount(-amount).build(),
+						AccountAmount.newBuilder().setAccountID(to).setAmount(+amount).build()))
+				.build();
 	}
 
 	@Override

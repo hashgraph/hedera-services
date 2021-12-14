@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.crypto;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -40,11 +41,14 @@ import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfoWithAlias;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -84,13 +88,40 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 						multipleAutoAccountCreations(),
 						accountCreatedIfAliasUsedAsPubKey(),
 						aliasCanBeUsedOnManyAccountsNotAsAlias(),
-						autoAccountCreationWorksWhenUsingAliasOfDeletedAccount()
+						autoAccountCreationWorksWhenUsingAliasOfDeletedAccount(),
+						canGetBalanceAndInfoViaAlias(),
 				}
 		);
 	}
 
+	private HapiApiSpec canGetBalanceAndInfoViaAlias() {
+		final var ed25519SourceKey = "ed25519Alias";
+		final var secp256k1SourceKey = "secp256k1Alias";
+		final var secp256k1Shape = KeyShape.SECP256K1;
+		final var ed25519Shape = KeyShape.ED25519;
+		final var autoCreation = "autoCreation";
+
+		return defaultHapiSpec("CanGetBalanceAndInfoViaAlias")
+				.given(
+						newKeyNamed(ed25519SourceKey).shape(ed25519Shape),
+						newKeyNamed(secp256k1SourceKey).shape(secp256k1Shape)
+				).when(
+						cryptoTransfer(
+								tinyBarsFromAccountToAlias(GENESIS, ed25519SourceKey, ONE_HUNDRED_HBARS),
+								tinyBarsFromAccountToAlias(GENESIS, secp256k1SourceKey, ONE_HUNDRED_HBARS)
+						)
+								.payingWith(GENESIS)
+								.via(autoCreation)
+				).then(
+						getAliasedAccountBalance(ed25519SourceKey),
+						getAliasedAccountBalance(secp256k1SourceKey),
+						getAliasedAccountInfo(ed25519SourceKey).hasExpectedAliasKey(),
+						getAliasedAccountInfo(secp256k1SourceKey).hasExpectedAliasKey()
+				);
+	}
+
 	private HapiApiSpec aliasCanBeUsedOnManyAccountsNotAsAlias() {
-		return defaultHapiSpec("AutoAccountCreationsHappyPath")
+		return defaultHapiSpec("AliasCanBeUsedOnManyAccountsNotAsAlias")
 				.given(
 						/* have alias key on other accounts and tokens not as alias */
 						newKeyNamed("validAlias"),
@@ -114,13 +145,13 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 										.noAlias()
 						),
 						getAccountInfoWithAlias("validAlias").has(
-										accountWith()
-												.key("validAlias")
-												.expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.5)
-												.alias("validAlias")
-												.autoRenew(THREE_MONTHS_IN_SECONDS)
-												.receiverSigReq(false)
-												.memo(AUTO_MEMO))
+								accountWith()
+										.key("validAlias")
+										.expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.5)
+										.alias("validAlias")
+										.autoRenew(THREE_MONTHS_IN_SECONDS)
+										.receiverSigReq(false)
+										.memo(AUTO_MEMO))
 								.logged()
 				);
 	}
@@ -144,12 +175,12 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 										.noAlias()
 						),
 						getAccountInfo("alias", true).has(
-										accountWith()
-												.key("alias")
-												.expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.5)
-												.alias("alias")
-												.autoRenew(THREE_MONTHS_IN_SECONDS)
-												.receiverSigReq(false))
+								accountWith()
+										.key("alias")
+										.expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.5)
+										.alias("alias")
+										.autoRenew(THREE_MONTHS_IN_SECONDS)
+										.receiverSigReq(false))
 								.logged()
 				);
 	}
@@ -282,8 +313,8 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 				)
 				.build().toByteString();
 		final var keyListAlias = Key.newBuilder().setKeyList(KeyList.newBuilder().addKeys(
-						Key.newBuilder().setEd25519(ByteString.copyFrom("aaaaaa".getBytes()))).addKeys(
-						Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom("bbbbbbb".getBytes()))))
+				Key.newBuilder().setEd25519(ByteString.copyFrom("aaaaaa".getBytes()))).addKeys(
+				Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom("bbbbbbb".getBytes()))))
 				.build().toByteString();
 		final var contractKeyAlias = Key.newBuilder().setContractID(
 				ContractID.newBuilder().setContractNum(100L)).build().toByteString();
@@ -344,13 +375,13 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 										.noAlias()
 						),
 						getAccountInfoWithAlias("validAlias").has(
-										accountWith()
-												.key("validAlias")
-												.expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.5)
-												.alias("validAlias")
-												.autoRenew(THREE_MONTHS_IN_SECONDS)
-												.receiverSigReq(false)
-												.memo(AUTO_MEMO))
+								accountWith()
+										.key("validAlias")
+										.expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.5)
+										.alias("validAlias")
+										.autoRenew(THREE_MONTHS_IN_SECONDS)
+										.receiverSigReq(false)
+										.memo(AUTO_MEMO))
 								.logged()
 				);
 	}
