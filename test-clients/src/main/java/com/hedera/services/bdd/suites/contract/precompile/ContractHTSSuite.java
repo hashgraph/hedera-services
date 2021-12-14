@@ -21,10 +21,8 @@ package com.hedera.services.bdd.suites.contract.precompile;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
-import com.hedera.services.bdd.spec.queries.meta.ChildRecord;
-import com.hedera.services.bdd.spec.queries.meta.TokenTransfer;
-import com.hedera.services.bdd.spec.queries.meta.TokenTransfers;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -48,7 +46,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.queries.meta.TokenTransfer.*;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -59,6 +56,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -109,12 +107,12 @@ public class ContractHTSSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(
-				distributeMultipleTokens()
-//				depositAndWithdrawFungibleTokens(),
-//				associateToken(),
-//				dissociateToken(),
-//				transferNft(),
-//				transferMultipleNfts()
+				distributeMultipleTokens(),
+				depositAndWithdrawFungibleTokens(),
+				associateToken(),
+				dissociateToken(),
+				transferNft(),
+				transferMultipleNfts()
 		);
 	}
 
@@ -214,38 +212,15 @@ public class ContractHTSSuite extends HapiApiSuite {
 								})
 
 				).then(
-						getTxnRecord("distributeTx").andAllChildRecords()
-								.hasChildRecords(
-										ChildRecord.with()
-												.status(SUCCESS)
-												.transfers(TokenTransfers.with(
-														with(A_TOKEN, ACCOUNT, 10L),
-														with(A_TOKEN, RECEIVER, 5L),
-														with(A_TOKEN, theSecondReceiver, 5L)
-												))));
-
-//						getTxnRecord("distributeTx").andAllChildRecords()
-//														.hasChildRecords(recordWith()
-//																.status(SUCCESS)
-//																.tokenTransfers(
-//																		changingFungibleBalances()
-//																				.including(A_TOKEN, ACCOUNT, 10L)
-//																				.including(A_TOKEN, RECEIVER, 5L)
-//																				.including(A_TOKEN, theSecondReceiver, 5L)
-//																),
-//																recordWith().txId()
-//																		.status(SUCCESS)
-//																		.tokenTransfers(
-//																				changingFungibleBalances()
-//																						.including(A_TOKEN, ACCOUNT, 10L)
-//																						.including(A_TOKEN, RECEIVER, 5L)
-//																						.including(A_TOKEN, theSecondReceiver, 5L)
-//																		)).logged()
-						// Should get txn record
-						// Make a functional chain to assert stuff
-						// modify assertExpectationsGiven to check the child records by whatever property is set to get
-						// checked.
-
+						childRecordsCheck("distributeTx", SUCCESS, recordWith()
+								.status(SUCCESS)
+								.tokenTransfers(
+										changingFungibleBalances()
+												.including(A_TOKEN, ACCOUNT, 10L)
+												.including(A_TOKEN, RECEIVER, 5L)
+												.including(A_TOKEN, theSecondReceiver, 5L)
+								))
+						);
 	}
 
 	private HapiApiSpec transferNft() {
@@ -304,7 +279,14 @@ public class ContractHTSSuite extends HapiApiSuite {
 						getAccountInfo(RECEIVER).hasOwnedNfts(1),
 						getAccountBalance(RECEIVER).hasTokenBalance(NFT, 1),
 						getAccountInfo(ACCOUNT).hasOwnedNfts(0),
-						getAccountBalance(ACCOUNT).hasTokenBalance(NFT, 0)
+						getAccountBalance(ACCOUNT).hasTokenBalance(NFT, 0),
+
+						childRecordsCheck("distributeTx", SUCCESS, recordWith()
+								.status(SUCCESS)
+								.tokenTransfers(
+										NonFungibleTransfers.changingNFTBalances()
+												.including(NFT, ACCOUNT, RECEIVER, 1L)
+								))
 				);
 	}
 
