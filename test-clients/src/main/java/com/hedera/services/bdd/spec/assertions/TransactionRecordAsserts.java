@@ -142,7 +142,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
 		return this;
 	}
 
-	private <T> void registerTypedProvider(String forField, ErroringAssertsProvider<T> provider) {
+	protected <T> void registerTypedProvider(String forField, ErroringAssertsProvider<T> provider) {
 		try {
 			Method m = TransactionRecord.class.getMethod(QueryUtils.asGetter(forField));
 			registerProvider((spec, o) -> {
