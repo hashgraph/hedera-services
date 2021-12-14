@@ -19,7 +19,6 @@ commands:
             sudo apt-get install -y apt-utils;
             sudo apt install -y curl;
             sudo apt install -y python3.7;
-            sudo rm /usr/bin/python3;
             sudo ln -s python3.7 /usr/bin/python3;
             sudo apt install -y python3-pip;
             pip3 install --upgrade pip;
