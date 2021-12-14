@@ -29,6 +29,7 @@ import com.hedera.services.bdd.spec.queries.contract.HapiGetContractRecords;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountBalance;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountRecords;
+import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileInfo;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetExecTime;
@@ -81,6 +82,10 @@ public class QueryVerbs {
 		return new HapiGetAccountInfo(alias, true);
 	}
 
+	public static HapiGetAccountInfo getAliasedAccountInfo(final String sourceKey) {
+		return new HapiGetAccountInfo(sourceKey, ReferenceType.ALIAS_KEY_NAME);
+	}
+
 	public static HapiGetAccountRecords getAccountRecords(final String account) {
 		return new HapiGetAccountRecords(account);
 	}
@@ -126,6 +131,10 @@ public class QueryVerbs {
 
 	public static HapiGetAccountBalance getAccountBalance(final String account) {
 		return new HapiGetAccountBalance(account);
+	}
+
+	public static HapiGetAccountBalance getAliasedAccountBalance(final String sourceKey) {
+		return new HapiGetAccountBalance(sourceKey, ReferenceType.ALIAS_KEY_NAME);
 	}
 
 	public static HapiGetAccountBalance getAccountBalanceWithAlias(final String alias) {
