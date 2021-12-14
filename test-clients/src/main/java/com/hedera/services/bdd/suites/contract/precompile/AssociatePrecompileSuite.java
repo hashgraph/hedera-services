@@ -95,11 +95,11 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(
-//				associatePrecompileWithSignatureWorksForFungible(),
-//				associatePrecompileWithContractIdSignatureWorksForFungible(),
-//				associatePrecompileWithSignatureWorksForNFT(),
-//				associatePrecompileWithContractIdSignatureWorksForNFT()
-//				nestedAssociateWorksAsExpected()
+				associatePrecompileWithSignatureWorksForFungible(),
+				associatePrecompileWithContractIdSignatureWorksForFungible(),
+				associatePrecompileWithSignatureWorksForNFT(),
+				associatePrecompileWithContractIdSignatureWorksForNFT(),
+				nestedAssociateWorksAsExpected(),
 				multipleAssociatePrecompileWithSignatureWorksForFungible()
 		);
 	}
@@ -372,7 +372,6 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 		final var theAccount = "anybody";
 		final var theContract = "associateDissociateContract";
 		final var multiKey = "purpose";
-		final var contractKeyShape = DELEGATE_CONTRACT;
 		final var contractKey = "meaning";
 
 		AtomicReference<AccountID> accountID = new AtomicReference<>();
@@ -431,7 +430,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 														.bytecode(theContract)
 														.gas(100_000),
 												newKeyNamed(contractKey)
-														.shape(contractKeyShape.signedWith("AssociateDissociate")),
+														.shape(DELEGATE_CONTRACT.signedWith("AssociateDissociate")),
 												tokenUpdate(FREEZABLE_TOKEN_ON_BY_DEFAULT)
 														.supplyKey(contractKey),
 												getTokenInfo(FREEZABLE_TOKEN_ON_BY_DEFAULT).logged(),
@@ -611,7 +610,6 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 		final var theAccount = "anybody";
 		final var theContract = "associateDissociateContract";
 		final var multiKey = "purpose";
-		final var contractKeyShape = DELEGATE_CONTRACT;
 		final var contractKey = "meaning";
 
 		AtomicReference<AccountID> accountID = new AtomicReference<>();
@@ -673,7 +671,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 														.bytecode(theContract)
 														.gas(100_000),
 												newKeyNamed(contractKey)
-														.shape(contractKeyShape.signedWith("AssociateDissociate")),
+														.shape(DELEGATE_CONTRACT.signedWith("AssociateDissociate")),
 												tokenUpdate(FREEZABLE_TOKEN_ON_BY_DEFAULT)
 														.supplyKey(contractKey),
 												getTokenInfo(FREEZABLE_TOKEN_ON_BY_DEFAULT).logged(),
@@ -738,7 +736,6 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	protected Logger getResultsLogger() {
 		return log;
 	}
-
 
 	/* --- Helpers --- */
 

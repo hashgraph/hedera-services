@@ -106,12 +106,12 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(
-//				dissociatePrecompileWithSigsForFungibleWorks(),
-//				dissociatePrecompileWitContractIdSigForFungibleWorks(),
-//				dissociatePrecompileWithSigsForNFTWorks(),
-//				dissociatePrecompileWitContractIdSigForNFTWorks(),
-//				dissociatePrecompileHasExpectedSemanticsForDeletedTokens()
-//				nestedDissociateWorksAsExpected()
+				dissociatePrecompileWithSigsForFungibleWorks(),
+				dissociatePrecompileWitContractIdSigForFungibleWorks(),
+				dissociatePrecompileWithSigsForNFTWorks(),
+				dissociatePrecompileWitContractIdSigForNFTWorks(),
+				dissociatePrecompileHasExpectedSemanticsForDeletedTokens(),
+				nestedDissociateWorksAsExpected(),
 				multiplePrecompileDissociationsWithSigsForFungibleWorks()
 		);
 	}

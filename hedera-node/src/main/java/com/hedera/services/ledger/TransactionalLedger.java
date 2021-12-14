@@ -311,6 +311,9 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	public void put(K id, A entity) {
 		throwIfNotInTxn();
 
+		if(isZombie(id)) {
+			deadEntities.remove(id);
+		}
 		/* The ledger wrapping us may have created an entity we don't have; so catch up on that if necessary. */
 		if (!exists(id)) {
 			create(id);
@@ -464,7 +467,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 			throw new IllegalStateException("No active transaction!");
 		}
 		if (existsOrIsPendingCreation(id)) {
-			throw new IllegalArgumentException("An account already exists with key '" + id + "'!");
+			throw new IllegalArgumentException("An entity already exists with key '" + id + "'!");
 		}
 	}
 
