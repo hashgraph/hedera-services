@@ -20,6 +20,7 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 
@@ -67,6 +68,7 @@ public class ExpirableTxnRecordTestHelper {
 				.setTxnId(TxnId.fromGrpc(record.getTransactionID()))
 				.setConsensusTime(RichInstant.fromGrpc(record.getConsensusTimestamp()))
 				.setMemo(record.getMemo())
+				.setParentConsensusTime(MiscUtils.timestampToInstant(record.getParentConsensusTimestamp()))
 				.setFee(record.getTransactionFee())
 				.setTransferList(
 						record.hasTransferList() ? CurrencyAdjustments.fromGrpc(record.getTransferList()) : null)

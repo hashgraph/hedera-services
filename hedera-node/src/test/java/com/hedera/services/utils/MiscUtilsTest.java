@@ -35,6 +35,7 @@ import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stats.ServicesStatsConfig;
 import com.hedera.test.utils.IdUtils;
@@ -258,6 +259,15 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 class MiscUtilsTest {
+	@Test
+	void canUnpackTime() {
+		final long seconds = 1_234_567L;
+		final int nanos = 890;
+		final var packedTime = BitPackUtils.packedTime(seconds, nanos);
+		final var expected = Timestamp.newBuilder().setSeconds(seconds).setNanos(nanos).build();
+		assertEquals(expected, MiscUtils.asTimestamp(packedTime));
+	}
+
 	@Test
 	void forEachDropInWorksAsExpected() {
 		// setup:
