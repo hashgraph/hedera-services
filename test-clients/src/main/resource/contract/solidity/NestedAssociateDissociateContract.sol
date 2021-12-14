@@ -7,6 +7,10 @@ contract NestedAssociateDissociateContract is HederaTokenService {
 
     AssociateDissociateContract associateDissociateContract;
 
+    constructor(address associateDissociateContractAddress) public {
+        associateDissociateContract = AssociateDissociateContract(associateDissociateContractAddress);
+    }
+
     function associateDissociateContractCall(address sender, address tokenAddress) external {
         associateDissociateContract.tokenAssociate(sender, tokenAddress);
         int response = HederaTokenService.dissociateToken(sender, tokenAddress);
@@ -34,6 +38,3 @@ contract AssociateDissociateContract is HederaTokenService {
         HederaTokenService.dissociateToken(sender, tokenAddress);
     }
 }
-
-
-
