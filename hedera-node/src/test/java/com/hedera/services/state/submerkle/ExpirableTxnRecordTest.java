@@ -23,6 +23,7 @@ package com.hedera.services.state.submerkle;
 import com.google.protobuf.ByteString;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.serdes.DomainSerdesTest;
+import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -60,7 +61,6 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.times;
@@ -488,7 +488,11 @@ class ExpirableTxnRecordTest {
 
 	@Test
 	void asGrpcWorks() {
-		final var expected = grpcRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
+		final var expected = grpcRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations()
+				.toBuilder()
+				.setParentConsensusTimestamp(MiscUtils.asTimestamp(packedParentConsTime))
+				.build();
+
 		subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
 		subject.setExpiry(0L);
 		subject.setSubmittingMember(UNKNOWN_SUBMITTING_MEMBER);

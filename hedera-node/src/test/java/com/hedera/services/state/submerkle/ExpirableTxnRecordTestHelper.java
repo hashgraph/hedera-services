@@ -62,13 +62,12 @@ public class ExpirableTxnRecordTestHelper {
 				: null;
 		final var newTokenAssociations =
 				 record.getAutomaticTokenAssociationsList().stream().map(FcTokenAssociation::fromGrpc).collect(toList());
-		return ExpirableTxnRecord.newBuilder()
+		final var builder = ExpirableTxnRecord.newBuilder()
 				.setReceipt(TxnReceipt.fromGrpc(record.getReceipt()))
 				.setTxnHash(record.getTransactionHash().toByteArray())
 				.setTxnId(TxnId.fromGrpc(record.getTransactionID()))
 				.setConsensusTime(RichInstant.fromGrpc(record.getConsensusTimestamp()))
 				.setMemo(record.getMemo())
-				.setParentConsensusTime(MiscUtils.timestampToInstant(record.getParentConsensusTimestamp()))
 				.setFee(record.getTransactionFee())
 				.setTransferList(
 						record.hasTransferList() ? CurrencyAdjustments.fromGrpc(record.getTransferList()) : null)
@@ -82,7 +81,10 @@ public class ExpirableTxnRecordTestHelper {
 				.setScheduleRef(record.hasScheduleRef() ? fromGrpcScheduleId(record.getScheduleRef()) : null)
 				.setAssessedCustomFees(fcAssessedFees)
 				.setNewTokenAssociations(newTokenAssociations)
-				.setAlias(record.getAlias())
-				.build();
+				.setAlias(record.getAlias());
+		if (record.hasParentConsensusTimestamp()) {
+			builder.setParentConsensusTime(MiscUtils.timestampToInstant(record.getParentConsensusTimestamp()));
+		}
+		return builder.build();
 	}
 }
