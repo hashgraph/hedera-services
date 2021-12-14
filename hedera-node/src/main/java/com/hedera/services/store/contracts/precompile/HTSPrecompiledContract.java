@@ -81,6 +81,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
@@ -298,8 +299,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		/*-- The updater here should always have a parent updater --*/
 		if(updater.parentUpdater().isPresent()) {
-			((AbstractLedgerWorldUpdater) updater.parentUpdater().get()).manageInProgressRecord(recordsHistorian, childRecord,
-					synthBody);
+			final var parent = (AbstractLedgerWorldUpdater) updater.parentUpdater().get();
+			parent.manageInProgressRecord(recordsHistorian, childRecord, synthBody);
 		} else {
 			throw new InvalidTransactionException(FAIL_INVALID);
 		}
